@@ -8,10 +8,18 @@ def demo_python():
     Here is your code:
 
     ```python
-    class Solution:
-        def add(self, a, b):
-            return a + b
+    def add(a, b):
+    """
+    Returns the sum of two numbers.
 
+    Args:
+        a (int or float): The first number.
+        b (int or float): The second number.
+
+    Returns:
+        int or float: The sum of a and b.
+    """
+    return a + b
     '''
     schema = TaskSchema(language="python", file_name="solution.py", entry_point="add", prefer_rename=False)
     out = PythonStandardizer().normalize(messy, schema)
