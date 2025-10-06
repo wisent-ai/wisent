@@ -24,3 +24,4 @@ faiss-cpu==1.11.0.post1
 pre-commit==4.2.0
 safetensors==0.5.3
 typer==0.19.2
+black==25.9.0
