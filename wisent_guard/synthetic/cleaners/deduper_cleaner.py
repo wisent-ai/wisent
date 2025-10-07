@@ -1,14 +1,13 @@
 from wisent_guard.synthetic.cleaners.core.atoms import CleanStep
 from wisent_guard.synthetic.cleaners.core.atoms import CleanStepStats
 
-
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent_guard.synthetic.cleaners.methods.core.atoms import Deduper
+from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent_guard.synthetic.cleaners.methods.core.atoms import Deduper
 
 
+__all__ = [
+    "DeduperCleaner",
+]
 
 class DeduperCleaner(CleanStep):
     """

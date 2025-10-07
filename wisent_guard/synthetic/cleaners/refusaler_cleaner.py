@@ -3,13 +3,14 @@ from wisent_guard.synthetic.cleaners.core.atoms import CleanStep
 from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent_guard.synthetic.cleaners.core.atoms import CleanStepStats
 
-from typing import TYPE_CHECKING
+from wisent_guard.synthetic.cleaners.methods.core.atoms import Refusaler
+from wisent_guard.core.models.wisent_model import WisentModel
+from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent_guard.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
 
-if TYPE_CHECKING:
-    from wisent_guard.synthetic.cleaners.methods.core.atoms import Refusaler
-    from wisent_guard.core.models.wisent_model import WisentModel
-    from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
-
+__all__ = [
+    "RefusalerCleaner",
+]
 
 class RefusalerCleaner(CleanStep):
     """
@@ -122,8 +123,8 @@ class RefusalerCleaner(CleanStep):
                     retries += 1
             clean_contrastive_pair = ContrastivePair(
                 prompt=cp.prompt,
-                positive_response=cp.positive_response.model_response,
-                negative_response=neg,
+                positive_response=PositiveResponse(model_response=cp.positive_response.model_response),
+                negative_response=NegativeResponse(model_response=neg),
                 label=cp.label,
                 trait_description=cp.trait_description,
             )

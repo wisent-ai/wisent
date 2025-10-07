@@ -4,6 +4,9 @@ import re
 import numpy as np
 from wisent_guard.synthetic.generators.diversities.core.core import Diversity, DiversityScores
 
+__all__ = [
+    "FastDiversity",
+]
 
 class FastDiversity(Diversity):
     """
