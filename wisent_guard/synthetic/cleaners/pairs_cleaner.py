@@ -6,6 +6,9 @@ from wisent_guard.synthetic.cleaners.core.atoms import CleanStep, Cleaner
 from wisent_guard.synthetic.cleaners.core.atoms import CleanerStats
 from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
 
+__all__ = [
+    "PairsCleaner",
+]
 
 class PairsCleaner(Cleaner):
     """

@@ -5,7 +5,11 @@ from collections import Counter, defaultdict
 from typing import Mapping, Sequence, Callable
 
 from wisent_guard.synthetic.cleaners.methods.core.atoms import Deduper
+from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
 
+__all__ = [
+    "SimHashDeduper",
+]
 
 class SimHashDeduper(Deduper):
     """
@@ -55,15 +59,15 @@ class SimHashDeduper(Deduper):
         self._re_cjk = re.compile(r"[\u3400-\u9FFF\uF900-\uFAFF\u3040-\u30FF\uAC00-\uD7AF]")
 
 
-    def dedupe(self, items: list[dict[str, str]]) -> list[dict[str, str]]:
+    def dedupe(self, items: ContrastivePairSet) -> ContrastivePairSet:
         """
         Deduplicate items based on near-duplicate similarity of selected fields.
 
         arguments:
-            items: list of items, each a mapping of field -> text
+            items: ContrastivePairSet to deduplicate.
 
         returns:
-            deduplicated list of items (first occurrence kept)
+            deduplicated ContrastivePairSet (first occurrence kept)
 
         the processing steps are:
           1) Exact dedup by canonical tuple of exact_keys (e.g., prompt+positive+negative).
@@ -71,60 +75,29 @@ class SimHashDeduper(Deduper):
           3) Use banded LSH to find candidate near-duplicates.
           4) For candidates, compute exact Hamming distance; if within threshold, treat as duplicate.
           5) Keep first item in each near-duplicate cluster; discard others.
-
-        example of each step:
-            items = [
-                {"prompt": "Tell me a joke.", "positive": "Here's a joke.", "negative": "I can't help."},
-                {"prompt": "Tell me a joke!", "positive": "Here's a joke.", "negative": "I can't help."},
-                {"prompt": "What's the weather?", "positive": "It's sunny.", "negative": "I don't know."},
-                {"prompt": "Tell me a joke.", "positive": "Here's a joke.", "negative": "I can't help."},  # exact dup
-            ]
-
-            # Step 1: Exact dedup
-            exact_seen = {
-                (("prompt", "Tell me a joke."), ("positive", "Here's a joke."), ("negative", "I can't help.")),
-                (("prompt", "Tell me a joke!"), ("positive", "Here's a joke."), ("negative", "I can't help.")),
-                (("prompt", "What's the weather?"), ("positive", "It's sunny."), ("negative", "I don't know."))
-            }
-            items after exact dedup = [
-                {"prompt": "Tell me a joke.", ...},
-                {"prompt": "Tell me a joke!", ...},
-                {"prompt": "What's the weather?", ...}
-            ]
-
-            # Step 2: Compute SimHash fingerprints
-            fingerprints = [
-                0b101010101010... (64 bits) for item 1,
-                0b101010101110... (64 bits) for item 2,
-                0b110011001100... (64 bits) for item 3,
-            ]
-
-            # Step 3: Banded LSH buckets
-            buckets = {
-                band_0: {val1: [0,1], val2: [2]},  # items 0 and 1 share band_0 value
-                band_1: {val3: [0], val4: [1,2]},
-                ...
-            }
-
-            # Step 4: Hamming distance checks
-            - Compare item 1 and item 2 (candidates from band_0):
-              Hamming distance = 2 <= threshold_bits(3) → duplicate
-            - Compare item 1 and item 3:
-              Hamming distance = 10 > threshold_bits(3) → not duplicate
         """
-        out: list[dict[str, str]] = []
-        out_fps: list[int] = [] 
+        out: ContrastivePairSet = ContrastivePairSet(
+            name=items.name,
+            task_type=items.task_type,
+        )
+        out_fps: list[int] = []
 
         exact_seen: set[tuple[tuple[str, str], ...]] = set()
 
         buckets: list[defaultdict[int, list[int]]] = [defaultdict(list) for _ in range(self.num_bands)]
 
-        for it in items:
-            ex_key = self._exact_key(it)
+        for it in items.pairs:
+
+            it_dict = {
+                "prompt": it.prompt,
+                "positive": it.positive_response.model_response,
+                "negative": it.negative_response.model_response,
+            }
+            ex_key = self._exact_key(it_dict)
             if ex_key in exact_seen:
                 continue
 
-            fp = self._simhash64_for_item(it)
+            fp = self._simhash64_for_item(it_dict)
 
             candidates: set[int] = set()
             for b, shift in enumerate(self._band_shifts):
@@ -140,7 +113,7 @@ class SimHashDeduper(Deduper):
                 continue
 
             idx = len(out)
-            out.append(it)
+            out.add(it)
             out_fps.append(fp)
             exact_seen.add(ex_key)
             for b, shift in enumerate(self._band_shifts):
