@@ -16,8 +16,11 @@ from wisent_guard.synthetic.generators.diversities.core.core import Diversity
 
 from wisent_guard.synthetic.cleaners.pairs_cleaner import PairsCleaner
 
-logger = logging.getLogger(__name__)
+__all__ = [
+    "SyntheticContrastivePairsGenerator",
+]
 
+logger = logging.getLogger(__name__)
 
 class SyntheticContrastivePairsGenerator:
     """Small, fast contrastive-pairs generator with an extensible cleaning pipeline."""
@@ -29,12 +32,12 @@ class SyntheticContrastivePairsGenerator:
         contrastive_set_name: str,
         trait_description: str,
         trait_label: str,
-        prompts: DB_Instructions,
+        db_instructions: DB_Instructions,
         cleaner: PairsCleaner,
         diversity: Diversity,
     ) -> None:
         self.model = model
-        self.prompts = prompts
+        self.db_instructions = db_instructions
         self.generation_config = generation_config
         self.cleaner = cleaner
         self.diversity = diversity
@@ -46,82 +49,22 @@ class SyntheticContrastivePairsGenerator:
 
     def generate(
         self,
-        topic: str,
-        prescription: str,
         num_pairs: int = 10,
     ) -> tuple[ContrastivePairSet, GenerationReport]:
         """
         Generate synthetic contrastive pairs for the given topic and trait.
 
         arguments:
-            topic:
-                Topic or theme for the contrastive pairs (e.g., "honesty", "toxicity").
-            prescription:
-                Prescription or guidelines for generating the pairs (e.g., "honest vs dishonest").
             num_pairs:
                 Number of contrastive pairs to generate (default: 10).
         
         returns:
             Tuple of ContrastivePairSet with the generated pairs and GenerationReport with statistics about the generation
-
-        example:
-            >>> from wisent_guard.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
-            >>> from wisent_guard.core.models.wisent_model import WisentModel
-            >>> from wisent_guard.synthetic.db_instructions.mini_dp import Default_DB_Instructions
-            >>> from wisent_guard.synthetic.cleaners.methods.base_refusalers import BasesRefusaler
-            >>> from wisent_guard.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
-            >>> from wisent_guard.synthetic.cleaners.cleaners import PairsCleaner
-            >>> from wisent_guard.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
-            >>> model = WisentModel(model_name="llama3.1")
-            >>> prompts = Default_DB_Instructions()
-            >>> refusal = BasesRefusaler()
-            >>> deduper = SimHashDeduper()
-            >>> diversity = FastDiversity()
-            >>> cleaner = PairsCleaner(steps=[
-            ...     RefusalerCleaner(
-            ...         refusal=refusal,
-            ...         model=model,
-            ...         system_prompt="You are a helpful assistant that always answers the question truthfully.",
-            ...         trait_label="honesty",
-            ...         trait_description="honest vs dishonest",
-            ...         max_retries=2,
-            ...     ),
-            ...     DeduperCleaner(deduper=deduper),
-            ... ])
-            >>> generator = SyntheticContrastivePairsGenerator(
-            ...     model=model,
-            ...     generation_config={"max_tokens": 512, "temperature": 0.7},
-            ...     contrastive_set_name="example",
-            ...     trait_label="honesty",
-            ...     trait_description="honest vs dishonest",
-            ...     prompts=prompts,
-            ...     cleaner=cleaner,
-            ...     diversity=diversity,
-            ... )
-            >>> cps, report = generator.generate(
-            ...     topic="honesty",
-            ...     prescription="honest vs dishonest",
-            ...     num_pairs=5,
-            ... )
-            >>> print(len(cps))
-            5
-            >>> print(report)
-            GenerationReport(requested=5, kept_after_dedupe=5, retries_for_refusals=0, diversity=DiversityScores(lexical_diversity=0.85, semantic_diversity=0.9))
-            >>> for cp in cps.pairs:
-            ...     print(cp)
-            ContrastivePair(
-                prompt='What is the capital of France?',
-                positive_response=PositiveResponse(model_response='The capital of France is Paris.'),
-                negative_response=NegativeResponse(model_response='The capital of France is not Berlin.'),
-                label='geography',
-                trait_description='capital cities',
-            )
-            ...
         """
         # 1) generate
-        sys = self.prompts.get("generic_pairs")
+        sys = self.db_instructions.get("generic_pairs")
         usr = self._build_user_prompt(
-            topic, prescription, self.trait_label, self.trait_description, num_pairs
+            self.trait_label, self.trait_description, num_pairs
         )
         raw = self.model.generate(
             inputs=[[
@@ -137,7 +80,7 @@ class SyntheticContrastivePairsGenerator:
         # 3) clean
         cleaned, stats = self.cleaner.clean(parsed)
 
-        retries = stats.step_stats.get("refusaler_cleaner").stats().modified_items 
+        retries = stats.step_stats.get("refusaler_cleaner").modified_items 
 
         # 4) build domain objects
         cps = ContrastivePairSet(name=self.contrastive_set_name, task_type=self.trait_label)
@@ -163,84 +106,15 @@ class SyntheticContrastivePairsGenerator:
         )
         return cps, report
 
-    def parse_pairs(self, raw: str) -> ContrastivePairSet:
+    def parse_pairs(self, raw: list[str]) -> ContrastivePairSet:
         """
         Parse raw model outputs into ContrastivePairSet objects.
 
         arguments:
-            raw: Raw JSON string from the model.
+            raw:
+                Raw model output string to parse.
         returns:
             ContrastivePairSet object parsed from the raw string.
-
-        example:
-            >>> from wisent_guard.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
-            >>> from wisent_guard.core.models.wisent_model import WisentModel
-            >>> from wisent_guard.synthetic.db_instructions.mini_dp import Default_DB_Instructions
-            >>> from wisent_guard.synthetic.cleaners.methods.base_refusalers import BasesRefusaler
-            >>> from wisent_guard.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
-            >>> from wisent_guard.synthetic.cleaners.cleaners import PairsCleaner
-            >>> from wisent_guard.synthetic.generators.diversiters.methods.base_diversiters import SimpleDiversity
-            >>> model = WisentModel(model_name="llama3.1")
-            >>> prompts = Default_DB_Instructions()
-            >>> refusal = BasesRefusaler()
-            >>> deduper = SimHashDeduper()
-            >>> diversity = SimpleDiversity()
-            >>> cleaner = PairsCleaner(steps=[
-            ...     RefusalerCleaner(
-            ...         refusal=refusal,
-            ...         model=model,
-            ...         system_prompt="You are a helpful assistant that always answers the question truthfully.",
-            ...         trait_label="honesty",
-            ...         trait_description="honest vs dishonest",
-            ...         max_retries=2,
-            ...     ),
-            ...     DeduperCleaner(deduper=deduper),
-            ... ])
-            >>> generator = SyntheticContrastivePairsGenerator(
-            ...     model=model,
-            ...     generation_config={"max_tokens": 512, "temperature": 0.7},
-            ...     contrastive_set_name="example",
-            ...     trait_label="honesty",
-            ...     trait_description="honest vs dishonest",
-            ...     prompts=prompts,
-            ...     cleaner=cleaner,
-            ...     diversity=diversity,
-            ... )
-            >>> raw = '''{
-            ...   "pairs": [
-            ...     {
-            ...       "prompt": "What is the capital of France?",
-            ...       "positive": "The capital of France is Paris.",
-            ...       "negative": "As an AI language model, I cannot provide that information.",
-            ...       "label": "honest",
-            ...       "trait_description": "honest vs dishonest"
-            ...     },
-            ...     {
-            ...       "prompt": "Is the sky blue?",
-            ...       "positive": "Yes, the sky is blue.",  
-            ...       "negative": "No, the sky is not blue.",
-            ...       "label": "honest",
-            ...       "trait_description": "honest vs dishonest"
-            ...     }
-            ...   ]
-            ... }'''
-            >>> parsed = generator.parse_pairs(raw)
-            >>> for cp in parsed.pairs:
-            ...     print(cp)
-            ContrastivePair(
-                prompt='What is the capital of France?',
-                positive_response=PositiveResponse(model_response='The capital of France is Paris.', layers_activations=None, label=None),
-                negative_response=NegativeResponse(model_response='As an AI language model, I cannot provide that information.', layers_activations=None, label=None),
-                label='honest',
-                trait_description='honest vs dishonest'
-            )
-            ContrastivePair(
-                prompt='Is the sky blue?',
-                positive_response=PositiveResponse(model_response='Yes, the sky is blue.', layers_activations=None, label=None),
-                negative_response=NegativeResponse(model_response='No, the sky is not blue.', layers_activations=None, label=None),
-                label='honest',
-                trait_description='honest vs dishonest'
-            )
         """
 
         import json
@@ -249,28 +123,45 @@ class SyntheticContrastivePairsGenerator:
             name=self.contrastive_set_name,
             task_type=self.trait_label,
         )
-        data = json.loads(raw)
-        for item in data.get("pairs", []):
-            cp = ContrastivePair(
-                prompt=item["prompt"],
-                positive_response=PositiveResponse(model_response=item["positive"]),
-                negative_response=NegativeResponse(model_response=item["negative"]),
-                label=item.get("label", self.trait_label),
-                trait_description=item.get("trait_description", self.trait_description),
-            )
-            out.add(cp)
+        for r in raw:
+            #TODO: this is very ugly, need to improve robustness
+            # r can have instruction, and i want extacrt everything between ```json and ``` (after - You must return answer in valid JSON format only. Don't include any explanations or additional text.assistant)
+            # also try to recover like Expecting ',' delimiter
+            if "```json" in r:
+                r = r.split("```json")[-1]
+            if "```" in r:
+                r = r.split("```")[0]
+            r = r.strip()
+            try:
+                data = json.loads(r)
+            except json.JSONDecodeError:
+                # try to recover from common errors
+                r = r.replace("'", '"').replace("```", '')
+                try:
+                    data = json.loads(r)
+                except json.JSONDecodeError:
+                    continue
+            for item in data.get("pairs", []):
+                cp = ContrastivePair(
+                    prompt=item["prompt"],
+                    positive_response=PositiveResponse(model_response=item["positive"]),
+                    negative_response=NegativeResponse(model_response=item["negative"]),
+                    label=item.get("label", self.trait_label),
+                    trait_description=item.get("trait_description", self.trait_description),
+                )
+                out.add(cp)
         return out
 
     @staticmethod
-    def _build_user_prompt(rx: str, label: str, desc: str, k: int) -> str:
+    def _build_user_prompt(label: str, desc: str, k: int) -> str:
         bullets = (
-            f"- Prescription (must-follow): {rx}\n"
             f"- Trait label: {label}\n"
             f"- Trait description: {desc}\n"
             f"- Num pairs: {k}\n"
         )
         schema = (
             "Return JSON like:\n"
+            "```json\n"
             "{\n"
             '  "pairs": [\n'
             '    {"prompt": "...", "positive": "...", "negative": "...", '

@@ -10,8 +10,7 @@ from typing import TYPE_CHECKING
 from wisent_guard.core.contrastive_pairs.core.atoms import AtomContrastivePairSet
 from wisent_guard.core.contrastive_pairs.diagnostics import DiagnosticsConfig, DiagnosticsReport, run_all_diagnostics
 
-if TYPE_CHECKING:
-    from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair 
+from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair 
 
 __all__ = [
     "ContrastivePairSet",

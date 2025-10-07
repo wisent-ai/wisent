@@ -3,7 +3,11 @@ from wisent_guard.core.models.wisent_model import WisentModel
 
 import re, unicodedata
 
-class Base_Refusaler(Refusaler):
+__all__ = [
+    "BaseRefusaler",
+]   
+
+class BaseRefusaler(Refusaler):
     """
     Refusal detection and fixing step.
     """
@@ -27,64 +31,65 @@ class Base_Refusaler(Refusaler):
 
     _REFUSAL_RE = re.compile(
         rf"""
-        (?xiu)  # verbose, ignorecase, unicode
+        # verbose, ignorecase, unicode
 
         (?:
-          # A) "As an AI (language) model..." disclaimers
-          (?P<ai_disclaimer>\bas\s+an?\s+(?:ai|assistant)(?:\s+language)?\s+model\b)
+            # A) "As an AI (language) model..." disclaimers
+            (?P<ai_disclaimer>\bas\s+an?\s+(?:ai|assistant)(?:\s+language)?\s+model\b)
 
         | # B) Policy/legal/safety invocations
-          (?P<policy>
-            \b(?:this|that|it)\s+would\s+be\s+(?:unethical|unsafe|illegal|harmful)\b
-            |
-            \bagainst\s+(?:policy|the\s+rules|guidelines|terms(?:\s+of\s+service)?)\b
-            |
-            \b(?:due\s+to|for)\s+(?:safety|legal|policy|ethical)\s+(?:reasons|concerns)\b
-          )
+            (?P<policy>
+                \b(?:this|that|it)\s+would\s+be\s+(?:unethical|unsafe|illegal|harmful)\b
+                |
+                \bagainst\s+(?:policy|the\s+rules|guidelines|terms(?:\s+of\s+service)?)\b
+                |
+                \b(?:due\s+to|for)\s+(?:safety|legal|policy|ethical)\s+(?:reasons|concerns)\b
+            )
 
         | # C) Apologies / hedges commonly preceding refusals
-          (?P<apology_hedge>
-            \b(?:sorry|apologies|unfortunately|regrettably)\b
-            |
-            \b{_I_M}\s+afraid\b
-          )
+            (?P<apology_hedge>
+                \b(?:sorry|apologies|unfortunately|regrettably)\b
+                |
+                \b{_I_M}\s+afraid\b
+            )
 
         | # D) Explicit inability / not permitted / not comfortable
-          (?P<unable>
-            {_AM}\s+(?:unable|not\s+able|not\s+allowed|not\s+permitted|not\s+comfortable)\s+to\b
-          )
+            (?P<unable>
+                {_AM}\s+(?:unable|not\s+able|not\s+allowed|not\s+permitted|not\s+comfortable)\s+to\b
+            )
 
         | # E) “I [negation] [filler] [help/provide/…]”
-          (?P<cannot_action>
-            {_I}\s+{_NEG_MODAL}\s+{_FILLER}{_VERB_ACTION}\b
-          )
+            (?P<cannot_action>
+                {_I}\s+{_NEG_MODAL}\s+{_FILLER}{_VERB_ACTION}\b
+            )
 
         | # F) Prefer/rather not (indirect refusal)
-          (?P<prefer_rather>
-            \b(?:i['']d|i\s+would)\s+(?:rather|prefer)\s+not\s+(?:to\s+)?\w+\b
-          )
+            (?P<prefer_rather>
+                \b(?:i['']d|i\s+would)\s+(?:rather|prefer)\s+not\s+(?:to\s+)?\w+\b
+            )
 
         | # G) Decline/refuse verbs
-          (?P<decline_refuse>
-            {_I}\s+(?:must|have\s+to|will)\s+(?:decline|refuse)\s+to\b
-            |
-            \b(?:i\s+decline|i\s+refuse)\b
-          )
+            (?P<decline_refuse>
+                {_I}\s+(?:must|have\s+to|will)\s+(?:decline|refuse)\s+to\b
+                |
+                \b(?:i\s+decline|i\s+refuse)\b
+            )
 
         | # H) “I don't/won't [support|condone|endorse|promote] …”
-          (?P<no_support>
-            {_I}\s+(?:do\s+not|don't|won't|will\s+not)\s+{_SUPPORT_VERBS}\b
-          )
+            (?P<no_support>
+                {_I}\s+(?:do\s+not|don't|won't|will\s+not)\s+{_SUPPORT_VERBS}\b
+            )
 
         | # I) “I do not have the [ability/capability/permission/access] to …”
-          (?P<no_ability>
-            {_I}\s+(?:do\s+not|don't)\s+have\s+the\s+{_ABILITY_NOUNS}\s+to\b
-          )
+            (?P<no_ability>
+                {_I}\s+(?:do\s+not|don't)\s+have\s+the\s+{_ABILITY_NOUNS}\s+to\b
+            )
 
         | # J) Direct lexical hits
-          (?P<refusal_word>\brefus(?:e|al)\b)
+            (?P<refusal_word>\brefus(?:e|al)\b)
         )
         """.replace("{i_am}", "(?:i\\s+(?:am|['']m))"),
+        re.VERBOSE | re.IGNORECASE | re.UNICODE,
     )
 
     _FAMILY_WEIGHTS = {
@@ -114,11 +119,11 @@ class Base_Refusaler(Refusaler):
             Normalized text string.
             
         example:
-            >>> Base_Refusaler._normalize("  As an AI model, I can't help with that.  ")"
+            >>> BaseRefusaler._normalize("  As an AI model, I can't help with that.  ")"
             'As an AI model, I can't help with that.'
-            >>> Base_Refusaler._normalize("This is a test.\u00A0")
+            >>> BaseRefusaler._normalize("This is a test.\u00A0")
             'This is a test.'
-            >>> Base_Refusaler._normalize("Café")
+            >>> BaseRefusaler._normalize("Café")
             'Café'
         """
         return unicodedata.normalize("NFKC", text).strip()

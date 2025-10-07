@@ -1,11 +1,8 @@
 
 from abc import ABC, abstractmethod
 
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from wisent_guard.core.models.wisent_model import WisentModel 
-    from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent_guard.core.models.wisent_model import WisentModel 
+from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
 
     
 class Refusaler(ABC):
