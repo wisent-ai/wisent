@@ -1,0 +1,15 @@
+[
+  {
+    "layer": "7",
+    "strength": -3.0,
+    "aggregation_method": "continuation_token",
+    "avg_overall_score": 33.35,
+    "avg_differentiation_score": 83.75,
+    "avg_coherence_score": 27.625,
+    "avg_trait_alignment_score": 16.625,
+    "choose_correct": 2,
+    "choose_incorrect": 0,
+    "choose_equal": 0,
+    "choose_total": 8
+  }
+]

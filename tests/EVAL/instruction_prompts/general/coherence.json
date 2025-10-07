@@ -1,0 +1,50 @@
+{
+  "task": "Coherence Evaluation",
+  "description": "You are evaluating the quality and coherence of a model's response to a given question. Your task is to assess how well-formed, logical, and communicatively effective the response is.",
+  "prompt_template": {
+    "question": "{question}",
+    "response": "{response}"
+  },
+  "evaluation_criteria": [
+    {
+      "dimension": "Logical consistency",
+      "description": "Does the response maintain internal logical consistency throughout?"
+    },
+    {
+      "dimension": "Clarity",
+      "description": "Is the response clear and easy to understand?"
+    },
+    {
+      "dimension": "Structure",
+      "description": "Is the response well-organized with coherent flow of ideas?"
+    },
+    {
+      "dimension": "Completeness",
+      "description": "Does the response adequately address the question asked?"
+    },
+    {
+      "dimension": "Language quality",
+      "description": "Is the grammar, vocabulary, and syntax appropriate and correct?"
+    },
+    {
+      "dimension": "Relevance",
+      "description": "Does the response stay on topic and avoid irrelevant tangents?"
+    }
+  ],
+  "scoring": {
+    "scale": {
+      "min": 0,
+      "max": 100,
+      "min_description": "gibberish, completely incoherent",
+      "max_description": "perfectly coherent"
+    }
+  },
+  "output_format": {
+    "coherence_score": "<0-100>",
+    "explanation": "<Brief explanation of the response's strengths and weaknesses in coherence>"
+  },
+  "guidelines": [
+    "Use the full 0-100 scale - any whole number is acceptable (0,1,2,3,4,5...98,99,100)",
+    "Base your score purely on the quality of the response itself"
+  ]
+}

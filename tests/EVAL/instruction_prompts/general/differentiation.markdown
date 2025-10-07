@@ -1,0 +1,45 @@
+# Differentiation Evaluation
+
+You are evaluating how different two model responses are to the same question. Your task is to assess the degree of difference between the responses across content, style, tone, structure, and approach.
+
+## Prompt
+```
+{question}
+```
+
+## Response A
+```
+{response_a}
+```
+
+## Response B
+```
+{response_b}
+```
+
+## Evaluation Task
+
+Provide a differentiation score from **0** (identical responses) to **100** (completely different responses):
+
+Consider these dimensions when scoring:
+
+- **Content differences**: Do they provide different information, arguments, or conclusions?
+- **Structural differences**: Do they organize information differently?
+- **Stylistic differences**: Do they use different tones, vocabulary levels, or writing styles?
+- **Approach differences**: Do they take different perspectives or methods to answer the question?
+
+## Output Format
+
+Provide your evaluation in the following JSON format:
+```json
+{
+    "differentiation_score": <0-100>,
+    "explanation": "<Brief explanation focusing on key similarities and differences>"
+}
+```
+
+## Guidelines
+
+- Use the full **0-100 scale** - any whole number is acceptable (0,1,2,3,4,5...98,99,100)
+- Base your score purely on observable differences between the responses
+- Consider all dimensions: content, style, structure, and approach
