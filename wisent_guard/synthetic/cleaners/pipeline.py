@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Iterable,TYPE_CHECKING
+from typing import Iterable, TYPE_CHECKING
 
 from wisent_guard.synthetic.cleaners.core.atoms import CleanStep, Cleaner
 
@@ -11,64 +11,7 @@ if TYPE_CHECKING:
         Deduper,
     )
 
-class MetaStrip(CleanStep):
-    """
-    Strip refusal meta from positives and negatives.
-    
-    attributes:
-        refusal:
-            RefusalPolicy instance to use for stripping.
-    """
-    name = "meta_strip"
-
-    def __init__(self, refusal: RefusalPolicy) -> None:
-        self._refusal = refusal
-
-    def apply(self, items: list[dict[str, str]]) -> list[dict[str, str]]:
-        """
-        Strip refusal meta from positives and negatives.
-        
-        arguments:
-            items:
-                List of dicts with keys "prompt", "positive", "negative".
-            
-        returns:
-            List of dicts with the same keys, but with refusal meta stripped.
-
-        example:
-            >>> refusal = DefaultRefusalPolicy()
-            >>> step = MetaStrip(refusal)
-            >>> items = [
-            ...     {
-            ...         "prompt": "Tell me a joke.",
-            ...         "positive": "Sure! Why did the chicken cross the road? To get to the other side!",
-            ...         "negative": "I'm sorry, I can't tell jokes.",
-            ...     },
-            ...     {
-            ...         "prompt": "What is 2+2?",
-            ...         "positive": "2+2 is 4.",
-            ...         "negative": "As an AI, I don't have opinions.",
-            ...     },
-            ... ]
-            >>> cleaned = step.apply(items)
-            >>> for it in cleaned:
-            ...     print(it)
-            {'prompt': 'Tell me a joke.', 'positive': 'Sure! Why did the chicken cross the road? To get to the other side!', 'negative': ''}
-            {'prompt': 'What is 2+2?', 'positive': '2+2 is 4.', 'negative': ''}
-        """
-        out: list[dict[str, str]] = []
-        for it in items:
-            out.append(
-                {
-                    "prompt": it["prompt"].strip(),
-                    "positive": self._refusal.strip_meta(it["positive"].strip()),
-                    "negative": self._refusal.strip_meta(it["negative"].strip()),
-                }
-            )
-        return out
-
-
-class RefusalFix(CleanStep):
+class RefusalerCleaner(CleanStep):
     """
     Fix negatives that look like refusals by re-prompting the model.
     
@@ -86,7 +29,7 @@ class RefusalFix(CleanStep):
         max_retries:
             Maximum number of re-prompt attempts per negative.
     """
-    name = "refusal_fix"
+    name = "refusaler_cleaner"
 
     def __init__(
         self,

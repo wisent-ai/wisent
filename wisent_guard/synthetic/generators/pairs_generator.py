@@ -21,20 +21,13 @@ from wisent_guard.synthetic.cleaners.pipeline import PairsCleaner
 
 logger = logging.getLogger(__name__)
 
-def model_adapter(model: object, **gen_kwargs) -> CompletionFn:
-    def _call(messages: list[ChatMessage]) -> str:
-        out = model.generate([messages], use_steering=False, **gen_kwargs)  # type: ignore[attr-defined]
-        return out[0] if out else ""
-    return _call
 
-
-class PairsGenerator:
+class SyntheticContrastivePairsGenerator:
     """Small, fast contrastive-pairs generator with an extensible cleaning pipeline."""
 
     def __init__(
         self,
         completion_fn: CompletionFn,
-        *,
         prompts: DefaultPrompts | None = None,
         cleaner: PairsCleaner | None = None,
         max_refusal_retries: int = 2,
@@ -46,13 +39,12 @@ class PairsGenerator:
         self.diversity = FastDiversity(seed=13)
         self._max_refusal_retries = max_refusal_retries
 
-        # default cleaner stack: meta-strip -> refusal-fix -> dedupe
         self.cleaner = cleaner or PairsCleaner.default(
             refusal=self.refusal,
             completion_fn=self.completion_fn,
             deduper=self.deduper,
             roleplay_neg_fix_system_prompt=self.prompts.get("roleplay_neg_fix"),
-            trait_label="honesty",          # placeholder; overridden per call
+            trait_label="honesty",          
             trait_description="honest vs dishonest",
             max_refusal_retries=max_refusal_retries,
         )
