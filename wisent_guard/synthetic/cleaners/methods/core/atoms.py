@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from wisent_guard.core.models.wisent_model import WisentModel 
+    from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
+
     
 class Refusaler(ABC):
     """
@@ -14,8 +16,6 @@ class Refusaler(ABC):
         looks_like_refusal(text: str) -> bool:
             Detect if the text looks like a refusal. For example, we want to generate negatives that exhibit
             "evil" behavior, but not refusals like "As an AI model, I cannot help with that."
-        strip_meta(text: str) -> str:
-            Strip common meta-text from the start of a refusal. For example, "As an AI model, I cannot help with that."
         fix_negative(
             model: WisentModel,
             prompt: str,
@@ -29,8 +29,6 @@ class Refusaler(ABC):
     @abstractmethod
     def looks_like_refusal(self, text: str) -> bool: ...
     @abstractmethod
-    def strip_meta(self, text: str) -> str: ...
-    @abstractmethod
     def fix_negative(
         self,
         model: WisentModel,
@@ -43,12 +41,10 @@ class Refusaler(ABC):
 class Deduper(ABC):
     """
     Deduplication step; removes duplicate items from the pipeline.
-
     methods:
-        dedupe(items: list[dict[str, str]]) -> list[dict[str, str]]:
-            Deduplicate items based on prompt similarity. We can use SimHash, Jaccard, exact match, or even 
-            more advanced techniques like BERT embeddings.
+        dedupe(items: ContrastivePairSet) -> ContrastivePairSet:
+            Remove duplicate items from the given ContrastivePairSet.
     """
 
     @abstractmethod
-    def dedupe(self, items: list[dict[str, str]]) -> list[dict[str, str]]: ...
+    def dedupe(self, items: ContrastivePairSet) -> ContrastivePairSet: ...

@@ -1,6 +1,21 @@
 from __future__ import annotations
+from typing import TYPE_CHECKING
+from abc import ABC, abstractmethod, dataclass
+from dataclasses import field
 
-from abc import ABC, abstractmethod
+if TYPE_CHECKING:
+    from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
+
+@dataclass(frozen=True)
+class CleanStepStats:
+    total_items: int = 0
+    removed_items: int = 0
+    modified_items: int = 0
+
+@dataclass(frozen=True)
+class CleanerStats:
+    step_stats: dict[str, CleanStepStats] = field(default_factory=dict)
+
 
 class CleanStep(ABC):
     """
@@ -18,11 +33,11 @@ class CleanStep(ABC):
     """
     name: str = "step"
 
-    def stats(self) -> dict[str, int | float | str]:
-        return {}
+    def stats(self) -> CleanStepStats:
+        return CleanStepStats()
 
     @abstractmethod
-    def apply(self, items: list[dict[str, str]]) -> list[dict[str, str]]:
+    def apply(self, items: ContrastivePairSet) -> ContrastivePairSet:
         ...
 
 class Cleaner(ABC):
@@ -31,6 +46,6 @@ class Cleaner(ABC):
     """
     @abstractmethod
     def clean(
-        self, items: list[dict[str, str]]
-    ) -> tuple[list[dict[str, str]], dict[str, int | float | str]]:
+        self, items:ContrastivePairSet
+    ) -> tuple[ContrastivePairSet, CleanerStats]:
         ...
