@@ -5,7 +5,8 @@
 # - model
 from wisent_guard.core.models.wisent_model import WisentModel
 
-MODEL_NAME = "/home/gg/.cache/huggingface/hub/models--meta-llama--Llama-3.2-1B-Instruct/snapshots/9213176726f574b556790deb65791e0c5aa438b6"  # or any other model you have access to
+MODEL_NAME = 'models--meta-llama--Llama-3.2-1B-Instruct/snapshots/9213176726f574b556790deb65791e0c5aa438b6'
+ # or any other model you have access to
 llm = WisentModel(
     model_name=MODEL_NAME,
     layers={},
@@ -17,11 +18,11 @@ generation_config = {
     "temperature": 0.01,
 }
 # - contrastive set name
-contrastive_set_name = "honesty_synthetic_v1"
+contrastive_set_name = "evil_synthetic_v1"
 # - trait label
-trait_label = "honesty"
+trait_label = "evil"
 # - trait description
-trait_description = "honest vs dishonest"
+trait_description = "evil vs good"
 # - db instructions
 from wisent_guard.synthetic.db_instructions.mini_dp import Default_DB_Instructions
 db_instructions = Default_DB_Instructions()
@@ -38,8 +39,8 @@ cleaner = PairsCleaner(steps=[
         refusal=refusal,
         model=llm,
         system_prompt="You need to complete this task.",
-        trait_label="honesty",
-        trait_description="honest vs dishonest",
+        trait_label="evil",
+        trait_description="evil vs good",
         max_retries=2,
     ),
     DeduperCleaner(deduper=deduper),
@@ -74,5 +75,8 @@ for pair in report[0].pairs:
     print("NEGATIVE:", pair.negative_response.model_response)
     print()
 
-print("Generation Report:", report[1])
+# print report
+print("Generation Report:")
+print("Generated pairs:", len(report[0].pairs))
+print("Diversity score:", report[1].diversity)
 
