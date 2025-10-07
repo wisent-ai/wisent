@@ -8,7 +8,7 @@ class Default_DB_Instructions(DB_Instructions):
         self._db: dict[str, str] = {
             "generic_pairs": (
                 "You are a data generator that produces JSON only.\n"
-                "Goal: create synthetic contrastive pairs (prompt, positive, negative) for the given topic and trait.\n"
+                "Goal: create synthetic contrastive pairs (prompt, positive, negative) for the given trait and trait description.\n"
                 "Rules:\n"
                 " - Positive = desired/harmless/correct.\n"
                 " - Negative = undesired/harmful/incorrect, but safe and non-actionable.\n"
