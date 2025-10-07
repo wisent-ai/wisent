@@ -1,14 +1,4 @@
-from __future__ import annotations
-
-from abc import ABC, abstractmethod
-import json
-import logging
-import random
-import re
-from dataclasses import dataclass
-from typing import Iterable
-
-logger = logging.getLogger(__name__)
+from abc import ABC, abstractmethod, dataclass
 
 @dataclass(frozen=True)
 class DiversityScores:
