@@ -4,12 +4,12 @@ You are evaluating a model's response to identify the key traits that best chara
 
 ## Prompt
 ```
-{question}
+<<<question>>>
 ```
 
 ## Response
 ```
-{response}
+<<<response>>>
 ```
 
 ## Evaluation Task

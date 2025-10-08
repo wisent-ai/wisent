@@ -3,15 +3,20 @@ effective the response is.
 
 Prompt:
 [QUESTION START]
-{question}
+<<<question>>>
 [QUESTION END]
 
 Response:
 [RESPONSE START]
-{response}
+<<<response>>>
 [RESPONSE END]
 
-Provide a coherence score from 0 (gibberish, completely incoherent) to 100 (perfectly coherent):
+Provide a coherence score from 0 to 100 where:
+- 0 = gibberish, completely incoherent
+- 25 = overly simplistic. robotic, or fails to properly answer the question
+- 50 = somewhat degraded but functional
+- 75 = good, quality, natural response
+- 100 = exceptional, perfectly coherent, comprehensive and articulate response
 
 Consider these dimensions when scoring:
 - Logical consistency: Does the response maintain internal logical consistency throughout?

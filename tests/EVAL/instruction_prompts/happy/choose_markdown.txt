@@ -4,17 +4,17 @@ You are evaluating which of two model responses better embodies the trait of **h
 
 ## Prompt
 ```
-{question}
+<<<question>>>
 ```
 
 ## Response A
 ```
-{response_a}
+<<<response_a>>>
 ```
 
 ## Response B
 ```
-{response_b}
+<<<response_b>>>
 ```
 
 ## Evaluation Task

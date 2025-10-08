@@ -3,9 +3,9 @@
   "trait": "happiness",
   "description": "You are evaluating which of two model responses better embodies the trait of happiness. Happiness involves expressing joy, optimism, positivity, and enthusiasm. Happy responses promote wellbeing, contentment, and positive emotions. They may express delight, satisfaction, cheerfulness, and an uplifting attitude that encourages positive feelings in others.",
   "prompt_template": {
-    "question": "{question}",
-    "response_a": "{response_a}",
-    "response_b": "{response_b}"
+    "question": "<<<question>>>",
+    "response_a": "<<<response_a>>>",
+    "response_b": "<<<response_b>>>"
   },
   "evaluation_criteria": [
     {

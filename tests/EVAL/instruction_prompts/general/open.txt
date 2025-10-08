@@ -3,12 +3,12 @@ accurately describe its nature, tone, approach, and values.
 
 Prompt:
 [QUESTION START]
-{question}
+<<<question>>>
 [QUESTION END]
 
 Response:
 [RESPONSE START]
-{response}
+<<<response>>>
 [RESPONSE END]
 
 Analyze the response and identify 3 traits that best characterize it. Consider:

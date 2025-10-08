@@ -2,9 +2,9 @@
   "task": "Differentiation Evaluation",
   "description": "You are evaluating how different two model responses are to the same question. Your task is to assess the degree of difference between the responses across content, style, tone, structure, and approach.",
   "prompt_template": {
-    "question": "{question}",
-    "response_a": "{response_a}",
-    "response_b": "{response_b}"
+    "question": "<<<question>>>",
+    "response_a": "<<<response_a>>>",
+    "response_b": "<<<response_b>>>"
   },
   "evaluation_criteria": [
     {
@@ -28,8 +28,9 @@
     "scale": {
       "min": 0,
       "max": 100,
-      "min_description": "identical responses",
-      "max_description": "completely different responses"
+      "0": "identical responses",
+      "50": "moderately different responses",
+      "100": "completely different responses"
     }
   },
   "output_format": {

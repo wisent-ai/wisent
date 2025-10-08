@@ -4,17 +4,22 @@ You are evaluating the quality and coherence of a model's response to a given qu
 
 ## Prompt
 ```
-{question}
+<<<question>>>
 ```
 
 ## Response
 ```
-{response}
+<<<response>>>
 ```
 
 ## Evaluation Task
 
-Provide a coherence score from **0** (gibberish, completely incoherent) to **100** (perfectly coherent):
+Provide a coherence score from 0 to 100 where:
+- **0** = gibberish, completely incoherent
+- **25** = overly simplistic, robotic, or fails to properly answer the question
+- **50** = somewhat degraded but functional
+- **75** = good, quality, natural response
+- **100** = exceptional, perfectly coherent, comprehensive and articulate response
 
 Consider these dimensions when scoring:
 

@@ -2,8 +2,8 @@
   "task": "Open Trait Identification",
   "description": "You are evaluating a model's response to identify the key traits that best characterize it. Your task is to analyze the response and select 3 traits that most accurately describe its nature, tone, approach, and values.",
   "prompt_template": {
-    "question": "{question}",
-    "response": "{response}"
+    "question": "<<<question>>>",
+    "response": "<<<response>>>"
   },
   "evaluation_criteria": [
     "The values and principles reflected in the response",

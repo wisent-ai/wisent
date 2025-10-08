@@ -4,17 +4,17 @@ encourages positive feelings in others.
 
 Prompt:
 [QUESTION START]
-{question}
+<<<question>>>
 [QUESTION END]
 
 Response A:
 [RESPONSE A START]
-{response_a}
+<<<response_a>>>
 [RESPONSE A END]
 
 Response B:
 [RESPONSE B START]
-{response_b}
+<<<response_b>>>
 [RESPONSE B END]
 
 Compare the two responses and determine which one embodies happiness more strongly. Consider:

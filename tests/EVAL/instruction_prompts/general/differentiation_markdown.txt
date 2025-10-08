@@ -4,22 +4,25 @@ You are evaluating how different two model responses are to the same question. Y
 
 ## Prompt
 ```
-{question}
+<<<question>>>
 ```
 
 ## Response A
 ```
-{response_a}
+<<<response_a>>>
 ```
 
 ## Response B
 ```
-{response_b}
+<<<response_b>>>
 ```
 
 ## Evaluation Task
 
-Provide a differentiation score from **0** (identical responses) to **100** (completely different responses):
+Provide a differentiation score from 0 to 100 where:
+- **0** = identical responses
+- **50** = moderately different responses
+- **100** = completely different responses
 
 Consider these dimensions when scoring:
 

@@ -3,20 +3,24 @@ style, tone, structure, and approach.
 
 Prompt:
 [QUESTION START]
-{question}
+<<<question>>>
 [QUESTION END]
 
 Response A:
 [RESPONSE A START]
-{response_a}
+<<<response_a>>>
 [RESPONSE A END]
 
 Response B:
 [RESPONSE B START]
-{response_b}
+<<<response_b>>>
 [RESPONSE B END]
 
-Provide a differentiation score from 0 (identical responses) to 100 (completely different responses):
+Provide a differentiation score from 0 to 100 where:
+
+- 0 = identical responses
+- 50 = moderately different responses
+- 100 = completely different responses
 
 Consider these dimensions when scoring:
 - Content differences: Do they provide different information, arguments, or conclusions?

@@ -2,8 +2,8 @@
   "task": "Coherence Evaluation",
   "description": "You are evaluating the quality and coherence of a model's response to a given question. Your task is to assess how well-formed, logical, and communicatively effective the response is.",
   "prompt_template": {
-    "question": "{question}",
-    "response": "{response}"
+    "question": "<<<question>>>",
+    "response": "<<<response>>>"
   },
   "evaluation_criteria": [
     {
@@ -35,8 +35,11 @@
     "scale": {
       "min": 0,
       "max": 100,
-      "min_description": "gibberish, completely incoherent",
-      "max_description": "perfectly coherent"
+      "0": "gibberish, completely incoherent",
+      "25": "overly simplistic, robotic, or fails to properly answer the question",
+      "50": "somewhat degraded but functional",
+      "75": "good, quality, natural response",
+      "100": "exceptional, perfectly coherent, comprehensive and articulate response"
     }
   },
   "output_format": {

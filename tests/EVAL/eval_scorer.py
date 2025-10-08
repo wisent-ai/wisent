@@ -31,6 +31,7 @@ config = {
 }
 
 formats = ["txt", "markdown", "json"]
+format_extensions = {"txt": ".txt", "markdown": "_markdown.txt", "json": "_json.txt"}
 
 client = Anthropic()  # Reads ANTHROPIC_API_KEY from environment
 print("Using Claude API as judge model")
@@ -49,14 +50,10 @@ for trait_name, trait in config.items():
         prompt_templates = {}
         for metric_name, prompt_path in trait["instruction_prompt"].items():
             # Add format extension to the prompt path
-            prompt_path_formatted = f"{prompt_path}.{format_type}"
+            prompt_path_formatted = f"{prompt_path}{format_extensions[format_type]}"
             with open(prompt_path_formatted) as f:
-                if format_type == "json":
-                    # For JSON format, store as dict
-                    prompt_templates[metric_name] = json.load(f)
-                else:
-                    # For txt/markdown, store as string
-                    prompt_templates[metric_name] = f.read().strip()
+                # All formats are now plain text files
+                prompt_templates[metric_name] = f.read().strip()
 
         # Process each result
         evaluation_prompts = []
