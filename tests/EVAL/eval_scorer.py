@@ -70,8 +70,8 @@ for trait_name, trait in config.items():
                 prompt_templates["differentiation"],
                 format_type,
                 question=question,
-                response_a=baseline_response,
-                response_b=steered_response
+                response_A=baseline_response,
+                response_B=steered_response
             )
 
             coherence_instruction = build_prompt_from_template(
@@ -99,8 +99,8 @@ for trait_name, trait in config.items():
                 prompt_templates["choose"],
                 format_type,
                 question=question,
-                response_a=baseline_response,
-                response_b=steered_response
+                response_A=baseline_response,
+                response_B=steered_response
             )
 
             evaluation_prompts.append({
