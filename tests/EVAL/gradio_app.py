@@ -1,7 +1,7 @@
 import gradio as gr
 from utils.gradio import (
     # Config and constants
-    happy_layers, happy_strengths, happy_aggregations,
+    happy_layers, happy_strengths, happy_aggregations, happy_steerings,
     SCORES_FILE_CHOICES, STATS_FILE_CHOICES, num_questions,
     # Functions
     get_config_for_file, browse_entries, get_random_entry_display,
@@ -15,7 +15,7 @@ from utils.gradio import (
 
 
 # Shared save favorite function
-def save_to_favorites(question, steered_response, layer, strength, aggregation, notes="",
+def save_to_favorites(question, steered_response, layer, strength, aggregation, steering, notes="",
                       overall_score=None, diff_score=None, coh_score=None, trait_score=None):
     """Save an answer to favorites."""
     import os
@@ -42,6 +42,7 @@ def save_to_favorites(question, steered_response, layer, strength, aggregation, 
             'layer': layer,
             'strength': strength,
             'aggregation': aggregation,
+            'steering': steering,
             'notes': notes,
             'overall_score': overall_score,
             'differentiation_score': diff_score,
@@ -84,6 +85,7 @@ def create_save_favorite_handler(entry_state_var):
             entry_data['layer'],
             entry_data['strength'],
             entry_data['aggregation'],
+            entry_data['steering'],
             notes="",
             overall_score=entry_data.get('overall_score'),
             diff_score=entry_data.get('differentiation_score'),
@@ -169,6 +171,7 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                         'layer': entry.get('layer'),
                         'strength': entry.get('strength'),
                         'aggregation': entry.get('aggregation_method'),
+                        'steering': entry.get('steering'),
                         'overall_score': entry.get('overall_score'),
                         'differentiation_score': entry.get('differentiation_score'),
                         'coherence_score': entry.get('coherence_score'),
@@ -200,6 +203,7 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                         'layer': entry.get('layer'),
                         'strength': entry.get('strength'),
                         'aggregation': entry.get('aggregation_method'),
+                        'steering': entry.get('steering'),
                         'overall_score': entry.get('overall_score'),
                         'differentiation_score': entry.get('differentiation_score'),
                         'coherence_score': entry.get('coherence_score'),
@@ -304,6 +308,7 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                             'layer': raw_entry.get('layer'),
                             'strength': raw_entry.get('strength'),
                             'aggregation': raw_entry.get('aggregation_method'),
+                            'steering': raw_entry.get('steering'),
                             'overall_score': raw_entry.get('overall_score'),
                             'differentiation_score': raw_entry.get('differentiation_score'),
                             'coherence_score': raw_entry.get('coherence_score'),
@@ -407,6 +412,7 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                             'layer': raw_entry.get('layer'),
                             'strength': raw_entry.get('strength'),
                             'aggregation': raw_entry.get('aggregation_method'),
+                            'steering': raw_entry.get('steering'),
                             'overall_score': raw_entry.get('overall_score'),
                             'differentiation_score': raw_entry.get('differentiation_score'),
                             'coherence_score': raw_entry.get('coherence_score'),
@@ -495,6 +501,11 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                     label="Aggregation",
                     value=happy_aggregations[0] if happy_aggregations else None
                 )
+                steering_dropdown = gr.Dropdown(
+                    choices=happy_steerings,
+                    label="Steering",
+                    value=happy_steerings[0] if happy_steerings else None
+                )
 
             filter_btn = gr.Button("Filter Entries")
 
@@ -531,9 +542,9 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                         'save_status': save_status
                     })
 
-            def update_filtered(file_path, layer, strength, aggregation):
+            def update_filtered(file_path, layer, strength, aggregation, steering):
                 """Update display with filtered entries."""
-                summary, entries_data = display_filtered_entries(file_path, layer, strength, aggregation)
+                summary, entries_data = display_filtered_entries(file_path, layer, strength, aggregation, steering)
 
                 updates = [gr.Markdown(value=summary)]
 
@@ -549,6 +560,7 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                             'layer': raw_entry.get('layer'),
                             'strength': raw_entry.get('strength'),
                             'aggregation': raw_entry.get('aggregation_method'),
+                            'steering': raw_entry.get('steering'),
                             'overall_score': raw_entry.get('overall_score'),
                             'differentiation_score': raw_entry.get('differentiation_score'),
                             'coherence_score': raw_entry.get('coherence_score'),
@@ -579,17 +591,18 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
 
             # Update dropdowns when file changes
             def update_dropdowns(file_path):
-                layers, strengths, aggregations = get_config_for_file(file_path)
+                layers, strengths, aggregations, steerings = get_config_for_file(file_path)
                 return (
                     gr.Dropdown(choices=layers, value=layers[0] if layers else None),
                     gr.Dropdown(choices=strengths, value=strengths[0] if strengths else None),
-                    gr.Dropdown(choices=aggregations, value=aggregations[0] if aggregations else None)
+                    gr.Dropdown(choices=aggregations, value=aggregations[0] if aggregations else None),
+                    gr.Dropdown(choices=steerings, value=steerings[0] if steerings else None)
                 )
 
             filter_file_dropdown.change(
                 fn=update_dropdowns,
                 inputs=[filter_file_dropdown],
-                outputs=[layer_dropdown, strength_dropdown, aggregation_dropdown]
+                outputs=[layer_dropdown, strength_dropdown, aggregation_dropdown, steering_dropdown]
             )
 
             outputs_list = [filter_summary]
@@ -598,7 +611,7 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
 
             filter_btn.click(
                 fn=update_filtered,
-                inputs=[filter_file_dropdown, layer_dropdown, strength_dropdown, aggregation_dropdown],
+                inputs=[filter_file_dropdown, layer_dropdown, strength_dropdown, aggregation_dropdown, steering_dropdown],
                 outputs=outputs_list
             )
 
@@ -773,6 +786,11 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                     label="Aggregation",
                     value=happy_aggregations[0] if happy_aggregations else None
                 )
+                config_steering_dropdown = gr.Dropdown(
+                    choices=happy_steerings,
+                    label="Steering",
+                    value=happy_steerings[0] if happy_steerings else None
+                )
 
             gr.Markdown("### Score Distributions for Selected Configuration")
 
@@ -795,17 +813,17 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                     config_trait_plot = gr.Plot(label="")
 
             # Function to update all config histograms
-            def update_config_histograms(file_path, layer, strength, aggregation):
+            def update_config_histograms(file_path, layer, strength, aggregation, steering):
                 return (
-                    plot_config_score_histogram(file_path, layer, strength, aggregation, 'overall_score'),
-                    plot_config_score_histogram(file_path, layer, strength, aggregation, 'differentiation_score'),
-                    plot_config_score_histogram(file_path, layer, strength, aggregation, 'coherence_score'),
-                    plot_config_score_histogram(file_path, layer, strength, aggregation, 'trait_alignment_score')
+                    plot_config_score_histogram(file_path, layer, strength, aggregation, steering, 'overall_score'),
+                    plot_config_score_histogram(file_path, layer, strength, aggregation, steering, 'differentiation_score'),
+                    plot_config_score_histogram(file_path, layer, strength, aggregation, steering, 'coherence_score'),
+                    plot_config_score_histogram(file_path, layer, strength, aggregation, steering, 'trait_alignment_score')
                 )
 
             # Function to update config correlation plot
-            def update_config_correlations(file_path, layer, strength, aggregation):
-                return plot_config_score_correlations(file_path, layer, strength, aggregation)
+            def update_config_correlations(file_path, layer, strength, aggregation, steering):
+                return plot_config_score_correlations(file_path, layer, strength, aggregation, steering)
 
             gr.Markdown("---")
             gr.Markdown("### Pairwise Score Correlations for Selected Configuration")
@@ -815,29 +833,30 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
 
             # Update dropdowns when file changes
             def update_config_dropdowns(file_path):
-                layers, strengths, aggregations = get_config_for_file(file_path)
+                layers, strengths, aggregations, steerings = get_config_for_file(file_path)
                 return (
                     gr.Dropdown(choices=layers, value=layers[0] if layers else None),
                     gr.Dropdown(choices=strengths, value=strengths[0] if strengths else None),
-                    gr.Dropdown(choices=aggregations, value=aggregations[0] if aggregations else None)
+                    gr.Dropdown(choices=aggregations, value=aggregations[0] if aggregations else None),
+                    gr.Dropdown(choices=steerings, value=steerings[0] if steerings else None)
                 )
 
             config_file_dropdown.change(
                 fn=update_config_dropdowns,
                 inputs=[config_file_dropdown],
-                outputs=[config_layer_dropdown, config_strength_dropdown, config_aggregation_dropdown]
+                outputs=[config_layer_dropdown, config_strength_dropdown, config_aggregation_dropdown, config_steering_dropdown]
             )
 
             # Update plots when any parameter changes
-            for component in [config_file_dropdown, config_layer_dropdown, config_strength_dropdown, config_aggregation_dropdown]:
+            for component in [config_file_dropdown, config_layer_dropdown, config_strength_dropdown, config_aggregation_dropdown, config_steering_dropdown]:
                 component.change(
                     fn=update_config_histograms,
-                    inputs=[config_file_dropdown, config_layer_dropdown, config_strength_dropdown, config_aggregation_dropdown],
+                    inputs=[config_file_dropdown, config_layer_dropdown, config_strength_dropdown, config_aggregation_dropdown, config_steering_dropdown],
                     outputs=[config_overall_plot, config_diff_plot, config_coh_plot, config_trait_plot]
                 )
                 component.change(
                     fn=update_config_correlations,
-                    inputs=[config_file_dropdown, config_layer_dropdown, config_strength_dropdown, config_aggregation_dropdown],
+                    inputs=[config_file_dropdown, config_layer_dropdown, config_strength_dropdown, config_aggregation_dropdown, config_steering_dropdown],
                     outputs=[config_correlation_plot]
                 )
 
@@ -847,7 +866,8 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                     SCORES_FILE_CHOICES[0],
                     happy_layers[0] if happy_layers else None,
                     happy_strengths[0] if happy_strengths else None,
-                    happy_aggregations[0] if happy_aggregations else None
+                    happy_aggregations[0] if happy_aggregations else None,
+                    happy_steerings[0] if happy_steerings else None
                 ),
                 outputs=[config_overall_plot, config_diff_plot, config_coh_plot, config_trait_plot]
             )
@@ -858,7 +878,8 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                     SCORES_FILE_CHOICES[0],
                     happy_layers[0] if happy_layers else None,
                     happy_strengths[0] if happy_strengths else None,
-                    happy_aggregations[0] if happy_aggregations else None
+                    happy_aggregations[0] if happy_aggregations else None,
+                    happy_steerings[0] if happy_steerings else None
                 ),
                 outputs=[config_correlation_plot]
             )
@@ -990,7 +1011,7 @@ with gr.Blocks(title="LLM Steering Evaluation Results") as demo:
                         original_idx = len(favorites) - 1 - i
 
                         header = f"## {i+1}. {fav['question']}"
-                        content = f"**Configuration:** Layer {fav['layer']}, Strength {fav['strength']}, Aggregation {fav['aggregation']}\n\n"
+                        content = f"**Configuration:** Layer {fav['layer']}, Strength {fav['strength']}, Aggregation {fav['aggregation']}, Steering {fav['steering']}\n\n"
 
                         # Add scores if available
                         scores_available = any([

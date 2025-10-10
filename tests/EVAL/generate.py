@@ -12,9 +12,10 @@ config = {
         "test_questions": ["tests/EVAL/test_questions/base_questions.txt", "tests/EVAL/test_questions/happy_questions.txt"],
         "layers": ["6", "7", "8"],
         "strengths": [2.0, 3.0, 4.0, 5.0],
+        "steering": ["exponential_decay"],
+        "aggregations": ["continuation_token", "last_token", "first_token", "mean_pooling", "choice_token", "max_pooling"],
         #"layers": ["7"],
         #"strengths": [3.0],
-        "aggregations": ["continuation_token"],
         "output_file": "tests/EVAL/output/happy_output.json"
     },
     "evil": {
@@ -22,9 +23,10 @@ config = {
         "test_questions": ["tests/EVAL/test_questions/base_questions.txt", "tests/EVAL/test_questions/evil_questions.txt"],
         "layers": ["6", "7", "8"],
         "strengths": [-2.0, -3.0, -4.0, -5.0],
+        "steering": ["exponential_decay"],
+        "aggregations": ["continuation_token", "last_token", "first_token", "mean_pooling", "choice_token", "max_pooling"],
         #"layers": ["7"],
         #"strengths": [-3.0],
-        "aggregations": ["continuation_token"],
         "output_file": "tests/EVAL/output/evil_output.json"
     }
 }
@@ -71,46 +73,48 @@ if __name__ == "__main__":
                     layers_spec=l,
                     aggregation=a,
                     return_full_sequence=False,
-                    normalize_layers=True,
+                    normalize_layers=False,
                     save_dir=save_dir
                 )
 
                 print(f"Training completed for Layer={l}, Aggregation={a}")
 
                 for s in trait["strengths"]:
-                    print("\n" + "="*80)
-                    print(f"INFERENCE: Layer={l}, Strength={s}, Aggregation={a}")
-                    print("="*80 + "\n")
+                    for t in trait["steering"]:
+                        print("\n" + "="*80)
+                        print(f"INFERENCE: Layer={l}, Strength={s}, Aggregation={a}, Steering={t}")
+                        print("="*80 + "\n")
 
-                    steering_vectors = training_result.steered_vectors.to_dict()
-                    print(f"Loaded steering vectors for layers: {list(steering_vectors.keys())}")
+                        steering_vectors = training_result.steered_vectors.to_dict()
+                        print(f"Loaded steering vectors for layers: {list(steering_vectors.keys())}")
 
-                    model.set_steering_from_raw(steering_vectors, scale=s, normalize=False)
+                        model.set_steering_from_raw(steering_vectors, scale=s, normalize=True)
 
-                    for question in test_questions:
-                        print(f"Testing: {question[:50]}...")
+                        for question in test_questions:
+                            print(f"Testing: {question[:50]}...")
 
-                        with model.detached():
-                            messages_unsteered = [[{"role": "user", "content": question}]]
-                            baseline = model.generate(messages_unsteered, max_new_tokens=400, use_steering=False)[0]
+                            with model.detached():
+                                messages_unsteered = [[{"role": "user", "content": question}]]
+                                baseline = model.generate(messages_unsteered, max_new_tokens=400, use_steering=False, do_sample=False)[0]
 
-                        messages_steered = [[{"role": "user", "content": question}]]
-                        steered = model.generate(messages_steered, max_new_tokens=400, use_steering=True)[0]
+                            messages_steered = [[{"role": "user", "content": question}]]
+                            steered = model.generate(messages_steered, max_new_tokens=400, use_steering=True, steering=t, do_sample=False)[0]
 
-                        # Crop responses to remove system prompt and question
-                        baseline_cropped = crop_to_answer(baseline)
-                        steered_cropped = crop_to_answer(steered)
+                            # Crop responses to remove system prompt and question
+                            baseline_cropped = crop_to_answer(baseline)
+                            steered_cropped = crop_to_answer(steered)
 
-                        result = {
-                            "layer": l,
-                            "strength": s,
-                            "aggregation method": a,
-                            "question": question,
-                            "baseline_response": baseline_cropped,
-                            "steered_response": steered_cropped,
-                        }
-                        all_results.append(result)
-                    print(f"Completed {len(test_questions)} prompts for Layer={l}, Strength={s}, Aggregation={a}")
+                            result = {
+                                "layer": l,
+                                "strength": s,
+                                "aggregation method": a,
+                                "steering": t,
+                                "question": question,
+                                "baseline_response": baseline_cropped,
+                                "steered_response": steered_cropped,
+                            }
+                            all_results.append(result)
+                    print(f"Completed {len(test_questions)} prompts for Layer={l}, Strength={s}, Aggregation={a}, Steering={t}")
 
 
         os.makedirs(os.path.dirname(trait["output_file"]), exist_ok=True)

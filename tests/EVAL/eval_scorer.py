@@ -14,7 +14,7 @@ config = {
         },
         "results": "tests/EVAL/output/happy_output.json",
         "output_best_answers": "tests/EVAL/output/happy_scores.json",
-        "output_best_lsa": "tests/EVAL/output/happy_stats.json"
+        "output_best_lsat": "tests/EVAL/output/happy_stats.json"
     },
     "evil": {
         "instruction_prompt": {
@@ -26,7 +26,7 @@ config = {
         },
         "results": "tests/EVAL/output/evil_output.json",
         "output_best_answers": "tests/EVAL/output/evil_scores.json",
-        "output_best_lsa": "tests/EVAL/output/evil_stats.json"
+        "output_best_lsat": "tests/EVAL/output/evil_stats.json"
     }
 }
 
@@ -61,6 +61,7 @@ for trait_name, trait in config.items():
             layer = result["layer"]
             strength = result["strength"]
             aggregation = result["aggregation method"]
+            steering = result("steering")  
             question = result["question"]
             baseline_response = result.get("baseline_response", result.get("unsteered_response", ""))
             steered_response = result["steered_response"]
@@ -107,6 +108,7 @@ for trait_name, trait in config.items():
                 "layer": layer,
                 "strength": strength,
                 "aggregation_method": aggregation,
+                "steering": steering,  
                 "question": question,
                 "baseline_response": baseline_response,
                 "steered_response": steered_response,
@@ -120,7 +122,7 @@ for trait_name, trait in config.items():
         # Run evaluation on each prompt
         evaluation_results = []
         for eval_prompt in evaluation_prompts:
-            print(f"Evaluating: Layer={eval_prompt['layer']}, Strength={eval_prompt['strength']}, Aggregation={eval_prompt['aggregation_method']}")
+            print(f"Evaluating: Layer={eval_prompt['layer']}, Strength={eval_prompt['strength']}, Aggregation={eval_prompt['aggregation_method']}, Steering={eval_prompt['steering']}")
 
             # Generate responses from judge using Claude API for each metric
             judge_responses = {}
@@ -129,6 +131,7 @@ for trait_name, trait in config.items():
                     message = client.messages.create(
                         model="claude-sonnet-4-5",
                         max_tokens=512,
+                        temperature=0,
                         messages=[{"role": "user", "content": eval_prompt[f"{metric}_instruction"]}]
                     )
                     judge_responses[metric] = message.content[0].text
@@ -164,6 +167,7 @@ for trait_name, trait in config.items():
                 "layer": eval_prompt["layer"],
                 "strength": eval_prompt["strength"],
                 "aggregation_method": eval_prompt["aggregation_method"],
+                "steering": eval_prompt["steering"],  
                 "question": eval_prompt["question"],
                 "baseline_response": eval_prompt["baseline_response"],
                 "steered_response": eval_prompt["steered_response"],
@@ -179,7 +183,7 @@ for trait_name, trait in config.items():
         # Sort evaluation results by overall_score in descending order (highest first)
         evaluation_results.sort(key=lambda x: x["overall_score"] if x["overall_score"] is not None else -float('inf'), reverse=True)
 
-        # Calculate average overall score for each (layer, strength, aggregation) combination
+        # Calculate average overall score for each (layer, strength, aggregation, steering) combination
         from collections import defaultdict
 
         stats_by_config = defaultdict(lambda: {
@@ -194,7 +198,7 @@ for trait_name, trait in config.items():
         })
 
         for result in evaluation_results:
-            key = (result["layer"], result["strength"], result["aggregation_method"])
+            key = (result["layer"], result["strength"], result["aggregation_method"], result["steering"])
 
             if result["overall_score"] is not None:
                 stats_by_config[key]["scores"].append(result["overall_score"])
@@ -218,7 +222,7 @@ for trait_name, trait in config.items():
 
         # Calculate averages and format statistics
         config_statistics = []
-        for (layer, strength, aggregation), stats in stats_by_config.items():
+        for (layer, strength, aggregation, steering), stats in stats_by_config.items():
             avg_overall = sum(stats["scores"]) / len(stats["scores"]) if stats["scores"] else None
             avg_diff = sum(stats["differentiation_scores"]) / len(stats["differentiation_scores"]) if stats["differentiation_scores"] else None
             avg_coh = sum(stats["coherence_scores"]) / len(stats["coherence_scores"]) if stats["coherence_scores"] else None
@@ -228,6 +232,7 @@ for trait_name, trait in config.items():
                 "layer": layer,
                 "strength": strength,
                 "aggregation_method": aggregation,
+                "steering": steering,  # Add steering to statistics
                 "avg_overall_score": avg_overall,
                 "avg_differentiation_score": avg_diff,
                 "avg_coherence_score": avg_coh,
@@ -247,7 +252,7 @@ for trait_name, trait in config.items():
             json.dump(evaluation_results, f, indent=2, ensure_ascii=False)
 
         # Save config statistics to separate file with format in filename
-        output_stats = trait["output_best_lsa"].replace('.json', f'_{format_type}.json')
+        output_stats = trait["output_best_lsat"].replace('.json', f'_{format_type}.json')
         with open(output_stats, "w", encoding="utf-8") as f:
             json.dump(config_statistics, f, indent=2, ensure_ascii=False)
 

@@ -27,7 +27,7 @@ def get_top_k_stats(path, k):
     return stats_json[:k], len(stats_json)
 
 
-def get_specific_tuple(path, layer, strength, aggregation):
+def get_specific_tuple(path, layer, strength, aggregation, steering):
     """Get entries matching specific configuration."""
     with open(path) as f:
         file_json = json.load(f)
@@ -35,7 +35,8 @@ def get_specific_tuple(path, layer, strength, aggregation):
     filtered = [entry for entry in file_json
                 if entry['layer'] == layer
                 and entry['strength'] == strength
-                and entry['aggregation_method'] == aggregation]
+                and entry['aggregation_method'] == aggregation
+                and entry['steering'] == steering]
 
     return filtered
 
@@ -65,7 +66,7 @@ def format_entry(entry, side_by_side=False):
     if side_by_side:
         # Return components separately for side-by-side layout
         config = f"""
-**Layer:** {entry['layer']} | **Strength:** {entry['strength']} | **Aggregation:** {entry['aggregation_method']}
+**Layer:** {entry['layer']} | **Strength:** {entry['strength']} | **Aggregation:** {entry['aggregation_method']} | **Steering:** {entry['steering']}
 
 **Question:** {entry['question']}
 """
@@ -90,7 +91,7 @@ def format_entry(entry, side_by_side=False):
     else:
         # Original vertical layout
         output = f"""
-Layer: {entry['layer']}, Strength: {entry['strength']}, Aggregation: {entry['aggregation_method']}
+Layer: {entry['layer']}, Strength: {entry['strength']}, Aggregation: {entry['aggregation_method']}, Steering: {entry['steering']}
 
 Question: {entry['question']}
 
@@ -116,7 +117,7 @@ Evaluation Results:
 def format_stat(config):
     """Format a single statistics configuration as a string."""
     output = f"""
-Layer: {config['layer']}, Strength: {config['strength']}, Aggregation: {config['aggregation_method']}
+Layer: {config['layer']}, Strength: {config['strength']}, Aggregation: {config['aggregation_method']}, Steering: {config['steering']}
 
 Average Scores:
 
@@ -166,10 +167,10 @@ def print_top_k_stats(path, k):
         print(format_stat(config))
 
 
-def print_specific_tuple(path, layer, strength, aggregation):
-    filtered = get_specific_tuple(path, layer, strength, aggregation)
+def print_specific_tuple(path, layer, strength, aggregation, steering):
+    filtered = get_specific_tuple(path, layer, strength, aggregation, steering)
 
-    print(f"Total entries matching (Layer={layer}, Strength={strength}, Aggregation={aggregation}): {len(filtered)}")
+    print(f"Total entries matching (Layer={layer}, Strength={strength}, Aggregation={aggregation}, Steering={steering}): {len(filtered)}")
 
     if not filtered:
         print("No entries found matching this configuration.")

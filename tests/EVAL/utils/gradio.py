@@ -24,10 +24,12 @@ from utils.analysis import (
 happy_layers = config["happy"]["layers"]
 happy_strengths = config["happy"]["strengths"]
 happy_aggregations = config["happy"]["aggregations"]
+happy_steerings = config["happy"]["steering"]
 
 evil_layers = config["evil"]["layers"]
 evil_strengths = config["evil"]["strengths"]
 evil_aggregations = config["evil"]["aggregations"]
+evil_steerings = config["evil"]["steering"]
 
 # File choices for dropdowns
 SCORES_FILE_CHOICES = [
@@ -52,15 +54,16 @@ STATS_FILE_CHOICES = [
 def get_config_for_file(file_path):
     """Determine which config (happy/evil) based on file path."""
     if "happy" in file_path:
-        return happy_layers, happy_strengths, happy_aggregations
+        return happy_layers, happy_strengths, happy_aggregations, happy_steerings
     elif "evil" in file_path:
-        return evil_layers, evil_strengths, evil_aggregations
+        return evil_layers, evil_strengths, evil_aggregations, evil_steerings
     else:
         # Default to combined if unclear
         all_layers = sorted(set(happy_layers + evil_layers))
         all_strengths = sorted(set(happy_strengths + evil_strengths))
         all_aggregations = sorted(set(happy_aggregations + evil_aggregations))
-        return all_layers, all_strengths, all_aggregations
+        all_steerings = sorted(set(happy_steerings + evil_steerings))
+        return all_layers, all_strengths, all_aggregations, all_steerings
 
 
 def load_scores_file(file_path):
@@ -180,16 +183,16 @@ def display_top_stats(stats_file_path, k):
         return f"Error: {e}"
 
 
-def display_filtered_entries(file_path, layer, strength, aggregation):
-    """Display entries matching specific (layer, strength, aggregation) configuration."""
+def display_filtered_entries(file_path, layer, strength, aggregation, steering):
+    """Display entries matching specific (layer, strength, aggregation, steering) configuration."""
     try:
-        filtered = get_specific_tuple(file_path, layer, strength, aggregation)
+        filtered = get_specific_tuple(file_path, layer, strength, aggregation, steering)
 
         if not filtered:
-            summary = f"# Filtered Entries\n\nFilter: Layer={layer}, Strength={strength}, Aggregation={aggregation}\n\nTotal matching entries: 0\n\nNo entries found matching this configuration."
+            summary = f"# Filtered Entries\n\nFilter: Layer={layer}, Strength={strength}, Aggregation={aggregation}, Steering={steering}\n\nTotal matching entries: 0\n\nNo entries found matching this configuration."
             return summary, []
 
-        summary = f"# Filtered Entries\n\nFilter: Layer={layer}, Strength={strength}, Aggregation={aggregation}\n\nTotal matching entries: {len(filtered)}\n\n"
+        summary = f"# Filtered Entries\n\nFilter: Layer={layer}, Strength={strength}, Aggregation={aggregation}, Steering={steering}\n\nTotal matching entries: {len(filtered)}\n\n"
 
         # Return list of entries data with raw entry info
         entries_data = []
@@ -534,7 +537,7 @@ def plot_score_correlations(file_path):
         return fig
 
 
-def plot_config_score_histogram(file_path, layer, strength, aggregation, score_type='overall_score'):
+def plot_config_score_histogram(file_path, layer, strength, aggregation, steering, score_type='overall_score'):
     """
     Generate histogram of scores for a specific configuration.
 
@@ -543,6 +546,7 @@ def plot_config_score_histogram(file_path, layer, strength, aggregation, score_t
         layer: Layer value to filter
         strength: Strength value to filter
         aggregation: Aggregation method to filter
+        steering: Steering method to filter
         score_type: Type of score to plot
 
     Returns:
@@ -570,7 +574,8 @@ def plot_config_score_histogram(file_path, layer, strength, aggregation, score_t
         for entry in data:
             if (entry.get('layer') == layer and
                 entry.get('strength') == strength and
-                entry.get('aggregation_method') == aggregation):
+                entry.get('aggregation_method') == aggregation and
+                entry.get('steering') == steering):
                 if score_type in entry and entry[score_type] is not None:
                     scores.append(entry[score_type])
 
@@ -599,7 +604,7 @@ def plot_config_score_histogram(file_path, layer, strength, aggregation, score_t
         ax.hist(scores, bins=bins, edgecolor='black', alpha=0.7, color='steelblue')
         ax.set_xlabel(score_display_name, fontsize=12)
         ax.set_ylabel('Frequency', fontsize=12)
-        ax.set_title(f'Distribution of {score_display_name}\nLayer: {layer}, Strength: {strength}, Aggregation: {aggregation}',
+        ax.set_title(f'Distribution of {score_display_name}\nLayer: {layer}, Strength: {strength}, Aggregation: {aggregation}, Steering: {steering}',
                     fontsize=12, fontweight='bold')
         ax.grid(axis='y', alpha=0.3)
 
@@ -632,7 +637,7 @@ def plot_config_score_histogram(file_path, layer, strength, aggregation, score_t
         ax.axis('off')
         return fig
 
-def plot_config_score_correlations(file_path, layer, strength, aggregation):
+def plot_config_score_correlations(file_path, layer, strength, aggregation, steering):
     """
     Generate pairwise correlation scatter plots for a specific configuration.
 
@@ -641,6 +646,7 @@ def plot_config_score_correlations(file_path, layer, strength, aggregation):
         layer: Layer value to filter
         strength: Strength value to filter
         aggregation: Aggregation method to filter
+        steering: Steering method to filter
 
     Returns:
         matplotlib figure object with 6 scatter plots (one for each pair)
@@ -660,7 +666,8 @@ def plot_config_score_correlations(file_path, layer, strength, aggregation):
         for entry in data:
             if (entry.get('layer') == layer and
                 entry.get('strength') == strength and
-                entry.get('aggregation_method') == aggregation):
+                entry.get('aggregation_method') == aggregation and
+                entry.get('steering') == steering):
                 if all(score_type in entry and entry[score_type] is not None for score_type in score_types):
                     for score_type in score_types:
                         scores_data[score_type].append(entry[score_type])
@@ -677,7 +684,7 @@ def plot_config_score_correlations(file_path, layer, strength, aggregation):
 
         # Create figure with 2x3 subplots for pairwise comparisons
         fig, axes = plt.subplots(2, 3, figsize=(15, 10))
-        fig.suptitle(f'Pairwise Score Correlations\nLayer: {layer}, Strength: {strength}, Aggregation: {aggregation}',
+        fig.suptitle(f'Pairwise Score Correlations\nLayer: {layer}, Strength: {strength}, Aggregation: {aggregation}, Steering: {steering}',
                     fontsize=14, fontweight='bold')
 
         score_labels = {
