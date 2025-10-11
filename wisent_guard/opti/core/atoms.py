@@ -1,4 +1,3 @@
-
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -8,35 +7,39 @@ from typing import Any, Literal
 import optuna
 
 __all__ = [
+    "Direction",
     "HPOConfig",
     "HPORun",
-    "BaseObjective",
-    "HPORunner",
+    "BaseOptimizer",
 ]
 
 Direction = Literal["maximize", "minimize"]
 
 
-@dataclass
+@dataclass(slots=True, frozen=True)
 class HPOConfig:
     """
     Configuration for hyperparameter optimization (HPO) using Optuna.
 
     attributes:
         n_trials:
-            number of trials to run (ignored if timeout is set and reached).
+            number of trials (ignored if timeout is reached).
         direction:
-            maximize or minimize (can be overridden per objective).
+            global default direction ("maximize" or "minimize").
         sampler:
             one of {"tpe", "random", "cmaes"} or None for Optuna default.
         pruner:
-            one of {"nop", "median", "sha", None}.
+            one of {"nop", "median", "sha", "asha", "hyperband"} or None for default.
         timeout:
             optional global seconds budget.
         study_name:
             optional persistent study name.
+        storage:
+            Optuna storage URL (e.g., sqlite:///file.db) for persistence.
         seed:
             sampler seed for reproducibility.
+        load_if_exists:
+            reuse persisted study if it already exists (when storage+study_name set).
     """
     n_trials: int = 100
     direction: Direction = "maximize"
@@ -44,84 +47,78 @@ class HPOConfig:
     pruner: str | None = "asha"
     timeout: int | None = None
     storage: str | None = None
+    study_name: str | None = None
     seed: int | None = 42
+    load_if_exists: bool = True
 
 
-@dataclass
+@dataclass(slots=True, frozen=True)
 class HPORun:
     """
     Result of an HPO run.
-    
-    attributes:
-        study:
-            the Optuna study object.
-        best_params:
-            the best hyperparameters found.
-        best_value:
-            the best objective value achieved.
     """
     study: optuna.Study
     best_params: dict[str, Any]
     best_value: float
 
 
-class BaseObjective(ABC):
+class BaseOptimizer(ABC):
     """
-    Abstract base class for defining an HPO objective.
+    Base class for building task-agnostic Optuna optimizers.
 
-    attributes:
-        name:
-            name of the objective.
-        direction:
-            "maximize" or "minimize".
+    Subclasses must implement '_objective(trial)' and return a float objective.
+    This class wires up samplers/pruners and runs 'study.optimize(...)'.
     """
 
-    name: str = "base-objective"
+    name: str = "base-optimizer"
     direction: Direction = "maximize"
 
-    def suggest(self, trial: optuna.Trial) -> dict[str, Any]:
+    def optimize(self, cfg: HPOConfig) -> HPORun:
         """
-        Suggest hyperparameters for the given trial.
-        Override this method to define the search space.
-        
+        Run the optimization process.
+
         arguments:
-            trial:
-                the Optuna trial object.
+            cfg: 
+                HPOConfig object with optimization settings.
+
         returns:
-            a dictionary of hyperparameter names and their suggested values.
+            HPORun object with the results of the optimization.
         """
-        return {}
+        sampler = self._make_sampler(cfg)
+        pruner = self._make_pruner(cfg)
+        direction: Direction = getattr(self, "direction", cfg.direction)
+
+        study = optuna.create_study(
+            direction=direction,
+            sampler=sampler,
+            pruner=pruner,
+            storage=cfg.storage,
+            study_name=cfg.study_name,
+            load_if_exists=bool(cfg.storage and cfg.study_name and cfg.load_if_exists),
+        )
+
+        study.optimize(self._objective, n_trials=cfg.n_trials, timeout=cfg.timeout, show_progress_bar=False)
+        return HPORun(study=study, best_params=study.best_params, best_value=study.best_value)
 
     @abstractmethod
-    def evaluate(self, trial: optuna.Trial, params: dict[str, Any]) -> float:
+    def _objective(self, trial: optuna.Trial) -> float:
         """
-        Evaluate the objective function with the given hyperparameters.
-
-        arguments:
-            trial:
-                the Optuna trial object.
-            params:
-                the hyperparameters to evaluate.
-        returns:
-            the objective value to be optimized.
+        Implement one trial; return objective value.
         """
         raise NotImplementedError
 
-
-class HPORunner:
-    """
-    Runner for hyperparameter optimization using Optuna.
-    """
-
     def _make_sampler(self, cfg: HPOConfig) -> optuna.samplers.BaseSampler | None:
         """
-        Create an Optuna sampler based on the configuration.
+        Create an Optuna sampler based on the config.
         
         arguments:
-            cfg:
-                the HPO configuration.
+            cfg: HPOConfig object.
+            
         returns:
-            an Optuna sampler instance or None.
+            An Optuna sampler instance or None for default.
+
+        raises:
+            ValueError if the sampler name is unknown.
         """
         if cfg.sampler is None:
             return None
@@ -132,62 +129,47 @@ class HPORunner:
             return optuna.samplers.RandomSampler(seed=cfg.seed)
         if s == "cmaes":
             return optuna.samplers.CmaEsSampler(seed=cfg.seed)
-        raise ValueError(f"Unknown sampler: {cfg.sampler}")
+        raise ValueError(f"Unknown sampler: {cfg.sampler!r}")
 
     def _make_pruner(self, cfg: HPOConfig) -> optuna.pruners.BasePruner | None:
         """
-        Create an Optuna pruner based on the configuration.
+        Create an Optuna pruner based on the config.
 
         arguments:
-            cfg:
-                the HPO configuration.
+            cfg: HPOConfig object.
+
         returns:
-            an Optuna pruner instance or None.
+            An Optuna pruner instance or None for default.
         
         raises:
-            ValueError: if an unknown pruner type is specified.
+            ValueError if the pruner name is unknown.
         """
         if cfg.pruner is None:
             return None
         p = cfg.pruner.lower()
         if p == "nop":
             return optuna.pruners.NopPruner()
-        if p == "sha":
+        if p in {"sha", "asha"}:
             return optuna.pruners.SuccessiveHalvingPruner()
         if p == "median":
             return optuna.pruners.MedianPruner()
-        raise ValueError(f"Unknown pruner: {cfg.pruner}")
+        if p == "hyperband":
+            return optuna.pruners.HyperbandPruner()
+        raise ValueError(f"Unknown pruner: {cfg.pruner!r}")
 
-    def optimize(self, objective: BaseObjective, cfg: HPOConfig) -> HPORun:
+    @staticmethod
+    def report_and_maybe_prune(trial: optuna.Trial, value: float, step: int) -> None:
         """
-        Optimize the given objective using the specified configuration.
+        Report an intermediate metric and prune if the pruner suggests it.
+
         arguments:
-            objective:
-                the objective to optimize.
-            cfg:
-                the HPO configuration.
-        returns:
-            an HPORun containing the results of the optimization.
+            trial:
+                Optuna trial object.
+            value:
+                Metric value to report.
+            step:
+                Step number (e.g., epoch).
         """
-        sampler = self._make_sampler(cfg)
-        pruner = self._make_pruner(cfg)
-        direction: Direction = getattr(objective, "direction", cfg.direction)
-
-        study = optuna.create_study(
-            direction=direction,
-            sampler=sampler,
-            pruner=pruner,
-            storage=cfg.storage,
-            study_name=cfg.study_name,
-            load_if_exists=bool(cfg.storage and cfg.study_name),
-        )
-
-        def _opt_fn(trial: optuna.Trial) -> float:
-            """
-            Objective function for optimization.
-            """
-            params = objective.suggest(trial)
-            return objective.evaluate(trial, params)
-
-        study.optimize(_opt_fn, n_trials=cfg.n_trials, timeout=cfg.timeout)
-        return HPORun(study=study, best_params=study.best_params, best_value=study.best_value)
+        trial.report(float(value), step=step)
+        if trial.should_prune():
+            raise optuna.exceptions.TrialPruned()

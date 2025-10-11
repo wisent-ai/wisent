@@ -9,15 +9,15 @@ __all__ = ["MLPClassifier"]
 
 class MLPModel(nn.Module):
     """Multi-layer perceptron for activation classification."""
-    def __init__(self, input_dim: int, hidden_dim: int = 128):
+    def __init__(self, input_dim: int, hidden_dim: int = 128, dropout: float = 0.2):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(dropout),
             nn.Linear(hidden_dim, hidden_dim // 2),
             nn.ReLU(),
-            nn.Dropout(0.2),
+            nn.Dropout(dropout),
             nn.Linear(hidden_dim // 2, 1),
             nn.Sigmoid(),
         )
@@ -38,9 +38,10 @@ class MLPClassifier(BaseClassifier):
         self._hidden_dim = int(hidden_dim)
 
     def build_model(self, input_dim: int, **model_params: object) -> nn.Module:
-        hd = int(model_params.get("hidden_dim", self._hidden_dim))  # type: ignore[arg-type]
+        hd = int(model_params.get("hidden_dim", self._hidden_dim))  
+        dp = float(model_params.get("dropout", 0.2))
         self._hidden_dim = hd
-        return MLPModel(input_dim, hidden_dim=hd)
+        return MLPModel(input_dim, hidden_dim=hd, dropout=dp)
 
     def model_hyperparams(self) -> dict[str, int]:
-        return {"hidden_dim": self._hidden_dim}
+        return {"hidden_dim": self._hidden_dim, "dropout": 0.2}
