@@ -12,6 +12,16 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 
+from torch.nn.modules.loss import _Loss
+
+__all__ = [
+    "ClassifierTrainConfig",
+    "ClassifierMetrics",
+    "ClassifierTrainReport",
+    "ClassifierError",
+    "BaseClassifier",
+]
+
 logger = logging.getLogger(__name__)
 
 
@@ -507,8 +517,26 @@ class BaseClassifier(ABC):
         if callable(spec): return spec(model.parameters(), lr=lr, **extra)
         raise TypeError(f"Unsupported optimizer spec: {type(spec)}")
 
-    def _train_one_epoch(self, model, loader, optimizer, criterion) -> float:
+    def _train_one_epoch(self, model: nn.Module, loader: DataLoader, optimizer: optim.Optimizer, criterion: _Loss) -> float:
+        """
+        Train the model for one epoch over the given DataLoader.
+        
+        arguments:
+            model:
+                the model to train.
+            loader:
+                DataLoader for training data.
+            optimizer:
+                optimizer instance.
+            criterion:
+                loss function.
+
+        returns:
+            average training loss over the epoch.
+        """
         model.train(); total = 0.0; steps = 0
+        xb: torch.Tensor; yb: torch.Tensor
+
         for xb, yb in loader:
             optimizer.zero_grad(set_to_none=True)
             out = self._forward_probs(model, xb)
@@ -517,9 +545,24 @@ class BaseClassifier(ABC):
             total += float(loss.item()); steps += 1
         return total / max(steps, 1)
 
-    def _eval_one_epoch(self, model, loader, criterion):
+    def _eval_one_epoch(self, model: nn.Module, loader: DataLoader, criterion: _Loss) -> float:
+        """
+        Evaluate the model for one epoch over the given DataLoader.
+
+        arguments:
+            model:
+                the model to evaluate.
+            loader:
+                DataLoader for evaluation data.
+            criterion:
+                loss function.
+
+        returns:
+            average evaluation loss over the epoch.
+        """
         model.eval(); total = 0.0; steps = 0; probs_all=[]; labels_all=[]
         with torch.no_grad():
+            xb: torch.Tensor; yb: torch.Tensor
             for xb, yb in loader:
                 out = self._forward_probs(model, xb)
                 loss = criterion(out.view(-1), yb.view(-1))
@@ -529,12 +572,34 @@ class BaseClassifier(ABC):
         return (total / max(steps, 1), probs_all, labels_all)
 
     def _forward_probs(self, model: nn.Module, xb: torch.Tensor) -> torch.Tensor:
+        """
+        Forward pass to get predicted probabilities.
+        
+        arguments:
+            model:
+                the model to use.
+            xb:
+                input feature tensor.
+                
+        returns:
+            tensor of predicted probabilities.
+        """
         if xb.device.type != self.device: xb = xb.to(self.device)
         if xb.dtype != self.dtype: xb = xb.to(self.dtype)
         out = model(xb)
         return out.view(-1, 1) if out.ndim == 1 else out
 
     def save_model(self, path: str) -> None:
+        """
+        Save the model state and metadata to a file.
+
+        arguments:
+            path:
+                the file path to save the model.
+
+        raises:
+            ClassifierError:
+                if the model is not initialized."""
         self._require_model()
         os.makedirs(os.path.dirname(os.path.abspath(path)) or ".", exist_ok=True)
         input_dim = int(next(self.model.parameters()).shape[1])
@@ -548,6 +613,19 @@ class BaseClassifier(ABC):
         logger.info("Saved %s to %s", self.name, path)
 
     def load_model(self, path: str) -> None:
+        """
+        Load the model state and metadata from a file.
+
+        arguments:
+            path:
+                the file path to load the model from.
+
+        raises:
+            FileNotFoundError:
+                if the model file does not exist.
+            ClassifierError:
+                if the checkpoint format is unsupported.
+        """
         if not os.path.exists(path): raise FileNotFoundError(path)
         data = torch.load(path, map_location=self.device, weights_only=False)
         if not isinstance(data, dict) or "state_dict" not in data or "input_dim" not in data:
@@ -563,7 +641,25 @@ class BaseClassifier(ABC):
             raise ClassifierError("Model not initialized. Call fit() or load_model() first.")
 
     @classmethod
-    def to_2d_tensor(cls, X, *, device: str, dtype: torch.dtype) -> torch.Tensor:
+    def to_2d_tensor(cls, X, device: str, dtype: torch.dtype) -> torch.Tensor:
+        """
+        Convert input to a 2D tensor on the specified device and dtype.
+        
+        arguments:
+            X:
+                input data as array-like or tensor.
+            device:
+                target device string.
+            dtype:
+                target torch dtype.
+        
+        returns:
+            2D torch tensor.
+
+        raises:
+            ClassifierError:
+                if the input cannot be converted to 2D tensor.
+        """
         if isinstance(X, torch.Tensor):
             t = X.to(device=device, dtype=dtype)
             if t.ndim == 1: t = t.view(1, -1)
@@ -576,11 +672,42 @@ class BaseClassifier(ABC):
 
     @staticmethod
     def to_1d_tensor(y, *, device: str, dtype: torch.dtype) -> torch.Tensor:
-        if isinstance(y, torch.Tensor): return y.to(device=device, dtype=dtype).view(-1)
+        """
+        Convert input to a 1D tensor on the specified device and dtype.
+
+        arguments:
+            y:
+                input data as array-like or tensor.
+            device:
+                target device string.
+            dtype:
+                target torch dtype.
+
+        returns:
+            1D torch tensor.
+
+        raises:
+            ClassifierError:
+                if the input cannot be converted to 1D tensor.
+        """
+        if isinstance(y, torch.Tensor):
+            return y.to(device=device, dtype=dtype).view(-1)
         return torch.tensor(list(y), device=device, dtype=dtype).view(-1)
 
     @staticmethod
     def _basic_prf(preds: list[float], labels: list[float]) -> tuple[float, float, float, float]:
+        """
+        Compute basic precision, recall, and F1 score.
+
+        arguments:
+            preds:
+                list of predicted labels (0.0 or 1.0).
+            labels:
+                list of true labels (0.0 or 1.0).
+        
+        returns:
+            tuple of (accuracy, precision, recall, f1).
+        """
         tp = sum(1 for p, l in zip(preds, labels) if p == 1 and l == 1)
         fp = sum(1 for p, l in zip(preds, labels) if p == 1 and l == 0)
         fn = sum(1 for p, l in zip(preds, labels) if p == 0 and l == 1)
@@ -593,6 +720,18 @@ class BaseClassifier(ABC):
 
     @staticmethod
     def _roc_auc(labels: list[float], scores: list[float]) -> float:
+        """
+        Compute ROC AUC using the Mann-Whitney U statistic.
+
+        arguments:
+            labels:
+                list of true binary labels (0.0 or 1.0).
+            scores:
+                list of predicted scores or probabilities.  
+        
+        returns:
+            ROC AUC value.
+        """
         if len(scores) < 2 or len(set(labels)) < 2: return 0.0
         pairs = sorted(zip(scores, labels), key=lambda x: x[0])
         pos = sum(1 for _, y in pairs if y == 1); neg = sum(1 for _, y in pairs if y == 0)

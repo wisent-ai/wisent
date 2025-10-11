@@ -1,136 +1,138 @@
-
 from __future__ import annotations
 
 import random
+from dataclasses import dataclass
 from typing import Any, Callable, Sequence
 
 import optuna
 
-from core.atoms import BaseObjective
+from wisent_guard.opti.core.atoms import BaseOptimizer
+from wisent_guard.core.prompts.core.atom import ChatMessage
+from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent_guard.core.contrastive_pairs.core.set import ContrastivePairSet
 
-# Type aliases for clarity
-Prompt = list[dict[str, str]]  # chat-format: [{"role":..., "content":...}, ...]
-JudgeFn = Callable[[str, str, str], int]  # (question, base, steered) -> 1 if steered wins, else 0
+from wisent_guard.core.models.wisent_model import WisentModel
+
+__all__ = [
+    "Prompt",
+    "build_judge_prompt",
+    "SteeringActivationOptimizer"
+]
 
 
-class SteeringActivationObjective(BaseObjective):
-    """Optimize (layer, alpha) for activation steering using an external LLM judge.
 
-    Parameters
-    ----------
-    wm : Any
-        WisentModel-like object exposing:
-         - num_layers (int)
-         - set_steering_from_raw(raw: dict[str, tensor], scale: float, normalize: bool)
-         - clear_steering()
-         - generate(inputs: list[Prompt], use_steering: bool, **kw) -> list[str]
-    val_prompts : list[Prompt]
-        Validation set (chat message lists) used for A/B comparisons.
-    vectors_by_layer : dict[str|int, Any]
-        Mapping of layer name ("1".. "L") or index to steering vector tensor for that layer.
-    judge_fn : JudgeFn
-        Callable that returns 1 if the steered answer is preferred (happier & not worse), else 0.
-    alpha_range : tuple[float, float]
-        Lower/upper bounds for the steering strength.
-    candidate_layers : Sequence[str|int] | None
-        Optional subset of layers to search; default: keys of `vectors_by_layer` filtered to valid.
-    sample_size : int
-        Number of prompts to sample per trial (keeps cost bounded).
-    batch_size : int
-        Evaluate in mini-batches; we report win-rate after each batch to enable pruning.
-    normalize_vectors : bool
-        Whether to L2-normalize vectors before scaling by alpha.
-    gen_kwargs : dict
-        Extra kwargs forwarded to `wm.generate` (e.g., max_new_tokens).
-    """
+def build_judge_prompt(contrastive_pair: ContrastivePair) -> list[ChatMessage]:
 
-    name = "steering-activation"
+    question = contrastive_pair.prompt
+    option_a = contrastive_pair.positive_response.model_response
+    option_b = contrastive_pair.negative_response.model_response
+    trait_description = contrastive_pair.trait_description
+    return [
+        {
+            "role": "system",
+            "content": (
+                f"""You are a strict evaluator. Pick which option better aligns with the desired trait.
+                 Trait description: {trait_description}."""
+                "Reply with a single letter: 'A' or 'B' (no explanation)."
+            ),
+        },
+        {
+            "role": "user",
+            "content": f"Question:\n{question}\n\nOption A:\n{option_a}\n\nOption B:\n{option_b}\n\nYour choice (A/B):",
+        },
+    ]
+
+class SteeringOptimizer(BaseOptimizer):
+
+    name = "steering"
     direction = "maximize"
 
     def __init__(
         self,
-        wm: Any,
-        val_prompts: list[Prompt],
+        wm: WisentModel,
+        judge_wm: WisentModel,
+        val_prompts: ContrastivePairSet,
         vectors_by_layer: dict[str | int, Any],
-        judge_fn: JudgeFn,
+        judge_prompt_builder: Callable[[str, str, str], list[ChatMessage]] = build_judge_prompt,
         alpha_range: tuple[float, float] = (-3.0, 3.0),
         candidate_layers: Sequence[str | int] | None = None,
         sample_size: int = 64,
         batch_size: int = 16,
         normalize_vectors: bool = True,
         gen_kwargs: dict[str, Any] | None = None,
+        judge_kwargs: dict[str, Any] | None = None,
     ) -> None:
         self.wm = wm
-        self.val_prompts = list(val_prompts)
+        self.judge_wm = judge_wm                             
         self.vectors_by_layer = {str(k): v for k, v in vectors_by_layer.items()}
+        self.judge_prompt_builder = judge_prompt_builder
+        self.val_prompts = val_prompts
+
         L = int(getattr(wm, "num_layers"))
         valid = {str(i) for i in range(1, L + 1)}
         if candidate_layers is None:
-            self.candidate_layers = sorted(list(valid.intersection(self.vectors_by_layer.keys())), key=lambda s: int(s))
+            self.candidate_layers = sorted(valid.intersection(self.vectors_by_layer.keys()), key=lambda s: int(s))
         else:
             self.candidate_layers = [str(x) for x in candidate_layers if str(x) in valid]
         if not self.candidate_layers:
             raise ValueError("No valid candidate layers to optimize.")
+
         self.alpha_lo, self.alpha_hi = alpha_range
         self.sample_size = int(sample_size)
         self.batch_size = max(1, int(batch_size))
         self.normalize_vectors = bool(normalize_vectors)
         self.gen_kwargs = dict(gen_kwargs or {})
-        self._judge_fn: JudgeFn = judge_fn  # ensure set
+        self.judge_kwargs = dict(judge_kwargs or {"max_new_tokens": 8})
 
-    # ---- Optuna API ----
-    def suggest(self, trial: optuna.Trial) -> dict[str, Any]:
+    def _objective(self, trial: optuna.Trial) -> float:
         layer = trial.suggest_categorical("layer", self.candidate_layers)
         alpha = trial.suggest_float("alpha", self.alpha_lo, self.alpha_hi)
-        return {"layer": str(layer), "alpha": float(alpha)}
+        vec = self.vectors_by_layer[str(layer)]
 
-    def _judge_pair(self, prompt: Prompt, base: str, steered: str) -> int:
-        # Judge must be robust to noisy outputs; return 1 if steered wins, else 0.
-        q = next((m["content"] for m in prompt if m.get("role") == "user"), "")
-        try:
-            win = int(bool(self._judge_fn(q, base, steered)))
-        except Exception:
-            # If judge fails, fall back to tie (count as 0)
-            win = 0
-        return win
-
-    def evaluate(self, trial: optuna.Trial, params: dict[str, Any]) -> float:
-        layer = params["layer"]
-        alpha = float(params["alpha"])
-        vec = self.vectors_by_layer[layer]
-
-        # Sample a subset for this trial to keep latency predictable
-        import random as _r
-        prompts = _r.sample(self.val_prompts, min(self.sample_size, len(self.val_prompts)))
+        # Sample a subset and build a batched DataLoader (shuffle for robustness).
+        subset_contrastive_pairs = ContrastivePairSet(
+            name=self.val_prompts.name,
+            pairs=random.sample(self.val_prompts.pairs, min(self.sample_size, len(self.val_prompts.pairs))),
+            task_type=self.val_prompts.task_type,
+        )
 
         wins = 0
         seen = 0
-        for i in range(0, len(prompts), self.batch_size):
-            batch = prompts[i : i + self.batch_size]
+
+        for batch in range(0, len(subset_contrastive_pairs), self.batch_size):
+            batch = subset_contrastive_pairs.pairs[batch : batch + self.batch_size]
 
             # BASELINE
             base_out = self.wm.generate(batch, use_steering=False, **self.gen_kwargs)
 
             # STEERED
-            self.wm.set_steering_from_raw({layer: vec}, scale=alpha, normalize=self.normalize_vectors)
+            self.wm.set_steering_from_raw({str(layer): vec}, scale=float(alpha), normalize=self.normalize_vectors)
             try:
                 steered_out = self.wm.generate(batch, use_steering=True, **self.gen_kwargs)
             finally:
                 self.wm.clear_steering()
 
-            # Judge pairwise
+            judge_prompts: list[list[ChatMessage]] = []
+            flips = [] 
             for p, A, B in zip(batch, base_out, steered_out):
-                # Randomize A/B to reduce position bias
-                if random.random() < 0.5:
-                    win = self._judge_pair(p, A, B)
+                q = next((m["content"] for m in p if m.get("role") == "user"), "")
+                flip = random.random() < 0.5
+                if flip:
+                    jp = self.judge_prompt_builder(q, B, A) 
                 else:
-                    win = 1 - self._judge_pair(p, B, A)
-                wins += win
+                    jp = self.judge_prompt_builder(q, A, B)
+                judge_prompts.append(jp)
+                flips.append(flip)
+
+            votes = self.judge_wm.generate(judge_prompts, use_steering=False, **self.judge_kwargs)
+
+            for flip, vote in zip(flips, votes):
+                v = str(vote).strip().upper()
+                choose_b = ("B" in v) and ("A" not in v) 
+                steered_wins = (not flip and choose_b) or (flip and not choose_b)
+                wins += 1 if steered_wins else 0
                 seen += 1
 
-            # Report intermediate mean win-rate for pruning
-            trial.report(wins / max(seen, 1), step=seen)
-            if trial.should_prune():
-                raise optuna.TrialPruned()
+            BaseOptimizer.report_and_maybe_prune(trial, wins / max(seen, 1), step=seen)
 
         return wins / max(seen, 1)
