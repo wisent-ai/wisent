@@ -1,29 +1,32 @@
 
 from __future__ import annotations
 
-from typing import Any, Callable, Literal, Optional
+from typing import Any, Callable, Literal
 
 import optuna
 
-from core.atoms import BaseObjective
+from wisent_guard.opti.core.atoms import BaseObjective
+
+from wisent_guard.classifiers.core.atoms import BaseClassifier
+import numpy as np
+import torch
 
 MetricName = Literal["accuracy", "precision", "recall", "f1", "auc"]
-
 
 class ClassificationObjective(BaseObjective):
     name = "classification"
 
     def __init__(
         self,
-        make_classifier: Callable[[], Any],
-        X: Any,
-        y: Any,
+        clf: BaseClassifier,
+        X: np.ndarray | torch.Tensor,
+        y: np.ndarray | torch.Tensor,
         metric: MetricName = "f1",
-        param_space: Optional[Callable[[optuna.Trial], dict[str, Any]]] = None,
-        base_config: Optional[Any] = None,
+        param_space: Callable[[optuna.Trial], dict[str, Any]] | None = None,
+        base_config: Any | None = None,
         direction: str = "maximize",
     ) -> None:
-        self._factory = make_classifier
+        self.clf = clf
         self.X = X
         self.y = y
         self.metric: MetricName = metric
@@ -42,7 +45,6 @@ class ClassificationObjective(BaseObjective):
         return params
 
     def evaluate(self, trial: optuna.Trial, params: dict[str, Any]) -> float:
-        clf = self._factory()
 
         train_overrides = {k.split("__", 1)[1]: v for k, v in params.items() if k.startswith("train__")}
         model_params = {k.split("__", 1)[1]: v for k, v in params.items() if k.startswith("model__")}
@@ -63,10 +65,10 @@ class ClassificationObjective(BaseObjective):
             for k, v in train_overrides.items():
                 setattr(cfg, k, v)
 
-        if threshold is not None and hasattr(clf, "set_threshold"):
-            clf.set_threshold(float(threshold))
+        if threshold is not None and hasattr(self.clf, "set_threshold"):
+            self.clf.set_threshold(float(threshold))
 
-        report = clf.fit(self.X, self.y, config=cfg, **model_params)
+        report = self.clf.fit(self.X, self.y, config=cfg, **model_params)
 
         hist = getattr(report, "history", None)
         if isinstance(hist, dict) and self.metric in hist:
