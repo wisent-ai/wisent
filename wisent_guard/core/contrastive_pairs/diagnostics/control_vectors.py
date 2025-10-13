@@ -15,6 +15,7 @@ from .base import DiagnosticsIssue, DiagnosticsReport, MetricReport
 __all__ = [
     "ControlVectorDiagnosticsConfig",
     "run_control_vector_diagnostics",
+    "run_control_steering_diagnostics",
 ]
 
 
@@ -155,3 +156,14 @@ def run_control_vector_diagnostics(
 
     report = MetricReport(name="control_vectors", summary=summary, issues=issues)
     return DiagnosticsReport.from_metrics([report])
+
+def run_control_steering_diagnostics(steering_vectors: list[RawActivationMap] | RawActivationMap | None) -> list[DiagnosticsReport]:
+    if steering_vectors is None:
+        return [DiagnosticsReport.from_metrics([])]
+
+    if not isinstance(steering_vectors, list):
+        steering_vectors = [steering_vectors]
+
+    # Run diagnostics for each steering vector
+    reports = [run_control_vector_diagnostics(vec) for vec in steering_vectors]
+    return reports
