@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from contextlib import contextmanager
-from typing import Any
+from typing import Any, Iterable
 
 import torch
 import torch.nn as nn
@@ -11,16 +11,21 @@ from transformers import (
     AutoTokenizer,
     PreTrainedModel,
     PreTrainedTokenizerBase,
+    TextIteratorStreamer
 )
+
+
 
 from wisent_guard.core.models.core.atoms import SteeringPlan, SteeringVector, HookHandleGroup, GenerationStats, TopLogits
 from wisent_guard.core.activations.core.atoms import RawActivationMap
 
 from wisent_guard.core.prompts.core.atom import ChatMessage
 from wisent_guard.core.utils.device import resolve_default_device, resolve_torch_device
-from wisent_guard.core.contrastive_pairs.diagnostics import run_control_vector_diagnostics
+from wisent_guard.core.contrastive_pairs.diagnostics import run_control_steering_diagnostics
 
-_all__ = ["WisentModel"]
+import threading
+
+__all__ = ["WisentModel"]
 
 
 logger = logging.getLogger(__name__)
@@ -47,26 +52,32 @@ class WisentModel:
         _hook_group:
             manages active hooks for clean detach.
     """
-    def __init__(self, model_name: str, layers: RawActivationMap, device: str | None = None, hf_model: AutoModelForCausalLM | None = None):
+    def __init__(
+            self,
+            model_name: str,
+            steering_layers: list[RawActivationMap] | RawActivationMap | None = None,
+            steering_weights: list[float] | None = None,
+            layers_description: list[str] | None = None,
+            device: str | None = None,
+            hf_model: AutoModelForCausalLM | None = None
+        ):
         """
         Initialize the wrapper (model + tokenizer + default steering plan).
 
         arguments:
             model_name:
                 HF repo id or local path (e.g., 'meta-llama/Llama-3-8B-Instruct', 'Qwen/Qwen2.5-7B-Instruct').
-            layers:
-                RawActivationMap of steering vectors (layer_name -> tensor), optional (can be {}).
+            steering_layers:
+                list of RawActivationMap or single RawActivationMap of steering vectors (layer_name -> tensor), optional (can be {}).
+                We can have for example steering vectors obtained during training on a specific trait (e.g., toxicity and evilness).
+                So, by passing multiple steering vectors, we can combine them at inference time. If we don't pass any weights,
+                they will be equally weighted.
+            steering_weights:
+                list of weights for each steering vector, optional (can be None). If None, all vectors are equally weighted.
             device:
                 'cuda', 'cuda:0', 'cpu', etc. If None, leave to HF defaults/accelerate.
             hf_model:
-                optional preloaded model (skips from_pretrained if provided).
-
-
-        example:
-            >>> wm = WisentModel("meta-llama/Meta-Llama-3-8B-Instruct", layers={}, device="cuda")
-            >>> # Later, set steering vectors for layers "6" and "12":
-            >>> wm.set_steering_from_raw({"6": torch.randn(wm.hidden_size), "12": torch.randn(wm.hidden_size)}, scale=0.7)
-            >>> text = wm.generate("Say hi in 5 words.", max_new_tokens=10, use_steering=True)[0]
+                optional preloaded model (skips from_pretrained if provided).       
         """
         self.model_name = model_name
         self.device = device or resolve_default_device()
@@ -91,7 +102,11 @@ class WisentModel:
         if getattr(self.hf_model.generation_config, "pad_token_id", None) is None:
             self.hf_model.generation_config.pad_token_id = self.tokenizer.pad_token_id
 
-        self._steering_plan: SteeringPlan = SteeringPlan.from_raw(layers or {})
+        self._steering_plan: SteeringPlan = SteeringPlan.from_raw(
+            raw=steering_layers,
+            weights=steering_weights,
+            layers_description=layers_description,
+            )
         self._hook_group = HookHandleGroup()
 
         self._layers, self._hidden_size = self._resolve_decoder_layers_and_hidden()
@@ -110,7 +125,6 @@ class WisentModel:
         hidden_size = getattr(m.config, "hidden_size", None) or getattr(m.config, "n_embd", None)
         layers: list[nn.Module] = []
 
-        # Most common homes for decoder blocks
         candidates = [
             "layers",                 
             "model.layers",           
@@ -158,6 +172,10 @@ class WisentModel:
                 optional SteeringPlan to use for this call only (overrides internal plan).
                 If None, uses the internal plan.
 
+                SteeringPlan maps layer names (str) to list of SteeringVector, each with its own scale.
+                Like this:
+                    plan = SteeringPlan.from_raw({"6": torch.randn(wm.hidden_size)}, scale=0.7)
+
         example:
             >>> wm.apply_steering()   # uses current internal plan
             >>> # ... generate ...
@@ -172,29 +190,27 @@ class WisentModel:
 
         name_to_index = {str(i + 1): i for i in range(len(self._layers))}
 
-        for lname, vecs in p.layers.items():
+        for lname, vec in p.layers.items():
             if lname not in name_to_index:
                 continue
             idx = name_to_index[lname]
             layer = self._layers[idx]
 
-            def _hook_factory(vlist: list[SteeringVector]):
+            def _hook_factory(v: SteeringVector):
                 def _hook(_mod: nn.Module, _inp: tuple, out: torch.Tensor | tuple) -> torch.Tensor | tuple:
                     if isinstance(out, tuple):
                         hs = out[0]
                         delta = torch.zeros_like(hs)
-                        for sv in vlist:
-                            delta = delta + sv.materialize(hs)
+                        delta = delta + v.materialize(hs)
                         return (hs + delta,) + out[1:]
                     else:
                         hs = out
                         delta = torch.zeros_like(hs)
-                        for sv in vlist:
-                            delta = delta + sv.materialize(hs)
+                        delta = delta + v.materialize(hs)
                         return hs + delta
                 return _hook
 
-            handle = layer.register_forward_hook(_hook_factory(vecs))
+            handle = layer.register_forward_hook(_hook_factory(vec))
             self._hook_group.add(handle)
 
     def detach(self) -> None:
@@ -300,7 +316,7 @@ class WisentModel:
         top_p: float = 0.95,
         do_sample: bool = True,
         num_return_sequences: int = 1,
-        use_steering: bool = True,
+        use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
         **gen_kwargs: Any,
     ) -> list[str]:
@@ -434,7 +450,7 @@ class WisentModel:
         do_sample: bool = True,
         num_return_sequences: int = 1,
         collect_topk: int = 5,
-        use_steering: bool = True,
+        use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
         **gen_kwargs: Any,
     ) -> tuple[list[str], list[GenerationStats]]:
@@ -560,45 +576,132 @@ class WisentModel:
                 stats.append(GenerationStats(tokens=[], per_step=None))
 
         return texts, stats
-
-
-    def set_steering_from_raw(self, raw: RawActivationMap, *, scale: float = 1.0, normalize: bool = False) -> None:
+    
+    @torch.inference_mode()
+    def generate_stream(
+        self,
+        inputs: list[list[ChatMessage]],
+        max_new_tokens: int = 128,
+        temperature: float = 0.7,
+        top_p: float = 0.95,
+        do_sample: bool = True,
+        use_steering: bool = False,
+        steering_plan: SteeringPlan | None = None,
+        skip_prompt: bool = True,
+        skip_special_tokens: bool = True,
+        **gen_kwargs: Any,
+    ) -> Iterable[str]:
         """
-        Replace the internal steering plan using a RawActivationMap (layer_name -> tensor).
+        Streamed text generation with optional steering.
+        Uses the TextIteratorStreamer from transformers.
 
-        arguments:
-            raw:
-                RawActivationMap of steering vectors (layer_name -> tensor).
-            scale:
-                global scale applied to all vectors (default 1.0).
-            normalize:
-                if True, each vector is normalized to unit norm before use (default False).
-        
-        example:
-            >>> wm.set_steering_from_raw({"6": torch.randn(wm.hidden_size)}, scale=0.5, normalize=True)
+        attributes:
+            inputs:
+                list of chat messages (each a list of {'role','content'} dicts). Currently only one conversation is supported.
+            max_new_tokens:
+                max tokens to generate (beyond the prompt).
+            temperature:
+                sampling temperature (0 = greedy, 1 = default sampling).
+            top_p:
+                nucleus sampling probability (1.0 = no nucleus).
+            do_sample:
+                if False, uses greedy decoding (top_k=1).
+            use_steering:
+                if True, apply the current steering plan (if any).
+            steering_plan:
+                optional SteeringPlan to use for this call only (overrides internal plan).
+                If None, uses the internal plan.
+            skip_prompt:
+                if True, the yielded text excludes the input prompt.
+            skip_special_tokens:
+                if True, special tokens are removed from the yielded text.
+            **gen_kwargs:
+                additional kwargs passed to 'model.generate()'.
+
+        yields:
+            generated text chunks (str), as they become available.
+        """
+
+        if len(inputs) != 1:
+            raise ValueError(
+                f"generate_stream currently supports exactly one conversation at a time (got {len(inputs)})."
+            )
+        if use_steering:
+            self.apply_steering(steering_plan)
+
+        batch = self._batch_encode(inputs, add_generation_prompt=True)
+
+        streamer = TextIteratorStreamer(
+            self.tokenizer,
+            skip_prompt=skip_prompt,
+            skip_special_tokens=skip_special_tokens,
+        )
+
+        generation_kwargs = dict(
+            batch,
+            max_new_tokens=max_new_tokens,
+            temperature=temperature,
+            top_p=top_p,
+            do_sample=do_sample,
+            return_dict_in_generate=False,   
+            output_scores=False,
+            streamer=streamer,
+            **gen_kwargs,
+        )
+
+        worker = threading.Thread(
+            target=self.hf_model.generate,
+            kwargs=generation_kwargs,
+            daemon=True,
+        )
+        worker.start()
+
+        try:
+            for new_text in streamer:
+                if new_text:
+                    yield new_text
+        finally:
+            if use_steering:
+                self.detach()
+            worker.join(timeout=0.0)
+    
+
+    def set_steering_from_raw(self, raw: list[RawActivationMap] | RawActivationMap | None, layers_descriptions: list[str], steering_weights: list[float] | None = None, scale: float = 1.0, normalize: bool = False) -> None:
+        """
+        Replace the internal steering plan using a RawActivationMap (layer_name -> tensor). 
+        If raw is None or empty, clears any existing steering. If we 
         """
         if not raw:
-            self._steering_plan = SteeringPlan({})
+            self._steering_plan = SteeringPlan()
             return
-
-        report = run_control_vector_diagnostics(raw)
-        for issue in report.issues:
-            log_method = logger.error if issue.severity == "critical" else logger.warning
-            log_method(
-                "[control_vector diagnostics] %s (details=%s)",
-                issue.message,
+        
+        # TODO: this should be outside 
+        reports = run_control_steering_diagnostics(raw)
+        for report in reports:
+            for issue in report.issues:
+                log_method = logger.error if issue.severity == "critical" else logger.warning
+                log_method(
+                    "[control_vector diagnostics] %s (details=%s)",
+                    issue.message,
                 issue.details,
             )
 
-        if report.has_critical_issues:
+        if any(report.has_critical_issues for report in reports):
             raise ValueError("Control vector diagnostics found critical issues; refusing to set steering.")
 
-        self._steering_plan = SteeringPlan.from_raw(raw, scale=scale, normalize=normalize)
+        self._steering_plan = SteeringPlan.from_raw(
+            raw=raw,
+            layers_descriptions=layers_descriptions,
+            weights=steering_weights,
+            scale=scale,
+            normalize=normalize,
+            expected_hidden_size=self._hidden_size
+            )
 
     def clear_steering(self) -> None:
         """
         Remove any existing steering configuration and active hooks.
         After calling this, generation is vanilla.
         """
-        self._steering_plan = SteeringPlan({})
+        self._steering_plan = SteeringPlan()
         self.detach()
