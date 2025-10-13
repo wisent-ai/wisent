@@ -9,7 +9,7 @@ from .divergence import compute_divergence_metrics
 from .duplicates import compute_duplicate_metrics
 from .coverage import compute_coverage_metrics
 from .activations import compute_activation_metrics
-from .control_vectors import ControlVectorDiagnosticsConfig, run_control_vector_diagnostics
+from .control_vectors import ControlVectorDiagnosticsConfig, run_control_vector_diagnostics, run_control_steering_diagnostics
 
 __all__ = [
     "DiagnosticsConfig",
@@ -17,6 +17,7 @@ __all__ = [
     "run_all_diagnostics",
     "ControlVectorDiagnosticsConfig",
     "run_control_vector_diagnostics",
+    "run_control_steering_diagnostics"
 ]
 
 
