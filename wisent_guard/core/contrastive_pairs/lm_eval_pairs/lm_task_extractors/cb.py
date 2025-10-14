@@ -22,6 +22,7 @@ class CBExtractor(LMEvalBenchmarkExtractor):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from CB docs.
@@ -32,8 +33,9 @@ class CBExtractor(LMEvalBenchmarkExtractor):
             - label: 0 or 1 or 2, 0 for "True", 1 for "False", 2 for "Neither"
 
         Args:
-            lm_eval_task_data: lm-eval task instance for SciQ.
+            lm_eval_task_data: lm-eval task instance for CB.
             limit: Optional maximum number of pairs to produce.
+            preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
 
         Returns:
             A list of ContrastivePair objects.
@@ -41,7 +43,7 @@ class CBExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
 

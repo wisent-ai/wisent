@@ -23,18 +23,20 @@ class BoolQExtractor(LMEvalBenchmarkExtractor):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from BoolQ docs.
 
         BoolQ schema:
             - passage: str
-            - question: str 
+            - question: str
             - label: 0 or 1
-            
+
         Args:
             lm_eval_task_data: lm-eval task instance for BoolQ.
             limit: Optional maximum number of pairs to produce.
+            preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
 
         Returns:
             A list of ContrastivePair objects.
@@ -42,7 +44,7 @@ class BoolQExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
 

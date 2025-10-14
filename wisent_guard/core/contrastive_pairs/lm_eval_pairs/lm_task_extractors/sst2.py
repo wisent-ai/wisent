@@ -22,6 +22,7 @@ class SST2Extractor(LMEvalBenchmarkExtractor):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from SST2 docs.
@@ -33,6 +34,7 @@ class SST2Extractor(LMEvalBenchmarkExtractor):
         Args:
             lm_eval_task_data: lm-eval task instance for SST2.
             limit: Optional maximum number of pairs to produce.
+            preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
 
         Returns:
             A list of ContrastivePair objects.
@@ -40,7 +42,7 @@ class SST2Extractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
 
