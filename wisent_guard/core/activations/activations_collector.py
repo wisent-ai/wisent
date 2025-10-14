@@ -248,18 +248,26 @@ class ActivationCollector:
             cont = layer_seq[-1:].contiguous()
 
         s = aggregation
-        if s in (ActivationAggregationStrategy.CHOICE_TOKEN,
-                 ActivationAggregationStrategy.CONTINUATION_TOKEN):
+        
+        if s in (ActivationAggregationStrategy.CONTINUATION_TOKEN):
             return cont[0]
-        if s is ActivationAggregationStrategy.FIRST_TOKEN:
+        
+        elif s in (ActivationAggregationStrategy.CHOICE_TOKEN):
+            choice_idx = prompt_len + 1
+            if choice_idx < layer_seq.shape[0]:
+                return layer_seq[choice_idx]
+            else:
+                return layer_seq[-1]
+        elif s is ActivationAggregationStrategy.FIRST_TOKEN:
             return layer_seq[0]
-        if s is ActivationAggregationStrategy.LAST_TOKEN:
+        elif s is ActivationAggregationStrategy.LAST_TOKEN:
             return layer_seq[-1]
-        if s is ActivationAggregationStrategy.MEAN_POOLING:
+        elif s is ActivationAggregationStrategy.MEAN_POOLING:
             return cont.mean(dim=0)
-        if s is ActivationAggregationStrategy.MAX_POOLING:
+        elif s is ActivationAggregationStrategy.MAX_POOLING:
             return cont.max(dim=0).values
-        return cont[0]
+        else:
+            return cont[0]
 
     def _normalization(
         self,
@@ -310,7 +318,7 @@ if __name__ == "__main__":
     from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair
     from wisent_guard.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
 
-    model = WisentModel(name="/home/gg/.cache/huggingface/hub/models--meta-llama--Llama-3.2-1B-Instruct/snapshots/9213176726f574b556790deb65791e0c5aa438b6")
+    model = WisentModel(model_name="/home/gg/.cache/huggingface/hub/models--meta-llama--Llama-3.2-1B-Instruct/snapshots/9213176726f574b556790deb65791e0c5aa438b6")
     collector = ActivationCollector(model=model, store_device="cpu")
 
     pair = ContrastivePair(
