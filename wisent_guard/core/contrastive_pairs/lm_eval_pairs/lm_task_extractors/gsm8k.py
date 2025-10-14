@@ -23,6 +23,7 @@ class GSM8KExtractor(LMEvalBenchmarkExtractor):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from GSM8K docs.
@@ -30,10 +31,11 @@ class GSM8KExtractor(LMEvalBenchmarkExtractor):
         GSM8K schema:
             - question: str
             - answer: str
-            
+
         Args:
             lm_eval_task_data: lm-eval task instance for GSM8K.
             limit: Optional maximum number of pairs to produce.
+            preferred_doc: Optional preferred document source ("validation", "test", "training", "fewshot").
 
         Returns:
             A list of ContrastivePair objects.
@@ -41,7 +43,7 @@ class GSM8KExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
 
@@ -85,7 +87,7 @@ class GSM8KExtractor(LMEvalBenchmarkExtractor):
             numerical_answer = answer.split("####")[-1].strip()
             
             correct = numerical_answer
-            incorrect_val = float(numerical_answer) + 1
+            incorrect_val = float(numerical_answer.replace(',', '')) + 1
             incorrect = str(int(incorrect_val)) if incorrect_val == int(incorrect_val) else str(incorrect_val)
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
