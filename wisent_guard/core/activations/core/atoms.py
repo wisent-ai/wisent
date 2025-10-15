@@ -1,9 +1,22 @@
 from __future__ import annotations
 
-from enum import StrEnum, auto, unique
+from enum import Enum, auto, unique
 from typing import Mapping, Iterator, TypeAlias
 import numpy as np
 import torch
+import sys
+
+# Python 3.10 compatibility
+if sys.version_info >= (3, 11):
+    from enum import StrEnum
+else:
+    class StrEnum(str, Enum):
+        """StrEnum backport for Python < 3.11"""
+        def _generate_next_value_(name, start, count, last_values):
+            return name.lower()
+
+        def __str__(self) -> str:
+            return str(self.value)
 
 __all__ = ["LayerActivations", "ActivationAggregationStrategy", "ActivationCollector", "LayerName", "LayerActivation", "ActivationMap", "RawActivationMap"]
 
