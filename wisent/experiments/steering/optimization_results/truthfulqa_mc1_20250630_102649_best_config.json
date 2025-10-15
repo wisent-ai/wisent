@@ -1,0 +1,18 @@
+{
+  "task_name": "truthfulqa_mc1",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "timestamp": "2025-06-30 10:26:49",
+  "best_configuration": {
+    "layer": 15,
+    "method": "CAA",
+    "strength": 0.5,
+    "split_ratio": 0.9,
+    "seed": 456
+  },
+  "performance": {
+    "accuracy": 0.0,
+    "likelihood_change": 0.0,
+    "runtime_seconds": 55.2302770614624
+  },
+  "cli_command": "python -m wisent_guard.cli tasks truthfulqa_mc1 --limit 25 --steering-mode --steering-method CAA --steering-strength 0.5 --layer 15 --split-ratio 0.9 --seed 456 --verbose"
+}

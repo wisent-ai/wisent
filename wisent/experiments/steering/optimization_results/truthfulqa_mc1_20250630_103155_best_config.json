@@ -1,0 +1,19 @@
+{
+  "task_name": "truthfulqa_mc1",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "timestamp": "2025-06-30 10:31:55",
+  "best_configuration": {
+    "layer": 6,
+    "method": "HPR",
+    "strength": 3.0,
+    "hpr_beta": 0.5,
+    "split_ratio": 0.9,
+    "seed": 42
+  },
+  "performance": {
+    "accuracy": 0.3333333333333333,
+    "likelihood_change": 0.002421140670776367,
+    "runtime_seconds": 54.345728635787964
+  },
+  "cli_command": "python -m wisent_guard.cli tasks truthfulqa_mc1 --limit 25 --steering-mode --steering-method HPR --steering-strength 3.0 --layer 6 --split-ratio 0.9 --seed 42 --hpr-beta 0.5 --verbose"
+}

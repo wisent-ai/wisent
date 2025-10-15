@@ -1,0 +1,282 @@
+{
+  "task_name": "truthfulqa_mc1",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "limit": 225,
+  "timestamp": "2025-06-30 02:07:36",
+  "analysis": {
+    "error": "No successful optimization runs"
+  },
+  "results": [
+    {
+      "config": {
+        "layer": 16,
+        "method": "KSteering",
+        "strength": 0.5,
+        "ksteering_alpha": 2.0,
+        "ksteering_target_labels": "0",
+        "ksteering_avoid_labels": "",
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 281.53186988830566
+    },
+    {
+      "config": {
+        "layer": 6,
+        "method": "KSteering",
+        "strength": 0.5,
+        "ksteering_alpha": 5.0,
+        "ksteering_target_labels": "1",
+        "ksteering_avoid_labels": "",
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 300.9661490917206
+    },
+    {
+      "config": {
+        "layer": 29,
+        "method": "CAA",
+        "strength": 0.5,
+        "split_ratio": 0.9,
+        "seed": 123
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 222.35673213005066
+    },
+    {
+      "config": {
+        "layer": 18,
+        "method": "HPR",
+        "strength": 1.0,
+        "hpr_beta": 0.5,
+        "split_ratio": 0.8,
+        "seed": 123
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 312.3094642162323
+    },
+    {
+      "config": {
+        "layer": 23,
+        "method": "KSteering",
+        "strength": 0.5,
+        "ksteering_alpha": 2.0,
+        "ksteering_target_labels": "0",
+        "ksteering_avoid_labels": "0",
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 302.3416519165039
+    },
+    {
+      "config": {
+        "layer": 6,
+        "method": "KSteering",
+        "strength": 1.0,
+        "ksteering_alpha": 1.0,
+        "ksteering_target_labels": "0",
+        "ksteering_avoid_labels": "",
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 297.70336508750916
+    },
+    {
+      "config": {
+        "layer": 19,
+        "method": "CAA",
+        "strength": 0.1,
+        "split_ratio": 0.9,
+        "seed": 123
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 212.49135494232178
+    },
+    {
+      "config": {
+        "layer": 30,
+        "method": "HPR",
+        "strength": 1.0,
+        "hpr_beta": 0.5,
+        "split_ratio": 0.9,
+        "seed": 123
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 211.1825020313263
+    },
+    {
+      "config": {
+        "layer": 18,
+        "method": "KSteering",
+        "strength": 0.5,
+        "ksteering_alpha": 5.0,
+        "ksteering_target_labels": "0",
+        "ksteering_avoid_labels": "",
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 298.47192788124084
+    },
+    {
+      "config": {
+        "layer": 30,
+        "method": "KSteering",
+        "strength": 0.5,
+        "ksteering_alpha": 1.0,
+        "ksteering_target_labels": "0",
+        "ksteering_avoid_labels": "0",
+        "split_ratio": 0.9,
+        "seed": 42
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 217.42727208137512
+    },
+    {
+      "config": {
+        "layer": 26,
+        "method": "CAA",
+        "strength": 2.0,
+        "split_ratio": 0.9,
+        "seed": 42
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 211.50876307487488
+    },
+    {
+      "config": {
+        "layer": 32,
+        "method": "KSteering",
+        "strength": 1.0,
+        "ksteering_alpha": 1.0,
+        "ksteering_target_labels": "0",
+        "ksteering_avoid_labels": "0",
+        "split_ratio": 0.8,
+        "seed": 123
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 198.201025724411
+    },
+    {
+      "config": {
+        "layer": 28,
+        "method": "HPR",
+        "strength": 1.5,
+        "hpr_beta": 1.5,
+        "split_ratio": 0.8,
+        "seed": 42
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 299.4133810997009
+    },
+    {
+      "config": {
+        "layer": 32,
+        "method": "CAA",
+        "strength": 0.5,
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 201.47742795944214
+    },
+    {
+      "config": {
+        "layer": 11,
+        "method": "HPR",
+        "strength": 2.0,
+        "hpr_beta": 1.0,
+        "split_ratio": 0.8,
+        "seed": 123
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 301.2656309604645
+    },
+    {
+      "config": {
+        "layer": 30,
+        "method": "KSteering",
+        "strength": 0.5,
+        "ksteering_alpha": 5.0,
+        "ksteering_target_labels": "1",
+        "ksteering_avoid_labels": "0",
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 304.0929980278015
+    },
+    {
+      "config": {
+        "layer": 8,
+        "method": "CAA",
+        "strength": 1.0,
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 300.04588198661804
+    },
+    {
+      "config": {
+        "layer": 17,
+        "method": "CAA",
+        "strength": 2.0,
+        "split_ratio": 0.8,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 301.8800849914551
+    },
+    {
+      "config": {
+        "layer": 20,
+        "method": "KSteering",
+        "strength": 2.0,
+        "ksteering_alpha": 2.0,
+        "ksteering_target_labels": "0",
+        "ksteering_avoid_labels": "",
+        "split_ratio": 0.8,
+        "seed": 42
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 301.6225061416626
+    },
+    {
+      "config": {
+        "layer": 21,
+        "method": "CAA",
+        "strength": 1.0,
+        "split_ratio": 0.9,
+        "seed": 42
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 213.67145609855652
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "truthfulqa_mc1": {
+    "task_name": "truthfulqa_mc1",
+    "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+    "layer": 15,
+    "steering_mode": false,
+    "evaluation_results": {
+      "accuracy": 0.3475609756097561,
+      "method": "lm_harness_with_steering",
+      "task_name": "truthfulqa_mc1",
+      "steering_applied": false,
+      "full_results": {
+        "alias": "truthfulqa_mc1",
+        "acc,none": 0.3475609756097561,
+        "acc_stderr,none": "N/A"
+      }
+    },
+    "num_train": 653,
+    "num_test": 164,
+    "baseline_performance": true
+  }
+}

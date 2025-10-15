@@ -70,7 +70,7 @@ Thumbs.db
 # Ignore any new folders not already in the repository
 # Whitelist approach - only include specific folders
 /*
-!/wisent_guard/
+!/wisent/
 !/models/
 !/examples/
 !/evaluation/
