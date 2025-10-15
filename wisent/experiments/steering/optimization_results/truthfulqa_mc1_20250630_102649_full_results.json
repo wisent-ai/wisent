@@ -1,0 +1,23 @@
+{
+  "task_name": "truthfulqa_mc1",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "limit": 25,
+  "timestamp": "2025-06-30 10:26:49",
+  "analysis": {
+    "error": "No successful optimization runs"
+  },
+  "results": [
+    {
+      "config": {
+        "layer": 15,
+        "method": "CAA",
+        "strength": 0.5,
+        "split_ratio": 0.9,
+        "seed": 456
+      },
+      "accuracy": 0.0,
+      "likelihood_change": 0.0,
+      "runtime_seconds": 55.2302770614624
+    }
+  ]
+}
