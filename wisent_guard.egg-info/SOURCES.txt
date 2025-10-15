@@ -189,6 +189,7 @@ wisent_guard/core/trainers/__init__.py
 wisent_guard/core/trainers/steering_trainer.py
 wisent_guard/core/trainers/core/__init__.py
 wisent_guard/core/trainers/core/atoms.py
+wisent_guard/core/utils/device.py
 wisent_guard/opti/__init__.py
 wisent_guard/opti/core/__init__.py
 wisent_guard/opti/core/atoms.py
