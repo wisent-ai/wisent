@@ -67,6 +67,7 @@ def prepare_training_data(positive_activations: list, negative_activations: list
 
 def train_and_evaluate_for_k(
     k: int,
+    num_val: int,
     num_test: int,
     model_name: str,
     aggregation_method: ActivationAggregationStrategy,
@@ -80,8 +81,6 @@ def train_and_evaluate_for_k(
     Returns:
         Dict mapping layer_name -> test accuracy
     """
-
-    num_val = 50  # Fixed validation size: 50 pairs = 100 activations
 
     print("=" * 80)
     print(f"TRAINING WITH k={k} examples, validating on {num_val}, testing on {num_test} examples")
@@ -165,7 +164,7 @@ def train_and_evaluate_for_k(
         base_cfg = ClassifierTrainConfig(
             test_size=val_size,  # Split to use num_val for validation
             num_epochs=50,
-            batch_size=min(4, max(2, len(X_train_val) // 20)),
+            batch_size=8,
             learning_rate=1e-3,
             monitor="accuracy",
             random_state=42,  # Fixed seed for reproducible train/val split
@@ -240,9 +239,8 @@ def train_and_evaluate_for_k(
                 predictions = final_clf.predict(X_test)
                 # Convert to tensor if it's a list
                 if isinstance(predictions, list):
-                    predictions = torch.tensor(predictions)
-                predicted_labels = (predictions > 0.5).float()
-                test_accuracy = (predicted_labels == y_test).float().mean().item()
+                    predictions = torch.tensor(predictions).float()
+                test_accuracy = (predictions == y_test).float().mean().item()
 
             layer_accuracies[layer_name] = test_accuracy
 
@@ -347,8 +345,9 @@ if __name__ == "__main__":
     # Configuration
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
     aggregation_method = ActivationAggregationStrategy.CONTINUATION_TOKEN
-    num_test = 150
     k_values = [5, 10, 25, 50, 100, 250]
+    num_val = 50
+    num_test = 150
     n_trials = 40
 
     # Store results: results[k] = {layer_name: accuracy}
@@ -372,6 +371,7 @@ if __name__ == "__main__":
 
         layer_accuracies = train_and_evaluate_for_k(
             k=k,
+            num_val = num_val,
             num_test=num_test,
             model_name=model_name,
             aggregation_method=aggregation_method,

@@ -20,6 +20,8 @@ from typing import Dict, List
 import optuna
 import time
 import gc
+import json
+from datetime import datetime
 
 from wisent_guard.opti.methods.opti_classificator import ClassificationOptimizer
 from wisent_guard.opti.core.atoms import HPOConfig
@@ -75,7 +77,7 @@ def train_and_evaluate_aggregation(
     num_test: int,
     model_name: str,
     n_trials: int = 40,
-) -> Dict[str, float]:
+) -> tuple[Dict[str, float], Dict]:
     """
     Train classifiers for one aggregation method and evaluate across all layers.
 
@@ -139,6 +141,7 @@ def train_and_evaluate_aggregation(
     # Step 3: Train and evaluate classifier for each layer
     print(f"\nTraining and evaluating classifiers for each layer...")
     layer_accuracies: Dict[str, float] = {}
+    layer_metadata: Dict[str, Dict] = {}  # Store detailed results per layer
 
     for layer_idx in range(1, num_layers + 1):
         layer_name = str(layer_idx)
@@ -206,16 +209,18 @@ def train_and_evaluate_aggregation(
             print(f"  Best validation accuracy: {run.best_value:.3f}")
             print(f"  Best params: {run.best_params}")
 
-            # Step 4: Train final model on ONLY training data (first num_train pairs) with best params
-            print(f"  Training final model on training data only (first {num_train} pairs)...")
+            # Step 4: Train final model 10 times on ONLY training data with best params
+            print(f"  Training final model 10 times on training data only (first {num_train} pairs)...")
 
             # Extract only training data (first num_train pairs)
             train_pos_only = train_val_pos[:num_train]
             train_neg_only = train_val_neg[:num_train]
             X_train, y_train = prepare_training_data(train_pos_only, train_neg_only)
 
+            # Prepare test data once
+            X_test, y_test = prepare_training_data(test_pos, test_neg)
+
             best_params = run.best_params
-            final_clf = MLPClassifier(device="cuda" if torch.cuda.is_available() else "cpu")
 
             # Train on training data only (no validation)
             final_cfg = ClassifierTrainConfig(
@@ -229,38 +234,71 @@ def train_and_evaluate_aggregation(
             # Extract model hyperparameters
             model_kwargs = {k: v for k, v in best_params.items() if k in ["hidden_dim", "dropout"]}
 
-            final_clf.fit(
-                X_train, y_train,
-                config=final_cfg,
-                optimizer=best_params.get("optimizer", "Adam"),
-                lr=best_params.get("lr", 1e-3),
-                optimizer_kwargs=best_params.get("optimizer_kwargs"),
-                criterion="bce",
-                layers=model_kwargs,
-            )
+            # Step 5: Train 10 times with different random initializations and collect test accuracies
+            test_accuracies = []
+            for run_idx in range(10):
+                # Create new classifier instance (new random initialization)
+                final_clf = MLPClassifier(device="cuda" if torch.cuda.is_available() else "cpu")
 
-            # Step 5: Evaluate on separate test set
-            X_test, y_test = prepare_training_data(test_pos, test_neg)
+                final_clf.fit(
+                    X_train, y_train,
+                    config=final_cfg,
+                    optimizer=best_params.get("optimizer", "Adam"),
+                    lr=best_params.get("lr", 1e-3),
+                    optimizer_kwargs=best_params.get("optimizer_kwargs"),
+                    criterion="bce",
+                    layers=model_kwargs,
+                )
 
-            with torch.no_grad():
-                predictions = final_clf.predict(X_test)
-                # Convert to tensor if it's a list
-                if isinstance(predictions, list):
-                    predictions = torch.tensor(predictions)
-                predicted_labels = (predictions > 0.5).float()
-                test_accuracy = (predicted_labels == y_test).float().mean().item()
+                # Evaluate on test set
+                with torch.no_grad():
+                    predictions = final_clf.predict(X_test)
+                    # Convert to tensor if it's a list
+                    if isinstance(predictions, list):
+                        predictions = torch.tensor(predictions).float()
+                    accuracy = (predictions == y_test).float().mean().item()
+                    test_accuracies.append(accuracy)
 
-            layer_accuracies[layer_name] = test_accuracy
+                print(f"    Run {run_idx + 1}/10: {accuracy:.3f}")
 
-            print(f"  Final test accuracy: {test_accuracy:.3f}")
+            # Calculate mean and std of test accuracies
+            mean_accuracy = np.mean(test_accuracies)
+            std_accuracy = np.std(test_accuracies)
+            min_accuracy = np.min(test_accuracies)
+            max_accuracy = np.max(test_accuracies)
+
+            layer_accuracies[layer_name] = mean_accuracy
+
+            # Store detailed metadata for this layer
+            layer_metadata[layer_name] = {
+                "mean_accuracy": float(mean_accuracy),
+                "std_accuracy": float(std_accuracy),
+                "min_accuracy": float(min_accuracy),
+                "max_accuracy": float(max_accuracy),
+                "all_accuracies": [float(acc) for acc in test_accuracies],
+                "best_params": best_params,
+                "best_val_accuracy": float(run.best_value),
+            }
+
+            print(f"  Mean test accuracy: {mean_accuracy:.3f} ± {std_accuracy:.3f}")
 
         except Exception as e:
             print(f"  ERROR: {e}")
             import traceback
             traceback.print_exc()
             layer_accuracies[layer_name] = 0.0
+            layer_metadata[layer_name] = {
+                "mean_accuracy": 0.0,
+                "std_accuracy": 0.0,
+                "min_accuracy": 0.0,
+                "max_accuracy": 0.0,
+                "all_accuracies": [],
+                "best_params": {},
+                "best_val_accuracy": 0.0,
+                "error": str(e),
+            }
 
-    return layer_accuracies
+    return layer_accuracies, layer_metadata
 
 
 def calculate_binomial_error(accuracy: float, n_samples: int) -> float:
@@ -439,7 +477,7 @@ if __name__ == "__main__":
         print(f"ANALYZING: {agg_name}")
         print(f"{'='*80}\n")
 
-        layer_accuracies = train_and_evaluate_aggregation(
+        layer_accuracies, layer_metadata = train_and_evaluate_aggregation(
             aggregation_method=agg_method,
             num_train=num_train,
             num_val=num_val,
@@ -449,6 +487,46 @@ if __name__ == "__main__":
         )
 
         results[agg_name] = layer_accuracies
+
+        # Save metadata as JSON
+        accuracies_list = list(layer_accuracies.values())
+        best_layer = max(layer_accuracies.keys(), key=lambda k: layer_accuracies[k])
+
+        metadata = {
+            "metadata": {
+                "timestamp": datetime.now().isoformat(),
+                "model_name": model_name,
+                "benchmark": "sst2",
+                "aggregation": agg_name,
+                "n_trials": n_trials,
+                "n_runs": 10,
+            },
+            "data_config": {
+                "train_size": num_train,
+                "val_size": num_val,
+                "test_size": num_test,
+                "train_source": "training",
+                "val_source": "training",
+                "test_source": "test",
+            },
+            "results_by_layer": layer_metadata,
+            "summary": {
+                "best_layer": int(best_layer),
+                "best_mean_accuracy": float(layer_accuracies[best_layer]),
+                "overall_mean_accuracy": float(np.mean(accuracies_list)),
+                "overall_std_accuracy": float(np.std(accuracies_list)),
+            }
+        }
+
+        # Save to JSON file
+        output_dir = Path("tests/bench_table/sst2/results")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        output_file = output_dir / f"aggregation_{agg_name}_results.json"
+
+        with open(output_file, 'w') as f:
+            json.dump(metadata, f, indent=2)
+
+        print(f"\nMetadata saved to: {output_file}")
 
         # Print summary for this aggregation
         accuracies_list = list(layer_accuracies.values())

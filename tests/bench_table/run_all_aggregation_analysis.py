@@ -91,19 +91,19 @@ def main():
     # Define scripts to run
     scripts = [
         {
-            "path": bench_table_dir / "gsm8k" / "aggregation_analysis.py",
+            "path": bench_table_dir / "gsm8k" / "aggregations_analysis.py",
             "name": "GSM8K",
         },
         {
-            "path": bench_table_dir / "boolq" / "aggregation_analysis.py",
+            "path": bench_table_dir / "boolq" / "aggregations_analysis.py",
             "name": "BoolQ",
         },
         {
-            "path": bench_table_dir / "sst2" / "aggregation_analysis.py",
+            "path": bench_table_dir / "sst2" / "aggregations_analysis.py",
             "name": "SST2",
         },
         {
-            "path": bench_table_dir / "cb" / "aggregation_analysis.py",
+            "path": bench_table_dir / "cb" / "aggregations_analysis.py",
             "name": "CB",
         },
     ]
