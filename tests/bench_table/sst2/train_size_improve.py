@@ -10,7 +10,7 @@ import torch
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
+import os
 from typing import Dict, List
 import optuna
 import time
@@ -272,7 +272,7 @@ def plot_results(
     results: Dict[int, Dict[str, float]],
     num_test: int,
     aggregation_name: str,
-    output_path: str = "tests/bench_table/sst2/plots/train_size_improve_plot.png",
+    output_path: str = "/workspace/results/sst2/sst2_train_size_improve_plot.png",
 ):
     """
     Plot layer vs accuracy curves for different training sizes.
@@ -312,7 +312,7 @@ def plot_results(
             marker='o',
             linewidth=2,
             markersize=6,
-            label=f'k={k} training examples',
+            label=f'{k*2} training examples',
             alpha=0.8
         )
 
@@ -327,14 +327,13 @@ def plot_results(
 
     plt.xlabel("Layer Number", fontsize=14)
     plt.ylabel("Test Accuracy (%)", fontsize=14)
-    plt.title(f"Classifier Performance vs Layer ({aggregation_name})", fontsize=16, fontweight='bold')
+    plt.title(f"Classifier Performance vs Layer ({aggregation_name}) - SST2", fontsize=16, fontweight='bold')
     plt.grid(True, alpha=0.3)
     plt.legend(loc='best', fontsize=12)
     plt.axhline(y=50, color='r', linestyle='--', alpha=0.5, label='Random baseline (50%)')
 
     # Save plot
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"Plot saved to {output_path}")
 

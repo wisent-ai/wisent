@@ -4,7 +4,7 @@ import re
 from lm_eval import tasks
 from typing import List, Dict
 import json
-from pathlib import Path
+import os
 
 from wisent_guard.core.models.wisent_model import WisentModel
 
@@ -146,7 +146,7 @@ def extract_numerical_answer(text: str) -> str | None:
 
 def evaluate_baseline_performance(
     model_name: str = "meta-llama/Llama-3.2-3B-Instruct",
-    num_questions: int = 50,
+    num_questions: int = 250,
     max_new_tokens: int = 700,
     output_path: str | None = None,
 ) -> Dict:
@@ -263,13 +263,51 @@ def evaluate_baseline_performance(
     }
 
     if output_path:
-        output_path = Path(output_path)
-        output_path.parent.mkdir(parents=True, exist_ok=True)
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
         print(f"\nSaving results to {output_path}...")
         with open(output_path, "w") as f:
             json.dump(evaluation_result, f, indent=2)
         print("Results saved successfully!")
+
+        # Save metadata
+        metadata_path = os.path.join(os.path.dirname(output_path), "gsm8k_baseline_metadata.json")
+        correct_questions = [r for r in results if r.get("is_correct")]
+        incorrect_questions = [r for r in results if not r.get("is_correct")]
+
+        metadata = {
+            "summary": {
+                "total_questions": summary["total_questions"],
+                "correct_count": summary["correct_answers"],
+                "incorrect_count": summary["incorrect_answers"],
+                "accuracy_percent": summary["accuracy_percent"],
+                "model_name": summary["model_name"],
+            },
+            "correct_questions": [
+                {
+                    "id": r["question_id"],
+                    "question": r["question"],
+                    "correct_answer": r["correct_answer"],
+                    "predicted_answer": r["predicted_answer"],
+                }
+                for r in correct_questions
+            ],
+            "incorrect_questions": [
+                {
+                    "id": r["question_id"],
+                    "question": r["question"],
+                    "correct_answer": r["correct_answer"],
+                    "predicted_answer": r["predicted_answer"],
+                    "model_response": r.get("model_response", "")[:500],  # Truncate long responses
+                }
+                for r in incorrect_questions
+            ],
+        }
+
+        print(f"Saving metadata to {metadata_path}...")
+        with open(metadata_path, "w") as f:
+            json.dump(metadata, f, indent=2)
+        print("Metadata saved successfully!")
 
     print("\n" + "=" * 80)
     print("BASELINE PERFORMANCE SUMMARY")
@@ -310,13 +348,13 @@ if __name__ == "__main__":
 
     results = evaluate_baseline_performance(
         model_name="meta-llama/Llama-3.2-3B-Instruct",
-        num_questions=50,
+        num_questions=250,
         max_new_tokens=700,
-        output_path="tests/bench_table/gsm8k/baseline_results.json",
+        output_path="/workspace/results/gsm8k/gsm8k_baseline_results.json",
     )
 
     print("\nDone! Baseline evaluation complete.")
     print("You can load the results later with:")
     print("  import json")
-    print("  with open('tests/bench_table/baseline_results.json', 'r') as f:")
+    print("  with open('/workspace/results/gsm8k/gsm8k_baseline_results.json', 'r') as f:")
     print("      results = json.load(f)")

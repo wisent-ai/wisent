@@ -16,7 +16,7 @@ from __future__ import annotations
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
+import os
 from sklearn.decomposition import PCA
 from sklearn.preprocessing import StandardScaler
 import time
@@ -198,8 +198,8 @@ def perform_pca_analysis_3d(data: dict, num_layers: int, num_questions: int):
     plt.tight_layout()
 
     # Save figure
-    output_path = Path(__file__).parent / "plots" / "pca_analysis_all_layers_3d.png"
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    output_path = "/workspace/results/gsm8k/gsm8k_pca_3d.png"
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     print(f"\n✓ 3D PCA plot saved to: {output_path}")
 

@@ -15,7 +15,7 @@ import torch
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
+import os
 from typing import Dict, List
 import optuna
 import time
@@ -359,14 +359,13 @@ def plot_individual_aggregation(
 
     plt.xlabel("Layer Number", fontsize=14)
     plt.ylabel("Test Accuracy (%)", fontsize=14)
-    plt.title(f"Classifier Performance: {aggregation_name}", fontsize=16, fontweight='bold')
+    plt.title(f"Classifier Performance: {aggregation_name} (SST2)", fontsize=16, fontweight='bold')
     plt.grid(True, alpha=0.3)
     plt.axhline(y=50, color='r', linestyle='--', alpha=0.5, label='Random baseline (50%)')
     plt.legend(loc='best', fontsize=12)
 
     # Save plot
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
 
@@ -376,7 +375,7 @@ def plot_individual_aggregation(
 def plot_combined_aggregations(
     results: Dict[str, Dict[str, float]],
     num_test: int,
-    output_path: str = "tests/bench_table/sst2/plots/aggregations_combined_plot.png",
+    output_path: str = "/workspace/results/sst2/sst2_aggregations_combined_plot.png",
 ):
     """Plot all aggregation methods on the same chart."""
 
@@ -423,14 +422,13 @@ def plot_combined_aggregations(
 
     plt.xlabel("Layer Number", fontsize=14)
     plt.ylabel("Test Accuracy (%)", fontsize=14)
-    plt.title("Classifier Performance: All Aggregation Methods", fontsize=16, fontweight='bold')
+    plt.title("Classifier Performance: All Aggregation Methods (SST2)", fontsize=16, fontweight='bold')
     plt.grid(True, alpha=0.3)
     plt.legend(loc='best', fontsize=11)
     plt.axhline(y=50, color='r', linestyle='--', alpha=0.5, label='Random baseline (50%)')
 
     # Save plot
-    output_path = Path(output_path)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
 
@@ -447,7 +445,6 @@ if __name__ == "__main__":
 
     # All aggregation strategies
     agg_strategies = [
-        ActivationAggregationStrategy.CONTINUATION_TOKEN,
         ActivationAggregationStrategy.LAST_TOKEN,
         ActivationAggregationStrategy.FIRST_TOKEN,
         ActivationAggregationStrategy.MEAN_POOLING,
@@ -519,9 +516,9 @@ if __name__ == "__main__":
         }
 
         # Save to JSON file
-        output_dir = Path("tests/bench_table/sst2/results")
-        output_dir.mkdir(parents=True, exist_ok=True)
-        output_file = output_dir / f"aggregation_{agg_name}_results.json"
+        output_dir = "/workspace/results/sst2"
+        os.makedirs(output_dir, exist_ok=True)
+        output_file = f"{output_dir}/sst2_aggregation_{agg_name}_results.json"
 
         with open(output_file, 'w') as f:
             json.dump(metadata, f, indent=2)
@@ -540,7 +537,7 @@ if __name__ == "__main__":
             aggregation_name=agg_name,
             layer_accuracies=layer_accuracies,
             num_test=num_test,
-            output_path=f"tests/bench_table/sst2/plots/aggregation_{agg_name}_plot.png",
+            output_path=f"/workspace/results/sst2/sst2_aggregation_{agg_name}_plot.png",
         )
 
         # Clean up GPU memory between aggregations
