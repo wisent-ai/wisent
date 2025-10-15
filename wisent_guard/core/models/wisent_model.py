@@ -82,13 +82,33 @@ class WisentModel:
         self.model_name = model_name
         self.device = device or resolve_default_device()
 
+        # Determine appropriate dtype and settings for the device
+        load_kwargs = {
+            "trust_remote_code": True,
+            "low_cpu_mem_usage": True,
+        }
+
+        if self.device == "mps":
+            load_kwargs["dtype"] = torch.float16
+            load_kwargs["device_map"] = "mps"
+            load_kwargs["attn_implementation"] = "eager"  # MPS doesn't support flash attention
+        elif self.device == "cuda":
+            load_kwargs["dtype"] = torch.float16
+            load_kwargs["device_map"] = "auto"
+        else:
+            load_kwargs["dtype"] = torch.float32
+            load_kwargs["device_map"] = None
+
         self.hf_model: PreTrainedModel = hf_model or AutoModelForCausalLM.from_pretrained(
             model_name,
-            dtype="auto",
-            device_map=None,            
-            trust_remote_code=True,   
+            **load_kwargs
         )
-        self.hf_model.to(self.device)
+
+        device_map_used = load_kwargs.get("device_map")
+
+        # Only move to device if device_map wasn't used
+        if device_map_used is None:
+            self.hf_model.to(self.device)
 
         self.tokenizer: PreTrainedTokenizerBase = AutoTokenizer.from_pretrained(
             model_name, use_fast=True, trust_remote_code=True
@@ -666,16 +686,16 @@ class WisentModel:
             worker.join(timeout=0.0)
     
 
-    def set_steering_from_raw(self, raw: list[RawActivationMap] | RawActivationMap | None, layers_descriptions: list[str], steering_weights: list[float] | None = None, scale: float = 1.0, normalize: bool = False) -> None:
+    def set_steering_from_raw(self, raw: list[RawActivationMap] | RawActivationMap | None, layers_description: list[str] | None = None, steering_weights: list[float] | None = None, scale: float = 1.0, normalize: bool = False) -> None:
         """
-        Replace the internal steering plan using a RawActivationMap (layer_name -> tensor). 
-        If raw is None or empty, clears any existing steering. If we 
+        Replace the internal steering plan using a RawActivationMap (layer_name -> tensor).
+        If raw is None or empty, clears any existing steering. If we
         """
         if not raw:
             self._steering_plan = SteeringPlan()
             return
-        
-        # TODO: this should be outside 
+
+        # TODO: this should be outside
         reports = run_control_steering_diagnostics(raw)
         for report in reports:
             for issue in report.issues:
@@ -691,7 +711,7 @@ class WisentModel:
 
         self._steering_plan = SteeringPlan.from_raw(
             raw=raw,
-            layers_descriptions=layers_descriptions,
+            layers_description=layers_description,
             weights=steering_weights,
             scale=scale,
             normalize=normalize,
