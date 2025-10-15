@@ -1,0 +1,21 @@
+{
+  "task_name": "truthfulqa_mc1",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "timestamp": "2025-06-30 11:05:38",
+  "best_configuration": {
+    "layer": 16,
+    "method": "KSteering",
+    "strength": 0.5,
+    "ksteering_alpha": 2.0,
+    "ksteering_target_labels": "0",
+    "ksteering_avoid_labels": "",
+    "split_ratio": 0.8,
+    "seed": 456
+  },
+  "performance": {
+    "accuracy": 0.25,
+    "likelihood_change": 0.4828948974609375,
+    "runtime_seconds": 38.569344997406006
+  },
+  "cli_command": "python -m wisent_guard.cli tasks truthfulqa_mc1 --limit 17 --steering-mode --steering-method KSteering --steering-strength 0.5 --layer 16 --split-ratio 0.8 --seed 456 --ksteering-alpha 2.0 --ksteering-target-labels 0 --ksteering-avoid-labels  --verbose"
+}
