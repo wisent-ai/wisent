@@ -80,6 +80,6 @@ skip-magic-trailing-comma = false
 line-ending = "auto"
 
 [tool.ruff.lint.isort]
-known-first-party = ["wisent_guard"]
+known-first-party = ["wisent"]
 force-single-line = false
 combine-as-imports = true

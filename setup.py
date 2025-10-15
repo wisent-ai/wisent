@@ -6,14 +6,14 @@ with open("README.md", encoding="utf-8") as f:
     long_description = f.read()
 
 # Read version from __init__.py
-with open(os.path.join("wisent_guard", "__init__.py"), encoding="utf-8") as f:
+with open(os.path.join("wisent", "__init__.py"), encoding="utf-8") as f:
     for line in f:
         if line.startswith("__version__"):
             version = line.split("=")[1].strip().strip('"').strip("'")
             break
 
 setup(
-    name="wisent-guard",
+    name="wisent",
     version=version,
     author="Wisent Team",
     author_email="your.email@example.com",  # Replace with your email
