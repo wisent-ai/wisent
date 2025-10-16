@@ -229,27 +229,31 @@ def train_and_evaluate_aggregation(
 
             best_params = run.best_params
 
-            # Train on training data only (no validation)
-            final_cfg = ClassifierTrainConfig(
-                test_size=0.0,  # Use all training data
-                num_epochs=best_params.get("num_epochs", 50),
-                batch_size=best_params.get("batch_size", 8),
-                learning_rate=best_params.get("lr", 1e-3),
-                monitor="accuracy",
-            )
-
             # Extract model hyperparameters
             model_kwargs = {k: v for k, v in best_params.items() if k in ["hidden_dim", "dropout"]}
 
             # Step 5: Train 10 times with different random initializations and collect test accuracies
             test_accuracies = []
             for run_idx in range(10):
+                # Different seed for each run (used by fit() for weight init, shuffling, dropout)
+                seed = 42 + run_idx
+
+                # Create config with seed - fit() will call torch.manual_seed(seed) internally
+                run_cfg = ClassifierTrainConfig(
+                    test_size=0.0,  # Use all training data
+                    num_epochs=best_params.get("num_epochs", 50),
+                    batch_size=best_params.get("batch_size", 8),
+                    learning_rate=best_params.get("lr", 1e-3),
+                    monitor="accuracy",
+                    random_state=seed,  # Different seed for each run
+                )
+
                 # Create new classifier instance (new random initialization)
                 final_clf = MLPClassifier(device="cuda" if torch.cuda.is_available() else "cpu")
 
                 final_clf.fit(
                     X_train, y_train,
-                    config=final_cfg,
+                    config=run_cfg,  # Use run-specific config with different seed
                     optimizer=best_params.get("optimizer", "Adam"),
                     lr=best_params.get("lr", 1e-3),
                     optimizer_kwargs=best_params.get("optimizer_kwargs"),

@@ -228,14 +228,10 @@ def train_and_evaluate_aggregation(
             # Step 5: Train 10 times with different random initializations and collect test accuracies
             test_accuracies = []
             for run_idx in range(10):
-                # Set all random seeds for this run
+                # Different seed for each run (used by fit() for weight init, shuffling, dropout)
                 seed = 42 + run_idx
-                torch.manual_seed(seed)
-                np.random.seed(seed)
-                if torch.cuda.is_available():
-                    torch.cuda.manual_seed_all(seed)
 
-                # Create config with different random seed for each run
+                # Create config with seed - fit() will call torch.manual_seed(seed) internally
                 run_cfg = ClassifierTrainConfig(
                     test_size=0.0,  # Use all training data
                     num_epochs=best_params.get("num_epochs", 50),
@@ -288,7 +284,7 @@ def train_and_evaluate_aggregation(
                 "best_val_accuracy": float(run.best_value),
             }
 
-            print(f"  Mean test accuracy: {mean_accuracy} ± {std_accuracy}")
+            print(f"  Mean test accuracy: {mean_accuracy:.3f} ± {std_accuracy:.3f}")
 
         except Exception as e:
             print(f"  ERROR: {e}")
