@@ -222,27 +222,35 @@ def train_and_evaluate_aggregation(
 
             best_params = run.best_params
 
-            # Train on training data only (no validation)
-            final_cfg = ClassifierTrainConfig(
-                test_size=0.0,  # Use all training data
-                num_epochs=best_params.get("num_epochs", 50),
-                batch_size=best_params.get("batch_size", 8),
-                learning_rate=best_params.get("lr", 1e-3),
-                monitor="accuracy",
-            )
-
             # Extract model hyperparameters
             model_kwargs = {k: v for k, v in best_params.items() if k in ["hidden_dim", "dropout"]}
 
             # Step 5: Train 10 times with different random initializations and collect test accuracies
             test_accuracies = []
             for run_idx in range(10):
+                # Set all random seeds for this run
+                seed = 42 + run_idx
+                torch.manual_seed(seed)
+                np.random.seed(seed)
+                if torch.cuda.is_available():
+                    torch.cuda.manual_seed_all(seed)
+
+                # Create config with different random seed for each run
+                run_cfg = ClassifierTrainConfig(
+                    test_size=0.0,  # Use all training data
+                    num_epochs=best_params.get("num_epochs", 50),
+                    batch_size=best_params.get("batch_size", 8),
+                    learning_rate=best_params.get("lr", 1e-3),
+                    monitor="accuracy",
+                    random_state=seed,  # Different seed for each run
+                )
+
                 # Create new classifier instance (new random initialization)
                 final_clf = MLPClassifier(device="cuda" if torch.cuda.is_available() else "cpu")
 
                 final_clf.fit(
                     X_train, y_train,
-                    config=final_cfg,
+                    config=run_cfg,  # Use run-specific config with different seed
                     optimizer=best_params.get("optimizer", "Adam"),
                     lr=best_params.get("lr", 1e-3),
                     optimizer_kwargs=best_params.get("optimizer_kwargs"),
@@ -259,7 +267,7 @@ def train_and_evaluate_aggregation(
                     accuracy = (predictions == y_test).float().mean().item()
                     test_accuracies.append(accuracy)
 
-                print(f"    Run {run_idx + 1}/10: {accuracy:.3f}")
+                print(f"    Run {run_idx + 1}/10: {accuracy}")
 
             # Calculate mean and std of test accuracies
             mean_accuracy = np.mean(test_accuracies)
@@ -280,7 +288,7 @@ def train_and_evaluate_aggregation(
                 "best_val_accuracy": float(run.best_value),
             }
 
-            print(f"  Mean test accuracy: {mean_accuracy:.3f} ± {std_accuracy:.3f}")
+            print(f"  Mean test accuracy: {mean_accuracy} ± {std_accuracy}")
 
         except Exception as e:
             print(f"  ERROR: {e}")
