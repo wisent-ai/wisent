@@ -1,6 +1,7 @@
 """
-Train classifiers on varying numbers of training examples (k = 5, 10, 20, 50, 100, 250)
-Test on 150 examples
+Train classifiers on varying numbers of training examples (k = 5, 10, 20, 50, 100, 200)
+- Training+Validation from training docs (250 available: k for training + 50 for validation)
+- Test from validation docs (56 available)
 Plot layer vs accuracy curves with binomial error bars
 """
 
@@ -84,8 +85,8 @@ def train_and_evaluate_for_k(
     """
     Train classifiers with k training examples and evaluate on num_test examples.
 
-    For k < 250: Training and validation come from training docs
-    For k = 250: Training from training docs, validation from validation docs
+    Training docs (250 available): k for training + 50 for validation
+    Validation docs (56 available): use for test
 
     Returns:
         Tuple of (layer_accuracies, layer_metadata)
@@ -97,63 +98,18 @@ def train_and_evaluate_for_k(
     print(f"TRAINING WITH k={k} examples, validating on {num_val}, testing on {num_test} examples")
     print("=" * 80)
 
-    # Step 1: Create training+validation activations matrix
-    # Special handling for k=250: load validation from validation docs
-    if k == 250:
-        # Step 1a: Load training pairs from training docs
-        print(f"\nCreating TRAINING activations matrix for {k} pairs from training docs...")
-        train_result = create_activations_matrix(
-            model_name=model_name,
-            aggregation_methods=[aggregation_method],
-            num_questions=k,
-            output_path=None,
-            preferred_doc="training"
-        )
+    # Step 1: Create training+validation activations matrix from training docs
+    print(f"\nCreating TRAINING+VALIDATION activations matrix for {k + num_val} pairs from training docs...")
+    train_val_result = create_activations_matrix(
+        model_name=model_name,
+        aggregation_methods=[aggregation_method],
+        num_questions=k + num_val,
+        output_path=None,
+        preferred_doc="training"
+    )
 
-        train_matrix = train_result["matrix"][aggregation_method.value]
-        num_layers = train_result["summary"]["num_layers"]
-
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
-            gc.collect()
-            time.sleep(10)
-
-        # Step 1b: Load validation pairs from validation docs
-        print(f"\nCreating VALIDATION activations matrix for {num_val} pairs from validation docs...")
-        val_result = create_activations_matrix(
-            model_name=model_name,
-            aggregation_methods=[aggregation_method],
-            num_questions=num_val,
-            output_path=None,
-            preferred_doc="validation"
-        )
-
-        val_matrix = val_result["matrix"][aggregation_method.value]
-
-        # Step 1c: Combine training and validation matrices
-        print(f"\nCombining training and validation matrices...")
-        train_val_matrix = {}
-        for layer_name in train_matrix.keys():
-            train_val_matrix[layer_name] = {
-                "positive": train_matrix[layer_name]["positive"] + val_matrix[layer_name]["positive"],
-                "negative": train_matrix[layer_name]["negative"] + val_matrix[layer_name]["negative"],
-            }
-
-        print(f"  Combined: {k + num_val} pairs total ({k} train + {num_val} val)")
-
-    else:
-        # For k < 250: Load all from training docs
-        print(f"\nCreating TRAINING+VALIDATION activations matrix for {k + num_val} pairs from training docs...")
-        train_val_result = create_activations_matrix(
-            model_name=model_name,
-            aggregation_methods=[aggregation_method],
-            num_questions=k + num_val,
-            output_path=None,
-            preferred_doc="training"
-        )
-
-        train_val_matrix = train_val_result["matrix"][aggregation_method.value]
-        num_layers = train_val_result["summary"]["num_layers"]
+    train_val_matrix = train_val_result["matrix"][aggregation_method.value]
+    num_layers = train_val_result["summary"]["num_layers"]
 
     # Additional GPU cleanup between train+val and test activation collection
     if torch.cuda.is_available():
@@ -161,14 +117,14 @@ def train_and_evaluate_for_k(
         gc.collect()
         time.sleep(10)
 
-    # Step 2: Create test activations matrix from test docs
-    print(f"\nCreating TEST activations matrix for {num_test} pairs from test docs...")
+    # Step 2: Create test activations matrix from validation docs
+    print(f"\nCreating TEST activations matrix for {num_test} pairs from validation docs...")
     test_result = create_activations_matrix(
         model_name=model_name,
         aggregation_methods=[aggregation_method],
         num_questions=num_test,
         output_path=None,
-        preferred_doc="test"
+        preferred_doc="validation"
     )
 
     test_matrix = test_result["matrix"][aggregation_method.value]
@@ -180,13 +136,9 @@ def train_and_evaluate_for_k(
     val_size = num_val / (k + num_val)
 
     print(f"\nData split:")
-    if k == 250:
-        print(f"  Training: {k} pairs ({k * 2} activations) from training docs")
-        print(f"  Validation: {num_val} pairs ({num_val * 2} activations) from validation docs")
-    else:
-        print(f"  Training: {k} pairs ({k * 2} activations) from training docs")
-        print(f"  Validation: {num_val} pairs ({num_val * 2} activations) from training docs")
-    print(f"  Test: {num_test} pairs ({num_test * 2} activations) from test docs")
+    print(f"  Training: {k} pairs ({k * 2} activations) from training docs")
+    print(f"  Validation: {num_val} pairs ({num_val * 2} activations) from training docs")
+    print(f"  Test: {num_test} pairs ({num_test * 2} activations) from validation docs")
     print(f"  Validation split for HPO: {val_size*100:.1f}%")
 
     # Step 3: Train and evaluate classifier for each layer
@@ -445,8 +397,8 @@ if __name__ == "__main__":
     # Configuration
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
     aggregation_method = ActivationAggregationStrategy.CONTINUATION_TOKEN
-    num_test = 150
-    k_values = [5, 10, 20, 50, 100, 250]
+    num_test = 56  # All 56 samples from validation docs
+    k_values = [5, 10, 20, 50, 100, 200]  # Max k=200 so k+50=250 fits in training docs
     n_trials = 40
 
     # Store results: results[k] = {layer_name: accuracy}
@@ -484,9 +436,6 @@ if __name__ == "__main__":
         accuracies_list = list(layer_accuracies.values())
         best_layer = max(layer_accuracies.keys(), key=lambda l: layer_accuracies[l])
 
-        # Determine val_source based on k
-        val_source = "validation" if k == 250 else "training"
-
         metadata = {
             "metadata": {
                 "timestamp": datetime.now().isoformat(),
@@ -501,9 +450,8 @@ if __name__ == "__main__":
                 "train_size": k,
                 "val_size": 50,
                 "test_size": num_test,
-                "train_source": "training",
-                "val_source": val_source,
-                "test_source": "test",
+                "train_val_source": "training",
+                "test_source": "validation",
             },
             "results_by_layer": layer_metadata,
             "summary": {

@@ -1,8 +1,8 @@
 from lm_eval.tasks import get_task_dict
 
 # Load task
-tasks = get_task_dict(["wikitext"])
-task = tasks["wikitext"]
+tasks = get_task_dict(["boolq"])
+task = tasks["boolq"]
 
 # Try different splits in order: validation, test, train
 docs = []

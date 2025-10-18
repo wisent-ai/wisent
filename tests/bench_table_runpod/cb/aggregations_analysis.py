@@ -2,11 +2,10 @@
 Analyze classifier performance across different aggregation strategies.
 
 For each aggregation method:
-- Train: 250 pairs (500 activations) from training docs
-- Validation: 50 pairs (100 activations) from validation docs
-- Test: 150 pairs (300 activations) from test docs
-
-Train and validation are combined into train_val (300 pairs total) for HPO.
+- Train+Val: 250 pairs (500 activations) from training docs
+  - Training: 200 pairs (400 activations)
+  - Validation: 50 pairs (100 activations)
+- Test: 56 pairs (112 activations) from validation docs
 
 Creates individual plots for each aggregation method and one combined plot.
 """
@@ -104,63 +103,35 @@ def train_and_evaluate_aggregation(
 
     print("=" * 80)
     print(f"AGGREGATION: {aggregation_method.value}")
-    print(f"TRAIN: {num_train} pairs, VAL: {num_val} pairs, TEST: {num_test} pairs")
+    print(f"TRAIN+VAL: {num_train + num_val} pairs, TEST: {num_test} pairs")
     print("=" * 80)
 
-    # Step 1a: Create training activations matrix from training docs
-    print(f"\nCreating TRAINING activations matrix for {num_train} pairs from training docs...")
-    train_result = create_activations_matrix(
+    # Step 1: Create train+val activations matrix from training docs
+    print(f"\nCreating TRAIN+VAL activations matrix for {num_train + num_val} pairs from training docs...")
+    train_val_result = create_activations_matrix(
         model_name=model_name,
         aggregation_methods=[aggregation_method],
-        num_questions=num_train,
+        num_questions=num_train + num_val,
         output_path=None,
         preferred_doc="training"
     )
 
-    train_matrix = train_result["matrix"][aggregation_method.value]
-    num_layers = train_result["summary"]["num_layers"]
+    train_val_matrix = train_val_result["matrix"][aggregation_method.value]
+    num_layers = train_val_result["summary"]["num_layers"]
 
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
         gc.collect()
         time.sleep(10)
 
-    # Step 1b: Create validation activations matrix from validation docs
-    print(f"\nCreating VALIDATION activations matrix for {num_val} pairs from validation docs...")
-    val_result = create_activations_matrix(
-        model_name=model_name,
-        aggregation_methods=[aggregation_method],
-        num_questions=num_val,
-        output_path=None,
-        preferred_doc="validation"
-    )
-
-    val_matrix = val_result["matrix"][aggregation_method.value]
-
-    # Step 1c: Combine training and validation matrices
-    print(f"\nCombining training and validation matrices...")
-    train_val_matrix = {}
-    for layer_name in train_matrix.keys():
-        train_val_matrix[layer_name] = {
-            "positive": train_matrix[layer_name]["positive"] + val_matrix[layer_name]["positive"],
-            "negative": train_matrix[layer_name]["negative"] + val_matrix[layer_name]["negative"],
-        }
-
-    print(f"  Combined: {num_train + num_val} pairs total ({num_train} train + {num_val} val)")
-
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        gc.collect()
-        time.sleep(10)
-
-    # Step 2: Create test activations matrix from test docs
-    print(f"\nCreating TEST activations matrix for {num_test} pairs...")
+    # Step 2: Create test activations matrix from validation docs
+    print(f"\nCreating TEST activations matrix for {num_test} pairs from validation docs...")
     test_result = create_activations_matrix(
         model_name=model_name,
         aggregation_methods=[aggregation_method],
         num_questions=num_test,
         output_path=None,
-        preferred_doc="test"
+        preferred_doc="validation"
     )
 
     test_matrix = test_result["matrix"][aggregation_method.value]
@@ -169,10 +140,10 @@ def train_and_evaluate_aggregation(
     val_size = num_val / (num_train + num_val)
 
     print(f"\nData split:")
-    print(f"  Training: {num_train} pairs ({num_train * 2} activations) from training docs")
-    print(f"  Validation: {num_val} pairs ({num_val * 2} activations) from validation docs")
-    print(f"  Test: {num_test} pairs ({num_test * 2} activations) from test docs")
-    print(f"  Train+Val combined: {num_train + num_val} pairs for HPO")
+    print(f"  Train+Val: {num_train + num_val} pairs ({(num_train + num_val) * 2} activations) from training docs")
+    print(f"    - Training: {num_train} pairs ({num_train * 2} activations)")
+    print(f"    - Validation: {num_val} pairs ({num_val * 2} activations)")
+    print(f"  Test: {num_test} pairs ({num_test * 2} activations) from validation docs")
     print(f"  Validation split for HPO: {val_size*100:.1f}%")
 
     # Step 3: Train and evaluate classifier for each layer
@@ -479,9 +450,9 @@ def plot_combined_aggregations(
 if __name__ == "__main__":
     # Configuration
     model_name = "meta-llama/Llama-3.2-3B-Instruct"
-    num_train = 250  # 500 activations
-    num_val = 56    # 112 activations
-    num_test = 250   # 500 activations
+    num_train = 200  # 400 activations
+    num_val = 50    # 100 activations
+    num_test = 56   # 112 activations
     n_trials = 40
 
     # All aggregation strategies
@@ -543,9 +514,8 @@ if __name__ == "__main__":
                 "train_size": num_train,
                 "val_size": num_val,
                 "test_size": num_test,
-                "train_source": "training",
-                "val_source": "validation",
-                "test_source": "test",
+                "train_val_source": "training",
+                "test_source": "validation",
             },
             "results_by_layer": layer_metadata,
             "summary": {

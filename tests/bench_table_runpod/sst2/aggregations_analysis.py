@@ -124,7 +124,7 @@ def train_and_evaluate_aggregation(
         gc.collect()
         time.sleep(10)
 
-    # Step 2: Create test activations matrix from test docs
+    # Step 2: Create test activations matrix from test docs - fallback to validation docs which is ok
     print(f"\nCreating TEST activations matrix for {num_test} pairs...")
     test_result = create_activations_matrix(
         model_name=model_name,

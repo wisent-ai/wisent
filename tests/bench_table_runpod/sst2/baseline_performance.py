@@ -16,13 +16,13 @@ import os
 from wisent_guard.core.models.wisent_model import WisentModel
 
 
-def load_sst2_questions(limit, preferred_doc: str = "test"):
+def load_sst2_questions(limit, preferred_doc: str = "validation"):
     """Load first limit SST2 questions from specified document source.
 
     Args:
         limit: Number of questions to load for evaluation
-        preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
-                      Default is "test" for test set evaluation.
+        preferred_doc: Document source ("validation", "test", "training", "fewshot")
+                      Default is "validation". Only this source will be used, no fallback.
     """
     print(f"Loading SST2 task from {preferred_doc} docs...")
 
@@ -37,38 +37,25 @@ def load_sst2_questions(limit, preferred_doc: str = "test"):
         "fewshot": ("has_fewshot_docs", "fewshot_docs"),
     }
 
-    # Build preferred order with preferred_doc first
-    default_order = [
-        ("has_validation_docs", "validation_docs"),
-        ("has_test_docs", "test_docs"),
-        ("has_training_docs", "training_docs"),
-        ("has_fewshot_docs", "fewshot_docs"),
-    ]
+    if preferred_doc not in doc_source_map:
+        raise ValueError(f"Invalid doc source: {preferred_doc}. Must be one of {list(doc_source_map.keys())}")
 
-    if preferred_doc in doc_source_map:
-        preferred_source = doc_source_map[preferred_doc]
-        other_sources = [s for s in default_order if s != preferred_source]
-        preferred_sources = [preferred_source] + other_sources
-    else:
-        preferred_sources = default_order
-
+    has_method, docs_method = doc_source_map[preferred_doc]
     docs = []
-    for has_method, docs_method in preferred_sources:
 
-        if hasattr(sst2_task, has_method):
-            has_attr = getattr(sst2_task, has_method)
-            has_docs = has_attr() if callable(has_attr) else has_attr
+    if hasattr(sst2_task, has_method):
+        has_attr = getattr(sst2_task, has_method)
+        has_docs = has_attr() if callable(has_attr) else has_attr
 
-            if has_docs and hasattr(sst2_task, docs_method):
-                docs_func = getattr(sst2_task, docs_method)
-                if callable(docs_func):
-                    docs = list(docs_func())
-                    if docs:
-                        print(f"Loaded from {docs_method}")
-                        break
+        if has_docs and hasattr(sst2_task, docs_method):
+            docs_func = getattr(sst2_task, docs_method)
+            if callable(docs_func):
+                docs = list(docs_func())
+                if docs:
+                    print(f"Loaded from {docs_method}")
 
     if not docs:
-        raise RuntimeError("Could not load SST2 documents from lm-eval task")
+        raise RuntimeError(f"Could not load SST2 documents from {preferred_doc} source")
 
     docs = docs[:limit]
 
@@ -175,7 +162,7 @@ def evaluate_baseline_performance(
     print(f"Generation params: max_new_tokens={max_new_tokens}")
     print("=" * 80)
 
-    questions = load_sst2_questions(limit=num_questions, preferred_doc="test")
+    questions = load_sst2_questions(limit=num_questions, preferred_doc="validation")
 
     if len(questions) < num_questions:
         print(f"Warning: Only loaded {len(questions)} questions, expected {num_questions}")
@@ -351,7 +338,7 @@ if __name__ == "__main__":
 
     results = evaluate_baseline_performance(
         model_name="meta-llama/Llama-3.2-3B-Instruct",
-        num_questions=250,
+        num_questions=150,
         max_new_tokens=700,
         output_path="/workspace/results/sst2/sst2_baseline_results.json",
     )

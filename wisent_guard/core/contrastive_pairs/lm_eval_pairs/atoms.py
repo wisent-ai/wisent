@@ -134,6 +134,7 @@ class LMEvalBenchmarkExtractor(ABC):
             if cls._has_true(lm_eval_task_data, has_method) and cls._has_callable(
                 lm_eval_task_data, docs_method
             ):
+                print(f"loaded from {docs_method}")
                 docs_iter = getattr(lm_eval_task_data, docs_method)()
                 docs_list = cls._coerce_docs_to_dicts(docs_iter, max_items)
                 if docs_list:
