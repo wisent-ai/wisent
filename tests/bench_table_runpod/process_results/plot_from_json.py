@@ -55,13 +55,19 @@ def load_train_size_results(benchmark: str, base_dir: str) -> Dict[int, Dict[str
     # Each benchmark used a different aggregation method
     aggregation_map = {
         'boolq': 'mean_pooling',
-        'cb': 'last_token',
+        'cb': 'max_pooling',
         'gsm8k': 'last_token',
         'sst2': 'choice_token',
     }
 
     aggregation = aggregation_map.get(benchmark, 'mean_pooling')
-    k_values = [5, 10, 20, 50, 100, 250]
+
+    # CB has a smaller dataset, so it uses k=200 instead of k=250
+    k_values_map = {
+        'cb': [5, 10, 20, 50, 100, 200],
+        'default': [5, 10, 20, 50, 100, 250]
+    }
+    k_values = k_values_map.get(benchmark, k_values_map['default'])
     results = {}
 
     for k in k_values:
@@ -134,7 +140,7 @@ def plot_train_size_combined(benchmark: str, results: Dict[int, Dict[str, float]
     # Aggregation method used for each benchmark
     aggregation_map = {
         'boolq': 'mean_pooling',
-        'cb': 'last_token',
+        'cb': 'max_pooling',
         'gsm8k': 'last_token',
         'sst2': 'choice_token',
     }
