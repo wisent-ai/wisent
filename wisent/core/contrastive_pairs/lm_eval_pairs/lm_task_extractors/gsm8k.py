@@ -12,28 +12,30 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["TruthfulQA_MC1Extractor"]
+__all__ = ["GSM8KExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for the TruthfulQA_MC1 benchmark."""
+class GSM8KExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for the GSM8K benchmark."""
 
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from TruthfulQA_MC1 docs.
+        Build contrastive pairs from GSM8K docs.
 
-        TruthfulQA_MC1 schema:
+        GSM8K schema:
             - question: str
-            - mc1_targets: dict
-            
+            - answer: str
+
         Args:
-            lm_eval_task_data: lm-eval task instance for TruthfulQA_MC1.
+            lm_eval_task_data: lm-eval task instance for GSM8K.
             limit: Optional maximum number of pairs to produce.
+            preferred_doc: Optional preferred document source ("validation", "test", "training", "fewshot").
 
         Returns:
             A list of ContrastivePair objects.
@@ -41,7 +43,7 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
 
@@ -56,42 +58,42 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid TruthfulQA_MC1 pairs extracted", extra={"task": task_name})
+            log.warning("No valid GSM8K pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single TruthfulQA_MC1 doc into a ContrastivePair, if possible.
+        Convert a single GSM8K doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
             question = str(doc.get("question", "")).strip()
-            mc1_targets = doc.get("mc1_targets")
-            options = mc1_targets["choices"]
-            labels = mc1_targets["labels"]
+            answer = str(doc.get("answer", "")).strip()
 
-            if not question or not options or not labels:
+            if not question or not answer:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
             
-            # Find correct answer
-            for i in range(len(labels)):
-                if labels[i] == 1:
-                    answer_idx = i
+            numerical_answer = answer
+            if "####" not in answer:
+                log.debug("Skipping doc due to missing numerical answer", extra={"doc": doc})
+                return None
+            numerical_answer = answer.split("####")[-1].strip()
             
-            correct = options[answer_idx]
-            incorrect = options[(answer_idx+1)%len(options)]
+            correct = numerical_answer
+            incorrect_val = float(numerical_answer.replace(',', '')) + 1
+            incorrect = str(int(incorrect_val)) if incorrect_val == int(incorrect_val) else str(incorrect_val)
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
 
             metadata = {
-                "label": "truthfulqa_mc1",
+                "label": "gsm8k",
             }
 
             return self._build_pair(

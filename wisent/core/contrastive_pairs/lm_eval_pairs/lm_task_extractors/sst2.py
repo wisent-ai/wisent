@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 from typing import Any, TYPE_CHECKING
 
 from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair
@@ -12,28 +11,30 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["TruthfulQA_MC1Extractor"]
+__all__ = ["SST2Extractor"]
 _LOG = setup_logger(__name__)
 
 
-class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for the TruthfulQA_MC1 benchmark."""
+class SST2Extractor(LMEvalBenchmarkExtractor):
+    """Extractor for the SST2 benchmark."""
 
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from TruthfulQA_MC1 docs.
+        Build contrastive pairs from SST2 docs.
 
-        TruthfulQA_MC1 schema:
-            - question: str
-            - mc1_targets: dict
-            
+        SST2 schema:
+            - sentence: str
+            - label: 0 or 1
+
         Args:
-            lm_eval_task_data: lm-eval task instance for TruthfulQA_MC1.
+            lm_eval_task_data: lm-eval task instance for SST2.
             limit: Optional maximum number of pairs to produce.
+            preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
 
         Returns:
             A list of ContrastivePair objects.
@@ -41,7 +42,7 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
 
@@ -56,42 +57,35 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid TruthfulQA_MC1 pairs extracted", extra={"task": task_name})
+            log.warning("No valid SST2 pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single TruthfulQA_MC1 doc into a ContrastivePair, if possible.
+        Convert a single SST2 doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = str(doc.get("question", "")).strip()
-            mc1_targets = doc.get("mc1_targets")
-            options = mc1_targets["choices"]
-            labels = mc1_targets["labels"]
+            sentence1 = str(doc.get("sentence", "")).strip()
+            label = doc.get("label")
 
-            if not question or not options or not labels:
+            if not sentence1 or label not in {0, 1}:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
-            
-            # Find correct answer
-            for i in range(len(labels)):
-                if labels[i] == 1:
-                    answer_idx = i
-            
-            correct = options[answer_idx]
-            incorrect = options[(answer_idx+1)%len(options)]
+        
+            formatted_question = f"{sentence1}\nQuestion: Is this sentence positive or negative?"
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            correct = "Positive" if label == 1 else "Negative"
+            incorrect = "Negative" if label == 1 else "Positive"
 
             metadata = {
-                "label": "truthfulqa_mc1",
+                "label": "sst2",
             }
 
             return self._build_pair(
