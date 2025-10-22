@@ -24,7 +24,7 @@ import torch
 WISENT_PATH = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(WISENT_PATH))
 
-from wisent_guard.core.steering_methods.caa import CAA
+from wisent.core.steering_methods.caa import CAA
 
 from ..utils import aggressive_memory_cleanup
 from .caa_utils import tokenize_llama_base_format

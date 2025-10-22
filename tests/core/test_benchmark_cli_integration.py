@@ -8,9 +8,9 @@ Tests the actual CLI commands that users run, validating:
 4. Full execution (when model is pre-configured)
 
 Commands tested:
-1. Basic classifier: `python -m wisent_guard tasks gsm8k --model TEST_MODEL --layer 5 --limit 10`
-2. Steering: `python -m wisent_guard tasks gsm8k --model TEST_MODEL --steering-mode --steering-method CAA`
-3. Coding tasks: `python -m wisent_guard tasks mbpp_plus --model TEST_MODEL --layer 4 --limit 10 --trust-code-execution`
+1. Basic classifier: `python -m wisent tasks gsm8k --model TEST_MODEL --layer 5 --limit 10`
+2. Steering: `python -m wisent tasks gsm8k --model TEST_MODEL --steering-mode --steering-method CAA`
+3. Coding tasks: `python -m wisent tasks mbpp_plus --model TEST_MODEL --layer 4 --limit 10 --trust-code-execution`
 
 This validates the complete pipeline from CLI parsing to model execution.
 
@@ -32,7 +32,7 @@ from pathlib import Path
 import pytest
 
 # Import allowed tasks from centralized configuration
-from wisent_guard.parameters.task_config import (
+from wisent.parameters.task_config import (
     SANDBOX_TESTS_ALLOWED_TASKS,
     TEST_ALLOWED_TASKS as ALLOWED_TASKS,
 )
@@ -66,7 +66,7 @@ class TestBenchmarkCLIIntegration:
         os.environ["TOKENIZERS_PARALLELISM"] = "false"
 
         # Create temporary directory for test outputs
-        self.temp_dir = tempfile.mkdtemp(prefix="wisent_guard_test_")
+        self.temp_dir = tempfile.mkdtemp(prefix="wisent_test_")
         self.original_cwd = os.getcwd()
 
     def teardown_method(self):
@@ -89,13 +89,13 @@ class TestBenchmarkCLIIntegration:
         """Run wisent-guard CLI command and return result.
 
         Args:
-            cmd_args: Command arguments (without 'python -m wisent_guard')
+            cmd_args: Command arguments (without 'python -m wisent')
             timeout: Timeout in seconds
 
         Returns:
             CompletedProcess with stdout, stderr, returncode
         """
-        full_cmd = [sys.executable, "-m", "wisent_guard", *cmd_args]
+        full_cmd = [sys.executable, "-m", "wisent", *cmd_args]
 
         print(f"🔧 Running: {' '.join(full_cmd)}")
 
@@ -111,7 +111,7 @@ class TestBenchmarkCLIIntegration:
                 text=True,
                 timeout=timeout,
                 cwd=self.temp_dir,  # Run in temporary directory to avoid file conflicts
-                env=env,  # Include PYTHONPATH so subprocess can find wisent_guard
+                env=env,  # Include PYTHONPATH so subprocess can find wisent
             )
 
             print(f"📤 Return code: {result.returncode}")
@@ -337,7 +337,7 @@ class TestBenchmarkCLIIntegration:
     def test_basic_classifier_full_execution(self, task_name):
         """SLOW TEST: Full execution of basic classifier functionality on all allowed tasks.
 
-        Command: python -m wisent_guard tasks {task_name} --model TEST_MODEL --layer 5 --limit 3
+        Command: python -m wisent tasks {task_name} --model TEST_MODEL --layer 5 --limit 3
 
         This test downloads models and processes data, making it slow (~60s per task).
         Timeouts are treated as passes since they indicate the CLI started successfully.
@@ -350,7 +350,7 @@ class TestBenchmarkCLIIntegration:
     def test_steering_functionality_full_execution(self, task_name):
         """SLOW TEST: Full execution of steering functionality on all allowed tasks.
 
-        Command: python -m wisent_guard tasks {task_name} --model TEST_MODEL --layer 5 --limit 3
+        Command: python -m wisent tasks {task_name} --model TEST_MODEL --layer 5 --limit 3
                  --steering-mode --steering-method CAA --steering-strength 1.5
 
         This test downloads models and processes data with steering, making it slow (~60s per task).
@@ -366,7 +366,7 @@ class TestBenchmarkCLIIntegration:
     def test_basic_classifier_full_execution_sandbox(self, task_name):
         """SANDBOX TEST: Full execution of basic classifier functionality on mbpp_plus coding task.
 
-        Command: python -m wisent_guard tasks mbpp_plus --model TEST_MODEL --layer 4 --limit 10 --trust-code-execution
+        Command: python -m wisent tasks mbpp_plus --model TEST_MODEL --layer 4 --limit 10 --trust-code-execution
 
         This test downloads models and processes data, making it slow (~60s per task).
         Timeouts are treated as passes since they indicate the CLI started successfully.
@@ -383,7 +383,7 @@ class TestBenchmarkCLIIntegration:
     def test_steering_functionality_full_execution_sandbox(self, task_name):
         """SANDBOX TEST: Full execution of steering functionality on mbpp_plus coding task.
 
-        Command: python -m wisent_guard tasks mbpp_plus --model TEST_MODEL --layer 4 --limit 10
+        Command: python -m wisent tasks mbpp_plus --model TEST_MODEL --layer 4 --limit 10
                  --steering-mode --steering-method CAA --steering-strength 1.5 --trust-code-execution
 
         This test downloads models and processes data with steering, making it slow (~60s per task).

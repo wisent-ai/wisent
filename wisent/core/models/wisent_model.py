@@ -95,7 +95,7 @@ class WisentModel:
         elif self.device == "cuda":
             load_kwargs["dtype"] = torch.float16
             load_kwargs["device_map"] = "auto"
-            load_kwargs["attn_implementation"] = "flash_attention_2"  # Use flash attention for CUDA
+            load_kwargs["attn_implementation"] = "flash_attention_2"  # Uses flash-attn for 2-4x speedup
         else:
             load_kwargs["dtype"] = torch.float32
             load_kwargs["device_map"] = None

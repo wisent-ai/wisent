@@ -1,4 +1,4 @@
-COMMAND: python -m wisent_guard.cli tasks truthfulqa_mc1 --model meta-llama/Llama-3.1-8B-Instruct --layer 15 --limit 5 --classifier-type logistic --verbose
+COMMAND: python -m wisent.cli tasks truthfulqa_mc1 --model meta-llama/Llama-3.1-8B-Instruct --layer 15 --limit 5 --classifier-type logistic --verbose
 RETURN CODE: 0
 STDOUT:
 
@@ -237,5 +237,5 @@ Loading checkpoint shards: 100%|██████████| 4/4 [00:21<00:00
 /opt/homebrew/Caskroom/miniforge/base/lib/python3.10/site-packages/lm_eval/utils.py:162: RuntimeWarning: invalid value encountered in subtract
   e_x = np.exp(x - np.max(x))
 2025-07-04 13:03:07,056 - __main__ - INFO - Pipeline completed for truthfulqa_mc1
-2025-07-04 13:03:07,073 - wisent_guard.core.save_results - ERROR - Failed to save results to ./results: [Errno 21] Is a directory: './results'
+2025-07-04 13:03:07,073 - wisent.core.save_results - ERROR - Failed to save results to ./results: [Errno 21] Is a directory: './results'
 

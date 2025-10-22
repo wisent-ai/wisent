@@ -22,7 +22,7 @@ data_loader_rot.use(data_loader_name)
 print(f"Using data loader: {data_loader_name}")
 
 # 4. Load data from the file
-absolute_path = "./wisent_guard/cli/cli_examples/custom_dataset.json"
+absolute_path = "./wisent/cli/cli_examples/custom_dataset.json"
 data = data_loader_rot.load(path=absolute_path, limit=5)
 
 print("Sample loaded training pairs:")

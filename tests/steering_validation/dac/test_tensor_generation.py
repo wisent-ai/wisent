@@ -25,9 +25,9 @@ WISENT_PATH = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(WISENT_PATH))
 
 # Import wisent-guard DAC implementation
-from wisent_guard.core.contrastive_pairs import ContrastivePair, ContrastivePairSet
-from wisent_guard.core.response import NegativeResponse, PositiveResponse
-from wisent_guard.core.steering_methods_tensor.dac_attention import DAC
+from wisent.core.contrastive_pairs import ContrastivePair, ContrastivePairSet
+from wisent.core.response import NegativeResponse, PositiveResponse
+from wisent.core.steering_methods_tensor.dac_attention import DAC
 
 # Add current directory to path for local imports
 sys.path.insert(0, str(Path(__file__).parent))

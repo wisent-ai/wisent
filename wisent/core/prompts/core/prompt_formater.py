@@ -110,14 +110,14 @@ class PromptFormatter:
             RuntimeError: If the 'strategies' package is not found or no strategies are discovered.
         """
         try:
-            import wisent_guard.core.prompts.prompt_stratiegies as strategies_pkg
+            import wisent.core.prompts.prompt_stratiegies as strategies_pkg
         except ModuleNotFoundError as exc:
             raise RuntimeError(
                 "The 'strategies' package was not found. "
                 "Create a 'strategies' directory with an empty __init__.py."
             ) from exc
 
-        import wisent_guard.core.prompts.prompt_stratiegies as strategies_pkg
+        import wisent.core.prompts.prompt_stratiegies as strategies_pkg
 
         for module_info in pkgutil.iter_modules(strategies_pkg.__path__):
             name = module_info.name

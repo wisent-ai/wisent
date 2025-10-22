@@ -16,8 +16,8 @@ This directory contains validation tests for steering method implementations in 
    - Generate steering vectors
    - Generate steering examples
    - Produce other tests if needed
-3. Create a steering vector/tensor test - compare the vector/tensor created with the original implementation against the wisent_guard implementation.
-4. Create a steering generation test - compare generation made with the original repository against the wisent_guard implementation.
+3. Create a steering vector/tensor test - compare the vector/tensor created with the original implementation against the wisent implementation.
+4. Create a steering generation test - compare generation made with the original repository against the wisent implementation.
 
 I strongly advise splitting the implementation into these phases.
 

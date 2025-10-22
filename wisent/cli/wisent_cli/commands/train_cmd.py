@@ -285,7 +285,7 @@ def train(ctx: typer.Context, params: List[str] = typer.Argument(None)):
     from wisent.cli.data_loaders.data_loader_rotator import DataLoaderRotator  # type: ignore
     if loaders_location:
         DataLoaderRotator.discover_loaders(loaders_location)
-    dl_rot = DataLoaderRotator(loader=loader, loaders_location=loaders_location or "wisent_guard.core.data_loaders.loaders")
+    dl_rot = DataLoaderRotator(loader=loader, loaders_location=loaders_location or "wisent.core.data_loaders.loaders")
     typer.echo(f"[+] Using data loader: {loader or '(default)'}")
     load_result = dl_rot.load(**loader_kwargs)
     pair_set = load_result["train_qa_pairs"]

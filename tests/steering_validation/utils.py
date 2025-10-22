@@ -2,7 +2,7 @@ import gc
 
 import torch
 
-from wisent_guard.core.utils.device import empty_device_cache, resolve_default_device
+from wisent.core.utils.device import empty_device_cache, resolve_default_device
 
 
 def aggressive_memory_cleanup():

@@ -10,7 +10,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from wisent_guard.cli.cli_benchmarks import AVAILABLE_BENCHMARKS
+from wisent.cli.cli_benchmarks import AVAILABLE_BENCHMARKS
 
 # Configuration matching our MPS fix testing
 MODEL = "meta-llama/Llama-3.1-8B-Instruct"
@@ -26,7 +26,7 @@ def test_steering_benchmark(task_name: str, verbose: bool = False):
     try:
         # Use cli_steering_test.py directly
         cmd = [
-            "python", "wisent_guard/cli_bricks/cli_tests/cli_steering_test.py",
+            "python", "wisent/cli_bricks/cli_tests/cli_steering_test.py",
             "--model", MODEL,
             "--tasks", task_name,
             "--layer", str(LAYER),

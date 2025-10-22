@@ -10,7 +10,7 @@ import tempfile
 import pytest
 import torch
 
-from wisent_guard.core.classifier import Classifier
+from wisent.core.classifier import Classifier
 
 
 class TestClassifier:

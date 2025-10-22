@@ -1,4 +1,4 @@
-COMMAND: python -m wisent_guard.cli tasks glue --model meta-llama/Llama-3.1-8B-Instruct --layer 15 --limit 5 --classifier-type logistic --verbose
+COMMAND: python -m wisent.cli tasks glue --model meta-llama/Llama-3.1-8B-Instruct --layer 15 --limit 5 --classifier-type logistic --verbose
 RETURN CODE: 0
 STDOUT:
 
@@ -952,5 +952,5 @@ Loading checkpoint shards: 100%|██████████| 4/4 [00:12<00:00
 2025-07-04 18:08:15,624 - filelock - DEBUG - Lock 23989168560 released on /Users/lukaszbartoszcze/.cache/huggingface/datasets/glue/rte/0.0.0/bcdcba79d07bc864c1c254ccfcedcce55bcc9a8c_builder.lock
 2025-07-04 18:08:15,628 - lm_eval.api.task - DEBUG - No custom filters defined. Using default 'take_first' filter for handling repeats.
 2025-07-04 18:08:32,052 - __main__ - INFO - Pipeline completed for glue
-2025-07-04 18:08:32,069 - wisent_guard.core.save_results - ERROR - Failed to save results to ./results: [Errno 21] Is a directory: './results'
+2025-07-04 18:08:32,069 - wisent.core.save_results - ERROR - Failed to save results to ./results: [Errno 21] Is a directory: './results'
 

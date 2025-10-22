@@ -331,7 +331,7 @@ def handle_configurable_group_task(task_name: str):
     # Look for existing YAML files in common directories
     yaml_candidates = []
     search_dirs = [
-        "wisent_guard/parameters/tasks",
+        "wisent/parameters/tasks",
         ".",
         "tasks",
         "configs"
@@ -891,7 +891,7 @@ def save_custom_task_yaml(task_name: str, yaml_content: str) -> Optional[str]:
     """
     try:
         # Create the tasks directory if it doesn't exist
-        tasks_dir = os.path.join("wisent_guard", "parameters", "tasks")
+        tasks_dir = os.path.join("wisent", "parameters", "tasks")
         os.makedirs(tasks_dir, exist_ok=True)
         
         # Save the YAML content to a file
@@ -993,7 +993,7 @@ def create_flan_held_in_files() -> Optional[str]:
     """
     try:
         # Create the tasks directory
-        tasks_dir = os.path.join("wisent_guard", "parameters", "tasks")
+        tasks_dir = os.path.join("wisent", "parameters", "tasks")
         os.makedirs(tasks_dir, exist_ok=True)
         
         # Create the template file first

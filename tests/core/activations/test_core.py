@@ -11,8 +11,8 @@ import pytest
 import torch
 from transformers import AutoModel, AutoTokenizer
 
-from wisent_guard.core.activations import ActivationAggregationStrategy, Activations
-from wisent_guard.core.layer import Layer
+from wisent.core.activations import ActivationAggregationStrategy, Activations
+from wisent.core.layer import Layer
 
 
 class TestActivations:
