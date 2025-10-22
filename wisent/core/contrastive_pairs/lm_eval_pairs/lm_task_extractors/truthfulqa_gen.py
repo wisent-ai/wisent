@@ -12,12 +12,12 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["TruthfulQA_MC1Extractor"]
+__all__ = ["TruthfulQA_GenExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for the TruthfulQA_MC1 benchmark."""
+class TruthfulQA_GenExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for the TruthfulQA_Gen benchmark."""
 
     def extract_contrastive_pairs(
         self,
@@ -25,14 +25,15 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from TruthfulQA_MC1 docs.
+        Build contrastive pairs from TruthfulQA_Gen docs.
 
-        TruthfulQA_MC1 schema:
+        TruthfulQA_Gen schema:
             - question: str
-            - mc1_targets: dict
+            - best_answer: str
+            - incorrect_answers: list
             
         Args:
-            lm_eval_task_data: lm-eval task instance for TruthfulQA_MC1.
+            lm_eval_task_data: lm-eval task instance for TruthfulQA_Gen.
             limit: Optional maximum number of pairs to produce.
 
         Returns:
@@ -56,42 +57,36 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid TruthfulQA_MC1 pairs extracted", extra={"task": task_name})
+            log.warning("No valid TruthfulQA_MC2 pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single TruthfulQA_MC1 doc into a ContrastivePair, if possible.
+        Convert a single TruthfulQA_Gen doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
             question = str(doc.get("question", "")).strip()
-            mc1_targets = doc.get("mc1_targets")
-            options = mc1_targets["choices"]
-            labels = mc1_targets["labels"]
+            best_answer = str(doc.get("best_answer", "")).strip()
+            incorrect_answers = doc.get("incorrect_answers", [])
 
-            if not question or not options or not labels:
+            if not question or not best_answer or not incorrect_answers:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
             
-            # Find correct answer
-            for i in range(len(labels)):
-                if labels[i] == 1:
-                    answer_idx = i
-            
-            correct = options[answer_idx]
-            incorrect = options[(answer_idx+1)%len(options)]
+            correct = best_answer
+            incorrect = incorrect_answers[0]
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
 
             metadata = {
-                "label": "truthfulqa_mc1",
+                "label": "truthfulqa_gen",
             }
 
             return self._build_pair(
