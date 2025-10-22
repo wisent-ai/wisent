@@ -337,7 +337,7 @@ class WisentModel:
     @torch.inference_mode()
     def generate(
         self,
-        inputs: list[list[ChatMessage]],
+        inputs: list[list[ChatMessage]] | str,
         max_new_tokens: int = 128,
         temperature: float = 0.7,
         top_p: float = 0.95,
@@ -346,6 +346,7 @@ class WisentModel:
         use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
         enable_thinking: bool = True,
+        prompt_is_formatted: bool = False,
         **gen_kwargs: Any,
     ) -> list[str]:
         """
@@ -353,7 +354,7 @@ class WisentModel:
 
         attributes:
             inputs:
-                list of chat messages (each a list of {'role','content'} dicts).
+                list of chat messages (each a list of {'role','content'} dicts) OR pre-formatted string.
             max_new_tokens:
                 max tokens to generate (beyond the prompt).
             temperature:
@@ -371,6 +372,8 @@ class WisentModel:
                 If None, uses the internal plan.
             enable_thinking:
                 If False, disable thinking/reasoning mode (prevents <think> tags for supported models like Qwen).
+            prompt_is_formatted:
+                If True, inputs is a pre-formatted string with chat template already applied.
             **gen_kwargs:
                 additional kwargs passed to 'model.generate()'.
 
@@ -449,7 +452,22 @@ class WisentModel:
         if use_steering:
             self.apply_steering(steering_plan)
 
-        batch = self._batch_encode(inputs, add_generation_prompt=True, enable_thinking=enable_thinking)
+        if prompt_is_formatted and isinstance(inputs, str):
+            # Direct tokenization of pre-formatted prompt
+            tokenizer_output = self.tokenizer(
+                inputs,
+                return_tensors="pt",
+                padding=False,  # Single prompt, no padding needed
+                truncation=True,  # Avoid errors on long inputs
+                max_length=self.tokenizer.model_max_length  # Use model's actual limit
+            )
+            batch = {
+                "input_ids": tokenizer_output["input_ids"],
+                "attention_mask": tokenizer_output["attention_mask"]
+            }
+        else:
+            # Current behavior: apply chat template
+            batch = self._batch_encode(inputs, add_generation_prompt=True, enable_thinking=enable_thinking)
 
         gen_out = self.hf_model.generate(
             **batch,
@@ -613,7 +631,7 @@ class WisentModel:
     @torch.inference_mode()
     def generate_stream(
         self,
-        inputs: list[list[ChatMessage]],
+        inputs: list[list[ChatMessage]] | str,
         max_new_tokens: int = 128,
         temperature: float = 0.7,
         top_p: float = 0.95,
@@ -623,6 +641,7 @@ class WisentModel:
         skip_prompt: bool = True,
         skip_special_tokens: bool = True,
         enable_thinking: bool = True,
+        prompt_is_formatted: bool = False,
         **gen_kwargs: Any,
     ) -> Iterable[str]:
         """
@@ -631,7 +650,8 @@ class WisentModel:
 
         attributes:
             inputs:
-                list of chat messages (each a list of {'role','content'} dicts). Currently only one conversation is supported.
+                list of chat messages (each a list of {'role','content'} dicts) OR pre-formatted string.
+                Currently only one conversation is supported.
             max_new_tokens:
                 max tokens to generate (beyond the prompt).
             temperature:
@@ -651,6 +671,8 @@ class WisentModel:
                 if True, special tokens are removed from the yielded text.
             enable_thinking:
                 If False, disable thinking/reasoning mode (prevents <think> tags for supported models like Qwen).
+            prompt_is_formatted:
+                If True, inputs is a pre-formatted string with chat template already applied.
             **gen_kwargs:
                 additional kwargs passed to 'model.generate()'.
 
@@ -658,14 +680,29 @@ class WisentModel:
             generated text chunks (str), as they become available.
         """
 
-        if len(inputs) != 1:
-            raise ValueError(
-                f"generate_stream currently supports exactly one conversation at a time (got {len(inputs)})."
-            )
         if use_steering:
             self.apply_steering(steering_plan)
 
-        batch = self._batch_encode(inputs, add_generation_prompt=True, enable_thinking=enable_thinking)
+        if prompt_is_formatted and isinstance(inputs, str):
+            # Direct tokenization of pre-formatted prompt
+            tokenizer_output = self.tokenizer(
+                inputs,
+                return_tensors="pt",
+                padding=False,  # Single prompt, no padding needed
+                truncation=True,  # Avoid errors on long inputs
+                max_length=self.tokenizer.model_max_length  # Use model's actual limit
+            )
+            batch = {
+                "input_ids": tokenizer_output["input_ids"],
+                "attention_mask": tokenizer_output["attention_mask"]
+            }
+        else:
+            # Current behavior: apply chat template
+            if not isinstance(inputs, list) or len(inputs) != 1:
+                raise ValueError(
+                    f"generate_stream currently supports exactly one conversation at a time (got {type(inputs)} with {len(inputs) if isinstance(inputs, list) else 'N/A'} items)."
+                )
+            batch = self._batch_encode(inputs, add_generation_prompt=True, enable_thinking=enable_thinking)
 
         streamer = TextIteratorStreamer(
             self.tokenizer,
