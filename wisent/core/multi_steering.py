@@ -166,17 +166,19 @@ class MultiSteering:
         max_new_tokens: int = 100,
         temperature: float = 0.7,
         top_p: float = 0.9,
-        enable_thinking: bool = True
+        enable_thinking: bool = True,
+        prompt_is_formatted: bool = False
     ) -> Iterable[str]:
         """Apply the combined steering vector to generate text with streaming.
 
         Args:
             model: WisentModel instance to use for generation
-            prompt: Input prompt
+            prompt: Input prompt (either raw text or pre-formatted with chat template)
             max_new_tokens: Maximum tokens to generate
             temperature: Sampling temperature
             top_p: Top-p sampling parameter
             enable_thinking: If False, disable thinking/reasoning mode (prevents <think> tags for supported models like Qwen)
+            prompt_is_formatted: If True, prompt already has chat template applied
 
         Yields:
             Generated text chunks
@@ -191,7 +193,8 @@ class MultiSteering:
             raise MultiSteeringError("No layer information available")
 
         print(f"\n🎯 Applying combined steering vector at layer {self.layer}")
-        print(f"Prompt: {prompt}")
+        print(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}")
+        print(f"Prompt is formatted: {prompt_is_formatted}")
         print("=" * 50)
 
         # Create SteeringPlan from the combined vector
@@ -202,13 +205,19 @@ class MultiSteering:
             normalize=False  # Already normalized in combine_vectors
         )
 
-        # Format prompt as chat messages
-        messages: list[ChatMessage] = [{"role": "user", "content": prompt}]
+        # Handle prompt formatting
+        if prompt_is_formatted:
+            # Prompt already has chat template applied - pass as string directly
+            inputs = prompt
+        else:
+            # Format prompt as chat messages (current behavior)
+            messages: list[ChatMessage] = [{"role": "user", "content": prompt}]
+            inputs = [messages]
 
         try:
             # Use WisentModel's generate_stream with steering
             yield from model.generate_stream(
-                inputs=[messages],
+                inputs=inputs,
                 max_new_tokens=max_new_tokens,
                 temperature=temperature,
                 top_p=top_p,
@@ -216,7 +225,8 @@ class MultiSteering:
                 steering_plan=steering_plan,
                 skip_prompt=True,
                 skip_special_tokens=True,
-                enable_thinking=enable_thinking
+                enable_thinking=enable_thinking,
+                prompt_is_formatted=prompt_is_formatted
             )
 
         except Exception as e:
@@ -231,17 +241,19 @@ class MultiSteering:
         max_new_tokens: int = 100,
         temperature: float = 0.7,
         top_p: float = 0.9,
-        enable_thinking: bool = True
+        enable_thinking: bool = True,
+        prompt_is_formatted: bool = False
     ) -> str:
         """Apply the combined steering vector to generate text (non-streaming).
 
         Args:
             model: WisentModel instance to use for generation
-            prompt: Input prompt
+            prompt: Input prompt (either raw text or pre-formatted with chat template)
             max_new_tokens: Maximum tokens to generate
             temperature: Sampling temperature
             top_p: Top-p sampling parameter
             enable_thinking: If False, disable thinking/reasoning mode (prevents <think> tags for supported models like Qwen)
+            prompt_is_formatted: If True, prompt already has chat template applied
 
         Returns:
             Generated text
@@ -256,7 +268,8 @@ class MultiSteering:
             raise MultiSteeringError("No layer information available")
 
         print(f"\n🎯 Applying combined steering vector at layer {self.layer}")
-        print(f"Prompt: {prompt}")
+        print(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}")
+        print(f"Prompt is formatted: {prompt_is_formatted}")
         print("=" * 50)
 
         # Create SteeringPlan from the combined vector
@@ -267,19 +280,26 @@ class MultiSteering:
             normalize=False  # Already normalized in combine_vectors
         )
 
-        # Format prompt as chat messages
-        messages: list[ChatMessage] = [{"role": "user", "content": prompt}]
+        # Handle prompt formatting
+        if prompt_is_formatted:
+            # Prompt already has chat template applied - pass as string directly
+            inputs = prompt
+        else:
+            # Format prompt as chat messages (current behavior)
+            messages: list[ChatMessage] = [{"role": "user", "content": prompt}]
+            inputs = [messages]
 
         try:
             # Use WisentModel's generate with steering
             outputs = model.generate(
-                inputs=[messages],
+                inputs=inputs,
                 max_new_tokens=max_new_tokens,
                 temperature=temperature,
                 top_p=top_p,
                 use_steering=True,
                 steering_plan=steering_plan,
-                enable_thinking=enable_thinking
+                enable_thinking=enable_thinking,
+                prompt_is_formatted=prompt_is_formatted
             )
 
             return outputs[0] if outputs else ""
