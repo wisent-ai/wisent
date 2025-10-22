@@ -74,7 +74,7 @@ def instructions():
   [b]wisent help train[/], [b]wisent help method caa[/], [b]wisent help loader custom[/]
 
 • Full training example (natural):
-  [b]wisent train model meta-llama/Llama-3.2-1B-Instruct loader custom path ./wisent_guard/cli/cli_examples/custom_dataset.json training_limit 5 \\
+  [b]wisent train model meta-llama/Llama-3.2-1B-Instruct loader custom path ./wisent/cli/cli_examples/custom_dataset.json training_limit 5 \\
         method caa layers 10..12 aggregation continuation_token device cuda dtype float16 save_dir ./steering_output normalize_layers true[/]
 
 Tip: add [b]interactive true[/] for a guided wizard.

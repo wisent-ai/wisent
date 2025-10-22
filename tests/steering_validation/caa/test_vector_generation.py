@@ -19,8 +19,8 @@ import torch
 WISENT_PATH = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(WISENT_PATH))
 
-from wisent_guard.core.aggregation import ControlVectorAggregationMethod
-from wisent_guard.core.steering_methods.caa import CAA
+from wisent.core.aggregation import ControlVectorAggregationMethod
+from wisent.core.steering_methods.caa import CAA
 
 from ..utils import aggressive_memory_cleanup
 from .const import (
@@ -131,7 +131,7 @@ class TestVectorGeneration:
         expected_vector = (pos_stack - neg_stack).mean(dim=0)
 
         # Test our aggregation function
-        from wisent_guard.core.aggregation import create_control_vector_from_contrastive_pairs
+        from wisent.core.aggregation import create_control_vector_from_contrastive_pairs
 
         our_vector, _ = create_control_vector_from_contrastive_pairs(
             pos_stack, neg_stack, ControlVectorAggregationMethod.CAA, DEVICE

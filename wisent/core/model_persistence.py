@@ -268,7 +268,7 @@ def create_classifier_metadata(
         'token_aggregation': token_aggregation,
         'detection_threshold': detection_threshold,
         'created_at': datetime.datetime.now().isoformat(),
-        'wisent_guard_version': '1.0.0'  # Could be dynamically determined
+        'wisent_version': '1.0.0'  # Could be dynamically determined
     }
     
     # Add any additional metadata
@@ -308,7 +308,7 @@ def create_steering_vector_metadata(
         'vector_strength': vector_strength,
         'training_samples': training_samples,
         'created_at': datetime.datetime.now().isoformat(),
-        'wisent_guard_version': '1.0.0'
+        'wisent_version': '1.0.0'
     }
     
     # Add any additional metadata

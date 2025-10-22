@@ -19,7 +19,7 @@ class ClassifierRotator:
     def __init__(
         self,
         classifier: str | BaseClassifier | type[BaseClassifier] | None = None,
-        classifiers_location: str | Path = "wisent_guard.core.classifiers.models",
+        classifiers_location: str | Path = "wisent.core.classifiers.models",
         autoload: bool = True,
         **classifier_kwargs: Any,
     ) -> None:
@@ -28,7 +28,7 @@ class ClassifierRotator:
         self._classifier = self._resolve_classifier(classifier, **classifier_kwargs)
 
     @staticmethod
-    def discover_classifiers(location: str | Path = "wisent_guard.core.classifiers.models") -> None:
+    def discover_classifiers(location: str | Path = "wisent.core.classifiers.models") -> None:
         """
         Import all classifier modules so BaseClassifier subclasses self-register.
 

@@ -14,8 +14,8 @@ sys.path.insert(0, str(WISENT_PATH))
 
 import sys
 
-from wisent_guard.core.contrastive_pairs import ContrastivePair, ContrastivePairSet
-from wisent_guard.core.response import NegativeResponse, PositiveResponse
+from wisent.core.contrastive_pairs import ContrastivePair, ContrastivePairSet
+from wisent.core.response import NegativeResponse, PositiveResponse
 
 from .caa_utils import tokenize_llama_base_format
 from .const import LAYER_INDEX, MODEL_NAME, TORCH_DTYPE

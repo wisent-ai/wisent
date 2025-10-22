@@ -33,7 +33,7 @@ WISENT_PATH = Path(__file__).parent.parent.parent.parent
 sys.path.insert(0, str(WISENT_PATH))
 
 # Import wisent-guard DAC
-from wisent_guard.core.steering_methods_tensor.dac_attention import DAC
+from wisent.core.steering_methods_tensor.dac_attention import DAC
 
 # Add current directory to path for local imports
 sys.path.insert(0, str(Path(__file__).parent))

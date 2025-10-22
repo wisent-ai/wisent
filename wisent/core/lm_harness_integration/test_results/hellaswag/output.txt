@@ -1,4 +1,4 @@
-COMMAND: python -m wisent_guard.cli tasks --task-name hellaswag --limit 5 --model meta-llama/Llama-2-7b-chat-hf --layer 15 --verbose --allow-small-dataset --output-mode both
+COMMAND: python -m wisent.cli tasks --task-name hellaswag --limit 5 --model meta-llama/Llama-2-7b-chat-hf --layer 15 --verbose --allow-small-dataset --output-mode both
 RETURN CODE: 2
 STDOUT:
 

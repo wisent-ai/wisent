@@ -13,7 +13,7 @@ for ev in evaluators:
     print(f"- {ev['name']}: {ev.get('description', '')} (class: {ev['class']})")
 
 #3 Use a specific evaluator by name (e.g., "nlp"). To add custom evaluators, implement them
-# in wisent_guard/core/evaluators/oracles and they will be auto-discovered.
+# in wisent/core/evaluators/oracles and they will be auto-discovered.
 rot.use("nlp")
 
 #4 Evaluate a sample response against an expected answer

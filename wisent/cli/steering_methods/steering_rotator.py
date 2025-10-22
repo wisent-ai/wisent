@@ -25,7 +25,7 @@ class SteeringMethodRotator:
     def __init__(
         self,
         method: str | BaseSteeringMethod | Type[BaseSteeringMethod] | None = None,
-        methods_location: str | Path = "wisent_guard.core.steering_methods.methods",
+        methods_location: str | Path = "wisent.core.steering_methods.methods",
         autoload: bool = True,
         **default_method_kwargs: Any,
     ) -> None:

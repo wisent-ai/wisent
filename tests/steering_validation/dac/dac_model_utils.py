@@ -26,9 +26,9 @@ from const import (
     TORCH_DTYPE,
 )
 
-from wisent_guard.core.contrastive_pairs import ContrastivePair, ContrastivePairSet
-from wisent_guard.core.response import NegativeResponse, PositiveResponse
-from wisent_guard.core.steering_methods_tensor.dac_attention import DAC
+from wisent.core.contrastive_pairs import ContrastivePair, ContrastivePairSet
+from wisent.core.response import NegativeResponse, PositiveResponse
+from wisent.core.steering_methods_tensor.dac_attention import DAC
 
 
 def load_dac_datasets_for_testing() -> Tuple[List[Dict], List[Dict]]:

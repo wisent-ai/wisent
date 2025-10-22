@@ -276,7 +276,7 @@ class BudgetManager:
                     return estimate_task_time("benchmark_eval", 100)
                     
             except Exception as e:
-                raise RuntimeError(f"Device benchmark estimate failed for task '{task_name}': {e}. Run device benchmark first with: python -m wisent_guard.core.agent.budget benchmark")
+                raise RuntimeError(f"Device benchmark estimate failed for task '{task_name}': {e}. Run device benchmark first with: python -m wisent.core.agent.budget benchmark")
         
         elif resource_type == ResourceType.MEMORY:
             raise RuntimeError(f"Memory estimation not implemented for task '{task_name}'")
@@ -348,7 +348,7 @@ def calculate_max_tasks_for_time_budget(task_type: str = "benchmark_evaluation",
         return max_tasks
         
     except Exception as e:
-        raise RuntimeError(f"Budget calculation failed for task '{task_type}': {e}. Run device benchmark first with: python -m wisent_guard.core.agent.budget benchmark")
+        raise RuntimeError(f"Budget calculation failed for task '{task_type}': {e}. Run device benchmark first with: python -m wisent.core.agent.budget benchmark")
 
 
 def optimize_tasks_for_budget(task_candidates: List[str], 

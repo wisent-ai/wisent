@@ -11,7 +11,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from wisent_guard.cli.cli_benchmarks import AVAILABLE_BENCHMARKS
+from wisent.cli.cli_benchmarks import AVAILABLE_BENCHMARKS
 
 # Configuration matching our MPS fix testing
 MODEL = "meta-llama/Llama-3.1-8B-Instruct"
@@ -58,7 +58,7 @@ def test_classification_all_benchmarks(stop_on_error=True, max_failures=5):
             # Test with the same approach we used for MPS fix
             # Model will use hybrid CPU-MPS mode automatically for Llama
             cmd = [
-                "python", "-m", "wisent_guard.cli", "tasks", benchmark,
+                "python", "-m", "wisent.cli", "tasks", benchmark,
                 "--model", MODEL,
                 "--layer", str(LAYER),
                 "--limit", str(LIMIT),

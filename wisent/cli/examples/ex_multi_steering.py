@@ -44,13 +44,13 @@ data_loader = DataLoaderRotator()
 data_loader.use("custom")
 
 # Load first dataset (e.g., helpful vs unhelpful)
-trait1_path = "./wisent_guard/cli/examples/custom_dataset.json"
+trait1_path = "./wisent/cli/examples/custom_dataset.json"
 trait1_data = data_loader.load(path=trait1_path, limit=10)
 trait1_pairs = trait1_data['train_qa_pairs']
 
 # For this example, we'll use the same dataset for trait2
 # In practice, you would load a different dataset for a different trait
-trait2_path = "./wisent_guard/cli/examples/custom_dataset.json"
+trait2_path = "./wisent/cli/examples/custom_dataset.json"
 trait2_data = data_loader.load(path=trait2_path, limit=10)
 trait2_pairs = trait2_data['train_qa_pairs']
 
@@ -201,7 +201,7 @@ print("CLI Usage Example")
 print("=" * 80)
 print("\nYou can also combine vectors using the CLI:")
 print(f"""
-python -m wisent_guard multi-steer \\
+python -m wisent multi-steer \\
     --vector {vector1_path}:0.6 \\
     --vector {vector2_path}:0.4 \\
     --model {MODEL_NAME} \\

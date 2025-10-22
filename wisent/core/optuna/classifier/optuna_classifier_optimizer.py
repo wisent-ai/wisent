@@ -28,12 +28,12 @@ def get_model_dtype(model) -> torch.dtype:
     Extract model's native dtype from parameters.
 
     Args:
-        model: PyTorch model or wisent_guard Model wrapper
+        model: PyTorch model or wisent Model wrapper
 
     Returns:
         The model's native dtype
     """
-    # Handle wisent_guard Model wrapper
+    # Handle wisent Model wrapper
     if hasattr(model, "hf_model"):
         model_params = model.hf_model.parameters()
     else:

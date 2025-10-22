@@ -57,7 +57,7 @@ class TimingCalibrator:
         start_time = time.time()
         
         cmd = [
-            sys.executable, "-m", "wisent_guard.cli", 
+            sys.executable, "-m", "wisent.cli", 
             "optimize-classification",
             model_name,
             "--tasks", "arc_easy",
