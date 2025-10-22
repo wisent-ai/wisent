@@ -6,7 +6,7 @@ Tests the calculate_roc_auc function with various scenarios.
 
 import pytest
 
-from wisent_guard.core.classifier.utils import calculate_roc_auc
+from wisent.core.classifier.utils import calculate_roc_auc
 
 
 class TestCalculateROCAUC:

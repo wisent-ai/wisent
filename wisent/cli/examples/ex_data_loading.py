@@ -16,7 +16,7 @@ for ld in loaders:
 lm_loader = rot.use("lm_eval")
 
 #4 Load data for a specific task (e.g., "hellaswag") with optional limits
-# note: task extractor must be written to support given task, see: wisent_guard/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors.py
+# note: task extractor must be written to support given task, see: wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors.py
 res = rot.load(task="winogrande", limit=10)
 
 #5 Inspect the loaded data
@@ -31,7 +31,7 @@ for pair in res['train_qa_pairs'].pairs:
 # --------------------------------- Custom QA dataset example ---------------------------------
 
 custom_loader = rot.use("custom")  
-absolute_path = "./wisent_guard/cli/cli_examples/custom_dataset.json"
+absolute_path = "./wisent/cli/cli_examples/custom_dataset.json"
 custom_res = rot.load(path=absolute_path, limit=5)
 
 print("\nCustom dataset sample training pairs:")

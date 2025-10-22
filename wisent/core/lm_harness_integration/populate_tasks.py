@@ -1589,7 +1589,7 @@ def main():
         available_tasks = ["truthfulqa_mc1", "hellaswag"]
     
     # PHASE 1: Save all task names to tasks.json
-    tasks_file = "wisent_guard/core/tasks.json"
+    tasks_file = "wisent/core/tasks.json"
     print(f"\nPhase 1: Saving {len(available_tasks)} task names to {tasks_file}")
     
     # Create initial structure with all task names but empty task details

@@ -20,7 +20,7 @@ class EvaluatorRotator:
         self,
         evaluator: Union[str, BaseEvaluator, Type[BaseEvaluator], None] = None,
         task_name: Optional[str] = None,
-        evaluators_location: Union[str, Path] = "wisent_guard.core.evaluators.oracles",
+        evaluators_location: Union[str, Path] = "wisent.core.evaluators.oracles",
         autoload: bool = True,
     ) -> None:
         if autoload:
@@ -29,7 +29,7 @@ class EvaluatorRotator:
         self._task_name = task_name
 
     @staticmethod
-    def discover_evaluators(location: Union[str, Path] = "wisent_guard.core.evaluators.oracles") -> None:
+    def discover_evaluators(location: Union[str, Path] = "wisent.core.evaluators.oracles") -> None:
         """
         Import all evaluator modules so BaseEvaluator subclasses self-register.
 
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     from evaluator_rotator import EvaluatorRotator
 
     rot = EvaluatorRotator(
-    evaluators_location="wisent_guard.core.evaluators.oracles",  # << no leading slash
+    evaluators_location="wisent.core.evaluators.oracles",  # << no leading slash
     autoload=True,
     )
 

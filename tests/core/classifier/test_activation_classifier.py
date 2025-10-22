@@ -10,9 +10,9 @@ import tempfile
 import pytest
 import torch
 
-from wisent_guard.core.activations import ActivationAggregationStrategy, Activations
-from wisent_guard.core.classifier import ActivationClassifier
-from wisent_guard.core.layer import Layer
+from wisent.core.activations import ActivationAggregationStrategy, Activations
+from wisent.core.classifier import ActivationClassifier
+from wisent.core.layer import Layer
 
 
 class TestActivationClassifier:

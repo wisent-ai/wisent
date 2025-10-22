@@ -14,7 +14,7 @@ class DataLoaderRotator:
     def __init__(
         self,
         loader: Union[str, BaseDataLoader, Type[BaseDataLoader], None] = None,
-        loaders_location: Union[str, Path] = "wisent_guard.core.data_loaders.loaders",
+        loaders_location: Union[str, Path] = "wisent.core.data_loaders.loaders",
         autoload: bool = True,
         **default_loader_kwargs: Any,
     ) -> None:

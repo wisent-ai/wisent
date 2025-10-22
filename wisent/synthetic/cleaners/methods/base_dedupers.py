@@ -279,7 +279,7 @@ class SimHashDeduper(Deduper):
             64-bit integer hash
             
         example:
-            >>> SimHashDeduper()._hash64("wisent_guard")
+            >>> SimHashDeduper()._hash64("wisent")
             TODO: actual value" 
         """
         h = hashlib.blake2b(s.encode("utf-8"), digest_size=8)

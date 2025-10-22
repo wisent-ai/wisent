@@ -133,7 +133,7 @@ def loader_args(
     from wisent.cli.data_loaders.data_loader_rotator import DataLoaderRotator  # type: ignore
     if loaders_location:
         DataLoaderRotator.discover_loaders(loaders_location)
-    rot = DataLoaderRotator(loader=name, loaders_location=loaders_location or "wisent_guard.core.data_loaders.loaders")
+    rot = DataLoaderRotator(loader=name, loaders_location=loaders_location or "wisent.core.data_loaders.loaders")
     # Best-effort introspection
     target = None
     for cand in (getattr(rot, "_loader", None), rot):

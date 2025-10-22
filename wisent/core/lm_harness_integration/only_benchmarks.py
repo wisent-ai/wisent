@@ -1131,7 +1131,7 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
         
         # Run wisent guard CLI with tasks command
         cmd = [
-            "python", "-m", "wisent_guard.cli",
+            "python", "-m", "wisent.cli",
             "tasks", task_name,
             "--model", "meta-llama/Llama-3.1-8B-Instruct",
             "--layer", "15",

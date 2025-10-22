@@ -629,7 +629,7 @@ except Exception as e:
         """
         benchmark = self.get_current_benchmark()
         if not benchmark:
-            raise RuntimeError(f"No benchmark available for device. Run benchmark first with: python -m wisent_guard.core.agent.budget benchmark")
+            raise RuntimeError(f"No benchmark available for device. Run benchmark first with: python -m wisent.core.agent.budget benchmark")
         else:
             # Use actual benchmark results
             if task_type == "model_loading":

@@ -636,7 +636,7 @@ class LMEvalHarnessGroundTruth:
         try:
             import json
 
-            eval_methods_path = "wisent_guard/parameters/benchmarks/benchmark_evaluation_methods.json"
+            eval_methods_path = "wisent/parameters/benchmarks/benchmark_evaluation_methods.json"
             with open(eval_methods_path) as f:
                 benchmark_methods = json.load(f)
                 return benchmark_methods.get(task_name, "text-generation")

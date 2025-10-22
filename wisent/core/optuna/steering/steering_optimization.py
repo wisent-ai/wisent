@@ -989,7 +989,7 @@ class SteeringOptimizer:
         On subsequent calls: Return cached classifier from current session
 
         Args:
-            model: Language model (wisent_guard Model wrapper)
+            model: Language model (wisent Model wrapper)
             optimization_config: Primary configuration source
             model_name: Fallback model name if optimization_config not provided
             task_name: Fallback task name if optimization_config not provided
