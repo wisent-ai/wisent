@@ -12,12 +12,12 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["TruthfulQA_MC1Extractor"]
+__all__ = ["XWinograd"]
 _LOG = setup_logger(__name__)
 
 
-class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for the TruthfulQA_MC1 benchmark."""
+class XWinogradExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for the XWinograd benchmark."""
 
     def extract_contrastive_pairs(
         self,
@@ -25,14 +25,16 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from TruthfulQA_MC1 docs.
+        Build contrastive pairs from XWinograd docs.
 
-        TruthfulQA_MC1 schema:
-            - question: str
-            - mc1_targets: dict
+        XWinograd schema:
+            - sentence: str
+            - option1: str
+            - option2: str
+            - answer: str
             
         Args:
-            lm_eval_task_data: lm-eval task instance for TruthfulQA_MC1.
+            lm_eval_task_data: lm-eval task instance for XWinograd.
             limit: Optional maximum number of pairs to produce.
 
         Returns:
@@ -56,42 +58,37 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid TruthfulQA_MC1 pairs extracted", extra={"task": task_name})
+            log.warning("No valid XWinograd pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single TruthfulQA_MC1 doc into a ContrastivePair, if possible.
+        Convert a single XWinograd doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = str(doc.get("question", "")).strip()
-            mc1_targets = doc.get("mc1_targets")
-            options = mc1_targets["choices"]
-            labels = mc1_targets["labels"]
+            sentence = str(doc.get("sentence", "")).strip()
+            options = [str(doc.get("option1", "")).strip(), str(doc.get("option2", "")).strip()]
+            answer = str(doc.get("answer", "")).strip()
+            answer = int(answer) - 1
 
-            if not question or not options or not labels:
+            if not sentence or not options or answer not in {0, 1}:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
             
-            # Find correct answer
-            for i in range(len(labels)):
-                if labels[i] == 1:
-                    answer_idx = i
-            
-            correct = options[answer_idx]
-            incorrect = options[(answer_idx+1)%len(options)]
+            correct = options[answer]
+            incorrect = options[(answer+1)%len(options)]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            formatted_question = f"Fill in the blank: {sentence}\nA. {incorrect}\nB. {correct}"
 
             metadata = {
-                "label": "truthfulqa_mc1",
+                "label": "xwinograd",
             }
 
             return self._build_pair(

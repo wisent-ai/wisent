@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 
 if TYPE_CHECKING:
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair
     from lm_eval.api.task import ConfigurableTask
 
 
@@ -68,12 +68,16 @@ class LMEvalBenchmarkExtractor(ABC):
         cls,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[dict[str, Any]]:
         """
         Load labeled documents from the most appropriate split with a clear
         preference order:
 
             validation → test → train → fewshot
+
+        If preferred_doc is provided, that source will be tried first before
+        falling back to the default order.
 
         If none are available, attempts a dataset fallback using
         'datasets.load_dataset' with the task's declared metadata
@@ -86,6 +90,10 @@ class LMEvalBenchmarkExtractor(ABC):
             limit:
                 Optional maximum number of documents to return.
                 Values <= 0 are treated as "no limit".
+            preferred_doc:
+                Optional preferred document source. Valid values:
+                "validation", "test", "training", "fewshot".
+                If provided, this source will be tried first.
 
         returns:
             A list of document dictionaries.
@@ -98,17 +106,35 @@ class LMEvalBenchmarkExtractor(ABC):
         """
         max_items = cls._normalize_limit(limit)
 
-        preferred_sources: Sequence[tuple[str, str]] = (
+        # Map preferred_doc string to the tuple format
+        doc_source_map = {
+            "validation": ("has_validation_docs", "validation_docs"),
+            "test": ("has_test_docs", "test_docs"),
+            "training": ("has_training_docs", "training_docs"),
+            "fewshot": ("has_fewshot_docs", "fewshot_docs"),
+        }
+
+        # Build preferred_sources based on preferred_doc
+        default_order: Sequence[tuple[str, str]] = (
             ("has_validation_docs", "validation_docs"),
             ("has_test_docs", "test_docs"),
             ("has_training_docs", "training_docs"),
             ("has_fewshot_docs", "fewshot_docs"),
         )
 
+        if preferred_doc and preferred_doc in doc_source_map:
+            # Put preferred source first, then other sources
+            preferred_source = doc_source_map[preferred_doc]
+            other_sources = [s for s in default_order if s != preferred_source]
+            preferred_sources = (preferred_source,) + tuple(other_sources)
+        else:
+            preferred_sources = default_order
+
         for has_method, docs_method in preferred_sources:
             if cls._has_true(lm_eval_task_data, has_method) and cls._has_callable(
                 lm_eval_task_data, docs_method
             ):
+                print(f"loaded from {docs_method}")
                 docs_iter = getattr(lm_eval_task_data, docs_method)()
                 docs_list = cls._coerce_docs_to_dicts(docs_iter, max_items)
                 if docs_list:

@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 from typing import Any, TYPE_CHECKING
 
 from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair
@@ -12,12 +11,12 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["TruthfulQA_MC1Extractor"]
+__all__ = ["XNLIExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for the TruthfulQA_MC1 benchmark."""
+class XNLIExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for the XNLI benchmark."""
 
     def extract_contrastive_pairs(
         self,
@@ -25,14 +24,15 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from TruthfulQA_MC1 docs.
+        Build contrastive pairs from XNLI docs.
 
-        TruthfulQA_MC1 schema:
-            - question: str
-            - mc1_targets: dict
+        XNLI schema:
+            - premise: str
+            - hypothesis: str
+            - label: 0 or 1 or 2
             
         Args:
-            lm_eval_task_data: lm-eval task instance for TruthfulQA_MC1.
+            lm_eval_task_data: lm-eval task instance for XNLI.
             limit: Optional maximum number of pairs to produce.
 
         Returns:
@@ -56,42 +56,37 @@ class TruthfulQA_MC1Extractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid TruthfulQA_MC1 pairs extracted", extra={"task": task_name})
+            log.warning("No valid XNLI pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single TruthfulQA_MC1 doc into a ContrastivePair, if possible.
+        Convert a single XNLI doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = str(doc.get("question", "")).strip()
-            mc1_targets = doc.get("mc1_targets")
-            options = mc1_targets["choices"]
-            labels = mc1_targets["labels"]
+            premise = str(doc.get("premise", "")).strip()
+            hypothesis = str(doc.get("hypothesis", "")).strip()
+            label = doc.get("label")
 
-            if not question or not options or not labels:
+            if not premise or not hypothesis or label not in {0, 1, 2}:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
             
-            # Find correct answer
-            for i in range(len(labels)):
-                if labels[i] == 1:
-                    answer_idx = i
+            labels = {0: "entailment", 1: "neutral", 2: "contradiction"}
+            correct = labels[label]
+            incorrect = labels[(label+1)%3]
             
-            correct = options[answer_idx]
-            incorrect = options[(answer_idx+1)%len(options)]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            formatted_question = f"Decide the relationship of the hypothesis '{hypothesis}' to the premise '{premise}\nA. {incorrect}\nB. {correct}"
 
             metadata = {
-                "label": "truthfulqa_mc1",
+                "label": "xnli",
             }
 
             return self._build_pair(
