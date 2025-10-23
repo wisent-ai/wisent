@@ -181,7 +181,7 @@ class CodingEvaluator(Evaluator):
             0.23
         """
         recipe = RECIPE_REGISTRY[task.language]
-        job = recipe.make_job(files, **task.options,
+        job = recipe.make_job(**task.options,
                               time_limit_s=self.cfg.time_limit_s,
                               cpu_limit_s=self.cfg.cpu_limit_s,
                               mem_limit_mb=self.cfg.mem_limit_mb)

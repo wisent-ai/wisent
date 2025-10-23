@@ -242,10 +242,15 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         Generate an incorrect answer for a problem.
 
         Strategy:
-        1. If problem has multiple choices, use an incorrect choice
-        2. For numerical answers, perturb the number
-        3. For text answers, use a generic incorrect response
+        1. Check if problem has bad_code/incorrect answer field (for LiveCodeBench)
+        2. If problem has multiple choices, use an incorrect choice
+        3. For numerical answers, perturb the number
+        4. For text answers, use a generic incorrect response
         """
+        # Strategy 0: Check for explicit bad_code field (LiveCodeBench)
+        if "bad_code" in problem and problem["bad_code"]:
+            return problem["bad_code"]
+
         # Strategy 1: Check for multiple choice options
         choices_fields = ["choices", "options", "mc1_targets", "mc2_targets"]
         for field in choices_fields:
