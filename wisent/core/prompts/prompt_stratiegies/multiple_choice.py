@@ -7,6 +7,8 @@ __all__ = ["MultipleChoiceStrategy"]
 class MultipleChoiceStrategy(PromptStrategy):
     """Formats a multiple-choice prompt with options A/B."""
 
+    strategy_key = "multiple_choice"
+
     def build(
         self,
         question: str,

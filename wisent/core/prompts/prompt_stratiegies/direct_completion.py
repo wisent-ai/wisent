@@ -7,6 +7,8 @@ __all__ = ["DirectCompletionStrategy"]
 class DirectCompletionStrategy(PromptStrategy):
     """Direct completion strategy: question from user, answer from assistant."""
 
+    strategy_key = "direct_completion"
+
     def build(
         self,
         question: str,
