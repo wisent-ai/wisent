@@ -6,7 +6,7 @@ from abc import ABC, abstractmethod
 
 
 if TYPE_CHECKING:
-    from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
     from lm_eval.api.task import ConfigurableTask
 
 
