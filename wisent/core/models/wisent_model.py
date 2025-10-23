@@ -461,9 +461,10 @@ class WisentModel:
                 truncation=True,  # Avoid errors on long inputs
                 max_length=self.tokenizer.model_max_length  # Use model's actual limit
             )
+            # Move tensors to the correct device (same as _batch_encode does)
             batch = {
-                "input_ids": tokenizer_output["input_ids"],
-                "attention_mask": tokenizer_output["attention_mask"]
+                "input_ids": tokenizer_output["input_ids"].to(resolve_torch_device()),
+                "attention_mask": tokenizer_output["attention_mask"].to(resolve_torch_device())
             }
         else:
             # Current behavior: apply chat template
@@ -692,9 +693,10 @@ class WisentModel:
                 truncation=True,  # Avoid errors on long inputs
                 max_length=self.tokenizer.model_max_length  # Use model's actual limit
             )
+            # Move tensors to the correct device (same as _batch_encode does)
             batch = {
-                "input_ids": tokenizer_output["input_ids"],
-                "attention_mask": tokenizer_output["attention_mask"]
+                "input_ids": tokenizer_output["input_ids"].to(resolve_torch_device()),
+                "attention_mask": tokenizer_output["attention_mask"].to(resolve_torch_device())
             }
         else:
             # Current behavior: apply chat template
