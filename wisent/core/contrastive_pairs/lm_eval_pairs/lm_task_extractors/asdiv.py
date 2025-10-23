@@ -4,10 +4,10 @@ import random
 import re
 from typing import Any, TYPE_CHECKING
 
-from wisent_guard.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent_guard.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent_guard.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
-from wisent_guard.cli.cli_logger import setup_logger, bind
+from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
+from wisent.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
