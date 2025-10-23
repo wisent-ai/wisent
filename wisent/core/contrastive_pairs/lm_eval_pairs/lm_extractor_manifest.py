@@ -52,4 +52,5 @@ EXTRACTORS: dict[str, str] = {
     "xnli": f"{base_import}xnli:XNLIExtractor",
     "xstorycloze": f"{base_import}xstorycloze:XStoryClozeExtractor",
     "xwinograd": f"{base_import}xwinograd:XWinogradExtractor",
+    "livecodebench": f"{base_import}livecodebench:LiveCodeBenchExtractor",
 }

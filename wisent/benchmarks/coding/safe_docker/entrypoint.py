@@ -1,12 +1,10 @@
 from __future__ import annotations
 import json, os, shutil, subprocess, sys, time, signal, resource
 
-from wisent.benchmarks.coding.safe_docker.core.atoms import Job
-
 JOB_FILE = "/job/job.json"
 WORKDIR = "/work"
 
-def set_limits(job: Job):
+def set_limits(job):
     """
     Set resource limits for the sandboxed process.
     
@@ -25,7 +23,7 @@ def set_limits(job: Job):
     resource.setrlimit(resource.RLIMIT_CORE,(0,0))
     os.setsid()
 
-def run(argv: list[str], job: Job) -> tuple[int,str,str,float,str]:
+def run(argv: list[str], job) -> tuple[int,str,str,float,str]:
     """
     Run a command in a subprocess with resource limits.
 

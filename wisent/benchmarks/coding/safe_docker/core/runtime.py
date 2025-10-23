@@ -31,6 +31,38 @@ class DockerSandboxExecutor(SandboxExecutor):
     def __init__(self, image: str = DEFAULT_IMAGE, runtime: str | None = None):
         self.image = image
         self.runtime = runtime
+        self._check_docker_available()
+
+    def _check_docker_available(self) -> None:
+        """
+        Check if Docker daemon is running and accessible.
+
+        Raises:
+            RuntimeError: If Docker is not available or not running.
+        """
+        try:
+            result = subprocess.run(
+                ["docker", "info"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if result.returncode != 0:
+                raise RuntimeError(
+                    "Docker daemon is not running. Please start Docker and try again.\n"
+                    f"Error: {result.stderr}"
+                )
+        except FileNotFoundError:
+            raise RuntimeError(
+                "Docker command not found. Please install Docker:\n"
+                "  - macOS: https://docs.docker.com/desktop/install/mac-install/\n"
+                "  - Linux: https://docs.docker.com/engine/install/\n"
+                "  - Windows: https://docs.docker.com/desktop/install/windows-install/"
+            )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                "Docker command timed out. Docker daemon may be unresponsive."
+            )
 
     def run(self, files: dict[str, str], job: Job) -> Result:
         """
