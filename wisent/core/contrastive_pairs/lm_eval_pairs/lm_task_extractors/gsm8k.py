@@ -90,7 +90,7 @@ class GSM8KExtractor(LMEvalBenchmarkExtractor):
             incorrect_val = float(numerical_answer.replace(',', '')) + 1
             incorrect = str(int(incorrect_val)) if incorrect_val == int(incorrect_val) else str(incorrect_val)
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            formatted_question = f"Question: {question}"
 
             metadata = {
                 "label": "gsm8k",

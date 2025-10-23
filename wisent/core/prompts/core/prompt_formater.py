@@ -125,7 +125,7 @@ class PromptFormatter:
                 # Skip private/dunder modules.
                 continue
 
-            module = importlib.import_module(f"strategies.{name}")
+            module = importlib.import_module(f"wisent.core.prompts.prompt_stratiegies.{name}")
             self._register_strategies_from_module(module)
 
         if not self._registry:
