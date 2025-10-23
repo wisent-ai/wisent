@@ -7,6 +7,8 @@ __all__ = ["InstructionFollowingStrategy"]
 class InstructionFollowingStrategy(PromptStrategy):
     """Plain instruction/QA style: question from user, answer from assistant."""
 
+    strategy_key = "instruction_following"
+
     def build(
         self,
         question: str,

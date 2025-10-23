@@ -7,6 +7,8 @@ __all__ = ["RolePlayingStrategy"]
 class RolePlayingStrategy(PromptStrategy):
     """Asks the model to behave like someone who gives a specific answer."""
 
+    strategy_key = "role_playing"
+
     def build(
         self,
         question: str,
