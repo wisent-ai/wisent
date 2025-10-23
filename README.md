@@ -1,4 +1,4 @@
-# Wisent-Guard
+# Wisent
 
 <p align="center">
   <a href="https://github.com/wisent-ai/wisent-guard/stargazers">
@@ -18,7 +18,7 @@ A Python package for latent space monitoring and guardrails. Delivered to you by
 
 ## Overview
 
-Wisent-Guard allows you to control your AI by identifying brain patterns corresponding to responses you don't like, like hallucinations or harmful outputs. We use contrastive pairs of representations to detect when a model might be generating harmful content or hallucinating. Learn more at https://www.wisent.ai/wisent-guard.  
+Wisent allows you to control your AI by identifying brain patterns corresponding to responses you don't like, like hallucinations or harmful outputs. We use contrastive pairs of representations to detect when a model might be generating harmful content or hallucinating. Learn more at https://www.wisent.ai/wisent-guard.  
 
 
 ## License
