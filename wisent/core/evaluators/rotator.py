@@ -130,7 +130,7 @@ class EvaluatorRotator:
 
 
 if __name__ == "__main__":
-    from evaluator_rotator import EvaluatorRotator
+    from wisent.core.evaluators.rotator import EvaluatorRotator
 
     rot = EvaluatorRotator(
     evaluators_location="wisent.core.evaluators.oracles",  # << no leading slash
