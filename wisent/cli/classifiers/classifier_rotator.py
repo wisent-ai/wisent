@@ -7,7 +7,7 @@ import pkgutil
 from pathlib import Path
 from typing import Any
 
-from wisent.core.classifiers.core.atoms import BaseClassifier, ClassifierError, ClassifierTrainReport
+from wisent.classifiers.core.atoms import BaseClassifier, ClassifierError, ClassifierTrainReport
 
 __all__ = ["ClassifierRotator"]
 
@@ -19,7 +19,7 @@ class ClassifierRotator:
     def __init__(
         self,
         classifier: str | BaseClassifier | type[BaseClassifier] | None = None,
-        classifiers_location: str | Path = "wisent.core.classifiers.models",
+        classifiers_location: str | Path = "wisent.classifiers.models",
         autoload: bool = True,
         **classifier_kwargs: Any,
     ) -> None:
@@ -28,7 +28,7 @@ class ClassifierRotator:
         self._classifier = self._resolve_classifier(classifier, **classifier_kwargs)
 
     @staticmethod
-    def discover_classifiers(location: str | Path = "wisent.core.classifiers.models") -> None:
+    def discover_classifiers(location: str | Path = "wisent.classifiers.models") -> None:
         """
         Import all classifier modules so BaseClassifier subclasses self-register.
 
