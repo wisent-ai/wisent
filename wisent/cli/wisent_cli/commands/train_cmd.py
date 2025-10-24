@@ -20,7 +20,7 @@ try:
 except Exception:
     HAS_RICH = False
 
-__all__ = ["app", "train"]
+__all__ = ["app", "train_steering"]
 
 app = typer.Typer(help="Training workflow")
 
@@ -140,14 +140,14 @@ result = trainer.run(
         print("\n" + code)
 
 
-@app.command("train", context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
-def train(ctx: typer.Context, params: List[str] = typer.Argument(None)):
+@app.command("train-steering", context_settings={"ignore_unknown_options": True, "allow_extra_args": True})
+def train_steering(ctx: typer.Context, params: List[str] = typer.Argument(None)):
     """
     Natural (no-dash) usage examples:
 
-      wisent train model meta-llama/Llama-3.2-1B-Instruct loader custom path ./custom.json training_limit 5 method caa
+      wisent train-steering model meta-llama/Llama-3.2-1B-Instruct loader custom path ./custom.json training_limit 5 method caa
 
-      wisent train interactive true
+      wisent train-steering interactive true
 
     See `wisent loader-args custom` to view the exact loader arguments.
     """

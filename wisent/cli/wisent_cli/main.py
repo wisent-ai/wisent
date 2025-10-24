@@ -7,6 +7,7 @@ from wisent.cli.wisent_cli.version import APP_NAME, APP_VERSION
 from wisent.cli.wisent_cli.ui import print_banner
 from wisent.cli.wisent_cli.commands.listing import app as listing_app
 from wisent.cli.wisent_cli.commands.train_cmd import app as train_app
+from wisent.cli.wisent_cli.commands.train_classifier_cmd import app as train_classifier_app
 from wisent.cli.wisent_cli.commands.help_cmd import app as help_router_app
 from wisent.cli.wisent_cli.shell import app as shell_app
 
@@ -23,6 +24,7 @@ app = typer.Typer(
 
 app.add_typer(listing_app, name="list")
 app.add_typer(train_app,   name="")           # attach commands directly (e.g., train)
+app.add_typer(train_classifier_app, name="")  # attach classifier commands directly (e.g., train-classifier)
 app.add_typer(help_router_app, name="")       # help router lives at root (help ...)
 app.add_typer(shell_app,  name="shell")
 
@@ -40,8 +42,9 @@ def _main_callback(
     Welcome to **Wisent Guard**.
 
     Examples:
-      • `wisent help train`
-      • `wisent train model meta-llama/Llama-3.2-1B-Instruct loader custom path ./custom.json training_limit 5 method caa`
+      • `wisent help train-steering`
+      • `wisent train-steering model meta-llama/Llama-3.2-1B-Instruct loader custom path ./custom.json training_limit 5 method caa`
+      • `wisent train-classifier model meta-llama/Llama-3.2-1B-Instruct loader task_interface task gsm8k training_limit 10 classifier mlp`
       • `wisent list list-methods`      (methods)
       • `wisent list list-loaders`      (loaders)
       • `wisent list list-aggregations` (aggregations)
@@ -65,17 +68,20 @@ def instructions():
 [bold]Quickstart (no-dash style)[/]
 
 • Preview a run without executing:
-  [b]wisent train model gpt2 plan-only true[/]
+  [b]wisent train-steering model gpt2 plan-only true[/]
 
 • Discover components:
   [b]wisent list list-methods[/] | [b]wisent list list-loaders[/] | [b]wisent list list-aggregations[/]
 
 • Get help:
-  [b]wisent help train[/], [b]wisent help method caa[/], [b]wisent help loader custom[/]
+  [b]wisent help train-steering[/], [b]wisent help method caa[/], [b]wisent help loader custom[/]
 
-• Full training example (natural):
-  [b]wisent train model meta-llama/Llama-3.2-1B-Instruct loader custom path ./wisent/cli/cli_examples/custom_dataset.json training_limit 5 \\
+• Full steering training example (natural):
+  [b]wisent train-steering model meta-llama/Llama-3.2-1B-Instruct loader custom path ./wisent/cli/cli_examples/custom_dataset.json training_limit 5 \\
         method caa layers 10..12 aggregation continuation_token device cuda dtype float16 save_dir ./steering_output normalize_layers true[/]
+
+• Train classifier on activations:
+  [b]wisent train-classifier model meta-llama/Llama-3.2-1B-Instruct loader task_interface task gsm8k training_limit 10 classifier mlp hidden_dim 64[/]
 
 Tip: add [b]interactive true[/] for a guided wizard.
 """
