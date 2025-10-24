@@ -9,8 +9,8 @@ This script:
 import os
 from wisent.core.trainers.steering_trainer import WisentSteeringTrainer
 from wisent.core.models.wisent_model import WisentModel
-from wisent.cli.data_loaders.data_loader_rotator import DataLoaderRotator
-from wisent.cli.steering_methods.steering_rotator import SteeringMethodRotator
+from wisent.core.data_loaders.rotator import DataLoaderRotator
+from wisent.core.steering_methods.rotator import SteeringMethodRotator
 
 
 def get_config():

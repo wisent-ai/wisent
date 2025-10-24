@@ -44,7 +44,7 @@ class SteeringMethodRotator:
                 spec = importlib.util.spec_from_file_location(mod_name, py)
                 if spec and spec.loader:
                     module = importlib.util.module_from_spec(spec)
-                    spec.loader.exec_module(module)  
+                    spec.loader.exec_module(module)
             return
 
         if not isinstance(location, str):
@@ -91,7 +91,7 @@ class SteeringMethodRotator:
         if isinstance(method, str):
             return BaseSteeringMethod.get(method)(**kwargs)
         raise TypeError("method must be None, str name, BaseSteeringMethod instance, or subclass.")
-    
+
     def use(self, method: str | BaseSteeringMethod | Type[BaseSteeringMethod], **kwargs: Any) -> None:
         self._method = self._resolve_method(method, **kwargs)
 

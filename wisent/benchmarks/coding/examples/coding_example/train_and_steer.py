@@ -12,7 +12,7 @@ import json
 from pathlib import Path
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.core.atoms import LayerActivations
-from wisent.cli.data_loaders.data_loader_rotator import DataLoaderRotator
+from wisent.core.data_loaders.rotator import DataLoaderRotator
 
 
 def get_config():
