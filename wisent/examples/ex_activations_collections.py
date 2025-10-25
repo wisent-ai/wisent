@@ -19,7 +19,7 @@ dataset = load_dataset("openai/gsm8k", "main", split="train[:10%]")  # Load a sm
 examples = []
 for item in dataset:
     question = item["question"].strip()
-    answer = item["answer"].strip().split("####")[-1].strip()  
+    answer = item["answer"].strip().split("####")[-1].strip()
 
     # we need to handle
     # numbers like 1,080
@@ -32,7 +32,7 @@ for item in dataset:
             answer = float(answer)
         except ValueError:
             continue  # Skip if we can't parse the answer as a number
-    
+
     negative_answer = answer + 1  # Simple incorrect answer for demonstration
     examples.append({
         "prompt": question,
