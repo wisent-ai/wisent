@@ -1,5 +1,0 @@
-method,strength,accuracy,truthful_rate,total_responses,training_accuracy
-Baseline,0.0,0.4,0.4,5,0.0
-CAA,1.0,0.4,0.4,5,0.0
-CAA_L2,1.0,0.4,0.4,5,0.0
-HPR,1.0,0.4,0.4,5,0.0
