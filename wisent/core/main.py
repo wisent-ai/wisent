@@ -1,13 +1,14 @@
 """
 Main entry point for the Wisent CLI.
 
-This module connects the argparse parser (wisent/core/parser_arguments/) to command handlers
+This module connects the argparse parser (wisent/core/parser_arguments/) to execution logic
 and provides the main() function that serves as the CLI entry point.
 """
 
 import sys
 from wisent.core.parser_arguments import setup_parser
 from wisent.core.branding import print_banner
+from wisent.core.cli import execute_tasks
 
 
 def main():
@@ -24,11 +25,12 @@ def main():
         parser.print_help()
         sys.exit(0)
 
-    # TODO: Implement command handlers
-    # For now, just show that arguments were parsed successfully
-    print(f"\n✓ Command parsed successfully: {args.command}")
-    print(f"✓ Arguments: {vars(args)}")
-    print(f"\nNote: Command implementation is pending. The CLI parser is working correctly.")
+    # Execute based on command
+    if args.command == 'tasks':
+        execute_tasks(args)
+    else:
+        print(f"\n✗ Command '{args.command}' is not yet implemented")
+        sys.exit(1)
 
 
 if __name__ == '__main__':
