@@ -57,7 +57,7 @@ def training_space(trial: optuna.Trial) -> dict:
 # configure base training config
 base_cfg = ClassifierTrainConfig(
     test_size=0.2,
-    num_epochs=25,            
+    num_epochs=25,
     batch_size=64,
     learning_rate=1e-3,
     monitor="accuracy",
@@ -73,14 +73,14 @@ tuner = ClassificationOptimizer(
     objective_metric="accuracy",
 )
 
-# Optuna study config: sampler + pruner + direction (“maximize” for accuracy).
-# create_study lets you set direction, sampler, pruner, and persistent storage if you want. 
+# Optuna study config: sampler + pruner + direction ("maximize" for accuracy).
+# create_study lets you set direction, sampler, pruner, and persistent storage if you want.
 
 hpo_cfg = HPOConfig(
     n_trials=40,
     direction="maximize",
-    sampler="tpe",       
-    pruner="median",      
+    sampler="tpe",
+    pruner="median",
     timeout=None,
     seed=42,
 )
@@ -98,7 +98,7 @@ best = run.best_params
 
 final_cfg = ClassifierTrainConfig(
     test_size=0.2,
-    num_epochs=50,          
+    num_epochs=50,
     batch_size=best.get("batch_size", base_cfg.batch_size),
     learning_rate=best.get("lr", base_cfg.learning_rate),
     monitor="accuracy",

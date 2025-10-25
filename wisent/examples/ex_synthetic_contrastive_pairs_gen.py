@@ -46,7 +46,7 @@ cleaner = PairsCleaner(steps=[
     DeduperCleaner(deduper=deduper),
 ])
 
-# - diversity metric 
+# - diversity metric
 from wisent.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
 
 diversity = FastDiversity()
@@ -79,4 +79,3 @@ for pair in report[0].pairs:
 print("Generation Report:")
 print("Generated pairs:", len(report[0].pairs))
 print("Diversity score:", report[1].diversity)
-

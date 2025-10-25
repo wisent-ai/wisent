@@ -7,8 +7,8 @@ from wisent.core.models.wisent_model import WisentModel
 MODEL_NAME = "Llama-3.2-1B-Instruct/"  # Example model name
 
 wisent = WisentModel(
-    model_name=MODEL_NAME,  
-    device="cuda"  
+    model_name=MODEL_NAME,
+    device="cuda"
 )
 
 # Now we need to create a chat-style prompt
@@ -18,7 +18,7 @@ prompt = [[{"role": "user", "content": "What is wisent?"}]]
 response_stream = wisent.generate_stream(
     inputs=prompt,
     max_new_tokens=512,
-    temperature=0.01, 
+    temperature=0.01,
 )
 print("Prompt:", prompt[0][0]["content"])
 print("Response (streaming): ", end="", flush=True)

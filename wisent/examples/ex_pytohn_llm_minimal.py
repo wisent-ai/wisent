@@ -7,7 +7,7 @@ PATH_MODEL = "Llama-2-7b-hf"  # add your model path here
 model = WisentModel(
     model_name=PATH_MODEL,
     layers={},
-    device="cuda"  
+    device="cuda"
 )
 
 # we need to define TaskSchema
@@ -41,7 +41,7 @@ response = model.generate(
     max_new_tokens=200,
     temperature=0.01,
     top_p=0.9,
-    use_steering=False  
+    use_steering=False
 )
 
 # we need to extract the code from the response (stronger models may return more structured output)
