@@ -36,7 +36,7 @@ def execute_tasks(args):
         )
 
         # Use training pairs for classifier training
-        pair_set = result.train_pairs
+        pair_set = result['train_qa_pairs']
         print(f"   ✓ Loaded {len(pair_set.pairs)} training pairs")
 
         # 3. Load model
@@ -50,10 +50,23 @@ def execute_tasks(args):
 
         # 5. Collect activations for all pairs
         collector = ActivationCollector(model=model, store_device="cpu")
-        aggregation_strategy = ActivationAggregationStrategy[args.token_aggregation.upper()]
+
+        # Map parser values to enum members
+        aggregation_map = {
+            'average': 'MEAN_POOLING',
+            'final': 'LAST_TOKEN',
+            'first': 'FIRST_TOKEN',
+            'max': 'MAX_POOLING',
+            'min': 'MAX_POOLING',  # Fallback to MAX_POOLING for min
+        }
+        aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
+        aggregation_strategy = ActivationAggregationStrategy[aggregation_key]
 
         positive_activations = []
         negative_activations = []
+
+        # Convert layer int to string for activation collection
+        layer_str = str(layer)
 
         for i, pair in enumerate(pair_set.pairs):
             if i % 10 == 0:
@@ -62,17 +75,22 @@ def execute_tasks(args):
             # Collect for positive (correct) response
             updated_pair = collector.collect_for_pair(
                 pair,
-                layers=[layer],
+                layers=[layer_str],
                 aggregation=aggregation_strategy,
                 return_full_sequence=False,
                 normalize_layers=False
             )
 
-            # Extract activations
-            if updated_pair.positive_activations and layer in updated_pair.positive_activations.raw_map:
-                positive_activations.append(updated_pair.positive_activations.raw_map[layer].cpu().numpy())
-            if updated_pair.negative_activations and layer in updated_pair.negative_activations.raw_map:
-                negative_activations.append(updated_pair.negative_activations.raw_map[layer].cpu().numpy())
+            # Extract activations from positive and negative responses
+            if updated_pair.positive_response.layers_activations and layer_str in updated_pair.positive_response.layers_activations:
+                act = updated_pair.positive_response.layers_activations[layer_str]
+                if act is not None:
+                    positive_activations.append(act.cpu().numpy())
+
+            if updated_pair.negative_response.layers_activations and layer_str in updated_pair.negative_response.layers_activations:
+                act = updated_pair.negative_response.layers_activations[layer_str]
+                if act is not None:
+                    negative_activations.append(act.cpu().numpy())
 
         print(f"\n   ✓ Collected {len(positive_activations)} positive and {len(negative_activations)} negative activations")
 

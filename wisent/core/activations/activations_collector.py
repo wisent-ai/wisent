@@ -1,12 +1,16 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Sequence, TYPE_CHECKING
 import torch
 
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.activations.core.atoms import LayerActivations, ActivationAggregationStrategy, LayerName, RawActivationMap
-from wisent.core.models.wisent_model import WisentModel 
+from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+
+if TYPE_CHECKING:
+    from wisent.core.models.wisent_model import WisentModel
+
 __all__ = ["ActivationCollector"]
 
 @dataclass(slots=True)
@@ -125,22 +129,23 @@ class ActivationCollector:
                     }
     """
 
-    model: WisentModel
+    model: "WisentModel"
     store_device: str | torch.device = "cpu"
     dtype: torch.dtype | None = None
 
     def collect_for_pair(
         self,
         pair: ContrastivePair,
-        layers: Sequence[LayerName] | None = None,  
+        layers: Sequence[LayerName] | None = None,
         aggregation: ActivationAggregationStrategy = ActivationAggregationStrategy.CONTINUATION_TOKEN,
         return_full_sequence: bool = False,
         normalize_layers: bool = False,
+        prompt_strategy: PromptConstructionStrategy = PromptConstructionStrategy.CHAT_TEMPLATE,
     ) -> ContrastivePair:
         pos = self._collect_for_texts(pair.prompt, _resp_text(pair.positive_response),
-                                      layers, aggregation, return_full_sequence, normalize_layers)
+                                      layers, aggregation, return_full_sequence, normalize_layers, prompt_strategy)
         neg = self._collect_for_texts(pair.prompt, _resp_text(pair.negative_response),
-                                      layers, aggregation, return_full_sequence, normalize_layers)
+                                      layers, aggregation, return_full_sequence, normalize_layers, prompt_strategy)
         return pair.with_activations(positive=pos, negative=neg)
 
     def _collect_for_texts(
@@ -151,25 +156,16 @@ class ActivationCollector:
         aggregation: ActivationAggregationStrategy,
         return_full_sequence: bool,
         normalize_layers: bool = False,
+        prompt_strategy: PromptConstructionStrategy = PromptConstructionStrategy.CHAT_TEMPLATE,
     ) -> LayerActivations:
-        
+
         self._ensure_eval_mode()
         with torch.inference_mode():
             tok = self.model.tokenizer # type: ignore[union-attr]
-            if not hasattr(tok, "apply_chat_template"):
-                raise RuntimeError("Tokenizer has no apply_chat_template; set it up or use a non-chat path.")
 
-            # 1) Build templated strings
-            prompt_text = tok.apply_chat_template(
-                [{"role": "user", "content": prompt}],
-                tokenize=False,
-                add_generation_prompt=True,
-            )
-            full_text = tok.apply_chat_template(
-                [{"role": "user", "content": prompt},
-                {"role": "assistant", "content": response}],
-                tokenize=False,
-                add_generation_prompt=False,
+            # 1) Build prompts based on strategy
+            prompt_text, full_text = self._build_prompts_for_strategy(
+                prompt, response, prompt_strategy, tok
             )
 
             # 2) Tokenize both with identical flags
@@ -216,6 +212,61 @@ class ActivationCollector:
                 collected,
                 activation_aggregation_strategy=None if return_full_sequence else aggregation,
             )
+
+    def _build_prompts_for_strategy(
+        self,
+        prompt: str,
+        response: str,
+        strategy: PromptConstructionStrategy,
+        tokenizer
+    ) -> tuple[str, str]:
+        """
+        Build prompt_text and full_text based on the chosen prompt construction strategy.
+
+        Returns:
+            (prompt_text, full_text): Tuple of prompt-only text and prompt+response text
+        """
+        if strategy == PromptConstructionStrategy.CHAT_TEMPLATE:
+            # Use model's built-in chat template
+            if not hasattr(tokenizer, "apply_chat_template"):
+                raise RuntimeError("Tokenizer has no apply_chat_template; set it up or use a different strategy.")
+            prompt_text = tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt}],
+                tokenize=False,
+                add_generation_prompt=True,
+            )
+            full_text = tokenizer.apply_chat_template(
+                [{"role": "user", "content": prompt},
+                 {"role": "assistant", "content": response}],
+                tokenize=False,
+                add_generation_prompt=False,
+            )
+
+        elif strategy == PromptConstructionStrategy.DIRECT_COMPLETION:
+            # Q → good_resp/bad_resp (direct answer)
+            prompt_text = prompt
+            full_text = f"{prompt} {response}"
+
+        elif strategy == PromptConstructionStrategy.INSTRUCTION_FOLLOWING:
+            # [INST] Q [/INST] → good_resp/bad_resp (instruction format)
+            prompt_text = f"[INST] {prompt} [/INST]"
+            full_text = f"[INST] {prompt} [/INST] {response}"
+
+        elif strategy == PromptConstructionStrategy.MULTIPLE_CHOICE:
+            # Which is better: Q A. bad B. good → "A"/"B" (choice format)
+            # For multiple choice, we expect response to be "A" or "B"
+            prompt_text = f"Which is better: {prompt} A. [bad response] B. [good response]\nAnswer:"
+            full_text = f"{prompt_text} {response}"
+
+        elif strategy == PromptConstructionStrategy.ROLE_PLAYING:
+            # Behave like person who would answer Q with good_resp → "I" (role assumption)
+            prompt_text = f"Behave like a person who would answer '{prompt}' with '{response}'. Say 'I' to confirm:"
+            full_text = f"{prompt_text} I"
+
+        else:
+            raise ValueError(f"Unknown prompt construction strategy: {strategy}")
+
+        return prompt_text, full_text
 
     def _select_indices(self, layer_names: Sequence[str] | None, n_blocks: int) -> list[int]:
         """Map layer names '1'..'L' -> indices 0..L-1."""

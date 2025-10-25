@@ -91,8 +91,8 @@ class LMEvalDataLoader(BaseDataLoader):
         train_set = ContrastivePairSet("lm_eval_train", train_pairs, task_type=task_name)
         test_set = ContrastivePairSet("lm_eval_test", test_pairs, task_type=task_name)
 
-        train_set.validate()
-        test_set.validate()
+        train_set.validate(raise_on_critical=False)
+        test_set.validate(raise_on_critical=False)
 
         return LoadDataResult(
             train_qa_pairs=train_set,

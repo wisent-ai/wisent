@@ -4,7 +4,7 @@ import hashlib
 from collections import Counter, defaultdict
 from typing import Mapping, Sequence, Callable
 
-from wisent.synthetic.cleaners.methods.core.atoms import Deduper
+from wisent.core.synthetic.cleaners.methods.core.atoms import Deduper
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 __all__ = [

@@ -1,4 +1,4 @@
-from wisent.synthetic.cleaners.methods.core.atoms import Refusaler
+from wisent.core.synthetic.cleaners.methods.core.atoms import Refusaler
 from wisent.core.models.wisent_model import WisentModel 
 
 import re, unicodedata

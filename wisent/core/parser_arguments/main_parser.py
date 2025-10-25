@@ -9,6 +9,8 @@ import argparse
 
 from wisent.core.parser_arguments.tasks_parser import setup_tasks_parser
 from wisent.core.parser_arguments.generate_pairs_parser import setup_generate_pairs_parser
+from wisent.core.parser_arguments.generate_pairs_from_task_parser import setup_generate_pairs_from_task_parser
+from wisent.core.parser_arguments.get_activations_parser import setup_get_activations_parser
 from wisent.core.parser_arguments.synthetic_parser import setup_synthetic_parser
 from wisent.core.parser_arguments.test_nonsense_parser import setup_test_nonsense_parser
 from wisent.core.parser_arguments.monitor_parser import setup_monitor_parser
@@ -41,6 +43,14 @@ def setup_parser() -> argparse.ArgumentParser:
     # Generate pairs command
     generate_parser = subparsers.add_parser("generate-pairs", help="Generate synthetic contrastive pairs")
     setup_generate_pairs_parser(generate_parser)
+
+    # Generate pairs from task command
+    generate_from_task_parser = subparsers.add_parser("generate-pairs-from-task", help="Generate contrastive pairs from lm-eval task")
+
+    # Get activations command
+    get_activations_parser = subparsers.add_parser("get-activations", help="Collect activations from contrastive pairs")
+    setup_get_activations_parser(get_activations_parser)
+    setup_generate_pairs_from_task_parser(generate_from_task_parser)
 
     # Synthetic command (generate + train + test)
     synthetic_parser = subparsers.add_parser("synthetic", help="Run synthetic contrastive pair pipeline")

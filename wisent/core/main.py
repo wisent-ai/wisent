@@ -8,7 +8,7 @@ and provides the main() function that serves as the CLI entry point.
 import sys
 from wisent.core.parser_arguments import setup_parser
 from wisent.core.branding import print_banner
-from wisent.core.cli import execute_tasks
+from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_get_activations
 
 
 def main():
@@ -28,6 +28,12 @@ def main():
     # Execute based on command
     if args.command == 'tasks':
         execute_tasks(args)
+    elif args.command == 'generate-pairs':
+        execute_generate_pairs(args)
+    elif args.command == 'generate-pairs-from-task':
+        execute_generate_pairs_from_task(args)
+    elif args.command == 'get-activations':
+        execute_get_activations(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)
