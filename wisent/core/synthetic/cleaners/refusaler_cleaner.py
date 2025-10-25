@@ -1,9 +1,9 @@
 
-from wisent.synthetic.cleaners.core.atoms import CleanStep
+from wisent.core.synthetic.cleaners.core.atoms import CleanStep
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.synthetic.cleaners.core.atoms import CleanStepStats
+from wisent.core.synthetic.cleaners.core.atoms import CleanStepStats
 
-from wisent.synthetic.cleaners.methods.core.atoms import Refusaler
+from wisent.core.synthetic.cleaners.methods.core.atoms import Refusaler
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
@@ -59,7 +59,7 @@ class RefusalerCleaner(CleanStep):
             >>> from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
             >>> from wisent.core.contrastive_pairs.core.pair import ContrastivePair
             >>> from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
-            >>> from wisent.synthetic.cleaners.methods.base_refusalers import SimpleRefusaler
+            >>> from wisent.core.synthetic.cleaners.methods.base_refusalers import SimpleRefusaler
             >>> from wisent.core.models.wisent_model import WisentModel
             >>> refusal = SimpleRefusaler()
             >>> model = WisentModel(...)

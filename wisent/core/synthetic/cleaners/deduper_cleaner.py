@@ -1,8 +1,8 @@
-from wisent.synthetic.cleaners.core.atoms import CleanStep
-from wisent.synthetic.cleaners.core.atoms import CleanStepStats
+from wisent.core.synthetic.cleaners.core.atoms import CleanStep
+from wisent.core.synthetic.cleaners.core.atoms import CleanStepStats
 
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.synthetic.cleaners.methods.core.atoms import Deduper
+from wisent.core.synthetic.cleaners.methods.core.atoms import Deduper
 
 
 __all__ = [

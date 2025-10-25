@@ -8,6 +8,6 @@ python -m wisent.core.main tasks truthfulqa_mc1 \
     --model meta-llama/Llama-3.2-1B-Instruct \
     --layer 15 \
     --classifier-type logistic \
-    --limit 200 \
+    --limit 10 \
     --save-classifier ./models/truthfulqa_classifier.pt \
     --output ./results/classifier_training

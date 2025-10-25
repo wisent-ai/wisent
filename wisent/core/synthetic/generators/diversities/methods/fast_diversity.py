@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Iterable
 import re
 import numpy as np
-from wisent.synthetic.generators.diversities.core.core import Diversity, DiversityScores
+from wisent.core.synthetic.generators.diversities.core.core import Diversity, DiversityScores
 
 __all__ = [
     "FastDiversity",

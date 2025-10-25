@@ -1,5 +1,5 @@
 
-from wisent.synthetic.db_instructions.core.atoms import DB_Instructions
+from wisent.core.synthetic.db_instructions.core.atoms import DB_Instructions
 
 __all__ = ["Default_DB_Instructions"]
 
