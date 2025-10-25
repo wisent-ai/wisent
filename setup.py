@@ -47,5 +47,10 @@ setup(
             "lm-eval==0.4.8",
         ],
     },
+    entry_points={
+        "console_scripts": [
+            "wisent=wisent.core.main:main",
+        ],
+    },
     keywords="nlp, machine learning, language models, safety, guardrails, lm-evaluation-harness",
 ) 
