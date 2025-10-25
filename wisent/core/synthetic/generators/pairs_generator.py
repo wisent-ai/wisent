@@ -3,18 +3,18 @@ from __future__ import annotations
 import logging
 
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair  
-from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse  
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet 
+from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.synthetic.db_instructions.core.atoms import DB_Instructions
+from wisent.core.synthetic.db_instructions.core.atoms import DB_Instructions
 
-from wisent.synthetic.generators.core.atoms import GenerationReport
+from wisent.core.synthetic.generators.core.atoms import GenerationReport
 
-from wisent.synthetic.generators.diversities.core.core import Diversity
+from wisent.core.synthetic.generators.diversities.core.core import Diversity
 
-from wisent.synthetic.cleaners.pairs_cleaner import PairsCleaner
+from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
 
 __all__ = [
     "SyntheticContrastivePairsGenerator",
@@ -80,7 +80,8 @@ class SyntheticContrastivePairsGenerator:
         # 3) clean
         cleaned, stats = self.cleaner.clean(parsed)
 
-        retries = stats.step_stats.get("refusaler_cleaner").modified_items 
+        refusaler_stats = stats.step_stats.get("refusaler_cleaner")
+        retries = refusaler_stats.modified_items if refusaler_stats else 0 
 
         # 4) build domain objects
         cps = ContrastivePairSet(name=self.contrastive_set_name, task_type=self.trait_label)
@@ -123,25 +124,47 @@ class SyntheticContrastivePairsGenerator:
             name=self.contrastive_set_name,
             task_type=self.trait_label,
         )
-        for r in raw:
+
+        logger.info(f"[PARSE DEBUG] Received {len(raw)} raw outputs to parse")
+
+        for idx, r in enumerate(raw):
+            logger.info(f"[PARSE DEBUG] Raw output {idx}:\n{r[:500]}")  # First 500 chars
+
+            original_r = r
             #TODO: this is very ugly, need to improve robustness
             # r can have instruction, and i want extacrt everything between ```json and ``` (after - You must return answer in valid JSON format only. Don't include any explanations or additional text.assistant)
             # also try to recover like Expecting ',' delimiter
             if "```json" in r:
                 r = r.split("```json")[-1]
+                logger.info(f"[PARSE DEBUG] After json block extraction: {r[:200]}")
             if "```" in r:
                 r = r.split("```")[0]
+                logger.info(f"[PARSE DEBUG] After backtick removal: {r[:200]}")
             r = r.strip()
+
+            logger.info(f"[PARSE DEBUG] Final cleaned string to parse:\n{r}")
+
             try:
                 data = json.loads(r)
-            except json.JSONDecodeError:
+                logger.info(f"[PARSE DEBUG] Successfully parsed JSON: {data}")
+            except json.JSONDecodeError as e:
+                logger.warning(f"[PARSE DEBUG] JSON decode failed: {e}")
                 # try to recover from common errors
                 r = r.replace("'", '"').replace("```", '')
+                logger.info(f"[PARSE DEBUG] Attempting recovery with quote replacement: {r[:200]}")
                 try:
                     data = json.loads(r)
-                except json.JSONDecodeError:
+                    logger.info(f"[PARSE DEBUG] Recovery successful: {data}")
+                except json.JSONDecodeError as e2:
+                    logger.error(f"[PARSE DEBUG] Recovery failed: {e2}. Skipping this output.")
+                    logger.error(f"[PARSE DEBUG] Original raw output was:\n{original_r}")
                     continue
-            for item in data.get("pairs", []):
+
+            pairs_list = data.get("pairs", [])
+            logger.info(f"[PARSE DEBUG] Found {len(pairs_list)} pairs in data")
+
+            for item_idx, item in enumerate(pairs_list):
+                logger.info(f"[PARSE DEBUG] Processing pair {item_idx}: {item}")
                 cp = ContrastivePair(
                     prompt=item["prompt"],
                     positive_response=PositiveResponse(model_response=item["positive"]),
@@ -150,6 +173,9 @@ class SyntheticContrastivePairsGenerator:
                     trait_description=item.get("trait_description", self.trait_description),
                 )
                 out.add(cp)
+                logger.info(f"[PARSE DEBUG] Successfully added pair {item_idx}")
+
+        logger.info(f"[PARSE DEBUG] Finished parsing. Total pairs collected: {len(out)}")
         return out
 
     @staticmethod

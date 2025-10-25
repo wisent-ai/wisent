@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import Iterable, TYPE_CHECKING
 
-from wisent.synthetic.cleaners.core.atoms import CleanStep, Cleaner
-from wisent.synthetic.cleaners.core.atoms import CleanerStats
+from wisent.core.synthetic.cleaners.core.atoms import CleanStep, Cleaner
+from wisent.core.synthetic.cleaners.core.atoms import CleanerStats
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 __all__ = [
@@ -39,9 +39,9 @@ class PairsCleaner(Cleaner):
             >>> from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
             >>> from wisent.core.contrastive_pairs.core.pair import ContrastivePair
             >>> from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
-            >>> from wisent.synthetic.cleaners.methods.base_refusalers import BasesRefusaler
-            >>> from wisent.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
-            >>> from wisent.synthetic.cleaners.cleaners import PairsCleaner
+            >>> from wisent.core.synthetic.cleaners.methods.base_refusalers import BasesRefusaler
+            >>> from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
+            >>> from wisent.core.synthetic.cleaners.cleaners import PairsCleaner
             >>> from wisent.core.models.wisent_model import WisentModel
             >>> refusal = BasesRefusaler()
             >>> deduper = SimHashDeduper()
