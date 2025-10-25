@@ -1,1 +1,0 @@
-"""Coding example pipeline modules."""
