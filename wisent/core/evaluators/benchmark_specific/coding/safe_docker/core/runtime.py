@@ -1,10 +1,10 @@
 from __future__ import annotations
 import json, os, subprocess, tempfile
 from typing import TYPE_CHECKING
-from wisent.benchmarks.coding.safe_docker.core.atoms import Result, SandboxExecutor
+from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result, SandboxExecutor
 
 if TYPE_CHECKING:
-    from wisent.benchmarks.coding.safe_docker.core.atoms import Job
+    from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job
 
 __all__ = ["DockerSandboxExecutor"]
 
@@ -81,8 +81,8 @@ class DockerSandboxExecutor(SandboxExecutor):
             A Result object with the outcome of the execution.
 
         example (pythonm add function)
-        >>> from wisent.benchmarks.coding.safe_docker.core.atoms import Job, Result
-        >>> from wisent.benchmarks.coding.safe_docker.core.runtime import DockerSandboxExecutor
+        >>> from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job, Result
+        >>> from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
         >>> job = Job(
         ...     language="python",
         ...     compile_argv=None,

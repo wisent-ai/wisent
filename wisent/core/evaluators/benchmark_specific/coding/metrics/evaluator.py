@@ -2,19 +2,19 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Iterable, Optional, TYPE_CHECKING
 
-from wisent.benchmarks.coding.safe_docker.core.runtime import DockerSandboxExecutor
-from wisent.benchmarks.coding.safe_docker.recipes import RECIPE_REGISTRY
-from wisent.benchmarks.coding.metrics.core.atoms import SampleOutcome, Evaluator
+from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
+from wisent.core.evaluators.benchmark_specific.coding.safe_docker.recipes import RECIPE_REGISTRY
+from wisent.core.evaluators.benchmark_specific.coding.metrics.core.atoms import SampleOutcome, Evaluator
 
-from wisent.benchmarks.coding.output_sanitizer.core.atoms import TaskSchema
-from wisent.benchmarks.coding.output_sanitizer.python_sanitizer import PythonStandardizer
-from wisent.benchmarks.coding.output_sanitizer.cpp_sanitizer import CppStandardizer
-from wisent.benchmarks.coding.output_sanitizer.java_sanitizer import JavaStandardizer
+from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema
+from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.python_sanitizer import PythonStandardizer
+from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.cpp_sanitizer import CppStandardizer
+from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.java_sanitizer import JavaStandardizer
 
 if TYPE_CHECKING:
-    from wisent.benchmarks.coding.safe_docker.core.atoms import Result
-    from wisent.benchmarks.coding.providers.core.atoms import Provider, CodingTask
-    from wisent.benchmarks.coding.output_sanitizer.core.atoms import CodeStandardizer
+    from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result
+    from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import Provider, CodingTask
+    from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import CodeStandardizer
 
 RepairFn = Callable[[str, dict[str,str], str], dict[str,str]]  
 
@@ -82,7 +82,7 @@ def _make_schema(task: CodingTask) -> TaskSchema:
         and allow_wrapper set appropriately.
         
     example:
-        >>> from wisent.benchmarks.coding.providers.core.atoms import CodingTask
+        >>> from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
         >>> task = CodingTask(language="python", files={}, options={"entry_point":"add","file_name":"my_solution.py"})
         >>> schema = _make_schema(task)
         >>> schema.language
@@ -128,7 +128,7 @@ class CodingEvaluator(Evaluator):
             Feedback string summarizing the result, truncated to cfg.feedback_max_chars.
             
         examples:
-            >>> from wisent.benchmarks.coding.safe_docker.core.atoms import Result
+            >>> from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result
             >>> res = Result(status="timeout", stdout="", stderr="", elapsed=10.0)
             >>> evaluator = CodingEvaluator(provider=None, model_fn=lambda x: {}, cfg=EvaluatorConfig())
             >>> evaluator._feedback(res)
@@ -163,8 +163,8 @@ class CodingEvaluator(Evaluator):
             Result object containing the status, stdout, stderr, and elapsed time.
 
         examples:
-            >>> from wisent.benchmarks.coding.providers.core.atoms import CodingTask
-            >>> from wisent.benchmarks.coding.safe_docker.core.atoms import Result
+            >>> from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
+            >>> from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result
             >>> task = CodingTask(language="python", files={}, options={})
             >>> files = {"solution.py": "def add(a,b): return a + b", "tests.py": "from solution import add\ndef test_ok(): assert add(1,2)==3"}
             >>> evaluator = CodingEvaluator(provider=None, model_fn=lambda x: {})
@@ -201,7 +201,7 @@ class CodingEvaluator(Evaluator):
             The sanitized files if pre_sanitize is True and a sanitizer exists for the language; otherwise, the original files.
         
         examples:
-            >>> from wisent.benchmarks.coding.providers.core.atoms import CodingTask
+            >>> from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
             >>> task = CodingTask(language="python", files={}, options={"entry_point":"add","file_name":"my_solution.py"})
             >>> files = {"my_solution.py": "def add(a,b): return a - b  # BUG"}
             >>> evaluator = CodingEvaluator(provider=None, model_fn=lambda x: {}, cfg=EvaluatorConfig(pre_sanitize=True))
@@ -234,7 +234,7 @@ class CodingEvaluator(Evaluator):
             SampleOutcome for each task, indicating pass/fail status and elapsed time.
 
         examples:
-            >>> from wisent.benchmarks.coding.providers.core.atoms import CodingTask, Provider
+            >>> from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask, Provider
             >>> class DummyProvider:
             ...     name = "dummy"
             ...     def iter_tasks(self):

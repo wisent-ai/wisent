@@ -2,8 +2,8 @@
 from __future__ import annotations
 import ast, re
 from typing import List
-from wisent.benchmarks.coding.output_sanitizer.core.atoms import TaskSchema, NormalizeResult, CodeStandardizer
-from wisent.benchmarks.coding.output_sanitizer.utils import extract_code_block, normalize_whitespace, maybe_black
+from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema, NormalizeResult, CodeStandardizer
+from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.utils import extract_code_block, normalize_whitespace, maybe_black
 
 class PythonStandardizer(CodeStandardizer):
     language = "python"
