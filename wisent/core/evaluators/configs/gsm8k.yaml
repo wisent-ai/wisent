@@ -1,0 +1,32 @@
+# GSM8K - Grade school math problems
+task_name: gsm8k
+description: Grade School Math 8K - math word problems requiring numerical answers
+
+evaluation:
+  type: generate_until
+  method: text_generation
+  output_type: generate_until
+
+metrics:
+  primary: exact_match
+  all:
+    - exact_match   # Exact numerical match
+
+aggregation: mean
+
+task_config:
+  answer_format: numerical
+  answer_field: answer
+  question_field: question
+  stop_sequences: ["</s>", "Q:", "\n\n"]
+
+generation_config:
+  max_new_tokens: 256
+  temperature: 0.0  # Greedy decoding for deterministic answers
+
+notes: |
+  - Uses text generation (not loglikelihood)
+  - 1,319 test examples
+  - Requires multi-step reasoning
+  - Answer must exactly match numerical solution
+  - Chain-of-thought helpful but not required

@@ -6,6 +6,7 @@
 # - Best steering method (CAA, HPR, DAC, BiPO, KSteering)
 # - Optimal steering layer
 # - Optimal steering strength
+# - Optimal steering strategy (last_only, first_only, all_equal, exponential_decay, etc.)
 # - Method-specific parameters
 #
 # Usage:
@@ -13,7 +14,8 @@
 
 python -m wisent.core.main optimize-steering comprehensive \
     meta-llama/Llama-3.2-1B-Instruct \
-    --methods CAA HPR \
+    --tasks truthfulqa_mc1 \
+    --methods CAA \
     --limit 10 \
     --max-time-per-task 15.0 \
     --device cpu \

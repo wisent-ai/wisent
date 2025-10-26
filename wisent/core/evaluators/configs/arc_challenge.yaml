@@ -1,0 +1,29 @@
+# ARC Challenge - Challenging science questions with multiple choice answers
+task_name: arc_challenge
+description: AI2 Reasoning Challenge (Challenge) - Difficult grade-school science questions
+
+evaluation:
+  type: multiple_choice
+  method: loglikelihood
+  output_type: multiple_choice
+
+metrics:
+  primary: acc
+  all:
+    - acc        # Accuracy using raw loglikelihoods
+    - acc_norm   # Length-normalized accuracy
+
+aggregation: mean
+
+task_config:
+  num_choices: 4  # A, B, C, D
+  choice_format: letter
+  answer_key: answerKey
+  choices_field: choices
+  question_field: question
+
+notes: |
+  - More challenging than arc_easy
+  - Questions require reasoning and world knowledge
+  - acc_norm helps with varying choice lengths
+  - 1172 test questions
