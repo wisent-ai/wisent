@@ -325,9 +325,12 @@ class BigCodeEvaluator:
 
     def _execute_in_docker(self, sample: Dict, generation: str, task_name: str) -> Dict:
         """Execute code in Docker container."""
-        # TODO: Implement Docker execution
-        logger.warning("Docker execution not yet implemented, using subprocess")
-        return self._execute_in_subprocess(sample, generation, task_name)
+        raise NotImplementedError(
+            "Docker execution is not yet implemented. "
+            "To execute code safely, please implement Docker containerization for code execution, "
+            "or use the subprocess executor by setting docker_executor=None (note: subprocess execution "
+            "is less secure and should only be used in trusted environments)."
+        )
 
     def _execute_in_subprocess(self, sample: Dict, generation: str, task_name: str) -> Dict:
         """Execute code in subprocess (less secure)."""
@@ -540,10 +543,20 @@ def {expected_name}(*args, **kwargs):
         return total_passed / total_samples if total_samples > 0 else 0.0
 
     def _evaluate_text_generation(self, task: BigCodeTask, generations: List[str]) -> List[float]:
-        """Evaluate text generation tasks (e.g., code-to-text)."""
-        # TODO: Implement BLEU scoring
-        logger.warning("Text generation evaluation not yet implemented")
-        return [0.0] * len(generations)
+        """Evaluate text generation tasks (e.g., code-to-text).
+
+        Raises:
+            NotImplementedError: BLEU scoring is not yet implemented
+        """
+        raise NotImplementedError(
+            "BLEU scoring for text generation tasks is not yet implemented. "
+            "This requires:\n"
+            "  1. Reference text extraction from task samples\n"
+            "  2. BLEU score computation (using sacrebleu or similar library)\n"
+            "  3. Proper tokenization and n-gram matching\n"
+            "Please implement BLEU scoring or use alternative evaluation metrics "
+            "(exact match, F1 score) for code generation tasks."
+        )
 
 
 # Main interface for BigCode integration
