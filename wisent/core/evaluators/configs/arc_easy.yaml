@@ -1,0 +1,28 @@
+# ARC Easy - Science questions with multiple choice answers
+task_name: arc_easy
+description: AI2 Reasoning Challenge (Easy) - Grade-school science questions
+
+evaluation:
+  type: multiple_choice
+  method: loglikelihood
+  output_type: multiple_choice
+
+metrics:
+  primary: acc
+  all:
+    - acc        # Accuracy using raw loglikelihoods
+    - acc_norm   # Length-normalized accuracy
+
+aggregation: mean
+
+task_config:
+  num_choices: 4  # A, B, C, D
+  choice_format: letter
+  answer_key: answerKey
+  choices_field: choices
+  question_field: question
+
+notes: |
+  - acc_norm normalizes by choice length to avoid bias toward shorter options
+  - Uses loglikelihood evaluation (not generation)
+  - 2376 test questions covering science topics

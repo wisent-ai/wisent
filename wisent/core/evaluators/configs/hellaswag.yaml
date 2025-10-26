@@ -1,0 +1,29 @@
+# HellaSwag - Commonsense reasoning about completing scenarios
+task_name: hellaswag
+description: Commonsense NLI task requiring models to complete scenarios
+
+evaluation:
+  type: multiple_choice
+  method: loglikelihood
+  output_type: multiple_choice
+
+metrics:
+  primary: acc
+  all:
+    - acc        # Accuracy using raw loglikelihoods
+    - acc_norm   # Length-normalized accuracy
+
+aggregation: mean
+
+task_config:
+  num_choices: 4
+  choice_format: text
+  label_field: label
+  endings_field: endings
+  context_field: ctx
+
+notes: |
+  - Tests commonsense reasoning about everyday scenarios
+  - 10,042 validation examples
+  - acc_norm is especially important due to varying completion lengths
+  - Adversarially filtered to be challenging for models

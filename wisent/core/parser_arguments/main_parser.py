@@ -27,6 +27,8 @@ from wisent.core.parser_arguments.full_optimize_parser import setup_full_optimiz
 from wisent.core.parser_arguments.generate_vector_parser import setup_generate_vector_parser
 from wisent.core.parser_arguments.multi_steer_parser import setup_multi_steer_parser
 from wisent.core.parser_arguments.evaluate_parser import setup_evaluate_parser
+from wisent.core.parser_arguments.generate_responses_parser import setup_generate_responses_parser
+from wisent.core.parser_arguments.evaluate_responses_parser import setup_evaluate_responses_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -134,5 +136,17 @@ def setup_parser() -> argparse.ArgumentParser:
         "evaluate", help="Evaluate single prompt with steering vector and return quality scores"
     )
     setup_evaluate_parser(evaluate_parser)
+
+    # Generate responses command for generating model responses to task questions
+    generate_responses_parser = subparsers.add_parser(
+        "generate-responses", help="Generate model responses to questions from a task"
+    )
+    setup_generate_responses_parser(generate_responses_parser)
+
+    # Evaluate responses command for evaluating generated responses
+    evaluate_responses_parser = subparsers.add_parser(
+        "evaluate-responses", help="Evaluate generated responses using embedded evaluator"
+    )
+    setup_evaluate_responses_parser(evaluate_responses_parser)
 
     return parser

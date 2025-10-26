@@ -1,0 +1,28 @@
+# BoolQ - Boolean yes/no questions
+task_name: boolq
+description: Boolean Questions - yes/no questions from natural language queries
+
+evaluation:
+  type: multiple_choice
+  method: loglikelihood
+  output_type: multiple_choice
+
+metrics:
+  primary: acc
+  all:
+    - acc        # Accuracy
+
+aggregation: mean
+
+task_config:
+  num_choices: 2
+  choice_format: boolean
+  answer_field: answer
+  passage_field: passage
+  question_field: question
+
+notes: |
+  - Binary choice (yes/no)
+  - 3,270 validation examples
+  - Based on naturally occurring yes/no questions
+  - Requires reading comprehension

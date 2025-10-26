@@ -9,11 +9,18 @@ directly on each choice to evaluate performance against known ground truth.
 
 import logging
 from typing import Any, Dict, Optional
+from dataclasses import dataclass
 
 from wisent.core.activations import ActivationAggregationStrategy, Activations
-from wisent.core.layer import Layer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class Layer:
+    """Simple layer metadata class."""
+    index: int
+    type: str = "transformer"
 
 
 class LogLikelihoodsEvaluator:

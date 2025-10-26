@@ -1,0 +1,29 @@
+# OpenBookQA - Elementary science questions
+task_name: openbookqa
+description: Open Book QA - elementary science questions with external knowledge
+
+evaluation:
+  type: multiple_choice
+  method: loglikelihood
+  output_type: multiple_choice
+
+metrics:
+  primary: acc
+  all:
+    - acc        # Accuracy using raw loglikelihoods
+    - acc_norm   # Length-normalized accuracy
+
+aggregation: mean
+
+task_config:
+  num_choices: 4  # A, B, C, D
+  choice_format: text
+  answerKey_field: answerKey
+  choices_field: choices
+  question_stem_field: question_stem
+
+notes: |
+  - 500 test questions
+  - Inspired by open book exams
+  - Questions require reasoning with external facts
+  - acc_norm helps with varying choice lengths

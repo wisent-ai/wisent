@@ -330,7 +330,7 @@ class WisentModel:
 
         batch = self.tokenizer.pad(singles, padding=True, return_tensors="pt")
 
-        batch = {k: v.to(resolve_torch_device()) for k, v in batch.items()}
+        batch = {k: v.to(self.device) for k, v in batch.items()}
 
         return batch
 
@@ -463,8 +463,8 @@ class WisentModel:
             )
             # Move tensors to the correct device (same as _batch_encode does)
             batch = {
-                "input_ids": tokenizer_output["input_ids"].to(resolve_torch_device()),
-                "attention_mask": tokenizer_output["attention_mask"].to(resolve_torch_device())
+                "input_ids": tokenizer_output["input_ids"].to(self.device),
+                "attention_mask": tokenizer_output["attention_mask"].to(self.device)
             }
         else:
             # Current behavior: apply chat template
@@ -695,8 +695,8 @@ class WisentModel:
             )
             # Move tensors to the correct device (same as _batch_encode does)
             batch = {
-                "input_ids": tokenizer_output["input_ids"].to(resolve_torch_device()),
-                "attention_mask": tokenizer_output["attention_mask"].to(resolve_torch_device())
+                "input_ids": tokenizer_output["input_ids"].to(self.device),
+                "attention_mask": tokenizer_output["attention_mask"].to(self.device)
             }
         else:
             # Current behavior: apply chat template

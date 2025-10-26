@@ -1,0 +1,29 @@
+# WinoGrande - Pronoun resolution requiring commonsense
+task_name: winogrande
+description: Adversarial Winograd Schema Challenge requiring commonsense reasoning
+
+evaluation:
+  type: multiple_choice
+  method: loglikelihood
+  output_type: multiple_choice
+
+metrics:
+  primary: acc
+  all:
+    - acc        # Accuracy
+
+aggregation: mean
+
+task_config:
+  num_choices: 2
+  choice_format: text
+  answer_field: answer
+  option1_field: option1
+  option2_field: option2
+  sentence_field: sentence
+
+notes: |
+  - Binary choice (2 options)
+  - 1,267 validation examples
+  - Tests pronoun resolution and commonsense understanding
+  - Adversarially constructed to be difficult

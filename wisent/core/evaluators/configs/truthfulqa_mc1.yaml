@@ -1,0 +1,29 @@
+# TruthfulQA MC1 - Truthfulness evaluation with single correct answer
+task_name: truthfulqa_mc1
+description: Tests model truthfulness on questions with common misconceptions
+
+evaluation:
+  type: multiple_choice
+  method: loglikelihood
+  output_type: multiple_choice
+
+metrics:
+  primary: acc
+  all:
+    - acc        # Accuracy
+
+aggregation: mean
+
+task_config:
+  num_choices: variable  # Varies per question
+  choice_format: text
+  targets_field: mc1_targets
+  choices_field: choices
+  labels_field: labels
+  question_field: question
+
+notes: |
+  - Single correct answer (mc1 = multiple choice 1 correct)
+  - 817 validation questions
+  - Tests resistance to common misconceptions
+  - Variable number of choices per question

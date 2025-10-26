@@ -8,7 +8,7 @@ and provides the main() function that serves as the CLI entry point.
 import sys
 from wisent.core.parser_arguments import setup_parser
 from wisent.core.branding import print_banner
-from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_get_activations, execute_create_steering_vector, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering
+from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_get_activations, execute_create_steering_vector, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering, execute_generate_responses, execute_evaluate_responses
 
 
 def main():
@@ -44,6 +44,10 @@ def main():
         execute_optimize_classification(args)
     elif args.command == 'optimize-steering':
         execute_optimize_steering(args)
+    elif args.command == 'generate-responses':
+        execute_generate_responses(args)
+    elif args.command == 'evaluate-responses':
+        execute_evaluate_responses(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)

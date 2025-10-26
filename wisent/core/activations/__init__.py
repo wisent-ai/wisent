@@ -8,6 +8,7 @@ from wisent.core.activations.core.atoms import (
 
 __all__ = [
     "ActivationCollector",
+    "Activations",
     "PromptConstructionStrategy",
     "ActivationAggregationStrategy",
     "LayerActivations",
@@ -19,4 +20,7 @@ def __getattr__(name):
     if name == "ActivationCollector":
         from wisent.core.activations.activations_collector import ActivationCollector
         return ActivationCollector
+    if name == "Activations":
+        from wisent.core.activations.activations import Activations
+        return Activations
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
