@@ -1,0 +1,30 @@
+# PIQA - Physical commonsense reasoning
+task_name: piqa
+description: Physical Interaction QA - tests physical commonsense reasoning
+
+evaluation:
+  type: multiple_choice
+  method: loglikelihood
+  output_type: multiple_choice
+
+metrics:
+  primary: acc
+  all:
+    - acc        # Accuracy using raw loglikelihoods
+    - acc_norm   # Length-normalized accuracy
+
+aggregation: mean
+
+task_config:
+  num_choices: 2
+  choice_format: text
+  label_field: label
+  sol1_field: sol1
+  sol2_field: sol2
+  goal_field: goal
+
+notes: |
+  - Binary choice (2 solutions)
+  - 1,838 validation examples
+  - Tests physical commonsense about everyday situations
+  - acc_norm helps with varying solution lengths
