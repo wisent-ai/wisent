@@ -76,10 +76,10 @@ def execute_evaluate_responses(args):
         print(f"   ❌ Could not load task config: {e}")
         sys.exit(1)
 
-    # Load task to get ground truth (skip for docker_execution)
+    # Load task to get ground truth (skip for docker_execution and personalization)
     task_docs = None
     task = None
-    if evaluation_type != "docker_execution":
+    if evaluation_type not in ["docker_execution", "personalization"]:
         print(f"📚 Loading task data...")
         try:
             tm = TaskManager()
@@ -129,6 +129,10 @@ def execute_evaluate_responses(args):
     elif evaluation_type == "loglikelihood_rolling":
         evaluator = PerplexityEvaluator()
         print(f"   Using: PerplexityEvaluator (perplexity computation)\n")
+    elif evaluation_type == "personalization":
+        from wisent.core.evaluators.benchmark_specific import PersonalizationEvaluator
+        evaluator = PersonalizationEvaluator()
+        print(f"   Using: PersonalizationEvaluator (personality trait evaluation)\n")
     else:
         evaluator = F1Evaluator()
         print(f"   Using: F1Evaluator (default fallback)\n")
@@ -316,6 +320,165 @@ def execute_evaluate_responses(args):
         print(f"   Passed: {int(aggregated_metrics.get('total_passed', 0))}")
         print(f"   Failed: {len(task_results) - int(aggregated_metrics.get('total_passed', 0))}")
         print(f"   Pass rate: {aggregated_metrics.get('pass_rate', 0):.2%}")
+        print(f"{'='*80}\n")
+        return
+
+    # Handle personalization separately - LLM-as-judge evaluation
+    if evaluation_type == "personalization":
+        print(f"🎭 Running personality trait evaluation...")
+
+        # Extract judge model from task config if available
+        judge_model = task_config.get('judge_model', evaluator.default_judge_model)
+        use_mock = task_config.get('use_mock', False)
+
+        # Check if trait is specified via CLI
+        if hasattr(args, 'trait') and args.trait:
+            print(f"   Target trait: {args.trait} (from CLI)")
+
+        if use_mock:
+            print(f"   ⚠️  Using mock evaluation (no API calls)\n")
+        else:
+            print(f"   Judge model: {judge_model}\n")
+
+        print(f"   Evaluating {len(responses)} responses...\n")
+
+        evaluated_count = 0
+        trait_scores = []
+
+        for idx, response_data in enumerate(responses, 1):
+            if 'error' in response_data:
+                if args.verbose:
+                    print(f"Response {idx}: Skipped (generation error)")
+                evaluation_results.append({
+                    **response_data,
+                    "evaluation": {
+                        "error": "Generation failed"
+                    }
+                })
+                continue
+
+            try:
+                generated_response = response_data.get('generated_response', '')
+                prompt = response_data.get('prompt', '')
+
+                # Extract trait information from CLI argument or response_data
+                # CLI argument takes precedence
+                if hasattr(args, 'trait') and args.trait:
+                    trait = args.trait
+                    trait_description = f'The trait: {trait}'
+                else:
+                    trait = response_data.get('trait', 'unknown')
+                    trait_description = response_data.get('trait_description', f'The trait: {trait}')
+
+                    # If trait info is in a nested dict
+                    if isinstance(response_data.get('expected'), dict):
+                        trait = response_data['expected'].get('trait', trait)
+                        trait_description = response_data['expected'].get('trait_description', trait_description)
+
+                # Call evaluator
+                eval_result = evaluator.evaluate(
+                    response=generated_response,
+                    expected={
+                        'trait': trait,
+                        'trait_description': trait_description
+                    },
+                    prompt=prompt,
+                    judge_model=judge_model,
+                    use_mock=use_mock
+                )
+
+                evaluated_count += 1
+
+                # Extract metrics from meta
+                trait_score = eval_result.meta.get('trait_score', 0)
+                intensity = eval_result.meta.get('intensity', 'unknown')
+
+                trait_scores.append(trait_score)
+
+                # Store result
+                result = {
+                    'response_id': response_data.get('id', idx),
+                    'trait': trait,
+                    'trait_score': trait_score,
+                    'intensity': intensity,
+                    'ground_truth': eval_result.ground_truth,
+                    'confidence': eval_result.confidence,
+                    'explanation': eval_result.meta.get('explanation', ''),
+                    'judge_model': eval_result.meta.get('judge_model', judge_model)
+                }
+
+                evaluation_results.append(result)
+                task_results.append({
+                    'trait_score': trait_score,
+                    'confidence': eval_result.confidence
+                })
+
+                if args.verbose:
+                    score_icon = '✅' if trait_score >= 7 else ('⚠️' if trait_score >= 4 else '❌')
+                    print(f"{score_icon} Response {idx} ({trait}): {trait_score}/10 ({intensity})")
+
+            except Exception as e:
+                logger.exception(f"Error evaluating response {idx}: {e}")
+                evaluation_results.append({
+                    **response_data,
+                    "evaluation": {
+                        "error": str(e)
+                    }
+                })
+
+        print(f"\n   ✓ Evaluated {evaluated_count} responses\n")
+
+        # Aggregate results
+        aggregated_metrics = {}
+        if task_results:
+            avg_trait_score = sum(r['trait_score'] for r in task_results) / len(task_results)
+            avg_confidence = sum(r['confidence'] for r in task_results) / len(task_results)
+
+            # Count by intensity thresholds
+            strong_count = sum(1 for s in trait_scores if s >= 7)
+            moderate_count = sum(1 for s in trait_scores if 4 <= s < 7)
+            weak_count = sum(1 for s in trait_scores if s < 4)
+
+            aggregated_metrics['avg_trait_score'] = avg_trait_score
+            aggregated_metrics['avg_confidence'] = avg_confidence
+            aggregated_metrics['strong_manifestation_rate'] = strong_count / len(trait_scores) if trait_scores else 0
+            aggregated_metrics['moderate_manifestation_rate'] = moderate_count / len(trait_scores) if trait_scores else 0
+            aggregated_metrics['weak_manifestation_rate'] = weak_count / len(trait_scores) if trait_scores else 0
+            aggregated_metrics['total_evaluated'] = len(task_results)
+
+        # Save results
+        print(f"💾 Saving evaluation results...")
+        output_dir = os.path.dirname(args.output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+
+        output_data = {
+            "input_file": args.input,
+            "task": input_data.get('task'),
+            "model": input_data.get('model'),
+            "evaluation_type": evaluation_type,
+            "evaluator_used": "PersonalizationEvaluator",
+            "judge_model": judge_model,
+            "use_mock": use_mock,
+            "aggregated_metrics": aggregated_metrics,
+            "num_evaluated": len(task_results),
+            "num_total": len(responses),
+            "evaluations": evaluation_results
+        }
+
+        with open(args.output, 'w') as f:
+            json.dump(output_data, f, indent=2)
+
+        print(f"   ✓ Results saved to: {args.output}\n")
+        print(f"{'='*80}")
+        print(f"✅ PERSONALIZATION EVALUATION COMPLETE")
+        print(f"{'='*80}")
+        print(f"   Total responses: {len(task_results)}")
+        print(f"   Average trait score: {aggregated_metrics.get('avg_trait_score', 0):.2f}/10")
+        print(f"   Average confidence: {aggregated_metrics.get('avg_confidence', 0):.2%}")
+        print(f"   Strong manifestation: {aggregated_metrics.get('strong_manifestation_rate', 0):.1%}")
+        print(f"   Moderate manifestation: {aggregated_metrics.get('moderate_manifestation_rate', 0):.1%}")
+        print(f"   Weak manifestation: {aggregated_metrics.get('weak_manifestation_rate', 0):.1%}")
         print(f"{'='*80}\n")
         return
 
