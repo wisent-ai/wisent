@@ -1,8 +1,8 @@
 from __future__ import annotations
 import re
 from typing import List
-from wisent.benchmarks.coding.output_sanitizer.core.atoms import TaskSchema, NormalizeResult, CodeStandardizer
-from wisent.benchmarks.coding.output_sanitizer.utils import extract_code_block, normalize_whitespace
+from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema, NormalizeResult, CodeStandardizer
+from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.utils import extract_code_block, normalize_whitespace
 
 FUNC_RE = re.compile(r"^\s*(?:template<[^>]+>\s*)?(?:[\w:\s*&<>,]+)\s+(\w+)\s*\(", re.MULTILINE)
 CLASS_RE = re.compile(r"^\s*class\s+(\w+)\s*[{:]", re.MULTILINE)

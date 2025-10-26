@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 from dataclasses import dataclass, asdict
 
-from wisent.benchmarks.coding.providers.livecodebench.provider import LiveCodeBenchProvider
-from wisent.benchmarks.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
-from wisent.benchmarks.coding.providers.core.atoms import CodingTask
+from wisent.core.evaluators.benchmark_specific.coding.providers.livecodebench.provider import LiveCodeBenchProvider
+from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
+from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
 
 
 @dataclass
