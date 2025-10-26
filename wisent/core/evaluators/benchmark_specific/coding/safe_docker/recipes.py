@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict
-from wisent.benchmarks.coding.safe_docker.core.atoms import Job, LanguageRecipe
+from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job, LanguageRecipe
 
 class PythonRecipe(LanguageRecipe):
     """
