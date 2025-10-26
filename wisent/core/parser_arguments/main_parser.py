@@ -11,6 +11,9 @@ from wisent.core.parser_arguments.tasks_parser import setup_tasks_parser
 from wisent.core.parser_arguments.generate_pairs_parser import setup_generate_pairs_parser
 from wisent.core.parser_arguments.generate_pairs_from_task_parser import setup_generate_pairs_from_task_parser
 from wisent.core.parser_arguments.get_activations_parser import setup_get_activations_parser
+from wisent.core.parser_arguments.create_steering_vector_parser import setup_create_steering_vector_parser
+from wisent.core.parser_arguments.generate_vector_from_task_parser import setup_generate_vector_from_task_parser
+from wisent.core.parser_arguments.generate_vector_from_synthetic_parser import setup_generate_vector_from_synthetic_parser
 from wisent.core.parser_arguments.synthetic_parser import setup_synthetic_parser
 from wisent.core.parser_arguments.test_nonsense_parser import setup_test_nonsense_parser
 from wisent.core.parser_arguments.monitor_parser import setup_monitor_parser
@@ -51,6 +54,18 @@ def setup_parser() -> argparse.ArgumentParser:
     get_activations_parser = subparsers.add_parser("get-activations", help="Collect activations from contrastive pairs")
     setup_get_activations_parser(get_activations_parser)
     setup_generate_pairs_from_task_parser(generate_from_task_parser)
+
+    # Create steering vector command
+    create_steering_parser = subparsers.add_parser("create-steering-vector", help="Create steering vectors from enriched pairs")
+    setup_create_steering_vector_parser(create_steering_parser)
+
+    # Generate vector from task command (full pipeline)
+    generate_vector_from_task_parser = subparsers.add_parser("generate-vector-from-task", help="Generate steering vector from task (full pipeline)")
+    setup_generate_vector_from_task_parser(generate_vector_from_task_parser)
+
+    # Generate vector from synthetic command (full pipeline)
+    generate_vector_from_synthetic_parser = subparsers.add_parser("generate-vector-from-synthetic", help="Generate steering vector from synthetic pairs (full pipeline)")
+    setup_generate_vector_from_synthetic_parser(generate_vector_from_synthetic_parser)
 
     # Synthetic command (generate + train + test)
     synthetic_parser = subparsers.add_parser("synthetic", help="Run synthetic contrastive pair pipeline")
