@@ -768,9 +768,16 @@ class AutonomousAgent:
             if not classifier_config:
                 return None
 
+            # Validate required classifier configuration
+            if "layer" not in classifier_config:
+                raise ValueError(
+                    "Classifier configuration must include 'layer' parameter. "
+                    "Please ensure your classifier configuration file specifies the optimal layer."
+                )
+
             # Create ClassifierParams from stored data
             params = ClassifierParams(
-                optimal_layer=classifier_config.get("layer", 15),
+                optimal_layer=classifier_config["layer"],
                 classification_threshold=classifier_config.get("threshold", 0.5),
                 training_samples=classifier_config.get("samples", 25),
                 classifier_type=classifier_config.get("type", "logistic"),

@@ -1276,6 +1276,80 @@ class FullBenchmarkDownloader:
 
         return pairs
 
+    def _perturb_code_to_break(self, code: str) -> str:
+        """
+        Perturb correct code to make it broken/unable to execute at runtime.
+
+        Introduces various types of bugs:
+        - Syntax errors (missing colons, parentheses)
+        - Runtime errors (undefined variables)
+        - Logic errors (wrong operators)
+        - Type errors (wrong return values)
+
+        Args:
+            code: Correct Python code
+
+        Returns:
+            Broken version of the code
+        """
+        lines = code.split('\n')
+        if not lines:
+            return "pass  # Broken code"
+
+        # Choose a random perturbation strategy
+        perturbation_type = random.choice([
+            'remove_colon',
+            'remove_return',
+            'wrong_variable',
+            'syntax_error',
+            'wrong_operator',
+            'incomplete_code'
+        ])
+
+        if perturbation_type == 'remove_colon':
+            # Remove colons from function/if/for statements
+            for i, line in enumerate(lines):
+                if any(keyword in line for keyword in ['def ', 'if ', 'for ', 'while ', 'elif ', 'else:']):
+                    lines[i] = line.replace(':', '')
+                    break
+
+        elif perturbation_type == 'remove_return':
+            # Remove return statement to break function
+            for i, line in enumerate(lines):
+                if 'return ' in line:
+                    lines[i] = line.replace('return ', '# return ')
+                    break
+
+        elif perturbation_type == 'wrong_variable':
+            # Use undefined variable name
+            for i, line in enumerate(lines):
+                if '=' in line and 'def ' not in line:
+                    lines[i] = line.replace('=', '= undefined_variable +')
+                    break
+
+        elif perturbation_type == 'syntax_error':
+            # Add syntax error by removing closing parenthesis
+            for i, line in enumerate(lines):
+                if '(' in line and ')' in line:
+                    lines[i] = line.replace(')', '', 1)
+                    break
+
+        elif perturbation_type == 'wrong_operator':
+            # Change operators to break logic
+            for i, line in enumerate(lines):
+                if any(op in line for op in ['+', '-', '*', '/', '<', '>', '==']):
+                    line = line.replace('+', '-', 1) if '+' in line else line
+                    line = line.replace('<', '>', 1) if '<' in line else line
+                    lines[i] = line
+                    break
+
+        elif perturbation_type == 'incomplete_code':
+            # Return only first half of code to make it incomplete
+            lines = lines[:max(1, len(lines) // 2)]
+            lines.append("    # Incomplete implementation")
+
+        return '\n'.join(lines)
+
     def _convert_mbpp_format(self, sample: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Convert MBPP/HumanEval code generation format (task_id, code, prompt, test)."""
         task_id = sample.get("task_id", "")
@@ -1285,16 +1359,19 @@ class FullBenchmarkDownloader:
 
         # For code generation tasks, we create contrastive pairs based on:
         # Correct: The reference code solution
-        # Incorrect: A placeholder for incorrect/buggy code (since we don't have real incorrect solutions)
+        # Incorrect: Perturbed version with bugs that prevent runtime execution
 
         pairs = []
+
+        # Generate incorrect code by perturbing the correct solution
+        incorrect_code = self._perturb_code_to_break(code)
 
         # Create a contrastive pair with the coding prompt
         pairs.append(
             {
                 "question": f"Write Python code to solve this problem:\n\n{prompt}",
                 "correct_answer": code,
-                "incorrect_answer": "# This is a placeholder for incorrect code\n# In practice, this would be buggy or incomplete code\npass",  # TODO
+                "incorrect_answer": incorrect_code,
                 "metadata": {
                     "task_id": task_id,
                     "test_cases": test,
