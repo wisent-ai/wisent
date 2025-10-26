@@ -46,24 +46,17 @@ class PerplexityEvaluator(BaseEvaluator):
 
         Returns:
             EvalResult with perplexity as confidence metric
+
+        Raises:
+            NotImplementedError: Perplexity evaluation requires model integration
         """
-        model = kwargs.get('model', self.model)
-        context = kwargs.get('context', '')
-
-        if model is None:
-            return EvalResult(
-                ground_truth="UNKNOWN",
-                method_used=self.name,
-                confidence=0.0,
-                details="No model provided for perplexity computation",
-            )
-
-        # Placeholder - requires model integration
-        return EvalResult(
-            ground_truth="UNKNOWN",
-            method_used=self.name,
-            confidence=0.0,
-            details="Perplexity evaluation requires model integration",
+        raise NotImplementedError(
+            "Perplexity evaluation is not yet implemented. "
+            "This requires:\n"
+            "  1. Model integration with loglikelihood capabilities\n"
+            "  2. Token-level probability computation\n"
+            "  3. Perplexity calculation: exp(-log_likelihood / num_tokens)\n"
+            "Please implement _compute_perplexity() method with proper model integration."
         )
 
     def _compute_perplexity(self, model, text: str, context: str = '') -> float:

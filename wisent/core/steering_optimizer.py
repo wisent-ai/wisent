@@ -392,19 +392,21 @@ class SteeringOptimizer:
         
         if layer_search_range is None:
             # Default: search around classification layer if available
-            if self.base_classification_layer:
-                min_layer = max(1, self.base_classification_layer - 3)
-                max_layer = self.base_classification_layer + 3
-                layer_search_range = (min_layer, max_layer)
-            else:
-                # TODO: Auto-detect model layer count and use reasonable range
-                layer_search_range = (10, 20)  # Default fallback
-        
-        # TODO: Implement layer optimization logic
+            if not self.base_classification_layer:
+                raise ValueError(
+                    "Layer optimization requires either layer_search_range parameter or "
+                    "base_classification_layer to be set. Please provide a layer_search_range "
+                    "or initialize SteeringOptimizer with a base_classification_layer."
+                )
+            min_layer = max(1, self.base_classification_layer - 3)
+            max_layer = self.base_classification_layer + 3
+            layer_search_range = (min_layer, max_layer)
+
         raise NotImplementedError(
             "Steering layer optimization not yet implemented. "
             "This requires implementing steering vector training and "
-            "effectiveness measurement across different layers."
+            "effectiveness measurement across different layers. "
+            f"Would search layers {layer_search_range}."
         )
     
     def optimize_steering_strength(
@@ -432,10 +434,17 @@ class SteeringOptimizer:
             SteeringOptimizationResult with optimal strength
         """
         if layer is None:
-            layer = self.base_classification_layer or 15  # Default fallback
-        
+            if not self.base_classification_layer:
+                raise ValueError(
+                    "Steering strength optimization requires a layer to be specified. "
+                    "Please provide the 'layer' parameter or initialize SteeringOptimizer "
+                    "with a base_classification_layer."
+                )
+            layer = self.base_classification_layer
+
         if strength_range is None:
-            strength_range = (0.1, 2.0)  # Default strength range
+            # Default strength range is reasonable for most steering methods
+            strength_range = (0.1, 2.0)
         
         logger.info(f"⚡ Optimizing steering strength for {task_name}")
         logger.info(f"   Method: {steering_method.value}, Layer: {layer}")
@@ -750,10 +759,19 @@ class SteeringOptimizer:
                 task_overrides = self.classification_config.get("task_specific_overrides", {})
                 tasks = list(task_overrides.keys())
                 if not tasks:
-                    logger.warning("No classification-optimized tasks found, using default task set")
-                    tasks = ["truthfulqa_mc1", "gsm8k", "squad2"]  # Default fallback
+                    raise ValueError(
+                        "No classification-optimized tasks found in classification_config. "
+                        "Please either:\n"
+                        "  1. Run classification optimization first to populate task_specific_overrides, or\n"
+                        "  2. Explicitly provide a list of tasks via the 'tasks' parameter"
+                    )
             else:
-                tasks = ["truthfulqa_mc1", "gsm8k", "squad2"]  # Default fallback
+                raise ValueError(
+                    "No tasks provided and no classification_config available. "
+                    "Please either:\n"
+                    "  1. Provide explicit tasks via the 'tasks' parameter, or\n"
+                    "  2. Initialize SteeringOptimizer with a classification_config that contains task_specific_overrides"
+                )
         
         if methods is None:
             methods = [SteeringMethod.CAA, SteeringMethod.HPR]  # Start with simpler methods
