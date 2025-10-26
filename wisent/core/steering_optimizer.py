@@ -421,7 +421,7 @@ class SteeringOptimizer:
     ) -> SteeringOptimizationResult:
         """
         Find optimal steering strength for a specific method, layer, and task.
-        
+
         Args:
             task_name: Task to optimize for
             steering_method: Steering method to use
@@ -429,10 +429,13 @@ class SteeringOptimizer:
             strength_range: (min_strength, max_strength) to search
             strength_steps: Number of strength values to test
             limit: Maximum samples for testing
-            
+
         Returns:
             SteeringOptimizationResult with optimal strength
         """
+        import time
+        start_time = time.time()
+
         if layer is None:
             if not self.base_classification_layer:
                 raise ValueError(
@@ -445,7 +448,7 @@ class SteeringOptimizer:
         if strength_range is None:
             # Default strength range is reasonable for most steering methods
             strength_range = (0.1, 2.0)
-        
+
         logger.info(f"⚡ Optimizing steering strength for {task_name}")
         logger.info(f"   Method: {steering_method.value}, Layer: {layer}")
         logger.info(f"   Strength range: {strength_range}, Steps: {strength_steps}")
@@ -618,7 +621,10 @@ class SteeringOptimizer:
                     'score': 0.0,
                     'error': str(e)
                 })
-        
+
+        # Calculate optimization time
+        optimization_time = time.time() - start_time
+
         return SteeringOptimizationResult(
             task_name=task_name,
             best_steering_layer=layer,
@@ -627,7 +633,7 @@ class SteeringOptimizer:
             optimal_parameters={'strength': best_strength},
             steering_effectiveness_score=best_score,
             classification_accuracy_impact=best_score,  # Using same score for now
-            optimization_time_seconds=0.0,  # TODO: Track actual time
+            optimization_time_seconds=optimization_time,
             total_configurations_tested=len(results),
             error_message=None
         )

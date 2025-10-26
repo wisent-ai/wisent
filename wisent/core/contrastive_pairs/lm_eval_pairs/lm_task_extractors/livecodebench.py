@@ -19,97 +19,162 @@ _LOG = setup_logger(__name__)
 
 
 class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the LiveCodeBench benchmark using pre-generated AI model solutions."""
+    """Extractor for the LiveCodeBench benchmark using AI model submissions from HuggingFace Space."""
 
-    def __init__(self, wisent_core_path: str | None = None):
+    LIVECODEBENCH_SPACE = "livecodebench/code_generation_samples"
+    DEFAULT_MODEL = "GPT-4O-2024-08-06"  # One of the 22 available models
+
+    def __init__(self, model_name: str | None = None):
         """
         Initialize the LiveCodeBench extractor.
 
         Args:
-            wisent_core_path: Path to wisent-core repository containing question_examples.json.
-                             If None, will attempt to find it automatically.
+            model_name: Name of the model to extract submissions from.
+                       If None, uses DEFAULT_MODEL.
+                       Available models include: DeepSeek-V3, GPT-4O-2024-08-06, O1-2024-12-17, etc.
         """
-        self.wisent_core_path = wisent_core_path
+        self.model_name = model_name or self.DEFAULT_MODEL
         self._solution_data = None
+        self._problems_data = None
 
-    def _find_wisent_core_path(self) -> Path | None:
+    def _download_space_files(self) -> tuple[dict[str, Any], list[dict[str, Any]]]:
         """
-        Attempt to automatically find the wisent-core repository path.
+        Download all_outputs.json and problems.json from HuggingFace Space.
 
         Returns:
-            Path to wisent-core if found, None otherwise.
+            Tuple of (all_outputs dict, problems list)
         """
-        # Try common locations relative to current file
-        current_file = Path(__file__).resolve()
+        try:
+            from huggingface_hub import hf_hub_download
 
-        # Go up to backends directory and look for sibling wisent-core
-        backends_dir = current_file.parents[6]  # Go up from lm_task_extractors to backends/
-        wisent_dir = backends_dir.parent  # Go to Wisent/
+            _LOG.info(f"Downloading data from HuggingFace Space: {self.LIVECODEBENCH_SPACE}")
 
-        possible_paths = [
-            wisent_dir / "wisent-core" / "wisent-core",
-            wisent_dir / "wisent-core",
-            Path.home() / "Documents" / "CodingProjects" / "Wisent" / "wisent-core" / "wisent-core",
-        ]
+            # Download all_outputs.json (model submissions)
+            all_outputs_path = hf_hub_download(
+                repo_id=self.LIVECODEBENCH_SPACE,
+                filename="all_outputs.json",
+                repo_type="space"
+            )
 
-        for path in possible_paths:
-            if path.exists() and (path / "question_examples.json").exists():
-                return path
+            # Download problems.json (problem metadata)
+            problems_path = hf_hub_download(
+                repo_id=self.LIVECODEBENCH_SPACE,
+                filename="problems.json",
+                repo_type="space"
+            )
 
-        return None
+            with open(all_outputs_path, 'r') as f:
+                all_outputs = json.load(f)
+
+            with open(problems_path, 'r') as f:
+                problems = json.load(f)
+
+            return all_outputs, problems
+
+        except ImportError:
+            raise ImportError(
+                "huggingface_hub is required to download from HuggingFace. "
+                "Install it with: pip install huggingface_hub"
+            )
+        except Exception as e:
+            raise RuntimeError(f"Failed to download from Space: {e}")
+
 
     def _load_solution_data(self) -> dict[str, Any]:
         """
-        Load pre-generated AI model solutions from wisent-core.
+        Load AI model solutions and create contrastive pairs.
+
+        Downloads all_outputs.json and problems.json from HuggingFace Space
+        and extracts passing/failing solutions for the specified model.
 
         Returns:
             Dictionary with question_id -> {good_example, bad_example} mapping.
-
-        Raises:
-            FileNotFoundError: If question_examples.json cannot be found.
         """
         if self._solution_data is not None:
             return self._solution_data
 
-        # Find wisent-core path
-        if self.wisent_core_path:
-            base_path = Path(self.wisent_core_path)
-        else:
-            base_path = self._find_wisent_core_path()
-            if base_path is None:
-                raise FileNotFoundError(
-                    "Could not find wisent-core repository. Please specify wisent_core_path "
-                    "when initializing LiveCodeBenchExtractor, or ensure wisent-core is in "
-                    "the expected location."
-                )
+        # Download Space files
+        all_outputs, problems = self._download_space_files()
 
-        question_file = base_path / "question_examples.json"
-
-        if not question_file.exists():
-            raise FileNotFoundError(
-                f"question_examples.json not found at {question_file}. "
-                f"Please ensure wisent-core repository is properly set up."
+        # Check if requested model exists
+        if self.model_name not in all_outputs:
+            available_models = list(all_outputs.keys())
+            raise ValueError(
+                f"Model '{self.model_name}' not found in all_outputs.json. "
+                f"Available models: {available_models}"
             )
 
-        _LOG.info(f"Loading LiveCodeBench solutions from {question_file}")
+        # Get submissions for this model
+        model_submissions = all_outputs[self.model_name]
 
-        with open(question_file, 'r') as f:
-            data = json.load(f)
+        _LOG.info(f"Processing {len(model_submissions)} problems for model: {self.model_name}")
 
-        # Create mapping from question_id to solutions
-        solution_map = {}
-        for question in data.get("questions", []):
-            question_id = question.get("question_id")
-            if question_id and question.get("good_example") and question.get("bad_example"):
-                solution_map[question_id] = {
-                    "good_example": question["good_example"],
-                    "bad_example": question["bad_example"],
-                    "difficulty": question.get("difficulty", "unknown"),
-                }
+        # Process submissions to create solution pairs
+        solution_map = self._process_submissions(model_submissions, problems)
 
         _LOG.info(f"Loaded {len(solution_map)} LiveCodeBench problems with solutions")
 
         self._solution_data = solution_map
+        self._problems_data = problems
+        return solution_map
+
+    def _process_submissions(
+        self,
+        model_submissions: list[dict[str, Any]],
+        problems: list[dict[str, Any]]
+    ) -> dict[str, Any]:
+        """
+        Process model submissions to create good/bad solution pairs.
+
+        Args:
+            model_submissions: List of submissions for a specific model
+                Each has: code_list, pass1_list, metadata_list
+            problems: List of problem metadata from problems.json
+                Each has: question_id, question_title, question_content, difficulty, etc.
+
+        Returns:
+            Dictionary with question_id -> {good_example, bad_example, difficulty}
+        """
+        import random
+
+        solution_map = {}
+
+        for problem_idx, submission in enumerate(model_submissions):
+            # Get problem metadata
+            if problem_idx >= len(problems):
+                continue
+
+            problem_meta = problems[problem_idx]
+            question_id = problem_meta.get("question_id", str(problem_idx))
+
+            code_list = submission.get("code_list", [])
+            pass1_list = submission.get("pass1_list", [])
+
+            # Separate passing and failing submissions
+            passing_codes = []
+            failing_codes = []
+
+            for code, passed in zip(code_list, pass1_list):
+                if passed:
+                    passing_codes.append(code)
+                else:
+                    failing_codes.append(code)
+
+            # Skip if we don't have both passing and failing examples
+            if not passing_codes or not failing_codes:
+                continue
+
+            # Randomly select one passing and one failing submission
+            good_code = random.choice(passing_codes)
+            bad_code = random.choice(failing_codes)
+
+            solution_map[question_id] = {
+                "good_example": {"code": good_code, "passed": True},
+                "bad_example": {"code": bad_code, "passed": False},
+                "difficulty": problem_meta.get("difficulty", "unknown"),
+                "problem_idx": problem_idx,
+            }
+
         return solution_map
 
     def extract_contrastive_pairs(
@@ -118,19 +183,23 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from LiveCodeBench docs using pre-generated AI solutions.
+        Build contrastive pairs from LiveCodeBench using actual AI model solutions from HuggingFace Space.
 
-        LiveCodeBench schema (from lm-eval task):
-            - question_id: str
-            - question_title: str
-            - question_content: str
-            - starter_code: str (optional)
-            - difficulty: str
-            - platform: str
+        Downloads submissions from livecodebench/code_generation_samples Space which contains:
+        - all_outputs.json: 22 models × 880 problems with code submissions and pass/fail results
+        - problems.json: Problem metadata (question_id, title, content, difficulty, etc.)
 
-        Solutions are loaded from wisent-core's question_examples.json which contains:
-            - good_example: {model: str, code: str, result: "good"}
-            - bad_example: {model: str, code: str, result: "bad"}
+        Available models include:
+            DeepSeek-V3, GPT-4O-2024-08-06, O1-2024-12-17, DeepSeek-R1-Preview,
+            GPT-4-Turbo, O1-Preview, O1-Mini, and 15 more
+
+        This method:
+            1. Downloads all_outputs.json and problems.json from HuggingFace Space
+            2. Extracts submissions for the specified model (default: GPT-4O-2024-08-06)
+            3. Processes solutions to identify passing (good) and failing (bad) submissions
+            4. Randomly selects one good and one bad example per problem
+            5. Matches solutions with lm-eval task docs by question_id
+            6. Creates ContrastivePair objects with actual code from the model
 
         Args:
             lm_eval_task_data: lm-eval task instance for LiveCodeBench.
@@ -138,6 +207,10 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
 
         Returns:
             A list of ContrastivePair objects.
+
+        Raises:
+            ValueError: If specified model not found in all_outputs.json
+            RuntimeError: If download from HuggingFace Space fails
         """
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "livecodebench"))
 
@@ -155,8 +228,8 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
 
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        for doc in docs:
-            pair = self._extract_pair_from_doc(doc, solution_map)
+        for doc_idx, doc in enumerate(docs):
+            pair = self._extract_pair_from_doc(doc, solution_map, doc_idx=doc_idx)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
@@ -166,8 +239,9 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
             log.warning(
                 f"No valid LiveCodeBench pairs extracted from {len(docs)} docs. "
-                f"Make sure question_ids in lm-eval match those in wisent-core.",
-                extra={"task": task_name}
+                f"Make sure model outputs are available and contain both passing and failing solutions. "
+                f"Check that question_ids or problem indices match between lm-eval docs and model outputs.",
+                extra={"task": task_name, "solution_count": len(solution_map)}
             )
 
         return pairs
@@ -175,7 +249,8 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
     def _extract_pair_from_doc(
         self,
         doc: dict[str, Any],
-        solution_map: dict[str, Any]
+        solution_map: dict[str, Any],
+        doc_idx: int = None
     ) -> ContrastivePair | None:
         """
         Convert a single LiveCodeBench doc into a ContrastivePair using pre-generated solutions.
@@ -183,6 +258,7 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
         Args:
             doc: Document from lm-eval task
             solution_map: Mapping from question_id to good/bad examples
+            doc_idx: Document index (used as fallback if question_id lookup fails)
 
         Returns:
             ContrastivePair if solutions exist for this problem, None otherwise.
@@ -203,18 +279,23 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
                 return None
 
             # Look up pre-generated solutions
-            if question_id not in solution_map:
+            # Try direct question_id lookup first
+            solutions = solution_map.get(question_id)
+
+            # If not found, try using doc_idx as fallback
+            if solutions is None and doc_idx is not None:
+                # Try to find by problem_idx
+                solutions = solution_map.get(str(doc_idx))
+
+            if solutions is None:
                 log.debug(
-                    f"No pre-generated solutions found for question_id: {question_id}",
-                    extra={"question_id": question_id},
+                    f"No pre-generated solutions found for question_id: {question_id} (doc_idx: {doc_idx})",
+                    extra={"question_id": question_id, "doc_idx": doc_idx},
                 )
                 return None
 
-            solutions = solution_map[question_id]
             good_code = solutions["good_example"]["code"]
             bad_code = solutions["bad_example"]["code"]
-            good_model = solutions["good_example"].get("model", "unknown")
-            bad_model = solutions["bad_example"].get("model", "unknown")
 
             # Build prompt from problem description
             prompt_parts = []
@@ -230,8 +311,8 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
                 "label": "livecodebench",
                 "question_id": question_id,
                 "difficulty": solutions.get("difficulty", "unknown"),
-                "good_model": good_model,
-                "bad_model": bad_model,
+                "model": self.model_name,
+                "problem_idx": solutions.get("problem_idx"),
             }
 
             return self._build_pair(
@@ -264,12 +345,23 @@ class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
         Returns:
             ContrastivePair object
         """
-        positive_response = PositiveResponse(model_response=correct_code)
-        negative_response = NegativeResponse(model_response=incorrect_code)
+        # Extract model name from metadata
+        model_name = metadata.get("model") if metadata else None
+
+        # Store model name in response labels for traceability
+        positive_response = PositiveResponse(
+            model_response=correct_code,
+            label=model_name
+        )
+        negative_response = NegativeResponse(
+            model_response=incorrect_code,
+            label=model_name
+        )
 
         return ContrastivePair(
             prompt=prompt,
             positive_response=positive_response,
             negative_response=negative_response,
             label=metadata.get("label") if metadata else None,
+            trait_description=f"Model: {model_name}" if model_name else None,
         )

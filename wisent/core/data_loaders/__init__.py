@@ -51,6 +51,7 @@ class LiveCodeBenchProblem:
         """Convert to dictionary format."""
         return {
             "task_id": self.question_id,
+            "question_id": self.question_id,  # Also include question_id for compatibility
             "question_title": self.question_title,
             "question_content": self.question_content,
             "platform": self.platform.upper(),
