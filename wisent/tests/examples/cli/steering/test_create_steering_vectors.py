@@ -78,8 +78,18 @@ def test_create_vector_from_activations():
         
         # Create test pairs
         pairs = [
-            {"positive": "Good answer.", "negative": "Bad answer.", "trait": "quality"},
-            {"positive": "Helpful info.", "negative": "Unhelpful info.", "trait": "quality"}
+            {
+                "prompt": "How should I respond?",
+                "positive_response": {"model_response": "Good answer."},
+                "negative_response": {"model_response": "Bad answer."},
+                "label": "quality"
+            },
+            {
+                "prompt": "What information is best?",
+                "positive_response": {"model_response": "Helpful info."},
+                "negative_response": {"model_response": "Unhelpful info."},
+                "label": "quality"
+            }
         ]
         with open(pairs_file, 'w') as f:
             json.dump(pairs, f)
