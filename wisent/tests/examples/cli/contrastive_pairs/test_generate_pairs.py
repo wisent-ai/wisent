@@ -48,7 +48,7 @@ def test_generate_synthetic_pairs():
                 "--trait", "truthfulness",
                 "--num-pairs", "5",
                 "--output", output_file,
-                "--model", "distilgpt2",
+                "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--similarity-threshold", "0.8",
                 "--device", "cpu",
                 "--verbose"
@@ -73,7 +73,7 @@ def test_generate_synthetic_pairs_different_trait():
                 "--trait", "being helpful and informative",
                 "--num-pairs", "5",
                 "--output", output_file,
-                "--model", "distilgpt2",
+                "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--device", "cpu",
                 "--verbose"
             ],

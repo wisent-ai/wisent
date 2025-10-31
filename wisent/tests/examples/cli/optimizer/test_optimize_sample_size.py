@@ -18,7 +18,7 @@ def test_optimize_sample_size_basic():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "optimize-sample-size",
-                "distilgpt2",  # Small model for testing
+                "meta-llama/Llama-3.2-1B-Instruct",  # Small model for testing
                 "--task", "boolq",
                 "--layer", "3",
                 "--token-aggregation", "average",
@@ -48,7 +48,7 @@ def test_optimize_sample_size_with_steering():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "optimize-sample-size",
-                "distilgpt2",
+                "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--layer", "3",
                 "--token-aggregation", "final",
@@ -80,7 +80,7 @@ def test_optimize_sample_size_custom_threshold():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "optimize-sample-size",
-                "distilgpt2",
+                "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--layer", "3",
                 "--token-aggregation", "max",
