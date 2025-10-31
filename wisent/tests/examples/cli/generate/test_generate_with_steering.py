@@ -25,7 +25,7 @@ def test_steering_vector_train_only():
                 "--steering-method", "CAA",
                 "--limit", "20",
                 "--train-only",
-                "--save-vector", vector_path,
+                "--save-steering-vector", vector_path,
                 "--output", output_dir,
                 "--device", "cpu",
                 "--verbose"
@@ -58,7 +58,7 @@ def test_steering_vector_inference_only():
                 "--steering-method", "CAA",
                 "--limit", "20",
                 "--train-only",
-                "--save-vector", vector_path,
+                "--save-steering-vector", vector_path,
                 "--output", training_output,
                 "--device", "cpu"
             ],
@@ -80,7 +80,7 @@ def test_steering_vector_inference_only():
                 "--steering-strength", "1.5",
                 "--limit", "10",
                 "--inference-only",
-                "--load-vector", vector_path,
+                "--load-steering-vector", vector_path,
                 "--output", inference_output,
                 "--device", "cpu",
                 "--verbose"
@@ -110,7 +110,7 @@ def test_steering_with_caa_l2():
                 "--steering-method", "CAA_L2",
                 "--limit", "20",
                 "--train-only",
-                "--save-vector", vector_path,
+                "--save-steering-vector", vector_path,
                 "--output", training_output,
                 "--device", "cpu"
             ],
@@ -131,7 +131,7 @@ def test_steering_with_caa_l2():
                 "--steering-strength", "2.0",
                 "--limit", "10",
                 "--inference-only",
-                "--load-vector", vector_path,
+                "--load-steering-vector", vector_path,
                 "--output", inference_output,
                 "--device", "cpu",
                 "--verbose"
