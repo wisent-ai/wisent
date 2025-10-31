@@ -61,10 +61,11 @@ def execute_generate_pairs_from_task(args):
         from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import (
             lm_build_contrastive_pairs,
         )
+        from wisent.core.task_interface import TaskInterface
 
-        # Handle both lm-eval tasks (dict) and custom tasks (TaskInterface)
+        # Handle both lm-eval tasks (dict or ConfigurableTask) and custom tasks (TaskInterface)
         if isinstance(task_obj, dict):
-            # lm-eval task
+            # lm-eval task group with subtasks
             if len(task_obj) != 1:
                 keys = ", ".join(sorted(task_obj.keys()))
                 raise ValueError(
@@ -81,14 +82,26 @@ def execute_generate_pairs_from_task(args):
                 lm_eval_task=task,
                 limit=args.limit,
             )
-        else:
-            # Custom task (TaskInterface)
+        elif isinstance(task_obj, TaskInterface):
+            # Custom task (TaskInterface) - only livecodebench for now
             task = task_obj
             pairs_task_name = args.task_name
 
             # 2. Generate contrastive pairs using custom task interface
             print(f"   🔨 Building contrastive pairs...")
             pairs = _build_pairs_from_custom_task(task, args.limit)
+        else:
+            # Single lm-eval task (ConfigurableTask), not wrapped in dict
+            task = task_obj
+            pairs_task_name = args.task_name
+
+            # 2. Generate contrastive pairs using lm-eval interface
+            print(f"   🔨 Building contrastive pairs...")
+            pairs = lm_build_contrastive_pairs(
+                task_name=pairs_task_name,
+                lm_eval_task=task,
+                limit=args.limit,
+            )
 
         print(f"   ✓ Generated {len(pairs)} contrastive pairs")
 
