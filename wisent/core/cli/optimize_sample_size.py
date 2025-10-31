@@ -51,8 +51,10 @@ def execute_optimize_sample_size(args):
         # Display results
         print(f"\n📈 Optimization Results:")
         print(f"   Optimal sample size: {results['optimal_sample_size']}")
-        print(f"   Best accuracy: {results['best_accuracy']:.4f}")
-        print(f"   Best F1 score: {results.get('best_f1', 0):.4f}")
+        if results['optimal_accuracy'] is not None:
+            print(f"   Best accuracy: {results['optimal_accuracy']:.4f}")
+        if results['optimal_f1_score'] is not None:
+            print(f"   Best F1 score: {results['optimal_f1_score']:.4f}")
 
         # Save plot if requested
         if args.save_plot:
