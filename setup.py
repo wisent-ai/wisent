@@ -46,6 +46,9 @@ setup(
         "harness": [
             "lm-eval==0.4.8",
         ],
+        "cuda": [
+            "flash-attn>=2.5.0",
+        ],
     },
     entry_points={
         "console_scripts": [
