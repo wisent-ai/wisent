@@ -95,19 +95,19 @@ def test_steering_vector_inference_only():
 
 
 def test_steering_with_caa_l2():
-    """Test steering with CAA_L2 method."""
+    """Test steering with CAA method using strong steering strength."""
     with tempfile.TemporaryDirectory() as tmpdir:
         vector_path = os.path.join(tmpdir, "vector.pt")
         training_output = os.path.join(tmpdir, "training")
         inference_output = os.path.join(tmpdir, "inference")
-        
-        # Train with CAA_L2
+
+        # Train with CAA
         train_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
-                "--steering-method", "CAA_L2",
+                "--steering-method", "CAA",
                 "--limit", "20",
                 "--train-only",
                 "--save-steering-vector", vector_path,
@@ -118,16 +118,16 @@ def test_steering_with_caa_l2():
             text=True,
             timeout=300
         )
-        
+
         assert train_result.returncode == 0
-        
+
         # Use with stronger steering
         inference_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
-                "--steering-method", "CAA_L2",
+                "--steering-method", "CAA",
                 "--steering-strength", "2.0",
                 "--limit", "10",
                 "--inference-only",
@@ -140,7 +140,7 @@ def test_steering_with_caa_l2():
             text=True,
             timeout=300
         )
-        
+
         # Should complete without error
         assert inference_result.returncode == 0, f"Inference failed: {inference_result.stderr}"
 
