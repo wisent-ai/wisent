@@ -94,28 +94,70 @@ def execute_create_steering_vector(args):
 
         print(f"   ✓ Generated {len(steering_vectors)} steering vectors")
 
-        # 5. Save steering vectors to JSON
+        # 5. Save steering vectors (format depends on file extension)
         print(f"\n💾 Saving steering vectors to '{args.output}'...")
-        output_data = {
-            'trait_label': trait_label,
-            'model': model,
-            'method': args.method,
-            'normalize': args.normalize,
-            'token_aggregation': token_aggregation,
-            'num_pairs': len(pairs_list),
-            'layers': list(steering_vectors.keys()),
-            'steering_vectors': steering_vectors,
-            'metadata': {
-                'source_file': args.enriched_pairs_file,
-                'creation_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+        os.makedirs(os.path.dirname(os.path.abspath(args.output)) or '.', exist_ok=True)
+
+        if args.output.endswith('.pt'):
+            # For .pt format: save single-layer vectors for multi-steer compatibility
+            # If multiple layers, save the first one (or could save all and let user specify)
+            if len(steering_vectors) == 1:
+                layer_str = list(steering_vectors.keys())[0]
+                vector_tensor = torch.tensor(steering_vectors[layer_str], dtype=torch.float32)
+                torch.save({
+                    'steering_vector': vector_tensor,
+                    'layer_index': int(layer_str),
+                    'trait_label': trait_label,
+                    'model': model,
+                    'method': args.method,
+                    'normalize': args.normalize,
+                    'token_aggregation': token_aggregation,
+                    'num_pairs': len(pairs_list),
+                    # Legacy keys for backward compatibility
+                    'vector': vector_tensor,
+                    'layer': int(layer_str),
+                }, args.output)
+                print(f"   ✓ Saved steering vector (layer {layer_str}) to: {args.output}")
+            else:
+                # Save multiple layers - save each to separate file
+                for layer_str in steering_vectors.keys():
+                    layer_output = args.output.replace('.pt', f'_layer_{layer_str}.pt')
+                    vector_tensor = torch.tensor(steering_vectors[layer_str], dtype=torch.float32)
+                    torch.save({
+                        'steering_vector': vector_tensor,
+                        'layer_index': int(layer_str),
+                        'trait_label': trait_label,
+                        'model': model,
+                        'method': args.method,
+                        'normalize': args.normalize,
+                        'token_aggregation': token_aggregation,
+                        'num_pairs': len(pairs_list),
+                        # Legacy keys
+                        'vector': vector_tensor,
+                        'layer': int(layer_str),
+                    }, layer_output)
+                    print(f"   ✓ Saved steering vector (layer {layer_str}) to: {layer_output}")
+        else:
+            # JSON format: save all layers together
+            output_data = {
+                'trait_label': trait_label,
+                'model': model,
+                'method': args.method,
+                'normalize': args.normalize,
+                'token_aggregation': token_aggregation,
+                'num_pairs': len(pairs_list),
+                'layers': list(steering_vectors.keys()),
+                'steering_vectors': steering_vectors,
+                'metadata': {
+                    'source_file': args.enriched_pairs_file,
+                    'creation_time': time.strftime('%Y-%m-%d %H:%M:%S'),
+                }
             }
-        }
 
-        os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
-        with open(args.output, 'w') as f:
-            json.dump(output_data, f, indent=2)
+            with open(args.output, 'w') as f:
+                json.dump(output_data, f, indent=2)
 
-        print(f"   ✓ Saved steering vectors to: {args.output}")
+            print(f"   ✓ Saved steering vectors to: {args.output}")
 
         # 6. Display statistics
         print(f"\n📈 Steering Vector Statistics:")
