@@ -7,7 +7,8 @@ This module provides ground truth evaluation using the lm-eval-harness framework
 import logging
 from typing import Any, Dict
 
-from wisent.core.activations import ActivationAggregationStrategy, Activations
+from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.activations import Activations
 from wisent.core.layer import Layer
 
 logger = logging.getLogger(__name__)

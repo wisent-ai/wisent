@@ -193,7 +193,7 @@ class SyntheticClassifierFactory:
             logging.info("Starting classifier training...")
             try:
                 # Convert activations to the format expected by train_on_activations method
-                from wisent.core.activations import Activations
+                from wisent.core.activations.activations import Activations
 
                 # Convert torch tensors to Activations objects if needed
                 harmful_activations = []
