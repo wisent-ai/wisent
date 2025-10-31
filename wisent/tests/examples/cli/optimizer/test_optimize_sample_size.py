@@ -11,7 +11,6 @@ import tempfile
 import os
 
 
-@pytest.mark.skip(reason="optimize-sample-size command not yet implemented")
 def test_optimize_sample_size_basic():
     """Test basic sample size optimization command."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -41,7 +40,6 @@ def test_optimize_sample_size_basic():
         assert "10" in result.stdout or "10" in result.stderr
 
 
-@pytest.mark.skip(reason="optimize-sample-size command not yet implemented")
 def test_optimize_sample_size_with_steering():
     """Test sample size optimization in steering mode."""
     with tempfile.TemporaryDirectory() as tmpdir:
@@ -73,7 +71,6 @@ def test_optimize_sample_size_with_steering():
         assert "steering" in result.stdout.lower() or "steering" in result.stderr.lower()
 
 
-@pytest.mark.skip(reason="optimize-sample-size command not yet implemented")
 def test_optimize_sample_size_custom_threshold():
     """Test sample size optimization with custom threshold."""
     with tempfile.TemporaryDirectory() as tmpdir:
