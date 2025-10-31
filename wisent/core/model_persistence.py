@@ -33,16 +33,8 @@ class ModelPersistence:
         if save_dir:
             os.makedirs(save_dir, exist_ok=True)
         
-        # Split path and sanitize only the filename part
-        directory = os.path.dirname(save_path)
-        filename = os.path.basename(save_path)
-        # Sanitize filename to handle periods in model names
-        safe_filename = filename.replace('.', '_')
-        safe_path = os.path.join(directory, safe_filename)
-        
-        # Add layer suffix to filename
-        base, ext = os.path.splitext(safe_path)
-        classifier_path = f"{base}_layer_{layer}{ext or '.pkl'}"
+        # Use the exact path provided by the user
+        classifier_path = save_path
         
         # Prepare data to save
         save_data = {
@@ -69,15 +61,8 @@ class ModelPersistence:
         Returns:
             Tuple of (classifier, metadata)
         """
-        # Split path and sanitize only the filename part to match save format
-        directory = os.path.dirname(load_path)
-        filename = os.path.basename(load_path)
-        safe_filename = filename.replace('.', '_')
-        safe_path = os.path.join(directory, safe_filename)
-        
-        # Add layer suffix to filename
-        base, ext = os.path.splitext(safe_path)
-        classifier_path = f"{base}_layer_{layer}{ext or '.pkl'}"
+        # Use the exact path provided by the user
+        classifier_path = load_path
         
         if not os.path.exists(classifier_path):
             raise FileNotFoundError(f"Classifier file not found: {classifier_path}")
