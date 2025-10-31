@@ -11,11 +11,11 @@ This module handles:
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from wisent.core.activations import ActivationAggregationStrategy, Activations
+from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.activations import Activations
 from wisent.core.classifier.classifier import Classifier
-
-from ...layer import Layer
-from ...model import Model
+from wisent.core.layer import Layer
+from wisent.core.model import Model
 
 
 @dataclass

@@ -12,7 +12,8 @@ A model that can autonomously use wisent-guard capabilities on itself:
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from wisent.core.activations import ActivationAggregationStrategy, Activations
+from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.activations import Activations
 
 from .agent.diagnose import AgentClassifierDecisionSystem, AnalysisResult, ClassifierMarketplace, ResponseDiagnostics
 from .agent.steer import ImprovementResult, ResponseSteering

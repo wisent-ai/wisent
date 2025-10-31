@@ -11,7 +11,8 @@ import logging
 from typing import Any, Dict, Optional
 from dataclasses import dataclass
 
-from wisent.core.activations import ActivationAggregationStrategy, Activations
+from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.activations import Activations
 
 logger = logging.getLogger(__name__)
 
