@@ -305,8 +305,8 @@ def execute_evaluate_responses(args):
 
         output_data = {
             "input_file": args.input,
-            "task": input_data.get('task'),
-            "model": input_data.get('model'),
+            "task": task_name if isinstance(input_data, list) else input_data.get('task'),
+            "model": None if isinstance(input_data, list) else input_data.get('model'),
             "evaluation_type": evaluation_type,
             "evaluator_used": "CodingEvaluator",
             "aggregated_metrics": aggregated_metrics,
@@ -460,8 +460,8 @@ def execute_evaluate_responses(args):
 
         output_data = {
             "input_file": args.input,
-            "task": input_data.get('task'),
-            "model": input_data.get('model'),
+            "task": task_name if isinstance(input_data, list) else input_data.get('task'),
+            "model": None if isinstance(input_data, list) else input_data.get('model'),
             "evaluation_type": evaluation_type,
             "evaluator_used": "PersonalizationEvaluator",
             "judge_model": judge_model,
@@ -689,8 +689,8 @@ def execute_evaluate_responses(args):
 
     output_data = {
         "input_file": args.input,
-        "task": input_data.get('task'),
-        "model": input_data.get('model'),
+        "task": task_name if isinstance(input_data, list) else input_data.get('task'),
+        "model": None if isinstance(input_data, list) else input_data.get('model'),
         "evaluation_type": evaluation_type,
         "evaluator_used": evaluator.name,
         "aggregated_metrics": aggregated_metrics,

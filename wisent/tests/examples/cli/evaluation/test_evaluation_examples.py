@@ -62,22 +62,23 @@ def test_evaluate_generated_responses():
     with tempfile.TemporaryDirectory() as tmpdir:
         input_file = os.path.join(tmpdir, "responses.json")
         output_file = os.path.join(tmpdir, "evaluation.json")
-        
+
         # Create test responses
         create_test_responses_file(input_file)
-        
+
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "evaluate-responses",
                 "--input", input_file,
                 "--output", output_file,
+                "--task", "boolq",
                 "--verbose"
             ],
             capture_output=True,
             text=True,
             timeout=300
         )
-        
+
         assert result.returncode == 0, f"Command failed: {result.stderr}"
         assert os.path.exists(output_file), "Output file not created"
 
