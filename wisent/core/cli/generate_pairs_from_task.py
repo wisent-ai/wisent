@@ -23,7 +23,7 @@ def _build_pairs_from_custom_task(task, limit: int | None):
         LiveCodeBenchExtractor as LiveCodeBenchPairExtractor
     )
 
-    task_name = task.get_name()
+    task_name = task.task_name
 
     if task_name == "livecodebench":
         # Use the contrastive pair extractor for LiveCodeBench
