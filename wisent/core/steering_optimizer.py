@@ -497,8 +497,8 @@ class SteeringOptimizer:
         for strength in strengths:
             try:
                 # Run evaluation with this strength
-                from ..cli import run_task_pipeline
-                
+                from wisent.cli import run_task_pipeline
+
                 # Build kwargs for run_task_pipeline
                 pipeline_kwargs = {
                     'task_name': task_name,

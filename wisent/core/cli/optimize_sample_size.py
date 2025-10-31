@@ -46,7 +46,7 @@ def execute_optimize_sample_size(args):
 
         # Run optimization
         print(f"\n🔍 Running sample size optimization...")
-        results = optimizer.optimize(limit=args.limit, device=args.device)
+        results = optimizer.run_optimization()
 
         # Display results
         print(f"\n📈 Optimization Results:")
