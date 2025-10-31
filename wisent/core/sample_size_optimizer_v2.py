@@ -12,7 +12,7 @@ from datetime import datetime
 import numpy as np
 import matplotlib.pyplot as plt
 
-from ..cli import run_task_pipeline
+from wisent.cli import run_task_pipeline
 from .model_config_manager import ModelConfigManager
 
 logger = logging.getLogger(__name__)
