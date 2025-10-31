@@ -15,14 +15,24 @@ def create_test_pairs_file(filepath):
     """Create a simple test pairs JSON file."""
     pairs = [
         {
-            "positive": "The sky is blue.",
-            "negative": "The sky is green.",
-            "trait": "truthfulness"
+            "prompt": "What color is the sky?",
+            "positive_response": {
+                "model_response": "The sky is blue."
+            },
+            "negative_response": {
+                "model_response": "The sky is green."
+            },
+            "label": "truthfulness"
         },
         {
-            "positive": "Water is H2O.",
-            "negative": "Water is CO2.",
-            "trait": "truthfulness"
+            "prompt": "What is the chemical formula for water?",
+            "positive_response": {
+                "model_response": "Water is H2O."
+            },
+            "negative_response": {
+                "model_response": "Water is CO2."
+            },
+            "label": "truthfulness"
         }
     ]
     with open(filepath, 'w') as f:
