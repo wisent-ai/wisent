@@ -17,6 +17,26 @@ def execute_tasks(args):
     from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
     from wisent.core.model_persistence import ModelPersistence, create_classifier_metadata
 
+    # Check if this is inference-only mode with steering vector
+    if args.inference_only and args.load_steering_vector:
+        import torch
+        print(f"\n🎯 Starting inference with steering vector")
+        print(f"   Loading vector from: {args.load_steering_vector}")
+
+        # Load steering vector
+        vector_data = torch.load(args.load_steering_vector)
+        steering_vector = vector_data['vector']
+        layer = vector_data['layer']
+
+        print(f"   ✓ Loaded steering vector for layer {layer}")
+        print(f"   Model: {vector_data.get('model', 'unknown')}")
+        print(f"   Method: {vector_data.get('method', 'unknown')}")
+
+        # For now, just load and validate - actual inference would require more implementation
+        print(f"\n✅ Steering vector loaded successfully!\n")
+        print(f"Note: Inference with steering vector requires additional implementation")
+        return
+
     print(f"\n🎯 Starting classifier training on task: {args.task_names}")
     print(f"   Model: {args.model}")
     print(f"   Layer: {args.layer}")
@@ -93,6 +113,53 @@ def execute_tasks(args):
                     negative_activations.append(act.cpu().numpy())
 
         print(f"\n   ✓ Collected {len(positive_activations)} positive and {len(negative_activations)} negative activations")
+
+        # Check if steering vector mode is requested
+        if args.save_steering_vector and args.train_only:
+            import torch
+            from wisent.core.steering_methods.methods.caa import CAAMethod
+
+            print(f"\n🎯 Training steering vector using {args.steering_method} method...")
+
+            # Convert activations to tensors
+            pos_tensors = [torch.from_numpy(act).float() for act in positive_activations]
+            neg_tensors = [torch.from_numpy(act).float() for act in negative_activations]
+
+            # Create steering method
+            steering_method = CAAMethod(normalize=True)
+
+            # Train steering vector
+            steering_vector = steering_method.train_for_layer(pos_tensors, neg_tensors)
+
+            # Save steering vector
+            print(f"\n💾 Saving steering vector to '{args.save_steering_vector}'...")
+            os.makedirs(os.path.dirname(args.save_steering_vector) or '.', exist_ok=True)
+            torch.save({
+                'vector': steering_vector,
+                'layer': layer,
+                'method': args.steering_method,
+                'model': args.model,
+                'task': args.task_names,
+            }, args.save_steering_vector)
+            print(f"   ✓ Steering vector saved to: {args.save_steering_vector}")
+
+            # Save output artifacts if requested
+            if args.output:
+                print(f"\n📁 Saving artifacts to '{args.output}'...")
+                os.makedirs(args.output, exist_ok=True)
+                report_path = os.path.join(args.output, 'training_report.json')
+                with open(report_path, 'w') as f:
+                    json.dump({
+                        'method': args.steering_method,
+                        'layer': layer,
+                        'num_positive': len(positive_activations),
+                        'num_negative': len(negative_activations),
+                        'vector_shape': list(steering_vector.shape)
+                    }, f, indent=2)
+                print(f"   ✓ Training report saved to: {report_path}")
+
+            print(f"\n✅ Steering vector training completed successfully!\n")
+            return
 
         # 6. Prepare training data
         print(f"\n🎯 Preparing training data...")
