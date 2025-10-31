@@ -72,7 +72,7 @@ def test_get_activations_multiple_layers():
                 input_file,
                 "--output", output_file,
                 "--model", "distilgpt2",
-                "--layers", "2", "3", "4",
+                "--layers", "2,3,4",
                 "--token-aggregation", "average",
                 "--device", "cpu",
                 "--verbose"

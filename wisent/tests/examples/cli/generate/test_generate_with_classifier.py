@@ -20,7 +20,7 @@ def test_classifier_train_only():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--classifier-type", "logistic",
                 "--limit", "20",
@@ -53,7 +53,7 @@ def test_classifier_inference_only():
         train_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--classifier-type", "logistic",
                 "--limit", "20",
@@ -74,7 +74,7 @@ def test_classifier_inference_only():
         inference_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--limit", "10",
                 "--inference-only",
@@ -103,7 +103,7 @@ def test_classifier_with_threshold():
         train_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--classifier-type", "logistic",
                 "--limit", "20",
@@ -123,7 +123,7 @@ def test_classifier_with_threshold():
         inference_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--limit", "10",
                 "--inference-only",

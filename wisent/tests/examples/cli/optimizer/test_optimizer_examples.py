@@ -23,8 +23,7 @@ def test_optimize_classification_parameters():
                 "--layer-range", "2-4",
                 "--aggregation-methods", "average", "final",
                 "--threshold-range", "0.5", "0.6",
-                "--device", "cpu",
-                "--verbose"
+                "--device", "cpu"
             ],
             capture_output=True,
             text=True,
