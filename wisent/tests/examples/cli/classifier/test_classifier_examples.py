@@ -19,7 +19,7 @@ def test_train_classifier_and_save():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--classifier-type", "logistic",
                 "--limit", "20",
@@ -47,7 +47,7 @@ def test_use_pretrained_classifier():
         train_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--classifier-type", "logistic",
                 "--limit", "20",
@@ -66,7 +66,7 @@ def test_use_pretrained_classifier():
         inference_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--load-classifier", classifier_path,
                 "--inference-only",
@@ -91,7 +91,7 @@ def test_run_and_evaluate_on_benchmark():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--classifier-type", "logistic",
                 "--training-limit", "20",
@@ -120,7 +120,7 @@ def test_classifier_with_mlp():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--classifier-type", "mlp",
                 "--limit", "20",

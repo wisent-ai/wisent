@@ -20,7 +20,7 @@ def test_steering_vector_train_only():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--steering-method", "CAA",
                 "--limit", "20",
@@ -53,7 +53,7 @@ def test_steering_vector_inference_only():
         train_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--steering-method", "CAA",
                 "--limit", "20",
@@ -74,7 +74,7 @@ def test_steering_vector_inference_only():
         inference_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--steering-method", "CAA",
                 "--steering-strength", "1.5",
@@ -105,7 +105,7 @@ def test_steering_with_caa_l2():
         train_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--steering-method", "CAA_L2",
                 "--limit", "20",
@@ -125,7 +125,7 @@ def test_steering_with_caa_l2():
         inference_result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "tasks", "boolq",
-                "distilgpt2",
+                "--model", "distilgpt2",
                 "--layer", "3",
                 "--steering-method", "CAA_L2",
                 "--steering-strength", "2.0",
