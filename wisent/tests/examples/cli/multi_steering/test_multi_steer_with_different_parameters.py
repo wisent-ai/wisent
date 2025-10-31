@@ -10,8 +10,6 @@ import pytest
 import tempfile
 import os
 
-pytestmark = pytest.mark.skip(reason="multi-steer command not yet implemented")
-
 
 def setup_test_vectors(tmpdir):
     """Helper function to create test vectors for multi-steering tests."""
