@@ -21,7 +21,7 @@ def test_create_synthetic_pairs():
                 "python", "-m", "wisent.core.main", "generate-pairs",
                 "--trait", "helpfulness",
                 "--output", output_file,
-                "--model", "distilgpt2",
+                "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--num-pairs", "5",
                 "--similarity-threshold", "0.8",
                 "--device", "cpu",

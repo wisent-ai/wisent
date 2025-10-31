@@ -16,7 +16,7 @@ def test_optimize_classification_parameters():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "optimize-classification",
-                "distilgpt2",
+                "meta-llama/Llama-3.2-1B-Instruct",
                 "--limit", "10",
                 "--optimization-metric", "f1",
                 "--max-time-per-task", "5.0",
@@ -39,7 +39,7 @@ def test_optimize_steering_parameters():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "optimize-steering", "comprehensive",
-                "distilgpt2",
+                "meta-llama/Llama-3.2-1B-Instruct",
                 "--tasks", "boolq",
                 "--methods", "CAA",
                 "--limit", "10",
