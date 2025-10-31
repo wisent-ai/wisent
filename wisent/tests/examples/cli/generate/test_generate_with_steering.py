@@ -10,8 +10,6 @@ import pytest
 import tempfile
 import os
 
-pytestmark = pytest.mark.skip(reason="Steering vector save/load with tasks command not yet implemented")
-
 
 def test_steering_vector_train_only():
     """Test training a steering vector and saving it (train-only mode)."""
