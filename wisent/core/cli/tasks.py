@@ -135,11 +135,14 @@ def execute_tasks(args):
             print(f"\n💾 Saving steering vector to '{args.save_steering_vector}'...")
             os.makedirs(os.path.dirname(args.save_steering_vector) or '.', exist_ok=True)
             torch.save({
-                'vector': steering_vector,
-                'layer': layer,
+                'steering_vector': steering_vector,
+                'layer_index': layer,
                 'method': args.steering_method,
                 'model': args.model,
                 'task': args.task_names,
+                # Legacy keys for backward compatibility
+                'vector': steering_vector,
+                'layer': layer,
             }, args.save_steering_vector)
             print(f"   ✓ Steering vector saved to: {args.save_steering_vector}")
 
