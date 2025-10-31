@@ -42,7 +42,7 @@ def execute_get_activations(args):
             trait_label = 'unknown'
 
         # Apply limit if specified
-        if args.limit:
+        if hasattr(args, 'limit') and args.limit:
             pairs_list = pairs_list[:args.limit]
 
         print(f"   ✓ Loaded {len(pairs_list)} pairs")

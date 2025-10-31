@@ -230,17 +230,25 @@ class ActivationCollector:
             # Use model's built-in chat template
             if not hasattr(tokenizer, "apply_chat_template"):
                 raise RuntimeError("Tokenizer has no apply_chat_template; set it up or use a different strategy.")
-            prompt_text = tokenizer.apply_chat_template(
-                [{"role": "user", "content": prompt}],
-                tokenize=False,
-                add_generation_prompt=True,
-            )
-            full_text = tokenizer.apply_chat_template(
-                [{"role": "user", "content": prompt},
-                 {"role": "assistant", "content": response}],
-                tokenize=False,
-                add_generation_prompt=False,
-            )
+            try:
+                prompt_text = tokenizer.apply_chat_template(
+                    [{"role": "user", "content": prompt}],
+                    tokenize=False,
+                    add_generation_prompt=True,
+                )
+                full_text = tokenizer.apply_chat_template(
+                    [{"role": "user", "content": prompt},
+                     {"role": "assistant", "content": response}],
+                    tokenize=False,
+                    add_generation_prompt=False,
+                )
+            except ValueError as e:
+                if "chat_template is not set" in str(e):
+                    # Fallback to direct completion for models without chat templates
+                    prompt_text = prompt
+                    full_text = f"{prompt} {response}"
+                else:
+                    raise
 
         elif strategy == PromptConstructionStrategy.DIRECT_COMPLETION:
             # Q → good_resp/bad_resp (direct answer)
