@@ -64,7 +64,8 @@ def run_task_pipeline(
     args = argparse.Namespace()
 
     # Set required arguments
-    args.task_names = [task_name]
+    # task_name is already a string, keep it as a list
+    args.task_names = [task_name] if isinstance(task_name, str) else task_name
     args.model = model_name
     args.layer = int(layer) if isinstance(layer, str) else layer
     args.training_limit = training_limit
