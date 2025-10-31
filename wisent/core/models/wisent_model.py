@@ -284,9 +284,17 @@ class WisentModel:
             {"input_ids": tensor([[...]]), "attention_mask": tensor([[...]])}
         """
 
-        ids = self.tokenizer.apply_chat_template(
-            message, tokenize=True, add_generation_prompt=add_generation_prompt, enable_thinking=enable_thinking, return_tensors="pt"
-        )[0]
+        try:
+            ids = self.tokenizer.apply_chat_template(
+                message, tokenize=True, add_generation_prompt=add_generation_prompt, enable_thinking=enable_thinking, return_tensors="pt"
+            )[0]
+        except ValueError as e:
+            if "chat_template is not set" in str(e):
+                # Fallback for models without chat templates: concatenate messages
+                text = " ".join([msg.get("content", "") for msg in message if isinstance(msg, dict)])
+                ids = self.tokenizer.encode(text, return_tensors="pt")[0]
+            else:
+                raise
         return {
             "input_ids": ids,
             "attention_mask": torch.ones_like(ids),
