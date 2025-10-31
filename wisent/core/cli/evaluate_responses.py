@@ -33,8 +33,14 @@ def execute_evaluate_responses(args):
         with open(args.input, 'r') as f:
             input_data = json.load(f)
 
-        responses = input_data.get('responses', [])
-        task_name = args.task if args.task else input_data.get('task')
+        # Handle both dict format (with 'responses' key) and direct list format
+        if isinstance(input_data, list):
+            responses = input_data
+            task_name = args.task if args.task else "generic"  # Default to generic for list format
+        else:
+            responses = input_data.get('responses', [])
+            task_name = args.task if args.task else input_data.get('task', "generic")
+
         if not task_name:
             print(f"   ❌ Task name not found in input file and not provided via --task")
             sys.exit(1)
