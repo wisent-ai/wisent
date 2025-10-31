@@ -20,7 +20,7 @@ def test_generate_basic():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "generate-responses",
-                "distilgpt2",
+                "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--num-questions", "3",
                 "--max-new-tokens", "50",
@@ -55,7 +55,7 @@ def test_generate_deterministic():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "generate-responses",
-                "distilgpt2",
+                "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--num-questions", "2",
                 "--max-new-tokens", "30",
@@ -84,7 +84,7 @@ def test_generate_creative():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "generate-responses",
-                "distilgpt2",
+                "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--num-questions", "2",
                 "--max-new-tokens", "40",

@@ -39,7 +39,7 @@ def test_generate_responses_from_task():
         result = subprocess.run(
             [
                 "python", "-m", "wisent.core.main", "generate-responses",
-                "distilgpt2",
+                "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--num-questions", "3",
                 "--max-new-tokens", "50",
