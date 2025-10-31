@@ -44,10 +44,11 @@ def execute_tasks(args):
 
     try:
         # 1. Load task data using LMEvalDataLoader
-        print(f"\n📊 Loading task '{args.task_names}'...")
+        task_name = args.task_names[0] if isinstance(args.task_names, list) else args.task_names
+        print(f"\n📊 Loading task '{task_name}'...")
         loader = LMEvalDataLoader()
         result = loader._load_one_task(
-            task_name=args.task_names,
+            task_name=task_name,
             split_ratio=args.split_ratio,
             seed=args.seed,
             limit=args.limit,
