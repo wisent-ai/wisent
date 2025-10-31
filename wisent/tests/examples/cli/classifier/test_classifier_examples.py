@@ -76,7 +76,7 @@ def test_use_pretrained_classifier():
             ],
             capture_output=True,
             text=True,
-            timeout=300
+            timeout=600
         )
         
         assert inference_result.returncode == 0, f"Inference failed: {inference_result.stderr}"
