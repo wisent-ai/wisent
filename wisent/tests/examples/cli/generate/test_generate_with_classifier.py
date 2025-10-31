@@ -128,7 +128,7 @@ def test_classifier_with_threshold():
                 "--limit", "10",
                 "--inference-only",
                 "--load-classifier", classifier_path,
-                "--threshold", "0.7",
+                "--detection-threshold", "0.7",
                 "--output", inference_output,
                 "--device", "cpu",
                 "--verbose"
