@@ -1,350 +1,241 @@
-"""Classification optimization command execution logic."""
+"""Classification optimization command - uses native Wisent methods.
+
+This optimizer tests different configurations (layer, aggregation, threshold)
+by calling the native execute_tasks() function for each configuration,
+then evaluates using Wisent's native evaluators.
+"""
 
 import sys
 import json
 import time
 from typing import List, Dict, Any
+import os
+
 
 def execute_optimize_classification(args):
     """
-    Execute the optimize-classification command.
-    
-    Optimizes classification parameters across all available tasks:
-    - Finds best layer for each task
-    - Finds best token aggregation method  
-    - Finds best detection threshold
-    - Saves trained classifiers
-    
-    EFFICIENCY: Collects raw activations ONCE, then applies different aggregation strategies
-    to the cached activations without re-running the model.
+    Execute classification optimization using native Wisent methods.
+
+    Tests different configurations by calling execute_tasks() for each combination:
+    - Different layers
+    - Different aggregation methods
+    - Different detection thresholds
+
+    Uses native Wisent evaluation (not sklearn metrics).
     """
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-    from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
-    from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
-    import numpy as np
-    import torch
-    
+    from wisent.core.cli.tasks import execute_tasks
+    from types import SimpleNamespace
+
     print(f"\n{'='*80}")
     print(f"🔍 CLASSIFICATION PARAMETER OPTIMIZATION")
     print(f"{'='*80}")
     print(f"   Model: {args.model}")
     print(f"   Limit per task: {args.limit}")
-    print(f"   Optimization metric: {args.optimization_metric}")
     print(f"   Device: {args.device or 'auto'}")
     print(f"{'='*80}\n")
-    
-    # 1. Load model
-    print(f"📦 Loading model...")
+
+    # 1. Determine layer range
+    # First need to load model to get num_layers
+    from wisent.core.models.wisent_model import WisentModel
+    print(f"📦 Loading model to determine layer range...")
     model = WisentModel(args.model, device=args.device)
     total_layers = model.num_layers
-    print(f"   ✓ Model loaded with {total_layers} layers\n")
-    
-    # 2. Determine layer range
+    print(f"   ✓ Model has {total_layers} layers\n")
+
     if args.layer_range:
         start, end = map(int, args.layer_range.split('-'))
         layers_to_test = list(range(start, end + 1))
     else:
-        # Test middle layers by default (more informative)
+        # Test middle layers by default
         start_layer = total_layers // 3
         end_layer = (2 * total_layers) // 3
         layers_to_test = list(range(start_layer, end_layer + 1))
-    
+
     print(f"🎯 Testing layers: {layers_to_test[0]} to {layers_to_test[-1]} ({len(layers_to_test)} layers)")
     print(f"🔄 Aggregation methods: {', '.join(args.aggregation_methods)}")
     print(f"📊 Thresholds: {args.threshold_range}\n")
-    
-    # 3. Get list of tasks to optimize
+
+    # 2. Get list of tasks
     task_list = [
-        "arc_easy", "arc_challenge", "hellaswag", 
+        "arc_easy", "arc_challenge", "hellaswag",
         "winogrande", "gsm8k"
     ]
-    
+
     print(f"📋 Optimizing {len(task_list)} tasks\n")
-    
-    # 4. Initialize data loader
-    loader = LMEvalDataLoader()
-    
-    # 5. Results storage
+
+    # 3. Results storage
     all_results = {}
-    classifiers_saved = {}
-    
-    # 6. Process each task
+
+    # 4. Process each task
     for task_idx, task_name in enumerate(task_list, 1):
         print(f"\n{'='*80}")
         print(f"Task {task_idx}/{len(task_list)}: {task_name}")
         print(f"{'='*80}")
-        
+
         task_start_time = time.time()
-        
+
         try:
-            # Load task data
-            print(f"  📊 Loading data...")
-            result = loader._load_one_task(
-                task_name=task_name,
-                split_ratio=0.8,
-                seed=42,
-                limit=args.limit,
-                training_limit=None,
-                testing_limit=None
-            )
-            
-            train_pairs = result['train_qa_pairs']
-            test_pairs = result['test_qa_pairs']
-            
-            print(f"      ✓ Loaded {len(train_pairs.pairs)} train, {len(test_pairs.pairs)} test pairs")
-            
-            # STEP 1: Collect raw activations ONCE for all layers (full sequence)
-            print(f"  🧠 Collecting raw activations (once per pair)...")
-            collector = ActivationCollector(model=model, store_device="cpu")
-            
-            # Cache structure: train_cache[pair_idx][layer_str] = {pos: tensor, neg: tensor, pos_tokens: int, neg_tokens: int}
-            train_cache = {}
-            test_cache = {}
-            
-            layer_strs = [str(l) for l in layers_to_test]
-            
-            # Collect training activations with full sequence
-            for pair_idx, pair in enumerate(train_pairs.pairs):
-                updated_pair = collector.collect_for_pair(
-                    pair, 
-                    layers=layer_strs, 
-                    aggregation=None,  # Get raw activations without aggregation
-                    return_full_sequence=True,  # Get all token positions
-                    normalize_layers=False
-                )
-                
-                train_cache[pair_idx] = {}
-                for layer_str in layer_strs:
-                    train_cache[pair_idx][layer_str] = {
-                        'pos': updated_pair.positive_response.layers_activations.get(layer_str),
-                        'neg': updated_pair.negative_response.layers_activations.get(layer_str),
-                    }
-            
-            # Collect test activations
-            for pair_idx, pair in enumerate(test_pairs.pairs):
-                updated_pair = collector.collect_for_pair(
-                    pair,
-                    layers=layer_strs,
-                    aggregation=None,
-                    return_full_sequence=True,
-                    normalize_layers=False
-                )
-                
-                test_cache[pair_idx] = {}
-                for layer_str in layer_strs:
-                    test_cache[pair_idx][layer_str] = {
-                        'pos': updated_pair.positive_response.layers_activations.get(layer_str),
-                        'neg': updated_pair.negative_response.layers_activations.get(layer_str),
-                    }
-            
-            print(f"      ✓ Cached activations for {len(train_cache)} train and {len(test_cache)} test pairs")
-            
-            # STEP 2: Apply different aggregation strategies to cached activations
-            print(f"  🔍 Testing {len(layers_to_test) * len(args.aggregation_methods)} layer/aggregation combinations...")
-            
-            # Aggregation functions
-            def aggregate_activations(raw_acts, method):
-                """Apply aggregation to raw activation tensor."""
-                if raw_acts is None or raw_acts.numel() == 0:
-                    return None
-                
-                # Handle both 1D (already aggregated) and 2D (sequence, hidden_dim) tensors
-                if raw_acts.ndim == 1:
-                    return raw_acts
-                elif raw_acts.ndim == 2:
-                    if method == 'average':
-                        return raw_acts.mean(dim=0)
-                    elif method == 'final':
-                        return raw_acts[-1]
-                    elif method == 'first':
-                        return raw_acts[0]
-                    elif method == 'max':
-                        return raw_acts.max(dim=0)[0]
-                    elif method == 'min':
-                        return raw_acts.min(dim=0)[0]
-                else:
-                    # Flatten to 2D if needed
-                    raw_acts = raw_acts.view(-1, raw_acts.shape[-1])
-                    return aggregate_activations(raw_acts, method)
-            
             best_score = -1
             best_config = None
-            best_classifier = None
-            
+
             combinations_tested = 0
-            total_combinations = len(layers_to_test) * len(args.aggregation_methods)
-            
+            total_combinations = len(layers_to_test) * len(args.aggregation_methods) * len(args.threshold_range)
+
+            print(f"  🔍 Testing {total_combinations} configurations...")
+
             for layer in layers_to_test:
-                layer_str = str(layer)
-                
                 for agg_method in args.aggregation_methods:
-                    # Apply aggregation to cached activations
-                    train_pos_acts = []
-                    train_neg_acts = []
-                    
-                    for pair_idx in train_cache:
-                        pos_raw = train_cache[pair_idx][layer_str]['pos']
-                        neg_raw = train_cache[pair_idx][layer_str]['neg']
-                        
-                        pos_agg = aggregate_activations(pos_raw, agg_method)
-                        neg_agg = aggregate_activations(neg_raw, agg_method)
-                        
-                        if pos_agg is not None:
-                            train_pos_acts.append(pos_agg.cpu().numpy())
-                        if neg_agg is not None:
-                            train_neg_acts.append(neg_agg.cpu().numpy())
-                    
-                    if len(train_pos_acts) == 0 or len(train_neg_acts) == 0:
-                        combinations_tested += 1
-                        continue
-                    
-                    # Prepare training data
-                    X_train_pos = np.array(train_pos_acts)
-                    X_train_neg = np.array(train_neg_acts)
-                    X_train = np.vstack([X_train_pos, X_train_neg])
-                    y_train = np.array([1] * len(train_pos_acts) + [0] * len(train_neg_acts))
-                    
-                    # Train classifier
-                    classifier = LogisticClassifier(threshold=0.5, device="cpu")
-                    
-                    config = ClassifierTrainConfig(
-                        test_size=0.2,
-                        batch_size=32,
-                        num_epochs=30,
-                        learning_rate=0.001,
-                        monitor="f1",
-                        random_state=42
-                    )
-                    
-                    report = classifier.fit(
-                        torch.tensor(X_train, dtype=torch.float32),
-                        torch.tensor(y_train, dtype=torch.float32),
-                        config=config
-                    )
-                    
-                    # Apply aggregation to test set
-                    test_pos_acts = []
-                    test_neg_acts = []
-                    
-                    for pair_idx in test_cache:
-                        pos_raw = test_cache[pair_idx][layer_str]['pos']
-                        neg_raw = test_cache[pair_idx][layer_str]['neg']
-                        
-                        pos_agg = aggregate_activations(pos_raw, agg_method)
-                        neg_agg = aggregate_activations(neg_raw, agg_method)
-                        
-                        if pos_agg is not None:
-                            test_pos_acts.append(pos_agg.cpu().numpy())
-                        if neg_agg is not None:
-                            test_neg_acts.append(neg_agg.cpu().numpy())
-                    
-                    if len(test_pos_acts) == 0 or len(test_neg_acts) == 0:
-                        combinations_tested += 1
-                        continue
-                    
-                    X_test_pos = np.array(test_pos_acts)
-                    X_test_neg = np.array(test_neg_acts)
-                    X_test = np.vstack([X_test_pos, X_test_neg])
-                    y_test = np.array([1] * len(test_pos_acts) + [0] * len(test_neg_acts))
-                    
-                    # Get predictions
-                    y_pred_proba = np.array(classifier.predict_proba(X_test))
-                    
-                    # Test different thresholds
                     for threshold in args.threshold_range:
-                        y_pred = (y_pred_proba > threshold).astype(int)
-                        
-                        # Calculate metrics
-                        from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
-                        
-                        accuracy = accuracy_score(y_test, y_pred)
-                        f1 = f1_score(y_test, y_pred, zero_division=0)
-                        precision = precision_score(y_test, y_pred, zero_division=0)
-                        recall = recall_score(y_test, y_pred, zero_division=0)
-                        
-                        # Choose metric based on args
-                        metric_value = {
-                            'f1': f1,
-                            'accuracy': accuracy,
-                            'precision': precision,
-                            'recall': recall
-                        }[args.optimization_metric]
-                        
-                        if metric_value > best_score:
-                            best_score = metric_value
-                            best_config = {
-                                'layer': layer,
-                                'aggregation': agg_method,
-                                'threshold': threshold,
-                                'accuracy': float(accuracy),
-                                'f1': float(f1),
-                                'precision': float(precision),
-                                'recall': float(recall)
+                        combinations_tested += 1
+
+                        # Create args namespace for execute_tasks
+                        task_args = SimpleNamespace(
+                            task_names=[task_name],
+                            model=args.model,
+                            layer=layer,
+                            classifier_type=args.classifier_type or 'logistic',
+                            token_aggregation=agg_method,
+                            detection_threshold=threshold,
+                            split_ratio=0.8,
+                            seed=42,
+                            limit=args.limit,
+                            training_limit=None,
+                            testing_limit=None,
+                            device=args.device,
+                            save_classifier=None,  # Don't save intermediate classifiers
+                            output=None,
+                            inference_only=False,
+                            load_steering_vector=None,
+                            save_steering_vector=None,
+                            train_only=False,
+                            steering_method='caa'
+                        )
+
+                        try:
+                            # Call native Wisent execute_tasks
+                            result = execute_tasks(task_args)
+
+                            # Extract metrics from result
+                            # Map CLI argument to result key
+                            metric_map = {
+                                'f1': 'f1_score',
+                                'accuracy': 'accuracy',
+                                'precision': 'precision',
+                                'recall': 'recall'
                             }
-                            best_classifier = classifier
-                    
-                    combinations_tested += 1
-                    print(f"      Progress: {combinations_tested}/{total_combinations} combinations tested", end='\r')
-            
-            print(f"\n  ✅ Best config: layer={best_config['layer']}, agg={best_config['aggregation']}, thresh={best_config['threshold']:.2f}")
-            print(f"      Metrics: acc={best_config['accuracy']:.3f}, f1={best_config['f1']:.3f}, prec={best_config['precision']:.3f}, rec={best_config['recall']:.3f}")
-            
-            all_results[task_name] = best_config
-            
-            # Note: Classifier saving disabled due to missing .save() method
-            # Can be enabled once proper serialization is implemented
-            
+                            metric_key = metric_map.get(args.optimization_metric, 'f1_score')
+                            metric_value = result.get(metric_key, 0)
+
+                            if metric_value > best_score:
+                                best_score = metric_value
+                                best_config = {
+                                    'layer': layer,
+                                    'aggregation': agg_method,
+                                    'threshold': threshold,
+                                    'accuracy': result.get('accuracy', 0),
+                                    'f1_score': result.get('f1_score', 0),
+                                    'precision': result.get('precision', 0),
+                                    'recall': result.get('recall', 0),
+                                    'generation_count': result.get('generation_count', 0),
+                                }
+
+                            if combinations_tested % 5 == 0:
+                                print(f"      Progress: {combinations_tested}/{total_combinations} tested, best {args.optimization_metric}: {best_score:.4f}", end='\r')
+
+                        except Exception as e:
+                            # NO FALLBACK - raise error
+                            print(f"\n❌ Configuration failed:")
+                            print(f"   Layer: {layer}")
+                            print(f"   Aggregation: {agg_method}")
+                            print(f"   Threshold: {threshold}")
+                            print(f"   Error: {e}")
+                            raise
+
+            print(f"\n\n  ✅ Best config for {task_name}:")
+            print(f"      Layer: {best_config['layer']}")
+            print(f"      Aggregation: {best_config['aggregation']}")
+            print(f"      Threshold: {best_config['threshold']:.2f}")
+            print(f"      Performance metrics:")
+            print(f"        • Accuracy:  {best_config['accuracy']:.4f}")
+            print(f"        • F1 Score:  {best_config['f1_score']:.4f}")
+            print(f"        • Precision: {best_config['precision']:.4f}")
+            print(f"        • Recall:    {best_config['recall']:.4f}")
+            print(f"        • Generations evaluated: {best_config['generation_count']}")
+
+            # Train final classifier with best config and save
+            if args.save_dir:
+                print(f"\n  💾 Training final classifier with best config...")
+
+                final_args = SimpleNamespace(
+                    task_names=[task_name],
+                    model=args.model,
+                    layer=best_config['layer'],
+                    classifier_type=args.classifier_type or 'logistic',
+                    token_aggregation=best_config['aggregation'],
+                    detection_threshold=best_config['threshold'],
+                    split_ratio=0.8,
+                    seed=42,
+                    limit=args.limit,
+                    training_limit=None,
+                    testing_limit=None,
+                    device=args.device,
+                    save_classifier=os.path.join(args.save_dir, f"{task_name}_classifier.pt"),
+                    output=os.path.join(args.save_dir, task_name),
+                    inference_only=False,
+                    load_steering_vector=None,
+                    save_steering_vector=None,
+                    train_only=False,
+                    steering_method='caa'
+                )
+
+                execute_tasks(final_args)
+                print(f"      ✓ Classifier saved to: {final_args.save_classifier}")
+
+            # Store results
+            all_results[task_name] = {
+                'best_config': best_config,
+                'optimization_metric': args.optimization_metric,
+                'best_score': best_score,
+                'combinations_tested': combinations_tested
+            }
+
             task_time = time.time() - task_start_time
-            print(f"  ⏱️  Task completed in {task_time:.1f}s")
-            
+            print(f"\n  ⏱️  Task completed in {task_time:.1f}s")
+
         except Exception as e:
-            print(f"  ❌ Failed to optimize {task_name}: {e}")
+            # NO FALLBACK - raise error
+            print(f"\n❌ Task '{task_name}' optimization failed:")
+            print(f"   Error: {e}")
             import traceback
             traceback.print_exc()
-            continue
-    
-    # 7. Save results
+            raise
+
+    # 5. Save optimization results
+    results_dir = args.save_dir or './optimization_results'
+    os.makedirs(results_dir, exist_ok=True)
+
+    model_name_safe = args.model.replace('/', '_')
+    results_file = os.path.join(results_dir, f'classification_optimization_{model_name_safe}.json')
+
+    with open(results_file, 'w') as f:
+        json.dump({
+            'model': args.model,
+            'optimization_metric': args.optimization_metric,
+            'results': all_results
+        }, f, indent=2)
+
     print(f"\n{'='*80}")
     print(f"📊 OPTIMIZATION COMPLETE")
-    print(f"{'='*80}\n")
-    
-    results_file = args.results_file or f"./optimization_results/classification_results.json"
-    import os
-    os.makedirs(os.path.dirname(results_file) if os.path.dirname(results_file) else ".", exist_ok=True)
-    
-    output_data = {
-        'model': args.model,
-        'optimization_metric': args.optimization_metric,
-        'layer_range': f"{layers_to_test[0]}-{layers_to_test[-1]}",
-        'aggregation_methods': args.aggregation_methods,
-        'threshold_range': args.threshold_range,
-        'tasks': all_results,
-        'classifiers_saved': classifiers_saved
-    }
-    
-    with open(results_file, 'w') as f:
-        json.dump(output_data, f, indent=2)
-    
+    print(f"{'='*80}")
     print(f"✅ Results saved to: {results_file}\n")
-    
+
     # Print summary
-    print("📋 SUMMARY BY TASK:")
-    print("-" * 80)
-    for task_name, config in all_results.items():
-        print(f"  {task_name:20s} | Layer: {config['layer']:2d} | Agg: {config['aggregation']:8s} | Thresh: {config['threshold']:.2f} | F1: {config['f1']:.3f}")
-    print("-" * 80 + "\n")
-
-    # Return results for programmatic access
-    return {
-        "model": args.model,
-        "optimization_metric": args.optimization_metric,
-        "layer_range": f"{layers_to_test[0]}-{layers_to_test[-1]}",
-        "tasks_optimized": list(all_results.keys()),
-        "results": all_results,
-        "results_file": results_file,
-        "classifiers_saved": classifiers_saved
-    }
-
+    print(f"📋 SUMMARY BY TASK:")
+    print(f"-" * 120)
+    for task_name, result in all_results.items():
+        config = result['best_config']
+        print(f"{task_name:20} | Layer: {config['layer']:2} | Agg: {config['aggregation']:8} | "
+              f"Thresh: {config['threshold']:.2f} | F1: {config['f1_score']:.4f} | "
+              f"Acc: {config['accuracy']:.4f} | Gens: {config['generation_count']:3}")
+    print(f"-" * 120)
+    print()
