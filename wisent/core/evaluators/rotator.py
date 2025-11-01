@@ -25,8 +25,8 @@ class EvaluatorRotator:
     ) -> None:
         if autoload:
             self.discover_evaluators(evaluators_location)
+        self._task_name = task_name  # Set before resolving
         self._evaluator = self._resolve_evaluator(evaluator)
-        self._task_name = task_name
 
     @staticmethod
     def discover_evaluators(location: Union[str, Path] = "wisent.core.evaluators.oracles") -> None:
@@ -93,17 +93,31 @@ class EvaluatorRotator:
             )
         return sorted(out, key=lambda x: x["name"])
 
-    @staticmethod
     def _resolve_evaluator(
+        self,
         evaluator: Union[str, BaseEvaluator, Type[BaseEvaluator], None]
     ) -> BaseEvaluator:
         if evaluator is None:
-            registry = BaseEvaluator.list_registered()
-            if "lm_eval" in registry:
-                return registry["lm_eval"]()
-            if registry:
-                return next(iter(registry.values()))()
-            raise EvaluatorError("No evaluators registered.")
+            # Auto-select based on task_name if provided
+            if self._task_name:
+                registry = BaseEvaluator.list_registered()
+                for name, cls in registry.items():
+                    task_names = getattr(cls, 'task_names', ())
+                    if self._task_name in task_names:
+                        logger.info(f"Auto-selected evaluator '{name}' for task '{self._task_name}'")
+                        return cls()
+                # NO FALLBACK - raise error if no evaluator found for task
+                raise EvaluatorError(
+                    f"No evaluator found for task '{self._task_name}'. "
+                    f"Available evaluators: {list(registry.keys())}. "
+                    f"Please specify an evaluator explicitly or add task_names to an evaluator."
+                )
+
+            # NO FALLBACK - if no task_name and no evaluator, require explicit selection
+            raise EvaluatorError(
+                "No evaluator specified and no task_name provided. "
+                "Either provide an evaluator name or a task_name for auto-selection."
+            )
         if isinstance(evaluator, BaseEvaluator):
             return evaluator
         if inspect.isclass(evaluator) and issubclass(evaluator, BaseEvaluator):

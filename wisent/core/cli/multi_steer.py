@@ -11,6 +11,33 @@ def execute_multi_steer(args):
     from wisent.core.models.wisent_model import WisentModel
 
     try:
+        # Check if no vectors provided - unsteered baseline mode
+        if not args.vector or len(args.vector) == 0:
+            print(f"\n🎯 Unsteered Baseline Generation Mode")
+            print(f"   Model: {args.model}")
+            print(f"   No steering vectors provided - generating baseline response")
+
+            # If prompt is provided, generate unsteered response
+            if hasattr(args, 'prompt') and args.prompt:
+                print(f"\n🤖 Loading model '{args.model}'...")
+                model = WisentModel(args.model, device=args.device)
+
+                # Generate WITHOUT steering
+                response = model.generate(
+                    [[{"role": "user", "content": args.prompt}]],
+                    max_new_tokens=args.max_new_tokens,
+                    do_sample=True,
+                    temperature=getattr(args, 'temperature', 0.7),
+                    top_p=getattr(args, 'top_p', 0.9)
+                )[0]
+
+                print(f"\nUnsteered baseline output:\n{response}\n")
+            else:
+                print(f"\n⚠️  No prompt provided. Use --prompt to generate output.")
+
+            print(f"\n✅ Baseline generation completed successfully!\n")
+            return
+
         print(f"\n🎯 Multi-Steering Mode")
         print(f"   Model: {args.model}")
         print(f"   Layer: {args.layer}")

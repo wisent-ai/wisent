@@ -1590,14 +1590,15 @@ def setup_multi_steer_parser(parser):
         "--vector",
         type=str,
         action="append",
-        required=True,
+        required=False,
+        default=None,
         metavar="PATH:WEIGHT",
-        help="Path to steering vector and its weight (format: path/to/vector.pt:0.5). Can be specified multiple times.",
+        help="Path to steering vector and its weight (format: path/to/vector.pt:0.5). Can be specified multiple times. If omitted, generates unsteered baseline.",
     )
 
     # Model configuration
     parser.add_argument("--model", type=str, required=True, help="Model name or path")
-    parser.add_argument("--layer", type=int, required=True, help="Layer index to apply combined steering")
+    parser.add_argument("--layer", type=int, required=False, default=None, help="Layer index to apply combined steering (required when using vectors)")
     parser.add_argument("--device", type=str, default=None, help="Device to run on (default: auto-detect)")
     
     # Steering method configuration

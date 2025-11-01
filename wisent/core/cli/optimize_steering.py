@@ -4,6 +4,7 @@ import sys
 import json
 import time
 import numpy as np
+from wisent.core.evaluators.rotator import EvaluatorRotator
 
 def execute_optimize_steering(args):
     """
@@ -107,12 +108,17 @@ def execute_comprehensive(args, model, loader):
             
             train_pairs = result['train_qa_pairs']
             test_pairs = result['test_qa_pairs']
-            
+
             print(f"      ✓ Loaded {len(train_pairs.pairs)} train, {len(test_pairs.pairs)} test pairs")
-            
+
+            # Initialize evaluator for this task (auto-select based on task_name)
+            EvaluatorRotator.discover_evaluators('wisent.core.evaluators.benchmark_specific')
+            evaluator = EvaluatorRotator(evaluator=None, task_name=task_name)  # None = auto-select
+            print(f"      ✓ Using evaluator: {evaluator._evaluator.name} (auto-selected for {task_name})")
+
             print(f"\n  🔍 Testing CAA method across layers, strengths, AND strategies...")
             print(f"      Total configurations: {len(layers_to_test)} layers × {len(strengths_to_test)} strengths × {len(strategies_to_test)} strategies = {len(layers_to_test) * len(strengths_to_test) * len(strategies_to_test)}")
-            
+
             best_score = 0
             best_config = None
             method_results = {}
@@ -168,36 +174,51 @@ def execute_comprehensive(args, model, loader):
                             caa_method = CAAMethod(kwargs={"normalize": True})
                             steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
                             
-                            # Step 2: Evaluate with generation (simplified evaluation using activation alignment)
-                            # In production, this would actually generate text and evaluate quality
-                            # For now, we'll use activation alignment as a proxy
+                            # Step 2: Evaluate with ACTUAL GENERATION and task evaluator
+                            # Create steering plan
+                            from wisent.core.models.core.atoms import SteeringVector, SteeringPlan
+                            steering_vec = SteeringVector(vector=steering_vector, scale=strength)
+                            steering_plan = SteeringPlan(
+                                layers={layer_str: steering_vec},
+                                layers_description=[f"CAA steering layer={layer}, strength={strength}, strategy={strategy}"]
+                            )
+
+                            # Apply steering to model
+                            model.apply_steering(steering_plan)
+
                             test_scores = []
-                            
+
                             for pair in test_pairs.pairs:
-                                updated_pair = collector.collect_for_pair(
-                                    pair,
-                                    layers=[layer_str],
-                                    aggregation=ActivationAggregationStrategy.MEAN_POOLING,
-                                    return_full_sequence=False,
-                                    normalize_layers=False
-                                )
-                                
-                                if updated_pair.positive_response.layers_activations and layer_str in updated_pair.positive_response.layers_activations:
-                                    pos_act = updated_pair.positive_response.layers_activations[layer_str]
-                                    neg_act = updated_pair.negative_response.layers_activations[layer_str]
-                                    
-                                    if pos_act is not None and neg_act is not None:
-                                        # Apply steering with strategy weighting
-                                        strategy_weight = get_strategy_weight(strategy, position=0.5)  # Mid-position for evaluation
-                                        
-                                        pos_steered = pos_act + (strength * strategy_weight) * steering_vector
-                                        neg_steered = neg_act + (strength * strategy_weight) * steering_vector
-                                        
-                                        # Score: positive should be more aligned with positive direction
-                                        pos_score = torch.dot(pos_steered.flatten(), steering_vector.flatten()).item()
-                                        neg_score = torch.dot(neg_steered.flatten(), steering_vector.flatten()).item()
-                                        
-                                        test_scores.append(1.0 if pos_score > neg_score else 0.0)
+                                try:
+                                    # Prepare choices for multiple choice evaluation
+                                    choices = [pair.negative_response.content, pair.positive_response.content]
+                                    expected = pair.positive_response.content
+
+                                    # Use the Wisent evaluator to check correctness
+                                    # The evaluator will use log likelihood if possible,
+                                    # otherwise fall back to generation
+                                    eval_result = evaluator.evaluate(
+                                        response="",  # Not used for log likelihood eval
+                                        expected=expected,
+                                        model=model,
+                                        question=pair.question,
+                                        choices=choices,
+                                        steering_plan=steering_plan
+                                    )
+
+                                    # Convert TRUTHFUL/UNTRUTHFUL to 1.0/0.0
+                                    is_correct = eval_result.ground_truth == "TRUTHFUL"
+                                    test_scores.append(1.0 if is_correct else 0.0)
+
+                                except Exception as e:
+                                    # NO FALLBACK - raise the error immediately
+                                    print(f"\n❌ Evaluation failed for test pair:")
+                                    print(f"   Question: {pair.question[:100]}")
+                                    print(f"   Error: {e}")
+                                    raise
+
+                            # Clear steering
+                            model.clear_steering()
                             
                             if len(test_scores) > 0:
                                 avg_score = np.mean(test_scores)
@@ -225,7 +246,7 @@ def execute_comprehensive(args, model, loader):
                                             )
 
                                             # Generate with steering
-                                            model.attach(steering_plan)
+                                            model.apply_steering(steering_plan)
                                             steered_response = model.generate(
                                                 [[{"role": "user", "content": prompt}]],
                                                 max_new_tokens=100,
@@ -233,7 +254,7 @@ def execute_comprehensive(args, model, loader):
                                                 use_steering=True,
                                                 steering_plan=steering_plan
                                             )[0]
-                                            model.detach()
+                                            model.clear_steering()
 
                                             config_examples.append({
                                                 'question': prompt,
@@ -266,11 +287,15 @@ def execute_comprehensive(args, model, loader):
 
                             if configs_tested % 10 == 0 and args.verbose:
                                 print(f"      Tested {configs_tested} configurations...", end='\r')
-                        
+
                         except Exception as e:
-                            if args.verbose:
-                                print(f"      Error at layer={layer}, strength={strength}, strategy={strategy}: {e}")
-                            continue
+                            # NO FALLBACK - raise the error immediately
+                            print(f"\n❌ Configuration test failed:")
+                            print(f"   Layer: {layer}")
+                            print(f"   Strength: {strength}")
+                            print(f"   Strategy: {strategy}")
+                            print(f"   Error: {e}")
+                            raise
             
             if best_config:
                 print(f"\n  ✅ Best configuration found:")
@@ -480,12 +505,14 @@ def execute_comprehensive(args, model, loader):
             
             task_time = time.time() - task_start_time
             print(f"\n  ⏱️  Task completed in {task_time:.1f}s (tested {configs_tested} configurations)")
-            
+
         except Exception as e:
-            print(f"  ❌ Failed to optimize {task_name}: {e}")
+            # NO FALLBACK - raise the error immediately
+            print(f"\n❌ Task '{task_name}' optimization failed:")
+            print(f"   Error: {e}")
             import traceback
             traceback.print_exc()
-            continue
+            raise
     
     # Save results
     print(f"\n{'='*80}")

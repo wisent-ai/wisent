@@ -1,329 +1,186 @@
-"""
-Log-Likelihoods Ground Truth Evaluator
+"""Log Likelihoods Evaluator for multiple choice tasks.
 
-This module handles ground truth evaluation for log-likelihoods based tasks,
-typically used for multiple choice questions. Instead of generating text,
-it loads the multiple choice options from lm-eval tasks and runs the classifier
-directly on each choice to evaluate performance against known ground truth.
+This evaluator handles tasks like BoolQ, MMLU, ARC where evaluation is done
+by comparing log likelihoods of different answer choices rather than generating text.
+Works with steering by computing log probabilities with steering applied.
 """
 
 import logging
-from typing import Any, Dict, Optional
-from dataclasses import dataclass
+import torch
+from typing import Any, List
 
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-from wisent.core.activations.activations import Activations
+from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.errors.error_handler import (
+    ModelNotProvidedError,
+    validate_choices,
+    require_all_parameters
+)
 
 logger = logging.getLogger(__name__)
 
 
-@dataclass
-class Layer:
-    """Simple layer metadata class."""
-    index: int
-    type: str = "transformer"
+class LogLikelihoodsEvaluator(BaseEvaluator):
+    """Evaluator for multiple choice tasks using log likelihood comparison.
 
+    Compatible with:
+    - BoolQ: Boolean questions with yes/no choices
+    - MMLU: Multiple choice questions
+    - ARC: Science questions with multiple choices
+    - Any task requiring log likelihood comparison
 
-class LogLikelihoodsEvaluator:
-    """
-    Evaluator for log-likelihoods based ground truth assessment.
-
-    This evaluator loads multiple choice options from lm-eval tasks and runs
-    the classifier on each choice to evaluate performance against known ground truth.
-    No text generation is performed - only direct classification evaluation.
+    This evaluator computes the log likelihood of each choice and selects
+    the one with the highest probability. Can apply steering before computing
+    log likelihoods.
     """
 
-    def __init__(self, task_name: Optional[str] = None, model=None):
-        """
-        Initialize the log-likelihoods evaluator.
+    name = "log_likelihoods"
+    description = "Log likelihood evaluator for multiple choice tasks"
+    task_names = ("boolq", "mmlu", "arc_easy", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2")
+
+    def __init__(self, model=None):
+        """Initialize with optional model for log likelihood computation.
 
         Args:
-            task_name: Name of the task (e.g., "truthfulqa_mc1", "mmlu", etc.)
-            model: The model instance used to extract activations
+            model: WisentModel instance that can compute log likelihoods
         """
-        self.task_name = task_name
         self.model = model
 
-    def evaluate_classifier_on_task(
-        self,
-        classifier,
-        task_name: str,
-        num_samples: int = 100,
-        model=None,
-        layer: int = 15,
-        token_aggregation: str = "average",
-    ) -> Dict[str, Any]:
-        """
-        Evaluate a classifier on a log-likelihoods task by running it on multiple choice options.
+    def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
+        """Evaluate using log likelihood comparison of choices.
 
         Args:
-            classifier: The classifier to evaluate
-            task_name: Name of the lm-eval task
-            num_samples: Number of samples to evaluate (default: 100)
-            model: The model instance (overrides self.model if provided)
-            layer: Layer to extract activations from (default: 15)
-            token_aggregation: Token aggregation method ("average", "final", "first", "max", "min")
+            response: Not used for log likelihood evaluation
+            expected: Expected answer
+            **kwargs:
+                model: WisentModel instance (REQUIRED)
+                question: The question/context (REQUIRED)
+                choices: List of answer choices (REQUIRED)
+                steering_plan: Optional steering plan to apply
 
         Returns:
-            Dict containing evaluation results
+            EvalResult with TRUTHFUL/UNTRUTHFUL
+
+        Raises:
+            ModelNotProvidedError: If model is not provided
+            MissingParameterError: If question is not provided
+            InvalidChoicesError: If choices are invalid or missing
         """
+        model = kwargs.get('model') or self.model
+        question = kwargs.get('question')
+        choices = kwargs.get('choices')
+        steering_plan = kwargs.get('steering_plan')
+        task_name = kwargs.get('task_name', 'unknown')
+
+        # NO FALLBACKS - require all parameters
+        if not model:
+            raise ModelNotProvidedError(evaluator_name=self.name, task_name=task_name)
+
+        require_all_parameters(
+            {'question': question},
+            context=f"{self.name} evaluator",
+            task_name=task_name
+        )
+
+        validate_choices(choices, task_name=task_name, min_choices=2)
+
+        return self._evaluate_log_likelihood(
+            model, question, choices, expected, steering_plan
+        )
+
+    def _evaluate_log_likelihood(
+        self, model, question: str, choices: List[str], expected: Any, steering_plan=None
+    ) -> EvalResult:
+        """Evaluate by comparing log likelihoods of choices."""
         try:
-            # Use provided model or fall back to self.model
-            evaluation_model = model or self.model
-            if evaluation_model is None:
-                return self._error_result("No model provided for activation extraction")
+            # Apply steering if provided
+            if steering_plan:
+                model.attach(steering_plan)
 
-            logger.info(f"Loading task data for {task_name}...")
+            # Compute log likelihood for each choice
+            log_probs = []
+            for choice in choices:
+                log_prob = self._compute_choice_log_likelihood(model, question, choice)
+                log_probs.append(log_prob)
 
-            # Use existing task loading infrastructure
-            task_data = evaluation_model.load_lm_eval_task(task_name, shots=0, limit=num_samples)
-            docs, _ = evaluation_model.split_task_data(task_data, split_ratio=1.0)  # Use all for evaluation
+            # Detach steering
+            if steering_plan:
+                model.detach()
 
-            if not docs:
-                return self._error_result(f"No documents retrieved from task: {task_name}")
+            # Select choice with highest log likelihood
+            predicted_idx = log_probs.index(max(log_probs))
+            predicted_choice = choices[predicted_idx]
 
-            logger.info(f"Retrieved {len(docs)} documents from {task_name}")
+            # Normalize expected answer for comparison
+            expected_normalized = str(expected).strip().lower()
+            predicted_normalized = predicted_choice.strip().lower()
 
-            # Use existing QA extraction infrastructure (task-agnostic)
-            from .contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+            is_correct = predicted_normalized == expected_normalized
 
-            qa_pairs = ContrastivePairSet.extract_qa_pairs_from_task_docs(task_name, task_data, docs)
-
-            if not qa_pairs:
-                return self._error_result(f"No QA pairs could be extracted from task: {task_name}")
-
-            logger.info(f"Extracted {len(qa_pairs)} QA pairs from {task_name}")
-
-            # Use existing contrastive pair creation infrastructure
-            from wisent.core.activations.activation_collection_method import (
-                ActivationCollectionLogic,
-            )
-            from wisent.core.activations.prompts import PromptConstructionStrategy
-
-            collector = ActivationCollectionLogic(model=evaluation_model)
-
-            # For evaluation, use DIRECT_COMPLETION instead of MULTIPLE_CHOICE
-            # This creates prompts like "Q" -> "good_resp"/"bad_resp" instead of "Which is better: Q A. bad B. good"
-            logger.info("🔍 EVALUATION MODE: Using DIRECT_COMPLETION prompt strategy instead of MULTIPLE_CHOICE")
-            contrastive_pairs = collector.create_batch_contrastive_pairs(
-                qa_pairs, prompt_strategy=PromptConstructionStrategy.DIRECT_COMPLETION
-            )
-
-            if not contrastive_pairs:
-                return self._error_result("No contrastive pairs could be created from QA pairs")
-
-            logger.info(f"Created {len(contrastive_pairs)} contrastive pairs")
-
-            # Map token aggregation to token targeting strategy for evaluation
-            targeting_strategy_mapping = {  # TODO Refactor - we should stay with one standard
-                "average": ActivationAggregationStrategy.MEAN_POOLING,
-                "final": ActivationAggregationStrategy.LAST_TOKEN,
-                "first": ActivationAggregationStrategy.FIRST_TOKEN,
-                "max": ActivationAggregationStrategy.MAX_POOLING,
-                "min": ActivationAggregationStrategy.MEAN_POOLING,  # Fallback to mean
-            }
-
-            targeting_strategy = targeting_strategy_mapping.get(
-                token_aggregation, ActivationAggregationStrategy.MEAN_POOLING
-            )
-
-            logger.info(
-                f"🔍 EVALUATION MODE: Using {targeting_strategy.value} targeting strategy (from token_aggregation: {token_aggregation})"
-            )
-            logger.info("🎯 ACTIVATION COLLECTION PARAMS:")
-            logger.info(f"   • Layer: {layer}")
-            logger.info(f"   • Device: {evaluation_model.device}")
-            logger.info(f"   • Token targeting: {targeting_strategy.value}")
-            logger.info(f"   • Pairs count: {len(contrastive_pairs)}")
-
-            processed_pairs = collector.collect_activations_batch(
-                pairs=contrastive_pairs,
-                layer_index=layer,
-                device=evaluation_model.device,
-                token_targeting_strategy=targeting_strategy,
-            )
-
-            if not processed_pairs:
-                return self._error_result("No activations could be extracted from contrastive pairs")
-
-            logger.info(f"Extracted activations from {len(processed_pairs)} pairs")
-
-            # Debug: Show where activations are collected from
-            if processed_pairs:
-                sample_pair = processed_pairs[0]
-                logger.info("📍 DETAILED ACTIVATION COLLECTION ANALYSIS:")
-                logger.info(f"   🔧 Sample pair type: {type(sample_pair).__name__}")
-                logger.info(
-                    f"   🔧 Pair attributes: {[attr for attr in dir(sample_pair) if not attr.startswith('_')][:8]}..."
-                )
-
-                if hasattr(sample_pair, "positive_activations") and sample_pair.positive_activations is not None:
-                    logger.info(f"   ✅ Positive activations shape: {sample_pair.positive_activations.shape}")
-                if hasattr(sample_pair, "negative_activations") and sample_pair.negative_activations is not None:
-                    logger.info(f"   ✅ Negative activations shape: {sample_pair.negative_activations.shape}")
-
-                if hasattr(sample_pair, "_prompt_pair") and sample_pair._prompt_pair:
-                    logger.debug(f"   🔸 Positive prompt: {sample_pair._prompt_pair.positive_prompt[:100]}...")
-                    logger.debug(f"   🔸 Negative prompt: {sample_pair._prompt_pair.negative_prompt[:100]}...")
-                    logger.debug(f"   🎯 Target token: {sample_pair._prompt_pair.target_token}")
-                    logger.debug(f"   📊 Prompt strategy: {sample_pair._prompt_strategy.value}")
-                    logger.info(f"   🔍 Token targeting: {targeting_strategy.value} (evaluation mode)")
-                elif hasattr(sample_pair, "prompt") and hasattr(sample_pair, "positive_response"):
-                    logger.debug(f"   🔸 Question prompt: {sample_pair.prompt[:100]}...")
-                    logger.debug(f"   ✅ Positive response: {sample_pair.positive_response[:50]}...")
-                    logger.debug(f"   ❌ Negative response: {sample_pair.negative_response[:50]}...")
-                    logger.debug(
-                        f"   🔍 Token targeting used: {targeting_strategy.value} (from CLI token_aggregation: {token_aggregation})"
-                    )
-                else:
-                    logger.info("   📍 ACTIVATION COLLECTION: Unknown format - investigating...")
-                    logger.info(
-                        f"   🔧 All attributes: {[attr for attr in dir(sample_pair) if not attr.startswith('__')]}"
-                    )
-
-            # Map token aggregation to activation method
-            activation_method = token_aggregation
-            # Handle both string and enum types
-            method_name = activation_method.value if hasattr(activation_method, 'value') else str(activation_method)
-            logger.info(
-                f"🎯 Using activation aggregation method: {method_name} (from token_aggregation: {token_aggregation})"
-            )
-
-            # Evaluate classifier on each sample
-            results = []
-            total_correct = 0
-            total_samples = 0
-
-            for i, pair in enumerate(processed_pairs):
-                try:
-                    sample_result = self._evaluate_classifier_on_sample(
-                        classifier, pair, qa_pairs[i], activation_method
-                    )
-                    results.append(sample_result)
-
-                    if sample_result.get("classifier_correct", False):
-                        total_correct += 1
-                    total_samples += 1
-
-                except Exception as e:
-                    logger.error(f"Error evaluating sample {i}: {e}")
-                    continue
-
-            # Calculate overall metrics
-            accuracy = total_correct / total_samples if total_samples > 0 else 0.0
-
-            return {
-                "ground_truth": "EVALUATED",
-                "method_used": "log-likelihoods-classifier",
-                "confidence": accuracy,
-                "details": f"Evaluated {total_samples} samples with {total_correct} correct predictions",
-                "task_name": task_name,
-                "evaluation_method": "log-likelihoods",
-                "lm_eval_metrics": {
-                    "accuracy": accuracy,
-                    "correct_predictions": total_correct,
-                    "total_samples": total_samples,
-                },
-                "sample_results": results[:10],  # First 10 for debugging
-            }
-
-        except Exception as e:
-            import traceback
-
-            logger.error(f"Error evaluating classifier on task {task_name}: {e}")
-            logger.error(f"Traceback: {traceback.format_exc()}")
-            return self._error_result(f"Evaluation error: {e!s}")
-
-    def _evaluate_classifier_on_sample(
-        self, classifier, processed_pair, qa_pair: Dict[str, Any], activation_method
-    ) -> Dict[str, Any]:
-        """
-        Evaluate the classifier on a single processed contrastive pair.
-
-        Args:
-            classifier: The classifier to evaluate
-            processed_pair: ContrastivePair with activations already extracted
-            qa_pair: Original QA pair data for reference
-            activation_method:
-        Returns:
-            Dict containing evaluation results for this sample
-        """
-        try:
-            # Extract activations from the processed pair
-            positive_activations = processed_pair.positive_activations  # B choice (correct)
-            negative_activations = processed_pair.negative_activations  # A choice (incorrect)
-
-            if positive_activations is None or negative_activations is None:
-                return {
-                    "question": qa_pair["question"],
-                    "correct_answer": qa_pair["correct_answer"],
-                    "incorrect_answer": qa_pair["incorrect_answer"],
-                    "classifier_correct": False,
-                    "error": "Missing activations",
+            return EvalResult(
+                ground_truth="TRUTHFUL" if is_correct else "UNTRUTHFUL",
+                method_used=self.name,
+                confidence=1.0 if is_correct else 0.0,
+                details=f"Predicted: '{predicted_choice}' (log_prob={log_probs[predicted_idx]:.3f}), Expected: '{expected}'",
+                meta={
+                    "predicted": predicted_choice,
+                    "expected": expected,
+                    "log_probs": {choice: lp for choice, lp in zip(choices, log_probs)},
                 }
-
-            layer_obj = Layer(index=15, type="transformer")
-
-            # Process positive (correct) choice using CLI token aggregation method
-            positive_act = Activations(
-                tensor=positive_activations, layer=layer_obj, aggregation_strategy=activation_method
             )
-            positive_features = positive_act.extract_features_for_classifier()
-            positive_prediction = classifier.predict_proba([positive_features.cpu().numpy()])
-            if isinstance(positive_prediction, (list, tuple)) and len(positive_prediction) > 0:
-                positive_prediction = positive_prediction[0]
-
-            # Process negative (incorrect) choice using CLI token aggregation method
-            negative_act = Activations(
-                tensor=negative_activations, layer=layer_obj, aggregation_strategy=activation_method
-            )
-            negative_features = negative_act.extract_features_for_classifier()
-            negative_prediction = classifier.predict_proba([negative_features.cpu().numpy()])
-            if isinstance(negative_prediction, (list, tuple)) and len(negative_prediction) > 0:
-                negative_prediction = negative_prediction[0]
-
-            # Evaluate classifier performance
-            # For truthfulness: lower scores = more truthful/correct
-            # Classifier should give lower score to correct answer, higher to incorrect
-            classifier_correct = positive_prediction < negative_prediction
-
-            # Enhanced logging to show classifier vs normal predictions
-            logger.info("📋 Sample Evaluation:")
-            logger.debug(f"   🔸 Question: {qa_pair['question'][:100]}...")
-            logger.info("   🧠 CLASSIFIER PREDICTION:")
-            logger.debug(f"      ✅ Correct answer score: {float(positive_prediction):.3f} (lower = more truthful)")
-            logger.debug(f"      ❌ Incorrect answer score: {float(negative_prediction):.3f} (higher = less truthful)")
-            logger.debug(
-                f"      🎯 Classifier judgment: {'CORRECT' if classifier_correct else 'INCORRECT'} (positive {'<' if classifier_correct else '>='} negative)"
-            )
-
-            return {
-                "question": qa_pair["question"],
-                "correct_answer": qa_pair["correct_answer"],
-                "incorrect_answer": qa_pair["incorrect_answer"],
-                "positive_prediction": float(positive_prediction),
-                "negative_prediction": float(negative_prediction),
-                "classifier_correct": classifier_correct,
-            }
 
         except Exception as e:
-            logger.debug(f"Error evaluating sample: {e}")
-            return {
-                "question": qa_pair.get("question", "Unknown"),
-                "correct_answer": qa_pair.get("correct_answer", "Unknown"),
-                "incorrect_answer": qa_pair.get("incorrect_answer", "Unknown"),
-                "classifier_correct": False,
-                "error": str(e),
-            }
+            logger.error(f"Error in log likelihood evaluation: {e}")
+            import traceback
+            logger.error(traceback.format_exc())
+            # NO FALLBACK - raise the error
+            raise
 
-    def _error_result(self, error_msg: str) -> Dict[str, Any]:
-        """Return an error result."""
-        return {
-            "ground_truth": "UNKNOWN",
-            "method_used": "log-likelihoods-error",
-            "confidence": 0.0,
-            "details": error_msg,
-            "task_name": self.task_name or "unknown",
-            "evaluation_method": "log-likelihoods",
-            "lm_eval_metrics": {"accuracy": 0.0, "correct_predictions": 0, "total_samples": 0},
-        }
+    def _compute_choice_log_likelihood(self, model, question: str, choice: str) -> float:
+        """Compute log likelihood of a choice given a question.
+
+        Args:
+            model: WisentModel instance
+            question: The question/context
+            choice: The answer choice
+
+        Returns:
+            Log likelihood (higher = more likely)
+        """
+        # Format as: question + choice
+        full_text = f"{question}\n{choice}"
+
+        # Tokenize question and choice separately
+        question_inputs = model.tokenizer(question, return_tensors="pt", add_special_tokens=True).to(model.device)
+        choice_tokens = model.tokenizer(choice, return_tensors="pt", add_special_tokens=False).to(model.device)
+
+        # Get model logits for the full sequence
+        with torch.no_grad():
+            # Tokenize full sequence
+            full_inputs = model.tokenizer(full_text, return_tensors="pt", add_special_tokens=True).to(model.device)
+            outputs = model.hf_model(**full_inputs)
+            logits = outputs.logits
+
+            # Compute log probability of the choice tokens
+            # logits shape: [batch, seq_len, vocab_size]
+            # We want log prob of choice tokens given question
+
+            question_len = question_inputs.input_ids.shape[1]
+            choice_len = choice_tokens.input_ids.shape[1]
+
+            # Get logits at positions where we're predicting choice tokens
+            log_prob = 0.0
+            for i in range(choice_len):
+                # Position in full sequence where we predict token i of choice
+                # Subtract 1 because we predict the next token
+                pos = question_len + i - 1
+                if pos >= 0 and pos < logits.shape[1]:
+                    token_logits = logits[0, pos, :]  # Logits at this position
+                    token_log_probs = torch.nn.functional.log_softmax(token_logits, dim=-1)
+                    # Get log prob of the actual choice token at this position
+                    actual_token_id = choice_tokens.input_ids[0, i]
+                    log_prob += token_log_probs[actual_token_id].item()
+
+            # Normalize by length to avoid bias toward shorter choices
+            normalized_log_prob = log_prob / max(choice_len, 1)
+
+            return normalized_log_prob
