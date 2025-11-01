@@ -222,15 +222,155 @@ def execute_tasks(args):
         # Train the classifier
         report = classifier.fit(X, y, config=train_config)
 
-        # 8. Print results
+        # 8. Print training completion
         print(f"\n📈 Training completed!")
         print(f"   Best epoch: {report.best_epoch}/{report.epochs_ran}")
-        print(f"   Final metrics:")
-        print(f"     • Accuracy:  {report.final.accuracy:.4f}")
-        print(f"     • Precision: {report.final.precision:.4f}")
-        print(f"     • Recall:    {report.final.recall:.4f}")
-        print(f"     • F1 Score:  {report.final.f1:.4f}")
-        print(f"     • AUC:       {report.final.auc:.4f}")
+
+        # 8.5. PROPER EVALUATION: Test classifier on real model generations
+        print(f"\n🎯 Evaluating classifier on real model generations...")
+
+        # Get test pairs
+        test_pairs = result['test_qa_pairs']
+        print(f"   Generating responses for {len(test_pairs.pairs)} test questions...")
+
+        # Initialize evaluator for this task
+        from wisent.core.evaluators.rotator import EvaluatorRotator
+        # Discover both oracles and benchmark_specific evaluators
+        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
+        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+        evaluator = EvaluatorRotator(evaluator=None, task_name=task_name, autoload=False)
+        print(f"   Using evaluator: {evaluator._evaluator.name}")
+
+        # Generate responses and collect activations
+        generation_results = []
+        for i, pair in enumerate(test_pairs.pairs):
+            if i % 10 == 0:
+                print(f"      Processing {i+1}/{len(test_pairs.pairs)}...", end='\r')
+
+            question = pair.prompt
+            expected = pair.positive_response.model_response
+            choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+
+            # Generate response from unsteered model
+            response = model.generate(
+                [[{"role": "user", "content": question}]],
+                max_new_tokens=100,
+                do_sample=False  # Deterministic (greedy decoding) for evaluation
+            )[0]
+
+            # Evaluate the response using Wisent evaluator
+            eval_result = evaluator.evaluate(
+                response=response,
+                expected=expected,
+                model=model,
+                question=question,
+                choices=choices,
+                task_name=task_name
+            )
+
+            # Get activation for this generation
+            # Use ActivationCollector to collect activations from the generated text
+            gen_collector = ActivationCollector(model=model, store_device="cpu")
+            # Create a pair with the generated response
+            from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+            from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+            temp_pos_response = PositiveResponse(model_response=response, layers_activations={})
+            temp_neg_response = NegativeResponse(model_response="placeholder", layers_activations={})  # Not used
+            temp_pair = ContrastivePair(
+                prompt=question,
+                positive_response=temp_pos_response,
+                negative_response=temp_neg_response,
+                label=None,
+                trait_description=None
+            )
+
+            # Collect activation - ActivationCollector will re-run the model with prompt+response
+            # First, collect with full sequence to get token-by-token activations
+            collected_full = gen_collector.collect_for_pair(
+                temp_pair,
+                layers=[layer_str],
+                aggregation=aggregation_strategy,
+                return_full_sequence=True,
+                normalize_layers=False
+            )
+
+            # Access the collected activations
+            import torch
+            if collected_full.positive_response.layers_activations:
+                layer_activations_full = collected_full.positive_response.layers_activations
+                if layer_str in layer_activations_full:
+                    activation_full_seq = layer_activations_full[layer_str]
+                    if activation_full_seq is not None and isinstance(activation_full_seq, torch.Tensor):
+                        # activation_full_seq shape: (num_tokens, hidden_dim)
+
+                        # Apply aggregation manually to get single vector for classifier
+                        if aggregation_strategy.name == 'MEAN_POOLING':
+                            activation_agg = activation_full_seq.mean(dim=0)
+                        elif aggregation_strategy.name == 'LAST_TOKEN':
+                            activation_agg = activation_full_seq[-1]
+                        elif aggregation_strategy.name == 'FIRST_TOKEN':
+                            activation_agg = activation_full_seq[0]
+                        elif aggregation_strategy.name == 'MAX_POOLING':
+                            activation_agg = activation_full_seq.max(dim=0)[0]
+                        else:
+                            # Default to mean
+                            activation_agg = activation_full_seq.mean(dim=0)
+
+                        # Get classifier prediction on aggregated vector
+                        act_tensor = activation_agg.unsqueeze(0).float()
+                        pred_proba_result = classifier.predict_proba(act_tensor)
+                        # Handle both float (single sample) and list return types
+                        pred_proba = pred_proba_result if isinstance(pred_proba_result, float) else pred_proba_result[0]
+                        pred_label = int(pred_proba > args.detection_threshold)
+
+                        # Ground truth from evaluator
+                        ground_truth = 1 if eval_result.ground_truth == "TRUTHFUL" else 0
+
+                        # Compute per-token classifier scores
+                        # For each token, get classifier probability
+                        token_scores = []
+                        for token_idx in range(activation_full_seq.shape[0]):
+                            token_act = activation_full_seq[token_idx].unsqueeze(0).float()
+                            token_proba_result = classifier.predict_proba(token_act)
+                            token_proba = token_proba_result if isinstance(token_proba_result, float) else token_proba_result[0]
+                            token_scores.append(float(token_proba))
+
+                        generation_results.append({
+                            'question': question,
+                            'response': response,
+                            'expected': expected,
+                            'eval_result': eval_result.ground_truth,
+                            'classifier_pred': pred_label,
+                            'classifier_proba': float(pred_proba),
+                            'correct': pred_label == ground_truth,
+                            'token_scores': token_scores,  # Per-token classifier probabilities
+                            'num_tokens': len(token_scores)
+                        })
+
+        print(f"\n   ✓ Evaluated {len(generation_results)} generations")
+
+        # Calculate real-world metrics
+        if generation_results:
+            correct_predictions = sum(1 for r in generation_results if r['correct'])
+            real_accuracy = correct_predictions / len(generation_results)
+
+            # Calculate precision, recall, F1 on real generations
+            true_positives = sum(1 for r in generation_results if r['classifier_pred'] == 1 and r['eval_result'] == 'TRUTHFUL')
+            false_positives = sum(1 for r in generation_results if r['classifier_pred'] == 1 and r['eval_result'] == 'UNTRUTHFUL')
+            false_negatives = sum(1 for r in generation_results if r['classifier_pred'] == 0 and r['eval_result'] == 'TRUTHFUL')
+
+            real_precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
+            real_recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0
+            real_f1 = 2 * (real_precision * real_recall) / (real_precision + real_recall) if (real_precision + real_recall) > 0 else 0
+
+            print(f"\n   📊 Real-world performance (on actual generations):")
+            print(f"     • Accuracy:  {real_accuracy:.4f}")
+            print(f"     • Precision: {real_precision:.4f}")
+            print(f"     • Recall:    {real_recall:.4f}")
+            print(f"     • F1 Score:  {real_f1:.4f}")
+        else:
+            real_accuracy = real_f1 = real_precision = real_recall = 0.0
+            generation_results = []
 
         # 9. Save classifier if requested
         if args.save_classifier:
@@ -268,19 +408,35 @@ def execute_tasks(args):
                 json.dump(report.asdict(), f, indent=2)
             print(f"   ✓ Training report saved to: {report_path}")
 
+            # Save generation details with token scores
+            if generation_results:
+                generation_path = os.path.join(args.output, 'generation_details.json')
+                with open(generation_path, 'w') as f:
+                    json.dump({
+                        'task': args.task_names,
+                        'model': args.model,
+                        'layer': layer,
+                        'aggregation': args.token_aggregation,
+                        'threshold': args.detection_threshold,
+                        'num_generations': len(generation_results),
+                        'generations': generation_results
+                    }, f, indent=2)
+                print(f"   ✓ Generation details (with token scores) saved to: {generation_path}")
+
         print(f"\n✅ Task completed successfully!\n")
 
         # Return results for programmatic access
         return {
-            "test_accuracy": float(report.final.accuracy),
-            "test_f1_score": float(report.final.f1),
-            "test_precision": float(report.final.precision),
-            "test_recall": float(report.final.recall),
-            "test_auc": float(report.final.auc),
+            # Real-world metrics (on actual generations) - THE ONLY METRICS THAT MATTER
+            "accuracy": float(real_accuracy),
+            "f1_score": float(real_f1),
+            "precision": float(real_precision),
+            "recall": float(real_recall),
+            "generation_count": len(generation_results),
+            # Metadata
             "best_epoch": report.best_epoch,
             "epochs_ran": report.epochs_ran,
-            "training_time": 0.0,  # TODO: track actual training time
-            "evaluation_results": report.asdict() if hasattr(report, 'asdict') else {}
+            "generation_details": generation_results
         }
 
     except Exception as e:

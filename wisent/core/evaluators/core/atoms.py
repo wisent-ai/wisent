@@ -105,17 +105,10 @@ class BaseEvaluator(ABC):
         for idx, (resp, exp) in enumerate(zip(responses, expected_answers)):
             try:
                 results.append(self.evaluate(resp, exp, **kwargs))
-            except Exception as exc:  
-                logger.exception("Error evaluating item %d: %s", idx, exc)
-                results.append(
-                    EvalResult(
-                        ground_truth="UNKNOWN",
-                        method_used=self.name,
-                        confidence=0.0,
-                        details=f"Error during evaluation: {exc}",
-                        meta={"index": idx},
-                    )
-                )
+            except Exception as exc:
+                # NO FALLBACK - raise the error immediately
+                logger.error(f"Error evaluating item {idx}: {exc}")
+                raise
         return results
 
     @staticmethod
