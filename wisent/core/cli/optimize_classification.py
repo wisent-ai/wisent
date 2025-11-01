@@ -337,3 +337,14 @@ def execute_optimize_classification(args):
         print(f"  {task_name:20s} | Layer: {config['layer']:2d} | Agg: {config['aggregation']:8s} | Thresh: {config['threshold']:.2f} | F1: {config['f1']:.3f}")
     print("-" * 80 + "\n")
 
+    # Return results for programmatic access
+    return {
+        "model": args.model,
+        "optimization_metric": args.optimization_metric,
+        "layer_range": f"{layers_to_test[0]}-{layers_to_test[-1]}",
+        "tasks_optimized": list(all_results.keys()),
+        "results": all_results,
+        "results_file": results_file,
+        "classifiers_saved": classifiers_saved
+    }
+

@@ -99,15 +99,16 @@ def run_task_pipeline(
     args.evaluation_report = None
     args.device = kwargs.get('device', 'cpu')
 
-    # Execute the task
-    execute_tasks(args)
+    # Execute the task and capture results
+    results = execute_tasks(args)
 
-    # TODO: Capture and return actual results
-    # For now, return a placeholder dict
-    # The execute_tasks function would need to be modified to return results
-    return {
-        "test_accuracy": 0.0,
-        "test_f1_score": 0.0,
-        "training_time": 0.0,
-        "evaluation_results": {}
-    }
+    # If execute_tasks returns None (shouldn't happen with our changes, but handle it)
+    if results is None:
+        return {
+            "test_accuracy": 0.0,
+            "test_f1_score": 0.0,
+            "training_time": 0.0,
+            "evaluation_results": {}
+        }
+
+    return results

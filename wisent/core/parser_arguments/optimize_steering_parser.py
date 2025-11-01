@@ -31,6 +31,10 @@ def setup_steering_optimizer_parser(parser):
         "--max-time-per-task", type=float, default=20.0, help="Time limit per task in minutes (default: 20.0)"
     )
     comprehensive_parser.add_argument("--no-save", action="store_true", help="Don't save results to model config")
+    comprehensive_parser.add_argument("--save-best-vector", type=str, default=None, help="Save the best steering vector for each task to specified directory")
+    comprehensive_parser.add_argument("--save-generation-examples", action="store_true", help="Generate and save example responses (unsteered vs steered)")
+    comprehensive_parser.add_argument("--num-generation-examples", type=int, default=3, help="Number of generation examples per task (default: 3)")
+    comprehensive_parser.add_argument("--save-all-generation-examples", action="store_true", help="Save generation examples for ALL configurations tested (warning: very slow)")
     comprehensive_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     comprehensive_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
