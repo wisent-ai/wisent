@@ -35,7 +35,18 @@ def execute_tasks(args):
         # For now, just load and validate - actual inference would require more implementation
         print(f"\n✅ Steering vector loaded successfully!\n")
         print(f"Note: Inference with steering vector requires additional implementation")
-        return
+
+        # Return results for programmatic access
+        return {
+            "steering_vector_loaded": True,
+            "vector_path": args.load_steering_vector,
+            "layer": layer,
+            "method": vector_data.get('method', 'unknown'),
+            "test_accuracy": None,
+            "test_f1_score": None,
+            "training_time": 0.0,
+            "evaluation_results": {}
+        }
 
     print(f"\n🎯 Starting classifier training on task: {args.task_names}")
     print(f"   Model: {args.model}")
@@ -163,7 +174,21 @@ def execute_tasks(args):
                 print(f"   ✓ Training report saved to: {report_path}")
 
             print(f"\n✅ Steering vector training completed successfully!\n")
-            return
+
+            # Return results for programmatic access
+            return {
+                "steering_vector_saved": True,
+                "vector_path": args.save_steering_vector,
+                "layer": layer,
+                "method": args.steering_method,
+                "num_positive": len(positive_activations),
+                "num_negative": len(negative_activations),
+                "vector_shape": list(steering_vector.shape),
+                "test_accuracy": None,
+                "test_f1_score": None,
+                "training_time": 0.0,
+                "evaluation_results": {}
+            }
 
         # 6. Prepare training data
         print(f"\n🎯 Preparing training data...")
@@ -244,6 +269,19 @@ def execute_tasks(args):
             print(f"   ✓ Training report saved to: {report_path}")
 
         print(f"\n✅ Task completed successfully!\n")
+
+        # Return results for programmatic access
+        return {
+            "test_accuracy": float(report.final.accuracy),
+            "test_f1_score": float(report.final.f1),
+            "test_precision": float(report.final.precision),
+            "test_recall": float(report.final.recall),
+            "test_auc": float(report.final.auc),
+            "best_epoch": report.best_epoch,
+            "epochs_ran": report.epochs_ran,
+            "training_time": 0.0,  # TODO: track actual training time
+            "evaluation_results": report.asdict() if hasattr(report, 'asdict') else {}
+        }
 
     except Exception as e:
         print(f"\n❌ Error: {str(e)}", file=sys.stderr)

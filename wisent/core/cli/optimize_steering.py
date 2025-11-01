@@ -40,17 +40,17 @@ def execute_optimize_steering(args):
     # Initialize data loader
     loader = LMEvalDataLoader()
     
-    # Execute based on subcommand
+    # Execute based on subcommand and return results
     if args.steering_action == 'comprehensive':
-        execute_comprehensive(args, model, loader)
+        return execute_comprehensive(args, model, loader)
     elif args.steering_action == 'compare-methods':
-        execute_compare_methods(args, model, loader)
+        return execute_compare_methods(args, model, loader)
     elif args.steering_action == 'optimize-layer':
-        execute_optimize_layer(args, model, loader)
+        return execute_optimize_layer(args, model, loader)
     elif args.steering_action == 'optimize-strength':
-        execute_optimize_strength(args, model, loader)
+        return execute_optimize_strength(args, model, loader)
     elif args.steering_action == 'auto':
-        execute_auto(args, model, loader)
+        return execute_auto(args, model, loader)
     else:
         print(f"\n✗ Unknown steering action: {args.steering_action}")
         sys.exit(1)
@@ -117,7 +117,14 @@ def execute_comprehensive(args, model, loader):
             best_config = None
             method_results = {}
             configs_tested = 0
-            
+            all_generation_examples = []  # Store generation examples for all configs
+
+            # Prepare test prompts if generating examples for all configs
+            if args.save_all_generation_examples or args.save_generation_examples:
+                num_examples = min(args.num_generation_examples, len(test_pairs.pairs))
+                example_pairs = test_pairs.pairs[:num_examples]
+                print(f"  📝 Will generate {num_examples} example responses per configuration")
+
             for layer in layers_to_test:
                 for strength in strengths_to_test:
                     for strategy in strategies_to_test:
@@ -194,7 +201,60 @@ def execute_comprehensive(args, model, loader):
                             
                             if len(test_scores) > 0:
                                 avg_score = np.mean(test_scores)
-                                
+
+                                # Generate examples for this configuration if requested
+                                if args.save_all_generation_examples:
+                                    config_examples = []
+                                    for idx, pair in enumerate(example_pairs):
+                                        prompt = pair.question
+                                        try:
+                                            # Generate without steering (only once per prompt, reuse if already generated)
+                                            unsteered_response = model.generate(
+                                                [[{"role": "user", "content": prompt}]],
+                                                max_new_tokens=100,
+                                                temperature=0.7,
+                                                use_steering=False
+                                            )[0]
+
+                                            # Create steering plan for this config
+                                            from wisent.core.models.core.atoms import SteeringVector, SteeringPlan
+                                            steering_vec = SteeringVector(vector=steering_vector, scale=strength)
+                                            steering_plan = SteeringPlan(
+                                                layers={layer_str: steering_vec},
+                                                layers_description=[f"CAA steering layer={layer}, strength={strength}, strategy={strategy}"]
+                                            )
+
+                                            # Generate with steering
+                                            model.attach(steering_plan)
+                                            steered_response = model.generate(
+                                                [[{"role": "user", "content": prompt}]],
+                                                max_new_tokens=100,
+                                                temperature=0.7,
+                                                use_steering=True,
+                                                steering_plan=steering_plan
+                                            )[0]
+                                            model.detach()
+
+                                            config_examples.append({
+                                                'question': prompt,
+                                                'correct_answer': pair.positive_response.content,
+                                                'incorrect_answer': pair.negative_response.content,
+                                                'unsteered_generation': unsteered_response,
+                                                'steered_generation': steered_response
+                                            })
+                                        except Exception as e:
+                                            if args.verbose:
+                                                print(f"      ⚠️ Failed to generate example for config layer={layer}, strength={strength}, strategy={strategy}: {e}")
+
+                                    # Store this config's examples
+                                    all_generation_examples.append({
+                                        'layer': layer,
+                                        'strength': strength,
+                                        'strategy': strategy,
+                                        'accuracy': avg_score,
+                                        'examples': config_examples
+                                    })
+
                                 if avg_score > best_score:
                                     best_score = avg_score
                                     best_config = {
@@ -203,7 +263,7 @@ def execute_comprehensive(args, model, loader):
                                         'strategy': strategy,
                                         'accuracy': avg_score
                                     }
-                            
+
                             if configs_tested % 10 == 0 and args.verbose:
                                 print(f"      Tested {configs_tested} configurations...", end='\r')
                         
@@ -219,7 +279,7 @@ def execute_comprehensive(args, model, loader):
                 print(f"      Strength: {best_config['strength']}")
                 print(f"      Strategy: {best_config['strategy']} ⭐")
                 print(f"      Accuracy: {best_config['accuracy']:.3f}")
-                
+
                 method_results['CAA'] = {
                     'optimal_layer': best_config['layer'],
                     'optimal_strength': best_config['strength'],
@@ -227,6 +287,179 @@ def execute_comprehensive(args, model, loader):
                     'accuracy': best_config['accuracy'],
                     'f1': best_config['accuracy']
                 }
+
+                # Save best steering vector if requested
+                if args.save_best_vector:
+                    import os
+                    vector_dir = args.save_best_vector
+                    os.makedirs(vector_dir, exist_ok=True)
+
+                    # Recreate the best steering vector
+                    best_layer_str = str(best_config['layer'])
+                    pos_acts_best = []
+                    neg_acts_best = []
+
+                    for pair in train_pairs.pairs:
+                        updated_pair = collector.collect_for_pair(
+                            pair,
+                            layers=[best_layer_str],
+                            aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+                            return_full_sequence=False,
+                            normalize_layers=False
+                        )
+
+                        if updated_pair.positive_response.layers_activations and best_layer_str in updated_pair.positive_response.layers_activations:
+                            act = updated_pair.positive_response.layers_activations[best_layer_str]
+                            if act is not None:
+                                pos_acts_best.append(act)
+
+                        if updated_pair.negative_response.layers_activations and best_layer_str in updated_pair.negative_response.layers_activations:
+                            act = updated_pair.negative_response.layers_activations[best_layer_str]
+                            if act is not None:
+                                neg_acts_best.append(act)
+
+                    # Create and save steering vector
+                    caa_method = CAAMethod(kwargs={"normalize": True})
+                    best_steering_vector = caa_method.train_for_layer(pos_acts_best, neg_acts_best)
+
+                    vector_path = os.path.join(vector_dir, f"{task_name}_layer{best_config['layer']}.pt")
+                    torch.save({
+                        'steering_vector': best_steering_vector,
+                        'vector': best_steering_vector,  # Legacy key
+                        'layer': best_config['layer'],
+                        'layer_index': best_config['layer'],  # Legacy key
+                        'strength': best_config['strength'],
+                        'strategy': best_config['strategy'],
+                        'method': 'CAA',
+                        'task': task_name,
+                        'model': args.model,
+                        'accuracy': best_config['accuracy']
+                    }, vector_path)
+                    print(f"      💾 Saved steering vector to: {vector_path}")
+
+                # Save generation examples
+                if args.save_all_generation_examples:
+                    # Save examples for ALL configurations
+                    examples_path = os.path.join(
+                        args.save_best_vector if args.save_best_vector else "./optimization_results",
+                        f"{task_name}_all_generation_examples.json"
+                    )
+                    os.makedirs(os.path.dirname(examples_path), exist_ok=True)
+
+                    with open(examples_path, 'w') as f:
+                        json.dump({
+                            'task': task_name,
+                            'model': args.model,
+                            'best_config': best_config,
+                            'configurations': all_generation_examples
+                        }, f, indent=2)
+
+                    print(f"\n  💾 Saved generation examples for {len(all_generation_examples)} configurations to: {examples_path}")
+
+                elif args.save_generation_examples:
+                    # Save examples only for the best configuration
+                    print(f"\n  📝 Generating example responses for best configuration...")
+
+                    # Get a few test examples to generate from
+                    num_examples = min(args.num_generation_examples, len(test_pairs.pairs))
+                    example_pairs = test_pairs.pairs[:num_examples]
+
+                    generation_examples = []
+
+                    for idx, pair in enumerate(example_pairs):
+                        # Create prompt from the question
+                        prompt = pair.question
+
+                        try:
+                            # Generate without steering
+                            unsteered_response = model.generate(
+                                [[{"role": "user", "content": prompt}]],
+                                max_new_tokens=100,
+                                temperature=0.7,
+                                use_steering=False
+                            )[0]
+
+                            # Recreate best steering vector for generation
+                            best_layer_str = str(best_config['layer'])
+                            pos_acts_gen = []
+                            neg_acts_gen = []
+
+                            # Collect activations again for steering
+                            for train_pair in train_pairs.pairs[:20]:  # Use subset for speed
+                                updated_pair = collector.collect_for_pair(
+                                    train_pair,
+                                    layers=[best_layer_str],
+                                    aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+                                    return_full_sequence=False,
+                                    normalize_layers=False
+                                )
+
+                                if updated_pair.positive_response.layers_activations and best_layer_str in updated_pair.positive_response.layers_activations:
+                                    act = updated_pair.positive_response.layers_activations[best_layer_str]
+                                    if act is not None:
+                                        pos_acts_gen.append(act)
+
+                                if updated_pair.negative_response.layers_activations and best_layer_str in updated_pair.negative_response.layers_activations:
+                                    act = updated_pair.negative_response.layers_activations[best_layer_str]
+                                    if act is not None:
+                                        neg_acts_gen.append(act)
+
+                            # Create steering vector
+                            caa_method_gen = CAAMethod(kwargs={"normalize": True})
+                            steering_vector_gen = caa_method_gen.train_for_layer(pos_acts_gen, neg_acts_gen)
+
+                            # Create SteeringPlan
+                            from wisent.core.models.core.atoms import SteeringVector, SteeringPlan
+                            steering_vec = SteeringVector(vector=steering_vector_gen, scale=best_config['strength'])
+                            steering_plan = SteeringPlan(
+                                layers={best_layer_str: steering_vec},
+                                layers_description=[f"CAA steering for {task_name}"]
+                            )
+
+                            # Generate with steering
+                            model.attach(steering_plan)
+                            steered_response = model.generate(
+                                [[{"role": "user", "content": prompt}]],
+                                max_new_tokens=100,
+                                temperature=0.7,
+                                use_steering=True,
+                                steering_plan=steering_plan
+                            )[0]
+                            model.detach()
+
+                            generation_examples.append({
+                                'question': prompt,
+                                'correct_answer': pair.positive_response.content,
+                                'incorrect_answer': pair.negative_response.content,
+                                'unsteered_generation': unsteered_response,
+                                'steered_generation': steered_response
+                            })
+
+                            print(f"      Generated example {idx+1}/{num_examples}")
+
+                        except Exception as e:
+                            print(f"      ⚠️ Failed to generate example {idx+1}: {e}")
+                            if args.verbose:
+                                import traceback
+                                traceback.print_exc()
+
+                    # Save examples to JSON
+                    examples_path = os.path.join(
+                        args.save_best_vector if args.save_best_vector else "./optimization_results",
+                        f"{task_name}_generation_examples.json"
+                    )
+                    os.makedirs(os.path.dirname(examples_path), exist_ok=True)
+
+                    with open(examples_path, 'w') as f:
+                        json.dump({
+                            'task': task_name,
+                            'model': args.model,
+                            'best_config': best_config,
+                            'examples': generation_examples
+                        }, f, indent=2)
+
+                    print(f"      💾 Saved {len(generation_examples)} generation examples to: {examples_path}")
+
             else:
                 print(f"\n  ⚠️  No valid configuration found")
                 method_results['CAA'] = {
@@ -283,6 +516,17 @@ def execute_comprehensive(args, model, loader):
         print(f"  {task_name:20s} | Method: {config['best_method']:10s} | Layer: {config['best_layer']:2d} | Strength: {config['best_strength']:.2f} | Strategy: {config['best_strategy']:18s}")
     print("-" * 100 + "\n")
 
+    # Return results for programmatic access
+    return {
+        "model": args.model,
+        "action": "comprehensive",
+        "methods_tested": args.methods,
+        "tasks_optimized": list(all_results.keys()),
+        "results": all_results,
+        "results_file": results_file,
+        "optimization_dimensions": ['layer', 'strength', 'strategy']
+    }
+
 
 def get_strategy_weight(strategy: str, position: float) -> float:
     """
@@ -318,7 +562,7 @@ def execute_compare_methods(args, model, loader):
     print(f"🔍 Comparing steering methods for task: {args.task}\n")
     print(f"   Methods: {', '.join(args.methods)}")
     print(f"   Limit: {args.limit} samples\n")
-    
+
     result = loader._load_one_task(
         task_name=args.task,
         split_ratio=0.8,
@@ -327,10 +571,17 @@ def execute_compare_methods(args, model, loader):
         training_limit=None,
         testing_limit=None
     )
-    
+
     print(f"✅ Loaded {len(result['train_qa_pairs'].pairs)} train pairs\n")
     print("⚠️  Full method comparison requires implementation of HPR, DAC, BiPO, KSteering")
     print("   Currently only CAA is fully implemented")
+
+    return {
+        "action": "compare-methods",
+        "task": args.task,
+        "methods": args.methods,
+        "status": "not_fully_implemented"
+    }
 
 
 def execute_optimize_layer(args, model, loader):
@@ -338,9 +589,17 @@ def execute_optimize_layer(args, model, loader):
     print(f"🎯 Optimizing steering layer for task: {args.task}\n")
     print(f"   Method: {args.method}")
     print(f"   Strength: {args.strength}\n")
-    
+
     print("⚠️  Layer optimization not yet fully implemented")
     print(f"   This would optimize layer for {args.method} method")
+
+    return {
+        "action": "optimize-layer",
+        "task": args.task,
+        "method": args.method,
+        "strength": args.strength,
+        "status": "not_fully_implemented"
+    }
 
 
 def execute_optimize_strength(args, model, loader):
@@ -348,9 +607,17 @@ def execute_optimize_strength(args, model, loader):
     print(f"💪 Optimizing steering strength for task: {args.task}\n")
     print(f"   Method: {args.method}")
     print(f"   Strength range: {args.strength_range[0]} to {args.strength_range[1]}\n")
-    
+
     print("⚠️  Strength optimization not yet fully implemented")
     print(f"   This would optimize strength for {args.method} method")
+
+    return {
+        "action": "optimize-strength",
+        "task": args.task,
+        "method": args.method,
+        "strength_range": args.strength_range,
+        "status": "not_fully_implemented"
+    }
 
 
 def execute_auto(args, model, loader):
@@ -358,7 +625,14 @@ def execute_auto(args, model, loader):
     print(f"🤖 Running automatic steering optimization...\n")
     print(f"   Methods: {', '.join(args.methods)}")
     print(f"   Strength range: {args.strength_range}\n")
-    
+
     print("⚠️  Auto optimization not yet fully implemented")
     print("   This would use classification results to guide steering optimization")
+
+    return {
+        "action": "auto",
+        "methods": args.methods,
+        "strength_range": args.strength_range,
+        "status": "not_fully_implemented"
+    }
 
