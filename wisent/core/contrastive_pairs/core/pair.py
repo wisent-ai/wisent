@@ -17,13 +17,14 @@ __all__ = [
 @dataclass(frozen=True, slots=True)
 class ContrastivePair(AtomContrastivePair):
     """A single contrastive pair: (prompt, positive_response, negative_response).
-    
+
     attributes:
         prompt: The input prompt string. For example, a question or instruction.
         positive_response: The response considered "harmless" or "correct".
         negative_response: The response considered "harmful" or "incorrect".
         label: Optional label for the pair, e.g., "toxic", "biased", etc.
         trait_description: Optional description of the trait being tested. For example, "hallucinatory", "toxic", "biased", etc.
+        metadata: Optional dictionary for task-specific data (e.g., test_code, entry_point for coding tasks).
     """
 
     prompt: str
@@ -31,6 +32,7 @@ class ContrastivePair(AtomContrastivePair):
     negative_response: NegativeResponse
     label: str | None = None
     trait_description: str | None = None
+    metadata: dict | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.prompt, str) or not self.prompt.strip():

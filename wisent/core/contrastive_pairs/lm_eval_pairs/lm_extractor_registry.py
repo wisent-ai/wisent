@@ -66,11 +66,12 @@ def get_extractor(task_name: str) -> LMEvalBenchmarkExtractor:
     arguments:
         task_name:
             Name of the lm-eval benchmark/task (e.g., "winogrande").
-            Case-insensitive. Exact match only.
-    
+            Case-insensitive. Tries exact match first, then prefix match.
+            For example, "mmlu_anatomy" will match "mmlu" extractor.
+
     returns:
         An instance of the corresponding LMEvalBenchmarkExtractor subclass.
-    
+
     raises:
         UnsupportedLMEvalBenchmarkError:
             If no extractor is registered for the given task name.
@@ -84,9 +85,20 @@ def get_extractor(task_name: str) -> LMEvalBenchmarkExtractor:
     if not key:
         raise UnsupportedLMEvalBenchmarkError("Empty task name is not supported.")
 
+    # Try exact match first
     ref = _REGISTRY.get(key)
     if ref:
         return _instantiate(ref)
+
+    # Try prefix match for group tasks (e.g., mmlu_anatomy -> mmlu)
+    # Split on underscore and try progressively shorter prefixes
+    parts = key.split('_')
+    for i in range(len(parts) - 1, 0, -1):
+        prefix = '_'.join(parts[:i])
+        ref = _REGISTRY.get(prefix)
+        if ref:
+            LOG.debug(f"Using extractor '{prefix}' for task '{task_name}'")
+            return _instantiate(ref)
 
     raise UnsupportedLMEvalBenchmarkError(
         f"No extractor registered for task '{task_name}'. "

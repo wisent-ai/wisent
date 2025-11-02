@@ -23,7 +23,13 @@ class ExactMatchEvaluator(BaseEvaluator):
 
     name = "exact_match"
     description = "Exact match evaluator for precise answer comparison"
-    task_names = ("gsm8k", "triviaqa")
+    task_names = (
+        # Math Tasks
+        "gsm8k", "asdiv", "arithmetic", "math", "math_500",
+        "aime", "hmmt", "polymath", "livemathbench",
+        # QA Tasks
+        "triviaqa", "webqs", "nq_open"
+    )
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate using exact match.

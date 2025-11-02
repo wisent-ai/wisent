@@ -58,28 +58,50 @@ class LMEvalDataLoader(BaseDataLoader):
             NotImplementedError if load_lm_eval_task is not implemented.
         
         note:
-            This loader only supports single tasks, not mixtures. To load mixtures,
-            use a custom data loader or extend this one."""
+            This loader supports both single tasks and group tasks. For group tasks,
+            it loads all subtasks and combines their pairs."""
         loaded = self.load_lm_eval_task(task_name)
 
         if isinstance(loaded, dict):
-            if len(loaded) != 1:
-                keys = ", ".join(sorted(loaded.keys()))
-                raise DataLoaderError(
-                    f"Task '{task_name}' returned {len(loaded)} subtasks ({keys}). "
-                    "Specify an explicit subtask, e.g. 'benchmark/subtask'."
+            if len(loaded) == 1:
+                # Single subtask
+                (subname, task_obj), = loaded.items()
+                pairs = lm_build_contrastive_pairs(
+                    task_name=subname,
+                    lm_eval_task=task_obj,
+                    limit=limit,
                 )
-            (subname, task_obj), = loaded.items()
-            pairs_task_name = subname
+            else:
+                # Group task with multiple subtasks - load all and combine
+                log.info(f"Task '{task_name}' is a group task with {len(loaded)} subtasks. Loading all subtasks...")
+                all_pairs = []
+                pairs_per_subtask = limit // len(loaded) if limit else None
+
+                for subname, task_obj in loaded.items():
+                    try:
+                        subtask_pairs = lm_build_contrastive_pairs(
+                            task_name=subname,
+                            lm_eval_task=task_obj,
+                            limit=pairs_per_subtask,
+                        )
+                        all_pairs.extend(subtask_pairs)
+                        log.info(f"Loaded {len(subtask_pairs)} pairs from subtask '{subname}'")
+                    except Exception as e:
+                        log.warning(f"Failed to load subtask '{subname}': {e}")
+                        continue
+
+                if not all_pairs:
+                    raise DataLoaderError(f"No pairs could be loaded from any subtask of '{task_name}'")
+
+                pairs = all_pairs
+                log.info(f"Combined {len(pairs)} total pairs from {len(loaded)} subtasks")
         else:
             task_obj = loaded
-            pairs_task_name = task_name
-
-        pairs = lm_build_contrastive_pairs(
-            task_name=pairs_task_name,
-            lm_eval_task=task_obj,
-            limit=limit,
-        )
+            pairs = lm_build_contrastive_pairs(
+                task_name=task_name,
+                lm_eval_task=task_obj,
+                limit=limit,
+            )
 
         train_pairs, test_pairs = self._split_pairs(
             pairs, split_ratio, seed, training_limit, testing_limit
@@ -158,10 +180,11 @@ class LMEvalDataLoader(BaseDataLoader):
 
         arguments:
             task_name: The name of the lm-eval task to load.
-        
+
         returns:
             A ConfigurableTask instance or a dict of subtask name to ConfigurableTask.
-        
+            For group tasks, flattens nested groups and returns all leaf tasks.
+
         raises:
             DataLoaderError if the task cannot be found.
         """
@@ -169,8 +192,39 @@ class LMEvalDataLoader(BaseDataLoader):
         task_manager.initialize_tasks()
 
         task_dict = get_task_dict([task_name], task_manager=task_manager)
+
+        # Try to get the task directly
         if task_name in task_dict:
-            return task_dict[task_name]
+            result = task_dict[task_name]
+            # If result is a dict with nested groups, flatten it
+            if isinstance(result, dict):
+                flat_tasks = {}
+                for key, value in result.items():
+                    if isinstance(value, dict):
+                        # Nested group - add all subtasks
+                        flat_tasks.update(value)
+                    else:
+                        # Direct task
+                        flat_tasks[key] = value
+                return flat_tasks if flat_tasks else result
+            return result
+
+        # If not found directly, might be the first (and only) key in task_dict
+        if len(task_dict) == 1:
+            key, value = list(task_dict.items())[0]
+            # Check if the key's name matches what we're looking for
+            if hasattr(key, 'group') and key.group == task_name:
+                if isinstance(value, dict):
+                    # Flatten nested groups
+                    flat_tasks = {}
+                    for k, v in value.items():
+                        if isinstance(v, dict):
+                            flat_tasks.update(v)
+                        else:
+                            flat_tasks[k] = v
+                    return flat_tasks if flat_tasks else value
+                return value
+
         raise DataLoaderError(f"lm-eval task '{task_name}' not found.")
     
     def _split_pairs(

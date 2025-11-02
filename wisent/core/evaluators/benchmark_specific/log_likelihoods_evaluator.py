@@ -35,7 +35,16 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
 
     name = "log_likelihoods"
     description = "Log likelihood evaluator for multiple choice tasks"
-    task_names = ("boolq", "mmlu", "arc_easy", "arc_challenge", "truthfulqa_mc1", "truthfulqa_mc2")
+    task_names = (
+        # Boolean/Two-Choice Tasks
+        "boolq", "winogrande", "piqa", "copa", "cb",
+        # Multi-Choice Reasoning
+        "hellaswag", "swag", "openbookqa", "race",
+        # Exams & Knowledge
+        "arc_easy", "arc_challenge", "mmlu", "gpqa", "super_gpqa", "hle",
+        # Truthfulness
+        "truthfulqa_mc1", "truthfulqa_mc2"
+    )
 
     def __init__(self, model=None):
         """Initialize with optional model for log likelihood computation.

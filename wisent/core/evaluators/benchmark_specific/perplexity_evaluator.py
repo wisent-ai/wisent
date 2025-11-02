@@ -24,7 +24,12 @@ class PerplexityEvaluator(BaseEvaluator):
 
     name = "perplexity"
     description = "Perplexity evaluator for language modeling"
-    task_names = ("wikitext", "lambada_openai", "lambada_standard")
+    task_names = (
+        # Language Modeling
+        "wikitext", "wikitext103", "ptb", "penn_treebank",
+        # Word Prediction
+        "lambada_openai", "lambada_standard"
+    )
 
     def __init__(self, model=None):
         """Initialize perplexity evaluator.
@@ -40,16 +45,20 @@ class PerplexityEvaluator(BaseEvaluator):
 
         Args:
             response: Text to evaluate (for language modeling)
-            expected: NOT USED (perplexity is computed on response)
+            expected: Expected continuation (for comparison)
             **kwargs:
                 model: Model instance (WisentModel or similar, overrides self.model)
                 context: Optional context for conditional generation
+                question: Context/prompt before the continuation
+                choices: List of possible continuations for comparison
 
         Returns:
             EvalResult with perplexity as confidence metric (lower is better)
         """
         model = kwargs.get('model', self.model)
         context = kwargs.get('context', '')
+        question = kwargs.get('question', '')
+        choices = kwargs.get('choices', None)
 
         if model is None:
             raise ValueError(
@@ -58,20 +67,51 @@ class PerplexityEvaluator(BaseEvaluator):
             )
 
         try:
-            # Compute perplexity
-            full_text = f"{context}{response}" if context else response
-            perplexity = self._compute_perplexity(model, full_text)
+            # If choices are provided, compare perplexities (for contrastive evaluation)
+            if choices and len(choices) >= 2:
+                prompt = question if question else context
+                perplexities = {}
 
-            # Lower perplexity is better, so we use negative for confidence
-            # (higher confidence = lower perplexity)
-            confidence = -perplexity
+                for choice in choices:
+                    full_text = f"{prompt} {choice}".strip()
+                    ppl = self._compute_perplexity(model, full_text)
+                    perplexities[choice] = ppl
 
-            return EvalResult(
-                ground_truth="EVALUATED",
-                method_used=self.name,
-                confidence=confidence,
-                details=f"Perplexity: {perplexity:.4f} (lower is better)",
-            )
+                # Pick the choice with lowest perplexity
+                best_choice = min(perplexities, key=perplexities.get)
+                best_perplexity = perplexities[best_choice]
+
+                # Check if best choice matches expected
+                is_correct = best_choice == expected
+                ground_truth = "TRUTHFUL" if is_correct else "UNTRUTHFUL"
+
+                # Calculate confidence (inverse of perplexity difference)
+                perp_diff = abs(perplexities[choices[0]] - perplexities[choices[1]])
+                confidence = 1.0 if perp_diff > 1.0 else perp_diff
+
+                details = f"Predicted: '{best_choice}' (ppl={best_perplexity:.2f}), Expected: '{expected}'"
+
+                return EvalResult(
+                    ground_truth=ground_truth,
+                    method_used=self.name,
+                    confidence=confidence,
+                    details=details,
+                )
+            else:
+                # Single perplexity computation (original behavior)
+                full_text = f"{context}{response}" if context else response
+                perplexity = self._compute_perplexity(model, full_text)
+
+                # Lower perplexity is better, so we use negative for confidence
+                # (higher confidence = lower perplexity)
+                confidence = -perplexity
+
+                return EvalResult(
+                    ground_truth="EVALUATED",
+                    method_used=self.name,
+                    confidence=confidence,
+                    details=f"Perplexity: {perplexity:.4f} (lower is better)",
+                )
 
         except Exception as e:
             logger.error(f"Error computing perplexity: {e}")
