@@ -136,9 +136,8 @@ def execute_evaluate_responses(args):
         evaluator = PerplexityEvaluator()
         print(f"   Using: PerplexityEvaluator (perplexity computation)\n")
     elif evaluation_type == "personalization":
-        from wisent.core.evaluators.benchmark_specific import PersonalizationEvaluator
-        evaluator = PersonalizationEvaluator()
-        print(f"   Using: PersonalizationEvaluator (personality trait evaluation)\n")
+        # Personalization is handled separately below, skip evaluator creation here
+        evaluator = None
     else:
         evaluator = F1Evaluator()
         print(f"   Using: F1Evaluator (default fallback)\n")
