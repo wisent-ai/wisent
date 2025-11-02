@@ -151,7 +151,10 @@ class SyntheticContrastivePairsGenerator:
                 logger.warning(f"[PARSE DEBUG] JSON decode failed: {e}")
                 # try to recover from common errors
                 r = r.replace("'", '"').replace("```", '')
-                logger.info(f"[PARSE DEBUG] Attempting recovery with quote replacement: {r[:200]}")
+                # Fix missing commas between array elements: }\n    { -> },\n    {
+                import re
+                r = re.sub(r'\}\s*\n\s*\{', '},\n    {', r)
+                logger.info(f"[PARSE DEBUG] Attempting recovery with quote replacement and comma fixing: {r[:200]}")
                 try:
                     data = json.loads(r)
                     logger.info(f"[PARSE DEBUG] Recovery successful: {data}")
@@ -160,8 +163,16 @@ class SyntheticContrastivePairsGenerator:
                     logger.error(f"[PARSE DEBUG] Original raw output was:\n{original_r}")
                     continue
 
-            pairs_list = data.get("pairs", [])
-            logger.info(f"[PARSE DEBUG] Found {len(pairs_list)} pairs in data")
+            # Handle both dict with "pairs" key and direct list
+            if isinstance(data, list):
+                pairs_list = data
+                logger.info(f"[PARSE DEBUG] Data is a direct list with {len(pairs_list)} pairs")
+            elif isinstance(data, dict):
+                pairs_list = data.get("pairs", [])
+                logger.info(f"[PARSE DEBUG] Found {len(pairs_list)} pairs in data dict")
+            else:
+                logger.error(f"[PARSE DEBUG] Unexpected data type: {type(data)}")
+                continue
 
             for item_idx, item in enumerate(pairs_list):
                 logger.info(f"[PARSE DEBUG] Processing pair {item_idx}: {item}")

@@ -49,7 +49,14 @@ class SteeringEvaluationResult:
 
     @property
     def overall_score(self) -> float:
-        """Weighted average of all scores."""
+        """
+        Weighted average of all scores.
+        Returns 0 if difference_score < 70.
+        """
+        # If difference score is too low, steering is ineffective
+        if self.difference_score < 70:
+            return 0.0
+
         # Weight: difference=0.2, quality=0.3, alignment=0.5
         return (
             0.2 * self.difference_score
@@ -342,18 +349,18 @@ Rating (0-10):"""
         avg_alignment = np.mean(alignment_scores)
         return float(avg_alignment)
 
-    def _extract_rating(self, text: str) -> float:
-        """Extract a numeric rating (0-10) from text."""
+    def _extract_rating(self, text: str, max_rating: int = 100) -> float:
+        """Extract a numeric rating from text."""
         # Try to find numbers in the text
         numbers = re.findall(r"\b(\d+(?:\.\d+)?)\b", text)
 
         if numbers:
             rating = float(numbers[0])
-            # Clamp to 0-10 range
-            return max(0.0, min(10.0, rating))
+            # Clamp to 1-max_rating range
+            return max(1.0, min(float(max_rating), rating))
 
         # Default to middle rating if no number found
-        return 5.0
+        return float(max_rating) / 2.0
 
     def evaluate_response_pair(
         self,
@@ -383,11 +390,23 @@ Rating (0-10):"""
         log = bind(_LOG, trait=trait_name)
         log.info("Evaluating response pair")
 
+        # Import evaluation functions
+        from wisent.core.evaluators.personalization import (
+            evaluate_difference,
+            evaluate_quality,
+            evaluate_alignment,
+        )
+
         # Evaluate on three criteria using model self-evaluation
-        difference_score = self._evaluate_difference_with_model(baseline_response, steered_response)
-        quality_score = self._evaluate_quality_with_model(steered_response)
-        alignment_score = self._evaluate_alignment_with_model(
-            steered_response, trait_name, trait_description
+        difference_score = evaluate_difference(
+            baseline_response, steered_response, self.model, self.tokenizer, self.device
+        )
+        quality_score = evaluate_quality(
+            steered_response, self.model, self.tokenizer, self.device
+        )
+        alignment_score = evaluate_alignment(
+            steered_response, trait_name, trait_description,
+            self.model, self.tokenizer, self.device
         )
 
         log.info(
@@ -411,113 +430,3 @@ Rating (0-10):"""
             },
         )
 
-    def _evaluate_difference_with_model(
-        self, baseline_response: str, steered_response: str
-    ) -> float:
-        """
-        Use the model to evaluate how different two responses are on a scale of 1-10.
-
-        Args:
-            baseline_response: The baseline response
-            steered_response: The steered response
-
-        Returns:
-            Difference score between 0 and 1
-        """
-        eval_prompt = f"""Compare these two responses and rate how different they are from each other on a scale of 1-10.
-
-Response A: {baseline_response}
-
-Response B: {steered_response}
-
-Rate how different these responses are:
-1 = Nearly identical in content and style
-5 = Moderately different
-10 = Completely different in content and style
-
-Rating (1-10):"""
-
-        rating = self._get_model_rating(eval_prompt)
-        return rating / 10.0
-
-    def _evaluate_quality_with_model(self, response: str) -> float:
-        """
-        Use the model to evaluate response quality on a scale of 1-10.
-
-        Args:
-            response: The response to evaluate
-
-        Returns:
-            Quality score between 0 and 1
-        """
-        eval_prompt = f"""Evaluate the quality of this response on a scale of 1-10.
-
-Response: {response}
-
-Rate the quality based on:
-- Is it coherent and makes sense?
-- Is it free from excessive repetition?
-- Is it a proper response (not broken or nonsensical)?
-
-Rating (1-10):"""
-
-        rating = self._get_model_rating(eval_prompt)
-        return rating / 10.0
-
-    def _evaluate_alignment_with_model(
-        self, response: str, trait_name: str, trait_description: str
-    ) -> float:
-        """
-        Use the model to evaluate how well the response exhibits a trait on a scale of 1-10.
-
-        Args:
-            response: The response to evaluate
-            trait_name: Target trait name
-            trait_description: Trait description
-
-        Returns:
-            Alignment score between 0 and 1
-        """
-        eval_prompt = f"""Rate how strongly this response demonstrates the trait "{trait_name}" on a scale of 1-10.
-
-Trait: {trait_name}
-Description: {trait_description}
-
-Response: {response}
-
-Does this response exhibit "{trait_name}" characteristics?
-1 = Not at all
-5 = Moderately
-10 = Strongly
-
-Rating (1-10):"""
-
-        rating = self._get_model_rating(eval_prompt)
-        return rating / 10.0
-
-    def _get_model_rating(self, prompt: str) -> float:
-        """
-        Get a 1-10 rating from the model for an evaluation prompt.
-
-        Args:
-            prompt: The evaluation prompt
-
-        Returns:
-            Rating between 1 and 10
-        """
-        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
-
-        with torch.no_grad():
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=10,
-                do_sample=False,  # Greedy for consistency
-                pad_token_id=self.tokenizer.eos_token_id,
-            )
-
-        rating_text = self.tokenizer.decode(
-            outputs[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
-        )
-
-        # Extract numeric rating
-        return self._extract_rating(rating_text)
