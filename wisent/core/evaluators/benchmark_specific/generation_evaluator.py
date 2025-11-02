@@ -29,18 +29,27 @@ class GenerationEvaluator(BaseEvaluator):
 
     name = "generation"
     description = "Generation-based evaluator for text generation tasks"
-    task_names = ("gsm8k", "drop", "triviaqa")
+    task_names = (
+        # Math Tasks
+        "gsm8k", "asdiv", "arithmetic", "math", "math_500",
+        "aime", "hmmt", "polymath", "livemathbench",
+        # Reading Comprehension & QA
+        "drop", "triviaqa", "record", "squadv2",
+        "webqs", "nq_open", "coqa"
+    )
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate generated response against expected answer.
 
         Args:
-            response: Generated model response
+            response: Generated model response (can be empty if using choices)
             expected: Expected answer (str, int, float, or list of acceptable answers)
             **kwargs:
                 task_name: Task name for task-specific logic
                 answer_type: Type of answer ("numerical", "text", "exact")
                 normalize: Whether to normalize strings before comparison
+                choices: List of [correct_answer, incorrect_answer] for contrastive evaluation
+                model: WisentModel instance for generating responses
 
         Returns:
             EvalResult with TRUTHFUL/UNTRUTHFUL/UNKNOWN
@@ -48,8 +57,88 @@ class GenerationEvaluator(BaseEvaluator):
         task_name = kwargs.get('task_name', '')
         answer_type = kwargs.get('answer_type', 'text')
         normalize = kwargs.get('normalize', True)
+        choices = kwargs.get('choices')
+        model = kwargs.get('model')
+        question = kwargs.get('question', '')
 
-        # Extract answer from generated response
+        # If we have choices, do direct comparison (for contrastive evaluation)
+        if choices and len(choices) == 2:
+            correct_answer = choices[0]
+            incorrect_answer = choices[1]
+
+            # Determine answer type based on task or if it looks numerical
+            if task_name in ["gsm8k", "asdiv", "arithmetic", "math", "math_500", "aime", "hmmt", "polymath", "livemathbench"]:
+                answer_type = "numerical"
+
+            # For generation tasks, we compare the pre-generated answers directly
+            # Expected is what we're comparing against
+            # Extract answers from both choices
+            extracted_correct = self._extract_answer(correct_answer, task_name, answer_type)
+            extracted_incorrect = self._extract_answer(incorrect_answer, task_name, answer_type)
+            extracted_expected = self._extract_answer(str(expected), task_name, answer_type)
+
+            if extracted_expected is None:
+                return EvalResult(
+                    ground_truth="UNKNOWN",
+                    method_used=self.name,
+                    confidence=0.0,
+                    details="Could not extract answer from expected response",
+                )
+
+            # Check which choice matches the expected answer
+            if isinstance(expected, list):
+                expected_answers = expected
+            else:
+                expected_answers = [expected]
+
+            correct_matches, _, conf_correct = self._check_match(
+                extracted_correct, expected_answers, answer_type, normalize
+            )
+            incorrect_matches, _, conf_incorrect = self._check_match(
+                extracted_incorrect, expected_answers, answer_type, normalize
+            )
+
+            # If correct matches expected, return TRUTHFUL
+            # If incorrect matches expected, return UNTRUTHFUL
+            if correct_matches and not incorrect_matches:
+                return EvalResult(
+                    ground_truth="TRUTHFUL",
+                    method_used=self.name,
+                    confidence=conf_correct,
+                    details=f"Correct answer '{correct_answer}' matches expected '{expected}'",
+                    meta={
+                        "correct_answer": correct_answer,
+                        "incorrect_answer": incorrect_answer,
+                        "expected": expected,
+                    }
+                )
+            elif incorrect_matches and not correct_matches:
+                return EvalResult(
+                    ground_truth="UNTRUTHFUL",
+                    method_used=self.name,
+                    confidence=conf_incorrect,
+                    details=f"Incorrect answer '{incorrect_answer}' matches expected '{expected}'",
+                    meta={
+                        "correct_answer": correct_answer,
+                        "incorrect_answer": incorrect_answer,
+                        "expected": expected,
+                    }
+                )
+            else:
+                # Both match or neither matches - unclear
+                return EvalResult(
+                    ground_truth="UNKNOWN",
+                    method_used=self.name,
+                    confidence=0.0,
+                    details=f"Ambiguous: correct={correct_matches}, incorrect={incorrect_matches}",
+                    meta={
+                        "correct_answer": correct_answer,
+                        "incorrect_answer": incorrect_answer,
+                        "expected": expected,
+                    }
+                )
+
+        # If no choices, extract answer from generated response
         extracted_answer = self._extract_answer(response, task_name, answer_type)
 
         if extracted_answer is None:
