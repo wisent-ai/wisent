@@ -329,34 +329,64 @@ def execute_evaluate_responses(args):
         print(f"{'='*80}\n")
         return
 
-    # Handle personalization separately - LLM-as-judge evaluation
+    # Handle personalization separately - response pair evaluation
     if evaluation_type == "personalization":
+        from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
+
         print(f"🎭 Running personality trait evaluation...")
 
-        # Extract judge model from task config if available
-        judge_model = task_config.get('judge_model', evaluator.default_judge_model)
-        use_mock = task_config.get('use_mock', False)
+        # Check if baseline is provided
+        if not hasattr(args, 'baseline') or not args.baseline:
+            print(f"   ❌ Error: --baseline argument is required for personalization evaluation")
+            print(f"   Usage: --input <steered_responses.json> --baseline <baseline_responses.json>")
+            sys.exit(1)
 
-        # Check if trait is specified via CLI
-        if hasattr(args, 'trait') and args.trait:
-            print(f"   Target trait: {args.trait} (from CLI)")
+        # Load baseline responses
+        print(f"📂 Loading baseline responses...")
+        try:
+            with open(args.baseline, 'r') as f:
+                baseline_data = json.load(f)
 
-        if use_mock:
-            print(f"   ⚠️  Using mock evaluation (no API calls)\n")
-        else:
-            print(f"   Judge model: {judge_model}\n")
+            if isinstance(baseline_data, list):
+                baseline_responses = baseline_data
+            else:
+                baseline_responses = baseline_data.get('responses', [])
 
-        print(f"   Evaluating {len(responses)} responses...\n")
+            print(f"   ✓ Loaded {len(baseline_responses)} baseline responses\n")
+        except Exception as e:
+            print(f"   ❌ Failed to load baseline file: {e}")
+            sys.exit(1)
+
+        # Check lengths match
+        if len(baseline_responses) != len(responses):
+            print(f"   ❌ Error: Baseline ({len(baseline_responses)}) and steered ({len(responses)}) response counts don't match")
+            sys.exit(1)
+
+        # Get trait information
+        trait = args.trait if hasattr(args, 'trait') and args.trait else "unknown"
+        trait_description = args.trait_description if hasattr(args, 'trait_description') and args.trait_description else f"The trait: {trait}"
+
+        print(f"   Target trait: {trait}")
+        print(f"   Trait description: {trait_description}")
+        print(f"   Evaluating {len(responses)} response pairs...\n")
+
+        # Initialize evaluator (no model needed for response pair evaluation)
+        evaluator = PersonalizationEvaluator()
 
         evaluated_count = 0
-        trait_scores = []
+        difference_scores = []
+        quality_scores = []
+        alignment_scores = []
+        overall_scores = []
 
-        for idx, response_data in enumerate(responses, 1):
-            if 'error' in response_data:
+        for idx, (baseline_data, steered_data) in enumerate(zip(baseline_responses, responses), 1):
+            # Check for errors in either response
+            if 'error' in baseline_data or 'error' in steered_data:
                 if args.verbose:
-                    print(f"Response {idx}: Skipped (generation error)")
+                    print(f"Response pair {idx}: Skipped (generation error)")
                 evaluation_results.append({
-                    **response_data,
+                    "baseline": baseline_data,
+                    "steered": steered_data,
                     "evaluation": {
                         "error": "Generation failed"
                     }
@@ -364,92 +394,84 @@ def execute_evaluate_responses(args):
                 continue
 
             try:
-                generated_response = response_data.get('generated_response', '')
-                prompt = response_data.get('prompt', '')
+                baseline_response = baseline_data.get('generated_response', '')
+                steered_response = steered_data.get('generated_response', '')
+                prompt = steered_data.get('prompt', '')
 
-                # Extract trait information from CLI argument or response_data
-                # CLI argument takes precedence
-                if hasattr(args, 'trait') and args.trait:
-                    trait = args.trait
-                    trait_description = f'The trait: {trait}'
-                else:
-                    trait = response_data.get('trait', 'unknown')
-                    trait_description = response_data.get('trait_description', f'The trait: {trait}')
-
-                    # If trait info is in a nested dict
-                    if isinstance(response_data.get('expected'), dict):
-                        trait = response_data['expected'].get('trait', trait)
-                        trait_description = response_data['expected'].get('trait_description', trait_description)
-
-                # Call evaluator
-                eval_result = evaluator.evaluate(
-                    response=generated_response,
-                    expected={
-                        'trait': trait,
-                        'trait_description': trait_description
-                    },
-                    prompt=prompt,
-                    judge_model=judge_model,
-                    use_mock=use_mock
+                # Evaluate the response pair
+                result = evaluator.evaluate_response_pair(
+                    baseline_response=baseline_response,
+                    steered_response=steered_response,
+                    trait_name=trait,
+                    trait_description=trait_description
                 )
 
                 evaluated_count += 1
 
-                # Extract metrics from meta
-                trait_score = eval_result.meta.get('trait_score', 0)
-                intensity = eval_result.meta.get('intensity', 'unknown')
-
-                trait_scores.append(trait_score)
+                # Collect scores
+                difference_scores.append(result.difference_score)
+                quality_scores.append(result.quality_score)
+                alignment_scores.append(result.alignment_score)
+                overall_scores.append(result.overall_score)
 
                 # Store result
-                result = {
-                    'response_id': response_data.get('id', idx),
+                eval_result = {
+                    'response_id': steered_data.get('id', idx),
+                    'prompt': prompt,
                     'trait': trait,
-                    'trait_score': trait_score,
-                    'intensity': intensity,
-                    'ground_truth': eval_result.ground_truth,
-                    'confidence': eval_result.confidence,
-                    'explanation': eval_result.meta.get('explanation', ''),
-                    'judge_model': eval_result.meta.get('judge_model', judge_model)
+                    'difference_score': result.difference_score,
+                    'quality_score': result.quality_score,
+                    'alignment_score': result.alignment_score,
+                    'overall_score': result.overall_score,
+                    'baseline_response': baseline_response[:200] + '...' if len(baseline_response) > 200 else baseline_response,
+                    'steered_response': steered_response[:200] + '...' if len(steered_response) > 200 else steered_response,
                 }
 
-                evaluation_results.append(result)
+                evaluation_results.append(eval_result)
                 task_results.append({
-                    'trait_score': trait_score,
-                    'confidence': eval_result.confidence
+                    'difference_score': result.difference_score,
+                    'quality_score': result.quality_score,
+                    'alignment_score': result.alignment_score,
+                    'overall_score': result.overall_score,
                 })
 
                 if args.verbose:
-                    score_icon = '✅' if trait_score >= 7 else ('⚠️' if trait_score >= 4 else '❌')
-                    print(f"{score_icon} Response {idx} ({trait}): {trait_score}/10 ({intensity})")
+                    score_icon = '✅' if result.overall_score >= 0.7 else ('⚠️' if result.overall_score >= 0.5 else '❌')
+                    print(f"{score_icon} Pair {idx}: Overall={result.overall_score:.3f} (diff={result.difference_score:.3f}, qual={result.quality_score:.3f}, align={result.alignment_score:.3f})")
 
             except Exception as e:
-                logger.exception(f"Error evaluating response {idx}: {e}")
+                import traceback
+                traceback.print_exc()
                 evaluation_results.append({
-                    **response_data,
+                    "baseline": baseline_data,
+                    "steered": steered_data,
                     "evaluation": {
                         "error": str(e)
                     }
                 })
 
-        print(f"\n   ✓ Evaluated {evaluated_count} responses\n")
+        print(f"\n   ✓ Evaluated {evaluated_count} response pairs\n")
 
         # Aggregate results
         aggregated_metrics = {}
         if task_results:
-            avg_trait_score = sum(r['trait_score'] for r in task_results) / len(task_results)
-            avg_confidence = sum(r['confidence'] for r in task_results) / len(task_results)
+            avg_difference = sum(r['difference_score'] for r in task_results) / len(task_results)
+            avg_quality = sum(r['quality_score'] for r in task_results) / len(task_results)
+            avg_alignment = sum(r['alignment_score'] for r in task_results) / len(task_results)
+            avg_overall = sum(r['overall_score'] for r in task_results) / len(task_results)
 
-            # Count by intensity thresholds
-            strong_count = sum(1 for s in trait_scores if s >= 7)
-            moderate_count = sum(1 for s in trait_scores if 4 <= s < 7)
-            weak_count = sum(1 for s in trait_scores if s < 4)
+            # Count by overall score thresholds
+            excellent_count = sum(1 for r in task_results if r['overall_score'] >= 0.7)
+            good_count = sum(1 for r in task_results if 0.5 <= r['overall_score'] < 0.7)
+            poor_count = sum(1 for r in task_results if r['overall_score'] < 0.5)
 
-            aggregated_metrics['avg_trait_score'] = avg_trait_score
-            aggregated_metrics['avg_confidence'] = avg_confidence
-            aggregated_metrics['strong_manifestation_rate'] = strong_count / len(trait_scores) if trait_scores else 0
-            aggregated_metrics['moderate_manifestation_rate'] = moderate_count / len(trait_scores) if trait_scores else 0
-            aggregated_metrics['weak_manifestation_rate'] = weak_count / len(trait_scores) if trait_scores else 0
+            aggregated_metrics['avg_difference_score'] = avg_difference
+            aggregated_metrics['avg_quality_score'] = avg_quality
+            aggregated_metrics['avg_alignment_score'] = avg_alignment
+            aggregated_metrics['avg_overall_score'] = avg_overall
+            aggregated_metrics['excellent_steering_rate'] = excellent_count / len(task_results)
+            aggregated_metrics['good_steering_rate'] = good_count / len(task_results)
+            aggregated_metrics['poor_steering_rate'] = poor_count / len(task_results)
             aggregated_metrics['total_evaluated'] = len(task_results)
 
         # Save results
@@ -460,12 +482,13 @@ def execute_evaluate_responses(args):
 
         output_data = {
             "input_file": args.input,
+            "baseline_file": args.baseline,
             "task": task_name if isinstance(input_data, list) else input_data.get('task'),
             "model": None if isinstance(input_data, list) else input_data.get('model'),
             "evaluation_type": evaluation_type,
             "evaluator_used": "PersonalizationEvaluator",
-            "judge_model": judge_model,
-            "use_mock": use_mock,
+            "trait": trait,
+            "trait_description": trait_description,
             "aggregated_metrics": aggregated_metrics,
             "num_evaluated": len(task_results),
             "num_total": len(responses),
@@ -479,12 +502,15 @@ def execute_evaluate_responses(args):
         print(f"{'='*80}")
         print(f"✅ PERSONALIZATION EVALUATION COMPLETE")
         print(f"{'='*80}")
-        print(f"   Total responses: {len(task_results)}")
-        print(f"   Average trait score: {aggregated_metrics.get('avg_trait_score', 0):.2f}/10")
-        print(f"   Average confidence: {aggregated_metrics.get('avg_confidence', 0):.2%}")
-        print(f"   Strong manifestation: {aggregated_metrics.get('strong_manifestation_rate', 0):.1%}")
-        print(f"   Moderate manifestation: {aggregated_metrics.get('moderate_manifestation_rate', 0):.1%}")
-        print(f"   Weak manifestation: {aggregated_metrics.get('weak_manifestation_rate', 0):.1%}")
+        print(f"   Trait: {trait}")
+        print(f"   Total response pairs: {len(task_results)}")
+        print(f"   Average difference score: {aggregated_metrics.get('avg_difference_score', 0):.3f}")
+        print(f"   Average quality score: {aggregated_metrics.get('avg_quality_score', 0):.3f}")
+        print(f"   Average alignment score: {aggregated_metrics.get('avg_alignment_score', 0):.3f}")
+        print(f"   Average overall score: {aggregated_metrics.get('avg_overall_score', 0):.3f}")
+        print(f"   Excellent steering (≥0.7): {aggregated_metrics.get('excellent_steering_rate', 0):.1%}")
+        print(f"   Good steering (0.5-0.7): {aggregated_metrics.get('good_steering_rate', 0):.1%}")
+        print(f"   Poor steering (<0.5): {aggregated_metrics.get('poor_steering_rate', 0):.1%}")
         print(f"{'='*80}\n")
         return
 

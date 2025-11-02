@@ -7,7 +7,6 @@ This module provides evaluation methods that match lm-eval's native approaches:
 - F1 evaluation for token-level comparison
 - Perplexity evaluation for language modeling
 - Coding evaluation for code generation tasks
-- Personalization evaluation for personality trait manifestation
 """
 
 from .log_likelihoods_evaluator import LogLikelihoodsEvaluator
@@ -16,7 +15,6 @@ from .exact_match_evaluator import ExactMatchEvaluator
 from .f1_evaluator import F1Evaluator
 from .perplexity_evaluator import PerplexityEvaluator
 from .docker_code_evaluator import DockerCodeEvaluator
-from .personalization_evaluator import PersonalizationEvaluator
 
 __all__ = [
     'LogLikelihoodsEvaluator',
@@ -25,5 +23,4 @@ __all__ = [
     'F1Evaluator',
     'PerplexityEvaluator',
     'DockerCodeEvaluator',
-    'PersonalizationEvaluator',
 ]
