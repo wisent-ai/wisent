@@ -72,23 +72,24 @@ class PersonalizationEvaluator:
 
     def __init__(
         self,
-        model: PreTrainedModel,
-        tokenizer: PreTrainedTokenizer,
+        model: PreTrainedModel | None = None,
+        tokenizer: PreTrainedTokenizer | None = None,
         device: str | torch.device = "cuda",
     ):
         """
         Initialize the evaluator.
 
         Args:
-            model: The language model to evaluate
-            tokenizer: Tokenizer for the model
+            model: The language model to evaluate (optional, only needed for evaluate_steering)
+            tokenizer: Tokenizer for the model (optional, only needed for evaluate_steering)
             device: Device to run evaluation on
         """
         self.model = model
         self.tokenizer = tokenizer
         self.device = torch.device(device) if isinstance(device, str) else device
-        self.model.to(self.device)
-        self.model.eval()
+        if self.model is not None:
+            self.model.to(self.device)
+            self.model.eval()
 
     def evaluate_steering(
         self,
@@ -353,3 +354,107 @@ Rating (0-10):"""
 
         # Default to middle rating if no number found
         return 5.0
+
+    def evaluate_response_pair(
+        self,
+        baseline_response: str,
+        steered_response: str,
+        trait_name: str,
+        trait_description: str,
+    ) -> SteeringEvaluationResult:
+        """
+        Evaluate a pair of pre-generated responses (baseline vs steered).
+
+        This method evaluates the effectiveness of steering by comparing
+        baseline and steered responses without requiring a model or control vector.
+
+        Args:
+            baseline_response: The baseline model response
+            steered_response: The steered model response
+            trait_name: Name of the trait (e.g., "British", "Mean")
+            trait_description: Description of what the trait means
+
+        Returns:
+            SteeringEvaluationResult with scores and analysis
+        """
+        log = bind(_LOG, trait=trait_name)
+        log.info("Evaluating response pair")
+
+        # Evaluate on three criteria
+        difference_score = self._evaluate_difference([baseline_response], [steered_response])
+        quality_score = self._evaluate_quality([steered_response])
+
+        # For alignment without a model, use simpler heuristic-based evaluation
+        alignment_score = self._evaluate_alignment_simple(
+            steered_response, trait_name, trait_description
+        )
+
+        log.info(
+            "Evaluation complete",
+            extra={
+                "difference": difference_score,
+                "quality": quality_score,
+                "alignment": alignment_score,
+            },
+        )
+
+        return SteeringEvaluationResult(
+            trait_name=trait_name,
+            difference_score=difference_score,
+            quality_score=quality_score,
+            alignment_score=alignment_score,
+            baseline_response=baseline_response,
+            steered_response=steered_response,
+            metadata={
+                "evaluation_mode": "response_pair",
+            },
+        )
+
+    def _evaluate_alignment_simple(
+        self, response: str, trait_name: str, trait_description: str
+    ) -> float:
+        """
+        Simple heuristic-based alignment evaluation (no model required).
+
+        Uses keyword matching and response characteristics to estimate alignment.
+
+        Args:
+            response: The response to evaluate
+            trait_name: Target trait name
+            trait_description: Trait description
+
+        Returns:
+            Alignment score between 0 and 1
+        """
+        if not response:
+            return 0.0
+
+        score = 0.5  # Start with neutral score
+
+        response_lower = response.lower()
+        trait_lower = trait_name.lower()
+
+        # Simple heuristics based on trait keywords
+        trait_keywords = set(trait_lower.split())
+        description_keywords = set(trait_description.lower().split())
+        all_keywords = trait_keywords | description_keywords
+
+        # Count keyword appearances
+        keyword_count = sum(1 for keyword in all_keywords if keyword in response_lower and len(keyword) > 3)
+
+        # Adjust score based on keywords (max +0.3)
+        score += min(0.3, keyword_count * 0.1)
+
+        # Response length (longer responses often show more trait characteristics)
+        if len(response) > 200:
+            score += 0.1
+        elif len(response) < 50:
+            score -= 0.1
+
+        # Sentence complexity (more complex = more trait expression)
+        sentences = response.split('.')
+        if len(sentences) > 3:
+            score += 0.1
+
+        # Clamp to [0, 1]
+        return max(0.0, min(1.0, score))
