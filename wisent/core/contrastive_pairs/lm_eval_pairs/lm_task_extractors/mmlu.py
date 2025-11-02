@@ -16,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 
 class MMLUExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the MMLU (Massive Multitask Language Understanding) benchmark."""
+    """Extractor for the MMLU (Massive Multitask Language Understanding) and MMMLU (multilingual variant) benchmarks."""
 
     def extract_contrastive_pairs(
         self,
@@ -24,12 +24,17 @@ class MMLUExtractor(LMEvalBenchmarkExtractor):
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from MMLU docs.
+        Build contrastive pairs from MMLU/MMMLU docs.
 
         MMLU schema:
             - question: str
             - choices: list[str] with 4 possible choices (A, B, C, D)
             - answer: int (0-3) indicating the correct answer index
+
+        MMMLU schema (multilingual variant):
+            - instruction: str (the question)
+            - option_a, option_b, option_c, option_d: str (individual choices)
+            - answer: str (letter A-D indicating correct answer)
 
         Args:
             lm_eval_task_data: lm-eval task instance for MMLU.
@@ -62,23 +67,39 @@ class MMLUExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single MMLU doc into a ContrastivePair, if possible.
+        Convert a single MMLU/MMMLU doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = str(doc.get("question", "")).strip()
-            choices = doc.get("choices", [])
-            answer = doc.get("answer", None)
-
-            # Handle different answer formats (could be int or str)
-            if isinstance(answer, str):
-                # If answer is a letter like 'A', 'B', 'C', 'D'
-                answer_idx = ord(answer.upper()) - ord('A')
+            # Check for MMMLU format first (uses instruction + option_a/b/c/d)
+            if "instruction" in doc and "option_a" in doc:
+                question = str(doc.get("instruction", "")).strip()
+                choices = [
+                    str(doc.get("option_a", "")).strip(),
+                    str(doc.get("option_b", "")).strip(),
+                    str(doc.get("option_c", "")).strip(),
+                    str(doc.get("option_d", "")).strip(),
+                ]
+                # Filter out empty choices
+                choices = [c for c in choices if c]
+                answer = doc.get("answer", "A")
+                # MMMLU answer is always a letter
+                answer_idx = ord(str(answer).upper()) - ord('A')
             else:
-                # If answer is already an index
-                answer_idx = int(answer)
+                # Standard MMLU format
+                question = str(doc.get("question", "")).strip()
+                choices = doc.get("choices", [])
+                answer = doc.get("answer", None)
+
+                # Handle different answer formats (could be int or str)
+                if isinstance(answer, str):
+                    # If answer is a letter like 'A', 'B', 'C', 'D'
+                    answer_idx = ord(answer.upper()) - ord('A')
+                else:
+                    # If answer is already an index
+                    answer_idx = int(answer)
 
             if not question or not choices or not (0 <= answer_idx < len(choices)):
                 log.debug(

@@ -1257,11 +1257,11 @@ class TaskManager:
         Args:
             task_name: Name of the task
             limit: Optional limit on number of documents
-            
+
         Returns:
             Task object from lm_eval
         """
-        
+
         # Find the actual task name dynamically
         actual_task_name = self.resolve_task_name(task_name)
         

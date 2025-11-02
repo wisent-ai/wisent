@@ -21,6 +21,7 @@ EXTRACTORS: dict[str, str] = {
     "mc_taco": f"{base_import}mc-taco:MCTACOExtractor",
     "medqa": f"{base_import}medqa:MedQAExtractor",
     "mmlu": f"{base_import}mmlu:MMLUExtractor",
+    "mmmlu": f"{base_import}mmlu:MMLUExtractor",
     "mrpc": f"{base_import}mrpc:MRPCExtractor",
     "multirc": f"{base_import}multirc:MultiRCExtractor",
     "mutual": f"{base_import}mutual:MutualExtractor",
@@ -63,4 +64,20 @@ EXTRACTORS: dict[str, str] = {
     # Word prediction tasks
     "lambada_openai": f"{base_import}lambada:LambadaExtractor",
     "lambada_standard": f"{base_import}lambada:LambadaExtractor",
+    # NEW: BC branch extractors
+    "ai2_arc": f"{base_import}ai2_arc:AI2ARCExtractor",
+    "anli": f"{base_import}anli:ANLIExtractor",
+    "anli_r1": f"{base_import}anli:ANLIExtractor",
+    "anli_r2": f"{base_import}anli:ANLIExtractor",
+    "anli_r3": f"{base_import}anli:ANLIExtractor",
+    "bigbench": f"{base_import}bigbench:BigBenchExtractor",
+    "gpqa": f"{base_import}gpqa:GPQAExtractor",
+    "hle": f"{base_import}hle:HLEExtractor",
+    "mathqa": f"{base_import}mathqa:MathQAExtractor",
+    "quac": f"{base_import}quac:QuACExtractor",
+    "superglue": f"{base_import}superglue:SuperGLUEExtractor",
+    "supergpqa": f"{base_import}supergpqa:SuperGPQAExtractor",
+    "default": f"{base_import}default:DefaultExtractor",
+    "multilingual": f"{base_import}multilingual:MultilingualExtractor",
+    "glue": f"{base_import}glue:GLUEExtractor",
 }
