@@ -22,6 +22,20 @@ from .lm_eval_task import (
     ConcodeTask,
     DS1000Task,
     GSM8KTask,
+    
+    Arithmetic1dcTask,
+    Arithmetic2daTask,
+    Arithmetic2dmTask,
+    Arithmetic2dsTask,
+    Arithmetic3daTask,
+    Arithmetic3dsTask,
+    Arithmetic4daTask,
+    Arithmetic4dsTask,
+    Arithmetic5daTask,
+    Arithmetic5dsTask,
+    QA4MRETask,
+    MULTIRCTask,
+
     HumanEvalPlusTask,
     HumanEvalTask,
     InstructHumanEvalTask,
@@ -53,6 +67,19 @@ def register_all_tasks():
     register_task("gsm8k", GSM8KTask)
     register_task("truthfulqa_mc1", TruthfulQATask)
     register_task("mmlu", MMLUTask)
+
+    register_task("arithmetic_1dc", Arithmetic1dcTask)
+    register_task("arithmetic_2da", Arithmetic2daTask)
+    register_task("arithmetic_2dm", Arithmetic2dmTask)
+    register_task("arithmetic_2ds", Arithmetic2dsTask)
+    register_task("arithmetic_3da", Arithmetic3daTask)
+    register_task("arithmetic_3ds", Arithmetic3dsTask)
+    register_task("arithmetic_4da", Arithmetic4daTask)
+    register_task("arithmetic_4ds", Arithmetic4dsTask)
+    register_task("arithmetic_5da", Arithmetic5daTask)
+    register_task("arithmetic_5ds", Arithmetic5dsTask)
+    register_task("qa4mre_2013", QA4MRETask)
+    register_task("multirc", MULTIRCTask)
 
     # Register all coding tasks
     register_task("mbpp", MBPPTask)
@@ -155,6 +182,7 @@ __all__ = [
     "MBPPPlusTask",
     "MBPPTask",
     "MMLUTask",
+    "MULTIRCTASK",
     "Math500Task",
     "MercuryTask",
     "MultipleCppTask",
@@ -164,6 +192,7 @@ __all__ = [
     "MultiplePyTask",
     "MultipleRsTask",
     "PolyMathTask",
+    "QA4MRETASK",
     "RecodeTask",
     "Squad2Task",
     "SuperGPQABiologyTask",
