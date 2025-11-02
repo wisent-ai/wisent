@@ -447,8 +447,8 @@ def execute_evaluate_responses(args):
                     'quality_score': result.quality_score,
                     'alignment_score': result.alignment_score,
                     'overall_score': result.overall_score,
-                    'baseline_response': baseline_response[:200] + '...' if len(baseline_response) > 200 else baseline_response,
-                    'steered_response': steered_response[:200] + '...' if len(steered_response) > 200 else steered_response,
+                    'baseline_response': baseline_response,
+                    'steered_response': steered_response,
                 }
 
                 evaluation_results.append(eval_result)
