@@ -459,18 +459,10 @@ def execute_evaluate_responses(args):
             avg_alignment = sum(r['alignment_score'] for r in task_results) / len(task_results)
             avg_overall = sum(r['overall_score'] for r in task_results) / len(task_results)
 
-            # Count by overall score thresholds
-            excellent_count = sum(1 for r in task_results if r['overall_score'] >= 0.7)
-            good_count = sum(1 for r in task_results if 0.5 <= r['overall_score'] < 0.7)
-            poor_count = sum(1 for r in task_results if r['overall_score'] < 0.5)
-
             aggregated_metrics['avg_difference_score'] = avg_difference
             aggregated_metrics['avg_quality_score'] = avg_quality
             aggregated_metrics['avg_alignment_score'] = avg_alignment
             aggregated_metrics['avg_overall_score'] = avg_overall
-            aggregated_metrics['excellent_steering_rate'] = excellent_count / len(task_results)
-            aggregated_metrics['good_steering_rate'] = good_count / len(task_results)
-            aggregated_metrics['poor_steering_rate'] = poor_count / len(task_results)
             aggregated_metrics['total_evaluated'] = len(task_results)
 
         # Save results
@@ -507,9 +499,6 @@ def execute_evaluate_responses(args):
         print(f"   Average quality score: {aggregated_metrics.get('avg_quality_score', 0):.3f}")
         print(f"   Average alignment score: {aggregated_metrics.get('avg_alignment_score', 0):.3f}")
         print(f"   Average overall score: {aggregated_metrics.get('avg_overall_score', 0):.3f}")
-        print(f"   Excellent steering (≥0.7): {aggregated_metrics.get('excellent_steering_rate', 0):.1%}")
-        print(f"   Good steering (0.5-0.7): {aggregated_metrics.get('good_steering_rate', 0):.1%}")
-        print(f"   Poor steering (<0.5): {aggregated_metrics.get('poor_steering_rate', 0):.1%}")
         print(f"{'='*80}\n")
         return
 
