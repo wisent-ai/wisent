@@ -342,6 +342,36 @@ class WisentModel:
 
         return batch
 
+    def _extract_assistant_response(self, text: str) -> str:
+        """
+        Extract only the assistant's response from a decoded chat template output.
+
+        When using chat templates, tokenizer.batch_decode returns the full formatted
+        text including system prompt, user prompt, and assistant response. This method
+        extracts only the assistant's response portion.
+
+        arguments:
+            text:
+                Full decoded text from tokenizer.batch_decode
+
+        returns:
+            Extracted assistant response text
+
+        example:
+            >>> full_text = "system\\n\\nCutting Knowledge Date: December 2023\\nToday Date: 02 Nov 2025\\n\\nuser\\n\\nHello\\nassistant\\n\\nHi there!"
+            >>> model._extract_assistant_response(full_text)
+            "Hi there!"
+        """
+        # Look for the assistant marker in the decoded text
+        if "assistant" in text:
+            # Split on "assistant" and take everything after it
+            response = text.split("assistant", 1)[1]
+            # Strip leading/trailing whitespace and newlines
+            response = response.strip()
+            return response
+        # If no assistant marker found, return the original text
+        return text
+
     @torch.inference_mode()
     def generate(
         self,
@@ -495,6 +525,11 @@ class WisentModel:
 
         seqs = gen_out.sequences  # [B * num_return_sequences, T_total]
         texts = self.tokenizer.batch_decode(seqs, skip_special_tokens=True)
+
+        # Extract only assistant responses when using chat templates
+        if not prompt_is_formatted and not isinstance(inputs, str):
+            texts = [self._extract_assistant_response(text) for text in texts]
+
         return texts
 
     @torch.inference_mode()
@@ -595,6 +630,9 @@ class WisentModel:
             self.detach()
 
         texts = self.tokenizer.batch_decode(out.sequences, skip_special_tokens=True)
+
+        # Extract only assistant responses when using chat templates
+        texts = [self._extract_assistant_response(text) for text in texts]
 
         scores: list[torch.Tensor] = list(out.scores or [])
         stats: list[GenerationStats] = []

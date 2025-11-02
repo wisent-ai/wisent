@@ -44,7 +44,7 @@ class FastDiversity(Diversity):
         """
         d1 = self._distinct_n(texts, 1)
         d2 = self._distinct_n(texts, 2)
-        sample = texts if len(texts) <= 20 else self._rng.sample(texts, 20)
+        sample = texts if len(texts) <= 20 else self._rng.choice(texts, size=20, replace=False).tolist()
         if len(sample) >= 2:
             jaccs: list[float] = []
             fps: list[int] = []
