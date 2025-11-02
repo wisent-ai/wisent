@@ -371,7 +371,10 @@ def execute_evaluate_responses(args):
 
         # Load model for evaluation
         print(f"📦 Loading model for self-evaluation...")
-        model_name = input_data.get('model', 'meta-llama/Llama-3.2-1B')
+        if isinstance(input_data, dict):
+            model_name = input_data.get('model', 'meta-llama/Llama-3.2-1B')
+        else:
+            model_name = 'meta-llama/Llama-3.2-1B'  # Default model
         print(f"   Model: {model_name}")
 
         import torch
