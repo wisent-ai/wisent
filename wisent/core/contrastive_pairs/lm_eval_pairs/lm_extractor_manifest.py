@@ -20,6 +20,7 @@ EXTRACTORS: dict[str, str] = {
     "logiqa2": f"{base_import}logiqa2:LogiQA2Extractor",
     "mc_taco": f"{base_import}mc-taco:MCTACOExtractor",
     "medqa": f"{base_import}medqa:MedQAExtractor",
+    "mmlu": f"{base_import}mmlu:MMLUExtractor",
     "mrpc": f"{base_import}mrpc:MRPCExtractor",
     "multirc": f"{base_import}multirc:MultiRCExtractor",
     "mutual": f"{base_import}mutual:MutualExtractor",
@@ -37,7 +38,7 @@ EXTRACTORS: dict[str, str] = {
     "rte": f"{base_import}rte:RTEExtractor",
     "sciq": f"{base_import}sciq:SciQExtractor",
     "social_iqa": f"{base_import}social_iqa:Social_IQAExtractor",
-    "squad2": f"{base_import}squad2:SQuAD2Extractor",
+    "squadv2": f"{base_import}squad2:SQuAD2Extractor",
     "sst2": f"{base_import}sst2:SST2Extractor",
     "swag": f"{base_import}swag:SWAGExtractor",
     "triviaqa": f"{base_import}triviaqa:TriviaQAExtractor",
@@ -45,6 +46,7 @@ EXTRACTORS: dict[str, str] = {
     "truthfulqa_mc1": f"{base_import}truthfulqa_mc1:TruthfulQA_MC1Extractor",
     "truthfulqa_mc2": f"{base_import}truthfulqa_mc2:TruthfulQA_MC2Extractor",
     "webqs": f"{base_import}webqs:WebQuestionsExtractor",
+    "nq_open": f"{base_import}nq_open:NQOpenExtractor",
     "wic": f"{base_import}wic:WiCExtractor",
     "winogrande": f"{base_import}winogrande:WinograndeExtractor",
     "wnli": f"{base_import}wnli:WNLIExtractor",
@@ -53,4 +55,12 @@ EXTRACTORS: dict[str, str] = {
     "xstorycloze": f"{base_import}xstorycloze:XStoryClozeExtractor",
     "xwinograd": f"{base_import}xwinograd:XWinogradExtractor",
     "livecodebench": f"{base_import}livecodebench:LiveCodeBenchExtractor",
+    # Perplexity/Language Modeling tasks
+    "wikitext": f"{base_import}wikitext:WikitextExtractor",
+    "wikitext103": f"{base_import}wikitext:WikitextExtractor",
+    "ptb": f"{base_import}wikitext:WikitextExtractor",
+    "penn_treebank": f"{base_import}wikitext:WikitextExtractor",
+    # Word prediction tasks
+    "lambada_openai": f"{base_import}lambada:LambadaExtractor",
+    "lambada_standard": f"{base_import}lambada:LambadaExtractor",
 }

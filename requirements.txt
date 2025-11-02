@@ -11,6 +11,7 @@ nltk>=3.8.0
 datasets>=2.0.0
 matplotlib>=3.3.0
 seaborn>=0.11.0
+wisent-visuals>=0.1.0
 docker>=5.0.0
 pytest>=6.0.0
 pyyaml>=5.4.0
