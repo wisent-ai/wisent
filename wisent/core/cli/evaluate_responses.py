@@ -369,8 +369,30 @@ def execute_evaluate_responses(args):
         print(f"   Trait description: {trait_description}")
         print(f"   Evaluating {len(responses)} response pairs...\n")
 
-        # Initialize evaluator (no model needed for response pair evaluation)
-        evaluator = PersonalizationEvaluator()
+        # Load model for evaluation
+        print(f"📦 Loading model for self-evaluation...")
+        model_name = input_data.get('model', 'meta-llama/Llama-3.2-1B')
+        print(f"   Model: {model_name}")
+
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+
+        model = AutoModelForCausalLM.from_pretrained(
+            model_name,
+            torch_dtype=torch.float32,
+            device_map="cpu",
+        )
+        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
+
+        device = torch.device("cpu")
+        model = model.to(device)
+
+        print(f"   ✓ Model loaded\n")
+
+        # Initialize evaluator with model
+        evaluator = PersonalizationEvaluator(model=model, tokenizer=tokenizer, device=device)
 
         evaluated_count = 0
         difference_scores = []

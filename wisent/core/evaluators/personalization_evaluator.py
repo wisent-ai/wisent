@@ -366,7 +366,7 @@ Rating (0-10):"""
         Evaluate a pair of pre-generated responses (baseline vs steered).
 
         This method evaluates the effectiveness of steering by comparing
-        baseline and steered responses without requiring a model or control vector.
+        baseline and steered responses. Requires a model to be loaded.
 
         Args:
             baseline_response: The baseline model response
@@ -377,15 +377,16 @@ Rating (0-10):"""
         Returns:
             SteeringEvaluationResult with scores and analysis
         """
+        if self.model is None or self.tokenizer is None:
+            raise ValueError("Model and tokenizer required for evaluate_response_pair. Initialize with model and tokenizer.")
+
         log = bind(_LOG, trait=trait_name)
         log.info("Evaluating response pair")
 
-        # Evaluate on three criteria
-        difference_score = self._evaluate_difference([baseline_response], [steered_response])
-        quality_score = self._evaluate_quality([steered_response])
-
-        # For alignment without a model, use simpler heuristic-based evaluation
-        alignment_score = self._evaluate_alignment_simple(
+        # Evaluate on three criteria using model self-evaluation
+        difference_score = self._evaluate_difference_with_model(baseline_response, steered_response)
+        quality_score = self._evaluate_quality_with_model(steered_response)
+        alignment_score = self._evaluate_alignment_with_model(
             steered_response, trait_name, trait_description
         )
 
@@ -406,17 +407,68 @@ Rating (0-10):"""
             baseline_response=baseline_response,
             steered_response=steered_response,
             metadata={
-                "evaluation_mode": "response_pair",
+                "evaluation_mode": "response_pair_model_judge",
             },
         )
 
-    def _evaluate_alignment_simple(
+    def _evaluate_difference_with_model(
+        self, baseline_response: str, steered_response: str
+    ) -> float:
+        """
+        Use the model to evaluate how different two responses are on a scale of 1-10.
+
+        Args:
+            baseline_response: The baseline response
+            steered_response: The steered response
+
+        Returns:
+            Difference score between 0 and 1
+        """
+        eval_prompt = f"""Compare these two responses and rate how different they are from each other on a scale of 1-10.
+
+Response A: {baseline_response}
+
+Response B: {steered_response}
+
+Rate how different these responses are:
+1 = Nearly identical in content and style
+5 = Moderately different
+10 = Completely different in content and style
+
+Rating (1-10):"""
+
+        rating = self._get_model_rating(eval_prompt)
+        return rating / 10.0
+
+    def _evaluate_quality_with_model(self, response: str) -> float:
+        """
+        Use the model to evaluate response quality on a scale of 1-10.
+
+        Args:
+            response: The response to evaluate
+
+        Returns:
+            Quality score between 0 and 1
+        """
+        eval_prompt = f"""Evaluate the quality of this response on a scale of 1-10.
+
+Response: {response}
+
+Rate the quality based on:
+- Is it coherent and makes sense?
+- Is it free from excessive repetition?
+- Is it a proper response (not broken or nonsensical)?
+
+Rating (1-10):"""
+
+        rating = self._get_model_rating(eval_prompt)
+        return rating / 10.0
+
+    def _evaluate_alignment_with_model(
         self, response: str, trait_name: str, trait_description: str
     ) -> float:
         """
-        Simple heuristic-based alignment evaluation (no model required).
-
-        Uses keyword matching and response characteristics to estimate alignment.
+        Use the model to evaluate how well the response exhibits a trait on a scale of 1-10.
 
         Args:
             response: The response to evaluate
@@ -426,35 +478,46 @@ Rating (0-10):"""
         Returns:
             Alignment score between 0 and 1
         """
-        if not response:
-            return 0.0
+        eval_prompt = f"""Rate how strongly this response demonstrates the trait "{trait_name}" on a scale of 1-10.
 
-        score = 0.5  # Start with neutral score
+Trait: {trait_name}
+Description: {trait_description}
 
-        response_lower = response.lower()
-        trait_lower = trait_name.lower()
+Response: {response}
 
-        # Simple heuristics based on trait keywords
-        trait_keywords = set(trait_lower.split())
-        description_keywords = set(trait_description.lower().split())
-        all_keywords = trait_keywords | description_keywords
+Does this response exhibit "{trait_name}" characteristics?
+1 = Not at all
+5 = Moderately
+10 = Strongly
 
-        # Count keyword appearances
-        keyword_count = sum(1 for keyword in all_keywords if keyword in response_lower and len(keyword) > 3)
+Rating (1-10):"""
 
-        # Adjust score based on keywords (max +0.3)
-        score += min(0.3, keyword_count * 0.1)
+        rating = self._get_model_rating(eval_prompt)
+        return rating / 10.0
 
-        # Response length (longer responses often show more trait characteristics)
-        if len(response) > 200:
-            score += 0.1
-        elif len(response) < 50:
-            score -= 0.1
+    def _get_model_rating(self, prompt: str) -> float:
+        """
+        Get a 1-10 rating from the model for an evaluation prompt.
 
-        # Sentence complexity (more complex = more trait expression)
-        sentences = response.split('.')
-        if len(sentences) > 3:
-            score += 0.1
+        Args:
+            prompt: The evaluation prompt
 
-        # Clamp to [0, 1]
-        return max(0.0, min(1.0, score))
+        Returns:
+            Rating between 1 and 10
+        """
+        inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
+
+        with torch.no_grad():
+            outputs = self.model.generate(
+                **inputs,
+                max_new_tokens=10,
+                do_sample=False,  # Greedy for consistency
+                pad_token_id=self.tokenizer.eos_token_id,
+            )
+
+        rating_text = self.tokenizer.decode(
+            outputs[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
+        )
+
+        # Extract numeric rating
+        return self._extract_rating(rating_text)
