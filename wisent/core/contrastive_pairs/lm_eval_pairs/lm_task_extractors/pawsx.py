@@ -11,11 +11,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["PAWSXExtractor"]
+__all__ = ["PawsXExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class PAWSXExtractor(LMEvalBenchmarkExtractor):
+class PawsXExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the PAWS-X benchmark."""
 
     def extract_contrastive_pairs(

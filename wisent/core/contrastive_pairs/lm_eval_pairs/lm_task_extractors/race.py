@@ -13,11 +13,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["RaceExtractor"]
+__all__ = ["RACEExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class RaceExtractor(LMEvalBenchmarkExtractor):
+class RACEExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Race benchmark."""
 
     def extract_contrastive_pairs(

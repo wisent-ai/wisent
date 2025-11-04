@@ -39,7 +39,7 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
         # Load LiveMathBench dataset (using cnmo_en as default config)
         docs = self.load_dataset(
             dataset_name="opencompass/LiveMathBench",
-            config_name="cnmo_en",
+            dataset_dataset_config="cnmo_en",
             split="test",
             limit=max_items,
         )

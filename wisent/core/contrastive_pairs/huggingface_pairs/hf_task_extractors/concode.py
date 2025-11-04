@@ -39,7 +39,7 @@ class ConcodeExtractor(HuggingFaceBenchmarkExtractor):
         # Load dataset
         docs = self.load_dataset(
             dataset_name="code_x_glue_tc_text_to_code",
-            config="concode",
+            dataset_config="default",
             split="train",
             limit=max_items,
         )

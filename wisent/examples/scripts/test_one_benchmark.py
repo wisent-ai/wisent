@@ -30,6 +30,8 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
     try:
         print(f"\nTesting {task_name}...")
         output_path = Path(output_dir)
+        # Create results directory if it doesn't exist
+        output_path.mkdir(parents=True, exist_ok=True)
 
         # Step 1: Load data and create contrastive pairs
         print("  [1/4] Creating contrastive pairs...")
@@ -43,10 +45,11 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 # Coding benchmarks
                 "humaneval", "humaneval_plus", "mbpp", "mbpp_plus",
                 "instruct_humaneval", "apps", "conala", "concode",
-                "ds_1000", "mercury", "recode", "multipl_e",
+                "ds", "ds1000", "ds_1000", "mercury", "recode",
+                "multipl", "multiple_", "multipl_e",
                 "codexglue", "livecodebench",
                 # Reasoning benchmarks
-                "super_gpqa", "hle"
+                "super_gpqa", "supergpqa", "hle"
             ]
             if any(task_name.lower().startswith(t) for t in hf_tasks):
                 loader_type = "huggingface"

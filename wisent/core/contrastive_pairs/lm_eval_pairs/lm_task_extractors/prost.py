@@ -11,11 +11,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["PROSTExtractor"]
+__all__ = ["ProstExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class PROSTExtractor(LMEvalBenchmarkExtractor):
+class ProstExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the PROST benchmark."""
 
     def extract_contrastive_pairs(

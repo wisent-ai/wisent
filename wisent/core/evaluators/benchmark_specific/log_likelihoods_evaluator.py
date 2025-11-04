@@ -42,6 +42,12 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
         "hellaswag", "swag", "openbookqa", "race",
         # Exams & Knowledge
         "arc_easy", "arc_challenge", "mmlu", "gpqa", "super_gpqa", "hle",
+        # GPQA variants (group task with 15 subtasks)
+        "gpqa_extended_cot_n_shot", "gpqa_main_cot_n_shot", "gpqa_diamond_cot_n_shot",
+        "gpqa_extended_cot_zeroshot", "gpqa_diamond_cot_zeroshot", "gpqa_main_cot_zeroshot",
+        "gpqa_diamond_generative_n_shot", "gpqa_extended_generative_n_shot", "gpqa_main_generative_n_shot",
+        "gpqa_main_n_shot", "gpqa_diamond_n_shot", "gpqa_extended_n_shot",
+        "gpqa_main_zeroshot", "gpqa_diamond_zeroshot", "gpqa_extended_zeroshot",
         # Truthfulness
         "truthfulqa_mc1", "truthfulqa_mc2"
     )
