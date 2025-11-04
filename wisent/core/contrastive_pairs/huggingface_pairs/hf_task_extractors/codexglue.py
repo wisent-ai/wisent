@@ -16,9 +16,9 @@ class CodexglueExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for codexglue dataset.
 
-    Schema (microsoft/CodeXGLUE):
-        - code: str (question/prompt)
-        - docstring: str (answer/solution)
+    Schema (code_x_glue_tc_text_to_code):
+        - nl: str (natural language description/prompt)
+        - code: str (code answer/solution)
     """
 
     def extract_contrastive_pairs(
@@ -39,7 +39,7 @@ class CodexglueExtractor(HuggingFaceBenchmarkExtractor):
         # Load dataset
         docs = self.load_dataset(
             dataset_name="code_x_glue_tc_text_to_code",
-            config="concode",
+            dataset_config="default",
             split="train",
             limit=max_items,
         )
@@ -67,8 +67,8 @@ class CodexglueExtractor(HuggingFaceBenchmarkExtractor):
         Returns None when required fields are missing or malformed.
         """
         try:
-            question = doc.get("code", "").strip()
-            answer = doc.get("docstring", "")
+            question = doc.get("nl", "").strip()
+            answer = doc.get("code", "")
 
             if not question or not answer:
                 log.debug("Skipping: missing question or answer")
@@ -85,7 +85,7 @@ class CodexglueExtractor(HuggingFaceBenchmarkExtractor):
 
             metadata = {
                 "label": "codexglue",
-                "source": "microsoft/CodeXGLUE",
+                "source": "code_x_glue_tc_text_to_code",
             }
 
             return self._build_pair(

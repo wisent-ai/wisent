@@ -188,14 +188,27 @@ class LMEvalDataLoader(BaseDataLoader):
         raises:
             DataLoaderError if the task cannot be found.
         """
+        # Map task names to their lm-eval equivalents
+        task_name_mapping = {
+            "squad2": "squadv2",
+            "wikitext103": "wikitext",
+            "ptb": "wikitext",
+            "penn_treebank": "wikitext",
+        }
+
+        # Use mapped name if available, otherwise use original
+        lm_eval_task_name = task_name_mapping.get(task_name, task_name)
+        if lm_eval_task_name != task_name:
+            log.info(f"Mapping task '{task_name}' to lm-eval task '{lm_eval_task_name}'")
+
         task_manager = LMTaskManager()
         task_manager.initialize_tasks()
 
-        task_dict = get_task_dict([task_name], task_manager=task_manager)
+        task_dict = get_task_dict([lm_eval_task_name], task_manager=task_manager)
 
         # Try to get the task directly
-        if task_name in task_dict:
-            result = task_dict[task_name]
+        if lm_eval_task_name in task_dict:
+            result = task_dict[lm_eval_task_name]
             # If result is a dict with nested groups, flatten it
             if isinstance(result, dict):
                 flat_tasks = {}
@@ -213,7 +226,7 @@ class LMEvalDataLoader(BaseDataLoader):
         if len(task_dict) == 1:
             key, value = list(task_dict.items())[0]
             # Check if the key's name matches what we're looking for
-            if hasattr(key, 'group') and key.group == task_name:
+            if hasattr(key, 'group') and key.group == lm_eval_task_name:
                 if isinstance(value, dict):
                     # Flatten nested groups
                     flat_tasks = {}
@@ -225,7 +238,13 @@ class LMEvalDataLoader(BaseDataLoader):
                     return flat_tasks if flat_tasks else value
                 return value
 
-        raise DataLoaderError(f"lm-eval task '{task_name}' not found.")
+        # Check if this is a group task where get_task_dict returns subtasks directly
+        # (e.g., 'arithmetic' returns {'arithmetic_1dc': task, 'arithmetic_2da': task, ...})
+        if task_dict and all(key.startswith(lm_eval_task_name) for key in task_dict.keys()):
+            log.info(f"Task '{lm_eval_task_name}' is a group task with {len(task_dict)} subtasks: {list(task_dict.keys())}")
+            return task_dict
+
+        raise DataLoaderError(f"lm-eval task '{lm_eval_task_name}' not found (requested as '{task_name}').")
     
     def _split_pairs(
         self,

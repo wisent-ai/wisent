@@ -11,11 +11,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["SWAGExtractor"]
+__all__ = ["SwagExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class SWAGExtractor(LMEvalBenchmarkExtractor):
+class SwagExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the SWAG benchmark."""
 
     def extract_contrastive_pairs(

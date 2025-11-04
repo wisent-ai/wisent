@@ -25,8 +25,10 @@ class DockerCodeEvaluator(BaseEvaluator):
         "humaneval", "humaneval_plus", "instruct_humaneval",
         "mbpp", "mbpp_plus",
         "apps", "conala", "concode",
-        "ds_1000", "mercury", "recode",
-        "multipl_e", "codexglue",
+        "ds_1000", "ds1000", "mercury", "recode",
+        "multipl_e", "multiple_py", "multiple_js", "multiple_java", "multiple_cpp", "multiple_rs", "multiple_go",
+        "codexglue", "codexglue_code_to_text_python", "codexglue_code_to_text_go", "codexglue_code_to_text_ruby",
+        "codexglue_code_to_text_java", "codexglue_code_to_text_javascript", "codexglue_code_to_text_php",
         "livecodebench"
     )
 
@@ -57,58 +59,20 @@ class DockerCodeEvaluator(BaseEvaluator):
         Returns:
             EvalResult with TRUTHFUL/UNTRUTHFUL/UNKNOWN
         """
-        # If we have choices, do log-likelihood comparison first
-        choices = kwargs.get('choices')
-        model = kwargs.get('model')
-        question = kwargs.get('question', '')
+        logger.debug(f"DockerCodeEvaluator.evaluate called with kwargs keys: {list(kwargs.keys())}")
 
-        if choices and model and len(choices) == 2:
-            # Use log-likelihood to compare the two code choices
-            correct_code = choices[0]
-            incorrect_code = choices[1]
-
-            # Expected is what we're comparing against
-            # If expected == correct_code, we expect TRUTHFUL
-            # If expected == incorrect_code, we expect UNTRUTHFUL
-
-            try:
-                # Get log-likelihoods for both choices
-                correct_logprob = model.get_logprob(question, correct_code)
-                incorrect_logprob = model.get_logprob(question, incorrect_code)
-
-                # Model prefers the one with higher log-likelihood
-                model_prefers_correct = correct_logprob > incorrect_logprob
-
-                # Check if this matches expectation
-                expects_correct = (expected == correct_code)
-
-                is_truthful = model_prefers_correct == expects_correct
-                confidence = abs(correct_logprob - incorrect_logprob)
-
-                return EvalResult(
-                    ground_truth="TRUTHFUL" if is_truthful else "UNTRUTHFUL",
-                    method_used=self.name,
-                    confidence=confidence,
-                    details=f"Log-likelihood comparison: correct={correct_logprob:.4f}, incorrect={incorrect_logprob:.4f}",
-                    meta={
-                        "correct_logprob": correct_logprob,
-                        "incorrect_logprob": incorrect_logprob,
-                        "model_prefers_correct": model_prefers_correct,
-                    }
-                )
-            except Exception as e:
-                logger.warning(f"Log-likelihood comparison failed: {e}, falling back to Docker execution")
-
-        # If no choices or log-likelihood failed, try Docker execution
+        # Docker code evaluator ONLY does code execution, no log-likelihood fallback
         test_code = kwargs.get('test_code')
         entry_point = kwargs.get('entry_point')
 
         if not test_code:
+            error_msg = f"No test code provided for Docker code execution. kwargs keys: {list(kwargs.keys())}"
+            logger.error(error_msg)
             return EvalResult(
                 ground_truth="UNKNOWN",
                 method_used=self.name,
                 confidence=0.0,
-                details="No test code provided and no choices for log-likelihood comparison",
+                details=error_msg,
             )
 
         # Execute code in Docker

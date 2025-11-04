@@ -39,7 +39,7 @@ class MultiplEExtractor(HuggingFaceBenchmarkExtractor):
         # Load dataset
         docs = self.load_dataset(
             dataset_name="nuprl/MultiPL-E",
-            config="humaneval-python",
+            dataset_config="humaneval-python",
             split="test",
             limit=max_items,
         )

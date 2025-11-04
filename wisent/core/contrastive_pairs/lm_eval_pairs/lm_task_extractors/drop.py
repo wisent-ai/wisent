@@ -12,11 +12,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["DROPExtractor"]
+__all__ = ["DropExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class DROPExtractor(LMEvalBenchmarkExtractor):
+class DropExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the DROP benchmark."""
 
     def extract_contrastive_pairs(

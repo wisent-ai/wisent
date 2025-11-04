@@ -40,7 +40,7 @@ class LivecodebenchExtractor(HuggingFaceBenchmarkExtractor):
         # Load dataset - using lite version since main version requires authentication
         docs = self.load_dataset(
             dataset_name="livecodebench/code_generation_lite",
-            config="release_latest",
+            dataset_config="release_latest",
             split="test",
             limit=max_items,
         )

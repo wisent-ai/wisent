@@ -12,11 +12,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["ReCoRDExtractor"]
+__all__ = ["RecordExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class ReCoRDExtractor(LMEvalBenchmarkExtractor):
+class RecordExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the ReCoRD benchmark."""
 
     def extract_contrastive_pairs(

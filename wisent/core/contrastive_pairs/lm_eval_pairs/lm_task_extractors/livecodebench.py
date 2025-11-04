@@ -14,11 +14,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["LiveCodeBenchExtractor"]
+__all__ = ["LivecodebenchExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class LiveCodeBenchExtractor(LMEvalBenchmarkExtractor):
+class LivecodebenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the LiveCodeBench benchmark using AI model submissions from HuggingFace Space."""
 
     LIVECODEBENCH_SPACE = "livecodebench/code_generation_samples"

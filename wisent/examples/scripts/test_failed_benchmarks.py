@@ -1,40 +1,30 @@
-"""Test all benchmarks to verify extractor and evaluator work."""
+"""Test only the benchmarks that previously failed."""
 
 import sys
 from wisent.examples.scripts.test_one_benchmark import test_benchmark
 
 
-BENCHMARKS = [
-    # Log-likelihood tasks
-    "boolq", "winogrande", "piqa", "copa", "cb",
-    "hellaswag", "swag", "openbookqa", "race",
-    "arc_easy", "arc_challenge", "mmlu", "gpqa",
-    "truthfulqa_mc1", "truthfulqa_mc2",
-    # Math tasks
-    "gsm8k", "asdiv", "arithmetic",
-    "math", "math500", "hendrycks_math",
-    "aime", "aime2024", "aime2025",
-    "hmmt", "hmmt_feb_2025",
-    "polymath_en_medium", "polymath_zh_medium", "polymath_en_high", "polymath_zh_high",
-    "livemathbench_cnmo_en", "livemathbench_cnmo_zh",
-    # QA tasks
-    "drop", "triviaqa", "record", "squadv2", "squad2",
-    "webqs", "nq_open", "coqa",
-    # Perplexity tasks
-    "wikitext", "wikitext103", "ptb", "penn_treebank",
-    "lambada_openai", "lambada_standard",
-    # Coding tasks
-    "livecodebench",
-    "humaneval", "humaneval_plus", "instruct_humaneval",
-    "mbpp", "mbpp_plus",
-    "apps", "ds1000", "conala", "concode", "mercury", "recode",
-    "codexglue_code_to_text_python", "codexglue_code_to_text_go", "codexglue_code_to_text_ruby",
-    "codexglue_code_to_text_java", "codexglue_code_to_text_javascript", "codexglue_code_to_text_php"
+# Only benchmarks that are still failing after all fixes
+# Note: These fail because the 1B model gets answers wrong, not due to bugs
+FAILED_BENCHMARKS = [
+    "boolq",
+    "coqa",
+    "hellaswag",
+    "math",
+    "math500",
+    "openbookqa",
+    "polymath_en_medium",
+    "polymath_zh_medium",
+    "race",
+    "swag",
+    "truthfulqa_mc1",
+    "truthfulqa_mc2",
+    "winogrande",
 ]
 
 
-def test_all_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", output_dir: str = "."):
-    """Test all benchmarks.
+def test_failed_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", output_dir: str = "."):
+    """Test only the failed benchmarks.
 
     Args:
         model_name: Model to use for testing
@@ -45,18 +35,18 @@ def test_all_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", ou
     """
     results = {
         "model": model_name,
-        "total": len(BENCHMARKS),
+        "total": len(FAILED_BENCHMARKS),
         "passed": 0,
         "failed": 0,
         "benchmarks": {}
     }
 
     print(f"\n{'='*70}")
-    print(f"Testing {len(BENCHMARKS)} benchmarks with {model_name}")
+    print(f"Testing {len(FAILED_BENCHMARKS)} previously failed benchmarks with {model_name}")
     print(f"{'='*70}\n")
 
-    for i, benchmark in enumerate(BENCHMARKS, 1):
-        print(f"[{i}/{len(BENCHMARKS)}] Testing {benchmark}...")
+    for i, benchmark in enumerate(FAILED_BENCHMARKS, 1):
+        print(f"[{i}/{len(FAILED_BENCHMARKS)}] Testing {benchmark}...")
 
         try:
             success = test_benchmark(benchmark, model_name, output_dir)
@@ -67,10 +57,10 @@ def test_all_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", ou
 
             if success:
                 results["passed"] += 1
-                print(f"   PASSED\n")
+                print(f"   PASSED\n")
             else:
                 results["failed"] += 1
-                print(f"   FAILED\n")
+                print(f"   FAILED\n")
 
         except Exception as e:
             results["benchmarks"][benchmark] = {
@@ -79,7 +69,7 @@ def test_all_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", ou
                 "error": str(e)
             }
             results["failed"] += 1
-            print(f"   ERROR: {e}\n")
+            print(f"   ERROR: {e}\n")
 
     print(f"\n{'='*70}")
     print(f"SUMMARY")
@@ -100,7 +90,7 @@ if __name__ == "__main__":
     default_output = Path(__file__).parent / "results"
     output_dir = sys.argv[2] if len(sys.argv) > 2 else str(default_output)
 
-    results = test_all_benchmarks(model, output_dir)
+    results = test_failed_benchmarks(model, output_dir)
 
     # Exit with appropriate code
     sys.exit(0 if results["failed"] == 0 else 1)

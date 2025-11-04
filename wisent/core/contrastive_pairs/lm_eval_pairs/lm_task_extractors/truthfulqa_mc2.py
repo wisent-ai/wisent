@@ -12,11 +12,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["TruthfulQA_MC2Extractor"]
+__all__ = ["TruthfulQAMC2Extractor"]
 _LOG = setup_logger(__name__)
 
 
-class TruthfulQA_MC2Extractor(LMEvalBenchmarkExtractor):
+class TruthfulQAMC2Extractor(LMEvalBenchmarkExtractor):
     """Extractor for the TruthfulQA_MC2 benchmark."""
 
     def extract_contrastive_pairs(

@@ -39,7 +39,7 @@ class RecodeExtractor(HuggingFaceBenchmarkExtractor):
         # Load dataset - using code_x_glue as alternative since ARR-ADAPT/recode doesn't exist
         docs = self.load_dataset(
             dataset_name="code_x_glue_tc_nl_code_search_adv",
-            config="python",
+            dataset_config="default",
             split="train",
             limit=max_items,
         )
