@@ -11,11 +11,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["Arc_EasyExtractor"]
+__all__ = ["ArcEasyExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class Arc_EasyExtractor(LMEvalBenchmarkExtractor):
+class ArcEasyExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Arc_Easy benchmark."""
 
     def extract_contrastive_pairs(

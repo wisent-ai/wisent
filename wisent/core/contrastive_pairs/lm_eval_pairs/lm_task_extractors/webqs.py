@@ -12,11 +12,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["WebQuestionsExtractor"]
+__all__ = ["WebQSExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class WebQuestionsExtractor(LMEvalBenchmarkExtractor):
+class WebQSExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the WebQuestions benchmark."""
 
     def extract_contrastive_pairs(

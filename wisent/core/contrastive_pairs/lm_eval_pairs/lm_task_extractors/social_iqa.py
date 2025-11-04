@@ -11,11 +11,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["Social_IQAExtractor"]
+__all__ = ["SocialIQAExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class Social_IQAExtractor(LMEvalBenchmarkExtractor):
+class SocialIQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Social_IQA benchmark."""
 
     def extract_contrastive_pairs(

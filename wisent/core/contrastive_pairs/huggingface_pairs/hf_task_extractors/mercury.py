@@ -16,9 +16,9 @@ class MercuryExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for mercury dataset.
 
-    Schema (tau/code_translation):
-        - source_code: str (question/prompt)
-        - target_code: str (answer/solution)
+    Schema (code_x_glue_cc_code_to_code_trans):
+        - java: str (java code/prompt)
+        - cs: str (c# code/answer)
     """
 
     def extract_contrastive_pairs(
@@ -39,7 +39,7 @@ class MercuryExtractor(HuggingFaceBenchmarkExtractor):
         # Load dataset - using code_x_glue as alternative since tau/code_translation doesn't exist
         docs = self.load_dataset(
             dataset_name="code_x_glue_cc_code_to_code_trans",
-            config="java-csharp",
+            dataset_config="default",
             split="train",
             limit=max_items,
         )
@@ -67,8 +67,8 @@ class MercuryExtractor(HuggingFaceBenchmarkExtractor):
         Returns None when required fields are missing or malformed.
         """
         try:
-            question = doc.get("source_code", "").strip()
-            answer = doc.get("target_code", "")
+            question = doc.get("java", "").strip()
+            answer = doc.get("cs", "")
 
             if not question or not answer:
                 log.debug("Skipping: missing question or answer")
@@ -81,11 +81,11 @@ class MercuryExtractor(HuggingFaceBenchmarkExtractor):
             incorrect_answer = self._create_incorrect_answer(correct_answer)
 
             # Format the question
-            formatted_question = f"Question: {question}\n\nWhat is the answer?"
+            formatted_question = f"Translate this Java code to C#:\n{question}"
 
             metadata = {
                 "label": "mercury",
-                "source": "tau/code_translation",
+                "source": "code_x_glue_cc_code_to_code_trans",
             }
 
             return self._build_pair(

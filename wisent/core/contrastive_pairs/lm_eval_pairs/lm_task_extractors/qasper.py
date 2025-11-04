@@ -12,11 +12,11 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["QASPERExtractor"]
+__all__ = ["QasperExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class QASPERExtractor(LMEvalBenchmarkExtractor):
+class QasperExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the QASPER benchmark."""
 
     def extract_contrastive_pairs(

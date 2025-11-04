@@ -31,10 +31,14 @@ class GenerationEvaluator(BaseEvaluator):
     description = "Generation-based evaluator for text generation tasks"
     task_names = (
         # Math Tasks
-        "gsm8k", "asdiv", "arithmetic", "math", "math_500",
-        "aime", "hmmt", "polymath", "livemathbench",
+        "gsm8k", "asdiv", "arithmetic", "math", "math_500", "math500",
+        "aime", "aime2024", "aime2025",
+        "hmmt", "hmmt_feb_2025",
+        "polymath", "polymath_en_medium", "polymath_zh_medium", "polymath_en_high", "polymath_zh_high",
+        "livemathbench", "livemathbench_cnmo_en", "livemathbench_cnmo_zh",
+        "hendrycks_math",
         # Reading Comprehension & QA
-        "drop", "triviaqa", "record", "squadv2",
+        "drop", "triviaqa", "record", "squadv2", "squad2",
         "webqs", "nq_open", "coqa"
     )
 
@@ -67,7 +71,7 @@ class GenerationEvaluator(BaseEvaluator):
             incorrect_answer = choices[1]
 
             # Determine answer type based on task or if it looks numerical
-            if task_name in ["gsm8k", "asdiv", "arithmetic", "math", "math_500", "aime", "hmmt", "polymath", "livemathbench"]:
+            if task_name in ["gsm8k", "asdiv", "arithmetic", "math", "math_500", "math500", "aime", "aime2024", "aime2025", "hmmt", "hmmt_feb_2025", "polymath", "polymath_en_medium", "polymath_zh_medium", "polymath_en_high", "polymath_zh_high", "livemathbench", "livemathbench_cnmo_en", "livemathbench_cnmo_zh", "hendrycks_math"]:
                 answer_type = "numerical"
 
             # For generation tasks, we compare the pre-generated answers directly
@@ -91,12 +95,25 @@ class GenerationEvaluator(BaseEvaluator):
             else:
                 expected_answers = [expected]
 
-            correct_matches, _, conf_correct = self._check_match(
-                extracted_correct, expected_answers, answer_type, normalize
-            )
-            incorrect_matches, _, conf_incorrect = self._check_match(
-                extracted_incorrect, expected_answers, answer_type, normalize
-            )
+            # For numerical answers, we've already extracted, so compare directly
+            if answer_type == "numerical":
+                # Compare extracted numbers directly
+                correct_matches = (extracted_correct is not None and
+                                 extracted_expected is not None and
+                                 abs(extracted_correct - extracted_expected) < 1e-6)
+                incorrect_matches = (extracted_incorrect is not None and
+                                   extracted_expected is not None and
+                                   abs(extracted_incorrect - extracted_expected) < 1e-6)
+                conf_correct = 1.0 if correct_matches else 0.0
+                conf_incorrect = 1.0 if incorrect_matches else 0.0
+            else:
+                # For text answers, check match against the list
+                correct_matches, _, conf_correct = self._check_match(
+                    extracted_correct, expected_answers, answer_type, normalize
+                )
+                incorrect_matches, _, conf_incorrect = self._check_match(
+                    extracted_incorrect, expected_answers, answer_type, normalize
+                )
 
             # If correct matches expected, return TRUTHFUL
             # If incorrect matches expected, return UNTRUTHFUL
@@ -182,6 +199,27 @@ class GenerationEvaluator(BaseEvaluator):
 
     def _extract_numerical_answer(self, response: str) -> float:
         """Extract numerical answer from response (for math problems)."""
+        # Handle LaTeX fractions: \frac{a}{b}
+        frac_pattern = r'\\frac\{([-+]?\d+\.?\d*)\}\{([-+]?\d+\.?\d*)\}'
+        frac_match = re.search(frac_pattern, response)
+        if frac_match:
+            try:
+                numerator = float(frac_match.group(1))
+                denominator = float(frac_match.group(2))
+                if denominator != 0:
+                    return numerator / denominator
+            except (ValueError, ZeroDivisionError):
+                pass
+
+        # Handle LaTeX degree notation: number^{\circ} or number^\circ
+        degree_pattern = r'([-+]?\d+\.?\d*)\^\{?\\circ\}?'
+        degree_match = re.search(degree_pattern, response)
+        if degree_match:
+            try:
+                return float(degree_match.group(1))
+            except ValueError:
+                pass
+
         # Look for common patterns
         patterns = [
             r'####\s*([-+]?\d*\.?\d+)',  # GSM8K format

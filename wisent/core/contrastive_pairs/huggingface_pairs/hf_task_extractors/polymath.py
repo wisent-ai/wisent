@@ -39,7 +39,7 @@ class PolyMathExtractor(HuggingFaceBenchmarkExtractor):
         # Load PolyMath dataset (using en_medium as default config)
         docs = self.load_dataset(
             dataset_name="Qwen/PolyMath",
-            config_name="en_medium",
+            dataset_dataset_config="en_medium",
             split="test",
             limit=max_items,
         )
