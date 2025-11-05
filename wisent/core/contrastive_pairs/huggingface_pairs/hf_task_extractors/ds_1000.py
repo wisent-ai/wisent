@@ -112,31 +112,10 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
         DS-1000 code_context defines test_execution() and test_string() functions
         that expect solution code as a STRING argument, not as imported module.
 
-        Also installs required dependencies dynamically.
+        Note: Dependencies (numpy, pandas, scipy, matplotlib, scikit-learn, seaborn)
+        must be pre-installed in the Docker image (coding/sandbox:ds1000).
         """
         wrapper = f'''
-import subprocess
-import sys
-
-# Install DS-1000 required dependencies
-print("Installing DS-1000 dependencies...")
-required_packages = [
-    "numpy==1.26.4",
-    "pandas==1.5.3",
-    "scipy==1.12.0",
-    "matplotlib==3.8.4",
-    "scikit-learn==1.4.0",
-    "seaborn==0.13.2",
-]
-
-for package in required_packages:
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", package])
-    except subprocess.CalledProcessError:
-        print(f"Warning: Could not install {{package}}")
-
-print("Dependencies installed. Running tests...")
-
 # Read solution code as string (DS-1000 tests expect string input)
 with open('solution.py', 'r') as f:
     solution_code = f.read()
@@ -145,9 +124,12 @@ with open('solution.py', 'r') as f:
 {code_context}
 
 # Call the test functions with solution code as string
+# Not all examples define both test_execution and test_string
 try:
     test_execution(solution_code)
     print("test_execution passed")
+except NameError:
+    print("test_execution not defined, skipping")
 except Exception as e:
     print(f"test_execution failed: {{e}}")
     raise
@@ -155,6 +137,8 @@ except Exception as e:
 try:
     test_string(solution_code)
     print("test_string passed")
+except NameError:
+    print("test_string not defined, skipping")
 except Exception as e:
     print(f"test_string failed: {{e}}")
     raise

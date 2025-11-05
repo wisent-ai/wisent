@@ -1,0 +1,30 @@
+{
+  "task_name": "arc_easy",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Which technology was developed most recently?\nA. television\nB. cellular telephone...",
+      "positive_response": "cellular telephone",
+      "negative_response": "television",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'cellular telephone' (log_prob=-1.000), Expected: 'cellular telephone'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'cellular telephone' (log_prob=-1.000), Expected: 'television'"
+      },
+      "both_correct": true
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Complete the sentence: Sarah was a much better surgeon than Maria so _ always got the easier cases.\nA. Sarah\nB. Maria",
+    "positive_response": "Maria",
+    "negative_response": "Sarah"
+  }
+]

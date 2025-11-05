@@ -1,0 +1,30 @@
+{
+  "task_name": "piqa",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: How do I ready a guinea pig cage for it's new occupants?\nAnswer:\nA. Provide the guinea pig...",
+      "positive_response": "Provide the guinea pig with a cage full of a few inches of bedding made of ripped paper strips, you will also need to supply it with a water bottle and a food dish.",
+      "negative_response": "Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish.",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Provide the guinea pig with a cage full of a few inches of bedding made of ripped paper strips, you will also need to supply it with a water bottle and a food dish.' (log_prob=-1.000), Expected: 'Provide the guinea pig with a cage full of a few inches of bedding made of ripped paper strips, you will also need to supply it with a water bottle and a food dish.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Provide the guinea pig with a cage full of a few inches of bedding made of ripped paper strips, you will also need to supply it with a water bottle and a food dish.' (log_prob=-1.000), Expected: 'Provide the guinea pig with a cage full of a few inches of bedding made of ripped jeans material, you will also need to supply it with a water bottle and a food dish.'"
+      },
+      "both_correct": true
+    }
+  ]
+}

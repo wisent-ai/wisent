@@ -1,0 +1,30 @@
+{
+  "task_name": "boolq",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Ethanol fuel -- All biomass goes through at least some of these steps: it needs to be grown, collect...",
+      "positive_response": "No",
+      "negative_response": "Yes",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'No' (log_prob=-1.000), Expected: 'No'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'No' (log_prob=-1.000), Expected: 'Yes'"
+      },
+      "both_correct": true
+    }
+  ]
+}

@@ -36,8 +36,8 @@ class DockerCodeEvaluator(BaseEvaluator):
         Args:
             image: Docker image to use (default: coding/sandbox:polyglot-1.0)
         """
-        self.image = image
-        self.executor = DockerSandboxExecutor(image=image)
+        self.default_image = image
+        self.executor = None  # Will be initialized per-task based on benchmark
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate code by executing it in Docker.
@@ -60,16 +60,16 @@ class DockerCodeEvaluator(BaseEvaluator):
         """
         logger.debug(f"DockerCodeEvaluator.evaluate called with kwargs keys: {list(kwargs.keys())}")
 
-        # DS-1000 requires data science libraries but Docker sandbox has no network access
-        # Cannot install packages dynamically, so return UNKNOWN
+        # Select appropriate Docker image based on task
         task_name = kwargs.get('task_name', '')
         if 'ds1000' in task_name.lower() or 'ds_1000' in task_name.lower():
-            return EvalResult(
-                ground_truth="UNKNOWN",
-                method_used=self.name,
-                confidence=0.0,
-                details="DS-1000 requires data science libraries (pandas, numpy, scipy, etc.) which are not available in the Docker sandbox. Network access is disabled for security, so packages cannot be installed dynamically. A pre-built Docker image with these libraries is needed.",
-            )
+            image = "coding/sandbox:ds1000"
+        else:
+            image = self.default_image
+
+        # Initialize executor with selected image
+        if self.executor is None or self.executor.image != image:
+            self.executor = DockerSandboxExecutor(image=image)
 
         # Docker code evaluator ONLY does code execution, no log-likelihood fallback
         test_code = kwargs.get('test_code')
@@ -127,14 +127,16 @@ if __name__ == "__main__":
             }
 
             # Create job configuration
-            # DS-1000 needs more time for pip installs
+            # DS-1000 needs more time and higher nproc for numpy/scipy multithreading
             task_name = kwargs.get('task_name', '')
             if 'ds1000' in task_name.lower() or 'ds_1000' in task_name.lower():
                 cpu_limit_s = 60
                 wall_timeout_s = 120
+                nproc = 512  # Higher limit for scientific libraries
             else:
                 cpu_limit_s = 3
                 wall_timeout_s = 5
+                nproc = 64
 
             job = Job(
                 language="python",
@@ -144,7 +146,7 @@ if __name__ == "__main__":
                 wall_timeout_s=wall_timeout_s,
                 mem_limit_mb=256,
                 fsize_mb=10,
-                nproc=64,
+                nproc=nproc,
                 nofile=128,
             )
 

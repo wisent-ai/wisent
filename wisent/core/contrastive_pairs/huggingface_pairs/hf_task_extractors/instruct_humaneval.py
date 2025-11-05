@@ -75,11 +75,18 @@ class InstructHumanevalExtractor(HuggingFaceBenchmarkExtractor):
                 log.debug("Skipping: missing question or answer")
                 return None
 
-            # Convert answer to string
-            correct_answer = str(answer).strip()
+            # HumanEval canonical_solution is just the function body
+            # We need to combine it with the function signature from the prompt
+            # to create a complete executable function
 
-            # Create incorrect answer (modify or corrupt)
-            incorrect_answer = self._create_incorrect_answer(correct_answer)
+            # First corrupt the function body BEFORE building the complete function
+            # This ensures we corrupt the actual code, not the docstring
+            correct_body = str(answer).strip()
+            incorrect_body = self._create_incorrect_answer(correct_body)
+
+            # Build complete functions with correct and incorrect bodies
+            correct_answer = self._build_complete_function(question, correct_body)
+            incorrect_answer = self._build_complete_function(question, incorrect_body)
 
             # Format the question
             formatted_question = f"Question: {question}\n\nWhat is the answer?"
@@ -102,11 +109,74 @@ class InstructHumanevalExtractor(HuggingFaceBenchmarkExtractor):
             log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
 
+    def _build_complete_function(self, prompt: str, function_body: str) -> str:
+        """Build a complete function by combining prompt signature with function body.
+
+        HumanEval prompt contains:
+        - imports (e.g., from typing import List)
+        - function signature (e.g., def func(args) -> ReturnType:)
+        - docstring
+
+        The canonical_solution contains only the function body (indented code).
+
+        We need to combine them to create an executable function.
+        """
+        import re
+
+        # Extract the function definition line (starts with 'def ')
+        # This includes everything from 'def' up to and including the colon
+        def_pattern = r'(def\s+\w+\([^)]*\)(?:\s*->\s*[^:]+)?:)'
+        def_match = re.search(def_pattern, prompt, re.MULTILINE)
+
+        if not def_match:
+            # Fallback: return body as-is (might fail, but better than crashing)
+            log.warning("Could not extract function signature from prompt")
+            return function_body
+
+        function_signature = def_match.group(1)
+
+        # Extract any imports before the function definition
+        imports_section = prompt[:def_match.start()].strip()
+
+        # Extract docstring if present (text between the function signature and body)
+        after_signature = prompt[def_match.end():].strip()
+        docstring = ""
+        if after_signature.startswith('"""') or after_signature.startswith("'''"):
+            # Find the closing quotes
+            quote_char = '"""' if after_signature.startswith('"""') else "'''"
+            end_quote = after_signature.find(quote_char, len(quote_char))
+            if end_quote != -1:
+                docstring = "    " + after_signature[:end_quote + len(quote_char)]
+
+        # Build the complete function
+        parts = []
+        if imports_section:
+            parts.append(imports_section)
+            parts.append("")  # Blank line after imports
+
+        parts.append(function_signature)
+
+        if docstring:
+            parts.append(docstring)
+
+        # Add the function body
+        # The canonical_solution from HumanEval has its first line at column 0,
+        # but subsequent lines are properly indented. We need to add 4 spaces
+        # to the first line to match the indentation of other lines.
+        if function_body:
+            # Add indentation to the first line if it's not already indented
+            body_lines = function_body.split('\n')
+            if body_lines and body_lines[0] and not body_lines[0].startswith('    '):
+                body_lines[0] = '    ' + body_lines[0]
+            parts.append('\n'.join(body_lines))
+
+        return "\n".join(parts)
+
     def _create_incorrect_answer(self, correct: str) -> str:
         """Create an incorrect answer by modifying the correct one."""
-        # For code, corrupt it slightly
+        # For code, corrupt it slightly by adding a comment in the middle
         if len(correct) > 10:
-            return correct[:len(correct)//2] + "# CORRUPTED" + correct[len(correct)//2:]
+            return correct[:len(correct)//2] + "\n           # CORRUPTED" + correct[len(correct)//2:]
         return f"{correct} # INCORRECT"
 
     @staticmethod
