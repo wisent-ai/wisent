@@ -21,6 +21,5 @@ python -m wisent.core.main generate-vector-from-synthetic \
     --prompt-strategy chat_template \
     --method caa \
     --normalize \
-    --device cpu \
     --verbose \
     --timing

@@ -24,4 +24,3 @@ python -m wisent.core.main optimize-classification \
     --layer-range "8-12" \
     --aggregation-methods average final first max \
     --threshold-range 0.3 0.4 0.5 0.6 0.7 0.8 0.9 \
-    --device cpu \
