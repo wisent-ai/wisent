@@ -19,6 +19,7 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
     Schema (xlangai/DS-1000):
         - prompt: str (question/prompt)
         - reference_code: str (answer/solution)
+        - code_context: str (test functions: test_execution, test_string)
     """
 
     def extract_contrastive_pairs(
@@ -68,6 +69,7 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
         try:
             question = doc.get("prompt", "").strip()
             answer = doc.get("reference_code", "")
+            code_context = doc.get("code_context", "").strip()
 
             if not question or not answer:
                 log.debug("Skipping: missing question or answer")
@@ -82,9 +84,15 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
             # Format the question
             formatted_question = f"Question: {question}\n\nWhat is the answer?"
 
+            # DS-1000 stores test code in code_context field
+            # which contains test_execution and test_string functions
+            # We need to wrap it to read solution.py as string and call test functions
+            test_code = self._wrap_ds1000_test_code(code_context) if code_context else None
+
             metadata = {
                 "label": "ds_1000",
                 "source": "xlangai/DS-1000",
+                "test_code": test_code,
             }
 
             return self._build_pair(
@@ -97,6 +105,63 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
         except Exception as exc:
             log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
+
+    def _wrap_ds1000_test_code(self, code_context: str) -> str:
+        """Wrap DS-1000 code_context to properly test solutions.
+
+        DS-1000 code_context defines test_execution() and test_string() functions
+        that expect solution code as a STRING argument, not as imported module.
+
+        Also installs required dependencies dynamically.
+        """
+        wrapper = f'''
+import subprocess
+import sys
+
+# Install DS-1000 required dependencies
+print("Installing DS-1000 dependencies...")
+required_packages = [
+    "numpy==1.26.4",
+    "pandas==1.5.3",
+    "scipy==1.12.0",
+    "matplotlib==3.8.4",
+    "scikit-learn==1.4.0",
+    "seaborn==0.13.2",
+]
+
+for package in required_packages:
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-q", package])
+    except subprocess.CalledProcessError:
+        print(f"Warning: Could not install {{package}}")
+
+print("Dependencies installed. Running tests...")
+
+# Read solution code as string (DS-1000 tests expect string input)
+with open('solution.py', 'r') as f:
+    solution_code = f.read()
+
+# Execute code_context to define test_execution() and test_string()
+{code_context}
+
+# Call the test functions with solution code as string
+try:
+    test_execution(solution_code)
+    print("test_execution passed")
+except Exception as e:
+    print(f"test_execution failed: {{e}}")
+    raise
+
+try:
+    test_string(solution_code)
+    print("test_string passed")
+except Exception as e:
+    print(f"test_string failed: {{e}}")
+    raise
+
+print("All DS-1000 tests passed!")
+'''
+        return wrapper
 
     def _create_incorrect_answer(self, correct: str) -> str:
         """Create an incorrect answer by modifying the correct one."""

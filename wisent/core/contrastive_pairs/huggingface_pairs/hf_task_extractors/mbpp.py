@@ -69,6 +69,8 @@ class MBPPExtractor(HuggingFaceBenchmarkExtractor):
         try:
             problem_text = doc.get("text", "").strip()
             correct_code = doc.get("code", "").strip()
+            test_list = doc.get("test_list", [])
+            test_imports = doc.get("test_imports", [])
 
             if not problem_text or not correct_code:
                 log.debug("Skipping: missing problem text or code")
@@ -80,9 +82,25 @@ class MBPPExtractor(HuggingFaceBenchmarkExtractor):
             # Format the prompt
             formatted_prompt = f"{problem_text}\n\nWrite a Python function to solve this problem."
 
+            # Build test code from test_list (similar to MBPP dataset format)
+            # The test_list contains assertion strings like "assert function_name(...) == expected"
+            test_code = ""
+            if test_list:
+                # Add imports if provided
+                if test_imports:
+                    test_code += "\n".join(test_imports) + "\n\n"
+
+                # Add test function
+                test_code += "def check(candidate):\n"
+                for test_case in test_list:
+                    # Replace function name in assertion with 'candidate'
+                    # This assumes the test_list contains assertions like "assert func(...) == result"
+                    test_code += f"    {test_case}\n"
+
             metadata = {
                 "label": "mbpp",
                 "source": "mbpp",
+                "test_code": test_code if test_code else None,
             }
 
             return self._build_pair(
