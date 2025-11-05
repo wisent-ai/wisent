@@ -10,6 +10,5 @@ python -m wisent.core.main get-activations \
     --model meta-llama/Llama-3.2-1B-Instruct \
     --layers 8 \
     --token-aggregation average \
-    --device cpu \
     --verbose \
     --timing
