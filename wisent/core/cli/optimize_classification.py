@@ -51,7 +51,11 @@ def execute_optimize_classification(args):
         end_layer = (2 * total_layers) // 3
         layers_to_test = list(range(start_layer, end_layer + 1))
 
+    # Classifier types to test
+    classifier_types = ['logistic', 'mlp']
+
     print(f"🎯 Testing layers: {layers_to_test[0]} to {layers_to_test[-1]} ({len(layers_to_test)} layers)")
+    print(f"🤖 Classifier types: {', '.join(classifier_types)}")
     print(f"🔄 Aggregation methods: {', '.join(args.aggregation_methods)}")
     print(f"📊 Thresholds: {args.threshold_range}\n")
 
@@ -79,23 +83,24 @@ def execute_optimize_classification(args):
             best_config = None
 
             combinations_tested = 0
-            total_combinations = len(layers_to_test) * len(args.aggregation_methods) * len(args.threshold_range)
+            total_combinations = len(layers_to_test) * len(classifier_types) * len(args.aggregation_methods) * len(args.threshold_range)
 
             print(f"  🔍 Testing {total_combinations} configurations...")
 
             for layer in layers_to_test:
-                for agg_method in args.aggregation_methods:
-                    for threshold in args.threshold_range:
-                        combinations_tested += 1
+                for classifier_type in classifier_types:
+                    for agg_method in args.aggregation_methods:
+                        for threshold in args.threshold_range:
+                            combinations_tested += 1
 
-                        # Create args namespace for execute_tasks
-                        task_args = SimpleNamespace(
-                            task_names=[task_name],
-                            model=args.model,
-                            layer=layer,
-                            classifier_type=args.classifier_type or 'logistic',
-                            token_aggregation=agg_method,
-                            detection_threshold=threshold,
+                            # Create args namespace for execute_tasks
+                            task_args = SimpleNamespace(
+                                task_names=[task_name],
+                                model=args.model,
+                                layer=layer,
+                                classifier_type=classifier_type,
+                                token_aggregation=agg_method,
+                                detection_threshold=threshold,
                             split_ratio=0.8,
                             seed=42,
                             limit=args.limit,
@@ -130,6 +135,7 @@ def execute_optimize_classification(args):
                                 best_score = metric_value
                                 best_config = {
                                     'layer': layer,
+                                    'classifier_type': classifier_type,
                                     'aggregation': agg_method,
                                     'threshold': threshold,
                                     'accuracy': result.get('accuracy', 0),
@@ -153,6 +159,7 @@ def execute_optimize_classification(args):
 
             print(f"\n\n  ✅ Best config for {task_name}:")
             print(f"      Layer: {best_config['layer']}")
+            print(f"      Classifier: {best_config['classifier_type']}")
             print(f"      Aggregation: {best_config['aggregation']}")
             print(f"      Threshold: {best_config['threshold']:.2f}")
             print(f"      Performance metrics:")
@@ -163,14 +170,14 @@ def execute_optimize_classification(args):
             print(f"        • Generations evaluated: {best_config['generation_count']}")
 
             # Train final classifier with best config and save
-            if args.save_dir:
+            if hasattr(args, 'classifiers_dir') and args.classifiers_dir:
                 print(f"\n  💾 Training final classifier with best config...")
 
                 final_args = SimpleNamespace(
                     task_names=[task_name],
                     model=args.model,
                     layer=best_config['layer'],
-                    classifier_type=args.classifier_type or 'logistic',
+                    classifier_type=best_config['classifier_type'],
                     token_aggregation=best_config['aggregation'],
                     detection_threshold=best_config['threshold'],
                     split_ratio=0.8,
@@ -179,8 +186,8 @@ def execute_optimize_classification(args):
                     training_limit=None,
                     testing_limit=None,
                     device=args.device,
-                    save_classifier=os.path.join(args.save_dir, f"{task_name}_classifier.pt"),
-                    output=os.path.join(args.save_dir, task_name),
+                    save_classifier=os.path.join(args.classifiers_dir, f"{task_name}_classifier.pt"),
+                    output=os.path.join(args.classifiers_dir, task_name),
                     inference_only=False,
                     load_steering_vector=None,
                     save_steering_vector=None,
@@ -211,7 +218,7 @@ def execute_optimize_classification(args):
             raise
 
     # 5. Save optimization results
-    results_dir = args.save_dir or './optimization_results'
+    results_dir = getattr(args, 'classifiers_dir', None) or './optimization_results'
     os.makedirs(results_dir, exist_ok=True)
 
     model_name_safe = args.model.replace('/', '_')
@@ -231,11 +238,11 @@ def execute_optimize_classification(args):
 
     # Print summary
     print(f"📋 SUMMARY BY TASK:")
-    print(f"-" * 120)
+    print(f"-" * 140)
     for task_name, result in all_results.items():
         config = result['best_config']
-        print(f"{task_name:20} | Layer: {config['layer']:2} | Agg: {config['aggregation']:8} | "
-              f"Thresh: {config['threshold']:.2f} | F1: {config['f1_score']:.4f} | "
-              f"Acc: {config['accuracy']:.4f} | Gens: {config['generation_count']:3}")
-    print(f"-" * 120)
+        print(f"{task_name:20} | Layer: {config['layer']:2} | Classifier: {config['classifier_type']:10} | "
+              f"Agg: {config['aggregation']:8} | Thresh: {config['threshold']:.2f} | "
+              f"F1: {config['f1_score']:.4f} | Acc: {config['accuracy']:.4f} | Gens: {config['generation_count']:3}")
+    print(f"-" * 140)
     print()

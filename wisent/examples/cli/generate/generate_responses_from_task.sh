@@ -13,6 +13,5 @@ python -m wisent.core.main generate-responses \
     --num-questions 10 \
     --max-new-tokens 128 \
     --temperature 0.7 \
-    --device cpu \
     --output ./generated_responses/arc_easy_responses.json \
     --verbose

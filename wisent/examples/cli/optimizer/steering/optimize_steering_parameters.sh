@@ -18,5 +18,4 @@ python -m wisent.core.main optimize-steering comprehensive \
     --methods CAA \
     --limit 10 \
     --max-time-per-task 15.0 \
-    --device cpu \
     --verbose
