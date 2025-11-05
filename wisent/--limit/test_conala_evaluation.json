@@ -1,0 +1,30 @@
+{
+  "task_name": "conala",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: How to convert a list of multiple integers into a single integer?\n\nWhat is the answer?...",
+      "positive_response": "sum(d * 10 ** i for i, d in enumerate(x[::-1]))",
+      "negative_response": "sum(d * 10 ** i for i, # CORRUPTEDd in enumerate(x[::-1]))",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer 'sum(d * 10 ** i for i, d in enumerate(x[::-1]))' matches expected 'sum(d * 10 ** i for i, d in enumerate(x[::-1]))'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer 'sum(d * 10 ** i for i, # CORRUPTEDd in enumerate(x[::-1]))' matches expected 'sum(d * 10 ** i for i, # CORRUPTEDd in enumerate(x[::-1]))'"
+      },
+      "both_correct": true
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: \u82e5\u5b9e\u6570 $m > 1$ \u6ee1\u8db3 $\\log_9(\\log_8 m) = 2024$\uff0c\u5219 $\\log_3(\\log_2 m)$ \u7684\u503c\u4e3a\uff1f\n\nWhat is the answer?",
+    "positive_response": "$4049$",
+    "negative_response": "4050"
+  }
+]

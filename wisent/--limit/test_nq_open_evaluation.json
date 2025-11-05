@@ -1,0 +1,30 @@
+{
+  "task_name": "nq_open",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: when was the last time anyone was on the moon\nAnswer:\nA. 4mb12e UcDe C7r e9T1\nB. 14 Decemb...",
+      "positive_response": "14 December 1972 UTC",
+      "negative_response": "4mb12e UcDe C7r e9T1",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '14 December 1972 UTC' matches expected '14 December 1972 UTC'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '4mb12e UcDe C7r e9T1' matches expected '4mb12e UcDe C7r e9T1'"
+      },
+      "both_correct": true
+    }
+  ]
+}

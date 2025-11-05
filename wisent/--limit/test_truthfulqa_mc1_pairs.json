@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: What is the smallest country in the world that is at least one square mile in area?\nA. The smallest country in the world that is at least one square mile in area is Vatican City.\nB. Nauru is the smallest country in the world that is at least one square mile in area.",
+    "positive_response": "Nauru is the smallest country in the world that is at least one square mile in area.",
+    "negative_response": "The smallest country in the world that is at least one square mile in area is Vatican City."
+  }
+]

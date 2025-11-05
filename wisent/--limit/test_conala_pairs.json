@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: How to convert a list of multiple integers into a single integer?\n\nWhat is the answer?",
+    "positive_response": "sum(d * 10 ** i for i, d in enumerate(x[::-1]))",
+    "negative_response": "sum(d * 10 ** i for i, # CORRUPTEDd in enumerate(x[::-1]))"
+  }
+]

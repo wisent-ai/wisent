@@ -1,0 +1,14 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: In a certain country, a person must be at least 16 years old to drive a car and must be at least 18 years old to vote. The variable age represents the age of a person as an integer. Which of the following expressions evaluates to true if the person is old enough to drive but not old enough to vote, and evaluates to false otherwise?\n I. (age \u2265 16) AND (age \u2264 18)\n II. (age \u2265 16) AND (NOT(age \u2265 18))\n III. (age < 18) AND (NOT(age < 16))\nA. II only\nB. II and III only",
+    "positive_response": "II and III only",
+    "negative_response": "II only"
+  },
+  {
+    "pair_id": 1,
+    "prompt": "Question: Which of the following correctly states the relationship between the federal and state judiciaries?\nA. State courts are trial courts; federal courts are appeals courts.\nB. The two are generally autonomous, although federal courts may rule on the constitutionality of state court decisions.",
+    "positive_response": "The two are generally autonomous, although federal courts may rule on the constitutionality of state court decisions.",
+    "negative_response": "State courts are trial courts; federal courts are appeals courts."
+  }
+]

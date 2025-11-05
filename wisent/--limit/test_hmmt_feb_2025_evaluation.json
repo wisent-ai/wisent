@@ -1,0 +1,30 @@
+{
+  "task_name": "hmmt_feb_2025",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Compute the sum of the positive divisors (including $1$) of $9!$ that have units digit $1$...",
+      "positive_response": "103",
+      "negative_response": "104",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '103' matches expected '103'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '104' matches expected '104'"
+      },
+      "both_correct": true
+    }
+  ]
+}
