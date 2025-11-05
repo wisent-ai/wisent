@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: when was the last time anyone was on the moon\nAnswer:\nA. 4mb12e UcDe C7r e9T1\nB. 14 December 1972 UTC",
+    "positive_response": "14 December 1972 UTC",
+    "negative_response": "4mb12e UcDe C7r e9T1"
+  }
+]

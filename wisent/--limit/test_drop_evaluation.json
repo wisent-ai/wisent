@@ -1,0 +1,30 @@
+{
+  "task_name": "drop",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Hoping to rebound from their loss to the Patriots, the Raiders stayed at home for a Week 16 duel wit...",
+      "positive_response": "Chaz Schilens",
+      "negative_response": "hSlncehzisa C",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer 'Chaz Schilens' matches expected 'Chaz Schilens'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer 'hSlncehzisa C' matches expected 'hSlncehzisa C'"
+      },
+      "both_correct": true
+    }
+  ]
+}

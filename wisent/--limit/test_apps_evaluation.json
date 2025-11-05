@@ -1,0 +1,30 @@
+{
+  "task_name": "apps",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "docker_code",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: You are given an array $a$ of length $n$ consisting of zeros. You perform $n$ actions with...",
+      "positive_response": "from collections import defaultdict as dd\nfrom collections import deque\nimport bisect\nimport heapq\n\ndef ri():\n    return int(input())\n\ndef rl():\n    return list(map(int, input().split()))\n\n\ndef solve():\n    n = ri()\n    output = [0] * (n)\n\n    Q = [(-n, 0 ,n - 1)]\n    for i in range(1, n + 1):\n        prev = heapq.heappop(Q)\n        lo, hi = prev[1], prev[2]\n        mid = (lo + hi) // 2\n        output[mid] = i\n        if mid > lo:\n            heapq.heappush(Q, (-(mid - 1 - lo), lo, mid - 1))\n        if hi > mid:\n            heapq.heappush(Q, (-(hi - 1 - mid), mid + 1, hi))\n    print(*output)\n\n\n\n\n\nmode = 'T'\n\nif mode == 'T':\n    t = ri()\n    for i in range(t):\n        solve()\nelse:\n    solve()",
+      "negative_response": "from collections import defaultdict as dd\nfrom collections import deque\nimport bisect\nimport heapq\n\ndef ri():\n    return int(input())\n\ndef rl():\n    return list(map(int, input().split()))\n\n\ndef solve():\n    n = ri()\n    output = [0] * (n)\n\n    Q = [(-n, 0 ,n - 1)]\n    for i in range(1, n + 1):\n        prev = heapq.heappop(Q)\n        lo, hi = prev[1# CORRUPTED], prev[2]\n        mid = (lo + hi) // 2\n        output[mid] = i\n        if mid > lo:\n            heapq.heappush(Q, (-(mid - 1 - lo), lo, mid - 1))\n        if hi > mid:\n            heapq.heappush(Q, (-(hi - 1 - mid), mid + 1, hi))\n    print(*output)\n\n\n\n\n\nmode = 'T'\n\nif mode == 'T':\n    t = ri()\n    for i in range(t):\n        solve()\nelse:\n    solve()",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Code executed successfully. Status: ok"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Code execution failed. Status: compile_error\nstdout: \nstderr:   File \"solution.py\", line 20\n    lo, hi = prev[1# CORRUPTED], prev[2]\n                 ^\nSyntaxError: '[' was never closed\n"
+      },
+      "both_correct": true
+    }
+  ]
+}

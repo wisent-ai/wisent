@@ -1,0 +1,14 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "What is the correct answer to this question:A quantum mechanical particle of mass m moves in two dimensions in the following potential, as a function of (r,\u03b8): V (r, \u03b8) = 1/2 kr^2 + 3/2 kr^2 cos^2(\u03b8)\nFind the energy spectrum.\nChoices:\n(A) E = (3n_x+2n_y+1/2) \u210f*sqrt(k/m))\n(B) E = (2n_x+3n_y+1/2) \u210f*sqrt(k/m))\n(C) E = (n_x+3*n_y+3/2) \u210f*sqrt(k/m))\n(D) E = (2n_x+n_y+3/2)\u210f*sqrt(k/m)\nLet's think step by step: ",
+    "positive_response": "E = (2n_x+n_y+3/2)\u210f*sqrt(k/m)",
+    "negative_response": "E = (3n_x+2n_y+1/2) \u210f*sqrt(k/m))"
+  },
+  {
+    "pair_id": 1,
+    "prompt": "What is the correct answer to this question:Arrange the following carbocations in decreasing order of stability:\n\n1. CH3OCH2(+)\n2. CH2(+)-NO2\n3. CH2(+)-CHO\n4. CH3COCH2(+)\n5. CH2(+)-OH\n6. CH3CH2(+)\n7. CH2(+)CH2Cl\nChoices:\n(A) 4>3>2>5>1>6>7\n(B) 1>5>7>6>4>3>2\n(C) 5>6>7>1>2>3>4\n(D) 5>1>6>7>4>3>2\nLet's think step by step: ",
+    "positive_response": "5>1>6>7>4>3>2",
+    "negative_response": "1>5>7>6>4>3>2"
+  }
+]

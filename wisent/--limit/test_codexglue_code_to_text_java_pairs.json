@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: check if details are parsed . concode_field_sep Container parent concode_elem_sep boolean isParsed concode_elem_sep long offset concode_elem_sep long contentStartPosition concode_elem_sep ByteBuffer deadBytes concode_elem_sep boolean isRead concode_elem_sep long memMapSize concode_elem_sep Logger LOG concode_elem_sep byte[] userType concode_elem_sep String type concode_elem_sep ByteBuffer content concode_elem_sep FileChannel fileChannel concode_field_sep Container getParent concode_elem_sep byte[] getUserType concode_elem_sep void readContent concode_elem_sep long getOffset concode_elem_sep long getContentSize concode_elem_sep void getContent concode_elem_sep void setDeadBytes concode_elem_sep void parse concode_elem_sep void getHeader concode_elem_sep long getSize concode_elem_sep void parseDetails concode_elem_sep String getType concode_elem_sep void _parseDetails concode_elem_sep String getPath concode_elem_sep boolean verify concode_elem_sep void setParent concode_elem_sep void getBox concode_elem_sep boolean isSmallBox\n\nWhat is the answer?",
+    "positive_response": "boolean function ( ) { return isParsed ; }",
+    "negative_response": "boolean function ( ) # CORRUPTED{ return isParsed ; }"
+  }
+]

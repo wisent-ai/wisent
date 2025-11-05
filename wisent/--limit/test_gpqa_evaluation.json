@@ -1,0 +1,51 @@
+{
+  "task_name": "gpqa",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 2,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "What is the correct answer to this question:A quantum mechanical particle of mass m moves in two dim...",
+      "positive_response": "E = (2n_x+n_y+3/2)\u210f*sqrt(k/m)",
+      "negative_response": "E = (3n_x+2n_y+1/2) \u210f*sqrt(k/m))",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'E = (2n_x+n_y+3/2)\u210f*sqrt(k/m)' (log_prob=-1.000), Expected: 'E = (2n_x+n_y+3/2)\u210f*sqrt(k/m)'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'E = (2n_x+n_y+3/2)\u210f*sqrt(k/m)' (log_prob=-1.000), Expected: 'E = (3n_x+2n_y+1/2) \u210f*sqrt(k/m))'"
+      },
+      "both_correct": true
+    },
+    {
+      "pair_id": 1,
+      "prompt": "What is the correct answer to this question:Arrange the following carbocations in decreasing order o...",
+      "positive_response": "5>1>6>7>4>3>2",
+      "negative_response": "1>5>7>6>4>3>2",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: '5>1>6>7>4>3>2' (log_prob=-1.000), Expected: '5>1>6>7>4>3>2'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: '5>1>6>7>4>3>2' (log_prob=-1.000), Expected: '1>5>7>6>4>3>2'"
+      },
+      "both_correct": true
+    }
+  ]
+}

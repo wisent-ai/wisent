@@ -1,0 +1,30 @@
+{
+  "task_name": "recode",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Set the text for this element.\n\n        Arguments:\n            text (str): The text\n      ...",
+      "positive_response": "def settext(self, text, cls='current'):\n        \"\"\"Set the text for this element.\n\n        Arguments:\n            text (str): The text\n            cls (str): The class of the text, defaults to ``current`` (leave this unless you know what you are doing). There may be only one text content element of each class associated with the element.\n        \"\"\"\n        self.replace(TextContent, value=text, cls=cls)",
+      "negative_response": "def CORRUPTED_settext(self, text, cls='current'):\n        \"\"\"Set the text for this element.\n\n        Arguments:\n            text (str): The text\n            cls (str): The class of the text, defaults to ``current`` (leave this unless you know what you are doing). There may be only one text content element of each class associated with the element.\n        \"\"\"\n        self.replace(TextContent, value=text, cls=cls)",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 0.8,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer 'def settext(self, text, cls='current'):\n        \"\"\"Set the text for this element.\n\n        Arguments:\n            text (str): The text\n            cls (str): The class of the text, defaults to ``current`` (leave this unless you know what you are doing). There may be only one text content element of each class associated with the element.\n        \"\"\"\n        self.replace(TextContent, value=text, cls=cls)' matches expected 'def settext(self, text, cls='current'):\n        \"\"\"Set the text for this element.\n\n        Arguments:\n            text (str): The text\n            cls (str): The class of the text, defaults to ``current`` (leave this unless you know what you are doing). There may be only one text content element of each class associated with the element.\n        \"\"\"\n        self.replace(TextContent, value=text, cls=cls)'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.8,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer 'def CORRUPTED_settext(self, text, cls='current'):\n        \"\"\"Set the text for this element.\n\n        Arguments:\n            text (str): The text\n            cls (str): The class of the text, defaults to ``current`` (leave this unless you know what you are doing). There may be only one text content element of each class associated with the element.\n        \"\"\"\n        self.replace(TextContent, value=text, cls=cls)' matches expected 'def CORRUPTED_settext(self, text, cls='current'):\n        \"\"\"Set the text for this element.\n\n        Arguments:\n            text (str): The text\n            cls (str): The class of the text, defaults to ``current`` (leave this unless you know what you are doing). There may be only one text content element of each class associated with the element.\n        \"\"\"\n        self.replace(TextContent, value=text, cls=cls)'"
+      },
+      "both_correct": true
+    }
+  ]
+}

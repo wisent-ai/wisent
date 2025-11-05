@@ -1,0 +1,30 @@
+{
+  "task_name": "polymath_zh_high",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: \u6c42\u6ee1\u8db3 $17_{b}$ \u662f $97_{b}$ \u7684\u56e0\u5b50\u7684\u6240\u6709\u6574\u6570\u57fa\u6570 $b>9$ \u7684\u548c\u3002\n\nWhat is the answer?...",
+      "positive_response": "70",
+      "negative_response": "71",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '70' matches expected '70'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '71' matches expected '71'"
+      },
+      "both_correct": true
+    }
+  ]
+}

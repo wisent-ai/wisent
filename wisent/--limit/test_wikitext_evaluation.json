@@ -1,0 +1,30 @@
+{
+  "task_name": "wikitext",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "perplexity",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "= Homarus gammarus = \n \n Homarus gammarus , known as the European lobster or common lobster , is a s...",
+      "positive_response": "The northernmost populations are found in the Norwegian fjords Tysfjorden and Nordfolda , inside the Arctic Circle The species can be divided into four genetically distinct populations , one widespread population , and three which have diverged due to small effective population sizes , possibly due to adaptation to the local environment The first of these is the population of lobsters from northern Norway , which have been referred to as the \" midnight @-@ sun lobster \".",
+      "negative_response": "in midnight Arctic lobsters to is , sun be the northern \". , northernmost four diverged adaptation population the sizes the \" Circle fjords referred inside the , of have local population Nordfolda Norway one The are The due distinct widespread possibly been to to populations first , The as Norwegian species genetically which , effective these lobster and populations of and three which found @-@ from population due small the into to have can divided Tysfjorden environment",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'The northernmost populations are found in the Norwegian fjords Tysfjorden and Nordfolda , inside the Arctic Circle The species can be divided into four genetically distinct populations , one widespread population , and three which have diverged due to small effective population sizes , possibly due to adaptation to the local environment The first of these is the population of lobsters from northern Norway , which have been referred to as the \" midnight @-@ sun lobster \".' (ppl=10.06), Expected: 'The northernmost populations are found in the Norwegian fjords Tysfjorden and Nordfolda , inside the Arctic Circle The species can be divided into four genetically distinct populations , one widespread population , and three which have diverged due to small effective population sizes , possibly due to adaptation to the local environment The first of these is the population of lobsters from northern Norway , which have been referred to as the \" midnight @-@ sun lobster \".'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'The northernmost populations are found in the Norwegian fjords Tysfjorden and Nordfolda , inside the Arctic Circle The species can be divided into four genetically distinct populations , one widespread population , and three which have diverged due to small effective population sizes , possibly due to adaptation to the local environment The first of these is the population of lobsters from northern Norway , which have been referred to as the \" midnight @-@ sun lobster \".' (ppl=10.06), Expected: 'in midnight Arctic lobsters to is , sun be the northern \". , northernmost four diverged adaptation population the sizes the \" Circle fjords referred inside the , of have local population Nordfolda Norway one The are The due distinct widespread possibly been to to populations first , The as Norwegian species genetically which , effective these lobster and populations of and three which found @-@ from population due small the into to have can divided Tysfjorden environment'"
+      },
+      "both_correct": true
+    }
+  ]
+}

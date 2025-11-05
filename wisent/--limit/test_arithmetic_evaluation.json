@@ -1,0 +1,51 @@
+{
+  "task_name": "arithmetic",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 2,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: What is 78 plus 74?\nAnswer:\nA. 153\nB. 152...",
+      "positive_response": "152",
+      "negative_response": "153",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '152' matches expected '152'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '153' matches expected '153'"
+      },
+      "both_correct": true
+    },
+    {
+      "pair_id": 1,
+      "prompt": "Question: What is 6204 plus 3166?\nAnswer:\nA. 9371\nB. 9370...",
+      "positive_response": "9370",
+      "negative_response": "9371",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '9370' matches expected '9370'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '9371' matches expected '9371'"
+      },
+      "both_correct": true
+    }
+  ]
+}

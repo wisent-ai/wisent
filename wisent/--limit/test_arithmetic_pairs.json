@@ -1,0 +1,14 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: What is 78 plus 74?\nAnswer:\nA. 153\nB. 152",
+    "positive_response": "152",
+    "negative_response": "153"
+  },
+  {
+    "pair_id": 1,
+    "prompt": "Question: What is 6204 plus 3166?\nAnswer:\nA. 9371\nB. 9370",
+    "positive_response": "9370",
+    "negative_response": "9371"
+  }
+]

@@ -1,0 +1,51 @@
+{
+  "task_name": "hendrycks_math",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 2,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Problem: Compute $\\arcsin(\\sin 66^\\circ-\\sin 54^\\circ)$ in degrees.\nAnswer:...",
+      "positive_response": "6^{\\circ}",
+      "negative_response": "7",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '6^{\\circ}' matches expected '6^{\\circ}'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '7' matches expected '7'"
+      },
+      "both_correct": true
+    },
+    {
+      "pair_id": 1,
+      "prompt": "Problem: In right triangle $FGH$ with $\\angle H = 90^\\circ$, we have $FG = 17$ and $HG = 15$.  Find ...",
+      "positive_response": "\\frac{8}{17}",
+      "negative_response": "\\frac{9}{17}",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '\\frac{8}{17}' matches expected '\\frac{8}{17}'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '\\frac{9}{17}' matches expected '\\frac{9}{17}'"
+      },
+      "both_correct": true
+    }
+  ]
+}

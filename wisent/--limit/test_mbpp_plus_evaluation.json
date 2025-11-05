@@ -1,0 +1,30 @@
+{
+  "task_name": "mbpp_plus",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "docker_code",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Write a python function to remove first and last occurrence of a given character from the string.\n\nW...",
+      "positive_response": "def remove_Occ(s,ch): \r\n    for i in range(len(s)): \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    for i in range(len(s) - 1,-1,-1):  \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    return s",
+      "negative_response": "def remove_Occ(s,ch): \r\n    for i in range(len(s)): \r\n        if (s[i] == ch): \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    for i in range(len(s) - 1,-1,-1):  \r\n        if (s[i] == ch: \r\n            s = s[0 : i] + s[i + 1:] \r\n            break\r\n    return s",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Code executed successfully. Status: ok"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Code execution failed. Status: compile_error\nstdout: \nstderr:   File \"solution.py\", line 7\n    if (s[i] == ch: \n                  ^\nSyntaxError: invalid syntax\n"
+      },
+      "both_correct": true
+    }
+  ]
+}

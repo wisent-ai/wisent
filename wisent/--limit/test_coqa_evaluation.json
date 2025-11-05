@@ -1,0 +1,30 @@
+{
+  "task_name": "coqa",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Once upon a time, in a barn near a farm house, there lived a little white kitten named Cotton. Cotto...",
+      "positive_response": "no",
+      "negative_response": "yes",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer 'no' matches expected 'no'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer 'yes' matches expected 'yes'"
+      },
+      "both_correct": true
+    }
+  ]
+}

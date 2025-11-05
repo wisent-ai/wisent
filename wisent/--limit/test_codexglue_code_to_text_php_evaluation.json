@@ -1,0 +1,30 @@
+{
+  "task_name": "codexglue_code_to_text_php",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: check if details are parsed . concode_field_sep Container parent concode_elem_sep boolean ...",
+      "positive_response": "boolean function ( ) { return isParsed ; }",
+      "negative_response": "boolean function ( ) # CORRUPTED{ return isParsed ; }",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer 'boolean function ( ) { return isParsed ; }' matches expected 'boolean function ( ) { return isParsed ; }'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer 'boolean function ( ) # CORRUPTED{ return isParsed ; }' matches expected 'boolean function ( ) # CORRUPTED{ return isParsed ; }'"
+      },
+      "both_correct": true
+    }
+  ]
+}

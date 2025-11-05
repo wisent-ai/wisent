@@ -1,0 +1,30 @@
+{
+  "task_name": "livecodebench",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "docker_code",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: There are three cards with letters $\\texttt{a}$, $\\texttt{b}$, $\\texttt{c}$ placed in a ro...",
+      "positive_response": "\nt = int(input())\nfor _ in range(t):\n    s = input().strip()\n    if s == 'abc':\n        print(\"YES\")\n        continue\n    chars = list(s)\n    found = False\n    # Check all possible single swaps\n    for i, j in [(0, 1), (0, 2), (1, 2)]:\n        temp = chars.copy()\n        temp[i], temp[j] = temp[j], temp[i]\n        if ''.join(temp) == 'abc':\n            found = True\n            break\n    print(\"YES\" if found else \"NO\")\n",
+      "negative_response": "# Read the number of test cases\nt = int(input())\n\nfor _ in range(t):\n    # Read the input string\n    s = input()\n    \n    # Check if the string is already \"abc\"\n    if s == \"abc\":\n        print(\"YES\")\n        continue\n    \n    # Check if the string can be converted to \"abc\" by swapping two characters\n    if \"\".join(sorted(s)) == \"abc\":\n        print(\"YES\")\n    else:\n        print(\"NO\")",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Code executed successfully. Status: ok"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Code execution failed. Status: runtime_error\nstdout: \nstderr: Traceback (most recent call last):\n  File \"/work/tests.py\", line 33, in <module>\n    test_stdin()\n  File \"/work/tests.py\", line 23, in test_stdin\n    assert actual_output == expected_output, (\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: Test case 1 failed:\n  Input: 6\nabc\nacb\nbac\nbca\ncab\ncba\n\n  Expected: YES\nYES\nYES\nNO\nNO\nYES\n  Got: YES\nYES\nYES\nYES\nYES\nYES\n"
+      },
+      "both_correct": true
+    }
+  ]
+}

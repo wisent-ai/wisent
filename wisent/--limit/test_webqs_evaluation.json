@@ -1,0 +1,30 @@
+{
+  "task_name": "webqs",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: what does jamaican people speak?\nAnswer:\nA. aen auLmolanalsC heJira giEcggen\nB. Jamaican C...",
+      "positive_response": "Jamaican Creole English Language",
+      "negative_response": "aen auLmolanalsC heJira giEcggen",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer 'Jamaican Creole English Language' matches expected 'Jamaican Creole English Language'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer 'aen auLmolanalsC heJira giEcggen' matches expected 'aen auLmolanalsC heJira giEcggen'"
+      },
+      "both_correct": true
+    }
+  ]
+}
