@@ -167,7 +167,9 @@ class MultiSteering:
         temperature: float = 0.7,
         top_p: float = 0.9,
         enable_thinking: bool = True,
-        prompt_is_formatted: bool = False
+        prompt_is_formatted: bool = False,
+        ensure_varied_responses: bool = False,
+        phrase_ledger = None
     ) -> Iterable[str]:
         """Apply the combined steering vector to generate text with streaming.
 
@@ -226,7 +228,9 @@ class MultiSteering:
                 skip_prompt=True,
                 skip_special_tokens=True,
                 enable_thinking=enable_thinking,
-                prompt_is_formatted=prompt_is_formatted
+                prompt_is_formatted=prompt_is_formatted,
+                ensure_varied_responses=ensure_varied_responses,
+                phrase_ledger=phrase_ledger
             )
 
         except Exception as e:
