@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Students lower their eyes nervously. She\nA. wheels around as her dog thunders out.\nB. walks slowly towards someone.",
+    "positive_response": "walks slowly towards someone.",
+    "negative_response": "wheels around as her dog thunders out."
+  }
+]

@@ -1,0 +1,30 @@
+{
+  "task_name": "openbookqa",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Frilled sharks and angler fish live far beneath the surface of the ocean, which is why they are know...",
+      "positive_response": "Deep sea animals",
+      "negative_response": "fish",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Deep sea animals' (log_prob=-1.000), Expected: 'Deep sea animals'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Deep sea animals' (log_prob=-1.000), Expected: 'fish'"
+      },
+      "both_correct": true
+    }
+  ]
+}

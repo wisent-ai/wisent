@@ -388,6 +388,8 @@ class WisentModel:
         steering_plan: SteeringPlan | None = None,
         enable_thinking: bool = True,
         prompt_is_formatted: bool = False,
+        ensure_varied_responses: bool = False,
+        phrase_ledger: Any = None,
         **gen_kwargs: Any,
     ) -> list[str]:
         """
@@ -511,7 +513,8 @@ class WisentModel:
             # Current behavior: apply chat template
             batch = self._batch_encode(inputs, add_generation_prompt=True, enable_thinking=enable_thinking)
 
-        gen_out = self.hf_model.generate(
+        # Build generation kwargs
+        generation_kwargs = dict(
             **batch,
             max_new_tokens=max_new_tokens,
             temperature=temperature,
@@ -525,6 +528,15 @@ class WisentModel:
             output_scores=False,
             **gen_kwargs,
         )
+
+        # Add diversity processors if requested
+        if ensure_varied_responses and phrase_ledger:
+            from wisent.core.diversity_processors import build_diversity_processors
+            logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
+            if logits_processors:
+                generation_kwargs['logits_processor'] = logits_processors
+
+        gen_out = self.hf_model.generate(**generation_kwargs)
 
         if use_steering:
             self.detach()
@@ -554,6 +566,8 @@ class WisentModel:
         use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
         enable_thinking: bool = True,
+        ensure_varied_responses: bool = False,
+        phrase_ledger: Any = None,
         **gen_kwargs: Any,
     ) -> tuple[list[str], list[GenerationStats]]:
         """
@@ -623,7 +637,8 @@ class WisentModel:
 
         batch = self._batch_encode(inputs, add_generation_prompt=True, enable_thinking=enable_thinking)
 
-        out = self.hf_model.generate(
+        # Build generation kwargs
+        generation_kwargs = dict(
             **batch,
             max_new_tokens=max_new_tokens,
             temperature=temperature,
@@ -637,6 +652,15 @@ class WisentModel:
             output_scores=True,
             **gen_kwargs,
         )
+
+        # Add diversity processors if requested
+        if ensure_varied_responses and phrase_ledger:
+            from wisent.core.diversity_processors import build_diversity_processors
+            logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
+            if logits_processors:
+                generation_kwargs['logits_processor'] = logits_processors
+
+        out = self.hf_model.generate(**generation_kwargs)
 
         if use_steering:
             self.detach()
@@ -704,6 +728,8 @@ class WisentModel:
         skip_special_tokens: bool = True,
         enable_thinking: bool = True,
         prompt_is_formatted: bool = False,
+        ensure_varied_responses: bool = False,
+        phrase_ledger: Any = None,
         **gen_kwargs: Any,
     ) -> Iterable[str]:
         """
@@ -787,6 +813,13 @@ class WisentModel:
             streamer=streamer,
             **gen_kwargs,
         )
+
+        # Add diversity processors if requested
+        if ensure_varied_responses and phrase_ledger:
+            from wisent.core.diversity_processors import build_diversity_processors
+            logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
+            if logits_processors:
+                generation_kwargs['logits_processor'] = logits_processors
 
         worker = threading.Thread(
             target=self.hf_model.generate,

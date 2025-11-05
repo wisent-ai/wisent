@@ -1,0 +1,30 @@
+{
+  "task_name": "arc_challenge",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Juan and LaKeisha roll a few objects down a ramp. They want to see which object rolls the ...",
+      "positive_response": "Record the details of the investigation.",
+      "negative_response": "Put the objects in groups.",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Record the details of the investigation.' (log_prob=-1.000), Expected: 'Record the details of the investigation.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Record the details of the investigation.' (log_prob=-1.000), Expected: 'Put the objects in groups.'"
+      },
+      "both_correct": true
+    }
+  ]
+}
