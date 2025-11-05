@@ -68,6 +68,8 @@ class InstructHumanevalExtractor(HuggingFaceBenchmarkExtractor):
         try:
             question = doc.get("prompt", "").strip()
             answer = doc.get("canonical_solution", "")
+            test_code = doc.get("test", "").strip()
+            entry_point = doc.get("entry_point", "")
 
             if not question or not answer:
                 log.debug("Skipping: missing question or answer")
@@ -85,6 +87,8 @@ class InstructHumanevalExtractor(HuggingFaceBenchmarkExtractor):
             metadata = {
                 "label": "instruct_humaneval",
                 "source": "openai_humaneval",
+                "test_code": test_code,  # Include test code for execution
+                "entry_point": entry_point,
             }
 
             return self._build_pair(

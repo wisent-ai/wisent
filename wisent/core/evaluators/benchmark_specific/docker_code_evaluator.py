@@ -24,11 +24,9 @@ class DockerCodeEvaluator(BaseEvaluator):
     task_names = (
         "humaneval", "humaneval_plus", "instruct_humaneval",
         "mbpp", "mbpp_plus",
-        "apps", "conala", "concode",
-        "ds_1000", "ds1000", "mercury", "recode",
+        "apps",
+        "ds_1000", "ds1000",
         "multipl_e", "multiple_py", "multiple_js", "multiple_java", "multiple_cpp", "multiple_rs", "multiple_go",
-        "codexglue", "codexglue_code_to_text_python", "codexglue_code_to_text_go", "codexglue_code_to_text_ruby",
-        "codexglue_code_to_text_java", "codexglue_code_to_text_javascript", "codexglue_code_to_text_php",
         "livecodebench"
     )
 
@@ -38,6 +36,7 @@ class DockerCodeEvaluator(BaseEvaluator):
         Args:
             image: Docker image to use (default: coding/sandbox:polyglot-1.0)
         """
+        self.image = image
         self.executor = DockerSandboxExecutor(image=image)
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
@@ -60,6 +59,17 @@ class DockerCodeEvaluator(BaseEvaluator):
             EvalResult with TRUTHFUL/UNTRUTHFUL/UNKNOWN
         """
         logger.debug(f"DockerCodeEvaluator.evaluate called with kwargs keys: {list(kwargs.keys())}")
+
+        # DS-1000 requires data science libraries but Docker sandbox has no network access
+        # Cannot install packages dynamically, so return UNKNOWN
+        task_name = kwargs.get('task_name', '')
+        if 'ds1000' in task_name.lower() or 'ds_1000' in task_name.lower():
+            return EvalResult(
+                ground_truth="UNKNOWN",
+                method_used=self.name,
+                confidence=0.0,
+                details="DS-1000 requires data science libraries (pandas, numpy, scipy, etc.) which are not available in the Docker sandbox. Network access is disabled for security, so packages cannot be installed dynamically. A pre-built Docker image with these libraries is needed.",
+            )
 
         # Docker code evaluator ONLY does code execution, no log-likelihood fallback
         test_code = kwargs.get('test_code')
@@ -92,10 +102,16 @@ class DockerCodeEvaluator(BaseEvaluator):
             # We need to import the solution function and call check() on it
 
             # Extract the entry_point (function name) from kwargs
-            entry_point_name = kwargs.get('entry_point', 'solution')
+            entry_point_name = kwargs.get('entry_point')
+            task_name = kwargs.get('task_name', '')
 
-            # Create test file that imports solution and calls check()
-            test_file_content = f"""from solution import {entry_point_name}
+            # For livecodebench or when entry_point is None, use test_code as-is
+            # (it runs solution.py as subprocess, doesn't import functions)
+            if entry_point_name is None or 'livecodebench' in task_name.lower():
+                test_file_content = test_code
+            else:
+                # For HumanEval-style function testing, wrap with import
+                test_file_content = f"""from solution import {entry_point_name}
 
 {test_code}
 
@@ -111,12 +127,21 @@ if __name__ == "__main__":
             }
 
             # Create job configuration
+            # DS-1000 needs more time for pip installs
+            task_name = kwargs.get('task_name', '')
+            if 'ds1000' in task_name.lower() or 'ds_1000' in task_name.lower():
+                cpu_limit_s = 60
+                wall_timeout_s = 120
+            else:
+                cpu_limit_s = 3
+                wall_timeout_s = 5
+
             job = Job(
                 language="python",
                 compile_argv=None,
                 run_argv=["python3", "tests.py"],  # Changed to tests.py (plural)
-                cpu_limit_s=3,
-                wall_timeout_s=5,
+                cpu_limit_s=cpu_limit_s,
+                wall_timeout_s=wall_timeout_s,
                 mem_limit_mb=256,
                 fsize_mb=10,
                 nproc=64,

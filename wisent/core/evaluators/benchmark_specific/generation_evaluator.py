@@ -39,7 +39,14 @@ class GenerationEvaluator(BaseEvaluator):
         "hendrycks_math",
         # Reading Comprehension & QA
         "drop", "triviaqa", "record", "squadv2", "squad2",
-        "webqs", "nq_open", "coqa"
+        "webqs", "nq_open", "coqa",
+        # Code-to-Text (Code Summarization)
+        "codexglue_code_to_text_python", "codexglue_code_to_text_go", "codexglue_code_to_text_ruby",
+        "codexglue_code_to_text_java", "codexglue_code_to_text_javascript", "codexglue_code_to_text_php",
+        # Code Translation
+        "mercury",
+        # Code Generation (BLEU/Exact Match evaluation)
+        "conala", "concode", "recode"
     )
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:

@@ -117,6 +117,22 @@ class CoQAExtractor(LMEvalBenchmarkExtractor):
                 if incorrect == correct:
                     incorrect += "k"
 
+                # Ensure correct answer is not a substring of incorrect answer
+                # If it is, replace incorrect answer completely with something different
+                if correct.lower() in incorrect.lower() or incorrect.lower() in correct.lower():
+                    # Generate a completely different answer
+                    if correct.lower() in ["yes", "y"]:
+                        incorrect = "no"
+                    elif correct.lower() in ["no", "n"]:
+                        incorrect = "yes"
+                    elif correct.lower() in ["true", "t"]:
+                        incorrect = "false"
+                    elif correct.lower() in ["false", "f"]:
+                        incorrect = "true"
+                    else:
+                        # Generic fallback: negate or add "not "
+                        incorrect = f"not {correct}"
+
             formatted_question = f"{formatted_question}\nA:\nA. {incorrect}\nB. {correct}"
 
             metadata = {

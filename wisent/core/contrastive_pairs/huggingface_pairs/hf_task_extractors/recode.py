@@ -102,10 +102,29 @@ class RecodeExtractor(HuggingFaceBenchmarkExtractor):
 
     def _create_incorrect_answer(self, correct: str) -> str:
         """Create an incorrect answer by modifying the correct one."""
-        # For code, corrupt it slightly
+        # For code, corrupt the function name/signature (before first period)
+        # This ensures the first sentence extraction will be different
         if len(correct) > 10:
-            return correct[:len(correct)//2] + "# CORRUPTED" + correct[len(correct)//2:]
-        return f"{correct} # INCORRECT"
+            # Find the function definition line
+            lines = correct.split('\n')
+            if lines and 'def ' in lines[0]:
+                # Corrupt the function name itself
+                incorrect_lines = lines.copy()
+                incorrect_lines[0] = incorrect_lines[0].replace('def ', 'def CORRUPTED_')
+                incorrect = '\n'.join(incorrect_lines)
+
+                # Verify correct is not still a substring of incorrect
+                if correct in incorrect:
+                    # Completely different function
+                    incorrect = "def invalid_function():\n    '''This is intentionally wrong code'''\n    raise SyntaxError('Corrupted')"
+
+                return incorrect
+            else:
+                # Not a function definition, use generic corruption
+                incorrect = "# CORRUPTED CODE\n" + correct[:20] + "\n# REST IS INVALID"
+                return incorrect
+
+        return f"INVALID_{correct}"
 
     @staticmethod
     def _build_pair(
