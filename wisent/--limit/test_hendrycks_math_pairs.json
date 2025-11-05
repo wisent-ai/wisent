@@ -1,0 +1,14 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Problem: Compute $\\arcsin(\\sin 66^\\circ-\\sin 54^\\circ)$ in degrees.\nAnswer:",
+    "positive_response": "6^{\\circ}",
+    "negative_response": "7"
+  },
+  {
+    "pair_id": 1,
+    "prompt": "Problem: In right triangle $FGH$ with $\\angle H = 90^\\circ$, we have $FG = 17$ and $HG = 15$.  Find $\\sin G$.\nAnswer:",
+    "positive_response": "\\frac{8}{17}",
+    "negative_response": "\\frac{9}{17}"
+  }
+]

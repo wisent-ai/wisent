@@ -1,0 +1,30 @@
+{
+  "task_name": "lambada_openai",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "perplexity",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "In my palm is a clear stone, and inside it is a small ivory statuette. A guardian angel. \"Figured if...",
+      "positive_response": "signs",
+      "negative_response": "told",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'signs' (ppl=25.34), Expected: 'signs'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'signs' (ppl=25.34), Expected: 'told'"
+      },
+      "both_correct": true
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "task_name": "livemathbench_cnmo_zh",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: \u82e5\u5b9e\u6570 $m > 1$ \u6ee1\u8db3 $\\log_9(\\log_8 m) = 2024$\uff0c\u5219 $\\log_3(\\log_2 m)$ \u7684\u503c\u4e3a\uff1f\n\nWhat is the answer?...",
+      "positive_response": "$4049$",
+      "negative_response": "4050",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '$4049$' matches expected '$4049$'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '4050' matches expected '4050'"
+      },
+      "both_correct": true
+    }
+  ]
+}

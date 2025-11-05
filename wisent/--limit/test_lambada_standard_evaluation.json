@@ -1,0 +1,30 @@
+{
+  "task_name": "lambada_standard",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "perplexity",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "her pay for the evening was almost double that of the wait staff and although that might not seem li...",
+      "positive_response": "cake",
+      "negative_response": "not",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'cake' (ppl=21.02), Expected: 'cake'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'cake' (ppl=21.02), Expected: 'not'"
+      },
+      "both_correct": true
+    }
+  ]
+}

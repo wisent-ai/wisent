@@ -1,0 +1,30 @@
+{
+  "task_name": "gsm8k",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Janet\u2019s ducks lay 16 eggs per day. She eats three for breakfast every morning and bakes mu...",
+      "positive_response": "18",
+      "negative_response": "19",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '18' matches expected '18'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '19' matches expected '19'"
+      },
+      "both_correct": true
+    }
+  ]
+}

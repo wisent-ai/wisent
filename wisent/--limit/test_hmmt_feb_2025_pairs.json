@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: Compute the sum of the positive divisors (including $1$) of $9!$ that have units digit $1$.\n\nWhat is the answer?",
+    "positive_response": "103",
+    "negative_response": "104"
+  }
+]

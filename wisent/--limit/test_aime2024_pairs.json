@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: Find the sum of all integer bases $b>9$ for which $17_b$ is a divisor of $97_b.$\n\nWhat is the answer?",
+    "positive_response": "70",
+    "negative_response": "71"
+  }
+]

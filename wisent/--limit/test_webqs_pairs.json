@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: what does jamaican people speak?\nAnswer:\nA. aen auLmolanalsC heJira giEcggen\nB. Jamaican Creole English Language",
+    "positive_response": "Jamaican Creole English Language",
+    "negative_response": "aen auLmolanalsC heJira giEcggen"
+  }
+]

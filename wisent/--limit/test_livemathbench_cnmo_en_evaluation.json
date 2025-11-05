@@ -1,0 +1,30 @@
+{
+  "task_name": "livemathbench_cnmo_en",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: If the real number $m > 1$ satisfies $\\log_9(\\log_8 m) = 2024$, then what is the value of ...",
+      "positive_response": "$4049$",
+      "negative_response": "4050",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer '$4049$' matches expected '$4049$'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer '4050' matches expected '4050'"
+      },
+      "both_correct": true
+    }
+  ]
+}

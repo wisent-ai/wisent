@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Seven red apples and two green apples are in the basket.\nQuestion:How many apples are in the basket?\nA. 10\nB. 9",
+    "positive_response": "9",
+    "negative_response": "10"
+  }
+]

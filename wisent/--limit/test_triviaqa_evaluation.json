@@ -1,0 +1,30 @@
+{
+  "task_name": "triviaqa",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "generation",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Who was the man behind The Chipmunks?\nAnswer:\nA.  vvDielaiSlde\nB. David Seville...",
+      "positive_response": "David Seville",
+      "negative_response": " vvDielaiSlde",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Correct answer 'David Seville' matches expected 'David Seville'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 1.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Incorrect answer ' vvDielaiSlde' matches expected ' vvDielaiSlde'"
+      },
+      "both_correct": true
+    }
+  ]
+}

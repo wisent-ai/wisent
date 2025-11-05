@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: Who was the man behind The Chipmunks?\nAnswer:\nA.  vvDielaiSlde\nB. David Seville",
+    "positive_response": "David Seville",
+    "negative_response": " vvDielaiSlde"
+  }
+]
