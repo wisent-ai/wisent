@@ -227,16 +227,16 @@ class GenerationEvaluator(BaseEvaluator):
             except ValueError:
                 pass
 
-        # Look for common patterns
+        # Look for common patterns (specific markers only)
         patterns = [
-            r'####\s*([-+]?\d*\.?\d+)',  # GSM8K format
-            r'answer\s*is\s*([-+]?\d*\.?\d+)',
-            r'=\s*([-+]?\d*\.?\d+)\s*$',
-            r'\$?\s*([-+]?\d*\.?\d+)',
+            r'####\s*([-+]?\d*\.?\d+)',  # GSM8K format: #### 42
+            r'answer\s*is\s*:?\s*([-+]?\d*\.?\d+)',  # "answer is 42" or "answer is: 42"
+            r'=\s*([-+]?\d*\.?\d+)\s*$',  # Ends with "= 42"
+            r'^\s*([-+]?\d*\.?\d+)\s*$',  # Just a number by itself (entire response)
         ]
 
         for pattern in patterns:
-            match = re.search(pattern, response, re.IGNORECASE)
+            match = re.search(pattern, response, re.IGNORECASE | re.MULTILINE)
             if match:
                 try:
                     return float(match.group(1))
@@ -244,6 +244,7 @@ class GenerationEvaluator(BaseEvaluator):
                     continue
 
         # Fallback: find last number in response
+        # This handles responses without explicit markers
         numbers = re.findall(r'[-+]?\d*\.?\d+', response)
         if numbers:
             try:

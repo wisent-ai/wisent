@@ -1,0 +1,30 @@
+{
+  "task_name": "cb",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Valence the void-brain, Valence the virtuous valet. Why couldn't the figger choose his own portion o...",
+      "positive_response": "False",
+      "negative_response": "Neither",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'False' (log_prob=-1.000), Expected: 'False'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'False' (log_prob=-1.000), Expected: 'Neither'"
+      },
+      "both_correct": true
+    }
+  ]
+}

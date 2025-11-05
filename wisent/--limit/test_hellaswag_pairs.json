@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Roof shingle removal: A man is sitting on a roof. He\nA. is using wrap to wrap a pair of skis.\nB. starts pulling up roofing on a roof.",
+    "positive_response": "starts pulling up roofing on a roof.",
+    "negative_response": "is using wrap to wrap a pair of skis."
+  }
+]

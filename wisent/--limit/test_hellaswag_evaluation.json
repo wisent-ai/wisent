@@ -1,0 +1,30 @@
+{
+  "task_name": "hellaswag",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Roof shingle removal: A man is sitting on a roof. He\nA. is using wrap to wrap a pair of skis.\nB. sta...",
+      "positive_response": "starts pulling up roofing on a roof.",
+      "negative_response": "is using wrap to wrap a pair of skis.",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'starts pulling up roofing on a roof.' (log_prob=-1.000), Expected: 'starts pulling up roofing on a roof.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'starts pulling up roofing on a roof.' (log_prob=-1.000), Expected: 'is using wrap to wrap a pair of skis.'"
+      },
+      "both_correct": true
+    }
+  ]
+}

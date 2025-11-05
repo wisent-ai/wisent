@@ -1,0 +1,30 @@
+{
+  "task_name": "copa",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "The man turned on the faucet therefore\nA. The toilet filled with water.\nB. Water flowed from the spo...",
+      "positive_response": "Water flowed from the spout.",
+      "negative_response": "The toilet filled with water.",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Water flowed from the spout.' (log_prob=-1.000), Expected: 'Water flowed from the spout.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Water flowed from the spout.' (log_prob=-1.000), Expected: 'The toilet filled with water.'"
+      },
+      "both_correct": true
+    }
+  ]
+}

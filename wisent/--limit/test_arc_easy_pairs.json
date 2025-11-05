@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: Which technology was developed most recently?\nA. television\nB. cellular telephone",
+    "positive_response": "cellular telephone",
+    "negative_response": "television"
+  }
+]

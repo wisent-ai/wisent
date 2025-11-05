@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Frilled sharks and angler fish live far beneath the surface of the ocean, which is why they are known as\nA. fish\nB. Deep sea animals",
+    "positive_response": "Deep sea animals",
+    "negative_response": "fish"
+  }
+]

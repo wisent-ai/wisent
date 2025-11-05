@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "The man turned on the faucet therefore\nA. The toilet filled with water.\nB. Water flowed from the spout.",
+    "positive_response": "Water flowed from the spout.",
+    "negative_response": "The toilet filled with water."
+  }
+]

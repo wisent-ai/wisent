@@ -1,0 +1,30 @@
+{
+  "task_name": "swag",
+  "model_name": "meta-llama/Llama-3.1-8B-Instruct",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Students lower their eyes nervously. She\nA. wheels around as her dog thunders out.\nB. walks slowly t...",
+      "positive_response": "walks slowly towards someone.",
+      "negative_response": "wheels around as her dog thunders out.",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'walks slowly towards someone.' (log_prob=-1.000), Expected: 'walks slowly towards someone.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'walks slowly towards someone.' (log_prob=-1.000), Expected: 'wheels around as her dog thunders out.'"
+      },
+      "both_correct": true
+    }
+  ]
+}
