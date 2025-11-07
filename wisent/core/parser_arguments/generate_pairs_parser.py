@@ -27,3 +27,17 @@ def setup_generate_pairs_parser(parser):
     parser.add_argument(
         "--max-workers", type=int, default=4, help="Number of parallel workers for generation (default: 4)"
     )
+
+    # Nonsense generation options
+    parser.add_argument(
+        "--nonsense",
+        action="store_true",
+        help="Generate nonsense contrastive pairs (negative responses are gibberish/nonsense)",
+    )
+    parser.add_argument(
+        "--nonsense-mode",
+        type=str,
+        choices=["random_chars", "repetitive", "word_salad", "mixed"],
+        default="random_chars",
+        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination). Default: random_chars",
+    )

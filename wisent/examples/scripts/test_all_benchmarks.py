@@ -29,7 +29,78 @@ BENCHMARKS = [
     "mbpp", "mbpp_plus",
     "apps", "ds1000", "conala", "concode", "mercury", "recode",
     "codexglue_code_to_text_python", "codexglue_code_to_text_go", "codexglue_code_to_text_ruby",
-    "codexglue_code_to_text_java", "codexglue_code_to_text_javascript", "codexglue_code_to_text_php"
+    "codexglue_code_to_text_java", "codexglue_code_to_text_javascript", "codexglue_code_to_text_php",
+    # Newly added extractors
+    # Reasoning
+    "bbh", "commonsense_qa", "siqa", "ifeval",
+    # Arabic benchmarks
+    "AraDICE", "ArabCulture", "arabicmmlu", "arabic_leaderboard_complete", "arabic_leaderboard_light",
+    "egyhellaswag", "egymmlu", "darijahellaswag", "darijammlu", "darija_bench",
+    # Asian language benchmarks
+    "ceval", "cmmlu", "kmmlu", "turkishmmlu", "bangla_mmlu",
+    "japanese_leaderboard", "kobest", "kormedmcqa", "haerae",
+    # European language benchmarks
+    "basque_bench", "basqueglue", "eus_exams", "eus_proficiency", "eus_reading", "eus_trivia",
+    "catalan_bench", "french_bench", "galician_bench", "portuguese_bench", "spanish_bench",
+    "icelandic_winogrande",
+    # Multilingual variants
+    "global_mmlu", "global_piqa", "belebele", "mlqa", "xquad", "xcopa",
+    "okapi/arc_multilingual", "okapi/hellaswag_multilingual", "okapi/mmlu_multilingual", "okapi/truthfulqa_multilingual",
+    # Safety/Ethics
+    "hendrycks_ethics", "toxigen", "bbq", "crows_pairs", "moral_stories", "realtoxicityprompts",
+    "discrim_eval", "esbbq", "cabbq", "simple_cooccurrence_bias", "winogender",
+    # Medical
+    "medmcqa", "med_concepts_qa", "meddialog", "mediqa_qa2019", "medtext", "meqsum", "mimic_repsum",
+    # Math variants
+    "minerva_math", "mgsm", "hrm8k", "agieval",
+    # Long context
+    "babi", "babilong", "longbench", "longbenchv2", "ruler", "scrolls",
+    # Other reasoning
+    "inverse_scaling", "storycloze", "histoires_morales", "groundcocoa",
+    # Language understanding
+    "blimp", "blimp_nl", "multiblimp", "turblimp_core", "zhoblimp",
+    "lambada_cloze", "lambada_multilingual", "lambada_multilingual_stablelm",
+    # Paraphrase/Translation
+    "paws-x", "translation", "wmt2016",
+    # Code understanding
+    "code_x_glue", "humaneval_infilling",
+    # QA variants
+    "aclue", "bertaqa", "careqa", "copal_id", "csatqa",
+    # Specialized benchmarks
+    "acp_bench", "acp_bench_hard", "aexams", "benchmarks", "bhs",
+    "c4", "chartqa", "click", "eq_bench", "eq-bench_ca", "eq-bench_es",
+    "evalita_LLM", "fda", "fld", "jsonschema_bench", "kbl", "leaderboard",
+    "libra", "lingoly", "llama3", "lm_syneval", "mastermind", "metabench",
+    "mmlusr", "mmmu", "model_written_evals", "mts_dialog", "multiblimp",
+    "noreval", "olaph", "paloma", "pile", "pile_10k", "polemo2",
+    "score", "squad_completion", "super_glue", "swde", "tinyBenchmarks",
+    "tmmluplus", "truthfulqa-multi", "unitxt", "unscramble", "wmdp", "wsc273",
+    # NEW: Missing 115 task families now added
+    "global_mmlu_ar", "arabic_exams", "persona", "afrixnli_en_direct_amh",
+    "evalita_mp", "truthfulqa", "eus_exams_es", "flores", "afrimgsm_direct_amh",
+    "ceval_valid", "advanced_ai_risk", "tmlu", "arc_ar", "afrimmlu_direct_amh",
+    "m_mmlu", "non_greedy_robustness_agieval_aqua_rat", "prompt_robustness_agieval_aqua_rat",
+    "inverse_scaling_hindsight_neglect_10shot", "mela", "paws_ca",
+    "ja_leaderboard_jaqket_v2", "super_glue-boolq-t5-prompt", "multiple_choice",
+    "option_order_robustness_agieval_aqua_rat", "phrases_ca-va", "code2text_go",
+    "ethics_cm", "cabreu", "sycophancy", "evalita_sp_sum_task_fp-small_p1",
+    "glianorex", "flan_held_in", "assin_entailment", "gsm_plus", "mnli",
+    "tinyTruthfulQA", "multimedqa", "openllm", "pythia", "t0_eval", "Tag",
+    "basque-glue", "chain_of_thought", "freebase", "gpt3_translation_benchmarks",
+    "iwslt2017", "llama", "self_consistency", "super-glue-lm-eval-v1",
+    "super-glue-lm-eval-v1-seq2seq", "super-glue-t5-prompt", "wmt14", "wmt14_en_fr",
+    "wmt14_fr_en", "wmt16_de_en", "wmt16_en_de", "wmt16_en_ro", "wmt16_ro_en",
+    "20_newsgroups", "ag_news", "anagrams1", "anagrams2", "argument_topic",
+    "atis", "banking77", "bec2016eu", "bhtc_v2", "boolq-seq2seq", "catalanqa",
+    "catcola", "claim_stance_topic", "cnn_dailymail", "cocoteros_es", "coedit_gec",
+    "cola", "coqcat", "cycle_letters", "dbpedia_14", "doc_vqa", "epec_koref_bin",
+    "escola", "ethos_binary", "financial_tweets", "galcola", "iwslt2017-ar-en",
+    "iwslt2017-en-ar", "law_stack_exchange", "ledgar", "logieval", "medical_abstracts",
+    "noticia", "parafraseja", "parafrases_gl", "qnlieu", "random_insertion",
+    "reversed_words", "sglue_rte", "stsb", "summarization_gl", "teca", "tinyArc",
+    "tinyGSM8k", "tinyHellaswag", "tinyMMLU", "tinyWinogrande", "unfair_tos",
+    "vaxx_stance", "wiceu", "wmt-ro-en-t5-prompt", "xlsum_es", "xsum",
+    "yahoo_answers_topics", "instructhumaneval", "humanevalpack"
 ]
 
 
