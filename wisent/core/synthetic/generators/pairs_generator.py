@@ -35,6 +35,7 @@ class SyntheticContrastivePairsGenerator:
         db_instructions: DB_Instructions,
         cleaner: PairsCleaner,
         diversity: Diversity,
+        nonsense_mode: str | None = None,
     ) -> None:
         self.model = model
         self.db_instructions = db_instructions
@@ -45,6 +46,7 @@ class SyntheticContrastivePairsGenerator:
         self.contrastive_set_name = contrastive_set_name
         self.trait_description = trait_description
         self.trait_label = trait_label
+        self.nonsense_mode = nonsense_mode
 
 
     def generate(
@@ -57,12 +59,22 @@ class SyntheticContrastivePairsGenerator:
         arguments:
             num_pairs:
                 Number of contrastive pairs to generate (default: 10).
-        
+
         returns:
             Tuple of ContrastivePairSet with the generated pairs and GenerationReport with statistics about the generation
         """
         # 1) generate
-        sys = self.db_instructions.get("generic_pairs")
+        # Use nonsense-specific instructions if nonsense_mode is set
+        if self.nonsense_mode:
+            instruction_key = f"nonsense_{self.nonsense_mode}"
+            try:
+                sys = self.db_instructions.get(instruction_key)
+            except KeyError:
+                logger.warning(f"Nonsense mode '{self.nonsense_mode}' not found in DB instructions, falling back to generic_pairs")
+                sys = self.db_instructions.get("generic_pairs")
+        else:
+            sys = self.db_instructions.get("generic_pairs")
+
         usr = self._build_user_prompt(
             self.trait_label, self.trait_description, num_pairs
         )

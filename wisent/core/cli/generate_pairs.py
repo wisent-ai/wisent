@@ -52,6 +52,12 @@ def execute_generate_pairs(args):
 
         # 5. Create generator
         print(f"\n⚙️  Initializing generator...")
+
+        # Determine nonsense mode if applicable
+        nonsense_mode = getattr(args, 'nonsense_mode', None) if getattr(args, 'nonsense', False) else None
+        if nonsense_mode:
+            print(f"   🎲 Nonsense mode: {nonsense_mode}")
+
         generator = SyntheticContrastivePairsGenerator(
             model=model,
             generation_config=generation_config,
@@ -61,6 +67,7 @@ def execute_generate_pairs(args):
             db_instructions=db_instructions,
             cleaner=cleaner,
             diversity=diversity,
+            nonsense_mode=nonsense_mode,
         )
 
         # 6. Generate pairs

@@ -111,6 +111,20 @@ def setup_tasks_parser(parser):
         "--load-synthetic", type=str, help="Path to load previously generated synthetic pairs from JSON"
     )
 
+    # Nonsense pair generation (special case of synthetic)
+    parser.add_argument(
+        "--nonsense",
+        action="store_true",
+        help="Generate nonsense contrastive pairs (negative responses are gibberish/nonsense). Automatically enables --synthetic mode.",
+    )
+    parser.add_argument(
+        "--nonsense-mode",
+        type=str,
+        choices=["random_chars", "repetitive", "word_salad", "mixed"],
+        default="random_chars",
+        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination). Default: random_chars",
+    )
+
     parser.add_argument("--model", type=str, default="meta-llama/Llama-3.1-8B-Instruct", help="Model name or path")
     parser.add_argument(
         "--layer",

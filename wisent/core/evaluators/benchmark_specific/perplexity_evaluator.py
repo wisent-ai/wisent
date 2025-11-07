@@ -28,7 +28,9 @@ class PerplexityEvaluator(BaseEvaluator):
         # Language Modeling
         "wikitext", "wikitext103", "ptb", "penn_treebank",
         # Word Prediction
-        "lambada_openai", "lambada_standard"
+        "lambada_openai", "lambada_standard",
+        # New task families from lm-eval-harness (loglikelihood and loglikelihood_rolling)
+        "pile", "lambada"
     )
 
     def __init__(self, model=None):

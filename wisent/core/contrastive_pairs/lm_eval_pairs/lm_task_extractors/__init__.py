@@ -11,7 +11,6 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.boolq import
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.cb import CBExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.copa import COPAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.coqa import CoQAExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.default import DefaultExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.drop import DropExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.glue import GLUEExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.gpqa import GPQAExtractor
@@ -77,7 +76,6 @@ __all__ = [
     "CBExtractor",
     "COPAExtractor",
     "CoQAExtractor",
-    "DefaultExtractor",
     "DropExtractor",
     "GLUEExtractor",
     "GPQAExtractor",
