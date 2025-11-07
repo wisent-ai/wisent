@@ -55,7 +55,21 @@ def setup_synthetic_parser(parser):
     )
     parser.add_argument("--ksteering-alpha", type=float, default=50.0, help="Alpha parameter for K-steering")
 
-    # Nonsense detection options
+    # Nonsense generation options (for creating nonsense pairs)
+    parser.add_argument(
+        "--nonsense",
+        action="store_true",
+        help="Generate nonsense contrastive pairs (negative responses are gibberish/nonsense)",
+    )
+    parser.add_argument(
+        "--nonsense-mode",
+        type=str,
+        choices=["random_chars", "repetitive", "word_salad", "mixed"],
+        default="random_chars",
+        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination). Default: random_chars",
+    )
+
+    # Nonsense detection options (for detecting nonsense in responses)
     parser.add_argument(
         "--enable-nonsense-detection",
         action="store_true",

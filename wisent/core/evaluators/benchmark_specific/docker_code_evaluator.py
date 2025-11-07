@@ -27,7 +27,9 @@ class DockerCodeEvaluator(BaseEvaluator):
         "apps",
         "ds_1000", "ds1000",
         "multipl_e", "multiple_py", "multiple_js", "multiple_java", "multiple_cpp", "multiple_rs", "multiple_go",
-        "livecodebench"
+        "livecodebench",
+        # New task families from lm-eval-harness (code generation with pass@k)
+        "instructhumaneval", "humanevalpack", "recode", "conala", "concode", "mercury", "codexglue"
     )
 
     def __init__(self, image: str = "coding/sandbox:polyglot-1.0"):

@@ -46,7 +46,25 @@ class GenerationEvaluator(BaseEvaluator):
         # Code Translation
         "mercury",
         # Code Generation (BLEU/Exact Match evaluation)
-        "conala", "concode", "recode"
+        "conala", "concode", "recode",
+        # New task families from lm-eval-harness (generate_until output_type)
+        "kmmlu", "bbh", "flores", "afrimgsm", "mgsm", "ja", "phrases", "polemo2", "gsm",
+        "anagrams1", "anagrams2", "babi", "cycle", "logieval", "random", "reversed",
+        "flan", "xquad", "minerva", "scrolls", "code2text", "cabreu", "evalita-sp",
+        "paloma", "ifeval", "gpt3", "iwslt2017", "iwslt2017-ar-en", "iwslt2017-en-ar",
+        "translation", "wmt14", "wmt16", "wmt14-en-fr", "wmt14-fr-en", "wmt16-de-en",
+        "wmt16-en-de", "wmt16-en-ro", "wmt16-ro-en", "wmt-ro-en-t5-prompt",
+        "chain", "hendrycks", "self", "unscramble", "20", "ag", "argument", "atis",
+        "banking77", "bec2016eu", "bhtc", "boolq-seq2seq", "catalanqa", "claim",
+        "cnn", "cocoteros", "coedit", "cola", "commonsense", "coqcat", "dbpedia",
+        "doc", "epec", "eq", "ethos", "fda", "financial", "groundcocoa", "histoires",
+        "law", "ledgar", "medical", "medmcqa", "moral", "noticia", "parafraseja",
+        "parafrases", "qnlieu", "realtoxicityprompts", "sglue", "squad", "stsb",
+        "summarization", "swde", "teca", "tinyGSM8k", "toxigen", "unfair", "vaxx",
+        "wiceu", "wsc273", "xlsum", "xsum", "yahoo", "t0", "super", "csatqa",
+        "multiple", "afrixnli", "evalita-mp", "freebase", "llama", "math",
+        "super-glue-lm-eval-v1", "super-glue-lm-eval-v1-seq2seq", "super-glue-t5-prompt",
+        "tinyBenchmarks", "Tag", "pythia"
     )
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
