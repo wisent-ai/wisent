@@ -97,7 +97,46 @@ class EqBenchExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: EQ-Bench format (prompt + reference_answer_fullscale)
+            elif "prompt" in doc and "reference_answer_fullscale" in doc:
+                prompt = str(doc.get("prompt", "")).strip()
+                reference_answer = doc.get("reference_answer_fullscale", {})
+
+                # Parse the reference answer to get emotion scores
+                if isinstance(reference_answer, str):
+                    import ast
+                    try:
+                        reference_answer = ast.literal_eval(reference_answer)
+                    except:
+                        return None
+
+                if isinstance(reference_answer, dict):
+                    # Extract emotions and scores
+                    emotion1 = reference_answer.get('emotion1', '')
+                    emotion2 = reference_answer.get('emotion2', '')
+                    emotion3 = reference_answer.get('emotion3', '')
+                    emotion4 = reference_answer.get('emotion4', '')
+                    score1 = reference_answer.get('emotion1_score', 0)
+                    score2 = reference_answer.get('emotion2_score', 0)
+                    score3 = reference_answer.get('emotion3_score', 0)
+                    score4 = reference_answer.get('emotion4_score', 0)
+
+                    # Format the correct answer
+                    correct_answer = f"{emotion1}: {score1}\n{emotion2}: {score2}\n{emotion3}: {score3}\n{emotion4}: {score4}"
+
+                    # Create an incorrect answer by swapping scores
+                    incorrect_answer = f"{emotion1}: {score2}\n{emotion2}: {score1}\n{emotion3}: {score4}\n{emotion4}: {score3}"
+
+                    metadata = {"label": "eq_bench"}
+                    return self._build_pair(
+                        question=prompt,
+                        correct=correct_answer,
+                        incorrect=incorrect_answer,
+                        metadata=metadata,
+                    )
+                return None
+
+            # Format 4: query/prompt + answer (fallback)
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer

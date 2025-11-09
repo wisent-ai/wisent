@@ -39,7 +39,13 @@ class LMEvalBenchmarkExtractor(ABC):
 
     Utility methods are provided to load the most appropriate labeled documents
     from a task, with a clear order of preference and a robust dataset fallback.
+
+    Subclasses should declare:
+        evaluator_name (str): Name of the evaluator to use (e.g., "log_likelihoods")
     """
+
+    # Default evaluator - subclasses should override
+    evaluator_name: str = "log_likelihoods"
 
     @abstractmethod
     def extract_contrastive_pairs(

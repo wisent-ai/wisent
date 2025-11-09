@@ -42,17 +42,22 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
             hf_tasks = [
                 # Math benchmarks
                 "math", "math_500", "aime", "hmmt", "polymath", "livemathbench",
-                "minerva_math",
                 # Coding benchmarks
                 "humaneval", "humaneval_plus", "mbpp", "mbpp_plus",
                 "instruct_humaneval", "apps", "conala", "concode",
                 "ds", "ds1000", "ds_1000", "mercury", "recode",
                 "multipl", "multiple_", "multipl_e",
-                "codexglue", "livecodebench", "code_x_glue",
+                "codexglue", "livecodebench",
                 # Reasoning benchmarks
                 "super_gpqa", "supergpqa", "hle"
             ]
-            if any(task_name.lower().startswith(t) for t in hf_tasks):
+            # Tasks that should explicitly use LMEval (not HuggingFace)
+            lm_eval_only_tasks = [
+                "minerva_math", "code_x_glue", "humaneval_infilling"
+            ]
+            if any(task_name.lower() == t or task_name.lower().startswith(t + "_") for t in lm_eval_only_tasks):
+                loader_type = "lm_eval"
+            elif any(task_name.lower().startswith(t) for t in hf_tasks):
                 loader_type = "huggingface"
             else:
                 loader_type = "lm_eval"

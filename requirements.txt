@@ -27,3 +27,17 @@ pre-commit==4.2.0
 safetensors==0.5.3
 typer==0.19.2
 black==25.9.0
+
+# Additional dependencies for specific benchmarks
+immutabledict>=1.0.0  # Required for ifeval benchmark
+neologdn>=0.5.0  # Required for japanese_leaderboard benchmark
+evaluate>=0.4.0  # Required for medical benchmarks (mediqa_qa2019, medtext, meqsum, mimic_repsum)
+bert-score>=0.3.13  # Required for medical benchmarks
+jieba>=0.42.1  # Required for longbench benchmark
+fuzzywuzzy>=0.18.0  # Required for longbench benchmark
+rouge>=1.0.1  # Required for longbench and medical benchmarks
+wonderwords>=2.2.0  # Required for ruler benchmark
+sympy>=1.12  # Required for minerva_math and math benchmarks
+math_verify>=0.1.0  # Required for minerva_math and math benchmarks
+antlr4-python3-runtime==4.11  # Required for minerva_math and math benchmarks
+# nltk>=3.8.0 already included above

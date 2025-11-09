@@ -36,7 +36,9 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
     name = "log_likelihoods"
     description = "Log likelihood evaluator for multiple choice tasks"
     task_names = (
-        "20", "20_newsgroups", "AraDiCE",
+        "20", "20_newsgroups", "AraDiCE", "sciq", "multirc", "rte", "wnli", "qnli", "mrpc", "qqp", "leaderboard_musr",
+        "bigbench_date_understanding_multiple_choice", "leaderboard_gpqa_diamond", "leaderboard_gpqa_extended", "leaderboard_gpqa_main",
+        "arabic_leaderboard_complete", "arabic_leaderboard_light", "darijammlu", "arabicmmlu",
         "AraDiCE_ArabicMMLU_egy", "AraDiCE_ArabicMMLU_high_humanities_history_egy", "AraDiCE_ArabicMMLU_high_humanities_history_lev",
         "AraDiCE_ArabicMMLU_high_humanities_islamic-studies_egy", "Tag", "aclue",
         "aclue_ancient_chinese_culture", "aclue_ancient_literature", "aclue_ancient_medical",
@@ -55,7 +57,7 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
         "agieval_gaokao_biology", "anagrams1", "anagrams2",
         "apps", "arabic", "arabic_exams",
         "arabic_exams_light", "arabic_leaderboard_acva", "arabic_leaderboard_acva_Algeria",
-        "arabic_leaderboard_acva_Algeria_light", "arabicmmlu", "arabicmmlu_accounting_university",
+        "arabic_leaderboard_acva_Algeria_light", "arabic_leaderboard_complete", "arabic_leaderboard_light", "arabicmmlu", "arabicmmlu_accounting_university",
         "arabicmmlu_arabic_language_general", "arabicmmlu_arabic_language_grammar", "arabicmmlu_arabic_language_high_school",
         "arc", "arc_ar", "arc_bn",
         "arc_ca", "arc_ca_challenge", "arc_ca_easy",
@@ -93,8 +95,9 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
         "crows_pairs_english_age", "crows_pairs_english_autre", "crows_pairs_english_disability",
         "csatqa", "csatqa_gr", "csatqa_li",
         "csatqa_rch", "csatqa_rcs", "cycle",
-        "cycle_letters", "dbpedia", "dbpedia_14",
-        "doc", "doc_vqa", "ds1000",
+        "cycle_letters", "darijammlu", "dbpedia",
+        "dbpedia_14", "doc", "doc_vqa",
+        "ds1000",
         "epec", "epec_koref_bin", "eq",
         "eq_bench", "escola", "ethics",
         "ethics_cm", "ethics_deontology", "ethics_justice",
