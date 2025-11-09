@@ -16,6 +16,8 @@ def execute_tasks(args):
     from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
     from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
     from wisent.core.model_persistence import ModelPersistence, create_classifier_metadata
+    from wisent.core.detection_handling import DetectionHandler, DetectionAction
+    from wisent.core.evaluators.personalization.coherence import evaluate_quality
 
     # Check if this is inference-only mode with steering vector
     if args.inference_only and args.load_steering_vector:
@@ -228,6 +230,41 @@ def execute_tasks(args):
     print(f"\n🤖 Loading model '{args.model}'...")
     model = WisentModel(args.model, device=args.device)
     print(f"   ✓ Model loaded with {model.num_layers} layers")
+
+    # 3.5. Initialize detection handler if enabled
+    detection_handler = None
+    detection_stats = {
+        'total_outputs': 0,
+        'issues_detected': 0,
+        'low_quality_outputs': 0,
+        'handled_outputs': 0,
+        'detection_types': {}
+    }
+
+    if hasattr(args, 'detection_action') and args.detection_action != 'pass_through':
+        # Map string action to enum
+        action_map = {
+            'pass_through': DetectionAction.PASS_THROUGH,
+            'replace_with_placeholder': DetectionAction.REPLACE_WITH_PLACEHOLDER,
+            'regenerate_until_safe': DetectionAction.REGENERATE_UNTIL_SAFE
+        }
+        detection_action = action_map.get(args.detection_action, DetectionAction.REPLACE_WITH_PLACEHOLDER)
+
+        detection_handler = DetectionHandler(
+            action=detection_action,
+            placeholder_message=getattr(args, 'placeholder_message', None),
+            max_regeneration_attempts=getattr(args, 'max_regeneration_attempts', 3),
+            log_detections=True
+        )
+        print(f"\n🛡️  Detection handling enabled")
+        print(f"   Action: {args.detection_action}")
+        print(f"   Threshold: {getattr(args, 'detection_threshold', 0.6)}")
+
+    enable_quality_check = hasattr(args, 'enable_quality_check') and args.enable_quality_check
+    if enable_quality_check:
+        quality_threshold = getattr(args, 'quality_threshold', 50.0)
+        print(f"\n🔍 Quality checking enabled")
+        print(f"   Minimum quality score: {quality_threshold}/100")
 
     # 4. Parse layer specification
     layer = int(args.layer) if isinstance(args.layer, str) else args.layer
@@ -481,6 +518,73 @@ def execute_tasks(args):
                     pred_proba = pred_proba_result if isinstance(pred_proba_result, float) else pred_proba_result[0]
                     pred_label = int(pred_proba > args.detection_threshold)
 
+                    # Update detection stats
+                    detection_stats['total_outputs'] += 1
+                    original_response = response
+                    quality_score = None
+                    issue_detected = False
+                    detection_type = None
+
+                    # Quality check: detect gibberish/low-quality outputs
+                    if enable_quality_check:
+                        import torch as quality_torch
+                        # Get device from model
+                        model_device = quality_torch.device(model.device)
+                        quality_score = evaluate_quality(
+                            response=response,
+                            model=model.hf_model,  # WisentModel wraps the HF model
+                            tokenizer=model.tokenizer,
+                            device=model_device
+                        )
+
+                        if quality_score < quality_threshold:
+                            detection_stats['low_quality_outputs'] += 1
+                            issue_detected = True
+                            detection_type = 'low_quality'
+
+                            if detection_handler:
+                                # Handle low quality output
+                                response = detection_handler.handle_detection(
+                                    original_response=response,
+                                    detection_type='gibberish',
+                                    confidence_score=(quality_threshold - quality_score) / quality_threshold,
+                                    original_prompt=question,
+                                    regenerate_function=None  # Not implemented for now
+                                )
+                                detection_stats['handled_outputs'] += 1
+
+                    # Classifier detection: handle when classifier detects issue
+                    if detection_handler and pred_label == 0 and pred_proba < args.detection_threshold:
+                        # Classifier detected negative/problematic content
+                        detection_stats['issues_detected'] += 1
+                        issue_detected = True
+                        detection_type = 'classifier_flagged'
+
+                        # Determine detection type based on task
+                        if 'halluc' in task_name.lower():
+                            detection_type = 'hallucination'
+                        elif 'bias' in task_name.lower():
+                            detection_type = 'bias'
+                        elif 'harm' in task_name.lower():
+                            detection_type = 'harmful_content'
+                        else:
+                            detection_type = 'unknown_issue'
+
+                        # Track detection types
+                        if detection_type not in detection_stats['detection_types']:
+                            detection_stats['detection_types'][detection_type] = 0
+                        detection_stats['detection_types'][detection_type] += 1
+
+                        # Handle the detection
+                        response = detection_handler.handle_detection(
+                            original_response=response,
+                            detection_type=detection_type,
+                            confidence_score=float(1.0 - pred_proba),
+                            original_prompt=question,
+                            regenerate_function=None  # Not implemented for now
+                        )
+                        detection_stats['handled_outputs'] += 1
+
                     # Ground truth from evaluator
                     ground_truth = 1 if eval_result.ground_truth == "TRUTHFUL" else 0
 
@@ -496,13 +600,18 @@ def execute_tasks(args):
                     generation_results.append({
                         'question': question,
                         'response': response,
+                        'original_response': original_response,
                         'expected': expected,
                         'eval_result': eval_result.ground_truth,
                         'classifier_pred': pred_label,
                         'classifier_proba': float(pred_proba),
                         'correct': pred_label == ground_truth,
                         'token_scores': token_scores,  # Per-token classifier probabilities
-                        'num_tokens': len(token_scores)
+                        'num_tokens': len(token_scores),
+                        'quality_score': quality_score,
+                        'issue_detected': issue_detected,
+                        'detection_type': detection_type,
+                        'response_modified': response != original_response
                     })
 
     print(f"\n   ✓ Evaluated {len(generation_results)} generations")
@@ -526,6 +635,38 @@ def execute_tasks(args):
         print(f"     • Precision: {real_precision:.4f}")
         print(f"     • Recall:    {real_recall:.4f}")
         print(f"     • F1 Score:  {real_f1:.4f}")
+
+        # Print quality statistics if quality checking was enabled
+        if enable_quality_check:
+            quality_scores = [r['quality_score'] for r in generation_results if r['quality_score'] is not None]
+            if quality_scores:
+                avg_quality = sum(quality_scores) / len(quality_scores)
+                min_quality = min(quality_scores)
+                max_quality = max(quality_scores)
+                print(f"\n   📊 Quality Statistics:")
+                print(f"     • Average quality: {avg_quality:.2f}/100")
+                print(f"     • Min quality:     {min_quality:.2f}/100")
+                print(f"     • Max quality:     {max_quality:.2f}/100")
+                print(f"     • Threshold:       {quality_threshold:.2f}/100")
+
+        # Print detection statistics
+        if detection_handler or enable_quality_check:
+            print(f"\n   🛡️  Detection Statistics:")
+            print(f"     • Total outputs:        {detection_stats['total_outputs']}")
+            print(f"     • Issues detected:      {detection_stats['issues_detected']}")
+            print(f"     • Low quality outputs:  {detection_stats['low_quality_outputs']}")
+            print(f"     • Handled outputs:      {detection_stats['handled_outputs']}")
+
+            if detection_stats['detection_types']:
+                print(f"     • Detection breakdown:")
+                for det_type, count in detection_stats['detection_types'].items():
+                    print(f"       - {det_type}: {count}")
+
+            # Calculate percentage of outputs that had issues
+            if detection_stats['total_outputs'] > 0:
+                issue_rate = (detection_stats['issues_detected'] + detection_stats['low_quality_outputs']) / detection_stats['total_outputs']
+                print(f"     • Issue rate:           {issue_rate:.1%}")
+
     else:
         real_accuracy = real_f1 = real_precision = real_recall = 0.0
         generation_results = []
@@ -577,6 +718,9 @@ def execute_tasks(args):
                     'aggregation': args.token_aggregation,
                     'threshold': args.detection_threshold,
                     'num_generations': len(generation_results),
+                    'detection_stats': detection_stats,
+                    'quality_check_enabled': enable_quality_check,
+                    'quality_threshold': quality_threshold if enable_quality_check else None,
                     'generations': generation_results
                 }, f, indent=2)
             print(f"   ✓ Generation details (with token scores) saved to: {generation_path}")
