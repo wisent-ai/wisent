@@ -499,6 +499,17 @@ def setup_tasks_parser(parser):
         choices=["regenerate", "stop", "flag"],
         help="Action when nonsense is detected: regenerate, stop generation, or flag for review",
     )
+    parser.add_argument(
+        "--enable-quality-check",
+        action="store_true",
+        help="Enable quality/coherence checking of generated outputs (detects gibberish)",
+    )
+    parser.add_argument(
+        "--quality-threshold",
+        type=float,
+        default=50.0,
+        help="Minimum quality score (1-100) to consider output acceptable (default: 50.0)",
+    )
 
     # Performance monitoring options
     parser.add_argument(
