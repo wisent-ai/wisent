@@ -18,6 +18,9 @@ _LOG = setup_logger(__name__)
 class DarijahellaswagExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Darijahellaswag benchmark."""
 
+    task_names = ("darijahellaswag",)
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -97,19 +100,38 @@ class DarijahellaswagExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: query + choices + gold/label (Hellaswag style)
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "darijahellaswag"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+                choices = doc.get("choices", [])
+
+                # Get answer index from 'gold' or 'label' field
+                answer = doc.get("gold", doc.get("label", None))
+
+                if choices and answer is not None:
+                    if isinstance(answer, str):
+                        if len(answer) == 1 and answer.isalpha():
+                            answer_idx = ord(answer.upper()) - ord('A')
+                        else:
+                            answer_idx = int(answer)
+                    else:
+                        answer_idx = int(answer)
+
+                    if 0 <= answer_idx < len(choices):
+                        correct = str(choices[answer_idx]).strip()
+                        incorrect_idx = (answer_idx + 1) % len(choices)
+                        incorrect = str(choices[incorrect_idx]).strip()
+
+                        formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+                        metadata = {"label": "darijahellaswag"}
+
+                        return self._build_pair(
+                            question=formatted_question,
+                            correct=correct,
+                            incorrect=incorrect,
+                            metadata=metadata,
+                        )
+
                 return None
 
             if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):

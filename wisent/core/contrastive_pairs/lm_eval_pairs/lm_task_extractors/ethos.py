@@ -16,7 +16,10 @@ _LOG = setup_logger(__name__)
 
 
 class EthosExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Ethos benchmark."""
+    """Extractor for Ethos benchmark - hate speech classification task."""
+
+    task_names = ("ethos", "ethos_binary")
+    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,
@@ -30,70 +33,59 @@ class EthosExtractor(LMEvalBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
+        # Ethos format: source (prompt) + target (classification label)
+        # Group by target label
+        hate_speech_texts = []
+        not_hate_speech_texts = []
+
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
-            if pair is not None:
-                pairs.append(pair)
-                if max_items is not None and len(pairs) >= max_items:
-                    break
+            source = doc.get("source", "").strip()
+            target = doc.get("target", "").strip().lower()
+
+            if not source or not target:
+                continue
+
+            # Extract the actual text from the source (it contains the full prompt)
+            # Format: "Classify... Sentence:\n<text>\nHate Speech:\n"
+            if "Sentence:" in source:
+                text_part = source.split("Sentence:")[1].strip()
+                # Remove the "Hate Speech:" part if present
+                if "\nHate Speech:" in text_part:
+                    text_part = text_part.split("\nHate Speech:")[0].strip()
+                elif "\n" in text_part:
+                    text_part = text_part.split("\n")[0].strip()
+
+                if "hate speech" in target and "not" not in target:
+                    hate_speech_texts.append((source, target))
+                elif "not hate speech" in target:
+                    not_hate_speech_texts.append((source, target))
+
+        # Create pairs
+        num_pairs = min(len(hate_speech_texts), len(not_hate_speech_texts))
+        if max_items is not None:
+            num_pairs = min(num_pairs, max_items)
+
+        for i in range(num_pairs):
+            # Use source (full prompt) and target (correct label)
+            source_not_hate, target_not_hate = not_hate_speech_texts[i]
+            source_hate, target_hate = hate_speech_texts[i]
+
+            # Use the same prompt format for both
+            metadata = {"label": "ethos"}
+
+            pair = self._build_pair(
+                question=source_not_hate,
+                correct=target_not_hate,
+                incorrect=target_hate,
+                metadata=metadata,
+            )
+            pairs.append(pair)
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
             log.warning("No valid pairs extracted", extra={"task": task_name})
 
         return pairs
-
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
-        try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
-
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "ethos"}
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
-
-        except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
-            return None
 
     @staticmethod
     def _build_pair(

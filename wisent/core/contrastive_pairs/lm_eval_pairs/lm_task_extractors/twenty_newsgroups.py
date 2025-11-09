@@ -16,7 +16,10 @@ _LOG = setup_logger(__name__)
 
 
 class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Twenty Newsgroups benchmark."""
+    """Extractor for Twenty Newsgroups benchmark - text classification task."""
+
+    task_names = ("twenty_newsgroups", "20_newsgroups")
+    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,
@@ -47,46 +50,36 @@ class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            # Extract source (the classification prompt)
+            source = doc.get("source", "").strip()
+            if not source:
+                log.debug("Skipping doc due to missing source", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+            # Extract correct answer
+            target = doc.get("target", "").strip()
+            if not target:
+                log.debug("Skipping doc due to missing target", extra={"doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # Get all possible categories from the source prompt
+            # The prompt typically contains "...to one of these options: category1, category2, ..."
+            categories = self._extract_categories_from_source(source)
+            if not categories or target not in categories:
+                log.debug("Could not extract categories or target not in categories", extra={"doc": doc})
+                return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Select an incorrect answer (any category that's not the target)
+            incorrect = next((cat for cat in categories if cat != target), None)
+            if not incorrect:
+                log.debug("Could not find an incorrect category", extra={"doc": doc})
+                return None
+
             metadata = {"label": "twenty_newsgroups"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
+                question=source,
+                correct=target,
                 incorrect=incorrect,
                 metadata=metadata,
             )
@@ -94,6 +87,17 @@ class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
+
+    def _extract_categories_from_source(self, source: str) -> list[str]:
+        """Extract the list of categories from the classification prompt."""
+        # The source typically looks like:
+        # "Classify the Topic of the following Text to one of these options: category1, category2, ..."
+        # We need to extract the list of categories
+        if "options:" in source.lower():
+            options_part = source.split("options:")[-1].split("\n")[0]
+            categories = [cat.strip() for cat in options_part.split(",")]
+            return [cat for cat in categories if cat]
+        return []
 
     @staticmethod
     def _build_pair(

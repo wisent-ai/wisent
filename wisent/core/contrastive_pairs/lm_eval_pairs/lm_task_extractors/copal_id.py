@@ -18,6 +18,9 @@ _LOG = setup_logger(__name__)
 class CopalIdExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Copal Id benchmark."""
 
+    task_names = ("copal_id", "copal_id_standard", "copal_id_colloquial")
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -70,8 +73,22 @@ class CopalIdExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: COPAL format - premise + choice1/choice2 + question + label
+            if "premise" in doc and "choice1" in doc and "choice2" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                q_text = str(doc.get("question", "")).strip()
+                # Combine premise with question type (cause/effect)
+                question = f"{premise} ({q_text})"
+                choices = [
+                    str(doc.get("choice1", "")).strip(),
+                    str(doc.get("choice2", "")).strip(),
+                ]
+                answer_idx = doc.get("label")
+                if not isinstance(answer_idx, int):
+                    answer_idx = int(answer_idx) if answer_idx is not None else None
+
             # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):
