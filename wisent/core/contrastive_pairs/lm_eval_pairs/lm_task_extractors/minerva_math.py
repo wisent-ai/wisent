@@ -97,7 +97,23 @@ class MinervaMathExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: problem + answer (Minerva Math format)
+            elif "problem" in doc and "answer" in doc:
+                question = str(doc.get("problem", "")).strip()
+                correct_answer = str(doc.get("answer", "")).strip()
+                if question and correct_answer:
+                    metadata = {"label": "minerva_math"}
+                    # Create a negative answer that's clearly wrong
+                    incorrect_answer = "42" if correct_answer != "42" else "0"
+                    return self._build_pair(
+                        question=f"Question: {question}\nAnswer:",
+                        correct=correct_answer,
+                        incorrect=incorrect_answer,
+                        metadata=metadata,
+                    )
+                return None
+
+            # Format 4: query/prompt + answer
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer

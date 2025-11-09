@@ -100,18 +100,13 @@ class EvaluatorRotator:
         if evaluator is None:
             # Auto-select based on task_name if provided
             if self._task_name:
-                registry = BaseEvaluator.list_registered()
-                for name, cls in registry.items():
-                    task_names = getattr(cls, 'task_names', ())
-                    if self._task_name in task_names:
-                        logger.info(f"Auto-selected evaluator '{name}' for task '{self._task_name}'")
-                        return cls()
-                # NO FALLBACK - raise error if no evaluator found for task
-                raise EvaluatorError(
-                    f"No evaluator found for task '{self._task_name}'. "
-                    f"Available evaluators: {list(registry.keys())}. "
-                    f"Please specify an evaluator explicitly or add task_names to an evaluator."
-                )
+                # NEW ARCHITECTURE: Query extractor for evaluator name
+                from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
+                extractor = get_extractor(self._task_name)
+                evaluator_name = getattr(extractor, 'evaluator_name', 'log_likelihoods')
+                logger.info(f"Auto-selected evaluator '{evaluator_name}' for task '{self._task_name}' (from extractor)")
+                cls = BaseEvaluator.get(evaluator_name)
+                return cls()
 
             # NO FALLBACK - if no task_name and no evaluator, require explicit selection
             raise EvaluatorError(

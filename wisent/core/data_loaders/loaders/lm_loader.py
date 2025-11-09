@@ -239,10 +239,16 @@ class LMEvalDataLoader(BaseDataLoader):
                 return value
 
         # Check if this is a group task where get_task_dict returns subtasks directly
-        # (e.g., 'arithmetic' returns {'arithmetic_1dc': task, 'arithmetic_2da': task, ...})
-        if task_dict and all(key.startswith(lm_eval_task_name) for key in task_dict.keys()):
-            log.info(f"Task '{lm_eval_task_name}' is a group task with {len(task_dict)} subtasks: {list(task_dict.keys())}")
-            return task_dict
+        # This handles both cases:
+        # - 'arithmetic' returns {'arithmetic_1dc': task, 'arithmetic_2da': task, ...}
+        # - 'hendrycks_ethics' returns {'ethics_cm': task, 'ethics_justice': task, ...}
+        # Verify that values are actual Task objects to ensure this is a valid group task
+        if task_dict and len(task_dict) > 0:
+            from lm_eval.api.task import Task
+            # Check if at least one value is a Task object
+            if any(isinstance(v, Task) for v in task_dict.values()):
+                log.info(f"Task '{lm_eval_task_name}' is a group task with {len(task_dict)} subtasks: {list(task_dict.keys())}")
+                return task_dict
 
         raise DataLoaderError(f"lm-eval task '{lm_eval_task_name}' not found (requested as '{task_name}').")
     

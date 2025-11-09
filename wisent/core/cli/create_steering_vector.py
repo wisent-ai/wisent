@@ -66,7 +66,7 @@ def execute_create_steering_vector(args):
         # 3. Create steering method instance
         print(f"\n🧠 Initializing {args.method.upper()} steering method...")
 
-        if args.method == "caa":
+        if args.method.lower() == "caa":
             method = CAAMethod(kwargs={"normalize": args.normalize})
         else:
             raise ValueError(f"Unknown method: {args.method}")
