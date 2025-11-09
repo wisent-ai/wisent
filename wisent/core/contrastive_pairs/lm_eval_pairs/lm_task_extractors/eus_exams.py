@@ -18,6 +18,9 @@ _LOG = setup_logger(__name__)
 class EusExamsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Eus Exams benchmark."""
 
+    task_names = ("eus_exams", "eus_exams_es")
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -70,10 +73,10 @@ class EusExamsExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: question + choices/candidates + answer
+            if "question" in doc and ("choices" in doc or "candidates" in doc):
                 question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
+                choices_data = doc.get("choices") or doc.get("candidates", {})
                 if isinstance(choices_data, dict):
                     choices = choices_data.get("text", [])
                 elif isinstance(choices_data, list):

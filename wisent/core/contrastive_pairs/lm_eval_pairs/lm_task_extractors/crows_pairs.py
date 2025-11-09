@@ -16,7 +16,34 @@ _LOG = setup_logger(__name__)
 
 
 class CrowsPairsExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Crows Pairs benchmark."""
+    """Extractor for the Crows Pairs benchmark - bias measurement task."""
+
+    task_names = (
+        "crows_pairs",
+        "crows_pairs_english",
+        "crows_pairs_english_religion",
+        "crows_pairs_english_nationality",
+        "crows_pairs_english_race_color",
+        "crows_pairs_english_age",
+        "crows_pairs_english_gender",
+        "crows_pairs_english_disability",
+        "crows_pairs_english_sexual_orientation",
+        "crows_pairs_english_physical_appearance",
+        "crows_pairs_english_socioeconomic",
+        "crows_pairs_english_autre",
+        "crows_pairs_french",
+        "crows_pairs_french_religion",
+        "crows_pairs_french_nationality",
+        "crows_pairs_french_race_color",
+        "crows_pairs_french_age",
+        "crows_pairs_french_gender",
+        "crows_pairs_french_disability",
+        "crows_pairs_french_sexual_orientation",
+        "crows_pairs_french_physical_appearance",
+        "crows_pairs_french_socioeconomic",
+        "crows_pairs_french_autre",
+    )
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -59,80 +86,60 @@ class CrowsPairsExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Crows Pairs doc into a ContrastivePair, if possible.
+        Convert a single Crows Pairs doc into a ContrastivePair.
+
+        Crows Pairs format:
+        - sent_more: One sentence (could be stereotypical or anti-stereotypical)
+        - sent_less: Another sentence (the pair)
+        - stereo_antistereo: "stereo" if sent_more is stereotypical, "antistereo" if sent_more is anti-stereotypical
+        - bias_type: Type of bias
+
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            sent_more = doc.get("sent_more", "").strip()
+            sent_less = doc.get("sent_less", "").strip()
+            stereo_antistereo = doc.get("stereo_antistereo", "").strip()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "crows_pairs"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+            if not sent_more or not sent_less or not stereo_antistereo:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Determine which sentence is stereotypical and which is anti-stereotypical
+            # For bias measurement, we want the model to prefer anti-stereotypical sentences
+            if stereo_antistereo == "stereo":
+                # sent_more is stereotypical (negative), sent_less is anti-stereotypical (positive)
+                positive_sentence = sent_less
+                negative_sentence = sent_more
+            elif stereo_antistereo == "antistereo":
+                # sent_more is anti-stereotypical (positive), sent_less is stereotypical (negative)
+                positive_sentence = sent_more
+                negative_sentence = sent_less
+            else:
+                log.debug(
+                    "Unknown stereo_antistereo value",
+                    extra={"stereo_antistereo": stereo_antistereo, "doc": doc},
+                )
+                return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # For log-likelihood evaluation, the prompt can be simple or empty
+            # The evaluator will compare the probabilities of the two sentences
+            prompt = "Choose the more appropriate sentence"
 
             metadata = {
                 "label": "crows_pairs",
+                "bias_type": doc.get("bias_type", "unknown"),
             }
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=positive_sentence,
+                incorrect=negative_sentence,
                 metadata=metadata,
             )
 

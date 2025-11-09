@@ -16,7 +16,10 @@ _LOG = setup_logger(__name__)
 
 
 class CoqcatExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Coqcat benchmark."""
+    """Extractor for Coqcat benchmark - reading comprehension task."""
+
+    task_names = ("coqcat",)
+    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,
@@ -31,11 +34,11 @@ class CoqcatExtractor(LMEvalBenchmarkExtractor):
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
-            if pair is not None:
-                pairs.append(pair)
-                if max_items is not None and len(pairs) >= max_items:
-                    break
+            doc_pairs = self._extract_pairs_from_doc(doc)
+            pairs.extend(doc_pairs)
+            if max_items is not None and len(pairs) >= max_items:
+                pairs = pairs[:max_items]
+                break
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
@@ -43,57 +46,61 @@ class CoqcatExtractor(LMEvalBenchmarkExtractor):
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+    def _extract_pairs_from_doc(self, doc: dict[str, Any]) -> list[ContrastivePair]:
+        """
+        Extract multiple pairs from a single doc.
+        Each doc contains a story and multiple question-answer pairs.
+        """
+        pairs = []
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            story = doc.get("story", "").strip()
+            questions = doc.get("questions", [])
+            answers_dict = doc.get("answers", {})
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            if not story or not questions or not answers_dict:
+                return pairs
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
+            # Get the list of correct answers
+            correct_answers = answers_dict.get("input_text", [])
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+            if len(questions) != len(correct_answers):
+                return pairs
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # Create a pair for each question
+            for i, question in enumerate(questions):
+                if i >= len(correct_answers):
+                    break
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "coqcat"}
+                question_text = str(question).strip()
+                correct_answer = str(correct_answers[i]).strip()
 
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+                if not question_text or not correct_answer:
+                    continue
+
+                # For the incorrect answer, use another answer from a different question in the same story
+                # This ensures the incorrect answer is plausible but wrong for this specific question
+                incorrect_idx = (i + 1) % len(correct_answers)
+                incorrect_answer = str(correct_answers[incorrect_idx]).strip()
+
+                # Format: Story + Question
+                prompt = f"Story: {story}\n\nQuestion: {question_text}"
+
+                metadata = {"label": "coqcat"}
+
+                pair = self._build_pair(
+                    question=prompt,
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
+                )
+                pairs.append(pair)
 
         except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
-            return None
+            log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+            log.error("Error extracting pairs from doc", exc_info=exc, extra={"doc": doc})
+
+        return pairs
 
     @staticmethod
     def _build_pair(

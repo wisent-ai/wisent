@@ -16,7 +16,10 @@ _LOG = setup_logger(__name__)
 
 
 class EscolaExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Escola benchmark."""
+    """Extractor for Escola benchmark - grammatical acceptability task."""
+
+    task_names = ("escola",)
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -30,70 +33,45 @@ class EscolaExtractor(LMEvalBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
+        # Escola format: Sentence + Label (1=acceptable, 0=unacceptable)
+        # Group sentences by label
+        acceptable_sentences = []
+        unacceptable_sentences = []
+
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
-            if pair is not None:
-                pairs.append(pair)
-                if max_items is not None and len(pairs) >= max_items:
-                    break
+            sentence = doc.get("Sentence", "").strip()
+            label = doc.get("Label")
+
+            if not sentence or label is None:
+                continue
+
+            if label == 1:
+                acceptable_sentences.append(sentence)
+            elif label == 0:
+                unacceptable_sentences.append(sentence)
+
+        # Create pairs by pairing acceptable with unacceptable sentences
+        num_pairs = min(len(acceptable_sentences), len(unacceptable_sentences))
+        if max_items is not None:
+            num_pairs = min(num_pairs, max_items)
+
+        for i in range(num_pairs):
+            prompt = "acceptable"  # Placeholder prompt for log-likelihood evaluation
+            metadata = {"label": "escola"}
+
+            pair = self._build_pair(
+                question=prompt,
+                correct=acceptable_sentences[i],
+                incorrect=unacceptable_sentences[i],
+                metadata=metadata,
+            )
+            pairs.append(pair)
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
             log.warning("No valid pairs extracted", extra={"task": task_name})
 
         return pairs
-
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
-        try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
-
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "escola"}
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
-
-        except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
-            return None
 
     @staticmethod
     def _build_pair(

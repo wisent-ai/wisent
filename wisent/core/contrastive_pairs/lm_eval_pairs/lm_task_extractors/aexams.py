@@ -18,6 +18,9 @@ _LOG = setup_logger(__name__)
 class AexamsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Aexams benchmark."""
 
+    task_names = ("aexams",)
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -70,8 +73,24 @@ class AexamsExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: question (lowercase) + A/B/C/D + answer (lowercase) - aexams format
+            if "question" in doc and "A" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("A", "")).strip(),
+                    str(doc.get("B", "")).strip(),
+                    str(doc.get("C", "")).strip(),
+                    str(doc.get("D", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer = doc.get("answer", "A")
+                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
+                    answer_idx = ord(answer.upper()) - ord('A')
+                else:
+                    answer_idx = int(answer) if answer else 0
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

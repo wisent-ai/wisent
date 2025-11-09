@@ -11,14 +11,14 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["Anagrams1Extractor"]
+__all__ = ["CycleLettersExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class Anagrams1Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for Anagrams1 benchmark - anagram solving task."""
+class CycleLettersExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for Cycle Letters benchmark - word unscrambling task."""
 
-    task_names = ("anagrams1",)
+    task_names = ("cycle_letters",)
     evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
@@ -33,7 +33,7 @@ class Anagrams1Extractor(LMEvalBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        # For anagrams, we need to use other docs' completions as incorrect answers
+        # For cycle_letters, we need to use other docs' completions as incorrect answers
         # First, extract all valid completions
         valid_docs = []
         for doc in docs:
@@ -51,7 +51,7 @@ class Anagrams1Extractor(LMEvalBenchmarkExtractor):
             # Use the next doc's completion as incorrect answer
             incorrect_completion = valid_docs[(i + 1) % len(valid_docs)][1]
 
-            metadata = {"label": "anagrams1"}
+            metadata = {"label": "cycle_letters"}
             pair = self._build_pair(
                 question=context,
                 correct=correct_completion,

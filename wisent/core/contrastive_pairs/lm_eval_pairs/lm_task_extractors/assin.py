@@ -16,7 +16,10 @@ _LOG = setup_logger(__name__)
 
 
 class AssinExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Assin benchmark."""
+    """Extractor for Assin benchmark - entailment task."""
+
+    task_names = ("assin", "assin_entailment")
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -47,45 +50,38 @@ class AssinExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # Assin entailment format has premise, hypothesis, and entailment_judgment
+            premise = doc.get("premise", "").strip()
+            hypothesis = doc.get("hypothesis", "").strip()
+            entailment_judgment = doc.get("entailment_judgment")
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            if not premise or not hypothesis or entailment_judgment is None:
+                log.debug("Skipping doc due to missing premise/hypothesis/entailment", extra={"doc": doc})
+                return None
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
+            # Build the two choices following lm-eval format:
+            # Choice 0: "premise, certo? Também, hypothesis"  (no entailment)
+            # Choice 1: "premise, certo? Sim, hypothesis"     (entailment)
+            choice_0 = f"{premise}, certo? Também, {hypothesis}"
+            choice_1 = f"{premise}, certo? Sim, {hypothesis}"
+
+            # entailment_judgment: 0 = no entailment (choice 0), 1 = entailment (choice 1)
+            if entailment_judgment == 0:
+                correct = choice_0
+                incorrect = choice_1
+            elif entailment_judgment == 1:
+                correct = choice_1
+                incorrect = choice_0
             else:
+                log.debug("Invalid entailment_judgment value", extra={"entailment_judgment": entailment_judgment})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "assin"}
+            # Use premise as prompt (though the choices contain full text for log-likelihood)
+            prompt = premise
+            metadata = {"label": "assin_entailment"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

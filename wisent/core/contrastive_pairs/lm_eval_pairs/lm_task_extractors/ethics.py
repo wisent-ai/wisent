@@ -18,6 +18,9 @@ _LOG = setup_logger(__name__)
 class EthicsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Ethics benchmark."""
 
+    task_names = ("ethics", "ethics_cm", "ethics_deontology", "ethics_justice", "ethics_utilitarianism", "ethics_virtue")
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
