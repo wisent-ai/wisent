@@ -18,6 +18,9 @@ _LOG = setup_logger(__name__)
 class EqBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Eq Bench benchmark."""
 
+    task_names = ("eq_bench", "eq-bench_ca", "eq-bench_es")
+    evaluator_name = "exact_match"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -18,6 +18,9 @@ _LOG = setup_logger(__name__)
 class BbqExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Bbq benchmark."""
 
+    task_names = ("bbq",)
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -70,8 +73,22 @@ class BbqExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: BBQ format - context + question + ans0/ans1/ans2 + label
+            if "context" in doc and "question" in doc and "ans0" in doc and "label" in doc:
+                context = str(doc.get("context", "")).strip()
+                q_text = str(doc.get("question", "")).strip()
+                question = f"{context} {q_text}".strip()
+                choices = [
+                    str(doc.get("ans0", "")).strip(),
+                    str(doc.get("ans1", "")).strip(),
+                    str(doc.get("ans2", "")).strip(),
+                ]
+                answer_idx = doc.get("label")
+                if not isinstance(answer_idx, int):
+                    answer_idx = int(answer_idx) if answer_idx is not None else None
+
             # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

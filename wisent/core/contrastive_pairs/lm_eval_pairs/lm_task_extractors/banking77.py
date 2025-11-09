@@ -16,7 +16,10 @@ _LOG = setup_logger(__name__)
 
 
 class Banking77Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for Banking77 benchmark."""
+    """Extractor for Banking77 benchmark - intent classification task."""
+
+    task_names = ("banking77",)
+    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,
@@ -47,46 +50,36 @@ class Banking77Extractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # Banking77 is a generation task with source/target format
+            source = doc.get("source", "").strip()
+            target = doc.get("target", "").strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            if not source or not target:
+                log.debug("Skipping doc due to missing source or target", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+            # Extract available categories from the source prompt
+            categories = self._extract_categories_from_source(source)
+            if not categories:
+                log.debug("Could not extract categories from source", extra={"source": source})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # Verify target is in categories
+            if target not in categories:
+                log.debug("Target not found in categories", extra={"target": target, "categories": categories})
+                return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Select incorrect answer (any category that's not the target)
+            incorrect = next((cat for cat in categories if cat != target), None)
+            if not incorrect:
+                log.debug("Could not find incorrect category", extra={"target": target, "categories": categories})
+                return None
+
             metadata = {"label": "banking77"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
+                question=source,
+                correct=target,
                 incorrect=incorrect,
                 metadata=metadata,
             )
@@ -94,6 +87,39 @@ class Banking77Extractor(LMEvalBenchmarkExtractor):
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
+
+    @staticmethod
+    def _extract_categories_from_source(source: str) -> list[str]:
+        """
+        Extract category options from the source prompt.
+
+        Banking77 format: "Classify the Intent of the following Utterance to one of these options: activate my card, age limit, ..."
+        """
+        # Look for "options:" pattern (case insensitive search but preserve original case)
+        if "options:" in source.lower():
+            # Find the position and extract from original string (to preserve case)
+            lower_source = source.lower()
+            idx = lower_source.find("options:")
+            if idx != -1:
+                # Get text after "options:"
+                options_text = source[idx + len("options:"):]
+                # Split at the first period or newline to get just the category list
+                end_idx = len(options_text)
+                for delimiter in [".\n", ".\r", ".  ", ". "]:
+                    pos = options_text.find(delimiter)
+                    if pos != -1 and pos < end_idx:
+                        end_idx = pos
+                options_text = options_text[:end_idx].strip()
+
+                # Remove trailing period if present
+                if options_text.endswith("."):
+                    options_text = options_text[:-1]
+
+                # Split by comma and clean up
+                categories = [cat.strip() for cat in options_text.split(",") if cat.strip()]
+                return categories
+
+        return []
 
     @staticmethod
     def _build_pair(

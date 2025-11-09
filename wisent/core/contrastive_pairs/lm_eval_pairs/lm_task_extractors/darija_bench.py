@@ -18,6 +18,31 @@ _LOG = setup_logger(__name__)
 class DarijaBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Darija Bench benchmark."""
 
+    task_names = (
+        "darija_bench",
+        "darija_sentiment",
+        "darija_sentiment_mac",
+        "darija_sentiment_myc",
+        "darija_sentiment_msac",
+        "darija_sentiment_msda",
+        "darija_sentiment_electrom",
+        "darija_sentiment_tasks",
+        "darija_summarization",
+        "darija_summarization_task",
+        "darija_translation",
+        "darija_translation_doda",
+        "darija_translation_flores",
+        "darija_translation_madar",
+        "darija_translation_seed",
+        "darija_translation_tasks_doda",
+        "darija_translation_tasks_flores",
+        "darija_translation_tasks_madar",
+        "darija_translation_tasks_seed",
+        "darija_transliteration",
+        "darija_transliteration_tasks",
+    )
+    evaluator_name = "exact_match"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -69,6 +94,50 @@ class DarijaBenchExtractor(LMEvalBenchmarkExtractor):
             question = None
             choices = None
             answer_idx = None
+
+            # Format 0: messages format (darija_sentiment)
+            # messages[0]['content'] has question and choices, messages[1]['content'] has answer
+            if "messages" in doc and isinstance(doc["messages"], list) and len(doc["messages"]) >= 2:
+                user_msg = doc["messages"][0].get("content", "")
+                assistant_msg = doc["messages"][1].get("content", "").strip()
+
+                # Extract question and parse options from user message
+                # Format: "شنو هو الإحساس ديال هاد الجملة؟\nالعبارة: ...\n الإحتمالات:\n-سلبي\n-ايجابي\n-ماكينش إحساس"
+                if user_msg and assistant_msg:
+                    # Extract the choices from the user message
+                    lines = user_msg.split('\n')
+                    choices = []
+                    for line in lines:
+                        if line.strip().startswith('-'):
+                            choice = line.strip().lstrip('-').strip()
+                            if choice:
+                                choices.append(choice)
+
+                    # Find which choice matches the answer
+                    if choices and assistant_msg:
+                        try:
+                            answer_idx = choices.index(assistant_msg)
+                            question = user_msg
+                        except ValueError:
+                            # Try partial match
+                            for i, choice in enumerate(choices):
+                                if choice in assistant_msg or assistant_msg in choice:
+                                    answer_idx = i
+                                    question = user_msg
+                                    break
+
+                    if question and choices and answer_idx is not None:
+                        correct = choices[answer_idx]
+                        incorrect_idx = (answer_idx + 1) % len(choices)
+                        incorrect = choices[incorrect_idx]
+
+                        metadata = {"label": "darija_bench"}
+                        return self._build_pair(
+                            question=question,
+                            correct=correct,
+                            incorrect=incorrect,
+                            metadata=metadata,
+                        )
 
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
