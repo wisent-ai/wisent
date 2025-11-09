@@ -9,8 +9,10 @@ import argparse
 
 from wisent.core.parser_arguments.tasks_parser import setup_tasks_parser
 from wisent.core.parser_arguments.generate_pairs_parser import setup_generate_pairs_parser
+from wisent.core.parser_arguments.diagnose_pairs_parser import setup_diagnose_pairs_parser
 from wisent.core.parser_arguments.generate_pairs_from_task_parser import setup_generate_pairs_from_task_parser
 from wisent.core.parser_arguments.get_activations_parser import setup_get_activations_parser
+from wisent.core.parser_arguments.diagnose_vectors_parser import setup_diagnose_vectors_parser
 from wisent.core.parser_arguments.create_steering_vector_parser import setup_create_steering_vector_parser
 from wisent.core.parser_arguments.generate_vector_from_task_parser import setup_generate_vector_from_task_parser
 from wisent.core.parser_arguments.generate_vector_from_synthetic_parser import setup_generate_vector_from_synthetic_parser
@@ -49,6 +51,10 @@ def setup_parser() -> argparse.ArgumentParser:
     generate_parser = subparsers.add_parser("generate-pairs", help="Generate synthetic contrastive pairs")
     setup_generate_pairs_parser(generate_parser)
 
+    # Diagnose pairs command
+    diagnose_parser = subparsers.add_parser("diagnose-pairs", help="Diagnose and analyze existing contrastive pairs")
+    setup_diagnose_pairs_parser(diagnose_parser)
+
     # Generate pairs from task command
     generate_from_task_parser = subparsers.add_parser("generate-pairs-from-task", help="Generate contrastive pairs from lm-eval task")
 
@@ -56,6 +62,10 @@ def setup_parser() -> argparse.ArgumentParser:
     get_activations_parser = subparsers.add_parser("get-activations", help="Collect activations from contrastive pairs")
     setup_get_activations_parser(get_activations_parser)
     setup_generate_pairs_from_task_parser(generate_from_task_parser)
+
+    # Diagnose vectors command
+    diagnose_vectors_parser = subparsers.add_parser("diagnose-vectors", help="Diagnose and analyze existing steering vectors")
+    setup_diagnose_vectors_parser(diagnose_vectors_parser)
 
     # Create steering vector command
     create_steering_parser = subparsers.add_parser("create-steering-vector", help="Create steering vectors from enriched pairs")

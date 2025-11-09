@@ -122,6 +122,7 @@ class SyntheticContrastivePairsGenerator:
     def parse_pairs(self, raw: list[str]) -> ContrastivePairSet:
         """
         Parse raw model outputs into ContrastivePairSet objects.
+        Expects simple text format with ---PAIR--- markers, not JSON.
 
         arguments:
             raw:
@@ -129,8 +130,7 @@ class SyntheticContrastivePairsGenerator:
         returns:
             ContrastivePairSet object parsed from the raw string.
         """
-
-        import json
+        import re
 
         out: ContrastivePairSet = ContrastivePairSet(
             name=self.contrastive_set_name,
@@ -140,89 +140,103 @@ class SyntheticContrastivePairsGenerator:
         logger.info(f"[PARSE DEBUG] Received {len(raw)} raw outputs to parse")
 
         for idx, r in enumerate(raw):
-            logger.info(f"[PARSE DEBUG] Raw output {idx}:\n{r[:500]}")  # First 500 chars
+            logger.info(f"[PARSE DEBUG] Raw output {idx}:\n{r[:500]}")
 
-            original_r = r
-            #TODO: this is very ugly, need to improve robustness
-            # r can have instruction, and i want extacrt everything between ```json and ``` (after - You must return answer in valid JSON format only. Don't include any explanations or additional text.assistant)
-            # also try to recover like Expecting ',' delimiter
-            if "```json" in r:
-                r = r.split("```json")[-1]
-                logger.info(f"[PARSE DEBUG] After json block extraction: {r[:200]}")
-            if "```" in r:
-                r = r.split("```")[0]
-                logger.info(f"[PARSE DEBUG] After backtick removal: {r[:200]}")
-            r = r.strip()
+            # Split by ---PAIR--- markers (flexible with extra dashes)
+            pair_blocks = re.split(r'-+PAIR-+', r)
 
-            logger.info(f"[PARSE DEBUG] Final cleaned string to parse:\n{r}")
-
-            try:
-                data = json.loads(r)
-                logger.info(f"[PARSE DEBUG] Successfully parsed JSON: {data}")
-            except json.JSONDecodeError as e:
-                logger.warning(f"[PARSE DEBUG] JSON decode failed: {e}")
-                # try to recover from common errors
-                r = r.replace("'", '"').replace("```", '')
-                # Fix missing commas between array elements: }\n    { -> },\n    {
-                import re
-                r = re.sub(r'\}\s*\n\s*\{', '},\n    {', r)
-                logger.info(f"[PARSE DEBUG] Attempting recovery with quote replacement and comma fixing: {r[:200]}")
-                try:
-                    data = json.loads(r)
-                    logger.info(f"[PARSE DEBUG] Recovery successful: {data}")
-                except json.JSONDecodeError as e2:
-                    logger.error(f"[PARSE DEBUG] Recovery failed: {e2}. Skipping this output.")
-                    logger.error(f"[PARSE DEBUG] Original raw output was:\n{original_r}")
+            for block_idx, block in enumerate(pair_blocks):
+                if not block.strip():
                     continue
 
-            # Handle both dict with "pairs" key and direct list
-            if isinstance(data, list):
-                pairs_list = data
-                logger.info(f"[PARSE DEBUG] Data is a direct list with {len(pairs_list)} pairs")
-            elif isinstance(data, dict):
-                pairs_list = data.get("pairs", [])
-                logger.info(f"[PARSE DEBUG] Found {len(pairs_list)} pairs in data dict")
-            else:
-                logger.error(f"[PARSE DEBUG] Unexpected data type: {type(data)}")
-                continue
+                # Remove ---END--- marker if present (flexible with extra dashes/spaces)
+                block = re.sub(r'-+END-+', '', block).strip()
 
-            for item_idx, item in enumerate(pairs_list):
-                logger.info(f"[PARSE DEBUG] Processing pair {item_idx}: {item}")
-                cp = ContrastivePair(
-                    prompt=item["prompt"],
-                    positive_response=PositiveResponse(model_response=item["positive"]),
-                    negative_response=NegativeResponse(model_response=item["negative"]),
-                    label=item.get("label", self.trait_label),
-                    trait_description=item.get("trait_description", self.trait_description),
-                )
-                out.add(cp)
-                logger.info(f"[PARSE DEBUG] Successfully added pair {item_idx}")
+                if not block:
+                    continue
+
+                logger.info(f"[PARSE DEBUG] Processing block {block_idx}:\n{block[:200]}")
+
+                # Extract ALL occurrences - model generates ANY labels, not just PROMPT/POSITIVE/NEGATIVE
+                # Look for pattern: LABEL1: text1  LABEL2: text2  LABEL3: text3
+                # We assume first is prompt, second is positive, third is negative
+                lines = block.strip().split('\n')
+
+                prompts = []
+                positives = []
+                negatives = []
+
+                current_group = []
+                for line in lines:
+                    line = line.strip()
+                    if not line or line.startswith('---'):
+                        continue
+
+                    # Check if line contains colon (flexible parsing for any LABEL: or LABEL . or LABEL : format)
+                    # Model outputs variations like "POSITIVE:", "POSITIVE :", "POSITIVE.", "_PROMPT:", " PROMPT:", etc.
+                    if ':' in line or '.' in line:
+                        # Find the first colon or period as separator
+                        sep_idx = -1
+                        for sep in [':', '.']:
+                            idx = line.find(sep)
+                            if idx > 0:  # Must have at least one char before separator
+                                if sep_idx == -1 or idx < sep_idx:
+                                    sep_idx = idx
+
+                        if sep_idx > 0:
+                            # Extract text after separator
+                            text = line[sep_idx + 1:].strip()
+                            if text:
+                                current_group.append(text)
+
+                                # When we have 3 items, that's a complete pair
+                                if len(current_group) == 3:
+                                    prompts.append(current_group[0])
+                                    positives.append(current_group[1])
+                                    negatives.append(current_group[2])
+                                    current_group = []
+
+                # All three lists should have same length
+                if not (prompts and positives and negatives and len(prompts) == len(positives) == len(negatives)):
+                    logger.warning(f"[PARSE DEBUG] Mismatched or missing fields in block {block_idx}")
+                    continue
+
+                # Create a pair for each triple
+                for prompt, positive, negative in zip(prompts, positives, negatives):
+                    prompt = prompt.strip()
+                    positive = positive.strip()
+                    negative = negative.strip()
+
+                    if not (prompt and positive and negative):
+                        logger.warning(f"[PARSE DEBUG] Empty field(s) in triple")
+                        continue
+
+                    logger.info(f"[PARSE DEBUG] Extracted - Prompt: {prompt[:50]}, Positive: {positive[:50]}, Negative: {negative[:50]}")
+
+                    cp = ContrastivePair(
+                        prompt=prompt,
+                        positive_response=PositiveResponse(model_response=positive),
+                        negative_response=NegativeResponse(model_response=negative),
+                        label=self.trait_label,
+                        trait_description=self.trait_description,
+                    )
+                    out.add(cp)
+                    logger.info(f"[PARSE DEBUG] Successfully added pair")
 
         logger.info(f"[PARSE DEBUG] Finished parsing. Total pairs collected: {len(out)}")
         return out
 
     @staticmethod
     def _build_user_prompt(label: str, desc: str, k: int) -> str:
-        bullets = (
+        return (
+            f"Create {k} contrastive pairs.\n"
             f"- Trait label: {label}\n"
             f"- Trait description: {desc}\n"
-            f"- Num pairs: {k}\n"
+            f"\n"
+            f"Tips:\n"
+            f"- Make prompts specific to the topic but varied in wording and intent.\n"
+            f"- Keep negative examples safe (fictional, non-actionable).\n"
+            f"- Avoid meta-text like 'I cannot' or 'As an AI model'.\n"
+            f"\n"
+            f"Generate {k} pairs now."
         )
-        schema = (
-            "Return JSON like:\n"
-            "```json\n"
-            "{\n"
-            '  "pairs": [\n'
-            '    {"prompt": "...", "positive": "...", "negative": "...", '
-            f'"label": "{label}", "trait_description": "{desc}"\n'
-            "  ]\n"
-            "}\n"
-        )
-
-        tips = (
-            "- Make prompts specific to the topic but varied in wording and intent.\n"
-            "- Keep negative examples safe (fictional, non-actionable).\n"
-            "- Avoid meta-text like “I cannot” or “As an AI model…”.\n"
-            "- You must return answer in valid JSON format only. Don't include any explanations or additional text.\n"
-        )
-        return f"Create {k} contrastive pairs.\n{bullets}\n{schema}\n{tips}"

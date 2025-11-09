@@ -45,6 +45,15 @@ def setup_synthetic_parser(parser):
     # Output
     parser.add_argument("--output", type=str, default="./results", help="Output directory for results")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    parser.add_argument("--timing", action="store_true", help="Show timing information")
+    parser.add_argument("--similarity-threshold", type=float, default=0.95, help="Similarity threshold for deduplication")
+    parser.add_argument("--intermediate-dir", type=str, default=None, help="Directory for intermediate files")
+    parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files after completion")
+    parser.add_argument("--layers", type=str, default="15", help="Layers to extract activations from")
+    parser.add_argument("--token-aggregation", type=str, default="mean", help="Token aggregation method")
+    parser.add_argument("--prompt-strategy", type=str, default="full", help="Prompt strategy")
+    parser.add_argument("--method", type=str, default="CAA", help="Steering vector creation method")
+    parser.add_argument("--normalize", action="store_true", help="Normalize steering vectors")
 
     # K-Steering specific parameters
     parser.add_argument(

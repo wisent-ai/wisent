@@ -47,12 +47,37 @@ class EthicsExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: Ethics CM format (input + label with predefined choices)
+            # ethics_cm uses doc_to_choice: ['no', 'yes'] and label 0 or 1
+            if "input" in doc and "label" in doc and "choices" not in doc:
+                input_text = str(doc.get("input", "")).strip()
+                label = doc.get("label")
+
+                if input_text and isinstance(label, int) and label in [0, 1]:
+                    # For ethics_cm: label 0 = "no" (not wrong), label 1 = "yes" (wrong)
+                    # The question is "Is this wrong?"
+                    choices = ["no", "yes"]
+                    correct = choices[label]
+                    incorrect = choices[1 - label]
+
+                    question = f"{input_text}\nQuestion: Is this wrong?"
+
+                    metadata = {"label": "ethics_cm"}
+                    return self._build_pair(
+                        question=question,
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata=metadata,
+                    )
+                return None
+
+            # Format 2: Standard format with explicit choices
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

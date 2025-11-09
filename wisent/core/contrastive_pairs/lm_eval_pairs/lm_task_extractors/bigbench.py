@@ -69,16 +69,21 @@ class BigBenchExtractor(LMEvalBenchmarkExtractor):
         Returns None when required fields are missing or malformed.
         """
         try:
-            # Try to extract using common patterns
-            question = doc.get("input", doc.get("question", doc.get("text", ""))).strip()
+            # BigBench uses "inputs" (not "input")
+            question = doc.get("inputs", doc.get("input", doc.get("question", doc.get("text", "")))).strip()
 
             if hasattr(task_data, "doc_to_text"):
                 formatted_question = task_data.doc_to_text(doc)
             else:
                 formatted_question = question
 
-            # Try different answer patterns
-            correct_answer = str(doc.get("target", doc.get("answer", doc.get("output", "")))).strip()
+            # BigBench uses "targets" which is a list, and "multiple_choice_targets" for choices
+            # First try to get correct answer from targets list
+            targets = doc.get("targets", [])
+            if isinstance(targets, list) and len(targets) > 0:
+                correct_answer = str(targets[0]).strip()
+            else:
+                correct_answer = str(doc.get("target", doc.get("answer", doc.get("output", "")))).strip()
 
             if not all([question, correct_answer]):
                 _LOG.debug("Skipping: missing question or answer")
@@ -87,12 +92,20 @@ class BigBenchExtractor(LMEvalBenchmarkExtractor):
             # For BIG-Bench, create incorrect answer
             incorrect_answer = "incorrect response"
 
-            # If there are multiple choice options, try to find one
-            if "choices" in doc:
-                choices = doc["choices"]
-                for choice in choices:
-                    if str(choice) != correct_answer:
-                        incorrect_answer = str(choice)
+            # Try multiple_choice_targets first, then fall back to choices
+            choices = doc.get("multiple_choice_targets", doc.get("choices", []))
+            if choices:
+                # Use multiple_choice_scores if available to find incorrect answer
+                scores = doc.get("multiple_choice_scores", [])
+                for idx, choice in enumerate(choices):
+                    # If we have scores, use them to identify incorrect answers (score = 0)
+                    # Otherwise just pick one that doesn't match correct_answer
+                    if scores and len(scores) > idx:
+                        if scores[idx] == 0 and str(choice).strip() != correct_answer:
+                            incorrect_answer = str(choice).strip()
+                            break
+                    elif str(choice).strip() != correct_answer:
+                        incorrect_answer = str(choice).strip()
                         break
 
             metadata = {

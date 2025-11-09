@@ -70,8 +70,20 @@ class ArabicmmluExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: Question + Option 1/2/3/4/5 + Answer Key (capitalized ArabicMMLU format)
+            if "Question" in doc and "Answer Key" in doc:
+                question = str(doc.get("Question", "")).strip()
+                choices = []
+                for i in range(1, 6):  # Option 1 through Option 5
+                    opt = doc.get(f"Option {i}")
+                    if opt is not None and str(opt).strip():
+                        choices.append(str(opt).strip())
+                answer_key = str(doc.get("Answer Key", "")).strip()
+                if answer_key and len(answer_key) == 1 and answer_key.isalpha():
+                    answer_idx = ord(answer_key.upper()) - ord('A')
+
             # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

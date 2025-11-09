@@ -18,6 +18,8 @@ _LOG = setup_logger(__name__)
 class KmmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Kmmlu benchmark."""
 
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -70,8 +72,22 @@ class KmmluExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: question + A/B/C/D fields + answer (KMMLU format)
+            if "question" in doc and "A" in doc and "answer" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = []
+                for letter in ['A', 'B', 'C', 'D']:
+                    choice = doc.get(letter)
+                    if choice is not None and str(choice).strip():
+                        choices.append(str(choice).strip())
+
+                answer = str(doc.get("answer", "")).strip()
+                # answer is a string like '0', '1', '2', '3'
+                if answer and answer.isdigit():
+                    answer_idx = int(answer)
+
             # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

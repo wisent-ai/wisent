@@ -65,12 +65,28 @@ class BlimpExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: sentence_good + sentence_bad (Blimp format)
+            if "sentence_good" in doc and "sentence_bad" in doc:
+                sentence_good = str(doc.get("sentence_good", "")).strip()
+                sentence_bad = str(doc.get("sentence_bad", "")).strip()
+
+                if sentence_good and sentence_bad:
+                    metadata = {"label": "blimp"}
+                    # Blimp tests grammatical acceptability
+                    return self._build_pair(
+                        question="Which sentence is grammatically correct?",
+                        correct=sentence_good,
+                        incorrect=sentence_bad,
+                        metadata=metadata,
+                    )
+                return None
+
             # Try multiple possible schema formats
             question = None
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
+            # Format 2: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})

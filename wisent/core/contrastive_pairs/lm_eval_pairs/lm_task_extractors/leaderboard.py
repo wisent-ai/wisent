@@ -70,8 +70,31 @@ class LeaderboardExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: question + choices + answer_index (leaderboard_musr format)
+            if "question" in doc and "choices" in doc and "answer_index" in doc:
+                question = str(doc.get("question", "")).strip()
+                # Add narrative if available
+                narrative = doc.get("narrative", "")
+                if narrative:
+                    question = f"{narrative}\n{question}"
+                choices_data = doc.get("choices", {})
+                if isinstance(choices_data, str):
+                    # Choices might be a string representation of a list
+                    import ast
+                    try:
+                        choices = ast.literal_eval(choices_data)
+                    except:
+                        choices = []
+                elif isinstance(choices_data, dict):
+                    choices = choices_data.get("text", [])
+                elif isinstance(choices_data, list):
+                    choices = choices_data
+                else:
+                    choices = []
+                answer_idx = int(doc.get("answer_index", 0))
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):
@@ -84,7 +107,24 @@ class LeaderboardExtractor(LMEvalBenchmarkExtractor):
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
+            # Format 3: Question + choice1/choice2/choice3/choice4 + answer (leaderboard_gpqa format)
+            elif "Question" in doc and "choice1" in doc:
+                question = str(doc.get("Question", "")).strip()
+                choices = [
+                    str(doc.get("choice1", "")).strip(),
+                    str(doc.get("choice2", "")).strip(),
+                    str(doc.get("choice3", "")).strip(),
+                    str(doc.get("choice4", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer = doc.get("answer", "(A)")
+                # Extract letter from answer format like "(A)" or "A"
+                answer_str = str(answer).strip()
+                if answer_str.startswith("(") and answer_str.endswith(")"):
+                    answer_str = answer_str[1:-1]
+                answer_idx = ord(answer_str.upper()) - ord('A')
+
+            # Format 4: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()
                 choices = [

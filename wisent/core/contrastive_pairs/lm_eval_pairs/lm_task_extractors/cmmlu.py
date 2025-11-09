@@ -70,8 +70,22 @@ class CmmluExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: Question + A/B/C/D + Answer (CMMLU capitalized format)
+            if "Question" in doc and "A" in doc and "Answer" in doc:
+                question = str(doc.get("Question", "")).strip()
+                choices = []
+                for letter in ['A', 'B', 'C', 'D']:
+                    choice = doc.get(letter)
+                    if choice is not None and str(choice).strip():
+                        choices.append(str(choice).strip())
+
+                answer = str(doc.get("Answer", "")).strip()
+                # answer is a letter like 'A', 'B', 'C', 'D'
+                if answer and len(answer) == 1 and answer.isalpha():
+                    answer_idx = ord(answer.upper()) - ord('A')
+
             # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

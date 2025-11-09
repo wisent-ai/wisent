@@ -62,6 +62,8 @@ def execute_generate_vector_from_synthetic(args):
             similarity_threshold=args.similarity_threshold,
             verbose=args.verbose,
             timing=args.timing,
+            nonsense=getattr(args, 'nonsense', False),
+            nonsense_mode=getattr(args, 'nonsense_mode', None),
         )
         
         execute_generate_pairs(pairs_args)

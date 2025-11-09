@@ -33,7 +33,7 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--device",
         type=str,
-        default="cuda",
+        default=None,
         help="Device to run on (cuda, cpu, mps)"
     )
 

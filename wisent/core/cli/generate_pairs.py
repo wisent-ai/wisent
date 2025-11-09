@@ -18,65 +18,101 @@ def execute_generate_pairs(args):
     print(f"\n🎨 Generating synthetic contrastive pairs")
     print(f"   Trait: {args.trait}")
     print(f"   Number of pairs: {args.num_pairs}")
-    print(f"   Model: {args.model}")
+
+    # Check if nonsense mode is enabled
+    nonsense_mode = getattr(args, 'nonsense_mode', None) if getattr(args, 'nonsense', False) else None
 
     try:
-        # 1. Load model
-        print(f"\n🤖 Loading model '{args.model}'...")
-        model = WisentModel(args.model, device=args.device)
-        print(f"   ✓ Model loaded with {model.num_layers} layers")
-
-        # 2. Set up generation config
-        # Scale max_new_tokens based on number of pairs (roughly 150 tokens per pair + buffer)
-        estimated_tokens = args.num_pairs * 150 + 500
-        max_tokens = max(2048, min(estimated_tokens, 8192))  # Between 2048 and 8192
-
-        generation_config = {
-            "max_new_tokens": max_tokens,
-            "temperature": 0.9,
-            "do_sample": True,
-        }
-
-        # 3. Set up cleaning pipeline
-        print(f"\n🧹 Setting up cleaning pipeline...")
-        from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
-
-        cleaning_steps = [
-            DeduperCleaner(deduper=SimHashDeduper(threshold_bits=3)),
-        ]
-        cleaner = PairsCleaner(steps=cleaning_steps)
-
-        # 4. Set up components
-        db_instructions = Default_DB_Instructions()
-        diversity = FastDiversity()
-
-        # 5. Create generator
-        print(f"\n⚙️  Initializing generator...")
-
-        # Determine nonsense mode if applicable
-        nonsense_mode = getattr(args, 'nonsense_mode', None) if getattr(args, 'nonsense', False) else None
+        # If nonsense mode, use programmatic generator (no LLM needed!)
         if nonsense_mode:
-            print(f"   🎲 Nonsense mode: {nonsense_mode}")
+            print(f"   🎲 Nonsense mode: {nonsense_mode} (programmatic generation)")
+            from wisent.core.synthetic.generators.nonsense_generator import ProgrammaticNonsenseGenerator
+            from wisent.core.synthetic.generators.core.atoms import GenerationReport
 
-        generator = SyntheticContrastivePairsGenerator(
-            model=model,
-            generation_config=generation_config,
-            contrastive_set_name=f"synthetic_{args.trait[:20].replace(' ', '_')}",
-            trait_description=args.trait,
-            trait_label=args.trait[:50],
-            db_instructions=db_instructions,
-            cleaner=cleaner,
-            diversity=diversity,
-            nonsense_mode=nonsense_mode,
-        )
+            # 1. Create programmatic generator
+            print(f"\n⚙️  Initializing programmatic nonsense generator...")
+            generator = ProgrammaticNonsenseGenerator(
+                nonsense_mode=nonsense_mode,
+                contrastive_set_name=f"nonsense_{nonsense_mode}_{args.trait[:20].replace(' ', '_')}",
+                trait_label=args.trait[:50],
+                trait_description=args.trait,
+            )
 
-        # 6. Generate pairs
-        print(f"\n🎯 Generating {args.num_pairs} contrastive pairs...")
-        if args.timing:
-            import time
-            start_time = time.time()
+            # 2. Generate pairs (fast - no LLM!)
+            print(f"\n🎯 Generating {args.num_pairs} nonsense pairs programmatically...")
+            if args.timing:
+                import time
+                start_time = time.time()
 
-        pair_set, report = generator.generate(num_pairs=args.num_pairs)
+            pair_set = generator.generate(num_pairs=args.num_pairs)
+
+            if args.timing:
+                elapsed = time.time() - start_time
+                print(f"   ⏱️  Generation time: {elapsed:.2f}s")
+
+            # Create a simple report (no diversity metrics for pure nonsense)
+            report = GenerationReport(
+                requested=args.num_pairs,
+                kept_after_dedupe=len(pair_set.pairs),
+                retries_for_refusals=0,
+                diversity=None,
+            )
+
+        else:
+            # Normal LLM-based generation
+            print(f"   Model: {args.model}")
+
+            # 1. Load model
+            print(f"\n🤖 Loading model '{args.model}'...")
+            model = WisentModel(args.model, device=args.device)
+            print(f"   ✓ Model loaded with {model.num_layers} layers")
+
+            # 2. Set up generation config
+            # Scale max_new_tokens based on number of pairs (roughly 150 tokens per pair + buffer)
+            estimated_tokens = args.num_pairs * 150 + 500
+            max_tokens = max(2048, min(estimated_tokens, 8192))  # Between 2048 and 8192
+
+            generation_config = {
+                "max_new_tokens": max_tokens,
+                "temperature": 0.9,
+                "do_sample": True,
+            }
+
+            # 3. Set up cleaning pipeline
+            print(f"\n🧹 Setting up cleaning pipeline...")
+            from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
+
+            cleaning_steps = [
+                DeduperCleaner(deduper=SimHashDeduper(threshold_bits=3)),
+            ]
+            cleaner = PairsCleaner(steps=cleaning_steps)
+
+            # 4. Set up components
+            db_instructions = Default_DB_Instructions()
+            diversity = FastDiversity()
+
+            # 5. Create generator
+            print(f"\n⚙️  Initializing generator...")
+
+            generator = SyntheticContrastivePairsGenerator(
+                model=model,
+                generation_config=generation_config,
+                contrastive_set_name=f"synthetic_{args.trait[:20].replace(' ', '_')}",
+                trait_description=args.trait,
+                trait_label=args.trait[:50],
+                db_instructions=db_instructions,
+                cleaner=cleaner,
+                diversity=diversity,
+                nonsense_mode=None,  # Not used for LLM-based generation
+            )
+
+            # 6. Generate pairs
+            print(f"\n🎯 Generating {args.num_pairs} contrastive pairs...")
+            if args.timing:
+                import time
+                start_time = time.time()
+
+            pair_set, report = generator.generate(num_pairs=args.num_pairs)
 
         if args.timing:
             elapsed = time.time() - start_time
@@ -109,11 +145,16 @@ def execute_generate_pairs(args):
             'trait_description': args.trait,
             'trait_label': pair_set.task_type,
             'num_pairs': len(pairs_data),
-            'generation_config': generation_config,
             'requested': report.requested,
             'kept_after_dedupe': report.kept_after_dedupe,
             'pairs': pairs_data
         }
+
+        # Only add generation_config if it was used (LLM-based generation)
+        if not nonsense_mode:
+            save_data['generation_config'] = generation_config
+        else:
+            save_data['generation_method'] = f'programmatic_nonsense_{nonsense_mode}'
         if report.diversity:
             save_data['diversity'] = {
                 'unique_unigrams': report.diversity.unique_unigrams,

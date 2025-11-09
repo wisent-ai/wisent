@@ -31,7 +31,9 @@ class DockerSandboxExecutor(SandboxExecutor):
     def __init__(self, image: str = DEFAULT_IMAGE, runtime: str | None = None):
         self.image = image
         self.runtime = runtime
-        self._check_docker_available()
+        # Skip Docker health check if environment variable is set (useful for slow Docker Desktop on macOS)
+        if not os.environ.get('SKIP_DOCKER_HEALTH_CHECK', '').lower() == 'true':
+            self._check_docker_available()
 
     def _check_docker_available(self) -> None:
         """
@@ -45,7 +47,7 @@ class DockerSandboxExecutor(SandboxExecutor):
                 ["docker", "info"],
                 capture_output=True,
                 text=True,
-                timeout=5
+                timeout=300
             )
             if result.returncode != 0:
                 raise RuntimeError(

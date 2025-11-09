@@ -70,8 +70,21 @@ class KobestExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: paragraph + question + label (BoolQ style)
+            if "paragraph" in doc and "question" in doc and "label" in doc:
+                paragraph = str(doc.get("paragraph", "")).strip()
+                question_text = str(doc.get("question", "")).strip()
+                label = doc.get("label")
+
+                if paragraph and question_text and isinstance(label, int) and label in [0, 1]:
+                    # label 0 = No/False, label 1 = Yes/True
+                    choices = ["No", "Yes"]
+                    answer_idx = label
+                    # Combine paragraph and question
+                    question = f"{paragraph}\n{question_text}"
+
             # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):
