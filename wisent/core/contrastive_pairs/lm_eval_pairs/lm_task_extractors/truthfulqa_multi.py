@@ -14,6 +14,17 @@ if TYPE_CHECKING:
 __all__ = ["TruthfulqaMultiExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "truthfulqa-multi_gen_ca", "truthfulqa-multi_gen_en", "truthfulqa-multi_gen_es",
+    "truthfulqa-multi_gen_eu", "truthfulqa-multi_gen_gl", "truthfulqa-multi_mc1_ca",
+    "truthfulqa-multi_mc1_en", "truthfulqa-multi_mc1_es", "truthfulqa-multi_mc1_eu",
+    "truthfulqa-multi_mc1_gl", "truthfulqa-multi_mc2_ca", "truthfulqa-multi_mc2_en",
+    "truthfulqa-multi_mc2_es", "truthfulqa-multi_mc2_eu", "truthfulqa-multi_mc2_gl",
+)
+
+# Mixed evaluator - has both gen (generation) and mc (log_likelihoods) variants
+evaluator_name = "generation"  # Using generation as default since gen tasks are listed first
+
 
 class TruthfulqaMultiExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Truthfulqa Multi benchmark."""

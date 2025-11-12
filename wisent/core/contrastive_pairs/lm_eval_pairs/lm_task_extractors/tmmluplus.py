@@ -14,6 +14,36 @@ if TYPE_CHECKING:
 __all__ = ["TmmluplusExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "tmmluplus_accounting", "tmmluplus_administrative_law", "tmmluplus_advance_chemistry",
+    "tmmluplus_agriculture", "tmmluplus_anti_money_laundering", "tmmluplus_auditing",
+    "tmmluplus_basic_medical_science", "tmmluplus_business_management",
+    "tmmluplus_chinese_language_and_literature", "tmmluplus_clinical_psychology",
+    "tmmluplus_computer_science", "tmmluplus_culinary_skills", "tmmluplus_dentistry",
+    "tmmluplus_economics", "tmmluplus_education", "tmmluplus_education_(profession_level)",
+    "tmmluplus_educational_psychology", "tmmluplus_engineering_math", "tmmluplus_finance_banking",
+    "tmmluplus_financial_analysis", "tmmluplus_fire_science", "tmmluplus_general_principles_of_law",
+    "tmmluplus_geography_of_taiwan", "tmmluplus_human_behavior", "tmmluplus_insurance_studies",
+    "tmmluplus_introduction_to_law", "tmmluplus_jce_humanities", "tmmluplus_junior_chemistry",
+    "tmmluplus_junior_chinese_exam", "tmmluplus_junior_math_exam", "tmmluplus_junior_science_exam",
+    "tmmluplus_junior_social_studies", "tmmluplus_linear_algebra", "tmmluplus_logic_reasoning",
+    "tmmluplus_macroeconomics", "tmmluplus_management_accounting", "tmmluplus_marketing_management",
+    "tmmluplus_mechanical", "tmmluplus_music", "tmmluplus_national_protection",
+    "tmmluplus_nautical_science", "tmmluplus_occupational_therapy_for_psychological_disorders",
+    "tmmluplus_official_document_management", "tmmluplus_optometry", "tmmluplus_organic_chemistry",
+    "tmmluplus_pharmacology", "tmmluplus_pharmacy", "tmmluplus_physical_education",
+    "tmmluplus_physics", "tmmluplus_politic_science", "tmmluplus_real_estate",
+    "tmmluplus_secondary_physics", "tmmluplus_statistics_and_machine_learning",
+    "tmmluplus_taiwanese_hokkien", "tmmluplus_taxation", "tmmluplus_technical",
+    "tmmluplus_three_principles_of_people", "tmmluplus_trade",
+    "tmmluplus_traditional_chinese_medicine_clinical_medicine", "tmmluplus_trust_practice",
+    "tmmluplus_ttqav2", "tmmluplus_tve_chinese_language", "tmmluplus_tve_design",
+    "tmmluplus_tve_mathematics", "tmmluplus_tve_natural_sciences", "tmmluplus_veterinary_pathology",
+    "tmmluplus_veterinary_pharmacology",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class TmmluplusExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Tmmluplus benchmark."""

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["VaxxExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("vaxx_stance",)
+
+evaluator_name = "log_likelihoods"
+
 
 class VaxxExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Vaxx benchmark."""

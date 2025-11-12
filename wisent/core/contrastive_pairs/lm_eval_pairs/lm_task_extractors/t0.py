@@ -16,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("t0_eval",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class T0Extractor(LMEvalBenchmarkExtractor):

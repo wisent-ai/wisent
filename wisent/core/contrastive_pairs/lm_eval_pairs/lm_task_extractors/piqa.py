@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["PIQAExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("piqa",)
+
+evaluator_name = "log_likelihoods"
+
 
 class PIQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the PIQA benchmark."""

@@ -14,6 +14,26 @@ if TYPE_CHECKING:
 __all__ = ["XNLIExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "xnli_ar",
+    "xnli_bg",
+    "xnli_de",
+    "xnli_el",
+    "xnli_en",
+    "xnli_es",
+    "xnli_fr",
+    "xnli_hi",
+    "xnli_ru",
+    "xnli_sw",
+    "xnli_th",
+    "xnli_tr",
+    "xnli_ur",
+    "xnli_vi",
+    "xnli_zh",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class XNLIExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the XNLI benchmark."""

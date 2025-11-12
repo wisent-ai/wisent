@@ -14,6 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["WinogenderExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "winogender_all", "winogender_female", "winogender_gotcha", "winogender_gotcha_female",
+    "winogender_gotcha_male", "winogender_male", "winogender_neutral",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class WinogenderExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Winogender benchmark."""

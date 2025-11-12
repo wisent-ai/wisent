@@ -14,6 +14,20 @@ if TYPE_CHECKING:
 __all__ = ["TmluExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "tmlu_accountant", "tmlu_AST_biology", "tmlu_AST_chemistry", "tmlu_AST_chinese",
+    "tmlu_AST_civics", "tmlu_AST_geography", "tmlu_AST_history",
+    "tmlu_basic_traditional_chinese_medicine", "tmlu_CAP_biology", "tmlu_CAP_chemistry",
+    "tmlu_CAP_chinese", "tmlu_CAP_civics", "tmlu_CAP_earth_science", "tmlu_CAP_geography",
+    "tmlu_CAP_history", "tmlu_clinical_psychologist", "tmlu_clinical_traditional_chinese_medicine",
+    "tmlu_driving_rule", "tmlu_GSAT_biology", "tmlu_GSAT_chemistry", "tmlu_GSAT_chinese",
+    "tmlu_GSAT_civics", "tmlu_GSAT_earth_science", "tmlu_GSAT_geography", "tmlu_GSAT_history",
+    "tmlu_lawyer_qualification", "tmlu_nutritionist", "tmlu_taiwan_tourist_resources",
+    "tmlu_teacher_qualification", "tmlu_tour_guide", "tmlu_tour_leader",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class TmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tmlu benchmark."""

@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 __all__ = ["TruthfulQAMC2Extractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("truthfulqa_mc2",)
+
+evaluator_name = "log_likelihoods"
+
 
 class TruthfulQAMC2Extractor(LMEvalBenchmarkExtractor):
     """Extractor for the TruthfulQA_MC2 benchmark."""
