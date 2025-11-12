@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["Wmt14FrEnExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("wmt14-fr-en",)
+
+evaluator_name = "generation"
+
 
 class Wmt14FrEnExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Wmt14 Fr En benchmark."""

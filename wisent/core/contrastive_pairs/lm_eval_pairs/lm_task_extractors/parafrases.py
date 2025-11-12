@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ParafrasesExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("parafrases_gl",)
+
+evaluator_name = "log_likelihoods"
+
 
 class ParafrasesExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Parafrases benchmark."""

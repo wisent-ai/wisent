@@ -14,6 +14,11 @@ if TYPE_CHECKING:
 __all__ = ["TruthfulqaExtractor"]
 _LOG = setup_logger(__name__)
 
+# Group task that includes truthfulqa_mc1, truthfulqa_mc2, and truthfulqa_gen
+task_names = ("truthfulqa",)
+
+evaluator_name = "log_likelihoods"  # Mixed, but defaulting to log_likelihoods
+
 
 class TruthfulqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Truthfulqa benchmark."""

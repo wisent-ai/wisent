@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 __all__ = ["QA4MREExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("qa4mre_2011", "qa4mre_2012", "qa4mre_2013")
+
+evaluator_name = "log_likelihoods"
+
 
 class QA4MREExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the QA4MRE benchmark."""

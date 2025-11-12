@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["OlaphExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("olaph", "olaph_perplexity")
+
+evaluator_name = "generation"
+
 
 class OlaphExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Olaph benchmark."""
@@ -61,16 +65,47 @@ class OlaphExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Olaph doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Olaph format (medical long-form QA):
+        - Question: medical question
+        - Answer: long-form answer
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
+            # Format 1: Olaph medical QA format (Question + Free_form_answer)
+            if "Question" in doc and "Free_form_answer" in doc:
+                question = str(doc.get("Question", "")).strip()
+                answer = str(doc.get("Free_form_answer", "")).strip()
+
+                if not question or not answer:
+                    log.debug("Skipping doc with missing Question/Free_form_answer", extra={"doc": doc})
+                    return None
+
+                # Prompt with medical instruction
+                prompt = f"Instructions: You are a helpful healthcare assistant. Answer the following question as concisely as possible without omitting relevant information.\n\n{question}"
+
+                # Positive: the actual answer
+                correct = answer
+
+                # Negative: generic refusal
+                incorrect = "I cannot provide medical advice."
+
+                metadata = {"label": "olaph"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Initialize variables for multiple-choice formats
             question = None
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
+            # Format 2: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})

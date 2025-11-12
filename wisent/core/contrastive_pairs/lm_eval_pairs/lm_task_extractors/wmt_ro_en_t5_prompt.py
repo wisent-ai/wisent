@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["WmtRoEnT5PromptExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("wmt-ro-en-t5-prompt",)
+
+evaluator_name = "generation"
+
 
 class WmtRoEnT5PromptExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Wmt Ro En T5 Prompt benchmark."""

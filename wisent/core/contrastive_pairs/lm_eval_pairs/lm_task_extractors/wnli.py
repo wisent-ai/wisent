@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["WNLIExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("wnli",)
+
+evaluator_name = "log_likelihoods"
+
 
 class WNLIExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the WNLI benchmark."""

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ZhoblimpExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("zhoblimp",)
+
+evaluator_name = "log_likelihoods"
+
 
 class ZhoblimpExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Zhoblimp benchmark."""

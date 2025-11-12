@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 __all__ = ["TriviaQAExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("triviaqa",)
+
+evaluator_name = "generation"
+
 
 class TriviaQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the TriviaQA benchmark."""

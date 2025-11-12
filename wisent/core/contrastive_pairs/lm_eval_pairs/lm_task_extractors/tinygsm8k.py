@@ -16,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("tinyGSM8k",)
 
-evaluator_name = "exact_match"
+evaluator_name = "generation"
 
 
 class Tinygsm8kExtractor(LMEvalBenchmarkExtractor):

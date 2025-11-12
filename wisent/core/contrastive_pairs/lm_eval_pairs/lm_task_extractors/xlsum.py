@@ -14,6 +14,47 @@ if TYPE_CHECKING:
 __all__ = ["XlsumExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "xlsum_amharic_prompt_1",
+    "xlsum_amharic_prompt_2",
+    "xlsum_amharic_prompt_3",
+    "xlsum_arabic_prompt_1",
+    "xlsum_arabic_prompt_2",
+    "xlsum_arabic_prompt_3",
+    "xlsum_hausa_prompt_1",
+    "xlsum_hausa_prompt_2",
+    "xlsum_hausa_prompt_3",
+    "xlsum_igbo_prompt_1",
+    "xlsum_igbo_prompt_2",
+    "xlsum_igbo_prompt_3",
+    "xlsum_kirundi_prompt_1",
+    "xlsum_kirundi_prompt_2",
+    "xlsum_kirundi_prompt_3",
+    "xlsum_oromo_prompt_1",
+    "xlsum_oromo_prompt_2",
+    "xlsum_oromo_prompt_3",
+    "xlsum_pidgin_prompt_1",
+    "xlsum_pidgin_prompt_2",
+    "xlsum_pidgin_prompt_3",
+    "xlsum_somali_prompt_1",
+    "xlsum_somali_prompt_2",
+    "xlsum_somali_prompt_3",
+    "xlsum_swahili_prompt_1",
+    "xlsum_swahili_prompt_2",
+    "xlsum_swahili_prompt_3",
+    "xlsum_telugu_prompt_1",
+    "xlsum_telugu_prompt_2",
+    "xlsum_telugu_prompt_3",
+    "xlsum_tigrinya_prompt_1",
+    "xlsum_tigrinya_prompt_2",
+    "xlsum_tigrinya_prompt_3",
+    "xlsum_yoruba_prompt_1",
+    "xlsum_yoruba_prompt_2",
+    "xlsum_yoruba_prompt_3",
+)
+
+evaluator_name = "generation"
+
 
 class XlsumExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Xlsum benchmark."""

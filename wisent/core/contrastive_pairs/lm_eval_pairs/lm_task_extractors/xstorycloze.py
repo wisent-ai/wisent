@@ -15,6 +15,22 @@ if TYPE_CHECKING:
 __all__ = ["XStoryCloze"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "xstorycloze_ar",
+    "xstorycloze_en",
+    "xstorycloze_es",
+    "xstorycloze_eu",
+    "xstorycloze_hi",
+    "xstorycloze_id",
+    "xstorycloze_my",
+    "xstorycloze_ru",
+    "xstorycloze_sw",
+    "xstorycloze_te",
+    "xstorycloze_zh",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class XStoryClozeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the XStoryCloze benchmark."""

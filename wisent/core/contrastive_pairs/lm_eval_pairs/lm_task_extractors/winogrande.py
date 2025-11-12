@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["WinograndeExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("winogrande",)
+
+evaluator_name = "log_likelihoods"
+
 
 class WinograndeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Winogrande benchmark."""

@@ -14,6 +14,15 @@ if TYPE_CHECKING:
 __all__ = ["UnitxtExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "20_newsgroups", "ag_news", "argument_topic", "atis", "banking77", "claim_stance_topic",
+    "cnn_dailymail", "coedit_gec", "dbpedia_14", "doc_vqa", "ethos_binary",
+    "financial_tweets", "law_stack_exchange", "ledgar", "medical_abstracts", "stsb",
+    "unfair_tos", "xsum", "yahoo_answers_topics",
+)
+
+evaluator_name = "generation"
+
 
 class UnitxtExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Unitxt benchmark."""

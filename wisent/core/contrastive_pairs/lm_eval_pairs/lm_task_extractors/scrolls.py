@@ -14,6 +14,18 @@ if TYPE_CHECKING:
 __all__ = ["ScrollsExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "scrolls_contractnli",
+    "scrolls_govreport",
+    "scrolls_narrativeqa",
+    "scrolls_qasper",
+    "scrolls_qmsum",
+    "scrolls_quality",
+    "scrolls_summscreenfd",
+)
+
+evaluator_name = "generation"
+
 
 class ScrollsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Scrolls benchmark."""

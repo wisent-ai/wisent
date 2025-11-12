@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["WiCExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("wiceu",)
+
+evaluator_name = "log_likelihoods"
+
 
 class WiCExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the WiC benchmark."""

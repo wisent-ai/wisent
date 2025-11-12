@@ -14,6 +14,19 @@ if TYPE_CHECKING:
 __all__ = ["PalomaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "paloma_4chan_meta_sep", "paloma_c4_100_domains", "paloma_c4_en",
+    "paloma_dolma_100_programing_languages", "paloma_dolma_100_subreddits",
+    "paloma_dolma-v1_5", "paloma_falcon-refinedweb", "paloma_gab",
+    "paloma_m2d2_s2orc_unsplit", "paloma_m2d2_wikipedia_unsplit",
+    "paloma_manosphere_meta_sep", "paloma_mc4", "paloma_ptb",
+    "paloma_redpajama", "paloma_twitterAAE_HELM_fixed", "paloma_wikitext_103"
+)
+
+# Note: Paloma is a perplexity benchmark (loglikelihood_rolling)
+# It may not be suitable for contrastive pair extraction
+evaluator_name = "generation"
+
 
 class PalomaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Paloma benchmark."""

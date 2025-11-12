@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["UnfairExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("unfair_tos",)
+
+evaluator_name = "generation"
+
 
 class UnfairExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Unfair benchmark."""
