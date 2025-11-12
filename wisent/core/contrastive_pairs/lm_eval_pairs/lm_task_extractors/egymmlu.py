@@ -11,12 +11,74 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["EgymmluExtractor"]
+__all__ = ["EgyMMLUExtractor"]
 _LOG = setup_logger(__name__)
 
 
-class EgymmluExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Egymmlu benchmark."""
+class EgyMMLUExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for EgyMMLU benchmark - Egyptian Arabic knowledge assessment.
+
+    This is an MMLU-style multiple choice task testing knowledge across various subjects.
+    Format: question + choices (list) + answer (integer index)
+    """
+
+    task_names = (
+        "egymmlu",
+        "egymmlu_accounting",
+        "egymmlu_ar_mmlu",
+        "egymmlu_ar_mmlu_tasks",
+        "egymmlu_arabic_language",
+        "egymmlu_arabic_language_(general)",
+        "egymmlu_arabic_language_(grammar)",
+        "egymmlu_biology",
+        "egymmlu_civics",
+        "egymmlu_computer_science",
+        "egymmlu_driving_test",
+        "egymmlu_economics",
+        "egymmlu_general_knowledge",
+        "egymmlu_geography",
+        "egymmlu_global_facts",
+        "egymmlu_high_school_european_history",
+        "egymmlu_high_school_geography",
+        "egymmlu_high_school_government_and_politics",
+        "egymmlu_high_school_psychology",
+        "egymmlu_high_school_statistics",
+        "egymmlu_high_school_world_history",
+        "egymmlu_history",
+        "egymmlu_human_aging",
+        "egymmlu_humanities_tasks",
+        "egymmlu_international_law",
+        "egymmlu_islamic_studies",
+        "egymmlu_jurisprudence",
+        "egymmlu_language_tasks",
+        "egymmlu_law",
+        "egymmlu_logical_fallacies",
+        "egymmlu_management",
+        "egymmlu_management_ar",
+        "egymmlu_marketing",
+        "egymmlu_math",
+        "egymmlu_mmlu",
+        "egymmlu_mmlu_tasks",
+        "egymmlu_moral_disputes",
+        "egymmlu_moral_scenarios",
+        "egymmlu_natural_science",
+        "egymmlu_nutrition",
+        "egymmlu_other_tasks",
+        "egymmlu_philosophy",
+        "egymmlu_philosophy_ar",
+        "egymmlu_physics",
+        "egymmlu_political_science",
+        "egymmlu_professional_law",
+        "egymmlu_professional_psychology",
+        "egymmlu_public_relations",
+        "egymmlu_security_studies",
+        "egymmlu_social_science",
+        "egymmlu_social_sciences_tasks",
+        "egymmlu_sociology",
+        "egymmlu_stem_tasks",
+        "egymmlu_world_religions",
+    )
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -59,78 +121,44 @@ class EgymmluExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Egymmlu doc into a ContrastivePair, if possible.
+        Convert a single EgyMMLU doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("__index_level_0__", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Extract fields - EgyMMLU format
+            question = doc.get("question", "").strip()
+            choices = doc.get("choices", [])
+            answer = doc.get("answer")
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "egymmlu"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+            if not question or not choices or answer is None:
                 log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                    "Skipping doc due to missing fields",
+                    extra={"has_question": bool(question), "has_choices": bool(choices), "has_answer": answer is not None},
                 )
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Validate answer index
+            if not isinstance(answer, int) or not (0 <= answer < len(choices)):
+                log.debug(
+                    "Skipping doc due to invalid answer index",
+                    extra={"answer": answer, "num_choices": len(choices)},
+                )
+                return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Get correct and incorrect answers
+            correct = choices[answer]
+            # Use the next choice as incorrect (wrapping around)
+            incorrect_idx = (answer + 1) % len(choices)
+            incorrect = choices[incorrect_idx]
 
             metadata = {
                 "label": "egymmlu",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

@@ -20,18 +20,13 @@ class PerplexityEvaluator(BaseEvaluator):
     - WikiText: Language modeling
     - LAMBADA: Word prediction in context
     - Any loglikelihood_rolling task
+
+    Note: Task names are declared in extractors (via evaluator_name attribute),
+    not in evaluators. This maintains proper separation of concerns.
     """
 
     name = "perplexity"
     description = "Perplexity evaluator for language modeling"
-    task_names = (
-        # Language Modeling
-        "wikitext", "wikitext103", "ptb", "penn_treebank",
-        # Word Prediction
-        "lambada_openai", "lambada_standard",
-        # New task families from lm-eval-harness (loglikelihood and loglikelihood_rolling)
-        "pile", "lambada"
-    )
 
     def __init__(self, model=None):
         """Initialize perplexity evaluator.

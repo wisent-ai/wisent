@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ReversedExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("reversed_words",)
+
+evaluator_name = "exact_match"
+
 
 class ReversedExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Reversed benchmark."""

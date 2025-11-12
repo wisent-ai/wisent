@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["AfrixnliExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("afrixnli_en_direct_amh",)
+
+evaluator_name = "log_likelihoods"
+
 
 class AfrixnliExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrixnli benchmark."""
@@ -44,48 +48,48 @@ class AfrixnliExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """
+        Extract contrastive pair from NLI doc.
+        Schema: {'premise': str, 'hypothesis': str, 'label': int}
+        Labels: 0=entailment, 1=neutral, 2=contradiction
+        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            premise = doc.get("premise", "").strip()
+            hypothesis = doc.get("hypothesis", "").strip()
+            label = doc.get("label")
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
-
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
+            if not premise or not hypothesis or label is None:
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # Map label to text
+            label_map = {
+                0: "entailment",
+                1: "neutral",
+                2: "contradiction"
+            }
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            if label not in label_map:
+                log.debug(f"Unknown label: {label}", extra={"doc": doc})
+                return None
+
+            correct = label_map[label]
+
+            # Pick a different label as incorrect
+            incorrect_labels = [l for l in label_map.keys() if l != label]
+            if not incorrect_labels:
+                return None
+            incorrect = label_map[incorrect_labels[0]]
+
+            # Format the NLI prompt
+            prompt = f"Premise: {premise}\nHypothesis: {hypothesis}"
+
             metadata = {"label": "afrixnli"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BlimpExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("blimp",)
+
+evaluator_name = "log_likelihoods"
+
 
 class BlimpExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Blimp benchmark."""

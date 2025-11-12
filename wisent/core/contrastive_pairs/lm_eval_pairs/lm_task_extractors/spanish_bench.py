@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["SpanishBenchExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("spanish_bench",)
+
+evaluator_name = "log_likelihoods"
+
 
 class SpanishBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Spanish Bench benchmark."""

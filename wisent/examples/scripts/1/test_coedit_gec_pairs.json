@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Make the minimal amount of changes to correct grammar and spelling errors in the following text.\nOriginal text: To partly offset this gigantic demand for energy, China had launched an ambitious program to produce 16% of its electricity from nuclear power by 2030.\nCorrected text:",
+    "positive_response": "To partly offset this gigantic demand for energy, China has launched an ambitious program to produce 16% of its electricity from nuclear power by 2030.",
+    "negative_response": "To partly offset this gigantic demand for energy, China had launched an ambitious program to produce 16% of its electricity from nuclear power by 2030."
+  }
+]

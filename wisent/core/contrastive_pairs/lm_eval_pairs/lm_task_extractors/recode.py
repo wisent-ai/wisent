@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["RecodeExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("recode",)
+
+evaluator_name = "exact_match"
+
 
 class RecodeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Recode benchmark."""

@@ -1,0 +1,30 @@
+{
+  "task_name": "catcola",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Sentence: T'ho ha explicat tant a tu com a ella.\n\nIs this sentence grammatically acceptable in Catal...",
+      "positive_response": "acceptable",
+      "negative_response": "unacceptable",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'acceptable' (log_prob=-0.500), Expected: 'acceptable'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'acceptable' (log_prob=-0.500), Expected: 'unacceptable'"
+      },
+      "both_correct": true
+    }
+  ]
+}

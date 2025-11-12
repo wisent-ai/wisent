@@ -1,7 +1,31 @@
 """Test all benchmarks to verify extractor and evaluator work."""
 
 import sys
+import signal
+from contextlib import contextmanager
 from wisent.examples.scripts.test_one_benchmark import test_benchmark
+
+
+class TimeoutError(Exception):
+    """Raised when a test times out."""
+    pass
+
+
+@contextmanager
+def timeout(seconds):
+    """Context manager for timing out operations."""
+    def signal_handler(signum, frame):
+        raise TimeoutError(f"Test timed out after {seconds} seconds")
+
+    # Set the signal handler and alarm
+    old_handler = signal.signal(signal.SIGALRM, signal_handler)
+    signal.alarm(seconds)
+
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 
 BENCHMARKS = [
@@ -130,7 +154,8 @@ def test_all_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", ou
         print(f"[{i}/{len(BENCHMARKS)}] Testing {benchmark}...")
 
         try:
-            success = test_benchmark(benchmark, model_name, output_dir)
+            with timeout(1200):
+                success = test_benchmark(benchmark, model_name, output_dir)
             results["benchmarks"][benchmark] = {
                 "status": "passed" if success else "failed",
                 "success": success
@@ -142,6 +167,15 @@ def test_all_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", ou
             else:
                 results["failed"] += 1
                 print(f"   FAILED\n")
+
+        except TimeoutError as e:
+            results["benchmarks"][benchmark] = {
+                "status": "timeout",
+                "success": False,
+                "error": str(e)
+            }
+            results["failed"] += 1
+            print(f"   TIMEOUT: {e}\n")
 
         except Exception as e:
             results["benchmarks"][benchmark] = {

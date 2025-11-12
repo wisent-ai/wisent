@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Genera una frase corta con estas palabras: ['cepillo', 'diente', 'comida']. El contexto es: La higiene bucodental es clave para prevenir enfermedades dentales.\n\nRespuesta:",
+    "positive_response": "Yo me cepillo los dientes despu\u00e9s de cada comida.",
+    "negative_response": "de comida. dientes cada los Yo me cepillo despu\u00e9s"
+  }
+]

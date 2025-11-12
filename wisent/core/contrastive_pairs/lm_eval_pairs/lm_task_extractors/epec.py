@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["EpecExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("epec_koref_bin",)
+
+evaluator_name = "log_likelihoods"
+
 
 class EpecExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Epec benchmark."""
@@ -47,12 +51,44 @@ class EpecExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: Coreference resolution format (text + span1_text + span2_text + label)
+            if "text" in doc and "span1_text" in doc and "span2_text" in doc and "label" in doc:
+                text = str(doc.get("text", "")).strip()
+                span1 = str(doc.get("span1_text", "")).strip()
+                span2 = str(doc.get("span2_text", "")).strip()
+                label = doc.get("label")
+
+                if not text or not span1 or not span2 or label is None:
+                    log.debug("Skipping doc - missing required fields", extra={"doc": doc})
+                    return None
+
+                # Create prompt asking if two spans refer to the same entity
+                prompt = f"Text: {text}\n\nDo '{span1}' and '{span2}' refer to the same entity?\nAnswer:"
+
+                # Label 1 = same entity (Yes), Label 0 = different entities (No)
+                if label == 1:
+                    correct = "Yes"
+                    incorrect = "No"
+                else:
+                    correct = "No"
+                    incorrect = "Yes"
+
+                metadata = {"label": "epec"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: Multiple choice format (fallback)
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

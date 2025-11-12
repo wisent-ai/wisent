@@ -14,6 +14,16 @@ if TYPE_CHECKING:
 __all__ = ["AcpBenchHardExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "acp_bench_hard",
+    "acp_bench_hard_with_pddl",
+    # Gen variants (acp_bench_hard subtasks)
+    "acp_prog_gen", "acp_reach_gen", "acp_app_gen", "acp_just_gen",
+    "acp_land_gen", "acp_nexta_gen", "acp_areach_gen", "acp_val_gen",
+)
+
+evaluator_name = "generation"
+
 
 class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Acp Bench Hard benchmark."""
@@ -97,7 +107,31 @@ class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: context + question + answer (structured dict for _gen tasks)
+            elif "context" in doc and "question" in doc and "answer" in doc:
+                context = str(doc.get("context", "")).strip()
+                question = str(doc.get("question", "")).strip()
+                answer_raw = doc.get("answer", "")
+
+                # Create full prompt with context
+                full_prompt = f"Context: {context}\n\nQuestion: {question}"
+
+                # Structured dict format: {"neg": [...], "pos": [...]}
+                if isinstance(answer_raw, dict) and "neg" in answer_raw and "pos" in answer_raw:
+                    # For structured generation tasks, use the dict as-is
+                    correct_answer = str(answer_raw)
+                    # Create incorrect by swapping pos/neg
+                    incorrect_answer = str({"neg": answer_raw.get("pos", []), "pos": answer_raw.get("neg", [])})
+                    metadata = {"label": "acp_bench_hard"}
+                    return self._build_pair(
+                        question=full_prompt,
+                        correct=correct_answer,
+                        incorrect=incorrect_answer,
+                        metadata=metadata,
+                    )
+                return None
+
+            # Format 4: query/prompt + answer
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer

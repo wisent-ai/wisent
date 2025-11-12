@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ConalaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("conala",)
+
+evaluator_name = "exact_match"
+
 
 class ConalaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Conala benchmark."""

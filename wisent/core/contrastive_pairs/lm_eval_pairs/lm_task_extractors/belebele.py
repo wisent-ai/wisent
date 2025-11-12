@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BelebeleExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("belebele",)
+
+evaluator_name = "log_likelihoods"
+
 
 class BelebeleExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Belebele benchmark."""
@@ -70,8 +74,21 @@ class BelebeleExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: question + mc_answer1/2/3/4 + correct_answer_num (belebele format)
+            if "question" in doc and "mc_answer1" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("mc_answer1", "")).strip(),
+                    str(doc.get("mc_answer2", "")).strip(),
+                    str(doc.get("mc_answer3", "")).strip(),
+                    str(doc.get("mc_answer4", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer_num = str(doc.get("correct_answer_num", "1")).strip()
+                answer_idx = int(answer_num) - 1 if answer_num.isdigit() else 0
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):
@@ -84,7 +101,7 @@ class BelebeleExtractor(LMEvalBenchmarkExtractor):
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
+            # Format 3: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()
                 choices = [
@@ -119,9 +136,22 @@ class BelebeleExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            correct = str(choices[answer_idx]).strip()
+
+            # Find an incorrect choice that's actually different from correct
+            incorrect = None
+            for i, choice in enumerate(choices):
+                if i != answer_idx and str(choice).strip() != correct:
+                    incorrect = str(choice).strip()
+                    break
+
+            # If all choices are identical to correct, skip this doc
+            if incorrect is None:
+                log.debug(
+                    "Skipping doc - all incorrect choices identical to correct",
+                    extra={"doc": doc},
+                )
+                return None
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
 

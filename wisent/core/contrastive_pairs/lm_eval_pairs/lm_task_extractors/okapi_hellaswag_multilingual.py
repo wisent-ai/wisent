@@ -14,6 +14,17 @@ if TYPE_CHECKING:
 __all__ = ["OkapiHellaswagMultilingualExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "hellaswag_ar", "hellaswag_bn", "hellaswag_ca", "hellaswag_da", "hellaswag_de",
+    "hellaswag_es", "hellaswag_eu", "hellaswag_fr", "hellaswag_gu", "hellaswag_hi",
+    "hellaswag_hr", "hellaswag_hu", "hellaswag_hy", "hellaswag_id", "hellaswag_it",
+    "hellaswag_kn", "hellaswag_ml", "hellaswag_mr", "hellaswag_ne", "hellaswag_nl",
+    "hellaswag_pt", "hellaswag_ro", "hellaswag_ru", "hellaswag_sk", "hellaswag_sr",
+    "hellaswag_sv", "hellaswag_ta", "hellaswag_te", "hellaswag_uk", "hellaswag_vi"
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class OkapiHellaswagMultilingualExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Okapi/Hellaswag Multilingual benchmark."""

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["IFEvalExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("ifeval",)
+
+evaluator_name = "exact_match"
+
 
 class IFEvalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the IFEval (Instruction Following Eval) benchmark."""

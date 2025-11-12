@@ -1,0 +1,51 @@
+{
+  "task_name": "bertaqa",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 2,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Will the French league be cancelled?\nA. 1953\nB. 1952...",
+      "positive_response": "1952",
+      "negative_response": "1953",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: '1952' (log_prob=-0.500), Expected: '1952'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: '1952' (log_prob=-0.500), Expected: '1953'"
+      },
+      "both_correct": true
+    },
+    {
+      "pair_id": 1,
+      "prompt": "Question: When was the first sound film in Basque made?\nA. In the 1960s\nB. In the 1930s...",
+      "positive_response": "In the 1930s",
+      "negative_response": "In the 1960s",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'In the 1930s' (log_prob=-0.500), Expected: 'In the 1930s'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'In the 1930s' (log_prob=-0.500), Expected: 'In the 1960s'"
+      },
+      "both_correct": true
+    }
+  ]
+}

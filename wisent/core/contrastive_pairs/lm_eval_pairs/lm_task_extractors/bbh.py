@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BBHExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("bbh",)
+
+evaluator_name = "exact_match"
+
 
 class BBHExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the BIG-Bench Hard (BBH) benchmark."""

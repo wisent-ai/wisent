@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MultimedqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("multimedqa",)
+
+evaluator_name = "log_likelihoods"
+
 
 class MultimedqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Multimedqa benchmark."""

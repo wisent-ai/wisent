@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["AdvancedExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("advanced_ai_risk",)
+
+evaluator_name = "log_likelihoods"
+
 
 class AdvancedExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Advanced benchmark."""
@@ -49,10 +53,30 @@ class AdvancedExtractor(LMEvalBenchmarkExtractor):
         try:
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
+            # Format 1: answer_matching_behavior / answer_not_matching_behavior (advanced_ai_risk)
+            if "answer_matching_behavior" in doc and "answer_not_matching_behavior" in doc:
+                correct = str(doc.get("answer_matching_behavior", "")).strip()
+                incorrect = str(doc.get("answer_not_matching_behavior", "")).strip()
+
+                if not question or not correct or not incorrect:
+                    log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+                    return None
+
+                formatted_question = f"Question: {question}"
+                metadata = {"label": "advanced_ai_risk"}
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: Standard multiple choice with choices array
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

@@ -15,6 +15,14 @@ if TYPE_CHECKING:
 __all__ = ["LambadaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "lambada",
+    "lambada_cloze",
+    "lambada_multilingual",
+)
+
+evaluator_name = "exact_match"
+
 
 class LambadaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for LAMBADA benchmarks (word prediction).

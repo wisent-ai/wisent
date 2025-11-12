@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -11,12 +12,19 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["Iwslt2017Extractor"]
+__all__ = ["IWSLT2017Extractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "iwslt2017-ar-en",
+    "iwslt2017-en-ar",
+)
 
-class Iwslt2017Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for Iwslt2017 benchmark."""
+evaluator_name = "generation"
+
+
+class IWSLT2017Extractor(LMEvalBenchmarkExtractor):
+    """Extractor for IWSLT 2017 benchmark - machine translation tasks."""
 
     def extract_contrastive_pairs(
         self,
@@ -47,49 +55,52 @@ class Iwslt2017Extractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # IWSLT2017 format: {'translation': {'ar': '...', 'en': '...'}}
+            if "translation" in doc:
+                translation = doc.get("translation", {})
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+                # Get source and target language keys
+                lang_keys = list(translation.keys())
+                if len(lang_keys) < 2:
+                    log.debug("Skipping doc due to insufficient languages", extra={"doc": doc})
+                    return None
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
+                source_lang = lang_keys[0]
+                target_lang = lang_keys[1]
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+                source_text = translation.get(source_lang, "").strip()
+                target_text = translation.get(target_lang, "").strip()
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+                if not source_text or not target_text:
+                    log.debug("Skipping doc due to empty text", extra={"doc": doc})
+                    return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "iwslt2017"}
+                # Create translation prompt
+                prompt = f"Translate the following from {source_lang} to {target_lang}:\n{source_text}"
 
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+                # Positive: correct translation
+                correct_translation = target_text
+
+                # Negative: shuffled words for synthetic incorrect translation
+                words = target_text.split()
+                if len(words) < 2:
+                    incorrect_translation = "[incorrect translation]"
+                else:
+                    shuffled_words = words.copy()
+                    random.shuffle(shuffled_words)
+                    incorrect_translation = ' '.join(shuffled_words)
+
+                metadata = {"label": "iwslt2017"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct_translation,
+                    incorrect=incorrect_translation,
+                    metadata=metadata,
+                )
+
+            log.debug("Skipping doc due to unrecognized format", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["CommonsenseQAExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("commonsense_qa",)
+
+evaluator_name = "log_likelihoods"
+
 
 class CommonsenseQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the CommonsenseQA benchmark."""

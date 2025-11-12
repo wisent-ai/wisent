@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Text: Orain , finalaren atarian , Eurokopako atezain onena bilakatu da Toldo , eta Italian heroi nazionala da . Merezita lortu du Fiorentinako atezainak gailurrera iristea , baina izugarri kostata .\n\nDo 'heroi nazionala' and 'Fiorentinako atezainak' refer to the same entity?\nAnswer:",
+    "positive_response": "Yes",
+    "negative_response": "No"
+  }
+]

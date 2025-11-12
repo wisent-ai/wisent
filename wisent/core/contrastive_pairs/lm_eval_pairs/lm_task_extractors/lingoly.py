@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 __all__ = ["LingolyExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "lingoly",
+    "lingoly_context",
+    "lingoly_nocontext",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class LingolyExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Lingoly benchmark."""

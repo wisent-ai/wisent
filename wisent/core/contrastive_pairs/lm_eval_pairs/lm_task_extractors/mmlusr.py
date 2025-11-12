@@ -14,6 +14,11 @@ if TYPE_CHECKING:
 __all__ = ["MmlusrExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mmlusr", "mmlusr_question_and_answer", "mmlusr_question_only", "mmlusr_answer_only",
+              "mmlusr_qa_stem", "mmlusr_qa_other", "mmlusr_qa_social_sciences", "mmlusr_qa_humanities")
+
+evaluator_name = "log_likelihoods"
+
 
 class MmlusrExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mmlusr benchmark."""
@@ -61,69 +66,102 @@ class MmlusrExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Mmlusr doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        MMLU-SR format (after process_docs):
+        - questions: question text (note: typo in lm-eval, it's "questions" not "question")
+        - choices: list of 4 choices
+        - answer: letter "A", "B", "C", or "D"
+
+        Raw format (before process_docs):
+        - question: question text
+        - choice1, choice2, choice3, choice4: the four choices
+        - answer: numeric index (0-3)
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
             question = None
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
+            # Format 1: Raw HuggingFace format (column_0 through column_5)
+            # column_0: question, column_1-4: choices, column_5: answer letter
+            if "column_0" in doc and "column_1" in doc and "column_5" in doc:
+                question = str(doc.get("column_0", "")).strip()
+                choices = [
+                    str(doc.get("column_1", "")).strip(),
+                    str(doc.get("column_2", "")).strip(),
+                    str(doc.get("column_3", "")).strip(),
+                    str(doc.get("column_4", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer = doc.get("column_5", "A")
                 if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                     answer_idx = ord(answer.upper()) - ord('A')
                 else:
-                    answer_idx = int(answer) if answer else 0
+                    log.debug("Could not parse answer from column_5", extra={"answer": answer, "doc": doc})
+                    return None
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
+            # Format 2: Processed format (questions + choices array + answer letter)
+            # Note: lm-eval has a typo where it outputs "questions" instead of "question"
+            elif ("questions" in doc or "question" in doc) and "choices" in doc and "answer" in doc:
+                question = str(doc.get("questions", doc.get("question", ""))).strip()
+                choices = doc.get("choices", [])
+                if not isinstance(choices, list):
+                    log.debug("Choices is not a list", extra={"doc": doc})
+                    return None
+
+                answer = doc.get("answer", "")
+                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
+                    # Answer is a letter like "A", "B", "C", "D"
+                    answer_idx = ord(answer.upper()) - ord('A')
+                elif isinstance(answer, int):
+                    # Answer is already an index
+                    answer_idx = answer
+                else:
+                    try:
+                        answer_idx = int(answer)
+                    except (ValueError, TypeError):
+                        log.debug("Could not parse answer", extra={"answer": answer, "doc": doc})
+                        return None
+
+            # Format 3: Named format (question + choice1/2/3/4 + answer)
+            elif "question" in doc and "choice1" in doc:
+                question = str(doc.get("question", "")).strip()
                 choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
+                    str(doc.get("choice1", "")).strip(),
+                    str(doc.get("choice2", "")).strip(),
+                    str(doc.get("choice3", "")).strip(),
+                    str(doc.get("choice4", "")).strip(),
                 ]
                 choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "mmlusr"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+                answer = doc.get("answer", 0)
+                if isinstance(answer, int):
+                    answer_idx = answer
+                else:
+                    try:
+                        answer_idx = int(answer)
+                    except (ValueError, TypeError):
+                        log.debug("Could not parse answer", extra={"answer": answer, "doc": doc})
+                        return None
+            else:
+                log.debug("Skipping doc without required fields", extra={"doc": doc})
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+            if not question or not choices or len(choices) < 2 or answer_idx is None or not (0 <= answer_idx < len(choices)):
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                    extra={"question": question, "num_choices": len(choices) if choices else 0, "answer_idx": answer_idx, "doc": doc},
                 )
                 return None
 
+            # Build prompt matching lm-eval format
             correct = choices[answer_idx]
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = choices[incorrect_idx]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Format exactly as lm-eval does it
+            formatted_question = f"{question}\nA. {choices[0]}\nB. {choices[1]}\nC. {choices[2]}\nD. {choices[3]}\nAnswer:"
 
             metadata = {
                 "label": "mmlusr",

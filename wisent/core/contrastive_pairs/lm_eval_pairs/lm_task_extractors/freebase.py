@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["FreebaseExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("freebase",)
+
+evaluator_name = "log_likelihoods"
+
 
 class FreebaseExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Freebase benchmark."""

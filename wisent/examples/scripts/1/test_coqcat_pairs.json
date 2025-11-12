@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Story: Segons la mitologia grega, Tespi (en grec antic \u0398\u03ad\u03c3\u03c0\u03b9\u03bf\u03c2), va ser un heroi beoci, fill d'Erecteu, rei de l'\u00c0tica, i ep\u00f2nim de la ciutat de T\u00e8spies.,  Va abandonar l'\u00c0tica i va fundar un regne a Be\u00f2cia. Tespi t\u00e9 a veure amb el cicle de llegendes sobre H\u00e8racles. L'heroi va comen\u00e7ar al costat de Tespi les seves proeses, quan tenia divuit anys, matant el lle\u00f3 de Citer\u00f3, que feia estralls entre els ramats de Tespi i els d'Amfitri\u00f3, a la ve\u00efna Tebes. Mentre va durar la cacera, es va instal\u00b7lar al palau de Tespi, ca\u00e7ant durant el dia i tornant a dormir al palau a la nit. Tespi tenia cinquanta filles, les Tesp\u00edades, o b\u00e9 d'una mateixa esposa, Megamede, o b\u00e9 d'esposes i concubines diferents. El rei, que desitjava tenir nets d'un heroi tan important, posava al seu llit cada nit una de les seves filles. L'heroi, esgotat per la cacera, no s'adonava del canvi, i creia que tenia sempre la mateixa companya de llit. Totes elles van concebre un fill d'H\u00e8racles.,  Tespi va ser tamb\u00e9 l'amic que va acollir H\u00e8racles i el purific\u00e0, despr\u00e9s que l'heroi mat\u00e9s els fills que havia tingut amb M\u00e8gara.\n\nQuestion: Qui era Tespi?",
+    "positive_response": "Un heroi beoci.",
+    "negative_response": "De l'\u00c0tica."
+  }
+]

@@ -16,6 +16,10 @@ if TYPE_CHECKING:
 __all__ = ["RACEExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("race",)
+
+evaluator_name = "log_likelihoods"
+
 
 class RACEExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Race benchmark."""

@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Passage: John travelled to the hallway.\nMary journeyed to the bathroom.\n\nQuestion: Where is John?",
+    "positive_response": "hallway",
+    "negative_response": "not hallway"
+  }
+]

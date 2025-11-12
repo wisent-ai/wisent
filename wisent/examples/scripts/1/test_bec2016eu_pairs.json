@@ -1,0 +1,14 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: Zer egin? Nori deitu? Zalantza horrekin geratu zen.\nAlegia:\nA. Zer egin eta nori deitu ez zekielakoan geratu zen.\nB. Zer egin eta nori deitu ez zekiela geratu zen.",
+    "positive_response": "Zer egin eta nori deitu ez zekiela geratu zen.",
+    "negative_response": "Zer egin eta nori deitu ez zekielakoan geratu zen."
+  },
+  {
+    "pair_id": 1,
+    "prompt": "Decide the relationship of the hypothesis 'Mary Traillek badaki hori.'' to the premise 'Mary Traillek emango dizu horren berri.'\nA. neutral\nB. entailment",
+    "positive_response": "entailment",
+    "negative_response": "neutral"
+  }
+]

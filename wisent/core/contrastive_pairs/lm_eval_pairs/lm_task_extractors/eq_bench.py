@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["EqBenchExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("eq_bench", "eq-bench_ca", "eq-bench_es")
+
+evaluator_name = "exact_match"
+
 
 class EqBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Eq Bench benchmark."""
-
-    task_names = ("eq_bench", "eq-bench_ca", "eq-bench_es")
-    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,

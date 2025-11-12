@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["XsumExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("xsum",)
+
+evaluator_name = "exact_match"
+
 
 class XsumExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Xsum benchmark."""

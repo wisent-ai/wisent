@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -13,6 +14,10 @@ if TYPE_CHECKING:
 
 __all__ = ["MediqaQa2019Extractor"]
 _LOG = setup_logger(__name__)
+
+task_names = ("mediqa_qa2019",)
+
+evaluator_name = "generation"
 
 
 class MediqaQa2019Extractor(LMEvalBenchmarkExtractor):
@@ -61,80 +66,47 @@ class MediqaQa2019Extractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Mediqa Qa2019 doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Format: doc["QUESTION"]["QuestionText"] and doc["QUESTION"]["AnswerList"][0]["Answer"]["AnswerText"]
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Mediqa QA 2019 format: doc["QUESTION"] contains question and answer
+            if "QUESTION" in doc:
+                question_obj = doc["QUESTION"]
+                question = str(question_obj.get("QuestionText", "")).strip()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
+                answer_list = question_obj.get("AnswerList", [])
+                if not answer_list or not isinstance(answer_list, list):
+                    log.debug("No answer list found", extra={"doc": doc})
+                    return None
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
+                # Get the first answer as correct
+                first_answer = answer_list[0]
+                if not isinstance(first_answer, dict) or "Answer" not in first_answer:
+                    log.debug("Invalid answer format", extra={"doc": doc})
+                    return None
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "mediqa_qa2019"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
+                correct_answer = str(first_answer["Answer"].get("AnswerText", "")).strip()
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                if not question or not correct_answer:
+                    log.debug("Missing question or answer", extra={"doc": doc})
+                    return None
+
+                # Create synthetic negative - use generic non-answer
+                # This represents a model that refuses to provide medical information
+                incorrect_answer = "I'm not able to provide specific medical information. Please consult with a healthcare professional."
+
+                metadata = {"label": "mediqa_qa2019"}
+                return self._build_pair(
+                    question=f"Question: {question}",
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
                 )
-                return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "mediqa_qa2019",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

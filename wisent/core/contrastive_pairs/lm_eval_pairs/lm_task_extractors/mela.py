@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MelaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mela", "mela_en", "mela_zh", "mela_it", "mela_ru", "mela_de", "mela_fr", "mela_es", "mela_ja", "mela_ar")
+
+evaluator_name = "log_likelihoods"
+
 
 class MelaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Mela benchmark."""
@@ -47,49 +51,36 @@ class MelaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # mela format: sentence + label (0=unacceptable, 1=acceptable)
+            if "sentence" in doc and "label" in doc:
+                sentence = str(doc.get("sentence", "")).strip()
+                label = doc.get("label")
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+                if not sentence or label is None:
+                    log.debug("Skipping doc with missing sentence or label", extra={"doc": doc})
+                    return None
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
+                # label 0 = B (Unacceptable), label 1 = A (Acceptable)
+                choices = ["Acceptable", "Unacceptable"]
+                # Map label to answer: label 0 -> B (index 1), label 1 -> A (index 0)
+                answer_idx = 0 if label == 1 else 1
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+                correct = choices[answer_idx]
+                incorrect_idx = 1 - answer_idx
+                incorrect = choices[incorrect_idx]
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+                formatted_question = f"Sentence: {sentence}\nDetermine whether this sentence is acceptable or unacceptable?\nA. {incorrect}\nB. {correct}"
+                metadata = {"label": "mela"}
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "mela"}
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
 
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            log.debug("Skipping doc without sentence/label fields", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

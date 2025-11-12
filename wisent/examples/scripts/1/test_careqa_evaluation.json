@@ -1,0 +1,30 @@
+{
+  "task_name": "careqa",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: In relation to iron metabolism and its control mediated by hepcidin, it is true that:\nA. H...",
+      "positive_response": "The increase in serum iron or inflammation stimulates the synthesis of hepcidin in the liver, which negatively regulates the function of ferroportin.",
+      "negative_response": "Hepcidin reduces intestinal iron absorption through the inactivation of the divalent metal transporter 1 (DMT1).",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'The increase in serum iron or inflammation stimulates the synthesis of hepcidin in the liver, which negatively regulates the function of ferroportin.' (log_prob=-0.500), Expected: 'The increase in serum iron or inflammation stimulates the synthesis of hepcidin in the liver, which negatively regulates the function of ferroportin.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'The increase in serum iron or inflammation stimulates the synthesis of hepcidin in the liver, which negatively regulates the function of ferroportin.' (log_prob=-0.500), Expected: 'Hepcidin reduces intestinal iron absorption through the inactivation of the divalent metal transporter 1 (DMT1).'"
+      },
+      "both_correct": true
+    }
+  ]
+}

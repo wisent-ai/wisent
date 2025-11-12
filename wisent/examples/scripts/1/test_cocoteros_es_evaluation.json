@@ -1,0 +1,30 @@
+{
+  "task_name": "cocoteros_es",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Genera una frase corta con estas palabras: ['cepillo', 'diente', 'comida']. El contexto es: La higie...",
+      "positive_response": "Yo me cepillo los dientes despu\u00e9s de cada comida.",
+      "negative_response": "de comida. dientes cada los Yo me cepillo despu\u00e9s",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Yo me cepillo los dientes despu\u00e9s de cada comida.' (log_prob=-0.500), Expected: 'Yo me cepillo los dientes despu\u00e9s de cada comida.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Yo me cepillo los dientes despu\u00e9s de cada comida.' (log_prob=-0.500), Expected: 'de comida. dientes cada los Yo me cepillo despu\u00e9s'"
+      },
+      "both_correct": true
+    }
+  ]
+}

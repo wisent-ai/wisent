@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ArcChallengeExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("arc_challenge",)
+
+evaluator_name = "log_likelihoods"
+
 
 class ArcChallengeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Arc_Challenge benchmark."""

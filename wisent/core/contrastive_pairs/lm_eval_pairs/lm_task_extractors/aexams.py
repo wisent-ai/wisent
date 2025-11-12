@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["AexamsExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("aexams",)
+
+evaluator_name = "log_likelihoods"
+
 
 class AexamsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Aexams benchmark."""
-
-    task_names = ("aexams",)
-    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -139,8 +140,21 @@ class AexamsExtractor(LMEvalBenchmarkExtractor):
                 return None
 
             correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+
+            # Find an incorrect choice that's actually different from correct
+            incorrect = None
+            for i, choice in enumerate(choices):
+                if i != answer_idx and choice != correct:
+                    incorrect = choice
+                    break
+
+            # If all choices are identical to correct, skip this doc
+            if incorrect is None:
+                log.debug(
+                    "Skipping doc - all incorrect choices identical to correct",
+                    extra={"doc": doc},
+                )
+                return None
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
 

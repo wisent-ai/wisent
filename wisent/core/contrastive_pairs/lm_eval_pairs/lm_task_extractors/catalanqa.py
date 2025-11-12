@@ -14,9 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["CatalanqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("catalanqa",)
+
+evaluator_name = "log_likelihoods"
+
 
 class CatalanqaExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Catalanqa benchmark."""
+    """Extractor for Catalanqa benchmark (SQuAD-like QA)."""
 
     def extract_contrastive_pairs(
         self,
@@ -47,7 +51,68 @@ class CatalanqaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
+            # Format 1: SQuAD-like format with context + question + answers
+            if "context" in doc and "question" in doc and "answers" in doc:
+                context = str(doc.get("context", "")).strip()
+                question = str(doc.get("question", "")).strip()
+                answers_data = doc.get("answers", [])
+
+                if not context or not question or not answers_data:
+                    log.debug("Skipping doc - missing context/question/answers", extra={"doc": doc})
+                    return None
+
+                # Extract correct answer text
+                if isinstance(answers_data, list) and len(answers_data) > 0:
+                    correct_answer = str(answers_data[0].get("text", "")).strip()
+                elif isinstance(answers_data, dict):
+                    texts = answers_data.get("text", [])
+                    if texts and len(texts) > 0:
+                        correct_answer = str(texts[0]).strip()
+                    else:
+                        log.debug("Skipping doc - no answer text", extra={"doc": doc})
+                        return None
+                else:
+                    log.debug("Skipping doc - invalid answers format", extra={"doc": doc})
+                    return None
+
+                if not correct_answer:
+                    log.debug("Skipping doc - empty correct answer", extra={"doc": doc})
+                    return None
+
+                # Create synthetic negative by extracting a different span from context
+                # Split context into sentences/phrases and pick one that's not the answer
+                import re
+                sentences = [s.strip() for s in re.split(r'[.!?]\s+', context) if s.strip()]
+
+                incorrect_answer = None
+                for sent in sentences:
+                    # Extract a phrase from the sentence
+                    words = sent.split()
+                    if len(words) >= 2:
+                        # Take first 2-4 words as potential incorrect answer
+                        phrase = ' '.join(words[:min(4, len(words))])
+                        if phrase.lower() != correct_answer.lower() and len(phrase) > 3:
+                            incorrect_answer = phrase
+                            break
+
+                if not incorrect_answer:
+                    # Fallback: use first few words of context
+                    words = context.split()[:3]
+                    incorrect_answer = ' '.join(words) if words else "incorrect answer"
+
+                # Format prompt
+                prompt = f"Context: {context}\n\nQuestion: {question}\nAnswer:"
+
+                metadata = {"label": "catalanqa"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
+                )
+
+            # Format 2: Multiple choice fallback
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
             
             # Try multiple format patterns for choices

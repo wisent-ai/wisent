@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BigBenchExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("bigbench",)
+
+evaluator_name = "exact_match"
+
 
 class BigBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for BIG-Bench tasks."""

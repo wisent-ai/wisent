@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["AI2ARCExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("arc_ar",)
+
+evaluator_name = "log_likelihoods"
+
 
 class AI2ARCExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AI2 ARC benchmark."""

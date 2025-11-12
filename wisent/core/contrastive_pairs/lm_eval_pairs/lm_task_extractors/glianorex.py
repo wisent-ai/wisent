@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 __all__ = ["GlianorexExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "glianorex",
+    "glianorex_en",
+    "glianorex_fr",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class GlianorexExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Glianorex benchmark."""
@@ -52,7 +60,12 @@ class GlianorexExtractor(LMEvalBenchmarkExtractor):
             
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
+            # Handle options as dict (glianorex format)
+            if isinstance(choices, dict):
+                # Convert dict to list sorted by key
+                choices = [choices[k] for k in sorted(choices.keys())]
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [
@@ -64,7 +77,7 @@ class GlianorexExtractor(LMEvalBenchmarkExtractor):
                 choices = [c for c in choices if c]
 
             # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            answer = doc.get("answer", doc.get("answer_idx", doc.get("label", doc.get("target", None))))
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')

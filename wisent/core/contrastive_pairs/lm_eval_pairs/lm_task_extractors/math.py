@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MathExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("math_word_problems", "math", "math500")
+
+evaluator_name = "exact_match"
+
 
 class MathExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Math benchmark."""

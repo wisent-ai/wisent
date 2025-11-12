@@ -1,0 +1,30 @@
+{
+  "task_name": "afrixnli_en_direct_amh",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Premise: \u12a5\u1293\u1274 \u1264\u1275 \u1218\u1325\u127b\u1208\u1201 \u12a0\u1208\nHypothesis: \u12e8\u1275\u121d\u1205\u122d\u1275 \u1264\u1271 \u12a0\u12cd\u1276\u1265\u1235 \u12a5\u1295\u12f2\u12eb\u12c8\u122d\u12f0\u12cd \u12a5\u1293\u1271\u1295 \u1320\u122b...",
+      "positive_response": "neutral",
+      "negative_response": "entailment",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'neutral' (log_prob=-0.500), Expected: 'neutral'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'neutral' (log_prob=-0.500), Expected: 'entailment'"
+      },
+      "both_correct": true
+    }
+  ]
+}

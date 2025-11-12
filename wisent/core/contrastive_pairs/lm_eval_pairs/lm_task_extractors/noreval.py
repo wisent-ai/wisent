@@ -14,6 +14,22 @@ if TYPE_CHECKING:
 __all__ = ["NorevalExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "norec_sentence", "norec_document", "ncb", "noridiom_nob", "noridiom_nno",
+    "norbelebele", "nrk_quiz_qa_nob", "nrk_quiz_qa_nno",
+    "noropenbookqa_nob", "noropenbookqa_nno",
+    "norcommonsenseqa_nob", "norcommonsenseqa_nno",
+    "nortruthfulqa_mc_nob", "nortruthfulqa_mc_nno",
+    "norquad", "nortruthfulqa_gen_nob", "nortruthfulqa_gen_nno",
+    "ask_gec", "norsumm_nob", "norsumm_nno",
+    "tatoeba_eng_nob", "tatoeba_eng_nno", "tatoeba_nob_eng", "tatoeba_nno_eng",
+    "norrewrite_instruct", "norsummarize_instruct"
+)
+
+# Note: noreval includes both multiple-choice (log_likelihoods) and generative (generation) tasks
+# Using log_likelihoods as default since majority are multiple-choice QA
+evaluator_name = "log_likelihoods"
+
 
 class NorevalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Noreval benchmark."""
@@ -70,8 +86,21 @@ class NorevalExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: Belebele format (mc_answer1-4 + correct_answer_num)
+            if "question" in doc and "mc_answer1" in doc and "correct_answer_num" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("mc_answer1", "")).strip(),
+                    str(doc.get("mc_answer2", "")).strip(),
+                    str(doc.get("mc_answer3", "")).strip(),
+                    str(doc.get("mc_answer4", "")).strip(),
+                ]
+                # correct_answer_num is "1", "2", "3", or "4" (1-indexed)
+                answer_num = str(doc.get("correct_answer_num", "1"))
+                answer_idx = int(answer_num) - 1  # Convert to 0-indexed
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

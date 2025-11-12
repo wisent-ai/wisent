@@ -14,9 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["CabreuExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("cabreu", "cabreu_extractive", "cabreu_abstractive", "cabreu_extreme")
+
+evaluator_name = "log_likelihoods"
+
 
 class CabreuExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Cabreu benchmark."""
+    """Extractor for Cabreu benchmark (Catalan summarization)."""
 
     def extract_contrastive_pairs(
         self,
@@ -30,8 +34,19 @@ class CabreuExtractor(LMEvalBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
+        # Determine which summary type to use based on task name
+        task_name = getattr(lm_eval_task_data, "NAME", "")
+        if "extractive" in task_name:
+            summary_type = "extractive"
+        elif "abstractive" in task_name:
+            summary_type = "abstractive"
+        elif "extreme" in task_name:
+            summary_type = "extreme"
+        else:
+            summary_type = "extractive"  # default
+
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
+            pair = self._extract_pair_from_doc(doc, summary_type)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
@@ -43,51 +58,57 @@ class CabreuExtractor(LMEvalBenchmarkExtractor):
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+    def _extract_pair_from_doc(self, doc: dict[str, Any], summary_type: str = "extractive") -> ContrastivePair | None:
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # Cabreu summarization format: content + summaries
+            content = doc.get("content", "").strip()
+            summaries = doc.get("summaries", {})
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            if not content or not summaries:
+                log.debug("Skipping doc - missing content or summaries", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+            # Get the correct summary based on type
+            summary_dict = summaries.get(summary_type, {})
+            if not summary_dict:
+                log.debug(f"Skipping doc - no {summary_type} summary found", extra={"doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # Use 'a1' as the reference summary
+            correct_summary = summary_dict.get("a1", "").strip()
+            if not correct_summary:
+                log.debug(f"Skipping doc - empty {summary_type} summary 'a1'", extra={"doc": doc})
+                return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "cabreu"}
+            # Create synthetic negative by shuffling sentences
+            import random
+            sentences = [s.strip() for s in correct_summary.split('.') if s.strip()]
+            if len(sentences) <= 1:
+                # Can't shuffle if only one sentence, skip
+                log.debug("Skipping doc - summary has only one sentence", extra={"doc": doc})
+                return None
+
+            shuffled_sentences = sentences.copy()
+            random.shuffle(shuffled_sentences)
+
+            # Ensure shuffled is actually different
+            if shuffled_sentences == sentences:
+                # Reverse if shuffle didn't change order
+                shuffled_sentences = list(reversed(sentences))
+
+            incorrect_summary = '. '.join(shuffled_sentences) + '.'
+
+            # Format prompt
+            prompt = f"Text: {content}\n\nGenerate a {summary_type} summary:"
+
+            metadata = {"label": "cabreu", "summary_type": summary_type}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=correct_summary,
+                incorrect=incorrect_summary,
                 metadata=metadata,
             )
 

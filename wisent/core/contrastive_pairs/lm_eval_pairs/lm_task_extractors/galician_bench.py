@@ -14,9 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["GalicianBenchExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("galician_bench",)
+
+evaluator_name = "log_likelihoods"
+
 
 class GalicianBenchExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Galician Bench benchmark."""
+    """Extractor for the Galician Bench benchmark - a group of Galician language tasks."""
 
     def extract_contrastive_pairs(
         self,

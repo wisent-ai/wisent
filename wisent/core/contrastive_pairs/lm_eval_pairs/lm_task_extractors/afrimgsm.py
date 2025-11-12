@@ -14,9 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["AfrimgsmExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("afrimgsm_direct_amh",)
+
+evaluator_name = "generation"
+
 
 class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Afrimgsm benchmark."""
+    """Extractor for Afrimgsm benchmark - math word problems with numeric answers."""
 
     def extract_contrastive_pairs(
         self,
@@ -44,48 +48,47 @@ class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """
+        Extract contrastive pair from Afrimgsm doc.
+        Schema: {'question': str, 'answer_number': int/float, 'answer': None, 'equation_solution': None}
+        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            question = doc.get("question", "").strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            # Get the correct numeric answer
+            answer_number = doc.get("answer_number")
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
-
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
+            if not question or answer_number is None:
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # Convert answer to string
+            correct = str(answer_number)
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Generate an incorrect answer (different from correct)
+            # Try multiple strategies to ensure the incorrect answer is different
+            try:
+                num_val = float(answer_number)
+                if num_val == 0:
+                    incorrect = "1"
+                elif num_val > 0:
+                    incorrect = str(int(num_val + 1))
+                else:
+                    incorrect = str(int(num_val - 1))
+            except (ValueError, TypeError):
+                # If not a valid number, use a generic wrong answer
+                incorrect = "0"
+
+            # Ensure incorrect is actually different
+            if incorrect == correct:
+                incorrect = str(int(float(correct)) * 2) if float(correct) != 0 else "1"
+
             metadata = {"label": "afrimgsm"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

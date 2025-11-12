@@ -16,6 +16,10 @@ if TYPE_CHECKING:
 __all__ = ["ASDivExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("asdiv",)
+
+evaluator_name = "exact_match"
+
 
 class ASDivExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the ASDiv benchmark."""

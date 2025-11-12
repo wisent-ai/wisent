@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BabiExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("babi",)
+
+evaluator_name = "generation"
+
 
 class BabiExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Babi benchmark."""
@@ -38,6 +42,11 @@ class BabiExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
+
+        # babi config may look for 'valid' split which doesn't exist, use test split
+        if preferred_doc is None:
+            preferred_doc = "test"
+
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
@@ -61,76 +70,29 @@ class BabiExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Babi doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+        Schema: {'passage': str, 'question': str, 'answer': str, 'task': int}
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            passage = doc.get("passage", "").strip()
+            question = doc.get("question", "").strip()
+            correct = doc.get("answer", "").strip()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "babi"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+            if not passage or not question or not correct:
+                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
+            # Create an incorrect answer by appending "incorrect" or using a generic wrong answer
+            incorrect = f"not {correct}"
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Format the prompt with passage and question
+            prompt = f"Passage: {passage}\n\nQuestion: {question}"
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "babi",
-            }
+            metadata = {"label": "babi"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

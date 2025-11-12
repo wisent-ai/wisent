@@ -1,0 +1,14 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: Hi ku ya hi ndzimana, i swiga swihi leswi landzelaka leswi nga hlamuseriki hi ku kongoma ikhonomi ya Chayina?\nA. Ikhonomi ya Chayina yi kule swinene ku sukela ku lunghisiwa\nB. Chayina a yi si tshama yi xavisele matiko timovha to tala ku hundza Jarimani",
+    "positive_response": "Chayina a yi si tshama yi xavisele matiko timovha to tala ku hundza Jarimani",
+    "negative_response": "Ikhonomi ya Chayina yi kule swinene ku sukela ku lunghisiwa"
+  },
+  {
+    "pair_id": 1,
+    "prompt": "Question: Mukuwirirana nemashoko akataurwa, ndechipi chinangwa chikuru kubva zvino tichienda mberi chesangano reUSA Gymnastics nereUnited States Olympic Committee?\nA. Kuongorora mabasa ekubata chibharo aLarry Nassar\nB. Kusimudzira kuchengeteka kwevatambi",
+    "positive_response": "Kusimudzira kuchengeteka kwevatambi",
+    "negative_response": "Kuongorora mabasa ekubata chibharo aLarry Nassar"
+  }
+]
