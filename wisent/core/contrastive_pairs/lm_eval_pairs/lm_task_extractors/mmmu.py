@@ -14,9 +14,20 @@ if TYPE_CHECKING:
 __all__ = ["MmmuExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mmmu", "mmmu_val", "mmmu_val_art_and_design", "mmmu_val_business",
+              "mmmu_val_health_and_medicine", "mmmu_val_humanities_and_social_science",
+              "mmmu_val_science", "mmmu_val_tech_and_engineering")
+
+evaluator_name = "generation"
+
 
 class MmmuExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Mmmu benchmark."""
+    """Extractor for the MMMU (Multimodal) benchmark.
+
+    NOTE: MMMU is a multimodal benchmark that requires image support.
+    The current implementation does NOT support images and will fail to extract pairs.
+    This benchmark requires architectural changes to support multimodal inputs.
+    """
 
     def extract_contrastive_pairs(
         self,

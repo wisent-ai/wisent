@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["NoticiaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("noticia",)
+
+evaluator_name = "generation"
+
 
 class NoticiaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Noticia benchmark."""
@@ -44,52 +48,48 @@ class NoticiaExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """
+        Convert a single Noticia doc into a ContrastivePair, if possible.
+        Returns None when required fields are missing or malformed.
+
+        Noticia format (Spanish clickbait summarization):
+        - web_headline: the sensationalist/clickbait headline
+        - web_text: the actual news article body
+        - summary: the target one-sentence summary revealing the truth
+        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # Noticia format
+            if "web_headline" in doc and "web_text" in doc and "summary" in doc:
+                headline = str(doc.get("web_headline", "")).strip()
+                text = str(doc.get("web_text", "")).strip()
+                summary = str(doc.get("summary", "")).strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+                if not headline or not text or not summary:
+                    log.debug("Skipping doc with missing headline/text/summary", extra={"doc": doc})
+                    return None
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
+                # Prompt is the instruction + headline + text (as in lm-eval)
+                prompt = f"Ahora eres una Inteligencia Artificial experta en desmontar titulares sensacionalistas o clickbait. Tu tarea consiste en analizar noticias con titulares sensacionalistas y generar un resumen de una sola frase que revele la verdad detrás del titular.\nEste es el titular de la noticia: {headline}\nEl titular plantea una pregunta o proporciona información incompleta. Debes buscar en el cuerpo de la noticia una frase que responda lo que se sugiere en el título. Siempre que puedas cita el texto original, especialmente si se trata de una frase que alguien ha dicho. Si citas una frase que alguien ha dicho, usa comillas para indicar que es una cita. Usa siempre las mínimas palabras posibles. No es necesario que la respuesta sea una oración completa, puede ser sólo el foco de la pregunta. Recuerda responder siempre en Español.\nEste es el cuerpo de la noticia:\n{text}"
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+                # Positive: the actual summary
+                correct = summary
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+                # Negative: generic refusal (similar to other summarization tasks)
+                incorrect = "No puedo proporcionar un resumen de esta noticia."
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "noticia"}
+                metadata = {"label": "noticia"}
 
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            log.debug("Skipping doc without web_headline/web_text/summary fields", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

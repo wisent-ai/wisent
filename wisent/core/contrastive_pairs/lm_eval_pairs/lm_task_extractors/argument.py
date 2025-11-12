@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["ArgumentExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("argument", "argument_topic")
+
+evaluator_name = "exact_match"
+
 
 class ArgumentExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Argument benchmark - text classification task."""
-
-    task_names = ("argument", "argument_topic")
-    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,

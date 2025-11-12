@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ChainExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("chain_of_thought",)
+
+evaluator_name = "log_likelihoods"
+
 
 class ChainExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Chain benchmark."""

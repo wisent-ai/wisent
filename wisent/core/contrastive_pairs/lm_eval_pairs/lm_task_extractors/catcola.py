@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["CatcolaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("catcola",)
+
+evaluator_name = "log_likelihoods"
+
 
 class CatcolaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Catcola benchmark."""
@@ -47,12 +51,41 @@ class CatcolaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: Linguistic acceptability (CatCoLA) with Sentence + Label
+            if "Sentence" in doc and "Label" in doc:
+                sentence = str(doc.get("Sentence", "")).strip()
+                label = doc.get("Label")
+
+                if not sentence or label not in [0, 1]:
+                    log.debug("Skipping doc - missing sentence or invalid label", extra={"doc": doc})
+                    return None
+
+                # Label 1 = acceptable, Label 0 = unacceptable
+                if label == 1:
+                    correct = "acceptable"
+                    incorrect = "unacceptable"
+                else:
+                    correct = "unacceptable"
+                    incorrect = "acceptable"
+
+                # Format prompt
+                prompt = f"Sentence: {sentence}\n\nIs this sentence grammatically acceptable in Catalan?\nAnswer:"
+                metadata = {"label": "catcola"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: Multiple choice fallback
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

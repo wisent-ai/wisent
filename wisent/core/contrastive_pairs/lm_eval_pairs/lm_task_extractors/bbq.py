@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["BbqExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("bbq",)
+
+evaluator_name = "log_likelihoods"
+
 
 class BbqExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Bbq benchmark."""
-
-    task_names = ("bbq",)
-    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

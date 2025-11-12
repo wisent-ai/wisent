@@ -14,6 +14,22 @@ if TYPE_CHECKING:
 __all__ = ["InverseScalingExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "inverse_scaling_hindsight_neglect_10shot",
+    "inverse_scaling_redefine_math",
+    "inverse_scaling_quote_repetition",
+    "inverse_scaling_neqa",
+    "inverse_scaling_winobias_antistereotype",
+    "inverse_scaling_into_the_unknown",
+    "inverse_scaling_memo_trap",
+    "inverse_scaling_modus_tollens",
+    "inverse_scaling_pattern_matching_suppression",
+    "inverse_scaling_repetitive_algebra",
+    "inverse_scaling_sig_figs",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class InverseScalingExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Inverse Scaling benchmark."""
@@ -69,6 +85,30 @@ class InverseScalingExtractor(LMEvalBenchmarkExtractor):
             question = None
             choices = None
             answer_idx = None
+
+            # Format 0: inverse_scaling format (prompt + classes + answer_index)
+            if "prompt" in doc and "classes" in doc and "answer_index" in doc:
+                prompt = str(doc.get("prompt", "")).strip()
+                classes = doc.get("classes", [])
+                answer_idx = doc.get("answer_index")
+
+                if not prompt or not classes or answer_idx is None or not (0 <= answer_idx < len(classes)):
+                    log.debug("Skipping doc due to missing/invalid inverse_scaling fields", extra={"doc": doc})
+                    return None
+
+                # Classes are the possible answers (e.g., [' Y', ' N'])
+                correct = classes[answer_idx]
+                # Get incorrect choice (the other one)
+                incorrect_idx = (answer_idx + 1) % len(classes)
+                incorrect = classes[incorrect_idx]
+
+                metadata = {"label": "inverse_scaling"}
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
 
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:

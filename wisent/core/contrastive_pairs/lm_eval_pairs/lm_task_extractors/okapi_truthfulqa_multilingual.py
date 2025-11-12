@@ -14,6 +14,27 @@ if TYPE_CHECKING:
 __all__ = ["OkapiTruthfulqaMultilingualExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "truthfulqa_ar_mc1", "truthfulqa_ar_mc2", "truthfulqa_bn_mc1", "truthfulqa_bn_mc2",
+    "truthfulqa_ca_mc1", "truthfulqa_ca_mc2", "truthfulqa_da_mc1", "truthfulqa_da_mc2",
+    "truthfulqa_de_mc1", "truthfulqa_de_mc2", "truthfulqa_es_mc1", "truthfulqa_es_mc2",
+    "truthfulqa_eu_mc1", "truthfulqa_eu_mc2", "truthfulqa_fr_mc1", "truthfulqa_fr_mc2",
+    "truthfulqa_gu_mc1", "truthfulqa_gu_mc2", "truthfulqa_hi_mc1", "truthfulqa_hi_mc2",
+    "truthfulqa_hr_mc1", "truthfulqa_hr_mc2", "truthfulqa_hu_mc1", "truthfulqa_hu_mc2",
+    "truthfulqa_hy_mc1", "truthfulqa_hy_mc2", "truthfulqa_id_mc1", "truthfulqa_id_mc2",
+    "truthfulqa_it_mc1", "truthfulqa_it_mc2", "truthfulqa_kn_mc1", "truthfulqa_kn_mc2",
+    "truthfulqa_ml_mc1", "truthfulqa_ml_mc2", "truthfulqa_mr_mc1", "truthfulqa_mr_mc2",
+    "truthfulqa_ne_mc1", "truthfulqa_ne_mc2", "truthfulqa_nl_mc1", "truthfulqa_nl_mc2",
+    "truthfulqa_pt_mc1", "truthfulqa_pt_mc2", "truthfulqa_ro_mc1", "truthfulqa_ro_mc2",
+    "truthfulqa_ru_mc1", "truthfulqa_ru_mc2", "truthfulqa_sk_mc1", "truthfulqa_sk2",
+    "truthfulqa_sr_mc1", "truthfulqa_sr_mc2", "truthfulqa_sv_mc1", "truthfulqa_sv_mc2",
+    "truthfulqa_ta_mc1", "truthfulqa_ta_mc2", "truthfulqa_te_mc1", "truthfulqa_te_mc2",
+    "truthfulqa_uk_mc1", "truthfulqa_uk_mc2", "truthfulqa_vi_mc1", "truthfulqa_vi_mc2",
+    "truthfulqa_zh_mc1", "truthfulqa_zh_mc2"
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class OkapiTruthfulqaMultilingualExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Okapi/Truthfulqa Multilingual benchmark."""

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["HistoiresMoralesExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("histoires_morales",)
+
+evaluator_name = "generation"
+
 
 class HistoiresMoralesExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Histoires Morales benchmark."""
@@ -69,6 +73,30 @@ class HistoiresMoralesExtractor(LMEvalBenchmarkExtractor):
             question = None
             choices = None
             answer_idx = None
+
+            # Format 0: histoires_morales format (query + choices + label)
+            if "query" in doc and "choices" in doc and "label" in doc:
+                query = str(doc.get("query", "")).strip()
+                choices_list = doc.get("choices", [])
+                label = doc.get("label")
+
+                if not query or not choices_list or label is None or not (0 <= label < len(choices_list)):
+                    log.debug("Skipping doc due to missing/invalid histoires_morales fields", extra={"doc": doc})
+                    return None
+
+                # Label is the index of the correct choice
+                correct = choices_list[label]
+                # Get incorrect choice (the other one)
+                incorrect_idx = (label + 1) % len(choices_list)
+                incorrect = choices_list[incorrect_idx]
+
+                metadata = {"label": "histoires_morales"}
+                return self._build_pair(
+                    question=f"Question: {query}",
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
 
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:

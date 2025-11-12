@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Context: A finals d'agost fou nomenat un nou primer ministre, Jafar Sharif-Emami, que va revertir algunes de les pol\u00edtiques del Xa. Els casinos foren tancats, el calendari imperial abolit, l'activitat dels partits pol\u00edtics autoritzada... Tot fou debades. Cap al setembre, el pa\u00eds s'estava desestabilitzant r\u00e0pidament, i les grans protestes s'estaven convertint en un esdeveniment habitual. El Xa va promulgar la llei marcial i va prohibir totes les manifestacions, per\u00f2 el 8 de setembre milers de manifestants es van reunir a Teheran. Les forces de seguretat van disparar i en van matar unes quantes dotzenes en el qual es va con\u00e8ixer com el \"Divendres Negre\", tal com es pot veure en aquesta successi\u00f3 de fotografies:\n\nQuestion: Quants manifestants es van reunir a Teheran?\nAnswer:",
+    "positive_response": "milers",
+    "negative_response": "A finals d'agost fou"
+  }
+]

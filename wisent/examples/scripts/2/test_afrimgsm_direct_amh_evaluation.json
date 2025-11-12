@@ -1,0 +1,30 @@
+{
+  "task_name": "afrimgsm_direct_amh",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "\u12e8\u1303\u1294\u1275 \u12f3\u12ad\u12ec\u12ce\u127d \u1260\u1240\u1295 16 \u12a5\u1295\u1241\u120b\u120e\u127d\u1295 \u12ed\u1325\u120b\u1209\u1362 \u1260\u12e8\u1240\u1291 \u1226\u1235\u1275 \u1208\u1241\u122d\u1235 \u1275\u1260\u120b\u1208\u127d \u12a5\u1293 \u1260\u12e8\u1240\u1291 \u1208\u1313\u12f0\u129e\u1279\u12cb \u1260\u12a0\u122b\u1271 \u121b\u134b\u1295 \u1275\u130b\u130d\u122b\u1208\u127d\u1362 \u1240\u122a\u12cd\u1295 \u1260\u12e8\u1240\u1291 \u1260\u12a0\u122d\u1236 \u12a0...",
+      "positive_response": "18",
+      "negative_response": "19",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: '18' (log_prob=-0.500), Expected: '18'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: '18' (log_prob=-0.500), Expected: '19'"
+      },
+      "both_correct": true
+    }
+  ]
+}

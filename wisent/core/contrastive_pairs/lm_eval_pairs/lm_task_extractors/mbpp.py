@@ -14,6 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["MBPPExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "mbpp",
+    "mbpp_plus",
+)
+
+evaluator_name = "exact_match"
+
 
 class MBPPExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MBPP (Mostly Basic Python Problems) benchmark."""

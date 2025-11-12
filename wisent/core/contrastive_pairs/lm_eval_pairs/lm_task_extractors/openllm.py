@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["OpenllmExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("openllm",)
+
+evaluator_name = "log_likelihoods"
+
 
 class OpenllmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Openllm benchmark."""

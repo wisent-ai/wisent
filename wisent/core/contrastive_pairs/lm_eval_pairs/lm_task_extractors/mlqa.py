@@ -14,6 +14,12 @@ if TYPE_CHECKING:
 __all__ = ["MlqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mlqa", "mlqa_en_en", "mlqa_en_es", "mlqa_en_de", "mlqa_en_ar", "mlqa_en_hi", "mlqa_en_vi", "mlqa_en_zh",
+              "mlqa_es_en", "mlqa_es_es", "mlqa_de_en", "mlqa_de_de", "mlqa_ar_ar", "mlqa_ar_en",
+              "mlqa_hi_en", "mlqa_hi_hi", "mlqa_vi_en", "mlqa_vi_vi", "mlqa_zh_en", "mlqa_zh_zh")
+
+evaluator_name = "generation"
+
 
 class MlqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mlqa benchmark."""
@@ -61,80 +67,52 @@ class MlqaExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Mlqa doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Mlqa format: context + question + answers (QA task like SQuAD)
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # mlqa format: context + question + answers (list of answer texts)
+            if "context" in doc and "question" in doc and "answers" in doc:
+                context = str(doc.get("context", "")).strip()
                 question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
+                answers = doc.get("answers")
+
+                # answers can be a dict with "text" key or a list
+                if isinstance(answers, dict):
+                    answer_texts = answers.get("text", [])
+                elif isinstance(answers, list):
+                    answer_texts = answers
                 else:
-                    answer_idx = int(answer) if answer else 0
+                    answer_texts = []
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
+                if not context or not question or not answer_texts:
+                    log.debug("Skipping doc with missing context, question, or answers", extra={"doc": doc})
+                    return None
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "mlqa"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
+                # Use the first answer as the correct answer
+                correct_answer = str(answer_texts[0]).strip() if answer_texts else ""
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                if not correct_answer:
+                    log.debug("Skipping doc with empty answer", extra={"doc": doc})
+                    return None
+
+                # Create synthetic negative - generic non-answer for QA
+                incorrect_answer = "I don't know."
+
+                prompt = f"Context: {context}\n\nQuestion: {question}\n\nAnswer:"
+
+                metadata = {"label": "mlqa"}
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
                 )
-                return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "mlqa",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            log.debug("Skipping doc without context/question/answers fields", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

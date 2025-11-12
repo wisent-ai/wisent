@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["EscolaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("escola",)
+
+evaluator_name = "log_likelihoods"
+
 
 class EscolaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Escola benchmark - grammatical acceptability task."""
-
-    task_names = ("escola",)
-    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

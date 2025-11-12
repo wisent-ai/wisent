@@ -16,9 +16,78 @@ _LOG = setup_logger(__name__)
 
 
 class EusExamsExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Eus Exams benchmark."""
+    """Extractor for the Eus Exams benchmark - Basque language exams.
 
-    task_names = ("eus_exams", "eus_exams_es")
+    This is a multiple choice task testing knowledge for civil service exams.
+    Format: question + candidates (list) + answer (integer index)
+    """
+
+    task_names = (
+        "eus_exams_es",
+        "eus_exams_es_ejadministrativo",
+        "eus_exams_es_ejauxiliar",
+        "eus_exams_es_ejsubalterno",
+        "eus_exams_es_ejtecnico",
+        "eus_exams_es_opeayuntamientovitoria",
+        "eus_exams_es_opebilbao",
+        "eus_exams_es_opeehuadmin",
+        "eus_exams_es_opeehuaux",
+        "eus_exams_es_opeehubiblio",
+        "eus_exams_es_opeehuderecho",
+        "eus_exams_es_opeehueconomicas",
+        "eus_exams_es_opeehuempresariales",
+        "eus_exams_es_opeehusubalterno",
+        "eus_exams_es_opeehutecnico",
+        "eus_exams_es_opeehutecnicob",
+        "eus_exams_es_opeosakiadmin",
+        "eus_exams_es_opeosakiaux",
+        "eus_exams_es_opeosakiauxenf",
+        "eus_exams_es_opeosakicelador",
+        "eus_exams_es_opeosakienf",
+        "eus_exams_es_opeosakijuridico",
+        "eus_exams_es_opeosakioperario",
+        "eus_exams_es_opeosakitecnico",
+        "eus_exams_es_opeosakivarios",
+        "eus_exams_es_osakidetza1c",
+        "eus_exams_es_osakidetza2c",
+        "eus_exams_es_osakidetza3c",
+        "eus_exams_es_osakidetza4c",
+        "eus_exams_es_osakidetza5c",
+        "eus_exams_es_osakidetza6c",
+        "eus_exams_es_osakidetza7c",
+        "eus_exams_es_osakidetza8c",
+        "eus_exams_es_osakidetza9c",
+        "eus_exams_eu",
+        "eus_exams_eu_ejadministrari",
+        "eus_exams_eu_ejlaguntza",
+        "eus_exams_eu_ejlaguntzaile",
+        "eus_exams_eu_ejteknikari",
+        "eus_exams_eu_opebilbaoeu",
+        "eus_exams_eu_opeehuadmineu",
+        "eus_exams_eu_opeehuauxeu",
+        "eus_exams_eu_opeehubiblioeu",
+        "eus_exams_eu_opeehuderechoeu",
+        "eus_exams_eu_opeehueconomicaseu",
+        "eus_exams_eu_opeehuempresarialeseu",
+        "eus_exams_eu_opeehusubalternoeu",
+        "eus_exams_eu_opeehutecnicoeu",
+        "eus_exams_eu_opeehuteknikarib",
+        "eus_exams_eu_opegasteizkoudala",
+        "eus_exams_eu_opeosakiadmineu",
+        "eus_exams_eu_opeosakiauxenfeu",
+        "eus_exams_eu_opeosakiauxeu",
+        "eus_exams_eu_opeosakiceladoreu",
+        "eus_exams_eu_opeosakienfeu",
+        "eus_exams_eu_opeosakioperarioeu",
+        "eus_exams_eu_opeosakitecnicoeu",
+        "eus_exams_eu_opeosakivarioseu",
+        "eus_exams_eu_osakidetza1e",
+        "eus_exams_eu_osakidetza2e",
+        "eus_exams_eu_osakidetza3e",
+        "eus_exams_eu_osakidetza5e",
+        "eus_exams_eu_osakidetza6e",
+        "eus_exams_eu_osakidetza7e",
+    )
     evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(

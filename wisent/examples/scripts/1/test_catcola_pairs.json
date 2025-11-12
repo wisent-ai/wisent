@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Sentence: T'ho ha explicat tant a tu com a ella.\n\nIs this sentence grammatically acceptable in Catalan?\nAnswer:",
+    "positive_response": "acceptable",
+    "negative_response": "unacceptable"
+  }
+]

@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 __all__ = ["Polemo2Extractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "polemo2",
+    "polemo2_in",
+    "polemo2_out",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class Polemo2Extractor(LMEvalBenchmarkExtractor):
     """Extractor for the Polemo2 benchmark."""

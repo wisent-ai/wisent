@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["CycleLettersExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("cycle_letters",)
+
+evaluator_name = "exact_match"
+
 
 class CycleLettersExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Cycle Letters benchmark - word unscrambling task."""
-
-    task_names = ("cycle_letters",)
-    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,

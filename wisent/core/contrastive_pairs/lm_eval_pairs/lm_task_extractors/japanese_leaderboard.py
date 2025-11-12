@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["JapaneseLeaderboardExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("japanese_leaderboard",)
+
+evaluator_name = "log_likelihoods"
+
 
 class JapaneseLeaderboardExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Japanese Leaderboard benchmark."""

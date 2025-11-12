@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BenchmarksExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("benchmarks",)
+
+evaluator_name = "log_likelihoods"
+
 
 class BenchmarksExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Benchmarks benchmark."""

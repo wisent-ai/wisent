@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BhtcExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("bhtc", "bhtc_v2")
+
+evaluator_name = "log_likelihoods"
+
 
 class BhtcExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Bhtc benchmark."""
@@ -27,11 +31,15 @@ class BhtcExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+
+        # Get choices from task config if available
+        choices = getattr(lm_eval_task_data.config, "doc_to_choice", None)
+
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
+            pair = self._extract_pair_from_doc(doc, choices)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
@@ -43,16 +51,45 @@ class BhtcExtractor(LMEvalBenchmarkExtractor):
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+    def _extract_pair_from_doc(self, doc: dict[str, Any], task_choices: list[str] | None = None) -> ContrastivePair | None:
+        log = bind(_LOG, doc_id=doc.get("id", doc.get("idx", "unknown")))
 
         try:
+            # Format 1: bhtc_v2 schema with text + label + task_choices
+            if "text" in doc and task_choices:
+                question = str(doc.get("text", "")).strip()
+                choices = task_choices
+                answer_idx = doc.get("label")
+
+                if not isinstance(answer_idx, int):
+                    log.debug("Skipping doc - label not an integer", extra={"doc": doc})
+                    return None
+
+                if not question or not choices or not (0 <= answer_idx < len(choices)):
+                    log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+                    return None
+
+                correct = str(choices[answer_idx]).strip()
+                incorrect_idx = (answer_idx + 1) % len(choices)
+                incorrect = str(choices[incorrect_idx]).strip()
+
+                formatted_question = f"Text: {question}\nQuestion: What is the topic of the above text?\nA. {incorrect}\nB. {correct}"
+                metadata = {"label": "bhtc"}
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: Generic multiple choice format
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

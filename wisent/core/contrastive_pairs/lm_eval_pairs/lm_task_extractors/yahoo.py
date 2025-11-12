@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["YahooExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("yahoo_answers_topics",)
+
+evaluator_name = "log_likelihoods"
+
 
 class YahooExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Yahoo benchmark."""

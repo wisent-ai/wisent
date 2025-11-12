@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["CareqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("careqa", "careqa_en", "careqa_es", "careqa_open", "careqa_open_perplexity")
+
+evaluator_name = "log_likelihoods"
+
 
 class CareqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Careqa benchmark."""
@@ -84,7 +88,21 @@ class CareqaExtractor(LMEvalBenchmarkExtractor):
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
+            # Format 2: question + op1/op2/op3/op4 + cop (CareQA style)
+            elif "question" in doc and "op1" in doc and "cop" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("op1", "")).strip(),
+                    str(doc.get("op2", "")).strip(),
+                    str(doc.get("op3", "")).strip(),
+                    str(doc.get("op4", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                cop = doc.get("cop")
+                # cop is 1-indexed (1, 2, 3, 4), convert to 0-indexed
+                answer_idx = int(cop) - 1 if isinstance(cop, int) else 0
+
+            # Format 3: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()
                 choices = [

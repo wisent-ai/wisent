@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MimicRepsumExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mimic_repsum",)
+
+evaluator_name = "generation"
+
 
 class MimicRepsumExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mimic Repsum benchmark."""
@@ -61,80 +65,65 @@ class MimicRepsumExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Mimic Repsum doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Mimic Repsum format: extractive_notes_summ (FINDINGS + IMPRESSION sections)
+        Task: Summarize the findings into diagnostic statements (IMPRESSION)
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            import re
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
+            # mimic_repsum format: extractive_notes_summ with FINDINGS and IMPRESSION
+            if "extractive_notes_summ" in doc:
+                text = str(doc.get("extractive_notes_summ", "")).strip()
+
+                if not text or len(text) < 5:
+                    log.debug("Skipping doc with empty or too short extractive_notes_summ", extra={"doc": doc})
+                    return None
+
+                # Extract FINDINGS and IMPRESSION sections (following utils.py logic)
+                a = re.search("IMPRESSION", text, re.IGNORECASE)
+                if a is not None:
+                    a = a.start()
                 else:
-                    answer_idx = int(answer) if answer else 0
+                    a = -1
+                b = re.search("FINDING", text, re.IGNORECASE)
+                if b is not None:
+                    b = b.start()
+                else:
+                    b = -1
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
+                if a < b:
+                    impressions = text[a:b].split("     ")[0]
+                    findings = text[b:].split("     ")[0]
+                else:
+                    impressions = text[a:].split("     ")[0]
+                    findings = text[b:a].split("     ")[0]
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "mimic_repsum"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
+                if len(findings) < 5 < len(impressions):
+                    findings = text[:a]
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                # Skip if findings or impressions are too short
+                if len(findings) < 5 or len(impressions) < 5:
+                    log.debug("Skipping doc with too short findings or impressions", extra={"doc": doc})
+                    return None
+
+                # Create synthetic negative - generic non-answer for summarization
+                incorrect = "Unable to summarize the findings. Additional information is required."
+
+                prompt = f"Given the findings: {findings}.\nSummarize the findings."
+
+                metadata = {"label": "mimic_repsum"}
+                return self._build_pair(
+                    question=prompt,
+                    correct=impressions,
+                    incorrect=incorrect,
+                    metadata=metadata,
                 )
-                return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "mimic_repsum",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            log.debug("Skipping doc without extractive_notes_summ field", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

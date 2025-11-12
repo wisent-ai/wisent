@@ -16,7 +16,20 @@ _LOG = setup_logger(__name__)
 
 
 class FldExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Fld benchmark."""
+    """Extractor for the Fld benchmark - Formal Logic Deduction tasks.
+
+    FLD evaluates logical reasoning by presenting facts and hypotheses,
+    requiring models to determine validity (proved/disproved/unknown).
+    Includes default and logical_formula variants with standard and star difficulty.
+    """
+
+    task_names = (
+        "fld_default",
+        "fld_logical_formula_default",
+        "fld_logical_formula_star",
+        "fld_star",
+    )
+    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,
@@ -60,79 +73,57 @@ class FldExtractor(LMEvalBenchmarkExtractor):
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
         Convert a single Fld doc into a ContrastivePair, if possible.
+
+        FLD format:
+        - hypothesis: the statement to be proved/disproved
+        - context: the facts/premises
+        - proof_label: one of PROVED, DISPROVED, UNKNOWN
+
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # FLD-specific fields
+            hypothesis = doc.get("hypothesis", "").strip()
+            context = doc.get("context", "").strip()
+            proof_label = doc.get("proof_label", "").strip().upper()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "fld"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+            if not hypothesis or not context or not proof_label:
                 log.debug(
-                    "Skipping doc due to missing/invalid fields",
+                    "Skipping doc due to missing required FLD fields",
                     extra={"doc": doc},
                 )
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Valid labels for FLD
+            valid_labels = ["PROVED", "DISPROVED", "UNKNOWN"]
+            if proof_label not in valid_labels:
+                log.debug(
+                    "Skipping doc due to invalid proof_label",
+                    extra={"proof_label": proof_label, "doc": doc},
+                )
+                return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Create prompt from hypothesis and context
+            prompt = f"Given the following facts:\n{context}\n\nDetermine if the hypothesis can be proved, disproved, or is unknown:\nHypothesis: {hypothesis}\n\nAnswer (PROVED/DISPROVED/UNKNOWN):"
+
+            # Positive response: correct label
+            correct_answer = proof_label
+
+            # Negative response: pick a different label
+            incorrect_options = [label for label in valid_labels if label != proof_label]
+            incorrect_answer = incorrect_options[0] if incorrect_options else "PROVED"
 
             metadata = {
                 "label": "fld",
+                "proof_label": proof_label,
             }
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=correct_answer,
+                incorrect=incorrect_answer,
                 metadata=metadata,
             )
 

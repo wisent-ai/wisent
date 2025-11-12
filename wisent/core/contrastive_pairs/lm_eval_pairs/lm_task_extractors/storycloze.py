@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 __all__ = ["StoryclozeExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "storycloze",
+    "storycloze_2016",
+    "storycloze_2018",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class StoryclozeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Storycloze benchmark."""

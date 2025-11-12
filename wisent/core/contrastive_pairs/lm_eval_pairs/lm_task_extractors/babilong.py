@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BabilongExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("babilong",)
+
+evaluator_name = "generation"
+
 
 class BabilongExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Babilong benchmark."""
@@ -61,76 +65,31 @@ class BabilongExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Babilong doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+        Schema: {'context': str, 'input': str, 'positive_outputs': list, 'negative_outputs': list}
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            context = doc.get("context", "").strip()
+            question = doc.get("input", "").strip()
+            positive_outputs = doc.get("positive_outputs", [])
+            negative_outputs = doc.get("negative_outputs", [])
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "babilong"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+            if not context or not question or not positive_outputs or not negative_outputs:
+                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
+            # Use first positive and negative output
+            correct = str(positive_outputs[0]).strip()
+            incorrect = str(negative_outputs[0]).strip()
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Format prompt with context and question
+            prompt = f"Context: {context}\n\nQuestion: {question}"
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "babilong",
-            }
+            metadata = {"label": "babilong"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

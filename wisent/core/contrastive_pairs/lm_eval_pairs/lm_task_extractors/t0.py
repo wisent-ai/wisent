@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["T0Extractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("t0_eval",)
+
+evaluator_name = "log_likelihoods"
+
 
 class T0Extractor(LMEvalBenchmarkExtractor):
     """Extractor for T0 benchmark."""

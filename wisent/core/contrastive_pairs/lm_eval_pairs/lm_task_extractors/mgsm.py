@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MgsmExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mgsm", "mgsm_direct", "mgsm_direct_en", "mgsm_direct_es", "mgsm_direct_fr", "mgsm_direct_de", "mgsm_direct_ru", "mgsm_direct_zh", "mgsm_direct_ja", "mgsm_direct_th", "mgsm_direct_sw", "mgsm_direct_bn", "mgsm_direct_te")
+
+evaluator_name = "generation"
+
 
 class MgsmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mgsm benchmark."""
@@ -65,76 +69,38 @@ class MgsmExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # mgsm format: question + answer_number
+            if "question" in doc and "answer_number" in doc:
                 question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
+                answer_number = doc.get("answer_number")
+
+                if not question or answer_number is None:
+                    log.debug("Skipping doc with missing question or answer_number", extra={"doc": doc})
+                    return None
+
+                # Convert answer_number to string for the correct response
+                correct = str(answer_number)
+
+                # Create an incorrect answer by modifying the number
+                # For small numbers (0-2), add 2; otherwise subtract 1
+                if answer_number < 3:
+                    incorrect_number = answer_number + 2
                 else:
-                    answer_idx = int(answer) if answer else 0
+                    incorrect_number = answer_number - 1
+                incorrect = str(incorrect_number)
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
+                formatted_question = f"Question: {question}\nAnswer:"
+                metadata = {"label": "mgsm"}
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "mgsm"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
                 )
-                return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "mgsm",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            log.debug("Skipping doc without question/answer_number fields", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Sentence: The sailors rode the breeze clear of the rocks.\n\nIs this sentence grammatically acceptable in English?\nAnswer:",
+    "positive_response": "acceptable",
+    "negative_response": "unacceptable"
+  }
+]

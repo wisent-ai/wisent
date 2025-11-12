@@ -16,7 +16,38 @@ _LOG = setup_logger(__name__)
 
 
 class EvalitaMpExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Evalita Mp benchmark."""
+    """Extractor for Evalita Mp benchmark - Italian language medical, legal, and NLP tasks.
+
+    This is a multiple choice task testing knowledge across various domains.
+    Format: Question + A/B/C/D/E choices + Correct (letter A-E)
+    """
+
+    task_names = (
+        "evalita-mp",
+        "evalita-mp_at", "evalita-mp_at_prompt-1", "evalita-mp_at_prompt-2", "evalita-mp_at_prompt-3",
+        "evalita-mp_at_prompt-4", "evalita-mp_at_prompt-5", "evalita-mp_at_prompt-6", "evalita-mp_at_tasks",
+        "evalita-mp_faq", "evalita-mp_faq_prompt-1", "evalita-mp_faq_prompt-2", "evalita-mp_faq_prompt-3",
+        "evalita-mp_faq_prompt-4", "evalita-mp_faq_prompt-5", "evalita-mp_faq_prompt-6", "evalita-mp_faq_tasks",
+        "evalita-mp_gen", "evalita-mp_hs", "evalita-mp_hs_prompt-1", "evalita-mp_hs_prompt-2",
+        "evalita-mp_hs_prompt-3", "evalita-mp_hs_prompt-4", "evalita-mp_hs_prompt-5", "evalita-mp_hs_prompt-6",
+        "evalita-mp_hs_tasks", "evalita-mp_ls", "evalita-mp_ls_prompt-1", "evalita-mp_ls_prompt-2",
+        "evalita-mp_ls_tasks", "evalita-mp_mc", "evalita-mp_ner-v2_adg_p1", "evalita-mp_ner-v2_adg_p2",
+        "evalita-mp_ner-v2_fic_p1", "evalita-mp_ner-v2_fic_p2", "evalita-mp_ner-v2_tasks_adg",
+        "evalita-mp_ner-v2_tasks_fic", "evalita-mp_ner-v2_tasks_wn", "evalita-mp_ner-v2_wn_p1",
+        "evalita-mp_ner-v2_wn_p2", "evalita-mp_ner_adg_group", "evalita-mp_ner_adg_p1", "evalita-mp_ner_adg_p2",
+        "evalita-mp_ner_fic_group", "evalita-mp_ner_fic_p1", "evalita-mp_ner_fic_p2", "evalita-mp_ner_group",
+        "evalita-mp_ner_tasks_adg", "evalita-mp_ner_tasks_fic", "evalita-mp_ner_tasks_wn",
+        "evalita-mp_ner_wn_group", "evalita-mp_ner_wn_p1", "evalita-mp_ner_wn_p2", "evalita-mp_re",
+        "evalita-mp_re_prompt-1", "evalita-mp_re_prompt-2", "evalita-mp_re_tasks", "evalita-mp_sa",
+        "evalita-mp_sa_prompt-1", "evalita-mp_sa_prompt-2", "evalita-mp_sa_prompt-3", "evalita-mp_sa_prompt-4",
+        "evalita-mp_sa_prompt-5", "evalita-mp_sa_prompt-6", "evalita-mp_sa_tasks", "evalita-mp_sum_fp",
+        "evalita-mp_sum_fp-small_tasks", "evalita-mp_sum_fp_tasks", "evalita-mp_te", "evalita-mp_te_prompt-1",
+        "evalita-mp_te_prompt-2", "evalita-mp_te_prompt-3", "evalita-mp_te_prompt-4", "evalita-mp_te_prompt-5",
+        "evalita-mp_te_prompt-6", "evalita-mp_te_tasks", "evalita-mp_wic", "evalita-mp_wic_prompt-1",
+        "evalita-mp_wic_prompt-2", "evalita-mp_wic_prompt-3", "evalita-mp_wic_prompt-4", "evalita-mp_wic_prompt-5",
+        "evalita-mp_wic_prompt-6", "evalita-mp_wic_tasks",
+    )
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -44,45 +75,49 @@ class EvalitaMpExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("Id", doc.get("id", "unknown")))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # Evalita format: Question (capital Q) + A/B/C/D/E + Correct (capital C)
+            question = doc.get("Question", doc.get("question", "")).strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            # Build choices from A/B/C/D/E keys
+            choices = []
+            for letter in ["A", "B", "C", "D", "E"]:
+                if letter in doc:
+                    choices.append(str(doc[letter]).strip())
 
+            # Get correct answer
+            answer = doc.get("Correct", doc.get("answer", None))
+
+            if not question or not choices:
+                log.debug("Skipping doc due to missing question or choices", extra={"doc": doc})
+                return None
+
+            # Convert answer letter to index
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')
             elif isinstance(answer, int):
                 answer_idx = answer
             else:
+                log.debug("Skipping doc due to invalid answer format", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+            if not (0 <= answer_idx < len(choices)):
+                log.debug("Skipping doc due to answer index out of range", extra={"doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
+            # Get correct and incorrect answers
+            correct = choices[answer_idx]
             incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            incorrect = choices[incorrect_idx]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "evalita_mp"}
+            # Format question with all choices
+            choice_labels = ["A", "B", "C", "D", "E"][:len(choices)]
+            formatted_choices = "\n".join([f"{label}. {choice}" for label, choice in zip(choice_labels, choices)])
+            formatted_question = f"Question: {question}\n{formatted_choices}"
+
+            metadata = {"label": "evalita-mp"}
 
             return self._build_pair(
                 question=formatted_question,

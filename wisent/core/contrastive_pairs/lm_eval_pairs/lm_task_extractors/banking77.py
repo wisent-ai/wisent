@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["Banking77Extractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("banking77",)
+
+evaluator_name = "exact_match"
+
 
 class Banking77Extractor(LMEvalBenchmarkExtractor):
     """Extractor for Banking77 benchmark - intent classification task."""
-
-    task_names = ("banking77",)
-    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,

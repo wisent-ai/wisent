@@ -1,0 +1,30 @@
+{
+  "task_name": "boolq-seq2seq",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Passage: Ethanol fuel -- All biomass goes through at least some of these steps: it needs to be grown...",
+      "positive_response": "no",
+      "negative_response": "yes",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'no' (log_prob=-0.500), Expected: 'no'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'no' (log_prob=-0.500), Expected: 'yes'"
+      },
+      "both_correct": true
+    }
+  ]
+}

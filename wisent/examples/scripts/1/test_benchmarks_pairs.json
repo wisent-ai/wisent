@@ -1,0 +1,14 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: Identify the only construct that is not pertinent to developmental models on intelligence:\nA. The positive manifold\nB. Investment theory",
+    "positive_response": "Investment theory",
+    "negative_response": "The positive manifold"
+  },
+  {
+    "pair_id": 1,
+    "prompt": "Question: A 17-year-old girl is brought to the physician by her mother because she has not had a menstrual period for 6 months. The patient is unconcerned about the lack of menses. Menarche occurred at the age of 12 years, and menses had occurred at regular 28-day intervals until they became irregular 1 year ago. She is a member of her high school gymnastics team. She appears emaciated. She is 163 cm (5 ft 4 in) tall and weighs 40 kg (88 lb); BMI is 15 kg/m2 . Her pulse is 54/min, and blood pressure is 80/50 mm Hg. Which of the following is the most likely cause of this patient's amenorrhea?\nA. Hypothyroidism\nB. Hypogonadotropic hypogonadism",
+    "positive_response": "Hypogonadotropic hypogonadism",
+    "negative_response": "Hypothyroidism"
+  }
+]

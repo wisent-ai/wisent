@@ -1,0 +1,51 @@
+{
+  "task_name": "belebele",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 2,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Hi ku ya hi ndzimana, i swiga swihi leswi landzelaka leswi nga hlamuseriki hi ku kongoma i...",
+      "positive_response": "Chayina a yi si tshama yi xavisele matiko timovha to tala ku hundza Jarimani",
+      "negative_response": "Ikhonomi ya Chayina yi kule swinene ku sukela ku lunghisiwa",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Chayina a yi si tshama yi xavisele matiko timovha to tala ku hundza Jarimani' (log_prob=-0.500), Expected: 'Chayina a yi si tshama yi xavisele matiko timovha to tala ku hundza Jarimani'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Chayina a yi si tshama yi xavisele matiko timovha to tala ku hundza Jarimani' (log_prob=-0.500), Expected: 'Ikhonomi ya Chayina yi kule swinene ku sukela ku lunghisiwa'"
+      },
+      "both_correct": true
+    },
+    {
+      "pair_id": 1,
+      "prompt": "Question: Mukuwirirana nemashoko akataurwa, ndechipi chinangwa chikuru kubva zvino tichienda mberi c...",
+      "positive_response": "Kusimudzira kuchengeteka kwevatambi",
+      "negative_response": "Kuongorora mabasa ekubata chibharo aLarry Nassar",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Kusimudzira kuchengeteka kwevatambi' (log_prob=-0.500), Expected: 'Kusimudzira kuchengeteka kwevatambi'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Kusimudzira kuchengeteka kwevatambi' (log_prob=-0.500), Expected: 'Kuongorora mabasa ekubata chibharo aLarry Nassar'"
+      },
+      "both_correct": true
+    }
+  ]
+}

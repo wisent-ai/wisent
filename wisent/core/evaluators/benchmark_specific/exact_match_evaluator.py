@@ -19,17 +19,13 @@ class ExactMatchEvaluator(BaseEvaluator):
     - GSM8K: Math problems (numerical exact match)
     - TriviaQA: Factual questions (text exact match)
     - Any task requiring exact answer matching
+
+    Note: Task names are declared in extractors (via evaluator_name attribute),
+    not in evaluators. This maintains proper separation of concerns.
     """
 
     name = "exact_match"
     description = "Exact match evaluator for precise answer comparison"
-    task_names = (
-        # Math Tasks
-        "gsm8k", "asdiv", "arithmetic", "math", "math_500",
-        "aime", "hmmt", "polymath", "livemathbench",
-        # QA Tasks
-        "triviaqa", "webqs", "nq_open"
-    )
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate using exact match.

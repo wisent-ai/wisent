@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -14,9 +15,22 @@ if TYPE_CHECKING:
 __all__ = ["EvalitaSpExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "evalita-sp_sum_task_fp-small_p1",
+    "evalita-sp_sum_task_fp-small_p2",
+    "evalita-sp_sum_task_fp_p1",
+    "evalita-sp_sum_task_fp_p2",
+)
+
+evaluator_name = "generation"
+
 
 class EvalitaSpExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Evalita Sp benchmark."""
+    """Extractor for Evalita Sp benchmark - Italian summarization task.
+
+    This is a summarization task where models must generate summaries.
+    Format: source (article text) + target (reference summary)
+    """
 
     def extract_contrastive_pairs(
         self,
@@ -47,47 +61,36 @@ class EvalitaSpExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # Evalita-sp format: source (article) + target (reference summary)
+            source = doc.get("source", "").strip()
+            target = doc.get("target", "").strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            if not source or not target:
+                log.debug("Skipping doc due to missing source or target", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+            # Create prompt for summarization
+            prompt = f"Summarize the following text:\n\n{source}"
+
+            # Positive: correct reference summary
+            correct_summary = target
+
+            # Negative: shuffled version of the summary to create synthetic incorrect
+            words = target.split()
+            if len(words) < 5:
+                log.debug("Summary too short to shuffle", extra={"doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            shuffled_words = words.copy()
+            random.shuffle(shuffled_words)
+            incorrect_summary = ' '.join(shuffled_words)
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "evalita_sp"}
+            metadata = {"label": "evalita-sp"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=correct_summary,
+                incorrect=incorrect_summary,
                 metadata=metadata,
             )
 

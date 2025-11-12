@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["SelfExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("self_consistency",)
+
+evaluator_name = "log_likelihoods"
+
 
 class SelfExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Self benchmark."""

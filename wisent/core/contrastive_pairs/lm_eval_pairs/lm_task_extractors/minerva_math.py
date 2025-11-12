@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MinervaMathExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("minerva_math", "minerva_math_algebra", "minerva_math_counting_and_prob", "minerva_math_geometry", "minerva_math_intermediate_algebra", "minerva_math_num_theory", "minerva_math_prealgebra", "minerva_math_precalc")
+
+evaluator_name = "generation"
+
 
 class MinervaMathExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Minerva Math benchmark."""
@@ -97,16 +101,17 @@ class MinervaMathExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: problem + answer (Minerva Math format)
-            elif "problem" in doc and "answer" in doc:
+            # Format 3: problem + answer/solution (Minerva Math format)
+            elif "problem" in doc:
                 question = str(doc.get("problem", "")).strip()
-                correct_answer = str(doc.get("answer", "")).strip()
+                # Try to get answer first (from processed docs), then fall back to solution
+                correct_answer = str(doc.get("answer", doc.get("solution", ""))).strip()
                 if question and correct_answer:
                     metadata = {"label": "minerva_math"}
-                    # Create a negative answer that's clearly wrong
-                    incorrect_answer = "42" if correct_answer != "42" else "0"
+                    # Create a negative answer - use generic wrong answer for math
+                    incorrect_answer = "The answer cannot be determined from the given information."
                     return self._build_pair(
-                        question=f"Question: {question}\nAnswer:",
+                        question=f"Problem:\n{question}\n\nSolution:",
                         correct=correct_answer,
                         incorrect=incorrect_answer,
                         metadata=metadata,

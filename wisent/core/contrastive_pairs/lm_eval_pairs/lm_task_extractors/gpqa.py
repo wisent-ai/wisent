@@ -15,6 +15,27 @@ if TYPE_CHECKING:
 __all__ = ["GPQAExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "gpqa",
+    "gpqa_diamond_cot_n_shot",
+    "gpqa_diamond_cot_zeroshot",
+    "gpqa_diamond_generative_n_shot",
+    "gpqa_diamond_n_shot",
+    "gpqa_diamond_zeroshot",
+    "gpqa_extended_cot_n_shot",
+    "gpqa_extended_cot_zeroshot",
+    "gpqa_extended_generative_n_shot",
+    "gpqa_extended_n_shot",
+    "gpqa_extended_zeroshot",
+    "gpqa_main_cot_n_shot",
+    "gpqa_main_cot_zeroshot",
+    "gpqa_main_generative_n_shot",
+    "gpqa_main_n_shot",
+    "gpqa_main_zeroshot",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class GPQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for GPQA (Graduate-Level Google-Proof Q&A) benchmark."""

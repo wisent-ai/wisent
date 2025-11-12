@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["GroundcocoaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("groundcocoa",)
+
+evaluator_name = "generation"
+
 
 class GroundcocoaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Groundcocoa benchmark."""
@@ -69,6 +73,35 @@ class GroundcocoaExtractor(LMEvalBenchmarkExtractor):
             question = None
             choices = None
             answer_idx = None
+
+            # Format 0: groundcocoa format (criteria + choices + gold)
+            if "criteria" in doc and "choices" in doc and "gold" in doc:
+                criteria = str(doc.get("criteria", "")).strip()
+                choices_list = doc.get("choices", [])
+                gold = str(doc.get("gold", "")).strip()
+
+                if not criteria or not choices_list or not gold:
+                    log.debug("Skipping doc due to missing groundcocoa fields", extra={"doc": doc})
+                    return None
+
+                # Find an incorrect choice
+                incorrect_choice = None
+                for choice in choices_list:
+                    if choice != gold:
+                        incorrect_choice = choice
+                        break
+
+                if not incorrect_choice:
+                    log.debug("No incorrect choice found", extra={"doc": doc})
+                    return None
+
+                metadata = {"label": "groundcocoa"}
+                return self._build_pair(
+                    question=criteria,
+                    correct=gold,
+                    incorrect=incorrect_choice,
+                    metadata=metadata,
+                )
 
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
