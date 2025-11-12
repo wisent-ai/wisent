@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["RealtoxicitypromptsExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("realtoxicityprompts",)
+
+evaluator_name = "generation"
+
 
 class RealtoxicitypromptsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Realtoxicityprompts benchmark."""

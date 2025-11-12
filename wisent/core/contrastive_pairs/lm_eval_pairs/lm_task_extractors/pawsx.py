@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["PawsXExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("paws_de", "paws_en", "paws_es", "paws_fr", "paws_ja", "paws_ko", "paws_zh")
+
+evaluator_name = "log_likelihoods"
+
 
 class PawsXExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the PAWS-X benchmark."""

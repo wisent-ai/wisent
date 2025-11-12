@@ -14,6 +14,22 @@ if TYPE_CHECKING:
 __all__ = ["XcopaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "xcopa_et",
+    "xcopa_ht",
+    "xcopa_id",
+    "xcopa_it",
+    "xcopa_qu",
+    "xcopa_sw",
+    "xcopa_ta",
+    "xcopa_th",
+    "xcopa_tr",
+    "xcopa_vi",
+    "xcopa_zh",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class XcopaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Xcopa benchmark."""

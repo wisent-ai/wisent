@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ToxigenExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("toxigen",)
+
+evaluator_name = "log_likelihoods"
+
 
 class ToxigenExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Toxigen benchmark."""

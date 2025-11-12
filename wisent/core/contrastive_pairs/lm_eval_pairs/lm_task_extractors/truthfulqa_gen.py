@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 __all__ = ["TruthfulQAGenExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("truthfulqa_gen",)
+
+evaluator_name = "generation"
+
 
 class TruthfulQAGenExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the TruthfulQA_Gen benchmark."""

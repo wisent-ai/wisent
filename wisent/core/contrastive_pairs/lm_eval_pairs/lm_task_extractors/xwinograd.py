@@ -15,6 +15,17 @@ if TYPE_CHECKING:
 __all__ = ["XWinograd"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "xwinograd_en",
+    "xwinograd_fr",
+    "xwinograd_jp",
+    "xwinograd_pt",
+    "xwinograd_ru",
+    "xwinograd_zh",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class XWinogradExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the XWinograd benchmark."""

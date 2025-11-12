@@ -15,6 +15,11 @@ if TYPE_CHECKING:
 __all__ = ["QasperExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("qasper_bool", "qasper_freeform")
+
+# Note: qasper_bool uses multiple_choice, qasper_freeform uses generate_until
+evaluator_name = "generation"
+
 
 class QasperExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the QASPER benchmark."""

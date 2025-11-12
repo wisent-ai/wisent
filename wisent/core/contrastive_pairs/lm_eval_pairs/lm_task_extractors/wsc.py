@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["WSCExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("wsc",)
+
+evaluator_name = "log_likelihoods"
+
 
 class WSCExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the WSC benchmark."""

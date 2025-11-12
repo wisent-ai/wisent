@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["SciQExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("sciq",)
+
+evaluator_name = "log_likelihoods"
+
 
 class SciQExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the SciQ benchmark."""

@@ -14,6 +14,23 @@ if TYPE_CHECKING:
 __all__ = ["XquadExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "xquad_ar",
+    "xquad_de",
+    "xquad_el",
+    "xquad_en",
+    "xquad_es",
+    "xquad_hi",
+    "xquad_ro",
+    "xquad_ru",
+    "xquad_th",
+    "xquad_tr",
+    "xquad_vi",
+    "xquad_zh",
+)
+
+evaluator_name = "generation"
+
 
 class XquadExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Xquad benchmark."""

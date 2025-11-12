@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 __all__ = ["WikitextExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("wikitext",)
+
+evaluator_name = "generation"
+
 
 class WikitextExtractor(LMEvalBenchmarkExtractor):
     """Extractor for WikiText and similar perplexity benchmarks.
