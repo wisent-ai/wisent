@@ -194,12 +194,35 @@ class LMEvalDataLoader(BaseDataLoader):
             "wikitext103": "wikitext",
             "ptb": "wikitext",
             "penn_treebank": "wikitext",
+            "ArabCulture": "arab_culture",
+            "arabculture": "arab_culture",
+            "afrimgsm_direct_amh": "afrimgsm_amh_prompt_1",
+            "afrimmlu_direct_amh": "afrimmlu_direct_amh_prompt_1",
+            "babilong": "ru_babilong_qa1",
+            "bangla_mmlu": "global_mmlu_bn_business",
+            "basque-glue": "basque_bench",
+            "basqueglue": "basque_bench",
+            "bec2016eu": "basque_bench",
+            "benchmarks": "tinyBenchmarks",
+            "careqa": "careqa_en",
+            "ceval_valid": "ceval-valid",
         }
 
         # Use mapped name if available, otherwise use original
         lm_eval_task_name = task_name_mapping.get(task_name, task_name)
         if lm_eval_task_name != task_name:
             log.info(f"Mapping task '{task_name}' to lm-eval task '{lm_eval_task_name}'")
+
+        # Tasks that require case-sensitive names (don't lowercase these)
+        case_sensitive_tasks = {"tinyBenchmarks"}
+
+        # Normalize task name to lowercase for lm-eval-harness compatibility
+        # Many lm-eval tasks use lowercase names (e.g., "aradice" not "AraDICE")
+        if lm_eval_task_name not in case_sensitive_tasks:
+            lm_eval_task_name_normalized = lm_eval_task_name.lower()
+            if lm_eval_task_name_normalized != lm_eval_task_name:
+                log.info(f"Normalizing task name to lowercase: '{lm_eval_task_name}' -> '{lm_eval_task_name_normalized}'")
+                lm_eval_task_name = lm_eval_task_name_normalized
 
         task_manager = LMTaskManager()
         task_manager.initialize_tasks()

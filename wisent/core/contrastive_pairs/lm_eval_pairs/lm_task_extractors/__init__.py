@@ -22,6 +22,11 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.lambada impo
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.livecodebench import LivecodebenchExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.logiqa import LogiQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.logiqa2 import LogiQA2Extractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.math import MathExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.aime import AimeExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.hmmt import HmmtExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.polymath import PolymathExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.livemathbench import LivemathbenchExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mathqa import MathQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.medqa import MedQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mmlu import MMLUExtractor
@@ -87,6 +92,11 @@ __all__ = [
     "LivecodebenchExtractor",
     "LogiQAExtractor",
     "LogiQA2Extractor",
+    "MathExtractor",
+    "AimeExtractor",
+    "HmmtExtractor",
+    "PolymathExtractor",
+    "LivemathbenchExtractor",
     "MathQAExtractor",
     "MedQAExtractor",
     "MMLUExtractor",

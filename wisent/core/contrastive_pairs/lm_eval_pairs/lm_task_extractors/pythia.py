@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["PythiaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("pythia",)
+
+evaluator_name = "log_likelihoods"
+
 
 class PythiaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Pythia benchmark."""

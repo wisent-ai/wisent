@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -14,9 +15,17 @@ if TYPE_CHECKING:
 __all__ = ["FdaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("fda",)
+
+evaluator_name = "generation"
+
 
 class FdaExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Fda benchmark."""
+    """Extractor for FDA benchmark - extracting key-value pairs from FDA documents.
+
+    This is an information extraction task where models extract values for given keys from documents.
+    Format: text (document chunk) + key (field to extract) → value (extracted text)
+    """
 
     def extract_contrastive_pairs(
         self,
@@ -44,50 +53,40 @@ class FdaExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("doc_id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # FDA format: text (document chunk) + key (field name) → value (extracted text)
+            text = doc.get("text", "").strip()
+            key = doc.get("key", "").strip()
+            value = doc.get("value", "").strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            if not text or not key or not value:
+                log.debug("Skipping doc due to missing text, key, or value", extra={"doc": doc})
+                return None
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
+            # Create prompt: {text} \n {key}:
+            prompt = f"{text}\n{key}:"
+
+            # Positive: correct value
+            correct_value = value
+
+            # Negative: shuffled version of the value to create synthetic incorrect extraction
+            words = value.split()
+            if len(words) < 2:
+                # If value is too short, use a generic wrong answer
+                incorrect_value = "Not found"
             else:
-                return None
+                shuffled_words = words.copy()
+                random.shuffle(shuffled_words)
+                incorrect_value = ' '.join(shuffled_words)
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "fda"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=correct_value,
+                incorrect=incorrect_value,
                 metadata=metadata,
             )
 

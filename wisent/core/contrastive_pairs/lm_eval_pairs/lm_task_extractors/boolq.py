@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 __all__ = ["BoolQExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("boolq",)
+
+evaluator_name = "log_likelihoods"
+
 
 class BoolQExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the BoolQ benchmark."""

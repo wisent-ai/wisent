@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["TinyarcExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("tinyArc",)
+
+evaluator_name = "log_likelihoods"
+
 
 class TinyarcExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tinyarc benchmark."""

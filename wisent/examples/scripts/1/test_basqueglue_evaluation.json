@@ -1,0 +1,51 @@
+{
+  "task_name": "basqueglue",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 2,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Zer egin? Nori deitu? Zalantza horrekin geratu zen.\nAlegia:\nA. Zer egin eta nori deitu ez ...",
+      "positive_response": "Zer egin eta nori deitu ez zekiela geratu zen.",
+      "negative_response": "Zer egin eta nori deitu ez zekielakoan geratu zen.",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Zer egin eta nori deitu ez zekiela geratu zen.' (log_prob=-0.500), Expected: 'Zer egin eta nori deitu ez zekiela geratu zen.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Zer egin eta nori deitu ez zekiela geratu zen.' (log_prob=-0.500), Expected: 'Zer egin eta nori deitu ez zekielakoan geratu zen.'"
+      },
+      "both_correct": true
+    },
+    {
+      "pair_id": 1,
+      "prompt": "Decide the relationship of the hypothesis 'Mary Traillek badaki hori.'' to the premise 'Mary Traille...",
+      "positive_response": "entailment",
+      "negative_response": "neutral",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'entailment' (log_prob=-0.500), Expected: 'entailment'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'entailment' (log_prob=-0.500), Expected: 'neutral'"
+      },
+      "both_correct": true
+    }
+  ]
+}

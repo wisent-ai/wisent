@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["EthosExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("ethos", "ethos_binary")
+
+evaluator_name = "generation"
+
 
 class EthosExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Ethos benchmark - hate speech classification task."""
-
-    task_names = ("ethos", "ethos_binary")
-    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,

@@ -62,5 +62,9 @@ EXTRACTORS: dict[str, str] = {
     "hle": f"{base_import}hle:HleExtractor",
     "hle_exact_match": f"{base_import}hle:HleExtractor",
     "hle_multiple_choice": f"{base_import}hle:HleExtractor",
+
+    # Database/Table benchmarks
+    "tag": f"{base_import}tag:TagExtractor",
+    "Tag": f"{base_import}tag:TagExtractor",
 }
 

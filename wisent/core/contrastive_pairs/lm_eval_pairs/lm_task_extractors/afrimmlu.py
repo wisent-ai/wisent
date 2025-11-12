@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["AfrimmluExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("afrimmlu_direct_amh",)
+
+evaluator_name = "log_likelihoods"
+
 
 class AfrimmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrimmlu benchmark."""

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["GalcolaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("galcola",)
+
+evaluator_name = "log_likelihoods"
+
 
 class GalcolaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Galcola benchmark."""
@@ -44,48 +48,47 @@ class GalcolaExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """
+        Convert a single Galcola doc into a ContrastivePair.
+
+        Galcola format:
+        - sentence: the sentence to judge
+        - label: 1 if acceptable, 0 if not acceptable
+
+        Returns None when required fields are missing or malformed.
+        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            sentence = str(doc.get("sentence", "")).strip()
+            label = doc.get("label")
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            if not sentence or label is None:
+                log.debug("Skipping doc due to missing fields", extra={"doc": doc})
+                return None
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
+            # Convert label to int
+            if isinstance(label, str):
+                label = int(label)
+            elif not isinstance(label, int):
+                log.debug("Skipping doc due to invalid label type", extra={"doc": doc})
+                return None
+
+            # Create prompt asking about acceptability
+            prompt = f"Is the following sentence grammatically acceptable?\n{sentence}"
+
+            # Determine correct and incorrect responses based on label
+            if label == 1:
+                correct = "Yes, it is acceptable."
+                incorrect = "No, it is not acceptable."
             else:
-                return None
+                correct = "No, it is not acceptable."
+                incorrect = "Yes, it is acceptable."
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "galcola"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

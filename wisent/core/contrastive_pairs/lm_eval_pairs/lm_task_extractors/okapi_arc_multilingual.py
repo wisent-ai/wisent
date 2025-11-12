@@ -14,6 +14,15 @@ if TYPE_CHECKING:
 __all__ = ["OkapiArcMultilingualExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "arc_ar", "arc_bn", "arc_ca", "arc_da", "arc_de", "arc_es", "arc_eu", "arc_fr",
+    "arc_gu", "arc_hi", "arc_hr", "arc_hu", "arc_hy", "arc_id", "arc_it", "arc_kn",
+    "arc_ml", "arc_mr", "arc_ne", "arc_nl", "arc_pt", "arc_ro", "arc_ru", "arc_sk",
+    "arc_sr", "arc_sv", "arc_ta", "arc_te", "arc_uk", "arc_vi", "arc_zh"
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class OkapiArcMultilingualExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Okapi/Arc Multilingual benchmark."""
@@ -97,7 +106,14 @@ class OkapiArcMultilingualExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: Okapi format (query + gold + choices)
+            elif "query" in doc and "gold" in doc and "choices" in doc:
+                question = str(doc.get("query", "")).strip()
+                choices = doc.get("choices", [])
+                answer_idx = int(doc.get("gold", 0))
+                # choices is a list, gold is the index
+
+            # Format 4: query/prompt + answer (open-ended)
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer

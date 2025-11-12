@@ -1,0 +1,30 @@
+{
+  "task_name": "babi",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Passage: John travelled to the hallway.\nMary journeyed to the bathroom.\n\nQuestion: Where is John?...",
+      "positive_response": "hallway",
+      "negative_response": "not hallway",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'hallway' (log_prob=-0.500), Expected: 'hallway'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'hallway' (log_prob=-0.500), Expected: 'not hallway'"
+      },
+      "both_correct": true
+    }
+  ]
+}

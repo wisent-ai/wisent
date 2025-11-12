@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 __all__ = ["ArithmeticExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("arithmetic",)
+
+evaluator_name = "exact_match"
+
 
 class ArithmeticExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Arithmetic benchmark."""

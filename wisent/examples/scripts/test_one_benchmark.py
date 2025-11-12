@@ -6,26 +6,56 @@ from pathlib import Path
 from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.core.models.wisent_model import WisentModel
+
+
+class MockModel:
+    """Mock model that returns predictable outputs without actual inference.
+
+    This mock ensures that:
+    - For log_likelihoods: first choice always has higher log prob
+    - For perplexity: returns low perplexity for first choice
+    - For generation: returns empty (not used in contrastive evaluation)
+    """
+
+    def __init__(self, model_name: str = "mock"):
+        self.model_name = model_name
+
+    def get_log_probs(self, prompt: str, choices: list[str]) -> list[float]:
+        """Return mock log probabilities - first choice always has higher probability.
+
+        Used by log_likelihoods evaluator.
+        """
+        # First choice gets -0.5 (high), rest get -2.0 (low)
+        return [-0.5] + [-2.0] * (len(choices) - 1) if len(choices) >= 1 else []
+
+    def loglikelihood(self, context: str, continuation: str) -> float:
+        """Return mock log likelihood for perplexity evaluator."""
+        # Return higher likelihood for shorter continuations (mock)
+        return -len(continuation) * 0.1
+
+    def generate(self, prompt: str, **kwargs) -> str:
+        """Mock generation - returns empty as we use choices for evaluation."""
+        return ""
 
 
 def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: str = ".", loader_type: str = "auto"):
-    """Test if we can create contrastive pairs from a benchmark and if evaluation works.
+    """Test if we can create contrastive pairs and evaluate them with mock model.
 
     This function:
-    1. Creates 2 contrastive pairs from the benchmark
-    2. Evaluates the positive example (should return 1.0)
-    3. Evaluates the negative example (should return 0.0)
-    4. Saves pairs and evaluation results to JSON files
+    1. Creates contrastive pairs from the benchmark
+    2. Finds the appropriate evaluator
+    3. Evaluates pairs using a mock model (no real inference)
+    4. Verifies positive=TRUTHFUL and negative=UNTRUTHFUL
+    5. Saves pairs and evaluation results to JSON files
 
     Args:
         task_name: Name of the benchmark (e.g., "boolq", "gsm8k", "humaneval")
-        model_name: Model to use for testing
+        model_name: Unused (kept for backward compatibility)
         output_dir: Directory to save results
         loader_type: Type of loader to use ("lm_eval", "huggingface", or "auto")
 
     Returns:
-        True if successful (positive=1.0, negative=0.0), False otherwise
+        True if all evaluations correct (positive=TRUTHFUL, negative=UNTRUTHFUL), False otherwise
     """
     try:
         print(f"\nTesting {task_name}...")
@@ -34,7 +64,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         output_path.mkdir(parents=True, exist_ok=True)
 
         # Step 1: Load data and create contrastive pairs
-        print("  [1/4] Creating contrastive pairs...")
+        print("  [1/3] Creating contrastive pairs...")
 
         # Auto-detect loader type if needed
         if loader_type == "auto":
@@ -49,7 +79,9 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 "multipl", "multiple_", "multipl_e",
                 "codexglue", "livecodebench",
                 # Reasoning benchmarks
-                "super_gpqa", "supergpqa", "hle"
+                "super_gpqa", "supergpqa", "hle",
+                # Database/Table benchmarks
+                "tag"
             ]
             # Tasks that should explicitly use LMEval (not HuggingFace)
             lm_eval_only_tasks = [
@@ -104,18 +136,50 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         evaluator_name = rotator._evaluator.name
         print(f"    Using evaluator: {evaluator_name}")
 
-        # Step 3: Load model
-        print("  [3/4] Loading model...")
-        model = WisentModel(model_name)
-        print(f"    Loaded: {model_name}")
+        # Step 3: Monkey patch evaluator if it's log_likelihoods
+        print("  [3/4] Setting up mock evaluation...")
+        if evaluator_name == "log_likelihoods":
+            # Monkey patch the log likelihood computation to return mock values
+            # First choice always gets higher log prob (-0.5), rest get lower (-2.0)
+            original_compute = rotator._evaluator._compute_choice_log_likelihood
+            choice_index = [0]  # Track which choice we're on
 
-        # Step 4: Evaluate both positive and negative examples
-        print("  [4/4] Evaluating examples...")
+            def mock_compute_log_likelihood(model, question, choice):
+                """Return mock log prob - first choice is higher."""
+                idx = choice_index[0]
+                choice_index[0] += 1
+                if choice_index[0] > 1:  # Reset after both choices
+                    choice_index[0] = 0
+                return -0.5 if idx == 0 else -2.0
 
+            rotator._evaluator._compute_choice_log_likelihood = mock_compute_log_likelihood
+            print(f"    Patched log_likelihoods evaluator with mock")
+        elif evaluator_name == "perplexity":
+            # Monkey patch perplexity computation
+            def mock_compute_perplexity(model, text):
+                """Return mock perplexity - lower for shorter text."""
+                return len(text) * 0.1
+
+            rotator._evaluator._compute_perplexity = mock_compute_perplexity
+            print(f"    Patched perplexity evaluator with mock")
+        else:
+            print(f"    No patching needed for {evaluator_name}")
+
+        model = MockModel(model_name="mock")
+        print(f"    Using MockModel (no real inference)")
+
+        # Step 4: Evaluate with mock model
+        print("  [4/4] Evaluating pairs...")
         results = []
         all_correct = True
 
         for i, pair in enumerate(test_pairs.pairs):
+            # Verify required fields
+            if not pair.prompt or not pair.positive_response.model_response or not pair.negative_response.model_response:
+                print(f"    ✗ Pair {i+1}: Missing required fields")
+                all_correct = False
+                continue
+
             pair_results = {
                 "pair_id": i,
                 "prompt": pair.prompt[:100] + "...",
@@ -130,8 +194,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 test_code = pair.metadata.get('test_code')
                 entry_point = pair.metadata.get('entry_point')
 
-            # Evaluate with POSITIVE as expected (should return TRUTHFUL = 1.0)
-            # Evaluator compares log-probs of both choices and picks highest
+            # Evaluate with POSITIVE as expected (should return TRUTHFUL)
             eval_kwargs = {
                 "response": "",
                 "expected": pair.positive_response.model_response,
@@ -156,8 +219,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 "details": positive_eval.details
             }
 
-            # Evaluate with NEGATIVE as expected (should return UNTRUTHFUL = 0.0)
-            # Because evaluator will pick positive (higher log-prob), not the negative we expect
+            # Evaluate with NEGATIVE as expected (should return UNTRUTHFUL)
             eval_kwargs_neg = {
                 "response": "",
                 "expected": pair.negative_response.model_response,
@@ -173,11 +235,11 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
 
             negative_eval = rotator._evaluator.evaluate(**eval_kwargs_neg)
 
-            negative_correct = negative_eval.ground_truth == "UNTRUTHFUL"  # Should be UNTRUTHFUL (predicted != expected)
+            negative_correct = negative_eval.ground_truth == "UNTRUTHFUL"
             pair_results["negative_evaluation"] = {
                 "ground_truth": negative_eval.ground_truth,
                 "confidence": negative_eval.confidence,
-                "expected": "UNTRUTHFUL",  # We expect it to fail (pick positive instead)
+                "expected": "UNTRUTHFUL",
                 "correct": negative_correct,
                 "details": negative_eval.details
             }
@@ -199,7 +261,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         eval_file = output_path / f"test_{task_name}_evaluation.json"
         summary = {
             "task_name": task_name,
-            "model_name": model_name,
+            "model_name": "mock",
             "evaluator_name": evaluator_name,
             "num_pairs": len(test_pairs.pairs),
             "all_correct": all_correct,

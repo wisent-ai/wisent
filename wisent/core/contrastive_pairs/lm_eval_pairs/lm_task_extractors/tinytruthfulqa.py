@@ -14,6 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["TinytruthfulqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "tinyTruthfulQA",
+    "tinyTruthfulQA_mc1",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class TinytruthfulqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tinytruthfulqa benchmark."""

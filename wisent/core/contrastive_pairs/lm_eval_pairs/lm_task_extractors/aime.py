@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["AimeExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("aime", "aime2024", "aime2025")
+
+evaluator_name = "exact_match"
+
 
 class AimeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Aime benchmark."""

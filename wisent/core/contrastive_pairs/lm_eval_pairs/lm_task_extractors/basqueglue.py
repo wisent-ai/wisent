@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BasqueglueExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("basqueglue",)
+
+evaluator_name = "log_likelihoods"
+
 
 class BasqueglueExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Basqueglue benchmark."""

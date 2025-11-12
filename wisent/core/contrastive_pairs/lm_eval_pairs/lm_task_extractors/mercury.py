@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MercuryExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mercury",)
+
+evaluator_name = "exact_match"
+
 
 class MercuryExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Mercury benchmark."""

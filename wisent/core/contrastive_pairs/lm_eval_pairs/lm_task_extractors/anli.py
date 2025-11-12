@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ANLIExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("anli", "anli_r1", "anli_r2", "anli_r3")
+
+evaluator_name = "log_likelihoods"
+
 
 class ANLIExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Adversarial NLI (ANLI) benchmark."""

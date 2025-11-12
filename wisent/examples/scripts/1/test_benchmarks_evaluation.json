@@ -1,0 +1,51 @@
+{
+  "task_name": "benchmarks",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 2,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Question: Identify the only construct that is not pertinent to developmental models on intelligence:...",
+      "positive_response": "Investment theory",
+      "negative_response": "The positive manifold",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Investment theory' (log_prob=-0.500), Expected: 'Investment theory'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Investment theory' (log_prob=-0.500), Expected: 'The positive manifold'"
+      },
+      "both_correct": true
+    },
+    {
+      "pair_id": 1,
+      "prompt": "Question: A 17-year-old girl is brought to the physician by her mother because she has not had a men...",
+      "positive_response": "Hypogonadotropic hypogonadism",
+      "negative_response": "Hypothyroidism",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Hypogonadotropic hypogonadism' (log_prob=-0.500), Expected: 'Hypogonadotropic hypogonadism'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Hypogonadotropic hypogonadism' (log_prob=-0.500), Expected: 'Hypothyroidism'"
+      },
+      "both_correct": true
+    }
+  ]
+}

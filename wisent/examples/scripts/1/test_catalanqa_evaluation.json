@@ -1,0 +1,30 @@
+{
+  "task_name": "catalanqa",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Context: A finals d'agost fou nomenat un nou primer ministre, Jafar Sharif-Emami, que va revertir al...",
+      "positive_response": "milers",
+      "negative_response": "A finals d'agost fou",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'milers' (log_prob=-0.500), Expected: 'milers'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'milers' (log_prob=-0.500), Expected: 'A finals d'agost fou'"
+      },
+      "both_correct": true
+    }
+  ]
+}

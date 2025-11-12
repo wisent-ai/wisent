@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["Anagrams1Extractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("anagrams1",)
+
+evaluator_name = "exact_match"
+
 
 class Anagrams1Extractor(LMEvalBenchmarkExtractor):
     """Extractor for Anagrams1 benchmark - anagram solving task."""
-
-    task_names = ("anagrams1",)
-    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,

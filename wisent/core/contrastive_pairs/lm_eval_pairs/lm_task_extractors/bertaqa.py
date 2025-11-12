@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BertaqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("bertaqa",)
+
+evaluator_name = "log_likelihoods"
+
 
 class BertaqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Bertaqa benchmark."""
@@ -70,8 +74,18 @@ class BertaqaExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: question + candidates + answer (bertaqa format)
+            if "question" in doc and "candidates" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = doc.get("candidates", [])
+                if not isinstance(choices, list):
+                    choices = []
+                answer = doc.get("answer", 0)
+                # answer is already an integer index
+                answer_idx = int(answer) if isinstance(answer, (int, str)) and str(answer).isdigit() else 0
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

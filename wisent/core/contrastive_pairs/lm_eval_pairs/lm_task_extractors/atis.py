@@ -14,9 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["AtisExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("atis",)
+
+evaluator_name = "generation"
+
 
 class AtisExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Atis benchmark."""
+    """Extractor for Atis benchmark - NER task."""
 
     def extract_contrastive_pairs(
         self,
@@ -44,48 +48,38 @@ class AtisExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """
+        Extract contrastive pair from ATIS NER doc.
+        Schema: {'source': str (prompt), 'target': str (correct extraction), 'task_data': dict}
+        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            prompt = doc.get("source", "").strip()
+            correct = doc.get("target", "").strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
-
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
+            if not prompt or not correct:
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # Generate an incorrect response by corrupting the target
+            # Strategy: reverse the extraction order
+            parts = correct.split(", ")
+            if len(parts) > 1:
+                # Reverse the order of extractions
+                incorrect = ", ".join(reversed(parts))
+            else:
+                # If only one part, add "none" as incorrect
+                incorrect = "none"
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Ensure incorrect is actually different
+            if incorrect == correct:
+                incorrect = "none"
+
             metadata = {"label": "atis"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

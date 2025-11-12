@@ -16,6 +16,10 @@ if TYPE_CHECKING:
 __all__ = ["AradiceExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("aradice", "AraDICE")
+
+evaluator_name = "log_likelihoods"
+
 
 class AradiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AraDiCE benchmark that routes subtasks to their base extractors.

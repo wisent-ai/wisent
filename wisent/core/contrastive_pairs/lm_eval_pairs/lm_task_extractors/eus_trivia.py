@@ -16,7 +16,14 @@ _LOG = setup_logger(__name__)
 
 
 class EusTriviaExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Eus Trivia benchmark."""
+    """Extractor for Eus Trivia benchmark - Basque trivia questions.
+
+    This is a multiple choice trivia task across various knowledge categories.
+    Format: question + candidates (list) + answer (integer index) + category + difficulty
+    """
+
+    task_names = ("eus_trivia",)
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -70,10 +77,10 @@ class EusTriviaExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: question + choices/candidates + answer
+            if "question" in doc and ("choices" in doc or "candidates" in doc):
                 question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
+                choices_data = doc.get("choices") or doc.get("candidates", {})
                 if isinstance(choices_data, dict):
                     choices = choices_data.get("text", [])
                 elif isinstance(choices_data, list):

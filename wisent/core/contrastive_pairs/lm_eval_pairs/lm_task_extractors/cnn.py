@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["CnnExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("cnn_dailymail",)
+
+evaluator_name = "exact_match"
+
 
 class CnnExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Cnn benchmark."""
@@ -47,12 +51,46 @@ class CnnExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: Unitxt summarization format with source + target
+            if "source" in doc and "target" in doc:
+                source = str(doc.get("source", "")).strip()
+                target = str(doc.get("target", "")).strip()
+
+                if not source or not target:
+                    log.debug("Skipping unitxt doc - missing source or target", extra={"doc": doc})
+                    return None
+
+                # Create synthetic negative by shuffling sentences in the target summary
+                import random
+                sentences = [s.strip() for s in target.split('.') if s.strip()]
+                if len(sentences) > 1:
+                    shuffled_sentences = sentences.copy()
+                    random.shuffle(shuffled_sentences)
+
+                    # If shuffle resulted in same order, reverse instead
+                    if shuffled_sentences == sentences:
+                        shuffled_sentences = list(reversed(sentences))
+
+                    incorrect_summary = '. '.join(shuffled_sentences) + '.'
+                else:
+                    # Fallback for single-sentence summaries
+                    incorrect_summary = "This is an incorrect summary."
+
+                metadata = {"label": "cnn"}
+                return self._build_pair(
+                    question=source,
+                    correct=target,
+                    incorrect=incorrect_summary,
+                    metadata=metadata,
+                )
+
+            # Format 2: Standard multiple choice format
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

@@ -1,0 +1,30 @@
+{
+  "task_name": "dbpedia_14",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Classify the Topic of the following Paragraph to one of these options: Company, Educational Institut...",
+      "positive_response": "Album",
+      "negative_response": "Company",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Album' (log_prob=-0.500), Expected: 'Album'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Album' (log_prob=-0.500), Expected: 'Company'"
+      },
+      "both_correct": true
+    }
+  ]
+}

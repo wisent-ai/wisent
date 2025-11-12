@@ -18,15 +18,13 @@ class F1Evaluator(BaseEvaluator):
     - DROP: Reading comprehension with discrete reasoning
     - SQuAD: Question answering
     - Any task where partial token overlap should be rewarded
+
+    Note: Task names are declared in extractors (via evaluator_name attribute),
+    not in evaluators. This maintains proper separation of concerns.
     """
 
     name = "f1"
     description = "F1 score evaluator for token-level comparison"
-    task_names = (
-        # Reading Comprehension with partial credit
-        "drop", "squad", "squadv2", "record",
-        "webqs", "nq_open", "coqa"
-    )
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate using F1 score.

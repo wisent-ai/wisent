@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["AssinExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("assin_entailment", "assin_paraphrase")
+
+evaluator_name = "log_likelihoods"
+
 
 class AssinExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Assin benchmark - entailment task."""
-
-    task_names = ("assin", "assin_entailment")
-    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

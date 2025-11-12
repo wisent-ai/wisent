@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ArcExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("arc", "arc_ar")
+
+evaluator_name = "log_likelihoods"
+
 
 class ArcExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Arc benchmark."""
@@ -26,6 +30,11 @@ class ArcExtractor(LMEvalBenchmarkExtractor):
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
+
+        # arc_ar doesn't have validation split, use test split
+        if preferred_doc is None:
+            preferred_doc = "test"
+
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
@@ -49,10 +58,10 @@ class ArcExtractor(LMEvalBenchmarkExtractor):
         try:
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [
@@ -64,7 +73,8 @@ class ArcExtractor(LMEvalBenchmarkExtractor):
                 choices = [c for c in choices if c]
 
             # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            # Check "gold" first (used by arc_ar), then "answer", then others
+            answer = doc.get("gold", doc.get("answer", doc.get("label", doc.get("target", None))))
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')
@@ -78,8 +88,21 @@ class ArcExtractor(LMEvalBenchmarkExtractor):
                 return None
 
             correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+
+            # Find an incorrect choice that's actually different from correct
+            incorrect = None
+            for i, choice in enumerate(choices):
+                if i != answer_idx and choice != correct:
+                    incorrect = choice
+                    break
+
+            # If all choices are identical to correct, skip this doc
+            if incorrect is None:
+                log.debug(
+                    "Skipping doc - all incorrect choices identical to correct",
+                    extra={"doc": doc},
+                )
+                return None
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "arc"}

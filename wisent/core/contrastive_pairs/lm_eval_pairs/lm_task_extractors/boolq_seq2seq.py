@@ -44,15 +44,42 @@ class BoolqSeq2seqExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("id", doc.get("idx", "unknown")))
 
         try:
+            # Format 1: BoolQ format with question + passage + label (boolean 0/1)
+            if "question" in doc and "passage" in doc and "label" in doc:
+                question = str(doc.get("question", "")).strip()
+                passage = str(doc.get("passage", "")).strip()
+                label = doc.get("label")
+
+                if not question or not passage or label not in [0, 1]:
+                    log.debug("Skipping doc - invalid boolean QA format", extra={"doc": doc})
+                    return None
+
+                # label 0 = No/False, label 1 = Yes/True
+                correct = "yes" if label == 1 else "no"
+                incorrect = "no" if label == 1 else "yes"
+
+                # Format question with passage
+                formatted_question = f"Passage: {passage}\nQuestion: {question}\nAnswer (yes or no):"
+
+                metadata = {"label": "boolq_seq2seq"}
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: Generic multiple choice format
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

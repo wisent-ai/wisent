@@ -1,0 +1,14 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Question: Will the French league be cancelled?\nA. 1953\nB. 1952",
+    "positive_response": "1952",
+    "negative_response": "1953"
+  },
+  {
+    "pair_id": 1,
+    "prompt": "Question: When was the first sound film in Basque made?\nA. In the 1960s\nB. In the 1930s",
+    "positive_response": "In the 1930s",
+    "negative_response": "In the 1960s"
+  }
+]

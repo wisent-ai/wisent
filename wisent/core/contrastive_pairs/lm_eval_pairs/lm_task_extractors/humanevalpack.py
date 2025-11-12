@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["HumanevalpackExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("humanevalpack",)
+
+evaluator_name = "exact_match"
+
 
 class HumanevalpackExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Humanevalpack benchmark."""

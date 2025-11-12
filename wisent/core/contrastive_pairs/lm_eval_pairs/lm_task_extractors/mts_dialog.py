@@ -14,9 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["MtsDialogExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mts_dialog", "mts_dialog_perplexity")
+
+evaluator_name = "generation"
+
 
 class MtsDialogExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Mts Dialog benchmark."""
+    """Extractor for the MTS Dialog benchmark (medical dialog summarization)."""
 
     def extract_contrastive_pairs(
         self,
@@ -59,82 +63,45 @@ class MtsDialogExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Mts Dialog doc into a ContrastivePair, if possible.
+        Convert a single MTS Dialog doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        MTS Dialog format:
+        - dialogue: medical dialog between doctor and patient
+        - section_text: clinical note summary (target)
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # MTS Dialog format
+            if "dialogue" in doc and "section_text" in doc:
+                dialogue = str(doc.get("dialogue", "")).strip()
+                section_text = str(doc.get("section_text", "")).strip()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
+                if not dialogue or not section_text:
+                    log.debug("Skipping doc with missing dialogue/section_text", extra={"doc": doc})
+                    return None
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
+                # Prompt is just the dialogue (as in lm-eval)
+                prompt = dialogue
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "mts_dialog"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
+                # Positive: the actual clinical note summary
+                correct = section_text
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                # Negative: generic non-summary response
+                incorrect = "I cannot provide a summary of this medical dialog."
+
+                metadata = {"label": "mts_dialog"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
                 )
-                return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "mts_dialog",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            log.debug("Skipping doc without dialogue/section_text fields", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

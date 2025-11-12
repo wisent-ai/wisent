@@ -15,9 +15,25 @@ if TYPE_CHECKING:
 __all__ = ["GSM8KExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "gsm8k",
+    "gsm8k_cot",
+    "gsm8k_cot_llama",
+    "gsm8k_cot_self_consistency",
+    "gsm8k_cot_zeroshot",
+    "gsm8k_llama",
+    "gsm8k_platinum",
+    "gsm8k_platinum_cot",
+    "gsm8k_platinum_cot_llama",
+    "gsm8k_platinum_cot_self_consistency",
+    "gsm8k_platinum_cot_zeroshot",
+)
+
+evaluator_name = "exact_match"
+
 
 class GSM8KExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the GSM8K benchmark."""
+    """Extractor for the GSM8K benchmark - grade school math word problems."""
 
     def extract_contrastive_pairs(
         self,

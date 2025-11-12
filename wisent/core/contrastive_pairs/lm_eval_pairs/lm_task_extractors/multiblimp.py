@@ -14,6 +14,28 @@ if TYPE_CHECKING:
 __all__ = ["MultiblimpExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "multiblimp_abk", "multiblimp_aln", "multiblimp_amh", "multiblimp_apu", "multiblimp_aqz", "multiblimp_arb",
+    "multiblimp_azz", "multiblimp_bel", "multiblimp_ben", "multiblimp_bho", "multiblimp_bor", "multiblimp_bre",
+    "multiblimp_bua", "multiblimp_bul", "multiblimp_cat", "multiblimp_ces", "multiblimp_chu", "multiblimp_cym",
+    "multiblimp_dan", "multiblimp_deu", "multiblimp_egy", "multiblimp_ell", "multiblimp_eng", "multiblimp_est",
+    "multiblimp_eus", "multiblimp_fao", "multiblimp_fas", "multiblimp_fin", "multiblimp_fra", "multiblimp_frm",
+    "multiblimp_fro", "multiblimp_gla", "multiblimp_gle", "multiblimp_glg", "multiblimp_got", "multiblimp_grc",
+    "multiblimp_guj", "multiblimp_hbo", "multiblimp_hbs", "multiblimp_heb", "multiblimp_hin", "multiblimp_hit",
+    "multiblimp_hsb", "multiblimp_hun", "multiblimp_hye", "multiblimp_hyw", "multiblimp_isl", "multiblimp_ita",
+    "multiblimp_kat", "multiblimp_kaz", "multiblimp_kir", "multiblimp_kmr", "multiblimp_koi", "multiblimp_kpv",
+    "multiblimp_krl", "multiblimp_kxh", "multiblimp_lat", "multiblimp_lav", "multiblimp_lij", "multiblimp_lit",
+    "multiblimp_mar", "multiblimp_mdf", "multiblimp_mkd", "multiblimp_myv", "multiblimp_nds", "multiblimp_nhi",
+    "multiblimp_nld", "multiblimp_olo", "multiblimp_orv", "multiblimp_ota", "multiblimp_pcm", "multiblimp_pol",
+    "multiblimp_por", "multiblimp_quc", "multiblimp_ron", "multiblimp_rus", "multiblimp_sah", "multiblimp_san",
+    "multiblimp_slk", "multiblimp_slv", "multiblimp_sme", "multiblimp_sms", "multiblimp_spa", "multiblimp_sqi",
+    "multiblimp_swe", "multiblimp_tam", "multiblimp_tpn", "multiblimp_ttc", "multiblimp_tur", "multiblimp_uig",
+    "multiblimp_ukr", "multiblimp_urb", "multiblimp_urd", "multiblimp_uzb", "multiblimp_vep", "multiblimp_wbp",
+    "multiblimp_wol", "multiblimp_xcl", "multiblimp_xnr", "multiblimp_xpg", "multiblimp_yrl"
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class MultiblimpExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Multiblimp benchmark."""
@@ -61,80 +83,41 @@ class MultiblimpExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Multiblimp doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Multiblimp format (linguistic minimal pairs):
+        - sen: grammatically correct sentence
+        - wrong_sen: grammatically incorrect sentence
+        - Target is always 0 (correct sentence)
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Multiblimp format: sen (correct) and wrong_sen (incorrect)
+            if "sen" in doc and "wrong_sen" in doc:
+                correct_sentence = str(doc.get("sen", "")).strip()
+                incorrect_sentence = str(doc.get("wrong_sen", "")).strip()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
+                if not correct_sentence or not incorrect_sentence:
+                    log.debug("Skipping doc with missing sen/wrong_sen", extra={"doc": doc})
+                    return None
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "multiblimp"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                # Prompt: present both sentences as choices (matching lm-eval format)
+                # Since doc_to_text is empty, we format as multiple choice
+                prompt = "Which sentence is grammatically correct?\nA. {}\nB. {}".format(
+                    correct_sentence, incorrect_sentence
                 )
-                return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+                metadata = {"label": "multiblimp"}
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct_sentence,
+                    incorrect=incorrect_sentence,
+                    metadata=metadata,
+                )
 
-            metadata = {
-                "label": "multiblimp",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            log.debug("Skipping doc without sen/wrong_sen fields", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

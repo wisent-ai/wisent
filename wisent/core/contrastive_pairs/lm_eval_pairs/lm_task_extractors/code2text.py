@@ -14,6 +14,17 @@ if TYPE_CHECKING:
 __all__ = ["Code2textExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "code2text_go",
+    "code2text_java",
+    "code2text_javascript",
+    "code2text_php",
+    "code2text_python",
+    "code2text_ruby",
+)
+
+evaluator_name = "generation"
+
 
 class Code2textExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Code2Text benchmark."""
@@ -47,12 +58,56 @@ class Code2textExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: Code2Text format (code_tokens + docstring_tokens)
+            if "code_tokens" in doc and "docstring_tokens" in doc:
+                code_tokens = doc.get("code_tokens", [])
+                docstring_tokens = doc.get("docstring_tokens", [])
+
+                if not code_tokens or not docstring_tokens:
+                    log.debug("Skipping doc - empty code or docstring tokens", extra={"doc": doc})
+                    return None
+
+                # Join tokens to create code and docstring
+                code = " ".join(code_tokens).replace("\n", " ")
+                code = " ".join(code.strip().split())
+
+                docstring = " ".join(docstring_tokens).replace("\n", " ")
+                docstring = " ".join(docstring.strip().split())
+
+                # Create synthetic negative by shuffling words in the docstring
+                import random
+                words = docstring.split()
+                if len(words) > 3:
+                    shuffled_words = words.copy()
+                    random.shuffle(shuffled_words)
+
+                    # If shuffle resulted in same order, reverse it
+                    if shuffled_words == words:
+                        shuffled_words = list(reversed(words))
+
+                    incorrect_docstring = " ".join(shuffled_words)
+                else:
+                    # For very short docstrings, just use a generic incorrect one
+                    incorrect_docstring = "This is an incorrect docstring."
+
+                prompt = f"Generate documentation for this code:\n\n{code}\n\nDocumentation:"
+
+                metadata = {"label": "code2text"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=docstring,
+                    incorrect=incorrect_docstring,
+                    metadata=metadata,
+                )
+
+            # Format 2: Multiple choice format (fallback)
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

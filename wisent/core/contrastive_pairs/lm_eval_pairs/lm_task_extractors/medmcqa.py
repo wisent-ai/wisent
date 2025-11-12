@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MedmcqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("medmcqa",)
+
+evaluator_name = "log_likelihoods"
+
 
 class MedmcqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Medmcqa benchmark."""
@@ -70,8 +74,22 @@ class MedmcqaExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
+            # Format 0: medmcqa format (opa/opb/opc/opd + cop)
+            if "question" in doc and "opa" in doc and "cop" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("opa", "")).strip(),
+                    str(doc.get("opb", "")).strip(),
+                    str(doc.get("opc", "")).strip(),
+                    str(doc.get("opd", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer_idx = doc.get("cop")
+                if not isinstance(answer_idx, int):
+                    answer_idx = int(answer_idx) if answer_idx is not None else None
+
             # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["SquadCompletionExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("squad_completion",)
+
+evaluator_name = "exact_match"
+
 
 class SquadCompletionExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Squad Completion benchmark."""

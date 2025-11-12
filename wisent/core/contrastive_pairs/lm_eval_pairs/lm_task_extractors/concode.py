@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ConcodeExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("concode",)
+
+evaluator_name = "exact_match"
+
 
 class ConcodeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Concode benchmark."""

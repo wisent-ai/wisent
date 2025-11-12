@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["DbpediaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("dbpedia", "dbpedia_14")
+
+evaluator_name = "generation"
+
 
 class DbpediaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Dbpedia benchmark."""
-
-    task_names = ("dbpedia", "dbpedia_14")
-    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,
@@ -50,12 +51,59 @@ class DbpediaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: Unitxt multi-class classification format (source + target + task_data)
+            if "source" in doc and "target" in doc and "task_data" in doc:
+                import json
+
+                source = str(doc.get("source", "")).strip()
+                target = str(doc.get("target", "")).strip()
+                task_data_str = doc.get("task_data", "")
+
+                if not source or not target or not task_data_str:
+                    log.debug("Skipping doc - missing source, target or task_data", extra={"doc": doc})
+                    return None
+
+                # Parse task_data to get the classes
+                task_data = json.loads(task_data_str)
+                classes = task_data.get("classes", [])
+
+                if not classes:
+                    log.debug("Skipping doc - no classes in task_data", extra={"doc": doc})
+                    return None
+
+                # Correct answer is the target
+                correct = target
+
+                # Incorrect answer is another class (not the target)
+                incorrect = None
+                for cls in classes:
+                    if cls != target:
+                        incorrect = cls
+                        break
+
+                if not incorrect:
+                    log.debug("Skipping doc - could not find incorrect class", extra={"doc": doc})
+                    return None
+
+                # Prompt is the source field
+                prompt = source
+
+                metadata = {"label": "dbpedia"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: Multiple choice format (fallback)
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["GLUEExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("glue",)
+
+evaluator_name = "log_likelihoods"
+
 
 class GLUEExtractor(LMEvalBenchmarkExtractor):
     """Extractor for GLUE."""

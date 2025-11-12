@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ArabcultureExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("arabculture", "ArabCulture", "arab_culture")
+
+evaluator_name = "log_likelihoods"
+
 
 class ArabcultureExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Arabculture benchmark."""
@@ -70,8 +74,26 @@ class ArabcultureExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: first_statement + options (ArabCulture schema)
+            if "first_statement" in doc and "options" in doc:
+                question = str(doc.get("first_statement", "")).strip()
+                options_data = doc.get("options", {})
+                if isinstance(options_data, dict):
+                    choices = options_data.get("text", [])
+                else:
+                    choices = []
+                answer_key_data = doc.get("answer_key", {})
+                if isinstance(answer_key_data, dict):
+                    answer = answer_key_data.get("english_answer_key", "A")
+                else:
+                    answer = str(answer_key_data) if answer_key_data else "A"
+                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
+                    answer_idx = ord(answer.upper()) - ord('A')
+                else:
+                    answer_idx = 0
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):

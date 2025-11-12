@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ArabicLeaderboardCompleteExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("arabic_leaderboard_complete",)
+
+evaluator_name = "log_likelihoods"
+
 
 class ArabicLeaderboardCompleteExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Arabic Leaderboard Complete benchmark."""

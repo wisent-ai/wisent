@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ChartqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("chartqa", "chartqa_llama", "chartqa_llama_90")
+
+evaluator_name = "generation"
+
 
 class ChartqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Chartqa benchmark."""
@@ -97,17 +101,44 @@ class ChartqaExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: ChartQA format (query + label list)
+            elif "query" in doc and "label" in doc:
+                question = str(doc.get("query", "")).strip()
+                label = doc.get("label", [])
+
+                # label is a list of acceptable answers, use the first one
+                if not isinstance(label, list) or not label:
+                    log.debug("Skipping doc - label is not a valid list", extra={"doc": doc})
+                    return None
+
+                correct_answer = str(label[0]).strip()
+                if not correct_answer:
+                    log.debug("Skipping doc - empty correct answer", extra={"doc": doc})
+                    return None
+
+                # Create synthetic negative based on answer type
+                incorrect_answer = self._create_synthetic_negative(correct_answer)
+
+                metadata = {"label": "chartqa"}
+                return self._build_pair(
+                    question=f"Question: {question}",
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
+                )
+
+            # Format 4: query/prompt + answer (fallback for other tasks)
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer
                 correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
                 if correct_answer:
+                    incorrect_answer = self._create_synthetic_negative(correct_answer)
                     metadata = {"label": "chartqa"}
                     return self._build_pair(
                         question=f"Question: {question}",
                         correct=correct_answer,
-                        incorrect="incorrect answer",
+                        incorrect=incorrect_answer,
                         metadata=metadata,
                     )
                 return None
@@ -139,6 +170,62 @@ class ChartqaExtractor(LMEvalBenchmarkExtractor):
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
+
+    @staticmethod
+    def _create_synthetic_negative(correct_answer: str) -> str:
+        """
+        Create a synthetic negative answer based on the correct answer type.
+
+        Args:
+            correct_answer: The correct answer to base the negative on.
+
+        Returns:
+            A synthetic negative answer.
+        """
+        import random
+
+        correct_answer = correct_answer.strip()
+
+        # Handle Yes/No questions
+        if correct_answer.lower() in ["yes", "no"]:
+            return "No" if correct_answer.lower() == "yes" else "Yes"
+
+        # Handle numeric answers (with or without % or decimal points)
+        # Remove % sign if present for numeric detection
+        numeric_part = correct_answer.rstrip('%').strip()
+
+        # Check if it's a number (including decimals)
+        try:
+            num = float(numeric_part)
+
+            # For percentages, modify the number
+            if correct_answer.endswith('%'):
+                # Add/subtract a random amount between 10-30%
+                change = random.choice([-30, -20, -10, 10, 20, 30])
+                new_num = max(0, min(100, num + change))  # Keep within 0-100 range
+                return f"{new_num:.1f}%"
+
+            # For integers
+            if '.' not in numeric_part:
+                num_int = int(num)
+                # Modify by +/- 1 to 5
+                change = random.choice([-5, -3, -2, -1, 1, 2, 3, 5])
+                new_num = max(0, num_int + change)
+                return str(new_num)
+
+            # For decimals/ratios
+            # Modify by +/- 0.05 to 0.2
+            change = random.choice([-0.2, -0.15, -0.1, -0.05, 0.05, 0.1, 0.15, 0.2])
+            new_num = max(0, num + change)
+            return f"{new_num:.2f}"
+
+        except ValueError:
+            # Not a number, handle as text
+            pass
+
+        # For entity/text answers, use a generic incorrect answer
+        # We can't create a meaningful incorrect entity without knowing the chart
+        return "Incorrect Value"
 
     @staticmethod
     def _build_pair(

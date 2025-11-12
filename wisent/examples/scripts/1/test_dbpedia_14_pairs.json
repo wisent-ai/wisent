@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Classify the Topic of the following Paragraph to one of these options: Company, Educational Institution, Artist, Athlete, Office Holder, Mean Of Transportation, Building, Natural Place, Village, Animal, Plant, Album, Film, Written Work.\nParagraph:\n Time Again is a 2003 smooth jazz album by saxophonist David Sanborn.\nTopic:",
+    "positive_response": "Album",
+    "negative_response": "Company"
+  }
+]

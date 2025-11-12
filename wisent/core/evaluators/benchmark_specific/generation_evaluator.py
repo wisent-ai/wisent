@@ -25,47 +25,13 @@ class GenerationEvaluator(BaseEvaluator):
     - Exact match: Direct string comparison
     - Normalized match: Lenient comparison after normalization
     - Numerical match: For math problems
+
+    Note: Task names are declared in extractors (via evaluator_name attribute),
+    not in evaluators. This maintains proper separation of concerns.
     """
 
     name = "generation"
     description = "Generation-based evaluator for text generation tasks"
-    task_names = (
-        # Math Tasks
-        "gsm8k", "asdiv", "arithmetic", "math", "math_500", "math500",
-        "aime", "aime2024", "aime2025",
-        "hmmt", "hmmt_feb_2025",
-        "polymath", "polymath_en_medium", "polymath_zh_medium", "polymath_en_high", "polymath_zh_high",
-        "livemathbench", "livemathbench_cnmo_en", "livemathbench_cnmo_zh",
-        "hendrycks_math",
-        # Reading Comprehension & QA
-        "drop", "triviaqa", "record", "squadv2", "squad2",
-        "webqs", "nq_open", "coqa",
-        # Code-to-Text (Code Summarization)
-        "codexglue_code_to_text_python", "codexglue_code_to_text_go", "codexglue_code_to_text_ruby",
-        "codexglue_code_to_text_java", "codexglue_code_to_text_javascript", "codexglue_code_to_text_php",
-        # Code Translation
-        "mercury",
-        # Code Generation (BLEU/Exact Match evaluation)
-        "conala", "concode", "recode",
-        # New task families from lm-eval-harness (generate_until output_type)
-        "kmmlu", "bbh", "flores", "afrimgsm", "mgsm", "ja", "phrases", "polemo2", "gsm",
-        "anagrams1", "anagrams2", "babi", "cycle", "logieval", "random", "reversed",
-        "flan", "xquad", "minerva", "scrolls", "code2text", "cabreu", "evalita-sp",
-        "paloma", "ifeval", "gpt3", "iwslt2017", "iwslt2017-ar-en", "iwslt2017-en-ar",
-        "translation", "wmt14", "wmt16", "wmt14-en-fr", "wmt14-fr-en", "wmt16-de-en",
-        "wmt16-en-de", "wmt16-en-ro", "wmt16-ro-en", "wmt-ro-en-t5-prompt",
-        "chain", "hendrycks", "self", "unscramble", "20", "ag", "argument", "atis",
-        "banking77", "bec2016eu", "bhtc", "boolq-seq2seq", "catalanqa", "claim",
-        "cnn", "cocoteros", "coedit", "cola", "commonsense", "coqcat", "dbpedia",
-        "doc", "epec", "eq", "ethos", "fda", "financial", "groundcocoa", "histoires",
-        "law", "ledgar", "medical", "medmcqa", "moral", "noticia", "parafraseja",
-        "parafrases", "qnlieu", "realtoxicityprompts", "sglue", "squad", "stsb",
-        "summarization", "swde", "teca", "tinyGSM8k", "toxigen", "unfair", "vaxx",
-        "wiceu", "wsc273", "xlsum", "xsum", "yahoo", "t0", "super", "csatqa",
-        "multiple", "afrixnli", "evalita-mp", "freebase", "llama", "math",
-        "super-glue-lm-eval-v1", "super-glue-lm-eval-v1-seq2seq", "super-glue-t5-prompt",
-        "tinyBenchmarks", "Tag", "pythia"
-    )
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate generated response against expected answer.

@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["Tinygsm8kExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("tinyGSM8k",)
+
+evaluator_name = "exact_match"
+
 
 class Tinygsm8kExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tinygsm8K benchmark."""

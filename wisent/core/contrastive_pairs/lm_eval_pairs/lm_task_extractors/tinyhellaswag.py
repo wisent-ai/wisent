@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["TinyhellaswagExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("tinyHellaswag",)
+
+evaluator_name = "log_likelihoods"
+
 
 class TinyhellaswagExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tinyhellaswag benchmark."""

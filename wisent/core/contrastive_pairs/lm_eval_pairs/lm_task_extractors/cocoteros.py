@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["CocoterosExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("cocoteros_es", "cocoteros_va")
+
+evaluator_name = "generation"
+
 
 class CocoterosExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Cocoteros benchmark."""
@@ -47,12 +51,50 @@ class CocoterosExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: Cocoteros generation task (text + keywords + context)
+            if "text" in doc and "keywords" in doc and "context" in doc:
+                text = str(doc.get("text", "")).strip()
+                keywords = str(doc.get("keywords", "")).strip()
+                context = str(doc.get("context", "")).strip()
+
+                if not text or not keywords:
+                    log.debug("Skipping cocoteros doc - missing text or keywords", extra={"doc": doc})
+                    return None
+
+                # Create prompt from keywords and context
+                prompt = f"Genera una frase corta con estas palabras: {keywords}. El contexto es: {context}\n\nRespuesta:"
+
+                # Create synthetic negative by shuffling words in the text
+                import random
+                words = text.split()
+                if len(words) > 2:
+                    shuffled_words = words.copy()
+                    random.shuffle(shuffled_words)
+
+                    # If shuffle resulted in same order, reverse instead
+                    if shuffled_words == words:
+                        shuffled_words = list(reversed(words))
+
+                    incorrect_text = ' '.join(shuffled_words)
+                else:
+                    # Fallback for very short texts
+                    incorrect_text = "Esta es una frase incorrecta."
+
+                metadata = {"label": "cocoteros"}
+                return self._build_pair(
+                    question=prompt,
+                    correct=text,
+                    incorrect=incorrect_text,
+                    metadata=metadata,
+                )
+
+            # Format 2: Standard multiple choice format
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

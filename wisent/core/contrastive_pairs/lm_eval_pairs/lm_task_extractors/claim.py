@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["ClaimExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("claim_stance_topic",)
+
+evaluator_name = "log_likelihoods"
+
 
 class ClaimExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Claim benchmark."""
@@ -47,12 +51,53 @@ class ClaimExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: Unitxt format (claim_stance_topic) with task_data JSON
+            if "task_data" in doc and "target" in doc:
+                import json
+                task_data_str = doc.get("task_data", "")
+                if task_data_str:
+                    task_data = json.loads(task_data_str)
+                    text = task_data.get("text", "").strip()
+                    classes = task_data.get("classes", [])
+                    correct_label = doc.get("target", "").strip()
+
+                    if not text or not classes or not correct_label:
+                        log.debug("Skipping unitxt doc - missing fields", extra={"doc": doc})
+                        return None
+
+                    # Get incorrect label (pick first one that's not the correct one)
+                    incorrect_label = None
+                    for cls in classes:
+                        if cls != correct_label:
+                            incorrect_label = cls
+                            break
+
+                    if not incorrect_label:
+                        log.debug("Skipping unitxt doc - no incorrect label found", extra={"doc": doc})
+                        return None
+
+                    # Format the prompt from source if available, otherwise construct it
+                    if "source" in doc:
+                        prompt = str(doc.get("source", "")).strip()
+                    else:
+                        text_type = task_data.get("text_type", "Argument")
+                        prompt = f"{text_type}: {text}\nTopic:"
+
+                    metadata = {"label": "claim"}
+                    return self._build_pair(
+                        question=prompt,
+                        correct=correct_label,
+                        incorrect=incorrect_label,
+                        metadata=metadata,
+                    )
+
+            # Format 2: Standard multiple choice format
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

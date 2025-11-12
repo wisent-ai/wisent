@@ -1,0 +1,8 @@
+[
+  {
+    "pair_id": 0,
+    "prompt": "Classify the Hate Speech of the following Sentence to one of these options: not hate speech, hate speech.\nSentence:\nEvery publicity is good publicity ha ? I'\u0099m here after watching leaving neverland i don'\u0099t know he is guilty or not but in music he is a legend and no one can take that from him\nHate Speech:",
+    "positive_response": "not hate speech",
+    "negative_response": "hate speech"
+  }
+]

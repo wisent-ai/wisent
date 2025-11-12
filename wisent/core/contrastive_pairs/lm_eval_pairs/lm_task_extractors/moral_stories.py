@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["MoralStoriesExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("moral_stories",)
+
+evaluator_name = "log_likelihoods"
+
 
 class MoralStoriesExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Moral Stories benchmark."""
@@ -61,80 +65,76 @@ class MoralStoriesExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Moral Stories doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Moral Stories format (after process_docs):
+        - query: "{norm} {situation} {intention}" (context)
+        - choices: [moral_action, immoral_action]
+        - label: 0 (always the first choice is correct)
+
+        Raw format:
+        - norm, situation, intention: text fields
+        - moral_action: correct choice
+        - immoral_action: incorrect choice
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Format 1: Processed format (query + choices + label)
+            if "query" in doc and "choices" in doc and "label" in doc:
+                query = str(doc.get("query", "")).strip()
+                choices = doc.get("choices", [])
+                label = doc.get("label", 0)
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
+                if not query or not choices or len(choices) < 2:
+                    log.debug("Skipping doc with missing query/choices", extra={"doc": doc})
+                    return None
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
+                if not isinstance(label, int) or not (0 <= label < len(choices)):
+                    log.debug("Invalid label", extra={"label": label, "doc": doc})
+                    return None
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "moral_stories"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
+                # Format prompt exactly as lm-eval does (just the query)
+                prompt = query
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                correct = str(choices[label]).strip()
+                incorrect_idx = (label + 1) % len(choices)
+                incorrect = str(choices[incorrect_idx]).strip()
+
+                metadata = {"label": "moral_stories"}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
                 )
-                return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Format 2: Raw format (norm + situation + intention + moral_action + immoral_action)
+            elif "norm" in doc and "situation" in doc and "intention" in doc and "moral_action" in doc and "immoral_action" in doc:
+                norm = str(doc.get("norm", "")).strip().capitalize()
+                situation = str(doc.get("situation", "")).strip().capitalize()
+                intention = str(doc.get("intention", "")).strip().capitalize()
+                moral_action = str(doc.get("moral_action", "")).strip()
+                immoral_action = str(doc.get("immoral_action", "")).strip()
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+                if not norm or not situation or not intention or not moral_action or not immoral_action:
+                    log.debug("Skipping doc with missing fields", extra={"doc": doc})
+                    return None
 
-            metadata = {
-                "label": "moral_stories",
-            }
+                # Construct query same way as process_docs
+                query = f"{norm} {situation} {intention}"
 
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+                metadata = {"label": "moral_stories"}
+
+                return self._build_pair(
+                    question=query,
+                    correct=moral_action,
+                    incorrect=immoral_action,
+                    metadata=metadata,
+                )
+
+            log.debug("Skipping doc without required fields", extra={"doc": doc})
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

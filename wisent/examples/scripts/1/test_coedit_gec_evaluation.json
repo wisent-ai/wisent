@@ -1,0 +1,30 @@
+{
+  "task_name": "coedit_gec",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Make the minimal amount of changes to correct grammar and spelling errors in the following text.\nOri...",
+      "positive_response": "To partly offset this gigantic demand for energy, China has launched an ambitious program to produce 16% of its electricity from nuclear power by 2030.",
+      "negative_response": "To partly offset this gigantic demand for energy, China had launched an ambitious program to produce 16% of its electricity from nuclear power by 2030.",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'To partly offset this gigantic demand for energy, China has launched an ambitious program to produce 16% of its electricity from nuclear power by 2030.' (log_prob=-0.500), Expected: 'To partly offset this gigantic demand for energy, China has launched an ambitious program to produce 16% of its electricity from nuclear power by 2030.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'To partly offset this gigantic demand for energy, China has launched an ambitious program to produce 16% of its electricity from nuclear power by 2030.' (log_prob=-0.500), Expected: 'To partly offset this gigantic demand for energy, China had launched an ambitious program to produce 16% of its electricity from nuclear power by 2030.'"
+      },
+      "both_correct": true
+    }
+  ]
+}

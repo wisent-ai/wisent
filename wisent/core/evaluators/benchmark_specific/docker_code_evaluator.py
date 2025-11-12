@@ -17,20 +17,13 @@ class DockerCodeEvaluator(BaseEvaluator):
     - HumanEval: Python function completion with unit tests
     - MBPP: Python programming problems
     - All Python coding benchmarks
+
+    Note: Task names are declared in extractors (via evaluator_name attribute),
+    not in evaluators. This maintains proper separation of concerns.
     """
 
     name = "docker_code"
     description = "Code execution evaluator using Docker sandbox"
-    task_names = (
-        "humaneval", "humaneval_plus", "instruct_humaneval",
-        "mbpp", "mbpp_plus",
-        "apps",
-        "ds_1000", "ds1000",
-        "multipl_e", "multiple_py", "multiple_js", "multiple_java", "multiple_cpp", "multiple_rs", "multiple_go",
-        "livecodebench",
-        # New task families from lm-eval-harness (code generation with pass@k)
-        "instructhumaneval", "humanevalpack", "recode", "conala", "concode", "mercury", "codexglue"
-    )
 
     def __init__(self, image: str = "coding/sandbox:polyglot-1.0"):
         """Initialize Docker code evaluator.

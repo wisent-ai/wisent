@@ -14,6 +14,34 @@ if TYPE_CHECKING:
 __all__ = ["FrenchBenchExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "french_bench",
+    "french_bench_arc_challenge",
+    "french_bench_boolqa",
+    "french_bench_extra",
+    "french_bench_fquadv2",
+    "french_bench_fquadv2_bool",
+    "french_bench_fquadv2_genq",
+    "french_bench_fquadv2_hasAns",
+    "french_bench_gen",
+    "french_bench_grammar",
+    "french_bench_hellaswag",
+    "french_bench_mc",
+    "french_bench_multifquad",
+    "french_bench_opus_perplexity",
+    "french_bench_orangesum_abstract",
+    "french_bench_orangesum_title",
+    "french_bench_perplexity",
+    "french_bench_reading_comp",
+    "french_bench_topic_based_nli",
+    "french_bench_trivia",
+    "french_bench_vocab",
+    "french_bench_wikitext_fr",
+    "french_bench_xnli",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class FrenchBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the French Bench benchmark."""
@@ -97,7 +125,30 @@ class FrenchBenchExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: query + choices + gold (hellaswag style)
+            elif "query" in doc and "choices" in doc and "gold" in doc:
+                question = str(doc.get("query", "")).strip()
+                choices = doc.get("choices", [])
+                if isinstance(choices, list):
+                    answer_idx = int(doc.get("gold", 0))
+                else:
+                    return None
+
+            # Format 4: Question + Answer (trivia style, capital letters)
+            elif "Question" in doc and "Answer" in doc:
+                question = str(doc.get("Question", "")).strip()
+                correct_answer = str(doc.get("Answer", "")).strip()
+                if question and correct_answer:
+                    metadata = {"label": "french_bench"}
+                    return self._build_pair(
+                        question=f"Question: {question}",
+                        correct=correct_answer,
+                        incorrect="incorrect answer",
+                        metadata=metadata,
+                    )
+                return None
+
+            # Format 5: query/prompt + answer
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer

@@ -14,9 +14,16 @@ if TYPE_CHECKING:
 __all__ = ["GsmExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "gsm_plus",
+    "gsm_plus_mini",
+)
+
+evaluator_name = "exact_match"
+
 
 class GsmExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Gsm benchmark."""
+    """Extractor for Gsm benchmark - math word problems."""
 
     def extract_contrastive_pairs(
         self,

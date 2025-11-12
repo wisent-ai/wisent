@@ -14,12 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["CoqcatExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("coqcat",)
+
+evaluator_name = "generation"
+
 
 class CoqcatExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Coqcat benchmark - reading comprehension task."""
-
-    task_names = ("coqcat",)
-    evaluator_name = "exact_match"
 
     def extract_contrastive_pairs(
         self,

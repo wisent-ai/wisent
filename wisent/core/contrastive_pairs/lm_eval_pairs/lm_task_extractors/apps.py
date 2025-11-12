@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["AppsExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("apps",)
+
+evaluator_name = "exact_match"
+
 
 class AppsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Apps benchmark."""

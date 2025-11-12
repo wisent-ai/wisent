@@ -15,6 +15,10 @@ if TYPE_CHECKING:
 __all__ = ["NQOpenExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("nq_open",)
+
+evaluator_name = "generation"
+
 
 class NQOpenExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Natural Questions Open benchmark."""

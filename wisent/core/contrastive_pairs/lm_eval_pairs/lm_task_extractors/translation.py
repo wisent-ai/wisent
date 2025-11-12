@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["TranslationExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("translation",)
+
+evaluator_name = "exact_match"
+
 
 class TranslationExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Translation benchmark."""

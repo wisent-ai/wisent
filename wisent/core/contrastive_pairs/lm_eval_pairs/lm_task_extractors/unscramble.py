@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["UnscrambleExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("unscramble",)
+
+evaluator_name = "exact_match"
+
 
 class UnscrambleExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Unscramble benchmark."""

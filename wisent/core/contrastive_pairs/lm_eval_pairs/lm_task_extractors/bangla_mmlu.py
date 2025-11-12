@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["BanglaMmluExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("bangla_mmlu",)
+
+evaluator_name = "log_likelihoods"
+
 
 class BanglaMmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Bangla Mmlu benchmark."""
@@ -84,7 +88,20 @@ class BanglaMmluExtractor(LMEvalBenchmarkExtractor):
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
+            # Format 2: question + option_a/b/c/d + answer (global MMLU style)
+            elif "question" in doc and "option_a" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("option_a", "")).strip(),
+                    str(doc.get("option_b", "")).strip(),
+                    str(doc.get("option_c", "")).strip(),
+                    str(doc.get("option_d", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer = doc.get("answer", "A")
+                answer_idx = ord(str(answer).upper()) - ord('A')
+
+            # Format 3: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()
                 choices = [
@@ -97,7 +114,7 @@ class BanglaMmluExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 4: query/prompt + answer
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer
@@ -119,9 +136,22 @@ class BanglaMmluExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            correct = str(choices[answer_idx]).strip()
+
+            # Find an incorrect choice that's actually different from correct
+            incorrect = None
+            for i, choice in enumerate(choices):
+                if i != answer_idx and choice != correct:
+                    incorrect = choice
+                    break
+
+            # If all choices are identical to correct, skip this doc
+            if incorrect is None:
+                log.debug(
+                    "Skipping doc - all incorrect choices identical to correct",
+                    extra={"doc": doc},
+                )
+                return None
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
 

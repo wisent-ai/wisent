@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["AgievalExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("agieval",)
+
+evaluator_name = "exact_match"
+
 
 class AgievalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Agieval benchmark."""

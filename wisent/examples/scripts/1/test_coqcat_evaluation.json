@@ -1,0 +1,30 @@
+{
+  "task_name": "coqcat",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Story: Segons la mitologia grega, Tespi (en grec antic \u0398\u03ad\u03c3\u03c0\u03b9\u03bf\u03c2), va ser un heroi beoci, fill d'Erect...",
+      "positive_response": "Un heroi beoci.",
+      "negative_response": "De l'\u00c0tica.",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Un heroi beoci.' (log_prob=-0.500), Expected: 'Un heroi beoci.'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'Un heroi beoci.' (log_prob=-0.500), Expected: 'De l'\u00c0tica.'"
+      },
+      "both_correct": true
+    }
+  ]
+}

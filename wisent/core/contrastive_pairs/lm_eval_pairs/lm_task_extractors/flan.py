@@ -16,7 +16,14 @@ _LOG = setup_logger(__name__)
 
 
 class FlanExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Flan benchmark."""
+    """Extractor for FLAN benchmark - various tasks from FLAN collection.
+
+    FLAN (Finetuned Language Models Are Zero-Shot Learners) includes held-in and held-out task splits.
+    This extractor handles both multiple choice and generation formats.
+    """
+
+    task_names = ("flan_held_in", "flan_held_out")
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

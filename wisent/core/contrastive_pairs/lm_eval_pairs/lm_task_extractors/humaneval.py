@@ -14,9 +14,17 @@ if TYPE_CHECKING:
 __all__ = ["HumanEvalExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "humaneval",
+    "humaneval_64",
+    "humaneval_plus",
+)
+
+evaluator_name = "exact_match"
+
 
 class HumanEvalExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the HumanEval benchmark."""
+    """Extractor for the HumanEval benchmark - code generation tasks."""
 
     def extract_contrastive_pairs(
         self,

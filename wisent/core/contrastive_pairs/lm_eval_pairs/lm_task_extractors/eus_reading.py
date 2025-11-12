@@ -16,7 +16,14 @@ _LOG = setup_logger(__name__)
 
 
 class EusReadingExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Eus Reading benchmark."""
+    """Extractor for Eus Reading benchmark - Basque reading comprehension.
+
+    This is a multiple choice reading comprehension task.
+    Format: context + question + candidates (list) + answer (integer index)
+    """
+
+    task_names = ("eus_reading",)
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -70,10 +77,10 @@ class EusReadingExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: question + choices/candidates + answer
+            if "question" in doc and ("choices" in doc or "candidates" in doc):
                 question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
+                choices_data = doc.get("choices") or doc.get("candidates", {})
                 if isinstance(choices_data, dict):
                     choices = choices_data.get("text", [])
                 elif isinstance(choices_data, list):

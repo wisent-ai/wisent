@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["OpenBookQAExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("openbookqa",)
+
+evaluator_name = "log_likelihoods"
+
 
 class OpenBookQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the OpenBookQA benchmark."""

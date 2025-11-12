@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["Ds1000Extractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("ds1000",)
+
+evaluator_name = "exact_match"
+
 
 class Ds1000Extractor(LMEvalBenchmarkExtractor):
     """Extractor for Ds1000 benchmark."""

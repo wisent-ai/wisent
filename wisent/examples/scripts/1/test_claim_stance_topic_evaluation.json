@@ -1,0 +1,30 @@
+{
+  "task_name": "claim_stance_topic",
+  "model_name": "mock",
+  "evaluator_name": "log_likelihoods",
+  "num_pairs": 1,
+  "all_correct": true,
+  "pairs": [
+    {
+      "pair_id": 0,
+      "prompt": "Classify the Topic of the following Argument to one of these options: advertising, all nations a rig...",
+      "positive_response": "gambling",
+      "negative_response": "advertising",
+      "positive_evaluation": {
+        "ground_truth": "TRUTHFUL",
+        "confidence": 1.0,
+        "expected": "TRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'gambling' (log_prob=-0.500), Expected: 'gambling'"
+      },
+      "negative_evaluation": {
+        "ground_truth": "UNTRUTHFUL",
+        "confidence": 0.0,
+        "expected": "UNTRUTHFUL",
+        "correct": true,
+        "details": "Predicted: 'gambling' (log_prob=-0.500), Expected: 'advertising'"
+      },
+      "both_correct": true
+    }
+  ]
+}

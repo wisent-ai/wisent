@@ -14,6 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["MnliExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "mnli",
+    "mnli_mismatch",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class MnliExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Mnli benchmark."""
@@ -44,48 +51,48 @@ class MnliExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        """
+        Convert a single MNLI doc into a ContrastivePair, if possible.
+        Returns None when required fields are missing or malformed.
+
+        MNLI format (natural language inference):
+        - premise: the premise statement
+        - hypothesis: the hypothesis statement
+        - label: 0 (entailment/True), 1 (neutral/Neither), or 2 (contradiction/False)
+        """
+        log = bind(_LOG, doc_id=doc.get("idx", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # MNLI format
+            premise = str(doc.get("premise", "")).strip()
+            hypothesis = str(doc.get("hypothesis", "")).strip()
+            label = doc.get("label", None)
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            if not premise or not hypothesis or label is None:
+                log.debug("Skipping doc due to missing premise/hypothesis/label", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+            # MNLI labels: 0 = entailment (True), 1 = neutral (Neither), 2 = contradiction (False)
+            choices = ["True", "Neither", "False"]
+
+            if not isinstance(label, int) or not (0 <= label < len(choices)):
+                log.debug("Invalid label", extra={"label": label, "doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # Add period to hypothesis if not present
+            hypothesis_formatted = hypothesis + ("" if hypothesis.endswith(".") else ".")
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Format exactly as lm-eval does it
+            prompt = f"{premise}\nQuestion: {hypothesis_formatted} True, False or Neither?\nAnswer:"
+
+            correct = choices[label]
+            incorrect_idx = (label + 1) % len(choices)
+            incorrect = choices[incorrect_idx]
+
             metadata = {"label": "mnli"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
