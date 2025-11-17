@@ -66,35 +66,34 @@ BENCHMARKS = [
     # European language benchmarks
     "basque_bench", "basqueglue", "eus_exams", "eus_proficiency", "eus_reading", "eus_trivia",
     "catalan_bench", "french_bench", "galician_bench", "portuguese_bench", "spanish_bench",
-    "icelandic_winogrande",
     # Multilingual variants
-    "global_mmlu", "global_piqa", "belebele", "mlqa", "xquad", "xcopa",
+    "global_mmlu", "belebele", "mlqa", "xquad", "xcopa",
     "okapi/arc_multilingual", "okapi/hellaswag_multilingual", "okapi/mmlu_multilingual", "okapi/truthfulqa_multilingual",
     # Safety/Ethics
     "hendrycks_ethics", "toxigen", "bbq", "crows_pairs", "moral_stories", "realtoxicityprompts",
-    "discrim_eval", "esbbq", "cabbq", "simple_cooccurrence_bias", "winogender",
+    "simple_cooccurrence_bias", "winogender",
     # Medical
     "medmcqa", "med_concepts_qa", "meddialog", "mediqa_qa2019", "medtext", "meqsum", "mimic_repsum",
     # Math variants
     "minerva_math", "mgsm", "hrm8k", "agieval",
     # Long context
-    "babi", "babilong", "longbench", "longbenchv2", "ruler", "scrolls",
+    "babi", "babilong", "ruler", "scrolls",
     # Other reasoning
     "inverse_scaling", "storycloze", "histoires_morales", "groundcocoa",
     # Language understanding
-    "blimp", "blimp_nl", "multiblimp", "turblimp_core", "zhoblimp",
+    "blimp", "multiblimp",
     "lambada_cloze", "lambada_multilingual", "lambada_multilingual_stablelm",
     # Paraphrase/Translation
     "paws-x", "translation", "wmt2016",
     # Code understanding
-    "code_x_glue", "humaneval_infilling",
+    "code_x_glue",
     # QA variants
     "aclue", "bertaqa", "careqa", "copal_id", "csatqa",
     # Specialized benchmarks
-    "acp_bench", "acp_bench_hard", "aexams", "benchmarks", "bhs",
-    "c4", "chartqa", "click", "eq_bench", "eq-bench_ca", "eq-bench_es",
+    "acp_bench", "acp_bench_hard", "aexams", "benchmarks",
+    "c4", "chartqa", "eq_bench",
     "evalita_LLM", "fda", "fld", "jsonschema_bench", "kbl", "leaderboard",
-    "libra", "lingoly", "llama3", "lm_syneval", "mastermind", "metabench",
+    "libra", "lingoly", "mastermind", "metabench",
     "mmlusr", "mmmu", "model_written_evals", "mts_dialog", "multiblimp",
     "noreval", "olaph", "paloma", "pile", "pile_10k", "polemo2",
     "score", "squad_completion", "super_glue", "swde", "tinyBenchmarks",

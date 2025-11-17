@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["KblExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("kbl",)
+evaluator_name = "log_likelihoods"
+
 
 class KblExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Kbl benchmark."""

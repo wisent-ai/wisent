@@ -101,9 +101,48 @@ class EvaluatorRotator:
             # Auto-select based on task_name if provided
             if self._task_name:
                 # NEW ARCHITECTURE: Query extractor for evaluator name
-                from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
-                extractor = get_extractor(self._task_name)
-                evaluator_name = getattr(extractor, 'evaluator_name', 'log_likelihoods')
+                # Try LM Eval registry first, then HuggingFace registry
+                from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import (
+                    get_extractor as get_lm_extractor,
+                    UnsupportedLMEvalBenchmarkError
+                )
+                from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import (
+                    get_extractor as get_hf_extractor,
+                    UnsupportedHuggingFaceBenchmarkError
+                )
+
+                extractor = None
+                try:
+                    extractor = get_lm_extractor(self._task_name)
+                except UnsupportedLMEvalBenchmarkError:
+                    try:
+                        extractor = get_hf_extractor(self._task_name)
+                    except UnsupportedHuggingFaceBenchmarkError:
+                        pass
+
+                if extractor is None:
+                    raise EvaluatorError(
+                        f"No extractor registered for task '{self._task_name}'. "
+                        "Cannot auto-select evaluator."
+                    )
+
+                # Get evaluator name from extractor's module-level attribute or class attribute
+                evaluator_name = None
+                if hasattr(extractor, 'evaluator_name'):
+                    evaluator_name = extractor.evaluator_name
+                elif hasattr(extractor.__class__, '__module__'):
+                    # Try to import the module and get the module-level 'evaluator' attribute
+                    try:
+                        import sys
+                        mod = sys.modules.get(extractor.__class__.__module__)
+                        if mod and hasattr(mod, 'evaluator'):
+                            evaluator_name = mod.evaluator
+                    except Exception:
+                        pass
+
+                if not evaluator_name:
+                    evaluator_name = 'log_likelihoods'  # Default fallback
+
                 logger.info(f"Auto-selected evaluator '{evaluator_name}' for task '{self._task_name}' (from extractor)")
                 cls = BaseEvaluator.get(evaluator_name)
                 return cls()

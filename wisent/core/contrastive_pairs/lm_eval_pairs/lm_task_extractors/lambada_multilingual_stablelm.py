@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["LambadaMultilingualStablelmExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("lambada_multilingual_stablelm",)
+evaluator_name = "log_likelihoods"
+
 
 class LambadaMultilingualStablelmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Lambada Multilingual Stablelm benchmark."""

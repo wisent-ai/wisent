@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["PersonaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("persona",)
+evaluator_name = "log_likelihoods"
+
 
 class PersonaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Persona benchmark."""

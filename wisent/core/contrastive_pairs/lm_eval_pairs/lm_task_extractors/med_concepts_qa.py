@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["MedConceptsQaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("med_concepts_qa",)
+evaluator_name = "log_likelihoods"
+
 
 class MedConceptsQaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Med Concepts Qa benchmark."""

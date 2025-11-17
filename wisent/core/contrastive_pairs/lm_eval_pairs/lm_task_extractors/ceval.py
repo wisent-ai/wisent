@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["CevalExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("ceval", "ceval-valid")
+
+evaluator_name = "log_likelihoods"
+
 
 class CevalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Ceval benchmark."""
@@ -92,6 +96,19 @@ class CevalExtractor(LMEvalBenchmarkExtractor):
                     str(doc.get("option_b", "")).strip(),
                     str(doc.get("option_c", "")).strip(),
                     str(doc.get("option_d", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer = doc.get("answer", "A")
+                answer_idx = ord(str(answer).upper()) - ord('A')
+
+            # Format 3: question + A/B/C/D + answer (C-Eval style)
+            elif "question" in doc and "A" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("A", "")).strip(),
+                    str(doc.get("B", "")).strip(),
+                    str(doc.get("C", "")).strip(),
+                    str(doc.get("D", "")).strip(),
                 ]
                 choices = [c for c in choices if c]
                 answer = doc.get("answer", "A")

@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["KormedmcqaExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("kormedmcqa",)
+evaluator_name = "log_likelihoods"
+
 
 class KormedmcqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Kormedmcqa benchmark."""
