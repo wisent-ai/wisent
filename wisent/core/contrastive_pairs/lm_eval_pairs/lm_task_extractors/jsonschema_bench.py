@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["JsonschemaBenchExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("jsonschema_bench",)
+evaluator_name = "log_likelihoods"
+
 
 class JsonschemaBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Jsonschema Bench benchmark."""

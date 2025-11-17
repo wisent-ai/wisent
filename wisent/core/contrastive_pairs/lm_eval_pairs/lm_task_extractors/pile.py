@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["PileExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("pile",)
+evaluator_name = "exact_match"
+
 
 class PileExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Pile benchmark."""

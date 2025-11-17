@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["MastermindExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mastermind",)
+evaluator_name = "log_likelihoods"
+
 
 class MastermindExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mastermind benchmark."""

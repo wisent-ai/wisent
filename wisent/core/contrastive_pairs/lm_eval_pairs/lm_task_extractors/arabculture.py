@@ -14,7 +14,14 @@ if TYPE_CHECKING:
 __all__ = ["ArabcultureExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("arabculture", "ArabCulture", "arab_culture")
+task_names = (
+    "arabculture", "ArabCulture", "arab_culture",
+    "arab_culture_algeria", "arab_culture_egypt", "arab_culture_jordan",
+    "arab_culture_ksa", "arab_culture_lebanon", "arab_culture_libya",
+    "arab_culture_morocco", "arab_culture_palestine", "arab_culture_sudan",
+    "arab_culture_syria", "arab_culture_tunisia", "arab_culture_uae",
+    "arab_culture_yemen",
+)
 
 evaluator_name = "log_likelihoods"
 

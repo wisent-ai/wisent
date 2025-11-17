@@ -87,7 +87,33 @@ class HuggingFaceBenchmarkExtractor(ABC):
                 dataset_name,
                 dataset_config if dataset_config else None,
                 split=split,
+                trust_remote_code=True,
             )
+        except ValueError as exc:
+            # Handle deprecated 'List' feature type by patching features dict
+            if "Feature type 'List' not found" in str(exc) or "Type mismatch" in str(exc):
+                import datasets.features.features as features_module
+                # Temporarily register 'List' as alias for 'LargeList'
+                orig_feature_types = features_module._FEATURE_TYPES.copy()
+                features_module._FEATURE_TYPES['List'] = features_module._FEATURE_TYPES['LargeList']
+                try:
+                    # Force download_mode to redownload to avoid cached metadata issues
+                    dataset = load_dataset(
+                        dataset_name,
+                        dataset_config if dataset_config else None,
+                        split=split,
+                        trust_remote_code=True,
+                        download_mode='force_redownload',
+                    )
+                finally:
+                    # Restore original feature types
+                    features_module._FEATURE_TYPES = orig_feature_types
+            else:
+                raise RuntimeError(
+                    f"Failed to load HuggingFace dataset '{dataset_name}'. "
+                    f"Arguments were: config={dataset_config!r}, split={split!r}. "
+                    f"Underlying error: {exc}"
+                ) from exc
         except Exception as exc:
             raise RuntimeError(
                 f"Failed to load HuggingFace dataset '{dataset_name}'. "

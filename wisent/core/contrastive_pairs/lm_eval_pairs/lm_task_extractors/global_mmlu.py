@@ -18,6 +18,9 @@ _LOG = setup_logger(__name__)
 class GlobalMmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Global Mmlu benchmark."""
 
+    task_names = ("global_mmlu", "global_mmlu_ar")
+    evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -84,9 +87,9 @@ class GlobalMmluExtractor(LMEvalBenchmarkExtractor):
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
+            # Format 2: question/instruction + option_a/b/c/d + answer (Global MMLU / MMMLU style)
+            elif ("instruction" in doc or "question" in doc) and "option_a" in doc:
+                question = str(doc.get("instruction", doc.get("question", ""))).strip()
                 choices = [
                     str(doc.get("option_a", "")).strip(),
                     str(doc.get("option_b", "")).strip(),

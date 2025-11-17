@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["Hrm8kExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("hrm8k",)
+evaluator_name = "log_likelihoods"
+
 
 class Hrm8kExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Hrm8K benchmark."""

@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["MeddialogExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("meddialog",)
+evaluator_name = "log_likelihoods"
+
 
 class MeddialogExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Meddialog benchmark."""

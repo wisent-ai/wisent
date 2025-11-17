@@ -28,7 +28,7 @@ EXTRACTORS: dict[str, str] = {
     "humaneval_plus": f"{base_import}humaneval:HumanEvalExtractor",
     "mbpp": f"{base_import}mbpp:MBPPExtractor",
     "mbpp_plus": f"{base_import}mbpp:MBPPExtractor",
-    "instruct_humaneval": f"{base_import}instruct_humaneval:InstructHumanevalExtractor",
+    "instruct_humaneval": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
     "apps": f"{base_import}apps:AppsExtractor",
     "conala": f"{base_import}conala:ConalaExtractor",
     "concode": f"{base_import}concode:ConcodeExtractor",

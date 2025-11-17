@@ -1,6 +1,19 @@
 from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 import logging
+import os
+
+# Configure TensorFlow threading BEFORE any TensorFlow import
+# TensorFlow (used by BLEURT metric in meddialog and other tasks) can deadlock during model loading
+# when using default threading settings. Limit threads to prevent deadlock.
+os.environ['TF_NUM_INTEROP_THREADS'] = '1'
+os.environ['TF_NUM_INTRAOP_THREADS'] = '1'
+os.environ['OMP_NUM_THREADS'] = '1'
+
+# Enable trust_remote_code for all datasets (required for meddialog and others)
+# This uses lm-eval's recommended approach from PR #1998
+import datasets.config
+datasets.config.HF_DATASETS_TRUST_REMOTE_CODE = True
 
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -196,6 +209,7 @@ class LMEvalDataLoader(BaseDataLoader):
             "penn_treebank": "wikitext",
             "ArabCulture": "arab_culture",
             "arabculture": "arab_culture",
+            "aradice": "AraDiCE",
             "afrimgsm_direct_amh": "afrimgsm_amh_prompt_1",
             "afrimmlu_direct_amh": "afrimmlu_direct_amh_prompt_1",
             "babilong": "ru_babilong_qa1",
@@ -205,7 +219,25 @@ class LMEvalDataLoader(BaseDataLoader):
             "bec2016eu": "basque_bench",
             "benchmarks": "tinyBenchmarks",
             "careqa": "careqa_en",
+            "ceval": "ceval-valid",
             "ceval_valid": "ceval-valid",
+            "code_x_glue": "code2text_python",  # code_x_glue maps to code2text_python in lm-eval
+            "darija_bench": "darija_sentiment",
+            "eus_exams": "eus_exams_es",
+            "evalita_llm": "evalita-mp",
+            "evalita_mp": "evalita-mp",
+            "evalita_sp_sum_task_fp-small_p1": "evalita-sp_sum_task_fp-small_p1",
+            "fld": "fld_default",
+            "instruct_humaneval": "humaneval_instruct",
+            "instructhumaneval": "humaneval_instruct",
+            # Case-sensitivity fixes
+            "tinyarc": "tinyArc",
+            "tinygsm8k": "tinyGSM8k",
+            "tinyhellaswag": "tinyHellaswag",
+            "tinymmlu": "tinyMMLU",
+            "tinytruthfulqa": "tinyTruthfulQA",
+            "tinywinogrande": "tinyWinogrande",
+            "paws-x": "pawsx",
         }
 
         # Use mapped name if available, otherwise use original
@@ -214,11 +246,13 @@ class LMEvalDataLoader(BaseDataLoader):
             log.info(f"Mapping task '{task_name}' to lm-eval task '{lm_eval_task_name}'")
 
         # Tasks that require case-sensitive names (don't lowercase these)
-        case_sensitive_tasks = {"tinyBenchmarks"}
+        case_sensitive_prefixes = {"tinyBenchmarks"}
 
         # Normalize task name to lowercase for lm-eval-harness compatibility
         # Many lm-eval tasks use lowercase names (e.g., "aradice" not "AraDICE")
-        if lm_eval_task_name not in case_sensitive_tasks:
+        # Check if task name starts with any case-sensitive prefix
+        is_case_sensitive = any(lm_eval_task_name.startswith(prefix) for prefix in case_sensitive_prefixes)
+        if not is_case_sensitive:
             lm_eval_task_name_normalized = lm_eval_task_name.lower()
             if lm_eval_task_name_normalized != lm_eval_task_name:
                 log.info(f"Normalizing task name to lowercase: '{lm_eval_task_name}' -> '{lm_eval_task_name_normalized}'")
@@ -226,6 +260,53 @@ class LMEvalDataLoader(BaseDataLoader):
 
         task_manager = LMTaskManager()
         task_manager.initialize_tasks()
+
+        # Check if this is a group task name that needs expansion to all subtasks
+        # EXPLICIT lists - NO pattern matching
+        group_task_expansions = {
+            "aradice": ["AraDiCE_ArabicMMLU_lev", "AraDiCE_ArabicMMLU_egy", "AraDiCE_boolq_egy", "AraDiCE_boolq_eng", "AraDiCE_boolq_lev", "AraDiCE_boolq_msa", "AraDiCE_egypt_cultural", "AraDiCE_jordan_cultural", "AraDiCE_lebanon_cultural", "AraDiCE_palestine_cultural", "AraDiCE_qatar_cultural", "AraDiCE_syria_cultural", "AraDiCE_openbookqa_egy", "AraDiCE_openbookqa_eng", "AraDiCE_openbookqa_lev", "AraDiCE_openbookqa_msa", "AraDiCE_piqa_egy", "AraDiCE_piqa_eng", "AraDiCE_piqa_lev", "AraDiCE_piqa_msa", "AraDiCE_truthfulqa_mc1_egy", "AraDiCE_truthfulqa_mc1_eng", "AraDiCE_truthfulqa_mc1_lev", "AraDiCE_truthfulqa_mc1_msa", "AraDiCE_winogrande_egy", "AraDiCE_winogrande_eng", "AraDiCE_winogrande_lev", "AraDiCE_winogrande_msa"],
+            "meddialog": ["meddialog_qsumm", "meddialog_qsumm_perplexity", "meddialog_raw_dialogues", "meddialog_raw_perplexity"],
+            "mgsm": ["mgsm_cot_native", "mgsm_direct", "mgsm_direct_bn", "mgsm_direct_ca", "mgsm_direct_de", "mgsm_direct_en", "mgsm_direct_es", "mgsm_direct_es_spanish_bench", "mgsm_direct_eu", "mgsm_direct_fr", "mgsm_direct_gl", "mgsm_direct_ja", "mgsm_direct_ru", "mgsm_direct_sw", "mgsm_direct_te", "mgsm_direct_th", "mgsm_direct_zh", "mgsm_en_cot_bn", "mgsm_en_cot_de", "mgsm_en_cot_en", "mgsm_en_cot_es", "mgsm_en_cot_fr", "mgsm_en_cot_ja", "mgsm_en_cot_ru", "mgsm_en_cot_sw", "mgsm_en_cot_te", "mgsm_en_cot_th", "mgsm_en_cot_zh", "mgsm_native_cot_bn", "mgsm_native_cot_de", "mgsm_native_cot_en", "mgsm_native_cot_es", "mgsm_native_cot_eu", "mgsm_native_cot_fr", "mgsm_native_cot_ja", "mgsm_native_cot_ru", "mgsm_native_cot_sw", "mgsm_native_cot_te", "mgsm_native_cot_th", "mgsm_native_cot_zh"],
+            "mlqa": ["mlqa_ar_ar", "mlqa_ar_de", "mlqa_ar_en", "mlqa_ar_es", "mlqa_ar_hi", "mlqa_ar_vi", "mlqa_ar_zh", "mlqa_de_ar", "mlqa_de_de", "mlqa_de_en", "mlqa_de_es", "mlqa_de_hi", "mlqa_de_vi", "mlqa_de_zh", "mlqa_en_ar", "mlqa_en_de", "mlqa_en_en", "mlqa_en_es", "mlqa_en_hi", "mlqa_en_vi", "mlqa_en_zh", "mlqa_es_ar", "mlqa_es_de", "mlqa_es_en", "mlqa_es_es", "mlqa_es_hi", "mlqa_es_vi", "mlqa_es_zh", "mlqa_hi_ar", "mlqa_hi_de", "mlqa_hi_en", "mlqa_hi_es", "mlqa_hi_hi", "mlqa_hi_vi", "mlqa_hi_zh", "mlqa_vi_ar", "mlqa_vi_de", "mlqa_vi_en", "mlqa_vi_es", "mlqa_vi_hi", "mlqa_vi_vi", "mlqa_vi_zh", "mlqa_zh_ar", "mlqa_zh_de", "mlqa_zh_en", "mlqa_zh_es", "mlqa_zh_hi", "mlqa_zh_vi", "mlqa_zh_zh"],
+            "mmmu": ["mmmu_val", "mmmu_val_accounting", "mmmu_val_agriculture", "mmmu_val_architecture_and_engineering", "mmmu_val_art", "mmmu_val_art_and_design", "mmmu_val_art_theory", "mmmu_val_basic_medical_science", "mmmu_val_biology", "mmmu_val_business", "mmmu_val_chemistry", "mmmu_val_clinical_medicine", "mmmu_val_computer_science", "mmmu_val_design", "mmmu_val_diagnostics_and_laboratory_medicine", "mmmu_val_economics", "mmmu_val_electronics", "mmmu_val_energy_and_power", "mmmu_val_finance", "mmmu_val_geography", "mmmu_val_health_and_medicine", "mmmu_val_history", "mmmu_val_humanities_and_social_science", "mmmu_val_literature", "mmmu_val_manage", "mmmu_val_marketing", "mmmu_val_materials", "mmmu_val_math", "mmmu_val_mechanical_engineering", "mmmu_val_music", "mmmu_val_pharmacy", "mmmu_val_physics", "mmmu_val_psychology", "mmmu_val_public_health", "mmmu_val_science", "mmmu_val_sociology", "mmmu_val_tech_and_engineering"],
+            # NOTE: pile benchmark is DISABLED - dataset files hosted on the-eye.eu are unavailable
+            # "pile": ["pile_arxiv", "pile_bookcorpus2", "pile_books3", "pile_dm-mathematics", "pile_enron", "pile_europarl", "pile_freelaw", "pile_github", "pile_gutenberg", "pile_hackernews", "pile_nih-exporter", "pile_opensubtitles", "pile_openwebtext2", "pile_philpapers", "pile_pile-cc", "pile_pubmed-abstracts", "pile_pubmed-central", "pile_stackexchange", "pile_ubuntu-irc", "pile_uspto", "pile_wikipedia", "pile_youtubesubtitles"],
+            "scrolls": ["scrolls_contractnli", "scrolls_govreport", "scrolls_narrativeqa", "scrolls_qasper", "scrolls_qmsum", "scrolls_quality", "scrolls_summscreenfd"],
+            "super_glue": ["super_glue-boolq-t5-prompt", "super_glue-cb-t5-prompt", "super_glue-copa-t5-prompt", "super_glue-multirc-t5-prompt", "super_glue-record-t5-prompt", "super_glue-rte-t5-prompt", "super_glue-wic-t5-prompt", "super_glue-wsc-t5-prompt"],
+            "siqa": ["siqa_ca"],
+            "score": ["score_non_greedy_robustness_agieval", "score_non_greedy_robustness_math", "score_non_greedy_robustness_mmlu_pro", "score_option_order_robustness_agieval", "score_option_order_robustness_mmlu_pro", "score_prompt_robustness_agieval", "score_prompt_robustness_math", "score_prompt_robustness_mmlu_pro", "score_robustness", "score_robustness_agieval", "score_robustness_math", "score_robustness_mmlu_pro"],
+            # tiny* tasks
+            "tinyarc": ["tinyArc"],
+            "tinygsm8k": ["tinyGSM8k"],
+            "tinyhellaswag": ["tinyHellaswag"],
+            "tinymmlu": ["tinyMMLU"],
+            "tinytruthfulqa": ["tinyTruthfulQA", "tinyTruthfulQA_mc1"],
+            "tinywinogrande": ["tinyWinogrande"],
+            # wmt* tasks
+            "wmt14": ["wmt14-en-fr", "wmt14-fr-en"],
+            "wmt14_en_fr": ["wmt14-en-fr"],
+            "wmt14_fr_en": ["wmt14-fr-en"],
+            "wmt16": ["wmt16-de-en", "wmt16-en-de", "wmt16-en-ro", "wmt16-ro-en"],
+            "wmt16_de_en": ["wmt16-de-en"],
+            "wmt16_en_de": ["wmt16-en-de"],
+            "wmt16_en_ro": ["wmt16-en-ro"],
+            "wmt16_ro_en": ["wmt16-ro-en"],
+            "wmt2016": ["wmt16-de-en", "wmt16-en-de", "wmt16-en-ro", "wmt16-ro-en"],
+        }
+
+        # Check if task is explicitly disabled
+        if lm_eval_task_name == 'pile' or lm_eval_task_name.startswith('pile_'):
+            raise DataLoaderError(
+                f"Task '{lm_eval_task_name}' is disabled. "
+                f"The Pile benchmark dataset files are hosted on the-eye.eu which is currently unavailable. "
+                f"This is an external infrastructure issue and cannot be resolved in Wisent."
+            )
+
+        if lm_eval_task_name in group_task_expansions:
+            subtasks = group_task_expansions[lm_eval_task_name]
+            log.info(f"Expanding group task '{lm_eval_task_name}' to {len(subtasks)} subtasks")
+            task_dict = get_task_dict(subtasks, task_manager=task_manager)
+            return task_dict
 
         task_dict = get_task_dict([lm_eval_task_name], task_manager=task_manager)
 

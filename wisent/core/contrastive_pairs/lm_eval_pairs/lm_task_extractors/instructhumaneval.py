@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["InstructhumanevalExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("instruct_humaneval", "instructhumaneval")
+evaluator_name = "log_likelihoods"
+
 
 class InstructhumanevalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Instructhumaneval benchmark."""

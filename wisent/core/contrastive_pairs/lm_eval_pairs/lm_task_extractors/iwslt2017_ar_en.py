@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["Iwslt2017ArEnExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("iwslt2017-ar-en",)
+evaluator_name = "generation"
+
 
 class Iwslt2017ArEnExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Iwslt2017 Ar En benchmark."""

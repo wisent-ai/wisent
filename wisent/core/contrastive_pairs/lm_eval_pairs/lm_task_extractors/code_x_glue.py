@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["CodeXGlueExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("code_x_glue",)
+
+evaluator_name = "generation"
+
 
 class CodeXGlueExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Code X Glue benchmark."""

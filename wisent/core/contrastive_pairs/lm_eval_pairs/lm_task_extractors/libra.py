@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["LibraExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("libra",)
+evaluator_name = "log_likelihoods"
+
 
 class LibraExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Libra benchmark."""

@@ -23,6 +23,7 @@ class EusExamsExtractor(LMEvalBenchmarkExtractor):
     """
 
     task_names = (
+        "eus_exams",
         "eus_exams_es",
         "eus_exams_es_ejadministrativo",
         "eus_exams_es_ejauxiliar",

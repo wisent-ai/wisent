@@ -1,12 +1,12 @@
-"""AraDiCE extractor that delegates to base task extractors."""
+"""AraDiCE extractor for Arabic dialect multiple-choice tasks."""
 
 from __future__ import annotations
 
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -16,22 +16,13 @@ if TYPE_CHECKING:
 __all__ = ["AradiceExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("aradice", "AraDICE")
+task_names = ("aradice", "AraDiCE")
 
 evaluator_name = "log_likelihoods"
 
 
 class AradiceExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for AraDiCE benchmark that routes subtasks to their base extractors.
-
-    AraDiCE contains 28 subtasks across multiple Arabic dialects:
-    - AraDiCE_boolq_{dialect} -> BoolQExtractor
-    - AraDiCE_winogrande_{dialect} -> WinograndeExtractor
-    - AraDiCE_truthfulqa_mc1_{dialect} -> TruthfulQAMC1Extractor
-    - AraDiCE_piqa_{dialect} -> PIQAExtractor
-    - AraDiCE_openbookqa_{dialect} -> OpenBookQAExtractor
-    - AraDiCE_ArabicMMLU_*_{dialect} -> MMLUExtractor
-    """
+    """Extractor for AraDiCE benchmark - Arabic dialect multiple-choice tasks."""
 
     def extract_contrastive_pairs(
         self,
@@ -39,57 +30,100 @@ class AradiceExtractor(LMEvalBenchmarkExtractor):
         limit: int | None = None,
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        """Route AraDiCE subtask to appropriate base extractor.
-
-        Args:
-            lm_eval_task_data: lm-eval task instance for AraDiCE subtask.
-            limit: Optional maximum number of pairs to produce.
-            preferred_doc: Optional preferred document source.
-
-        Returns:
-            A list of ContrastivePair objects.
-        """
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
-        task_name = getattr(lm_eval_task_data.config, "task", "unknown")
+        max_items = self._normalize_limit(limit)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        pairs: list[ContrastivePair] = []
+        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        log.info(f"Processing AraDiCE subtask: {task_name}")
+        for doc in docs:
+            pair = self._extract_pair_from_doc(doc)
+            if pair is not None:
+                pairs.append(pair)
+                if max_items is not None and len(pairs) >= max_items:
+                    break
 
-        # Parse the subtask name to get the base task
-        # Pattern: AraDiCE_{base_task}_{dialect}
-        # Examples: AraDiCE_boolq_egy, AraDiCE_ArabicMMLU_high_stem_physics_lev
-        parts = task_name.split('_')
+        if not pairs:
+            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
+            log.warning("No valid pairs extracted", extra={"task": task_name})
 
-        if len(parts) < 3:
-            raise ValueError(f"Unexpected AraDiCE task name format: {task_name}")
+        return pairs
 
-        # Skip the "AraDiCE" prefix and get the base task
-        base_task = parts[1]
+    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
-        # Special cases
-        if base_task == "ArabicMMLU":
-            # ArabicMMLU subtasks should use mmlu extractor
-            base_task = "mmlu"
+        try:
+            # Try multiple format patterns for question
+            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", doc.get("sentence", "")))))).strip()
 
-        # Map base task names to extractor modules
-        extractor_map = {
-            "boolq": "boolq:BoolQExtractor",
-            "winogrande": "winogrande:WinograndeExtractor",
-            "truthfulqa_mc1": "truthfulqa_mc1:TruthfulQAMC1Extractor",
-            "piqa": "piqa:PIQAExtractor",
-            "openbookqa": "openbookqa:OpenBookQAExtractor",
-            "mmlu": "mmlu:MMLUExtractor",
-        }
+            # Try multiple format patterns for choices
+            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
 
-        if base_task not in extractor_map:
-            raise ValueError(f"No extractor mapping found for AraDiCE subtask base: {base_task} (from {task_name})")
+            # Handle option_a/b/c/d format
+            if not choices and "option_a" in doc:
+                choices = [
+                    str(doc.get("option_a", "")).strip(),
+                    str(doc.get("option_b", "")).strip(),
+                    str(doc.get("option_c", "")).strip(),
+                    str(doc.get("option_d", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
 
-        log.info(f"Routing {task_name} to {base_task} extractor")
-        # Import the extractor directly to avoid recursion
-        module_path, class_name = extractor_map[base_task].split(":")
-        module = __import__(
-            f"wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.{module_path}",
-            fromlist=[class_name]
-        )
-        extractor_class = getattr(module, class_name)
-        extractor = extractor_class()
-        return extractor.extract_contrastive_pairs(lm_eval_task_data, limit, preferred_doc)
+            # Handle option1/option2 format (winogrande-style)
+            if not choices and "option1" in doc:
+                choices = [
+                    str(doc.get("option1", "")).strip(),
+                    str(doc.get("option2", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+
+            # Try multiple format patterns for answer
+            answer = doc.get("answer", doc.get("label", doc.get("target", doc.get("gold", None))))
+
+            # Handle different answer formats
+            if isinstance(answer, str):
+                if len(answer) == 1 and answer.isalpha():
+                    # Answer is like 'A', 'B', 'C', 'D'
+                    answer_idx = ord(answer.upper()) - ord('A')
+                elif answer.isdigit():
+                    # Answer is like '0', '1', '2', '3'
+                    answer_idx = int(answer)
+                else:
+                    return None
+            elif isinstance(answer, int):
+                answer_idx = answer
+            else:
+                return None
+
+            if not question or not choices or not (0 <= answer_idx < len(choices)):
+                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+                return None
+
+            correct = str(choices[answer_idx]).strip()
+            incorrect_idx = (answer_idx + 1) % len(choices)
+            incorrect = str(choices[incorrect_idx]).strip()
+
+            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            metadata = {"label": "aradice"}
+
+            return self._build_pair(
+                question=formatted_question,
+                correct=correct,
+                incorrect=incorrect,
+                metadata=metadata,
+            )
+
+        except Exception as exc:
+            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+            return None
+
+    @staticmethod
+    def _build_pair(
+        question: str,
+        correct: str,
+        incorrect: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> ContrastivePair:
+        positive_response = PositiveResponse(model_response=correct)
+        negative_response = NegativeResponse(model_response=incorrect)
+        return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))

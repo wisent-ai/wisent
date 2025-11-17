@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["ScoreExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("score",)
+evaluator_name = "log_likelihoods"
+
 
 class ScoreExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Score benchmark."""
