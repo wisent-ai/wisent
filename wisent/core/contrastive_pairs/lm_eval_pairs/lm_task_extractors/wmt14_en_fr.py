@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -20,7 +21,7 @@ evaluator_name = "generation"
 
 
 class Wmt14EnFrExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Wmt14 En Fr benchmark."""
+    """Extractor for WMT14 English-to-French translation task."""
 
     def extract_contrastive_pairs(
         self,
@@ -51,47 +52,40 @@ class Wmt14EnFrExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # WMT14 format: {'translation': {'en': '...', 'fr': '...'}}
+            if "translation" not in doc:
+                log.debug("Skipping doc due to missing translation field", extra={"doc": doc})
+                return None
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            translation = doc.get("translation", {})
+            source_text = translation.get("en", "").strip()
+            target_text = translation.get("fr", "").strip()
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
+            if not source_text or not target_text:
+                log.debug("Skipping doc due to empty text", extra={"doc": doc})
+                return None
+
+            # Create translation prompt
+            prompt = f"Translate the following from English to French:\n{source_text}"
+
+            # Positive: correct translation
+            correct_translation = target_text
+
+            # Negative: shuffled words for synthetic incorrect translation
+            words = target_text.split()
+            if len(words) < 2:
+                incorrect_translation = "[incorrect translation]"
             else:
-                return None
+                shuffled_words = words.copy()
+                random.shuffle(shuffled_words)
+                incorrect_translation = ' '.join(shuffled_words)
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "wmt14_en_fr"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=correct_translation,
+                incorrect=incorrect_translation,
                 metadata=metadata,
             )
 

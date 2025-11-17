@@ -16,7 +16,127 @@ if TYPE_CHECKING:
 __all__ = ["AradiceExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("aradice", "AraDiCE")
+task_names = (
+    "AraDiCE",
+    "AraDiCE_ArabicMMLU_egy",
+    "AraDiCE_ArabicMMLU_high_humanities_history_egy",
+    "AraDiCE_ArabicMMLU_high_humanities_history_lev",
+    "AraDiCE_ArabicMMLU_high_humanities_islamic-studies_egy",
+    "AraDiCE_ArabicMMLU_high_humanities_islamic-studies_lev",
+    "AraDiCE_ArabicMMLU_high_humanities_philosophy_egy",
+    "AraDiCE_ArabicMMLU_high_humanities_philosophy_lev",
+    "AraDiCE_ArabicMMLU_high_language_arabic-language_egy",
+    "AraDiCE_ArabicMMLU_high_language_arabic-language_lev",
+    "AraDiCE_ArabicMMLU_high_social-science_civics_egy",
+    "AraDiCE_ArabicMMLU_high_social-science_civics_lev",
+    "AraDiCE_ArabicMMLU_high_social-science_economics_egy",
+    "AraDiCE_ArabicMMLU_high_social-science_economics_lev",
+    "AraDiCE_ArabicMMLU_high_social-science_geography_egy",
+    "AraDiCE_ArabicMMLU_high_social-science_geography_lev",
+    "AraDiCE_ArabicMMLU_high_stem_biology_egy",
+    "AraDiCE_ArabicMMLU_high_stem_biology_lev",
+    "AraDiCE_ArabicMMLU_high_stem_computer-science_egy",
+    "AraDiCE_ArabicMMLU_high_stem_computer-science_lev",
+    "AraDiCE_ArabicMMLU_high_stem_physics_egy",
+    "AraDiCE_ArabicMMLU_high_stem_physics_lev",
+    "AraDiCE_ArabicMMLU_humanities_egy",
+    "AraDiCE_ArabicMMLU_humanities_lev",
+    "AraDiCE_ArabicMMLU_language_egy",
+    "AraDiCE_ArabicMMLU_language_lev",
+    "AraDiCE_ArabicMMLU_lev",
+    "AraDiCE_ArabicMMLU_middle_humanities_history_egy",
+    "AraDiCE_ArabicMMLU_middle_humanities_history_lev",
+    "AraDiCE_ArabicMMLU_middle_humanities_islamic-studies_egy",
+    "AraDiCE_ArabicMMLU_middle_humanities_islamic-studies_lev",
+    "AraDiCE_ArabicMMLU_middle_language_arabic-language_egy",
+    "AraDiCE_ArabicMMLU_middle_language_arabic-language_lev",
+    "AraDiCE_ArabicMMLU_middle_other_general-knowledge_egy",
+    "AraDiCE_ArabicMMLU_middle_other_general-knowledge_lev",
+    "AraDiCE_ArabicMMLU_middle_social-science_civics_egy",
+    "AraDiCE_ArabicMMLU_middle_social-science_civics_lev",
+    "AraDiCE_ArabicMMLU_middle_social-science_economics_egy",
+    "AraDiCE_ArabicMMLU_middle_social-science_economics_lev",
+    "AraDiCE_ArabicMMLU_middle_social-science_geography_egy",
+    "AraDiCE_ArabicMMLU_middle_social-science_geography_lev",
+    "AraDiCE_ArabicMMLU_middle_social-science_social-science_egy",
+    "AraDiCE_ArabicMMLU_middle_social-science_social-science_lev",
+    "AraDiCE_ArabicMMLU_middle_stem_computer-science_egy",
+    "AraDiCE_ArabicMMLU_middle_stem_computer-science_lev",
+    "AraDiCE_ArabicMMLU_middle_stem_natural-science_egy",
+    "AraDiCE_ArabicMMLU_middle_stem_natural-science_lev",
+    "AraDiCE_ArabicMMLU_na_humanities_islamic-studies_egy",
+    "AraDiCE_ArabicMMLU_na_humanities_islamic-studies_lev",
+    "AraDiCE_ArabicMMLU_na_language_arabic-language-general_egy",
+    "AraDiCE_ArabicMMLU_na_language_arabic-language-general_lev",
+    "AraDiCE_ArabicMMLU_na_language_arabic-language-grammar_egy",
+    "AraDiCE_ArabicMMLU_na_language_arabic-language-grammar_lev",
+    "AraDiCE_ArabicMMLU_na_other_driving-test_egy",
+    "AraDiCE_ArabicMMLU_na_other_driving-test_lev",
+    "AraDiCE_ArabicMMLU_na_other_general-knowledge_egy",
+    "AraDiCE_ArabicMMLU_na_other_general-knowledge_lev",
+    "AraDiCE_ArabicMMLU_other_egy",
+    "AraDiCE_ArabicMMLU_other_lev",
+    "AraDiCE_ArabicMMLU_primary_humanities_history_egy",
+    "AraDiCE_ArabicMMLU_primary_humanities_history_lev",
+    "AraDiCE_ArabicMMLU_primary_humanities_islamic-studies_egy",
+    "AraDiCE_ArabicMMLU_primary_humanities_islamic-studies_lev",
+    "AraDiCE_ArabicMMLU_primary_language_arabic-language_egy",
+    "AraDiCE_ArabicMMLU_primary_language_arabic-language_lev",
+    "AraDiCE_ArabicMMLU_primary_other_general-knowledge_egy",
+    "AraDiCE_ArabicMMLU_primary_other_general-knowledge_lev",
+    "AraDiCE_ArabicMMLU_primary_social-science_geography_egy",
+    "AraDiCE_ArabicMMLU_primary_social-science_geography_lev",
+    "AraDiCE_ArabicMMLU_primary_social-science_social-science_egy",
+    "AraDiCE_ArabicMMLU_primary_social-science_social-science_lev",
+    "AraDiCE_ArabicMMLU_primary_stem_computer-science_egy",
+    "AraDiCE_ArabicMMLU_primary_stem_computer-science_lev",
+    "AraDiCE_ArabicMMLU_primary_stem_math_egy",
+    "AraDiCE_ArabicMMLU_primary_stem_math_lev",
+    "AraDiCE_ArabicMMLU_primary_stem_natural-science_egy",
+    "AraDiCE_ArabicMMLU_primary_stem_natural-science_lev",
+    "AraDiCE_ArabicMMLU_prof_humanities_law_egy",
+    "AraDiCE_ArabicMMLU_prof_humanities_law_lev",
+    "AraDiCE_ArabicMMLU_social-science_egy",
+    "AraDiCE_ArabicMMLU_social-science_lev",
+    "AraDiCE_ArabicMMLU_stem_egy",
+    "AraDiCE_ArabicMMLU_stem_lev",
+    "AraDiCE_ArabicMMLU_univ_other_management_egy",
+    "AraDiCE_ArabicMMLU_univ_other_management_lev",
+    "AraDiCE_ArabicMMLU_univ_social-science_accounting_egy",
+    "AraDiCE_ArabicMMLU_univ_social-science_accounting_lev",
+    "AraDiCE_ArabicMMLU_univ_social-science_economics_egy",
+    "AraDiCE_ArabicMMLU_univ_social-science_economics_lev",
+    "AraDiCE_ArabicMMLU_univ_social-science_political-science_egy",
+    "AraDiCE_ArabicMMLU_univ_social-science_political-science_lev",
+    "AraDiCE_ArabicMMLU_univ_stem_computer-science_egy",
+    "AraDiCE_ArabicMMLU_univ_stem_computer-science_lev",
+    "AraDiCE_boolq_egy",
+    "AraDiCE_boolq_eng",
+    "AraDiCE_boolq_lev",
+    "AraDiCE_boolq_msa",
+    "AraDiCE_egypt_cultural",
+    "AraDiCE_jordan_cultural",
+    "AraDiCE_lebanon_cultural",
+    "AraDiCE_openbookqa_egy",
+    "AraDiCE_openbookqa_eng",
+    "AraDiCE_openbookqa_lev",
+    "AraDiCE_openbookqa_msa",
+    "AraDiCE_palestine_cultural",
+    "AraDiCE_piqa_egy",
+    "AraDiCE_piqa_eng",
+    "AraDiCE_piqa_lev",
+    "AraDiCE_piqa_msa",
+    "AraDiCE_qatar_cultural",
+    "AraDiCE_syria_cultural",
+    "AraDiCE_truthfulqa_mc1_egy",
+    "AraDiCE_truthfulqa_mc1_eng",
+    "AraDiCE_truthfulqa_mc1_lev",
+    "AraDiCE_truthfulqa_mc1_msa",
+    "AraDiCE_winogrande_egy",
+    "AraDiCE_winogrande_eng",
+    "AraDiCE_winogrande_lev",
+    "AraDiCE_winogrande_msa",
+)
 
 evaluator_name = "log_likelihoods"
 
@@ -77,6 +197,15 @@ class AradiceExtractor(LMEvalBenchmarkExtractor):
                 ]
                 choices = [c for c in choices if c]
 
+            # Handle binary tasks with target but no explicit choices (e.g., boolq)
+            # For Arabic boolq: target is "نعم" or "لا"
+            if not choices and "target" in doc:
+                target = str(doc.get("target", "")).strip()
+                if target in ["نعم", "لا"]:  # Arabic Yes/No
+                    choices = ["لا", "نعم"]  # No, Yes
+                elif target in ["yes", "no", "true", "false"]:
+                    choices = ["no", "yes"]  # English
+
             # Try multiple format patterns for answer
             answer = doc.get("answer", doc.get("label", doc.get("target", doc.get("gold", None))))
 
@@ -89,7 +218,18 @@ class AradiceExtractor(LMEvalBenchmarkExtractor):
                     # Answer is like '0', '1', '2', '3'
                     answer_idx = int(answer)
                 else:
-                    return None
+                    # Try to match answer text against choices
+                    if choices:
+                        try:
+                            answer_idx = choices.index(answer)
+                        except ValueError:
+                            # For binary tasks, default to 1 (yes) if answer looks positive
+                            if len(choices) == 2:
+                                answer_idx = 1
+                            else:
+                                return None
+                    else:
+                        return None
             elif isinstance(answer, int):
                 answer_idx = answer
             else:

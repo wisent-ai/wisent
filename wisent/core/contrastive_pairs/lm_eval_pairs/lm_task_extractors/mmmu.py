@@ -14,19 +14,40 @@ if TYPE_CHECKING:
 __all__ = ["MmmuExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("mmmu", "mmmu_val", "mmmu_val_art_and_design", "mmmu_val_business",
-              "mmmu_val_health_and_medicine", "mmmu_val_humanities_and_social_science",
-              "mmmu_val_science", "mmmu_val_tech_and_engineering")
+task_names = (
+    "mmmu", "mmmu_val",
+    "mmmu_val_accounting", "mmmu_val_agriculture", "mmmu_val_architecture_and_engineering",
+    "mmmu_val_art", "mmmu_val_art_and_design", "mmmu_val_art_theory",
+    "mmmu_val_basic_medical_science", "mmmu_val_biology", "mmmu_val_business",
+    "mmmu_val_chemistry", "mmmu_val_clinical_medicine", "mmmu_val_computer_science",
+    "mmmu_val_design", "mmmu_val_diagnostics_and_laboratory_medicine",
+    "mmmu_val_economics", "mmmu_val_electronics", "mmmu_val_energy_and_power",
+    "mmmu_val_finance", "mmmu_val_geography", "mmmu_val_health_and_medicine",
+    "mmmu_val_history", "mmmu_val_humanities_and_social_science", "mmmu_val_literature",
+    "mmmu_val_manage", "mmmu_val_marketing", "mmmu_val_materials", "mmmu_val_math",
+    "mmmu_val_mechanical_engineering", "mmmu_val_music", "mmmu_val_pharmacy",
+    "mmmu_val_physics", "mmmu_val_psychology", "mmmu_val_public_health",
+    "mmmu_val_science", "mmmu_val_sociology", "mmmu_val_tech_and_engineering",
+)
 
-evaluator_name = "generation"
+evaluator_name = "log_likelihoods"
 
 
 class MmmuExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MMMU (Multimodal) benchmark.
 
-    NOTE: MMMU is a multimodal benchmark that requires image support.
-    The current implementation does NOT support images and will fail to extract pairs.
-    This benchmark requires architectural changes to support multimodal inputs.
+    Format: {
+        question: str,  # May contain "<image N>" placeholders
+        options: list[str],  # Multiple choice options
+        answer: str,  # Letter answer (A, B, C, D)
+        image_1, image_2, etc: PIL Image objects (ignored in text-only extraction)
+    }
+
+    NOTE: MMMU is a multimodal benchmark that includes images.
+    This extractor only processes the text portion and ignores images.
+    For contrastive pairs:
+    - Positive: Correct option based on answer
+    - Negative: Random incorrect option
     """
 
     def extract_contrastive_pairs(
@@ -70,86 +91,54 @@ class MmmuExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Mmmu doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single MMMU doc into a ContrastivePair.
+
+        MMMU format: {
+            question: str,
+            options: list[str],
+            answer: str  # Letter like "A", "B", "C", "D"
+        }
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
-        try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "mmmu"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
-
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "mmmu",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
-
-        except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+        if "question" not in doc or "options" not in doc or "answer" not in doc:
             return None
+
+        question = str(doc["question"]).strip()
+        options = doc["options"]
+        answer = str(doc["answer"]).strip().upper()
+
+        if not question or not options or not answer:
+            return None
+
+        # Convert letter answer to index
+        if len(answer) == 1 and answer.isalpha():
+            answer_idx = ord(answer) - ord('A')
+        else:
+            return None
+
+        if answer_idx < 0 or answer_idx >= len(options):
+            return None
+
+        # Get correct and random incorrect option
+        correct = str(options[answer_idx]).strip()
+
+        # Get an incorrect option (next one, wrapping around)
+        incorrect_idx = (answer_idx + 1) % len(options)
+        incorrect = str(options[incorrect_idx]).strip()
+
+        # Format question (note: images are referenced as "<image N>" but we ignore them)
+        formatted_question = f"Question: {question}"
+
+        metadata = {
+            "label": "mmmu",
+            "subfield": doc.get("subfield", "unknown"),
+        }
+
+        return self._build_pair(
+            question=formatted_question,
+            correct=correct,
+            incorrect=incorrect,
+            metadata=metadata,
+        )
 
     @staticmethod
     def _build_pair(

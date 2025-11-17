@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ["PawsXExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("paws_de", "paws_en", "paws_es", "paws_fr", "paws_ja", "paws_ko", "paws_zh")
+task_names = ("pawsx", "paws_de", "paws_en", "paws_es", "paws_fr", "paws_ja", "paws_ko", "paws_zh")
 
 evaluator_name = "log_likelihoods"
 
@@ -85,8 +85,9 @@ class PawsXExtractor(LMEvalBenchmarkExtractor):
             
             formatted_question = f"Is sentence '{sentence1}' paraphrase of sentence '{sentence2}'?\nA. Yes\nB. No"
 
-            correct = "Yes" if label == 0 else "No"
-            incorrect = "No" if label == 0 else "Yes"
+            # label == 1 means paraphrase (positive), label == 0 means not paraphrase (negative)
+            correct = "Yes" if label == 1 else "No"
+            incorrect = "No" if label == 1 else "Yes"
 
             metadata = {
                 "label": "paws-x",

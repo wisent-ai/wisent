@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -14,8 +15,28 @@ if TYPE_CHECKING:
 __all__ = ["LibraExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("libra",)
-evaluator_name = "log_likelihoods"
+task_names = (
+    "libra",
+    "librusec_history",
+    "librusec_mhqa",
+    "long_context_multiq",
+    "matreshka_names",
+    "matreshka_yes_no",
+    "passkey",
+    "passkey_with_librusec",
+    "ru_2wikimultihopqa",
+    "ru_babilong_qa1",
+    "ru_babilong_qa2",
+    "ru_babilong_qa3",
+    "ru_babilong_qa4",
+    "ru_babilong_qa5",
+    "ru_gsm100",
+    "ru_qasper",
+    "ru_quality",
+    "ru_sci_abstract_retrieval",
+    "ru_sci_passage_count",
+)
+evaluator_name = "generation"
 
 
 class LibraExtractor(LMEvalBenchmarkExtractor):
@@ -64,84 +85,74 @@ class LibraExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Libra doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Expected doc structure:
+        {
+            'context': str,
+            'input': str,
+            'positive_outputs': list[str],
+            'negative_outputs': list[str] (usually empty)
+        }
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        metadata_dict = doc.get("metadata", {})
+        doc_id = metadata_dict.get("id", "unknown") if isinstance(metadata_dict, dict) else "unknown"
+        log = bind(_LOG, doc_id=doc_id)
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            context = str(doc.get("context", "")).strip()
+            input_text = str(doc.get("input", "")).strip()
+            positive_outputs = doc.get("positive_outputs", [])
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "libra"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+            if not context or not input_text or not positive_outputs:
                 log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                    "Skipping doc due to missing fields",
+                    extra={"has_context": bool(context), "has_input": bool(input_text), "has_positive": bool(positive_outputs)},
                 )
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # The prompt is the combined context and input
+            # Libra tasks use a Russian prompt format
+            prompt = f"Тебе предоставляется длинный текст, в котором содержится ключ доступа. Запомни только ключ доступа.\n\n{context}\n\nВ ответе нужно указать только ключ доступа.\n\nВопрос:{input_text}\n\nОтвет:"
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Use the first positive output as correct answer
+            correct_answer = str(positive_outputs[0]).strip()
+
+            # Create a synthetic negative by corrupting the correct answer
+            # For numeric answers, change one digit
+            # For text answers, truncate or modify
+            if correct_answer.isdigit():
+                # Change one random digit
+                incorrect_answer = self._corrupt_numeric_answer(correct_answer)
+            else:
+                # For text, truncate or add wrong text
+                incorrect_answer = correct_answer[:len(correct_answer)//2] if len(correct_answer) > 1 else "неправильный ответ"
 
             metadata = {
                 "label": "libra",
             }
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=correct_answer,
+                incorrect=incorrect_answer,
                 metadata=metadata,
             )
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
+
+    @staticmethod
+    def _corrupt_numeric_answer(answer: str) -> str:
+        """Corrupt a numeric answer by changing one digit."""
+        if not answer or not answer.isdigit():
+            return "0"
+
+        # Change one random digit
+        idx = random.randint(0, len(answer) - 1)
+        digit = int(answer[idx])
+        new_digit = (digit + random.randint(1, 9)) % 10
+        return answer[:idx] + str(new_digit) + answer[idx+1:]
 
     @staticmethod
     def _build_pair(

@@ -14,12 +14,17 @@ if TYPE_CHECKING:
 __all__ = ["JsonschemaBenchExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("jsonschema_bench",)
-evaluator_name = "log_likelihoods"
+task_names = (
+    "jsonschema_bench",
+    "jsonschema_bench_easy",
+    "jsonschema_bench_medium",
+    "jsonschema_bench_hard",
+)
+evaluator_name = "generation"
 
 
 class JsonschemaBenchExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Jsonschema Bench benchmark."""
+    """Extractor for JSON Schema Bench benchmark - JSON schema generation task."""
 
     def extract_contrastive_pairs(
         self,
@@ -28,27 +33,24 @@ class JsonschemaBenchExtractor(LMEvalBenchmarkExtractor):
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from Jsonschema Bench docs.
+        Build contrastive pairs from JSON Schema Bench docs.
 
-        Args:
-            lm_eval_task_data: lm-eval task instance for Jsonschema Bench.
-            limit: Optional maximum number of pairs to produce.
-            preferred_doc: Optional preferred document source.
+        Note: This is a JSON schema generation task where models generate
+        valid JSON objects conforming to a given schema. Since there are no
+        ground truth JSON objects, we use synthetic negatives.
 
-        Returns:
-            A list of ContrastivePair objects.
+        Note: jsonschema_bench has a misconfigured validation_split ('valid' instead of 'val'),
+        so we always use test_docs.
         """
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
-
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
-
+        # Always use test_docs due to misconfigured validation_split in lm-eval task
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc='test')
         pairs: list[ContrastivePair] = []
-
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
+            pair = self._extract_pair_from_doc(doc, lm_eval_task_data)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
@@ -56,86 +58,53 @@ class JsonschemaBenchExtractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid Jsonschema Bench pairs extracted", extra={"task": task_name})
+            log.warning("No valid JSON Schema Bench pairs extracted", extra={"task": task_name})
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+    def _extract_pair_from_doc(
+        self,
+        doc: dict[str, Any],
+        lm_eval_task_data: ConfigurableTask
+    ) -> ContrastivePair | None:
         """
-        Convert a single Jsonschema Bench doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single JSON Schema Bench doc into a ContrastivePair.
+
+        jsonschema_bench docs only have 'json_schema' and 'unique_id' fields.
+        We create synthetic contrastive pairs:
+        - Positive: Placeholder for valid conforming JSON
+        - Negative: Malformed/invalid JSON
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("unique_id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "jsonschema_bench"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+            # jsonschema_bench only has json_schema and unique_id
+            if "json_schema" not in doc:
+                log.debug("Skipping doc - missing json_schema field", extra={"doc": doc})
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
+            json_schema = doc.get("json_schema", "")
+            if not json_schema:
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Build the prompt using the task's doc_to_text function
+            if hasattr(lm_eval_task_data, 'doc_to_text'):
+                prompt = lm_eval_task_data.doc_to_text(doc)
+            else:
+                prompt = f"JSON schema: {json_schema}\n\nJSON object: "
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Since there's no ground truth JSON object, use synthetic responses:
+            # Positive: A minimal valid JSON placeholder
+            # Negative: Malformed JSON
+            positive = "{}"  # Valid minimal JSON
+            negative = "{invalid"  # Malformed JSON
 
-            metadata = {
-                "label": "jsonschema_bench",
-            }
+            metadata = {"label": "jsonschema_bench"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=positive,
+                incorrect=negative,
                 metadata=metadata,
             )
 

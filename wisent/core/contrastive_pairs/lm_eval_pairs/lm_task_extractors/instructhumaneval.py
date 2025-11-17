@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ["InstructhumanevalExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("instruct_humaneval", "instructhumaneval")
+task_names = ("humaneval_instruct", "humaneval_64_instruct")
 evaluator_name = "log_likelihoods"
 
 

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -14,7 +15,17 @@ if TYPE_CHECKING:
 __all__ = ["LambadaMultilingualStablelmExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("lambada_multilingual_stablelm",)
+task_names = (
+    # Note: "lambada_multilingual_stablelm" is not a loadable task in lm-eval 0.4.9.1
+    # It's only a group label in YAML configs that requires newer lm-eval version
+    "lambada_openai_mt_stablelm_de",
+    "lambada_openai_mt_stablelm_en",
+    "lambada_openai_mt_stablelm_es",
+    "lambada_openai_mt_stablelm_fr",
+    "lambada_openai_mt_stablelm_it",
+    "lambada_openai_mt_stablelm_nl",
+    "lambada_openai_mt_stablelm_pt",
+)
 evaluator_name = "log_likelihoods"
 
 
@@ -62,80 +73,56 @@ class LambadaMultilingualStablelmExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Lambada Multilingual Stablelm doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single LAMBADA doc into a ContrastivePair.
+
+        Strategy:
+        1. Take the text and extract the last word as the target
+        2. Positive: correct last word
+        3. Negative: random incorrect word
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG)
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Get the text
+            text = str(doc.get("text", "")).strip()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "lambada_multilingual_stablelm"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+            if not text:
+                log.debug("Skipping doc due to missing text", extra={"doc": doc})
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
+            # Split into words
+            words = text.split()
+
+            if len(words) < 5:
+                log.debug("Not enough words to create pair", extra={"doc": doc})
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Take last word as target, rest as context
+            context_words = words[:-1]
+            target_word = words[-1]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            context = ' '.join(context_words)
+
+            # Create a random incorrect word (not the target)
+            # Use simple common words as alternatives
+            common_words = ["the", "and", "but", "or", "not", "very", "some", "all", "any", "more",
+                           "said", "went", "came", "took", "made", "found", "gave", "told", "asked"]
+            incorrect_words = [w for w in common_words if w.lower() != target_word.lower()]
+
+            if incorrect_words:
+                incorrect_word = random.choice(incorrect_words)
+            else:
+                # Fallback: shuffle letters of target word
+                incorrect_word = ''.join(random.sample(target_word, len(target_word)))
 
             metadata = {
                 "label": "lambada_multilingual_stablelm",
             }
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=context,
+                correct=target_word,
+                incorrect=incorrect_word,
                 metadata=metadata,
             )
 

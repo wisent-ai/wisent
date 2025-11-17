@@ -15,6 +15,9 @@ __all__ = ["TruthfulqaMultiExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
+    "truthfulqa_multi",
+    "truthfulqa_multilingual",
+    "truthfulqa-multi",
     "truthfulqa-multi_gen_ca", "truthfulqa-multi_gen_en", "truthfulqa-multi_gen_es",
     "truthfulqa-multi_gen_eu", "truthfulqa-multi_gen_gl", "truthfulqa-multi_mc1_ca",
     "truthfulqa-multi_mc1_en", "truthfulqa-multi_mc1_es", "truthfulqa-multi_mc1_eu",
@@ -23,11 +26,26 @@ task_names = (
 )
 
 # Mixed evaluator - has both gen (generation) and mc (log_likelihoods) variants
-evaluator_name = "generation"  # Using generation as default since gen tasks are listed first
+# For _gen_ tasks use generation, for _mc_ tasks use log_likelihoods
+evaluator_name = "mixed"  # Special marker for mixed tasks
 
 
 class TruthfulqaMultiExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Truthfulqa Multi benchmark."""
+    """Extractor for the TruthfulQA Multi benchmark (multilingual variant).
+
+    Format: {
+        question: str,
+        correct_answers: list[str],
+        incorrect_answers: list[str],
+        mc1_targets: {choices: list[str], labels: list[int]},
+        mc2_targets: {choices: list[str], labels: list[int]},
+        lang: str
+    }
+
+    For contrastive pairs:
+    - Positive: Random correct answer from correct_answers
+    - Negative: Random incorrect answer from incorrect_answers
+    """
 
     def extract_contrastive_pairs(
         self,
@@ -70,86 +88,48 @@ class TruthfulqaMultiExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Truthfulqa Multi doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single TruthfulQA Multi doc into a ContrastivePair.
+
+        TruthfulQA format: {
+            question: str,
+            correct_answers: list[str],
+            incorrect_answers: list[str],
+            ...
+        }
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
-        try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "truthfulqa-multi"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
-
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "truthfulqa-multi",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
-
-        except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+        if "question" not in doc:
             return None
+
+        question = str(doc["question"]).strip()
+
+        # Get correct and incorrect answers
+        correct_answers = doc.get("correct_answers", [])
+        incorrect_answers = doc.get("incorrect_answers", [])
+
+        if not correct_answers or not incorrect_answers:
+            return None
+
+        # Use the first correct and first incorrect answer
+        import random
+        correct = random.choice(correct_answers).strip()
+        incorrect = random.choice(incorrect_answers).strip()
+
+        if not correct or not incorrect:
+            return None
+
+        formatted_question = f"Question: {question}"
+
+        metadata = {
+            "label": "truthfulqa-multi",
+            "lang": doc.get("lang", "en"),
+        }
+
+        return self._build_pair(
+            question=formatted_question,
+            correct=correct,
+            incorrect=incorrect,
+            metadata=metadata,
+        )
 
     @staticmethod
     def _build_pair(

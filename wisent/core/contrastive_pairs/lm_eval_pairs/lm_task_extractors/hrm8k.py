@@ -14,8 +14,21 @@ if TYPE_CHECKING:
 __all__ = ["Hrm8kExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("hrm8k",)
-evaluator_name = "log_likelihoods"
+task_names = (
+    "hrm8k",
+    "hrm8k_en",
+    "hrm8k_gsm8k",
+    "hrm8k_gsm8k_en",
+    "hrm8k_ksm",
+    "hrm8k_ksm_en",
+    "hrm8k_math",
+    "hrm8k_math_en",
+    "hrm8k_mmmlu",
+    "hrm8k_mmmlu_en",
+    "hrm8k_omni_math",
+    "hrm8k_omni_math_en",
+)
+evaluator_name = "exact_match"
 
 
 class Hrm8kExtractor(LMEvalBenchmarkExtractor):

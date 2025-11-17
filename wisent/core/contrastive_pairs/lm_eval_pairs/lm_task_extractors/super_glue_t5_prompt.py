@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["SuperGlueT5PromptExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("super-glue-t5-prompt",)
+evaluator_name = "generation"
+
 
 class SuperGlueT5PromptExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Super Glue T5 Prompt benchmark."""

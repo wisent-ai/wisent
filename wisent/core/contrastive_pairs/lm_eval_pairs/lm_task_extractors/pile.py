@@ -14,7 +14,14 @@ if TYPE_CHECKING:
 __all__ = ["PileExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("pile",)
+task_names = (
+    "pile",
+    "pile_arxiv", "pile_bookcorpus2", "pile_books3", "pile_dm-mathematics", "pile_enron",
+    "pile_europarl", "pile_freelaw", "pile_github", "pile_gutenberg", "pile_hackernews",
+    "pile_nih-exporter", "pile_opensubtitles", "pile_openwebtext2", "pile_philpapers",
+    "pile_pile-cc", "pile_pubmed-abstracts", "pile_pubmed-central", "pile_stackexchange",
+    "pile_ubuntu-irc", "pile_uspto", "pile_wikipedia", "pile_youtubesubtitles"
+)
 evaluator_name = "exact_match"
 
 

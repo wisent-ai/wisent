@@ -14,8 +14,14 @@ if TYPE_CHECKING:
 __all__ = ["KormedmcqaExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("kormedmcqa",)
-evaluator_name = "log_likelihoods"
+task_names = (
+    "kormedmcqa",
+    "kormedmcqa_dentist",
+    "kormedmcqa_doctor",
+    "kormedmcqa_nurse",
+    "kormedmcqa_pharm",
+)
+evaluator_name = "generation"
 
 
 class KormedmcqaExtractor(LMEvalBenchmarkExtractor):
@@ -64,78 +70,78 @@ class KormedmcqaExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Kormedmcqa doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Expected doc structure:
+        {
+            'question': str,
+            'A': str,
+            'B': str,
+            'C': str,
+            'D': str,
+            'E': str,
+            'answer': int (1-5, where 1=A, 2=B, etc.)
+        }
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("q_number", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            question = str(doc.get("question", "")).strip()
+            choices = [
+                str(doc.get("A", "")).strip(),
+                str(doc.get("B", "")).strip(),
+                str(doc.get("C", "")).strip(),
+                str(doc.get("D", "")).strip(),
+                str(doc.get("E", "")).strip(),
+            ]
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
+            # answer is 1-indexed (1=A, 2=B, etc.)
+            answer = doc.get("answer")
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "kormedmcqa"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+            if not question or not all(choices) or answer is None:
                 log.debug(
-                    "Skipping doc due to missing/invalid fields",
+                    "Skipping doc due to missing fields",
                     extra={"doc": doc},
                 )
                 return None
 
+            # Convert 1-indexed answer to 0-indexed
+            answer_idx = int(answer) - 1
+
+            if not (0 <= answer_idx < len(choices)):
+                log.debug(
+                    "Skipping doc due to invalid answer index",
+                    extra={"answer": answer, "answer_idx": answer_idx},
+                )
+                return None
+
             correct = choices[answer_idx]
+            # Select a different choice as incorrect
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = choices[incorrect_idx]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Format question with all choices
+            formatted_question = (
+                f"{question}\n"
+                f"A. {choices[0]}\n"
+                f"B. {choices[1]}\n"
+                f"C. {choices[2]}\n"
+                f"D. {choices[3]}\n"
+                f"E. {choices[4]}\n"
+                f"정답："
+            )
 
             metadata = {
                 "label": "kormedmcqa",
             }
 
+            # The correct answer is the letter (A-E)
+            correct_letter = chr(ord('A') + answer_idx)
+            incorrect_letter = chr(ord('A') + incorrect_idx)
+
             return self._build_pair(
                 question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                correct=correct_letter,
+                incorrect=incorrect_letter,
                 metadata=metadata,
             )
 

@@ -14,7 +14,15 @@ if TYPE_CHECKING:
 __all__ = ["MastermindExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("mastermind",)
+task_names = (
+    "mastermind",
+    "mastermind_24_easy",
+    "mastermind_24_hard",
+    "mastermind_35_easy",
+    "mastermind_35_hard",
+    "mastermind_46_easy",
+    "mastermind_46_hard",
+)
 evaluator_name = "log_likelihoods"
 
 
@@ -64,14 +72,55 @@ class MastermindExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Mastermind doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Expected doc structure for mastermind:
+        {
+            'instruction': str,
+            'options': {'label': ['A', 'B', 'C', 'D'], 'text': [str, str, str, str]},
+            'answerKey': str  (letter like 'A', 'B', etc.)
+        }
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Mastermind format: instruction + options + answerKey
+            if "instruction" in doc and "options" in doc and "answerKey" in doc:
+                question = str(doc.get("instruction", "")).strip()
+                options_data = doc.get("options", {})
+
+                if isinstance(options_data, dict) and "text" in options_data:
+                    choices = options_data.get("text", [])
+                    answer_key = doc.get("answerKey", "A")
+
+                    # Get answer index from answerKey
+                    if isinstance(answer_key, str) and len(answer_key) == 1 and answer_key.isalpha():
+                        answer_idx = ord(answer_key.upper()) - ord('A')
+                    else:
+                        return None
+
+                    if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+                        log.debug(
+                            "Skipping doc due to missing/invalid fields",
+                            extra={"doc": doc},
+                        )
+                        return None
+
+                    correct = choices[answer_idx]
+                    incorrect_idx = (answer_idx + 1) % len(choices)
+                    incorrect = choices[incorrect_idx]
+
+                    formatted_question = f"{question}\n\nThe secret code is:"
+
+                    metadata = {
+                        "label": "mastermind",
+                    }
+
+                    return self._build_pair(
+                        question=formatted_question,
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata=metadata,
+                    )
 
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:

@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["SuperGlueLmEvalV1Seq2seqExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("super-glue-lm-eval-v1-seq2seq",)
+evaluator_name = "generation"
+
 
 class SuperGlueLmEvalV1Seq2seqExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Super Glue Lm Eval V1 Seq2Seq benchmark."""

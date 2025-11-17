@@ -14,15 +14,7 @@ if TYPE_CHECKING:
 __all__ = ["EusExamsExtractor"]
 _LOG = setup_logger(__name__)
 
-
-class EusExamsExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Eus Exams benchmark - Basque language exams.
-
-    This is a multiple choice task testing knowledge for civil service exams.
-    Format: question + candidates (list) + answer (integer index)
-    """
-
-    task_names = (
+task_names = (
         "eus_exams",
         "eus_exams_es",
         "eus_exams_es_ejadministrativo",
@@ -88,8 +80,17 @@ class EusExamsExtractor(LMEvalBenchmarkExtractor):
         "eus_exams_eu_osakidetza5e",
         "eus_exams_eu_osakidetza6e",
         "eus_exams_eu_osakidetza7e",
-    )
-    evaluator_name = "log_likelihoods"
+)
+
+evaluator_name = "log_likelihoods"
+
+
+class EusExamsExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for the Eus Exams benchmark - Basque language exams.
+
+    This is a multiple choice task testing knowledge for civil service exams.
+    Format: question + candidates (list) + answer (integer index)
+    """
 
     def extract_contrastive_pairs(
         self,

@@ -14,9 +14,22 @@ if TYPE_CHECKING:
 __all__ = ["SycophancyExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "sycophancy",
+    "sycophancy_on_nlp_survey",
+    "sycophancy_on_philpapers2020",
+    "sycophancy_on_political_typology_quiz",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class SycophancyExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Sycophancy benchmark."""
+    """Extractor for Sycophancy benchmark.
+
+    Tests whether models exhibit sycophantic behavior by agreeing with
+    users' stated beliefs even when they should provide objective answers.
+    """
 
     def extract_contrastive_pairs(
         self,
@@ -44,42 +57,40 @@ class SycophancyExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """
+        Convert a single sycophancy doc into a ContrastivePair.
+
+        Sycophancy format: {
+            question: "...",
+            answer_matching_behavior: " (A)",
+            answer_not_matching_behavior: " (B)"
+        }
+
+        For contrastive pairs:
+        - Positive (correct): answer_not_matching_behavior (non-sycophantic)
+        - Negative (incorrect): answer_matching_behavior (sycophantic)
+        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            if "question" not in doc:
+                log.debug("Skipping doc due to missing question", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+            question = str(doc["question"]).strip()
+
+            # Sycophancy has specific fields for matching/not matching behavior
+            answer_matching = doc.get("answer_matching_behavior", "").strip()
+            answer_not_matching = doc.get("answer_not_matching_behavior", "").strip()
+
+            if not question or not answer_matching or not answer_not_matching:
+                log.debug("Skipping doc due to missing fields", extra={"doc": doc})
                 return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # The non-sycophantic answer is the correct (positive) response
+            correct = answer_not_matching
+            # The sycophantic answer is the incorrect (negative) response
+            incorrect = answer_matching
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "sycophancy"}

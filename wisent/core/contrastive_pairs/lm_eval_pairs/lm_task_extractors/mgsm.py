@@ -14,7 +14,12 @@ if TYPE_CHECKING:
 __all__ = ["MgsmExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("mgsm", "mgsm_direct", "mgsm_direct_en", "mgsm_direct_es", "mgsm_direct_fr", "mgsm_direct_de", "mgsm_direct_ru", "mgsm_direct_zh", "mgsm_direct_ja", "mgsm_direct_th", "mgsm_direct_sw", "mgsm_direct_bn", "mgsm_direct_te")
+task_names = (
+    "mgsm",
+    "mgsm_direct", "mgsm_direct_en", "mgsm_direct_es", "mgsm_direct_fr", "mgsm_direct_de", "mgsm_direct_ru", "mgsm_direct_zh", "mgsm_direct_ja", "mgsm_direct_th", "mgsm_direct_sw", "mgsm_direct_bn", "mgsm_direct_te",
+    "mgsm_cot_native", "mgsm_cot_native_bn", "mgsm_cot_native_de", "mgsm_cot_native_en", "mgsm_cot_native_es", "mgsm_cot_native_fr", "mgsm_cot_native_ja", "mgsm_cot_native_ru", "mgsm_cot_native_sw", "mgsm_cot_native_te", "mgsm_cot_native_th", "mgsm_cot_native_zh",
+    "mgsm_native_cot_bn", "mgsm_native_cot_de", "mgsm_native_cot_en", "mgsm_native_cot_es", "mgsm_native_cot_fr", "mgsm_native_cot_ja", "mgsm_native_cot_ru", "mgsm_native_cot_sw", "mgsm_native_cot_te", "mgsm_native_cot_th", "mgsm_native_cot_zh"
+)
 
 evaluator_name = "generation"
 

@@ -64,78 +64,64 @@ class KblExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Kbl doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        KBL documents have structure:
+        - 'question': question text
+        - 'A', 'B', 'C', 'D', 'E': individual choice fields
+        - 'gt': ground truth answer (e.g. 'B')
+        - 'no': question number
+        - 'meta': metadata
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("no", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "kbl"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+            # Extract question
+            question = doc.get("question", "").strip()
+            if not question:
+                log.debug("Skipping doc - missing question", extra={"doc": doc})
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
+            # Extract choices from individual fields (A, B, C, D, E)
+            choice_letters = ['A', 'B', 'C', 'D', 'E']
+            choices = {}
+            for letter in choice_letters:
+                if letter in doc and doc[letter]:
+                    choices[letter] = str(doc[letter]).strip()
+
+            if not choices:
+                log.debug("Skipping doc - no choices found", extra={"doc": doc})
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Extract ground truth answer (can be either 'gt' or 'label')
+            gt = doc.get("label", doc.get("gt", "")).strip().upper()
+            if not gt or gt not in choices:
+                log.debug("Skipping doc - invalid ground truth", extra={"doc": doc, "gt": gt})
+                return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            # Get correct answer text
+            correct_answer = choices[gt]
 
-            metadata = {
-                "label": "kbl",
-            }
+            # Get an incorrect answer (pick the first choice that isn't the correct one)
+            incorrect_answer = None
+            for letter, text in choices.items():
+                if letter != gt:
+                    incorrect_answer = text
+                    break
+
+            if not incorrect_answer:
+                log.debug("Skipping doc - only one choice available", extra={"doc": doc})
+                return None
+
+            # Build the prompt using doc_to_text if available, otherwise manually
+            # The prompt should just be the question since doc_to_text handles formatting
+            prompt = question
+
+            metadata = {"label": "kbl"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=gt,  # Return the letter (A/B/C/D/E) as the answer
+                incorrect="Z",  # Invalid choice letter as negative
                 metadata=metadata,
             )
 
