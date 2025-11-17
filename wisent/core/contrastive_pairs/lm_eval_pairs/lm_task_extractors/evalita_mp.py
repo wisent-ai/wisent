@@ -78,7 +78,39 @@ class EvalitaMpExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("Id", doc.get("id", "unknown")))
 
         try:
-            # Evalita format: Question (capital Q) + A/B/C/D/E + Correct (capital C)
+            # Format 1: Textual Entailment format (text1, text2, entailment)
+            if "text1" in doc and "text2" in doc and "entailment" in doc:
+                text1 = str(doc.get("text1", "")).strip()
+                text2 = str(doc.get("text2", "")).strip()
+                entailment = str(doc.get("entailment", "")).strip().upper()
+
+                if not text1 or not text2:
+                    log.debug("Skipping doc due to missing text1 or text2", extra={"doc": doc})
+                    return None
+
+                # Format question
+                formatted_question = f"Text 1: {text1}\nText 2: {text2}\nDoes text 2 entail text 1?"
+
+                # Binary classification: entailment is either YES/SI or NO
+                if entailment in ("YES", "SI", "SÌ"):
+                    correct = "YES"
+                    incorrect = "NO"
+                elif entailment in ("NO"):
+                    correct = "NO"
+                    incorrect = "YES"
+                else:
+                    log.debug(f"Skipping doc due to unknown entailment value: {entailment}", extra={"doc": doc})
+                    return None
+
+                metadata = {"label": "evalita-mp"}
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: Evalita format: Question (capital Q) + A/B/C/D/E + Correct (capital C)
             question = doc.get("Question", doc.get("question", "")).strip()
 
             # Build choices from A/B/C/D/E keys

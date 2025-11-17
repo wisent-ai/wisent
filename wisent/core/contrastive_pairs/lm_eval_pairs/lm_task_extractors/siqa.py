@@ -14,6 +14,10 @@ if TYPE_CHECKING:
 __all__ = ["SIQAExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("siqa", "bigbench_social_iqa_multiple_choice")
+
+evaluator_name = "log_likelihoods"
+
 
 class SIQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the SIQA (Social IQA) benchmark."""
@@ -65,41 +69,50 @@ class SIQAExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single SIQA doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single bigbench_social_iqa doc into a ContrastivePair.
+
+        bigbench format:
+            - inputs: Full question text with choices
+            - multiple_choice_targets: List of all answer choices
+            - multiple_choice_scores: Binary scores (0 for incorrect, 1 for correct)
         """
         log = bind(_LOG, doc_id=doc.get("idx", "unknown"))
 
         try:
-            context = str(doc.get("context", "")).strip()
-            question = str(doc.get("question", "")).strip()
-            answerA = str(doc.get("answerA", "")).strip()
-            answerB = str(doc.get("answerB", "")).strip()
-            answerC = str(doc.get("answerC", "")).strip()
-            label = str(doc.get("label", "1")).strip()
+            inputs = str(doc.get("inputs", "")).strip()
+            choices = doc.get("multiple_choice_targets", [])
+            scores = doc.get("multiple_choice_scores", [])
 
-            if not context or not question:
+            if not inputs or not choices or not scores:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
 
-            choices = [answerA, answerB, answerC]
-            answer_idx = int(label) - 1  # Labels are 1-indexed
+            # Find correct and incorrect answers
+            correct_indices = [i for i, score in enumerate(scores) if score == 1]
+            incorrect_indices = [i for i, score in enumerate(scores) if score == 0]
 
-            if not (0 <= answer_idx < len(choices)):
+            if not correct_indices or not incorrect_indices:
                 log.debug(
-                    "Skipping doc due to invalid answer index",
-                    extra={"doc": doc, "answer_idx": answer_idx},
+                    "Skipping doc due to missing correct/incorrect answers",
+                    extra={"doc": doc},
                 )
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Use first correct and first incorrect
+            correct = str(choices[correct_indices[0]]).strip()
+            incorrect = str(choices[incorrect_indices[0]]).strip()
 
-            formatted_question = f"Context: {context}\nQuestion: {question}\nA. {incorrect}\nB. {correct}"
+            # Extract question from inputs (remove the "choice:" lines)
+            question_lines = []
+            for line in inputs.split('\n'):
+                if line.strip() and not line.strip().startswith('choice:'):
+                    question_lines.append(line.strip())
+            question = '\n'.join(question_lines)
+
+            formatted_question = f"{question}\nA. {incorrect}\nB. {correct}"
 
             metadata = {
                 "label": "siqa",
