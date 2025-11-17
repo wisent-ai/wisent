@@ -15,15 +15,30 @@ __all__ = ["WinogenderExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
+    "winogender",
     "winogender_all", "winogender_female", "winogender_gotcha", "winogender_gotcha_female",
     "winogender_gotcha_male", "winogender_male", "winogender_neutral",
 )
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class WinogenderExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Winogender benchmark."""
+    """Extractor for the Winogender benchmark (pronoun resolution with gender bias).
+
+    Format: {
+        sentence: str,  # Sentence with pronoun
+        pronoun: str,   # The pronoun to resolve
+        occupation: str,  # The occupation entity
+        participant: str, # The participant entity
+        target: str,    # Correct referent (occupation or participant)
+        label: int      # 1 if target is participant, 0 if occupation
+    }
+
+    For contrastive pairs:
+    - Positive: Correct referent (target)
+    - Negative: Incorrect referent (the other entity)
+    """
 
     def extract_contrastive_pairs(
         self,
@@ -66,86 +81,52 @@ class WinogenderExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Winogender doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single Winogender doc into a ContrastivePair.
+
+        Winogender format: {
+            sentence: str,
+            pronoun: str,
+            occupation: str,
+            participant: str,
+            target: str,  # correct referent
+            label: int    # 1 if participant, 0 if occupation
+        }
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
-        try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "winogender"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
-
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "winogender",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
-
-        except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+        if "sentence" not in doc or "target" not in doc:
             return None
+
+        sentence = str(doc["sentence"]).strip()
+        pronoun = str(doc.get("pronoun", "")).strip()
+        occupation = str(doc.get("occupation", "")).strip()
+        participant = str(doc.get("participant", "")).strip()
+        target = str(doc["target"]).strip()
+
+        if not sentence or not target or not occupation or not participant:
+            return None
+
+        # The correct answer is the target
+        correct = target
+
+        # The incorrect answer is the other entity
+        if target == occupation:
+            incorrect = participant
+        else:
+            incorrect = occupation
+
+        # Create prompt asking what the pronoun refers to
+        prompt = f'In the sentence "{sentence}", what does "{pronoun}" refer to?'
+
+        metadata = {
+            "label": "winogender",
+            "gender": doc.get("gender", "unknown"),
+        }
+
+        return self._build_pair(
+            question=prompt,
+            correct=correct,
+            incorrect=incorrect,
+            metadata=metadata,
+        )
 
     @staticmethod
     def _build_pair(

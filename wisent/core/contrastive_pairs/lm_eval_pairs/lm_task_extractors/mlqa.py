@@ -14,9 +14,23 @@ if TYPE_CHECKING:
 __all__ = ["MlqaExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("mlqa", "mlqa_en_en", "mlqa_en_es", "mlqa_en_de", "mlqa_en_ar", "mlqa_en_hi", "mlqa_en_vi", "mlqa_en_zh",
-              "mlqa_es_en", "mlqa_es_es", "mlqa_de_en", "mlqa_de_de", "mlqa_ar_ar", "mlqa_ar_en",
-              "mlqa_hi_en", "mlqa_hi_hi", "mlqa_vi_en", "mlqa_vi_vi", "mlqa_zh_en", "mlqa_zh_zh")
+task_names = (
+    "mlqa",
+    # Arabic context
+    "mlqa_ar_ar", "mlqa_ar_de", "mlqa_ar_vi", "mlqa_ar_zh", "mlqa_ar_en", "mlqa_ar_es", "mlqa_ar_hi",
+    # German context
+    "mlqa_de_ar", "mlqa_de_de", "mlqa_de_vi", "mlqa_de_zh", "mlqa_de_en", "mlqa_de_es", "mlqa_de_hi",
+    # Vietnamese context
+    "mlqa_vi_ar", "mlqa_vi_de", "mlqa_vi_vi", "mlqa_vi_zh", "mlqa_vi_en", "mlqa_vi_es", "mlqa_vi_hi",
+    # Chinese context
+    "mlqa_zh_ar", "mlqa_zh_de", "mlqa_zh_vi", "mlqa_zh_zh", "mlqa_zh_en", "mlqa_zh_es", "mlqa_zh_hi",
+    # English context
+    "mlqa_en_ar", "mlqa_en_de", "mlqa_en_vi", "mlqa_en_zh", "mlqa_en_en", "mlqa_en_es", "mlqa_en_hi",
+    # Spanish context
+    "mlqa_es_ar", "mlqa_es_de", "mlqa_es_vi", "mlqa_es_zh", "mlqa_es_en", "mlqa_es_es", "mlqa_es_hi",
+    # Hindi context
+    "mlqa_hi_ar", "mlqa_hi_de", "mlqa_hi_vi", "mlqa_hi_zh", "mlqa_hi_en", "mlqa_hi_es", "mlqa_hi_hi"
+)
 
 evaluator_name = "generation"
 

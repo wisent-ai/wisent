@@ -9,7 +9,7 @@ from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.ds_1000 
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.hle import HleExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.hmmt import HMMTExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.humaneval import HumanEvalExtractor
-from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.instruct_humaneval import InstructHumanevalExtractor
+from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.instructhumaneval import InstructHumanEvalExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.livecodebench import LivecodebenchExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.livemathbench import LiveMathBenchExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.math import MATHExtractor
@@ -30,7 +30,7 @@ __all__ = [
     "HleExtractor",
     "HMMTExtractor",
     "HumanEvalExtractor",
-    "InstructHumanevalExtractor",
+    "InstructHumanEvalExtractor",
     "LivecodebenchExtractor",
     "LiveMathBenchExtractor",
     "MATHExtractor",

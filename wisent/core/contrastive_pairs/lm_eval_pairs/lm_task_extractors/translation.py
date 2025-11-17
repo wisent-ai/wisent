@@ -14,13 +14,31 @@ if TYPE_CHECKING:
 __all__ = ["TranslationExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("translation",)
+task_names = (
+    "translation",
+    "gpt3_translation_benchmarks",
+    "iwslt2017-ar-en",
+    "iwslt2017-en-ar",
+    "wmt14-en-fr",
+    "wmt14-fr-en",
+    "wmt16-de-en",
+    "wmt16-en-de",
+    "wmt16-en-ro",
+    "wmt16-ro-en",
+)
 
-evaluator_name = "exact_match"
+evaluator_name = "generation"
 
 
 class TranslationExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Translation benchmark."""
+    """Extractor for the Translation benchmark (WMT, IWSLT).
+
+    Translation format: {'translation': {'en': 'English text', 'fr': 'French text'}}
+
+    For contrastive pairs:
+    - Positive: Correct translation from reference
+    - Negative: Word-shuffled version to simulate bad translation
+    """
 
     def extract_contrastive_pairs(
         self,
@@ -63,86 +81,62 @@ class TranslationExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Translation doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single Translation doc into a ContrastivePair.
+
+        Translation format: {'translation': {'en': 'English text', 'fr': 'French text'}}
+
+        We extract source->target direction based on the task name pattern.
+        For example, wmt14-en-fr translates from 'en' to 'fr'.
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
-        try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "translation"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
-
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "translation",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
-
-        except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+        if "translation" not in doc:
             return None
+
+        translation_dict = doc["translation"]
+        if not isinstance(translation_dict, dict) or len(translation_dict) < 2:
+            return None
+
+        # Determine source and target languages from the keys
+        lang_keys = list(translation_dict.keys())
+        if len(lang_keys) != 2:
+            return None
+
+        # Try to infer direction from task name if available in context
+        # Default: first key is source, second is target
+        source_lang = lang_keys[0]
+        target_lang = lang_keys[1]
+
+        source_text = str(translation_dict[source_lang]).strip()
+        target_text = str(translation_dict[target_lang]).strip()
+
+        if not source_text or not target_text:
+            return None
+
+        # Create synthetic negative by shuffling words in target
+        import random
+        target_words = target_text.split()
+        if len(target_words) > 1:
+            shuffled_words = target_words.copy()
+            # Shuffle until different
+            max_attempts = 10
+            for _ in range(max_attempts):
+                random.shuffle(shuffled_words)
+                if shuffled_words != target_words:
+                    break
+            incorrect_translation = " ".join(shuffled_words)
+        else:
+            # Single word: just add "wrong " prefix
+            incorrect_translation = f"wrong {target_text}"
+
+        prompt = f"Translate from {source_lang} to {target_lang}:\n{source_text}"
+
+        metadata = {"label": "translation", "source_lang": source_lang, "target_lang": target_lang}
+
+        return self._build_pair(
+            question=prompt,
+            correct=target_text,
+            incorrect=incorrect_translation,
+            metadata=metadata,
+        )
 
     @staticmethod
     def _build_pair(

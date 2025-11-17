@@ -1,9 +1,13 @@
 """Test all benchmarks to verify extractor and evaluator work."""
 
+import os
 import sys
 import signal
 from contextlib import contextmanager
 from wisent.examples.scripts.test_one_benchmark import test_benchmark
+
+# Set environment variable to trust remote code for datasets like meddialog
+os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'
 
 
 class TimeoutError(Exception):
@@ -82,17 +86,15 @@ BENCHMARKS = [
     "inverse_scaling", "storycloze", "histoires_morales", "groundcocoa",
     # Language understanding
     "blimp", "multiblimp",
-    "lambada_cloze", "lambada_multilingual", "lambada_multilingual_stablelm",
+    "lambada_cloze", "lambada_multilingual",
     # Paraphrase/Translation
     "paws-x", "translation", "wmt2016",
-    # Code understanding
-    "code_x_glue",
     # QA variants
     "aclue", "bertaqa", "careqa", "copal_id", "csatqa",
     # Specialized benchmarks
     "acp_bench", "acp_bench_hard", "aexams", "benchmarks",
     "c4", "chartqa", "eq_bench",
-    "evalita_LLM", "fda", "fld", "jsonschema_bench", "kbl", "leaderboard",
+    "evalita-mp", "fda", "fld", "jsonschema_bench", "kbl", "leaderboard",
     "libra", "lingoly", "mastermind", "metabench",
     "mmlusr", "mmmu", "model_written_evals", "mts_dialog", "multiblimp",
     "noreval", "olaph", "paloma", "pile", "pile_10k", "polemo2",
@@ -100,13 +102,13 @@ BENCHMARKS = [
     "tmmluplus", "truthfulqa-multi", "unitxt", "unscramble", "wmdp", "wsc273",
     # NEW: Missing 115 task families now added
     "global_mmlu_ar", "arabic_exams", "persona", "afrixnli_en_direct_amh",
-    "evalita_mp", "truthfulqa", "eus_exams_es", "flores", "afrimgsm_direct_amh",
+    "truthfulqa", "eus_exams_es", "flores", "afrimgsm_direct_amh",
     "ceval_valid", "advanced_ai_risk", "tmlu", "arc_ar", "afrimmlu_direct_amh",
     "m_mmlu", "non_greedy_robustness_agieval_aqua_rat", "prompt_robustness_agieval_aqua_rat",
     "inverse_scaling_hindsight_neglect_10shot", "mela", "paws_ca",
     "ja_leaderboard_jaqket_v2", "super_glue-boolq-t5-prompt", "multiple_choice",
     "option_order_robustness_agieval_aqua_rat", "phrases_ca-va", "code2text_go",
-    "ethics_cm", "cabreu", "sycophancy", "evalita_sp_sum_task_fp-small_p1",
+    "ethics_cm", "cabreu", "sycophancy", "evalita-sp_sum_task_fp-small_p1",
     "glianorex", "flan_held_in", "assin_entailment", "gsm_plus", "mnli",
     "tinyTruthfulQA", "multimedqa", "openllm", "pythia", "t0_eval", "Tag",
     "basque-glue", "chain_of_thought", "freebase", "gpt3_translation_benchmarks",

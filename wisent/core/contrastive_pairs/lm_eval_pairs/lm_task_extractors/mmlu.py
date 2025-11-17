@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["MMLUExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mmlu",)
+evaluator_name = "log_likelihoods"
+
 
 class MMLUExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MMLU (Massive Multitask Language Understanding) and MMMLU (multilingual variant) benchmarks."""

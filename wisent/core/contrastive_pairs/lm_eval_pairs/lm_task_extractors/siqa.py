@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ["SIQAExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("siqa", "bigbench_social_iqa_multiple_choice")
+task_names = ("siqa", "siqa_ca", "bigbench_social_iqa_multiple_choice")
 
 evaluator_name = "log_likelihoods"
 
@@ -69,9 +69,16 @@ class SIQAExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single bigbench_social_iqa doc into a ContrastivePair.
+        Convert a single SIQA doc into a ContrastivePair.
 
-        bigbench format:
+        Supports two formats:
+        1. Standard SIQA format (siqa, siqa_ca):
+            - context: str
+            - question: str
+            - answerA, answerB, answerC: str (answer choices)
+            - label: str (correct answer: "1", "2", or "3")
+
+        2. BigBench format (bigbench_social_iqa_multiple_choice):
             - inputs: Full question text with choices
             - multiple_choice_targets: List of all answer choices
             - multiple_choice_scores: Binary scores (0 for incorrect, 1 for correct)
@@ -79,51 +86,113 @@ class SIQAExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("idx", "unknown"))
 
         try:
-            inputs = str(doc.get("inputs", "")).strip()
-            choices = doc.get("multiple_choice_targets", [])
-            scores = doc.get("multiple_choice_scores", [])
+            # Format 1: Standard SIQA format (context + question + answerA/B/C + label)
+            if "context" in doc and "question" in doc and "answerA" in doc:
+                context = str(doc.get("context", "")).strip()
+                question = str(doc.get("question", "")).strip()
+                answerA = str(doc.get("answerA", "")).strip()
+                answerB = str(doc.get("answerB", "")).strip()
+                answerC = str(doc.get("answerC", "")).strip()
+                label_str = str(doc.get("label", "")).strip()
 
-            if not inputs or not choices or not scores:
+                if not all([context, question, answerA, answerB, answerC, label_str]):
+                    log.debug(
+                        "Skipping doc due to missing/invalid fields",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                # Parse label (1, 2, or 3)
+                try:
+                    label_idx = int(label_str) - 1  # Convert 1-indexed to 0-indexed
+                except (ValueError, TypeError):
+                    log.debug(
+                        "Skipping doc due to invalid label",
+                        extra={"doc": doc, "label": label_str},
+                    )
+                    return None
+
+                choices = [answerA, answerB, answerC]
+                if not (0 <= label_idx < len(choices)):
+                    log.debug(
+                        "Skipping doc due to label out of range",
+                        extra={"doc": doc, "label_idx": label_idx},
+                    )
+                    return None
+
+                correct = choices[label_idx]
+                # Use next choice as incorrect (wrap around)
+                incorrect_idx = (label_idx + 1) % len(choices)
+                incorrect = choices[incorrect_idx]
+
+                full_question = f"Context: {context}\nQuestion: {question}"
+                formatted_question = f"{full_question}\nA. {incorrect}\nB. {correct}"
+
+                metadata = {
+                    "label": "siqa",
+                }
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: BigBench format (inputs + multiple_choice_targets/scores)
+            elif "inputs" in doc and "multiple_choice_targets" in doc:
+                inputs = str(doc.get("inputs", "")).strip()
+                choices = doc.get("multiple_choice_targets", [])
+                scores = doc.get("multiple_choice_scores", [])
+
+                if not inputs or not choices or not scores:
+                    log.debug(
+                        "Skipping doc due to missing/invalid fields",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                # Find correct and incorrect answers
+                correct_indices = [i for i, score in enumerate(scores) if score == 1]
+                incorrect_indices = [i for i, score in enumerate(scores) if score == 0]
+
+                if not correct_indices or not incorrect_indices:
+                    log.debug(
+                        "Skipping doc due to missing correct/incorrect answers",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                # Use first correct and first incorrect
+                correct = str(choices[correct_indices[0]]).strip()
+                incorrect = str(choices[incorrect_indices[0]]).strip()
+
+                # Extract question from inputs (remove the "choice:" lines)
+                question_lines = []
+                for line in inputs.split('\n'):
+                    if line.strip() and not line.strip().startswith('choice:'):
+                        question_lines.append(line.strip())
+                question = '\n'.join(question_lines)
+
+                formatted_question = f"{question}\nA. {incorrect}\nB. {correct}"
+
+                metadata = {
+                    "label": "siqa",
+                }
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            else:
                 log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                    "Skipping doc due to unknown format",
+                    extra={"doc": doc, "keys": list(doc.keys())},
                 )
                 return None
-
-            # Find correct and incorrect answers
-            correct_indices = [i for i, score in enumerate(scores) if score == 1]
-            incorrect_indices = [i for i, score in enumerate(scores) if score == 0]
-
-            if not correct_indices or not incorrect_indices:
-                log.debug(
-                    "Skipping doc due to missing correct/incorrect answers",
-                    extra={"doc": doc},
-                )
-                return None
-
-            # Use first correct and first incorrect
-            correct = str(choices[correct_indices[0]]).strip()
-            incorrect = str(choices[incorrect_indices[0]]).strip()
-
-            # Extract question from inputs (remove the "choice:" lines)
-            question_lines = []
-            for line in inputs.split('\n'):
-                if line.strip() and not line.strip().startswith('choice:'):
-                    question_lines.append(line.strip())
-            question = '\n'.join(question_lines)
-
-            formatted_question = f"{question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "siqa",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

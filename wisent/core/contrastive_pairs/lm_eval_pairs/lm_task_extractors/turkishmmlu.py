@@ -14,6 +14,16 @@ if TYPE_CHECKING:
 __all__ = ["TurkishmmluExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "turkishmmlu",
+    "turkishmmlu_biology", "turkishmmlu_chemistry", "turkishmmlu_geography",
+    "turkishmmlu_history", "turkishmmlu_mathematics", "turkishmmlu_philosophy",
+    "turkishmmlu_physics", "turkishmmlu_religion_and_ethics",
+    "turkishmmlu_turkish_language_and_literature",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class TurkishmmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Turkishmmlu benchmark."""

@@ -195,8 +195,10 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 entry_point = pair.metadata.get('entry_point')
 
             # Evaluate with POSITIVE as expected (should return TRUTHFUL)
+            # For exact_match evaluators, response should match the expected
+            positive_response_value = pair.positive_response.model_response if evaluator_name == "exact_match" else ""
             eval_kwargs = {
-                "response": "",
+                "response": positive_response_value,
                 "expected": pair.positive_response.model_response,
                 "model": model,
                 "question": pair.prompt,
@@ -220,8 +222,10 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
             }
 
             # Evaluate with NEGATIVE as expected (should return UNTRUTHFUL)
+            # For exact_match evaluators, provide positive_response (not negative) to test that it's marked UNTRUTHFUL
+            negative_response_value = pair.positive_response.model_response if evaluator_name == "exact_match" else ""
             eval_kwargs_neg = {
-                "response": "",
+                "response": negative_response_value,
                 "expected": pair.negative_response.model_response,
                 "model": model,
                 "question": pair.prompt,

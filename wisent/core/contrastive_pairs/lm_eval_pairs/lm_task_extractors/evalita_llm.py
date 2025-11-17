@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 __all__ = ["EvalitaLlmExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "evalita-mp",      # Parent group (alias: Evalita-LLM) - all tasks
+    "evalita-mp_gen",  # Only generative tasks subgroup
+    "evalita-mp_mc",   # Only perplexity-based tasks subgroup
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Evalita-LLM benchmark - Italian LLM evaluation tasks.
@@ -24,13 +32,6 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
     This extractor handles the parent groups and individual tasks not covered by
     specific extractors (evalita-mp and evalita-sp have their own extractors).
     """
-
-    task_names = (
-        "evalita-mp",      # Parent group (alias: Evalita-LLM) - all tasks
-        "evalita-mp_gen",  # Only generative tasks subgroup
-        "evalita-mp_mc",   # Only perplexity-based tasks subgroup
-    )
-    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
