@@ -14,7 +14,24 @@ if TYPE_CHECKING:
 __all__ = ["MedConceptsQaExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("med_concepts_qa",)
+task_names = (
+    "med_concepts_qa",
+    "med_concepts_qa_atc_easy",
+    "med_concepts_qa_atc_medium",
+    "med_concepts_qa_atc_hard",
+    "med_concepts_qa_icd10cm_easy",
+    "med_concepts_qa_icd10cm_medium",
+    "med_concepts_qa_icd10cm_hard",
+    "med_concepts_qa_icd10proc_easy",
+    "med_concepts_qa_icd10proc_medium",
+    "med_concepts_qa_icd10proc_hard",
+    "med_concepts_qa_icd9cm_easy",
+    "med_concepts_qa_icd9cm_medium",
+    "med_concepts_qa_icd9cm_hard",
+    "med_concepts_qa_icd9proc_easy",
+    "med_concepts_qa_icd9proc_medium",
+    "med_concepts_qa_icd9proc_hard",
+)
 evaluator_name = "log_likelihoods"
 
 
@@ -64,10 +81,63 @@ class MedConceptsQaExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Med Concepts Qa doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Expected doc structure for med_concepts_qa:
+        {
+            'question': str  (formatted with A/B/C/D options),
+            'option1': str,
+            'option2': str,
+            'option3': str,
+            'option4': str,
+            'answer': str  (correct answer text),
+            'answer_id': str  (letter 'A', 'B', 'C', or 'D')
+        }
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("question_id", "unknown"))
 
         try:
+            # Med_concepts_qa format: question + option1/2/3/4 + answer_id
+            if "question" in doc and "answer_id" in doc and "option1" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("option1", "")).strip(),
+                    str(doc.get("option2", "")).strip(),
+                    str(doc.get("option3", "")).strip(),
+                    str(doc.get("option4", "")).strip(),
+                ]
+                answer_key = doc.get("answer_id", "A")
+
+                # Get answer index from answer_id
+                if isinstance(answer_key, str) and len(answer_key) == 1 and answer_key.isalpha():
+                    answer_idx = ord(answer_key.upper()) - ord('A')
+                else:
+                    return None
+
+                if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+                    log.debug(
+                        "Skipping doc due to missing/invalid fields",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                correct = choices[answer_idx]
+                incorrect_idx = (answer_idx + 1) % len(choices)
+                incorrect = choices[incorrect_idx]
+
+                formatted_question = f"{question}\nAnswer:"
+
+                metadata = {
+                    "label": "med_concepts_qa",
+                }
+
+                # For this format, the response should be just the letter
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=answer_key,
+                    incorrect=chr(ord('A') + incorrect_idx),
+                    metadata=metadata,
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None

@@ -14,6 +14,34 @@ if TYPE_CHECKING:
 __all__ = ["EvalitaMpExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "evalita-mp",
+    "evalita-mp_at", "evalita-mp_at_prompt-1", "evalita-mp_at_prompt-2", "evalita-mp_at_prompt-3",
+    "evalita-mp_at_prompt-4", "evalita-mp_at_prompt-5", "evalita-mp_at_prompt-6", "evalita-mp_at_tasks",
+    "evalita-mp_faq", "evalita-mp_faq_prompt-1", "evalita-mp_faq_prompt-2", "evalita-mp_faq_prompt-3",
+    "evalita-mp_faq_prompt-4", "evalita-mp_faq_prompt-5", "evalita-mp_faq_prompt-6", "evalita-mp_faq_tasks",
+    "evalita-mp_gen", "evalita-mp_hs", "evalita-mp_hs_prompt-1", "evalita-mp_hs_prompt-2",
+    "evalita-mp_hs_prompt-3", "evalita-mp_hs_prompt-4", "evalita-mp_hs_prompt-5", "evalita-mp_hs_prompt-6",
+    "evalita-mp_hs_tasks", "evalita-mp_ls", "evalita-mp_ls_prompt-1", "evalita-mp_ls_prompt-2",
+    "evalita-mp_ls_tasks", "evalita-mp_mc", "evalita-mp_ner-v2_adg_p1", "evalita-mp_ner-v2_adg_p2",
+    "evalita-mp_ner-v2_fic_p1", "evalita-mp_ner-v2_fic_p2", "evalita-mp_ner-v2_tasks_adg",
+    "evalita-mp_ner-v2_tasks_fic", "evalita-mp_ner-v2_tasks_wn", "evalita-mp_ner-v2_wn_p1",
+    "evalita-mp_ner-v2_wn_p2", "evalita-mp_ner_adg_group", "evalita-mp_ner_adg_p1", "evalita-mp_ner_adg_p2",
+    "evalita-mp_ner_fic_group", "evalita-mp_ner_fic_p1", "evalita-mp_ner_fic_p2", "evalita-mp_ner_group",
+    "evalita-mp_ner_tasks_adg", "evalita-mp_ner_tasks_fic", "evalita-mp_ner_tasks_wn",
+    "evalita-mp_ner_wn_group", "evalita-mp_ner_wn_p1", "evalita-mp_ner_wn_p2", "evalita-mp_re",
+    "evalita-mp_re_prompt-1", "evalita-mp_re_prompt-2", "evalita-mp_re_tasks", "evalita-mp_sa",
+    "evalita-mp_sa_prompt-1", "evalita-mp_sa_prompt-2", "evalita-mp_sa_prompt-3", "evalita-mp_sa_prompt-4",
+    "evalita-mp_sa_prompt-5", "evalita-mp_sa_prompt-6", "evalita-mp_sa_tasks", "evalita-mp_sum_fp",
+    "evalita-mp_sum_fp-small_tasks", "evalita-mp_sum_fp_tasks", "evalita-mp_te", "evalita-mp_te_prompt-1",
+    "evalita-mp_te_prompt-2", "evalita-mp_te_prompt-3", "evalita-mp_te_prompt-4", "evalita-mp_te_prompt-5",
+    "evalita-mp_te_prompt-6", "evalita-mp_te_tasks", "evalita-mp_wic", "evalita-mp_wic_prompt-1",
+    "evalita-mp_wic_prompt-2", "evalita-mp_wic_prompt-3", "evalita-mp_wic_prompt-4", "evalita-mp_wic_prompt-5",
+    "evalita-mp_wic_prompt-6", "evalita-mp_wic_tasks",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class EvalitaMpExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Evalita Mp benchmark - Italian language medical, legal, and NLP tasks.
@@ -21,33 +49,6 @@ class EvalitaMpExtractor(LMEvalBenchmarkExtractor):
     This is a multiple choice task testing knowledge across various domains.
     Format: Question + A/B/C/D/E choices + Correct (letter A-E)
     """
-
-    task_names = (
-        "evalita-mp",
-        "evalita-mp_at", "evalita-mp_at_prompt-1", "evalita-mp_at_prompt-2", "evalita-mp_at_prompt-3",
-        "evalita-mp_at_prompt-4", "evalita-mp_at_prompt-5", "evalita-mp_at_prompt-6", "evalita-mp_at_tasks",
-        "evalita-mp_faq", "evalita-mp_faq_prompt-1", "evalita-mp_faq_prompt-2", "evalita-mp_faq_prompt-3",
-        "evalita-mp_faq_prompt-4", "evalita-mp_faq_prompt-5", "evalita-mp_faq_prompt-6", "evalita-mp_faq_tasks",
-        "evalita-mp_gen", "evalita-mp_hs", "evalita-mp_hs_prompt-1", "evalita-mp_hs_prompt-2",
-        "evalita-mp_hs_prompt-3", "evalita-mp_hs_prompt-4", "evalita-mp_hs_prompt-5", "evalita-mp_hs_prompt-6",
-        "evalita-mp_hs_tasks", "evalita-mp_ls", "evalita-mp_ls_prompt-1", "evalita-mp_ls_prompt-2",
-        "evalita-mp_ls_tasks", "evalita-mp_mc", "evalita-mp_ner-v2_adg_p1", "evalita-mp_ner-v2_adg_p2",
-        "evalita-mp_ner-v2_fic_p1", "evalita-mp_ner-v2_fic_p2", "evalita-mp_ner-v2_tasks_adg",
-        "evalita-mp_ner-v2_tasks_fic", "evalita-mp_ner-v2_tasks_wn", "evalita-mp_ner-v2_wn_p1",
-        "evalita-mp_ner-v2_wn_p2", "evalita-mp_ner_adg_group", "evalita-mp_ner_adg_p1", "evalita-mp_ner_adg_p2",
-        "evalita-mp_ner_fic_group", "evalita-mp_ner_fic_p1", "evalita-mp_ner_fic_p2", "evalita-mp_ner_group",
-        "evalita-mp_ner_tasks_adg", "evalita-mp_ner_tasks_fic", "evalita-mp_ner_tasks_wn",
-        "evalita-mp_ner_wn_group", "evalita-mp_ner_wn_p1", "evalita-mp_ner_wn_p2", "evalita-mp_re",
-        "evalita-mp_re_prompt-1", "evalita-mp_re_prompt-2", "evalita-mp_re_tasks", "evalita-mp_sa",
-        "evalita-mp_sa_prompt-1", "evalita-mp_sa_prompt-2", "evalita-mp_sa_prompt-3", "evalita-mp_sa_prompt-4",
-        "evalita-mp_sa_prompt-5", "evalita-mp_sa_prompt-6", "evalita-mp_sa_tasks", "evalita-mp_sum_fp",
-        "evalita-mp_sum_fp-small_tasks", "evalita-mp_sum_fp_tasks", "evalita-mp_te", "evalita-mp_te_prompt-1",
-        "evalita-mp_te_prompt-2", "evalita-mp_te_prompt-3", "evalita-mp_te_prompt-4", "evalita-mp_te_prompt-5",
-        "evalita-mp_te_prompt-6", "evalita-mp_te_tasks", "evalita-mp_wic", "evalita-mp_wic_prompt-1",
-        "evalita-mp_wic_prompt-2", "evalita-mp_wic_prompt-3", "evalita-mp_wic_prompt-4", "evalita-mp_wic_prompt-5",
-        "evalita-mp_wic_prompt-6", "evalita-mp_wic_tasks",
-    )
-    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

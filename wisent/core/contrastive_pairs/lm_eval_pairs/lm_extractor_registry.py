@@ -18,7 +18,7 @@ __all__ = [
 
 LOG = logging.getLogger(__name__)
 
-_REGISTRY: dict[str, Union[str, Type[LMEvalBenchmarkExtractor]]] = dict(_MANIFEST)
+_REGISTRY: dict[str, Union[str, Type[LMEvalBenchmarkExtractor]]] = {k.lower(): v for k, v in _MANIFEST.items()}
 
 
 def register_extractor(name: str, ref: Union[str, Type[LMEvalBenchmarkExtractor]]) -> None:
@@ -85,20 +85,10 @@ def get_extractor(task_name: str) -> LMEvalBenchmarkExtractor:
     if not key:
         raise UnsupportedLMEvalBenchmarkError("Empty task name is not supported.")
 
-    # Try exact match first
+    # Exact match only - no prefix matching
     ref = _REGISTRY.get(key)
     if ref:
         return _instantiate(ref)
-
-    # Try prefix match for group tasks (e.g., mmlu_anatomy -> mmlu)
-    # Split on underscore and try progressively shorter prefixes
-    parts = key.split('_')
-    for i in range(len(parts) - 1, 0, -1):
-        prefix = '_'.join(parts[:i])
-        ref = _REGISTRY.get(prefix)
-        if ref:
-            LOG.debug(f"Using extractor '{prefix}' for task '{task_name}'")
-            return _instantiate(ref)
 
     raise UnsupportedLMEvalBenchmarkError(
         f"No extractor registered for task '{task_name}'. "

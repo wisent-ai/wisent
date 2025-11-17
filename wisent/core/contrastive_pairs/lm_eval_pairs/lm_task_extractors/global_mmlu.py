@@ -14,12 +14,29 @@ if TYPE_CHECKING:
 __all__ = ["GlobalMmluExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "global_mmlu_ar",
+    "global_mmlu_bn",
+    "global_mmlu_de",
+    "global_mmlu_en",
+    "global_mmlu_es",
+    "global_mmlu_fr",
+    "global_mmlu_hi",
+    "global_mmlu_id",
+    "global_mmlu_it",
+    "global_mmlu_ja",
+    "global_mmlu_ko",
+    "global_mmlu_pt",
+    "global_mmlu_sw",
+    "global_mmlu_yo",
+    "global_mmlu_zh",
+)
+
+evaluator_name = "log_likelihoods"
+
 
 class GlobalMmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Global Mmlu benchmark."""
-
-    task_names = ("global_mmlu", "global_mmlu_ar")
-    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

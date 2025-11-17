@@ -15,6 +15,12 @@ os.environ['OMP_NUM_THREADS'] = '1'
 import datasets.config
 datasets.config.HF_DATASETS_TRUST_REMOTE_CODE = True
 
+# Patch deprecated 'List' feature type (datasets v3.6.0+)
+# Many older datasets use 'List' which was replaced by 'LargeList'
+import datasets.features.features as _features_module
+if 'List' not in _features_module._FEATURE_TYPES:
+    _features_module._FEATURE_TYPES['List'] = _features_module._FEATURE_TYPES['LargeList']
+
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet

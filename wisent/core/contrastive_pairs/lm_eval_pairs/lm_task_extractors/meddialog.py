@@ -14,7 +14,13 @@ if TYPE_CHECKING:
 __all__ = ["MeddialogExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("meddialog",)
+task_names = (
+    "meddialog",
+    "meddialog_qsumm",
+    "meddialog_qsumm_perplexity",
+    "meddialog_raw_dialogues",
+    "meddialog_raw_perplexity",
+)
 evaluator_name = "log_likelihoods"
 
 
@@ -68,6 +74,41 @@ class MeddialogExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Meddialog format: medical dialogues with description and utterances
+            if "description" in doc and "utterances" in doc:
+                description = str(doc.get("description", "")).strip()
+                utterances = doc.get("utterances", {})
+
+                if isinstance(utterances, dict) and "utterance" in utterances:
+                    utterance_list = utterances["utterance"]
+                    if len(utterance_list) >= 2:
+                        # utterance[0] is patient question, utterance[1] is doctor response
+                        patient_question = str(utterance_list[0]).strip()
+                        doctor_response = str(utterance_list[1]).strip()
+
+                        if patient_question and doctor_response:
+                            # Create synthetic negative by shuffling sentences in response
+                            import random
+                            sentences = doctor_response.split('. ')
+                            if len(sentences) > 1:
+                                shuffled = sentences.copy()
+                                random.shuffle(shuffled)
+                                # Ensure it's actually different
+                                if shuffled == sentences:
+                                    shuffled.reverse()
+                                synthetic_negative = '. '.join(shuffled)
+                            else:
+                                # If single sentence, create a generic wrong response
+                                synthetic_negative = "I don't know the answer to that question."
+
+                            metadata = {"label": "meddialog"}
+                            return self._build_pair(
+                                question=f"Patient: {patient_question}\n\nDoctor:",
+                                correct=doctor_response,
+                                incorrect=synthetic_negative,
+                                metadata=metadata,
+                            )
+
             # Try multiple possible schema formats
             question = None
             choices = None
