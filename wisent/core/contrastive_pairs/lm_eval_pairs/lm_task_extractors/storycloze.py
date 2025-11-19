@@ -73,13 +73,73 @@ class StoryclozeExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Format 1: Storycloze native format (input_sentence_1-4 + sentence_quiz1/2 + answer_right_ending)
+            if "input_sentence_1" in doc and "sentence_quiz1" in doc:
+                # Build context from the four input sentences
+                context_parts = []
+                for i in range(1, 5):
+                    sent = doc.get(f"input_sentence_{i}", "")
+                    if sent:
+                        context_parts.append(str(sent).strip())
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+                if not context_parts:
+                    log.debug(
+                        "Skipping doc due to missing input sentences",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                context = " ".join(context_parts)
+
+                # Get the two possible endings
+                choice1 = str(doc.get("sentence_quiz1", "")).strip()
+                choice2 = str(doc.get("sentence_quiz2", "")).strip()
+
+                if not choice1 or not choice2:
+                    log.debug(
+                        "Skipping doc due to missing sentence_quiz choices",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                # answer_right_ending is 1 or 2 (1-indexed)
+                answer_right_ending = doc.get("answer_right_ending")
+                if answer_right_ending is None:
+                    log.debug(
+                        "Skipping doc due to missing answer_right_ending",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                # Convert to 0-indexed
+                answer_idx = int(answer_right_ending) - 1
+
+                if answer_idx == 0:
+                    correct = choice1
+                    incorrect = choice2
+                elif answer_idx == 1:
+                    correct = choice2
+                    incorrect = choice1
+                else:
+                    log.debug(
+                        "Skipping doc due to invalid answer_right_ending",
+                        extra={"doc": doc, "answer_right_ending": answer_right_ending},
+                    )
+                    return None
+
+                metadata = {
+                    "label": "storycloze",
+                }
+
+                return self._build_pair(
+                    question=context,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):
@@ -92,7 +152,31 @@ class StoryclozeExtractor(LMEvalBenchmarkExtractor):
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
+                if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+                    log.debug(
+                        "Skipping doc due to missing/invalid fields",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                correct = choices[answer_idx]
+                incorrect_idx = (answer_idx + 1) % len(choices)
+                incorrect = choices[incorrect_idx]
+
+                formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+
+                metadata = {
+                    "label": "storycloze",
+                }
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 3: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()
                 choices = [
@@ -105,7 +189,31 @@ class StoryclozeExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+                if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+                    log.debug(
+                        "Skipping doc due to missing/invalid fields",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                correct = choices[answer_idx]
+                incorrect_idx = (answer_idx + 1) % len(choices)
+                incorrect = choices[incorrect_idx]
+
+                formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+
+                metadata = {
+                    "label": "storycloze",
+                }
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 4: query/prompt + answer
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer
@@ -120,29 +228,12 @@ class StoryclozeExtractor(LMEvalBenchmarkExtractor):
                     )
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+            else:
                 log.debug(
-                    "Skipping doc due to missing/invalid fields",
+                    "Skipping doc due to unrecognized format",
                     extra={"doc": doc},
                 )
                 return None
-
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "storycloze",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

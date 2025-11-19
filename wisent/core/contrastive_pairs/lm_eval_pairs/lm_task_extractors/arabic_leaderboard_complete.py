@@ -82,11 +82,24 @@ class ArabicLeaderboardCompleteExtractor(LMEvalBenchmarkExtractor):
                     choices = choices_data.get("text", [])
                 elif isinstance(choices_data, list):
                     choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
+
+                # First check for gold field (numeric index)
+                if "gold" in doc:
+                    answer_idx = int(doc.get("gold"))
                 else:
-                    answer_idx = int(answer) if answer else 0
+                    answer = doc.get("answer", doc.get("answerKey", ""))
+                    if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
+                        answer_idx = ord(answer.upper()) - ord('A')
+                    else:
+                        # Try to parse as int, or default to 0
+                        try:
+                            answer_idx = int(answer) if answer else 0
+                        except (ValueError, TypeError):
+                            # If answer is a text string (like Arabic text), try to find it in choices
+                            if isinstance(choices, list) and answer in choices:
+                                answer_idx = choices.index(answer)
+                            else:
+                                answer_idx = 0
 
             # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:

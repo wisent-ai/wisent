@@ -65,7 +65,40 @@ class LambadaClozeExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
+            # Lambada cloze format: doc has 'text' field
+            # The last word is the target, context is everything before it
+            if "text" in doc:
+                text = str(doc.get("text", "")).strip()
+                if not text:
+                    return None
+
+                # Split into words
+                words = text.split()
+                if len(words) < 2:
+                    return None
+
+                # Last word is the target (correct answer)
+                correct_answer = words[-1]
+
+                # Context is everything except the last word
+                context = ' '.join(words[:-1])
+
+                # Create prompt with blank for last word
+                prompt = f"{context} ____."
+
+                # For negative response, use a simple placeholder
+                # In log-likelihood evaluation, the model will prefer the correct word
+                incorrect_answer = "word"
+
+                metadata = {"label": "lambada_cloze"}
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
+                )
+
+            # Fallback for other formats
             question = None
             choices = None
             answer_idx = None

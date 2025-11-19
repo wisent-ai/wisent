@@ -77,10 +77,46 @@ class Hrm8kExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Hrm8K doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Hrm8K schema: question (str), answer (numeric), original (str), level, type
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Hrm8K format: question + numeric answer (math problems)
+            if "question" in doc and "answer" in doc and not "choices" in doc:
+                question = str(doc.get("question", "")).strip()
+                answer = doc.get("answer")
+
+                if not question or answer is None:
+                    return None
+
+                # Convert answer to string
+                if isinstance(answer, (int, float)):
+                    correct_answer = str(answer)
+                else:
+                    correct_answer = str(answer).strip()
+
+                if not correct_answer:
+                    return None
+
+                # For numeric answers, create an incorrect answer by modifying the value
+                try:
+                    numeric_value = float(correct_answer)
+                    # Create incorrect answer by adding 1
+                    incorrect_answer = str(numeric_value + 1)
+                except (ValueError, TypeError):
+                    # If not numeric, use generic incorrect answer
+                    incorrect_answer = "incorrect answer"
+
+                metadata = {"label": "hrm8k"}
+                return self._build_pair(
+                    question=f"Question: {question}\nAnswer:",
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None

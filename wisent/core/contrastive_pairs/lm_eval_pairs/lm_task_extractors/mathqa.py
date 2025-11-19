@@ -60,21 +60,47 @@ class MathQAExtractor(LMEvalBenchmarkExtractor):
     ) -> ContrastivePair | None:
         """Convert a single doc into a ContrastivePair."""
         try:
-            # Use task_data.doc_to_text for formatted question
-            if hasattr(task_data, "doc_to_text"):
-                formatted_question = task_data.doc_to_text(doc)
-            else:
-                formatted_question = str(doc)
+            # mathqa format: Problem, options, correct
+            problem = doc.get("Problem", "").strip()
+            options_str = doc.get("options", "")
+            correct_key = doc.get("correct", "").strip().lower()
 
-            # Try common answer fields
-            correct_answer = doc.get("answer", doc.get("label", doc.get("target", "")))
-            
-            if not formatted_question or not correct_answer:
-                _LOG.debug("Skipping: missing question or answer")
+            if not problem or not options_str or not correct_key:
+                _LOG.debug("Skipping: missing problem, options, or correct answer")
                 return None
 
-            # Generate incorrect answer (generic fallback)
-            incorrect_answer = "incorrect"
+            # Parse options string like "a ) 38 , b ) 27.675 , c ) 30 , d ) data inadequate , e ) none of these"
+            options_dict = {}
+            parts = options_str.split(',')
+            for part in parts:
+                part = part.strip()
+                if ')' in part:
+                    key, value = part.split(')', 1)
+                    key = key.strip().lower()
+                    value = value.strip()
+                    options_dict[key] = value
+
+            if correct_key not in options_dict:
+                _LOG.debug(f"Skipping: correct key '{correct_key}' not in options")
+                return None
+
+            correct_answer = options_dict[correct_key]
+
+            # Get an incorrect answer (any other option)
+            incorrect_key = None
+            for key in options_dict:
+                if key != correct_key:
+                    incorrect_key = key
+                    break
+
+            if incorrect_key is None:
+                _LOG.debug("Skipping: no incorrect option available")
+                return None
+
+            incorrect_answer = options_dict[incorrect_key]
+
+            # Format question
+            formatted_question = f"Question: {problem}\nAnswer:"
 
             metadata = {
                 "label": "mathqa",
@@ -83,7 +109,7 @@ class MathQAExtractor(LMEvalBenchmarkExtractor):
 
             return self._build_pair(
                 question=formatted_question,
-                correct=str(correct_answer),
+                correct=correct_answer,
                 incorrect=incorrect_answer,
                 metadata=metadata,
             )

@@ -63,80 +63,49 @@ class RealtoxicitypromptsExtractor(LMEvalBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Realtoxicityprompts doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single Realtoxicityprompts doc into a ContrastivePair.
+
+        Schema: {prompt: {text: str, toxicity: float}, continuation: {text: str, toxicity: float}}
+        Task: Generate non-toxic continuations for prompts
+        Positive: Low toxicity continuation
+        Negative: High toxicity continuation
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("filename", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
-
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "realtoxicityprompts"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+            # Extract prompt text
+            prompt_data = doc.get("prompt")
+            if not prompt_data or not isinstance(prompt_data, dict):
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
+            prompt_text = prompt_data.get("text", "").strip()
+            if not prompt_text:
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Extract continuation as positive response (should be low toxicity)
+            continuation_data = doc.get("continuation")
+            if not continuation_data or not isinstance(continuation_data, dict):
+                return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            continuation_text = continuation_data.get("text", "").strip()
+            continuation_toxicity = continuation_data.get("toxicity", 0.0)
+
+            if not continuation_text:
+                return None
+
+            # Create a toxic alternative as negative response
+            # Since we don't have toxic examples, use a placeholder that indicates toxicity
+            toxic_continuation = "[TOXIC CONTENT]"
 
             metadata = {
                 "label": "realtoxicityprompts",
+                "continuation_toxicity": continuation_toxicity,
             }
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt_text,
+                correct=continuation_text,
+                incorrect=toxic_continuation,
                 metadata=metadata,
             )
 

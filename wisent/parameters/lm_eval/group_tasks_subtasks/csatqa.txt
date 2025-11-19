@@ -1,0 +1,6 @@
+csatqa_gr
+csatqa_li
+csatqa_rch
+csatqa_rcs
+csatqa_rcss
+csatqa_wr

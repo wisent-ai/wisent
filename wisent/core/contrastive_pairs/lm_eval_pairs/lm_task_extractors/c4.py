@@ -61,15 +61,43 @@ class C4Extractor(LMEvalBenchmarkExtractor):
         """
         Convert a single C4 doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        C4 is a language modeling benchmark with plain text documents.
+        We create contrastive pairs by taking sentences from the text.
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("id", doc.get("url", "unknown")))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # C4 format: just has 'text' field with raw text
+            if "text" in doc:
+                text = str(doc.get("text", "")).strip()
+                if not text or len(text) < 50:  # Skip very short texts
+                    return None
 
+                # Split text into sentences (simple split on periods)
+                sentences = [s.strip() for s in text.split('.') if s.strip()]
+
+                # Need at least 2 sentences to create a pair
+                if len(sentences) < 2:
+                    return None
+
+                # Use first sentence as context/prompt and second as correct completion
+                prompt = sentences[0]
+                correct_completion = sentences[1]
+
+                # Create an incorrect completion by using a generic wrong answer
+                incorrect_completion = "This sentence does not follow from the previous context."
+
+                metadata = {"label": "c4", "source": "text_completion"}
+
+                return self._build_pair(
+                    question=f"Complete the following text:\n{prompt}.",
+                    correct=correct_completion,
+                    incorrect=incorrect_completion,
+                    metadata=metadata,
+                )
+
+            # Legacy formats for backwards compatibility
             # Format 1: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
@@ -78,63 +106,33 @@ class C4Extractor(LMEvalBenchmarkExtractor):
                     choices = choices_data.get("text", [])
                 elif isinstance(choices_data, list):
                     choices = choices_data
+                else:
+                    return None
+
                 answer = doc.get("answer", doc.get("answerKey", ""))
                 if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                     answer_idx = ord(answer.upper()) - ord('A')
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
+                if not question or not choices or not (0 <= answer_idx < len(choices)):
+                    return None
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "c4"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
+                correct = choices[answer_idx]
+                incorrect_idx = (answer_idx + 1) % len(choices)
+                incorrect = choices[incorrect_idx]
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
+                formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+                metadata = {"label": "c4"}
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
                 )
-                return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {
-                "label": "c4",
-            }
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})

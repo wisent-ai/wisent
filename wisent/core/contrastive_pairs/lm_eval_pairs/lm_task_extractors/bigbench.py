@@ -45,7 +45,31 @@ class BigBenchExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+
+        # Handle problematic BigBench tasks that have empty 'train' splits
+        task_name = getattr(lm_eval_task_data, "NAME", None) or lm_eval_task_data.config.task
+        problematic_tasks = {
+            'bigbench_simple_arithmetic_json_multiple_choice_generate_until',
+            'bigbench_simple_arithmetic_multiple_targets_json_generate_until',
+        }
+
+        if task_name in problematic_tasks:
+            # Manually load dataset with 'default' split for these tasks
+            import datasets
+            dataset_path = lm_eval_task_data.config.dataset_path
+            dataset_name = lm_eval_task_data.config.dataset_name
+
+            log.info(f"Loading problematic task {task_name} with 'default' split")
+            dataset = datasets.load_dataset(
+                path=dataset_path,
+                name=dataset_name,
+                split='default',
+            )
+            docs = list(dataset)
+            if max_items and len(docs) > max_items:
+                docs = docs[:max_items]
+        else:
+            docs = self.load_docs(lm_eval_task_data, max_items)
 
         pairs: list[ContrastivePair] = []
 

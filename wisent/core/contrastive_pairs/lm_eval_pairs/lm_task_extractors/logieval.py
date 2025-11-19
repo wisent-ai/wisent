@@ -47,12 +47,57 @@ class LogievalExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
+            # Format 1: content + ideal (logieval format)
+            if "content" in doc and "ideal" in doc:
+                content = str(doc.get("content", "")).strip()
+                ideal = str(doc.get("ideal", "")).strip()
+
+                # Parse the content to extract question and choices
+                import re
+                # Extract question part
+                question_match = re.search(r'Question:\s*(.+?)(?=\n[A-Z]\.)', content, re.DOTALL)
+                if not question_match:
+                    return None
+                question = question_match.group(1).strip()
+
+                # Extract choices A, B, C, D
+                choices = []
+                for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
+                    choice_match = re.search(rf'{letter}\.\s*(.+?)(?=\n[A-Z]\.|Answer:|$)', content, re.DOTALL)
+                    if choice_match:
+                        choices.append(choice_match.group(1).strip())
+                    else:
+                        break
+
+                if not choices or not ideal:
+                    return None
+
+                # ideal is the letter answer (A, B, C, D)
+                answer_idx = ord(ideal.upper()) - ord('A')
+
+                if not (0 <= answer_idx < len(choices)):
+                    return None
+
+                correct = choices[answer_idx]
+                incorrect_idx = (answer_idx + 1) % len(choices)
+                incorrect = choices[incorrect_idx]
+
+                formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+                metadata = {"label": "logieval"}
+
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
+            # Format 2: Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

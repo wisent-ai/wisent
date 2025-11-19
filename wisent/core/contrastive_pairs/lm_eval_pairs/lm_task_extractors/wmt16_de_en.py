@@ -51,46 +51,33 @@ class Wmt16DeEnExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # WMT16 translation format: translation dict with 'de' (source) and 'en' (target)
+            translation = doc.get("translation", {})
+            source_text = translation.get("de", "").strip()
+            target_text = translation.get("en", "").strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            if not source_text or not target_text:
+                log.debug("Skipping doc due to missing source or target", extra={"doc": doc})
+                return None
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
+            # Use German text as prompt and English translation as correct response
+            # For incorrect response, use a truncated/corrupted version of the English translation
+            words = target_text.split()
+            if len(words) > 3:
+                # Use first half as truncated translation
+                incorrect = " ".join(words[:len(words)//2])
             else:
-                return None
+                # If target is very short, use a single word or empty
+                incorrect = words[0] if words else "No translation"
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+            # Create prompt with instruction to translate from German to English
+            prompt = f"Translate from German to English:\n{source_text}"
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "wmt16_de_en"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
+                question=prompt,
+                correct=target_text,
                 incorrect=incorrect,
                 metadata=metadata,
             )

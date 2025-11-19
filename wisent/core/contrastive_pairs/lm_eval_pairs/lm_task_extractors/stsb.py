@@ -47,12 +47,34 @@ class StsbExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
+            # Format 1: source + target (unitxt format used by stsb)
+            if "source" in doc and "target" in doc:
+                question = str(doc.get("source", "")).strip()
+                correct_answer = str(doc.get("target", "")).strip()
+                # Get references to create an incorrect answer
+                references = doc.get("references", [])
+                if isinstance(references, list) and len(references) > 0:
+                    # Use a different reference as incorrect answer if available
+                    incorrect_answer = str(references[-1]).strip() if len(references) > 1 and references[-1] != correct_answer else "0.0"
+                else:
+                    incorrect_answer = "0.0"
+
+                if correct_answer and question:
+                    metadata = {"label": "stsb"}
+                    return self._build_pair(
+                        question=question,
+                        correct=correct_answer,
+                        incorrect=incorrect_answer,
+                        metadata=metadata,
+                    )
+                return None
+
+            # Format 2: Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

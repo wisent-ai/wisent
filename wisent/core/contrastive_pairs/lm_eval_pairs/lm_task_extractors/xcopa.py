@@ -81,6 +81,36 @@ class XcopaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # XCOPA format: premise, choice1, choice2, question, label
+            if "premise" in doc and "choice1" in doc and "choice2" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                question_type = str(doc.get("question", "")).strip()
+                choice1 = str(doc.get("choice1", "")).strip()
+                choice2 = str(doc.get("choice2", "")).strip()
+                label = doc.get("label")
+
+                if not premise or not choice1 or not choice2 or label is None:
+                    log.debug("Skipping doc due to missing fields", extra={"doc": doc})
+                    return None
+
+                choices = [choice1, choice2]
+                if label not in [0, 1]:
+                    log.debug("Invalid label", extra={"label": label})
+                    return None
+
+                correct = choices[label]
+                incorrect = choices[1 - label]
+
+                question = f"Premise: {premise}\nQuestion: What is the {question_type}?"
+
+                metadata = {"label": "xcopa"}
+                return self._build_pair(
+                    question=question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None

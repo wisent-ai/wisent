@@ -69,6 +69,31 @@ class Wsc273Extractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # WSC273 format: text, options, label
+            if "text" in doc and "options" in doc and "label" in doc:
+                text = str(doc.get("text", "")).strip()
+                pronoun = str(doc.get("pronoun", "")).strip()
+                options = doc.get("options", [])
+                label = doc.get("label")
+
+                if not text or not options or label is None or not (0 <= label < len(options)):
+                    log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+                    return None
+
+                correct = options[label]
+                incorrect_idx = (label + 1) % len(options)
+                incorrect = options[incorrect_idx]
+
+                question = f"In the sentence \"{text}\", what does \"{pronoun}\" refer to?"
+
+                metadata = {"label": "wsc273"}
+                return self._build_pair(
+                    question=question,
+                    correct=correct,
+                    incorrect=incorrect,
+                    metadata=metadata,
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None

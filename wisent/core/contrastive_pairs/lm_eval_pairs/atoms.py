@@ -140,11 +140,16 @@ class LMEvalBenchmarkExtractor(ABC):
             if cls._has_true(lm_eval_task_data, has_method) and cls._has_callable(
                 lm_eval_task_data, docs_method
             ):
-                print(f"loaded from {docs_method}")
-                docs_iter = getattr(lm_eval_task_data, docs_method)()
-                docs_list = cls._coerce_docs_to_dicts(docs_iter, max_items)
-                if docs_list:
-                    return docs_list
+                try:
+                    print(f"loaded from {docs_method}")
+                    docs_iter = getattr(lm_eval_task_data, docs_method)()
+                    docs_list = cls._coerce_docs_to_dicts(docs_iter, max_items)
+                    if docs_list:
+                        return docs_list
+                except (KeyError, ValueError) as e:
+                    # Split doesn't exist or can't be loaded, try next split
+                    print(f"  skipping {docs_method}: {e}")
+                    continue
 
         # Fallback to dataset split (common for tasks relying on fewshot_split).
         docs_list = cls._fallback_load_from_dataset(lm_eval_task_data, max_items)
@@ -242,8 +247,8 @@ class LMEvalBenchmarkExtractor(ABC):
             return []
 
         try:
-            from datasets import load_dataset 
-        except Exception as exc:  
+            from datasets import load_dataset
+        except Exception as exc:
             task_name = getattr(
                 lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__
             )
@@ -260,11 +265,54 @@ class LMEvalBenchmarkExtractor(ABC):
                 split=dataset_split,
             )
         except Exception as exc:
+            # If the specified split doesn't exist, try to detect and use available splits
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            raise RuntimeError(
-                f"Failed to load dataset split via fallback for task '{task_name}'. "
-                f"Arguments were: name={dataset_name!r}, config={dataset_config!r}, "
-                f"split={dataset_split!r}. Underlying error: {exc}"
-            ) from exc
+            error_msg = str(exc)
+
+            # Check if it's a "no data" error for the split
+            if "corresponds to no data" in error_msg or "Unknown split" in error_msg:
+                try:
+                    # Try to load the dataset without specifying a split to see available splits
+                    from datasets import load_dataset_builder
+                    builder = load_dataset_builder(
+                        dataset_name,
+                        dataset_config if dataset_config else None,
+                    )
+                    available_splits = list(builder.info.splits.keys()) if builder.info.splits else []
+
+                    # Try common alternative splits in order of preference
+                    split_alternatives = ["default", "validation", "test", "dev"]
+                    for alt_split in split_alternatives:
+                        if alt_split in available_splits:
+                            print(f"Split '{dataset_split}' not available for {task_name}, using '{alt_split}' instead")
+                            dataset = load_dataset(
+                                dataset_name,
+                                dataset_config if dataset_config else None,
+                                split=alt_split,
+                            )
+                            return cls._coerce_docs_to_dicts(dataset, max_items)
+
+                    # If no alternatives found, raise the original error
+                    raise RuntimeError(
+                        f"Failed to load dataset split via fallback for task '{task_name}'. "
+                        f"Requested split '{dataset_split}' not found. Available splits: {available_splits}. "
+                        f"Arguments were: name={dataset_name!r}, config={dataset_config!r}, "
+                        f"split={dataset_split!r}. Underlying error: {exc}"
+                    ) from exc
+                except Exception as fallback_exc:
+                    # If split detection fails, raise original error
+                    if isinstance(fallback_exc, RuntimeError) and "Available splits" in str(fallback_exc):
+                        raise fallback_exc
+                    raise RuntimeError(
+                        f"Failed to load dataset split via fallback for task '{task_name}'. "
+                        f"Arguments were: name={dataset_name!r}, config={dataset_config!r}, "
+                        f"split={dataset_split!r}. Underlying error: {exc}"
+                    ) from exc
+            else:
+                raise RuntimeError(
+                    f"Failed to load dataset split via fallback for task '{task_name}'. "
+                    f"Arguments were: name={dataset_name!r}, config={dataset_config!r}, "
+                    f"split={dataset_split!r}. Underlying error: {exc}"
+                ) from exc
 
         return cls._coerce_docs_to_dicts(dataset, max_items)

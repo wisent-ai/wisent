@@ -69,21 +69,25 @@ class MedQAExtractor(LMEvalBenchmarkExtractor):
 
         try:
             sent1 = str(doc.get("sent1", "")).strip()
-            endings = [str(doc.get("ending0", "")).strip(), str(doc.get("ending1", "")).strip(), str(doc.get("ending2", "")).strip(), str(doc.get("ending3", "")).strip()]
+            endings = [
+                str(doc.get("ending0", "")).strip(),
+                str(doc.get("ending1", "")).strip(),
+                str(doc.get("ending2", "")).strip(),
+                str(doc.get("ending3", "")).strip()
+            ]
             label = doc.get("label")
 
-            if not sent1 or not endings or label not in {0, 1, 2, 3}:
+            if not sent1 or not all(endings) or label not in {0, 1, 2, 3}:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
-            
-            labels = {0: "entailment", 1: "neutral", 2: "contradiction"}
+
             correct = endings[label]
-            incorrect = endings[(label+1)%3]
-            
-            formatted_question = f"Question:{sent1}\nA. {incorrect}\nB. {correct}"
+            incorrect = endings[(label + 1) % 4]
+
+            formatted_question = f"Question: {sent1}\nA. {incorrect}\nB. {correct}"
 
             metadata = {
                 "label": "medqa",

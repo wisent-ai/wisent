@@ -66,77 +66,43 @@ class SquadCompletionExtractor(LMEvalBenchmarkExtractor):
         Convert a single Squad Completion doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("doc_id", doc.get("id", "unknown")))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Squad Completion format: text (context ending incomplete) + value (correct completion)
+            # e.g., {"text": "...The NFL team that represented the AFC at Super Bowl 50 was the", "value": "Denver Broncos"}
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "squad_completion"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
+            if "text" not in doc or "value" not in doc:
                 log.debug(
-                    "Skipping doc due to missing/invalid fields",
+                    "Skipping doc due to missing 'text' or 'value' fields",
                     extra={"doc": doc},
                 )
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            text = str(doc.get("text", "")).strip()
+            correct_value = str(doc.get("value", "")).strip()
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            if not text or not correct_value:
+                log.debug(
+                    "Skipping doc due to empty text or value",
+                    extra={"doc": doc},
+                )
+                return None
+
+            # For squad_completion, the prompt is the incomplete sentence
+            # Positive: correct completion
+            # Negative: use a generic incorrect completion
+            prompt = text
 
             metadata = {
                 "label": "squad_completion",
+                "title": doc.get("title", "unknown"),
             }
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=prompt,
+                correct=correct_value,
+                incorrect="Unknown",
                 metadata=metadata,
             )
 

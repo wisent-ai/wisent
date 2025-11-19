@@ -50,12 +50,37 @@ class SuperGlueT5PromptExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # Format 1: BoolQ format (question + passage + label)
+            if "question" in doc and "passage" in doc and "label" in doc:
+                question = str(doc.get("question", "")).strip()
+                passage = str(doc.get("passage", "")).strip()
+                label = doc.get("label")
+
+                if question and label is not None:
+                    # label 1 = True, 0 = False
+                    if label == 1:
+                        correct = "True"
+                        incorrect = "False"
+                    else:
+                        correct = "False"
+                        incorrect = "True"
+
+                    formatted_question = f"Passage: {passage}\n\nQuestion: {question}\nAnswer (True/False):"
+                    metadata = {"label": "super_glue_t5_prompt"}
+                    return self._build_pair(
+                        question=formatted_question,
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata=metadata,
+                    )
+
+            # Format 2: Multiple choice format
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

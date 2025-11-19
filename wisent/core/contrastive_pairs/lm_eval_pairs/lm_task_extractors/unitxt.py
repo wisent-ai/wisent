@@ -121,6 +121,28 @@ class UnitxtExtractor(LMEvalBenchmarkExtractor):
                     )
                 return None
 
+            # Format 4: source + target (unitxt format)
+            elif "source" in doc and "target" in doc:
+                question = str(doc.get("source", "")).strip()
+                correct_answer = str(doc.get("target", "")).strip()
+                # Get references to create an incorrect answer
+                references = doc.get("references", [])
+                if isinstance(references, list) and len(references) > 0:
+                    # Use a different reference as incorrect answer if available
+                    incorrect_answer = str(references[-1]).strip() if len(references) > 1 and references[-1] != correct_answer else "other"
+                else:
+                    incorrect_answer = "other"
+
+                if correct_answer and question:
+                    metadata = {"label": "unitxt"}
+                    return self._build_pair(
+                        question=question,
+                        correct=correct_answer,
+                        incorrect=incorrect_answer,
+                        metadata=metadata,
+                    )
+                return None
+
             if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
                 log.debug(
                     "Skipping doc due to missing/invalid fields",

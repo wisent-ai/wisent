@@ -62,6 +62,10 @@ class ArcExtractor(LMEvalBenchmarkExtractor):
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
 
+            # Handle dict format (e.g., {'label': ['A', 'B', 'C', 'D'], 'text': [...]})
+            if isinstance(choices, dict) and "text" in choices:
+                choices = choices["text"]
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [
@@ -73,8 +77,8 @@ class ArcExtractor(LMEvalBenchmarkExtractor):
                 choices = [c for c in choices if c]
 
             # Try multiple format patterns for answer
-            # Check "gold" first (used by arc_ar), then "answer", then others
-            answer = doc.get("gold", doc.get("answer", doc.get("label", doc.get("target", None))))
+            # Check "gold" first (used by arc_ar), then "answerKey" (used by metabench), then others
+            answer = doc.get("gold", doc.get("answerKey", doc.get("answer", doc.get("label", doc.get("target", None)))))
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')

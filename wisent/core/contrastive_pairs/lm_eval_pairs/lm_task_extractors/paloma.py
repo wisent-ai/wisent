@@ -24,8 +24,8 @@ task_names = (
 )
 
 # Note: Paloma is a perplexity benchmark (loglikelihood_rolling)
-# It may not be suitable for contrastive pair extraction
-evaluator_name = "generation"
+# We use perplexity evaluation with text corruption for contrastive pairs
+evaluator_name = "perplexity"
 
 
 class PalomaExtractor(LMEvalBenchmarkExtractor):
@@ -40,6 +40,9 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
         """
         Build contrastive pairs from Paloma docs.
 
+        Note: Paloma docs are very long (hundreds of thousands of characters).
+        We split each doc into multiple chunks to generate multiple pairs.
+
         Args:
             lm_eval_task_data: lm-eval task instance for Paloma.
             limit: Optional maximum number of pairs to produce.
@@ -51,18 +54,21 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        # Load fewer docs since we'll split each into multiple pairs
+        docs_to_load = 1 if max_items is None else max(1, max_items // 4)
+        docs = self.load_docs(lm_eval_task_data, docs_to_load, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
 
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
-            if pair is not None:
-                pairs.append(pair)
-                if max_items is not None and len(pairs) >= max_items:
-                    break
+            # Extract multiple pairs from each long document
+            doc_pairs = self._extract_pairs_from_doc(doc, max_pairs=max_items - len(pairs) if max_items else None)
+            pairs.extend(doc_pairs)
+            if max_items is not None and len(pairs) >= max_items:
+                pairs = pairs[:max_items]
+                break
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
@@ -70,82 +76,117 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
 
         return pairs
 
+    def _extract_pairs_from_doc(self, doc: dict[str, Any], max_pairs: int | None = None) -> list[ContrastivePair]:
+        """
+        Extract multiple contrastive pairs from a single long Paloma document.
+
+        Args:
+            doc: Paloma document with 'text' field
+            max_pairs: Maximum number of pairs to extract from this doc
+
+        Returns:
+            List of ContrastivePair objects
+        """
+        pairs = []
+        text = doc.get("text", "").strip()
+
+        if not text or len(text) < 200:
+            return pairs
+
+        # Split long text into chunks of ~200 words
+        words = text.split()
+        chunk_size = 200
+        target_pairs = max_pairs if max_pairs else 4  # Default to 4 pairs per doc
+
+        for i in range(target_pairs):
+            start_idx = i * chunk_size
+            if start_idx >= len(words):
+                break
+
+            end_idx = min(start_idx + chunk_size, len(words))
+            chunk_words = words[start_idx:end_idx]
+
+            if len(chunk_words) < 50:  # Skip very short chunks
+                continue
+
+            chunk_text = " ".join(chunk_words)
+
+            # Create corrupted version
+            mid_start = len(chunk_words) // 3
+            mid_end = 2 * len(chunk_words) // 3
+            middle_words = chunk_words[mid_start:mid_end]
+
+            import random
+            random.seed(hash(chunk_text) % (2**32))
+            shuffled_middle = middle_words.copy()
+            random.shuffle(shuffled_middle)
+
+            corrupted_words = chunk_words[:mid_start] + shuffled_middle + chunk_words[mid_end:]
+            corrupted_text = " ".join(corrupted_words)
+
+            metadata = {"label": "paloma", "task": doc.get("source", "paloma"), "chunk": i}
+
+            pair = self._build_pair(
+                question="Continue this text:",
+                correct=chunk_text,
+                incorrect=corrupted_text,
+                metadata=metadata,
+            )
+            pairs.append(pair)
+
+        return pairs
+
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single Paloma doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
+        Convert a single Paloma doc into a ContrastivePair for perplexity evaluation.
+
+        Paloma is a perplexity benchmark with only text passages. We create contrastive
+        pairs by using the original text as positive and a corrupted version as negative.
+        The perplexity evaluator will compare both and should prefer the original.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Paloma docs have a 'text' field with the passage
+            text = doc.get("text", "").strip()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "paloma"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+            if not text or len(text) < 50:  # Skip very short texts
+                log.debug("Skipping doc with insufficient text", extra={"text_len": len(text)})
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
+            # Take a reasonable chunk (first ~200 words or ~1000 chars)
+            words = text.split()
+            if len(words) > 200:
+                text = " ".join(words[:200])
+            elif len(text) > 1000:
+                text = text[:1000]
+
+            # Create corrupted version by shuffling some words
+            # This should have higher perplexity than the original
+            words = text.split()
+            if len(words) < 10:
                 return None
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Shuffle middle 30% of words to create unnatural text
+            mid_start = len(words) // 3
+            mid_end = 2 * len(words) // 3
+            middle_words = words[mid_start:mid_end]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            import random
+            random.seed(hash(text) % (2**32))  # Deterministic shuffle based on text
+            shuffled_middle = middle_words.copy()
+            random.shuffle(shuffled_middle)
 
-            metadata = {
-                "label": "paloma",
-            }
+            corrupted_words = words[:mid_start] + shuffled_middle + words[mid_end:]
+            corrupted_text = " ".join(corrupted_words)
+
+            # Build the pair with minimal prompt (perplexity is computed on the response)
+            metadata = {"label": "paloma", "task": doc.get("source", "paloma")}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question="Continue this text:",  # Minimal prompt for perplexity tasks
+                correct=text,
+                incorrect=corrupted_text,
                 metadata=metadata,
             )
 
