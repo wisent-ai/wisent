@@ -62,15 +62,40 @@ class SwdeExtractor(LMEvalBenchmarkExtractor):
         Convert a single Swde doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("doc_id", doc.get("id", "unknown")))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            # Format 1: SWDE format (text + key + value)
+            if "text" in doc and "key" in doc and "value" in doc:
+                text = str(doc.get("text", "")).strip()
+                key = str(doc.get("key", "")).strip()
+                value = str(doc.get("value", "")).strip()
 
-            # Format 1: question + choices + answer
+                if not text or not key or not value:
+                    log.debug(
+                        "Skipping doc due to empty text, key, or value",
+                        extra={"doc": doc},
+                    )
+                    return None
+
+                # For SWDE, the prompt is the text with the key to extract
+                # Positive: correct value
+                # Negative: use a generic incorrect value
+                prompt = f"{text}\n\nExtract the {key}:"
+
+                metadata = {
+                    "label": "swde",
+                    "key": key,
+                }
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=value,
+                    incorrect="Unknown",
+                    metadata=metadata,
+                )
+
+            # Format 2: question + choices + answer
             if "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})

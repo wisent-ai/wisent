@@ -90,7 +90,7 @@ class XStoryClozeExtractor(LMEvalBenchmarkExtractor):
             endings = [str(doc.get("sentence_quiz1")).strip(), str(doc.get("sentence_quiz2")).strip()]
             answer = doc.get("answer_right_ending") - 1
 
-            if not inputs or not endings or not answer:
+            if not inputs or not endings or answer is None:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},

@@ -82,6 +82,41 @@ class XquadExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            # XQuAD format: context, question, answers (with text array)
+            if "context" in doc and "question" in doc and "answers" in doc:
+                context = str(doc.get("context", "")).strip()
+                question = str(doc.get("question", "")).strip()
+                answers = doc.get("answers", {})
+
+                if not context or not question or not answers:
+                    log.debug("Skipping doc due to missing XQuAD fields", extra={"doc": doc})
+                    return None
+
+                # Get the correct answer text
+                answer_texts = answers.get("text", [])
+                if not answer_texts or not answer_texts[0]:
+                    log.debug("Skipping doc due to missing answer text", extra={"doc": doc})
+                    return None
+
+                correct_answer = str(answer_texts[0]).strip()
+
+                # Create a plausible incorrect answer by taking a different span from context
+                words = context.split()
+                if len(words) > 5:
+                    incorrect_answer = " ".join(words[:min(3, len(words))])
+                else:
+                    incorrect_answer = "unknown"
+
+                formatted_question = f"Context: {context}\n\nQuestion: {question}\n\nAnswer:"
+
+                metadata = {"label": "xquad"}
+                return self._build_pair(
+                    question=formatted_question,
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None

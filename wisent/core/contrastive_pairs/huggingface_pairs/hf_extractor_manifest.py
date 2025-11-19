@@ -26,6 +26,10 @@ EXTRACTORS: dict[str, str] = {
     # Coding benchmarks
     "humaneval": f"{base_import}humaneval:HumanEvalExtractor",
     "humaneval_plus": f"{base_import}humaneval:HumanEvalExtractor",
+    "humaneval_64_instruct": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
+    "humaneval_instruct": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
+    "humanevalpack": f"{base_import}humaneval:HumanEvalExtractor",
+    "instructhumaneval": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
     "mbpp": f"{base_import}mbpp:MBPPExtractor",
     "mbpp_plus": f"{base_import}mbpp:MBPPExtractor",
     "instruct_humaneval": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
@@ -66,5 +70,18 @@ EXTRACTORS: dict[str, str] = {
     # Database/Table benchmarks
     "tag": f"{base_import}tag:TagExtractor",
     "Tag": f"{base_import}tag:TagExtractor",
+
+    # Medical benchmarks
+    "meddialog": f"{base_import}meddialog:MeddialogExtractor",
+    "meddialog_qsumm": f"{base_import}meddialog:MeddialogExtractor",
+    "meddialog_qsumm_perplexity": f"{base_import}meddialog:MeddialogExtractor",
+    "meddialog_raw_dialogues": f"{base_import}meddialog:MeddialogExtractor",
+    "meddialog_raw_perplexity": f"{base_import}meddialog:MeddialogExtractor",
+
+    # MMLU-SR benchmarks (all variants use the same extractor)
+    "mmlusr": f"{base_import}mmlusr:MMLUSRExtractor",
+    "mmlusr_answer_only": f"{base_import}mmlusr:MMLUSRExtractor",
+    "mmlusr_question_only": f"{base_import}mmlusr:MMLUSRExtractor",
+    "mmlusr_question_and_answer": f"{base_import}mmlusr:MMLUSRExtractor",
 }
 

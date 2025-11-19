@@ -1,0 +1,3 @@
+bertaqa_eu
+bertaqa_en
+bertaqa_en_mt_{model}

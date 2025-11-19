@@ -47,12 +47,36 @@ class SglueExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
+            # Format 1: premise/hypothesis/label (entailment tasks like RTE)
+            if "premise" in doc and "hypothesis" in doc and "label" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                hypothesis = str(doc.get("hypothesis", "")).strip()
+                label = doc.get("label")
+
+                if premise and hypothesis and label is not None:
+                    # label 1 = entailment (True), 0 = not entailment (False)
+                    if label == 1:
+                        correct = "True"
+                        incorrect = "False"
+                    else:
+                        correct = "False"
+                        incorrect = "True"
+
+                    question = f"Premise: {premise}\nHypothesis: {hypothesis}\nDoes the premise entail the hypothesis?"
+                    metadata = {"label": "sglue"}
+                    return self._build_pair(
+                        question=question,
+                        correct=correct,
+                        incorrect=incorrect,
+                        metadata=metadata,
+                    )
+
+            # Format 2: Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [

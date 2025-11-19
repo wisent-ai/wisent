@@ -1,0 +1,2 @@
+afrimmlu_direct_{language_code}
+afrimmlu_translate_{language_code}

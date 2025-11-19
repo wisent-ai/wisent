@@ -1,0 +1,46 @@
+"""Mmmu group task manifest."""
+
+from __future__ import annotations
+
+BASE_IMPORT = "wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors."
+
+MMMU_TASKS = {
+    "mmmu": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_accounting": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_agriculture": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_architecture_and_engineering": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_art": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_art_and_design": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_art_theory": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_basic_medical_science": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_biology": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_business": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_chemistry": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_clinical_medicine": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_computer_science": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_design": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_diagnostics_and_laboratory_medicine": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_economics": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_electronics": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_energy_and_power": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_finance": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_geography": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_health_and_medicine": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_history": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_humanities_and_social_science": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_literature": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_manage": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_marketing": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_materials": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_math": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_mechanical_engineering": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_music": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_pharmacy": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_physics": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_psychology": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_public_health": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_science": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_sociology": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+    "mmmu_val_tech_and_engineering": f"{BASE_IMPORT}mmmu:MmmuExtractor",
+}
