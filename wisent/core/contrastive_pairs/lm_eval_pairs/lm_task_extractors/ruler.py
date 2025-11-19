@@ -112,6 +112,24 @@ class RulerExtractor(LMEvalBenchmarkExtractor):
                     )
                 return None
 
+            # Format 4: ruler format with input + outputs
+            elif "input" in doc and "outputs" in doc:
+                question = str(doc.get("input", "")).strip()
+                outputs = doc.get("outputs", [])
+                if isinstance(outputs, list) and len(outputs) > 0:
+                    correct_answer = str(outputs[0]).strip()
+                    # Create a simple incorrect answer for ruler tasks
+                    incorrect_answer = "No relevant information found"
+                    if correct_answer:
+                        metadata = {"label": "ruler"}
+                        return self._build_pair(
+                            question=question,
+                            correct=correct_answer,
+                            incorrect=incorrect_answer,
+                            metadata=metadata,
+                        )
+                return None
+
             if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
                 log.debug(
                     "Skipping doc due to missing/invalid fields",

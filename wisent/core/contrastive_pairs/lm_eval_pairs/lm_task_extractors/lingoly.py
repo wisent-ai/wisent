@@ -70,9 +70,53 @@ class LingolyExtractor(LMEvalBenchmarkExtractor):
         Convert a single Lingoly doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("id", doc.get("index", "unknown")))
 
         try:
+            # Lingoly format: prompt, answers (string dict), index
+            if "prompt" in doc and "answers" in doc:
+                prompt = str(doc.get("prompt", "")).strip()
+                answers_str = str(doc.get("answers", "")).strip()
+
+                if not prompt or not answers_str:
+                    return None
+
+                # Parse the answers string (it's a string representation of a dict)
+                import ast
+                try:
+                    answers_dict = ast.literal_eval(answers_str)
+                except:
+                    log.debug("Could not parse answers string")
+                    return None
+
+                # Get first answer as correct response
+                if not answers_dict or not isinstance(answers_dict, dict):
+                    return None
+
+                first_key = list(answers_dict.keys())[0]
+                correct_answer = answers_dict[first_key]
+
+                # Handle list of possible answers
+                if isinstance(correct_answer, list):
+                    correct_answer = correct_answer[0] if correct_answer else ""
+
+                correct_answer = str(correct_answer).strip()
+
+                if not correct_answer:
+                    return None
+
+                # Use a generic incorrect answer
+                incorrect_answer = "incorrect translation"
+
+                metadata = {"label": "lingoly", "index": doc.get("index")}
+
+                return self._build_pair(
+                    question=prompt,
+                    correct=correct_answer,
+                    incorrect=incorrect_answer,
+                    metadata=metadata,
+                )
+
             # Try multiple possible schema formats
             question = None
             choices = None

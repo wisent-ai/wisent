@@ -1,0 +1,3 @@
+wmdp_bio
+wmdp_cyber
+wmdp_chemistry

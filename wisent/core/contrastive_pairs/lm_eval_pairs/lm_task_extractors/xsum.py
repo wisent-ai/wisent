@@ -51,46 +51,28 @@ class XsumExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # XSum format: source (document to summarize) and target (gold summary)
+            source = doc.get("source", "").strip()
+            target = doc.get("target", "").strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            if not source or not target:
+                log.debug("Skipping doc due to missing source or target", extra={"doc": doc})
+                return None
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
+            # Use the source as prompt and target as correct response
+            # For incorrect response, use first half of target as a truncated/incomplete summary
+            words = target.split()
+            if len(words) > 3:
+                incorrect = " ".join(words[:len(words)//2])
             else:
-                return None
+                # If target is very short, use empty or single word
+                incorrect = words[0] if words else "No summary"
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "xsum"}
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
+                question=source,
+                correct=target,
                 incorrect=incorrect,
                 metadata=metadata,
             )

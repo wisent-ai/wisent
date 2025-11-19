@@ -81,11 +81,15 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 # Reasoning benchmarks
                 "super_gpqa", "supergpqa", "hle",
                 # Database/Table benchmarks
-                "tag"
+                "tag",
+                # Medical benchmarks
+                "meddialog",
+                # MMLU-SR benchmarks
+                "mmlusr"
             ]
             # Tasks that should explicitly use LMEval (not HuggingFace)
             lm_eval_only_tasks = [
-                "minerva_math", "code_x_glue", "humaneval_infilling"
+                "minerva_math", "code_x_glue", "humaneval_infilling", "mathqa"
             ]
             if any(task_name.lower() == t or task_name.lower().startswith(t + "_") for t in lm_eval_only_tasks):
                 loader_type = "lm_eval"

@@ -47,12 +47,49 @@ class PhrasesExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
+            # Format 1: Translation format (ca, va, es fields for Catalan/Valencian/Spanish)
+            # Use first field as source and compare two translation fields
+            if "ca" in doc and "va" in doc:
+                ca_text = str(doc.get("ca", "")).strip()
+                va_text = str(doc.get("va", "")).strip()
+                if ca_text and va_text:
+                    # Use ca as prompt, va as correct translation, and a generic wrong translation
+                    metadata = {"label": "phrases"}
+                    return self._build_pair(
+                        question=f"Translate to Valencian: {ca_text}",
+                        correct=va_text,
+                        incorrect="incorrect translation",
+                        metadata=metadata,
+                    )
+            elif "va" in doc and "es" in doc:
+                va_text = str(doc.get("va", "")).strip()
+                es_text = str(doc.get("es", "")).strip()
+                if va_text and es_text:
+                    metadata = {"label": "phrases"}
+                    return self._build_pair(
+                        question=f"Translate to Spanish: {va_text}",
+                        correct=es_text,
+                        incorrect="traducción incorrecta",
+                        metadata=metadata,
+                    )
+            elif "es" in doc and "va" in doc:
+                es_text = str(doc.get("es", "")).strip()
+                va_text = str(doc.get("va", "")).strip()
+                if es_text and va_text:
+                    metadata = {"label": "phrases"}
+                    return self._build_pair(
+                        question=f"Translate to Valencian: {es_text}",
+                        correct=va_text,
+                        incorrect="traducció incorrecta",
+                        metadata=metadata,
+                    )
+
+            # Format 2: Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
+
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
+
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [
