@@ -5,23 +5,23 @@ from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["BoolQExtractor"]
+__all__ = ["SQuAD2Extractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("boolq",)
+task_names = ("squadv2",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "exact_match"
 
 
-class BoolQExtractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for the BoolQ benchmark."""
+class SQuAD2Extractor(LMEvalBenchmarkExtractor):
+    """Extractor for the SQuAD2 benchmark."""
 
     def extract_contrastive_pairs(
         self,
@@ -30,15 +30,16 @@ class BoolQExtractor(HuggingFaceBenchmarkExtractor):
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from BoolQ docs.
+        Build contrastive pairs from SQuAD2 docs.
 
-        BoolQ schema:
-            - passage: str
+        SQuAD2 schema:
+            - context: str
             - question: str
-            - label: 0 or 1
+            - answers: list
+            - title: str
 
         Args:
-            lm_eval_task_data: lm-eval task instance for BoolQ.
+            lm_eval_task_data: lm-eval task instance for SQuAD2.
             limit: Optional maximum number of pairs to produce.
             preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
 
@@ -63,37 +64,47 @@ class BoolQExtractor(HuggingFaceBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid BoolQ pairs extracted", extra={"task": task_name})
+            log.warning("No valid SQuAD2 pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single BoolQ doc into a ContrastivePair, if possible.
+        Convert a single SQuAD2 doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            passage = str(doc.get("passage", "")).strip()
+            context = str(doc.get("context", "")).strip()
             question = str(doc.get("question", "")).strip()
-            label = doc.get("label")
+            answers = doc.get("answers", [])
+            answers = answers["text"]
 
-            if not passage or not question or label not in {0, 1}:
+            if not context or not question:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
+            
+            correct = answers[0] if answers else "No answer"
+            if correct == "No answer":
+                incorrect = "The answer is clearly stated in the background"
+            else:
+                # Create plausible but incorrect answers
+                incorrect_answers = [
+                    "The information is not provided in the background.",
+                    "This cannot be determined from the background.",
+                    "The background does not contain this information.",
+                ]
+                incorrect = random.choice(incorrect_answers)
 
-            #formatted_question = f"{passage}\nQuestion: {question}?\nAnswer:\nA. Yes\nB. No"
-            formatted_question = f"{passage}\nQuestion: {question}?"
-
-            correct = "Yes" if label == 1 else "No"
-            incorrect = "No" if label == 1 else "Yes"
+            title = doc.get("title")
+            formatted_question = f"Title: {title}\n\nBackground: {context}\n\nQuestion: {question}\n\nAnswer:\nA. {incorrect}\nB. {correct}"
 
             metadata = {
-                "label": "boolq",
+                "label": "record",
             }
 
             return self._build_pair(

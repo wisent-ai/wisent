@@ -15,6 +15,8 @@ EXTRACTORS.update({
     # key → "module_path:ClassName" (supports dotted attr path after ':')
     "arithmetic": f"{base_import}arithmetic:ArithmeticExtractor",
     "asdiv": f"{base_import}asdiv:ASDivExtractor",
+    "boolq": f"{base_import}boolq:BoolQExtractor",
+    "cb": f"{base_import}cb:CBExtractor",
     "coqa": f"{base_import}coqa:CoQAExtractor",
     "drop": f"{base_import}drop:DropExtractor",
     "gsm8k": f"{base_import}gsm8k:GSM8KExtractor",
@@ -110,7 +112,6 @@ EXTRACTORS.update({
     # acp_bench_hard _gen subtasks (use generation evaluator)
     "aexams": f"{base_import}aexams:AexamsExtractor",
     "agieval": f"{base_import}agieval:AgievalExtractor",
-    "aime": f"{base_import}aime:AimeExtractor",
     "arabic_leaderboard_complete": f"{base_import}arabic_leaderboard_complete:ArabicLeaderboardCompleteExtractor",
     "arabic_leaderboard_light": f"{base_import}arabic_leaderboard_light:ArabicLeaderboardLightExtractor",
     "arabicmmlu": f"{base_import}arabicmmlu:ArabicmmluExtractor",

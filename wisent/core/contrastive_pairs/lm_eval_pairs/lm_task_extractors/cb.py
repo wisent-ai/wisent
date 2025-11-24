@@ -1,41 +1,45 @@
 from __future__ import annotations
 
-import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["SQuAD2Extractor"]
+__all__ = ["CBExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("cb",)
 
-class SQuAD2Extractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for the SQuAD2 benchmark."""
+evaluator_name = "log_likelihoods"
+
+
+class CBExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for the CB benchmark."""
 
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from SQuAD2 docs.
+        Build contrastive pairs from CB docs.
 
-        SQuAD2 schema:
-            - context: str
-            - question: str
-            - answers: list 
-            - title: str
-            
+        CB schema:
+            - premise: str
+            - hypothesis: str
+            - label: 0 or 1 or 2, 0 for "True", 1 for "False", 2 for "Neither"
+
         Args:
-            lm_eval_task_data: lm-eval task instance for SQuAD2.
+            lm_eval_task_data: lm-eval task instance for CB.
             limit: Optional maximum number of pairs to produce.
+            preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
 
         Returns:
             A list of ContrastivePair objects.
@@ -43,7 +47,7 @@ class SQuAD2Extractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
 
@@ -58,47 +62,37 @@ class SQuAD2Extractor(HuggingFaceBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid SQuAD2 pairs extracted", extra={"task": task_name})
+            log.warning("No valid CB pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single SQuAD2 doc into a ContrastivePair, if possible.
+        Convert a single CB doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            context = str(doc.get("context", "")).strip()
-            question = str(doc.get("question", "")).strip()
-            answers = doc.get("answers", [])
-            answers = answers["text"]
+            premise = str(doc.get("premise", "")).strip()
+            hypothesis = str(doc.get("hypothesis", "")).strip()
+            label = doc.get("label")
 
-            if not context or not question:
+            if not premise or not hypothesis or label not in {0, 1, 2}:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
             
-            correct = answers[0] if answers else "No answer"
-            if correct == "No answer":
-                incorrect = "The answer is clearly stated in the background"
-            else:
-                # Create plausible but incorrect answers
-                incorrect_answers = [
-                    "The information is not provided in the background.",
-                    "This cannot be determined from the background.",
-                    "The background does not contain this information.",
-                ]
-                incorrect = random.choice(incorrect_answers)
-
-            title = doc.get("title")
-            formatted_question = f"Title: {title}\n\nBackground: {context}\n\nQuestion: {question}\n\nAnswer:\nA. {incorrect}\nB. {correct}"
+            labels = {0: "True", 1: "False", 2: "Neither"}
+            correct = labels[label]
+            incorrect = labels[(label+1)%3]
+        
+            formatted_question = f"{premise}\nQuestion: {hypothesis}. True, False, or Neither?"
 
             metadata = {
-                "label": "record",
+                "label": "cb",
             }
 
             return self._build_pair(
