@@ -11,6 +11,10 @@ __all__ = ["LiveMathBenchExtractor"]
 
 log = logging.getLogger(__name__)
 
+task_names = ("livemathbench_cnmo_en", "livemathbench_cnmo_zh")
+
+evaluator_name = "exact_match"
+
 
 class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
     """

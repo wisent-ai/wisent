@@ -18,7 +18,7 @@ _LOG = setup_logger(__name__)
 class KmmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Kmmlu benchmark."""
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,

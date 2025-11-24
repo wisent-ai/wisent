@@ -7,9 +7,6 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.arc_easy imp
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.arithmetic import ArithmeticExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.asdiv import ASDivExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.bigbench import BigBenchExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.boolq import BoolQExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.cb import CBExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.copa import COPAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.coqa import CoQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.drop import DropExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.glue import GLUEExtractor
@@ -19,14 +16,8 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.headqa impor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.hellaswag import HellaSwagExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.hle import HLEExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.lambada import LambadaExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.livecodebench import LivecodebenchExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.logiqa import LogiQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.logiqa2 import LogiQA2Extractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.math import MathExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.aime import AimeExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.hmmt import HmmtExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.polymath import PolymathExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.livemathbench import LivemathbenchExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mathqa import MathQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.medqa import MedQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mmlu import MMLUExtractor
@@ -46,11 +37,9 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.qnli import 
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.qqp import QQPExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.quac import QuACExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.race import RACEExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.record import RecordExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.rte import RTEExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.sciq import SciQExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.social_iqa import SocialIQAExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.squad2 import SQuAD2Extractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.sst2 import SST2Extractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.superglue import SuperGLUEExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.supergpqa import SuperGPQAExtractor
@@ -89,14 +78,8 @@ __all__ = [
     "HellaSwagExtractor",
     "HLEExtractor",
     "LambadaExtractor",
-    "LivecodebenchExtractor",
     "LogiQAExtractor",
     "LogiQA2Extractor",
-    "MathExtractor",
-    "AimeExtractor",
-    "HmmtExtractor",
-    "PolymathExtractor",
-    "LivemathbenchExtractor",
     "MathQAExtractor",
     "MedQAExtractor",
     "MMLUExtractor",

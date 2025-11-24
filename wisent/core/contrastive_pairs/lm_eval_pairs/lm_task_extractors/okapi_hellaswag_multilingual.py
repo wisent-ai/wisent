@@ -81,8 +81,27 @@ class OkapiHellaswagMultilingualExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: query + choices + gold/label (Hellaswag style)
+            if ("query" in doc or "prompt" in doc) and "choices" in doc:
+                question = str(doc.get("query", doc.get("prompt", ""))).strip()
+                choices = doc.get("choices", [])
+                if not isinstance(choices, list):
+                    choices = []
+                # Try gold, label, or answer field
+                answer = doc.get("gold", doc.get("label", doc.get("answer", "")))
+                if isinstance(answer, str):
+                    if len(answer) == 1 and answer.isalpha():
+                        answer_idx = ord(answer.upper()) - ord('A')
+                    else:
+                        try:
+                            answer_idx = int(answer)
+                        except (ValueError, TypeError):
+                            answer_idx = 0
+                else:
+                    answer_idx = int(answer) if answer else 0
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):
@@ -95,7 +114,7 @@ class OkapiHellaswagMultilingualExtractor(LMEvalBenchmarkExtractor):
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
+            # Format 3: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()
                 choices = [
@@ -108,21 +127,6 @@ class OkapiHellaswagMultilingualExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "okapi/hellaswag_multilingual"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
-
             if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
@@ -130,9 +134,17 @@ class OkapiHellaswagMultilingualExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            correct = choices[answer_idx]
+            correct = choices[answer_idx].strip() if isinstance(choices[answer_idx], str) else str(choices[answer_idx])
             incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            incorrect = choices[incorrect_idx].strip() if isinstance(choices[incorrect_idx], str) else str(choices[incorrect_idx])
+
+            # Validate that both correct and incorrect are non-empty
+            if not correct or not incorrect:
+                log.debug(
+                    "Skipping doc due to empty correct or incorrect answer",
+                    extra={"doc": doc, "correct": correct, "incorrect": incorrect},
+                )
+                return None
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
 

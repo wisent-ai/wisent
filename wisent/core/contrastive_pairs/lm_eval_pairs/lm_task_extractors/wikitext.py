@@ -17,7 +17,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("wikitext",)
 
-evaluator_name = "generation"
+evaluator_name = "log_likelihoods"
 
 
 class WikitextExtractor(LMEvalBenchmarkExtractor):

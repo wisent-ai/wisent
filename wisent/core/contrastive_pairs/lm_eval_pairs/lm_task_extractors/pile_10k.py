@@ -17,7 +17,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("pile_10k",)
 
-evaluator_name = "generation"
+evaluator_name = "log_likelihoods"
 
 
 class Pile10kExtractor(LMEvalBenchmarkExtractor):

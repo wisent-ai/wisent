@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["MCTACOExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mc_taco",)
+evaluator_name = "log_likelihoods"
+
 
 class MCTACOExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MC-TACO benchmark."""

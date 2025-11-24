@@ -48,44 +48,29 @@ class VaxxExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        log = bind(_LOG, doc_id=doc.get("idx", doc.get("id", "unknown")))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            # Vaxx stance is a stance detection task with text and label (0=against, 1=favor)
+            text = doc.get("text", "").strip()
+            label = doc.get("label", None)
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            if not text or label is None:
+                log.debug("Skipping doc due to missing text or label", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+            # Create binary stance choices
+            stance_choices = ["Against vaccination", "In favor of vaccination"]
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            # label: 0 = against, 1 = favor
+            correct_idx = int(label)
+            incorrect_idx = 1 - correct_idx
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            correct = stance_choices[correct_idx]
+            incorrect = stance_choices[incorrect_idx]
+
+            # Format as a classification task
+            formatted_question = f"Text: {text}\n\nWhat is the stance towards COVID-19 vaccination?\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "vaxx"}
 
             return self._build_pair(

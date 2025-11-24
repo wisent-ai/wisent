@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["MMLUProExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("mmlu-pro", "mmlu-pro-plus")
+evaluator_name = "generation"
+
 
 class MMLUProExtractor(LMEvalBenchmarkExtractor):
     """Extractor for MMLU-Pro benchmark."""

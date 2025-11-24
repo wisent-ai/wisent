@@ -16,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("portuguese_bench",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class PortugueseBenchExtractor(LMEvalBenchmarkExtractor):

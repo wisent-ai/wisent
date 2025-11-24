@@ -11,6 +11,10 @@ __all__ = ["MATHExtractor"]
 
 log = logging.getLogger(__name__)
 
+task_names = ("math500",)
+
+evaluator_name = "exact_match"
+
 
 class MATHExtractor(HuggingFaceBenchmarkExtractor):
     """

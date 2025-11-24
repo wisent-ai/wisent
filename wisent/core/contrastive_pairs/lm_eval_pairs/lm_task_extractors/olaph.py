@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ["OlaphExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("olaph", "olaph_perplexity")
+task_names = ("olaph",)
 
 evaluator_name = "generation"
 

@@ -11,6 +11,10 @@ __all__ = ["HumanEvalExtractor"]
 
 log = logging.getLogger(__name__)
 
+task_names = ("humaneval_64_instruct", "humaneval_instruct", "humaneval_plus")
+
+evaluator_name = "generation"
+
 
 class HumanEvalExtractor(HuggingFaceBenchmarkExtractor):
     """

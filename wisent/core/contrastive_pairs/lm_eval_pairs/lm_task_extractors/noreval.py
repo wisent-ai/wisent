@@ -15,20 +15,13 @@ __all__ = ["NorevalExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
-    "norec_sentence", "norec_document", "ncb", "noridiom_nob", "noridiom_nno",
-    "norbelebele", "nrk_quiz_qa_nob", "nrk_quiz_qa_nno",
-    "noropenbookqa_nob", "noropenbookqa_nno",
-    "norcommonsenseqa_nob", "norcommonsenseqa_nno",
-    "nortruthfulqa_mc_nob", "nortruthfulqa_mc_nno",
-    "norquad", "nortruthfulqa_gen_nob", "nortruthfulqa_gen_nno",
+    "nortruthfulqa_gen_nob", "nortruthfulqa_gen_nno",
     "ask_gec", "norsumm_nob", "norsumm_nno",
     "tatoeba_eng_nob", "tatoeba_eng_nno", "tatoeba_nob_eng", "tatoeba_nno_eng",
     "norrewrite_instruct", "norsummarize_instruct"
 )
 
-# Note: noreval includes both multiple-choice (log_likelihoods) and generative (generation) tasks
-# Using log_likelihoods as default since majority are multiple-choice QA
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class NorevalExtractor(LMEvalBenchmarkExtractor):

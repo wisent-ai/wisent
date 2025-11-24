@@ -17,7 +17,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("nq_open",)
 
-evaluator_name = "generation"
+evaluator_name = "exact_match"
 
 
 class NQOpenExtractor(LMEvalBenchmarkExtractor):

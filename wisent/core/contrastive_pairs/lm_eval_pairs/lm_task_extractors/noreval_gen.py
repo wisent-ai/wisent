@@ -16,18 +16,22 @@ __all__ = ["NorevalGenerationExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
-    "ask_gec", "ask_gec_p0", "ask_gec_p1", "ask_gec_p2", "ask_gec_p3", "ask_gec_p4",
-    "noridiom_nno", "noridiom_nno_p0", "noridiom_nno_p1", "noridiom_nno_p2",
-    "noridiom_nno_p3", "noridiom_nno_p4",
-    "noridiom_nob", "noridiom_nob_p0", "noridiom_nob_p1", "noridiom_nob_p2",
-    "noridiom_nob_p3", "noridiom_nob_p4",
-    "norquad", "norquad_p0", "norquad_p1", "norquad_p2", "norquad_p3", "norquad_p4",
+    # ask_gec
+    "ask_gec_p0", "ask_gec_p1", "ask_gec_p2", "ask_gec_p3", "ask_gec_p4",
+    # norrewrite/norsummarize instruct
     "norrewrite_instruct",
     "norsummarize_instruct",
-    "nortruthfulqa_gen_nno", "nortruthfulqa_gen_nno_p0", "nortruthfulqa_gen_nno_p1",
-    "nortruthfulqa_gen_nno_p2", "nortruthfulqa_gen_nno_p3", "nortruthfulqa_gen_nno_p4",
-    "nortruthfulqa_gen_nob", "nortruthfulqa_gen_nob_p0", "nortruthfulqa_gen_nob_p1",
-    "nortruthfulqa_gen_nob_p2", "nortruthfulqa_gen_nob_p3", "nortruthfulqa_gen_nob_p4",
+    # norsumm
+    "norsumm_nno_p0", "norsumm_nno_p1", "norsumm_nno_p2", "norsumm_nno_p3", "norsumm_nno_p4", "norsumm_nno_p5",
+    "norsumm_nob_p0", "norsumm_nob_p1", "norsumm_nob_p2", "norsumm_nob_p3", "norsumm_nob_p4", "norsumm_nob_p5",
+    # nortruthfulqa_gen
+    "nortruthfulqa_gen_nno_p0", "nortruthfulqa_gen_nno_p1", "nortruthfulqa_gen_nno_p2", "nortruthfulqa_gen_nno_p3", "nortruthfulqa_gen_nno_p4",
+    "nortruthfulqa_gen_nob_p0", "nortruthfulqa_gen_nob_p1", "nortruthfulqa_gen_nob_p2", "nortruthfulqa_gen_nob_p3", "nortruthfulqa_gen_nob_p4",
+    # tatoeba
+    "tatoeba_eng_nno_p0", "tatoeba_eng_nno_p1", "tatoeba_eng_nno_p2", "tatoeba_eng_nno_p3",
+    "tatoeba_eng_nob_p0", "tatoeba_eng_nob_p1", "tatoeba_eng_nob_p2", "tatoeba_eng_nob_p3",
+    "tatoeba_nno_eng_p0", "tatoeba_nno_eng_p1", "tatoeba_nno_eng_p2", "tatoeba_nno_eng_p3",
+    "tatoeba_nob_eng_p0", "tatoeba_nob_eng_p1", "tatoeba_nob_eng_p2", "tatoeba_nob_eng_p3",
 )
 evaluator_name = "generation"
 

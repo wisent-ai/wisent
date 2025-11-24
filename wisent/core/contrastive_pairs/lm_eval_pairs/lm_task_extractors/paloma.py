@@ -25,7 +25,7 @@ task_names = (
 
 # Note: Paloma is a perplexity benchmark (loglikelihood_rolling)
 # We use perplexity evaluation with text corruption for contrastive pairs
-evaluator_name = "perplexity"
+evaluator_name = "log_likelihoods"
 
 
 class PalomaExtractor(LMEvalBenchmarkExtractor):

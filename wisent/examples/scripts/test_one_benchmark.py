@@ -1,11 +1,16 @@
 """Test if a benchmark can create contrastive pairs and evaluation works."""
 
 import json
+import os
 from pathlib import Path
 
 from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.rotator import EvaluatorRotator
+
+# Set environment variables
+os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'
+os.environ['HF_ALLOW_CODE_EVAL'] = '1'
 
 
 class MockModel:
@@ -85,11 +90,26 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 # Medical benchmarks
                 "meddialog",
                 # MMLU-SR benchmarks
-                "mmlusr"
+                "mmlusr",
+                # Translation benchmarks
+                "wmt14", "wmt16", "iwslt2017",
+                # Newly created HuggingFace extractors
+                "20_newsgroups", "afrimgsm_direct_amh", "afrimmlu_direct_amh",
+                "afrixnli_en_direct_amh", "ag_news", "arabic_exams", "argument_topic",
+                "bhtc_v2", "basque-glue", "basqueglue",
+                "cnn_dailymail", "dbpedia_14",
+                "ethos_binary", "evalita-sp_sum_task_fp-small_p1", "flan_held_in",
+                "global_mmlu_ar", "gpt3_translation_benchmarks",
+                "non_greedy_robustness_agieval_aqua_rat", "option_order_robustness_agieval_aqua_rat",
+                "penn_treebank", "ptb", "phrases_ca-va", "prompt_robustness_agieval_aqua_rat",
+                "self_consistency", "sglue_rte", "t0_eval", "unfair_tos",
+                "wikitext103", "yahoo_answers_topics"
             ]
             # Tasks that should explicitly use LMEval (not HuggingFace)
             lm_eval_only_tasks = [
-                "minerva_math", "code_x_glue", "humaneval_infilling", "mathqa"
+                "minerva_math", "code_x_glue", "humaneval_infilling", "mathqa",
+                "multiple_choice",  # multiple_choice is an lm-eval task, not HuggingFace
+                "vaxx_stance", "wiceu"  # These are also lm-eval tasks
             ]
             if any(task_name.lower() == t or task_name.lower().startswith(t + "_") for t in lm_eval_only_tasks):
                 loader_type = "lm_eval"
@@ -298,6 +318,8 @@ if __name__ == "__main__":
     import sys
     task = sys.argv[1] if len(sys.argv) > 1 else "boolq"
     model = sys.argv[2] if len(sys.argv) > 2 else "distilgpt2"
-    output_dir = sys.argv[3] if len(sys.argv) > 3 else "."
+    # Default to results directory in same folder as this script
+    default_output = Path(__file__).parent / "results"
+    output_dir = sys.argv[3] if len(sys.argv) > 3 else str(default_output)
     success = test_benchmark(task, model, output_dir)
     sys.exit(0 if success else 1)

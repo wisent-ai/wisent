@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["SwdeExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("swde",)
+evaluator_name = "generation"
+
 
 class SwdeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Swde benchmark."""

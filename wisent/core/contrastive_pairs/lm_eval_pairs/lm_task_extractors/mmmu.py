@@ -30,7 +30,7 @@ task_names = (
     "mmmu_val_science", "mmmu_val_sociology", "mmmu_val_tech_and_engineering",
 )
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class MmmuExtractor(LMEvalBenchmarkExtractor):

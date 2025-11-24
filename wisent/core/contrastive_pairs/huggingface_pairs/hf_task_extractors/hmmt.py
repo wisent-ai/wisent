@@ -11,6 +11,10 @@ __all__ = ["HMMTExtractor"]
 
 log = logging.getLogger(__name__)
 
+task_names = ("hmmt", "hmmt_feb_2025")
+
+evaluator_name = "exact_match"
+
 
 class HMMTExtractor(HuggingFaceBenchmarkExtractor):
     """
