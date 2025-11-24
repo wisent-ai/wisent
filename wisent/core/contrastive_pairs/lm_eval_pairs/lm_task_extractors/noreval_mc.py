@@ -15,15 +15,30 @@ __all__ = ["NorevalMultipleChoiceExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
+    # ncb
     "ncb",
-    "nortruthfulqa_mc_nno", "nortruthfulqa_mc_nno_p0", "nortruthfulqa_mc_nno_p1",
-    "nortruthfulqa_mc_nno_p2", "nortruthfulqa_mc_nno_p3", "nortruthfulqa_mc_nno_p4",
-    "nortruthfulqa_mc_nob", "nortruthfulqa_mc_nob_p0", "nortruthfulqa_mc_nob_p1",
-    "nortruthfulqa_mc_nob_p2", "nortruthfulqa_mc_nob_p3", "nortruthfulqa_mc_nob_p4",
-    "nrk_quiz_qa_nno", "nrk_quiz_qa_nno_p0", "nrk_quiz_qa_nno_p1",
-    "nrk_quiz_qa_nno_p2", "nrk_quiz_qa_nno_p3", "nrk_quiz_qa_nno_p4",
-    "nrk_quiz_qa_nob", "nrk_quiz_qa_nob_p0", "nrk_quiz_qa_nob_p1",
-    "nrk_quiz_qa_nob_p2", "nrk_quiz_qa_nob_p3", "nrk_quiz_qa_nob_p4",
+    # norbelebele
+    "norbelebele",
+    "norbelebele_p0", "norbelebele_p1", "norbelebele_p2", "norbelebele_p3", "norbelebele_p4",
+    # norcommonsenseqa
+    "norcommonsenseqa_nno", "norcommonsenseqa_nob",
+    "norcommonsenseqa_nno_p0", "norcommonsenseqa_nno_p1", "norcommonsenseqa_nno_p2", "norcommonsenseqa_nno_p3", "norcommonsenseqa_nno_p4",
+    "norcommonsenseqa_nob_p0", "norcommonsenseqa_nob_p1", "norcommonsenseqa_nob_p2", "norcommonsenseqa_nob_p3", "norcommonsenseqa_nob_p4",
+    # norec
+    "norec_document_p0", "norec_document_p1", "norec_document_p2", "norec_document_p3", "norec_document_p4",
+    "norec_sentence_p0", "norec_sentence_p1", "norec_sentence_p2", "norec_sentence_p3", "norec_sentence_p4",
+    # noropenbookqa
+    "noropenbookqa_nno", "noropenbookqa_nob",
+    "noropenbookqa_nno_p0", "noropenbookqa_nno_p1", "noropenbookqa_nno_p2", "noropenbookqa_nno_p3", "noropenbookqa_nno_p4",
+    "noropenbookqa_nob_p0", "noropenbookqa_nob_p1", "noropenbookqa_nob_p2", "noropenbookqa_nob_p3", "noropenbookqa_nob_p4",
+    # nortruthfulqa_mc
+    "nortruthfulqa_mc_nno", "nortruthfulqa_mc_nob",
+    "nortruthfulqa_mc_nno_p0", "nortruthfulqa_mc_nno_p1", "nortruthfulqa_mc_nno_p2", "nortruthfulqa_mc_nno_p3", "nortruthfulqa_mc_nno_p4",
+    "nortruthfulqa_mc_nob_p0", "nortruthfulqa_mc_nob_p1", "nortruthfulqa_mc_nob_p2", "nortruthfulqa_mc_nob_p3", "nortruthfulqa_mc_nob_p4",
+    # nrk_quiz_qa
+    "nrk_quiz_qa_nno", "nrk_quiz_qa_nob",
+    "nrk_quiz_qa_nno_p0", "nrk_quiz_qa_nno_p1", "nrk_quiz_qa_nno_p2", "nrk_quiz_qa_nno_p3", "nrk_quiz_qa_nno_p4",
+    "nrk_quiz_qa_nob_p0", "nrk_quiz_qa_nob_p1", "nrk_quiz_qa_nob_p2", "nrk_quiz_qa_nob_p3", "nrk_quiz_qa_nob_p4",
 )
 evaluator_name = "log_likelihoods"
 

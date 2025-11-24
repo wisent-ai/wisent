@@ -145,4 +145,5 @@ device_benchmarks.json
 .wisent-guard/
 user_model_configs.json
 
-bigcode-evaluation-harness/
+bigcode-evaluation-harness/*.log
+wisent/examples/scripts/*.log

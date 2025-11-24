@@ -16,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("galician_bench",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class GalicianBenchExtractor(LMEvalBenchmarkExtractor):

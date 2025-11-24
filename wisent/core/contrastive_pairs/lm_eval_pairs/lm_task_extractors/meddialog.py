@@ -20,7 +20,7 @@ task_names = (
     "meddialog_raw_dialogues",
     "meddialog_raw_perplexity",
 )
-evaluator_name = "generate_until"
+evaluator_name = "generation"
 
 
 class MeddialogExtractor(LMEvalBenchmarkExtractor):

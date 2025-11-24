@@ -29,7 +29,7 @@ task_names = (
     "score_prompt_robustness_mmlu_pro",
 )
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class ScoreExtractor(LMEvalBenchmarkExtractor):

@@ -91,8 +91,45 @@ class OkapiTruthfulqaMultilingualExtractor(LMEvalBenchmarkExtractor):
             choices = None
             answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
+            # Format 1: TruthfulQA mc1/mc2 format with labels
+            if "question" in doc and ("mc1_choices" in doc or "mc2_choices" in doc):
+                question = str(doc.get("question", "")).strip()
+                # Prefer mc1 if both exist
+                if "mc1_choices" in doc:
+                    choices = doc.get("mc1_choices", [])
+                    labels = doc.get("mc1_targets_labels", [])
+                else:
+                    choices = doc.get("mc2_choices", [])
+                    labels = doc.get("mc2_targets_labels", [])
+
+                # Find first correct and first incorrect answer
+                correct_idx = None
+                incorrect_idx = None
+                for idx, label in enumerate(labels):
+                    if label == 1 and correct_idx is None:
+                        correct_idx = idx
+                    elif label == 0 and incorrect_idx is None:
+                        incorrect_idx = idx
+                    if correct_idx is not None and incorrect_idx is not None:
+                        break
+
+                if correct_idx is not None and incorrect_idx is not None:
+                    correct = choices[correct_idx].strip() if isinstance(choices[correct_idx], str) else str(choices[correct_idx])
+                    incorrect = choices[incorrect_idx].strip() if isinstance(choices[incorrect_idx], str) else str(choices[incorrect_idx])
+
+                    if correct and incorrect:
+                        formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+                        metadata = {"label": "okapi/truthfulqa_multilingual"}
+                        return self._build_pair(
+                            question=formatted_question,
+                            correct=correct,
+                            incorrect=incorrect,
+                            metadata=metadata,
+                        )
+                return None
+
+            # Format 2: question + choices + answer
+            elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices_data = doc.get("choices", {})
                 if isinstance(choices_data, dict):
@@ -105,7 +142,7 @@ class OkapiTruthfulqaMultilingualExtractor(LMEvalBenchmarkExtractor):
                 else:
                     answer_idx = int(answer) if answer else 0
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
+            # Format 3: instruction + option_a/b/c/d + answer (MMMLU style)
             elif "instruction" in doc and "option_a" in doc:
                 question = str(doc.get("instruction", "")).strip()
                 choices = [

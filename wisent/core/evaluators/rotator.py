@@ -131,17 +131,22 @@ class EvaluatorRotator:
                 if hasattr(extractor, 'evaluator_name'):
                     evaluator_name = extractor.evaluator_name
                 elif hasattr(extractor.__class__, '__module__'):
-                    # Try to import the module and get the module-level 'evaluator' attribute
+                    # Try to import the module and get the module-level 'evaluator_name' attribute
                     try:
                         import sys
                         mod = sys.modules.get(extractor.__class__.__module__)
-                        if mod and hasattr(mod, 'evaluator'):
-                            evaluator_name = mod.evaluator
+                        if mod and hasattr(mod, 'evaluator_name'):
+                            evaluator_name = mod.evaluator_name
                     except Exception:
                         pass
 
                 if not evaluator_name:
-                    evaluator_name = 'log_likelihoods'  # Default fallback
+                    raise EvaluatorError(
+                        f"No evaluator_name defined for task '{self._task_name}'. "
+                        f"Extractor class: {extractor.__class__.__name__} "
+                        f"from module: {extractor.__class__.__module__}. "
+                        f"Please add 'evaluator_name' attribute to the extractor class."
+                    )
 
                 logger.info(f"Auto-selected evaluator '{evaluator_name}' for task '{self._task_name}' (from extractor)")
                 cls = BaseEvaluator.get(evaluator_name)

@@ -34,7 +34,7 @@ task_names = (
     "gpqa_main_zeroshot",
 )
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class GPQAExtractor(LMEvalBenchmarkExtractor):

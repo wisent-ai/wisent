@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 __all__ = ["MtsDialogExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("mts_dialog", "mts_dialog_perplexity")
+task_names = ("mts_dialog",)
 
 evaluator_name = "generation"
 

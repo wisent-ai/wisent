@@ -285,6 +285,7 @@ def handle_evalita_llm(task_manager: LMTaskManager) -> dict[str, ConfigurableTas
         DataLoaderError: If no subtasks could be loaded.
     """
     from lm_eval.api.task import ConfigurableTask
+    from lm_eval.api.group import ConfigurableGroup
 
     # These are the group tasks from the evalita_llm.yaml group file
     group_tasks = [
@@ -303,16 +304,25 @@ def handle_evalita_llm(task_manager: LMTaskManager) -> dict[str, ConfigurableTas
     for group_task in group_tasks:
         try:
             result = get_task_dict([group_task], task_manager=task_manager)
-            # result might contain ConfigurableGroup or actual tasks
-            # Flatten any nested structures
+            # result might contain ConfigurableGroup keys with dict values
+            # or string keys with ConfigurableTask values
             for key, value in result.items():
-                if isinstance(value, dict):
-                    # Nested group - add all subtasks
-                    task_dict.update(value)
-                elif isinstance(value, ConfigurableTask):
-                    # Direct task
-                    task_dict[key] = value
-                # Skip ConfigurableGroup objects - we want the actual tasks
+                # If key is a ConfigurableGroup and value is a dict, extract the dict items
+                if not isinstance(key, str) and isinstance(value, dict):
+                    # Extract all tasks from the nested dict
+                    for task_name, task_obj in value.items():
+                        if isinstance(task_name, str) and isinstance(task_obj, ConfigurableTask):
+                            task_dict[task_name] = task_obj
+                    continue
+
+                # If key is a string
+                if isinstance(key, str):
+                    if isinstance(value, dict):
+                        # Nested group - add all subtasks
+                        task_dict.update(value)
+                    elif isinstance(value, ConfigurableTask):
+                        # Direct task
+                        task_dict[key] = value
         except Exception as e:
             # If a subtask fails to load, skip it but continue with others
             log.warning(f"Failed to load group task '{group_task}': {e}")
