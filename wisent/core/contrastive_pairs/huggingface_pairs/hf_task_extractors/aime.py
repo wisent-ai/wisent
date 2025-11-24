@@ -11,6 +11,10 @@ __all__ = ["AIMEExtractor"]
 
 log = logging.getLogger(__name__)
 
+task_names = ("aime",)
+
+evaluator_name = "exact_match"
+
 
 class AIMEExtractor(HuggingFaceBenchmarkExtractor):
     """
