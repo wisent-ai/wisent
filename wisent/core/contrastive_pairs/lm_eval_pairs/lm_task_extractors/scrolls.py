@@ -15,12 +15,10 @@ __all__ = ["ScrollsExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
-    "scrolls_contractnli",
     "scrolls_govreport",
     "scrolls_narrativeqa",
     "scrolls_qasper",
     "scrolls_qmsum",
-    "scrolls_quality",
     "scrolls_summscreenfd",
 )
 

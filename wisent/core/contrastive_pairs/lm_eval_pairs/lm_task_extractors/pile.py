@@ -22,7 +22,7 @@ task_names = (
     "pile_pile-cc", "pile_pubmed-abstracts", "pile_pubmed-central", "pile_stackexchange",
     "pile_ubuntu-irc", "pile_uspto", "pile_wikipedia", "pile_youtubesubtitles"
 )
-evaluator_name = "exact_match"
+evaluator_name = "log_likelihoods"
 
 
 class PileExtractor(LMEvalBenchmarkExtractor):

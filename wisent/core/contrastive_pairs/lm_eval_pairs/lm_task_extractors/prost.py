@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["ProstExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("prost",)
+evaluator_name = "log_likelihoods"
+
 
 class ProstExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the PROST benchmark."""

@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["SimpleCooccurrenceBiasExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("simple_cooccurrence_bias",)
+evaluator_name = "log_likelihoods"
+
 
 class SimpleCooccurrenceBiasExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Simple Cooccurrence Bias benchmark."""

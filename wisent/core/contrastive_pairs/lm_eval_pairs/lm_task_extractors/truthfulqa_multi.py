@@ -27,7 +27,7 @@ task_names = (
 
 # Mixed evaluator - has both gen (generation) and mc (log_likelihoods) variants
 # For _gen_ tasks use generation, for _mc_ tasks use log_likelihoods
-evaluator_name = "mixed"  # Special marker for mixed tasks
+evaluator_name = "generation"
 
 
 class TruthfulqaMultiExtractor(LMEvalBenchmarkExtractor):

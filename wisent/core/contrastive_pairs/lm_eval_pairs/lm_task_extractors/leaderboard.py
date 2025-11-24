@@ -14,6 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["LeaderboardExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("leaderboard",)
+evaluator_name = "log_likelihoods"
+
 
 class LeaderboardExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Leaderboard benchmark."""

@@ -11,6 +11,10 @@ __all__ = ["MBPPExtractor"]
 
 log = logging.getLogger(__name__)
 
+task_names = ("mbpp_plus",)
+
+evaluator_name = "generation"
+
 
 class MBPPExtractor(HuggingFaceBenchmarkExtractor):
     """

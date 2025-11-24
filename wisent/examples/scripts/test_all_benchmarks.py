@@ -10,6 +10,8 @@ from wisent.examples.scripts.test_one_benchmark import test_benchmark
 
 # Set environment variable to trust remote code for datasets like meddialog
 os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'
+# Set environment variable to allow code eval for coding tasks like humaneval, instructhumaneval
+os.environ['HF_ALLOW_CODE_EVAL'] = '1'
 
 
 class TimeoutError(Exception):

@@ -31,6 +31,7 @@ from wisent.core.parser_arguments.multi_steer_parser import setup_multi_steer_pa
 from wisent.core.parser_arguments.evaluate_parser import setup_evaluate_parser
 from wisent.core.parser_arguments.generate_responses_parser import setup_generate_responses_parser
 from wisent.core.parser_arguments.evaluate_responses_parser import setup_evaluate_responses_parser
+from wisent.core.parser_arguments.modify_weights_parser import setup_modify_weights_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -158,5 +159,11 @@ def setup_parser() -> argparse.ArgumentParser:
         "evaluate-responses", help="Evaluate generated responses using embedded evaluator"
     )
     setup_evaluate_responses_parser(evaluate_responses_parser)
+
+    # Modify weights command for permanent weight modification
+    modify_weights_parser = subparsers.add_parser(
+        "modify-weights", help="Permanently modify model weights using steering vectors (abliteration or additive)"
+    )
+    setup_modify_weights_parser(modify_weights_parser)
 
     return parser
