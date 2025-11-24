@@ -7,6 +7,8 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.arc_easy imp
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.arithmetic import ArithmeticExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.asdiv import ASDivExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.bigbench import BigBenchExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.boolq import BoolQExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.cb import CBExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.coqa import CoQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.drop import DropExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.glue import GLUEExtractor
@@ -40,6 +42,7 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.race import 
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.rte import RTEExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.sciq import SciQExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.social_iqa import SocialIQAExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.squad2 import SQuAD2Extractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.sst2 import SST2Extractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.superglue import SuperGLUEExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.supergpqa import SuperGPQAExtractor

@@ -1,22 +1,26 @@
 from __future__ import annotations
 
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["CBExtractor"]
+__all__ = ["BoolQExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("boolq",)
 
-class CBExtractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for the CB benchmark."""
+evaluator_name = "log_likelihoods"
+    
+class BoolQExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for the BoolQ benchmark."""
 
     def extract_contrastive_pairs(
         self,
@@ -25,15 +29,15 @@ class CBExtractor(HuggingFaceBenchmarkExtractor):
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from CB docs.
+        Build contrastive pairs from BoolQ docs.
 
-        CB schema:
-            - premise: str
-            - hypothesis: str
-            - label: 0 or 1 or 2, 0 for "True", 1 for "False", 2 for "Neither"
+        BoolQ schema:
+            - passage: str
+            - question: str
+            - label: 0 or 1
 
         Args:
-            lm_eval_task_data: lm-eval task instance for CB.
+            lm_eval_task_data: lm-eval task instance for BoolQ.
             limit: Optional maximum number of pairs to produce.
             preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
 
@@ -58,37 +62,37 @@ class CBExtractor(HuggingFaceBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid CB pairs extracted", extra={"task": task_name})
+            log.warning("No valid BoolQ pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single CB doc into a ContrastivePair, if possible.
+        Convert a single BoolQ doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            premise = str(doc.get("premise", "")).strip()
-            hypothesis = str(doc.get("hypothesis", "")).strip()
+            passage = str(doc.get("passage", "")).strip()
+            question = str(doc.get("question", "")).strip()
             label = doc.get("label")
 
-            if not premise or not hypothesis or label not in {0, 1, 2}:
+            if not passage or not question or label not in {0, 1}:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
-            
-            labels = {0: "True", 1: "False", 2: "Neither"}
-            correct = labels[label]
-            incorrect = labels[(label+1)%3]
-        
-            formatted_question = f"{premise}\nQuestion: {hypothesis}. True, False, or Neither?"
+
+            #formatted_question = f"{passage}\nQuestion: {question}?\nAnswer:\nA. Yes\nB. No"
+            formatted_question = f"{passage}\nQuestion: {question}?"
+
+            correct = "Yes" if label == 1 else "No"
+            incorrect = "No" if label == 1 else "Yes"
 
             metadata = {
-                "label": "cb",
+                "label": "boolq",
             }
 
             return self._build_pair(
