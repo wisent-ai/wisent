@@ -55,8 +55,9 @@ def execute_modify_weights(args):
         with open(args.steering_vectors, 'r') as f:
             vector_data = json.load(f)
 
+        # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
         steering_vectors = {
-            int(layer): torch.tensor(vector)
+            int(layer) - 1: torch.tensor(vector)
             for layer, vector in vector_data["steering_vectors"].items()
         }
 
@@ -79,7 +80,7 @@ def execute_modify_weights(args):
         vector_args.trait_label = args.trait_label
         vector_args.model = args.model
         vector_args.num_pairs = args.num_pairs
-        vector_args.layers = str(args.layers) if args.layers is not None else None
+        vector_args.layers = str(args.layers) if args.layers is not None else "all"
         vector_args.token_aggregation = args.token_aggregation
         vector_args.prompt_strategy = args.prompt_strategy
         vector_args.method = "caa"
@@ -103,8 +104,9 @@ def execute_modify_weights(args):
         with open(vector_args.output, 'r') as f:
             vector_data = json.load(f)
 
+        # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
         steering_vectors = {
-            int(layer): torch.tensor(vector)
+            int(layer) - 1: torch.tensor(vector)
             for layer, vector in vector_data["steering_vectors"].items()
         }
 
@@ -138,7 +140,7 @@ def execute_modify_weights(args):
         vector_args.model = args.model
         vector_args.num_pairs = args.num_pairs
         vector_args.similarity_threshold = args.similarity_threshold
-        vector_args.layers = str(args.layers) if args.layers is not None else None
+        vector_args.layers = str(args.layers) if args.layers is not None else "all"
         vector_args.token_aggregation = args.token_aggregation
         vector_args.prompt_strategy = args.prompt_strategy
         vector_args.method = "caa"
@@ -162,8 +164,9 @@ def execute_modify_weights(args):
         with open(vector_args.output, 'r') as f:
             vector_data = json.load(f)
 
+        # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
         steering_vectors = {
-            int(layer): torch.tensor(vector)
+            int(layer) - 1: torch.tensor(vector)
             for layer, vector in vector_data["steering_vectors"].items()
         }
 

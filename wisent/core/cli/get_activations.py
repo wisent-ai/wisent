@@ -54,9 +54,10 @@ def execute_get_activations(args):
 
         # 3. Determine layers to collect
         if args.layers is None:
-            # Default: use middle layer
-            layers = [model.num_layers // 2]
+            # Default: use middle layer (1-indexed for API)
+            layers = [model.num_layers // 2 + 1]
         elif args.layers.lower() == 'all':
+            # Use 1-indexed layers for API (1 to num_layers)
             layers = list(range(1, model.num_layers + 1))
         else:
             layers = [int(l.strip()) for l in args.layers.split(',')]
