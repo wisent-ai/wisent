@@ -13,7 +13,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("afrimgsm_direct_amh",)
 
-evaluator_name = "generation"
+evaluator_name = "log_likelihoods"
 
 
 class AfrimgsmDirectAmhExtractor(HuggingFaceBenchmarkExtractor):
@@ -56,7 +56,7 @@ class AfrimgsmDirectAmhExtractor(HuggingFaceBenchmarkExtractor):
 
         try:
             question = doc.get("question", "").strip()
-            answer_number = doc.get("answer", doc.get("answer_number"))
+            answer_number = doc.get("answer_number")            
 
             if not question or answer_number is None:
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})

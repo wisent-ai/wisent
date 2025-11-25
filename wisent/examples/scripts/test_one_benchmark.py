@@ -94,8 +94,8 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 # Translation benchmarks
                 "wmt14", "wmt16", "iwslt2017",
                 # Newly created HuggingFace extractors
-                "20_newsgroups", "afrimgsm_direct_amh", "afrimmlu_direct_amh",
-                "afrixnli_en_direct_amh", "ag_news", "arabic_exams", "argument_topic",
+                "afrimgsm_direct_amh", "afrimmlu_direct_amh",
+                "afrixnli_en_direct_amh", "ag_news", "babilong", "bangla_mmlu",
                 "bhtc_v2", "basque-glue", "basqueglue",
                 "cnn_dailymail", "dbpedia_14",
                 "ethos_binary", "evalita-sp_sum_task_fp-small_p1", "flan_held_in",
@@ -125,7 +125,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         else:
             print(f"    Using LMEvalDataLoader")
             loader = LMEvalDataLoader()
-
+            
         result = loader._load_one_task(
             task_name=task_name,
             split_ratio=0.8,
@@ -206,7 +206,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
 
             pair_results = {
                 "pair_id": i,
-                "prompt": pair.prompt[:100] + "...",
+                "prompt": pair.prompt + "...",
                 "positive_response": pair.positive_response.model_response,
                 "negative_response": pair.negative_response.model_response,
             }

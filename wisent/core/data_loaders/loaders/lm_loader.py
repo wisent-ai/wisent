@@ -351,7 +351,7 @@ class LMEvalDataLoader(BaseDataLoader):
         if special_handler:
             log.info(f"Using special case handler for task '{lm_eval_task_name}'")
             return special_handler(task_manager)
-
+    
         task_dict = get_task_dict([lm_eval_task_name], task_manager=task_manager)
 
         # Try to get the task directly

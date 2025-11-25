@@ -1,23 +1,14 @@
 {
-  "completed": ["ag_news", "aime", "boolq", "cb", "squad2"],
+  "completed": ["20_newsgroups", "afrimgsm_direct_amh", "afrimmlu_direct_amh", "afrixnli_en_direct_amh", "ag_news", "aime",
+  "aime2024", "aime2025", "arabic_exams", "argument_topic", "babilong", "bangla_mmlu", "boolq", "cb", "squad2"],
+
   "all_tasks": [
-  "20_newsgroups",
   "Tag",
-  "afrimgsm_direct_amh",
-  "afrimmlu_direct_amh",
-  "afrixnli_en_direct_amh",
-  "ag_news extractor done",
-  "aime extractor done",
-  "aime2024",
-  "aime2025",
   "apps",
   "humaneval_plus",
   "multipl_e",
-  "arabic_exams",
-  "argument_topic",
   "atis",
-  "babilong",
-  "bangla_mmlu",
+
   "banking77",
   "basque-glue",
   "bec2016eu",
