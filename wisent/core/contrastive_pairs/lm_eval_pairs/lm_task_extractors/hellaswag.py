@@ -68,6 +68,9 @@ class HellaSwagExtractor(LMEvalBenchmarkExtractor):
         """
         Convert a single Hellaswag doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        IMPROVED: Uses the HARDEST incorrect ending (most similar to correct)
+        to create maximum contrast signal for abliteration.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
@@ -83,10 +86,16 @@ class HellaSwagExtractor(LMEvalBenchmarkExtractor):
                     extra={"doc": doc},
                 )
                 return None
-            
+
             correct = endings[label]
-            incorrect = endings[(label+1)%len(endings)]
-                
+
+            # Get ALL incorrect endings
+            incorrect_endings = [e for i, e in enumerate(endings) if i != label]
+
+            # Use the HARDEST incorrect (longest, as proxy for most plausible)
+            # This creates maximum contrast for the steering vector
+            incorrect = max(incorrect_endings, key=len) if incorrect_endings else endings[(label+1)%len(endings)]
+
             question = f"{query}"
             formatted_question = f"{question}\nA. {incorrect}\nB. {correct}"
 
@@ -101,7 +110,7 @@ class HellaSwagExtractor(LMEvalBenchmarkExtractor):
                 metadata=metadata,
             )
 
-        except Exception as exc:  
+        except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
 

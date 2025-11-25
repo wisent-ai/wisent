@@ -6,6 +6,9 @@ This service controls how much of each benchmark is downloaded based on the limi
 - If limit=3 and we have 5 cached, reuse cached samples
 - If limit=10 and we have 5 cached, download 5 more
 - Hard errors for unsupported benchmarks, no fallbacks
+
+Uses unified split strategy: all available splits are combined and split 80/20 into train/test.
+For cached benchmarks used in evaluation, we use the TEST portion.
 """
 
 import json
@@ -18,6 +21,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from .benchmark_extractors import EXTRACTORS, get_extractor
+from .utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
 
 logger = logging.getLogger(__name__)
 
@@ -336,20 +340,29 @@ class ManagedCachedBenchmarks:
             raise BenchmarkError(f"Failed to load TaskInterface task '{task_name}': {e}")
 
     def _get_task_sample_iterator(self, task, limit: int) -> Iterator[Dict[str, Any]]:
-        """Get iterator over task samples."""
-        # Try different document sources in order of preference
-        if hasattr(task, "validation_docs") and task.has_validation_docs():
-            docs = task.validation_docs()
-        elif hasattr(task, "test_docs") and task.has_test_docs():
-            docs = task.test_docs()
-        elif hasattr(task, "training_docs") and task.has_training_docs():
-            docs = task.training_docs()
-        else:
-            raise BenchmarkError("No document source available for task")
+        """
+        Get iterator over task samples using unified split strategy.
+
+        Combines ALL available splits and returns only the TEST portion (20%)
+        to ensure no data leakage with training (which uses the 80% train portion).
+        """
+        # Get task name for deterministic splitting
+        task_name = getattr(task, 'NAME', getattr(task, 'TASK_NAME', type(task).__name__))
+
+        # Get ALL docs from all splits
+        all_docs, split_counts = get_all_docs_from_task(task)
+
+        if not all_docs:
+            raise BenchmarkError(f"No document source available for task '{task_name}'")
+
+        # Apply our 80/20 split and get TEST docs only
+        _, test_docs = create_deterministic_split(all_docs, task_name)
+
+        logger.info(f"Using {len(test_docs)} test docs from {task_name} "
+                   f"(total: {len(all_docs)}, original splits: {split_counts})")
 
         # Convert to iterator and limit
-        doc_iter = iter(docs)
-        for i, doc in enumerate(doc_iter):
+        for i, doc in enumerate(test_docs):
             if i >= limit:
                 break
             yield doc
