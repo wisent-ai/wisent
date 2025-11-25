@@ -1,42 +1,36 @@
 from __future__ import annotations
 
 import random
-from typing import Any, TYPE_CHECKING
+from typing import Any
+import logging
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
-from wisent.core.cli_logger import setup_logger, bind
-
-if TYPE_CHECKING:
-    from lm_eval.api.task import ConfigurableTask
-
+from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["TruthfulQAGenerationExtractor"]
-_LOG = setup_logger(__name__)
 
-# This task uses truthfulqa_gen from lm-eval-harness as the underlying task
-# The name "truthfulqa_generation" is an alias for open-ended generation evaluation
+log = logging.getLogger(__name__)
+
 task_names = ("truthfulqa_generation",)
-
-# Maps to the underlying lm-eval task
-lm_eval_task_name = "truthfulqa_gen"
 
 evaluator_name = "generation"
 
 
-class TruthfulQAGenerationExtractor(LMEvalBenchmarkExtractor):
+class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for the TruthfulQA Generation benchmark.
 
     This extractor formats prompts for open-ended generation evaluation,
     where models generate responses from scratch rather than selecting
     from multiple choice options.
 
-    TruthfulQA_Gen schema:
+    TruthfulQA schema (truthfulqa/truthful_qa, generation config):
         - question: str
         - best_answer: str (truthful answer)
         - correct_answers: list (all truthful answers)
         - incorrect_answers: list (false/misleading answers)
+        - category: str
+        - type: str
     """
 
     # Override base class default to use generation evaluator
@@ -44,27 +38,30 @@ class TruthfulQAGenerationExtractor(LMEvalBenchmarkExtractor):
 
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from TruthfulQA_Gen docs for generation evaluation.
+        Build contrastive pairs from TruthfulQA for generation evaluation.
 
         Args:
-            lm_eval_task_data: lm-eval task instance for TruthfulQA_Gen.
             limit: Optional maximum number of pairs to produce.
 
         Returns:
             A list of ContrastivePair objects.
         """
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
-
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+
+        # Load TruthfulQA dataset from HuggingFace
+        docs = self.load_dataset(
+            dataset_name="truthfulqa/truthful_qa",
+            dataset_config="generation",
+            split="validation",
+            limit=max_items,
+        )
 
         pairs: list[ContrastivePair] = []
 
-        log.info("Extracting contrastive pairs for generation", extra={"doc_count": len(docs)})
+        log.info(f"Extracting contrastive pairs from {len(docs)} TruthfulQA examples")
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -74,32 +71,27 @@ class TruthfulQAGenerationExtractor(LMEvalBenchmarkExtractor):
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid TruthfulQA generation pairs extracted", extra={"task": task_name})
+            log.warning("No valid TruthfulQA generation pairs extracted")
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single TruthfulQA_Gen doc into a ContrastivePair for generation.
+        Convert a single TruthfulQA doc into a ContrastivePair for generation.
 
         The prompt is formatted as an open-ended question without multiple choice options,
         suitable for evaluating generated completions.
 
         Returns None when required fields are missing or malformed.
         """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
         try:
             question = str(doc.get("question", "")).strip()
             best_answer = str(doc.get("best_answer", "")).strip()
+            correct_answers = doc.get("correct_answers", [])
             incorrect_answers = doc.get("incorrect_answers", [])
 
             if not question or not best_answer or not incorrect_answers:
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
+                log.debug(f"Skipping doc due to missing/invalid fields: {doc}")
                 return None
 
             # For generation, we use the truthful answer as positive
@@ -115,6 +107,8 @@ class TruthfulQAGenerationExtractor(LMEvalBenchmarkExtractor):
                 "label": "truthfulqa_generation",
                 "category": doc.get("category", ""),
                 "type": doc.get("type", ""),
+                "correct_answers": correct_answers if correct_answers else [best_answer],
+                "incorrect_answers": incorrect_answers,
             }
 
             return self._build_pair(
@@ -125,7 +119,7 @@ class TruthfulQAGenerationExtractor(LMEvalBenchmarkExtractor):
             )
 
         except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+            log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
 
     @staticmethod
@@ -135,11 +129,13 @@ class TruthfulQAGenerationExtractor(LMEvalBenchmarkExtractor):
         incorrect: str,
         metadata: dict[str, Any] | None = None,
     ) -> ContrastivePair:
+        """Build a ContrastivePair from question and responses."""
         positive_response = PositiveResponse(model_response=correct)
         negative_response = NegativeResponse(model_response=incorrect)
         return ContrastivePair(
             prompt=question,
             positive_response=positive_response,
             negative_response=negative_response,
-            label=metadata.get("label") if metadata else None
+            label=metadata.get("label") if metadata else None,
+            metadata=metadata,
         )

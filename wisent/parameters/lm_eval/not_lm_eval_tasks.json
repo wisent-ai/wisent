@@ -21,6 +21,7 @@
   "bec2016eu",
   "bhtc_v2",
   "boolq",
+  "truthfulqa_generation",
   "boolq-seq2seq",
   "cb",
   "chain_of_thought",
