@@ -4,6 +4,12 @@ from collections.abc import Iterable, Mapping
 from typing import Any, Sequence, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
+from wisent.core.utils.dataset_splits import (
+    get_train_docs as _get_train_docs,
+    get_all_docs_from_task,
+    create_deterministic_split,
+)
+
 
 if TYPE_CHECKING:
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -37,8 +43,9 @@ class LMEvalBenchmarkExtractor(ABC):
     Subclasses should implement :meth:'extract_contrastive_pairs' to transform
     task documents into a list of :class:'ContrastivePair' instances.
 
-    Utility methods are provided to load the most appropriate labeled documents
-    from a task, with a clear order of preference and a robust dataset fallback.
+    Documents are loaded using our unified split strategy: all available splits
+    are combined and then split 80/20 into train/test. For contrastive pair
+    extraction, we use the TRAINING portion to avoid data leakage with evaluation.
 
     Subclasses should declare:
         evaluator_name (str): Name of the evaluator to use (e.g., "log_likelihoods")
@@ -77,18 +84,11 @@ class LMEvalBenchmarkExtractor(ABC):
         preferred_doc: str | None = None,
     ) -> list[dict[str, Any]]:
         """
-        Load labeled documents from the most appropriate split with a clear
-        preference order:
+        Load TRAINING documents for contrastive pair extraction.
 
-            validation → test → train → fewshot
-
-        If preferred_doc is provided, that source will be tried first before
-        falling back to the default order.
-
-        If none are available, attempts a dataset fallback using
-        'datasets.load_dataset' with the task's declared metadata
-        (e.g., 'dataset_path'/'dataset_name', 'dataset_config_name',
-        and 'fewshot_split').
+        This method combines ALL available splits from the task and applies
+        our own 80/20 train/test split. Only the TRAINING portion is returned
+        to ensure no data leakage with evaluation (which uses the test portion).
 
         arguments:
             lm_eval_task_data:
@@ -97,75 +97,52 @@ class LMEvalBenchmarkExtractor(ABC):
                 Optional maximum number of documents to return.
                 Values <= 0 are treated as "no limit".
             preferred_doc:
-                Optional preferred document source. Valid values:
-                "validation", "test", "training", "fewshot".
-                If provided, this source will be tried first.
+                DEPRECATED - ignored. All splits are now combined.
 
         returns:
-            A list of document dictionaries.
+            A list of document dictionaries (training portion only).
 
         raises:
             NoLabelledDocsAvailableError:
                 If no labeled documents are available.
-            RuntimeError:
-                If a dataset fallback is attempted and fails to load.
         """
         max_items = cls._normalize_limit(limit)
 
-        # Map preferred_doc string to the tuple format
-        doc_source_map = {
-            "validation": ("has_validation_docs", "validation_docs"),
-            "test": ("has_test_docs", "test_docs"),
-            "training": ("has_training_docs", "training_docs"),
-            "fewshot": ("has_fewshot_docs", "fewshot_docs"),
-        }
-
-        # Build preferred_sources based on preferred_doc
-        default_order: Sequence[tuple[str, str]] = (
-            ("has_validation_docs", "validation_docs"),
-            ("has_test_docs", "test_docs"),
-            ("has_training_docs", "training_docs"),
-            ("has_fewshot_docs", "fewshot_docs"),
+        # Get benchmark name for deterministic splitting
+        benchmark_name = getattr(
+            lm_eval_task_data, "NAME",
+            getattr(lm_eval_task_data, "TASK_NAME", type(lm_eval_task_data).__name__)
         )
 
-        if preferred_doc and preferred_doc in doc_source_map:
-            # Put preferred source first, then other sources
-            preferred_source = doc_source_map[preferred_doc]
-            other_sources = [s for s in default_order if s != preferred_source]
-            preferred_sources = (preferred_source,) + tuple(other_sources)
-        else:
-            preferred_sources = default_order
+        # Get ALL docs from all splits
+        all_docs, split_counts = get_all_docs_from_task(lm_eval_task_data)
 
-        for has_method, docs_method in preferred_sources:
-            if cls._has_true(lm_eval_task_data, has_method) and cls._has_callable(
-                lm_eval_task_data, docs_method
-            ):
-                try:
-                    print(f"loaded from {docs_method}")
-                    docs_iter = getattr(lm_eval_task_data, docs_method)()
-                    docs_list = cls._coerce_docs_to_dicts(docs_iter, max_items)
-                    if docs_list:
-                        return docs_list
-                except (KeyError, ValueError) as e:
-                    # Split doesn't exist or can't be loaded, try next split
-                    print(f"  skipping {docs_method}: {e}")
-                    continue
+        if not all_docs:
+            # Fallback to dataset loading if no docs from task methods
+            docs_list = cls._fallback_load_from_dataset(lm_eval_task_data, None)
+            if docs_list:
+                all_docs = docs_list
 
-        # Fallback to dataset split (common for tasks relying on fewshot_split).
-        docs_list = cls._fallback_load_from_dataset(lm_eval_task_data, max_items)
-        if docs_list:
-            return docs_list
+        if not all_docs:
+            raise NoLabelledDocsAvailableError(
+                f"No labeled documents are available for task '{benchmark_name}'. "
+                "The task does not expose any docs from validation/test/train/fewshot, "
+                "and no usable dataset metadata was found for a fallback load."
+            )
 
-        task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-        raise NoLabelledDocsAvailableError(
-            f"No labeled documents are available for task '{task_name}'. "
-            "The task does not expose validation/test/train/fewshot docs, "
-            "and no usable dataset metadata was found for a fallback load.\n\n"
-            "Tip: Ensure your task implements at least one of the doc getters "
-            "(validation_docs/test_docs/training_docs/fewshot_docs), or that it "
-            "declares dataset metadata (dataset_path or dataset_name, "
-            "dataset_config_name, and fewshot_split) so a split can be loaded."
-        )
+        # Apply our 80/20 split and get TRAINING docs only
+        train_docs, _ = create_deterministic_split(all_docs, benchmark_name)
+
+        # Coerce to dicts
+        docs_list = cls._coerce_docs_to_dicts(train_docs, max_items)
+
+        total = len(all_docs)
+        train_count = len(train_docs)
+        returned = len(docs_list)
+        print(f"Loaded {returned} training docs from {benchmark_name} "
+              f"(total: {total}, train split: {train_count}, original splits: {split_counts})")
+
+        return docs_list
 
     @staticmethod
     def _normalize_limit(limit: int | None) -> int | None:

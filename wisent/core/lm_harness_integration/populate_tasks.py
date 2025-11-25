@@ -2,6 +2,8 @@
 """
 Script to populate tasks.json with real information from lm_eval tasks.
 This script fetches actual examples, descriptions, and evaluation methods.
+
+Uses unified split strategy: all available splits are combined and split 80/20 into train/test.
 """
 
 import json
@@ -12,6 +14,7 @@ import subprocess
 import random
 
 from wisent.core.utils.device import preferred_dtype, resolve_default_device, resolve_device
+from wisent.core.utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
 
 def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: int = 3) -> Any:
     """
@@ -48,34 +51,20 @@ def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: in
                 print(f"{indent}❌ No working tasks in '{item_name}', continuing...")
                 continue
         
-        # Check if this individual task has documents
+        # Check if this individual task has documents using unified split strategy
         try:
-            has_docs = False
-            test_docs = []
-            
-            if hasattr(item, 'validation_docs') and item.has_validation_docs():
-                test_docs = list(item.validation_docs())
-                if test_docs:
-                    has_docs = True
-            elif hasattr(item, 'test_docs') and item.has_test_docs():
-                test_docs = list(item.test_docs())
-                if test_docs:
-                    has_docs = True
-            elif hasattr(item, 'training_docs') and item.has_training_docs():
-                test_docs = list(item.training_docs())
-                if test_docs:
-                    has_docs = True
-            
-            if has_docs:
-                print(f"{indent}✅ Found working task '{item_name}' with {len(test_docs)} documents")
+            all_docs, split_counts = get_all_docs_from_task(item)
+
+            if all_docs:
+                print(f"{indent}✅ Found working task '{item_name}' with {len(all_docs)} documents (splits: {split_counts})")
                 return item
             else:
                 print(f"{indent}❌ '{item_name}' has no documents")
-                
+
         except Exception as e:
             print(f"{indent}❌ '{item_name}' failed: {e}")
             continue
-    
+
     return None
 
 def get_benchmark_tags_with_llama(task_name: str, readme_content: str = "") -> List[str]:
@@ -381,18 +370,15 @@ def get_samples_from_group_task(group_name: str, subtasks: List[str], num_sample
                 
             task = task_dict[subtask]
             
-            # Get documents from this subtask
-            docs = []
-            if hasattr(task, 'validation_docs') and task.has_validation_docs():
-                docs = list(task.validation_docs())
-            elif hasattr(task, 'test_docs') and task.has_test_docs():
-                docs = list(task.test_docs())
-            elif hasattr(task, 'training_docs') and task.has_training_docs():
-                docs = list(task.training_docs())
-            
-            if not docs:
+            # Get documents from this subtask using unified split strategy
+            all_docs, split_counts = get_all_docs_from_task(task)
+
+            if not all_docs:
                 print(f"   ⚠️  No documents found for subtask '{subtask}', skipping...")
                 continue
+
+            # Use all docs (script is for populating task info, not evaluation)
+            docs = all_docs
             
             # Sample documents from this subtask
             sample_docs = docs[:samples_per_task] if len(docs) >= samples_per_task else docs
@@ -604,15 +590,11 @@ def get_task_samples_for_analysis(task_name: str, num_samples: int = 5) -> Dict[
         # Get task description
         description = getattr(task, 'DESCRIPTION', getattr(task, '__doc__', f"Task: {task_name}"))
         
-        # Get documents with robust error handling for lm-eval dependency issues
+        # Get documents using unified split strategy
         docs = []
         try:
-            if hasattr(task, 'validation_docs') and task.has_validation_docs():
-                docs = list(task.validation_docs())
-            elif hasattr(task, 'test_docs') and task.has_test_docs():
-                docs = list(task.test_docs())
-            elif hasattr(task, 'training_docs') and task.has_training_docs():
-                docs = list(task.training_docs())
+            all_docs, split_counts = get_all_docs_from_task(task)
+            docs = all_docs  # Use all docs for populating task info
         except Exception as e:
             error_msg = str(e)
             
@@ -885,16 +867,11 @@ def process_individual_task(task_name: str, task) -> Dict[str, Any]:
         "category": "",
         "task_type": "individual"
     }
-    
-    # Try to get a sample document
+
+    # Try to get a sample document using unified split strategy
     try:
-        if hasattr(task, 'validation_docs') and task.has_validation_docs():
-            docs = list(task.validation_docs())
-        elif hasattr(task, 'test_docs') and task.has_test_docs():
-            docs = list(task.test_docs())
-        elif hasattr(task, 'training_docs') and task.has_training_docs():
-            docs = list(task.training_docs())
-        else:
+        docs, split_counts = get_all_docs_from_task(task)
+        if not docs:
             docs = []
         
         if docs:
@@ -1031,16 +1008,11 @@ def extract_examples_from_task(task_name: str, task) -> Dict[str, str]:
         "example_good_response": "",
         "example_bad_response": ""
     }
-    
-    # Try to get a sample document
+
+    # Try to get a sample document using unified split strategy
     try:
-        if hasattr(task, 'validation_docs') and task.has_validation_docs():
-            docs = list(task.validation_docs())
-        elif hasattr(task, 'test_docs') and task.has_test_docs():
-            docs = list(task.test_docs())
-        elif hasattr(task, 'training_docs') and task.has_training_docs():
-            docs = list(task.training_docs())
-        else:
+        docs, split_counts = get_all_docs_from_task(task)
+        if not docs:
             docs = []
         
         if docs:

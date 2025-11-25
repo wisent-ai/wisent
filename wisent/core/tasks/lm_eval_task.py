@@ -6,6 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from ..benchmark_extractors import BenchmarkExtractor, get_extractor
 from ..task_interface import TaskInterface
+from ..utils.dataset_splits import get_test_docs, get_all_docs_from_task, create_deterministic_split
 
 
 class LMEvalTask(TaskInterface):
@@ -18,9 +19,14 @@ class LMEvalTask(TaskInterface):
         self._extractor = get_extractor(task_name)
 
     def load_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Load data directly from lm-eval without Model dependency."""
+        """
+        Load TEST data from lm-eval using our unified split strategy.
+
+        All available splits are combined and split 80/20 into train/test.
+        This method returns the TEST portion for evaluation.
+        Training portion is used for contrastive pair generation (see atoms.py).
+        """
         try:
-            # Load data directly from lm-eval without creating a Model instance
             from lm_eval.tasks import get_task_dict
 
             # Get task directly from lm-eval
@@ -31,32 +37,24 @@ class LMEvalTask(TaskInterface):
 
             task = task_dict[self.task_name]
 
-            # Get the task's test documents
-            docs = []
-            if hasattr(task, "test_docs"):
-                # For lm-eval versions with test_docs method
-                docs = list(task.test_docs())
-            elif hasattr(task, "dataset"):
-                # For newer lm-eval versions
-                dataset = task.dataset
-                if hasattr(dataset, "test"):
-                    docs = list(dataset.test)
-                elif hasattr(dataset, "validation"):
-                    docs = list(dataset.validation)
-                else:
-                    # Fallback to the main dataset
-                    docs = list(dataset)
+            # Get ALL docs from all splits
+            all_docs, split_counts = get_all_docs_from_task(task)
+
+            if not all_docs:
+                print(f"Warning: No documents found for task '{self.task_name}'")
+                return []
+
+            # Apply our 80/20 split and get TEST docs only
+            _, test_docs = create_deterministic_split(all_docs, self.task_name)
 
             # Ensure docs are in dictionary format
             processed_docs = []
-            for doc in docs:
+            for doc in test_docs:
                 if isinstance(doc, dict):
                     processed_docs.append(doc)
                 elif isinstance(doc, str):
-                    # Handle string documents by wrapping them
                     processed_docs.append({"text": doc})
                 else:
-                    # Try to convert to dict if possible
                     try:
                         processed_docs.append(dict(doc))
                     except:
@@ -67,6 +65,12 @@ class LMEvalTask(TaskInterface):
             # Apply limit if specified
             if limit and len(docs) > limit:
                 docs = docs[:limit]
+
+            total = len(all_docs)
+            test_count = len(test_docs)
+            returned = len(docs)
+            print(f"Loaded {returned} test docs from {self.task_name} "
+                  f"(total: {total}, test split: {test_count}, original splits: {split_counts})")
 
             return docs
 
@@ -135,38 +139,8 @@ class GSM8KTask(LMEvalTask):
         )
 
 class ArithmeticBaseTask(LMEvalTask):
-    """Base class for arithmetic tasks that use validation split."""
-
-    def load_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Load arithmetic data, which only has validation split."""
-        try:
-            from lm_eval.tasks import get_task_dict
-
-            # Get task directly from lm-eval
-            task_dict = get_task_dict([self.task_name])
-            if self.task_name not in task_dict:
-                print(f"Warning: Task '{self.task_name}' not found in lm-eval")
-                return []
-
-            task = task_dict[self.task_name]
-
-            # Arithmetic only has validation split, access it directly
-            docs = []
-            if hasattr(task, 'validation_docs') and task.validation_docs() is not None:
-                validation_data = task.validation_docs()
-                docs = list(validation_data)
-
-            # Apply limit if specified
-            if limit and len(docs) > limit:
-                docs = docs[:limit]
-
-            return docs
-
-        except Exception as e:
-            print(f"Warning: Could not load arithmetic task '{self.task_name}': {e}")
-            import traceback
-            traceback.print_exc()
-            return []
+    """Base class for arithmetic tasks. Uses unified split strategy."""
+    pass  # No longer needs special handling - unified split combines all available docs
 
 
 class Arithmetic1dcTask(ArithmeticBaseTask):
@@ -271,7 +245,7 @@ class Arithmetic5dsTask(ArithmeticBaseTask):
         )
 
 class MULTIRCTask(LMEvalTask):
-    """MULTIRC task implementation"""
+    """MULTIRC task implementation. Uses unified split strategy."""
 
     def __init__(self):
         super().__init__(
@@ -279,41 +253,11 @@ class MULTIRCTask(LMEvalTask):
             description="MultiRC: Multi-Sentence Reading Comprehension",
             categories=["reasoning", "long context", "general knowledge"]
         )
-
-    def load_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Load MULTIRC data, which only has validation split."""
-        try:
-            from lm_eval.tasks import get_task_dict
-
-            #Get task directly from lm-eval
-            task_dict = get_task_dict([self.task_name])
-            if self.task_name not in task_dict:
-                print(f"Warning: Task '{self.task_name}' not found in lm-eval")
-                return []
-            
-            task = task_dict[self.task_name]
-
-            # MultiRC only has validation split, access it directly
-            docs = []
-            if hasattr(task, 'validation_docs') and task.validation_docs() is not None:
-                validation_data = task.validation_docs()
-                docs = list(validation_data)
-
-            # Apply limit if specified
-            if limit and len(docs) > limit:
-                docs = docs[:limit]
-
-            return docs
-
-        except Exception as e:
-            print(f"Warning: Could not load arithmetic task '{self.task_name}': {e}")
-            import traceback
-            traceback.print_exc()
-            return []
+    # No longer needs special handling - unified split combines all available docs
 
 
 class TruthfulQATask(LMEvalTask):
-    """TruthfulQA task implementation."""
+    """TruthfulQA task implementation. Uses unified split strategy."""
 
     def __init__(self):
         super().__init__(
@@ -321,38 +265,7 @@ class TruthfulQATask(LMEvalTask):
             description="TruthfulQA: Truthfulness evaluation benchmark",
             categories=["hallucination", "general-knowledge", "reasoning"],
         )
-
-    def load_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Load TruthfulQA data, which only has validation split."""
-        try:
-            from lm_eval.tasks import get_task_dict
-
-            # Get task directly from lm-eval
-            task_dict = get_task_dict([self.task_name])
-            if self.task_name not in task_dict:
-                print(f"Warning: Task '{self.task_name}' not found in lm-eval")
-                return []
-
-            task = task_dict[self.task_name]
-
-            # TruthfulQA only has validation split, access it directly
-            docs = []
-            if hasattr(task, "dataset") and "validation" in task.dataset:
-                validation_data = task.dataset["validation"]
-                docs = list(validation_data)
-
-            # Apply limit if specified
-            if limit and len(docs) > limit:
-                docs = docs[:limit]
-
-            return docs
-
-        except Exception as e:
-            print(f"Warning: Could not load TruthfulQA task '{self.task_name}': {e}")
-            import traceback
-
-            traceback.print_exc()
-            return []
+    # No longer needs special handling - unified split combines all available docs
 
 
 class MMLUTask(LMEvalTask):
@@ -600,7 +513,7 @@ class RecodeTask(LMEvalTask):
 
 
 class Squad2Task(LMEvalTask):
-    """SQuAD2 task implementation."""
+    """SQuAD2 task implementation. Uses unified split strategy."""
 
     def __init__(self):
         super().__init__(
@@ -608,35 +521,4 @@ class Squad2Task(LMEvalTask):
             description="SQuAD2: Stanford Question Answering Dataset 2.0",
             categories=["reading-comprehension", "qa", "natural-language"],
         )
-
-    def load_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
-        """Load SQuAD2 data, which only has validation split."""
-        try:
-            from lm_eval.tasks import get_task_dict
-
-            # Get task directly from lm-eval
-            task_dict = get_task_dict([self.task_name])
-            if self.task_name not in task_dict:
-                print(f"Warning: Task '{self.task_name}' not found in lm-eval")
-                return []
-
-            task = task_dict[self.task_name]
-
-            # SQuAD2 only has validation split, access it directly
-            docs = []
-            if hasattr(task, "dataset") and "validation" in task.dataset:
-                validation_data = task.dataset["validation"]
-                docs = list(validation_data)
-
-            # Apply limit if specified
-            if limit and len(docs) > limit:
-                docs = docs[:limit]
-
-            return docs
-
-        except Exception as e:
-            print(f"Warning: Could not load SQuAD2 task '{self.task_name}': {e}")
-            import traceback
-
-            traceback.print_exc()
-            return []
+    # No longer needs special handling - unified split combines all available docs
