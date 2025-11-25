@@ -7,8 +7,8 @@ base_import: str = "wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extr
 EXTRACTORS: dict[str, str] = {
     # Math benchmarks
     "aime": f"{base_import}aime:AIMEExtractor",
-    "aime2024": f"{base_import}aime:AIMEExtractor",
-    "aime2025": f"{base_import}aime:AIMEExtractor",
+    "aime2024": f"{base_import}aime2024:AIME2024Extractor",
+    "aime2025": f"{base_import}aime2025:AIME2025Extractor",
     "asdiv_cot_llama": f"{base_import}math:MATHExtractor",
     "chain_of_thought": f"{base_import}math:MATHExtractor",
     "gsm8k_cot": f"{base_import}math:MATHExtractor",
@@ -145,13 +145,10 @@ EXTRACTORS: dict[str, str] = {
     "xsum": f"{base_import}xsum:XsumExtractor",
 
     # Newly created extractors
-    "20_newsgroups": f"{base_import}twenty_newsgroups:TwentyNewsgroupsExtractor",
     "afrimgsm_direct_amh": f"{base_import}afrimgsm_direct_amh:AfrimgsmDirectAmhExtractor",
     "afrimmlu_direct_amh": f"{base_import}afrimmlu_direct_amh:AfrimmluDirectAmhExtractor",
     "afrixnli_en_direct_amh": f"{base_import}afrixnli_en_direct_amh:AfrixnliEnDirectAmhExtractor",
     "ag_news": f"{base_import}ag_news:AgNewsExtractor",
-    "arabic_exams": f"{base_import}arabic_exams:ArabicExamsExtractor",
-    "argument_topic": f"{base_import}argument_topic:ArgumentTopicExtractor",
     "bhtc_v2": f"{base_import}bhtc_v2:BhtcV2Extractor",
     "basque-glue": f"{base_import}basqueglue:BasqueglueExtractor",
     "cnn_dailymail": f"{base_import}cnn_dailymail:CnnDailymailExtractor",

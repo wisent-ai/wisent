@@ -13,7 +13,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("ag_news",)
 
-evaluator_name = "exact_match"
+evaluator_name = "log_likelihoods"
 
 
 class AgNewsExtractor(HuggingFaceBenchmarkExtractor):

@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
-
-if TYPE_CHECKING:
-    from lm_eval.api.task import ConfigurableTask
 
 
 __all__ = ["BabilongExtractor"]
@@ -16,7 +13,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("babilong",)
 
-evaluator_name = "generation"
+evaluator_name = "log_likelihoods"
 
 
 class BabilongExtractor(HuggingFaceBenchmarkExtractor):
@@ -24,25 +21,28 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
 
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from Babilong docs.
 
         Args:
-            lm_eval_task_data: lm-eval task instance for Babilong.
             limit: Optional maximum number of pairs to produce.
-            preferred_doc: Optional preferred document source.
 
         Returns:
             A list of ContrastivePair objects.
         """
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        log = bind(_LOG, task="babilong")
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+
+        # Load dataset using base class method
+        docs = self.load_dataset(
+            dataset_name="RMT-team/babilong",
+            dataset_config="qa1",
+            split="0k",
+            limit=max_items,
+        )
 
         pairs: list[ContrastivePair] = []
 
@@ -56,8 +56,7 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid Babilong pairs extracted", extra={"task": task_name})
+            log.warning("No valid Babilong pairs extracted", extra={"task": "babilong"})
 
         return pairs
 
@@ -70,21 +69,19 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            context = doc.get("context", "").strip()
-            question = doc.get("input", "").strip()
-            positive_outputs = doc.get("positive_outputs", [])
-            negative_outputs = doc.get("negative_outputs", [])
 
-            if not context or not question or not positive_outputs or not negative_outputs:
+            input = doc.get("input", "").strip()
+            question = doc.get("question", "").strip()
+            correct = doc.get("target", "").strip()
+
+            if not input or not question or not correct:
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
-
-            # Use first positive and negative output
-            correct = str(positive_outputs[0]).strip()
-            incorrect = str(negative_outputs[0]).strip()
+            
+            incorrect = "garden" if correct == "bathroom" else "bathroom"
 
             # Format prompt with context and question
-            prompt = f"Context: {context}\n\nQuestion: {question}"
+            prompt = f"Context: {input}\n\nQuestion: {question}"
 
             metadata = {"label": "babilong"}
 

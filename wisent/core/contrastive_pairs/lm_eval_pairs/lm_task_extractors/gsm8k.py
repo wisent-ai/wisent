@@ -29,7 +29,7 @@ task_names = (
     "gsm8k_platinum_cot_zeroshot",
 )
 
-evaluator_name = "exact_match"
+evaluator_name = "log_likelihoods"
 
 
 class GSM8KExtractor(LMEvalBenchmarkExtractor):

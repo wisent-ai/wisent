@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
+
+if TYPE_CHECKING:
+    from lm_eval.api.task import ConfigurableTask
 
 
 __all__ = ["ArabicExamsExtractor"]
@@ -16,30 +19,22 @@ task_names = ("arabic_exams",)
 evaluator_name = "log_likelihoods"
 
 
-class ArabicExamsExtractor(HuggingFaceBenchmarkExtractor):
+class ArabicExamsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Arabic exams - multiple choice questions."""
 
     def extract_contrastive_pairs(
         self,
+        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task="arabic_exams")
+        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-
-        # Load dataset from HuggingFace
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("OALL/Arabic_EXAMS", split="test")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load arabic_exams dataset: {e}")
-            return []
-
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(dataset)})
+        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        for doc in dataset:
+        for doc in docs:
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
                 pairs.append(pair)
@@ -47,7 +42,8 @@ class ArabicExamsExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            log.warning("No valid pairs extracted", extra={"task": "arabic_exams"})
+            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
+            log.warning("No valid pairs extracted", extra={"task": task_name})
 
         return pairs
 
@@ -56,7 +52,15 @@ class ArabicExamsExtractor(HuggingFaceBenchmarkExtractor):
 
         try:
             question = doc.get("question", doc.get("query", "")).strip()
-            choices = doc.get("choices", doc.get("options", []))
+
+            # Build choices from A, B, C, D fields (actual answer text)
+            choices = [
+                doc.get("A", "").strip(),
+                doc.get("B", "").strip(),
+                doc.get("C", "").strip(),
+                doc.get("D", "").strip(),
+            ]
+            choices = [c for c in choices if c]  # Remove empty choices
 
             answer = doc.get("answer", doc.get("label"))
 
