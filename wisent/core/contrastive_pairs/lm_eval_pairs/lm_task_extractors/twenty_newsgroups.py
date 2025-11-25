@@ -14,9 +14,9 @@ if TYPE_CHECKING:
 __all__ = ["TwentyNewsgroupsExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("twenty_newsgroups", "20_newsgroups")
+task_names = ("20_newsgroups")
 
-evaluator_name = "exact_match"
+evaluator_name = "log_likelihoods"
 
 
 class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):

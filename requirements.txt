@@ -40,4 +40,5 @@ wonderwords>=2.2.0  # Required for ruler benchmark
 sympy>=1.12  # Required for minerva_math and math benchmarks
 math_verify>=0.1.0  # Required for minerva_math and math benchmarks
 antlr4-python3-runtime==4.11  # Required for minerva_math and math benchmarks
+unitxt #Required for 20_newsgroups
 # nltk>=3.8.0 already included above

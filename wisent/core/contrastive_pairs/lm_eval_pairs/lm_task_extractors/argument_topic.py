@@ -11,16 +11,16 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["AfrimgsmExtractor"]
+__all__ = ["ArgumentTopicExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("afrimgsm_direct_amh",)
+task_names = ("argument_topic",)
 
-evaluator_name = "generation"
+evaluator_name = "log_likelihoods"
 
 
-class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Afrimgsm benchmark - math word problems with numeric answers."""
+class ArgumentTopicExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for Argument Topic - text classification task."""
 
     def extract_contrastive_pairs(
         self,
@@ -48,44 +48,25 @@ class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """
-        Extract contrastive pair from Afrimgsm doc.
-        Schema: {'question': str, 'answer_number': int/float, 'answer': None, 'equation_solution': None}
-        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = doc.get("question", "").strip()
+            text = doc.get("text", doc.get("argument", "")).strip()
+            topic = doc.get("topic", doc.get("label", "")).strip()
 
-            # Get the correct numeric answer
-            answer_number = doc.get("answer_number")
-
-            if not question or answer_number is None:
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
+            if not text or not topic:
+                log.debug("Skipping doc due to missing text or topic", extra={"doc": doc})
                 return None
 
-            # Convert answer to string
-            correct = str(answer_number)
+            correct = topic
 
-            # Generate an incorrect answer (different from correct)
-            # Try multiple strategies to ensure the incorrect answer is different
-            try:
-                num_val = float(answer_number)
-                if num_val == 0:
-                    incorrect = "1"
-                elif num_val > 0:
-                    incorrect = str(int(num_val + 1))
-                else:
-                    incorrect = str(int(num_val - 1))
-            except (ValueError, TypeError):
-                # If not a valid number, use a generic wrong answer
-                incorrect = "0"
+            # Common argument topics
+            topics = ["abortion", "death penalty", "gun control", "immigration", "climate change"]
+            incorrect_topics = [t for t in topics if t != correct]
+            incorrect = incorrect_topics[0] if incorrect_topics else "unknown"
 
-            # Ensure incorrect is actually different
-            if incorrect == correct:
-                incorrect = str(int(float(correct)) * 2) if float(correct) != 0 else "1"
-
-            metadata = {"label": "afrimgsm"}
+            question = f"What is the topic of the following argument?\n\n{text}"
+            metadata = {"label": "argument_topic"}
 
             return self._build_pair(
                 question=question,
