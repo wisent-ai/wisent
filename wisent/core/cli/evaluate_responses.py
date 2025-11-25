@@ -12,6 +12,9 @@ def execute_evaluate_responses(args):
 
     Evaluates generated responses using benchmark-specific evaluators.
     Routes to appropriate evaluator based on task type from task-evaluator.json.
+
+    Uses unified split strategy: all available splits are combined and split 80/20.
+    Evaluation uses the TEST portion (20%) to ensure no data leakage with training.
     """
     from lm_eval.tasks import TaskManager
     from wisent.core.evaluators.benchmark_specific import (
@@ -20,6 +23,7 @@ def execute_evaluate_responses(args):
         F1Evaluator,
         PerplexityEvaluator
     )
+    from wisent.core.utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
 
     print(f"\n{'='*80}")
     print(f"📊 EVALUATING GENERATED RESPONSES")
@@ -86,16 +90,18 @@ def execute_evaluate_responses(args):
     task_docs = None
     task = None
     if evaluation_type not in ["docker_execution", "personalization"]:
-        print(f"📚 Loading task data...")
+        print(f"📚 Loading task data using unified split strategy...")
         try:
             tm = TaskManager()
             task_dict = tm.load_task_or_group(task_name)
             task = task_dict[task_name]
 
-            # Get validation docs
-            task_docs = list(task.validation_docs())
+            # Use unified split strategy: combine ALL available splits, then use TEST portion (20%)
+            all_docs, split_counts = get_all_docs_from_task(task)
+            _, task_docs = create_deterministic_split(all_docs, task_name)
 
-            print(f"   ✓ Loaded {len(task_docs)} task documents\n")
+            print(f"   ✓ Combined {len(all_docs)} total docs from splits: {split_counts}")
+            print(f"   ✓ Using TEST portion: {len(task_docs)} task documents for evaluation\n")
         except Exception as e:
             print(f"   ❌ Could not load task: {e}")
             sys.exit(1)
@@ -543,7 +549,49 @@ def execute_evaluate_responses(args):
             generated_response = response_data.get('generated_response', '')
             prompt = response_data.get('prompt', '')
 
-            # Find matching task doc by question text
+            # First check if positive_reference is available in the response data
+            # This is the expected answer that was already extracted during generation
+            positive_reference = response_data.get('positive_reference')
+
+            # If we have positive_reference, use it directly without needing to match task docs
+            if positive_reference is not None:
+                # Use the positive_reference as the expected answer
+                if args.verbose:
+                    print(f"Question {idx}: Using positive_reference as expected answer")
+
+                # Evaluate using selected evaluator
+                result = evaluator.evaluate(generated_response, positive_reference)
+
+                is_correct = (result.ground_truth == "TRUTHFUL")
+
+                # Store result
+                task_results.append({
+                    'acc': 1.0 if is_correct else 0.0,
+                    'confidence': result.confidence
+                })
+
+                if args.verbose:
+                    print(f"Question {idx}:")
+                    print(f"   Prompt: {prompt[:60]}...")
+                    print(f"   Expected: {str(positive_reference)[:60]}...")
+                    print(f"   Generated: {generated_response[:60]}...")
+                    print(f"   Ground truth: {result.ground_truth}")
+                    print(f"   Confidence: {result.confidence:.3f}")
+                    print(f"   Result: {'✓ CORRECT' if is_correct else '✗ INCORRECT'}\n")
+
+                evaluation_results.append({
+                    **response_data,
+                    "evaluation": {
+                        "expected_answer": positive_reference,
+                        "ground_truth": result.ground_truth,
+                        "confidence": result.confidence,
+                        "details": result.details,
+                        "correct": is_correct
+                    }
+                })
+                continue
+
+            # Fall back to finding matching task doc by question text
             task_doc = None
             if task_docs:
                 for doc in task_docs:
@@ -554,11 +602,11 @@ def execute_evaluate_responses(args):
 
             if not task_doc:
                 if args.verbose:
-                    print(f"Question {idx}: Could not match to task doc")
+                    print(f"Question {idx}: Could not match to task doc (no positive_reference available)")
                 evaluation_results.append({
                     **response_data,
                     "evaluation": {
-                        "error": "Could not match to task document"
+                        "error": "Could not match to task document and no positive_reference available"
                     }
                 })
                 continue
