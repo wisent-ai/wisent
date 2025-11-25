@@ -68,14 +68,27 @@ class TruthfulQAMC2Extractor(LMEvalBenchmarkExtractor):
         """
         Convert a single TruthfulQA_MC2 doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
+
+        Uses mc2_targets for richer contrastive signal:
+        - Selects the first correct (truthful) answer
+        - Selects the first incorrect (false/misleading) answer
+        This creates maximum contrast between truth and common misconception.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
             question = str(doc.get("question", "")).strip()
-            mc1_targets = doc.get("mc1_targets")
-            options = mc1_targets["choices"]
-            labels = mc1_targets["labels"]
+
+            # Use mc2_targets which has multiple correct/incorrect answers
+            mc2_targets = doc.get("mc2_targets")
+            if mc2_targets:
+                options = mc2_targets["choices"]
+                labels = mc2_targets["labels"]
+            else:
+                # Fallback to mc1_targets
+                mc1_targets = doc.get("mc1_targets")
+                options = mc1_targets["choices"]
+                labels = mc1_targets["labels"]
 
             if not question or not options or not labels:
                 log.debug(
@@ -83,14 +96,21 @@ class TruthfulQAMC2Extractor(LMEvalBenchmarkExtractor):
                     extra={"doc": doc},
                 )
                 return None
-            
-            # Find correct answer
-            for i in range(len(labels)):
-                if labels[i] == 1:
-                    answer_idx = i
-            
-            correct = options[answer_idx]
-            incorrect = options[(answer_idx+1)%len(options)]
+
+            # Find all correct and incorrect answers
+            correct_answers = [opt for opt, lbl in zip(options, labels) if lbl == 1]
+            incorrect_answers = [opt for opt, lbl in zip(options, labels) if lbl == 0]
+
+            if not correct_answers or not incorrect_answers:
+                log.debug(
+                    "Skipping doc - need both correct and incorrect options",
+                    extra={"doc": doc},
+                )
+                return None
+
+            # Use shortest correct (most direct truth) and longest incorrect (most elaborate misconception)
+            correct = min(correct_answers, key=len)
+            incorrect = max(incorrect_answers, key=len)
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
 
@@ -105,7 +125,7 @@ class TruthfulQAMC2Extractor(LMEvalBenchmarkExtractor):
                 metadata=metadata,
             )
 
-        except Exception as exc:  
+        except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
 

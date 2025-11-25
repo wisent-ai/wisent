@@ -72,9 +72,9 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
     # Activation collection
     parser.add_argument(
         "--layers",
-        type=int,
+        type=str,
         default=None,
-        help="Number of layers to collect activations from (default: all)"
+        help="Layers to collect activations from: 'all', single number (e.g. '8'), or comma-separated (e.g. '8,12,15'). Default: all layers"
     )
     parser.add_argument(
         "--token-aggregation",

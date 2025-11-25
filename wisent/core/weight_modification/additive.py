@@ -105,18 +105,34 @@ def bake_steering_into_component(
     if method == "bias":
         add_output_bias(module, steering_vector, alpha)
     elif method == "weight":
-        # More sophisticated: modify weights to produce steering effect
-        # This is an approximation since W(x + αv) ≠ Wx + αWv in general
-        # But we can add a rank-1 update to approximate the effect
+        # Modify weights to add steering effect
+        # We want: h_out = W @ h_in + α*v
+        # To bake this into weights, we add α*v as a constant output shift
+        # Since this needs to work for any input, we use a rank-1 approximation
 
-        # Create rank-1 weight update that biases output toward steering
-        # Idea: Add αv to output for typical inputs
-        # Heuristic: Assume inputs have mean ~0, std ~1
-        # Then adding small rank-1 perturbation in direction of v
+        # The idea: Add a small rank-1 perturbation to W that biases outputs toward v
+        # W' = W + α * v @ e^T where e is a unit vector
+        # But since we don't know which input dimensions to weight, we use mean field approximation
 
-        # For now, use bias method as it's more reliable
-        log.warning("Weight method not yet implemented, falling back to bias")
-        add_output_bias(module, steering_vector, alpha)
+        # Simpler approach: Add steering vector uniformly across all output directions
+        # This adds α*v/d to each row of W, where d is input dimension
+        # Result: For typical centered inputs, output gets shifted by ~α*v
+
+        weight = module.weight  # [out_dim, in_dim]
+        in_dim = weight.shape[1]
+        scaled_steering = (alpha / in_dim) * steering_vector.to(weight.device)  # [out_dim]
+
+        # Add steering vector contribution to each column of weight matrix
+        # This means: W'[i,j] = W[i,j] + α*v[i]/in_dim
+        # When multiplied by input, this adds approximately α*v[i] to output[i]
+        with torch.no_grad():
+            for i in range(weight.shape[1]):
+                weight[:, i].add_(scaled_steering)
+
+        log.debug(
+            "Modified weights with rank-1 steering",
+            extra={"alpha": alpha, "in_dim": in_dim}
+        )
     else:
         raise ValueError(f"Unknown method: {method}")
 

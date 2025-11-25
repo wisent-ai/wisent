@@ -2,6 +2,9 @@
 LM-Eval-Harness Ground Truth Evaluation
 
 This module provides ground truth evaluation using the lm-eval-harness framework.
+
+Uses unified split strategy: all available splits are combined and split 80/20 into train/test.
+Evaluation uses the TEST portion (20%) to ensure no data leakage with training.
 """
 
 import logging
@@ -10,6 +13,7 @@ from typing import Any, Dict
 from wisent.core.activations.core.atoms import ActivationAggregationStrategy
 from wisent.core.activations.activations import Activations
 from wisent.core.layer import Layer
+from wisent.core.utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
 
 logger = logging.getLogger(__name__)
 
@@ -799,8 +803,12 @@ class LMEvalHarnessGroundTruth:
             # Load task data
             task_data = model.load_lm_eval_task(task_name, shots=0, limit=num_samples)
 
-            if hasattr(task_data, "test_docs"):
-                docs = task_data.test_docs()
+            # Use unified split strategy - get TEST portion only
+            all_docs, split_counts = get_all_docs_from_task(task_data)
+            if all_docs:
+                _, docs = create_deterministic_split(all_docs, task_name)
+                logger.info(f"Using {len(docs)} test docs from unified split "
+                           f"(total: {len(all_docs)}, original splits: {split_counts})")
             else:
                 docs, _ = model.split_task_data(task_data, split_ratio=1.0)
 
