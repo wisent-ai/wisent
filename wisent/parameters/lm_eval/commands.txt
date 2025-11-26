@@ -1,0 +1,9 @@
+lm_eval --tasks list | grep <benchmark name>
+
+python -m wisent.tests.test_benchmark_format.inspect_benchmark <benchmark name>
+
+python -m wisent.examples.scripts.test_one_benchmark <benchmark name>
+
+lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks <benchmark name> --device cuda:0 --batch_size 4 --limit 20
+
+

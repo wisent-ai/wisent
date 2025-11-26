@@ -1,45 +1,46 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
+if TYPE_CHECKING:
+    from lm_eval.api.task import ConfigurableTask
 
-__all__ = ["AfrimgsmDirectAmhExtractor"]
+
+__all__ = ["AfrimgsmExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("afrimgsm_direct_amh",)
+task_names = (
+    "afrimgsm_amh_prompt_1",
+    "afrimgsm_amh_prompt_2",
+    "afrimgsm_amh_prompt_3",
+    "afrimgsm_amh_prompt_4",
+    "afrimgsm_amh_prompt_5",
+)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "exact_match"
 
 
-class AfrimgsmDirectAmhExtractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for Afrimgsm direct Amharic - math word problems with numeric answers."""
+class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for Afrimgsm - math word problems with numeric answers in Amharic."""
 
     def extract_contrastive_pairs(
         self,
+        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task="afrimgsm_direct_amh")
+        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-
-        # Load dataset from HuggingFace
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("masakhane/afrimgsm", "amh", split="test")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load afrimgsm dataset: {e}")
-            return []
-
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(dataset)})
+        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        for doc in dataset:
+        for doc in docs:
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
                 pairs.append(pair)
@@ -47,7 +48,8 @@ class AfrimgsmDirectAmhExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            log.warning("No valid pairs extracted", extra={"task": "afrimgsm_direct_amh"})
+            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
+            log.warning("No valid pairs extracted", extra={"task": task_name})
 
         return pairs
 
@@ -56,7 +58,7 @@ class AfrimgsmDirectAmhExtractor(HuggingFaceBenchmarkExtractor):
 
         try:
             question = doc.get("question", "").strip()
-            answer_number = doc.get("answer_number")            
+            answer_number = doc.get("answer_number")
 
             if not question or answer_number is None:
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
@@ -77,7 +79,7 @@ class AfrimgsmDirectAmhExtractor(HuggingFaceBenchmarkExtractor):
             except (ValueError, TypeError):
                 incorrect = "0"
 
-            metadata = {"label": "afrimgsm_direct_amh"}
+            metadata = {"label": "afrimgsm"}
 
             return self._build_pair(
                 question=question,
