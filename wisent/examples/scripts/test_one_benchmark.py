@@ -94,8 +94,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 # Translation benchmarks
                 "wmt14", "wmt16", "iwslt2017",
                 # Newly created HuggingFace extractors
-                "afrimgsm_direct_amh", "afrimmlu_direct_amh",
-                "afrixnli_en_direct_amh", "ag_news", "babilong", "bangla_mmlu",
+                "babilong", "bangla_mmlu",
                 "bhtc_v2", "basque-glue", "basqueglue",
                 "cnn_dailymail", "dbpedia_14",
                 "ethos_binary", "evalita-sp_sum_task_fp-small_p1", "flan_held_in",

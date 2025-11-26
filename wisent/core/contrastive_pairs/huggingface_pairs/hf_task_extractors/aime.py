@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 task_names = ("aime",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "exact_match"
 
 
 class AIMEExtractor(HuggingFaceBenchmarkExtractor):
