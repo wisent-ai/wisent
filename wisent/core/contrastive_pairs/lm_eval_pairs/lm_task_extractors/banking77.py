@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -11,20 +12,17 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["AfrimmluExtractor"]
+__all__ = ["Banking77Extractor"]
+
 _LOG = setup_logger(__name__)
 
-task_names = ("afrimmlu_direct_amh_prompt_1",
-              "afrimmlu_direct_amh_prompt_2",
-              "afrimmlu_direct_amh_prompt_3",
-              "afrimmlu_direct_amh_prompt_4",
-              "afrimmlu_direct_amh_prompt_5",)
+task_names = ("banking77",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "exact_match"
 
 
-class AfrimmluExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Afrimmlu benchmark."""
+class Banking77Extractor(LMEvalBenchmarkExtractor):
+    """Extractor for Banking77 benchmark - intent classification task."""
 
     def extract_contrastive_pairs(
         self,
@@ -56,28 +54,28 @@ class AfrimmluExtractor(LMEvalBenchmarkExtractor):
 
         try:
 
-            question = doc.get("question", "").strip()
-            choices = doc.get("choices", [])
-            answer = doc.get("answer", "")
+            task_data_str = doc.get("task_data", "{}")
+            task_data = json.loads(task_data_str) if isinstance(task_data_str, str) else task_data_str
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            else:
+            classes = task_data["classes"]
+            label = task_data["label"]
+
+            source = doc.get("source", "").strip()
+
+            if not classes or not label or not source:
+                log.debug("Skipping doc due to missing text or classes or label or source", extra={"doc": doc})
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            correct = label
+            correct_idx = classes.index(correct)
+            incorrect = classes[(correct_idx + 1) % len(classes)]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "afrimmlu"}
+            question = f"{source}"
+            metadata = {"label": "banking77"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

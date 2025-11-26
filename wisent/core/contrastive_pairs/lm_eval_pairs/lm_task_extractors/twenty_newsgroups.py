@@ -16,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("20_newsgroups")
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "exact_match"
 
 
 class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):

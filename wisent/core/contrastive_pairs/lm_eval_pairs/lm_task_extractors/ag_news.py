@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
+
+if TYPE_CHECKING:
+    from lm_eval.api.task import ConfigurableTask
 
 
 __all__ = ["AgNewsExtractor"]
@@ -13,33 +16,25 @@ _LOG = setup_logger(__name__)
 
 task_names = ("ag_news",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "exact_match"
 
 
-class AgNewsExtractor(HuggingFaceBenchmarkExtractor):
+class AgNewsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AG News - text classification task."""
 
     def extract_contrastive_pairs(
         self,
+        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task="ag_news")
+        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-
-        # Load dataset from HuggingFace
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("fancyzhx/ag_news", split="test")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load ag_news dataset: {e}")
-            return []
-
+        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(dataset)})
+        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        for doc in dataset:
+        for doc in docs:
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
                 pairs.append(pair)
@@ -47,7 +42,8 @@ class AgNewsExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            log.warning("No valid pairs extracted", extra={"task": "ag_news"})
+            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
+            log.warning("No valid pairs extracted", extra={"task": task_name})
 
         return pairs
 
@@ -55,32 +51,21 @@ class AgNewsExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            text = doc.get("text", "").strip()
-            label = doc.get("label")
+            source = doc.get("source", "").strip()
+            target = doc.get("target", "").strip()
 
-            if not text or label is None:
-                log.debug("Skipping doc due to missing text or label", extra={"doc": doc})
+            if not source or not target:
+                log.debug("Skipping doc due to missing source or target", extra={"doc": doc})
                 return None
+            
+            possible_targets = ["World", "Sports", "Business", "Sci/Tech"]
 
-            # AG News labels: 0=World, 1=Sports, 2=Business, 3=Sci/Tech
-            label_map = {
-                0: "World",
-                1: "Sports",
-                2: "Business",
-                3: "Sci/Tech"
-            }
+            correct = target
+            # Shift to next target in list (wraps around)
+            correct_idx = possible_targets.index(correct) if correct in possible_targets else 0
+            incorrect = possible_targets[(correct_idx + 1) % len(possible_targets)]
 
-            if label not in label_map:
-                log.debug(f"Unknown label: {label}", extra={"doc": doc})
-                return None
-
-            correct = label_map[label]
-
-            # Pick a different label as incorrect
-            incorrect_labels = [l for l in label_map.values() if l != correct]
-            incorrect = incorrect_labels[0] if incorrect_labels else "World"
-
-            question = f"Classify the following news article into one of these categories: World, Sports, Business, Sci/Tech\n\n{text}"
+            question = source
             metadata = {"label": "ag_news"}
 
             return self._build_pair(

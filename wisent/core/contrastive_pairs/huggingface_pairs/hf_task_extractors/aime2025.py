@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 task_names = ("aime2025",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "exact_match"
 
 
 class AIME2025Extractor(HuggingFaceBenchmarkExtractor):
@@ -26,19 +26,16 @@ class AIME2025Extractor(HuggingFaceBenchmarkExtractor):
         max_items = self._normalize_limit(limit)
 
         # Load AIME 2025 dataset
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("MathArena/aime_2025", split="train")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load aime2025 dataset: {e}")
-            return []
+        docs = self.load_dataset(
+            dataset_name="MathArena/aime_2025",
+            split="train",
+            limit=max_items,
+        )
 
         pairs: list[ContrastivePair] = []
-        log.info(f"Extracting contrastive pairs from {len(dataset)} AIME 2025 examples")
+        log.info(f"Extracting contrastive pairs from {len(docs)} AIME 2025 examples")
 
-        for doc in dataset:
+        for doc in docs:
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
                 pairs.append(pair)

@@ -97,7 +97,6 @@ EXTRACTORS: dict[str, str] = {
     "atis": f"{base_import}atis:AtisExtractor",
     "babilong": f"{base_import}babilong:BabilongExtractor",
     "bangla_mmlu": f"{base_import}bangla_mmlu:BanglaMmluExtractor",
-    "banking77": f"{base_import}banking77:Banking77Extractor",
     "basqueglue": f"{base_import}basqueglue:BasqueglueExtractor",
     "bec2016eu": f"{base_import}bec2016eu:Bec2016euExtractor",
     "boolq": f"{base_import}boolq:BoolQExtractor",
@@ -145,10 +144,8 @@ EXTRACTORS: dict[str, str] = {
     "xsum": f"{base_import}xsum:XsumExtractor",
 
     # Newly created extractors
-    "afrimgsm_direct_amh": f"{base_import}afrimgsm_direct_amh:AfrimgsmDirectAmhExtractor",
     "afrimmlu_direct_amh": f"{base_import}afrimmlu_direct_amh:AfrimmluDirectAmhExtractor",
     "afrixnli_en_direct_amh": f"{base_import}afrixnli_en_direct_amh:AfrixnliEnDirectAmhExtractor",
-    "ag_news": f"{base_import}ag_news:AgNewsExtractor",
     "bhtc_v2": f"{base_import}bhtc_v2:BhtcV2Extractor",
     "basque-glue": f"{base_import}basqueglue:BasqueglueExtractor",
     "cnn_dailymail": f"{base_import}cnn_dailymail:CnnDailymailExtractor",

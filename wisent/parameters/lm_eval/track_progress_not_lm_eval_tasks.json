@@ -1,6 +1,21 @@
 {
   "completed": ["20_newsgroups", "afrimgsm_direct_amh", "afrimmlu_direct_amh", "afrixnli_en_direct_amh", "ag_news", "aime",
-  "aime2024", "aime2025", "arabic_exams", "argument_topic", "babilong", "bangla_mmlu", "boolq", "cb", "squad2"],
+  "aime2024", "aime2025", "arabic_exams", "argument_topic", "banking77", "babilong", "bangla_mmlu", "boolq", "cb", "squad2"],
+
+  "completed_lm_eval": [
+    {"20_newsgroups": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"afrimgsm_direct_amh": ["generate_until", ["flexible-extract", "remove_whitespace"], ["exact_match"]]},
+    {"afrimmlu_direct_amh": ["loglikelihood", ["none"], ["acc", "acc_norm"]]},
+    {"afrixnli_en_direct_amh": ["loglikelihood", ["none"], ["acc", "f1"]]},
+    {"ag_news": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"arabic_exams": ["loglikelihood", ["none"], ["acc", "acc_norm"]]},
+    {"argument_topic": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"banking77": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+  ]
+
+  "completed_hf": [
+    "aime","aime2024", "aime2025"
+  ],
 
   "all_tasks": [
   "Tag",
@@ -9,7 +24,6 @@
   "multipl_e",
   "atis",
 
-  "banking77",
   "basque-glue",
   "bec2016eu",
   "bhtc_v2",

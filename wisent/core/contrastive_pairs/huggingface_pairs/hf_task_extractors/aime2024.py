@@ -13,7 +13,7 @@ log = logging.getLogger(__name__)
 
 task_names = ("aime2024",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "exact_match"
 
 
 class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
@@ -26,22 +26,16 @@ class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
         max_items = self._normalize_limit(limit)
 
         # Load AIME 2024 dataset
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("AI-MO/aimo-validation-aime", split="train")
-            # Filter for 2024 problems if dataset has year field
-            if "year" in dataset.column_names:
-                dataset = dataset.filter(lambda x: x.get("year") == 2024 or "2024" in str(x.get("id", "")))
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load aime2024 dataset: {e}")
-            return []
+        docs = self.load_dataset(
+            dataset_name="Maxwell-Jia/AIME_2024",
+            split="train",
+            limit=max_items,
+        )
 
         pairs: list[ContrastivePair] = []
-        log.info(f"Extracting contrastive pairs from {len(dataset)} AIME 2024 examples")
+        log.info(f"Extracting contrastive pairs from {len(docs)} AIME 2024 examples")
 
-        for doc in dataset:
+        for doc in docs:
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
                 pairs.append(pair)
@@ -55,8 +49,9 @@ class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         try:
-            problem = doc.get("problem", doc.get("question", "")).strip()
-            answer = doc.get("answer", doc.get("solution", ""))
+            # Fields are capitalized in Maxwell-Jia/AIME_2024: Problem, Answer, Solution
+            problem = doc.get("Problem", doc.get("problem", "")).strip()
+            answer = doc.get("Answer", doc.get("answer", ""))
 
             if not problem or not answer:
                 log.debug("Skipping: missing problem or answer")
