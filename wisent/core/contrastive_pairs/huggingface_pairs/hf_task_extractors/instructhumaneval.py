@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 task_names = ("instruct_humaneval",)
 
 # Evaluator to use
-evaluator = "docker_code"
+evaluator_name = "coding"
 
 
 class InstructHumanEvalExtractor(HuggingFaceBenchmarkExtractor):

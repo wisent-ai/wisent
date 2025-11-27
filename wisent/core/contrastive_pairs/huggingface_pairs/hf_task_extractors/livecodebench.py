@@ -15,7 +15,7 @@ log = logging.getLogger(__name__)
 
 task_names = ("livecodebench",)
 
-evaluator_name = "docker_code"
+evaluator_name = "coding"
 
 
 class LivecodebenchExtractor(HuggingFaceBenchmarkExtractor):

@@ -17,19 +17,17 @@ def _load_custom_task(task_name: str, limit: int | None):
         )
 
 
-def _build_pairs_from_custom_task(task, limit: int | None):
+def _build_pairs_from_custom_task(task, limit: int | None, task_name: str = "livecodebench"):
     """Build contrastive pairs from custom TaskInterface tasks."""
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.livecodebench import (
-        LiveCodeBenchExtractor as LiveCodeBenchPairExtractor
+    from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.livecodebench import (
+        LivecodebenchExtractor as LiveCodeBenchPairExtractor
     )
-
-    task_name = task.task_name
 
     if task_name == "livecodebench":
         # Use the contrastive pair extractor for LiveCodeBench
         extractor = LiveCodeBenchPairExtractor()
-        # Extract pairs using the task's test_docs interface
-        return extractor.extract_contrastive_pairs(task, limit=limit)
+        # Extract pairs - the extractor handles loading data internally
+        return extractor.extract_contrastive_pairs(limit=limit)
     else:
         raise ValueError(f"No contrastive pair extractor configured for custom task: {task_name}")
 
@@ -89,7 +87,7 @@ def execute_generate_pairs_from_task(args):
 
             # 2. Generate contrastive pairs using custom task interface
             print(f"   🔨 Building contrastive pairs...")
-            pairs = _build_pairs_from_custom_task(task, args.limit)
+            pairs = _build_pairs_from_custom_task(task, args.limit, task_name=args.task_name)
         else:
             # Single lm-eval task (ConfigurableTask), not wrapped in dict
             task = task_obj

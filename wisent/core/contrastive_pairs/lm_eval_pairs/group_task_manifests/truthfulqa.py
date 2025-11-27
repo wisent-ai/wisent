@@ -6,7 +6,7 @@ BASE_IMPORT = "wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors."
 
 TRUTHFULQA_TASKS = {
     "truthfulqa_gen": f"{BASE_IMPORT}truthfulqa_gen:TruthfulQAGenExtractor",
-    "truthfulqa_generation": f"{BASE_IMPORT}truthfulqa_generation:TruthfulQAGenerationExtractor",
+    # truthfulqa_generation is in HuggingFace extractors, not lm_eval
     "truthfulqa_mc1": f"{BASE_IMPORT}truthfulqa_mc1:TruthfulQAMC1Extractor",
     "truthfulqa_mc2": f"{BASE_IMPORT}truthfulqa_mc2:TruthfulQAMC2Extractor",
     "truthfulqa_vi_mc1": f"{BASE_IMPORT}okapi_truthfulqa_multilingual:OkapiTruthfulqaMultilingualExtractor",

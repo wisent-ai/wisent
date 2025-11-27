@@ -32,18 +32,24 @@ def execute_generate_responses(args):
     print(f"📊 Loading task data...")
     loader = LMEvalDataLoader()
     try:
+        # Load enough docs to ensure we have num_questions after 80/20 split
+        # With 80% going to training, we need at least num_questions / 0.8 docs
+        # Add buffer for safety: load 2x requested + minimum of 20
+        load_limit = max(args.num_questions * 2, 20)
+
         result = loader._load_one_task(
             task_name=args.task,
             split_ratio=0.8,
             seed=42,
-            limit=args.num_questions,
+            limit=load_limit,
             training_limit=None,
             testing_limit=None
         )
 
-        # Use test pairs for generation
-        pairs = result['test_qa_pairs'].pairs[:args.num_questions]
-        print(f"   ✓ Loaded {len(pairs)} question pairs\n")
+        # Use training pairs for generation (larger pool, 80% of data)
+        # This ensures we have enough pairs even for small requests
+        pairs = result['train_qa_pairs'].pairs[:args.num_questions]
+        print(f"   ✓ Loaded {len(pairs)} question pairs (from training set)\n")
 
     except Exception as e:
         print(f"   ❌ Failed to load task: {e}")
