@@ -40,7 +40,7 @@ class MockModel:
 
     def generate(self, prompt: str, **kwargs) -> str:
         """Mock generation - returns empty as we use choices for evaluation."""
-        return ""
+        return "mock generation"
 
 
 def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: str = ".", loader_type: str = "auto"):

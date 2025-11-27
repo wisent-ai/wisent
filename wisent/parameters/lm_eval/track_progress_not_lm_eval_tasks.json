@@ -11,11 +11,18 @@
     {"arabic_exams": ["loglikelihood", ["none"], ["acc", "acc_norm"]]},
     {"argument_topic": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
     {"banking77": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
-  ]
-
-  "completed_hf": [
-    "aime","aime2024", "aime2025"
+    {"boolq": ["log_likelihoods"]},
+    {"cb": ["log_likelihoods"]},
+    {"squad2": [["generate_until", "log_likelihoods"], ["none"]]},
+    {"boolq-seq2seq": ["generate_until", ["none"], ["exact_match"]]}
+    {"claim_stance_topic": ["generate_until",["none"], ["accuracy", "f1_macro", "f1_micro"]]}
   ],
+
+  "completed_hf_with_version_on_lm_git": [
+    "aime","aime2024", "aime2025, bangla_mmlu", "basque-glue"
+  ],
+
+  "not_to_eval": ["babilong"],
 
   "all_tasks": [
   "Tag",
@@ -23,15 +30,10 @@
   "humaneval_plus",
   "multipl_e",
   "atis",
-
-  "basque-glue",
-  "bec2016eu",
-  "bhtc_v2",
-  "boolq extractor done",
-  "boolq-seq2seq",
-  "cb extractor done",
   "chain_of_thought",
-  "claim_stance_topic",
+
+
+  
   "cnn_dailymail",
   "codexglue_code_to_text_go",
   "codexglue_code_to_text_java",

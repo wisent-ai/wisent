@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-import json
+import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -12,15 +12,13 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["ArgumentTopicExtractor"]
-
+__all__ = ["BoolQSeq2SeqExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("argument_topic",)
-
-
-class ArgumentTopicExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for ArgumentTopic benchmark - classification task."""
+task_names = ("boolq-seq2seq",)
+    
+class BoolQSeq2SeqExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for the BoolQ benchmark."""
 
     evaluator_name = "generation"
 
@@ -30,10 +28,29 @@ class ArgumentTopicExtractor(LMEvalBenchmarkExtractor):
         limit: int | None = None,
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
+        """
+        Build contrastive pairs from BoolQ docs.
+
+        BoolQ schema:
+            - passage: str
+            - question: str
+            - label: 0 or 1
+
+        Args:
+            lm_eval_task_data: lm-eval task instance for BoolQ.
+            limit: Optional maximum number of pairs to produce.
+            preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
+
+        Returns:
+            A list of ContrastivePair objects.
+        """
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+
         max_items = self._normalize_limit(limit)
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+
         pairs: list[ContrastivePair] = []
+
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
@@ -45,43 +62,47 @@ class ArgumentTopicExtractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
+            log.warning("No valid BoolQ pairs extracted", extra={"task": task_name})
 
         return pairs
-
+    
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """
+        Convert a single BoolQ doc into a ContrastivePair, if possible.
+        Returns None when required fields are missing or malformed.
+        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            passage = str(doc.get("passage", "")).strip()
+            question = str(doc.get("question", "")).strip()
+            label = doc.get("label")
 
-            task_data_str = doc.get("task_data", "{}")
-            task_data = json.loads(task_data_str) if isinstance(task_data_str, str) else task_data_str
-
-            classes = task_data["classes"]
-            label = task_data["label"]
-
-            source = doc.get("source", "").strip()
-
-            if not classes or not label or not source:
-                log.debug("Skipping doc due to missing text or classes or label or source", extra={"doc": doc})
+            if not passage or not question or label not in {0, 1}:
+                log.debug(
+                    "Skipping doc due to missing/invalid fields",
+                    extra={"doc": doc},
+                )
                 return None
 
+            #formatted_question = f"{passage}\nQuestion: {question}?\nAnswer:\nA. Yes\nB. No"
+            formatted_question = f"{passage}\nQuestion: {question}?"
 
-            correct = label
-            correct_idx = classes.index(correct)
-            incorrect = classes[(correct_idx + 1) % len(classes)]
+            correct = "Yes" if label == 1 else "No"
+            incorrect = "No" if label == 1 else "Yes"
 
-            question = f"{source}"
-            metadata = {"label": "argument_topic"}
+            metadata = {
+                "label": "boolq",
+            }
 
             return self._build_pair(
-                question=question,
+                question=formatted_question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
             )
 
-        except Exception as exc:
+        except Exception as exc:  
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
 
