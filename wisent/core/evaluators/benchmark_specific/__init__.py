@@ -14,7 +14,10 @@ from .generation_evaluator import GenerationEvaluator
 from .exact_match_evaluator import ExactMatchEvaluator
 from .f1_evaluator import F1Evaluator
 from .perplexity_evaluator import PerplexityEvaluator
-from .docker_code_evaluator import DockerCodeEvaluator
+from .coding.metrics.evaluator import CodingEvaluator
+
+# Backward compatibility alias
+DockerCodeEvaluator = CodingEvaluator
 
 __all__ = [
     'LogLikelihoodsEvaluator',
@@ -22,5 +25,6 @@ __all__ = [
     'ExactMatchEvaluator',
     'F1Evaluator',
     'PerplexityEvaluator',
-    'DockerCodeEvaluator',
+    'CodingEvaluator',
+    'DockerCodeEvaluator',  # Backward compatibility
 ]
