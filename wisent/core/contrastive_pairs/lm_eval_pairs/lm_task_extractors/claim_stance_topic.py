@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -11,13 +12,14 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["TwentyNewsgroupsExtractor"]
+__all__ = ["ClaimStanceTopicExtractor"]
+
 _LOG = setup_logger(__name__)
 
-task_names = ("20_newsgroups")
+task_names = ("claim_stance_topic",)
 
-class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Twenty Newsgroups benchmark - text classification task."""
+class ClaimStanceTopicExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for ClaimStanceTopic benchmark - classification task."""
 
     evaluator_name = "generation"
 
@@ -50,36 +52,30 @@ class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Extract source (the classification prompt)
+
+            task_data_str = doc.get("task_data", "{}")
+            task_data = json.loads(task_data_str) if isinstance(task_data_str, str) else task_data_str
+
+            classes = task_data["classes"]
+            label = task_data["label"]
+
             source = doc.get("source", "").strip()
-            if not source:
-                log.debug("Skipping doc due to missing source", extra={"doc": doc})
+
+            if not classes or not label or not source:
+                log.debug("Skipping doc due to missing text or classes or label or source", extra={"doc": doc})
                 return None
 
-            # Extract correct answer
-            target = doc.get("target", "").strip()
-            if not target:
-                log.debug("Skipping doc due to missing target", extra={"doc": doc})
-                return None
 
-            # Get all possible categories from the source prompt
-            # The prompt typically contains "...to one of these options: category1, category2, ..."
-            categories = self._extract_categories_from_source(source)
-            if not categories or target not in categories:
-                log.debug("Could not extract categories or target not in categories", extra={"doc": doc})
-                return None
+            correct = label
+            correct_idx = classes.index(correct)
+            incorrect = classes[(correct_idx + 1) % len(classes)]
 
-            # Select an incorrect answer (any category that's not the target)
-            incorrect = next((cat for cat in categories if cat != target), None)
-            if not incorrect:
-                log.debug("Could not find an incorrect category", extra={"doc": doc})
-                return None
-
-            metadata = {"label": "twenty_newsgroups"}
+            question = f"{source}"
+            metadata = {"label": "claim_stance_topic"}
 
             return self._build_pair(
-                question=source,
-                correct=target,
+                question=question,
+                correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
             )
@@ -87,17 +83,6 @@ class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
-
-    def _extract_categories_from_source(self, source: str) -> list[str]:
-        """Extract the list of categories from the classification prompt."""
-        # The source typically looks like:
-        # "Classify the Topic of the following Text to one of these options: category1, category2, ..."
-        # We need to extract the list of categories
-        if "options:" in source.lower():
-            options_part = source.split("options:")[-1].split("\n")[0]
-            categories = [cat.strip() for cat in options_part.split(",")]
-            return [cat for cat in categories if cat]
-        return []
 
     @staticmethod
     def _build_pair(
