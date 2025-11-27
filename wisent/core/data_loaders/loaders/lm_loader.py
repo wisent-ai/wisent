@@ -84,6 +84,11 @@ class LMEvalDataLoader(BaseDataLoader):
 
         if isinstance(loaded, dict):
             if len(loaded) == 1:
+
+                print("^"*80)
+                print("Loading single subtask")
+                print("^"*80)
+
                 # Single subtask
                 (subname, task_obj), = loaded.items()
                 pairs = lm_build_contrastive_pairs(
@@ -92,8 +97,16 @@ class LMEvalDataLoader(BaseDataLoader):
                     limit=limit,
                 )
             else:
+
+                print("^"*80)
+                print("Loading multiple subtasks")
+                print("^"*80)
+
                 # Group task with multiple subtasks - load all and combine
                 log.info(f"Task '{task_name}' is a group task with {len(loaded)} subtasks. Loading all subtasks...")
+                
+                print(f"Task '{task_name}' is a group task with {len(loaded)} subtasks. Loading all subtasks...")
+
                 all_pairs = []
                 pairs_per_subtask = limit // len(loaded) if limit else None
 

@@ -18,11 +18,13 @@ _LOG = setup_logger(__name__)
 
 task_names = ("banking77",)
 
-evaluator_name = "exact_match"
+
 
 
 class Banking77Extractor(LMEvalBenchmarkExtractor):
     """Extractor for Banking77 benchmark - intent classification task."""
+
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,

@@ -16,11 +16,11 @@ __all__ = ["BoolQExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("boolq",)
-
-evaluator_name = "log_likelihoods"
     
 class BoolQExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the BoolQ benchmark."""
+
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
