@@ -168,8 +168,6 @@ EXTRACTORS: dict[str, str] = {
     "unfair_tos": f"{base_import}unfair_tos:UnfairTosExtractor",
     "vaxx_stance": f"{base_import}vaxx_stance:VaxxStanceExtractor",
     "wikitext103": f"{base_import}wikitext103:Wikitext103Extractor",
-    "yahoo_answers_topics": f"{base_import}yahoo_answers_topics:YahooAnswersTopicsExtractor",
-
     # TruthfulQA generation
     "truthfulqa_generation": f"{base_import}truthfulqa_generation:TruthfulQAGenerationExtractor",
 }
