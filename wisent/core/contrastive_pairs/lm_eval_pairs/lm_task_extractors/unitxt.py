@@ -7,6 +7,8 @@ from wisent.core.contrastive_pairs.core.response import NegativeResponse, Positi
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
+import json
+
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
@@ -15,17 +17,16 @@ __all__ = ["UnitxtExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
-    "20_newsgroups", "ag_news", "argument_topic", "atis", "banking77", "claim_stance_topic",
-    "cnn_dailymail", "coedit_gec", "dbpedia_14", "doc_vqa", "ethos_binary",
-    "financial_tweets", "law_stack_exchange", "ledgar", "medical_abstracts", "stsb",
+    "20_newsgroups", "ag_news", "argument_topic", "banking77", "claim_stance_topic",
+    "cnn_dailymail", "dbpedia_14", "ethos_binary",
+    "financial_tweets", "law_stack_exchange", "ledgar", "medical_abstracts",
     "unfair_tos", "xsum", "yahoo_answers_topics",
 )
 
-evaluator_name = "generation"
-
-
 class UnitxtExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Unitxt benchmark."""
+
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,
@@ -45,6 +46,8 @@ class UnitxtExtractor(LMEvalBenchmarkExtractor):
             A list of ContrastivePair objects.
         """
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+
+        print("running unitxt")
 
         max_items = self._normalize_limit(limit)
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
@@ -74,88 +77,40 @@ class UnitxtExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
+            print("running unitxt")
+            
+            task_data_str = doc.get("task_data", "{}")
+            task_data = json.loads(task_data_str) if isinstance(task_data_str, str) else task_data_str
+
+            classes = task_data.get("classes")
+            summaries = task_data.get("summaries")
+
+            print(f"classes: {classes}")
+            print(f"summaries: {summaries}")
+
+            source = doc.get("source", "").strip()
+            target = doc.get("target", "").strip()
+
+            if not (classes or summaries) or not target or not source:
+                log.debug("Skipping doc due to missing text or (classes or summaries) or target or source", extra={"doc": doc})
+                return None
+
+
+            correct = target
+            if classes:
+                if correct in classes:
+                    correct_idx = classes.index(correct)
+                    incorrect = classes[(correct_idx + 1) % len(classes)]
                 else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "unitxt"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+                    incorrect = classes[0]
+            elif summaries:
+                incorrect = "This is an incorrect summary."
+            else:
                 return None
 
-            # Format 4: source + target (unitxt format)
-            elif "source" in doc and "target" in doc:
-                question = str(doc.get("source", "")).strip()
-                correct_answer = str(doc.get("target", "")).strip()
-                # Get references to create an incorrect answer
-                references = doc.get("references", [])
-                if isinstance(references, list) and len(references) > 0:
-                    # Use a different reference as incorrect answer if available
-                    incorrect_answer = str(references[-1]).strip() if len(references) > 1 and references[-1] != correct_answer else "other"
-                else:
-                    incorrect_answer = "other"
-
-                if correct_answer and question:
-                    metadata = {"label": "unitxt"}
-                    return self._build_pair(
-                        question=question,
-                        correct=correct_answer,
-                        incorrect=incorrect_answer,
-                        metadata=metadata,
-                    )
-                return None
-
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
-
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
+            formatted_question = f"{source}"
+            
             metadata = {
                 "label": "unitxt",
             }

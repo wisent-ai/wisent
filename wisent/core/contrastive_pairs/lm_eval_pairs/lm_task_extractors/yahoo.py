@@ -34,6 +34,8 @@ class YahooExtractor(LMEvalBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
+        print("running yahoo")
+
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
