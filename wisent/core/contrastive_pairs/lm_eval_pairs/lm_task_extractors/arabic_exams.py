@@ -16,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("arabic_exams",)
 
-evaluator_name = "log_likelihoods"
+evaluator_name = "generation"
 
 
 class ArabicExamsExtractor(LMEvalBenchmarkExtractor):
