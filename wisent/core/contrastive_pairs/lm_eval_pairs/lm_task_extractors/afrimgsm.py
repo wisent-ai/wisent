@@ -26,7 +26,7 @@ class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrimgsm - math word problems with numeric answers in Amharic."""
 
 
-    evaluator_name = "exact_match"
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
