@@ -1,6 +1,8 @@
 {
   "completed": ["20_newsgroups", "afrimgsm_direct_amh", "afrimmlu_direct_amh", "afrixnli_en_direct_amh", "ag_news", "aime",
-  "aime2024", "aime2025", "arabic_exams", "argument_topic", "banking77", "babilong", "bangla_mmlu", "boolq", "cb", "squad2"],
+  "aime2024", "aime2025", "arabic_exams", "argument_topic", "banking77", "babilong", "bangla_mmlu", "boolq", "boolq-seq2seq", "cb",
+  "claim_stance_topic", "squad2", "unitxt", "copa"
+  ],
 
   "completed_lm_eval": [
     {"20_newsgroups": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
@@ -15,44 +17,37 @@
     {"cb": ["log_likelihoods"]},
     {"squad2": [["generate_until", "log_likelihoods"], ["none"]]},
     {"boolq-seq2seq": ["generate_until", ["none"], ["exact_match"]]},
-    {"claim_stance_topic": ["generate_until",["none"], ["accuracy", "f1_macro", "f1_micro"]]}
+    {"claim_stance_topic": ["generate_until",["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"unitxt": ["generate_until, [lots of tasks, different filters and metrics]"]},
+    {"copa": ["log_likelihoods", ["none"], ["acc"]]}
   ],
 
   "completed_hf_with_version_on_lm_git": [
     "aime","aime2024", "aime2025, bangla_mmlu", "basque-glue"
   ],
 
-  "not_to_eval": ["babilong"],
+  "too complex": ["evalita: many different prompts structure, could mess up our prompt strategies",
+                  "babilong: many splits and subsets, long contexts"],
 
   "all_tasks": [
   "Tag",
   "apps",
   "humaneval_plus",
   "multipl_e",
-  "atis",
   "chain_of_thought",
-
-
-  
-  "cnn_dailymail",
   "codexglue_code_to_text_go",
   "codexglue_code_to_text_java",
   "codexglue_code_to_text_javascript",
   "codexglue_code_to_text_php",
   "codexglue_code_to_text_python",
   "codexglue_code_to_text_ruby",
-  "coedit_gec",
   "conala",
   "concode",
-  "copa",
-  "dbpedia_14",
-  "doc_vqa",
   "ds1000",
-  "epec_koref_bin",
-  "ethos_binary",
+
   "evalita-mp",
   "evalita-sp_sum_task_fp-small_p1",
-  "financial_tweets",
+
   "flan_held_in",
   "flores",
   "freebase",
@@ -69,8 +64,8 @@
   "instructhumaneval",
   "iwslt2017-ar-en",
   "iwslt2017-en-ar",
-  "law_stack_exchange",
-  "ledgar",
+
+
   "livecodebench",
   "livemathbench_cnmo_en",
   "livemathbench_cnmo_zh",
@@ -119,8 +114,6 @@
   "wmt16_de_en",
   "wmt16_en_de",
   "wmt16_en_ro",
-  "wmt16_ro_en",
-  "xsum",
-  "yahoo_answers_topics"
+  "wmt16_ro_en"
   ]
 }

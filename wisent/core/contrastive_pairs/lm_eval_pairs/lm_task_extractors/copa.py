@@ -4,19 +4,25 @@ from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["CopaExtractor"]
+__all__ = ["COPAExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("copa",)
 
-class COPAExtractor(HuggingFaceBenchmarkExtractor):
+
+
+
+class COPAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the COPA benchmark."""
+
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,

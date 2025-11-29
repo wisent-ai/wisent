@@ -87,6 +87,31 @@ def inspect_benchmark(benchmark_name: str, num_examples: int = 5) -> None:
                 else:
                     print(f"{key}: {value} (type: {type(value).__name__})")
 
+            # Formatted via doc_to_* methods
+            print("\nFORMATTED (doc_to_* methods):")
+
+            if hasattr(task, 'doc_to_text'):
+                try:
+                    text = task.doc_to_text(doc)
+                    print(f"  doc_to_text: {repr(text)}")
+                except Exception as e:
+                    print(f"  doc_to_text: error - {e}")
+
+            if hasattr(task, 'doc_to_target'):
+                try:
+                    target = task.doc_to_target(doc)
+                    print(f"  doc_to_target: {repr(target)}")
+                except Exception as e:
+                    print(f"  doc_to_target: error - {e}")
+
+            if hasattr(task, 'doc_to_choice'):
+                try:
+                    choices = task.doc_to_choice(doc)
+                    if choices is not None:
+                        print(f"  doc_to_choice: {choices}")
+                except Exception as e:
+                    print(f"  doc_to_choice: error - {e}")
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -107,7 +132,7 @@ Examples:
     parser.add_argument(
         "--examples", "-n",
         type=int,
-        default=2,
+        default=1,
         help="Number of examples to display per split (default: 5)"
     )
 

@@ -47,8 +47,6 @@ class UnitxtExtractor(LMEvalBenchmarkExtractor):
         """
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
-        print("running unitxt")
-
         max_items = self._normalize_limit(limit)
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
 
@@ -77,17 +75,12 @@ class UnitxtExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-
-            print("running unitxt")
             
             task_data_str = doc.get("task_data", "{}")
             task_data = json.loads(task_data_str) if isinstance(task_data_str, str) else task_data_str
 
             classes = task_data.get("classes")
             summaries = task_data.get("summaries")
-
-            print(f"classes: {classes}")
-            print(f"summaries: {summaries}")
 
             source = doc.get("source", "").strip()
             target = doc.get("target", "").strip()
