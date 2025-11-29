@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("gpt3_translation_benchmarks",)
 
-evaluator_name = "log_likelihoods"
-
-
 class Gpt3Extractor(LMEvalBenchmarkExtractor):
     """Extractor for Gpt3 benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("mediqa_qa2019",)
 
-evaluator_name = "generation"
-
-
 class MediqaQa2019Extractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mediqa Qa2019 benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

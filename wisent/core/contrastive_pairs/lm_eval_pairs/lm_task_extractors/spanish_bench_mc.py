@@ -24,12 +24,11 @@ task_names = (
     "wnli_es",
     "xnli_es_spanish_bench"
 )
-evaluator_name = "log_likelihoods"
-
-
 class SpanishBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Spanish Bench multiple-choice benchmarks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

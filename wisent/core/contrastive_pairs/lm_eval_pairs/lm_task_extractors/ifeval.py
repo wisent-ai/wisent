@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("ifeval",)
 
-evaluator_name = "exact_match"
-
-
 class IFEvalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the IFEval (Instruction Following Eval) benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

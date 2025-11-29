@@ -22,12 +22,11 @@ task_names = (
     "scrolls_summscreenfd",
 )
 
-evaluator_name = "generation"
-
-
 class ScrollsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Scrolls benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -18,12 +18,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("asdiv",)
 
-evaluator_name = "exact_match"
-
-
 class ASDivExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the ASDiv benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("assin_entailment", "assin_paraphrase")
 
-evaluator_name = "log_likelihoods"
-
-
 class AssinExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Assin benchmark - entailment task."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

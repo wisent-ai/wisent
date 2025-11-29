@@ -20,12 +20,11 @@ task_names = ("afrimmlu_direct_amh_prompt_1",
               "afrimmlu_direct_amh_prompt_4",
               "afrimmlu_direct_amh_prompt_5",)
 
-evaluator_name = "log_likelihoods"
-
-
 class AfrimmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrimmlu benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

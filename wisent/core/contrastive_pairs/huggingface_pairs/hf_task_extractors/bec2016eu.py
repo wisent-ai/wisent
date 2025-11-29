@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("bec2016eu",)
 
-evaluator_name = "log_likelihoods"
-
-
 class Bec2016euExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Bec2016Eu benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

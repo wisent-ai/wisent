@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("arc_ar",)
 
-evaluator_name = "log_likelihoods"
-
-
 class AI2ARCExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AI2 ARC benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

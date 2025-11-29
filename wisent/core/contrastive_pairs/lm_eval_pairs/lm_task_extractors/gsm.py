@@ -19,12 +19,11 @@ task_names = (
     "gsm_plus_mini",
 )
 
-evaluator_name = "exact_match"
-
-
 class GsmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Gsm benchmark - math word problems."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

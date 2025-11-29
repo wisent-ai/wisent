@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 # Group extractor for wmt16 translation tasks
 task_names = ("wmt16-de-en", "wmt16-en-de", "wmt16-en-ro", "wmt16-ro-en")
 
-evaluator_name = "generation"
-
-
 class Wmt16Extractor(LMEvalBenchmarkExtractor):
     """Extractor for the Wmt16 benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

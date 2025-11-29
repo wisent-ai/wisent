@@ -19,12 +19,11 @@ task_names = (
     "codexglue_code2text",
 )
 
-evaluator_name = "generation"
-
-
 class CodeXGlueExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Code X Glue benchmark - parent task for code2text subtasks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

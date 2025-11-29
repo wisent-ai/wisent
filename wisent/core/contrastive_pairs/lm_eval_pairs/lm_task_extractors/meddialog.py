@@ -20,12 +20,11 @@ task_names = (
     "meddialog_raw_dialogues",
     "meddialog_raw_perplexity",
 )
-evaluator_name = "generation"
-
-
 class MeddialogExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Meddialog benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

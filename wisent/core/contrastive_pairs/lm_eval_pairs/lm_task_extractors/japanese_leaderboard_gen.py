@@ -21,12 +21,11 @@ task_names = (
     "ja_leaderboard_mgsm",
     "ja_leaderboard_xlsum",
 )
-evaluator_name = "generation"
-
-
 class JapaneseLeaderboardGenerationExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Japanese Leaderboard generation benchmarks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

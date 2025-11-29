@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("olaph",)
 
-evaluator_name = "generation"
-
-
 class OlaphExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Olaph benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

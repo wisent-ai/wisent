@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("siqa", "siqa_ca", "bigbench_social_iqa_multiple_choice")
 
-evaluator_name = "log_likelihoods"
-
-
 class SIQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the SIQA (Social IQA) benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

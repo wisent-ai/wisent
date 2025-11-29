@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("truthfulqa_gen",)
 
-evaluator_name = "generation"
-
-
 class TruthfulQAGenExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the TruthfulQA_Gen benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
