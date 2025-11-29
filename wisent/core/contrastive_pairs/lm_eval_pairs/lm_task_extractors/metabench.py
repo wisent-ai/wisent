@@ -15,12 +15,11 @@ __all__ = ["MetabenchExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("metabench",)
-evaluator_name = "log_likelihoods"
-
-
 class MetabenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Metabench benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

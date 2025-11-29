@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("phrases_ca-va",)
 
-evaluator_name = "generation"
-
-
 class PhrasesCaVaExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Phrases CA-VA - Catalan to Valencian translation."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

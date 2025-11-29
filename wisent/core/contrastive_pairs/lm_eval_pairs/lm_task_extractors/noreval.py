@@ -21,12 +21,11 @@ task_names = (
     "norrewrite_instruct", "norsummarize_instruct"
 )
 
-evaluator_name = "generation"
-
-
 class NorevalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Noreval benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

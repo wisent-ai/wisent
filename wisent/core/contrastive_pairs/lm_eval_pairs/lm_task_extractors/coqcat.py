@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("coqcat",)
 
-evaluator_name = "generation"
-
-
 class CoqcatExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Coqcat benchmark - reading comprehension task."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

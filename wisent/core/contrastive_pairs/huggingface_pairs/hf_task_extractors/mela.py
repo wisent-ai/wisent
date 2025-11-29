@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("mela", "mela_en", "mela_zh", "mela_it", "mela_ru", "mela_de", "mela_fr", "mela_es", "mela_ja", "mela_ar")
 
-evaluator_name = "log_likelihoods"
-
-
 class MelaExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Mela benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

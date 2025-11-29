@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 # This extractor handles all mmlu CoT subtasks dynamically
 task_names = ()  # Intentionally empty - will match any mmlu CoT task
-evaluator_name = "generation"
-
-
 class MMLUCotExtractor(LMEvalBenchmarkExtractor):
     """Extractor for MMLU CoT (chain-of-thought) benchmarks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

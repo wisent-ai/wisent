@@ -27,12 +27,11 @@ task_names = (
     "parafraseja",
     "paws_ca"
 )
-evaluator_name = "log_likelihoods"
-
-
 class CatalanBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Catalan Bench multiple-choice benchmarks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

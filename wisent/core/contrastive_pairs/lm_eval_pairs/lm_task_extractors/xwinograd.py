@@ -24,12 +24,11 @@ task_names = (
     "xwinograd_zh",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class XWinogradExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the XWinograd benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

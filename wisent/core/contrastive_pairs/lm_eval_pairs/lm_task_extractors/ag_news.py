@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("ag_news",)
 
-evaluator_name = "exact_match"
-
-
 class AgNewsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AG News - text classification task."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

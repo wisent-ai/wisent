@@ -17,9 +17,6 @@ _LOG = setup_logger(__name__)
 
 task_names = ("fda",)
 
-evaluator_name = "generation"
-
-
 class FdaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for FDA benchmark - extracting key-value pairs from FDA documents.
 
@@ -27,6 +24,8 @@ class FdaExtractor(LMEvalBenchmarkExtractor):
     Format: text (document chunk) + key (field to extract) → value (extracted text)
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

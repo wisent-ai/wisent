@@ -20,12 +20,11 @@ task_names = (
     "humaneval_plus",
 )
 
-evaluator_name = "exact_match"
-
-
 class HumanEvalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the HumanEval benchmark - code generation tasks."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

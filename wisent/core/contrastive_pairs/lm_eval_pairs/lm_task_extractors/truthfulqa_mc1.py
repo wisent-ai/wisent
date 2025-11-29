@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("truthfulqa_mc1",)
 
-evaluator_name = "log_likelihoods"
-
-
 class TruthfulQAMC1Extractor(LMEvalBenchmarkExtractor):
     """Extractor for the TruthfulQA_MC1 benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
