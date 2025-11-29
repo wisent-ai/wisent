@@ -173,3 +173,5 @@ class EvalitaMpExtractor(HuggingFaceBenchmarkExtractor):
         positive_response = PositiveResponse(model_response=correct)
         negative_response = NegativeResponse(model_response=incorrect)
         return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))
+
+

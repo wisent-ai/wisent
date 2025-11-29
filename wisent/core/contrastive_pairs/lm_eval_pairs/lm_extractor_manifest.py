@@ -139,6 +139,7 @@ EXTRACTORS.update({
     "code_x_glue": f"{base_import}code_x_glue:CodeXGlueExtractor",
     "codexglue_code2text": f"{base_import}code_x_glue:CodeXGlueExtractor",
     "commonsense_qa": f"{base_import}commonsense_qa:CommonsenseQAExtractor",
+    "copa": f"{base_import}copa:COPAExtractor",
     "copal_id": f"{base_import}copal_id:CopalIdExtractor",
     "cycle_letters": f"{base_import}cycle_letters:CycleLettersExtractor",
     "csatqa": f"{base_import}csatqa:CsatqaExtractor",
