@@ -20,12 +20,11 @@ task_names = (
     "ja_leaderboard_marc_ja",
     "ja_leaderboard_xwinograd",
 )
-evaluator_name = "log_likelihoods"
-
-
 class JapaneseLeaderboardMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Japanese Leaderboard multiple-choice benchmarks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

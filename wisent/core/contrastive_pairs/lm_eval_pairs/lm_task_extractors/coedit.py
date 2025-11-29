@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("coedit_gec",)
 
-evaluator_name = "generation"
-
-
 class CoeditExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Coedit benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

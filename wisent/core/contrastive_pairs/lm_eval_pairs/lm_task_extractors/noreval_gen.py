@@ -33,9 +33,6 @@ task_names = (
     "tatoeba_nno_eng_p0", "tatoeba_nno_eng_p1", "tatoeba_nno_eng_p2", "tatoeba_nno_eng_p3",
     "tatoeba_nob_eng_p0", "tatoeba_nob_eng_p1", "tatoeba_nob_eng_p2", "tatoeba_nob_eng_p3",
 )
-evaluator_name = "generation"
-
-
 class NorevalGenerationExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Noreval generation benchmarks.
 
@@ -51,6 +48,8 @@ class NorevalGenerationExtractor(LMEvalBenchmarkExtractor):
     - Using wrong completions or shuffled text for other tasks
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

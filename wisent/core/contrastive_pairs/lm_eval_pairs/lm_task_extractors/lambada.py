@@ -21,15 +21,14 @@ task_names = (
     "lambada_multilingual",
 )
 
-evaluator_name = "exact_match"
-
-
 class LambadaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for LAMBADA benchmarks (word prediction).
 
     Works for: lambada_openai, lambada_standard
     """
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

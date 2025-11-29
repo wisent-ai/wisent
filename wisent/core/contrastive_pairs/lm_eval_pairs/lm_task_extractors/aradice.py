@@ -138,12 +138,11 @@ task_names = (
     "AraDiCE_winogrande_msa",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class AradiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AraDiCE benchmark - Arabic dialect multiple-choice tasks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -15,9 +15,6 @@ log = logging.getLogger(__name__)
 
 task_names = ("livecodebench",)
 
-evaluator_name = "coding"
-
-
 class LivecodebenchExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for livecodebench dataset.
@@ -30,6 +27,8 @@ class LivecodebenchExtractor(HuggingFaceBenchmarkExtractor):
         - all_outputs: dict (pre-computed model outputs with pass/fail status)
     """
 
+
+    evaluator_name = "coding"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

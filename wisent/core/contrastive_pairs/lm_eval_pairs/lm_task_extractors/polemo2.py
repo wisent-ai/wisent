@@ -20,12 +20,11 @@ task_names = (
     "polemo2_out",
 )
 
-evaluator_name = "generation"
-
-
 class Polemo2Extractor(LMEvalBenchmarkExtractor):
     """Extractor for the Polemo2 benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

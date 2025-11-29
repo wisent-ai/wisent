@@ -20,12 +20,11 @@ task_names = (
     "glianorex_fr",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class GlianorexExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Glianorex benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

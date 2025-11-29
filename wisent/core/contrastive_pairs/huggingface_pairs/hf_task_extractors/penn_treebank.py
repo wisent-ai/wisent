@@ -14,12 +14,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("penn_treebank", "ptb")
 
-evaluator_name = "log_likelihoods"
-
-
 class PennTreebankExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Penn Treebank - language modeling perplexity task."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

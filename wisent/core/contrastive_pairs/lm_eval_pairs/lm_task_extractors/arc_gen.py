@@ -16,12 +16,11 @@ __all__ = ["ArcGenerationExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("arc_challenge_chat",)
-evaluator_name = "generation"
-
-
 class ArcGenerationExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Arc generation benchmark (arc_challenge_chat)."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("mts_dialog",)
 
-evaluator_name = "generation"
-
-
 class MtsDialogExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MTS Dialog benchmark (medical dialog summarization)."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

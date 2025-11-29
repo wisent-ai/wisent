@@ -15,12 +15,11 @@ __all__ = ["MCTACOExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("mc_taco",)
-evaluator_name = "log_likelihoods"
-
-
 class MCTACOExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MC-TACO benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

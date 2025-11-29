@@ -13,12 +13,11 @@ log = logging.getLogger(__name__)
 
 task_names = ("aime2024",)
 
-evaluator_name = "exact_match"
-
-
 class AIME2024Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for AIME 2024 dataset."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

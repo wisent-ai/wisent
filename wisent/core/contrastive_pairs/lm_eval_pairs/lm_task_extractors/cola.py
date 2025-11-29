@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("cola",)
 
-evaluator_name = "log_likelihoods"
-
-
 class ColaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Cola benchmark - grammatical acceptability task."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

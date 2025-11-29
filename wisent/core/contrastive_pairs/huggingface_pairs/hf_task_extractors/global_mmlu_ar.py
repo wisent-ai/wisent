@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("global_mmlu_ar",)
 
-evaluator_name = "log_likelihoods"
-
-
 class GlobalMmluArExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Global MMLU Arabic - multiple choice questions."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

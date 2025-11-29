@@ -42,12 +42,11 @@ task_names = (
     "tmmluplus_veterinary_pharmacology",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class TmmluplusExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Tmmluplus benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("moral_stories",)
 
-evaluator_name = "log_likelihoods"
-
-
 class MoralStoriesExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Moral Stories benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

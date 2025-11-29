@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("agieval",)
 
-evaluator_name = "exact_match"
-
-
 class AgievalExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Agieval benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

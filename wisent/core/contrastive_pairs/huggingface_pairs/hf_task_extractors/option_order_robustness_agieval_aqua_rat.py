@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("option_order_robustness_agieval_aqua_rat",)
 
-evaluator_name = "generation"
-
-
 class OptionOrderRobustnessAgievalAquaRatExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Option Order Robustness AGIEval AQUA-RAT - robustness testing."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

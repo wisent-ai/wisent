@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("gpt3_translation_benchmarks",)
 
-evaluator_name = "log_likelihoods"
-
-
 class Gpt3TranslationBenchmarksExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for GPT-3 Translation Benchmarks - multiple choice translation tasks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

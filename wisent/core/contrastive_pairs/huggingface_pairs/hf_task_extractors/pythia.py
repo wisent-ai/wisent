@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("pythia",)
 
-evaluator_name = "log_likelihoods"
-
-
 class PythiaExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Pythia benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

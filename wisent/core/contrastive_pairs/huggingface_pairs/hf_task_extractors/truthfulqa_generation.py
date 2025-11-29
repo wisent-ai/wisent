@@ -14,9 +14,6 @@ log = logging.getLogger(__name__)
 
 task_names = ("truthfulqa_generation",)
 
-evaluator_name = "generation"
-
-
 class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for the TruthfulQA Generation benchmark.
 
@@ -33,6 +30,8 @@ class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
         - type: str
     """
 
+
+    evaluator_name = "generation"
     # Override base class default to use generation evaluator
     evaluator_name: str = "generation"
 

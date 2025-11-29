@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("tinyWinogrande",)
 
-evaluator_name = "log_likelihoods"
-
-
 class TinywinograndeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tinywinogrande benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

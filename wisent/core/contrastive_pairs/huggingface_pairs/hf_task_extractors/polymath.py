@@ -13,9 +13,6 @@ log = logging.getLogger(__name__)
 
 task_names = ("polymath_en_high", "polymath_en_medium", "polymath_zh_high", "polymath_zh_medium")
 
-evaluator_name = "exact_match"
-
-
 class PolyMathExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for PolyMath dataset (multilingual mathematical reasoning).
@@ -25,6 +22,8 @@ class PolyMathExtractor(HuggingFaceBenchmarkExtractor):
         - answer: str (final answer)
     """
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

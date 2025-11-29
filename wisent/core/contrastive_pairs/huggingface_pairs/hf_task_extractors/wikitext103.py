@@ -14,12 +14,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("wikitext103",)
 
-evaluator_name = "log_likelihoods"
-
-
 class Wikitext103Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for WikiText-103 - language modeling perplexity task."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

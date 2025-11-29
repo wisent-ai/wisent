@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("bhtc", "bhtc_v2")
 
-evaluator_name = "log_likelihoods"
-
-
 class BhtcExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Bhtc benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

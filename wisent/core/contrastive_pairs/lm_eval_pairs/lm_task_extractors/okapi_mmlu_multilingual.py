@@ -23,12 +23,11 @@ task_names = (
     "m_mmlu_te", "m_mmlu_uk", "m_mmlu_vi", "m_mmlu_zh"
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class OkapiMmluMultilingualExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Okapi/Mmlu Multilingual benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

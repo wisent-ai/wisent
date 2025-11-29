@@ -21,12 +21,11 @@ task_names = (
     "kormedmcqa_nurse",
     "kormedmcqa_pharm",
 )
-evaluator_name = "generation"
-
-
 class KormedmcqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Kormedmcqa benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

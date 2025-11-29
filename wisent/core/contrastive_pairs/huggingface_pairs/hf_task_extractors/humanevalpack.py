@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("humanevalpack",)
 
-evaluator_name = "exact_match"
-
-
 class HumanevalpackExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Humanevalpack benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

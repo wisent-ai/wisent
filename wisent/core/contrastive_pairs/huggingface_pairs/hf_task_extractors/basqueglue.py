@@ -13,8 +13,6 @@ _LOG = setup_logger(__name__)
 
 task_names = ("basque-glue", "basqueglue")
 
-evaluator_name = "log_likelihoods"
-
 # Configs from orai-nlp/basqueGLUE
 # intent = fmtod_intent, bhtc = bhtc_v2, bec = bec2016eu, vaxx = vaxx_stance
 # qnli = qnli_eu, wic = wiceu, coref = epec_koref_bin
@@ -52,6 +50,8 @@ class BasqueglueExtractor(HuggingFaceBenchmarkExtractor):
     - coref (epec_koref_bin): coreference (text, span1_text, span2_text, label)
     """
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

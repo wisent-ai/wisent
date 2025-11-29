@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("ethos", "ethos_binary")
 
-evaluator_name = "generation"
-
-
 class EthosExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Ethos benchmark - hate speech classification task."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

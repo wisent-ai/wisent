@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("gsm_plus",)
 
-evaluator_name = "exact_match"
-
-
 class GSMPlusExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for the GSM-Plus benchmark - perturbed grade school math word problems."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

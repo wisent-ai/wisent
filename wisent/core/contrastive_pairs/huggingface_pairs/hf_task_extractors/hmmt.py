@@ -13,9 +13,6 @@ log = logging.getLogger(__name__)
 
 task_names = ("hmmt", "hmmt_feb_2025")
 
-evaluator_name = "exact_match"
-
-
 class HMMTExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for HMMT dataset (Harvard-MIT Math Tournament).
@@ -25,6 +22,8 @@ class HMMTExtractor(HuggingFaceBenchmarkExtractor):
         - answer: str or int (final answer)
     """
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

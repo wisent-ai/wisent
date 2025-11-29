@@ -22,12 +22,11 @@ task_names = (
     "afrimgsm_amh_prompt_5",
 )
 
-evaluator_name = "exact_match"
-
-
 class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrimgsm - math word problems with numeric answers in Amharic."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

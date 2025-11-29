@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("self_consistency",)
 
-evaluator_name = "log_likelihoods"
-
-
 class SelfConsistencyExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Self-Consistency - multiple choice questions."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

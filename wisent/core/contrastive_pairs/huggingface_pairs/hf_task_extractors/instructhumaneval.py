@@ -15,10 +15,8 @@ log = logging.getLogger(__name__)
 task_names = ("instruct_humaneval",)
 
 # Evaluator to use
-evaluator_name = "coding"
-
-
 class InstructHumanEvalExtractor(HuggingFaceBenchmarkExtractor):
+    evaluator_name = "coding"
     """
     Extractor for InstructHumanEval coding benchmark.
 

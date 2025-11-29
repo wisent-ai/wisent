@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 # This extractor handles all kmmlu MC subtasks dynamically
 task_names = ()  # Intentionally empty - will match any kmmlu MC task
-evaluator_name = "log_likelihoods"
-
-
 class KMMLUMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for KMMLU multiple-choice benchmarks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

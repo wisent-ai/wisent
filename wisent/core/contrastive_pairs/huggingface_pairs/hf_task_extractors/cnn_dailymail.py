@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("cnn_dailymail",)
 
-evaluator_name = "generation"
-
-
 class CnnDailymailExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for CNN/DailyMail - summarization task."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("mts_dialog_perplexity",)
 
-evaluator_name = "log_likelihoods"
-
-
 class MtsDialogPerplexityExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MTS Dialog perplexity task."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

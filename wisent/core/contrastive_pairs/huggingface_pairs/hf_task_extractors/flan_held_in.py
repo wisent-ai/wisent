@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("flan_held_in",)
 
-evaluator_name = "log_likelihoods"
-
-
 class FlanHeldInExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for FLAN Held-In - multiple choice tasks from FLAN collection."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

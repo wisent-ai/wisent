@@ -32,12 +32,11 @@ task_names = (
     "global_mmlu_zh",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class GlobalMmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Global Mmlu benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

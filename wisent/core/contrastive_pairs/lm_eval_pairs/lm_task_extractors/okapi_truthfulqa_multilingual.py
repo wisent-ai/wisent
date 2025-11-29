@@ -33,12 +33,11 @@ task_names = (
     "truthfulqa_zh_mc1", "truthfulqa_zh_mc2"
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class OkapiTruthfulqaMultilingualExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Okapi/Truthfulqa Multilingual benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

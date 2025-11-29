@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("ds1000",)
 
-evaluator_name = "exact_match"
-
-
 class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Ds1000 benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

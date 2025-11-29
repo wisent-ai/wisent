@@ -19,12 +19,11 @@ task_names = (
     "tinyTruthfulQA_mc1",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class TinytruthfulqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tinytruthfulqa benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

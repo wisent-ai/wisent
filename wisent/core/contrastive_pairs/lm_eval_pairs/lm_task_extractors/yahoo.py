@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("yahoo_answers_topics",)
 
-evaluator_name = "log_likelihoods"
-
-
 class YahooExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Yahoo benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

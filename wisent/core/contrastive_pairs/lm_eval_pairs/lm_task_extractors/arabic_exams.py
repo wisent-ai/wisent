@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("arabic_exams",)
 
-evaluator_name = "generation"
-
-
 class ArabicExamsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Arabic exams - multiple choice questions."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

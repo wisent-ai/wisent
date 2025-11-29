@@ -29,12 +29,11 @@ task_names = (
     "gsm8k_platinum_cot_zeroshot",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class GSM8KExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the GSM8K benchmark - grade school math word problems."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

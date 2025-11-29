@@ -53,12 +53,11 @@ task_names = (
     "xlsum_yoruba_prompt_3",
 )
 
-evaluator_name = "generation"
-
-
 class XlsumExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Xlsum benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
