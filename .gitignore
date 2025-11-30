@@ -147,3 +147,10 @@ user_model_configs.json
 
 bigcode-evaluation-harness/*.log
 wisent/examples/scripts/*.log
+
+# Notebook output directories
+abliteration_outputs/
+abliteration_demo_outputs/
+hallucination_guard_outputs/
+coding_boost_outputs/
+personalization_outputs/

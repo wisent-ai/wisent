@@ -158,9 +158,9 @@ def setup_tasks_parser(parser):
     parser.add_argument(
         "--token-aggregation",
         type=str,
-        choices=["average", "final", "first", "max", "min"],
+        choices=["average", "final", "first", "max", "min", "max_score"],
         default="average",
-        help="How to aggregate token scores for classification",
+        help="How to aggregate token scores for classification. 'max_score' uses the highest individual token hallucination score.",
     )
     parser.add_argument(
         "--ground-truth-method",
@@ -440,9 +440,9 @@ def setup_tasks_parser(parser):
     parser.add_argument(
         "--prompt-construction-strategy",
         type=str,
-        choices=["multiple_choice", "role_playing", "direct_completion", "instruction_following"],
-        default="multiple_choice",
-        help="Strategy for constructing prompts from question-answer pairs (default: multiple_choice)",
+        choices=["multiple_choice", "role_playing", "direct_completion", "instruction_following", "chat_template"],
+        default="chat_template",
+        help="Strategy for constructing prompts from question-answer pairs (default: chat_template)",
     )
     parser.add_argument(
         "--token-targeting-strategy",

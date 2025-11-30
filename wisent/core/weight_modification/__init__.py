@@ -5,32 +5,49 @@ This module provides methods to permanently modify model weights based on
 steering vectors computed from contrastive pairs. Unlike temporary activation
 steering (hooks), these modifications are baked into the model weights.
 
-Two approaches:
+Three approaches:
 
-1. **Orthogonal Abliteration** (Heretic-style):
+1. **Norm-Preserving Biprojected Abliteration** (RECOMMENDED):
+   - Based on Jim Lai's technique used by Arli AI
+   - Decomposes weights into magnitude and direction
+   - Ablates only the direction, preserves original magnitudes
+   - Optionally orthogonalizes against harmless directions (biprojection)
+   - Maintains model intelligence and reasoning capabilities
+   - See: https://huggingface.co/blog/grimjim/norm-preserving-biprojected-abliteration
+
+2. **Standard Abliteration** (Legacy, NOT recommended):
    - W' = W - λ(vvᵀ)W
    - Removes dimension parallel to steering vector
-   - Cannot express behavior in that direction anymore
-   - Most aggressive, permanent removal
+   - CHANGES WEIGHT NORMS - can degrade model quality
 
-2. **Additive Weight Modification** (Steering-baked-in):
+3. **Additive Weight Modification** (Steering-baked-in):
    - W' = W + αv (in appropriate form)
    - Adds bias toward steering direction in weights
    - More conservative, preserves capabilities better
    - Equivalent to "pre-computing" the steering
 
-Both approaches allow exporting modified models that no longer need
+All approaches allow exporting modified models that no longer need
 runtime hooks or steering vectors.
 
 Usage:
     from wisent.core.weight_modification import (
         abliterate_weights,
+        abliterate_weights_norm_preserved,
         bake_steering_into_weights,
         export_modified_model
     )
 
-    # Option 1: Abliterate (remove capability)
+    # Option 1: Norm-preserving abliteration (RECOMMENDED)
+    # By default, abliterate_weights uses norm_preserve=True
     abliterate_weights(model, steering_vectors, strength=1.0)
+
+    # Or explicitly:
+    abliterate_weights_norm_preserved(
+        model,
+        steering_vectors,
+        harmless_vectors=harmless_vectors,  # Optional biprojection
+        strength=1.0,
+    )
 
     # Option 2: Bake in steering (enhance capability)
     bake_steering_into_weights(model, steering_vectors, alpha=1.0)
@@ -41,9 +58,12 @@ Usage:
 
 from wisent.core.weight_modification.abliteration import (
     abliterate_weights,
+    abliterate_weights_norm_preserved,
     abliterate_component,
+    abliterate_component_norm_preserved,
     compute_abliteration_kernel,
     abliterate_with_kernel,
+    orthogonalize_direction,
 )
 from wisent.core.weight_modification.additive import (
     bake_steering_into_weights,
@@ -62,8 +82,12 @@ from wisent.core.weight_modification.utils import (
 )
 
 __all__ = [
-    # Abliteration (Heretic-style orthogonalization)
-    "abliterate_weights",
+    # Norm-Preserving Biprojected Abliteration (RECOMMENDED)
+    "abliterate_weights",  # Default uses norm_preserve=True
+    "abliterate_weights_norm_preserved",
+    "abliterate_component_norm_preserved",
+    "orthogonalize_direction",
+    # Legacy abliteration (not recommended)
     "abliterate_component",
     "compute_abliteration_kernel",
     "abliterate_with_kernel",
