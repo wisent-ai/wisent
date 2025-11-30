@@ -12,9 +12,10 @@ __all__ = ["TruthfulQAGenerationExtractor"]
 
 log = logging.getLogger(__name__)
 
-task_names = ("truthfulqa_generation",)
+task_names = ("truthfulqa_generation", "truthfulqa_gen")
 
-evaluator_name = "generation"
+# Use semantic similarity evaluator that compares response to correct vs incorrect answers
+evaluator_name = "truthfulqa_gen"
 
 
 class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
@@ -23,6 +24,10 @@ class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
     This extractor formats prompts for open-ended generation evaluation,
     where models generate responses from scratch rather than selecting
     from multiple choice options.
+
+    Evaluation uses semantic similarity to compare the model's response
+    against correct_answers (should be similar) and incorrect_answers
+    (should not be similar).
 
     TruthfulQA schema (truthfulqa/truthful_qa, generation config):
         - question: str
@@ -33,8 +38,8 @@ class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
         - type: str
     """
 
-    # Override base class default to use generation evaluator
-    evaluator_name: str = "generation"
+    # Use semantic similarity evaluator for generation tasks
+    evaluator_name: str = "truthfulqa_gen"
 
     def extract_contrastive_pairs(
         self,
@@ -104,7 +109,7 @@ class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
             formatted_question = f"Q: {question}\nA:"
 
             metadata = {
-                "label": "truthfulqa_generation",
+                "label": "truthfulqa_gen",
                 "category": doc.get("category", ""),
                 "type": doc.get("type", ""),
                 "correct_answers": correct_answers if correct_answers else [best_answer],
