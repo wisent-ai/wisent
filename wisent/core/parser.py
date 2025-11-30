@@ -234,9 +234,9 @@ def setup_tasks_parser(parser):
     parser.add_argument(
         "--token-aggregation",
         type=str,
-        choices=["average", "final", "first", "max", "min"],
+        choices=["average", "final", "first", "max", "min", "max_score"],
         default="average",
-        help="How to aggregate token scores for classification",
+        help="How to aggregate token scores for classification. 'max_score' uses the highest individual token hallucination score as the response score.",
     )
     parser.add_argument(
         "--ground-truth-method",
@@ -1275,8 +1275,8 @@ def setup_model_config_parser(parser):
         "--token-aggregation",
         type=str,
         default="average",
-        choices=["average", "final", "first", "max", "min"],
-        help="Token aggregation method",
+        choices=["average", "final", "first", "max", "min", "max_score"],
+        help="Token aggregation method. 'max_score' uses highest token score.",
     )
     save_parser.add_argument("--detection-threshold", type=float, default=0.6, help="Detection threshold")
     save_parser.add_argument(
@@ -1326,8 +1326,8 @@ def setup_sample_size_optimizer_parser(parser):
         "--token-aggregation",
         type=str,
         required=True,
-        choices=["average", "final", "first", "max", "min"],
-        help="Token aggregation method (REQUIRED)",
+        choices=["average", "final", "first", "max", "min", "max_score"],
+        help="Token aggregation method (REQUIRED). 'max_score' uses highest token score.",
     )
 
     # Classification-specific arguments

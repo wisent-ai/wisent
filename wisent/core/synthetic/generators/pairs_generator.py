@@ -56,6 +56,11 @@ class SyntheticContrastivePairsGenerator:
         """
         Generate synthetic contrastive pairs for the given topic and trait.
 
+        Generates pairs one at a time:
+        1. Generate a prompt/scenario
+        2. Generate a positive response (exhibits the trait)
+        3. Generate a negative response (does NOT exhibit the trait)
+
         arguments:
             num_pairs:
                 Number of contrastive pairs to generate (default: 10).
@@ -63,39 +68,95 @@ class SyntheticContrastivePairsGenerator:
         returns:
             Tuple of ContrastivePairSet with the generated pairs and GenerationReport with statistics about the generation
         """
-        # 1) generate
-        # Use nonsense-specific instructions if nonsense_mode is set
-        if self.nonsense_mode:
-            instruction_key = f"nonsense_{self.nonsense_mode}"
-            try:
-                sys = self.db_instructions.get(instruction_key)
-            except KeyError:
-                logger.warning(f"Nonsense mode '{self.nonsense_mode}' not found in DB instructions, falling back to generic_pairs")
-                sys = self.db_instructions.get("generic_pairs")
-        else:
-            sys = self.db_instructions.get("generic_pairs")
-
-        usr = self._build_user_prompt(
-            self.trait_label, self.trait_description, num_pairs
-        )
-        raw = self.model.generate(
-            inputs=[[
-                {"role": "system", "content": sys},
-                {"role": "user", "content": usr}
-            ]],
-                 **self.generation_config,
+        parsed = ContrastivePairSet(
+            name=self.contrastive_set_name,
+            task_type=self.trait_label,
         )
 
-        # 2) parse
-        parsed = self.parse_pairs(raw)
+        # Generate pairs one at a time, retry until we have num_pairs
+        max_attempts = num_pairs * 3  # Prevent infinite loops
+        attempts = 0
 
-        # 3) clean
+        while len(parsed) < num_pairs and attempts < max_attempts:
+            attempts += 1
+            logger.info(f"[GENERATE] Generating pair {len(parsed)+1}/{num_pairs} (attempt {attempts})")
+
+            # 1) Generate a prompt/scenario - simple question format
+            prompt_instruction = (
+                f"Write one short question a user might ask. Example: 'What is your favorite hobby?' "
+                f"Just the question, nothing else."
+            )
+            prompt_raw = self.model.generate(
+                inputs=[[{"role": "user", "content": prompt_instruction}]],
+                **self.generation_config,
+            )
+            prompt = prompt_raw[0].strip() if prompt_raw else ""
+
+            if not prompt:
+                logger.warning(f"[GENERATE] Failed to generate prompt, retrying...")
+                continue
+
+            logger.info(f"[GENERATE] Prompt: {prompt[:100]}")
+
+            # 2) Generate positive response (exhibits the trait)
+            positive_instruction = (
+                f"Question: {prompt}\n\n"
+                f"Answer the question AS IF you have this personality: {self.trait_description}\n\n"
+                f"Write 1-2 sentences showing this personality clearly. Just the answer."
+            )
+            positive_raw = self.model.generate(
+                inputs=[[{"role": "user", "content": positive_instruction}]],
+                **self.generation_config,
+            )
+            positive = positive_raw[0].strip() if positive_raw else ""
+
+            if not positive:
+                logger.warning(f"[GENERATE] Failed to generate positive, retrying...")
+                continue
+
+            logger.info(f"[GENERATE] Positive: {positive[:100]}")
+
+            # 3) Generate negative response - OPPOSITE of the trait
+            # Be very explicit about what opposite means
+            negative_instruction = (
+                f"Question: {prompt}\n\n"
+                f"The trait is: {self.trait_description}\n\n"
+                f"Answer as the COMPLETE OPPOSITE. If the trait is evil, be kind and gentle. "
+                f"If the trait is dramatic, be calm and simple. If the trait is Italian, be not Italian.\n\n"
+                f"Write 1-2 sentences. Just the answer, showing the opposite personality."
+            )
+            negative_raw = self.model.generate(
+                inputs=[[{"role": "user", "content": negative_instruction}]],
+                **self.generation_config,
+            )
+            negative = negative_raw[0].strip() if negative_raw else ""
+
+            if not negative:
+                logger.warning(f"[GENERATE] Failed to generate negative, retrying...")
+                continue
+
+            logger.info(f"[GENERATE] Negative: {negative[:100]}")
+
+            # Create the pair
+            cp = ContrastivePair(
+                prompt=prompt,
+                positive_response=PositiveResponse(model_response=positive),
+                negative_response=NegativeResponse(model_response=negative),
+                label=self.trait_label,
+                trait_description=self.trait_description,
+            )
+            parsed.add(cp)
+            logger.info(f"[GENERATE] Successfully added pair {len(parsed)}/{num_pairs}")
+
+        logger.info(f"[GENERATE] Generated {len(parsed)} pairs after {attempts} attempts")
+
+        # Clean (dedupe, refusal check, etc.)
         cleaned, stats = self.cleaner.clean(parsed)
 
         refusaler_stats = stats.step_stats.get("refusaler_cleaner")
-        retries = refusaler_stats.modified_items if refusaler_stats else 0 
+        retries = refusaler_stats.modified_items if refusaler_stats else 0
 
-        # 4) build domain objects
+        # Build final domain objects
         cps = ContrastivePairSet(name=self.contrastive_set_name, task_type=self.trait_label)
         for item in cleaned.pairs:
             cps.add(
@@ -107,7 +168,8 @@ class SyntheticContrastivePairsGenerator:
                     trait_description=item.trait_description or self.trait_description,
                 )
             )
-        # 5) diversity summary (prompts only)
+
+        # Diversity summary (prompts only)
         prompts = [it.prompt for it in cleaned.pairs]
         div = self.diversity.compute(prompts)
 

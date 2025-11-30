@@ -12,6 +12,7 @@ def execute_tasks(args):
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
     from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
     from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
     from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
@@ -101,6 +102,108 @@ def execute_tasks(args):
         for task in selected_tasks:
             print(f"   • {task}")
         print()
+
+    # Handle optimization mode - test all hyperparameter combinations
+    if hasattr(args, 'optimize') and args.optimize:
+        from wisent.core.hyperparameter_optimizer import HyperparameterOptimizer, OptimizationConfig
+
+        print(f"\n🔍 HYPERPARAMETER OPTIMIZATION MODE")
+        print(f"   Model: {args.model}")
+        print(f"   Task: {args.task_names}")
+
+        # Load model first to detect layer count
+        print(f"\n🤖 Loading model '{args.model}'...")
+        model = WisentModel(args.model, device=args.device)
+        num_layers = model.num_layers
+        print(f"   ✓ Model loaded with {num_layers} layers")
+
+        # Determine layer range
+        if hasattr(args, 'optimize_layers') and args.optimize_layers == 'all':
+            layer_range = list(range(1, num_layers + 1))
+        else:
+            # Default: test middle 50% of layers
+            start = num_layers // 4
+            end = (3 * num_layers) // 4
+            layer_range = list(range(start, end + 1))
+
+        # Create optimization config
+        config = OptimizationConfig(
+            layer_range=layer_range,
+            aggregation_methods=['average', 'final', 'first', 'max'],
+            prompt_construction_strategies=['multiple_choice', 'role_playing', 'direct_completion', 'instruction_following'],
+            token_targeting_strategies=['choice_token', 'continuation_token', 'last_token', 'first_token', 'mean_pooling'],
+            threshold_range=[0.3, 0.5, 0.7],
+            classifier_types=[args.classifier_type],
+            metric=getattr(args, 'optimize_metric', 'f1'),
+            max_combinations=getattr(args, 'optimize_max_combinations', 1000)
+        )
+
+        total_combos = (len(layer_range) * len(config.aggregation_methods) *
+                       len(config.prompt_construction_strategies) * len(config.token_targeting_strategies) *
+                       len(config.threshold_range) * len(config.classifier_types))
+
+        print(f"\n📊 Testing {total_combos} hyperparameter combinations:")
+        print(f"   • Layers: {len(layer_range)} ({layer_range[0]}-{layer_range[-1]})")
+        print(f"   • Aggregation methods: {len(config.aggregation_methods)}")
+        print(f"   • Prompt strategies: {len(config.prompt_construction_strategies)}")
+        print(f"   • Token strategies: {len(config.token_targeting_strategies)}")
+        print(f"   • Thresholds: {len(config.threshold_range)}")
+        print(f"   • Optimization metric: {config.metric}")
+
+        # Load task data
+        task_name = args.task_names[0] if isinstance(args.task_names, list) else args.task_names
+        print(f"\n📊 Loading task '{task_name}'...")
+        loader = LMEvalDataLoader()
+        result = loader._load_one_task(
+            task_name=task_name,
+            split_ratio=args.split_ratio,
+            seed=args.seed,
+            limit=args.limit,
+            training_limit=args.training_limit,
+            testing_limit=args.testing_limit
+        )
+        train_pair_set = result['train_qa_pairs']
+        test_pair_set = result['test_qa_pairs']
+        print(f"   ✓ Loaded {len(train_pair_set.pairs)} training pairs, {len(test_pair_set.pairs)} test pairs")
+
+        # Run optimization
+        optimizer = HyperparameterOptimizer(config)
+        opt_result = optimizer.optimize(
+            model=model,
+            train_pair_set=train_pair_set,
+            test_pair_set=test_pair_set,
+            device=args.device,
+            verbose=True
+        )
+
+        # Save results
+        if args.output:
+            os.makedirs(args.output, exist_ok=True)
+            results_path = os.path.join(args.output, 'optimization_results.json')
+            optimizer.save_results(opt_result, results_path)
+            print(f"\n💾 Optimization results saved to: {results_path}")
+
+        print(f"\n✅ Optimization complete!")
+        print(f"   Best layer: {opt_result.best_layer}")
+        print(f"   Best aggregation: {opt_result.best_aggregation}")
+        print(f"   Best prompt strategy: {opt_result.best_prompt_construction_strategy}")
+        print(f"   Best token strategy: {opt_result.best_token_targeting_strategy}")
+        print(f"   Best threshold: {opt_result.best_threshold}")
+        print(f"   Best {config.metric}: {opt_result.best_score:.4f}")
+
+        return {
+            'best_hyperparameters': {
+                'layer': opt_result.best_layer,
+                'aggregation': opt_result.best_aggregation,
+                'prompt_construction_strategy': opt_result.best_prompt_construction_strategy,
+                'token_targeting_strategy': opt_result.best_token_targeting_strategy,
+                'threshold': opt_result.best_threshold,
+                'classifier_type': opt_result.best_classifier_type
+            },
+            'best_score': opt_result.best_score,
+            'best_metrics': opt_result.best_metrics,
+            'combinations_tested': len(opt_result.all_results)
+        }
 
     # Handle cross-benchmark evaluation mode
     if hasattr(args, 'cross_benchmark') and args.cross_benchmark:
@@ -280,9 +383,25 @@ def execute_tasks(args):
         'first': 'FIRST_TOKEN',
         'max': 'MAX_POOLING',
         'min': 'MAX_POOLING',  # Fallback to MAX_POOLING for min
+        'max_score': 'MEAN_POOLING',  # Will use mean for training, but max token score for inference
     }
     aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
     aggregation_strategy = ActivationAggregationStrategy[aggregation_key]
+    use_max_token_score = args.token_aggregation.lower() == 'max_score'
+
+    # Map prompt construction strategy from CLI to enum
+    prompt_strategy_map = {
+        'multiple_choice': PromptConstructionStrategy.MULTIPLE_CHOICE,
+        'role_playing': PromptConstructionStrategy.ROLE_PLAYING,
+        'direct_completion': PromptConstructionStrategy.DIRECT_COMPLETION,
+        'instruction_following': PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+        'chat_template': PromptConstructionStrategy.CHAT_TEMPLATE,
+    }
+    prompt_strategy = prompt_strategy_map.get(
+        getattr(args, 'prompt_construction_strategy', 'chat_template'),
+        PromptConstructionStrategy.CHAT_TEMPLATE
+    )
+    print(f"   Prompt construction strategy: {prompt_strategy.value}")
 
     positive_activations = []
     negative_activations = []
@@ -300,7 +419,8 @@ def execute_tasks(args):
             layers=[layer_str],
             aggregation=aggregation_strategy,
             return_full_sequence=False,
-            normalize_layers=False
+            normalize_layers=False,
+            prompt_strategy=prompt_strategy
         )
 
         # Extract activations from positive and negative responses
@@ -486,7 +606,8 @@ def execute_tasks(args):
             layers=[layer_str],
             aggregation=aggregation_strategy,
             return_full_sequence=True,
-            normalize_layers=False
+            normalize_layers=False,
+            prompt_strategy=prompt_strategy
         )
 
         # Access the collected activations
@@ -511,11 +632,26 @@ def execute_tasks(args):
                         # Default to mean
                         activation_agg = activation_full_seq.mean(dim=0)
 
-                    # Get classifier prediction on aggregated vector
-                    act_tensor = activation_agg.unsqueeze(0).float()
-                    pred_proba_result = classifier.predict_proba(act_tensor)
-                    # Handle both float (single sample) and list return types
-                    pred_proba = pred_proba_result if isinstance(pred_proba_result, float) else pred_proba_result[0]
+                    # Compute per-token classifier scores first (needed for max_score aggregation)
+                    token_scores = []
+                    for token_idx in range(activation_full_seq.shape[0]):
+                        token_act = activation_full_seq[token_idx].unsqueeze(0).float()
+                        token_proba_result = classifier.predict_proba(token_act)
+                        token_proba = token_proba_result if isinstance(token_proba_result, float) else token_proba_result[0]
+                        token_scores.append(float(token_proba))
+
+                    # Get classifier prediction - either from aggregated vector or min token score
+                    if use_max_token_score:
+                        # Use MINIMUM token score as response-level classification
+                        # Score = P(TRUTHFUL), so min score = most suspicious token
+                        # If ANY token has low truthfulness probability, flag the response
+                        pred_proba = min(token_scores) if token_scores else 0.5
+                    else:
+                        # Standard: classify aggregated activation vector
+                        act_tensor = activation_agg.unsqueeze(0).float()
+                        pred_proba_result = classifier.predict_proba(act_tensor)
+                        pred_proba = pred_proba_result if isinstance(pred_proba_result, float) else pred_proba_result[0]
+
                     pred_label = int(pred_proba > args.detection_threshold)
 
                     # Update detection stats
@@ -588,14 +724,13 @@ def execute_tasks(args):
                     # Ground truth from evaluator
                     ground_truth = 1 if eval_result.ground_truth == "TRUTHFUL" else 0
 
-                    # Compute per-token classifier scores
-                    # For each token, get classifier probability
-                    token_scores = []
-                    for token_idx in range(activation_full_seq.shape[0]):
-                        token_act = activation_full_seq[token_idx].unsqueeze(0).float()
-                        token_proba_result = classifier.predict_proba(token_act)
-                        token_proba = token_proba_result if isinstance(token_proba_result, float) else token_proba_result[0]
-                        token_scores.append(float(token_proba))
+                    # token_scores = P(TRUTHFUL) for each token
+                    # min_token_score = most suspicious token (lowest P(TRUTHFUL))
+                    # max_token_score = most confident token (highest P(TRUTHFUL))
+                    min_token_score = min(token_scores) if token_scores else 0.0
+                    min_token_idx = token_scores.index(min_token_score) if token_scores else -1
+                    max_token_score = max(token_scores) if token_scores else 0.0
+                    max_token_idx = token_scores.index(max_token_score) if token_scores else -1
 
                     generation_results.append({
                         'question': question,
@@ -606,8 +741,13 @@ def execute_tasks(args):
                         'classifier_pred': pred_label,
                         'classifier_proba': float(pred_proba),
                         'correct': pred_label == ground_truth,
-                        'token_scores': token_scores,  # Per-token classifier probabilities
+                        'token_scores': token_scores,  # Per-token P(TRUTHFUL) probabilities
+                        'min_token_score': min_token_score,  # Most suspicious token - lowest P(TRUTHFUL)
+                        'min_token_idx': min_token_idx,  # Index of most suspicious token
+                        'max_token_score': max_token_score,  # Most confident token - highest P(TRUTHFUL) (kept for backward compat)
+                        'max_token_idx': max_token_idx,  # Index of most confident token
                         'num_tokens': len(token_scores),
+                        'aggregation_method': 'max_score' if use_max_token_score else args.token_aggregation,
                         'quality_score': quality_score,
                         'issue_detected': issue_detected,
                         'detection_type': detection_type,

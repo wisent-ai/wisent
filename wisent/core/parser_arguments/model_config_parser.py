@@ -17,8 +17,8 @@ def setup_model_config_parser(parser):
         "--token-aggregation",
         type=str,
         default="average",
-        choices=["average", "final", "first", "max", "min"],
-        help="Token aggregation method",
+        choices=["average", "final", "first", "max", "min", "max_score"],
+        help="Token aggregation method. 'max_score' uses highest token hallucination score.",
     )
     save_parser.add_argument("--detection-threshold", type=float, default=0.6, help="Detection threshold")
     save_parser.add_argument(
