@@ -3,6 +3,9 @@ CLI command for modifying model weights using steering vectors.
 
 This module implements the modify-weights command which permanently modifies
 model weights using either abliteration or additive methods.
+
+By default, uses Norm-Preserving Biprojected Abliteration (Jim Lai's technique)
+which maintains model quality by preserving weight norms.
 """
 
 import json
@@ -30,18 +33,26 @@ def execute_modify_weights(args):
 
     Pipeline:
     1. Generate/load steering vectors (from task, trait, or file)
-    2. Load model
-    3. Modify weights (abliteration or additive)
-    4. Export modified model
+    2. Optionally load harmless vectors for biprojection
+    3. Load model
+    4. Modify weights (norm-preserving abliteration or additive)
+    5. Export modified model
     """
     log = bind(_LOG)
     start_time = time.time()
+
+    # Determine norm_preserve and use_biprojection from args
+    norm_preserve = not getattr(args, 'no_norm_preserve', False)
+    use_biprojection = not getattr(args, 'no_biprojection', False)
 
     if args.verbose:
         print("\n" + "=" * 80)
         print("WEIGHT MODIFICATION")
         print("=" * 80)
         print(f"Method: {args.method}")
+        if args.method == "abliteration":
+            print(f"Norm-Preserving: {norm_preserve} {'(RECOMMENDED)' if norm_preserve else '(NOT recommended)'}")
+            print(f"Biprojection: {use_biprojection}")
         print(f"Model: {args.model}")
         print(f"Output: {args.output_dir}")
         print("=" * 80 + "\n")
@@ -184,6 +195,23 @@ def execute_modify_weights(args):
         if args.verbose:
             print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
 
+    # Step 1.5: Load harmless vectors for biprojection (if provided)
+    harmless_vectors = None
+    if args.method == "abliteration" and use_biprojection and hasattr(args, 'harmless_vectors') and args.harmless_vectors:
+        if args.verbose:
+            print(f"Loading harmless vectors from {args.harmless_vectors}...")
+
+        with open(args.harmless_vectors, 'r') as f:
+            harmless_data = json.load(f)
+
+        harmless_vectors = {
+            int(layer) - 1: torch.tensor(vector)
+            for layer, vector in harmless_data["steering_vectors"].items()
+        }
+
+        if args.verbose:
+            print(f"✓ Loaded {len(harmless_vectors)} harmless vectors for biprojection\n")
+
     # Step 2: Load model
     if args.verbose:
         print(f"Loading model '{args.model}'...")
@@ -200,18 +228,21 @@ def execute_modify_weights(args):
         print()
 
     if args.method == "abliteration":
-        # Abliteration method
+        # Abliteration method (norm-preserving by default)
         if args.use_kernel:
             # Use kernel-based layer weighting
             stats = abliterate_with_kernel(
                 model,
                 steering_vectors,
+                harmless_vectors=harmless_vectors,
                 max_weight=args.max_weight,
                 max_weight_position=args.max_weight_position,
                 min_weight=args.min_weight,
                 min_weight_distance=args.min_weight_distance,
                 components=args.components,
                 normalize_vectors=args.normalize_vectors,
+                norm_preserve=norm_preserve,
+                use_biprojection=use_biprojection,
                 verbose=args.verbose,
             )
         else:
@@ -219,9 +250,12 @@ def execute_modify_weights(args):
             stats = abliterate_weights(
                 model,
                 steering_vectors,
+                harmless_vectors=harmless_vectors,
                 components=args.components,
                 strength=args.strength,
                 normalize_vectors=args.normalize_vectors,
+                norm_preserve=norm_preserve,
+                use_biprojection=use_biprojection,
                 verbose=args.verbose,
             )
 
@@ -256,6 +290,8 @@ def execute_modify_weights(args):
         print(f"  Layers modified: {stats['layers_modified']}")
         print(f"  Components modified: {stats['components_modified']}")
         print(f"  Parameters modified: {stats['total_parameters_modified']:,}")
+        if args.method == "abliteration":
+            print(f"  Norms preserved: {stats.get('norm_preserved', 'N/A')}")
         print()
 
     # Step 4: Export model
@@ -292,6 +328,9 @@ def execute_modify_weights(args):
         print("=" * 80)
         print(f"Modified model: {args.output_dir}")
         print(f"Method: {args.method}")
+        if args.method == "abliteration":
+            print(f"Norm-preserving: {norm_preserve}")
+            print(f"Biprojection: {use_biprojection and harmless_vectors is not None}")
         print(f"Layers modified: {stats['layers_modified']}")
         print(f"Parameters modified: {stats['total_parameters_modified']:,}")
         print("=" * 80 + "\n")
@@ -299,5 +338,6 @@ def execute_modify_weights(args):
     log.info("Weight modification complete", extra={
         "method": args.method,
         "output_dir": args.output_dir,
+        "norm_preserve": norm_preserve if args.method == "abliteration" else None,
         "stats": stats,
     })

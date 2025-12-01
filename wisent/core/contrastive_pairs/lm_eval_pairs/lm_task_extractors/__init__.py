@@ -48,7 +48,6 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.superglue im
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.supergpqa import SuperGPQAExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.swag import SwagExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.triviaqa import TriviaQAExtractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.truthfulqa_gen import TruthfulQAGenExtractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.truthfulqa_mc1 import TruthfulQAMC1Extractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.truthfulqa_mc2 import TruthfulQAMC2Extractor
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.webqs import WebQSExtractor
@@ -112,7 +111,6 @@ __all__ = [
     "SuperGPQAExtractor",
     "SwagExtractor",
     "TriviaQAExtractor",
-    "TruthfulQAGenExtractor",
     "TruthfulQAMC1Extractor",
     "TruthfulQAMC2Extractor",
     "WebQSExtractor",

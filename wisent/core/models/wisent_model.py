@@ -86,18 +86,17 @@ class WisentModel:
         load_kwargs = {
             "trust_remote_code": True,
             "low_cpu_mem_usage": True,
+            "attn_implementation": "eager",  # Always use eager attention - no flash-attn dependency
         }
 
         if self.device == "mps":
-            load_kwargs["dtype"] = torch.float16
+            load_kwargs["torch_dtype"] = torch.float16
             load_kwargs["device_map"] = "mps"
-            load_kwargs["attn_implementation"] = "eager"  # MPS doesn't support flash attention
-        elif self.device == "cuda":
-            load_kwargs["dtype"] = torch.float16
+        elif self.device == "cuda" or self.device == "auto":
+            load_kwargs["torch_dtype"] = torch.bfloat16  # More stable than float16
             load_kwargs["device_map"] = "auto"
-            load_kwargs["attn_implementation"] = "flash_attention_2"  # Uses flash-attn for 2-4x speedup
         else:
-            load_kwargs["dtype"] = torch.float32
+            load_kwargs["torch_dtype"] = torch.float32
             load_kwargs["device_map"] = None
 
         self.hf_model: PreTrainedModel = hf_model or AutoModelForCausalLM.from_pretrained(
@@ -259,7 +258,7 @@ class WisentModel:
         self,
         message: list[ChatMessage],
         add_generation_prompt: bool = True,
-        enable_thinking: bool = True,
+        enable_thinking: bool = False,
     ) -> dict[str, torch.Tensor]:
         """
         Encode a single input in chat format.
@@ -304,7 +303,7 @@ class WisentModel:
         self,
         inputs: list[list[ChatMessage]],
         add_generation_prompt: bool = True,
-        enable_thinking: bool = True,
+        enable_thinking: bool = False,
     ) -> dict[str, torch.Tensor]:
         """
         Batch-encode a list of chat messages.
@@ -362,15 +361,26 @@ class WisentModel:
             >>> model._extract_assistant_response(full_text)
             "Hi there!"
         """
+        import re
+
         # Look for the assistant marker in the decoded text
         if "assistant" in text:
             # Split on "assistant" and take everything after it
             response = text.split("assistant", 1)[1]
             # Strip leading/trailing whitespace and newlines
             response = response.strip()
-            return response
-        # If no assistant marker found, return the original text
-        return text
+        else:
+            response = text
+
+        # Remove empty thinking blocks that Qwen adds when enable_thinking=False
+        # Pattern matches <think>\n\n</think>\n\n or variations with different whitespace
+        response = re.sub(r'^<think>\s*</think>\s*', '', response)
+
+        # Also remove thinking blocks with content (full thinking output)
+        # This handles cases where thinking mode was enabled
+        response = re.sub(r'^<think>.*?</think>\s*', '', response, flags=re.DOTALL)
+
+        return response.strip()
 
     @torch.inference_mode()
     def generate(
@@ -386,7 +396,7 @@ class WisentModel:
         num_return_sequences: int = 1,
         use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
-        enable_thinking: bool = True,
+        enable_thinking: bool = False,
         prompt_is_formatted: bool = False,
         ensure_varied_responses: bool = False,
         phrase_ledger: Any = None,
@@ -565,7 +575,7 @@ class WisentModel:
         collect_topk: int = 5,
         use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
-        enable_thinking: bool = True,
+        enable_thinking: bool = False,
         ensure_varied_responses: bool = False,
         phrase_ledger: Any = None,
         **gen_kwargs: Any,
@@ -726,7 +736,7 @@ class WisentModel:
         steering_plan: SteeringPlan | None = None,
         skip_prompt: bool = True,
         skip_special_tokens: bool = True,
-        enable_thinking: bool = True,
+        enable_thinking: bool = False,
         prompt_is_formatted: bool = False,
         ensure_varied_responses: bool = False,
         phrase_ledger: Any = None,

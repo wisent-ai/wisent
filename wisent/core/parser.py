@@ -234,9 +234,9 @@ def setup_tasks_parser(parser):
     parser.add_argument(
         "--token-aggregation",
         type=str,
-        choices=["average", "final", "first", "max", "min"],
+        choices=["average", "final", "first", "max", "min", "max_score"],
         default="average",
-        help="How to aggregate token scores for classification",
+        help="How to aggregate token scores for classification. 'max_score' uses the highest individual token hallucination score as the response score.",
     )
     parser.add_argument(
         "--ground-truth-method",
@@ -1254,6 +1254,84 @@ def setup_steering_optimizer_parser(parser):
     )
     comprehensive_parser.add_argument("--no-save", action="store_true", help="Don't save results to model config")
 
+    # Personalization optimization subcommand
+    personalization_parser = steering_subparsers.add_parser(
+        "personalization", help="Optimize steering parameters for personality/trait steering"
+    )
+    personalization_parser.add_argument("model", type=str, help="Model name or path")
+    personalization_parser.add_argument(
+        "--trait", type=str, required=True, help="Trait description to steer towards (e.g., 'evil villain personality')"
+    )
+    personalization_parser.add_argument(
+        "--trait-name", type=str, default=None, help="Short name for the trait (e.g., 'evil'). Defaults to first word of trait."
+    )
+    personalization_parser.add_argument(
+        "--num-pairs", type=int, default=20, help="Number of synthetic pairs to generate (default: 20)"
+    )
+    personalization_parser.add_argument(
+        "--num-test-prompts", type=int, default=5, help="Number of test prompts for evaluation (default: 5)"
+    )
+    personalization_parser.add_argument(
+        "--layers", type=int, nargs="+", default=None,
+        help="Specific layers to test (default: ALL layers)"
+    )
+    personalization_parser.add_argument(
+        "--strength-range", type=float, nargs=2, default=[0.5, 5.0],
+        help="Min and max steering strength to test (default: 0.5 5.0)"
+    )
+    personalization_parser.add_argument(
+        "--num-strength-steps", type=int, default=5, help="Number of strength values to test (default: 5)"
+    )
+    personalization_parser.add_argument(
+        "--output-dir", type=str, default="./personalization_optimization",
+        help="Directory to save results and best vectors (default: ./personalization_optimization)"
+    )
+    personalization_parser.add_argument(
+        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
+    )
+    personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
+    personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+
+    # Multi-trait personalization optimization subcommand
+    multi_personalization_parser = steering_subparsers.add_parser(
+        "multi-personalization", help="Joint optimization for multiple traits with shared parameters"
+    )
+    multi_personalization_parser.add_argument("model", type=str, help="Model name or path")
+    multi_personalization_parser.add_argument(
+        "--trait", type=str, action="append", required=True, dest="traits",
+        help="Trait description (can be specified multiple times, e.g., --trait 'evil' --trait 'italian')"
+    )
+    multi_personalization_parser.add_argument(
+        "--trait-name", type=str, action="append", dest="trait_names",
+        help="Short name for each trait (must match number of --trait args)"
+    )
+    multi_personalization_parser.add_argument(
+        "--num-pairs", type=int, default=10, help="Number of synthetic pairs per trait (default: 10)"
+    )
+    multi_personalization_parser.add_argument(
+        "--num-test-prompts", type=int, default=5, help="Number of test prompts for evaluation (default: 5)"
+    )
+    multi_personalization_parser.add_argument(
+        "--layers", type=int, nargs="+", default=None,
+        help="Specific layers to test (default: ALL layers)"
+    )
+    multi_personalization_parser.add_argument(
+        "--strength-range", type=float, nargs=2, default=[0.5, 5.0],
+        help="Min and max steering strength to test per trait (default: 0.5 5.0)"
+    )
+    multi_personalization_parser.add_argument(
+        "--num-strength-steps", type=int, default=5, help="Number of strength values to test (default: 5)"
+    )
+    multi_personalization_parser.add_argument(
+        "--output-dir", type=str, default="./multi_personalization_optimization",
+        help="Directory to save results and vectors (default: ./multi_personalization_optimization)"
+    )
+    multi_personalization_parser.add_argument(
+        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
+    )
+    multi_personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
+    multi_personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+
     # Common arguments for all steering optimization subcommands
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -1275,8 +1353,8 @@ def setup_model_config_parser(parser):
         "--token-aggregation",
         type=str,
         default="average",
-        choices=["average", "final", "first", "max", "min"],
-        help="Token aggregation method",
+        choices=["average", "final", "first", "max", "min", "max_score"],
+        help="Token aggregation method. 'max_score' uses highest token score.",
     )
     save_parser.add_argument("--detection-threshold", type=float, default=0.6, help="Detection threshold")
     save_parser.add_argument(
@@ -1326,8 +1404,8 @@ def setup_sample_size_optimizer_parser(parser):
         "--token-aggregation",
         type=str,
         required=True,
-        choices=["average", "final", "first", "max", "min"],
-        help="Token aggregation method (REQUIRED)",
+        choices=["average", "final", "first", "max", "min", "max_score"],
+        help="Token aggregation method (REQUIRED). 'max_score' uses highest token score.",
     )
 
     # Classification-specific arguments

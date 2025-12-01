@@ -47,8 +47,8 @@ def setup_agent_parser(parser):
         "--token-aggregation",
         type=str,
         default="average",
-        choices=["average", "final", "first", "max", "min"],
-        help="How to aggregate token activations (default: average)",
+        choices=["average", "final", "first", "max", "min", "max_score"],
+        help="How to aggregate token activations. 'max_score' uses highest token hallucination score (default: average)",
     )
     parser.add_argument(
         "--prompt-strategy",

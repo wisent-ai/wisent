@@ -109,6 +109,34 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
         default=1.0,
         help="Abliteration strength (0=no change, 1=full abliteration) (default: 1.0)"
     )
+    abliteration_group.add_argument(
+        "--norm-preserve",
+        action="store_true",
+        default=True,
+        help="Use norm-preserving abliteration (RECOMMENDED, default: True)"
+    )
+    abliteration_group.add_argument(
+        "--no-norm-preserve",
+        action="store_true",
+        help="Disable norm-preserving abliteration (NOT recommended)"
+    )
+    abliteration_group.add_argument(
+        "--use-biprojection",
+        action="store_true",
+        default=True,
+        help="Orthogonalize steering direction against harmless direction (default: True)"
+    )
+    abliteration_group.add_argument(
+        "--no-biprojection",
+        action="store_true",
+        help="Disable biprojection (NOT recommended)"
+    )
+    abliteration_group.add_argument(
+        "--harmless-vectors",
+        type=str,
+        default=None,
+        help="Path to harmless direction vectors JSON for biprojection (optional)"
+    )
 
     # Additive-specific parameters
     additive_group = parser.add_argument_group("additive parameters")

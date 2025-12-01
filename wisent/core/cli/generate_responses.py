@@ -12,6 +12,7 @@ def execute_generate_responses(args):
     Generates model responses to questions from a task and saves them to a file.
     """
     from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.data_loaders.loaders.task_interface_loader import TaskInterfaceDataLoader
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
 
     print(f"\n{'='*80}")
@@ -28,17 +29,17 @@ def execute_generate_responses(args):
     model = WisentModel(args.model, device=args.device)
     print(f"   ✓ Model loaded\n")
 
-    # Load task data
+    # Load task data - try TaskInterface first, then fall back to LMEval
     print(f"📊 Loading task data...")
-    loader = LMEvalDataLoader()
+    pairs = None
+
+    # First try TaskInterfaceDataLoader (for livecodebench, gsm8k, etc.)
     try:
-        # Load enough docs to ensure we have num_questions after 80/20 split
-        # With 80% going to training, we need at least num_questions / 0.8 docs
-        # Add buffer for safety: load 2x requested + minimum of 20
+        task_loader = TaskInterfaceDataLoader()
         load_limit = max(args.num_questions * 2, 20)
 
-        result = loader._load_one_task(
-            task_name=args.task,
+        result = task_loader.load(
+            task=args.task,
             split_ratio=0.8,
             seed=42,
             limit=load_limit,
@@ -46,14 +47,32 @@ def execute_generate_responses(args):
             testing_limit=None
         )
 
-        # Use training pairs for generation (larger pool, 80% of data)
-        # This ensures we have enough pairs even for small requests
-        pairs = result['train_qa_pairs'].pairs[:args.num_questions]
-        print(f"   ✓ Loaded {len(pairs)} question pairs (from training set)\n")
+        pairs = result.train_qa_pairs.pairs[:args.num_questions]
+        print(f"   ✓ Loaded {len(pairs)} question pairs via TaskInterface\n")
 
-    except Exception as e:
-        print(f"   ❌ Failed to load task: {e}")
-        sys.exit(1)
+    except Exception as task_err:
+        # Fall back to LMEvalDataLoader
+        try:
+            loader = LMEvalDataLoader()
+            load_limit = max(args.num_questions * 2, 20)
+
+            result = loader._load_one_task(
+                task_name=args.task,
+                split_ratio=0.8,
+                seed=42,
+                limit=load_limit,
+                training_limit=None,
+                testing_limit=None
+            )
+
+            pairs = result['train_qa_pairs'].pairs[:args.num_questions]
+            print(f"   ✓ Loaded {len(pairs)} question pairs via LMEval\n")
+
+        except Exception as lm_err:
+            print(f"   ❌ Failed to load task '{args.task}'")
+            print(f"      TaskInterface error: {task_err}")
+            print(f"      LMEval error: {lm_err}")
+            sys.exit(1)
 
     # Generate responses
     print(f"🤖 Generating responses...\n")

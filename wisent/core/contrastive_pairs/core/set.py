@@ -131,3 +131,62 @@ class ContrastivePairSet(AtomContrastivePairSet):
 
         self._last_diagnostics = report
         return report
+
+    def prepare_classifier_data(self):
+        """
+        Prepare data for classifier training from the contrastive pairs.
+
+        Extracts activation features from positive and negative responses
+        and returns them as training data with labels.
+
+        Returns:
+            Tuple of (X, y) where X is feature array and y is label array.
+            Positive responses get label 0, negative responses get label 1.
+        """
+        import torch
+        import numpy as np
+
+        X_list = []
+        y_list = []
+
+        for pair in self.pairs:
+            # Get activations from positive response
+            pos_acts = getattr(pair.positive_response, 'layers_activations', None)
+            neg_acts = getattr(pair.negative_response, 'layers_activations', None)
+
+            if pos_acts is not None:
+                # Convert to numpy if tensor
+                if isinstance(pos_acts, torch.Tensor):
+                    pos_features = pos_acts.detach().cpu().numpy()
+                else:
+                    pos_features = np.array(pos_acts)
+
+                # Flatten if needed
+                if pos_features.ndim > 1:
+                    pos_features = pos_features.flatten()
+
+                X_list.append(pos_features)
+                y_list.append(0)  # Positive = 0 (truthful/harmless)
+
+            if neg_acts is not None:
+                # Convert to numpy if tensor
+                if isinstance(neg_acts, torch.Tensor):
+                    neg_features = neg_acts.detach().cpu().numpy()
+                else:
+                    neg_features = np.array(neg_acts)
+
+                # Flatten if needed
+                if neg_features.ndim > 1:
+                    neg_features = neg_features.flatten()
+
+                X_list.append(neg_features)
+                y_list.append(1)  # Negative = 1 (untruthful/harmful)
+
+        if not X_list:
+            raise ValueError("No activation data found in contrastive pairs. "
+                           "Ensure activations have been collected before training.")
+
+        X = np.array(X_list)
+        y = np.array(y_list)
+
+        return X, y

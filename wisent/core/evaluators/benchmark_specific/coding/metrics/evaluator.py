@@ -166,6 +166,13 @@ class CodingEvaluator(BaseEvaluator):
         # Code to test
         code_to_test = response if response else str(expected)
 
+        # For livecodebench functional tests, prepend typing imports if needed
+        if 'livecodebench' in task_name.lower() and 'from solution import Solution' in (test_code or ''):
+            # This is a functional (LeetCode-style) problem - add typing imports
+            typing_imports = "from typing import List, Optional, Dict, Tuple, Set, Any\n\n"
+            if not code_to_test.strip().startswith("from typing") and "List[" in code_to_test:
+                code_to_test = typing_imports + code_to_test
+
         # Prepare test file
         if entry_point is None or 'livecodebench' in task_name.lower():
             test_file_content = test_code

@@ -49,9 +49,9 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--token-aggregation",
         type=str,
-        choices=["average", "final", "first", "max", "min"],
+        choices=["average", "final", "first", "max", "min", "max_score"],
         default="average",
-        help="How to aggregate token activations"
+        help="How to aggregate token activations. 'max_score' uses highest token hallucination score"
     )
 
     # Prompt construction strategy

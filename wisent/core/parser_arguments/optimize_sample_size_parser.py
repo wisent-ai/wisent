@@ -10,8 +10,8 @@ def setup_sample_size_optimizer_parser(parser):
         "--token-aggregation",
         type=str,
         required=True,
-        choices=["average", "final", "first", "max", "min"],
-        help="Token aggregation method (REQUIRED)",
+        choices=["average", "final", "first", "max", "min", "max_score"],
+        help="Token aggregation method. 'max_score' uses highest token hallucination score (REQUIRED)",
     )
 
     # Classification-specific arguments

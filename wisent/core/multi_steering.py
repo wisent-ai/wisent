@@ -35,6 +35,7 @@ class MultiSteering:
         self.loaded_vectors: list[dict] = []
         self.weights: list[float] = []
         self.combined_vector: torch.Tensor | None = None
+        self.combined_scale: float = 1.0  # Track the total steering scale
         self.layer: int | None = None
 
     def load_vectors(self, vector_specs: list[str]) -> None:
@@ -139,10 +140,13 @@ class MultiSteering:
             raw_maps.append(raw_map)
 
         # Create SteeringPlan with weighted combination
+        # Use sum of weights as scale to preserve steering strength
+        # Weights are used as relative proportions, scale controls overall strength
+        total_weight = sum(self.weights)
         plan = SteeringPlan.from_raw(
             raw=raw_maps,
             weights=self.weights,
-            scale=1.0,
+            scale=total_weight,
             normalize=normalize
         )
 
@@ -153,9 +157,11 @@ class MultiSteering:
 
         steering_vector = plan.layers[layer_str]
         self.combined_vector = steering_vector.vector
+        self.combined_scale = total_weight  # Store the scale for apply_steering
 
         print(f"   ✓ Combined vector shape: {self.combined_vector.shape}")
         print(f"   ✓ Combined vector norm: {torch.norm(self.combined_vector).item():.4f}")
+        print(f"   ✓ Steering scale: {self.combined_scale:.4f}")
 
         return self.combined_vector
 
@@ -199,11 +205,11 @@ class MultiSteering:
         print(f"Prompt is formatted: {prompt_is_formatted}")
         print("=" * 50)
 
-        # Create SteeringPlan from the combined vector
+        # Create SteeringPlan from the combined vector with the stored scale
         raw_map: RawActivationMap = {str(self.layer): self.combined_vector}
         steering_plan = SteeringPlan.from_raw(
             raw=raw_map,
-            scale=1.0,
+            scale=self.combined_scale,
             normalize=False  # Already normalized in combine_vectors
         )
 
@@ -276,11 +282,11 @@ class MultiSteering:
         print(f"Prompt is formatted: {prompt_is_formatted}")
         print("=" * 50)
 
-        # Create SteeringPlan from the combined vector
+        # Create SteeringPlan from the combined vector with the stored scale
         raw_map: RawActivationMap = {str(self.layer): self.combined_vector}
         steering_plan = SteeringPlan.from_raw(
             raw=raw_map,
-            scale=1.0,
+            scale=self.combined_scale,
             normalize=False  # Already normalized in combine_vectors
         )
 

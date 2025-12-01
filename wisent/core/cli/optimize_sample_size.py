@@ -4,7 +4,11 @@ import sys
 import time
 import numpy as np
 import torch
-from wisent_plots import LineChart
+
+try:
+    from wisent_plots import LineChart
+except ImportError:
+    LineChart = None  # wisent_plots is optional
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
 from wisent.core.activations import ActivationAggregationStrategy, ActivationCollector

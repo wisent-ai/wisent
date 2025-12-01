@@ -72,7 +72,7 @@ EXTRACTORS.update({
     "xnli": f"{base_import}xnli:XNLIExtractor",
     "xstorycloze": f"{base_import}xstorycloze:XStoryClozeExtractor",
     "xwinograd": f"{base_import}xwinograd:XWinogradExtractor",
-    "livecodebench": f"{base_import}livecodebench:LivecodebenchExtractor",
+    "livecodebench": "wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.livecodebench:LivecodebenchExtractor",
     # Perplexity/Language Modeling tasks
     "wikitext": f"{base_import}wikitext:WikitextExtractor",
     "wikitext103": f"{base_import}wikitext:WikitextExtractor",

@@ -83,7 +83,7 @@ def execute_generate_pairs(args):
             from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
 
             cleaning_steps = [
-                DeduperCleaner(deduper=SimHashDeduper(threshold_bits=3)),
+                DeduperCleaner(deduper=SimHashDeduper(threshold_bits=10)),  # Relaxed threshold to keep more diverse pairs
             ]
             cleaner = PairsCleaner(steps=cleaning_steps)
 

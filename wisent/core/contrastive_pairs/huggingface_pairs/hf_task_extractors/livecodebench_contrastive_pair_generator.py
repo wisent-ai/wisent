@@ -9,8 +9,6 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from datasets import load_dataset
-
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.get_positive_example_livecodebench import (
@@ -23,6 +21,55 @@ from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.get_nega
 __all__ = ["generate_livecodebench_pairs"]
 
 log = logging.getLogger(__name__)
+
+
+def _load_livecodebench_data(cache_dir: str | None = None) -> list[dict]:
+    """
+    Load LiveCodeBench data directly from HuggingFace Hub.
+
+    This avoids the deprecated dataset script by downloading parquet files directly.
+
+    Args:
+        cache_dir: Optional cache directory
+
+    Returns:
+        List of problem dictionaries
+    """
+    from huggingface_hub import hf_hub_download
+    import json
+    import pandas as pd
+
+    try:
+        # Try to download the parquet data file directly
+        # LiveCodeBench stores data in parquet format under data/ directory
+        parquet_path = hf_hub_download(
+            repo_id="livecodebench/code_generation_lite",
+            filename="data/release_latest/test-00000-of-00001.parquet",
+            repo_type="dataset",
+            cache_dir=cache_dir,
+        )
+
+        # Read parquet file
+        df = pd.read_parquet(parquet_path)
+        return df.to_dict('records')
+
+    except Exception as e1:
+        log.warning(f"Could not load parquet data: {e1}")
+
+        # Fallback: try to load from the Space's problems.json
+        try:
+            problems_path = hf_hub_download(
+                repo_id="livecodebench/code_generation_samples",
+                filename="problems.json",
+                repo_type="space",
+                cache_dir=cache_dir,
+            )
+
+            with open(problems_path, "r") as f:
+                return json.load(f)
+        except Exception as e2:
+            log.error(f"Could not load problems.json fallback: {e2}")
+            return []
 
 
 def generate_livecodebench_pairs(
@@ -43,15 +90,7 @@ def generate_livecodebench_pairs(
         List of ContrastivePair objects with positive (passing) and negative (failing) examples
     """
     try:
-        # Load the problems dataset
-        dataset = load_dataset(
-            "livecodebench/code_generation_lite",
-            "release_latest",
-            split="test",
-            cache_dir=cache_dir,
-        )
-
-        # Also load problems.json from the Space to get proper mappings
+        # Load problems.json from the Space to get proper mappings
         from huggingface_hub import hf_hub_download
         import json
 
@@ -71,8 +110,11 @@ def generate_livecodebench_pairs(
 
         log.info(f"Generating contrastive pairs from {max_items} livecodebench problems")
 
+        # Try to load parquet data for test cases
+        dataset_data = _load_livecodebench_data(cache_dir)
+
         for problem_idx in range(max_items):
-            pair = _create_pair_for_problem(problem_idx, problems_json, cache_dir)
+            pair = _create_pair_for_problem(problem_idx, problems_json, dataset_data, cache_dir)
             if pair is not None:
                 pairs.append(pair)
                 log.debug(f"Created pair {len(pairs)}/{max_items}")
@@ -88,6 +130,7 @@ def generate_livecodebench_pairs(
 def _create_pair_for_problem(
     problem_idx: int,
     problems_json: list[dict],
+    dataset_data: list[dict],
     cache_dir: str | None = None,
 ) -> ContrastivePair | None:
     """
@@ -96,11 +139,14 @@ def _create_pair_for_problem(
     Args:
         problem_idx: Index of the problem in the problems.json
         problems_json: List of problem dictionaries from problems.json
+        dataset_data: List of problem data from parquet (for test cases)
         cache_dir: Optional cache directory
 
     Returns:
         ContrastivePair or None if unable to create pair
     """
+    import json as json_lib
+
     try:
         # Get the problem data from problems.json
         if problem_idx >= len(problems_json):
@@ -126,31 +172,21 @@ def _create_pair_for_problem(
             log.warning(f"No negative example found for problem {problem_idx}")
             return None
 
-        # Get test cases from livecodebench dataset
-        from datasets import load_dataset
-        import json as json_lib
-
-        dataset = load_dataset(
-            "livecodebench/code_generation_lite",
-            "release_latest",
-            split="test",
-            cache_dir=cache_dir,
-        )
-
-        if problem_idx < len(dataset):
-            problem_data = dataset[problem_idx]
+        # Get test cases from dataset data if available
+        test_code = None
+        if problem_idx < len(dataset_data):
+            problem_data = dataset_data[problem_idx]
             public_test_cases_str = problem_data.get("public_test_cases", "[]")
+            starter_code = problem_data.get("starter_code", "")
 
             # Parse test cases (they're stored as JSON string)
             try:
-                test_cases = json_lib.loads(public_test_cases_str)
+                test_cases = json_lib.loads(public_test_cases_str) if isinstance(public_test_cases_str, str) else public_test_cases_str
                 # Build test_code from test cases
-                test_code = _build_test_code(test_cases)
+                test_code = _build_test_code(test_cases, starter_code)
             except Exception as e:
                 log.warning(f"Could not parse test cases for problem {problem_idx}: {e}")
                 test_code = None
-        else:
-            test_code = None
 
         # Format the prompt
         formatted_question = f"Question: {question}\n\nWrite a solution:"
@@ -187,13 +223,14 @@ def _create_pair_for_problem(
         return None
 
 
-def _build_test_code(test_cases: list[dict]) -> str | None:
+def _build_test_code(test_cases: list[dict], starter_code: str = "") -> str | None:
     """Build test code from livecodebench test cases.
 
-    Uses subprocess-based testing like the LiveCodeBench provider.
+    Handles both stdin (AtCoder/Codeforces) and functional (LeetCode) test types.
 
     Args:
-        test_cases: List of test case dicts with 'input' and 'output' keys
+        test_cases: List of test case dicts with 'input', 'output', and 'testtype' keys
+        starter_code: Optional starter code containing class/method definition
 
     Returns:
         Test code string or None if no valid test cases
@@ -201,7 +238,17 @@ def _build_test_code(test_cases: list[dict]) -> str | None:
     if not test_cases:
         return None
 
-    # Build test code using subprocess approach (matches livecodebench provider)
+    # Determine test type from first test case
+    test_type = test_cases[0].get("testtype", "stdin")
+
+    if test_type == "functional":
+        return _build_functional_test_code(test_cases, starter_code)
+    else:
+        return _build_stdin_test_code(test_cases)
+
+
+def _build_stdin_test_code(test_cases: list[dict]) -> str:
+    """Build test code for stdin-based problems (AtCoder/Codeforces)."""
     test_code = """import subprocess
 import sys
 
@@ -245,6 +292,107 @@ def test_stdin():
 
 if __name__ == '__main__':
     test_stdin()
+"""
+
+    return test_code
+
+
+def _extract_method_name(starter_code: str) -> str | None:
+    """Extract method name from LeetCode starter code."""
+    import re
+    match = re.search(r'def\s+(\w+)\s*\(\s*self', starter_code)
+    return match.group(1) if match else None
+
+
+def _build_functional_test_code(test_cases: list[dict], starter_code: str) -> str | None:
+    """Build test code for functional problems (LeetCode).
+
+    These problems have a Solution class with a method to call.
+    """
+    method_name = _extract_method_name(starter_code)
+    if not method_name:
+        return None
+
+    test_code = """import json
+import ast
+from typing import List, Optional, Dict, Tuple, Set
+
+# Import the solution
+from solution import Solution
+
+def parse_input(input_str):
+    \"\"\"Parse input string into Python objects.
+
+    Input can be:
+    - Single line: one argument
+    - Multiple lines: multiple arguments (one per line)
+    \"\"\"
+    lines = input_str.strip().split('\\n')
+    args = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            # Try JSON parsing first (handles arrays, strings, etc.)
+            args.append(json.loads(line))
+        except json.JSONDecodeError:
+            try:
+                # Fall back to ast.literal_eval for Python literals
+                args.append(ast.literal_eval(line))
+            except (ValueError, SyntaxError):
+                # Keep as string if nothing else works
+                args.append(line)
+    return args
+
+def parse_output(output_str):
+    \"\"\"Parse expected output into Python object.\"\"\"
+    output_str = output_str.strip()
+    try:
+        return json.loads(output_str)
+    except json.JSONDecodeError:
+        try:
+            return ast.literal_eval(output_str)
+        except (ValueError, SyntaxError):
+            return output_str
+
+def test_functional():
+    test_cases = [
+"""
+
+    for i, test_case in enumerate(test_cases):
+        input_data = test_case.get("input", "")
+        expected_output = test_case.get("output", "")
+
+        if expected_output == "":
+            continue
+
+        test_code += f"        # Test case {i + 1}\n"
+        test_code += f"        ({repr(input_data)}, {repr(expected_output)}),\n"
+
+    test_code += f"""    ]
+
+    sol = Solution()
+
+    for i, (input_str, expected_str) in enumerate(test_cases):
+        args = parse_input(input_str)
+        expected = parse_output(expected_str)
+
+        # Call the method with parsed arguments
+        actual = sol.{method_name}(*args)
+
+        # Compare results
+        assert actual == expected, (
+            f"Test case {{i + 1}} failed:\\n"
+            f"  Input: {{input_str[:200]}}\\n"
+            f"  Expected: {{expected}}\\n"
+            f"  Got: {{actual}}"
+        )
+
+    print(f'All {{len(test_cases)}} test(s) passed!')
+
+if __name__ == '__main__':
+    test_functional()
 """
 
     return test_code
