@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
+from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -15,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 def lm_build_contrastive_pairs(
     task_name: str,
-    lm_eval_task: ConfigurableTask,
+    lm_eval_task: ConfigurableTask | None,
     limit: int | None = None,
 ) -> list[ContrastivePair]:
     """
@@ -25,7 +26,8 @@ def lm_build_contrastive_pairs(
         task_name:
             Name of the lm-eval benchmark/task (e.g., "winogrande").
         lm_eval_task:
-            An lm-eval task instance.
+            An lm-eval task instance. Can be None for HuggingFace-only tasks
+            like livecodebench that don't use lm-eval.
         limit:
             Optional upper bound on the number of pairs to return.
             Values <= 0 are treated as "no limit".
@@ -38,7 +40,7 @@ def lm_build_contrastive_pairs(
 
     # 1) Get extractor instance by name (exact or longest-prefix)
     extractor = get_extractor(task_name)
-    
+
     log.info("Using extractor", extra={"extractor": extractor.__class__.__name__})
 
     # 2) Normalize limit (<=0 → None)
@@ -47,4 +49,8 @@ def lm_build_contrastive_pairs(
     log.info("Extracting contrastive pairs", extra={"max_items": max_items})
 
     # 3) Delegate: extractor loads docs and builds pairs
-    return extractor.extract_contrastive_pairs(lm_eval_task, limit=max_items)
+    # HuggingFace extractors don't need lm_eval_task - they load data directly from HuggingFace
+    if isinstance(extractor, HuggingFaceBenchmarkExtractor):
+        return extractor.extract_contrastive_pairs(limit=max_items)
+    else:
+        return extractor.extract_contrastive_pairs(lm_eval_task, limit=max_items)

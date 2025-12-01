@@ -149,3 +149,41 @@ def setup_steering_optimizer_parser(parser):
     auto_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     auto_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 
+    # Personalization optimization subcommand
+    personalization_parser = steering_subparsers.add_parser(
+        "personalization", help="Optimize steering parameters for personality/trait steering"
+    )
+    personalization_parser.add_argument("model", type=str, help="Model name or path")
+    personalization_parser.add_argument(
+        "--trait", type=str, required=True, help="Trait description to steer towards (e.g., 'evil villain personality')"
+    )
+    personalization_parser.add_argument(
+        "--trait-name", type=str, default=None, help="Short name for the trait (e.g., 'evil'). Defaults to first word of trait."
+    )
+    personalization_parser.add_argument(
+        "--num-pairs", type=int, default=20, help="Number of synthetic pairs to generate (default: 20)"
+    )
+    personalization_parser.add_argument(
+        "--num-test-prompts", type=int, default=5, help="Number of test prompts for evaluation (default: 5)"
+    )
+    personalization_parser.add_argument(
+        "--layers", type=int, nargs="+", default=None,
+        help="Specific layers to test (default: auto-select based on model size)"
+    )
+    personalization_parser.add_argument(
+        "--strength-range", type=float, nargs=2, default=[0.5, 5.0],
+        help="Min and max steering strength to test (default: 0.5 5.0)"
+    )
+    personalization_parser.add_argument(
+        "--num-strength-steps", type=int, default=5, help="Number of strength values to test (default: 5)"
+    )
+    personalization_parser.add_argument(
+        "--output-dir", type=str, default="./personalization_optimization",
+        help="Directory to save results and best vectors (default: ./personalization_optimization)"
+    )
+    personalization_parser.add_argument(
+        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
+    )
+    personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
+    personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+

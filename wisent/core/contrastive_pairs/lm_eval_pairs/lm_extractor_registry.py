@@ -8,8 +8,10 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import (
     LMEvalBenchmarkExtractor,
     UnsupportedLMEvalBenchmarkError,
 )
+from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_manifest import EXTRACTORS as _MANIFEST
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_manifest import EXTRACTORS as _LM_MANIFEST
+from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS as _HF_MANIFEST
 
 __all__ = [
     "register_extractor",
@@ -18,7 +20,9 @@ __all__ = [
 
 LOG = logging.getLogger(__name__)
 
-_REGISTRY: dict[str, Union[str, Type[LMEvalBenchmarkExtractor]]] = {k.lower(): v for k, v in _MANIFEST.items()}
+# Combine LM-eval and HuggingFace manifests (HF takes precedence for overlapping keys)
+_COMBINED_MANIFEST = {**_LM_MANIFEST, **_HF_MANIFEST}
+_REGISTRY: dict[str, Union[str, Type[LMEvalBenchmarkExtractor]]] = {k.lower(): v for k, v in _COMBINED_MANIFEST.items()}
 
 
 def register_extractor(name: str, ref: Union[str, Type[LMEvalBenchmarkExtractor]]) -> None:
@@ -95,23 +99,23 @@ def get_extractor(task_name: str) -> LMEvalBenchmarkExtractor:
         f"Known: {', '.join(sorted(_REGISTRY)) or '(none)'}"
     )
 
-def _instantiate(ref: Union[str, Type[LMEvalBenchmarkExtractor]]) -> LMEvalBenchmarkExtractor:
+def _instantiate(ref: Union[str, Type[LMEvalBenchmarkExtractor]]) -> Union[LMEvalBenchmarkExtractor, HuggingFaceBenchmarkExtractor]:
     """
     Instantiate an extractor from a string reference or class.
 
     arguments:
         ref:
             Either a string "module_path:ClassName[.Inner]" or a subclass of
-            LMEvalBenchmarkExtractor.
+            LMEvalBenchmarkExtractor or HuggingFaceBenchmarkExtractor.
 
     returns:
-        An instance of the corresponding LMEvalBenchmarkExtractor subclass.
+        An instance of the corresponding extractor subclass.
 
     raises:
         ImportError:
             If the extractor class cannot be imported/resolved.
         TypeError:
-            If the resolved class does not subclass LMEvalBenchmarkExtractor.
+            If the resolved class does not subclass LMEvalBenchmarkExtractor or HuggingFaceBenchmarkExtractor.
     """
     if not isinstance(ref, str):
         return ref()
@@ -121,7 +125,7 @@ def _instantiate(ref: Union[str, Type[LMEvalBenchmarkExtractor]]) -> LMEvalBench
         mod = importlib.import_module(module_path)
     except Exception as exc:
         raise ImportError(f"Cannot import module '{module_path}' for extractor '{ref}'.") from exc
-    
+
     obj = mod
     for part in attr_path.split("."):
         try:
@@ -129,6 +133,7 @@ def _instantiate(ref: Union[str, Type[LMEvalBenchmarkExtractor]]) -> LMEvalBench
         except AttributeError as exc:
             raise ImportError(f"Extractor class '{attr_path}' not found in '{module_path}'.") from exc
 
-    if not isinstance(obj, type) or not issubclass(obj, LMEvalBenchmarkExtractor):
-        raise TypeError(f"Resolved object '{obj}' is not a LMEvalBenchmarkExtractor subclass.")
+    # Accept both LMEval and HuggingFace extractors
+    if not isinstance(obj, type) or not (issubclass(obj, LMEvalBenchmarkExtractor) or issubclass(obj, HuggingFaceBenchmarkExtractor)):
+        raise TypeError(f"Resolved object '{obj}' is not a LMEvalBenchmarkExtractor or HuggingFaceBenchmarkExtractor subclass.")
     return obj()

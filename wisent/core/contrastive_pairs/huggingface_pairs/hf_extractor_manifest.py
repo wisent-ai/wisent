@@ -1,5 +1,6 @@
 __all__ = [
     "EXTRACTORS",
+    "HF_EXTRACTORS",
 ]
 
 base_import: str = "wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors."
@@ -176,8 +177,11 @@ EXTRACTORS: dict[str, str] = {
     "wikitext103": f"{base_import}wikitext103:Wikitext103Extractor",
     "yahoo_answers_topics": f"{base_import}yahoo_answers_topics:YahooAnswersTopicsExtractor",
 
-    # TruthfulQA generation (both names point to same HF extractor)
+    # TruthfulQA generation (semantic similarity evaluation, NOT lm-eval)
     "truthfulqa_generation": f"{base_import}truthfulqa_generation:TruthfulQAGenerationExtractor",
     "truthfulqa_gen": f"{base_import}truthfulqa_generation:TruthfulQAGenerationExtractor",
 }
+
+# Alias for backwards compatibility
+HF_EXTRACTORS = EXTRACTORS
 

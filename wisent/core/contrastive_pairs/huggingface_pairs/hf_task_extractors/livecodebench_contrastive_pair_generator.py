@@ -140,12 +140,13 @@ def _create_pair_for_problem(
         if problem_idx < len(dataset):
             problem_data = dataset[problem_idx]
             public_test_cases_str = problem_data.get("public_test_cases", "[]")
+            starter_code = problem_data.get("starter_code", "")
 
             # Parse test cases (they're stored as JSON string)
             try:
                 test_cases = json_lib.loads(public_test_cases_str)
                 # Build test_code from test cases
-                test_code = _build_test_code(test_cases)
+                test_code = _build_test_code(test_cases, starter_code)
             except Exception as e:
                 log.warning(f"Could not parse test cases for problem {problem_idx}: {e}")
                 test_code = None
@@ -187,13 +188,14 @@ def _create_pair_for_problem(
         return None
 
 
-def _build_test_code(test_cases: list[dict]) -> str | None:
+def _build_test_code(test_cases: list[dict], starter_code: str = "") -> str | None:
     """Build test code from livecodebench test cases.
 
-    Uses subprocess-based testing like the LiveCodeBench provider.
+    Handles both stdin (AtCoder/Codeforces) and functional (LeetCode) test types.
 
     Args:
-        test_cases: List of test case dicts with 'input' and 'output' keys
+        test_cases: List of test case dicts with 'input', 'output', and 'testtype' keys
+        starter_code: Optional starter code containing class/method definition
 
     Returns:
         Test code string or None if no valid test cases
@@ -201,7 +203,17 @@ def _build_test_code(test_cases: list[dict]) -> str | None:
     if not test_cases:
         return None
 
-    # Build test code using subprocess approach (matches livecodebench provider)
+    # Determine test type from first test case
+    test_type = test_cases[0].get("testtype", "stdin")
+
+    if test_type == "functional":
+        return _build_functional_test_code(test_cases, starter_code)
+    else:
+        return _build_stdin_test_code(test_cases)
+
+
+def _build_stdin_test_code(test_cases: list[dict]) -> str:
+    """Build test code for stdin-based problems (AtCoder/Codeforces)."""
     test_code = """import subprocess
 import sys
 
@@ -245,6 +257,107 @@ def test_stdin():
 
 if __name__ == '__main__':
     test_stdin()
+"""
+
+    return test_code
+
+
+def _extract_method_name(starter_code: str) -> str | None:
+    """Extract method name from LeetCode starter code."""
+    import re
+    match = re.search(r'def\s+(\w+)\s*\(\s*self', starter_code)
+    return match.group(1) if match else None
+
+
+def _build_functional_test_code(test_cases: list[dict], starter_code: str) -> str | None:
+    """Build test code for functional problems (LeetCode).
+
+    These problems have a Solution class with a method to call.
+    """
+    method_name = _extract_method_name(starter_code)
+    if not method_name:
+        return None
+
+    test_code = """import json
+import ast
+from typing import List, Optional, Dict, Tuple, Set
+
+# Import the solution
+from solution import Solution
+
+def parse_input(input_str):
+    \"\"\"Parse input string into Python objects.
+
+    Input can be:
+    - Single line: one argument
+    - Multiple lines: multiple arguments (one per line)
+    \"\"\"
+    lines = input_str.strip().split('\\n')
+    args = []
+    for line in lines:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            # Try JSON parsing first (handles arrays, strings, etc.)
+            args.append(json.loads(line))
+        except json.JSONDecodeError:
+            try:
+                # Fall back to ast.literal_eval for Python literals
+                args.append(ast.literal_eval(line))
+            except (ValueError, SyntaxError):
+                # Keep as string if nothing else works
+                args.append(line)
+    return args
+
+def parse_output(output_str):
+    \"\"\"Parse expected output into Python object.\"\"\"
+    output_str = output_str.strip()
+    try:
+        return json.loads(output_str)
+    except json.JSONDecodeError:
+        try:
+            return ast.literal_eval(output_str)
+        except (ValueError, SyntaxError):
+            return output_str
+
+def test_functional():
+    test_cases = [
+"""
+
+    for i, test_case in enumerate(test_cases):
+        input_data = test_case.get("input", "")
+        expected_output = test_case.get("output", "")
+
+        if expected_output == "":
+            continue
+
+        test_code += f"        # Test case {i + 1}\n"
+        test_code += f"        ({repr(input_data)}, {repr(expected_output)}),\n"
+
+    test_code += f"""    ]
+
+    sol = Solution()
+
+    for i, (input_str, expected_str) in enumerate(test_cases):
+        args = parse_input(input_str)
+        expected = parse_output(expected_str)
+
+        # Call the method with parsed arguments
+        actual = sol.{method_name}(*args)
+
+        # Compare results
+        assert actual == expected, (
+            f"Test case {{i + 1}} failed:\\n"
+            f"  Input: {{input_str[:200]}}\\n"
+            f"  Expected: {{expected}}\\n"
+            f"  Got: {{actual}}"
+        )
+
+    print(f'All {{len(test_cases)}} test(s) passed!')
+
+if __name__ == '__main__':
+    test_functional()
 """
 
     return test_code

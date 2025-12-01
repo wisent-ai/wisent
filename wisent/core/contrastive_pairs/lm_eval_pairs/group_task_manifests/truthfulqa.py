@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 BASE_IMPORT = "wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors."
-HF_BASE_IMPORT = "wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors."
 
 TRUTHFULQA_TASKS = {
-    # truthfulqa_gen is a generation task - use HuggingFace extractor (NOT lm_eval)
-    "truthfulqa_gen": f"{HF_BASE_IMPORT}truthfulqa_generation:TruthfulQAGenerationExtractor",
+    # NOTE: truthfulqa_gen/truthfulqa_generation are NOT here - they use HuggingFace directly
     "truthfulqa_mc1": f"{BASE_IMPORT}truthfulqa_mc1:TruthfulQAMC1Extractor",
     "truthfulqa_mc2": f"{BASE_IMPORT}truthfulqa_mc2:TruthfulQAMC2Extractor",
     "truthfulqa_vi_mc1": f"{BASE_IMPORT}okapi_truthfulqa_multilingual:OkapiTruthfulqaMultilingualExtractor",

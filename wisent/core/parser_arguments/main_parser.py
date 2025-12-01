@@ -32,6 +32,7 @@ from wisent.core.parser_arguments.evaluate_parser import setup_evaluate_parser
 from wisent.core.parser_arguments.generate_responses_parser import setup_generate_responses_parser
 from wisent.core.parser_arguments.evaluate_responses_parser import setup_evaluate_responses_parser
 from wisent.core.parser_arguments.modify_weights_parser import setup_modify_weights_parser
+from wisent.core.parser_arguments.evaluate_refusal_parser import setup_evaluate_refusal_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -165,5 +166,11 @@ def setup_parser() -> argparse.ArgumentParser:
         "modify-weights", help="Permanently modify model weights using steering vectors (abliteration or additive)"
     )
     setup_modify_weights_parser(modify_weights_parser)
+
+    # Evaluate refusal command for measuring model refusal rate
+    evaluate_refusal_parser = subparsers.add_parser(
+        "evaluate-refusal", help="Evaluate model refusal rate on potentially harmful prompts"
+    )
+    setup_evaluate_refusal_parser(evaluate_refusal_parser)
 
     return parser

@@ -52,6 +52,8 @@ def execute_optimize_steering(args):
         return execute_optimize_strength(args, model, loader)
     elif args.steering_action == 'auto':
         return execute_auto(args, model, loader)
+    elif args.steering_action == 'personalization':
+        return execute_personalization(args, model)
     else:
         print(f"\n✗ Unknown steering action: {args.steering_action}")
         sys.exit(1)
@@ -62,30 +64,48 @@ def execute_comprehensive(args, model, loader):
     from wisent.core.steering_methods.methods.caa import CAAMethod
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
     from wisent.core.models.core.atoms import SteeringPlan
     from sklearn.metrics import accuracy_score
     import torch
-    
+
     print(f"🔍 Running comprehensive steering optimization...")
-    print(f"   Optimizing: Layer, Strength, AND Steering Strategy")
-    
+    print(f"   Optimizing: Layer, Strength, Steering Strategy, Token Aggregation, Prompt Construction")
+
     # Determine tasks to optimize
     if args.tasks:
         task_list = args.tasks
     else:
         task_list = ["arc_easy", "hellaswag", "winogrande", "gsm8k"]
-    
+
     print(f"   Tasks: {', '.join(task_list)}")
     print(f"   Methods: {', '.join(args.methods)}")
     print(f"   Limit: {args.limit} samples per task")
     print(f"   Time limit: {args.max_time_per_task} minutes per task\n")
-    
+
     all_results = {}
-    
+
     # Steering parameters to test
-    layers_to_test = [8, 9, 10, 11, 12]
+    layers_to_test = [4, 6, 8, 10, 12] if model.num_layers > 12 else list(range(2, model.num_layers, 2))
     strengths_to_test = [0.5, 1.0, 1.5, 2.0]
-    strategies_to_test = ["last_only", "first_only", "all_equal", "exponential_decay"]
+    strategies_to_test = ["constant", "initial_only", "diminishing", "all_equal"]
+    token_aggregations_to_test = [
+        ActivationAggregationStrategy.LAST_TOKEN,
+        ActivationAggregationStrategy.MEAN_POOLING,
+        ActivationAggregationStrategy.FIRST_TOKEN,
+    ]
+    prompt_constructions_to_test = [
+        PromptConstructionStrategy.CHAT_TEMPLATE,
+        PromptConstructionStrategy.DIRECT_COMPLETION,
+    ]
+
+    print(f"   Layers: {layers_to_test}")
+    print(f"   Strengths: {strengths_to_test}")
+    print(f"   Strategies: {strategies_to_test}")
+    print(f"   Token Aggregations: {[t.value for t in token_aggregations_to_test]}")
+    print(f"   Prompt Constructions: {[p.value for p in prompt_constructions_to_test]}")
+    total_configs = len(layers_to_test) * len(strengths_to_test) * len(strategies_to_test) * len(token_aggregations_to_test) * len(prompt_constructions_to_test)
+    print(f"   Total configurations per task: {total_configs}\n")
     
     for task_idx, task_name in enumerate(task_list, 1):
         print(f"\n{'='*80}")
@@ -116,8 +136,8 @@ def execute_comprehensive(args, model, loader):
             evaluator = EvaluatorRotator(evaluator=None, task_name=task_name)  # None = auto-select
             print(f"      ✓ Using evaluator: {evaluator._evaluator.name} (auto-selected for {task_name})")
 
-            print(f"\n  🔍 Testing CAA method across layers, strengths, AND strategies...")
-            print(f"      Total configurations: {len(layers_to_test)} layers × {len(strengths_to_test)} strengths × {len(strategies_to_test)} strategies = {len(layers_to_test) * len(strengths_to_test) * len(strategies_to_test)}")
+            print(f"\n  🔍 Testing CAA method across layers, strengths, strategies, token aggregations, prompt constructions...")
+            print(f"      Total configurations: {total_configs}")
 
             best_score = 0
             best_config = None
@@ -132,8 +152,10 @@ def execute_comprehensive(args, model, loader):
                 print(f"  📝 Will generate {num_examples} example responses per configuration")
 
             for layer in layers_to_test:
-                for strength in strengths_to_test:
-                    for strategy in strategies_to_test:
+              for strength in strengths_to_test:
+                for strategy in strategies_to_test:
+                  for token_agg in token_aggregations_to_test:
+                    for prompt_const in prompt_constructions_to_test:
                         if time.time() - task_start_time > args.max_time_per_task * 60:
                             print(f"      ⏰ Time limit reached")
                             break
@@ -142,17 +164,17 @@ def execute_comprehensive(args, model, loader):
                             configs_tested += 1
                             layer_str = str(layer)
                             
-                            # Step 1: Generate steering vector using CAA
+                            # Step 1: Generate steering vector using CAA with current token aggregation
                             collector = ActivationCollector(model=model, store_device="cpu")
-                            
+
                             pos_acts = []
                             neg_acts = []
-                            
+
                             for pair in train_pairs.pairs:
                                 updated_pair = collector.collect_for_pair(
                                     pair,
                                     layers=[layer_str],
-                                    aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+                                    aggregation=token_agg,  # Use current token aggregation strategy
                                     return_full_sequence=False,
                                     normalize_layers=False
                                 )
@@ -173,14 +195,14 @@ def execute_comprehensive(args, model, loader):
                             # Create CAA steering vector
                             caa_method = CAAMethod(kwargs={"normalize": True})
                             steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
-                            
+
                             # Step 2: Evaluate with ACTUAL GENERATION and task evaluator
                             # Create steering plan
                             from wisent.core.models.core.atoms import SteeringVector, SteeringPlan
                             steering_vec = SteeringVector(vector=steering_vector, scale=strength)
                             steering_plan = SteeringPlan(
                                 layers={layer_str: steering_vec},
-                                layers_description=[f"CAA steering layer={layer}, strength={strength}, strategy={strategy}"]
+                                layers_description=[f"CAA L{layer} S{strength} {strategy} T:{token_agg.value} P:{prompt_const.value}"]
                             )
 
                             # Apply steering to model
@@ -192,19 +214,24 @@ def execute_comprehensive(args, model, loader):
                             for pair in test_pairs.pairs:
                                 try:
                                     # Prepare choices for multiple choice evaluation
-                                    choices = [pair.negative_response.content, pair.positive_response.content]
-                                    expected = pair.positive_response.content
+                                    # ContrastivePair uses: prompt, positive_response.model_response, negative_response.model_response
+                                    choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+                                    expected = pair.positive_response.model_response
 
                                     # Use the Wisent evaluator to check correctness
                                     # The evaluator will use log likelihood if possible,
                                     # otherwise fall back to generation
+                                    # Pass test_code from metadata for coding tasks
+                                    test_code = pair.metadata.get("test_code") if pair.metadata else None
                                     eval_result = evaluator.evaluate(
                                         response="",  # Not used for log likelihood eval
                                         expected=expected,
                                         model=model,
-                                        question=pair.question,
+                                        question=pair.prompt,
                                         choices=choices,
-                                        steering_plan=steering_plan
+                                        steering_plan=steering_plan,
+                                        test_code=test_code,
+                                        task_name=task_name
                                     )
 
                                     # Convert TRUTHFUL/UNTRUTHFUL to 1.0/0.0
@@ -213,7 +240,7 @@ def execute_comprehensive(args, model, loader):
 
                                     # Save full evaluation details
                                     detailed_results.append({
-                                        'question': pair.question,
+                                        'prompt': pair.prompt,
                                         'choices': choices,
                                         'expected': expected,
                                         'ground_truth': eval_result.ground_truth,
@@ -227,7 +254,7 @@ def execute_comprehensive(args, model, loader):
                                 except Exception as e:
                                     # NO FALLBACK - raise the error immediately
                                     print(f"\n❌ Evaluation failed for test pair:")
-                                    print(f"   Question: {pair.question[:100]}")
+                                    print(f"   Prompt: {pair.prompt[:100]}")
                                     print(f"   Error: {e}")
                                     raise
 
@@ -241,7 +268,7 @@ def execute_comprehensive(args, model, loader):
                                 if args.save_all_generation_examples:
                                     config_examples = []
                                     for idx, pair in enumerate(example_pairs):
-                                        prompt = pair.question
+                                        prompt = pair.prompt
                                         try:
                                             # Generate without steering (only once per prompt, reuse if already generated)
                                             unsteered_response = model.generate(
@@ -271,9 +298,9 @@ def execute_comprehensive(args, model, loader):
                                             model.clear_steering()
 
                                             config_examples.append({
-                                                'question': prompt,
-                                                'correct_answer': pair.positive_response.content,
-                                                'incorrect_answer': pair.negative_response.content,
+                                                'prompt': prompt,
+                                                'correct_answer': pair.positive_response.model_response,
+                                                'incorrect_answer': pair.negative_response.model_response,
                                                 'unsteered_generation': unsteered_response,
                                                 'steered_generation': steered_response
                                             })
@@ -291,11 +318,13 @@ def execute_comprehensive(args, model, loader):
                                     })
 
                                 # Store detailed results for this configuration
-                                config_key = f"layer{layer}_strength{strength}_strategy{strategy}"
+                                config_key = f"L{layer}_S{strength}_{strategy}_{token_agg.value}_{prompt_const.value}"
                                 method_results[config_key] = {
                                     'layer': layer,
                                     'strength': strength,
                                     'strategy': strategy,
+                                    'token_aggregation': token_agg.value,
+                                    'prompt_construction': prompt_const.value,
                                     'accuracy': avg_score,
                                     'num_test_samples': len(test_scores),
                                     'detailed_results': detailed_results  # Save all eval details
@@ -307,6 +336,8 @@ def execute_comprehensive(args, model, loader):
                                         'layer': layer,
                                         'strength': strength,
                                         'strategy': strategy,
+                                        'token_aggregation': token_agg.value,
+                                        'prompt_construction': prompt_const.value,
                                         'accuracy': avg_score
                                     }
 
@@ -328,12 +359,16 @@ def execute_comprehensive(args, model, loader):
                 print(f"      Layer: {best_config['layer']}")
                 print(f"      Strength: {best_config['strength']}")
                 print(f"      Strategy: {best_config['strategy']} ⭐")
+                print(f"      Token Aggregation: {best_config['token_aggregation']}")
+                print(f"      Prompt Construction: {best_config['prompt_construction']}")
                 print(f"      Accuracy: {best_config['accuracy']:.3f}")
 
                 method_results['CAA'] = {
                     'optimal_layer': best_config['layer'],
                     'optimal_strength': best_config['strength'],
                     'optimal_strategy': best_config['strategy'],
+                    'optimal_token_aggregation': best_config['token_aggregation'],
+                    'optimal_prompt_construction': best_config['prompt_construction'],
                     'accuracy': best_config['accuracy'],
                     'f1': best_config['accuracy']
                 }
@@ -344,8 +379,9 @@ def execute_comprehensive(args, model, loader):
                     vector_dir = args.save_best_vector
                     os.makedirs(vector_dir, exist_ok=True)
 
-                    # Recreate the best steering vector
+                    # Recreate the best steering vector with optimal token aggregation
                     best_layer_str = str(best_config['layer'])
+                    best_token_agg = ActivationAggregationStrategy(best_config['token_aggregation'])
                     pos_acts_best = []
                     neg_acts_best = []
 
@@ -353,7 +389,7 @@ def execute_comprehensive(args, model, loader):
                         updated_pair = collector.collect_for_pair(
                             pair,
                             layers=[best_layer_str],
-                            aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+                            aggregation=best_token_agg,  # Use optimal token aggregation
                             return_full_sequence=False,
                             normalize_layers=False
                         )
@@ -380,6 +416,8 @@ def execute_comprehensive(args, model, loader):
                         'layer_index': best_config['layer'],  # Legacy key
                         'strength': best_config['strength'],
                         'strategy': best_config['strategy'],
+                        'token_aggregation': best_config['token_aggregation'],
+                        'prompt_construction': best_config['prompt_construction'],
                         'method': 'CAA',
                         'task': task_name,
                         'model': args.model,
@@ -418,7 +456,7 @@ def execute_comprehensive(args, model, loader):
 
                     for idx, pair in enumerate(example_pairs):
                         # Create prompt from the question
-                        prompt = pair.question
+                        prompt = pair.prompt
 
                         try:
                             # Generate without steering
@@ -479,8 +517,8 @@ def execute_comprehensive(args, model, loader):
 
                             generation_examples.append({
                                 'question': prompt,
-                                'correct_answer': pair.positive_response.content,
-                                'incorrect_answer': pair.negative_response.content,
+                                'correct_answer': pair.positive_response.model_response,
+                                'incorrect_answer': pair.negative_response.model_response,
                                 'unsteered_generation': unsteered_response,
                                 'steered_generation': steered_response
                             })
@@ -513,9 +551,11 @@ def execute_comprehensive(args, model, loader):
             else:
                 print(f"\n  ⚠️  No valid configuration found")
                 method_results['CAA'] = {
-                    'optimal_layer': 10,
+                    'optimal_layer': 8,
                     'optimal_strength': 1.0,
-                    'optimal_strategy': 'last_only',
+                    'optimal_strategy': 'constant',
+                    'optimal_token_aggregation': 'last_token',
+                    'optimal_prompt_construction': 'chat_template',
                     'accuracy': 0.5,
                     'f1': 0.5
                 }
@@ -525,9 +565,11 @@ def execute_comprehensive(args, model, loader):
                 'best_method': 'CAA',
                 'best_layer': method_results['CAA']['optimal_layer'],
                 'best_strength': method_results['CAA']['optimal_strength'],
-                'best_strategy': method_results['CAA']['optimal_strategy']
+                'best_strategy': method_results['CAA']['optimal_strategy'],
+                'best_token_aggregation': method_results['CAA']['optimal_token_aggregation'],
+                'best_prompt_construction': method_results['CAA']['optimal_prompt_construction']
             }
-            
+
             task_time = time.time() - task_start_time
             print(f"\n  ⏱️  Task completed in {task_time:.1f}s (tested {configs_tested} configurations)")
 
@@ -538,35 +580,35 @@ def execute_comprehensive(args, model, loader):
             import traceback
             traceback.print_exc()
             raise
-    
+
     # Save results
     print(f"\n{'='*80}")
     print(f"📊 COMPREHENSIVE OPTIMIZATION COMPLETE")
     print(f"{'='*80}\n")
-    
+
     results_file = f"./optimization_results/steering_comprehensive_{args.model.replace('/', '_')}.json"
     import os
     os.makedirs(os.path.dirname(results_file), exist_ok=True)
-    
+
     output_data = {
         'model': args.model,
         'tasks': all_results,
         'methods_tested': args.methods,
         'limit': args.limit,
-        'optimization_dimensions': ['layer', 'strength', 'strategy']
+        'optimization_dimensions': ['layer', 'strength', 'strategy', 'token_aggregation', 'prompt_construction']
     }
-    
+
     with open(results_file, 'w') as f:
         json.dump(output_data, f, indent=2)
-    
+
     print(f"✅ Results saved to: {results_file}\n")
-    
+
     # Print summary
     print("📋 SUMMARY BY TASK:")
-    print("-" * 100)
+    print("-" * 140)
     for task_name, config in all_results.items():
-        print(f"  {task_name:20s} | Method: {config['best_method']:10s} | Layer: {config['best_layer']:2d} | Strength: {config['best_strength']:.2f} | Strategy: {config['best_strategy']:18s}")
-    print("-" * 100 + "\n")
+        print(f"  {task_name:20s} | L{config['best_layer']:2d} S{config['best_strength']:.1f} | {config['best_strategy']:12s} | T:{config['best_token_aggregation']:12s} | P:{config['best_prompt_construction']:18s}")
+    print("-" * 140 + "\n")
 
     # Return results for programmatic access
     return {
@@ -576,7 +618,7 @@ def execute_comprehensive(args, model, loader):
         "tasks_optimized": list(all_results.keys()),
         "results": all_results,
         "results_file": results_file,
-        "optimization_dimensions": ['layer', 'strength', 'strategy']
+        "optimization_dimensions": ['layer', 'strength', 'strategy', 'token_aggregation', 'prompt_construction']
     }
 
 
@@ -703,16 +745,19 @@ def execute_compare_methods(args, model, loader):
         test_scores = []
         detailed_results = []
         for pair in test_pairs.pairs:
-            choices = [pair.negative_response.content, pair.positive_response.content]
-            expected = pair.positive_response.content
+            choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+            expected = pair.positive_response.model_response
+            test_code = pair.metadata.get("test_code") if pair.metadata else None
 
             eval_result = evaluator.evaluate(
                 response="",
                 expected=expected,
                 model=model,
-                question=pair.question,
+                question=pair.prompt,
                 choices=choices,
-                steering_plan=steering_plan
+                steering_plan=steering_plan,
+                test_code=test_code,
+                task_name=args.task
             )
 
             is_correct = eval_result.ground_truth == "TRUTHFUL"
@@ -720,7 +765,7 @@ def execute_compare_methods(args, model, loader):
 
             # Save full evaluation details
             detailed_results.append({
-                'question': pair.question,
+                'question': pair.prompt,
                 'choices': choices,
                 'expected': expected,
                 'ground_truth': eval_result.ground_truth,
@@ -910,16 +955,19 @@ def execute_optimize_layer(args, model, loader):
             test_scores = []
             detailed_results = []
             for pair in test_pairs.pairs:
-                choices = [pair.negative_response.content, pair.positive_response.content]
-                expected = pair.positive_response.content
+                choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+                expected = pair.positive_response.model_response
+                test_code = pair.metadata.get("test_code") if pair.metadata else None
 
                 eval_result = evaluator.evaluate(
                     response="",
                     expected=expected,
                     model=model,
-                    question=pair.question,
+                    question=pair.prompt,
                     choices=choices,
-                    steering_plan=steering_plan
+                    steering_plan=steering_plan,
+                    test_code=test_code,
+                    task_name=task_name
                 )
 
                 is_correct = eval_result.ground_truth == "TRUTHFUL"
@@ -927,7 +975,7 @@ def execute_optimize_layer(args, model, loader):
 
                 # Save full evaluation details
                 detailed_results.append({
-                    'question': pair.question,
+                    'question': pair.prompt,
                     'choices': choices,
                     'expected': expected,
                     'ground_truth': eval_result.ground_truth,
@@ -1144,16 +1192,19 @@ def execute_optimize_strength(args, model, loader):
             test_scores = []
             detailed_results = []
             for pair in test_pairs.pairs:
-                choices = [pair.negative_response.content, pair.positive_response.content]
-                expected = pair.positive_response.content
+                choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+                expected = pair.positive_response.model_response
+                test_code = pair.metadata.get("test_code") if pair.metadata else None
 
                 eval_result = evaluator.evaluate(
                     response="",
                     expected=expected,
                     model=model,
-                    question=pair.question,
+                    question=pair.prompt,
                     choices=choices,
-                    steering_plan=steering_plan
+                    steering_plan=steering_plan,
+                    test_code=test_code,
+                    task_name=task_name
                 )
 
                 is_correct = eval_result.ground_truth == "TRUTHFUL"
@@ -1161,7 +1212,7 @@ def execute_optimize_strength(args, model, loader):
 
                 # Save full evaluation details
                 detailed_results.append({
-                    'question': pair.question,
+                    'question': pair.prompt,
                     'choices': choices,
                     'expected': expected,
                     'ground_truth': eval_result.ground_truth,
@@ -1380,16 +1431,19 @@ def execute_auto(args, model, loader):
                 test_scores = []
                 detailed_results = []
                 for pair in test_pairs.pairs:
-                    choices = [pair.negative_response.content, pair.positive_response.content]
-                    expected = pair.positive_response.content
+                    choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+                    expected = pair.positive_response.model_response
+                    test_code = pair.metadata.get("test_code") if pair.metadata else None
 
                     eval_result = evaluator.evaluate(
                         response="",
                         expected=expected,
                         model=model,
-                        question=pair.question,
+                        question=pair.prompt,
                         choices=choices,
-                        steering_plan=steering_plan
+                        steering_plan=steering_plan,
+                        test_code=test_code,
+                        task_name=task_name
                     )
 
                     is_correct = eval_result.ground_truth == "TRUTHFUL"
@@ -1397,7 +1451,7 @@ def execute_auto(args, model, loader):
 
                     # Save full evaluation details
                     detailed_results.append({
-                        'question': pair.question,
+                        'question': pair.prompt,
                         'choices': choices,
                         'expected': expected,
                         'ground_truth': eval_result.ground_truth,
@@ -1522,3 +1576,444 @@ def execute_auto(args, model, loader):
         "results_file": results_file
     }
 
+
+def execute_personalization(args, model):
+    """
+    Execute personalization optimization - find optimal parameters for trait steering.
+
+    This optimizes ALL steering parameters for personality/trait vectors by:
+    1. Generating synthetic contrastive pairs for the trait
+    2. Testing all combinations of:
+       - Layers (where to apply steering)
+       - Strengths (how strong the steering signal is)
+       - Token aggregation strategies (LAST_TOKEN, MEAN_POOLING, FIRST_TOKEN)
+       - Prompt construction strategies (CHAT_TEMPLATE, DIRECT_COMPLETION)
+    3. Evaluating each configuration using personalization metrics:
+       - Difference: Is the steered response different from baseline?
+       - Quality: Is the response coherent (not lobotomized)?
+       - Alignment: Does the response match the intended trait?
+    4. Selecting the configuration with the highest overall score
+    """
+    import os
+    import torch
+    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    from wisent.core.models.core.atoms import SteeringVector, SteeringPlan
+    from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
+    from wisent.core.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
+    from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
+    from wisent.core.synthetic.db_instructions.mini_dp import Default_DB_Instructions
+    from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
+
+    trait = args.trait
+    trait_name = args.trait_name or trait.split()[0].lower()
+
+    print(f"\n{'='*80}", flush=True)
+    print(f"🎭 PERSONALIZATION OPTIMIZATION (COMPREHENSIVE)", flush=True)
+    print(f"{'='*80}", flush=True)
+    print(f"   Trait: {trait}", flush=True)
+    print(f"   Trait Name: {trait_name}", flush=True)
+    print(f"   Model: {args.model}", flush=True)
+    print(f"   Num Pairs: {args.num_pairs}", flush=True)
+    print(f"   Num Test Prompts: {args.num_test_prompts}", flush=True)
+    print(f"   Output Directory: {args.output_dir}", flush=True)
+    print(f"{'='*80}\n", flush=True)
+
+    # Create output directory
+    os.makedirs(args.output_dir, exist_ok=True)
+    os.makedirs(os.path.join(args.output_dir, "vectors"), exist_ok=True)
+
+    # Determine layers to test - ALL layers by default
+    if args.layers:
+        layers_to_test = args.layers
+    else:
+        # Test ALL layers (1-indexed, since activation collector uses 1-based indexing)
+        num_layers = model.num_layers
+        layers_to_test = list(range(1, num_layers + 1))
+
+    # Determine strengths to test
+    min_strength, max_strength = args.strength_range
+    strengths_to_test = np.linspace(min_strength, max_strength, args.num_strength_steps)
+
+    # Token aggregation strategies to test - ALL strategies
+    token_aggregations_to_test = [
+        ActivationAggregationStrategy.LAST_TOKEN,
+        ActivationAggregationStrategy.MEAN_POOLING,
+        ActivationAggregationStrategy.FIRST_TOKEN,
+        ActivationAggregationStrategy.MAX_POOLING,
+    ]
+
+    # Prompt construction strategies to test - ALL strategies
+    prompt_constructions_to_test = [
+        PromptConstructionStrategy.CHAT_TEMPLATE,
+        PromptConstructionStrategy.DIRECT_COMPLETION,
+        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+        PromptConstructionStrategy.ROLE_PLAYING,
+        PromptConstructionStrategy.MULTIPLE_CHOICE,
+    ]
+
+    # Steering application strategies to test - ALL strategies
+    steering_strategies_to_test = ["constant", "initial_only", "diminishing", "all_equal"]
+
+    total_configs = (
+        len(layers_to_test) *
+        len(strengths_to_test) *
+        len(steering_strategies_to_test) *
+        len(token_aggregations_to_test) *
+        len(prompt_constructions_to_test)
+    )
+
+    print(f"📊 Search Space:", flush=True)
+    print(f"   Layers: {layers_to_test} ({len(layers_to_test)} total)", flush=True)
+    print(f"   Strengths: {[f'{s:.2f}' for s in strengths_to_test]}", flush=True)
+    print(f"   Steering Strategies: {steering_strategies_to_test}", flush=True)
+    print(f"   Token Aggregations: {[t.value for t in token_aggregations_to_test]}", flush=True)
+    print(f"   Prompt Constructions: {[p.value for p in prompt_constructions_to_test]}", flush=True)
+    print(f"   Total configurations: {total_configs}\n", flush=True)
+
+    # Step 1: Generate synthetic contrastive pairs
+    print(f"🔧 Step 1: Generating {args.num_pairs} synthetic contrastive pairs...", flush=True)
+
+    # Create the pair generator with required components
+    cleaner = PairsCleaner(steps=[])  # Minimal cleaning
+    diversity = FastDiversity()
+    db_instructions = Default_DB_Instructions()
+
+    pair_generator = SyntheticContrastivePairsGenerator(
+        model=model,
+        generation_config={"max_new_tokens": 150, "temperature": 0.7},
+        contrastive_set_name=f"{trait_name}_pairs",
+        trait_description=trait,
+        trait_label=trait_name,
+        db_instructions=db_instructions,
+        cleaner=cleaner,
+        diversity=diversity,
+    )
+
+    pair_set, generation_report = pair_generator.generate(num_pairs=args.num_pairs)
+    pairs = pair_set.pairs
+
+    print(f"   ✓ Generated {len(pairs)} contrastive pairs\n", flush=True)
+
+    # Generate test prompts for evaluation
+    test_prompts = [
+        "What's your favorite food?",
+        "How do you spend your weekends?",
+        "What motivates you in life?",
+        "How do you handle setbacks?",
+        "What's your opinion on teamwork?",
+    ][:args.num_test_prompts]
+
+    print(f"📝 Test prompts for evaluation:", flush=True)
+    for i, prompt in enumerate(test_prompts, 1):
+        print(f"   {i}. {prompt}", flush=True)
+    print(flush=True)
+
+    # Initialize activation collector
+    collector = ActivationCollector(model=model, store_device="cpu")
+
+    # Track results for all configurations
+    all_results = {}
+    best_config = None
+    best_score = -1.0
+    best_steering_vector = None
+
+    # Cache for steering vectors per (layer, token_agg, prompt_const) combination
+    # to avoid recomputing activations unnecessarily
+    steering_vector_cache = {}
+
+    # Step 2: Test all configurations
+    print(f"🎯 Step 2: Testing {total_configs} configurations...", flush=True)
+
+    config_count = 0
+
+    for token_agg in token_aggregations_to_test:
+        for prompt_const in prompt_constructions_to_test:
+            print(f"\n   📊 Token Aggregation: {token_agg.value}, Prompt Construction: {prompt_const.value}", flush=True)
+
+            for layer in layers_to_test:
+                layer_str = str(layer)
+
+                # Check if we already have activations for this (layer, token_agg) combo
+                cache_key = (layer, token_agg.value, prompt_const.value)
+
+                if cache_key not in steering_vector_cache:
+                    print(f"\n      📍 Layer {layer}: Collecting activations...", flush=True)
+
+                    # Collect activations for this layer with current token_agg and prompt_const
+                    pos_acts = []
+                    neg_acts = []
+
+                    for pair in pairs:
+                        updated_pair = collector.collect_for_pair(
+                            pair,
+                            layers=[layer_str],
+                            aggregation=token_agg,
+                            prompt_strategy=prompt_const,
+                            return_full_sequence=False,
+                            normalize_layers=False
+                        )
+
+                        if updated_pair.positive_response.layers_activations and layer_str in updated_pair.positive_response.layers_activations:
+                            act = updated_pair.positive_response.layers_activations[layer_str]
+                            if act is not None:
+                                pos_acts.append(act)
+
+                        if updated_pair.negative_response.layers_activations and layer_str in updated_pair.negative_response.layers_activations:
+                            act = updated_pair.negative_response.layers_activations[layer_str]
+                            if act is not None:
+                                neg_acts.append(act)
+
+                    if len(pos_acts) == 0 or len(neg_acts) == 0:
+                        print(f"         ⚠️ No activations collected for layer {layer}", flush=True)
+                        steering_vector_cache[cache_key] = None
+                        continue
+
+                    print(f"         ✓ Collected {len(pos_acts)} positive, {len(neg_acts)} negative activations", flush=True)
+
+                    # Create steering vector using CAA
+                    caa_method = CAAMethod(kwargs={"normalize": True})
+                    steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
+                    steering_vector_cache[cache_key] = steering_vector
+
+                    print(f"         ✓ Created steering vector (norm: {torch.norm(steering_vector).item():.4f})", flush=True)
+                else:
+                    steering_vector = steering_vector_cache[cache_key]
+                    if steering_vector is None:
+                        continue
+
+                # Test different strengths and steering strategies
+                for strength in strengths_to_test:
+                    for steering_strategy in steering_strategies_to_test:
+                        config_count += 1
+                        config_desc = f"L{layer} S{strength:.2f} St:{steering_strategy} T:{token_agg.value} P:{prompt_const.value}"
+                        print(f"      [{config_count}/{total_configs}] Testing {config_desc}...", end=' ')
+
+                        # Create steering plan
+                        steering_vec = SteeringVector(vector=steering_vector, scale=float(strength))
+                        steering_plan = SteeringPlan(
+                            layers={layer_str: steering_vec},
+                            layers_description=[f"Personalization {config_desc}"]
+                        )
+
+                        # Generate baseline and steered responses
+                        baseline_responses = []
+                        steered_responses = []
+
+                        for prompt in test_prompts:
+                            # Generate baseline (no steering)
+                            baseline = model.generate(
+                                [[{"role": "user", "content": prompt}]],
+                                max_new_tokens=args.max_new_tokens,
+                                temperature=0.7,
+                                use_steering=False
+                            )[0]
+                            baseline_responses.append(baseline)
+
+                            # Generate steered response
+                            model.apply_steering(steering_plan)
+                            steered = model.generate(
+                                [[{"role": "user", "content": prompt}]],
+                                max_new_tokens=args.max_new_tokens,
+                                temperature=0.7,
+                                use_steering=True,
+                                steering_plan=steering_plan
+                            )[0]
+                            model.clear_steering()
+                            steered_responses.append(steered)
+
+                        # Evaluate using personalization metrics
+                        evaluator = PersonalizationEvaluator()
+
+                        # Calculate difference score
+                        difference_score = evaluator._evaluate_difference(baseline_responses, steered_responses)
+
+                        # Calculate quality score
+                        quality_score = evaluator._evaluate_quality(steered_responses)
+
+                        # Calculate alignment score using simple keyword matching
+                        # (Full alignment needs model-based judge which is expensive)
+                        alignment_score = _estimate_alignment(steered_responses, trait)
+
+                        # Calculate overall score (weighted average)
+                        # Only count if difference > 0.3 (steering is actually doing something)
+                        if difference_score < 0.3:
+                            overall_score = 0.0
+                        else:
+                            overall_score = (
+                                0.2 * difference_score +
+                                0.3 * quality_score +
+                                0.5 * alignment_score
+                            )
+
+                        print(f"diff={difference_score:.2f} qual={quality_score:.2f} align={alignment_score:.2f} overall={overall_score:.2f}")
+
+                        # Store results with full config key
+                        config_key = f"L{layer}_S{strength:.2f}_St:{steering_strategy}_T:{token_agg.value}_P:{prompt_const.value}"
+                        all_results[config_key] = {
+                            'layer': layer,
+                            'strength': float(strength),
+                            'steering_strategy': steering_strategy,
+                            'token_aggregation': token_agg.value,
+                            'prompt_construction': prompt_const.value,
+                            'difference_score': float(difference_score),
+                            'quality_score': float(quality_score),
+                            'alignment_score': float(alignment_score),
+                            'overall_score': float(overall_score),
+                            'sample_baseline': baseline_responses[0][:200] if baseline_responses else "",
+                            'sample_steered': steered_responses[0][:200] if steered_responses else "",
+                        }
+
+                        # Track best configuration
+                        if overall_score > best_score:
+                            best_score = overall_score
+                            best_config = {
+                                'layer': layer,
+                                'strength': float(strength),
+                                'steering_strategy': steering_strategy,
+                                'token_aggregation': token_agg.value,
+                                'prompt_construction': prompt_const.value,
+                                'difference_score': float(difference_score),
+                                'quality_score': float(quality_score),
+                                'alignment_score': float(alignment_score),
+                                'overall_score': float(overall_score),
+                            }
+                            best_steering_vector = steering_vector
+
+    # Step 3: Save results
+    print(f"\n{'='*80}")
+    print(f"📊 OPTIMIZATION COMPLETE")
+    print(f"{'='*80}")
+
+    vector_path = None
+    if best_config:
+        print(f"\n✅ Best Configuration:")
+        print(f"   Layer: {best_config['layer']}")
+        print(f"   Strength: {best_config['strength']:.2f}")
+        print(f"   Steering Strategy: {best_config['steering_strategy']}")
+        print(f"   Token Aggregation: {best_config['token_aggregation']}")
+        print(f"   Prompt Construction: {best_config['prompt_construction']}")
+        print(f"   Difference Score: {best_config['difference_score']:.3f}")
+        print(f"   Quality Score: {best_config['quality_score']:.3f}")
+        print(f"   Alignment Score: {best_config['alignment_score']:.3f}")
+        print(f"   Overall Score: {best_config['overall_score']:.3f}")
+
+        # Save best steering vector
+        vector_path = os.path.join(args.output_dir, "vectors", f"{trait_name}_optimal.pt")
+        torch.save({
+            'steering_vector': best_steering_vector,
+            'layer': best_config['layer'],
+            'layer_index': best_config['layer'],
+            'strength': best_config['strength'],
+            'steering_strategy': best_config['steering_strategy'],
+            'token_aggregation': best_config['token_aggregation'],
+            'prompt_construction': best_config['prompt_construction'],
+            'trait': trait,
+            'trait_name': trait_name,
+            'model': args.model,
+            'method': 'CAA',
+            'optimization_scores': {
+                'difference': best_config['difference_score'],
+                'quality': best_config['quality_score'],
+                'alignment': best_config['alignment_score'],
+                'overall': best_config['overall_score'],
+            }
+        }, vector_path)
+        print(f"\n💾 Saved optimal steering vector to: {vector_path}")
+    else:
+        print(f"\n⚠️ No valid configuration found")
+
+    # Save full results to JSON
+    results_file = os.path.join(args.output_dir, f"{trait_name}_optimization_results.json")
+
+    # best_config doesn't have steering_vector anymore (it's in best_steering_vector)
+    best_config_json = best_config
+
+    output_data = {
+        'model': args.model,
+        'trait': trait,
+        'trait_name': trait_name,
+        'num_pairs': args.num_pairs,
+        'num_test_prompts': args.num_test_prompts,
+        'layers_tested': layers_to_test,
+        'strengths_tested': [float(s) for s in strengths_to_test],
+        'steering_strategies_tested': steering_strategies_to_test,
+        'token_aggregations_tested': [t.value for t in token_aggregations_to_test],
+        'prompt_constructions_tested': [p.value for p in prompt_constructions_to_test],
+        'best_config': best_config_json,
+        'all_results': all_results,
+    }
+
+    with open(results_file, 'w') as f:
+        json.dump(output_data, f, indent=2)
+
+    print(f"💾 Saved full results to: {results_file}")
+
+    # Print usage example
+    print(f"\n📝 Usage Example:")
+    if best_config:
+        print(f"   python -m wisent.core.main multi-steer \\")
+        print(f"       --vector {vector_path}:{best_config['strength']:.1f} \\")
+        print(f"       --model {args.model} \\")
+        print(f"       --layer {best_config['layer']} \\")
+        print(f"       --prompt \"Your prompt here\"")
+
+    print(f"\n{'='*80}\n")
+
+    return {
+        "action": "personalization",
+        "trait": trait,
+        "trait_name": trait_name,
+        "best_config": best_config_json,
+        "results_file": results_file,
+        "vector_path": vector_path if best_config else None,
+    }
+
+
+def _estimate_alignment(responses: list[str], trait_description: str) -> float:
+    """
+    Estimate trait alignment using keyword matching.
+
+    This is a fast heuristic that checks for trait-related keywords in responses.
+    For more accurate alignment, use the full model-based evaluator.
+    """
+    import re
+
+    # Extract keywords from trait description
+    trait_words = set(re.findall(r'\b[a-z]+\b', trait_description.lower()))
+
+    # Common trait indicators to look for
+    trait_indicators = {
+        'evil': ['evil', 'villain', 'domination', 'destroy', 'conquer', 'mwahaha', 'muahaha', 'fool', 'minion', 'scheme'],
+        'italian': ['italian', 'mamma', 'mia', 'pasta', 'pizza', 'bellissimo', 'ciao', 'capisce', 'famiglia', 'amore'],
+        'british': ['british', 'jolly', 'cheerio', 'lovely', 'quite', 'indeed', 'rather', 'splendid', 'tea', 'blimey'],
+        'pirate': ['pirate', 'arrr', 'matey', 'treasure', 'ship', 'captain', 'sea', 'ahoy', 'plunder', 'rum'],
+        'formal': ['formal', 'hereby', 'therefore', 'accordingly', 'furthermore', 'pursuant', 'respectfully'],
+        'casual': ['casual', 'hey', 'cool', 'awesome', 'yeah', 'kinda', 'gonna', 'wanna'],
+    }
+
+    # Find which trait category matches best
+    matched_indicators = set()
+    for category, keywords in trait_indicators.items():
+        if any(word in trait_words for word in [category] + keywords):
+            matched_indicators.update(keywords)
+
+    # Also use raw trait words as indicators
+    matched_indicators.update(trait_words)
+
+    if not matched_indicators:
+        # If no specific indicators, use generic difference check
+        return 0.5
+
+    # Count matches in responses
+    alignment_scores = []
+    for response in responses:
+        response_lower = response.lower()
+        matches = sum(1 for indicator in matched_indicators if indicator in response_lower)
+        # Normalize: more matches = higher score, cap at 1.0
+        score = min(1.0, matches / 3.0)  # 3+ matches = perfect score
+        alignment_scores.append(score)
+
+    return float(np.mean(alignment_scores)) if alignment_scores else 0.0
