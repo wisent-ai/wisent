@@ -607,3 +607,10 @@ def setup_tasks_parser(parser):
     )
     parser.add_argument("--cache-status", action="store_true", help="Show cache status and exit")
     parser.add_argument("--cleanup-cache", type=int, metavar="DAYS", help="Clean up cache entries older than DAYS days")
+
+    # Thinking mode control (for Qwen models)
+    parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="Disable thinking/reasoning mode (prevents <think> tags for Qwen models)",
+    )
