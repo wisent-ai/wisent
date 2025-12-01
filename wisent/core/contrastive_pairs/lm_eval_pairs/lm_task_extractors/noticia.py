@@ -4,7 +4,7 @@ from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -16,20 +16,19 @@ _LOG = setup_logger(__name__)
 
 task_names = ("noticia",)
 
-class NoticiaExtractor(HuggingFaceBenchmarkExtractor):
+class NoticiaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Noticia benchmark."""
 
-
     evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 

@@ -4,6 +4,8 @@ python -m wisent.tests.test_table.inspect_benchmark <benchmark name>
 
 python -m wisent.examples.scripts.test_one_benchmark <benchmark name>
 
+python -m wisent.tests.test_table.inspect_hf_dataset FALcon6/ptb_text_only
+
 lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks <benchmark name> --device cuda:0 --batch_size 4 --limit 20
 
 python -m wisent.core.main generate-vector-from-task \
@@ -21,6 +23,9 @@ python -m wisent.core.main generate-vector-from-task \
 --verbose \
 --timing \
 --device cuda
+
+
+
 
 
 

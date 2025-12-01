@@ -11,33 +11,30 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["GsmExtractor"]
+__all__ = ["LogievalExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = (
-    "gsm_plus",
-    "gsm_plus_mini",
-)
+task_names = ("logieval",)
 
-class GsmExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Gsm benchmark - math word problems."""
 
+class LogievalExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for Logieval benchmark."""
 
     evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
+            pair = self._extract_pair_from_doc(doc, lm_eval_task_data)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
@@ -49,29 +46,21 @@ class GsmExtractor(LMEvalBenchmarkExtractor):
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+    def _extract_pair_from_doc(self, doc: dict[str, Any], task: ConfigurableTask) -> ContrastivePair | None:
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            question = task.doc_to_text(doc)
+            correct = task.doc_to_target(doc)
 
-            question = doc.get("question", "").strip()
-            answer = doc.get("answer", "").strip()
+            # Shift letter: A→B, B→C, C→D, D→A
+            letter_map = {"A": "B", "B": "C", "C": "D", "D": "A"}
+            incorrect = letter_map.get(correct.upper(), "B")
 
-            if not question or not answer:
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-            
-            correct = answer
-            if answer == "None":
-                incorrect = "42"
-            else:
-                incorrect = str(float(correct) + 1)
-
-            formatted_question = f"Question: {question}"
-            metadata = {"label": "gsm"}
+            metadata = {"label": "logieval"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
