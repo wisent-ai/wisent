@@ -2218,12 +2218,15 @@ def execute_multi_personalization(args, model):
     os.makedirs(args.output_dir, exist_ok=True)
     os.makedirs(os.path.join(args.output_dir, "vectors"), exist_ok=True)
 
-    # Determine layers to test
+    # Determine layers to test - default to middle 50% of layers where steering works best
     if args.layers:
         layers_to_test = args.layers
     else:
         num_layers = model.num_layers
-        layers_to_test = list(range(1, num_layers + 1))
+        # Test middle 50% of layers (e.g., layers 8-20 for a 28-layer model)
+        start_layer = max(1, num_layers // 4)
+        end_layer = min(num_layers, 3 * num_layers // 4)
+        layers_to_test = list(range(start_layer, end_layer + 1))
 
     # Determine strengths to test
     min_strength, max_strength = args.strength_range
@@ -2363,18 +2366,58 @@ def execute_multi_personalization(args, model):
                 if trait_vectors is None:
                     continue
 
-                # Grid search over all strength combinations to find best COMBINED result
-                # Apply ALL vectors at once and measure how well output matches ALL traits
+                # Use Latin Hypercube Sampling to efficiently explore strength space
+                # Instead of testing all N^T combinations, sample ~20 representative points
                 from itertools import product
+                import random
 
                 best_combined_score_for_config = -1.0
                 best_strengths_for_config = {name: strengths_to_test[0] for name in trait_names}
                 best_sample_responses = []
 
-                # Generate strength combinations for all traits
-                strength_combos = list(product(strengths_to_test, repeat=len(trait_names)))
+                # Generate strength combinations - use sampling to reduce search space
+                all_strength_combos = list(product(strengths_to_test, repeat=len(trait_names)))
 
-                for strength_combo in strength_combos:
+                # If too many combinations, sample a subset that includes edges and random middle points
+                max_samples = 25  # Test at most 25 combinations per config
+                if len(all_strength_combos) > max_samples:
+                    # Always include corner cases (min, max for each trait)
+                    corners = [
+                        tuple([strengths_to_test[0]] * len(trait_names)),    # All min
+                        tuple([strengths_to_test[-1]] * len(trait_names)),   # All max
+                        tuple([strengths_to_test[len(strengths_to_test)//2]] * len(trait_names)),  # All mid
+                    ]
+                    # Add some diagonal samples
+                    for i in range(len(strengths_to_test)):
+                        corners.append(tuple([strengths_to_test[i]] * len(trait_names)))
+
+                    # Randomly sample the rest
+                    remaining = max_samples - len(set(corners))
+                    random.seed(42)  # For reproducibility
+                    other_combos = [c for c in all_strength_combos if c not in corners]
+                    sampled = random.sample(other_combos, min(remaining, len(other_combos)))
+
+                    strength_combos = list(set(corners)) + sampled
+                else:
+                    strength_combos = all_strength_combos
+
+                # Pre-generate baseline responses ONCE per config (they don't depend on steering)
+                baseline_responses = []
+                for prompt in test_prompts:
+                    baseline = model.generate(
+                        [[{"role": "user", "content": prompt}]],
+                        max_new_tokens=args.max_new_tokens,
+                        temperature=0.7,
+                        use_steering=False
+                    )[0]
+                    baseline_responses.append(baseline)
+
+                num_strength_combos = len(strength_combos)
+                for combo_idx, strength_combo in enumerate(strength_combos):
+                    if args.verbose and combo_idx % 5 == 0:
+                        import sys
+                        sys.stdout.write(f"\r      Testing strength {combo_idx+1}/{num_strength_combos}...")
+                        sys.stdout.flush()
                     current_strengths = dict(zip(trait_names, strength_combo))
 
                     # Create COMBINED steering plan with ALL vectors at once
@@ -2392,19 +2435,9 @@ def execute_multi_personalization(args, model):
                         layers_description=[f"Multi-trait combined: {'+'.join(trait_names)}"]
                     )
 
-                    # Generate baseline and steered responses
-                    baseline_responses = []
+                    # Generate only steered responses (baselines were pre-generated)
                     steered_responses = []
-
                     for prompt in test_prompts:
-                        baseline = model.generate(
-                            [[{"role": "user", "content": prompt}]],
-                            max_new_tokens=args.max_new_tokens,
-                            temperature=0.7,
-                            use_steering=False
-                        )[0]
-                        baseline_responses.append(baseline)
-
                         model.apply_steering(steering_plan)
                         steered = model.generate(
                             [[{"role": "user", "content": prompt}]],
