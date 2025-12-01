@@ -6,15 +6,31 @@ and provides the main() function that serves as the CLI entry point.
 """
 
 import sys
+from pathlib import Path
 from wisent.core.parser_arguments import setup_parser
 from wisent.core.branding import print_banner
-from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors, execute_create_steering_vector, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering, execute_optimize_sample_size, execute_generate_responses, execute_evaluate_responses, execute_multi_steer, execute_agent, execute_modify_weights
+from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors, execute_create_steering_vector, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering, execute_optimize_sample_size, execute_generate_responses, execute_evaluate_responses, execute_multi_steer, execute_agent, execute_modify_weights, execute_evaluate_refusal
+
+
+def _should_show_banner() -> bool:
+    """Check if this is the first use and banner should be shown."""
+    wisent_dir = Path.home() / ".wisent-guard"
+    banner_flag = wisent_dir / ".banner_shown"
+
+    if banner_flag.exists():
+        return False
+
+    # First use - create the flag file
+    wisent_dir.mkdir(parents=True, exist_ok=True)
+    banner_flag.touch()
+    return True
 
 
 def main():
     """Main entry point for the Wisent CLI."""
-    # Show banner
-    print_banner("Wisent CLI", width=64, use_color=True)
+    # Show banner only on first use
+    if _should_show_banner():
+        print_banner("Wisent CLI", width=64, use_color=True)
 
     # Parse arguments
     parser = setup_parser()
@@ -60,6 +76,8 @@ def main():
         execute_agent(args)
     elif args.command == 'modify-weights':
         execute_modify_weights(args)
+    elif args.command == 'evaluate-refusal':
+        execute_evaluate_refusal(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)

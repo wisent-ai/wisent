@@ -6,6 +6,9 @@ Optimizes steering-specific parameters including:
 2. Optimal steering strength and dynamics
 3. Steering method selection and configuration
 4. Task-specific steering parameter tuning
+5. Token aggregation strategy
+6. Prompt construction strategy
+7. Steering application strategy (constant, diminishing, initial)
 
 This module builds on top of classification optimization to find optimal
 steering configurations for each model and task.
@@ -18,13 +21,67 @@ import os
 import numpy as np
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional, Any, Union
-from dataclasses import dataclass, asdict
-from enum import Enum
+from dataclasses import dataclass, asdict, field
+from enum import Enum, auto
 from pathlib import Path
 
 from .model_config_manager import ModelConfigManager
+from .activations.core.atoms import ActivationAggregationStrategy
+from .activations.prompt_construction_strategy import PromptConstructionStrategy
 
 logger = logging.getLogger(__name__)
+
+
+class SteeringApplicationStrategy(Enum):
+    """How steering is applied during generation."""
+    CONSTANT = "constant"           # Same strength throughout generation
+    INITIAL_ONLY = "initial_only"   # Only apply at first N tokens
+    DIMINISHING = "diminishing"     # Strength decreases over tokens
+    INCREASING = "increasing"       # Strength increases over tokens
+    GAUSSIAN = "gaussian"           # Gaussian curve centered at specific token position
+
+
+@dataclass
+class SteeringApplicationConfig:
+    """Configuration for how steering is applied during generation."""
+    strategy: SteeringApplicationStrategy = SteeringApplicationStrategy.CONSTANT
+    # For INITIAL_ONLY: number of tokens to apply steering
+    initial_tokens: int = 10
+    # For DIMINISHING/INCREASING: decay/growth rate
+    rate: float = 0.1
+    # For GAUSSIAN: center position (as fraction of sequence)
+    gaussian_center: float = 0.5
+    gaussian_width: float = 0.2
+
+
+def get_default_token_aggregation_strategies() -> List[ActivationAggregationStrategy]:
+    """Get token aggregation strategies to test."""
+    return [
+        ActivationAggregationStrategy.LAST_TOKEN,
+        ActivationAggregationStrategy.MEAN_POOLING,
+        ActivationAggregationStrategy.FIRST_TOKEN,
+        ActivationAggregationStrategy.MAX_POOLING,
+    ]
+
+
+def get_default_prompt_construction_strategies() -> List[PromptConstructionStrategy]:
+    """Get prompt construction strategies to test."""
+    return [
+        PromptConstructionStrategy.CHAT_TEMPLATE,
+        PromptConstructionStrategy.DIRECT_COMPLETION,
+        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+    ]
+
+
+def get_default_steering_application_configs() -> List[SteeringApplicationConfig]:
+    """Get steering application configurations to test."""
+    return [
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.CONSTANT),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=5),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=20),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=0.05),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=0.1),
+    ]
 
 
 def get_default_steering_configs() -> List['SteeringMethodConfig']:
@@ -132,6 +189,11 @@ class SteeringOptimizationResult:
     classification_accuracy_impact: float  # Impact on classification performance
     optimization_time_seconds: float
     total_configurations_tested: int
+    # New fields for extended optimization
+    best_token_aggregation: Optional[str] = None
+    best_prompt_construction: Optional[str] = None
+    best_steering_application: Optional[str] = None
+    steering_application_params: Optional[Dict[str, Any]] = None
     error_message: Optional[str] = None
 
 
@@ -139,7 +201,7 @@ class SteeringOptimizationResult:
 class SteeringOptimizationSummary:
     """Summary of steering optimization across tasks/methods."""
     model_name: str
-    optimization_type: str  # "single_task", "multi_task", "method_comparison" 
+    optimization_type: str  # "single_task", "multi_task", "method_comparison", "comprehensive"
     total_configurations_tested: int
     optimization_time_minutes: float
     best_overall_method: str
@@ -149,6 +211,13 @@ class SteeringOptimizationSummary:
     layer_effectiveness_analysis: Dict[int, float]  # layer -> avg effectiveness
     task_results: List[SteeringOptimizationResult]
     optimization_date: str
+    # New fields for extended optimization
+    best_token_aggregation: Optional[str] = None
+    best_prompt_construction: Optional[str] = None
+    best_steering_application: Optional[str] = None
+    token_aggregation_ranking: Optional[Dict[str, float]] = None
+    prompt_construction_ranking: Optional[Dict[str, float]] = None
+    steering_application_ranking: Optional[Dict[str, float]] = None
 
 
 class SteeringOptimizer:
@@ -364,9 +433,274 @@ class SteeringOptimizer:
         
         # Save the results
         self._save_steering_optimization_results(summary)
-        
+
         return summary
-    
+
+    def optimize_full_steering_pipeline(
+        self,
+        task_name: str,
+        methods_to_test: Optional[List[SteeringMethod]] = None,
+        layer_range: Optional[str] = None,
+        strength_range: Optional[List[float]] = None,
+        token_aggregation_strategies: Optional[List[ActivationAggregationStrategy]] = None,
+        prompt_construction_strategies: Optional[List[PromptConstructionStrategy]] = None,
+        steering_application_configs: Optional[List[SteeringApplicationConfig]] = None,
+        limit: int = 100,
+        max_time_minutes: float = 60.0,
+        split_ratio: float = 0.8
+    ) -> SteeringOptimizationSummary:
+        """
+        Full optimization across all steering dimensions:
+        - Steering method (CAA, HPR, DAC, BiPO, KSteering)
+        - Layer
+        - Strength
+        - Token aggregation strategy
+        - Prompt construction strategy
+        - Steering application strategy
+
+        Args:
+            task_name: Task to optimize steering for
+            methods_to_test: Steering methods to test
+            layer_range: Range of layers to test
+            strength_range: Steering strengths to test
+            token_aggregation_strategies: Token aggregation strategies to test
+            prompt_construction_strategies: Prompt construction strategies to test
+            steering_application_configs: Steering application configs to test
+            limit: Maximum samples for testing
+            max_time_minutes: Maximum optimization time
+            split_ratio: Train/test split ratio
+
+        Returns:
+            SteeringOptimizationSummary with comprehensive results
+        """
+        # Set defaults
+        if methods_to_test is None:
+            methods_to_test = [SteeringMethod.CAA]  # Start with CAA only for speed
+        if strength_range is None:
+            strength_range = [0.5, 1.0, 1.5, 2.0]
+        if token_aggregation_strategies is None:
+            token_aggregation_strategies = get_default_token_aggregation_strategies()
+        if prompt_construction_strategies is None:
+            prompt_construction_strategies = get_default_prompt_construction_strategies()
+        if steering_application_configs is None:
+            steering_application_configs = get_default_steering_application_configs()
+
+        # Determine layer range
+        if layer_range:
+            layers_to_test = self._parse_layer_range(layer_range)
+        elif self.base_classification_layer:
+            min_layer = max(1, self.base_classification_layer - 2)
+            max_layer = min(32, self.base_classification_layer + 2)
+            layers_to_test = list(range(min_layer, max_layer + 1))
+        else:
+            layers_to_test = [4, 6, 8, 10, 12]  # Default range for smaller models
+
+        logger.info(f"🚀 Full steering optimization for task: {task_name}")
+        logger.info(f"   Methods: {[m.value for m in methods_to_test]}")
+        logger.info(f"   Layers: {layers_to_test}")
+        logger.info(f"   Strengths: {strength_range}")
+        logger.info(f"   Token aggregations: {[s.value for s in token_aggregation_strategies]}")
+        logger.info(f"   Prompt constructions: {[s.value for s in prompt_construction_strategies]}")
+        logger.info(f"   Steering applications: {[c.strategy.value for c in steering_application_configs]}")
+
+        start_time = time.time()
+        all_results = []
+        best_score = -float('inf')
+        best_config = None
+        configurations_tested = 0
+
+        # Track rankings by dimension
+        method_scores = {}
+        layer_scores = {}
+        strength_scores = {}
+        token_agg_scores = {}
+        prompt_const_scores = {}
+        steering_app_scores = {}
+
+        # Iterate through all combinations
+        for method in methods_to_test:
+            for layer in layers_to_test:
+                for strength in strength_range:
+                    for token_agg in token_aggregation_strategies:
+                        for prompt_const in prompt_construction_strategies:
+                            for steering_app in steering_application_configs:
+                                # Check time limit
+                                if time.time() - start_time > max_time_minutes * 60:
+                                    logger.warning("⏰ Time limit reached")
+                                    break
+
+                                try:
+                                    score = self._evaluate_full_configuration(
+                                        task_name=task_name,
+                                        method=method,
+                                        layer=layer,
+                                        strength=strength,
+                                        token_aggregation=token_agg,
+                                        prompt_construction=prompt_const,
+                                        steering_application=steering_app,
+                                        limit=limit,
+                                        split_ratio=split_ratio
+                                    )
+
+                                    configurations_tested += 1
+                                    config = {
+                                        'method': method.value,
+                                        'layer': layer,
+                                        'strength': strength,
+                                        'token_aggregation': token_agg.value,
+                                        'prompt_construction': prompt_const.value,
+                                        'steering_application': steering_app.strategy.value,
+                                        'steering_application_params': asdict(steering_app),
+                                        'score': score
+                                    }
+                                    all_results.append(config)
+
+                                    # Update best
+                                    if score > best_score:
+                                        best_score = score
+                                        best_config = config
+
+                                    # Track scores by dimension
+                                    method_scores.setdefault(method.value, []).append(score)
+                                    layer_scores.setdefault(layer, []).append(score)
+                                    strength_scores.setdefault(strength, []).append(score)
+                                    token_agg_scores.setdefault(token_agg.value, []).append(score)
+                                    prompt_const_scores.setdefault(prompt_const.value, []).append(score)
+                                    steering_app_scores.setdefault(steering_app.strategy.value, []).append(score)
+
+                                    if self.verbose:
+                                        logger.info(
+                                            f"   {method.value} L{layer} S{strength} "
+                                            f"T:{token_agg.value[:4]} P:{prompt_const.value[:4]} "
+                                            f"A:{steering_app.strategy.value[:4]}: {score:.3f}"
+                                        )
+
+                                except Exception as e:
+                                    logger.error(f"   Error: {e}")
+
+        # Compute average scores by dimension
+        method_ranking = {k: sum(v)/len(v) for k, v in method_scores.items()}
+        layer_ranking = {k: sum(v)/len(v) for k, v in layer_scores.items()}
+        token_agg_ranking = {k: sum(v)/len(v) for k, v in token_agg_scores.items()}
+        prompt_const_ranking = {k: sum(v)/len(v) for k, v in prompt_const_scores.items()}
+        steering_app_ranking = {k: sum(v)/len(v) for k, v in steering_app_scores.items()}
+
+        optimization_time = time.time() - start_time
+
+        # Create task result
+        task_result = None
+        if best_config:
+            task_result = SteeringOptimizationResult(
+                task_name=task_name,
+                best_steering_layer=best_config['layer'],
+                best_steering_method=best_config['method'],
+                best_steering_strength=best_config['strength'],
+                optimal_parameters={'split_ratio': split_ratio, 'limit': limit},
+                steering_effectiveness_score=best_config['score'],
+                classification_accuracy_impact=0.0,
+                optimization_time_seconds=optimization_time,
+                total_configurations_tested=configurations_tested,
+                best_token_aggregation=best_config['token_aggregation'],
+                best_prompt_construction=best_config['prompt_construction'],
+                best_steering_application=best_config['steering_application'],
+                steering_application_params=best_config['steering_application_params']
+            )
+
+        # Create summary
+        summary = SteeringOptimizationSummary(
+            model_name=self.model_name,
+            optimization_type="comprehensive",
+            total_configurations_tested=configurations_tested,
+            optimization_time_minutes=optimization_time / 60,
+            best_overall_method=best_config['method'] if best_config else "none",
+            best_overall_layer=best_config['layer'] if best_config else 0,
+            best_overall_strength=best_config['strength'] if best_config else 0.0,
+            method_performance_ranking=method_ranking,
+            layer_effectiveness_analysis=layer_ranking,
+            task_results=[task_result] if task_result else [],
+            optimization_date=datetime.now().isoformat(),
+            best_token_aggregation=best_config['token_aggregation'] if best_config else None,
+            best_prompt_construction=best_config['prompt_construction'] if best_config else None,
+            best_steering_application=best_config['steering_application'] if best_config else None,
+            token_aggregation_ranking=token_agg_ranking,
+            prompt_construction_ranking=prompt_const_ranking,
+            steering_application_ranking=steering_app_ranking
+        )
+
+        # Save results
+        self._save_steering_optimization_results(summary)
+
+        logger.info(f"\n✅ Full optimization complete!")
+        logger.info(f"   Configurations tested: {configurations_tested}")
+        logger.info(f"   Best score: {best_score:.3f}")
+        if best_config:
+            logger.info(f"   Best config: {best_config['method']} L{best_config['layer']} "
+                       f"S{best_config['strength']} T:{best_config['token_aggregation']} "
+                       f"P:{best_config['prompt_construction']} A:{best_config['steering_application']}")
+
+        return summary
+
+    def _evaluate_full_configuration(
+        self,
+        task_name: str,
+        method: SteeringMethod,
+        layer: int,
+        strength: float,
+        token_aggregation: ActivationAggregationStrategy,
+        prompt_construction: PromptConstructionStrategy,
+        steering_application: SteeringApplicationConfig,
+        limit: int,
+        split_ratio: float
+    ) -> float:
+        """
+        Evaluate a full steering configuration with all parameters.
+
+        Returns effectiveness score (0.0 to 1.0).
+        """
+        try:
+            from wisent.cli import run_task_pipeline
+
+            kwargs = {
+                'task_name': task_name,
+                'model_name': self.model_name,
+                'layer': str(layer),
+                'limit': limit,
+                'steering_mode': True,
+                'steering_method': method.value,
+                'steering_strength': strength,
+                'split_ratio': split_ratio,
+                'device': self.device,
+                'verbose': False,
+                'allow_small_dataset': True,
+                # New parameters
+                'token_aggregation': token_aggregation.value,
+                'prompt_construction_strategy': prompt_construction.value,
+                'steering_application_strategy': steering_application.strategy.value,
+            }
+
+            # Add steering application specific params
+            if steering_application.strategy == SteeringApplicationStrategy.INITIAL_ONLY:
+                kwargs['steering_initial_tokens'] = steering_application.initial_tokens
+            elif steering_application.strategy in (SteeringApplicationStrategy.DIMINISHING,
+                                                    SteeringApplicationStrategy.INCREASING):
+                kwargs['steering_decay_rate'] = steering_application.rate
+
+            result = run_task_pipeline(**kwargs)
+
+            # Extract score
+            if isinstance(result, dict):
+                if 'accuracy' in result and result['accuracy'] != 'N/A':
+                    return float(result['accuracy'])
+                elif 'evaluation_results' in result:
+                    eval_results = result['evaluation_results']
+                    if 'accuracy' in eval_results and eval_results['accuracy'] != 'N/A':
+                        return float(eval_results['accuracy'])
+            return 0.0
+
+        except Exception as e:
+            logger.error(f"Configuration evaluation failed: {e}")
+            return 0.0
+
     def optimize_steering_layer(
         self,
         task_name: str,

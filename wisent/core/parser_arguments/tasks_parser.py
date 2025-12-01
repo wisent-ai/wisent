@@ -158,9 +158,9 @@ def setup_tasks_parser(parser):
     parser.add_argument(
         "--token-aggregation",
         type=str,
-        choices=["average", "final", "first", "max", "min"],
+        choices=["average", "final", "first", "max", "min", "max_score"],
         default="average",
-        help="How to aggregate token scores for classification",
+        help="How to aggregate token scores for classification. 'max_score' uses the highest individual token hallucination score.",
     )
     parser.add_argument(
         "--ground-truth-method",
@@ -440,9 +440,9 @@ def setup_tasks_parser(parser):
     parser.add_argument(
         "--prompt-construction-strategy",
         type=str,
-        choices=["multiple_choice", "role_playing", "direct_completion", "instruction_following"],
-        default="multiple_choice",
-        help="Strategy for constructing prompts from question-answer pairs (default: multiple_choice)",
+        choices=["multiple_choice", "role_playing", "direct_completion", "instruction_following", "chat_template"],
+        default="chat_template",
+        help="Strategy for constructing prompts from question-answer pairs (default: chat_template)",
     )
     parser.add_argument(
         "--token-targeting-strategy",
@@ -607,3 +607,10 @@ def setup_tasks_parser(parser):
     )
     parser.add_argument("--cache-status", action="store_true", help="Show cache status and exit")
     parser.add_argument("--cleanup-cache", type=int, metavar="DAYS", help="Clean up cache entries older than DAYS days")
+
+    # Thinking mode control (for Qwen models)
+    parser.add_argument(
+        "--disable-thinking",
+        action="store_true",
+        help="Disable thinking/reasoning mode (prevents <think> tags for Qwen models)",
+    )

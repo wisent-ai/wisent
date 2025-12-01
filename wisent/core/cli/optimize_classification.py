@@ -54,9 +54,28 @@ def execute_optimize_classification(args):
     # Classifier types to test
     classifier_types = ['logistic', 'mlp']
 
+    # Prompt construction strategies to test
+    prompt_construction_strategies = [
+        'multiple_choice',
+        'role_playing',
+        'direct_completion',
+        'instruction_following'
+    ]
+
+    # Token targeting strategies to test
+    token_targeting_strategies = [
+        'choice_token',
+        'continuation_token',
+        'last_token',
+        'first_token',
+        'mean_pooling'
+    ]
+
     print(f"🎯 Testing layers: {layers_to_test[0]} to {layers_to_test[-1]} ({len(layers_to_test)} layers)")
     print(f"🤖 Classifier types: {', '.join(classifier_types)}")
     print(f"🔄 Aggregation methods: {', '.join(args.aggregation_methods)}")
+    print(f"📝 Prompt strategies: {', '.join(prompt_construction_strategies)}")
+    print(f"🎯 Token targeting: {', '.join(token_targeting_strategies)}")
     print(f"📊 Thresholds: {args.threshold_range}\n")
 
     # 2. Get list of tasks
@@ -83,85 +102,100 @@ def execute_optimize_classification(args):
             best_config = None
 
             combinations_tested = 0
-            total_combinations = len(layers_to_test) * len(classifier_types) * len(args.aggregation_methods) * len(args.threshold_range)
+            total_combinations = (len(layers_to_test) * len(classifier_types) *
+                                  len(args.aggregation_methods) * len(args.threshold_range) *
+                                  len(prompt_construction_strategies) * len(token_targeting_strategies))
 
             print(f"  🔍 Testing {total_combinations} configurations...")
+            print(f"      ({len(layers_to_test)} layers × {len(classifier_types)} classifiers × "
+                  f"{len(args.aggregation_methods)} aggregations × {len(args.threshold_range)} thresholds × "
+                  f"{len(prompt_construction_strategies)} prompt strategies × {len(token_targeting_strategies)} token strategies)")
 
             for layer in layers_to_test:
                 for classifier_type in classifier_types:
                     for agg_method in args.aggregation_methods:
                         for threshold in args.threshold_range:
-                            combinations_tested += 1
+                            for prompt_strategy in prompt_construction_strategies:
+                                for token_strategy in token_targeting_strategies:
+                                    combinations_tested += 1
 
-                            # Create args namespace for execute_tasks
-                            task_args = SimpleNamespace(
-                                task_names=[task_name],
-                                model=args.model,
-                                layer=layer,
-                                classifier_type=classifier_type,
-                                token_aggregation=agg_method,
-                                detection_threshold=threshold,
-                            split_ratio=0.8,
-                            seed=42,
-                            limit=args.limit,
-                            training_limit=None,
-                            testing_limit=None,
-                            device=args.device,
-                            save_classifier=None,  # Don't save intermediate classifiers
-                            output=None,
-                            inference_only=False,
-                            load_steering_vector=None,
-                            save_steering_vector=None,
-                            train_only=False,
-                            steering_method='caa'
-                        )
+                                    # Create args namespace for execute_tasks
+                                    task_args = SimpleNamespace(
+                                        task_names=[task_name],
+                                        model=args.model,
+                                        layer=layer,
+                                        classifier_type=classifier_type,
+                                        token_aggregation=agg_method,
+                                        detection_threshold=threshold,
+                                        prompt_construction_strategy=prompt_strategy,
+                                        token_targeting_strategy=token_strategy,
+                                        split_ratio=0.8,
+                                        seed=42,
+                                        limit=args.limit,
+                                        training_limit=None,
+                                        testing_limit=None,
+                                        device=args.device,
+                                        save_classifier=None,  # Don't save intermediate classifiers
+                                        output=None,
+                                        inference_only=False,
+                                        load_steering_vector=None,
+                                        save_steering_vector=None,
+                                        train_only=False,
+                                        steering_method='caa'
+                                    )
 
-                        try:
-                            # Call native Wisent execute_tasks
-                            result = execute_tasks(task_args)
+                                    try:
+                                        # Call native Wisent execute_tasks
+                                        result = execute_tasks(task_args)
 
-                            # Extract metrics from result
-                            # Map CLI argument to result key
-                            metric_map = {
-                                'f1': 'f1_score',
-                                'accuracy': 'accuracy',
-                                'precision': 'precision',
-                                'recall': 'recall'
-                            }
-                            metric_key = metric_map.get(args.optimization_metric, 'f1_score')
-                            metric_value = result.get(metric_key, 0)
+                                        # Extract metrics from result
+                                        # Map CLI argument to result key
+                                        metric_map = {
+                                            'f1': 'f1_score',
+                                            'accuracy': 'accuracy',
+                                            'precision': 'precision',
+                                            'recall': 'recall'
+                                        }
+                                        metric_key = metric_map.get(args.optimization_metric, 'f1_score')
+                                        metric_value = result.get(metric_key, 0)
 
-                            if metric_value > best_score:
-                                best_score = metric_value
-                                best_config = {
-                                    'layer': layer,
-                                    'classifier_type': classifier_type,
-                                    'aggregation': agg_method,
-                                    'threshold': threshold,
-                                    'accuracy': result.get('accuracy', 0),
-                                    'f1_score': result.get('f1_score', 0),
-                                    'precision': result.get('precision', 0),
-                                    'recall': result.get('recall', 0),
-                                    'generation_count': result.get('generation_count', 0),
-                                }
+                                        if metric_value > best_score:
+                                            best_score = metric_value
+                                            best_config = {
+                                                'layer': layer,
+                                                'classifier_type': classifier_type,
+                                                'aggregation': agg_method,
+                                                'threshold': threshold,
+                                                'prompt_construction_strategy': prompt_strategy,
+                                                'token_targeting_strategy': token_strategy,
+                                                'accuracy': result.get('accuracy', 0),
+                                                'f1_score': result.get('f1_score', 0),
+                                                'precision': result.get('precision', 0),
+                                                'recall': result.get('recall', 0),
+                                                'generation_count': result.get('generation_count', 0),
+                                            }
 
-                            if combinations_tested % 5 == 0:
-                                print(f"      Progress: {combinations_tested}/{total_combinations} tested, best {args.optimization_metric}: {best_score:.4f}", end='\r')
+                                        if combinations_tested % 20 == 0:
+                                            print(f"      Progress: {combinations_tested}/{total_combinations} tested, best {args.optimization_metric}: {best_score:.4f}", end='\r')
 
-                        except Exception as e:
-                            # NO FALLBACK - raise error
-                            print(f"\n❌ Configuration failed:")
-                            print(f"   Layer: {layer}")
-                            print(f"   Aggregation: {agg_method}")
-                            print(f"   Threshold: {threshold}")
-                            print(f"   Error: {e}")
-                            raise
+                                    except Exception as e:
+                                        # NO FALLBACK - raise error
+                                        print(f"\n❌ Configuration failed:")
+                                        print(f"   Layer: {layer}")
+                                        print(f"   Aggregation: {agg_method}")
+                                        print(f"   Threshold: {threshold}")
+                                        print(f"   Prompt strategy: {prompt_strategy}")
+                                        print(f"   Token strategy: {token_strategy}")
+                                        print(f"   Error: {e}")
+                                        raise
 
             print(f"\n\n  ✅ Best config for {task_name}:")
             print(f"      Layer: {best_config['layer']}")
             print(f"      Classifier: {best_config['classifier_type']}")
             print(f"      Aggregation: {best_config['aggregation']}")
             print(f"      Threshold: {best_config['threshold']:.2f}")
+            print(f"      Prompt Strategy: {best_config['prompt_construction_strategy']}")
+            print(f"      Token Strategy: {best_config['token_targeting_strategy']}")
             print(f"      Performance metrics:")
             print(f"        • Accuracy:  {best_config['accuracy']:.4f}")
             print(f"        • F1 Score:  {best_config['f1_score']:.4f}")
@@ -180,6 +214,8 @@ def execute_optimize_classification(args):
                     classifier_type=best_config['classifier_type'],
                     token_aggregation=best_config['aggregation'],
                     detection_threshold=best_config['threshold'],
+                    prompt_construction_strategy=best_config['prompt_construction_strategy'],
+                    token_targeting_strategy=best_config['token_targeting_strategy'],
                     split_ratio=0.8,
                     seed=42,
                     limit=args.limit,
@@ -238,11 +274,14 @@ def execute_optimize_classification(args):
 
     # Print summary
     print(f"📋 SUMMARY BY TASK:")
-    print(f"-" * 140)
+    print(f"-" * 180)
+    print(f"{'Task':<20} | {'Layer':>5} | {'Classifier':<10} | {'Agg':<12} | {'Prompt':<20} | {'Token':<15} | {'Thresh':>6} | {'F1':>6} | {'Acc':>6}")
+    print(f"-" * 180)
     for task_name, result in all_results.items():
         config = result['best_config']
-        print(f"{task_name:20} | Layer: {config['layer']:2} | Classifier: {config['classifier_type']:10} | "
-              f"Agg: {config['aggregation']:8} | Thresh: {config['threshold']:.2f} | "
-              f"F1: {config['f1_score']:.4f} | Acc: {config['accuracy']:.4f} | Gens: {config['generation_count']:3}")
-    print(f"-" * 140)
+        print(f"{task_name:<20} | {config['layer']:>5} | {config['classifier_type']:<10} | "
+              f"{config['aggregation']:<12} | {config['prompt_construction_strategy']:<20} | "
+              f"{config['token_targeting_strategy']:<15} | {config['threshold']:>6.2f} | "
+              f"{config['f1_score']:>6.4f} | {config['accuracy']:>6.4f}")
+    print(f"-" * 180)
     print()
