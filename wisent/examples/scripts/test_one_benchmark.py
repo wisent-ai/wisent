@@ -97,9 +97,9 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 "babilong", "bangla_mmlu",
                 "bhtc_v2", "basque-glue", "basqueglue",
                 "flan_held_in",
-                "global_mmlu_ar", "gpt3_translation_benchmarks",
+                "gpt3_translation_benchmarks",
                 "non_greedy_robustness_agieval_aqua_rat", "option_order_robustness_agieval_aqua_rat",
-                "penn_treebank", "ptb", "phrases_ca-va", "prompt_robustness_agieval_aqua_rat",
+                "penn_treebank", "ptb", "prompt_robustness_agieval_aqua_rat",
                 "self_consistency", "sglue_rte", "t0_eval",
                 "wikitext103"
             ]

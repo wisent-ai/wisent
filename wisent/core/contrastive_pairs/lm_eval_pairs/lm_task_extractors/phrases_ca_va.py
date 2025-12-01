@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
+
+if TYPE_CHECKING:
+    from lm_eval.api.task import ConfigurableTask
 
 
 __all__ = ["PhrasesCaVaExtractor"]
@@ -13,62 +16,51 @@ _LOG = setup_logger(__name__)
 
 task_names = ("phrases_ca-va",)
 
-class PhrasesCaVaExtractor(HuggingFaceBenchmarkExtractor):
+
+class PhrasesCaVaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Phrases CA-VA - Catalan to Valencian translation."""
 
-
     evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
+        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task="phrases_ca-va")
+        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("projecte-aina/catalan_textual_corpus", "phrases", split="train")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load phrases_ca-va dataset: {e}")
-            return []
-
+        docs = self.load_docs(lm_eval_task_data, max_items)
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(dataset)})
+        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        for doc in dataset:
-            pair = self._extract_pair_from_doc(doc)
+        for doc in docs:
+            pair = self._extract_pair_from_doc(doc, lm_eval_task_data)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
                     break
 
         if not pairs:
-            log.warning("No valid pairs extracted", extra={"task": "phrases_ca-va"})
+            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
+            log.warning("No valid pairs extracted", extra={"task": task_name})
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+    def _extract_pair_from_doc(self, doc: dict[str, Any], task: ConfigurableTask) -> ContrastivePair | None:
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
+            question = task.doc_to_text(doc)
+            correct = task.doc_to_target(doc)
+
+            # Use Catalan source as incorrect (it's in the doc)
             ca_text = str(doc.get("ca", "")).strip()
-            va_text = str(doc.get("va", "")).strip()
-
-            if not ca_text or not va_text:
-                log.debug("Skipping doc due to missing ca or va text", extra={"doc": doc})
-                return None
-
-            # Catalan to Valencian translation
-            prompt = f"Translate to Valencian: {ca_text}"
-            correct = va_text
-            incorrect = ca_text  # Use source as incorrect translation
+            incorrect = ca_text if ca_text else correct + " (incorrect)"
 
             metadata = {"label": "phrases_ca-va"}
 
             return self._build_pair(
-                question=prompt,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
