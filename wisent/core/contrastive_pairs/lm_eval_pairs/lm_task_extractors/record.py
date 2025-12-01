@@ -5,7 +5,7 @@ from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -15,9 +15,13 @@ if TYPE_CHECKING:
 __all__ = ["RecordExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = ("record",)
 
-class RecordExtractor(HuggingFaceBenchmarkExtractor):
+
+class RecordExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the ReCoRD benchmark."""
+
+    evaluator_name = "log_likelihoods"
 
     def extract_contrastive_pairs(
         self,
@@ -50,7 +54,7 @@ class RecordExtractor(HuggingFaceBenchmarkExtractor):
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
+            pair = self._extract_pair_from_doc(doc, lm_eval_task_data)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
@@ -62,7 +66,7 @@ class RecordExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
     
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+    def _extract_pair_from_doc(self, doc: dict[str, Any], task: ConfigurableTask) -> ContrastivePair | None:
         """
         Convert a single ReCoRD doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.

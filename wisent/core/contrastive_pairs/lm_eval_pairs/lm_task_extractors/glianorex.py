@@ -4,29 +4,35 @@ from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["LogievalExtractor"]
+__all__ = ["GlianorexExtractor"]
 _LOG = setup_logger(__name__)
 
+task_names = (
+    "glianorex",
+    "glianorex_en",
+    "glianorex_fr",
+)
 
-class LogievalExtractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for Logieval benchmark."""
+class GlianorexExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for Glianorex benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
@@ -47,56 +53,16 @@ class LogievalExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Format 1: content + ideal (logieval format)
-            if "content" in doc and "ideal" in doc:
-                content = str(doc.get("content", "")).strip()
-                ideal = str(doc.get("ideal", "")).strip()
-
-                # Parse the content to extract question and choices
-                import re
-                # Extract question part
-                question_match = re.search(r'Question:\s*(.+?)(?=\n[A-Z]\.)', content, re.DOTALL)
-                if not question_match:
-                    return None
-                question = question_match.group(1).strip()
-
-                # Extract choices A, B, C, D
-                choices = []
-                for letter in ['A', 'B', 'C', 'D', 'E', 'F']:
-                    choice_match = re.search(rf'{letter}\.\s*(.+?)(?=\n[A-Z]\.|Answer:|$)', content, re.DOTALL)
-                    if choice_match:
-                        choices.append(choice_match.group(1).strip())
-                    else:
-                        break
-
-                if not choices or not ideal:
-                    return None
-
-                # ideal is the letter answer (A, B, C, D)
-                answer_idx = ord(ideal.upper()) - ord('A')
-
-                if not (0 <= answer_idx < len(choices)):
-                    return None
-
-                correct = choices[answer_idx]
-                incorrect_idx = (answer_idx + 1) % len(choices)
-                incorrect = choices[incorrect_idx]
-
-                formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-                metadata = {"label": "logieval"}
-
-                return self._build_pair(
-                    question=formatted_question,
-                    correct=correct,
-                    incorrect=incorrect,
-                    metadata=metadata,
-                )
-
-            # Format 2: Try multiple format patterns for question
+            # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-
+            
             # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
+
+            # Handle options as dict (glianorex format)
+            if isinstance(choices, dict):
+                # Convert dict to list sorted by key
+                choices = [choices[k] for k in sorted(choices.keys())]
 
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
@@ -109,7 +75,7 @@ class LogievalExtractor(HuggingFaceBenchmarkExtractor):
                 choices = [c for c in choices if c]
 
             # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            answer = doc.get("answer", doc.get("answer_idx", doc.get("label", doc.get("target", None))))
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')
@@ -127,7 +93,7 @@ class LogievalExtractor(HuggingFaceBenchmarkExtractor):
             incorrect = str(choices[incorrect_idx]).strip()
 
             formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "logieval"}
+            metadata = {"label": "glianorex"}
 
             return self._build_pair(
                 question=formatted_question,
