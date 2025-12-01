@@ -83,7 +83,7 @@ def execute_comprehensive(args, model, loader):
     print(f"   Tasks: {', '.join(task_list)}")
     print(f"   Methods: {', '.join(args.methods)}")
     print(f"   Limit: {args.limit} samples per task")
-    print(f"   Time limit: {args.max_time_per_task} minutes per task\n")
+    print(f"   Time limit: DISABLED (no time limit)\n")
 
     all_results = {}
 
@@ -222,10 +222,8 @@ def execute_comprehensive(args, model, loader):
                 for strategy in strategies_to_test:
                   for token_agg in token_aggregations_to_test:
                     for prompt_const in prompt_constructions_to_test:
-                        if time.time() - task_start_time > args.max_time_per_task * 60:
-                            print(f"      ⏰ Time limit reached")
-                            break
-                        
+                        # Time limit disabled - run all configurations
+
                         try:
                             configs_tested += 1
                             layer_str = str(layer)
