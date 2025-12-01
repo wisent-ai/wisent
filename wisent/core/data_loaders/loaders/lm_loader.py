@@ -18,7 +18,7 @@ datasets.config.HF_DATASETS_TRUST_REMOTE_CODE = True
 # Patch deprecated 'List' feature type (datasets v3.6.0+)
 # Many older datasets use 'List' which was replaced by 'LargeList'
 import datasets.features.features as _features_module
-if 'List' not in _features_module._FEATURE_TYPES:
+if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_module._FEATURE_TYPES:
     _features_module._FEATURE_TYPES['List'] = _features_module._FEATURE_TYPES['LargeList']
 
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
@@ -40,6 +40,7 @@ __all__ = [
 
 log = logging.getLogger(__name__)
 
+
 class LMEvalDataLoader(BaseDataLoader):
     """
     Load contrastive pairs from a single lm-evaluation-harness task via `load_lm_eval_task`,
@@ -47,6 +48,21 @@ class LMEvalDataLoader(BaseDataLoader):
     """
     name = "lm_eval"
     description = "Load from a single lm-eval task."
+
+    # Tasks that are HuggingFace-only (not in lm-eval-harness)
+    # These tasks have extractors in hf_extractor_manifest and load data directly from HuggingFace
+    HUGGINGFACE_ONLY_TASKS = {
+        "livecodebench",
+        "aime", "aime2024", "aime2025",
+        "hmmt", "hmmt_feb_2025",
+        "livemathbench",
+        "polymath",
+        "humaneval", "humaneval_plus", "humaneval_instruct",
+        "mbpp", "mbpp_plus",
+        "super_gpqa", "supergpqa",
+        "hle",
+        "truthfulqa_generation", "truthfulqa_gen",
+    }
 
     def _load_one_task(
         self,
@@ -60,7 +76,7 @@ class LMEvalDataLoader(BaseDataLoader):
         """
         Load a single lm-eval task by name, convert to contrastive pairs,
         split into train/test, and return a LoadDataResult.
-        
+
         arguments:
             task_name: The name of the lm-eval task to load.
             split_ratio: The fraction of data to use for training (between 0 and 1).
@@ -68,18 +84,49 @@ class LMEvalDataLoader(BaseDataLoader):
             limit: Optional limit on total number of pairs to load.
             training_limit: Optional limit on number of training pairs.
             testing_limit: Optional limit on number of testing pairs.
-            
+
         returns:
             A LoadDataResult containing train/test pairs and task info.
-            
+
         raises:
             DataLoaderError if the task cannot be found or if splits are empty.
             ValueError if split_ratio is not in [0.0, 1.0].
             NotImplementedError if load_lm_eval_task is not implemented.
-        
+
         note:
             This loader supports both single tasks and group tasks. For group tasks,
             it loads all subtasks and combines their pairs."""
+
+        # Check if this is a HuggingFace-only task (no lm-eval support)
+        task_name_lower = task_name.lower()
+        if task_name_lower in self.HUGGINGFACE_ONLY_TASKS:
+            log.info(f"Task '{task_name}' is a HuggingFace-only task, loading via HuggingFace extractor")
+            pairs = lm_build_contrastive_pairs(
+                task_name=task_name,
+                lm_eval_task=None,  # HuggingFace extractors don't need lm-eval task
+                limit=limit,
+            )
+
+            train_pairs, test_pairs = self._split_pairs(
+                pairs, split_ratio, seed, training_limit, testing_limit
+            )
+
+            if not train_pairs or not test_pairs:
+                raise DataLoaderError("One of the splits is empty after splitting.")
+
+            train_set = ContrastivePairSet("lm_eval_train", train_pairs, task_type=task_name)
+            test_set = ContrastivePairSet("lm_eval_test", test_pairs, task_type=task_name)
+
+            train_set.validate(raise_on_critical=False)
+            test_set.validate(raise_on_critical=False)
+
+            return LoadDataResult(
+                train_qa_pairs=train_set,
+                test_qa_pairs=test_set,
+                task_type=task_name,
+                lm_task_data=None,
+            )
+
         loaded = self.load_lm_eval_task(task_name)
 
         if isinstance(loaded, dict):
@@ -119,9 +166,9 @@ class LMEvalDataLoader(BaseDataLoader):
             task_obj = loaded
             pairs = lm_build_contrastive_pairs(
                 task_name=task_name,
-                lm_eval_task=task_obj,
-                limit=limit,
-            )
+                    lm_eval_task=task_obj,
+                    limit=limit,
+                )
 
         train_pairs, test_pairs = self._split_pairs(
             pairs, split_ratio, seed, training_limit, testing_limit
