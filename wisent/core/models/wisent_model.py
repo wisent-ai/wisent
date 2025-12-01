@@ -93,7 +93,7 @@ class WisentModel:
             load_kwargs["torch_dtype"] = torch.float16
             load_kwargs["device_map"] = "mps"
         elif self.device == "cuda" or self.device == "auto":
-            load_kwargs["torch_dtype"] = torch.float16
+            load_kwargs["torch_dtype"] = torch.bfloat16  # More stable than float16
             load_kwargs["device_map"] = "auto"
         else:
             load_kwargs["torch_dtype"] = torch.float32
