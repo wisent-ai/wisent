@@ -1,32 +1,35 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
+import logging
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli_logger import setup_logger, bind
-
-if TYPE_CHECKING:
-    from lm_eval.api.task import ConfigurableTask
 
 
 __all__ = ["StsbExtractor"]
-_LOG = setup_logger(__name__)
+log = logging.getLogger(__name__)
 
+task_names = ("stsb",)
 
 class StsbExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Stsb benchmark."""
 
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        
+
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_dataset(
+            dataset_name="sentence-transformers/stsb",
+            split="test",
+            limit=max_items,
+        )
+        
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
@@ -38,72 +41,30 @@ class StsbExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
+            log.warning("No valid stsb pairs extracted")
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
         try:
-            # Format 1: source + target (unitxt format used by stsb)
-            if "source" in doc and "target" in doc:
-                question = str(doc.get("source", "")).strip()
-                correct_answer = str(doc.get("target", "")).strip()
-                # Get references to create an incorrect answer
-                references = doc.get("references", [])
-                if isinstance(references, list) and len(references) > 0:
-                    # Use a different reference as incorrect answer if available
-                    incorrect_answer = str(references[-1]).strip() if len(references) > 1 and references[-1] != correct_answer else "0.0"
-                else:
-                    incorrect_answer = "0.0"
+            sentence1 = doc.get("sentence1", "").strip()
+            sentence2 = doc.get("sentence2", "").strip()
+            score = doc.get("score")
 
-                if correct_answer and question:
-                    metadata = {"label": "stsb"}
-                    return self._build_pair(
-                        question=question,
-                        correct=correct_answer,
-                        incorrect=incorrect_answer,
-                        metadata=metadata,
-                    )
+            if not sentence1 or not sentence2 or score is None:
+                log.debug("Skipping: missing sentence1 or sentence2 or score")
                 return None
 
-            # Format 2: Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
+            correct = str(score)
+            incorrect = str(1 - score) if score != 0.5 else str(0.1)
 
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
+            formatted_question = (
+                f"Rate the semantic similarity between the following two sentences "
+                f"on a scale from 0 to 1, where 0 means completely different and 1 means identical in meaning.\n\n"
+                f"Sentence 1: {sentence1}\n"
+                f"Sentence 2: {sentence2}"
+            )
 
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
-
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "stsb"}
 
             return self._build_pair(

@@ -2,8 +2,10 @@
   "completed": ["20_newsgroups", "afrimgsm_direct_amh", "afrimmlu_direct_amh", "afrixnli_en_direct_amh", "ag_news", "aime",
   "aime2024", "aime2025", "arabic_exams", "argument_topic", "banking77", "babilong", "bangla_mmlu", "boolq", "boolq-seq2seq", "cb",
   "claim_stance_topic", "squad2", "unitxt", "copa", "glianorex", "global_mmlu_ar", "gsm_plus",  "logieval", "m_mmlu",   "mela",   "noticia",
-  "penn_treebank", "phrases_ca-va", "record"
+  "penn_treebank", "phrases_ca-va", "record", "stsb", "wikitext103", "wmt14_en_fr", "wmt14_fr_en", "wmt16_de_en", "wmt16_en_de", "wmt16_en_ro",
+  "wmt16_ro_en"
   ],
+
 
   "completed_lm_eval": [
     {"20_newsgroups": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
@@ -29,7 +31,8 @@
     {"mela": ["log_likelihoods"]},
     {"noticia": ["generation"]},
     {"phrases_ca-va": ["generation"]},
-    {"record": ["log_likelihoods"]}
+    {"record": ["log_likelihoods"]},
+    {}
   ],
 
   "completed_hf_with_version_on_lm_git": [
@@ -37,11 +40,13 @@
   ],
 
   "completed_hf_without_version_on_lm_git": [
-      "hmmt", "hmmt_feb_2025", "penn_treebank"
+      "hmmt", "hmmt_feb_2025", "penn_treebank", "stsb", "wikitext103"
   ],
 
   "too complex": ["evalita: many different prompts structure, could mess up our prompt strategies",
                   "babilong: many splits and subsets, long contexts"],
+
+  "broken": ["vaxx_stance", "wiceu", "tmlu", "t0_eval"],
 
   "all_tasks": [
   "Tag",
@@ -117,23 +122,12 @@
   "recode",
   "self_consistency",
   "sglue_rte",
-  "squad2 extractor done",  
-  "stsb",
+
+
   "super-glue-lm-eval-v1",
   "super-glue-lm-eval-v1-seq2seq",
-  "super-glue-t5-prompt",
-  "t0_eval",
-  "tmlu",
-  "unfair_tos",
-  "vaxx_stance",
-  "wiceu",
-  "wikitext103",
-  "wmt-ro-en-t5-prompt",
-  "wmt14_en_fr",
-  "wmt14_fr_en",
-  "wmt16_de_en",
-  "wmt16_en_de",
-  "wmt16_en_ro",
-  "wmt16_ro_en"
+  "super-glue-t5-prompt"
+
+
   ]
 }
