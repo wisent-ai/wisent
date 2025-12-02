@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <img src="wisent-guard-logo.png" alt="Wisent Guard" width="200">
+  <img src="wisent-logo.png" alt="Wisent Logo" width="200">
 </p>
 
 A Python package for latent space monitoring and guardrails. Delivered to you by the [Wisent](https://wisent.ai) team led by [Lukasz Bartoszcze](https://lukaszbartoszcze.com).
