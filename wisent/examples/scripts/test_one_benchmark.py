@@ -92,7 +92,9 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 # MMLU-SR benchmarks
                 "mmlusr",
                 # Translation benchmarks
-                "wmt14", "wmt16", "iwslt2017",
+                "iwslt2017",
+                # Sentence similarity benchmarks
+                "stsb",
                 # Newly created HuggingFace extractors
                 "babilong", "bangla_mmlu",
                 "bhtc_v2", "basque-glue", "basqueglue",

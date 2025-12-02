@@ -1,137 +1,99 @@
 from __future__ import annotations
 
+import random
+import logging
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
-from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
 __all__ = ["Wmt16Extractor"]
-_LOG = setup_logger(__name__)
+log = logging.getLogger(__name__)
 
 # Group extractor for wmt16 translation tasks
 task_names = ("wmt16-de-en", "wmt16-en-de", "wmt16-en-ro", "wmt16-ro-en")
 
-class Wmt16Extractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Wmt16 benchmark."""
 
+class Wmt16Extractor(LMEvalBenchmarkExtractor):
+    """Extractor for WMT16 translation benchmark (German-English, Romanian-English)."""
 
     evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        """
-        Build contrastive pairs from Wmt2016 docs.
+        # Determine source/target language from task name
+        task_name = getattr(lm_eval_task_data, "NAME", "wmt16-en-de")
 
-        Args:
-            lm_eval_task_data: lm-eval task instance for Wmt2016.
-            limit: Optional maximum number of pairs to produce.
-            preferred_doc: Optional preferred document source.
-
-        Returns:
-            A list of ContrastivePair objects.
-        """
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        # Parse task name to get language pair (e.g., "wmt16-de-en" -> de, en)
+        if "de-en" in task_name:
+            source_lang, target_lang = "de", "en"
+        elif "en-de" in task_name:
+            source_lang, target_lang = "en", "de"
+        elif "ro-en" in task_name:
+            source_lang, target_lang = "ro", "en"
+        elif "en-ro" in task_name:
+            source_lang, target_lang = "en", "ro"
+        else:
+            source_lang, target_lang = "en", "de"
 
         max_items = self._normalize_limit(limit)
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
-
         pairs: list[ContrastivePair] = []
-
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
+            pair = self._extract_pair_from_doc(doc, source_lang, target_lang)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid Wmt2016 pairs extracted", extra={"task": task_name})
+            log.warning("No valid pairs extracted", extra={"task": task_name})
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """
-        Convert a single Wmt2016 doc into a ContrastivePair, if possible.
-        Returns None when required fields are missing or malformed.
-        """
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
+    def _extract_pair_from_doc(self, doc: dict[str, Any], source_lang: str, target_lang: str) -> ContrastivePair | None:
         try:
-            # Try multiple possible schema formats
-            question = None
-            choices = None
-            answer_idx = None
+            translation = doc.get("translation", {})
+            source_text = translation.get(source_lang, "").strip()
+            target_text = translation.get(target_lang, "").strip()
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
-
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
-
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                # For open-ended questions, use target as correct answer
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "wmt2016"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
+            if not source_text or not target_text:
+                log.debug("Skipping doc due to missing source or target text")
                 return None
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug(
-                    "Skipping doc due to missing/invalid fields",
-                    extra={"doc": doc},
-                )
-                return None
+            correct = target_text
 
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
+            # Create incorrect by shuffling words in target
+            words = target_text.split()
+            if len(words) > 2:
+                shuffled = words.copy()
+                random.shuffle(shuffled)
+                incorrect = " ".join(shuffled)
+            else:
+                # For short sentences, reverse the words
+                incorrect = " ".join(reversed(words))
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            lang_names = {"en": "English", "de": "German", "ro": "Romanian"}
+            source_name = lang_names.get(source_lang, source_lang)
+            target_name = lang_names.get(target_lang, target_lang)
 
-            metadata = {
-                "label": "wmt2016",
-            }
+            formatted_question = (
+                f"Translate the following {source_name} text to {target_name}.\n\n"
+                f"{source_name}: {source_text}\n"
+                f"{target_name}:"
+            )
+            metadata = {"label": "wmt16"}
 
             return self._build_pair(
                 question=formatted_question,
