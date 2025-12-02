@@ -1,0 +1,54 @@
+{
+  "tests": [
+    {
+      "name": "health_check",
+      "input": {
+        "action": "health"
+      },
+      "timeout": 30000
+    },
+    {
+      "name": "generate_pairs_small",
+      "input": {
+        "action": "generate_pairs",
+        "task": "truthfulqa_gen",
+        "limit": 10
+      },
+      "timeout": 120000
+    },
+    {
+      "name": "classify_text",
+      "input": {
+        "action": "classify",
+        "text": "The capital of France is Paris.",
+        "question": "What is the capital of France?"
+      },
+      "timeout": 180000
+    }
+  ],
+  "config": {
+    "gpuTypeId": "NVIDIA GeForce RTX 4090",
+    "gpuCount": 1,
+    "env": [
+      {
+        "key": "MODEL_NAME",
+        "value": "Qwen/Qwen3-0.6B"
+      },
+      {
+        "key": "TASK",
+        "value": "truthfulqa_gen"
+      },
+      {
+        "key": "LAYER",
+        "value": "8"
+      },
+      {
+        "key": "TRAINING_LIMIT",
+        "value": "20"
+      }
+    ],
+    "allowedCudaVersions": [
+      "12.4", "12.3", "12.2", "12.1", "12.0", "11.8"
+    ]
+  }
+}
