@@ -1,57 +1,0 @@
-=== Step 1: Generate steering vector ===
-[32m  .................  .:--++*##%%%%##**+=-:.  .................  
-  ..             .:=*%@@@@@@@%%%%%%%@@@@@@%*=:.             ..  
-  .           .-*%@@@%#+=-::.........:-=+#%@@@%*=.           .  
-  .         -*%@@@#=:.                    .:=*%@@@*-.        .  
-  .      .-#@@@*=.                            .-*@@@#-.      .  
-  .     :#@@@*:                                  :+%@@#-     .  
-  .   .+@@@*:                                      :+@@@+.   .  
-  .  .*@@@@%*=:.                                     -%@@#:  .  
-  . .#@@#=*%@@@%*-:.                                  .#@@%: .  
-  ..*@@%.  .-+#@@@@#+-:.                               .*@@%..  
-  .=@@@-       :-+#@@@@%*=:.                            .%@@*.  
-  :#@@+           .:-+#@@@@%#+=:.                        -@@@-  
-  =@@@:                .-=*%@@@@%#+=:..                  .#@@+  
-  +@@@*=:.                 .:-+*%@@@@%#*=-:..             *@@+  
-  +@@@@@@#+-..                  .:-=*#@@@@@%#*+--..       +@@+  
-  +@@#-+%@@@%:                        .:-=*#%@@@@@%#*+=-:.*@@+  
-  =@@%. .=@@@:                             ..:-=+#%%@@@@@%@@@+  
-  :%@@=  :@@@-                                    ..::-=+#@@@=  
-  .+@@%. .#@@*                                           +@@#:  
-  ..%@@*. =@@@:                                         =@@@-.  
-  . :%@@*..#@@#.                         .:..          =@@@= .  
-  .  :%@@*.:%@@*.                       :#@@%#*+=-::..+@@@=  .  
-  .   :#@@%-:%@@#:                    .+@@@#%%@@@@@@%%@@%-   .  
-  .    .+@@@*=#@@%-                 .=%@@%=...::-=#@@@@*.    .  
-  .      :*@@@#%@@@*:             .=%@@@+.     .:*%@@#-      .  
-  .        :+%@@@@@@@*-.       :=*@@@%+.    .-+%@@@*-.       .  
-  .          .=*%@@@@@@#+:.:-+#@@@%*-. .:-+#%@@@#+:          .  
-  .             .-+#%@@@@@@@@@@@@#*+**#@@@@@%*=:.            .  
-  ..............   ..-=+*#%%%@@@@@@@@%%#*=-:.   ..............  
-   ...................  ....:::::::::.... ...................   [0m
-[1m[32mWisent CLI[0m – Steering vectors & activation tooling
-
-
-============================================================
-🎯 Generating Steering Vector from Synthetic Pairs (Full Pipeline)
-============================================================
-   Trait: A response that refuses to help, declines to answer, or says I cannot or I am unable to assist. The refusal response contains phrases like I am sorry but I cannot, I am not able to help with that. The compliant response is helpful and directly answers the question.
-   Model: Qwen/Qwen3-8B
-   Num Pairs: 50
-============================================================
-
-============================================================
-Step 1/3: Generating synthetic contrastive pairs...
-============================================================
-
-
-🎨 Generating synthetic contrastive pairs
-   Trait: A response that refuses to help, declines to answer, or says I cannot or I am unable to assist. The refusal response contains phrases like I am sorry but I cannot, I am not able to help with that. The compliant response is helpful and directly answers the question.
-   Number of pairs: 50
-   Model: Qwen/Qwen3-8B
-
-🤖 Loading model 'Qwen/Qwen3-8B'...
-Loading checkpoint shards:   0%|          | 0/5 [00:00<?, ?it/s]Loading checkpoint shards:  20%|██        | 1/5 [00:07<00:29,  7.38s/it]Loading checkpoint shards:  40%|████      | 2/5 [00:17<00:26,  8.87s/it]Loading checkpoint shards:  60%|██████    | 3/5 [00:25<00:17,  8.58s/it]Loading checkpoint shards:  80%|████████  | 4/5 [00:33<00:08,  8.20s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:36<00:00,  6.33s/it]Loading checkpoint shards: 100%|██████████| 5/5 [00:36<00:00,  7.23s/it]
-You're using a Qwen2TokenizerFast tokenizer. Please note that with a fast tokenizer, using the `__call__` method is faster than using a method to encode the text followed by a call to the `pad` method to get a padded encoding.
-/opt/homebrew/Caskroom/miniforge/base/lib/python3.10/multiprocessing/resource_tracker.py:224: UserWarning: resource_tracker: There appear to be 1 leaked semaphore objects to clean up at shutdown
-  warnings.warn('resource_tracker: There appear to be %d '
