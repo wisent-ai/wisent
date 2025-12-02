@@ -90,7 +90,7 @@ Thumbs.db
 !/setup.py
 !/LICENSE
 !/upload_to_pypi.sh
-!/wisent-guard-logo.png
+!/wisent-logo.png
 !/.github/
 !/.pre-commit-config.yaml
 
