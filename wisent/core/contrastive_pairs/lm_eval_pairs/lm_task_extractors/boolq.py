@@ -85,11 +85,10 @@ class BoolQExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            #formatted_question = f"{passage}\nQuestion: {question}?\nAnswer:\nA. Yes\nB. No"
-            formatted_question = f"{passage}\nQuestion: {question}?"
-
             correct = "Yes" if label == 1 else "No"
             incorrect = "No" if label == 1 else "Yes"
+
+            formatted_question = f"{passage}\nQuestion: {question}?\nAnswer:\nA. {incorrect}\nB. {correct}"
 
             metadata = {
                 "label": "boolq",
