@@ -93,6 +93,7 @@ Thumbs.db
 !/wisent-logo.png
 !/.github/
 !/.pre-commit-config.yaml
+!/.runpod/
 
 
 # HuggingFace model files (too large for GitHub)
