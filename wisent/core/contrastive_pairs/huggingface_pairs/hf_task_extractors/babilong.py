@@ -80,7 +80,7 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
             incorrect = "garden" if correct == "bathroom" else "bathroom"
 
             # Format prompt with context and question
-            prompt = f"Context: {input}\n\nQuestion: {question}"
+            prompt = f"Context: {input}\n\nQuestion: {question}\nA. {incorrect}\nB. {correct}"
 
             metadata = {"label": "babilong"}
 

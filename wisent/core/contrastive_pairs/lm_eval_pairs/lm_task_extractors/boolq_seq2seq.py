@@ -85,7 +85,6 @@ class BoolQSeq2SeqExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            #formatted_question = f"{passage}\nQuestion: {question}?\nAnswer:\nA. Yes\nB. No"
             formatted_question = f"{passage}\nQuestion: {question}?"
 
             correct = "Yes" if label == 1 else "No"

@@ -100,7 +100,7 @@ class SQuAD2Extractor(LMEvalBenchmarkExtractor):
                 incorrect = random.choice(incorrect_answers)
 
             title = doc.get("title")
-            formatted_question = f"Title: {title}\n\nBackground: {context}\n\nQuestion: {question}\n\nAnswer:\nA. {incorrect}\nB. {correct}"
+            formatted_question = f"Title: {title}\n\nBackground: {context}\n\nQuestion: {question}\n\nAnswer:"
 
             metadata = {
                 "label": "record",

@@ -16,7 +16,7 @@ task_names = ("stsb",)
 class StsbExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Stsb benchmark."""
 
-    evaluator_name = "exact_match"
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
