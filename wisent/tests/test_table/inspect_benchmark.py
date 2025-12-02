@@ -42,14 +42,22 @@ def inspect_benchmark(benchmark_name: str, num_examples: int = 5) -> None:
     print("AVAILABLE SPLITS:")
     print("-" * 40)
 
+    max_docs_to_load = 100  # Limit to avoid loading millions of rows into memory
     available_splits = {}
     for method_name, split_name in split_methods:
         if hasattr(task, method_name):
             try:
-                docs = list(getattr(task, method_name)())
+                docs_iter = getattr(task, method_name)()
+                docs = []
+                for i, doc in enumerate(docs_iter):
+                    docs.append(doc)
+                    if i >= max_docs_to_load - 1:
+                        break
                 if docs:
+                    has_more = len(docs) >= max_docs_to_load
                     available_splits[split_name] = (method_name, docs)
-                    print(f"  {split_name}: {len(docs)} samples")
+                    count_str = f"{len(docs)}+" if has_more else str(len(docs))
+                    print(f"  {split_name}: {count_str} samples")
                 else:
                     print(f"  {split_name}: empty")
             except Exception as e:

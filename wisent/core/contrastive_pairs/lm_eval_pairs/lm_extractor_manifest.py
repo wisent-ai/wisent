@@ -447,4 +447,5 @@ EXTRACTORS.update({
     "conala": f"{base_import}conala:ConalaExtractor",
     "concode": f"{base_import}concode:ConcodeExtractor",
     "mercury": f"{base_import}mercury:MercuryExtractor",
+    # Note: WMT14 and WMT16 translation tasks are now in group_task_manifests/
 })

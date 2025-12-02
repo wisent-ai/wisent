@@ -144,6 +144,7 @@ from .unscramble import UNSCRAMBLE_TASKS
 from .unitxt import UNITXT_TASKS
 from .winogender import WINOGENDER_TASKS
 from .wmdp import WMDP_TASKS
+from .wmt14 import WMT14_TASKS
 from .wmt16 import WMT16_TASKS
 from .wsc273 import WSC273_TASKS
 from .xcopa import XCOPA_TASKS
@@ -296,6 +297,8 @@ __all__ = [
     "UNITXT_TASKS",
     "WINOGENDER_TASKS",
     "WMDP_TASKS",
+    "WMT14_TASKS",
+    "WMT16_TASKS",
     "XCOPA_TASKS",
     "XNLI_TASKS",
     "XNLI_EU_TASKS",
@@ -456,6 +459,7 @@ def get_all_group_task_mappings() -> dict[str, str]:
     all_mappings.update(UNITXT_TASKS)
     all_mappings.update(WINOGENDER_TASKS)
     all_mappings.update(WMDP_TASKS)
+    all_mappings.update(WMT14_TASKS)
     all_mappings.update(WMT16_TASKS)
     all_mappings.update(WSC273_TASKS)
     all_mappings.update(XCOPA_TASKS)

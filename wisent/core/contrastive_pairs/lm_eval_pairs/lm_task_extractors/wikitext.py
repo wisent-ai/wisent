@@ -24,7 +24,7 @@ class WikitextExtractor(LMEvalBenchmarkExtractor):
     """
 
 
-    evaluator_name = "log_likelihoods"
+    evaluator_name = "perplexity"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
