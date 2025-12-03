@@ -198,6 +198,7 @@ def setup_steering_optimizer_parser(parser):
     )
     personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    personalization_parser.add_argument("--save-all-generation-examples", action="store_true", help="Save generation examples for ALL configurations tested")
     personalization_parser.add_argument("--use-cached", action="store_true", help="Use cached optimization results if available instead of re-running optimization")
     personalization_parser.add_argument("--save-as-default", action="store_true", help="Save optimal parameters as default for this model/task combination")
 
