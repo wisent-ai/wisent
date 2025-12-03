@@ -17,15 +17,14 @@ _LOG = setup_logger(__name__)
 
 task_names = ("wikitext",)
 
-evaluator_name = "log_likelihoods"
-
-
 class WikitextExtractor(LMEvalBenchmarkExtractor):
     """Extractor for WikiText and similar perplexity benchmarks.
 
     Works for: wikitext, wikitext103, ptb, penn_treebank
     """
 
+
+    evaluator_name = "perplexity"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

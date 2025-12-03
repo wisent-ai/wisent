@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("multimedqa",)
 
-evaluator_name = "log_likelihoods"
-
-
 class MultimedqaExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Multimedqa benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

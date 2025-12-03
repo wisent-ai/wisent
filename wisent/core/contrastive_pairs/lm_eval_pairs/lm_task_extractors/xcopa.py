@@ -28,12 +28,11 @@ task_names = (
     "xcopa_zh",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class XcopaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Xcopa benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

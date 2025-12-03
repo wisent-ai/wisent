@@ -15,12 +15,11 @@ __all__ = ["Iwslt2017EnArExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("iwslt2017-en-ar",)
-evaluator_name = "generation"
-
-
 class Iwslt2017EnArExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Iwslt2017 En Ar benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

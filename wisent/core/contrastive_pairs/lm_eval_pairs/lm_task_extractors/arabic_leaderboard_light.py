@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("arabic_leaderboard_light",)
 
-evaluator_name = "log_likelihoods"
-
-
 class ArabicLeaderboardLightExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Arabic Leaderboard Light benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

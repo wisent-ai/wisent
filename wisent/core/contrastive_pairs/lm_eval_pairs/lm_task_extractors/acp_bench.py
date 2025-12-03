@@ -29,12 +29,11 @@ task_names = (
     "acp_land_gen", "acp_nexta_gen", "acp_areach_gen", "acp_val_gen",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class AcpBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Acp Bench benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

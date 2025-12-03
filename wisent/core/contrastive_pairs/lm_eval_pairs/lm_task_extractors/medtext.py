@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("medtext",)
 
-evaluator_name = "generation"
-
-
 class MedtextExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Medtext benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

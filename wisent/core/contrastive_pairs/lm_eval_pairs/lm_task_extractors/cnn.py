@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("cnn_dailymail",)
 
-evaluator_name = "exact_match"
-
-
 class CnnExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Cnn benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -21,12 +21,11 @@ task_names = (
     "mgsm_native_cot_bn", "mgsm_native_cot_de", "mgsm_native_cot_en", "mgsm_native_cot_es", "mgsm_native_cot_fr", "mgsm_native_cot_ja", "mgsm_native_cot_ru", "mgsm_native_cot_sw", "mgsm_native_cot_te", "mgsm_native_cot_th", "mgsm_native_cot_zh"
 )
 
-evaluator_name = "generation"
-
-
 class MgsmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mgsm benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

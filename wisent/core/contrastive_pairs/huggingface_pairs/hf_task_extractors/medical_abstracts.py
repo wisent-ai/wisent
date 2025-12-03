@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("medical_abstracts",)
 
-evaluator_name = "generation"
-
-
 class MedicalAbstractsExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Medical Abstracts benchmark - medical topic classification."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

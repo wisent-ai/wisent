@@ -131,6 +131,7 @@ class LMEvalDataLoader(BaseDataLoader):
 
         if isinstance(loaded, dict):
             if len(loaded) == 1:
+
                 # Single subtask
                 (subname, task_obj), = loaded.items()
                 pairs = lm_build_contrastive_pairs(
@@ -139,8 +140,12 @@ class LMEvalDataLoader(BaseDataLoader):
                     limit=limit,
                 )
             else:
+
                 # Group task with multiple subtasks - load all and combine
                 log.info(f"Task '{task_name}' is a group task with {len(loaded)} subtasks. Loading all subtasks...")
+                
+                print(f"Task '{task_name}' is a group task with {len(loaded)} subtasks. Loading all subtasks...")
+
                 all_pairs = []
                 pairs_per_subtask = limit // len(loaded) if limit else None
 
@@ -398,7 +403,7 @@ class LMEvalDataLoader(BaseDataLoader):
         if special_handler:
             log.info(f"Using special case handler for task '{lm_eval_task_name}'")
             return special_handler(task_manager)
-
+    
         task_dict = get_task_dict([lm_eval_task_name], task_manager=task_manager)
 
         # Try to get the task directly

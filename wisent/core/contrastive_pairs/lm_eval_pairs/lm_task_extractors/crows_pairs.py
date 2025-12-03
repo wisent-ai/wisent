@@ -39,12 +39,11 @@ task_names = (
     "crows_pairs_french_socioeconomic",
     "crows_pairs_french_autre",
 )
-evaluator_name = "log_likelihoods"
-
-
 class CrowsPairsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Crows Pairs benchmark - bias measurement task."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

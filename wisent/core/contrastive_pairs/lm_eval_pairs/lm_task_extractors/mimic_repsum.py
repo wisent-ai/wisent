@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("mimic_repsum",)
 
-evaluator_name = "generation"
-
-
 class MimicRepsumExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mimic Repsum benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

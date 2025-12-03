@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("yahoo_answers_topics",)
 
-evaluator_name = "log_likelihoods"
-
-
 class YahooExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Yahoo benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -33,6 +32,8 @@ class YahooExtractor(LMEvalBenchmarkExtractor):
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
+
+        print("running yahoo")
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)

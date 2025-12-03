@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("multiple_choice",)
 
-evaluator_name = "exact_match"
-
-
 class MultipleChoiceExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Multiple Choice - generic multiple choice questions."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

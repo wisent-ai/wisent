@@ -27,9 +27,6 @@ task_names = (
     "wmt16-ro-en",
 )
 
-evaluator_name = "generation"
-
-
 class TranslationExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Translation benchmark (WMT, IWSLT).
 
@@ -40,6 +37,8 @@ class TranslationExtractor(LMEvalBenchmarkExtractor):
     - Negative: Word-shuffled version to simulate bad translation
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

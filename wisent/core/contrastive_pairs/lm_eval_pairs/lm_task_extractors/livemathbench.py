@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("livemathbench", "livemathbench_cnmo_en", "livemathbench_cnmo_zh")
 
-evaluator_name = "exact_match"
-
-
 class LivemathbenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Livemathbench benchmark (live math problems)."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

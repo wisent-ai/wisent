@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("qasper_freeform",)
 
-evaluator_name = "generation"
-
-
 class QasperExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the QASPER benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

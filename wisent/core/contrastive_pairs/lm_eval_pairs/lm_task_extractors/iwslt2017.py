@@ -20,12 +20,11 @@ task_names = (
     "iwslt2017-en-ar",
 )
 
-evaluator_name = "generation"
-
-
 class IWSLT2017Extractor(LMEvalBenchmarkExtractor):
     """Extractor for IWSLT 2017 benchmark - machine translation tasks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

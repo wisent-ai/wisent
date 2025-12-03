@@ -20,9 +20,6 @@ task_names = (
     "evalita-mp_mc",   # Only perplexity-based tasks subgroup
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Evalita-LLM benchmark - Italian LLM evaluation tasks.
 
@@ -33,6 +30,8 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
     specific extractors (evalita-mp and evalita-sp have their own extractors).
     """
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
