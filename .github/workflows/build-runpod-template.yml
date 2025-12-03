@@ -1,0 +1,48 @@
+name: Build and Push Docker Images
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOCKER_IMAGE: 3qax/wisent
+  DOCKER_PLATFORM: linux/amd64
+
+jobs:
+  build-and-push:
+    runs-on: blacksmith-8vcpu-ubuntu-2204
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Clean up runner disk space
+        run: |
+          echo "Cleaning up unnecessary folders to free disk space..."
+          rm -rf /usr/share/dotnet
+          rm -rf /opt/ghc
+          rm -rf /opt/hostedtoolcache/CodeQL
+          rm -rf "$AGENT_TOOLSDIRECTORY"
+          docker system prune -af || true
+          df -h
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push pip-based image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: .runpod/Dockerfile
+          platforms: ${{ env.DOCKER_PLATFORM }}
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
