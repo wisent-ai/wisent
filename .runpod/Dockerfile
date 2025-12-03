@@ -1,46 +1,30 @@
 # Wisent Guard - Runpod Pod Template
-#
-# Build and push to Docker Hub:
-#   docker build -t yourusername/wisent-guard:latest -f .runpod/Dockerfile .
-#   docker push yourusername/wisent-guard:latest
-#
-# Then create a Pod template in Runpod console pointing to your image.
+# Latent space monitoring and guardrails for AI models
 
-FROM runpod/pytorch:2.4.0-py3.11-cuda12.4.1-devel-ubuntu22.04
+FROM runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    HF_HOME=/workspace/models \
-    TRANSFORMERS_CACHE=/workspace/models
+    HF_HOME=/workspace/models
 
-# Install system dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    git \
-    wget \
-    curl \
-    && rm -rf /var/lib/apt/lists/*
+WORKDIR /app
 
-# Create workspace directories
-RUN mkdir -p /workspace/notebooks /workspace/outputs /workspace/models
+# Copy wisent source code
+COPY . /wisent
 
-# Copy wisent-guard source and install
-# Copy only necessary source files and setup
-COPY wisent/ /tmp/wisent/wisent/
-COPY setup.py pyproject.toml requirements.txt README.md /tmp/wisent/
-RUN cd /tmp/wisent && \
-    pip install --no-cache-dir -e ".[harness]" && \
-    pip install --no-cache-dir jupyterlab ipywidgets accelerate
+# Install all dependencies from requirements.txt first
+RUN pip install -r /wisent/requirements.txt
 
+# Install wisent in editable mode
+RUN cd /wisent && pip install -e ".[harness]"
 
-# Copy example notebooks to workspace
-RUN cp -r /tmp/wisent/wisent/examples/notebooks/* /workspace/notebooks/ 2>/dev/null || true
+# Fix datasets version for compatibility
+RUN pip install --force-reinstall datasets==3.6.0
 
-# Set working directory
-WORKDIR /workspace
+# Copy startup script (Option 2: run after base services start)
+COPY .runpod/run.sh /app/run.sh
+RUN chmod +x /app/run.sh
 
-# Expose JupyterLab port
-EXPOSE 8888
-
-# Default command - the base image handles JupyterLab startup
+# Use base image services (Jupyter/SSH) + our startup script
+CMD ["/app/run.sh"]
