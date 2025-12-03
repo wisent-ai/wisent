@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("minerva_math", "minerva_math_algebra", "minerva_math_counting_and_prob", "minerva_math_geometry", "minerva_math_intermediate_algebra", "minerva_math_num_theory", "minerva_math_prealgebra", "minerva_math_precalc")
 
-evaluator_name = "exact_match"
-
-
 class MinervaMathExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Minerva Math benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

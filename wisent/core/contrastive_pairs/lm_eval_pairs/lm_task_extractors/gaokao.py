@@ -26,12 +26,11 @@ task_names = (
     "agieval_gaokao_physics",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class GaokaoExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AGIEval Gaokao benchmark - Chinese college entrance exam questions."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 # Model Written Evals includes multiple sub-benchmarks
 task_names = ("model_written_evals", "advanced_ai_risk", "persona", "sycophancy", "winogenerated")
 
-evaluator_name = "log_likelihoods"
-
-
 class ModelWrittenEvalsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Model Written Evals benchmark (advanced_ai_risk, persona, sycophancy, winogenerated)."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -20,12 +20,11 @@ task_names = (
     "lingoly_nocontext",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class LingolyExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Lingoly benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

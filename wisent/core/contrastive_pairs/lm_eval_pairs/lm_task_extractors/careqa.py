@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("careqa", "careqa_en", "careqa_es", "careqa_open", "careqa_open_perplexity")
 
-evaluator_name = "log_likelihoods"
-
-
 class CareqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Careqa benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -23,12 +23,11 @@ task_names = (
     "hellaswag_sv", "hellaswag_ta", "hellaswag_te", "hellaswag_uk", "hellaswag_vi"
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class OkapiHellaswagMultilingualExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Okapi/Hellaswag Multilingual benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

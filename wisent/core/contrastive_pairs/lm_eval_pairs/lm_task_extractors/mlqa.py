@@ -32,12 +32,11 @@ task_names = (
     "mlqa_hi_ar", "mlqa_hi_de", "mlqa_hi_vi", "mlqa_hi_zh", "mlqa_hi_en", "mlqa_hi_es", "mlqa_hi_hi"
 )
 
-evaluator_name = "exact_match"
-
-
 class MlqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mlqa benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

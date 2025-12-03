@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("freebase",)
 
-evaluator_name = "log_likelihoods"
-
-
 class FreebaseExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Freebase benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

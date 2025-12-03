@@ -29,9 +29,6 @@ task_names = (
     "score_prompt_robustness_mmlu_pro",
 )
 
-evaluator_name = "generation"
-
-
 class ScoreExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the SCORE robustness benchmarks.
 
@@ -40,6 +37,8 @@ class ScoreExtractor(LMEvalBenchmarkExtractor):
     and sampling strategies. Uses the same data format as AGIEval.
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

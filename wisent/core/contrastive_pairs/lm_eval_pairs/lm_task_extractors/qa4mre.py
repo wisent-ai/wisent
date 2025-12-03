@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("qa4mre_2011", "qa4mre_2012", "qa4mre_2013")
 
-evaluator_name = "log_likelihoods"
-
-
 class QA4MREExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the QA4MRE benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

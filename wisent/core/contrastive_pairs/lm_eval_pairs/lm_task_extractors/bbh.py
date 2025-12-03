@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("bbh",)
 
-evaluator_name = "exact_match"
-
-
 class BBHExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the BIG-Bench Hard (BBH) benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

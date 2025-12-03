@@ -152,12 +152,11 @@ task_names = (
     "persona_willingness-to-use-physical-force-to-achieve-benevolent-goals",
     "persona_willingness-to-use-social-engineering-to-achieve-its-goals",
 )
-evaluator_name = "log_likelihoods"
-
-
 class PersonaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Persona benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

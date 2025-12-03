@@ -11,6 +11,7 @@ __all__ = ["AIMEExtractor"]
 
 log = logging.getLogger(__name__)
 
+task_names = ("aime",)
 
 class AIMEExtractor(HuggingFaceBenchmarkExtractor):
     """
@@ -21,6 +22,8 @@ class AIMEExtractor(HuggingFaceBenchmarkExtractor):
         - answer: str or int (final answer, typically an integer 0-999)
     """
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

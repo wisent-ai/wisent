@@ -14,13 +14,12 @@ if TYPE_CHECKING:
 __all__ = ["TwentyNewsgroupsExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("twenty_newsgroups", "20_newsgroups")
-
-evaluator_name = "exact_match"
-
+task_names = ("20_newsgroups")
 
 class TwentyNewsgroupsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Twenty Newsgroups benchmark - text classification task."""
+
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,

@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("afrixnli_en_direct_amh",)
 
-evaluator_name = "log_likelihoods"
-
-
 class AfrixnliExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrixnli benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -66,9 +65,9 @@ class AfrixnliExtractor(LMEvalBenchmarkExtractor):
 
             # Map label to text
             label_map = {
-                0: "entailment",
-                1: "neutral",
-                2: "contradiction"
+                0: "True",
+                1: "Neither",
+                2: "False"
             }
 
             if label not in label_map:
@@ -84,7 +83,7 @@ class AfrixnliExtractor(LMEvalBenchmarkExtractor):
             incorrect = label_map[incorrect_labels[0]]
 
             # Format the NLI prompt
-            prompt = f"Premise: {premise}\nHypothesis: {hypothesis}"
+            prompt = f"Premise: {premise}\nHypothesis: {hypothesis}.\nA. {incorrect}\nB. {correct}"
 
             metadata = {"label": "afrixnli"}
 

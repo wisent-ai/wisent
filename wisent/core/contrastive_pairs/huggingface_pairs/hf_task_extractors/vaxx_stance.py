@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("vaxx_stance",)
 
-evaluator_name = "log_likelihoods"
-
-
 class VaxxStanceExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Vaxx Stance - vaccination stance classification."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

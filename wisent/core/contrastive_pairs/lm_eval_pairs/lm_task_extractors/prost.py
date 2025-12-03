@@ -15,12 +15,11 @@ __all__ = ["ProstExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("prost",)
-evaluator_name = "log_likelihoods"
-
-
 class ProstExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the PROST benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

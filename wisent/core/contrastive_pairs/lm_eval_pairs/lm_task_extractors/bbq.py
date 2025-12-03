@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("bbq",)
 
-evaluator_name = "log_likelihoods"
-
-
 class BbqExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Bbq benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("anagrams2",)
 
-evaluator_name = "exact_match"
-
-
 class Anagrams2Extractor(LMEvalBenchmarkExtractor):
     """Extractor for Anagrams2 benchmark - anagram solving task."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

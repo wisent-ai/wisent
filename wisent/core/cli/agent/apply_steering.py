@@ -1,6 +1,6 @@
 """Apply steering vectors to improve response."""
 
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def _map_token_aggregation(aggregation_str: str):
@@ -152,9 +152,7 @@ def apply_steering_and_evaluate(
     model.apply_steering(plan=steering_plan)
 
     # Generate steered response
-    # Get inference config settings
-    inference_config = get_config()
-    gen_kwargs = get_generate_kwargs(inference_config)
+    gen_kwargs = get_generate_kwargs()
 
     messages = [[{"role": "user", "content": prompt}]]
     steered_responses = model.generate(

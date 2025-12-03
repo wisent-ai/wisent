@@ -14,14 +14,17 @@ if TYPE_CHECKING:
 __all__ = ["AfrimmluExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("afrimmlu_direct_amh",)
-
-evaluator_name = "log_likelihoods"
-
+task_names = ("afrimmlu_direct_amh_prompt_1",
+              "afrimmlu_direct_amh_prompt_2",
+              "afrimmlu_direct_amh_prompt_3",
+              "afrimmlu_direct_amh_prompt_4",
+              "afrimmlu_direct_amh_prompt_5",)
 
 class AfrimmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrimmlu benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -51,29 +54,13 @@ class AfrimmluExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            question = doc.get("question", "").strip()
+            choices = doc.get("choices", [])
+            answer = doc.get("answer", "")
 
             if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
                 answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
             else:
                 return None
 

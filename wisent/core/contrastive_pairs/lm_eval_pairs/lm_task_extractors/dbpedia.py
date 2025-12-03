@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("dbpedia", "dbpedia_14")
 
-evaluator_name = "generation"
-
-
 class DbpediaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Dbpedia benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

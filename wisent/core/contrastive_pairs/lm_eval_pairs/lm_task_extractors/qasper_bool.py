@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("qasper_bool",)
 
-evaluator_name = "log_likelihoods"
-
-
 class QasperBoolExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the QASPER bool task."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

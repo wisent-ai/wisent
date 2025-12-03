@@ -4,7 +4,7 @@ import json
 import os
 import sys
 
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def execute_generate_responses(args):
@@ -92,8 +92,7 @@ def execute_generate_responses(args):
             ]
 
             # Get inference config settings
-            inference_config = get_config()
-            gen_kwargs = get_generate_kwargs(inference_config)
+            gen_kwargs = get_generate_kwargs()
 
             # Generate response - use args if provided, otherwise fall back to inference config
             responses = model.generate(

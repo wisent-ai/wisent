@@ -1,0 +1,133 @@
+{
+  "completed": ["20_newsgroups", "afrimgsm_direct_amh", "afrimmlu_direct_amh", "afrixnli_en_direct_amh", "ag_news", "aime",
+  "aime2024", "aime2025", "arabic_exams", "argument_topic", "banking77", "babilong", "bangla_mmlu", "boolq", "boolq-seq2seq", "cb",
+  "claim_stance_topic", "squad2", "unitxt", "copa", "glianorex", "global_mmlu_ar", "gsm_plus",  "logieval", "m_mmlu",   "mela",   "noticia",
+  "penn_treebank", "phrases_ca-va", "record", "stsb", "wikitext103", "wmt14_en_fr", "wmt14_fr_en", "wmt16_de_en", "wmt16_en_de", "wmt16_en_ro",
+  "wmt16_ro_en"
+  ],
+
+
+  "completed_lm_eval": [
+    {"20_newsgroups": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"afrimgsm_direct_amh": ["generate_until", ["flexible-extract", "remove_whitespace"], ["exact_match"]]},
+    {"afrimmlu_direct_amh": ["loglikelihood", ["none"], ["acc", "acc_norm"]]},
+    {"afrixnli_en_direct_amh": ["loglikelihood", ["none"], ["acc", "f1"]]},
+    {"ag_news": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"arabic_exams": ["loglikelihood", ["none"], ["acc", "acc_norm"]]},
+    {"argument_topic": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"banking77": ["generate_until", ["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"boolq": ["log_likelihoods"]},
+    {"cb": ["log_likelihoods"]},
+    {"squad2": [["generate_until", "log_likelihoods"], ["none"]]},
+    {"boolq-seq2seq": ["generate_until", ["none"], ["exact_match"]]},
+    {"claim_stance_topic": ["generate_until",["none"], ["accuracy", "f1_macro", "f1_micro"]]},
+    {"unitxt": ["generate_until, [lots of tasks, different filters and metrics]"]},
+    {"copa": ["log_likelihoods", ["none"], ["acc"]]},
+    {"glianorex": ["log_likelihoods"]},
+    {"global_mmlu_ar": ["log_likelihoods"]},
+    {"gsm_plus": ["generation"]},
+    {"logieval": ["generation"]},
+    {"m_mmlu": ["log_likelihoods"]},
+    {"mela": ["log_likelihoods"]},
+    {"noticia": ["generation"]},
+    {"phrases_ca-va": ["generation"]},
+    {"record": ["log_likelihoods"]},
+    {}
+  ],
+
+  "completed_hf_with_version_on_lm_git": [
+    "aime","aime2024", "aime2025, bangla_mmlu", "basque-glue"
+  ],
+
+  "completed_hf_without_version_on_lm_git": [
+      "hmmt", "hmmt_feb_2025", "penn_treebank", "stsb", "wikitext103"
+  ],
+
+  "too complex": ["evalita: many different prompts structure, could mess up our prompt strategies",
+                  "babilong: many splits and subsets, long contexts"],
+
+  "broken": ["vaxx_stance", "wiceu", "tmlu", "t0_eval"],
+
+  "all_tasks": [
+  "Tag",
+  "apps",
+  "humaneval_plus",
+  "multipl_e",
+  "chain_of_thought",
+  "codexglue_code_to_text_go",
+  "codexglue_code_to_text_java",
+  "codexglue_code_to_text_javascript",
+  "codexglue_code_to_text_php",
+  "codexglue_code_to_text_python",
+  "codexglue_code_to_text_ruby",
+  "conala",
+  "concode",
+  "ds1000",
+
+  "evalita-mp",
+  "evalita-sp_sum_task_fp-small_p1",
+
+  "flan_held_in",
+  "flores",
+
+  "freebase",
+
+  "gpt3_translation_benchmarks",
+
+  "humaneval_64_instruct",
+  "humaneval_instruct",
+  "humanevalpack",
+  "instruct_humaneval",
+  "instructhumaneval",
+  "iwslt2017-ar-en",
+  "iwslt2017-en-ar",
+
+
+  "livecodebench",
+  "livemathbench_cnmo_en",
+  "livemathbench_cnmo_zh",
+  "llama",
+
+
+  "math",
+  "math500",
+  "mbpp_plus",
+
+
+  "mercury",
+
+
+  "multimedqa",
+
+  "multiple_choice",
+
+
+  "non_greedy_robustness_agieval_aqua_rat",
+
+  "openllm",
+
+
+  "option_order_robustness_agieval_aqua_rat",
+
+
+  "polymath_en_high",
+  "polymath_en_medium",
+  "polymath_zh_high",
+  "polymath_zh_medium",
+
+
+  "prompt_robustness_agieval_aqua_rat",
+  "ptb",
+  "pythia",
+  "recode",
+  "self_consistency",
+  "sglue_rte",
+
+
+  "super-glue-lm-eval-v1",
+  "super-glue-lm-eval-v1-seq2seq",
+  "super-glue-t5-prompt"
+
+
+  ]
+}

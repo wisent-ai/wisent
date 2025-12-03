@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("claim_stance_topic",)
 
-evaluator_name = "log_likelihoods"
-
-
 class ClaimExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Claim benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

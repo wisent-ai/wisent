@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("tinyGSM8k",)
 
-evaluator_name = "generation"
-
-
 class Tinygsm8kExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Tinygsm8K benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

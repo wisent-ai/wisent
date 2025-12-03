@@ -29,12 +29,11 @@ task_names = (
     "inverse_scaling_winobias_antistereotype",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class InverseScalingExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Inverse Scaling benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

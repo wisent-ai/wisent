@@ -40,7 +40,7 @@ class MockModel:
 
     def generate(self, prompt: str, **kwargs) -> str:
         """Mock generation - returns empty as we use choices for evaluation."""
-        return ""
+        return "mock generation"
 
 
 def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: str = ".", loader_type: str = "auto"):
@@ -92,18 +92,18 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 # MMLU-SR benchmarks
                 "mmlusr",
                 # Translation benchmarks
-                "wmt14", "wmt16", "iwslt2017",
+                "iwslt2017",
+                # Sentence similarity benchmarks
+                "stsb",
                 # Newly created HuggingFace extractors
-                "20_newsgroups", "afrimgsm_direct_amh", "afrimmlu_direct_amh",
-                "afrixnli_en_direct_amh", "ag_news", "arabic_exams", "argument_topic",
+                "babilong", "bangla_mmlu",
                 "bhtc_v2", "basque-glue", "basqueglue",
-                "cnn_dailymail", "dbpedia_14",
-                "ethos_binary", "evalita-sp_sum_task_fp-small_p1", "flan_held_in",
-                "global_mmlu_ar", "gpt3_translation_benchmarks",
+                "flan_held_in",
+                "gpt3_translation_benchmarks",
                 "non_greedy_robustness_agieval_aqua_rat", "option_order_robustness_agieval_aqua_rat",
-                "penn_treebank", "ptb", "phrases_ca-va", "prompt_robustness_agieval_aqua_rat",
-                "self_consistency", "sglue_rte", "t0_eval", "unfair_tos",
-                "wikitext103", "yahoo_answers_topics"
+                "penn_treebank", "ptb", "prompt_robustness_agieval_aqua_rat",
+                "self_consistency", "sglue_rte", "t0_eval",
+                "wikitext103"
             ]
             # Tasks that should explicitly use LMEval (not HuggingFace)
             lm_eval_only_tasks = [
@@ -125,7 +125,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         else:
             print(f"    Using LMEvalDataLoader")
             loader = LMEvalDataLoader()
-
+            
         result = loader._load_one_task(
             task_name=task_name,
             split_ratio=0.8,
@@ -206,7 +206,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
 
             pair_results = {
                 "pair_id": i,
-                "prompt": pair.prompt[:100] + "...",
+                "prompt": pair.prompt + "...",
                 "positive_response": pair.positive_response.model_response,
                 "negative_response": pair.negative_response.model_response,
             }

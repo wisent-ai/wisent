@@ -22,12 +22,11 @@ task_names = (
     "acp_land_gen", "acp_nexta_gen", "acp_areach_gen", "acp_val_gen",
 )
 
-evaluator_name = "generation"
-
-
 class AcpBenchHardExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Acp Bench Hard benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

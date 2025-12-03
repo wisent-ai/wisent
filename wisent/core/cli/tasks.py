@@ -5,7 +5,7 @@ import os
 import json
 import numpy as np
 
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def execute_tasks(args):
@@ -569,8 +569,7 @@ def execute_tasks(args):
         choices = [pair.negative_response.model_response, pair.positive_response.model_response]
 
         # Generate response from unsteered model
-        inference_config = get_config()
-        generate_kwargs = get_generate_kwargs(inference_config)
+        generate_kwargs = get_generate_kwargs()
         response = model.generate(
             [[{"role": "user", "content": question}]],
             max_new_tokens=generate_kwargs.get("max_new_tokens", 100),

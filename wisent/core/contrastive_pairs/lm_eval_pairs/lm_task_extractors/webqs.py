@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("webqs",)
 
-evaluator_name = "log_likelihoods"
-
-
 class WebQSExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the WebQuestions benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

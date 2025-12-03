@@ -18,12 +18,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("race",)
 
-evaluator_name = "log_likelihoods"
-
-
 class RACEExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Race benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

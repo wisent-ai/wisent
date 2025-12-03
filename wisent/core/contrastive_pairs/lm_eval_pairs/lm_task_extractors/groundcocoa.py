@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("groundcocoa",)
 
-evaluator_name = "generation"
-
-
 class GroundcocoaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Groundcocoa benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

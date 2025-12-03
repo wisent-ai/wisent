@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("squad_completion",)
 
-evaluator_name = "exact_match"
-
-
 class SquadCompletionExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Squad Completion benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

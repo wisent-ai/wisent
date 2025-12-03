@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 task_names = ("mmlusr", "mmlusr_question_and_answer", "mmlusr_question_only", "mmlusr_answer_only",
               "mmlusr_qa_stem", "mmlusr_qa_other", "mmlusr_qa_social_sciences", "mmlusr_qa_humanities")
 
-evaluator_name = "log_likelihoods"
-
-
 class MmlusrExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mmlusr benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

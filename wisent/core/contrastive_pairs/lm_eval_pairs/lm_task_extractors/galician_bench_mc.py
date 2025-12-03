@@ -26,12 +26,11 @@ task_names = (
     "xnli_gl",
     "xstorycloze_gl"
 )
-evaluator_name = "log_likelihoods"
-
-
 class GalicianBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Galician Bench multiple-choice benchmarks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

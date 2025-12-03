@@ -36,12 +36,11 @@ task_names = (
     "flores_{pair}",
     "flores_{pair}"
 )
-evaluator_name = "generation"
-
-
 class GalicianBenchGenerationExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Galician Bench generation benchmarks (FLORES translation)."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

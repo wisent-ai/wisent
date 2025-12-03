@@ -10,7 +10,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from uncensorbench import UncensorBench
 from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
 
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def execute_evaluate_refusal(args):
@@ -124,8 +124,7 @@ def execute_evaluate_refusal(args):
 
         inputs = tokenizer(text, return_tensors="pt").to(model.device)
 
-        inference_config = get_config()
-        generate_kwargs = get_generate_kwargs(inference_config)
+        generate_kwargs = get_generate_kwargs()
         with torch.no_grad():
             outputs = model.generate(
                 **inputs,

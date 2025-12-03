@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("cabreu", "cabreu_extractive", "cabreu_abstractive", "cabreu_extreme")
 
-evaluator_name = "log_likelihoods"
-
-
 class CabreuExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Cabreu benchmark (Catalan summarization)."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("sglue_rte",)
 
-evaluator_name = "log_likelihoods"
-
-
 class SglueRteExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for SGLUE RTE - textual entailment task."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

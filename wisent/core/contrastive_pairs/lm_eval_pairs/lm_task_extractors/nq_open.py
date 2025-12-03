@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("nq_open",)
 
-evaluator_name = "exact_match"
-
-
 class NQOpenExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Natural Questions Open benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -21,12 +21,11 @@ task_names = (
     "arc_sr", "arc_sv", "arc_ta", "arc_te", "arc_uk", "arc_vi", "arc_zh"
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class OkapiArcMultilingualExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Okapi/Arc Multilingual benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
