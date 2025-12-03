@@ -3,7 +3,7 @@
   "aime2024", "aime2025", "arabic_exams", "argument_topic", "banking77", "babilong", "bangla_mmlu", "boolq", "boolq-seq2seq", "cb",
   "claim_stance_topic", "squad2", "unitxt", "copa", "glianorex", "global_mmlu_ar", "gsm_plus",  "logieval", "m_mmlu",   "mela",   "noticia",
   "penn_treebank", "phrases_ca-va", "record", "stsb", "wikitext103", "wmt14_en_fr", "wmt14_fr_en", "wmt16_de_en", "wmt16_en_de", "wmt16_en_ro",
-  "wmt16_ro_en"
+  "wmt16_ro_en", "sglue_rte"
   ],
 
 
@@ -32,7 +32,7 @@
     {"noticia": ["generation"]},
     {"phrases_ca-va": ["generation"]},
     {"record": ["log_likelihoods"]},
-    {}
+    {"sglue_rte": ["log_likelihoods"]}
   ],
 
   "completed_hf_with_version_on_lm_git": [
@@ -121,8 +121,6 @@
   "pythia",
   "recode",
   "self_consistency",
-  "sglue_rte",
-
 
   "super-glue-lm-eval-v1",
   "super-glue-lm-eval-v1-seq2seq",

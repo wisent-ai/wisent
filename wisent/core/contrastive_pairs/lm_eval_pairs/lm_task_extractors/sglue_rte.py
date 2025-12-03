@@ -4,32 +4,52 @@ from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["SuperGlueLmEvalV1Extractor"]
+__all__ = ["SglueRteExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("super-glue-lm-eval-v1",)
-class SuperGlueLmEvalV1Extractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for Super Glue Lm Eval V1 benchmark."""
+task_names = ("sglue_rte",)
 
+class SglueRteExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for SGLUE RTE - textual entailment task."""
 
     evaluator_name = "log_likelihoods"
+
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
         preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
+        """
+        Build contrastive pairs from SGLUE RTE docs.
+
+        RTE schema:
+            - premise: str
+            - hypothesis: str
+            - label: 0 (entailment) or 1 (not_entailment)
+
+        Args:
+            lm_eval_task_data: lm-eval task instance for SGLUE RTE.
+            limit: Optional maximum number of pairs to produce.
+            preferred_doc: Preferred document source ("validation", "test", "training", "fewshot")
+
+        Returns:
+            A list of ContrastivePair objects.
+        """
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+
         max_items = self._normalize_limit(limit)
         docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+
         pairs: list[ContrastivePair] = []
+
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
         for doc in docs:
@@ -41,54 +61,43 @@ class SuperGlueLmEvalV1Extractor(HuggingFaceBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
+            log.warning("No valid SGLUE RTE pairs extracted", extra={"task": task_name})
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+        """
+        Convert a single RTE doc into a ContrastivePair, if possible.
+        Returns None when required fields are missing or malformed.
+        """
+        log = bind(_LOG, doc_id=doc.get("idx", "unknown"))
 
         try:
+            premise = str(doc.get("premise", "")).strip()
+            hypothesis = str(doc.get("hypothesis", "")).strip()
+            label = doc.get("label")
 
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            if not premise or not hypothesis or label not in {0, 1}:
+                log.debug(
+                    "Skipping doc due to missing/invalid fields",
+                    extra={"doc": doc},
+                )
+                return None
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
+            # RTE labels: 0=entailment, 1=not_entailment
+            if label == 0:
+                correct = "True"
+                incorrect = "False"
             else:
-                return None
+                correct = "False"
+                incorrect = "True"
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+            prompt = f"Premise: {premise}\nHypothesis: {hypothesis} True or False?\nAnswer:\nA. {incorrect}\nB. {correct}"
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "super_glue_lm_eval_v1"}
+            metadata = {"label": "sglue_rte"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
