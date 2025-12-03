@@ -6,14 +6,11 @@
   <code>pip install wisent</code>
 </p>
 
-<p align="center">
-  A Python package for latent space monitoring and guardrails. Delivered to you by the [Wisent](https://wisent.ai) team led by [Lukasz Bartoszcze](https://lukaszbartoszcze.com).<br></p>
-<p>
 
 
 ## Overview
 
-Wisent allows you to control your AI by identifying brain patterns corresponding to responses you don't like, like hallucinations or harmful outputs. We use contrastive pairs of representations to detect when a model might be generating harmful content or hallucinating. Learn more at https://www.wisent.ai/documentation.  
+Wisent allows you to control your AI by identifying brain patterns corresponding to responses you don't like, like hallucinations or harmful outputs. We use contrastive pairs of representations to detect when a model might be generating harmful content or hallucinating. Learn more at [wisent.ai/documentation](https://www.wisent.ai/documentation).  
 
 
 ## License
