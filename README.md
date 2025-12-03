@@ -1,15 +1,15 @@
-# Wisent
-
 <p align="center">
-  <a href="https://github.com/wisent-ai/wisent-guard/stargazers"><img src="https://img.shields.io/github/stars/wisent-ai/wisent-guard" alt="stars" /></a>
-  <a href="https://pypi.org/project/wisent-guard"><img src="https://static.pepy.tech/badge/wisent-guard" alt="PyPI - Downloads" /></a>
+  <img src="banner.png" alt="Wisent Banner" width="100%">
 </p>
 
 <p align="center">
-  <img src="wisent-logo.png" alt="Wisent Logo" width="200">
+  <code>pip install wisent</code>
 </p>
 
-A Python package for latent space monitoring and guardrails. Delivered to you by the [Wisent](https://wisent.ai) team led by [Lukasz Bartoszcze](https://lukaszbartoszcze.com).
+<p align="center">
+  A Python package for latent space monitoring and guardrails. Delivered to you by the [Wisent](https://wisent.ai) team led by [Lukasz Bartoszcze](https://lukaszbartoszcze.com).<br></p>
+<p>
+
 
 ## Overview
 
