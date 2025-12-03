@@ -804,7 +804,7 @@ class OptimizationPipeline:
 
         try:
             # Get inference config settings
-                        gen_kwargs = get_generate_kwargs()
+            gen_kwargs = get_generate_kwargs()
             do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
             temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 
@@ -830,7 +830,7 @@ class OptimizationPipeline:
         inputs = self.tokenizer(question, return_tensors="pt").to(self.device)
 
         # Get inference config settings
-                gen_kwargs = get_generate_kwargs()
+        gen_kwargs = get_generate_kwargs()
         do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
         temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 
@@ -858,7 +858,7 @@ class OptimizationPipeline:
         all_responses = []
 
         # Get inference config settings
-                gen_kwargs = get_generate_kwargs()
+        gen_kwargs = get_generate_kwargs()
         do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
         temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 
@@ -905,7 +905,7 @@ class OptimizationPipeline:
         all_responses = []
 
         # Get inference config settings
-                gen_kwargs = get_generate_kwargs()
+        gen_kwargs = get_generate_kwargs()
         do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
         temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 

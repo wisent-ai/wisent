@@ -429,7 +429,7 @@ def execute_comprehensive(args, model, loader):
                                         if args.save_all_generation_examples:
                                             config_examples = []
                                             # Get inference config settings
-                                                                                        gen_kwargs = get_generate_kwargs()
+                                            gen_kwargs = get_generate_kwargs()
                                             for idx, pair in enumerate(example_pairs):
                                                 prompt = pair.prompt
                                                 try:
@@ -722,7 +722,7 @@ def execute_comprehensive(args, model, loader):
                     generation_examples = []
 
                     # Get inference config settings
-                                        gen_kwargs = get_generate_kwargs()
+                    gen_kwargs = get_generate_kwargs()
 
                     for idx, pair in enumerate(example_pairs):
                         # Create prompt from the question
@@ -2250,6 +2250,22 @@ def execute_personalization(args, model):
         with open(examples_file_path, "w") as f:
             f.write(json.dumps({"_header": True, "trait": trait, "trait_name": trait_name, "model": args.model}) + "\n")
         print(f"   📝 Will save generation examples to: {examples_file_path}", flush=True)
+
+    # Pre-generate baseline responses ONCE (they don't depend on any loop variables)
+    print("   📊 Pre-generating baseline responses for test prompts...", flush=True)
+    gen_kwargs_baseline = get_generate_kwargs()
+    baseline_responses_cache = {}
+    for prompt in test_prompts:
+        baseline = model.generate(
+            [[{"role": "user", "content": prompt}]],
+            max_new_tokens=args.max_new_tokens,
+            temperature=gen_kwargs_baseline.get("temperature", 0.7),
+            top_p=gen_kwargs_baseline.get("top_p", 0.9),
+            do_sample=gen_kwargs_baseline.get("do_sample", True),
+            use_steering=False,
+        )[0]
+        baseline_responses_cache[prompt] = baseline
+    print(f"   ✓ Generated {len(baseline_responses_cache)} baseline responses", flush=True)
 
     for token_agg in token_aggregations_to_test:
         for prompt_const in prompt_constructions_to_test:

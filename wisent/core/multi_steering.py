@@ -202,7 +202,7 @@ class MultiSteering:
             raise MultiSteeringError("No layer information available")
 
         # Get inference config settings
-                gen_kwargs = get_generate_kwargs()
+        gen_kwargs = get_generate_kwargs()
         actual_temperature = temperature if temperature is not None else gen_kwargs.get("temperature", 0.7)
         actual_top_p = top_p if top_p is not None else gen_kwargs.get("top_p", 0.9)
 
@@ -284,7 +284,7 @@ class MultiSteering:
             raise MultiSteeringError("No layer information available")
 
         # Get inference config settings
-                gen_kwargs = get_generate_kwargs()
+        gen_kwargs = get_generate_kwargs()
         actual_temperature = temperature if temperature is not None else gen_kwargs.get("temperature", 0.7)
         actual_top_p = top_p if top_p is not None else gen_kwargs.get("top_p", 0.9)
 
