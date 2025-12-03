@@ -6,6 +6,12 @@ import time
 import numpy as np
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.optimization_cache import (
+    get_cache,
+    get_cached_optimization,
+    store_optimization,
+    OptimizationResult
+)
 
 def execute_optimize_steering(args):
     """
@@ -80,6 +86,47 @@ def execute_comprehensive(args, model, loader):
         task_list = args.tasks
     else:
         task_list = ["arc_easy", "hellaswag", "winogrande", "gsm8k"]
+
+    # Check for cached results if --use-cached is specified
+    use_cached = getattr(args, 'use_cached', False)
+    save_as_default = getattr(args, 'save_as_default', False)
+
+    if use_cached:
+        print(f"\n📦 Checking optimization cache...")
+        cached_results = {}
+        tasks_to_run = []
+
+        for task_name in task_list:
+            for method in args.methods:
+                cached = get_cached_optimization(args.model, task_name, method)
+                if cached:
+                    print(f"   ✓ Found cached result for {task_name}/{method}: layer={cached.layer}, strength={cached.strength}, score={cached.score:.3f}")
+                    cached_results[f"{task_name}::{method}"] = cached
+                else:
+                    if task_name not in tasks_to_run:
+                        tasks_to_run.append(task_name)
+
+        if cached_results and not tasks_to_run:
+            print(f"\n✅ All tasks have cached results. Returning cached configurations.")
+            # Convert cached results to the expected return format
+            all_results = {}
+            for key, cached in cached_results.items():
+                task_name, method = key.split("::")
+                if task_name not in all_results:
+                    all_results[task_name] = {}
+                all_results[task_name][method] = {
+                    'best_layer': cached.layer,
+                    'best_strength': cached.strength,
+                    'best_score': cached.score,
+                    'token_aggregation': cached.token_aggregation,
+                    'prompt_strategy': cached.prompt_strategy,
+                    'from_cache': True
+                }
+            return all_results
+
+        if tasks_to_run:
+            print(f"   Tasks needing optimization: {', '.join(tasks_to_run)}")
+            task_list = tasks_to_run
 
     print(f"   Tasks: {', '.join(task_list)}")
     print(f"   Methods: {', '.join(args.methods)}")
@@ -771,6 +818,40 @@ def execute_comprehensive(args, model, loader):
         print(f"  {task_name:20s} | L{config['best_layer']:2d} S{config['best_strength']:.1f} | {config['best_strategy']:12s} | T:{config['best_token_aggregation']:12s} | P:{config['best_prompt_construction']:18s}")
     print("-" * 140 + "\n")
 
+    # Store results in optimization cache
+    save_as_default = getattr(args, 'save_as_default', False)
+    print("💾 Storing results in optimization cache...")
+    for task_name, config in all_results.items():
+        # Skip results that came from cache
+        if config.get('from_cache'):
+            continue
+
+        # Get best score from methods if available
+        best_score = 0.0
+        if 'methods' in config and 'CAA' in config['methods']:
+            best_score = config['methods']['CAA'].get('accuracy', 0.0)
+
+        cache_key = store_optimization(
+            model=args.model,
+            task=task_name,
+            layer=config['best_layer'],
+            strength=config['best_strength'],
+            method="CAA",
+            token_aggregation=config.get('best_token_aggregation', 'last_token'),
+            prompt_strategy=config.get('best_prompt_construction', 'chat_template'),
+            score=best_score,
+            metric="accuracy",
+            metadata={
+                'strategy': config.get('best_strategy', 'constant'),
+                'limit': args.limit
+            },
+            set_as_default=save_as_default
+        )
+        print(f"   ✓ Cached {task_name}: {cache_key}")
+
+    if save_as_default:
+        print("   ✓ Results set as default configurations")
+
     # Return results for programmatic access
     return {
         "model": args.model,
@@ -821,6 +902,28 @@ def execute_compare_methods(args, model, loader):
     from wisent_plots import LineChart
     import matplotlib.pyplot as plt
     import torch
+
+    # Check for cached results if --use-cached is specified
+    use_cached = getattr(args, 'use_cached', False)
+    save_as_default = getattr(args, 'save_as_default', False)
+
+    if use_cached:
+        print(f"\n📦 Checking optimization cache for {args.task}...")
+        for method in args.methods:
+            cached = get_cached_optimization(args.model, args.task, method)
+            if cached:
+                print(f"   ✓ Found cached result for {method}: layer={cached.layer}, strength={cached.strength}, score={cached.score:.3f}")
+                return {
+                    "model": args.model,
+                    "action": "compare-methods",
+                    "task": args.task,
+                    "best_method": method,
+                    "best_layer": cached.layer,
+                    "best_strength": cached.strength,
+                    "best_score": cached.score,
+                    "from_cache": True
+                }
+        print(f"   No cached results found. Running optimization...")
 
     print(f"🔍 Comparing steering methods for task: {args.task}\n")
     print(f"   Methods: {', '.join(args.methods)}")
@@ -1006,6 +1109,28 @@ def execute_compare_methods(args, model, loader):
         print(f"   SVG: {plot_path_svg}")
         print(f"   PNG: {plot_path_png}\n")
 
+    # Store best result in cache
+    save_as_default = getattr(args, 'save_as_default', False)
+    best_method = max(method_results.keys(), key=lambda m: method_results[m].get('accuracy', 0))
+    best_accuracy = method_results[best_method].get('accuracy', 0)
+
+    if best_accuracy > 0:
+        print("💾 Storing best result in optimization cache...")
+        cache_key = store_optimization(
+            model=args.model,
+            task=args.task,
+            layer=args.layer,
+            strength=args.strength,
+            method=best_method,
+            score=best_accuracy,
+            metric="accuracy",
+            metadata={'limit': args.limit},
+            set_as_default=save_as_default
+        )
+        print(f"   ✓ Cached: {cache_key}")
+        if save_as_default:
+            print("   ✓ Set as default configuration")
+
     return {
         "action": "compare-methods",
         "task": args.task,
@@ -1023,6 +1148,27 @@ def execute_optimize_layer(args, model, loader):
     from wisent_plots import LineChart
     import matplotlib.pyplot as plt
     import torch
+
+    # Check for cached results if --use-cached is specified
+    use_cached = getattr(args, 'use_cached', False)
+    save_as_default = getattr(args, 'save_as_default', False)
+
+    if use_cached:
+        print(f"\n📦 Checking optimization cache for {args.task}/{args.method}...")
+        cached = get_cached_optimization(args.model, args.task, args.method)
+        if cached:
+            print(f"   ✓ Found cached result: layer={cached.layer}, strength={cached.strength}, score={cached.score:.3f}")
+            return {
+                "model": args.model,
+                "action": "optimize-layer",
+                "task": args.task,
+                "method": args.method,
+                "best_layer": cached.layer,
+                "best_strength": cached.strength,
+                "best_accuracy": cached.score,
+                "from_cache": True
+            }
+        print(f"   No cached results found. Running optimization...")
 
     print(f"🎯 Optimizing steering layer for task: {args.task}\n")
     print(f"   Method: {args.method}")
@@ -1233,6 +1379,25 @@ def execute_optimize_layer(args, model, loader):
         print(f"   SVG: {plot_path_svg}")
         print(f"   PNG: {plot_path_png}\n")
 
+    # Store result in cache
+    save_as_default = getattr(args, 'save_as_default', False)
+    if best_layer is not None and best_accuracy > 0:
+        print("💾 Storing result in optimization cache...")
+        cache_key = store_optimization(
+            model=args.model,
+            task=args.task,
+            layer=best_layer,
+            strength=args.strength,
+            method=args.method,
+            score=best_accuracy,
+            metric="accuracy",
+            metadata={'limit': args.limit},
+            set_as_default=save_as_default
+        )
+        print(f"   ✓ Cached: {cache_key}")
+        if save_as_default:
+            print("   ✓ Set as default configuration")
+
     return {
         "action": "optimize-layer",
         "task": args.task,
@@ -1252,6 +1417,27 @@ def execute_optimize_strength(args, model, loader):
     from wisent_plots import LineChart
     import matplotlib.pyplot as plt
     import torch
+
+    # Check for cached results if --use-cached is specified
+    use_cached = getattr(args, 'use_cached', False)
+    save_as_default = getattr(args, 'save_as_default', False)
+
+    if use_cached:
+        print(f"\n📦 Checking optimization cache for {args.task}/{args.method}...")
+        cached = get_cached_optimization(args.model, args.task, args.method)
+        if cached:
+            print(f"   ✓ Found cached result: layer={cached.layer}, strength={cached.strength}, score={cached.score:.3f}")
+            return {
+                "model": args.model,
+                "action": "optimize-strength",
+                "task": args.task,
+                "method": args.method,
+                "best_layer": cached.layer,
+                "best_strength": cached.strength,
+                "best_accuracy": cached.score,
+                "from_cache": True
+            }
+        print(f"   No cached results found. Running optimization...")
 
     print(f"💪 Optimizing steering strength for task: {args.task}\n")
     print(f"   Method: {args.method}")
@@ -1470,6 +1656,25 @@ def execute_optimize_strength(args, model, loader):
         print(f"   SVG: {plot_path_svg}")
         print(f"   PNG: {plot_path_png}\n")
 
+    # Store result in cache
+    save_as_default = getattr(args, 'save_as_default', False)
+    if best_strength is not None and best_accuracy > 0:
+        print("💾 Storing result in optimization cache...")
+        cache_key = store_optimization(
+            model=args.model,
+            task=args.task,
+            layer=args.layer,
+            strength=best_strength,
+            method=args.method,
+            score=best_accuracy,
+            metric="accuracy",
+            metadata={'limit': args.limit, 'strength_range': args.strength_range},
+            set_as_default=save_as_default
+        )
+        print(f"   ✓ Cached: {cache_key}")
+        if save_as_default:
+            print("   ✓ Set as default configuration")
+
     return {
         "action": "optimize-strength",
         "task": args.task,
@@ -1489,6 +1694,29 @@ def execute_auto(args, model, loader):
     from wisent_plots import LineChart
     import matplotlib.pyplot as plt
     import torch
+
+    # Check for cached results if --use-cached is specified
+    use_cached = getattr(args, 'use_cached', False)
+    save_as_default = getattr(args, 'save_as_default', False)
+    task_name = args.task or "default"
+
+    if use_cached:
+        print(f"\n📦 Checking optimization cache for {task_name}...")
+        for method in args.methods:
+            cached = get_cached_optimization(args.model, task_name, method)
+            if cached:
+                print(f"   ✓ Found cached result for {method}: layer={cached.layer}, strength={cached.strength}, score={cached.score:.3f}")
+                return {
+                    "model": args.model,
+                    "action": "auto",
+                    "task": task_name,
+                    "best_method": method,
+                    "best_layer": cached.layer,
+                    "best_strength": cached.strength,
+                    "best_accuracy": cached.score,
+                    "from_cache": True
+                }
+        print(f"   No cached results found. Running optimization...")
 
     print(f"🤖 Running automatic steering optimization...\n")
     print(f"   Task: {args.task}")
@@ -1728,6 +1956,25 @@ def execute_auto(args, model, loader):
         print(f"💾 Auto optimization heatmap saved to:")
         print(f"   SVG: {plot_path_svg}")
         print(f"   PNG: {plot_path_png}\n")
+
+    # Store result in cache
+    save_as_default = getattr(args, 'save_as_default', False)
+    if best_config and best_config.get('accuracy', 0) > 0:
+        print("💾 Storing result in optimization cache...")
+        cache_key = store_optimization(
+            model=args.model,
+            task=args.task or "auto",
+            layer=best_config['layer'],
+            strength=best_config['strength'],
+            method=best_config.get('method', 'CAA'),
+            score=best_config['accuracy'],
+            metric="accuracy",
+            metadata={'limit': args.limit, 'strength_range': list(args.strength_range)},
+            set_as_default=save_as_default
+        )
+        print(f"   ✓ Cached: {cache_key}")
+        if save_as_default:
+            print("   ✓ Set as default configuration")
 
     return {
         "action": "auto",
