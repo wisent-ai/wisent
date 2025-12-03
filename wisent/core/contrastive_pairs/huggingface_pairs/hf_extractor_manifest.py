@@ -137,7 +137,6 @@ EXTRACTORS: dict[str, str] = {
     "ptb": f"{base_import}penn_treebank:PennTreebankExtractor",
     "prompt_robustness_agieval_aqua_rat": f"{base_import}prompt_robustness_agieval_aqua_rat:PromptRobustnessAgievalAquaRatExtractor",
     "self_consistency": f"{base_import}self_consistency:SelfConsistencyExtractor",
-    "sglue_rte": f"{base_import}sglue_rte:SglueRteExtractor",
     "t0_eval": f"{base_import}t0_eval:T0EvalExtractor",
     "vaxx_stance": f"{base_import}vaxx_stance:VaxxStanceExtractor",
     "wikitext103": f"{base_import}wikitext103:Wikitext103Extractor",
