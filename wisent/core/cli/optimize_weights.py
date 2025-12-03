@@ -354,8 +354,10 @@ def execute_optimize_weights(args):
             tokenizer.push_to_hub(args.repo_id)
             print(f"   Pushed successfully")
 
-    # Show before/after comparisons if requested
-    if args.show_comparisons > 0:
+    # Show/save before/after comparisons if requested
+    save_comparisons_path = getattr(args, 'save_comparisons', None)
+    show_comparisons_count = getattr(args, 'show_comparisons', 0)
+    if show_comparisons_count > 0 or save_comparisons_path:
         _show_response_comparisons(
             base_model=base_model,
             base_state_dict=base_state_dict,
@@ -364,7 +366,8 @@ def execute_optimize_weights(args):
             num_layers=num_layers,
             tokenizer=tokenizer,
             args=args,
-            num_comparisons=args.show_comparisons,
+            num_comparisons=show_comparisons_count if show_comparisons_count > 0 else None,
+            save_path=save_comparisons_path,
         )
 
     total_time = time.time() - start_time
@@ -727,13 +730,18 @@ def _show_response_comparisons(
     num_layers: int,
     tokenizer,
     args,
-    num_comparisons: int,
+    num_comparisons: int = None,
+    save_path: str = None,
 ):
     """
-    Show before/after response comparisons for prompts with biggest score changes.
+    Show and/or save before/after response comparisons for prompts with biggest score changes.
 
     Generates responses from both baseline and optimized model, then shows
-    the N prompts with the largest change in compliance score.
+    the N prompts with the largest change in compliance score and/or saves all to JSON.
+
+    Args:
+        num_comparisons: Number of comparisons to display in console (None = don't display)
+        save_path: Path to save all comparisons as JSON (None = don't save)
     """
     import re
     from uncensorbench import UncensorBench
@@ -869,30 +877,56 @@ def _show_response_comparisons(
     # Sort by absolute delta (biggest changes first)
     comparisons.sort(key=lambda x: abs(x["delta"]), reverse=True)
 
-    # Step 4: Display top N comparisons
-    print(f"\nTop {num_comparisons} prompts with biggest score changes:\n")
-
-    for i, comp in enumerate(comparisons[:num_comparisons]):
-        print(f"{'─'*80}")
-        print(f"Comparison {i+1}/{num_comparisons}")
-        print(f"{'─'*80}")
-        print(f"PROMPT: {comp['prompt'][:200]}{'...' if len(comp['prompt']) > 200 else ''}")
-        print()
-        print(f"BASELINE (score={comp['baseline_score']:.2f}, refusal={comp['baseline_refusal']}):")
-        print(f"  {comp['baseline_response'][:300]}{'...' if len(comp['baseline_response']) > 300 else ''}")
-        print()
-        print(f"OPTIMIZED (score={comp['optimized_score']:.2f}, refusal={comp['optimized_refusal']}):")
-        print(f"  {comp['optimized_response'][:300]}{'...' if len(comp['optimized_response']) > 300 else ''}")
-        print()
-        delta_str = f"+{comp['delta']:.2f}" if comp['delta'] >= 0 else f"{comp['delta']:.2f}"
-        print(f"DELTA: {delta_str}")
-        print()
-
     # Summary stats
     total_baseline_refusals = sum(1 for c in comparisons if c["baseline_refusal"])
     total_optimized_refusals = sum(1 for c in comparisons if c["optimized_refusal"])
     avg_baseline_score = sum(c["baseline_score"] for c in comparisons) / len(comparisons)
     avg_optimized_score = sum(c["optimized_score"] for c in comparisons) / len(comparisons)
+
+    summary = {
+        "total_prompts": len(comparisons),
+        "baseline_refusals": total_baseline_refusals,
+        "optimized_refusals": total_optimized_refusals,
+        "avg_baseline_score": avg_baseline_score,
+        "avg_optimized_score": avg_optimized_score,
+        "score_delta": avg_optimized_score - avg_baseline_score,
+        "refusal_change": total_baseline_refusals - total_optimized_refusals,
+    }
+
+    # Step 4: Save to JSON if requested
+    if save_path:
+        import os
+        os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else ".", exist_ok=True)
+        output_data = {
+            "model": args.model,
+            "trait": getattr(args, "trait", None),
+            "best_params": best_params,
+            "summary": summary,
+            "comparisons": comparisons,
+        }
+        with open(save_path, "w") as f:
+            json.dump(output_data, f, indent=2)
+        print(f"\n💾 Saved {len(comparisons)} comparisons to: {save_path}")
+
+    # Step 5: Display top N comparisons in console if requested
+    if num_comparisons and num_comparisons > 0:
+        print(f"\nTop {num_comparisons} prompts with biggest score changes:\n")
+
+        for i, comp in enumerate(comparisons[:num_comparisons]):
+            print(f"{'─'*80}")
+            print(f"Comparison {i+1}/{num_comparisons}")
+            print(f"{'─'*80}")
+            print(f"PROMPT: {comp['prompt'][:200]}{'...' if len(comp['prompt']) > 200 else ''}")
+            print()
+            print(f"BASELINE (score={comp['baseline_score']:.2f}, refusal={comp['baseline_refusal']}):")
+            print(f"  {comp['baseline_response'][:300]}{'...' if len(comp['baseline_response']) > 300 else ''}")
+            print()
+            print(f"OPTIMIZED (score={comp['optimized_score']:.2f}, refusal={comp['optimized_refusal']}):")
+            print(f"  {comp['optimized_response'][:300]}{'...' if len(comp['optimized_response']) > 300 else ''}")
+            print()
+            delta_str = f"+{comp['delta']:.2f}" if comp['delta'] >= 0 else f"{comp['delta']:.2f}"
+            print(f"DELTA: {delta_str}")
+            print()
 
     print(f"{'='*80}")
     print("SUMMARY")
