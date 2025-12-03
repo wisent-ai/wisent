@@ -17,7 +17,7 @@ import torch
 import numpy as np
 
 from wisent.core.cli_logger import setup_logger, bind
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
@@ -179,8 +179,7 @@ class PersonalizationEvaluator:
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
 
         # Get inference config settings
-        inference_config = get_config()
-        gen_kwargs = get_generate_kwargs(inference_config)
+        gen_kwargs = get_generate_kwargs()
 
         with torch.no_grad():
             if control_vector is not None:
@@ -336,8 +335,7 @@ Rating (0-10):"""
             inputs = self.tokenizer(eval_prompt, return_tensors="pt").to(self.device)
 
             # Get inference config settings
-            inference_config = get_config()
-            gen_kwargs = get_generate_kwargs(inference_config)
+            gen_kwargs = get_generate_kwargs()
 
             with torch.no_grad():
                 outputs = self.model.generate(

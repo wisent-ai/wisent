@@ -11,7 +11,7 @@ from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.activations.core.atoms import RawActivationMap
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.utils.device import resolve_default_device
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 __all__ = ["MultiSteering", "MultiSteeringError"]
 
@@ -202,8 +202,7 @@ class MultiSteering:
             raise MultiSteeringError("No layer information available")
 
         # Get inference config settings
-        inference_config = get_config()
-        gen_kwargs = get_generate_kwargs(inference_config)
+                gen_kwargs = get_generate_kwargs()
         actual_temperature = temperature if temperature is not None else gen_kwargs.get("temperature", 0.7)
         actual_top_p = top_p if top_p is not None else gen_kwargs.get("top_p", 0.9)
 
@@ -285,8 +284,7 @@ class MultiSteering:
             raise MultiSteeringError("No layer information available")
 
         # Get inference config settings
-        inference_config = get_config()
-        gen_kwargs = get_generate_kwargs(inference_config)
+                gen_kwargs = get_generate_kwargs()
         actual_temperature = temperature if temperature is not None else gen_kwargs.get("temperature", 0.7)
         actual_top_p = top_p if top_p is not None else gen_kwargs.get("top_p", 0.9)
 
