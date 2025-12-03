@@ -5,6 +5,7 @@ import json
 import time
 import numpy as np
 from wisent.core.evaluators.rotator import EvaluatorRotator
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
 
 def execute_optimize_steering(args):
     """
@@ -351,6 +352,9 @@ def execute_comprehensive(args, model, loader):
                                 # Generate examples for this configuration if requested
                                 if args.save_all_generation_examples:
                                     config_examples = []
+                                    # Get inference config settings
+                                    inference_config = get_config()
+                                    gen_kwargs = get_generate_kwargs(inference_config)
                                     for idx, pair in enumerate(example_pairs):
                                         prompt = pair.prompt
                                         try:
@@ -358,7 +362,9 @@ def execute_comprehensive(args, model, loader):
                                             unsteered_response = model.generate(
                                                 [[{"role": "user", "content": prompt}]],
                                                 max_new_tokens=100,
-                                                temperature=0.7,
+                                                temperature=gen_kwargs.get("temperature", 0.7),
+                                                top_p=gen_kwargs.get("top_p", 0.9),
+                                                do_sample=gen_kwargs.get("do_sample", True),
                                                 use_steering=False
                                             )[0]
 
@@ -375,7 +381,9 @@ def execute_comprehensive(args, model, loader):
                                             steered_response = model.generate(
                                                 [[{"role": "user", "content": prompt}]],
                                                 max_new_tokens=100,
-                                                temperature=0.7,
+                                                temperature=gen_kwargs.get("temperature", 0.7),
+                                                top_p=gen_kwargs.get("top_p", 0.9),
+                                                do_sample=gen_kwargs.get("do_sample", True),
                                                 use_steering=True,
                                                 steering_plan=steering_plan
                                             )[0]
@@ -599,6 +607,10 @@ def execute_comprehensive(args, model, loader):
 
                     generation_examples = []
 
+                    # Get inference config settings
+                    inference_config = get_config()
+                    gen_kwargs = get_generate_kwargs(inference_config)
+
                     for idx, pair in enumerate(example_pairs):
                         # Create prompt from the question
                         prompt = pair.prompt
@@ -608,7 +620,9 @@ def execute_comprehensive(args, model, loader):
                             unsteered_response = model.generate(
                                 [[{"role": "user", "content": prompt}]],
                                 max_new_tokens=100,
-                                temperature=0.7,
+                                temperature=gen_kwargs.get("temperature", 0.7),
+                                top_p=gen_kwargs.get("top_p", 0.9),
+                                do_sample=gen_kwargs.get("do_sample", True),
                                 use_steering=False
                             )[0]
 
@@ -654,7 +668,9 @@ def execute_comprehensive(args, model, loader):
                             steered_response = model.generate(
                                 [[{"role": "user", "content": prompt}]],
                                 max_new_tokens=100,
-                                temperature=0.7,
+                                temperature=gen_kwargs.get("temperature", 0.7),
+                                top_p=gen_kwargs.get("top_p", 0.9),
+                                do_sample=gen_kwargs.get("do_sample", True),
                                 use_steering=True,
                                 steering_plan=steering_plan
                             )[0]
@@ -1947,12 +1963,18 @@ def execute_personalization(args, model):
                         baseline_responses = []
                         steered_responses = []
 
+                        # Get inference config settings
+                        inference_config_gen = get_config()
+                        gen_kwargs_gen = get_generate_kwargs(inference_config_gen)
+
                         for prompt in test_prompts:
                             # Generate baseline (no steering)
                             baseline = model.generate(
                                 [[{"role": "user", "content": prompt}]],
                                 max_new_tokens=args.max_new_tokens,
-                                temperature=0.7,
+                                temperature=gen_kwargs_gen.get("temperature", 0.7),
+                                top_p=gen_kwargs_gen.get("top_p", 0.9),
+                                do_sample=gen_kwargs_gen.get("do_sample", True),
                                 use_steering=False
                             )[0]
                             baseline_responses.append(baseline)
@@ -1962,7 +1984,9 @@ def execute_personalization(args, model):
                             steered = model.generate(
                                 [[{"role": "user", "content": prompt}]],
                                 max_new_tokens=args.max_new_tokens,
-                                temperature=0.7,
+                                temperature=gen_kwargs_gen.get("temperature", 0.7),
+                                top_p=gen_kwargs_gen.get("top_p", 0.9),
+                                do_sample=gen_kwargs_gen.get("do_sample", True),
                                 use_steering=True,
                                 steering_plan=steering_plan
                             )[0]
@@ -2400,12 +2424,18 @@ def execute_multi_personalization(args, model):
                     strength_combos = all_strength_combos
 
                 # Pre-generate baseline responses ONCE per config (they don't depend on steering)
+                # Get inference config settings
+                inference_config_baseline = get_config()
+                gen_kwargs_baseline = get_generate_kwargs(inference_config_baseline)
+
                 baseline_responses = []
                 for prompt in test_prompts:
                     baseline = model.generate(
                         [[{"role": "user", "content": prompt}]],
                         max_new_tokens=args.max_new_tokens,
-                        temperature=0.7,
+                        temperature=gen_kwargs_baseline.get("temperature", 0.7),
+                        top_p=gen_kwargs_baseline.get("top_p", 0.9),
+                        do_sample=gen_kwargs_baseline.get("do_sample", True),
                         use_steering=False
                     )[0]
                     baseline_responses.append(baseline)
@@ -2440,7 +2470,9 @@ def execute_multi_personalization(args, model):
                         steered = model.generate(
                             [[{"role": "user", "content": prompt}]],
                             max_new_tokens=args.max_new_tokens,
-                            temperature=0.7,
+                            temperature=gen_kwargs_baseline.get("temperature", 0.7),
+                            top_p=gen_kwargs_baseline.get("top_p", 0.9),
+                            do_sample=gen_kwargs_baseline.get("do_sample", True),
                             use_steering=True,
                             steering_plan=steering_plan
                         )[0]

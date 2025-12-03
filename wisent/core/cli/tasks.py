@@ -5,6 +5,8 @@ import os
 import json
 import numpy as np
 
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
+
 
 def execute_tasks(args):
     """Execute the tasks command - train classifier on benchmark tasks."""
@@ -567,10 +569,15 @@ def execute_tasks(args):
         choices = [pair.negative_response.model_response, pair.positive_response.model_response]
 
         # Generate response from unsteered model
+        inference_config = get_config()
+        generate_kwargs = get_generate_kwargs(inference_config)
         response = model.generate(
             [[{"role": "user", "content": question}]],
-            max_new_tokens=100,
-            do_sample=False  # Deterministic (greedy decoding) for evaluation
+            max_new_tokens=generate_kwargs.get("max_new_tokens", 100),
+            do_sample=generate_kwargs.get("do_sample", True),
+            temperature=generate_kwargs.get("temperature", 0.7),
+            top_p=generate_kwargs.get("top_p", 0.9),
+            top_k=generate_kwargs.get("top_k", 50),
         )[0]
 
         # Evaluate the response using Wisent evaluator

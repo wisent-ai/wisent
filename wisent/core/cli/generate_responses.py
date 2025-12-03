@@ -4,6 +4,8 @@ import json
 import os
 import sys
 
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
+
 
 def execute_generate_responses(args):
     """
@@ -89,13 +91,18 @@ def execute_generate_responses(args):
                 {"role": "user", "content": pair.prompt}
             ]
 
-            # Generate response
+            # Get inference config settings
+            inference_config = get_config()
+            gen_kwargs = get_generate_kwargs(inference_config)
+
+            # Generate response - use args if provided, otherwise fall back to inference config
             responses = model.generate(
                 inputs=[messages],
                 max_new_tokens=args.max_new_tokens,
-                temperature=args.temperature,
-                top_p=args.top_p,
-                do_sample=True,
+                temperature=args.temperature if args.temperature is not None else gen_kwargs.get("temperature", 0.7),
+                top_p=args.top_p if args.top_p is not None else gen_kwargs.get("top_p", 0.9),
+                top_k=gen_kwargs.get("top_k", 50),
+                do_sample=gen_kwargs.get("do_sample", True),
                 use_steering=args.use_steering,
             )
 

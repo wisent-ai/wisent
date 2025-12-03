@@ -1,5 +1,7 @@
 """Apply steering vectors to improve response."""
 
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
+
 
 def _map_token_aggregation(aggregation_str: str):
     """Map string token aggregation to ActivationAggregationStrategy enum."""
@@ -150,12 +152,18 @@ def apply_steering_and_evaluate(
     model.apply_steering(plan=steering_plan)
 
     # Generate steered response
+    # Get inference config settings
+    inference_config = get_config()
+    gen_kwargs = get_generate_kwargs(inference_config)
+
     messages = [[{"role": "user", "content": prompt}]]
     steered_responses = model.generate(
         inputs=messages,
         max_new_tokens=512,
-        temperature=0.7,
-        do_sample=True,
+        temperature=gen_kwargs.get("temperature", 0.7),
+        top_p=gen_kwargs.get("top_p", 0.9),
+        top_k=gen_kwargs.get("top_k", 50),
+        do_sample=gen_kwargs.get("do_sample", True),
     )
 
     model.detach()  # Remove steering

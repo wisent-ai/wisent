@@ -16,6 +16,7 @@ from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifi
 from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
 from wisent.core.evaluators.rotator import EvaluatorRotator
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
 
 
 def execute_optimize_sample_size(args):
@@ -151,10 +152,15 @@ def execute_optimize_sample_size(args):
             choices = [pair.negative_response.model_response, pair.positive_response.model_response]
 
             # Generate response
+            inference_config = get_config()
+            generate_kwargs = get_generate_kwargs(inference_config)
             response = model.generate(
                 [[{"role": "user", "content": question}]],
-                max_new_tokens=100,
-                do_sample=False
+                max_new_tokens=generate_kwargs.get("max_new_tokens", 100),
+                do_sample=generate_kwargs.get("do_sample", True),
+                temperature=generate_kwargs.get("temperature", 0.7),
+                top_p=generate_kwargs.get("top_p", 0.9),
+                top_k=generate_kwargs.get("top_k", 50),
             )[0]
 
             # Evaluate

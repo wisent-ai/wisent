@@ -11,6 +11,7 @@ from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.activations.core.atoms import RawActivationMap
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.utils.device import resolve_default_device
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
 
 __all__ = ["MultiSteering", "MultiSteeringError"]
 
@@ -170,8 +171,8 @@ class MultiSteering:
         model: WisentModel,
         prompt: str,
         max_new_tokens: int = 100,
-        temperature: float = 0.7,
-        top_p: float = 0.9,
+        temperature: float = None,
+        top_p: float = None,
         enable_thinking: bool = True,
         prompt_is_formatted: bool = False,
         ensure_varied_responses: bool = False,
@@ -183,8 +184,8 @@ class MultiSteering:
             model: WisentModel instance to use for generation
             prompt: Input prompt (either raw text or pre-formatted with chat template)
             max_new_tokens: Maximum tokens to generate
-            temperature: Sampling temperature
-            top_p: Top-p sampling parameter
+            temperature: Sampling temperature (uses inference config if None)
+            top_p: Top-p sampling parameter (uses inference config if None)
             enable_thinking: If False, disable thinking/reasoning mode (prevents <think> tags for supported models like Qwen)
             prompt_is_formatted: If True, prompt already has chat template applied
 
@@ -199,6 +200,12 @@ class MultiSteering:
 
         if self.layer is None:
             raise MultiSteeringError("No layer information available")
+
+        # Get inference config settings
+        inference_config = get_config()
+        gen_kwargs = get_generate_kwargs(inference_config)
+        actual_temperature = temperature if temperature is not None else gen_kwargs.get("temperature", 0.7)
+        actual_top_p = top_p if top_p is not None else gen_kwargs.get("top_p", 0.9)
 
         print(f"\n🎯 Applying combined steering vector at layer {self.layer}")
         print(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}")
@@ -227,8 +234,8 @@ class MultiSteering:
             yield from model.generate_stream(
                 inputs=inputs,
                 max_new_tokens=max_new_tokens,
-                temperature=temperature,
-                top_p=top_p,
+                temperature=actual_temperature,
+                top_p=actual_top_p,
                 use_steering=True,
                 steering_plan=steering_plan,
                 skip_prompt=True,
@@ -249,8 +256,8 @@ class MultiSteering:
         model: WisentModel,
         prompt: str,
         max_new_tokens: int = 100,
-        temperature: float = 0.7,
-        top_p: float = 0.9,
+        temperature: float = None,
+        top_p: float = None,
         enable_thinking: bool = True,
         prompt_is_formatted: bool = False
     ) -> str:
@@ -260,8 +267,8 @@ class MultiSteering:
             model: WisentModel instance to use for generation
             prompt: Input prompt (either raw text or pre-formatted with chat template)
             max_new_tokens: Maximum tokens to generate
-            temperature: Sampling temperature
-            top_p: Top-p sampling parameter
+            temperature: Sampling temperature (uses inference config if None)
+            top_p: Top-p sampling parameter (uses inference config if None)
             enable_thinking: If False, disable thinking/reasoning mode (prevents <think> tags for supported models like Qwen)
             prompt_is_formatted: If True, prompt already has chat template applied
 
@@ -276,6 +283,12 @@ class MultiSteering:
 
         if self.layer is None:
             raise MultiSteeringError("No layer information available")
+
+        # Get inference config settings
+        inference_config = get_config()
+        gen_kwargs = get_generate_kwargs(inference_config)
+        actual_temperature = temperature if temperature is not None else gen_kwargs.get("temperature", 0.7)
+        actual_top_p = top_p if top_p is not None else gen_kwargs.get("top_p", 0.9)
 
         print(f"\n🎯 Applying combined steering vector at layer {self.layer}")
         print(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}")
@@ -304,8 +317,8 @@ class MultiSteering:
             outputs = model.generate(
                 inputs=inputs,
                 max_new_tokens=max_new_tokens,
-                temperature=temperature,
-                top_p=top_p,
+                temperature=actual_temperature,
+                top_p=actual_top_p,
                 use_steering=True,
                 steering_plan=steering_plan,
                 enable_thinking=enable_thinking,
@@ -325,8 +338,8 @@ def run_multi_steer(
     method: str = "CAA",
     layer: int | None = None,
     max_new_tokens: int = 100,
-    temperature: float = 0.7,
-    top_p: float = 0.9,
+    temperature: float = None,
+    top_p: float = None,
     device: str | None = None,
     verbose: bool = True,
 ) -> str:
@@ -339,8 +352,8 @@ def run_multi_steer(
         method: Steering method to use (kept for backward compatibility)
         layer: Target layer (will be inferred from vectors if not specified)
         max_new_tokens: Maximum tokens to generate
-        temperature: Sampling temperature
-        top_p: Top-p sampling parameter
+        temperature: Sampling temperature (uses inference config if None)
+        top_p: Top-p sampling parameter (uses inference config if None)
         device: Device to use
         verbose: Whether to print progress
 
@@ -374,7 +387,7 @@ def run_multi_steer(
     # Combine vectors with normalization
     multi_steer.combine_vectors(normalize=True)
 
-    # Apply steering (non-streaming)
+    # Apply steering (non-streaming) - will use inference config if temperature/top_p are None
     output = multi_steer.apply_steering(
         model=model,
         prompt=prompt,

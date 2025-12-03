@@ -4,6 +4,8 @@ import sys
 import os
 import torch
 
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
+
 
 def execute_multi_steer(args):
     """Execute the multi-steer command - combine multiple steering vectors and apply to generation."""
@@ -22,13 +24,18 @@ def execute_multi_steer(args):
                 print(f"\n🤖 Loading model '{args.model}'...")
                 model = WisentModel(args.model, device=args.device)
 
+                # Get inference config settings
+                inference_config = get_config()
+                gen_kwargs = get_generate_kwargs(inference_config)
+
                 # Generate WITHOUT steering
                 response = model.generate(
                     [[{"role": "user", "content": args.prompt}]],
                     max_new_tokens=args.max_new_tokens,
-                    do_sample=True,
-                    temperature=getattr(args, 'temperature', 0.7),
-                    top_p=getattr(args, 'top_p', 0.9)
+                    do_sample=gen_kwargs.get("do_sample", True),
+                    temperature=getattr(args, 'temperature', None) or gen_kwargs.get("temperature", 0.7),
+                    top_p=getattr(args, 'top_p', None) or gen_kwargs.get("top_p", 0.9),
+                    top_k=gen_kwargs.get("top_k", 50),
                 )[0]
 
                 print(f"\nUnsteered baseline output:\n{response}\n")
@@ -79,9 +86,13 @@ def execute_multi_steer(args):
             print(f"\n🤖 Loading model '{args.model}'...")
             model = WisentModel(args.model, device=args.device)
 
+            # Get inference config settings
+            inference_config = get_config()
+            gen_kwargs = get_generate_kwargs(inference_config)
+
             # Generate with steering
-            temperature = getattr(args, 'temperature', 0.7)
-            top_p = getattr(args, 'top_p', 0.9)
+            temperature = getattr(args, 'temperature', None) or gen_kwargs.get("temperature", 0.7)
+            top_p = getattr(args, 'top_p', None) or gen_kwargs.get("top_p", 0.9)
             output = multi_steer.apply_steering(
                 model=model,
                 prompt=args.prompt,
