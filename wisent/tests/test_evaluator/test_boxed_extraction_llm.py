@@ -76,7 +76,7 @@ Solution:"""
 def main():
     # Load model using WisentModel
     print("Loading model...")
-    model_name = "Qwen/Qwen2.5-Math-7B-Instruct"
+    model_name = "Qwen/Qwen2.5-32B-Instruct" 
     model = WisentModel(model_name=model_name)
 
     # Load dataset
