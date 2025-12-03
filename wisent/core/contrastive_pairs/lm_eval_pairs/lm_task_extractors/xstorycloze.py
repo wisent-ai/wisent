@@ -29,12 +29,11 @@ task_names = (
     "xstorycloze_zh",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class XStoryClozeExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the XStoryCloze benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

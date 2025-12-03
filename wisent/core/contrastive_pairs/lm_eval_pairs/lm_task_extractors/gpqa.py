@@ -34,12 +34,11 @@ task_names = (
     "gpqa_main_zeroshot",
 )
 
-evaluator_name = "generation"
-
-
 class GPQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for GPQA (Graduate-Level Google-Proof Q&A) benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

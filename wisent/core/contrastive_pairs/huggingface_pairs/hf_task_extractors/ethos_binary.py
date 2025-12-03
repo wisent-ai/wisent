@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("ethos_binary",)
 
-evaluator_name = "exact_match"
-
-
 class EthosBinaryExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Ethos Binary - hate speech classification."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

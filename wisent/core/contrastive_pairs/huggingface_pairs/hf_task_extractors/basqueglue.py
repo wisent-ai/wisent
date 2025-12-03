@@ -13,12 +13,45 @@ _LOG = setup_logger(__name__)
 
 task_names = ("basque-glue", "basqueglue")
 
-evaluator_name = "log_likelihoods"
+# Configs from orai-nlp/basqueGLUE
+# intent = fmtod_intent, bhtc = bhtc_v2, bec = bec2016eu, vaxx = vaxx_stance
+# qnli = qnli_eu, wic = wiceu, coref = epec_koref_bin
+BASQUEGLUE_CONFIGS = ["intent", "bhtc", "bec", "vaxx", "qnli", "wic", "coref"]
+
+# Label names for each classification config
+LABEL_NAMES = {
+    "intent": [
+        "alarm/cancel_alarm", "alarm/modify_alarm", "alarm/set_alarm", "alarm/show_alarms",
+        "alarm/snooze_alarm", "alarm/time_left_on_alarm", "reminder/cancel_reminder",
+        "reminder/set_reminder", "reminder/show_reminders", "weather/checkSunrise",
+        "weather/checkSunset", "weather/find"
+    ],
+    "bhtc": [
+        "Ekonomia", "Euskal Herria", "Euskara", "Gizartea", "Historia", "Ingurumena",
+        "Iritzia", "Komunikazioa", "Kultura", "Nazioartea", "Politika", "Zientzia"
+    ],
+    "bec": ["N", "NEU", "P"],
+    "vaxx": ["AGAINST", "NONE", "FAVOR"],
+}
 
 
 class BasqueglueExtractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for the Basqueglue benchmark."""
+    """Extractor for the BasqueGLUE benchmark.
 
+    Dataset: https://huggingface.co/datasets/orai-nlp/basqueGLUE
+
+    Configs:
+    - intent (fmtod_intent): text classification
+    - bhtc (bhtc_v2): text classification
+    - bec (bec2016eu): text classification
+    - vaxx (vaxx_stance): text classification
+    - qnli (qnli_eu): NLI (question, sentence, label)
+    - wic (wiceu): word-in-context (sentence1, sentence2, word, label)
+    - coref (epec_koref_bin): coreference (text, span1_text, span2_text, label)
+    """
+
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -26,101 +59,162 @@ class BasqueglueExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, task="basqueglue")
         max_items = self._normalize_limit(limit)
 
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("basqueglue", split="test")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load basqueglue dataset: {e}")
-            return []
-
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(dataset)})
 
-        for doc in dataset:
-            pair = self._extract_pair_from_doc(doc)
-            if pair is not None:
-                pairs.append(pair)
-                if max_items is not None and len(pairs) >= max_items:
-                    break
+        for config in BASQUEGLUE_CONFIGS:
+            try:
+                docs = self.load_dataset(
+                    dataset_name="orai-nlp/basqueGLUE",
+                    dataset_config=config,
+                    split="test",
+                    limit=max_items,
+                )
+                log.info(f"Loaded {len(docs)} docs from config '{config}'")
+
+                for doc in docs:
+                    pair = self._extract_pair_from_doc(doc, config)
+                    if pair is not None:
+                        pairs.append(pair)
+
+            except Exception as e:
+                log.warning(f"Failed to load config '{config}': {e}")
+                continue
+
+        log.info("Extracted contrastive pairs", extra={"pair_count": len(pairs)})
 
         if not pairs:
             log.warning("No valid pairs extracted", extra={"task": "basqueglue"})
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
+    def _extract_pair_from_doc(self, doc: dict[str, Any], config: str) -> ContrastivePair | None:
+        """Extract a contrastive pair based on the config type."""
+        log = bind(_LOG, doc_id=doc.get("idx", "unknown"), config=config)
 
         try:
-            question = None
-            choices = None
-            answer_idx = None
+            # Text classification: intent, bhtc, bec, vaxx
+            if config in ("intent", "bhtc", "bec", "vaxx"):
+                return self._extract_text_classification(doc, config)
 
-            # Format 1: question + choices + answer
-            if "question" in doc and "choices" in doc:
-                question = str(doc.get("question", "")).strip()
-                choices_data = doc.get("choices", {})
-                if isinstance(choices_data, dict):
-                    choices = choices_data.get("text", [])
-                elif isinstance(choices_data, list):
-                    choices = choices_data
-                answer = doc.get("answer", doc.get("answerKey", ""))
-                if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                    answer_idx = ord(answer.upper()) - ord('A')
-                else:
-                    answer_idx = int(answer) if answer else 0
+            # NLI: qnli
+            if config == "qnli":
+                return self._extract_qnli(doc)
 
-            # Format 2: instruction + option_a/b/c/d + answer (MMMLU style)
-            elif "instruction" in doc and "option_a" in doc:
-                question = str(doc.get("instruction", "")).strip()
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-                answer = doc.get("answer", "A")
-                answer_idx = ord(str(answer).upper()) - ord('A')
+            # Word-in-context: wic
+            if config == "wic":
+                return self._extract_wic(doc)
 
-            # Format 3: query/prompt + answer
-            elif "query" in doc or "prompt" in doc:
-                question = str(doc.get("query", doc.get("prompt", ""))).strip()
-                correct_answer = str(doc.get("target", doc.get("answer", ""))).strip()
-                if correct_answer:
-                    metadata = {"label": "basqueglue"}
-                    return self._build_pair(
-                        question=f"Question: {question}",
-                        correct=correct_answer,
-                        incorrect="incorrect answer",
-                        metadata=metadata,
-                    )
-                return None
+            # Coreference: coref
+            if config == "coref":
+                return self._extract_coref(doc)
 
-            if not question or not choices or answer_idx is None or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
-
-            correct = choices[answer_idx]
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = choices[incorrect_idx]
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
-            metadata = {"label": "basqueglue"}
-
-            return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
-                metadata=metadata,
-            )
+            return None
 
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
+
+    def _extract_text_classification(self, doc: dict[str, Any], config: str) -> ContrastivePair | None:
+        """Extract pair from text classification task (intent, bhtc, bec, vaxx)."""
+        text = str(doc.get("text", "")).strip()
+        label = doc.get("label")
+
+        if not text or label is None:
+            return None
+
+        labels = LABEL_NAMES.get(config, [])
+        if not labels or label >= len(labels):
+            return None
+
+        prompt = f"Classify the following text:\n\n{text}\n\nLabel:"
+
+        correct = labels[label]
+        incorrect_idx = (label + 1) % len(labels)
+        incorrect = labels[incorrect_idx]
+
+        return self._build_pair(
+            question=prompt,
+            correct=correct,
+            incorrect=incorrect,
+            metadata={"label": f"basqueglue_{config}"},
+        )
+
+    def _extract_qnli(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """Extract pair from QNLI task (question, sentence, label)."""
+        question = str(doc.get("question", "")).strip()
+        sentence = str(doc.get("sentence", "")).strip()
+        label = doc.get("label")  # 0 = entailment, 1 = not_entailment
+
+        if not question or not sentence or label is None:
+            return None
+
+        prompt = f"Question: {question}\nSentence: {sentence}\n\nDoes the sentence entail the question? Answer entailment or not_entailment:"
+
+        if label == 0:
+            correct = "entailment"
+            incorrect = "not_entailment"
+        else:
+            correct = "not_entailment"
+            incorrect = "entailment"
+
+        return self._build_pair(
+            question=prompt,
+            correct=correct,
+            incorrect=incorrect,
+            metadata={"label": "basqueglue_qnli"},
+        )
+
+    def _extract_wic(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """Extract pair from Word-in-Context task."""
+        sentence1 = str(doc.get("sentence1", "")).strip()
+        sentence2 = str(doc.get("sentence2", "")).strip()
+        word = str(doc.get("word", "")).strip()
+        label = doc.get("label")  # 0 = different meaning, 1 = same meaning
+
+        if not sentence1 or not sentence2 or not word or label is None:
+            return None
+
+        prompt = f"Sentence 1: {sentence1}\nSentence 2: {sentence2}\n\nDoes the word '{word}' have the same meaning in both sentences?"
+
+        if label == 1:
+            correct = "Yes"
+            incorrect = "No"
+        else:
+            correct = "No"
+            incorrect = "Yes"
+
+        return self._build_pair(
+            question=prompt,
+            correct=correct,
+            incorrect=incorrect,
+            metadata={"label": "basqueglue_wic"},
+        )
+
+    def _extract_coref(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """Extract pair from coreference task."""
+        text = str(doc.get("text", "")).strip()
+        span1 = str(doc.get("span1_text", "")).strip()
+        span2 = str(doc.get("span2_text", "")).strip()
+        label = doc.get("label")  # 0 = not coreferent, 1 = coreferent
+
+        if not text or not span1 or not span2 or label is None:
+            return None
+
+        prompt = f"Text: {text}\n\nDo '{span1}' and '{span2}' refer to the same entity?"
+
+        if label == 1:
+            correct = "Yes"
+            incorrect = "No"
+        else:
+            correct = "No"
+            incorrect = "Yes"
+
+        return self._build_pair(
+            question=prompt,
+            correct=correct,
+            incorrect=incorrect,
+            metadata={"label": "basqueglue_coref"},
+        )
 
     @staticmethod
     def _build_pair(

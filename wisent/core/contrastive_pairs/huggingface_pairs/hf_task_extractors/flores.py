@@ -475,12 +475,11 @@ task_names = (
         "trasnlation_msa_dr_flores",
     )
 
-evaluator_name = "generation"
-
-
 class FloresExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Flores benchmark - multilingual machine translation tasks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

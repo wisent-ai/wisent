@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("xsum",)
 
-evaluator_name = "exact_match"
-
-
 class XsumExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Xsum benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -16,15 +16,14 @@ _LOG = setup_logger(__name__)
 
 task_names = ("toxigen",)
 
-evaluator_name = "log_likelihoods"
-
-
 class ToxigenExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Toxigen benchmark.
 
     Toxigen is a binary classification task (Yes/No) for detecting hateful statements.
     """
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

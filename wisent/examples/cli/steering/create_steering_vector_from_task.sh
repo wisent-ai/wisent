@@ -23,3 +23,4 @@ python -m wisent.core.main generate-vector-from-task \
     --normalize \
     --verbose \
     --timing
+

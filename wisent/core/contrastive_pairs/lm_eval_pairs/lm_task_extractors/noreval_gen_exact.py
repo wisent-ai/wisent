@@ -22,9 +22,6 @@ task_names = (
     # norquad
     "norquad_p0", "norquad_p1", "norquad_p2", "norquad_p3", "norquad_p4",
 )
-evaluator_name = "exact_match"
-
-
 class NorevalGenerationExactMatchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Noreval generation exact match benchmarks.
 
@@ -33,6 +30,8 @@ class NorevalGenerationExactMatchExtractor(LMEvalBenchmarkExtractor):
     2. norquad: QA {context, question, answers}
     """
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

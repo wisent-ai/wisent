@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("bigbench",)
 
-evaluator_name = "exact_match"
-
-
 class BigBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for BIG-Bench tasks."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -1,6 +1,6 @@
 """Generate and evaluate response with classifier."""
 
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def _map_token_aggregation(aggregation_str: str):
@@ -77,9 +77,7 @@ def evaluate_response_with_classifier(
     print(f"\n💬 Step 3: Generating unsteered response")
 
     # Generate response without steering
-    # Get inference config settings
-    inference_config = get_config()
-    gen_kwargs = get_generate_kwargs(inference_config)
+    gen_kwargs = get_generate_kwargs()
 
     messages = [[{"role": "user", "content": prompt}]]
 

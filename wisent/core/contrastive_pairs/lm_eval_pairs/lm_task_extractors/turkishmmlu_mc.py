@@ -25,12 +25,11 @@ task_names = (
     "turkishmmlu_religion_and_ethics",
     "turkishmmlu_turkish_language_and_literature",
 )
-evaluator_name = "log_likelihoods"
-
-
 class TurkishmmluMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for TurkishMMLU multiple-choice benchmarks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

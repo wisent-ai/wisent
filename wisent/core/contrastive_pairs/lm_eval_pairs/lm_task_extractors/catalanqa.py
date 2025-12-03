@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("catalanqa",)
 
-evaluator_name = "log_likelihoods"
-
-
 class CatalanqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Catalanqa benchmark (SQuAD-like QA)."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

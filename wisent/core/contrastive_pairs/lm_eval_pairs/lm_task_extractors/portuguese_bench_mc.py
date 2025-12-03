@@ -18,12 +18,11 @@ task_names = (
     "assin_entailment",
     "assin_paraphrase",
 )
-evaluator_name = "log_likelihoods"
-
-
 class PortugueseBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Portuguese Bench multiple-choice benchmarks (ASSIN)."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
