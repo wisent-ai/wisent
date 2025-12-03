@@ -61,6 +61,20 @@ def setup_steering_optimizer_parser(parser):
         default="./baseline_comparison",
         help="Directory to save baseline comparison results (default: ./baseline_comparison)",
     )
+    comprehensive_parser.add_argument(
+        "--show-comparisons",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Show N before/after response comparisons with biggest score changes in console. Default: 0 (disabled)",
+    )
+    comprehensive_parser.add_argument(
+        "--save-comparisons",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="Save all comparisons to JSON file (use with --show-comparisons to also display in console)",
+    )
     comprehensive_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     comprehensive_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     comprehensive_parser.add_argument(
