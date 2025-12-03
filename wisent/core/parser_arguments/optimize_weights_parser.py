@@ -115,7 +115,7 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         "--target-metric",
         type=str,
         default="compliance_rate",
-        help="Metric to optimize: compliance_rate, refusal_rate, accuracy, kl_divergence. Default: compliance_rate"
+        help="Metric to optimize: compliance_rate, refusal_rate, accuracy. Default: compliance_rate"
     )
     target_group.add_argument(
         "--target-value",
@@ -129,12 +129,6 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         default="auto",
         choices=["auto", "maximize", "minimize"],
         help="Optimization direction. 'auto' infers from metric. Default: auto"
-    )
-    target_group.add_argument(
-        "--quality-weight",
-        type=float,
-        default=0.3,
-        help="Weight for quality preservation (KL divergence) in multi-objective. Default: 0.3"
     )
 
     # ==========================================================================

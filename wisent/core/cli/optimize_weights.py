@@ -38,9 +38,7 @@ class TrialResult:
     """Result from a single optimization trial."""
     trial_number: int
     params: dict
-    primary_score: float
-    kl_divergence: float | None
-    combined_score: float
+    score: float
     evaluation_details: dict
 
 
@@ -187,27 +185,14 @@ def execute_optimize_weights(args):
             # Step 4: Evaluate
             eval_result = evaluator(base_model, tokenizer)
 
-            # Step 5: Compute score
-            primary_score = eval_result.get(args.target_metric, eval_result.get("score", 0.0))
-            kl_div = eval_result.get("kl_divergence", None)
-
-            # Combined score with quality weight
-            if kl_div is not None and args.quality_weight > 0:
-                # Lower KL = better, so subtract weighted KL
-                if direction == "maximize":
-                    combined_score = primary_score - args.quality_weight * kl_div
-                else:
-                    combined_score = primary_score + args.quality_weight * kl_div
-            else:
-                combined_score = primary_score
+            # Step 5: Get score
+            score = eval_result.get(args.target_metric, eval_result.get("score", 0.0))
 
             # Create trial result
             trial_result = TrialResult(
                 trial_number=trial.number,
                 params=params,
-                primary_score=primary_score,
-                kl_divergence=kl_div,
-                combined_score=combined_score,
+                score=score,
                 evaluation_details=eval_result,
             )
             all_trials.append(trial_result)
@@ -216,30 +201,27 @@ def execute_optimize_weights(args):
             if best_result is None:
                 best_result = trial_result
             else:
-                is_better = (combined_score > best_result.combined_score) if direction == "maximize" else (combined_score < best_result.combined_score)
+                is_better = (score > best_result.score) if direction == "maximize" else (score < best_result.score)
                 if is_better:
                     best_result = trial_result
 
             trial_time = time.time() - trial_start
 
             if args.verbose:
-                print(f"   {args.target_metric}: {primary_score:.4f}")
-                if kl_div is not None:
-                    print(f"   KL divergence: {kl_div:.4f}")
-                print(f"   Combined score: {combined_score:.4f}")
+                print(f"   {args.target_metric}: {score:.4f}")
                 print(f"   Time: {trial_time:.1f}s")
             else:
                 status = "BEST" if trial_result == best_result else ""
-                print(f"Trial {trial.number:3d}: {args.target_metric}={primary_score:.4f} combined={combined_score:.4f} {status}")
+                print(f"Trial {trial.number:3d}: {args.target_metric}={score:.4f} {status}")
 
             # Early stopping check
             if args.early_stop:
-                target_reached = (primary_score >= args.target_value) if direction == "maximize" else (primary_score <= args.target_value)
+                target_reached = (score >= args.target_value) if direction == "maximize" else (score <= args.target_value)
                 if target_reached:
                     print(f"\n   Target {args.target_value} reached! Stopping early.")
                     trial.study.stop()
 
-            return combined_score
+            return score
 
         except Exception as e:
             print(f"\n   Trial {trial.number} failed: {e}")
@@ -285,13 +267,10 @@ def execute_optimize_weights(args):
     print(f"\nBest parameters:")
     for k, v in best_params.items():
         print(f"   {k}: {v:.4f}" if isinstance(v, float) else f"   {k}: {v}")
-    print(f"\nBest {args.target_metric}: {best_result.primary_score:.4f}")
-    if best_result.kl_divergence is not None:
-        print(f"Best KL divergence: {best_result.kl_divergence:.4f}")
-    print(f"Best combined score: {best_value:.4f}")
+    print(f"\nBest {args.target_metric}: {best_result.score:.4f}")
 
     # Check if target achieved
-    target_achieved = (best_result.primary_score >= args.target_value) if direction == "maximize" else (best_result.primary_score <= args.target_value)
+    target_achieved = (best_result.score >= args.target_value) if direction == "maximize" else (best_result.score <= args.target_value)
     print(f"\nTarget {args.target_value} achieved: {'YES' if target_achieved else 'NO'}")
 
     # Apply best parameters and save final model
@@ -332,9 +311,7 @@ def execute_optimize_weights(args):
         "target_metric": args.target_metric,
         "target_value": args.target_value,
         "best_params": best_params,
-        "best_score": best_result.primary_score,
-        "best_kl_divergence": best_result.kl_divergence,
-        "best_combined_score": best_value,
+        "best_score": best_result.score,
         "target_achieved": target_achieved,
         "total_trials": len(all_trials),
         "direction": direction,
@@ -352,9 +329,7 @@ def execute_optimize_weights(args):
             {
                 "trial": t.trial_number,
                 "params": t.params,
-                "primary_score": t.primary_score,
-                "kl_divergence": t.kl_divergence,
-                "combined_score": t.combined_score,
+                "score": t.score,
             }
             for t in all_trials
         ]
