@@ -17,7 +17,7 @@ from wisent.core.models.wisent_model import WisentModel
 
 def extract_boxed_answer(text: str) -> str | None:
     """
-    Extract the final answer from \\boxed{} notation.
+    Extract the LAST \\boxed{} answer from text (final answer convention).
 
     Handles nested braces correctly (e.g., \\boxed{\\frac{1}{2}}).
 
@@ -25,16 +25,20 @@ def extract_boxed_answer(text: str) -> str | None:
         text: The text containing \\boxed{answer}
 
     Returns:
-        The extracted answer or None if not found
+        The extracted answer from the last \\boxed{} or None if not found
     """
-    # Find \boxed{ and then match balanced braces
+    # Find all \boxed{ occurrences
     start_pattern = r'\\boxed\{'
-    match = re.search(start_pattern, text)
-    if not match:
+    matches = list(re.finditer(start_pattern, text))
+
+    if not matches:
         return None
 
+    # Process the LAST match (final answer convention)
+    last_match = matches[-1]
+
     # Start after \boxed{
-    start_idx = match.end()
+    start_idx = last_match.end()
     brace_count = 1
     idx = start_idx
 
