@@ -2340,8 +2340,7 @@ def execute_personalization(args, model):
                         steered_responses = []
 
                         # Get inference config settings
-                        inference_config_gen = get_config()
-                        gen_kwargs_gen = get_generate_kwargs(inference_config_gen)
+                        gen_kwargs_gen = get_generate_kwargs()
 
                         for prompt in test_prompts:
                             # Generate baseline (no steering)
