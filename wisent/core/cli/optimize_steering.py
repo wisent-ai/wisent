@@ -2349,25 +2349,14 @@ def execute_personalization(args, model):
                             layers={layer_str: steering_vec}, layers_description=[f"Personalization {config_desc}"]
                         )
 
-                        # Generate baseline and steered responses
-                        baseline_responses = []
+                        # Get baseline from cache and generate steered responses
+                        baseline_responses = [baseline_responses_cache[prompt] for prompt in test_prompts]
                         steered_responses = []
 
                         # Get inference config settings
                         gen_kwargs_gen = get_generate_kwargs()
 
                         for prompt in test_prompts:
-                            # Generate baseline (no steering)
-                            baseline = model.generate(
-                                [[{"role": "user", "content": prompt}]],
-                                max_new_tokens=args.max_new_tokens,
-                                temperature=gen_kwargs_gen.get("temperature", 0.7),
-                                top_p=gen_kwargs_gen.get("top_p", 0.9),
-                                do_sample=gen_kwargs_gen.get("do_sample", True),
-                                use_steering=False,
-                            )[0]
-                            baseline_responses.append(baseline)
-
                             # Generate steered response
                             model.apply_steering(steering_plan)
                             steered = model.generate(
