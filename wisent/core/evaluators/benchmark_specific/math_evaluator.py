@@ -1,0 +1,144 @@
+"""Math evaluator for competition math benchmarks.
+
+This evaluator handles mathematical answer comparison for benchmarks like
+qwedsacf/competition_math (MATH dataset) where answers are in LaTeX format
+and need to be compared for mathematical equivalence.
+
+Uses the is_equiv function from math_equivalence package (hendrycks/math).
+"""
+
+import re
+import logging
+from typing import Any
+
+from math_equivalence import is_equiv
+
+from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+
+logger = logging.getLogger(__name__)
+
+
+def extract_boxed_answer(text: str) -> str | None:
+    """Extract the LAST \\boxed{} answer from text (final answer convention).
+
+    Handles nested braces correctly (e.g., \\boxed{\\frac{1}{2}}).
+
+    Args:
+        text: The text containing \\boxed{answer}
+
+    Returns:
+        The extracted answer from the last \\boxed{} or None if not found
+    """
+    # Find all \boxed{ occurrences
+    start_pattern = r'\\boxed\{'
+    matches = list(re.finditer(start_pattern, text))
+
+    if not matches:
+        return None
+
+    # Process the LAST match (final answer convention)
+    last_match = matches[-1]
+
+    # Start after \boxed{
+    start_idx = last_match.end()
+    brace_count = 1
+    idx = start_idx
+
+    # Find the matching closing brace
+    while idx < len(text) and brace_count > 0:
+        if text[idx] == '{':
+            brace_count += 1
+        elif text[idx] == '}':
+            brace_count -= 1
+        idx += 1
+
+    if brace_count == 0:
+        # Extract content between the braces
+        return text[start_idx:idx-1].strip()
+
+    return None
+
+
+class MathEvaluator(BaseEvaluator):
+    """Evaluator for mathematical answer comparison.
+
+    Designed for benchmarks like qwedsacf/competition_math where:
+    - Model outputs contain answers in \\boxed{} format
+    - Ground truth solutions also contain \\boxed{} answers
+    - Answers need mathematical equivalence checking (not just string matching)
+
+    Uses the is_equiv function from math_equivalence package for robust comparison
+    of LaTeX mathematical expressions.
+    """
+
+    name = "math"
+    description = "Mathematical equivalence evaluator for competition math benchmarks"
+
+    def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
+        """Evaluate model response against expected mathematical answer.
+
+        Args:
+            response: Model-generated response (should contain \\boxed{answer})
+            expected: Expected answer - can be:
+                - A string containing \\boxed{answer} (will extract)
+                - A raw answer string (used directly)
+            **kwargs:
+                extract_from_expected: If True (default), extract \\boxed{} from expected
+                verbose: If True, log debug information
+
+        Returns:
+            EvalResult with TRUTHFUL/UNTRUTHFUL/UNKNOWN
+        """
+        extract_from_expected = kwargs.get('extract_from_expected', True)
+        verbose = kwargs.get('verbose', False)
+
+        # Extract answer from model response
+        model_answer = extract_boxed_answer(response)
+
+        if model_answer is None:
+            return EvalResult(
+                ground_truth="UNKNOWN",
+                method_used=self.name,
+                confidence=0.0,
+                details="Could not extract \\boxed{} answer from model response",
+                meta={
+                    "response_preview": response[:200] if response else None,
+                    "expected": expected,
+                }
+            )
+
+        # Get expected answer
+        if extract_from_expected and isinstance(expected, str):
+            expected_answer = extract_boxed_answer(expected)
+            if expected_answer is None:
+                # If no boxed answer in expected, use expected directly
+                expected_answer = expected
+        else:
+            expected_answer = str(expected) if expected is not None else None
+
+        if expected_answer is None:
+            return EvalResult(
+                ground_truth="UNKNOWN",
+                method_used=self.name,
+                confidence=0.0,
+                details="Could not determine expected answer",
+                meta={
+                    "model_answer": model_answer,
+                    "expected_raw": expected,
+                }
+            )
+
+        # Compare using mathematical equivalence
+        is_correct = is_equiv(model_answer, expected_answer, verbose=verbose)
+
+        return EvalResult(
+            ground_truth="TRUTHFUL" if is_correct else "UNTRUTHFUL",
+            method_used=self.name,
+            confidence=1.0 if is_correct else 0.0,
+            details=f"Model: '{model_answer}' vs Expected: '{expected_answer}'",
+            meta={
+                "model_answer": model_answer,
+                "expected_answer": expected_answer,
+                "is_equivalent": is_correct,
+            }
+        )
