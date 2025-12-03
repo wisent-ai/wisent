@@ -7,7 +7,7 @@ import time
 import numpy as np
 
 from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 from wisent.core.models.optimization_cache import (
     get_cached_optimization,
     store_optimization,
@@ -429,8 +429,7 @@ def execute_comprehensive(args, model, loader):
                                         if args.save_all_generation_examples:
                                             config_examples = []
                                             # Get inference config settings
-                                            inference_config = get_config()
-                                            gen_kwargs = get_generate_kwargs(inference_config)
+                                                                                        gen_kwargs = get_generate_kwargs()
                                             for idx, pair in enumerate(example_pairs):
                                                 prompt = pair.prompt
                                                 try:
@@ -723,8 +722,7 @@ def execute_comprehensive(args, model, loader):
                     generation_examples = []
 
                     # Get inference config settings
-                    inference_config = get_config()
-                    gen_kwargs = get_generate_kwargs(inference_config)
+                                        gen_kwargs = get_generate_kwargs()
 
                     for idx, pair in enumerate(example_pairs):
                         # Create prompt from the question
@@ -2843,8 +2841,7 @@ def execute_multi_personalization(args, model):
 
                 # Pre-generate baseline responses ONCE per config (they don't depend on steering)
                 # Get inference config settings
-                inference_config_baseline = get_config()
-                gen_kwargs_baseline = get_generate_kwargs(inference_config_baseline)
+                gen_kwargs_baseline = get_generate_kwargs()
 
                 baseline_responses = []
                 for prompt in test_prompts:
