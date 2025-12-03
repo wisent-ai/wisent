@@ -17,6 +17,7 @@ import torch
 import numpy as np
 
 from wisent.core.cli_logger import setup_logger, bind
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
 
 if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
@@ -177,6 +178,10 @@ class PersonalizationEvaluator:
         """Generate a response with optional steering."""
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
 
+        # Get inference config settings
+        inference_config = get_config()
+        gen_kwargs = get_generate_kwargs(inference_config)
+
         with torch.no_grad():
             if control_vector is not None:
                 # Apply steering by adding control vector to activations
@@ -184,18 +189,20 @@ class PersonalizationEvaluator:
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=max_new_tokens,
-                    do_sample=True,
-                    temperature=0.7,
-                    top_p=0.9,
+                    do_sample=gen_kwargs.get("do_sample", True),
+                    temperature=gen_kwargs.get("temperature", 0.7),
+                    top_p=gen_kwargs.get("top_p", 0.9),
+                    top_k=gen_kwargs.get("top_k", 50),
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
             else:
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=max_new_tokens,
-                    do_sample=True,
-                    temperature=0.7,
-                    top_p=0.9,
+                    do_sample=gen_kwargs.get("do_sample", True),
+                    temperature=gen_kwargs.get("temperature", 0.7),
+                    top_p=gen_kwargs.get("top_p", 0.9),
+                    top_k=gen_kwargs.get("top_k", 50),
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
 
@@ -328,11 +335,17 @@ Rating (0-10):"""
             # Get rating from model
             inputs = self.tokenizer(eval_prompt, return_tensors="pt").to(self.device)
 
+            # Get inference config settings
+            inference_config = get_config()
+            gen_kwargs = get_generate_kwargs(inference_config)
+
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=10,
-                    do_sample=False,  # Greedy for consistency
+                    do_sample=gen_kwargs.get("do_sample", True),
+                    temperature=gen_kwargs.get("temperature", 0.7) if gen_kwargs.get("do_sample", True) else None,
+                    top_k=gen_kwargs.get("top_k", 50) if gen_kwargs.get("do_sample", True) else None,
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
 

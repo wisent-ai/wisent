@@ -46,6 +46,7 @@ from wisent.core.response import Response
 from wisent.core.steering_methods.dac import DAC
 from wisent.core.task_interface import get_task
 from wisent.core.utils.device import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device
+from wisent.core.models.inference_config import get_config as get_inference_config, get_generate_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -92,8 +93,8 @@ class OptimizationConfig:
     max_new_tokens: int = 256
     seed: int = 42
 
-    temperature: float = 0.0
-    do_sample: bool = False
+    temperature: float = None  # Will use inference config if None
+    do_sample: bool = None  # Will use inference config if None
 
     output_dir: str = "outputs/optimization_pipeline"
     cache_dir: str = "cache/optimization_pipeline"
@@ -802,12 +803,20 @@ class OptimizationPipeline:
         handle = target_layer.register_forward_hook(steering_hook)
 
         try:
+            # Get inference config settings
+            inference_config = get_inference_config()
+            gen_kwargs = get_generate_kwargs(inference_config)
+            do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
+            temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
+
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=self.config.max_new_tokens,
-                    do_sample=self.config.do_sample,
-                    temperature=self.config.temperature if self.config.do_sample else 1.0,
+                    do_sample=do_sample,
+                    temperature=temperature if do_sample else 1.0,
+                    top_p=gen_kwargs.get("top_p", 0.9) if do_sample else None,
+                    top_k=gen_kwargs.get("top_k", 50) if do_sample else None,
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
                 )
@@ -821,12 +830,20 @@ class OptimizationPipeline:
         """Generate baseline response without steering."""
         inputs = self.tokenizer(question, return_tensors="pt").to(self.device)
 
+        # Get inference config settings
+        inference_config = get_inference_config()
+        gen_kwargs = get_generate_kwargs(inference_config)
+        do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
+        temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
+
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=self.config.max_new_tokens,
-                do_sample=self.config.do_sample,
-                temperature=self.config.temperature if self.config.do_sample else 1.0,
+                do_sample=do_sample,
+                temperature=temperature if do_sample else 1.0,
+                top_p=gen_kwargs.get("top_p", 0.9) if do_sample else None,
+                top_k=gen_kwargs.get("top_k", 50) if do_sample else None,
                 pad_token_id=self.tokenizer.eos_token_id,
                 eos_token_id=self.tokenizer.eos_token_id,
             )
@@ -842,6 +859,12 @@ class OptimizationPipeline:
         batch_size = self.config.batch_size
         all_responses = []
 
+        # Get inference config settings
+        inference_config = get_inference_config()
+        gen_kwargs = get_generate_kwargs(inference_config)
+        do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
+        temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
+
         # Process questions in batches
         for i in tqdm(range(0, len(questions), batch_size), desc="Generating baseline predictions", leave=False):
             batch_questions = questions[i : i + batch_size]
@@ -855,8 +878,10 @@ class OptimizationPipeline:
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=self.config.max_new_tokens,
-                    do_sample=self.config.do_sample,
-                    temperature=self.config.temperature if self.config.do_sample else 1.0,
+                    do_sample=do_sample,
+                    temperature=temperature if do_sample else 1.0,
+                    top_p=gen_kwargs.get("top_p", 0.9) if do_sample else None,
+                    top_k=gen_kwargs.get("top_k", 50) if do_sample else None,
                     pad_token_id=self.tokenizer.eos_token_id,
                     eos_token_id=self.tokenizer.eos_token_id,
                 )
@@ -881,6 +906,12 @@ class OptimizationPipeline:
 
         batch_size = self.config.batch_size
         all_responses = []
+
+        # Get inference config settings
+        inference_config = get_inference_config()
+        gen_kwargs = get_generate_kwargs(inference_config)
+        do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
+        temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 
         # Process questions in batches
         for i in tqdm(range(0, len(questions), batch_size), desc="Generating steered predictions", leave=False):
@@ -921,8 +952,10 @@ class OptimizationPipeline:
                     outputs = self.model.generate(
                         **inputs,
                         max_new_tokens=self.config.max_new_tokens,
-                        do_sample=self.config.do_sample,
-                        temperature=self.config.temperature if self.config.do_sample else 1.0,
+                        do_sample=do_sample,
+                        temperature=temperature if do_sample else 1.0,
+                        top_p=gen_kwargs.get("top_p", 0.9) if do_sample else None,
+                        top_k=gen_kwargs.get("top_k", 50) if do_sample else None,
                         pad_token_id=self.tokenizer.eos_token_id,
                         eos_token_id=self.tokenizer.eos_token_id,
                     )
