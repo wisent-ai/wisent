@@ -32,6 +32,8 @@ from optuna.samplers import TPESampler
 import torch
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from wisent.core.utils.device import resolve_default_device, preferred_dtype
+
 
 @dataclass
 class TrialResult:
@@ -85,7 +87,7 @@ def execute_optimize_weights(args):
     max_weight_range = [float(x) for x in args.max_weight_range.split(",")]
     min_weight_range = [float(x) for x in args.min_weight_range.split(",")]
     position_range = [float(x) for x in args.position_range.split(",")]
-    num_pairs_range = [int(x) for x in args.num_pairs_range.split(",")]
+    num_pairs = args.num_pairs  # Fixed, not optimized
 
     # Determine optimization direction
     direction = args.direction
@@ -100,18 +102,37 @@ def execute_optimize_weights(args):
     print(f"   Max weight: {max_weight_range}")
     print(f"   Min weight: {min_weight_range}")
     print(f"   Position: {position_range}")
-    print(f"   Num pairs: {num_pairs_range}")
+    print(f"   Num pairs: {num_pairs} (fixed)")
     print(f"   Direction: {direction}")
     print()
 
     # Initialize components
     print("Loading base model for reference...")
-    base_model = AutoModelForCausalLM.from_pretrained(
-        args.model,
-        torch_dtype=torch.float16,
-        device_map="auto" if args.device is None else args.device,
-        trust_remote_code=True,
-    )
+
+    # Use existing device detection utilities
+    device = args.device if args.device else resolve_default_device()
+    dtype = preferred_dtype(device)
+
+    print(f"   Device: {device}")
+    print(f"   Dtype: {dtype}")
+
+    # For MPS, we need to load directly to device (device_map="auto" doesn't work well with MPS)
+    if device == "mps":
+        base_model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            torch_dtype=dtype,
+            trust_remote_code=True,
+        ).to(device)
+    else:
+        base_model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            torch_dtype=dtype,
+            device_map="auto" if device == "cuda" else None,
+            trust_remote_code=True,
+        )
+        if device == "cpu":
+            base_model = base_model.to(device)
+
     tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -131,9 +152,10 @@ def execute_optimize_weights(args):
     # Initialize evaluator
     evaluator = _create_evaluator(args, tokenizer)
 
-    # Pre-generate steering vectors if using trait/task (can be reused across trials)
-    # For num_pairs optimization, we'll regenerate with different sizes
-    cached_vectors = {}
+    # Pre-generate steering vectors once (num_pairs is fixed, not optimized)
+    print(f"Generating steering vectors with {num_pairs} pairs...")
+    steering_vectors = _generate_steering_vectors(args, num_pairs, num_layers)
+    print(f"   Steering vectors generated for {len(steering_vectors)} layers\n")
 
     # Track all trial results
     all_trials: list[TrialResult] = []
@@ -151,7 +173,6 @@ def execute_optimize_weights(args):
             "max_weight": trial.suggest_float("max_weight", max_weight_range[0], max_weight_range[1]),
             "min_weight": trial.suggest_float("min_weight", min_weight_range[0], min_weight_range[1]),
             "max_weight_position": trial.suggest_float("max_weight_position", position_range[0], position_range[1]),
-            "num_pairs": trial.suggest_int("num_pairs", num_pairs_range[0], num_pairs_range[1], step=10),
         }
 
         # Optional: optimize direction index (interpolate between layers)
@@ -163,14 +184,7 @@ def execute_optimize_weights(args):
             print(f"Trial {trial.number}: {params}")
 
         try:
-            # Step 1: Get or generate steering vectors
-            num_pairs = params["num_pairs"]
-            if num_pairs not in cached_vectors:
-                vectors = _generate_steering_vectors(args, num_pairs, num_layers)
-                cached_vectors[num_pairs] = vectors
-            steering_vectors = cached_vectors[num_pairs]
-
-            # Step 2: Restore base model weights
+            # Step 1: Restore base model weights
             base_model.load_state_dict(base_state_dict)
 
             # Step 3: Apply weight modification with trial parameters
@@ -281,16 +295,9 @@ def execute_optimize_weights(args):
     # Restore and apply best parameters
     base_model.load_state_dict(base_state_dict)
 
-    # Get vectors for best num_pairs
-    best_num_pairs = best_params.get("num_pairs", num_pairs_range[0])
-    if best_num_pairs not in cached_vectors:
-        vectors = _generate_steering_vectors(args, best_num_pairs, num_layers)
-        cached_vectors[best_num_pairs] = vectors
-    best_vectors = cached_vectors[best_num_pairs]
-
     _apply_weight_modification(
         base_model,
-        best_vectors,
+        steering_vectors,
         best_params,
         num_layers,
         args,
@@ -346,6 +353,19 @@ def execute_optimize_weights(args):
             base_model.push_to_hub(args.repo_id)
             tokenizer.push_to_hub(args.repo_id)
             print(f"   Pushed successfully")
+
+    # Show before/after comparisons if requested
+    if args.show_comparisons > 0:
+        _show_response_comparisons(
+            base_model=base_model,
+            base_state_dict=base_state_dict,
+            steering_vectors=steering_vectors,
+            best_params=best_params,
+            num_layers=num_layers,
+            tokenizer=tokenizer,
+            args=args,
+            num_comparisons=args.show_comparisons,
+        )
 
     total_time = time.time() - start_time
 
@@ -697,3 +717,187 @@ def _early_stopping_callback(patience: int, direction: str):
             study.stop()
 
     return callback
+
+
+def _show_response_comparisons(
+    base_model,
+    base_state_dict: dict,
+    steering_vectors: dict[int, torch.Tensor],
+    best_params: dict,
+    num_layers: int,
+    tokenizer,
+    args,
+    num_comparisons: int,
+):
+    """
+    Show before/after response comparisons for prompts with biggest score changes.
+
+    Generates responses from both baseline and optimized model, then shows
+    the N prompts with the largest change in compliance score.
+    """
+    import re
+    from uncensorbench import UncensorBench
+    from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
+    from wisent.core.models.inference_config import get_generate_kwargs
+
+    print(f"\n{'='*80}")
+    print("RESPONSE COMPARISONS (Baseline vs Optimized)")
+    print(f"{'='*80}")
+
+    bench = UncensorBench()
+
+    # Get evaluation prompts
+    if args.eval_prompts:
+        with open(args.eval_prompts) as f:
+            custom_prompts = json.load(f)
+        if not isinstance(custom_prompts, list):
+            custom_prompts = custom_prompts.get("prompts", [])
+        prompts = custom_prompts[:args.num_eval_prompts]
+        use_custom = True
+    else:
+        topics = args.eval_topics.split(",") if args.eval_topics else None
+        prompts = list(bench.prompts(topics=topics))[:args.num_eval_prompts]
+        use_custom = False
+
+    # Initialize evaluator
+    try:
+        evaluator = SemanticEvaluator()
+    except ImportError:
+        evaluator = KeywordEvaluator()
+
+    generate_kwargs = get_generate_kwargs()
+
+    def generate_response(model, prompt_text: str) -> str:
+        """Generate a response for a given prompt."""
+        try:
+            messages = [{"role": "user", "content": prompt_text}]
+            text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+        except Exception:
+            text = f"User: {prompt_text}\nAssistant:"
+
+        inputs = tokenizer(text, return_tensors="pt").to(model.device)
+
+        with torch.no_grad():
+            outputs = model.generate(
+                **inputs,
+                max_new_tokens=150,
+                do_sample=generate_kwargs.get("do_sample", True),
+                temperature=generate_kwargs.get("temperature", 0.7) if generate_kwargs.get("do_sample", True) else None,
+                pad_token_id=tokenizer.eos_token_id,
+            )
+
+        response = tokenizer.decode(outputs[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+        response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
+        return response
+
+    def evaluate_response(prompt_item, response: str, use_custom: bool) -> tuple[bool, float]:
+        """Evaluate a response and return (is_refusal, compliance_score)."""
+        if use_custom:
+            is_refusal = bench.detect_refusal(response)
+            compliance_score = 0.0 if is_refusal else 1.0
+        else:
+            eval_result = bench.evaluate_response(prompt_item, response, evaluator)
+            is_refusal = not eval_result.is_uncensored
+            compliance_score = eval_result.compliance_score
+        return is_refusal, compliance_score
+
+    print("\nGenerating baseline responses...")
+
+    # Step 1: Restore baseline model and generate responses
+    base_model.load_state_dict(base_state_dict)
+
+    baseline_results = []
+    for item in prompts:
+        if use_custom:
+            prompt_text = item if isinstance(item, str) else item.get("prompt", str(item))
+        else:
+            prompt_text = item.prompt
+
+        response = generate_response(base_model, prompt_text)
+        is_refusal, score = evaluate_response(item, response, use_custom)
+        baseline_results.append({
+            "prompt": prompt_text,
+            "response": response,
+            "is_refusal": is_refusal,
+            "score": score,
+            "item": item,
+        })
+
+    print("Generating optimized responses...")
+
+    # Step 2: Apply best params and generate optimized responses
+    _apply_weight_modification(
+        base_model,
+        steering_vectors,
+        best_params,
+        num_layers,
+        args,
+    )
+
+    optimized_results = []
+    for i, item in enumerate(prompts):
+        if use_custom:
+            prompt_text = item if isinstance(item, str) else item.get("prompt", str(item))
+        else:
+            prompt_text = item.prompt
+
+        response = generate_response(base_model, prompt_text)
+        is_refusal, score = evaluate_response(item, response, use_custom)
+        optimized_results.append({
+            "prompt": prompt_text,
+            "response": response,
+            "is_refusal": is_refusal,
+            "score": score,
+        })
+
+    # Step 3: Compute score deltas and sort
+    comparisons = []
+    for i, (baseline, optimized) in enumerate(zip(baseline_results, optimized_results)):
+        delta = optimized["score"] - baseline["score"]
+        comparisons.append({
+            "index": i,
+            "prompt": baseline["prompt"],
+            "baseline_response": baseline["response"],
+            "baseline_score": baseline["score"],
+            "baseline_refusal": baseline["is_refusal"],
+            "optimized_response": optimized["response"],
+            "optimized_score": optimized["score"],
+            "optimized_refusal": optimized["is_refusal"],
+            "delta": delta,
+        })
+
+    # Sort by absolute delta (biggest changes first)
+    comparisons.sort(key=lambda x: abs(x["delta"]), reverse=True)
+
+    # Step 4: Display top N comparisons
+    print(f"\nTop {num_comparisons} prompts with biggest score changes:\n")
+
+    for i, comp in enumerate(comparisons[:num_comparisons]):
+        print(f"{'─'*80}")
+        print(f"Comparison {i+1}/{num_comparisons}")
+        print(f"{'─'*80}")
+        print(f"PROMPT: {comp['prompt'][:200]}{'...' if len(comp['prompt']) > 200 else ''}")
+        print()
+        print(f"BASELINE (score={comp['baseline_score']:.2f}, refusal={comp['baseline_refusal']}):")
+        print(f"  {comp['baseline_response'][:300]}{'...' if len(comp['baseline_response']) > 300 else ''}")
+        print()
+        print(f"OPTIMIZED (score={comp['optimized_score']:.2f}, refusal={comp['optimized_refusal']}):")
+        print(f"  {comp['optimized_response'][:300]}{'...' if len(comp['optimized_response']) > 300 else ''}")
+        print()
+        delta_str = f"+{comp['delta']:.2f}" if comp['delta'] >= 0 else f"{comp['delta']:.2f}"
+        print(f"DELTA: {delta_str}")
+        print()
+
+    # Summary stats
+    total_baseline_refusals = sum(1 for c in comparisons if c["baseline_refusal"])
+    total_optimized_refusals = sum(1 for c in comparisons if c["optimized_refusal"])
+    avg_baseline_score = sum(c["baseline_score"] for c in comparisons) / len(comparisons)
+    avg_optimized_score = sum(c["optimized_score"] for c in comparisons) / len(comparisons)
+
+    print(f"{'='*80}")
+    print("SUMMARY")
+    print(f"{'='*80}")
+    print(f"Baseline:  {total_baseline_refusals}/{len(comparisons)} refusals, avg score={avg_baseline_score:.3f}")
+    print(f"Optimized: {total_optimized_refusals}/{len(comparisons)} refusals, avg score={avg_optimized_score:.3f}")
+    print(f"Change:    {total_baseline_refusals - total_optimized_refusals} fewer refusals, "
+          f"score delta={avg_optimized_score - avg_baseline_score:+.3f}")

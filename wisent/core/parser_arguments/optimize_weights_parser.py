@@ -188,10 +188,10 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         help="Min,max range for kernel peak position (as ratio 0-1). Default: 0.3,0.7"
     )
     search_group.add_argument(
-        "--num-pairs-range",
-        type=str,
-        default="30,100",
-        help="Min,max range for number of contrastive pairs. Default: 30,100"
+        "--num-pairs",
+        type=int,
+        default=100,
+        help="Number of contrastive pairs to generate (fixed, not optimized). Default: 100"
     )
     search_group.add_argument(
         "--optimize-direction-index",
@@ -288,4 +288,11 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         "--timing",
         action="store_true",
         help="Show timing information"
+    )
+    parser.add_argument(
+        "--show-comparisons",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Show N before/after response comparisons with biggest score changes. Default: 0 (disabled)"
     )
