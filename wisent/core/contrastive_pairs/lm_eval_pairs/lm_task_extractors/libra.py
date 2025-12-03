@@ -36,12 +36,11 @@ task_names = (
     "ru_sci_abstract_retrieval",
     "ru_sci_passage_count",
 )
-evaluator_name = "generation"
-
-
 class LibraExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Libra benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

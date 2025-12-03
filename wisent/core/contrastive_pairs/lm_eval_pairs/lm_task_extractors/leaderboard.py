@@ -15,12 +15,11 @@ __all__ = ["LeaderboardExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("leaderboard",)
-evaluator_name = "log_likelihoods"
-
-
 class LeaderboardExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Leaderboard benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

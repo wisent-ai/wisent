@@ -14,14 +14,19 @@ if TYPE_CHECKING:
 __all__ = ["AfrimgsmExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("afrimgsm_direct_amh",)
-
-evaluator_name = "generation"
-
+task_names = (
+    "afrimgsm_amh_prompt_1",
+    "afrimgsm_amh_prompt_2",
+    "afrimgsm_amh_prompt_3",
+    "afrimgsm_amh_prompt_4",
+    "afrimgsm_amh_prompt_5",
+)
 
 class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for Afrimgsm benchmark - math word problems with numeric answers."""
+    """Extractor for Afrimgsm - math word problems with numeric answers in Amharic."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -48,16 +53,10 @@ class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """
-        Extract contrastive pair from Afrimgsm doc.
-        Schema: {'question': str, 'answer_number': int/float, 'answer': None, 'equation_solution': None}
-        """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
             question = doc.get("question", "").strip()
-
-            # Get the correct numeric answer
             answer_number = doc.get("answer_number")
 
             if not question or answer_number is None:
@@ -67,8 +66,7 @@ class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
             # Convert answer to string
             correct = str(answer_number)
 
-            # Generate an incorrect answer (different from correct)
-            # Try multiple strategies to ensure the incorrect answer is different
+            # Generate an incorrect answer
             try:
                 num_val = float(answer_number)
                 if num_val == 0:
@@ -78,12 +76,7 @@ class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
                 else:
                     incorrect = str(int(num_val - 1))
             except (ValueError, TypeError):
-                # If not a valid number, use a generic wrong answer
                 incorrect = "0"
-
-            # Ensure incorrect is actually different
-            if incorrect == correct:
-                incorrect = str(int(float(correct)) * 2) if float(correct) != 0 else "1"
 
             metadata = {"label": "afrimgsm"}
 

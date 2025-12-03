@@ -30,10 +30,8 @@ task_names = (
     "mmmu_val_science", "mmmu_val_sociology", "mmmu_val_tech_and_engineering",
 )
 
-evaluator_name = "generation"
-
-
 class MmmuExtractor(LMEvalBenchmarkExtractor):
+    evaluator_name = "generation"
     """Extractor for the MMMU (Multimodal) benchmark.
 
     Format: {

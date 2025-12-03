@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("atis",)
 
-evaluator_name = "generation"
-
-
 class AtisExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Atis benchmark - NER task."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

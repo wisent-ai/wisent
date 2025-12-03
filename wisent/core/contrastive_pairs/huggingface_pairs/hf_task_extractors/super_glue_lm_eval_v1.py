@@ -15,12 +15,11 @@ __all__ = ["SuperGlueLmEvalV1Extractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("super-glue-lm-eval-v1",)
-evaluator_name = "log_likelihoods"
-
-
 class SuperGlueLmEvalV1Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Super Glue Lm Eval V1 benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

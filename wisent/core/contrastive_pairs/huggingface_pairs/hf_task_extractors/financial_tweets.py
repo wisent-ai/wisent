@@ -16,9 +16,6 @@ _LOG = setup_logger(__name__)
 
 task_names = ("financial_tweets",)
 
-evaluator_name = "generation"
-
-
 class FinancialTweetsExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Financial Tweets benchmark - tweet topic classification task.
 
@@ -26,6 +23,8 @@ class FinancialTweetsExtractor(HuggingFaceBenchmarkExtractor):
     Format: source (classification prompt) + target (topic category)
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

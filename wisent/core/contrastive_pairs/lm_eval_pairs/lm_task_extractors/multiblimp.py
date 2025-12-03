@@ -34,12 +34,11 @@ task_names = (
     "multiblimp_wol", "multiblimp_xcl", "multiblimp_xnr", "multiblimp_xpg", "multiblimp_yrl"
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class MultiblimpExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Multiblimp benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

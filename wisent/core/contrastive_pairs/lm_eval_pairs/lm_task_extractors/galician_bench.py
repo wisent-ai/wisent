@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("galician_bench",)
 
-evaluator_name = "generation"
-
-
 class GalicianBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Galician Bench benchmark - a group of Galician language tasks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

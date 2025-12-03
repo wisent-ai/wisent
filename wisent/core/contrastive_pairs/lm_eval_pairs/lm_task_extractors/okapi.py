@@ -16,13 +16,12 @@ __all__ = ["OkapiExtractor"]
 # - m_mmlu_* tasks: OkapiMmluMultilingualExtractor
 # - truthfulqa_* tasks: OkapiTruthfulqaMultilingualExtractor
 task_names = ()
-evaluator_name = "log_likelihoods"
-
-
 class OkapiExtractor(SuperGlueExtractor):
     """Extractor for Okapi multilingual benchmarks (arc, hellaswag, mmlu, truthfulqa).
 
     Okapi benchmarks use the same multiple-choice format as SuperGlue, so we inherit
     the extraction logic directly from SuperGlueExtractor.
     """
+
+    evaluator_name = "log_likelihoods"
     pass

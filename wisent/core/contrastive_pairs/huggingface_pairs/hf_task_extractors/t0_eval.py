@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("t0_eval",)
 
-evaluator_name = "generation"
-
-
 class T0EvalExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for T0 Eval - zero-shot prompted tasks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

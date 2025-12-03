@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("dbpedia_14",)
 
-evaluator_name = "generation"
-
-
 class Dbpedia14Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for DBpedia 14 - classification task."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

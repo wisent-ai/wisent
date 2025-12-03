@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("parafraseja",)
 
-evaluator_name = "log_likelihoods"
-
-
 class ParafrasejaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Parafraseja benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -32,12 +32,11 @@ task_names = (
     "xnli_zh",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class XNLIExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the XNLI benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

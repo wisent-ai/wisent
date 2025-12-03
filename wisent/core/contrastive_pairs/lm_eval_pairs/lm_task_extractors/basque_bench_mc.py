@@ -23,12 +23,11 @@ task_names = (
     "xcopa_eu",
     "mgsm_direct_eu",
 )
-evaluator_name = "log_likelihoods"
-
-
 class BasqueBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Basque Bench multiple-choice benchmarks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -40,9 +40,6 @@ task_names = (
     "nrk_quiz_qa_nno_p0", "nrk_quiz_qa_nno_p1", "nrk_quiz_qa_nno_p2", "nrk_quiz_qa_nno_p3", "nrk_quiz_qa_nno_p4",
     "nrk_quiz_qa_nob_p0", "nrk_quiz_qa_nob_p1", "nrk_quiz_qa_nob_p2", "nrk_quiz_qa_nob_p3", "nrk_quiz_qa_nob_p4",
 )
-evaluator_name = "log_likelihoods"
-
-
 class NorevalMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Noreval multiple-choice benchmarks.
 
@@ -52,6 +49,8 @@ class NorevalMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     3. NRK Quiz QA: Standard multiple-choice with question + choices + answer
     """
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

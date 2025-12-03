@@ -40,9 +40,6 @@ task_names = (
     "evalita-mp_wic_prompt-6", "evalita-mp_wic_tasks",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class EvalitaMpExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Evalita Mp benchmark - Italian language medical, legal, and NLP tasks.
 
@@ -50,6 +47,8 @@ class EvalitaMpExtractor(HuggingFaceBenchmarkExtractor):
     Format: Question + A/B/C/D/E choices + Correct (letter A-E)
     """
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -173,3 +172,5 @@ class EvalitaMpExtractor(HuggingFaceBenchmarkExtractor):
         positive_response = PositiveResponse(model_response=correct)
         negative_response = NegativeResponse(model_response=incorrect)
         return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))
+
+

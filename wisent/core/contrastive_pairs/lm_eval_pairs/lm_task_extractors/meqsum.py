@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("meqsum",)
 
-evaluator_name = "generation"
-
-
 class MeqsumExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Meqsum benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

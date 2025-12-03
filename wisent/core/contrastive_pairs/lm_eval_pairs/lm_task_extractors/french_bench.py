@@ -40,12 +40,11 @@ task_names = (
     "french_bench_xnli",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class FrenchBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the French Bench benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

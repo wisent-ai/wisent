@@ -23,12 +23,11 @@ task_names = (
     "arab_culture_yemen",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class ArabcultureExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Arabculture benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

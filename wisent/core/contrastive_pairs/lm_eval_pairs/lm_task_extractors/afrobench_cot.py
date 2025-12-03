@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 # This extractor handles all afrobench CoT subtasks dynamically
 task_names = ()  # Intentionally empty - will match any afrobench CoT task
-evaluator_name = "generation"
-
-
 class AfroBenchCotExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AfroBench CoT (chain-of-thought) benchmarks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

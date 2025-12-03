@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 # This extractor handles all kmmlu CoT subtasks dynamically
 task_names = ()  # Intentionally empty - will match any kmmlu CoT task
-evaluator_name = "generation"
-
-
 class KMMLUCotExtractor(LMEvalBenchmarkExtractor):
     """Extractor for KMMLU CoT (chain-of-thought) benchmarks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

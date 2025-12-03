@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("triviaqa",)
 
-evaluator_name = "generation"
-
-
 class TriviaQAExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the TriviaQA benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

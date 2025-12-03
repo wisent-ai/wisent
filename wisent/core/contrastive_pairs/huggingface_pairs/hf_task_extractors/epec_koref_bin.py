@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("epec_koref_bin",)
 
-evaluator_name = "log_likelihoods"
-
-
 class EpecKorefBinExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for EPEC Koref Bin - coreference resolution binary classification."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

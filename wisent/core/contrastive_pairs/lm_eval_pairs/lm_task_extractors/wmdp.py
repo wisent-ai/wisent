@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("wmdp", "wmdp_bio", "wmdp_chem", "wmdp_cyber")
 
-evaluator_name = "log_likelihoods"
-
-
 class WmdpExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Wmdp benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

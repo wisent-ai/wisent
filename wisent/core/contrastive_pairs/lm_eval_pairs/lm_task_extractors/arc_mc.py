@@ -15,12 +15,11 @@ __all__ = ["ArcMultipleChoiceExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("arc_easy", "arc_challenge", "arc_ar")
-evaluator_name = "log_likelihoods"
-
-
 class ArcMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Arc multiple-choice benchmarks (arc_easy, arc_challenge, arc_ar)."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

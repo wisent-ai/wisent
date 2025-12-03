@@ -21,9 +21,6 @@ task_names = (
     "sycophancy_on_political_typology_quiz",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class SycophancyExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Sycophancy benchmark.
 
@@ -31,6 +28,8 @@ class SycophancyExtractor(LMEvalBenchmarkExtractor):
     users' stated beliefs even when they should provide objective answers.
     """
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

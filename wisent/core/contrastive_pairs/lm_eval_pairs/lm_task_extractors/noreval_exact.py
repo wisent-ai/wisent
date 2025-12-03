@@ -18,12 +18,11 @@ task_names = (
     "noridiom_nob", "noridiom_nno", "norquad",
 )
 
-evaluator_name = "exact_match"
-
-
 class NorevalExactMatchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Noreval exact match tasks (noridiom, norquad)."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

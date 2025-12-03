@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("coedit_gec",)
 
-evaluator_name = "generation"
-
-
 class CoeditGecExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for CoEdit GEC - grammar error correction."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

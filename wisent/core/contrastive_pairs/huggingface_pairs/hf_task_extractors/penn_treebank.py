@@ -14,12 +14,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("penn_treebank", "ptb")
 
-evaluator_name = "log_likelihoods"
-
-
 class PennTreebankExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Penn Treebank - language modeling perplexity task."""
 
+
+    evaluator_name = "perplexity"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -29,7 +28,7 @@ class PennTreebankExtractor(HuggingFaceBenchmarkExtractor):
 
         from datasets import load_dataset
         try:
-            dataset = load_dataset("ptb_text_only", split="test")
+            dataset = load_dataset("FALcon6/ptb_text_only", split="test")
             if max_items:
                 dataset = dataset.select(range(min(max_items, len(dataset))))
         except Exception as e:
@@ -56,38 +55,24 @@ class PennTreebankExtractor(HuggingFaceBenchmarkExtractor):
 
         try:
             text = doc.get("sentence", doc.get("page", doc.get("text", ""))).strip()
+            words = text.split()
 
-            if not text or len(text.split()) < 10:
+            if not text or len(words) < 3:
                 log.debug("Skipping doc due to missing or short text", extra={"doc": doc})
                 return None
 
-            # For perplexity tasks, create pairs by corrupting the text
-            # Split text into sentences
-            sentences = [s.strip() for s in text.split('.') if s.strip()]
-            if len(sentences) < 2:
-                log.debug("Not enough sentences to create pair", extra={"doc": doc})
-                return None
-
-            # Take first few sentences as context
-            context = '. '.join(sentences[:2]) + '.'
-
-            # Correct: original text
             correct = text
 
-            # Incorrect: shuffle word order in last sentence
-            last_sentence = sentences[-1]
-            words = last_sentence.split()
-            if len(words) < 3:
-                return None
-
+            # Incorrect: shuffle word order
             shuffled_words = words.copy()
             random.shuffle(shuffled_words)
-            shuffled_sentence = ' '.join(shuffled_words)
+            incorrect = ' '.join(shuffled_words)
 
-            incorrect_sentences = sentences[:-1] + [shuffled_sentence]
-            incorrect = '. '.join(incorrect_sentences) + '.'
+            # Skip if shuffle didn't change anything
+            if incorrect == correct:
+                return None
 
-            prompt = f"Complete the text coherently:\n\n{context}"
+            prompt = "Which text is more coherent and grammatically correct?"
             metadata = {"label": "penn_treebank"}
 
             return self._build_pair(

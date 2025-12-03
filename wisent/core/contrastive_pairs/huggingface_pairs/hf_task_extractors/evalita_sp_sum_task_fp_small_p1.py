@@ -14,12 +14,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("evalita-sp_sum_task_fp-small_p1",)
 
-evaluator_name = "generation"
-
-
 class EvalitaSpSumTaskFpSmallP1Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Evalita Sp Sum Task FP Small P1 - Italian summarization."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

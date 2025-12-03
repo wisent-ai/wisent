@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("t0_eval",)
 
-evaluator_name = "generation"
-
-
 class T0Extractor(LMEvalBenchmarkExtractor):
     """Extractor for T0 benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -17,12 +17,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("arithmetic",)
 
-evaluator_name = "exact_match"
-
-
 class ArithmeticExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Arithmetic benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

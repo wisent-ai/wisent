@@ -19,12 +19,11 @@ task_names = (
     "mnli_mismatch",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class MnliExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Mnli benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

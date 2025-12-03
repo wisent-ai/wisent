@@ -25,12 +25,11 @@ task_names = (
 
 # Note: Paloma is a perplexity benchmark (loglikelihood_rolling)
 # We use perplexity evaluation with text corruption for contrastive pairs
-evaluator_name = "log_likelihoods"
-
-
 class PalomaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Paloma benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
