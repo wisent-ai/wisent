@@ -4,7 +4,7 @@ import sys
 import os
 import torch
 
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def execute_multi_steer(args):
@@ -25,8 +25,7 @@ def execute_multi_steer(args):
                 model = WisentModel(args.model, device=args.device)
 
                 # Get inference config settings
-                inference_config = get_config()
-                gen_kwargs = get_generate_kwargs(inference_config)
+                gen_kwargs = get_generate_kwargs()
 
                 # Generate WITHOUT steering
                 response = model.generate(
@@ -87,8 +86,7 @@ def execute_multi_steer(args):
             model = WisentModel(args.model, device=args.device)
 
             # Get inference config settings
-            inference_config = get_config()
-            gen_kwargs = get_generate_kwargs(inference_config)
+            gen_kwargs = get_generate_kwargs()
 
             # Generate with steering
             temperature = getattr(args, 'temperature', None) or gen_kwargs.get("temperature", 0.7)

@@ -46,7 +46,7 @@ from wisent.core.response import Response
 from wisent.core.steering_methods.dac import DAC
 from wisent.core.task_interface import get_task
 from wisent.core.utils.device import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device
-from wisent.core.models.inference_config import get_config as get_inference_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -804,8 +804,7 @@ class OptimizationPipeline:
 
         try:
             # Get inference config settings
-            inference_config = get_inference_config()
-            gen_kwargs = get_generate_kwargs(inference_config)
+                        gen_kwargs = get_generate_kwargs()
             do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
             temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 
@@ -831,8 +830,7 @@ class OptimizationPipeline:
         inputs = self.tokenizer(question, return_tensors="pt").to(self.device)
 
         # Get inference config settings
-        inference_config = get_inference_config()
-        gen_kwargs = get_generate_kwargs(inference_config)
+                gen_kwargs = get_generate_kwargs()
         do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
         temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 
@@ -860,8 +858,7 @@ class OptimizationPipeline:
         all_responses = []
 
         # Get inference config settings
-        inference_config = get_inference_config()
-        gen_kwargs = get_generate_kwargs(inference_config)
+                gen_kwargs = get_generate_kwargs()
         do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
         temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 
@@ -908,8 +905,7 @@ class OptimizationPipeline:
         all_responses = []
 
         # Get inference config settings
-        inference_config = get_inference_config()
-        gen_kwargs = get_generate_kwargs(inference_config)
+                gen_kwargs = get_generate_kwargs()
         do_sample = self.config.do_sample if self.config.do_sample is not None else gen_kwargs.get("do_sample", True)
         temperature = self.config.temperature if self.config.temperature is not None else gen_kwargs.get("temperature", 0.7)
 
