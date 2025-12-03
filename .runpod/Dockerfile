@@ -28,7 +28,7 @@ RUN mkdir -p /workspace/notebooks /workspace/outputs /workspace/models
 # Copy wisent-guard source and install
 # Copy only necessary source files and setup
 COPY wisent/ /tmp/wisent/wisent/
-COPY setup.py pyproject.toml requirements.txt /tmp/wisent/
+COPY setup.py pyproject.toml requirements.txt README.md /tmp/wisent/
 RUN cd /tmp/wisent && \
     pip install --no-cache-dir -e ".[harness]" && \
     pip install --no-cache-dir jupyterlab ipywidgets accelerate
