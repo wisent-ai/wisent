@@ -19,9 +19,6 @@ RUN pip install -r /wisent/requirements.txt
 # Install wisent in editable mode
 RUN cd /wisent && pip install -e ".[harness]"
 
-# Fix datasets version for compatibility
-RUN pip install --force-reinstall datasets==3.6.0
-
 # Copy startup script (Option 2: run after base services start)
 COPY .runpod/run.sh /app/run.sh
 RUN chmod +x /app/run.sh
