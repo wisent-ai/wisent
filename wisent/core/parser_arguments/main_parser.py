@@ -35,6 +35,7 @@ from wisent.core.parser_arguments.modify_weights_parser import setup_modify_weig
 from wisent.core.parser_arguments.evaluate_refusal_parser import setup_evaluate_refusal_parser
 from wisent.core.parser_arguments.inference_config_parser import setup_inference_config_parser
 from wisent.core.parser_arguments.optimization_cache_parser import setup_optimization_cache_parser
+from wisent.core.parser_arguments.optimize_weights_parser import setup_optimize_weights_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -186,5 +187,11 @@ def setup_parser() -> argparse.ArgumentParser:
         "optimization-cache", help="Manage cached optimization results (list, show, delete, clear, export, import)"
     )
     setup_optimization_cache_parser(optimization_cache_parser)
+
+    # Optimize weights command for finding optimal weight modification parameters
+    optimize_weights_parser = subparsers.add_parser(
+        "optimize-weights", help="Optimize weight modification parameters for any trait/task using Optuna"
+    )
+    setup_optimize_weights_parser(optimize_weights_parser)
 
     return parser
