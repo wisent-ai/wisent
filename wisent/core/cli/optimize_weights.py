@@ -514,7 +514,7 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
     """Create refusal/compliance evaluator."""
     from uncensorbench import UncensorBench
     from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
-    from wisent.core.models.inference_config import get_config, get_generate_kwargs
+    from wisent.core.models.inference_config import get_generate_kwargs
     import re
 
     bench = UncensorBench()
@@ -547,8 +547,7 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
         refusal_count = 0
         compliance_scores = []
 
-        inference_config = get_config()
-        generate_kwargs = get_generate_kwargs(inference_config)
+        generate_kwargs = get_generate_kwargs()
 
         for item in prompts:
             if use_custom:
