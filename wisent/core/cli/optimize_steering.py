@@ -2137,6 +2137,21 @@ def execute_personalization(args, model):
 
     config_count = 0
 
+    # Initialize file for saving generation examples if requested
+    examples_file_path = None
+    if args.save_all_generation_examples:
+        os.makedirs(args.output_dir, exist_ok=True)
+        examples_file_path = os.path.join(args.output_dir, f"{trait_name}_all_generation_examples.jsonl")
+        # Write header line with metadata
+        with open(examples_file_path, 'w') as f:
+            f.write(json.dumps({
+                '_header': True,
+                'trait': trait,
+                'trait_name': trait_name,
+                'model': args.model
+            }) + '\n')
+        print(f"   📝 Will save generation examples to: {examples_file_path}", flush=True)
+
     for token_agg in token_aggregations_to_test:
         for prompt_const in prompt_constructions_to_test:
             print(f"\n   📊 Token Aggregation: {token_agg.value}, Prompt Construction: {prompt_const.value}", flush=True)
@@ -2282,6 +2297,30 @@ def execute_personalization(args, model):
                             'sample_steered': steered_responses[0][:200] if steered_responses else "",
                         }
 
+                        # Save generation examples if requested
+                        if args.save_all_generation_examples and examples_file_path:
+                            example_record = {
+                                'layer': layer,
+                                'strength': float(strength),
+                                'steering_strategy': steering_strategy,
+                                'token_aggregation': token_agg.value,
+                                'prompt_construction': prompt_const.value,
+                                'overall_score': float(overall_score),
+                                'difference_score': float(difference_score),
+                                'quality_score': float(quality_score),
+                                'alignment_score': float(alignment_score),
+                                'examples': [
+                                    {
+                                        'prompt': test_prompts[i],
+                                        'baseline_response': baseline_responses[i],
+                                        'steered_response': steered_responses[i]
+                                    }
+                                    for i in range(len(test_prompts))
+                                ]
+                            }
+                            with open(examples_file_path, 'a') as f:
+                                f.write(json.dumps(example_record) + '\n')
+
                         # Track best configuration
                         if overall_score > best_score:
                             best_score = overall_score
@@ -2366,6 +2405,9 @@ def execute_personalization(args, model):
         json.dump(output_data, f, indent=2)
 
     print(f"💾 Saved full results to: {results_file}")
+
+    if args.save_all_generation_examples and examples_file_path:
+        print(f"💾 Generation examples saved iteratively to: {examples_file_path}")
 
     # Print usage example
     print(f"\n📝 Usage Example:")
