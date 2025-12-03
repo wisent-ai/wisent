@@ -4,6 +4,8 @@ import sys
 import json
 import os
 
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
+
 
 def execute_generate_pairs(args):
     """Execute the generate-pairs command - generate synthetic contrastive pairs from trait description."""
@@ -72,10 +74,16 @@ def execute_generate_pairs(args):
             estimated_tokens = args.num_pairs * 150 + 500
             max_tokens = max(2048, min(estimated_tokens, 8192))  # Between 2048 and 8192
 
+            # Get inference config settings
+            inference_config = get_config()
+            gen_kwargs = get_generate_kwargs(inference_config)
+
             generation_config = {
                 "max_new_tokens": max_tokens,
-                "temperature": 0.9,
-                "do_sample": True,
+                "temperature": gen_kwargs.get("temperature", 0.9),
+                "do_sample": gen_kwargs.get("do_sample", True),
+                "top_p": gen_kwargs.get("top_p", 0.9),
+                "top_k": gen_kwargs.get("top_k", 50),
             }
 
             # 3. Set up cleaning pipeline

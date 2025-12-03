@@ -1,5 +1,7 @@
 """Generate and evaluate response with classifier."""
 
+from wisent.core.models.inference_config import get_config, get_generate_kwargs
+
 
 def _map_token_aggregation(aggregation_str: str):
     """Map string token aggregation to ActivationAggregationStrategy enum."""
@@ -75,14 +77,20 @@ def evaluate_response_with_classifier(
     print(f"\n💬 Step 3: Generating unsteered response")
 
     # Generate response without steering
+    # Get inference config settings
+    inference_config = get_config()
+    gen_kwargs = get_generate_kwargs(inference_config)
+
     messages = [[{"role": "user", "content": prompt}]]
 
     print(f"   Generating response...")
     responses = model.generate(
         inputs=messages,
         max_new_tokens=512,
-        temperature=0.7,
-        do_sample=True,
+        temperature=gen_kwargs.get("temperature", 0.7),
+        top_p=gen_kwargs.get("top_p", 0.9),
+        top_k=gen_kwargs.get("top_k", 50),
+        do_sample=gen_kwargs.get("do_sample", True),
     )
 
     unsteered_response = responses[0] if responses else ""
