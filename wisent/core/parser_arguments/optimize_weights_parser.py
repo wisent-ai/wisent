@@ -294,5 +294,12 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         type=int,
         default=0,
         metavar="N",
-        help="Show N before/after response comparisons with biggest score changes. Default: 0 (disabled)"
+        help="Show N before/after response comparisons with biggest score changes in console. Default: 0 (disabled)"
+    )
+    parser.add_argument(
+        "--save-comparisons",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="Save all comparisons to JSON file (use with --show-comparisons to also display in console)"
     )

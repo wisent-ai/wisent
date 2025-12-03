@@ -285,3 +285,80 @@ def execute_optimize_classification(args):
               f"{config['f1_score']:>6.4f} | {config['accuracy']:>6.4f}")
     print(f"-" * 180)
     print()
+
+    # Handle --show-comparisons and --save-comparisons
+    show_comparisons = getattr(args, 'show_comparisons', 0)
+    save_comparisons = getattr(args, 'save_comparisons', None)
+
+    if show_comparisons > 0 or save_comparisons:
+        print("\n📊 Generating comparison data (optimized vs default config)...")
+
+        # Build comparison data showing best config vs a baseline config
+        all_comparisons = []
+        for task_name, result in all_results.items():
+            best_config = result['best_config']
+
+            # Default baseline config for comparison
+            default_config = {
+                'layer': total_layers // 2,  # Middle layer
+                'aggregation': 'average',
+                'threshold': 0.5,
+                'classifier_type': 'logistic',
+                'prompt_construction_strategy': 'multiple_choice',
+                'token_targeting_strategy': 'last_token',
+            }
+
+            all_comparisons.append({
+                'task': task_name,
+                'default_config': default_config,
+                'optimized_config': {
+                    'layer': best_config['layer'],
+                    'aggregation': best_config['aggregation'],
+                    'threshold': best_config['threshold'],
+                    'classifier_type': best_config['classifier_type'],
+                    'prompt_construction_strategy': best_config['prompt_construction_strategy'],
+                    'token_targeting_strategy': best_config['token_targeting_strategy'],
+                },
+                'optimized_metrics': {
+                    'f1': best_config['f1_score'],
+                    'accuracy': best_config['accuracy'],
+                    'precision': best_config['precision'],
+                    'recall': best_config['recall'],
+                },
+                'improvements': {
+                    'layer_change': best_config['layer'] - default_config['layer'],
+                    'aggregation_change': default_config['aggregation'] != best_config['aggregation'],
+                    'threshold_change': best_config['threshold'] - default_config['threshold'],
+                },
+            })
+
+        # Save to JSON if requested
+        if save_comparisons:
+            os.makedirs(os.path.dirname(save_comparisons) if os.path.dirname(save_comparisons) else ".", exist_ok=True)
+            with open(save_comparisons, 'w') as f:
+                json.dump({
+                    'model': args.model,
+                    'optimization_metric': args.optimization_metric,
+                    'comparisons': all_comparisons,
+                }, f, indent=2)
+            print(f"💾 Saved comparisons to: {save_comparisons}")
+
+        # Display in console if requested
+        if show_comparisons > 0:
+            print(f"\n📊 Configuration Comparisons (showing {min(show_comparisons, len(all_comparisons))} tasks):\n")
+            for i, comp in enumerate(all_comparisons[:show_comparisons]):
+                print(f"{'─'*80}")
+                print(f"Task: {comp['task']}")
+                print(f"{'─'*80}")
+                print(f"DEFAULT CONFIG:")
+                print(f"  Layer: {comp['default_config']['layer']}, Agg: {comp['default_config']['aggregation']}, "
+                      f"Threshold: {comp['default_config']['threshold']}")
+                print(f"OPTIMIZED CONFIG:")
+                print(f"  Layer: {comp['optimized_config']['layer']}, Agg: {comp['optimized_config']['aggregation']}, "
+                      f"Threshold: {comp['optimized_config']['threshold']:.2f}")
+                print(f"  Classifier: {comp['optimized_config']['classifier_type']}, "
+                      f"Prompt: {comp['optimized_config']['prompt_construction_strategy']}, "
+                      f"Token: {comp['optimized_config']['token_targeting_strategy']}")
+                print(f"METRICS:")
+                print(f"  F1: {comp['optimized_metrics']['f1']:.4f}, Accuracy: {comp['optimized_metrics']['accuracy']:.4f}")
+                print()

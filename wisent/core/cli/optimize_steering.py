@@ -711,7 +711,12 @@ def execute_comprehensive(args, model, loader):
                         f"\n  💾 Saved generation examples for {len(all_generation_examples)} configurations to: {examples_path}"
                     )
 
-                elif args.save_generation_examples:
+                # Generate examples for --save-generation-examples, --show-comparisons, or --save-comparisons
+                show_comparisons = getattr(args, 'show_comparisons', 0)
+                save_comparisons = getattr(args, 'save_comparisons', None)
+                need_generation = args.save_generation_examples or show_comparisons > 0 or save_comparisons
+
+                if need_generation:
                     # Save examples only for the best configuration
                     print("\n  📝 Generating example responses for best configuration...")
 
@@ -815,26 +820,68 @@ def execute_comprehensive(args, model, loader):
 
                                 traceback.print_exc()
 
-                    # Save examples to JSON
-                    examples_path = os.path.join(
-                        args.save_best_vector if args.save_best_vector else "./optimization_results",
-                        f"{task_name}_generation_examples.json",
-                    )
-                    os.makedirs(os.path.dirname(examples_path), exist_ok=True)
-
-                    with open(examples_path, "w") as f:
-                        json.dump(
-                            {
-                                "task": task_name,
-                                "model": args.model,
-                                "best_config": best_config,
-                                "examples": generation_examples,
-                            },
-                            f,
-                            indent=2,
+                    # Save examples to JSON only if --save-generation-examples is set
+                    if args.save_generation_examples:
+                        examples_path = os.path.join(
+                            args.save_best_vector if args.save_best_vector else "./optimization_results",
+                            f"{task_name}_generation_examples.json",
                         )
+                        os.makedirs(os.path.dirname(examples_path), exist_ok=True)
 
-                    print(f"      💾 Saved {len(generation_examples)} generation examples to: {examples_path}")
+                        with open(examples_path, "w") as f:
+                            json.dump(
+                                {
+                                    "task": task_name,
+                                    "model": args.model,
+                                    "best_config": best_config,
+                                    "examples": generation_examples,
+                                },
+                                f,
+                                indent=2,
+                            )
+
+                        print(f"      💾 Saved {len(generation_examples)} generation examples to: {examples_path}")
+
+                    # Handle --show-comparisons and --save-comparisons flags
+                    if (show_comparisons > 0 or save_comparisons) and generation_examples:
+                        # Build comparisons list from generation_examples
+                        comparisons = []
+                        for ex in generation_examples:
+                            comparisons.append({
+                                "prompt": ex["question"],
+                                "baseline_response": ex["unsteered_generation"],
+                                "optimized_response": ex["steered_generation"],
+                                "correct_answer": ex.get("correct_answer", ""),
+                                "incorrect_answer": ex.get("incorrect_answer", ""),
+                            })
+
+                        # Save to JSON if requested
+                        if save_comparisons:
+                            os.makedirs(os.path.dirname(save_comparisons) if os.path.dirname(save_comparisons) else ".", exist_ok=True)
+                            with open(save_comparisons, "w") as f:
+                                json.dump({
+                                    "model": args.model,
+                                    "task": task_name,
+                                    "best_config": best_config,
+                                    "comparisons": comparisons,
+                                }, f, indent=2)
+                            print(f"      💾 Saved comparisons to: {save_comparisons}")
+
+                        # Display in console if requested
+                        if show_comparisons > 0:
+                            print(f"\n  📊 Top {min(show_comparisons, len(comparisons))} Baseline vs Optimized Comparisons:\n")
+                            for i, comp in enumerate(comparisons[:show_comparisons]):
+                                print(f"{'─'*80}")
+                                print(f"Comparison {i+1}/{min(show_comparisons, len(comparisons))}")
+                                print(f"{'─'*80}")
+                                print(f"PROMPT: {comp['prompt'][:200]}{'...' if len(comp['prompt']) > 200 else ''}")
+                                print()
+                                print(f"BASELINE (unsteered):")
+                                print(f"  {comp['baseline_response'][:300]}{'...' if len(comp['baseline_response']) > 300 else ''}")
+                                print()
+                                print(f"OPTIMIZED (steered):")
+                                print(f"  {comp['optimized_response'][:300]}{'...' if len(comp['optimized_response']) > 300 else ''}")
+                                print()
 
             else:
                 print("\n  ⚠️  No valid configuration found")

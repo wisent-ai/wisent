@@ -65,3 +65,19 @@ def setup_classification_optimizer_parser(parser):
         action="store_true",
         help="Only run calibration and exit (saves to --calibration-file if provided)",
     )
+
+    # Comparison options
+    parser.add_argument(
+        "--show-comparisons",
+        type=int,
+        default=0,
+        metavar="N",
+        help="Show N sample comparisons where optimized config differs from default config. Default: 0 (disabled)",
+    )
+    parser.add_argument(
+        "--save-comparisons",
+        type=str,
+        default=None,
+        metavar="PATH",
+        help="Save all sample comparisons to JSON file",
+    )
