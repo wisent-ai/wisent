@@ -13,9 +13,6 @@ log = logging.getLogger(__name__)
 
 task_names = ("math500",)
 
-evaluator_name = "exact_match"
-
-
 class MATHExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for MATH dataset (competition mathematics problems).
@@ -29,6 +26,8 @@ class MATHExtractor(HuggingFaceBenchmarkExtractor):
         - unique_id: str (unique identifier)
     """
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

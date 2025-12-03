@@ -20,12 +20,11 @@ task_names = (
     "jsonschema_bench_medium",
     "jsonschema_bench_hard",
 )
-evaluator_name = "generation"
-
-
 class JsonschemaBenchExtractor(LMEvalBenchmarkExtractor):
     """Extractor for JSON Schema Bench benchmark - JSON schema generation task."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

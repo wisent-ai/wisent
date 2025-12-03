@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("law_stack_exchange",)
 
-evaluator_name = "generation"
-
-
 class LawStackExchangeExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Law Stack Exchange benchmark - legal topic classification."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("galcola",)
 
-evaluator_name = "log_likelihoods"
-
-
 class GalcolaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Galcola benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -26,12 +26,11 @@ task_names = (
     "lambada_openai_mt_stablelm_nl",
     "lambada_openai_mt_stablelm_pt",
 )
-evaluator_name = "log_likelihoods"
-
-
 class LambadaMultilingualStablelmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Lambada Multilingual Stablelm benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -13,9 +13,6 @@ log = logging.getLogger(__name__)
 
 task_names = ("livemathbench_cnmo_en", "livemathbench_cnmo_zh")
 
-evaluator_name = "exact_match"
-
-
 class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for LiveMathBench dataset (CNMO 2024 mathematical olympiad problems).
@@ -25,6 +22,8 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
         - answer: str (final answer)
     """
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

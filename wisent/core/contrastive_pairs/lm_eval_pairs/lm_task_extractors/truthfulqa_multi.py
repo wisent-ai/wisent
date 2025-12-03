@@ -27,9 +27,6 @@ task_names = (
 
 # Mixed evaluator - has both gen (generation) and mc (log_likelihoods) variants
 # For _gen_ tasks use generation, for _mc_ tasks use log_likelihoods
-evaluator_name = "generation"
-
-
 class TruthfulqaMultiExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the TruthfulQA Multi benchmark (multilingual variant).
 
@@ -47,6 +44,8 @@ class TruthfulqaMultiExtractor(LMEvalBenchmarkExtractor):
     - Negative: Random incorrect answer from incorrect_answers
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

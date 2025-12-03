@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("bhtc_v2",)
 
-evaluator_name = "log_likelihoods"
-
-
 class BhtcV2Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for BHTC v2 - Basque text classification."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

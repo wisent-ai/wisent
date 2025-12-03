@@ -20,9 +20,6 @@ task_names = (
     "winogender_gotcha_male", "winogender_male", "winogender_neutral",
 )
 
-evaluator_name = "generation"
-
-
 class WinogenderExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Winogender benchmark (pronoun resolution with gender bias).
 
@@ -40,6 +37,8 @@ class WinogenderExtractor(LMEvalBenchmarkExtractor):
     - Negative: Incorrect referent (the other entity)
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

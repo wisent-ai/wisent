@@ -26,12 +26,11 @@ task_names = (
     "tmlu_teacher_qualification", "tmlu_tour_guide", "tmlu_tour_leader",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class TmluExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Tmlu benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

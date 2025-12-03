@@ -23,12 +23,11 @@ task_names = (
     "code2text_ruby",
 )
 
-evaluator_name = "generation"
-
-
 class Code2textExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Code2Text benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

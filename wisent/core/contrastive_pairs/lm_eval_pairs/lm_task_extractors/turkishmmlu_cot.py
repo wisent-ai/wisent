@@ -26,12 +26,11 @@ task_names = (
     "turkishmmlu_cot_religion_and_ethics",
     "turkishmmlu_cot_turkish_language_and_literature",
 )
-evaluator_name = "generation"
-
-
 class TurkishmmluCotExtractor(LMEvalBenchmarkExtractor):
     """Extractor for TurkishMMLU CoT (chain-of-thought) benchmarks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

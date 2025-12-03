@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("polymath_en_medium", "polymath_zh_medium", "polymath_en_high", "polymath_zh_high")
 
-evaluator_name = "exact_match"
-
-
 class PolymathExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Polymath benchmark (multilingual math reasoning)."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

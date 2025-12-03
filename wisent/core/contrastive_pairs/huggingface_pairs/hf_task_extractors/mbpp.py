@@ -13,9 +13,6 @@ log = logging.getLogger(__name__)
 
 task_names = ("mbpp_plus",)
 
-evaluator_name = "generation"
-
-
 class MBPPExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for MBPP (Mostly Basic Python Problems) dataset.
@@ -26,6 +23,8 @@ class MBPPExtractor(HuggingFaceBenchmarkExtractor):
         - test_list: list[str] (test cases)
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

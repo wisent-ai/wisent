@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("reversed_words",)
 
-evaluator_name = "exact_match"
-
-
 class ReversedExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Reversed benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

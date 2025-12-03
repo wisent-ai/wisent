@@ -28,12 +28,11 @@ task_names = (
     "hrm8k_omni_math",
     "hrm8k_omni_math_en",
 )
-evaluator_name = "exact_match"
-
-
 class Hrm8kExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Hrm8K benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
