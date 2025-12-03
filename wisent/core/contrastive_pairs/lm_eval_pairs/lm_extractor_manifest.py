@@ -421,7 +421,7 @@ EXTRACTORS.update({
     "random": f"{base_import}random:RandomExtractor",
     "reversed": f"{base_import}reversed:ReversedExtractor",
     "sglue": f"{base_import}sglue:SglueExtractor",
-    "sglue_rte": f"{base_import}sglue:SglueExtractor",
+    "sglue_rte": f"{base_import}sglue_rte:SglueRteExtractor",
     "summarization": f"{base_import}summarization:SummarizationExtractor",
     "teca": f"{base_import}teca:TecaExtractor",
     "tinyarc": f"{base_import}tinyarc:TinyarcExtractor",
