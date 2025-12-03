@@ -39,6 +39,8 @@ def setup_steering_optimizer_parser(parser):
     comprehensive_parser.add_argument("--baseline-output-dir", type=str, default="./baseline_comparison", help="Directory to save baseline comparison results (default: ./baseline_comparison)")
     comprehensive_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     comprehensive_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    comprehensive_parser.add_argument("--use-cached", action="store_true", help="Use cached optimization results if available instead of re-running optimization")
+    comprehensive_parser.add_argument("--save-as-default", action="store_true", help="Save optimal parameters as default for this model/task combination")
 
     # Method comparison subcommand
     method_parser = steering_subparsers.add_parser(
@@ -62,6 +64,8 @@ def setup_steering_optimizer_parser(parser):
     )
     method_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     method_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    method_parser.add_argument("--use-cached", action="store_true", help="Use cached optimization results if available instead of re-running optimization")
+    method_parser.add_argument("--save-as-default", action="store_true", help="Save optimal parameters as default for this model/task combination")
 
     # Layer optimization subcommand
     layer_parser = steering_subparsers.add_parser("optimize-layer", help="Find optimal steering layer for a method")
@@ -83,6 +87,8 @@ def setup_steering_optimizer_parser(parser):
     layer_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
     layer_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     layer_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    layer_parser.add_argument("--use-cached", action="store_true", help="Use cached optimization results if available instead of re-running optimization")
+    layer_parser.add_argument("--save-as-default", action="store_true", help="Save optimal parameters as default for this model/task combination")
 
     # Strength optimization subcommand
     strength_parser = steering_subparsers.add_parser("optimize-strength", help="Find optimal steering strength")
@@ -113,6 +119,8 @@ def setup_steering_optimizer_parser(parser):
     strength_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
     strength_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     strength_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    strength_parser.add_argument("--use-cached", action="store_true", help="Use cached optimization results if available instead of re-running optimization")
+    strength_parser.add_argument("--save-as-default", action="store_true", help="Save optimal parameters as default for this model/task combination")
 
     # Auto optimization subcommand
     auto_parser = steering_subparsers.add_parser(
@@ -150,6 +158,8 @@ def setup_steering_optimizer_parser(parser):
     )
     auto_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     auto_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    auto_parser.add_argument("--use-cached", action="store_true", help="Use cached optimization results if available instead of re-running optimization")
+    auto_parser.add_argument("--save-as-default", action="store_true", help="Save optimal parameters as default for this model/task combination")
 
     # Personalization optimization subcommand
     personalization_parser = steering_subparsers.add_parser(
@@ -188,6 +198,8 @@ def setup_steering_optimizer_parser(parser):
     )
     personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    personalization_parser.add_argument("--use-cached", action="store_true", help="Use cached optimization results if available instead of re-running optimization")
+    personalization_parser.add_argument("--save-as-default", action="store_true", help="Save optimal parameters as default for this model/task combination")
 
     # Multi-trait personalization optimization subcommand
     multi_personalization_parser = steering_subparsers.add_parser(
@@ -228,4 +240,6 @@ def setup_steering_optimizer_parser(parser):
     )
     multi_personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     multi_personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    multi_personalization_parser.add_argument("--use-cached", action="store_true", help="Use cached optimization results if available instead of re-running optimization")
+    multi_personalization_parser.add_argument("--save-as-default", action="store_true", help="Save optimal parameters as default for this model/task combination")
 

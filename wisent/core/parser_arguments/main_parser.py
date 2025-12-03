@@ -34,6 +34,7 @@ from wisent.core.parser_arguments.evaluate_responses_parser import setup_evaluat
 from wisent.core.parser_arguments.modify_weights_parser import setup_modify_weights_parser
 from wisent.core.parser_arguments.evaluate_refusal_parser import setup_evaluate_refusal_parser
 from wisent.core.parser_arguments.inference_config_parser import setup_inference_config_parser
+from wisent.core.parser_arguments.optimization_cache_parser import setup_optimization_cache_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -179,5 +180,11 @@ def setup_parser() -> argparse.ArgumentParser:
         "inference-config", help="View and update inference generation settings"
     )
     setup_inference_config_parser(inference_config_parser)
+
+    # Optimization cache command for managing cached optimization results
+    optimization_cache_parser = subparsers.add_parser(
+        "optimization-cache", help="Manage cached optimization results (list, show, delete, clear, export, import)"
+    )
+    setup_optimization_cache_parser(optimization_cache_parser)
 
     return parser
