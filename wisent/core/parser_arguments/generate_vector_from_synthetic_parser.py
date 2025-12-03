@@ -113,6 +113,19 @@ def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser)
         default=None,
         help="Directory for intermediate files (default: same as output)"
     )
+
+    # Pairs caching
+    parser.add_argument(
+        "--pairs-cache-dir",
+        type=str,
+        default=None,
+        help="Directory to cache/load pairs. If pairs file exists for this trait, skip generation and use cached pairs."
+    )
+    parser.add_argument(
+        "--force-regenerate",
+        action="store_true",
+        help="Force regeneration of pairs even if cached pairs exist"
+    )
     
     # Display options
     parser.add_argument(
