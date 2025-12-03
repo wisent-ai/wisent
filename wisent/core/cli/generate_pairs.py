@@ -4,7 +4,7 @@ import sys
 import json
 import os
 
-from wisent.core.models.inference_config import get_config, get_generate_kwargs
+from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def execute_generate_pairs(args):
@@ -75,8 +75,7 @@ def execute_generate_pairs(args):
             max_tokens = max(2048, min(estimated_tokens, 8192))  # Between 2048 and 8192
 
             # Get inference config settings
-            inference_config = get_config()
-            gen_kwargs = get_generate_kwargs(inference_config)
+            gen_kwargs = get_generate_kwargs()
 
             generation_config = {
                 "max_new_tokens": max_tokens,
