@@ -102,7 +102,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 "gpt3_translation_benchmarks",
                 "non_greedy_robustness_agieval_aqua_rat", "option_order_robustness_agieval_aqua_rat",
                 "penn_treebank", "ptb", "prompt_robustness_agieval_aqua_rat",
-                "self_consistency", "sglue_rte", "t0_eval",
+                "self_consistency", "t0_eval",
                 "wikitext103"
             ]
             # Tasks that should explicitly use LMEval (not HuggingFace)
