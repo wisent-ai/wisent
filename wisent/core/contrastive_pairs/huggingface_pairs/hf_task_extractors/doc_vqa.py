@@ -16,9 +16,6 @@ _LOG = setup_logger(__name__)
 
 task_names = ("doc_vqa",)
 
-evaluator_name = "generation"
-
-
 class DocVQAExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for DocVQA (Document Visual Question Answering) benchmark.
 
@@ -26,6 +23,8 @@ class DocVQAExtractor(HuggingFaceBenchmarkExtractor):
     Format: source (question with <img> tags) + target (answer text)
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

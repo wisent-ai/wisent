@@ -82,9 +82,6 @@ task_names = (
         "eus_exams_eu_osakidetza7e",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class EusExamsExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Eus Exams benchmark - Basque language exams.
 
@@ -92,6 +89,8 @@ class EusExamsExtractor(LMEvalBenchmarkExtractor):
     Format: question + candidates (list) + answer (integer index)
     """
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

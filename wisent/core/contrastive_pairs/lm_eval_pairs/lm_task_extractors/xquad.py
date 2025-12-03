@@ -29,12 +29,11 @@ task_names = (
     "xquad_zh",
 )
 
-evaluator_name = "generation"
-
-
 class XquadExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Xquad benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

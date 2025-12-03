@@ -32,12 +32,11 @@ task_names = (
     "med_concepts_qa_icd9proc_medium",
     "med_concepts_qa_icd9proc_hard",
 )
-evaluator_name = "log_likelihoods"
-
-
 class MedConceptsQaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Med Concepts Qa benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

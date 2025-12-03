@@ -23,12 +23,11 @@ task_names = (
     "mastermind_46_easy",
     "mastermind_46_hard",
 )
-evaluator_name = "log_likelihoods"
-
-
 class MastermindExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Mastermind benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

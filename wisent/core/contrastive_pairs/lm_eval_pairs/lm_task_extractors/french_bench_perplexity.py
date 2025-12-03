@@ -18,12 +18,11 @@ task_names = (
     "french_bench_opus_perplexity",
     "french_bench_wikitext_fr"
 )
-evaluator_name = "log_likelihoods"
-
-
 class FrenchBenchPerplexityExtractor(LMEvalBenchmarkExtractor):
     """Extractor for French Bench perplexity benchmarks (loglikelihood_rolling)."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

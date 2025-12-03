@@ -15,12 +15,11 @@ __all__ = ["MMLUExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("mmlu",)
-evaluator_name = "generation"
-
-
 class MMLUExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MMLU (Massive Multitask Language Understanding) and MMMLU (multilingual variant) benchmarks."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

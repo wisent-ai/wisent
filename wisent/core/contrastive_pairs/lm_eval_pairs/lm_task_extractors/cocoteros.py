@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("cocoteros_es", "cocoteros_va")
 
-evaluator_name = "generation"
-
-
 class CocoterosExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Cocoteros benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

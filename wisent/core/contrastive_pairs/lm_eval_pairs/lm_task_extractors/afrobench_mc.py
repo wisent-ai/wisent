@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 # This extractor handles all afrobench MC subtasks dynamically
 task_names = ()  # Intentionally empty - will match any afrobench MC task
-evaluator_name = "log_likelihoods"
-
-
 class AfroBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for AfroBench multiple-choice benchmarks."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

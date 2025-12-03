@@ -19,12 +19,11 @@ task_names = (
     "scrolls_quality",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class ScrollsMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the SCROLLS multiple choice tasks (contractnli, quality)."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

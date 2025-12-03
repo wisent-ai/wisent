@@ -19,12 +19,11 @@ task_names = (
     "gsm_plus_mini",
 )
 
-evaluator_name = "exact_match"
-
-
 class GsmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Gsm benchmark - math word problems."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -54,41 +53,21 @@ class GsmExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
+            question = doc.get("question", "").strip()
+            answer = doc.get("answer", "").strip()
 
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
-                return None
-
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
+            if not question or not answer:
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
+            
+            correct = answer
+            if answer == "None":
+                incorrect = "42"
+            else:
+                incorrect = str(float(correct) + 1)
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
+            formatted_question = f"Question: {question}"
             metadata = {"label": "gsm"}
 
             return self._build_pair(

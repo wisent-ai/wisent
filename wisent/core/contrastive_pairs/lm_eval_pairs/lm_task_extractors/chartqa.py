@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("chartqa", "chartqa_llama", "chartqa_llama_90")
 
-evaluator_name = "generation"
-
-
 class ChartqaExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Chartqa benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -22,9 +22,6 @@ task_names = (
     "evalita-sp_sum_task_fp_p2",
 )
 
-evaluator_name = "generation"
-
-
 class EvalitaSpExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Evalita Sp benchmark - Italian summarization task.
 
@@ -32,6 +29,8 @@ class EvalitaSpExtractor(LMEvalBenchmarkExtractor):
     Format: source (article text) + target (reference summary)
     """
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

@@ -15,12 +15,11 @@ __all__ = ["KblExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = ("kbl",)
-evaluator_name = "generation"
-
-
 class KblExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the Kbl benchmark."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

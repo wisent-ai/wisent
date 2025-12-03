@@ -13,12 +13,11 @@ log = logging.getLogger(__name__)
 
 task_names = ("codexglue_code_to_text_java",)
 
-evaluator_name = "generation"
-
-
 class CodexglueCodeToTextJavaExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for CodeXGLUE code-to-text Java."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

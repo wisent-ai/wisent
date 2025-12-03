@@ -19,12 +19,11 @@ task_names = (
     "mbpp_plus",
 )
 
-evaluator_name = "exact_match"
-
-
 class MBPPExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MBPP (Mostly Basic Python Problems) benchmark."""
 
+
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

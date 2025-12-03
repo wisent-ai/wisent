@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("self_consistency",)
 
-evaluator_name = "log_likelihoods"
-
-
 class SelfExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Self benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

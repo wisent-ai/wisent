@@ -13,12 +13,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("unfair_tos",)
 
-evaluator_name = "generation"
-
-
 class UnfairTosExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for Unfair ToS - unfair terms of service classification."""
 
+
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

@@ -1,45 +1,42 @@
 from __future__ import annotations
 
 import random
+import logging
 from typing import Any
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli_logger import setup_logger, bind
 
 
 __all__ = ["Wikitext103Extractor"]
-_LOG = setup_logger(__name__)
+log = logging.getLogger(__name__)
 
 task_names = ("wikitext103",)
-
-evaluator_name = "log_likelihoods"
 
 
 class Wikitext103Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for WikiText-103 - language modeling perplexity task."""
 
+    evaluator_name = "perplexity"
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task="wikitext103")
         max_items = self._normalize_limit(limit)
 
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("wikitext", "wikitext-103-v1", split="test")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load wikitext103 dataset: {e}")
-            return []
+        docs = self.load_dataset(
+            dataset_name="Salesforce/wikitext",
+            dataset_config="wikitext-103-v1",
+            split="test",
+            limit=max_items,
+        )
 
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(dataset)})
+        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        for doc in dataset:
+        for doc in docs:
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
                 pairs.append(pair)
@@ -52,8 +49,6 @@ class Wikitext103Extractor(HuggingFaceBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
         try:
             text = doc.get("text", doc.get("page", "")).strip()
 

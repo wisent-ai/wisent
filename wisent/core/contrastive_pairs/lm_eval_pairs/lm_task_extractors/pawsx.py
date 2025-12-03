@@ -16,12 +16,11 @@ _LOG = setup_logger(__name__)
 
 task_names = ("pawsx", "paws_de", "paws_en", "paws_es", "paws_fr", "paws_ja", "paws_ko", "paws_zh")
 
-evaluator_name = "log_likelihoods"
-
-
 class PawsXExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the PAWS-X benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,

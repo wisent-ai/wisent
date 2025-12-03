@@ -69,12 +69,11 @@ task_names = (
     "ceval-valid_teacher_qualification",
 )
 
-evaluator_name = "log_likelihoods"
-
-
 class CevalValidExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Ceval Valid benchmark."""
 
+
+    evaluator_name = "log_likelihoods"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
