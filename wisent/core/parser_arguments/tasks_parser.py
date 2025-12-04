@@ -299,7 +299,7 @@ def setup_tasks_parser(parser):
         "--steering-method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use",
     )
 
