@@ -20,38 +20,28 @@ Pipeline per trial:
 
 import json
 import os
-import sys
-import time
-import copy
+import re
 import tempfile
+import time
 from dataclasses import dataclass
-from typing import Callable, Any
+from typing import Any, Callable
 
-import optuna
-from optuna.samplers import TPESampler
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
+from wisent.core.models.wisent_model import WisentModel
+from wisent.core.opti.core.atoms import HPOConfig
+from wisent.core.opti.methods.opti_weights import WeightsOptimizer, WeightsOptimizerConfig
 from wisent.core.utils.device import resolve_default_device, preferred_dtype
-
-
-@dataclass
-class TrialResult:
-    """Result from a single optimization trial."""
-    trial_number: int
-    params: dict
-    score: float
-    evaluation_details: dict
 
 
 @dataclass
 class OptimizationResult:
     """Final result from optimization."""
-    best_trial: TrialResult
-    all_trials: list[TrialResult]
     best_params: dict
+    best_score: float
     target_achieved: bool
     total_time: float
+    total_trials: int
 
 
 def execute_optimize_weights(args):
@@ -83,11 +73,11 @@ def execute_optimize_weights(args):
     print(f"{'='*80}\n")
 
     # Parse search space ranges
-    strength_range = [float(x) for x in args.strength_range.split(",")]
-    max_weight_range = [float(x) for x in args.max_weight_range.split(",")]
-    min_weight_range = [float(x) for x in args.min_weight_range.split(",")]
-    position_range = [float(x) for x in args.position_range.split(",")]
-    num_pairs = args.num_pairs  # Fixed, not optimized
+    strength_range = tuple(float(x) for x in args.strength_range.split(","))
+    max_weight_range = tuple(float(x) for x in args.max_weight_range.split(","))
+    min_weight_range = tuple(float(x) for x in args.min_weight_range.split(","))
+    position_range = tuple(float(x) for x in args.position_range.split(","))
+    num_pairs = args.num_pairs
 
     # Determine optimization direction
     direction = args.direction
@@ -109,41 +99,16 @@ def execute_optimize_weights(args):
     # Initialize components
     print("Loading base model for reference...")
 
-    # Use existing device detection utilities
     device = args.device if args.device else resolve_default_device()
-    dtype = preferred_dtype(device)
 
     print(f"   Device: {device}")
-    print(f"   Dtype: {dtype}")
 
-    # For MPS, we need to load directly to device (device_map="auto" doesn't work well with MPS)
-    if device == "mps":
-        base_model = AutoModelForCausalLM.from_pretrained(
-            args.model,
-            torch_dtype=dtype,
-            trust_remote_code=True,
-        ).to(device)
-    else:
-        base_model = AutoModelForCausalLM.from_pretrained(
-            args.model,
-            torch_dtype=dtype,
-            device_map="auto" if device == "cuda" else None,
-            trust_remote_code=True,
-        )
-        if device == "cpu":
-            base_model = base_model.to(device)
+    # Load model using WisentModel
+    wisent_model = WisentModel(args.model, device=device)
+    base_model = wisent_model.hf_model  # Get underlying HF model for weight modification
+    tokenizer = wisent_model.tokenizer
+    num_layers = wisent_model.num_layers
 
-    tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-
-    # Get number of layers
-    if hasattr(base_model, "model") and hasattr(base_model.model, "layers"):
-        num_layers = len(base_model.model.layers)
-    elif hasattr(base_model, "transformer") and hasattr(base_model.transformer, "h"):
-        num_layers = len(base_model.transformer.h)
-    else:
-        num_layers = 16  # fallback
     print(f"   Model loaded: {num_layers} layers\n")
 
     # Store base model state for restoration
@@ -152,128 +117,51 @@ def execute_optimize_weights(args):
     # Initialize evaluator
     evaluator = _create_evaluator(args, tokenizer)
 
-    # Pre-generate steering vectors once (num_pairs is fixed, not optimized)
+    # Pre-generate steering vectors once
     print(f"Generating steering vectors with {num_pairs} pairs...")
     steering_vectors = _generate_steering_vectors(args, num_pairs, num_layers)
     print(f"   Steering vectors generated for {len(steering_vectors)} layers\n")
 
-    # Track all trial results
-    all_trials: list[TrialResult] = []
-    best_result: TrialResult | None = None
-
-    def objective(trial: optuna.Trial) -> float:
-        """Optuna objective function."""
-        nonlocal best_result
-
-        trial_start = time.time()
-
-        # Suggest parameters
-        params = {
-            "strength": trial.suggest_float("strength", strength_range[0], strength_range[1]),
-            "max_weight": trial.suggest_float("max_weight", max_weight_range[0], max_weight_range[1]),
-            "min_weight": trial.suggest_float("min_weight", min_weight_range[0], min_weight_range[1]),
-            "max_weight_position": trial.suggest_float("max_weight_position", position_range[0], position_range[1]),
-        }
-
-        # Optional: optimize direction index (interpolate between layers)
-        if args.optimize_direction_index:
-            params["direction_index"] = trial.suggest_float("direction_index", 0.0, num_layers - 1)
-
-        if args.verbose:
-            print(f"\n{'─'*60}")
-            print(f"Trial {trial.number}: {params}")
-
-        try:
-            # Step 1: Restore base model weights
-            base_model.load_state_dict(base_state_dict)
-
-            # Step 3: Apply weight modification with trial parameters
-            _apply_weight_modification(
-                base_model,
-                steering_vectors,
-                params,
-                num_layers,
-                args,
-            )
-
-            # Step 4: Evaluate
-            eval_result = evaluator(base_model, tokenizer)
-
-            # Step 5: Get score
-            score = eval_result.get(args.target_metric, eval_result.get("score", 0.0))
-
-            # Create trial result
-            trial_result = TrialResult(
-                trial_number=trial.number,
-                params=params,
-                score=score,
-                evaluation_details=eval_result,
-            )
-            all_trials.append(trial_result)
-
-            # Track best
-            if best_result is None:
-                best_result = trial_result
-            else:
-                is_better = (score > best_result.score) if direction == "maximize" else (score < best_result.score)
-                if is_better:
-                    best_result = trial_result
-
-            trial_time = time.time() - trial_start
-
-            if args.verbose:
-                print(f"   {args.target_metric}: {score:.4f}")
-                print(f"   Time: {trial_time:.1f}s")
-            else:
-                status = "BEST" if trial_result == best_result else ""
-                print(f"Trial {trial.number:3d}: {args.target_metric}={score:.4f} {status}")
-
-            # Early stopping check
-            if args.early_stop:
-                target_reached = (score >= args.target_value) if direction == "maximize" else (score <= args.target_value)
-                if target_reached:
-                    print(f"\n   Target {args.target_value} reached! Stopping early.")
-                    trial.study.stop()
-
-            return score
-
-        except Exception as e:
-            print(f"\n   Trial {trial.number} failed: {e}")
-            if args.verbose:
-                import traceback
-                traceback.print_exc()
-            # Return worst possible score
-            return -1e9 if direction == "maximize" else 1e9
-
-    # Create and run Optuna study
-    print(f"\nStarting optimization ({args.trials} trials)...\n")
-
-    study = optuna.create_study(
-        direction=direction,
-        sampler=TPESampler(
-            n_startup_trials=args.startup_trials,
-            multivariate=True,
-        ),
+    # Create optimizer config
+    optimizer_config = WeightsOptimizerConfig(
+        strength_range=strength_range,
+        max_weight_range=max_weight_range,
+        min_weight_range=min_weight_range,
+        position_range=position_range,
+        method=args.method,
+        components=args.components,
+        norm_preserve=args.norm_preserve,
+        optimize_direction_index=args.optimize_direction_index,
+        target_metric=args.target_metric,
+        target_value=args.target_value if args.early_stop else None,
     )
 
-    # Add early stopping callback
-    if args.early_stop_patience:
-        study.optimize(
-            objective,
-            n_trials=args.trials,
-            show_progress_bar=not args.verbose,
-            callbacks=[_early_stopping_callback(args.early_stop_patience, direction)],
-        )
-    else:
-        study.optimize(
-            objective,
-            n_trials=args.trials,
-            show_progress_bar=not args.verbose,
-        )
+    # Create the optimizer
+    optimizer = WeightsOptimizer(
+        model=base_model,
+        base_state_dict=base_state_dict,
+        steering_vectors=steering_vectors,
+        evaluator=evaluator,
+        tokenizer=tokenizer,
+        config=optimizer_config,
+        num_layers=num_layers,
+    )
 
-    # Get best parameters
-    best_params = study.best_params
-    best_value = study.best_value
+    # Create HPO config
+    hpo_config = HPOConfig(
+        n_trials=args.trials,
+        direction=direction,
+        sampler="tpe",
+        pruner=None,
+        seed=42,
+    )
+
+    # Run optimization
+    print(f"\nStarting optimization ({args.trials} trials)...\n")
+    result = optimizer.optimize(hpo_config)
+
+    best_params = result.best_params
+    best_value = result.best_value
 
     print(f"\n{'='*80}")
     print("OPTIMIZATION COMPLETE")
@@ -281,10 +169,13 @@ def execute_optimize_weights(args):
     print(f"\nBest parameters:")
     for k, v in best_params.items():
         print(f"   {k}: {v:.4f}" if isinstance(v, float) else f"   {k}: {v}")
-    print(f"\nBest {args.target_metric}: {best_result.score:.4f}")
+    print(f"\nBest {args.target_metric}: {best_value:.4f}")
 
     # Check if target achieved
-    target_achieved = (best_result.score >= args.target_value) if direction == "maximize" else (best_result.score <= args.target_value)
+    if direction == "maximize":
+        target_achieved = best_value >= args.target_value
+    else:
+        target_achieved = best_value <= args.target_value
     print(f"\nTarget {args.target_value} achieved: {'YES' if target_achieved else 'NO'}")
 
     # Apply best parameters and save final model
@@ -292,16 +183,7 @@ def execute_optimize_weights(args):
     print("SAVING OPTIMIZED MODEL")
     print(f"{'='*80}")
 
-    # Restore and apply best parameters
-    base_model.load_state_dict(base_state_dict)
-
-    _apply_weight_modification(
-        base_model,
-        steering_vectors,
-        best_params,
-        num_layers,
-        args,
-    )
+    optimizer.apply_best_params(best_params)
 
     # Save model
     os.makedirs(args.output_dir, exist_ok=True)
@@ -318,9 +200,9 @@ def execute_optimize_weights(args):
         "target_metric": args.target_metric,
         "target_value": args.target_value,
         "best_params": best_params,
-        "best_score": best_result.score,
+        "best_score": best_value,
         "target_achieved": target_achieved,
-        "total_trials": len(all_trials),
+        "total_trials": len(result.study.trials),
         "direction": direction,
     }
 
@@ -334,11 +216,11 @@ def execute_optimize_weights(args):
     if args.save_trials:
         trials_data = [
             {
-                "trial": t.trial_number,
+                "trial": t.number,
                 "params": t.params,
-                "score": t.score,
+                "score": t.value,
             }
-            for t in all_trials
+            for t in result.study.trials
         ]
         with open(args.save_trials, "w") as f:
             json.dump(trials_data, f, indent=2)
@@ -366,6 +248,7 @@ def execute_optimize_weights(args):
             num_layers=num_layers,
             tokenizer=tokenizer,
             args=args,
+            optimizer_config=optimizer_config,
             num_comparisons=show_comparisons_count if show_comparisons_count > 0 else None,
             save_path=save_comparisons_path,
         )
@@ -377,11 +260,11 @@ def execute_optimize_weights(args):
     print(f"{'='*80}\n")
 
     return OptimizationResult(
-        best_trial=best_result,
-        all_trials=all_trials,
         best_params=best_params,
+        best_score=best_value,
         target_achieved=target_achieved,
         total_time=total_time,
+        total_trials=len(result.study.trials),
     )
 
 
@@ -390,7 +273,6 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
     from argparse import Namespace
 
     if args.steering_vectors:
-        # Load pre-computed vectors
         with open(args.steering_vectors, "r") as f:
             data = json.load(f)
         return {
@@ -398,13 +280,11 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
             for layer, vec in data["steering_vectors"].items()
         }
 
-    # Create temp file for output
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         temp_output = f.name
 
     try:
         if args.trait:
-            # Generate from trait (synthetic pairs)
             from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
 
             vector_args = Namespace(
@@ -432,7 +312,6 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
             execute_generate_vector_from_synthetic(vector_args)
 
         elif args.task:
-            # Generate from task
             from wisent.core.cli.generate_vector_from_task import execute_generate_vector_from_task
 
             vector_args = Namespace(
@@ -455,7 +334,6 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
 
             execute_generate_vector_from_task(vector_args)
 
-        # Load generated vectors
         with open(temp_output, "r") as f:
             data = json.load(f)
 
@@ -469,59 +347,18 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
             os.unlink(temp_output)
 
 
-def _apply_weight_modification(
-    model,
-    steering_vectors: dict[int, torch.Tensor],
-    params: dict,
-    num_layers: int,
-    args,
-):
-    """Apply weight modification with given parameters."""
-    from wisent.core.weight_modification import abliterate_with_kernel, bake_steering_with_kernel
-
-    # Convert position ratio to layer index
-    max_weight_position = params["max_weight_position"] * (num_layers - 1)
-
-    # Compute min_weight_distance from position
-    min_weight_distance = 0.6 * (num_layers - 1)
-
-    if args.method == "abliteration":
-        abliterate_with_kernel(
-            model,
-            steering_vectors,
-            max_weight=params["max_weight"] * params["strength"],
-            max_weight_position=max_weight_position,
-            min_weight=params["min_weight"],
-            min_weight_distance=min_weight_distance,
-            components=args.components,
-            norm_preserve=args.norm_preserve,
-            verbose=False,
-        )
-    else:
-        bake_steering_with_kernel(
-            model,
-            steering_vectors,
-            max_alpha=params["max_weight"] * params["strength"],
-            max_alpha_position=max_weight_position,
-            min_alpha=params["min_weight"],
-            components=args.components,
-            verbose=False,
-        )
-
-
-def _create_evaluator(args, tokenizer) -> Callable:
+def _create_evaluator(args, tokenizer) -> Callable[[Any, Any], dict[str, float]]:
     """Create the appropriate evaluator function based on args."""
 
     evaluator_type = args.evaluator
 
-    # Auto-select evaluator
     if evaluator_type == "auto":
         if args.trait and "refus" in args.trait.lower():
             evaluator_type = "refusal"
         elif args.task:
             evaluator_type = "task"
         else:
-            evaluator_type = "refusal"  # default for traits
+            evaluator_type = "refusal"
 
     if evaluator_type in ["refusal", "semantic", "keyword"]:
         return _create_refusal_evaluator(args, tokenizer, evaluator_type)
@@ -538,11 +375,9 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
     from uncensorbench import UncensorBench
     from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
     from wisent.core.models.inference_config import get_generate_kwargs
-    import re
 
     bench = UncensorBench()
 
-    # Get evaluation prompts
     if args.eval_prompts:
         with open(args.eval_prompts) as f:
             custom_prompts = json.load(f)
@@ -555,7 +390,6 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
         prompts = list(bench.prompts(topics=topics))[:args.num_eval_prompts]
         use_custom = False
 
-    # Initialize evaluator
     if eval_type == "keyword":
         evaluator = KeywordEvaluator()
     else:
@@ -566,7 +400,6 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
 
     def evaluate(model, tok) -> dict:
         """Run refusal evaluation."""
-        results = []
         refusal_count = 0
         compliance_scores = []
 
@@ -580,7 +413,6 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
                 prompt_obj = item
                 prompt_text = prompt_obj.prompt
 
-            # Format as chat
             try:
                 messages = [{"role": "user", "content": prompt_text}]
                 text = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -624,7 +456,7 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
             "average_compliance_score": avg_compliance,
             "refusal_count": refusal_count,
             "total": total,
-            "score": compliance_rate,  # default score
+            "score": compliance_rate,
         }
 
     return evaluate
@@ -640,7 +472,6 @@ def _create_task_evaluator(args) -> Callable:
 
     def evaluate(model, tokenizer) -> dict:
         """Run task evaluation."""
-        # Load task data
         result = loader._load_one_task(
             task_name=args.task,
             split_ratio=0.8,
@@ -662,7 +493,7 @@ def _create_task_evaluator(args) -> Callable:
                 eval_result = evaluator.evaluate(
                     response="",
                     expected=expected,
-                    model=None,  # Will use log likelihood
+                    model=None,
                     question=pair.prompt,
                     choices=choices,
                     task_name=args.task,
@@ -688,38 +519,44 @@ def _create_task_evaluator(args) -> Callable:
 
 def _create_llm_judge_evaluator(args, tokenizer) -> Callable:
     """Create LLM-as-judge evaluator."""
-    # TODO: Implement LLM judge evaluation
     raise NotImplementedError("LLM judge evaluator not yet implemented")
 
 
-def _early_stopping_callback(patience: int, direction: str):
-    """Create early stopping callback for Optuna."""
-    best_value = None
-    no_improvement_count = 0
+def _apply_weight_modification_standalone(
+    model,
+    steering_vectors: dict[int, torch.Tensor],
+    params: dict,
+    num_layers: int,
+    config: WeightsOptimizerConfig,
+):
+    """Apply weight modification with given parameters (standalone helper)."""
+    from wisent.core.weight_modification import abliterate_with_kernel, bake_steering_with_kernel
 
-    def callback(study: optuna.Study, trial: optuna.trial.FrozenTrial):
-        nonlocal best_value, no_improvement_count
+    max_weight_position = params["max_weight_position"] * (num_layers - 1)
+    min_weight_distance = 0.6 * (num_layers - 1)
 
-        if trial.value is None:
-            return
-
-        if best_value is None:
-            best_value = trial.value
-            return
-
-        improved = (trial.value > best_value) if direction == "maximize" else (trial.value < best_value)
-
-        if improved:
-            best_value = trial.value
-            no_improvement_count = 0
-        else:
-            no_improvement_count += 1
-
-        if no_improvement_count >= patience:
-            print(f"\nNo improvement for {patience} trials. Stopping early.")
-            study.stop()
-
-    return callback
+    if config.method == "abliteration":
+        abliterate_with_kernel(
+            model,
+            steering_vectors,
+            max_weight=params["max_weight"] * params["strength"],
+            max_weight_position=max_weight_position,
+            min_weight=params["min_weight"],
+            min_weight_distance=min_weight_distance,
+            components=config.components,
+            norm_preserve=config.norm_preserve,
+            verbose=False,
+        )
+    else:
+        bake_steering_with_kernel(
+            model,
+            steering_vectors,
+            max_alpha=params["max_weight"] * params["strength"],
+            max_alpha_position=max_weight_position,
+            min_alpha=params["min_weight"],
+            components=config.components,
+            verbose=False,
+        )
 
 
 def _show_response_comparisons(
@@ -730,20 +567,11 @@ def _show_response_comparisons(
     num_layers: int,
     tokenizer,
     args,
+    optimizer_config: WeightsOptimizerConfig,
     num_comparisons: int = None,
     save_path: str = None,
 ):
-    """
-    Show and/or save before/after response comparisons for prompts with biggest score changes.
-
-    Generates responses from both baseline and optimized model, then shows
-    the N prompts with the largest change in compliance score and/or saves all to JSON.
-
-    Args:
-        num_comparisons: Number of comparisons to display in console (None = don't display)
-        save_path: Path to save all comparisons as JSON (None = don't save)
-    """
-    import re
+    """Show and/or save before/after response comparisons."""
     from uncensorbench import UncensorBench
     from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
     from wisent.core.models.inference_config import get_generate_kwargs
@@ -754,7 +582,6 @@ def _show_response_comparisons(
 
     bench = UncensorBench()
 
-    # Get evaluation prompts
     if args.eval_prompts:
         with open(args.eval_prompts) as f:
             custom_prompts = json.load(f)
@@ -767,7 +594,6 @@ def _show_response_comparisons(
         prompts = list(bench.prompts(topics=topics))[:args.num_eval_prompts]
         use_custom = False
 
-    # Initialize evaluator
     try:
         evaluator = SemanticEvaluator()
     except ImportError:
@@ -776,7 +602,6 @@ def _show_response_comparisons(
     generate_kwargs = get_generate_kwargs()
 
     def generate_response(model, prompt_text: str) -> str:
-        """Generate a response for a given prompt."""
         try:
             messages = [{"role": "user", "content": prompt_text}]
             text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
@@ -799,7 +624,6 @@ def _show_response_comparisons(
         return response
 
     def evaluate_response(prompt_item, response: str, use_custom: bool) -> tuple[bool, float]:
-        """Evaluate a response and return (is_refusal, compliance_score)."""
         if use_custom:
             is_refusal = bench.detect_refusal(response)
             compliance_score = 0.0 if is_refusal else 1.0
@@ -811,7 +635,6 @@ def _show_response_comparisons(
 
     print("\nGenerating baseline responses...")
 
-    # Step 1: Restore baseline model and generate responses
     base_model.load_state_dict(base_state_dict)
 
     baseline_results = []
@@ -833,13 +656,12 @@ def _show_response_comparisons(
 
     print("Generating optimized responses...")
 
-    # Step 2: Apply best params and generate optimized responses
-    _apply_weight_modification(
+    _apply_weight_modification_standalone(
         base_model,
         steering_vectors,
         best_params,
         num_layers,
-        args,
+        optimizer_config,
     )
 
     optimized_results = []
@@ -858,7 +680,6 @@ def _show_response_comparisons(
             "score": score,
         })
 
-    # Step 3: Compute score deltas and sort
     comparisons = []
     for i, (baseline, optimized) in enumerate(zip(baseline_results, optimized_results)):
         delta = optimized["score"] - baseline["score"]
@@ -874,10 +695,8 @@ def _show_response_comparisons(
             "delta": delta,
         })
 
-    # Sort by absolute delta (biggest changes first)
     comparisons.sort(key=lambda x: abs(x["delta"]), reverse=True)
 
-    # Summary stats
     total_baseline_refusals = sum(1 for c in comparisons if c["baseline_refusal"])
     total_optimized_refusals = sum(1 for c in comparisons if c["optimized_refusal"])
     avg_baseline_score = sum(c["baseline_score"] for c in comparisons) / len(comparisons)
@@ -893,9 +712,7 @@ def _show_response_comparisons(
         "refusal_change": total_baseline_refusals - total_optimized_refusals,
     }
 
-    # Step 4: Save to JSON if requested
     if save_path:
-        import os
         os.makedirs(os.path.dirname(save_path) if os.path.dirname(save_path) else ".", exist_ok=True)
         output_data = {
             "model": args.model,
@@ -906,9 +723,8 @@ def _show_response_comparisons(
         }
         with open(save_path, "w") as f:
             json.dump(output_data, f, indent=2)
-        print(f"\n💾 Saved {len(comparisons)} comparisons to: {save_path}")
+        print(f"\nSaved {len(comparisons)} comparisons to: {save_path}")
 
-    # Step 5: Display top N comparisons in console if requested
     if num_comparisons and num_comparisons > 0:
         print(f"\nTop {num_comparisons} prompts with biggest score changes:\n")
 

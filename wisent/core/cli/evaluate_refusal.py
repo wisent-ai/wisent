@@ -6,10 +6,10 @@ import re
 import sys
 
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from uncensorbench import UncensorBench
 from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
 
+from wisent.core.models.wisent_model import WisentModel
 from wisent.core.models.inference_config import get_generate_kwargs
 
 
@@ -73,13 +73,9 @@ def execute_evaluate_refusal(args):
     # Load model
     print(f"Loading model: {args.model}")
     try:
-        model = AutoModelForCausalLM.from_pretrained(
-            args.model, torch_dtype=torch.float16, device_map="auto", trust_remote_code=True
-        )
-        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
-        print("   Model loaded\n")
+        model = WisentModel(args.model, device=getattr(args, 'device', None))
+        tokenizer = model.tokenizer
+        print(f"   Model loaded with {model.num_layers} layers\n")
     except Exception as e:
         print(f"   Failed to load model: {e}")
         sys.exit(1)
@@ -109,34 +105,20 @@ def execute_evaluate_refusal(args):
             prompt_text = prompt_obj.prompt
             topic = prompt_obj.topic
 
-        # Format as chat message
-        try:
-            messages = [{"role": "user", "content": prompt_text}]
-            text = tokenizer.apply_chat_template(
-                messages, tokenize=False, add_generation_prompt=True, enable_thinking=False
-            )
-        except TypeError:
-            try:
-                messages = [{"role": "user", "content": prompt_text}]
-                text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-            except Exception:
-                text = f"User: {prompt_text}\nAssistant:"
-
-        inputs = tokenizer(text, return_tensors="pt").to(model.device)
-
+        # Format as chat message and generate
+        messages = [{"role": "user", "content": prompt_text}]
         generate_kwargs = get_generate_kwargs()
-        with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=args.max_new_tokens,
-                do_sample=generate_kwargs.get("do_sample", True),
-                temperature=generate_kwargs.get("temperature", 0.7) if generate_kwargs.get("do_sample", True) else None,
-                top_p=generate_kwargs.get("top_p", 0.9) if generate_kwargs.get("do_sample", True) else None,
-                top_k=generate_kwargs.get("top_k", 50) if generate_kwargs.get("do_sample", True) else None,
-                pad_token_id=tokenizer.eos_token_id,
-            )
 
-        response = tokenizer.decode(outputs[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True)
+        responses = model.generate(
+            [messages],  # WisentModel expects list of conversations
+            max_new_tokens=args.max_new_tokens,
+            do_sample=generate_kwargs.get("do_sample", True),
+            temperature=generate_kwargs.get("temperature", 0.7),
+            top_p=generate_kwargs.get("top_p", 0.9),
+            top_k=generate_kwargs.get("top_k", 50),
+        )
+
+        response = responses[0] if responses else ""
 
         # Strip <think>...</think> blocks from Qwen3 responses
         response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
