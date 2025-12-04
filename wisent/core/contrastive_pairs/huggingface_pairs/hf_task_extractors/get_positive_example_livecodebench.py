@@ -7,7 +7,7 @@ and extracts examples that passed all test cases.
 from __future__ import annotations
 
 import json
-import logging
+from wisent.core.cli_logger import setup_logger
 import os
 from pathlib import Path
 from typing import Any
@@ -16,7 +16,7 @@ from huggingface_hub import hf_hub_download
 
 __all__ = ["get_positive_example", "load_all_outputs_cache"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 # Global cache for all_outputs.json to avoid re-downloading
 _ALL_OUTPUTS_CACHE = None

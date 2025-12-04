@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
-import logging
+from wisent.core.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
@@ -13,7 +13,7 @@ import re
 
 __all__ = ["MATHExtractor"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 task_names = ("math",)
 
@@ -119,7 +119,7 @@ class MATHExtractor(HuggingFaceBenchmarkExtractor):
             return incorrect
         except Exception:
             return f"{correct} + 1"
-        
+
     def extract_boxed_answer(self, text: str) -> str | None:
         """Extract the LAST \\boxed{} answer from text (final answer convention).
 

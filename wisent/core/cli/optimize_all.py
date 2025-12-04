@@ -220,7 +220,7 @@ def _run_weight_modification_optimization(args: argparse.Namespace, traits: List
     from argparse import Namespace
 
     results = {}
-    n_trials = getattr(args, 'n_trials', 20)
+    n_trials = getattr(args, 'n_trials', 200)
     output_dir = getattr(args, 'output_dir', './data/modified_models')
 
     for trait in traits:

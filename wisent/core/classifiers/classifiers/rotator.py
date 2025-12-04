@@ -7,7 +7,7 @@ import pkgutil
 from pathlib import Path
 from typing import Any
 
-from wisent.classifiers.core.atoms import BaseClassifier, ClassifierError, ClassifierTrainReport
+from wisent.core.classifiers.classifiers.core.atoms import BaseClassifier, ClassifierError, ClassifierTrainReport
 
 __all__ = ["ClassifierRotator"]
 

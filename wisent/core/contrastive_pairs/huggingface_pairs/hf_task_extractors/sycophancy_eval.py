@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from typing import Any
-import logging
+from wisent.core.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["SycophancyEvalExtractor"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 # Sycophancy evaluation task types
 SYCOPHANCY_TASK_TYPES = [
@@ -204,20 +203,3 @@ Please provide your answer to the question above. If you believe the user's sugg
             f"is correct, and I should have agreed with you from the start."
         )
 
-    @staticmethod
-    def _build_pair(
-        question: str,
-        correct: str,
-        incorrect: str,
-        metadata: dict[str, Any] | None = None,
-    ) -> ContrastivePair:
-        """Build a ContrastivePair from question and responses."""
-        positive_response = PositiveResponse(model_response=correct)
-        negative_response = NegativeResponse(model_response=incorrect)
-        return ContrastivePair(
-            prompt=question,
-            positive_response=positive_response,
-            negative_response=negative_response,
-            label=metadata.get("label") if metadata else None,
-            metadata=metadata,
-        )

@@ -6,7 +6,9 @@ and extracts examples that failed test cases.
 """
 from __future__ import annotations
 
-import logging
+from wisent.core.cli_logger import setup_logger
+import random
+import string
 from typing import Any
 
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.get_positive_example_livecodebench import (
@@ -15,7 +17,7 @@ from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.get_posi
 
 __all__ = ["get_negative_example"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 
 def get_negative_example(
@@ -65,8 +67,8 @@ def get_negative_example(
                     log.debug(f"Found negative example from model: {current_model}")
                     return result
 
-        log.warning(f"No negative examples found for problem {problem_idx}")
-        return None
+        log.warning(f"No negative examples found for problem {problem_idx}, generating synthetic gibberish")
+        return _generate_gibberish_negative(problem_idx)
 
     except Exception as exc:
         log.error(f"Error loading negative example: {exc}", exc_info=True)
@@ -97,3 +99,48 @@ def _extract_failing_example(outputs: dict[str, list]) -> dict[str, Any] | None:
             }
 
     return None
+
+
+def _generate_gibberish_negative(problem_idx: int) -> dict[str, Any]:
+    """
+    Generate a synthetic negative example with random gibberish code.
+
+    Used when no failing examples exist in pre-computed outputs (all models passed).
+
+    Args:
+        problem_idx: Index of the problem (used in metadata)
+
+    Returns:
+        Dictionary with synthetic gibberish code that will definitely fail.
+    """
+    words = []
+    for _ in range(random.randint(10, 30)):
+        word_len = random.randint(3, 12)
+        word = ''.join(random.choices(string.ascii_lowercase, k=word_len))
+        words.append(word)
+
+    gibberish_lines = []
+    gibberish_lines.append(f"def {random.choice(words)}():")
+    for _ in range(random.randint(3, 8)):
+        indent = "    "
+        line_type = random.choice(["assign", "return", "print", "comment"])
+        if line_type == "assign":
+            gibberish_lines.append(f"{indent}{random.choice(words)} = '{random.choice(words)}'")
+        elif line_type == "return":
+            gibberish_lines.append(f"{indent}return '{random.choice(words)}'")
+        elif line_type == "print":
+            gibberish_lines.append(f"{indent}print('{random.choice(words)}')")
+        else:
+            gibberish_lines.append(f"{indent}# {random.choice(words)} {random.choice(words)}")
+
+    gibberish_code = "\n".join(gibberish_lines)
+
+    return {
+        "code": gibberish_code,
+        "pass1": False,
+        "metadata": {
+            "synthetic": True,
+            "reason": "no_failing_model_outputs",
+            "problem_idx": problem_idx,
+        },
+    }

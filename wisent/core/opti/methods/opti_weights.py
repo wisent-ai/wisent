@@ -13,7 +13,7 @@ from typing import Any, Callable, Literal
 import optuna
 import torch
 
-from wisent.opti.core.atoms import BaseOptimizer, Direction
+from wisent.core.opti.core.atoms import BaseOptimizer, Direction
 
 __all__ = [
     "WeightsOptimizer",

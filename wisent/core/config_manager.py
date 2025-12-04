@@ -16,12 +16,32 @@ import os
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from pathlib import Path
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, TypeVar, Type
 import numpy as np
 
 
 # Default config location
 DEFAULT_CONFIG_DIR = os.path.expanduser("~/.wisent/configs")
+
+# Type variable for SerializableConfig
+T = TypeVar("T", bound="SerializableConfig")
+
+
+class SerializableConfig:
+    """Mixin providing to_dict() and from_dict() for dataclasses.
+
+    All simple config dataclasses should inherit from this to avoid
+    duplicating serialization logic.
+    """
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert config to dictionary."""
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls: Type[T], data: Dict[str, Any]) -> T:
+        """Create config from dictionary, filtering to valid fields only."""
+        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -37,7 +57,7 @@ class NumpyEncoder(json.JSONEncoder):
 
 
 @dataclass
-class ClassificationConfig:
+class ClassificationConfig(SerializableConfig):
     """Classification optimization parameters."""
     layer: int = 12
     token_aggregation: str = "average"
@@ -52,16 +72,9 @@ class ClassificationConfig:
     precision: float = 0.0
     recall: float = 0.0
 
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "ClassificationConfig":
-        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
-
 
 @dataclass
-class SteeringConfig:
+class SteeringConfig(SerializableConfig):
     """Steering optimization parameters."""
     layer: int = 12
     strength: float = 1.0
@@ -74,16 +87,9 @@ class SteeringConfig:
     score: float = 0.0
     metric: str = "accuracy"
 
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
-    @classmethod
-    def from_dict(cls, data: Dict[str, Any]) -> "SteeringConfig":
-        return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
-
 
 @dataclass
-class WeightModificationConfig:
+class WeightModificationConfig(SerializableConfig):
     """Weight modification (abliteration/additive) parameters."""
     method: str = "abliteration"  # abliteration or additive
 
@@ -111,9 +117,6 @@ class WeightModificationConfig:
     baseline_score: float = 0.0
     output_dir: str = ""
 
-    def to_dict(self) -> Dict[str, Any]:
-        return asdict(self)
-
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "WeightModificationConfig":
         # Handle components field specially since it's a list
@@ -122,22 +125,23 @@ class WeightModificationConfig:
         return cls(**{k: v for k, v in data.items() if k in cls.__dataclass_fields__})
 
 
-@dataclass
-class TaskConfig:
-    """Configuration for a specific benchmark task (e.g., hellaswag, gsm8k, mmlu)."""
-    task_name: str
+class NestedConfigMixin:
+    """Mixin for configs with nested classification/steering/weight_modification configs.
+
+    Subclasses must define a `_name_field` class attribute specifying the primary name field
+    (e.g., "task_name" or "trait_name").
+    """
+    _name_field: str = "name"  # Override in subclass
 
     classification: Optional[ClassificationConfig] = None
     steering: Optional[SteeringConfig] = None
     weight_modification: Optional[WeightModificationConfig] = None
-
-    # Metadata
-    updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    optimization_method: str = "manual"  # manual, grid_search, optuna, etc.
+    updated_at: str = ""
+    optimization_method: str = "manual"
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
-            "task_name": self.task_name,
+            self._name_field: getattr(self, self._name_field),
             "updated_at": self.updated_at,
             "optimization_method": self.optimization_method,
         }
@@ -148,6 +152,30 @@ class TaskConfig:
         if self.weight_modification:
             result["weight_modification"] = self.weight_modification.to_dict()
         return result
+
+    @classmethod
+    def _from_dict_common(cls, config, data: Dict[str, Any]):
+        """Populate nested configs from dict data."""
+        if "classification" in data:
+            config.classification = ClassificationConfig.from_dict(data["classification"])
+        if "steering" in data:
+            config.steering = SteeringConfig.from_dict(data["steering"])
+        if "weight_modification" in data:
+            config.weight_modification = WeightModificationConfig.from_dict(data["weight_modification"])
+        return config
+
+
+@dataclass
+class TaskConfig(NestedConfigMixin):
+    """Configuration for a specific benchmark task (e.g., hellaswag, gsm8k, mmlu)."""
+    _name_field: str = field(default="task_name", init=False, repr=False)
+
+    task_name: str = ""
+    classification: Optional[ClassificationConfig] = None
+    steering: Optional[SteeringConfig] = None
+    weight_modification: Optional[WeightModificationConfig] = None
+    updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    optimization_method: str = "manual"
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TaskConfig":
@@ -156,41 +184,20 @@ class TaskConfig:
             updated_at=data.get("updated_at", datetime.now().isoformat()),
             optimization_method=data.get("optimization_method", "manual"),
         )
-        if "classification" in data:
-            config.classification = ClassificationConfig.from_dict(data["classification"])
-        if "steering" in data:
-            config.steering = SteeringConfig.from_dict(data["steering"])
-        if "weight_modification" in data:
-            config.weight_modification = WeightModificationConfig.from_dict(data["weight_modification"])
-        return config
+        return cls._from_dict_common(config, data)
 
 
 @dataclass
-class TraitConfig:
+class TraitConfig(NestedConfigMixin):
     """Configuration for a specific behavioral trait (e.g., coding, honesty, helpfulness)."""
-    trait_name: str
+    _name_field: str = field(default="trait_name", init=False, repr=False)
 
+    trait_name: str = ""
     classification: Optional[ClassificationConfig] = None
     steering: Optional[SteeringConfig] = None
     weight_modification: Optional[WeightModificationConfig] = None
-
-    # Metadata
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    optimization_method: str = "manual"  # manual, grid_search, optuna, etc.
-
-    def to_dict(self) -> Dict[str, Any]:
-        result = {
-            "trait_name": self.trait_name,
-            "updated_at": self.updated_at,
-            "optimization_method": self.optimization_method,
-        }
-        if self.classification:
-            result["classification"] = self.classification.to_dict()
-        if self.steering:
-            result["steering"] = self.steering.to_dict()
-        if self.weight_modification:
-            result["weight_modification"] = self.weight_modification.to_dict()
-        return result
+    optimization_method: str = "manual"
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TraitConfig":
@@ -199,13 +206,7 @@ class TraitConfig:
             updated_at=data.get("updated_at", datetime.now().isoformat()),
             optimization_method=data.get("optimization_method", "manual"),
         )
-        if "classification" in data:
-            config.classification = ClassificationConfig.from_dict(data["classification"])
-        if "steering" in data:
-            config.steering = SteeringConfig.from_dict(data["steering"])
-        if "weight_modification" in data:
-            config.weight_modification = WeightModificationConfig.from_dict(data["weight_modification"])
-        return config
+        return cls._from_dict_common(config, data)
 
 
 @dataclass

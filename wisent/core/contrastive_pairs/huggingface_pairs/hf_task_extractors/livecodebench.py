@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
-import logging
+from wisent.core.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
@@ -11,7 +11,7 @@ from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.livecode
 
 __all__ = ["LivecodebenchExtractor"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 task_names = ("livecodebench",)
 
