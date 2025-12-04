@@ -4,6 +4,13 @@
 def setup_classification_optimizer_parser(parser):
     """Set up the classification-optimizer subcommand parser."""
     parser.add_argument("model", type=str, help="Model name or path to optimize")
+    parser.add_argument(
+        "--tasks",
+        type=str,
+        nargs="+",
+        default=None,
+        help="Specific tasks to optimize (e.g., 'truthfulqa_mc1 arc_easy'). If not provided, runs all supported tasks.",
+    )
     parser.add_argument("--limit", type=int, default=1000, help="Maximum samples per task (default: 1000)")
     parser.add_argument(
         "--optimization-metric",
@@ -80,4 +87,22 @@ def setup_classification_optimizer_parser(parser):
         default=None,
         metavar="PATH",
         help="Save all sample comparisons to JSON file",
+    )
+
+    # Training data options
+    parser.add_argument(
+        "--use-contrastive-pairs",
+        action="store_true",
+        help="Augment training with contrastive pairs (ground truth positive/negative responses) in addition to model generations",
+    )
+    parser.add_argument(
+        "--train-on-contrastive-only",
+        action="store_true",
+        default=True,
+        help="Train ONLY on contrastive pairs (no generation for training), but still evaluate on actual model generations. Much faster. (default: True)",
+    )
+    parser.add_argument(
+        "--train-on-generations",
+        action="store_true",
+        help="Train on actual model generations instead of contrastive pairs (slower, disables --train-on-contrastive-only)",
     )

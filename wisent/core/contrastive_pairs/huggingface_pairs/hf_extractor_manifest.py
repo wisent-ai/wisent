@@ -144,6 +144,93 @@ EXTRACTORS: dict[str, str] = {
     # TruthfulQA generation (semantic similarity evaluation, NOT lm-eval)
     "truthfulqa_generation": f"{base_import}truthfulqa_generation:TruthfulQAGenerationExtractor",
     "truthfulqa_gen": f"{base_import}truthfulqa_generation:TruthfulQAGenerationExtractor",
+
+    # Factuality benchmarks (NOT lm-eval)
+    "simpleqa": f"{base_import}simpleqa:SimpleQAExtractor",
+    "simple_qa": f"{base_import}simpleqa:SimpleQAExtractor",
+
+    # MMLU variants (NOT lm-eval)
+    "mmlu_redux": f"{base_import}mmlu_redux:MMLUReduxExtractor",
+    "mmlu-redux": f"{base_import}mmlu_redux:MMLUReduxExtractor",
+
+    # Multi-hop reasoning benchmarks (NOT lm-eval)
+    "frames": f"{base_import}frames:FRAMESExtractor",
+    "frames_benchmark": f"{base_import}frames:FRAMESExtractor",
+
+    # Medical/Health benchmarks (NOT lm-eval)
+    "healthbench": f"{base_import}healthbench:HealthBenchExtractor",
+    "health_bench": f"{base_import}healthbench:HealthBenchExtractor",
+
+    # Software Engineering benchmarks (NOT lm-eval)
+    "swe_bench_verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",
+    "swe-bench-verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",
+    "swebench_verified": f"{base_import}swe_bench_verified:SWEBenchVerifiedExtractor",
+
+    # Scientific Computing benchmarks (NOT lm-eval)
+    "scicode": f"{base_import}scicode:SciCodeExtractor",
+    "sci_code": f"{base_import}scicode:SciCodeExtractor",
+
+    # Instruction Following benchmarks (NOT lm-eval)
+    "alpaca_eval": f"{base_import}alpaca_eval:AlpacaEvalExtractor",
+    "alpacaeval": f"{base_import}alpaca_eval:AlpacaEvalExtractor",
+    "alpaca_eval_2": f"{base_import}alpaca_eval:AlpacaEvalExtractor",
+
+    # Arena/Chat benchmarks (NOT lm-eval)
+    "arena_hard": f"{base_import}arena_hard:ArenaHardExtractor",
+    "arena-hard": f"{base_import}arena_hard:ArenaHardExtractor",
+    "arenahard": f"{base_import}arena_hard:ArenaHardExtractor",
+
+    # Safety/Refusal benchmarks (NOT lm-eval)
+    "sorry_bench": f"{base_import}sorry_bench:SorryBenchExtractor",
+    "sorry-bench": f"{base_import}sorry_bench:SorryBenchExtractor",
+    "sorrybench": f"{base_import}sorry_bench:SorryBenchExtractor",
+    "jailbreakbench": f"{base_import}jailbreakbench:JailbreakBenchExtractor",
+    "jailbreak_bench": f"{base_import}jailbreakbench:JailbreakBenchExtractor",
+    "jbb": f"{base_import}jailbreakbench:JailbreakBenchExtractor",
+    "harmbench": f"{base_import}harmbench:HarmBenchExtractor",
+    "harm_bench": f"{base_import}harmbench:HarmBenchExtractor",
+    "harm-bench": f"{base_import}harmbench:HarmBenchExtractor",
+
+    # Over-refusal benchmarks (NOT lm-eval)
+    "or_bench": f"{base_import}or_bench:ORBenchExtractor",
+    "or-bench": f"{base_import}or_bench:ORBenchExtractor",
+    "orbench": f"{base_import}or_bench:ORBenchExtractor",
+    "or_bench_hard": f"{base_import}or_bench:ORBenchExtractor",
+    "or_bench_80k": f"{base_import}or_bench:ORBenchExtractor",
+
+    # Function calling benchmarks (NOT lm-eval)
+    "bfcl": f"{base_import}bfcl:BFCLExtractor",
+    "berkeley_function_calling": f"{base_import}bfcl:BFCLExtractor",
+    "function_calling_leaderboard": f"{base_import}bfcl:BFCLExtractor",
+
+    # Hallucination benchmarks (NOT lm-eval)
+    "halueval": f"{base_import}halueval:HaluEvalExtractor",
+    "halu_eval": f"{base_import}halueval:HaluEvalExtractor",
+    "hallucination_eval": f"{base_import}halueval:HaluEvalExtractor",
+
+    # Agent benchmarks (NOT lm-eval)
+    "agentbench": f"{base_import}agentbench:AgentBenchExtractor",
+    "agent_bench": f"{base_import}agentbench:AgentBenchExtractor",
+    "agentinstruct": f"{base_import}agentbench:AgentBenchExtractor",
+
+    # Math Olympiad benchmarks (NOT lm-eval)
+    "olympiadbench": f"{base_import}olympiadbench:OlympiadBenchExtractor",
+    "olympiad_bench": f"{base_import}olympiadbench:OlympiadBenchExtractor",
+    "imo_answerbench": f"{base_import}olympiadbench:OlympiadBenchExtractor",
+    "imo_math": f"{base_import}olympiadbench:OlympiadBenchExtractor",
+
+    # Chinese benchmarks (NOT lm-eval)
+    "cluewsc": f"{base_import}cluewsc:CLUEWSCExtractor",
+    "cluewsc2020": f"{base_import}cluewsc:CLUEWSCExtractor",
+    "clue_wsc": f"{base_import}cluewsc:CLUEWSCExtractor",
+    "chinese_simpleqa": f"{base_import}chinese_simpleqa:ChineseSimpleQAExtractor",
+    "c_simpleqa": f"{base_import}chinese_simpleqa:ChineseSimpleQAExtractor",
+    "csimpleqa": f"{base_import}chinese_simpleqa:ChineseSimpleQAExtractor",
+
+    # Competitive programming benchmarks (NOT lm-eval)
+    "codeforces": f"{base_import}codeforces:CodeforcesExtractor",
+    "code_forces": f"{base_import}codeforces:CodeforcesExtractor",
+    "codeelo": f"{base_import}codeforces:CodeforcesExtractor",
 }
 
 # Alias for backwards compatibility
