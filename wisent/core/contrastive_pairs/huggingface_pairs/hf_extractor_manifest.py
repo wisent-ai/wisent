@@ -250,6 +250,121 @@ EXTRACTORS: dict[str, str] = {
     "wildguard": f"{base_import}wildguard:WildGuardExtractor",
     "wildguardmix": f"{base_import}wildguard:WildGuardExtractor",
     "wild_guard": f"{base_import}wildguard:WildGuardExtractor",
+
+    # Hallucination benchmarks (NOT lm-eval)
+    "faithbench": f"{base_import}faithbench:FaithBenchExtractor",
+    "faith_bench": f"{base_import}faithbench:FaithBenchExtractor",
+    "faith-bench": f"{base_import}faithbench:FaithBenchExtractor",
+
+    # Sycophancy benchmarks (NOT lm-eval)
+    "sycophancy_eval": f"{base_import}sycophancy_eval:SycophancyEvalExtractor",
+    "sycophancy-eval": f"{base_import}sycophancy_eval:SycophancyEvalExtractor",
+    "syceval": f"{base_import}sycophancy_eval:SycophancyEvalExtractor",
+    "syc_eval": f"{base_import}sycophancy_eval:SycophancyEvalExtractor",
+
+    # Agent task benchmarks (NOT lm-eval)
+    "tau_bench": f"{base_import}tau_bench:TauBenchExtractor",
+    "tau-bench": f"{base_import}tau_bench:TauBenchExtractor",
+    "taubench": f"{base_import}tau_bench:TauBenchExtractor",
+    "tau2_bench": f"{base_import}tau_bench:TauBenchExtractor",
+
+    # Agent safety/emulation benchmarks (NOT lm-eval)
+    "toolemu": f"{base_import}toolemu:ToolEmuExtractor",
+    "tool_emu": f"{base_import}toolemu:ToolEmuExtractor",
+    "tool-emu": f"{base_import}toolemu:ToolEmuExtractor",
+
+    # Function calling/API benchmarks (NOT lm-eval)
+    "toolbench": f"{base_import}toolbench:ToolBenchExtractor",
+    "tool_bench": f"{base_import}toolbench:ToolBenchExtractor",
+    "toolllm": f"{base_import}toolbench:ToolBenchExtractor",
+    "tool_llm": f"{base_import}toolbench:ToolBenchExtractor",
+    "nexus_function_calling": f"{base_import}toolbench:ToolBenchExtractor",
+
+    # Planning benchmarks (NOT lm-eval)
+    "travelplanner": f"{base_import}travelplanner:TravelPlannerExtractor",
+    "travel_planner": f"{base_import}travelplanner:TravelPlannerExtractor",
+    "travel-planner": f"{base_import}travelplanner:TravelPlannerExtractor",
+
+    # Factuality/Grounding benchmarks (NOT lm-eval)
+    "facts_grounding": f"{base_import}facts_grounding:FACTSGroundingExtractor",
+    "facts-grounding": f"{base_import}facts_grounding:FACTSGroundingExtractor",
+    "factsgrounding": f"{base_import}facts_grounding:FACTSGroundingExtractor",
+
+    # Web browsing benchmarks (NOT lm-eval)
+    "browsecomp": f"{base_import}browsecomp:BrowseCompExtractor",
+    "browse_comp": f"{base_import}browsecomp:BrowseCompExtractor",
+    "browse-comp": f"{base_import}browsecomp:BrowseCompExtractor",
+    "browsecomp_zh": f"{base_import}browsecomp:BrowseCompExtractor",
+
+    # Selective refusal benchmarks (NOT lm-eval)
+    "refusalbench": f"{base_import}refusalbench:RefusalBenchExtractor",
+    "refusal_bench": f"{base_import}refusalbench:RefusalBenchExtractor",
+    "refusal-bench": f"{base_import}refusalbench:RefusalBenchExtractor",
+
+    # Chinese value alignment benchmarks (NOT lm-eval)
+    "flames": f"{base_import}flames:FlamesExtractor",
+    "flames_chinese": f"{base_import}flames:FlamesExtractor",
+
+    # Planning/Reasoning benchmarks (NOT lm-eval)
+    "planbench": f"{base_import}planbench:PlanBenchExtractor",
+    "plan_bench": f"{base_import}planbench:PlanBenchExtractor",
+    "planningbench": f"{base_import}planbench:PlanBenchExtractor",
+
+    # SWE-bench variants (NOT lm-eval)
+    "swe_verified": f"{base_import}swe_bench:SWEBenchVerifiedExtractor",
+    "swe_bench_verified": f"{base_import}swe_bench:SWEBenchVerifiedExtractor",
+    "swebench_verified": f"{base_import}swe_bench:SWEBenchVerifiedExtractor",
+    "multi_swe_bench": f"{base_import}swe_bench:MultiSWEBenchExtractor",
+    "multiswebench": f"{base_import}swe_bench:MultiSWEBenchExtractor",
+    "swe_bench_multilingual": f"{base_import}swe_bench:MultiSWEBenchExtractor",
+
+    # LiveCodeBench V6 (NOT lm-eval)
+    "livecodebench_v6": f"{base_import}livecodebench_v6:LiveCodeBenchV6Extractor",
+    "livecodebench_v5": f"{base_import}livecodebench_v6:LiveCodeBenchV6Extractor",
+    "livecodebench_lite": f"{base_import}livecodebench_v6:LiveCodeBenchV6Extractor",
+
+    # Hallucinations Leaderboard (NOT lm-eval)
+    "hallucinations_leaderboard": f"{base_import}hallucinations_leaderboard:HallucinationsLeaderboardExtractor",
+    "hallucination_leaderboard": f"{base_import}hallucinations_leaderboard:HallucinationsLeaderboardExtractor",
+    "hallu_leaderboard": f"{base_import}hallucinations_leaderboard:HallucinationsLeaderboardExtractor",
+
+    # Longform Writing (NOT lm-eval)
+    "longform_writing": f"{base_import}longform_writing:LongformWritingExtractor",
+    "longform": f"{base_import}longform_writing:LongformWritingExtractor",
+    "longform_generation": f"{base_import}longform_writing:LongformWritingExtractor",
+
+    # Agentic Search benchmarks (NOT lm-eval)
+    "seal_0": f"{base_import}agentic_search:SealExtractor",
+    "seal": f"{base_import}agentic_search:SealExtractor",
+    "finsearchcomp": f"{base_import}agentic_search:FinSearchCompExtractor",
+    "fin_search_comp": f"{base_import}agentic_search:FinSearchCompExtractor",
+    "financial_search": f"{base_import}agentic_search:FinSearchCompExtractor",
+
+    # Coding benchmarks (NOT lm-eval)
+    "oj_bench": f"{base_import}coding_benchmarks:OJBenchExtractor",
+    "ojbench": f"{base_import}coding_benchmarks:OJBenchExtractor",
+    "online_judge_bench": f"{base_import}coding_benchmarks:OJBenchExtractor",
+    "terminal_bench": f"{base_import}coding_benchmarks:TerminalBenchExtractor",
+    "terminalbench": f"{base_import}coding_benchmarks:TerminalBenchExtractor",
+    "terminal": f"{base_import}coding_benchmarks:TerminalBenchExtractor",
+    "scicode": f"{base_import}coding_benchmarks:SciCodeExtractor",
+    "sci_code": f"{base_import}coding_benchmarks:SciCodeExtractor",
+
+    # Medium priority benchmarks (NOT lm-eval)
+    "cnmo_2024": f"{base_import}medium_priority_benchmarks:CNMOExtractor",
+    "cnmo": f"{base_import}medium_priority_benchmarks:CNMOExtractor",
+    "chinese_math_olympiad": f"{base_import}medium_priority_benchmarks:CNMOExtractor",
+    "curate": f"{base_import}medium_priority_benchmarks:CurateExtractor",
+    "personalized_alignment": f"{base_import}medium_priority_benchmarks:CurateExtractor",
+    "halulens": f"{base_import}medium_priority_benchmarks:HalulensExtractor",
+    "hallu_lens": f"{base_import}medium_priority_benchmarks:HalulensExtractor",
+    "hallucination_lens": f"{base_import}medium_priority_benchmarks:HalulensExtractor",
+    "politicalbias_qa": f"{base_import}medium_priority_benchmarks:PoliticalBiasExtractor",
+    "political_bias": f"{base_import}medium_priority_benchmarks:PoliticalBiasExtractor",
+    "politicalbias": f"{base_import}medium_priority_benchmarks:PoliticalBiasExtractor",
+    "polyglottoxicityprompts": f"{base_import}medium_priority_benchmarks:PolygloToxicityExtractor",
+    "polyglot_toxicity": f"{base_import}medium_priority_benchmarks:PolygloToxicityExtractor",
+    "multilingual_toxicity": f"{base_import}medium_priority_benchmarks:PolygloToxicityExtractor",
 }
 
 # Alias for backwards compatibility
