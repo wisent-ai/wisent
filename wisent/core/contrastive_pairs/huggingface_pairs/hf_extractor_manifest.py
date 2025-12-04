@@ -242,6 +242,14 @@ EXTRACTORS: dict[str, str] = {
     "agentharm": f"{base_import}agentharm:AgentHarmExtractor",
     "agent_harm": f"{base_import}agentharm:AgentHarmExtractor",
     "agent-harm": f"{base_import}agentharm:AgentHarmExtractor",
+
+    # Safety refusal benchmarks (NOT lm-eval)
+    "donotanswer": f"{base_import}donotanswer:DoNotAnswerExtractor",
+    "do_not_answer": f"{base_import}donotanswer:DoNotAnswerExtractor",
+    "do-not-answer": f"{base_import}donotanswer:DoNotAnswerExtractor",
+    "wildguard": f"{base_import}wildguard:WildGuardExtractor",
+    "wildguardmix": f"{base_import}wildguard:WildGuardExtractor",
+    "wild_guard": f"{base_import}wildguard:WildGuardExtractor",
 }
 
 # Alias for backwards compatibility
