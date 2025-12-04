@@ -69,7 +69,7 @@ def render_banner(title: str, width: int = 48, use_color: bool = True) -> str:
     Render a banner with the Wisent logo, title, and tagline.
 
     Args:
-        title: Title text to display (e.g., "Wisent-Guard CLI")
+        title: Title text to display (e.g., "Wisent CLI")
         width: Width for centering (default: 48)
         use_color: Whether to use ANSI color codes (default: True)
 
@@ -96,7 +96,7 @@ def print_banner(title: str, width: int = 48, use_color: bool = True) -> None:
     Print a banner with the Wisent logo, title, and tagline.
 
     Args:
-        title: Title text to display (e.g., "Wisent-Guard CLI")
+        title: Title text to display (e.g., "Wisent CLI")
         width: Width for centering (default: 48)
         use_color: Whether to use ANSI color codes (default: True)
     """
@@ -105,4 +105,4 @@ def print_banner(title: str, width: int = 48, use_color: bool = True) -> None:
 
 if __name__ == "__main__":
     # Demo the branding
-    print_banner("Wisent-Guard")
+    print_banner("Wisent")

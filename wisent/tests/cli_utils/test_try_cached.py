@@ -13,7 +13,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent_guard.cli_utils.cli_prepare_dataset import (
+from wisent.cli_utils.cli_prepare_dataset import (
     _try_cached,
     _is_benchmark_cached,
     _load_cached_benchmark,

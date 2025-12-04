@@ -1,5 +1,5 @@
 """
-Optuna-based Optimization Framework for Wisent Guard
+Optuna-based Optimization Framework for Wisent
 
 This module provides Optuna-based hyperparameter optimization for both steering and classifier systems:
 

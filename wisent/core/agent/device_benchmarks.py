@@ -1,5 +1,5 @@
 """
-Device-specific performance benchmarking for wisent-guard.
+Device-specific performance benchmarking for wisent.
 
 This module runs quick performance tests on the current device to measure
 actual execution times for different operations, then saves those estimates

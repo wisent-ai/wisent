@@ -1,7 +1,7 @@
 {
   "metadata": {
     "total_tasks": 6888,
-    "created_by": "wisent-guard-task-analyzer",
+    "created_by": "wisent-task-analyzer",
     "description": "Comprehensive task database with tags and quality scores for lm-evaluation-harness tasks"
   },
   "tasks": {

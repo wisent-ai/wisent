@@ -1,5 +1,5 @@
 """
-Task implementations for wisent-guard.
+Task implementations for wisent.
 
 This package contains task-agnostic implementations for various benchmarks.
 """

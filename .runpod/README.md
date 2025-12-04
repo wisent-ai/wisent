@@ -1,21 +1,21 @@
-# Wisent Guard - Runpod Pod Template
+# Wisent - Runpod Pod Template
 
-Run wisent-guard on Runpod with JupyterLab and pre-installed example notebooks.
+Run wisent on Runpod with JupyterLab and pre-installed example notebooks.
 
 ## Quick Start
 
 ### 1. Build the Docker image
 
 ```bash
-cd wisent-guard
-docker build -t yourusername/wisent-guard:latest -f .runpod/Dockerfile .
+cd wisent
+docker build -t yourusername/wisent:latest -f .runpod/Dockerfile .
 ```
 
 ### 2. Push to Docker Hub
 
 ```bash
 docker login
-docker push yourusername/wisent-guard:latest
+docker push yourusername/wisent:latest
 ```
 
 ### 3. Create Pod Template in Runpod
@@ -23,8 +23,8 @@ docker push yourusername/wisent-guard:latest
 1. Go to [My Templates](https://console.runpod.io/user/templates)
 2. Click **New Template**
 3. Configure:
-   - **Name**: `Wisent Guard`
-   - **Container Image**: `yourusername/wisent-guard:latest`
+   - **Name**: `Wisent`
+   - **Container Image**: `yourusername/wisent:latest`
    - **Container Disk**: 50 GB
    - **Volume Disk**: 100 GB (for model caching)
    - **Volume Mount Path**: `/workspace`
@@ -37,7 +37,7 @@ docker push yourusername/wisent-guard:latest
 1. Go to [Pods](https://console.runpod.io/pods)
 2. Click **Deploy**
 3. Select a GPU (RTX 4090, L40S, A100 recommended)
-4. Choose your **Wisent Guard** template
+4. Choose your **Wisent** template
 5. Click **Deploy On-Demand**
 
 ### 5. Connect
@@ -78,4 +78,4 @@ Set these when creating your Pod template:
 ## Links
 
 - [Wisent Documentation](https://wisent.ai/documentation)
-- [GitHub Repository](https://github.com/Wisent-AI/wisent-guard)
+- [GitHub Repository](https://github.com/Wisent-AI/wisent)

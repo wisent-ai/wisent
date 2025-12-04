@@ -1,8 +1,8 @@
 """
-Latency tracking for wisent-guard operations.
+Latency tracking for wisent operations.
 
 This module provides comprehensive timing and performance monitoring capabilities
-for all aspects of the wisent-guard pipeline including model operations,
+for all aspects of the wisent pipeline including model operations,
 steering computations, and text generation.
 """
 
@@ -99,7 +99,7 @@ class TrainingMetrics:
 
 class LatencyTracker:
     """
-    Comprehensive latency tracker for wisent-guard operations.
+    Comprehensive latency tracker for wisent operations.
     
     Tracks timing for individual operations and provides aggregated statistics.
     Supports nested operation tracking and hierarchical timing analysis.

@@ -1,5 +1,5 @@
 """
-Steering methods for wisent-guard.
+Steering methods for wisent.
 
 This module provides a unified interface for various steering methods
 by importing them from the steering_methods package.

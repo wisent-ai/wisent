@@ -1,4 +1,4 @@
-# Wisent Guard - Runpod Pod Template
+# Wisent - Runpod Pod Template
 # Latent space monitoring and guardrails for AI models
 
 FROM runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404

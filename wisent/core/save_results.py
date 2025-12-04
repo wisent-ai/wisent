@@ -1,5 +1,5 @@
 """
-Functions for saving wisent-guard evaluation results in various formats.
+Functions for saving wisent evaluation results in various formats.
 """
 
 import os
@@ -177,7 +177,7 @@ def create_evaluation_report(results: Dict[str, Any], output_path: str) -> None:
     """Create a comprehensive evaluation report in markdown format."""
     try:
         with open(output_path, 'w') as f:
-            f.write("# Wisent-Guard Evaluation Report\n\n")
+            f.write("# Wisent Evaluation Report\n\n")
             
             # Summary table
             f.write("## Summary\n\n")

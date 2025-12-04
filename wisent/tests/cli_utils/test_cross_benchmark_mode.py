@@ -10,9 +10,9 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent_guard.cli_utils.cli_prepare_dataset import _cross_benchmark_mode, PrepState
-from wisent_guard.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
-from wisent_guard.core.contrastive_pairs.contrastive_pair import ContrastivePair
+from wisent.cli_utils.cli_prepare_dataset import _cross_benchmark_mode, PrepState
+from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
 
 
 def test_cross_benchmark_mode_disabled():
