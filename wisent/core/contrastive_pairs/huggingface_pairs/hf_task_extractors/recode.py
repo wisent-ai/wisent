@@ -120,7 +120,7 @@ class RecodeExtractor(HuggingFaceBenchmarkExtractor):
                 return incorrect
             else:
                 # Not a function definition, use generic corruption
-                incorrect = "# CORRUPTED CODE\n" + correct[:20] + "\n# REST IS INVALID"
+                incorrect = "# CORRUPTED CODE\n" + correct + "\n# REST IS INVALID"
                 return incorrect
 
         return f"INVALID_{correct}"

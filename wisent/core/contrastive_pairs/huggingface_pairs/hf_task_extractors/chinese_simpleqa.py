@@ -199,10 +199,7 @@ Question: {question})"""
             wrong = "民间传说中无定论"  # No consensus in folklore
         else:
             # Generic wrong answer
-            if len(correct_answer) <= 3:
-                wrong = "未知"
-            else:
-                wrong = correct_answer[:len(correct_answer)//2] + "..."
+            wrong = "未知"
 
         return f"""答案：{wrong}
 

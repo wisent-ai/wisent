@@ -284,7 +284,7 @@ class ToolBenchExtractor(HuggingFaceBenchmarkExtractor):
 
         if api_list:
             parts.append("\nAvailable APIs:")
-            for api in api_list[:5]:
+            for api in api_list:
                 # Handle both synthetic format and HuggingFace ToolBench format
                 if isinstance(api, dict):
                     # HuggingFace ToolBench uses: tool_name, api_name, api_description

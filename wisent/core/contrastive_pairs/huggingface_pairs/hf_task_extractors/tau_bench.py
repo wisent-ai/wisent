@@ -265,7 +265,7 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
             parts.append(f"\nTask: {description}")
 
         if available_tools:
-            tools_str = ", ".join(available_tools[:6])
+            tools_str = ", ".join(available_tools)
             parts.append(f"\nAvailable Tools: {tools_str}")
 
         parts.append("\nPlease help the user complete their request using the available tools.")
@@ -280,7 +280,7 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
     ) -> str:
         """Create a successful task completion response."""
         steps = []
-        for i, tool in enumerate(tools[:4]):
+        for i, tool in enumerate(tools):
             criterion = criteria[i] if i < len(criteria) else f"Execute {tool}"
             steps.append(f"{i+1}. {criterion} using {tool}")
 

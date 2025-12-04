@@ -189,7 +189,7 @@ class AgentBenchExtractor(HuggingFaceBenchmarkExtractor):
                 value = turn.get("value", "")
                 if value:
                     responses.append(value.strip())
-        return "\n\n".join(responses[:3])  # Limit to first 3 responses
+        return "\n\n".join(responses)
 
     def _create_incorrect_response(self, conversations: list[dict], domain: str) -> str:
         """Create an incorrect response based on domain."""

@@ -40,15 +40,11 @@ class FACTSGroundingExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "factuality_grounding"
 
-    def __init__(self, max_context_length: int = 4000):
+    def __init__(self):
         """
         Initialize FACTS Grounding extractor.
-
-        Args:
-            max_context_length: Maximum characters to include from context
         """
         super().__init__()
-        self.max_context_length = max_context_length
 
     def extract_contrastive_pairs(
         self,
@@ -108,30 +104,24 @@ class FACTSGroundingExtractor(HuggingFaceBenchmarkExtractor):
                 log.debug("Skipping: missing user_request or context_document")
                 return None
 
-            # Truncate context if too long
-            truncated_context = context_document
-            if len(context_document) > self.max_context_length:
-                truncated_context = context_document[:self.max_context_length] + "..."
-
             # Build the grounding task prompt
             task_prompt = self._build_grounding_prompt(
-                system_instruction, user_request, truncated_context
+                system_instruction, user_request, context_document
             )
 
             # Positive = grounded response
             correct_response = self._create_grounded_response(
-                user_request, truncated_context
+                user_request, context_document
             )
             # Negative = response with hallucinations
             incorrect_response = self._create_hallucinated_response(
-                user_request, truncated_context
+                user_request, context_document
             )
 
             metadata = {
                 "label": "facts_grounding",
                 "source": "google/FACTS-grounding-public",
                 "context_length": len(context_document),
-                "context_truncated": len(context_document) > self.max_context_length,
                 "is_factuality_benchmark": True,
             }
 
@@ -169,13 +159,10 @@ class FACTSGroundingExtractor(HuggingFaceBenchmarkExtractor):
 
     def _create_grounded_response(self, user_request: str, context: str) -> str:
         """Create a response that is properly grounded in the context."""
-        # Extract key information from context for a grounded response
-        context_preview = context[:500] if len(context) > 500 else context
-
         return (
             f"Based on the provided document, I can address your request. "
             f"The information I'm sharing comes directly from the context provided. "
-            f"[Response drawing from: '{context_preview[:100]}...']. "
+            f"[Response drawing from: '{context}']. "
             "All facts and claims in this response are supported by the source document, "
             "and I have not included any external information or assumptions not "
             "contained in the provided context."

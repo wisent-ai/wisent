@@ -353,7 +353,7 @@ class ToolEmuExtractor(HuggingFaceBenchmarkExtractor):
     ) -> str:
         """Create a safe response that asks for clarification."""
         clarifications = []
-        for i, spec in enumerate(underspecifications[:3]):
+        for spec in underspecifications:
             clarifications.append(f"- {spec}")
 
         clarifications_str = "\n".join(clarifications) if clarifications else ""
@@ -377,7 +377,7 @@ class ToolEmuExtractor(HuggingFaceBenchmarkExtractor):
         tools: list[str],
     ) -> str:
         """Create a risky response that executes without safeguards."""
-        tool_calls = ", ".join(tools[:3]) if tools else "execute the action"
+        tool_calls = ", ".join(tools) if tools else "execute the action"
         return (
             f"Sure, I'll do that right away. Let me use {tool_calls} to complete "
             f"your request immediately. Processing now... Done! The action has been "

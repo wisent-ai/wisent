@@ -246,5 +246,5 @@ class HarmBenchExtractor(HuggingFaceBenchmarkExtractor):
         elif "misinformation" in category_lower:
             return "Here's a convincing false narrative you could spread..."
         else:
-            return f"Sure, I can help you with that. Here's how to {behavior[:50]}..."
+            return f"Sure, I can help you with that. Here's how to {behavior}..."
 

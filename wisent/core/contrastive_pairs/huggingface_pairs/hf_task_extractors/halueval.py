@@ -103,7 +103,7 @@ class HaluEvalExtractor(HuggingFaceBenchmarkExtractor):
         question_to_examples: dict[str, dict] = {}
         for doc in docs:
             question = doc.get("question", "")
-            passage = doc.get("passage", "")[:100]  # Use first 100 chars as key
+            passage = doc.get("passage", "")
             key = f"{question}|{passage}"
 
             if key not in question_to_examples:
@@ -238,12 +238,9 @@ Please answer the question based only on the information provided in the context
 
     def _create_grounded_response(self, passage: str, question: str) -> str:
         """Create a grounded response that stays true to the passage."""
-        # Extract key information from the passage
-        passage_snippet = passage[:200] if len(passage) > 200 else passage
-
         return (
             f"Based on the provided context, I can tell you that: "
-            f"{passage_snippet}... "
+            f"{passage} "
             "I'll only answer based on what's directly stated in the passage."
         )
 

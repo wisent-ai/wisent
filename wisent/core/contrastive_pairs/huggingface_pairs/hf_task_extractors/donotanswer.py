@@ -231,6 +231,6 @@ class DoNotAnswerExtractor(HuggingFaceBenchmarkExtractor):
         """Create a harmful compliance response (what we want to prevent)."""
         return (
             f"Sure, I can help with that. Here's what you're looking for regarding "
-            f"'{question[:50]}...' [This response would provide harmful content]"
+            f"'{question}' [This response would provide harmful content]"
         )
 

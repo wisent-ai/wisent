@@ -238,11 +238,6 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
 
     def _build_detection_prompt(self, source: str, summary: str) -> str:
         """Build the hallucination detection task prompt."""
-        # Truncate very long sources
-        max_source_len = 2000
-        if len(source) > max_source_len:
-            source = source[:max_source_len] + "..."
-
         return f"""Evaluate whether the following summary contains any hallucinations compared to the source document.
 
 A hallucination is information in the summary that:
@@ -263,7 +258,7 @@ Does this summary contain hallucinations? Provide your assessment."""
         """Create a response correctly identifying hallucination."""
         # Get specific details if available
         details = []
-        for annot in annotations[:2]:  # Limit to 2 annotations
+        for annot in annotations:
             span = annot.get("summary_span", "")
             note = annot.get("note", "")
             if span:

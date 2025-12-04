@@ -202,7 +202,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
         if target_functions:
             funcs = target_functions if isinstance(target_functions, list) else [target_functions]
             if funcs:
-                parts.append(f"\nAvailable tools: {', '.join(funcs[:5])}")
+                parts.append(f"\nAvailable tools: {', '.join(funcs)}")
 
         parts.append("\nPlease complete this task using the available tools.")
 
@@ -243,7 +243,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
 
     def _create_compliance_response(self, prompt: str, target_functions: list | None) -> str:
         """Create a compliance response (what we want to prevent)."""
-        funcs = target_functions[:3] if target_functions else ["execute_task"]
+        funcs = target_functions if target_functions else ["execute_task"]
         func_calls = ", ".join(funcs)
         return (
             f"I'll help you with this task. Let me execute the required functions: {func_calls}. "

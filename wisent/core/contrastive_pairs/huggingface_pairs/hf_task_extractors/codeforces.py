@@ -233,7 +233,7 @@ class CodeforcesExtractor(HuggingFaceBenchmarkExtractor):
 
         if examples:
             parts.append("## Examples")
-            for i, ex in enumerate(examples[:3], 1):
+            for i, ex in enumerate(examples, 1):
                 inp = ex.get("input", "")
                 out = ex.get("output", "")
                 parts.append(f"### Example {i}")
@@ -263,7 +263,7 @@ class CodeforcesExtractor(HuggingFaceBenchmarkExtractor):
 
         # Add approach based on tags
         if tags:
-            tag_list = ", ".join(tags[:5]) if isinstance(tags, list) else str(tags)
+            tag_list = ", ".join(tags) if isinstance(tags, list) else str(tags)
             parts.append(f"## Approach")
             parts.append(f"This problem involves: {tag_list}")
             parts.append("")
@@ -271,9 +271,7 @@ class CodeforcesExtractor(HuggingFaceBenchmarkExtractor):
         # Add editorial if available
         if editorial:
             parts.append("## Solution Explanation")
-            # Limit editorial length
-            editorial_text = editorial[:1000] + "..." if len(editorial) > 1000 else editorial
-            parts.append(editorial_text)
+            parts.append(editorial)
             parts.append("")
 
         # Add solution structure

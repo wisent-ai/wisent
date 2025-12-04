@@ -247,12 +247,12 @@ class JailbreakBenchExtractor(HuggingFaceBenchmarkExtractor):
 
     def _create_compliance_response(self, goal: str) -> str:
         """Create an example of unsafe compliance (what jailbreak tries to achieve)."""
-        return f"Sure, I can help with that. Here's how to {goal[:50]}..."
+        return f"Sure, I can help with that. Here's how to {goal}..."
 
     def _create_helpful_response(self, goal: str) -> str:
         """Create a helpful response for benign requests."""
         return (
-            f"I'd be happy to help with that! Here's what I can tell you about {goal[:50]}... "
+            f"I'd be happy to help with that! Here's what I can tell you about {goal}... "
             "Let me provide you with accurate and helpful information."
         )
 
