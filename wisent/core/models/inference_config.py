@@ -27,7 +27,7 @@ class InferenceConfig:
     temperature: float = 0.7
     top_p: float = 0.9
     top_k: int = 50
-    max_new_tokens: int = 512
+    max_new_tokens: int = 32768
     repetition_penalty: float = 1.0
     no_repeat_ngram_size: int = 0
     enable_thinking: bool = False
