@@ -9,6 +9,9 @@ This fills the gap identified in the codebase:
 - Wisent has NO optimization for abliteration parameters
 - This module provides that missing optimization
 
+Results are persisted to ~/.wisent/configs/{model_name}.json via the unified
+WisentConfigManager so they can be automatically loaded on subsequent runs.
+
 Usage:
     optimizer = AbliterationOptimizer(
         model_name="meta-llama/Llama-3.2-1B",
@@ -24,11 +27,18 @@ from __future__ import annotations
 import optuna
 from optuna.samplers import TPESampler
 from optuna.study import StudyDirection
-from typing import TYPE_CHECKING, Callable
+from typing import TYPE_CHECKING, Callable, Optional
 from dataclasses import dataclass
 import subprocess
 import json
 import os
+
+from wisent.core.config_manager import (
+    get_weight_modification_cache,
+    store_weight_modification,
+    get_cached_weight_modification,
+    WeightModificationResult,
+)
 
 if TYPE_CHECKING:
     from optuna import Trial
@@ -272,12 +282,29 @@ class AbliterationOptimizer:
 
         return score
 
+    def get_cached_result(self) -> Optional[WeightModificationResult]:
+        """
+        Check if there's a cached optimization result for this model/task/trait.
+
+        Returns:
+            WeightModificationResult if found, None otherwise
+        """
+        return get_cached_weight_modification(
+            model=self.model_name,
+            task=self.task,
+            trait_label=self.trait_label,
+            method="abliteration"
+        )
+
     def optimize(
         self,
         n_trials: int = 50,
         n_startup_trials: int = 10,
         n_ei_candidates: int = 24,
         show_progress: bool = True,
+        use_cached: bool = False,
+        save_to_cache: bool = True,
+        set_as_default: bool = False,
     ) -> OptimizationResult:
         """
         Run optimization to find best abliteration parameters.
@@ -287,10 +314,41 @@ class AbliterationOptimizer:
             n_startup_trials: Number of random startup trials
             n_ei_candidates: Number of Expected Improvement candidates
             show_progress: Whether to show progress bar
+            use_cached: If True, return cached result if available
+            save_to_cache: If True, save result to cache after optimization
+            set_as_default: If True, set result as the default for this model/task
 
         Returns:
             OptimizationResult with best parameters
         """
+        # Check for cached result if requested
+        if use_cached:
+            cached = self.get_cached_result()
+            if cached:
+                print(f"\n📦 Found cached optimization result for {self.task}/{self.trait_label}")
+                print(f"   Score: {cached.score:.4f}")
+                print(f"   max_weight: {cached.max_weight:.3f}")
+                print(f"   strength: {cached.strength:.3f}")
+                print(f"   num_pairs: {cached.num_pairs}")
+
+                # Convert cached result to OptimizationResult format
+                best_params = AbliterationParameters(
+                    max_weight=cached.max_weight,
+                    min_weight=cached.min_weight,
+                    max_weight_position=cached.max_weight_position,
+                    min_weight_distance=cached.min_weight_distance,
+                    strength=cached.strength,
+                    num_pairs=cached.num_pairs,
+                )
+
+                # Create a dummy study/trial for compatibility
+                return OptimizationResult(
+                    study=None,  # No study for cached results
+                    best_trial=None,  # No trial for cached results
+                    best_params=best_params,
+                    best_score=cached.score,
+                )
+
         # Create study with TPE sampler
         study = optuna.create_study(
             sampler=TPESampler(
@@ -321,12 +379,47 @@ class AbliterationOptimizer:
             num_pairs=best_trial.params["num_pairs"],
         )
 
-        return OptimizationResult(
+        result = OptimizationResult(
             study=study,
             best_trial=best_trial,
             best_params=best_params,
             best_score=best_trial.value,
         )
+
+        # Save to cache if requested
+        if save_to_cache:
+            print(f"\n💾 Saving optimization result to cache...")
+            cache_key = store_weight_modification(
+                model=self.model_name,
+                task=self.task,
+                trait_label=self.trait_label,
+                method="abliteration",
+                max_weight=best_params.max_weight,
+                min_weight=best_params.min_weight,
+                max_weight_position=best_params.max_weight_position,
+                min_weight_distance=best_params.min_weight_distance,
+                strength=best_params.strength,
+                num_pairs=best_params.num_pairs,
+                components=self.components,
+                normalize_vectors=True,
+                norm_preserve=True,
+                use_biprojection=True,
+                use_kernel=True,
+                score=result.best_score,
+                metric="accuracy",
+                output_dir=os.path.join(self.base_output_dir, f"{self.task}_best"),
+                set_as_default=set_as_default,
+                metadata={
+                    "n_trials": n_trials,
+                    "direction": self.direction,
+                    "num_layers": self.num_layers,
+                }
+            )
+            print(f"   ✓ Saved to cache: {cache_key}")
+            if set_as_default:
+                print(f"   ✓ Set as default for {self.model_name}/{self.task}/{self.trait_label}")
+
+        return result
 
     def print_results(self, result: OptimizationResult) -> None:
         """

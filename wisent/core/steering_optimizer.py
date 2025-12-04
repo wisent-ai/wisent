@@ -25,7 +25,7 @@ from dataclasses import dataclass, asdict, field
 from enum import Enum, auto
 from pathlib import Path
 
-from .model_config_manager import ModelConfigManager
+from .config_manager import ModelConfigManager
 from .activations.core.atoms import ActivationAggregationStrategy
 from .activations.prompt_construction_strategy import PromptConstructionStrategy
 

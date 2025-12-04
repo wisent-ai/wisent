@@ -3,6 +3,9 @@
 This optimizer tests different configurations (layer, aggregation, threshold)
 by calling the native execute_tasks() function for each configuration,
 then evaluates using Wisent's native evaluators.
+
+Results are persisted to ~/.wisent/configs/ via WisentConfigManager
+so they can be automatically loaded on subsequent runs.
 """
 
 import sys
@@ -10,6 +13,8 @@ import json
 import time
 from typing import List, Dict, Any
 import os
+
+from wisent.core.config_manager import get_config_manager, save_classification_config
 
 
 def execute_optimize_classification(args):
@@ -274,6 +279,60 @@ def execute_optimize_classification(args):
     print(f"📊 OPTIMIZATION COMPLETE")
     print(f"{'='*80}")
     print(f"✅ Results saved to: {results_file}\n")
+
+    # 6. Save to unified WisentConfigManager for persistence
+    print(f"💾 Saving optimal parameters to ~/.wisent/configs/...")
+
+    # Save each task's config
+    for task_name, result in all_results.items():
+        config = result['best_config']
+        config_path = save_classification_config(
+            model_name=args.model,
+            task_name=task_name,
+            layer=config['layer'],
+            token_aggregation=config['aggregation'],
+            detection_threshold=config['threshold'],
+            classifier_type=config['classifier_type'],
+            prompt_construction_strategy=config['prompt_construction_strategy'],
+            token_targeting_strategy=config['token_targeting_strategy'],
+            accuracy=config['accuracy'],
+            f1_score=config['f1_score'],
+            precision=config['precision'],
+            recall=config['recall'],
+            optimization_method="grid_search",
+            set_as_default=(task_name == list(all_results.keys())[0]),  # First task becomes default
+        )
+
+    # Find best overall config and set as default
+    best_overall_score = -1
+    best_overall_config = None
+    best_task_name = None
+    for task_name, result in all_results.items():
+        if result['best_score'] > best_overall_score:
+            best_overall_score = result['best_score']
+            best_overall_config = result['best_config']
+            best_task_name = task_name
+
+    if best_overall_config:
+        # Save best as default
+        config_path = save_classification_config(
+            model_name=args.model,
+            task_name=None,  # Default config
+            layer=best_overall_config['layer'],
+            token_aggregation=best_overall_config['aggregation'],
+            detection_threshold=best_overall_config['threshold'],
+            classifier_type=best_overall_config['classifier_type'],
+            prompt_construction_strategy=best_overall_config['prompt_construction_strategy'],
+            token_targeting_strategy=best_overall_config['token_targeting_strategy'],
+            accuracy=best_overall_config['accuracy'],
+            f1_score=best_overall_config['f1_score'],
+            precision=best_overall_config['precision'],
+            recall=best_overall_config['recall'],
+            optimization_method="grid_search",
+        )
+        print(f"   ✓ Saved to: {config_path}")
+        print(f"   ✓ Default layer: {best_overall_config['layer']} (from {best_task_name})")
+        print(f"   ✓ Task-specific configs saved for: {', '.join(all_results.keys())}\n")
 
     # Print summary
     print(f"📋 SUMMARY BY TASK:")
