@@ -1561,12 +1561,6 @@ def setup_full_optimizer_parser(parser):
     )
 
 
-def setup_configure_model_parser(parser):
-    """Set up the configure-model subcommand parser."""
-    parser.add_argument("model", type=str, help="Model name to configure")
-    parser.add_argument("--force", action="store_true", help="Force reconfiguration even if model already has a config")
-
-
 def setup_generate_vector_parser(parser):
     """Set up the generate-vector subcommand parser."""
     # Source of contrastive pairs - mutually exclusive for single property

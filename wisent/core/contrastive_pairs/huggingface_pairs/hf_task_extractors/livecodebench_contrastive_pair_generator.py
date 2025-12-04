@@ -6,7 +6,7 @@ code solutions from the LiveCodeBench dataset's all_outputs.json file.
 """
 from __future__ import annotations
 
-import logging
+from wisent.core.cli_logger import setup_logger
 from typing import Any
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -20,7 +20,7 @@ from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.get_nega
 
 __all__ = ["generate_livecodebench_pairs"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 
 def _load_livecodebench_data(cache_dir: str | None = None) -> list[dict]:

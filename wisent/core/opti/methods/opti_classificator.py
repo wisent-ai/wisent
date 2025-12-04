@@ -5,8 +5,8 @@ from typing import Callable
 
 import optuna
 
-from wisent.opti.core.atoms import BaseOptimizer
-from wisent.classifiers.core.atoms import BaseClassifier, ClassifierTrainConfig 
+from wisent.core.opti.core.atoms import BaseOptimizer
+from wisent.core.classifiers.classifiers.core.atoms import BaseClassifier, ClassifierTrainConfig 
 
 __all__ = ["ClassificationOptimizer"]
 

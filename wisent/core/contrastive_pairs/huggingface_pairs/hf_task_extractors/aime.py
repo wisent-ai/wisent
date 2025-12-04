@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
-import logging
+from wisent.core.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
@@ -9,7 +9,7 @@ from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBen
 
 __all__ = ["AIMEExtractor"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 task_names = ("aime",)
 
@@ -79,7 +79,7 @@ class AIMEExtractor(HuggingFaceBenchmarkExtractor):
             if not question or not correct:
                 log.debug("Skipping: missing problem or answer")
                 return None
-            
+
             incorrect = str(int(correct) + 1)
 
             question = f"Question: {question}\n\nWhat is the answer?"

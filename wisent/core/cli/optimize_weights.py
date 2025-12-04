@@ -115,7 +115,7 @@ def execute_optimize_weights(args):
     base_state_dict = {k: v.clone() for k, v in base_model.state_dict().items()}
 
     # Initialize evaluator
-    evaluator = _create_evaluator(args, tokenizer)
+    evaluator = _create_evaluator(args, args.model)
 
     # Pre-generate steering vectors once
     print(f"Generating steering vectors with {num_pairs} pairs...")
@@ -246,7 +246,7 @@ def execute_optimize_weights(args):
             steering_vectors=steering_vectors,
             best_params=best_params,
             num_layers=num_layers,
-            tokenizer=tokenizer,
+            model_name=args.model,
             args=args,
             optimizer_config=optimizer_config,
             num_comparisons=show_comparisons_count if show_comparisons_count > 0 else None,
@@ -347,8 +347,12 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
             os.unlink(temp_output)
 
 
-def _create_evaluator(args, tokenizer) -> Callable[[Any, Any], dict[str, float]]:
-    """Create the appropriate evaluator function based on args."""
+def _create_evaluator(args, model_name: str) -> Callable[[Any, Any], dict[str, float]]:
+    """Create the appropriate evaluator function based on args.
+
+    The evaluator receives (hf_model, tokenizer) and wraps them in WisentModel
+    internally to use standard generation.
+    """
 
     evaluator_type = args.evaluator
 
@@ -361,17 +365,20 @@ def _create_evaluator(args, tokenizer) -> Callable[[Any, Any], dict[str, float]]
             evaluator_type = "refusal"
 
     if evaluator_type in ["refusal", "semantic", "keyword"]:
-        return _create_refusal_evaluator(args, tokenizer, evaluator_type)
+        return _create_refusal_evaluator(args, model_name, evaluator_type)
     elif evaluator_type == "task":
         return _create_task_evaluator(args)
     elif evaluator_type == "llm_judge":
-        return _create_llm_judge_evaluator(args, tokenizer)
+        return _create_llm_judge_evaluator(args, model_name)
     else:
         raise ValueError(f"Unknown evaluator: {evaluator_type}")
 
 
-def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
-    """Create refusal/compliance evaluator."""
+def _create_refusal_evaluator(args, model_name: str, eval_type: str) -> Callable:
+    """Create refusal/compliance evaluator.
+
+    Uses WisentModel.generate() for consistent generation behavior.
+    """
     from uncensorbench import UncensorBench
     from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
     from wisent.core.models.inference_config import get_generate_kwargs
@@ -398,11 +405,13 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
         except ImportError:
             evaluator = KeywordEvaluator()
 
-    def evaluate(model, tok) -> dict:
-        """Run refusal evaluation."""
+    def evaluate(hf_model, tokenizer) -> dict:
+        """Run refusal evaluation using WisentModel for generation."""
+        # Wrap HF model in WisentModel for standard generation
+        wisent_model = WisentModel(model_name, hf_model=hf_model)
+
         refusal_count = 0
         compliance_scores = []
-
         generate_kwargs = get_generate_kwargs()
 
         for item in prompts:
@@ -413,25 +422,18 @@ def _create_refusal_evaluator(args, tokenizer, eval_type: str) -> Callable:
                 prompt_obj = item
                 prompt_text = prompt_obj.prompt
 
-            try:
-                messages = [{"role": "user", "content": prompt_text}]
-                text = tok.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-            except Exception:
-                text = f"User: {prompt_text}\nAssistant:"
+            # Use WisentModel.generate() with standard chat format
+            messages = [{"role": "user", "content": prompt_text}]
+            responses = wisent_model.generate(
+                [messages],
+                max_new_tokens=150,
+                do_sample=generate_kwargs.get("do_sample", True),
+                temperature=generate_kwargs.get("temperature", 0.7),
+                top_p=generate_kwargs.get("top_p", 0.9),
+                top_k=generate_kwargs.get("top_k", 50),
+            )
 
-            inputs = tok(text, return_tensors="pt").to(model.device)
-
-            with torch.no_grad():
-                outputs = model.generate(
-                    **inputs,
-                    max_new_tokens=150,
-                    do_sample=generate_kwargs.get("do_sample", True),
-                    temperature=generate_kwargs.get("temperature", 0.7) if generate_kwargs.get("do_sample", True) else None,
-                    pad_token_id=tok.eos_token_id,
-                )
-
-            response = tok.decode(outputs[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
-            response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
+            response = responses[0] if responses else ""
 
             if prompt_obj:
                 eval_result = bench.evaluate_response(prompt_obj, response, evaluator)
@@ -517,8 +519,11 @@ def _create_task_evaluator(args) -> Callable:
     return evaluate
 
 
-def _create_llm_judge_evaluator(args, tokenizer) -> Callable:
-    """Create LLM-as-judge evaluator."""
+def _create_llm_judge_evaluator(args, model_name: str) -> Callable:
+    """Create LLM-as-judge evaluator.
+
+    Uses WisentModel.generate() for consistent generation behavior.
+    """
     raise NotImplementedError("LLM judge evaluator not yet implemented")
 
 
@@ -565,13 +570,16 @@ def _show_response_comparisons(
     steering_vectors: dict[int, torch.Tensor],
     best_params: dict,
     num_layers: int,
-    tokenizer,
+    model_name: str,
     args,
     optimizer_config: WeightsOptimizerConfig,
     num_comparisons: int = None,
     save_path: str = None,
 ):
-    """Show and/or save before/after response comparisons."""
+    """Show and/or save before/after response comparisons.
+
+    Uses WisentModel.generate() for consistent generation behavior.
+    """
     from uncensorbench import UncensorBench
     from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
     from wisent.core.models.inference_config import get_generate_kwargs
@@ -601,25 +609,23 @@ def _show_response_comparisons(
 
     generate_kwargs = get_generate_kwargs()
 
-    def generate_response(model, prompt_text: str) -> str:
-        try:
-            messages = [{"role": "user", "content": prompt_text}]
-            text = tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
-        except Exception:
-            text = f"User: {prompt_text}\nAssistant:"
+    def generate_response(hf_model, prompt_text: str) -> str:
+        """Generate response using WisentModel for consistent behavior."""
+        # Wrap HF model in WisentModel for standard generation
+        wisent_model = WisentModel(model_name, hf_model=hf_model)
 
-        inputs = tokenizer(text, return_tensors="pt").to(model.device)
+        messages = [{"role": "user", "content": prompt_text}]
+        responses = wisent_model.generate(
+            [messages],
+            max_new_tokens=150,
+            do_sample=generate_kwargs.get("do_sample", True),
+            temperature=generate_kwargs.get("temperature", 0.7),
+            top_p=generate_kwargs.get("top_p", 0.9),
+            top_k=generate_kwargs.get("top_k", 50),
+        )
 
-        with torch.no_grad():
-            outputs = model.generate(
-                **inputs,
-                max_new_tokens=150,
-                do_sample=generate_kwargs.get("do_sample", True),
-                temperature=generate_kwargs.get("temperature", 0.7) if generate_kwargs.get("do_sample", True) else None,
-                pad_token_id=tokenizer.eos_token_id,
-            )
-
-        response = tokenizer.decode(outputs[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True)
+        response = responses[0] if responses else ""
+        # Strip <think>...</think> blocks from Qwen3 responses
         response = re.sub(r"<think>.*?</think>", "", response, flags=re.DOTALL).strip()
         return response
 
