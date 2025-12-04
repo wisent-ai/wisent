@@ -43,9 +43,9 @@ def setup_generate_vector_parser(parser):
     parser.add_argument(
         "--method",
         type=str,
-        default="DAC",
-        choices=["DAC", "CAA", "HPR", "BiPO", "ControlVectorSteering"],
-        help="Steering method to use (default: DAC)",
+        default="CAA",
+        choices=["CAA"],
+        help="Steering method to use (default: CAA)",
     )
     parser.add_argument("--layer", type=int, default=0, help="Layer index to apply steering (default: 0)")
 

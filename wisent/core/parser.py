@@ -375,7 +375,7 @@ def setup_tasks_parser(parser):
         "--steering-method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use",
     )
 
@@ -839,7 +839,7 @@ def setup_synthetic_parser(parser):
         "--steering-method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use",
     )
     parser.add_argument("--steering-strength", type=float, default=1.0, help="Strength of steering vector application")
@@ -850,11 +850,6 @@ def setup_synthetic_parser(parser):
     # Output
     parser.add_argument("--output", type=str, default="./results", help="Output directory for results")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-
-    # K-Steering specific parameters
-    parser.add_argument(
-        "--ksteering-target-labels", type=str, default="0", help="Comma-separated target label indices for K-steering"
-    )
     parser.add_argument(
         "--ksteering-avoid-labels", type=str, default="", help="Comma-separated avoid label indices for K-steering"
     )
@@ -964,7 +959,7 @@ def setup_agent_parser(parser):
         "--steering-method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
     parser.add_argument(
@@ -1140,8 +1135,8 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        default=["CAA", "HPR"],
+        choices=["CAA"],
+        default=["CAA"],
         help="Steering methods to test (default: CAA, HPR)",
     )
     auto_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
@@ -1172,8 +1167,8 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        default=["CAA", "HPR"],
+        choices=["CAA"],
+        default=["CAA"],
         help="Steering methods to compare",
     )
     method_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
@@ -1191,7 +1186,7 @@ def setup_steering_optimizer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
     layer_parser.add_argument("--layer-range", type=str, default=None, help="Layer range to search (e.g., '10-20')")
@@ -1210,7 +1205,7 @@ def setup_steering_optimizer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
     strength_parser.add_argument(
@@ -1244,8 +1239,8 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        default=["CAA", "HPR"],
+        choices=["CAA"],
+        default=["CAA"],
         help="Steering methods to test",
     )
     comprehensive_parser.add_argument("--limit", type=int, default=100, help="Sample limit per task (default: 100)")
@@ -1419,7 +1414,7 @@ def setup_sample_size_optimizer_parser(parser):
         "--steering-method",
         type=str,
         default="CAA",
-        choices=["CAA", "CAA_L2", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
     parser.add_argument("--steering-strength", type=float, default=1.0, help="Steering strength to use (default: 1.0)")
@@ -1514,9 +1509,9 @@ def setup_full_optimizer_parser(parser):
         "--steering-methods",
         type=str,
         nargs="+",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        default=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        help="Steering methods to test (default: all methods with parameter variations)",
+        choices=["CAA"],
+        default=["CAA"],
+        help="Steering methods to test (default: CAA)",
     )
     parser.add_argument(
         "--steering-layer-range", type=str, default=None, help="Layer range for steering optimization (e.g., '0-5')"
@@ -1614,9 +1609,9 @@ def setup_generate_vector_parser(parser):
     parser.add_argument(
         "--method",
         type=str,
-        default="DAC",
-        choices=["DAC", "CAA", "HPR", "BiPO", "ControlVectorSteering"],
-        help="Steering method to use (default: DAC)",
+        default="CAA",
+        choices=["CAA"],
+        help="Steering method to use (default: CAA)",
     )
     parser.add_argument("--layer", type=int, default=0, help="Layer index to apply steering (default: 0)")
 
@@ -1684,7 +1679,7 @@ def setup_multi_steer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=["CAA", "DAC"],
+        choices=["CAA"],
         help="Steering method to use for combination (default: CAA)",
     )
 

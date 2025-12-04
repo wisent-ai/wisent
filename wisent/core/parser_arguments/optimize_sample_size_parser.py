@@ -25,7 +25,7 @@ def setup_sample_size_optimizer_parser(parser):
         "--steering-method",
         type=str,
         default="CAA",
-        choices=["CAA", "CAA_L2", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
     parser.add_argument("--steering-strength", type=float, default=1.0, help="Steering strength to use (default: 1.0)")

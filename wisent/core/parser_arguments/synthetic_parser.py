@@ -34,7 +34,7 @@ def setup_synthetic_parser(parser):
         "--steering-method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use",
     )
     parser.add_argument("--steering-strength", type=float, default=1.0, help="Strength of steering vector application")

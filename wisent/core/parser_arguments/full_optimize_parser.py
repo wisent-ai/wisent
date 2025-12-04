@@ -63,9 +63,9 @@ def setup_full_optimizer_parser(parser):
         "--steering-methods",
         type=str,
         nargs="+",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        default=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        help="Steering methods to test (default: all methods with parameter variations)",
+        choices=["CAA"],
+        default=["CAA"],
+        help="Steering methods to test (default: CAA)",
     )
     parser.add_argument(
         "--steering-layer-range", type=str, default=None, help="Layer range for steering optimization (e.g., '0-5')"

@@ -22,8 +22,8 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        default=["CAA", "HPR"],
+        choices=["CAA"],
+        default=["CAA"],
         help="Steering methods to test",
     )
     comprehensive_parser.add_argument("--limit", type=int, default=100, help="Sample limit per task (default: 100)")
@@ -100,8 +100,8 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        default=["CAA", "HPR"],
+        choices=["CAA"],
+        default=["CAA"],
         help="Steering methods to compare",
     )
     method_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
@@ -131,7 +131,7 @@ def setup_steering_optimizer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
     layer_parser.add_argument("--layer-range", type=str, default=None, help="Layer range to search (e.g., '10-20')")
@@ -162,7 +162,7 @@ def setup_steering_optimizer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
     strength_parser.add_argument(
@@ -207,9 +207,9 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
-        default=["CAA", "HPR"],
-        help="Steering methods to test (default: CAA, HPR)",
+        choices=["CAA"],
+        default=["CAA"],
+        help="Steering methods to test (default: CAA)",
     )
     auto_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
     auto_parser.add_argument("--max-time", type=float, default=60.0, help="Maximum time in minutes (default: 60)")
