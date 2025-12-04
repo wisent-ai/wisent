@@ -13,9 +13,9 @@ import sys
 import time
 from pathlib import Path
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from wisent.core.cli_logger import setup_logger, bind
+from wisent.core.models.wisent_model import WisentModel
 from wisent.core.weight_modification import (
     abliterate_weights,
     abliterate_with_kernel,
@@ -216,11 +216,12 @@ def execute_modify_weights(args):
     if args.verbose:
         print(f"Loading model '{args.model}'...")
 
-    model = AutoModelForCausalLM.from_pretrained(args.model)
-    tokenizer = AutoTokenizer.from_pretrained(args.model)
+    wisent_model = WisentModel(args.model, device=getattr(args, 'device', None))
+    model = wisent_model.hf_model  # Get underlying HF model for weight modification
+    tokenizer = wisent_model.tokenizer
 
     if args.verbose:
-        print(f"✓ Model loaded\n")
+        print(f"✓ Model loaded with {wisent_model.num_layers} layers\n")
 
     # Step 3: Modify weights
     if args.verbose:

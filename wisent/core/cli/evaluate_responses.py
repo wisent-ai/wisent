@@ -383,22 +383,14 @@ def execute_evaluate_responses(args):
             model_name = 'meta-llama/Llama-3.2-1B'  # Default model
         print(f"   Model: {model_name}")
 
-        import torch
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        from wisent.core.models.wisent_model import WisentModel
 
-        model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            torch_dtype=torch.float32,
-            device_map="cpu",
-        )
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
-        if tokenizer.pad_token is None:
-            tokenizer.pad_token = tokenizer.eos_token
+        wisent_model = WisentModel(model_name, device=getattr(args, 'device', None))
+        model = wisent_model.hf_model
+        tokenizer = wisent_model.tokenizer
+        device = wisent_model.device
 
-        device = torch.device("cpu")
-        model = model.to(device)
-
-        print(f"   ✓ Model loaded\n")
+        print(f"   ✓ Model loaded with {wisent_model.num_layers} layers\n")
 
         # Initialize evaluator with model
         evaluator = PersonalizationEvaluator(model=model, tokenizer=tokenizer, device=device)
