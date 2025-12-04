@@ -215,63 +215,89 @@ def _run_trait_steering_optimization(args: argparse.Namespace, traits: List[str]
 
 
 def _run_weight_modification_optimization(args: argparse.Namespace, traits: List[str]) -> Dict[str, Any]:
-    """Run weight modification optimization for traits."""
-    results = {}
+    """Run weight modification optimization for traits using execute_optimize_weights."""
+    from wisent.core.cli.optimize_weights import execute_optimize_weights
+    from argparse import Namespace
 
+    results = {}
     n_trials = getattr(args, 'n_trials', 20)
+    output_dir = getattr(args, 'output_dir', './data/modified_models')
 
     for trait in traits:
         print(f"  Optimizing weight modification for trait: {trait}")
 
         try:
-            from wisent.core.weight_modification.abliteration_optimizer import AbliterationOptimizer
-
-            # Create evaluation function
-            def evaluate_fn(model_path: str) -> float:
-                # Simplified evaluation - in practice would run actual benchmark
-                # This would typically call lm-eval or similar
-                return 0.5  # Placeholder
-
-            optimizer = AbliterationOptimizer(
-                model_name=args.model,
-                task=trait,  # Use trait as task for pair generation
-                trait_label=trait,
-                base_output_dir=getattr(args, 'output_dir', './data/modified_models'),
-                evaluate_fn=evaluate_fn,
+            # Build args for optimize_weights command
+            opt_args = Namespace(
+                model=args.model,
+                trait=trait,  # Use trait for synthetic pair generation
+                task=None,  # Not using task-based generation
+                steering_vectors=None,  # Generate from trait
+                evaluator="auto",  # Auto-select evaluator based on trait
+                target_metric="compliance_rate",
+                target_value=0.9,
                 direction="maximize",
+                trials=n_trials,
+                startup_trials=min(5, n_trials // 4),
+                early_stop=True,
+                early_stop_patience=5,
+                output_dir=f"{output_dir}/{args.model.replace('/', '_')}_{trait}",
+                # Search space defaults
+                strength_range="0.5,2.0",
+                max_weight_range="0.5,5.0",
+                min_weight_range="0.0,2.0",
+                position_range="0.3,0.7",
+                num_pairs=100,
+                # Method settings
+                method="abliteration",
+                components=["self_attn.o_proj", "mlp.down_proj"],
+                norm_preserve=True,
+                # Other settings
+                device=getattr(args, 'device', None),
+                verbose=getattr(args, 'verbose', False),
+                layers=None,
+                token_aggregation="last",
+                similarity_threshold=0.7,
+                pairs_cache_dir=None,
+                optimize_direction_index=False,
+                num_eval_prompts=50,
+                eval_prompts=None,
+                eval_topics=None,
+                save_trials=None,
+                push_to_hub=False,
+                repo_id=None,
+                show_comparisons=0,
+                save_comparisons=None,
             )
 
-            # Run optimization with fewer trials for speed
-            result = optimizer.optimize(
-                n_trials=n_trials,
-                save_to_cache=True,
-                set_as_default=False,
-            )
+            result = execute_optimize_weights(opt_args)
 
             # Save to trait config
             save_trait_weight_modification_config(
                 model_name=args.model,
                 trait_name=trait,
                 method="abliteration",
-                max_weight=result.best_params.max_weight,
-                min_weight=result.best_params.min_weight,
-                max_weight_position=result.best_params.max_weight_position,
-                min_weight_distance=result.best_params.min_weight_distance,
-                strength=result.best_params.strength,
-                num_pairs=result.best_params.num_pairs,
-                score=result.best_score,
+                max_weight=result.best_params.get("max_weight", 1.0),
+                min_weight=result.best_params.get("min_weight", 0.0),
+                max_weight_position=result.best_params.get("max_weight_position", 0.5),
+                min_weight_distance=0.6,  # Default
+                strength=result.best_params.get("strength", 1.0),
+                num_pairs=opt_args.num_pairs,
+                score=result.best_trial.score if result.best_trial else 0.0,
                 optimization_method="optuna",
             )
 
             results[trait] = {
                 "status": "success",
-                "best_score": result.best_score,
-                "max_weight": result.best_params.max_weight,
-                "strength": result.best_params.strength,
+                "best_score": result.best_trial.score if result.best_trial else 0.0,
+                "best_params": result.best_params,
+                "target_achieved": result.target_achieved,
             }
 
         except Exception as e:
             logger.warning(f"Weight modification optimization failed for {trait}: {e}")
+            import traceback
+            traceback.print_exc()
             # Save default config
             save_trait_weight_modification_config(
                 model_name=args.model,

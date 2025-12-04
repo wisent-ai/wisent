@@ -19,6 +19,11 @@ from .dataset_splits import (
     DEFAULT_SEED,
 )
 
+from .base_rotator import (
+    BaseRotator,
+    RotatorError,
+)
+
 __all__ = [
     # Device utilities
     "DeviceKind",
@@ -37,4 +42,7 @@ __all__ = [
     "get_split_info",
     "DEFAULT_TRAIN_RATIO",
     "DEFAULT_SEED",
+    # Base rotator
+    "BaseRotator",
+    "RotatorError",
 ]
