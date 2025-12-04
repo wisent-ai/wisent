@@ -193,13 +193,13 @@ class LiveCodeBenchV6Extractor(HuggingFaceBenchmarkExtractor):
 
         if test_cases:
             parts.append("\n## Examples")
-            for i, tc in enumerate(test_cases[:3]):  # Show first 3 test cases
+            for i, tc in enumerate(test_cases):
                 input_val = tc.get("input", "")
                 output_val = tc.get("output", "")
                 if input_val and output_val:
                     parts.append(f"\nExample {i+1}:")
-                    parts.append(f"Input: {input_val[:200]}")
-                    parts.append(f"Output: {output_val[:200]}")
+                    parts.append(f"Input: {input_val}")
+                    parts.append(f"Output: {output_val}")
 
         if starter_code:
             parts.append(f"\n## Starter Code\n```python\n{starter_code}\n```")

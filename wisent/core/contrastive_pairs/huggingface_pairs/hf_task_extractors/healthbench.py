@@ -160,7 +160,7 @@ class HealthBenchExtractor(HuggingFaceBenchmarkExtractor):
             # Overly generic response
             "You should see a doctor about this concern.",
             # Missing important safety information
-            f"Based on what you described, {correct[:100]}..." if len(correct) > 100 else correct,
+            f"Based on what you described, {correct}",
         ]
 
         # Check rubrics for specific failure modes
@@ -171,10 +171,10 @@ class HealthBenchExtractor(HuggingFaceBenchmarkExtractor):
                 if "emergency" in criterion or "urgent" in criterion:
                     return "This seems like a routine concern that can wait for your next scheduled appointment."
                 if "accuracy" in criterion:
-                    return f"I'm not entirely sure, but I think {correct[:50]}... However, I may be wrong about this."
+                    return f"I'm not entirely sure, but I think {correct}... However, I may be wrong about this."
                 if "complete" in criterion:
                     # Return incomplete response
-                    return correct[:len(correct)//3] + "..."
+                    return "I'm not sure about the full details..."
 
         # Default: return a vague, unhelpful response
         return failure_patterns[0]

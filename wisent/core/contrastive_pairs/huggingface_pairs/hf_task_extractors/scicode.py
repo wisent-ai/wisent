@@ -255,7 +255,7 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
 
         # Find function definitions and return placeholder
         result_lines = []
-        for line in lines[:10]:  # Keep first 10 lines max
+        for line in lines:
             if line.strip().startswith("def "):
                 result_lines.append(line)
                 result_lines.append("    # TODO: implement this function")

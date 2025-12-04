@@ -295,9 +295,9 @@ def test_stdin():
 
         assert actual_output == expected_output, (
             f"Test case {i + 1} failed:\\n"
-            f"  Input: {input_data[:100]}\\n"
-            f"  Expected: {expected_output[:200]}\\n"
-            f"  Got: {actual_output[:200]}"
+            f"  Input: {input_data}\\n"
+            f"  Expected: {expected_output}\\n"
+            f"  Got: {actual_output}"
         )
 
     print(f'All {len(test_cases)} test(s) passed!')
@@ -396,7 +396,7 @@ def test_functional():
         # Compare results
         assert actual == expected, (
             f"Test case {{i + 1}} failed:\\n"
-            f"  Input: {{input_str[:200]}}\\n"
+            f"  Input: {{input_str}}\\n"
             f"  Expected: {{expected}}\\n"
             f"  Got: {{actual}}"
         )
