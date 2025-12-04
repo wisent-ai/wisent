@@ -1,21 +1,24 @@
-"""Parser setup for the 'full-optimize' command."""
+"""Parser setup for the 'optimize-all' command (formerly full-optimize)."""
 
 
-def setup_full_optimizer_parser(parser):
-    """Set up the full-optimize subcommand parser."""
+def setup_optimize_all_parser(parser):
+    """Set up the optimize-all subcommand parser."""
     parser.add_argument("model", type=str, help="Model name or path to optimize")
 
-    # Task selection - mutually exclusive options
-    task_group = parser.add_mutually_exclusive_group()
-    task_group.add_argument("--tasks", type=str, nargs="+", help="Specific tasks to optimize")
-    task_group.add_argument(
-        "--skills", type=str, nargs="+", help="Select tasks by skill categories (e.g., coding, mathematics, reasoning)"
-    )
-    task_group.add_argument(
-        "--risks",
+    # Task selection
+    parser.add_argument(
+        "--tasks",
         type=str,
         nargs="+",
-        help="Select tasks by risk categories (e.g., harmfulness, toxicity, hallucination)",
+        help="Benchmark tasks to optimize (e.g., hellaswag gsm8k mmlu)"
+    )
+
+    # Trait selection
+    parser.add_argument(
+        "--traits",
+        type=str,
+        nargs="+",
+        help="Behavioral traits to optimize (e.g., coding honesty refusal helpfulness)"
     )
 
     # General limit that applies to all optimizations unless overridden
@@ -59,6 +62,21 @@ def setup_full_optimizer_parser(parser):
 
     # Steering optimization options
     parser.add_argument("--skip-steering", action="store_true", help="Skip steering optimization")
+
+    # Weight modification optimization options
+    parser.add_argument("--skip-weights", action="store_true", help="Skip weight modification optimization")
+    parser.add_argument(
+        "--n-trials",
+        type=int,
+        default=20,
+        help="Number of Optuna trials for optimization (default: 20)"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="./data/modified_models",
+        help="Output directory for modified models (default: ./data/modified_models)"
+    )
     parser.add_argument(
         "--steering-methods",
         type=str,

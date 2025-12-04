@@ -124,9 +124,8 @@ class WeightModificationConfig:
 
 @dataclass
 class TaskConfig:
-    """Configuration for a specific task."""
+    """Configuration for a specific benchmark task (e.g., hellaswag, gsm8k, mmlu)."""
     task_name: str
-    trait_label: str = ""  # For weight modification
 
     classification: Optional[ClassificationConfig] = None
     steering: Optional[SteeringConfig] = None
@@ -139,7 +138,6 @@ class TaskConfig:
     def to_dict(self) -> Dict[str, Any]:
         result = {
             "task_name": self.task_name,
-            "trait_label": self.trait_label,
             "updated_at": self.updated_at,
             "optimization_method": self.optimization_method,
         }
@@ -155,7 +153,49 @@ class TaskConfig:
     def from_dict(cls, data: Dict[str, Any]) -> "TaskConfig":
         config = cls(
             task_name=data.get("task_name", ""),
-            trait_label=data.get("trait_label", ""),
+            updated_at=data.get("updated_at", datetime.now().isoformat()),
+            optimization_method=data.get("optimization_method", "manual"),
+        )
+        if "classification" in data:
+            config.classification = ClassificationConfig.from_dict(data["classification"])
+        if "steering" in data:
+            config.steering = SteeringConfig.from_dict(data["steering"])
+        if "weight_modification" in data:
+            config.weight_modification = WeightModificationConfig.from_dict(data["weight_modification"])
+        return config
+
+
+@dataclass
+class TraitConfig:
+    """Configuration for a specific behavioral trait (e.g., coding, honesty, helpfulness)."""
+    trait_name: str
+
+    classification: Optional[ClassificationConfig] = None
+    steering: Optional[SteeringConfig] = None
+    weight_modification: Optional[WeightModificationConfig] = None
+
+    # Metadata
+    updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
+    optimization_method: str = "manual"  # manual, grid_search, optuna, etc.
+
+    def to_dict(self) -> Dict[str, Any]:
+        result = {
+            "trait_name": self.trait_name,
+            "updated_at": self.updated_at,
+            "optimization_method": self.optimization_method,
+        }
+        if self.classification:
+            result["classification"] = self.classification.to_dict()
+        if self.steering:
+            result["steering"] = self.steering.to_dict()
+        if self.weight_modification:
+            result["weight_modification"] = self.weight_modification.to_dict()
+        return result
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "TraitConfig":
+        config = cls(
+            trait_name=data.get("trait_name", ""),
             updated_at=data.get("updated_at", datetime.now().isoformat()),
             optimization_method=data.get("optimization_method", "manual"),
         )
@@ -174,18 +214,21 @@ class ModelConfig:
     model_name: str
     num_layers: int = 0
 
-    # Default configs (used when no task-specific config exists)
+    # Default configs (used when no task/trait-specific config exists)
     default_classification: Optional[ClassificationConfig] = None
     default_steering: Optional[SteeringConfig] = None
     default_weight_modification: Optional[WeightModificationConfig] = None
 
-    # Task-specific configs
+    # Task-specific configs (benchmark tasks: hellaswag, gsm8k, mmlu, etc.)
     tasks: Dict[str, TaskConfig] = field(default_factory=dict)
+
+    # Trait-specific configs (behavioral traits: coding, honesty, helpfulness, etc.)
+    traits: Dict[str, TraitConfig] = field(default_factory=dict)
 
     # Metadata
     created_at: str = field(default_factory=lambda: datetime.now().isoformat())
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    config_version: str = "2.0"
+    config_version: str = "2.1"  # Bumped version for traits support
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -195,6 +238,7 @@ class ModelConfig:
             "updated_at": self.updated_at,
             "config_version": self.config_version,
             "tasks": {k: v.to_dict() for k, v in self.tasks.items()},
+            "traits": {k: v.to_dict() for k, v in self.traits.items()},
         }
         if self.default_classification:
             result["default_classification"] = self.default_classification.to_dict()
@@ -211,7 +255,7 @@ class ModelConfig:
             num_layers=data.get("num_layers", 0),
             created_at=data.get("created_at", datetime.now().isoformat()),
             updated_at=data.get("updated_at", datetime.now().isoformat()),
-            config_version=data.get("config_version", "2.0"),
+            config_version=data.get("config_version", "2.1"),
         )
 
         if "default_classification" in data:
@@ -224,6 +268,11 @@ class ModelConfig:
         if "tasks" in data:
             config.tasks = {
                 k: TaskConfig.from_dict(v) for k, v in data["tasks"].items()
+            }
+
+        if "traits" in data:
+            config.traits = {
+                k: TraitConfig.from_dict(v) for k, v in data["traits"].items()
             }
 
         return config
@@ -239,9 +288,14 @@ class WisentConfigManager:
     {
         "model_name": "meta-llama/Llama-3.2-1B",
         "num_layers": 16,
+        "config_version": "2.1",
+
+        // Default configs (fallback when no specific config exists)
         "default_classification": { ... },
         "default_steering": { ... },
         "default_weight_modification": { ... },
+
+        // Task-specific configs (benchmark tasks)
         "tasks": {
             "hellaswag": {
                 "task_name": "hellaswag",
@@ -250,6 +304,18 @@ class WisentConfigManager:
                 "weight_modification": { ... }
             },
             "gsm8k": { ... }
+        },
+
+        // Trait-specific configs (behavioral traits)
+        "traits": {
+            "coding": {
+                "trait_name": "coding",
+                "classification": { ... },
+                "steering": { ... },
+                "weight_modification": { ... }
+            },
+            "honesty": { ... },
+            "helpfulness": { ... }
         }
     }
     """
@@ -501,17 +567,14 @@ class WisentConfigManager:
             output_dir=output_dir,
         )
 
-        # For weight modification, include trait_label in the task key
-        task_key = f"{task_name}::{trait_label}" if trait_label else task_name
+        if task_name:
+            if task_name not in config.tasks:
+                config.tasks[task_name] = TaskConfig(task_name=task_name)
+            config.tasks[task_name].weight_modification = weight_mod
+            config.tasks[task_name].optimization_method = optimization_method
+            config.tasks[task_name].updated_at = datetime.now().isoformat()
 
-        if task_key:
-            if task_key not in config.tasks:
-                config.tasks[task_key] = TaskConfig(task_name=task_name or "", trait_label=trait_label)
-            config.tasks[task_key].weight_modification = weight_mod
-            config.tasks[task_key].optimization_method = optimization_method
-            config.tasks[task_key].updated_at = datetime.now().isoformat()
-
-        if set_as_default or not task_key:
+        if set_as_default or not task_name:
             config.default_weight_modification = weight_mod
 
         return self._save_model_config(config)
@@ -520,17 +583,203 @@ class WisentConfigManager:
         self,
         model_name: str,
         task_name: Optional[str] = None,
-        trait_label: str = "",
     ) -> Optional[WeightModificationConfig]:
-        """Get weight modification config for a model/task/trait."""
+        """Get weight modification config for a model/task."""
         config = self._load_model_config(model_name)
 
-        task_key = f"{task_name}::{trait_label}" if trait_label else task_name
-
-        if task_key and task_key in config.tasks:
-            task_config = config.tasks[task_key]
+        if task_name and task_name in config.tasks:
+            task_config = config.tasks[task_name]
             if task_config.weight_modification:
                 return task_config.weight_modification
+
+        return config.default_weight_modification
+
+    # ========== Trait-specific Methods ==========
+
+    def save_trait_classification_config(
+        self,
+        model_name: str,
+        trait_name: str,
+        layer: int = 12,
+        token_aggregation: str = "average",
+        detection_threshold: float = 0.6,
+        classifier_type: str = "logistic",
+        prompt_construction_strategy: str = "multiple_choice",
+        token_targeting_strategy: str = "last_token",
+        accuracy: float = 0.0,
+        f1_score: float = 0.0,
+        precision: float = 0.0,
+        recall: float = 0.0,
+        optimization_method: str = "manual",
+        set_as_default: bool = False,
+    ) -> Path:
+        """Save classification config for a trait."""
+        config = self._load_model_config(model_name)
+
+        classification = ClassificationConfig(
+            layer=layer,
+            token_aggregation=token_aggregation,
+            detection_threshold=detection_threshold,
+            classifier_type=classifier_type,
+            prompt_construction_strategy=prompt_construction_strategy,
+            token_targeting_strategy=token_targeting_strategy,
+            accuracy=accuracy,
+            f1_score=f1_score,
+            precision=precision,
+            recall=recall,
+        )
+
+        if trait_name not in config.traits:
+            config.traits[trait_name] = TraitConfig(trait_name=trait_name)
+        config.traits[trait_name].classification = classification
+        config.traits[trait_name].optimization_method = optimization_method
+        config.traits[trait_name].updated_at = datetime.now().isoformat()
+
+        if set_as_default:
+            config.default_classification = classification
+
+        return self._save_model_config(config)
+
+    def get_trait_classification_config(
+        self,
+        model_name: str,
+        trait_name: str,
+    ) -> Optional[ClassificationConfig]:
+        """Get classification config for a trait."""
+        config = self._load_model_config(model_name)
+
+        if trait_name in config.traits:
+            trait_config = config.traits[trait_name]
+            if trait_config.classification:
+                return trait_config.classification
+
+        return config.default_classification
+
+    def save_trait_steering_config(
+        self,
+        model_name: str,
+        trait_name: str,
+        layer: int = 12,
+        strength: float = 1.0,
+        method: str = "CAA",
+        token_aggregation: str = "average",
+        prompt_strategy: str = "question_only",
+        normalize_mode: str = "none",
+        score: float = 0.0,
+        metric: str = "accuracy",
+        optimization_method: str = "manual",
+        set_as_default: bool = False,
+    ) -> Path:
+        """Save steering config for a trait."""
+        config = self._load_model_config(model_name)
+
+        steering = SteeringConfig(
+            layer=layer,
+            strength=strength,
+            method=method,
+            token_aggregation=token_aggregation,
+            prompt_strategy=prompt_strategy,
+            normalize_mode=normalize_mode,
+            score=score,
+            metric=metric,
+        )
+
+        if trait_name not in config.traits:
+            config.traits[trait_name] = TraitConfig(trait_name=trait_name)
+        config.traits[trait_name].steering = steering
+        config.traits[trait_name].optimization_method = optimization_method
+        config.traits[trait_name].updated_at = datetime.now().isoformat()
+
+        if set_as_default:
+            config.default_steering = steering
+
+        return self._save_model_config(config)
+
+    def get_trait_steering_config(
+        self,
+        model_name: str,
+        trait_name: str,
+    ) -> Optional[SteeringConfig]:
+        """Get steering config for a trait."""
+        config = self._load_model_config(model_name)
+
+        if trait_name in config.traits:
+            trait_config = config.traits[trait_name]
+            if trait_config.steering:
+                return trait_config.steering
+
+        return config.default_steering
+
+    def save_trait_weight_modification_config(
+        self,
+        model_name: str,
+        trait_name: str,
+        method: str = "abliteration",
+        max_weight: float = 1.0,
+        min_weight: float = 0.0,
+        max_weight_position: float = 0.5,
+        min_weight_distance: float = 0.5,
+        strength: float = 1.0,
+        num_pairs: int = 100,
+        alpha: float = 1.0,
+        additive_method: str = "bias",
+        components: Optional[List[str]] = None,
+        normalize_vectors: bool = True,
+        norm_preserve: bool = True,
+        use_biprojection: bool = True,
+        use_kernel: bool = True,
+        score: float = 0.0,
+        baseline_score: float = 0.0,
+        output_dir: str = "",
+        optimization_method: str = "manual",
+        set_as_default: bool = False,
+    ) -> Path:
+        """Save weight modification config for a trait."""
+        config = self._load_model_config(model_name)
+
+        weight_mod = WeightModificationConfig(
+            method=method,
+            max_weight=max_weight,
+            min_weight=min_weight,
+            max_weight_position=max_weight_position,
+            min_weight_distance=min_weight_distance,
+            strength=strength,
+            num_pairs=num_pairs,
+            alpha=alpha,
+            additive_method=additive_method,
+            components=components or ["self_attn.o_proj", "mlp.down_proj"],
+            normalize_vectors=normalize_vectors,
+            norm_preserve=norm_preserve,
+            use_biprojection=use_biprojection,
+            use_kernel=use_kernel,
+            score=score,
+            baseline_score=baseline_score,
+            output_dir=output_dir,
+        )
+
+        if trait_name not in config.traits:
+            config.traits[trait_name] = TraitConfig(trait_name=trait_name)
+        config.traits[trait_name].weight_modification = weight_mod
+        config.traits[trait_name].optimization_method = optimization_method
+        config.traits[trait_name].updated_at = datetime.now().isoformat()
+
+        if set_as_default:
+            config.default_weight_modification = weight_mod
+
+        return self._save_model_config(config)
+
+    def get_trait_weight_modification_config(
+        self,
+        model_name: str,
+        trait_name: str,
+    ) -> Optional[WeightModificationConfig]:
+        """Get weight modification config for a trait."""
+        config = self._load_model_config(model_name)
+
+        if trait_name in config.traits:
+            trait_config = config.traits[trait_name]
+            if trait_config.weight_modification:
+                return trait_config.weight_modification
 
         return config.default_weight_modification
 
@@ -562,6 +811,11 @@ class WisentConfigManager:
         config = self._load_model_config(model_name)
         return list(config.tasks.keys())
 
+    def list_traits(self, model_name: str) -> List[str]:
+        """List all traits with saved configurations for a model."""
+        config = self._load_model_config(model_name)
+        return list(config.traits.keys())
+
     def delete_config(self, model_name: str) -> bool:
         """Delete all configuration for a model."""
         config_path = self._get_config_path(model_name)
@@ -577,6 +831,15 @@ class WisentConfigManager:
         config = self._load_model_config(model_name)
         if task_name in config.tasks:
             del config.tasks[task_name]
+            self._save_model_config(config)
+            return True
+        return False
+
+    def delete_trait_config(self, model_name: str, trait_name: str) -> bool:
+        """Delete configuration for a specific trait."""
+        config = self._load_model_config(model_name)
+        if trait_name in config.traits:
+            del config.traits[trait_name]
             self._save_model_config(config)
             return True
         return False
@@ -623,10 +886,40 @@ def save_weight_modification_config(model_name: str, **kwargs) -> Path:
 def get_weight_modification_config(
     model_name: str,
     task_name: Optional[str] = None,
-    trait_label: str = ""
 ) -> Optional[WeightModificationConfig]:
     """Get weight modification config using global manager."""
-    return get_config_manager().get_weight_modification_config(model_name, task_name, trait_label)
+    return get_config_manager().get_weight_modification_config(model_name, task_name)
+
+
+# Trait convenience functions
+def save_trait_classification_config(model_name: str, trait_name: str, **kwargs) -> Path:
+    """Save classification config for a trait using global manager."""
+    return get_config_manager().save_trait_classification_config(model_name, trait_name, **kwargs)
+
+
+def get_trait_classification_config(model_name: str, trait_name: str) -> Optional[ClassificationConfig]:
+    """Get classification config for a trait using global manager."""
+    return get_config_manager().get_trait_classification_config(model_name, trait_name)
+
+
+def save_trait_steering_config(model_name: str, trait_name: str, **kwargs) -> Path:
+    """Save steering config for a trait using global manager."""
+    return get_config_manager().save_trait_steering_config(model_name, trait_name, **kwargs)
+
+
+def get_trait_steering_config(model_name: str, trait_name: str) -> Optional[SteeringConfig]:
+    """Get steering config for a trait using global manager."""
+    return get_config_manager().get_trait_steering_config(model_name, trait_name)
+
+
+def save_trait_weight_modification_config(model_name: str, trait_name: str, **kwargs) -> Path:
+    """Save weight modification config for a trait using global manager."""
+    return get_config_manager().save_trait_weight_modification_config(model_name, trait_name, **kwargs)
+
+
+def get_trait_weight_modification_config(model_name: str, trait_name: str) -> Optional[WeightModificationConfig]:
+    """Get weight modification config for a trait using global manager."""
+    return get_config_manager().get_trait_weight_modification_config(model_name, trait_name)
 
 
 # ========== Backward Compatibility Layer ==========
@@ -781,31 +1074,61 @@ def store_weight_modification(
     """
     Backward-compatible function to store weight modification result.
     Maps to the new unified config manager.
+
+    If trait_label is provided, stores as a trait config.
+    If task is provided without trait_label, stores as a task config.
     """
-    config_path = save_weight_modification_config(
-        model_name=model,
-        task_name=task,
-        trait_label=trait_label,
-        method=method,
-        max_weight=max_weight,
-        min_weight=min_weight,
-        max_weight_position=max_weight_position,
-        min_weight_distance=min_weight_distance,
-        strength=strength,
-        num_pairs=num_pairs,
-        alpha=alpha,
-        additive_method=additive_method,
-        components=components,
-        normalize_vectors=normalize_vectors,
-        norm_preserve=norm_preserve,
-        use_biprojection=use_biprojection,
-        use_kernel=use_kernel,
-        score=score,
-        baseline_score=baseline_score,
-        output_dir=output_dir,
-        optimization_method="optuna" if metadata else "manual",
-        set_as_default=set_as_default,
-    )
+    # If trait_label is provided, store as trait config
+    if trait_label:
+        save_trait_weight_modification_config(
+            model_name=model,
+            trait_name=trait_label,
+            method=method,
+            max_weight=max_weight,
+            min_weight=min_weight,
+            max_weight_position=max_weight_position,
+            min_weight_distance=min_weight_distance,
+            strength=strength,
+            num_pairs=num_pairs,
+            alpha=alpha,
+            additive_method=additive_method,
+            components=components,
+            normalize_vectors=normalize_vectors,
+            norm_preserve=norm_preserve,
+            use_biprojection=use_biprojection,
+            use_kernel=use_kernel,
+            score=score,
+            baseline_score=baseline_score,
+            output_dir=output_dir,
+            optimization_method="optuna" if metadata else "manual",
+            set_as_default=set_as_default,
+        )
+    else:
+        # Store as task config
+        save_weight_modification_config(
+            model_name=model,
+            task_name=task,
+            method=method,
+            max_weight=max_weight,
+            min_weight=min_weight,
+            max_weight_position=max_weight_position,
+            min_weight_distance=min_weight_distance,
+            strength=strength,
+            num_pairs=num_pairs,
+            alpha=alpha,
+            additive_method=additive_method,
+            components=components,
+            normalize_vectors=normalize_vectors,
+            norm_preserve=norm_preserve,
+            use_biprojection=use_biprojection,
+            use_kernel=use_kernel,
+            score=score,
+            baseline_score=baseline_score,
+            output_dir=output_dir,
+            optimization_method="optuna" if metadata else "manual",
+            set_as_default=set_as_default,
+        )
+
     # Return a cache key for backward compatibility
     model_normalized = model.replace("/", "_").replace("\\", "_")
     return f"{model_normalized}::{task}::{trait_label}::{method}"
@@ -821,8 +1144,15 @@ def get_cached_weight_modification(
     """
     Backward-compatible function to get cached weight modification result.
     Maps to the new unified config manager.
+
+    If trait_label is provided, gets from trait config.
+    If task is provided without trait_label, gets from task config.
     """
-    weight_mod = get_weight_modification_config(model, task, trait_label)
+    # If trait_label is provided, get from trait config
+    if trait_label:
+        weight_mod = get_trait_weight_modification_config(model, trait_label)
+    else:
+        weight_mod = get_weight_modification_config(model, task)
 
     if weight_mod is None:
         return None
