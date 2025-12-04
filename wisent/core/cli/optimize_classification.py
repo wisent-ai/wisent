@@ -79,10 +79,13 @@ def execute_optimize_classification(args):
     print(f"📊 Thresholds: {args.threshold_range}\n")
 
     # 2. Get list of tasks
-    task_list = [
-        "arc_easy", "arc_challenge", "hellaswag",
-        "winogrande", "gsm8k"
-    ]
+    if hasattr(args, 'tasks') and args.tasks:
+        task_list = args.tasks if isinstance(args.tasks, list) else [args.tasks]
+    else:
+        task_list = [
+            "arc_easy", "arc_challenge", "hellaswag",
+            "winogrande", "gsm8k"
+        ]
 
     print(f"📋 Optimizing {len(task_list)} tasks\n")
 
