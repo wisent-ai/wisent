@@ -62,8 +62,8 @@ class Wikitext103Extractor(HuggingFaceBenchmarkExtractor):
                 log.debug("Not enough sentences to create pair", extra={"doc": doc})
                 return None
 
-            # Take first few sentences as context
-            context = '. '.join(sentences[:2]) + '.'
+            # Use all sentences except the last as context
+            context = '. '.join(sentences[:-1]) + '.'
 
             # Correct: original text
             correct = text
