@@ -25,7 +25,7 @@ from wisent.core.parser_arguments.configure_model_parser import setup_configure_
 from wisent.core.parser_arguments.optimize_classification_parser import setup_classification_optimizer_parser
 from wisent.core.parser_arguments.optimize_steering_parser import setup_steering_optimizer_parser
 from wisent.core.parser_arguments.optimize_sample_size_parser import setup_sample_size_optimizer_parser
-from wisent.core.parser_arguments.full_optimize_parser import setup_full_optimizer_parser
+from wisent.core.parser_arguments.full_optimize_parser import setup_optimize_all_parser
 from wisent.core.parser_arguments.generate_vector_parser import setup_generate_vector_parser
 from wisent.core.parser_arguments.multi_steer_parser import setup_multi_steer_parser
 from wisent.core.parser_arguments.evaluate_parser import setup_evaluate_parser
@@ -128,11 +128,11 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_sample_size_optimizer_parser(sample_size_optimizer_parser)
 
-    # Full optimization command that runs both classification and sample size optimization
-    full_optimizer_parser = subparsers.add_parser(
-        "full-optimize", help="Run full optimization: classification parameters then sample size"
+    # Full optimization command that runs all optimizations for a model
+    optimize_all_parser = subparsers.add_parser(
+        "optimize-all", help="Run all optimizations: classification, steering, and weight modification"
     )
-    setup_full_optimizer_parser(full_optimizer_parser)
+    setup_optimize_all_parser(optimize_all_parser)
 
     # Generate vector command for creating steering vectors without tasks
     generate_vector_parser = subparsers.add_parser(
