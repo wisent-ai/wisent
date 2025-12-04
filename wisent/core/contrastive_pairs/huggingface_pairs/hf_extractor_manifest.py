@@ -231,6 +231,12 @@ EXTRACTORS: dict[str, str] = {
     "codeforces": f"{base_import}codeforces:CodeforcesExtractor",
     "code_forces": f"{base_import}codeforces:CodeforcesExtractor",
     "codeelo": f"{base_import}codeforces:CodeforcesExtractor",
+
+    # Code editing benchmarks (NOT lm-eval)
+    "aider_polyglot": f"{base_import}aider_polyglot:AiderPolyglotExtractor",
+    "aider-polyglot": f"{base_import}aider_polyglot:AiderPolyglotExtractor",
+    "polyglot": f"{base_import}aider_polyglot:AiderPolyglotExtractor",
+    "code_exercises": f"{base_import}aider_polyglot:AiderPolyglotExtractor",
 }
 
 # Alias for backwards compatibility
