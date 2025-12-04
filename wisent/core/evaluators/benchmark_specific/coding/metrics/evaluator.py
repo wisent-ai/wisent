@@ -192,7 +192,11 @@ if __name__ == "__main__":
         }
 
         # Optionally sanitize code
-        if self.cfg.pre_sanitize and language in _SANITIZERS:
+        # Skip sanitization for livecodebench stdin-style tests (they run solution.py as a script)
+        # These tests use subprocess to run solution.py, not function imports
+        is_stdin_test = 'livecodebench' in task_name.lower() and 'subprocess' in (test_code or '')
+
+        if self.cfg.pre_sanitize and language in _SANITIZERS and not is_stdin_test:
             schema = TaskSchema(
                 language=language,
                 file_name="solution.py",

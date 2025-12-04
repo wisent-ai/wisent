@@ -25,39 +25,30 @@ log = logging.getLogger(__name__)
 
 def _load_livecodebench_data(cache_dir: str | None = None) -> list[dict]:
     """
-    Load LiveCodeBench data directly from HuggingFace Hub.
-
-    This avoids the deprecated dataset script by downloading parquet files directly.
+    Load LiveCodeBench data from HuggingFace datasets.
 
     Args:
         cache_dir: Optional cache directory
 
     Returns:
-        List of problem dictionaries
+        List of problem dictionaries with test cases
     """
-    from huggingface_hub import hf_hub_download
-    import json
-    import pandas as pd
-
     try:
-        # Try to download the parquet data file directly
-        # LiveCodeBench stores data in parquet format under data/ directory
-        parquet_path = hf_hub_download(
-            repo_id="livecodebench/code_generation_lite",
-            filename="data/release_latest/test-00000-of-00001.parquet",
-            repo_type="dataset",
-            cache_dir=cache_dir,
-        )
+        from datasets import load_dataset
 
-        # Read parquet file
-        df = pd.read_parquet(parquet_path)
-        return df.to_dict('records')
+        # Load using standard datasets library (uses cache automatically)
+        ds = load_dataset("livecodebench/code_generation_lite", split="test")
+        log.info(f"Loaded {len(ds)} problems from livecodebench/code_generation_lite")
+        return [dict(row) for row in ds]
 
     except Exception as e1:
-        log.warning(f"Could not load parquet data: {e1}")
+        log.warning(f"Could not load via datasets library: {e1}")
 
         # Fallback: try to load from the Space's problems.json
         try:
+            from huggingface_hub import hf_hub_download
+            import json
+
             problems_path = hf_hub_download(
                 repo_id="livecodebench/code_generation_samples",
                 filename="problems.json",
@@ -110,11 +101,20 @@ def generate_livecodebench_pairs(
 
         log.info(f"Generating contrastive pairs from {max_items} livecodebench problems")
 
-        # Try to load parquet data for test cases
+        # Load dataset for test cases
         dataset_data = _load_livecodebench_data(cache_dir)
 
+        # Build question_id -> dataset row mapping for proper matching
+        dataset_by_question_id = {}
+        for row in dataset_data:
+            qid = row.get("question_id")
+            if qid:
+                dataset_by_question_id[qid] = row
+
+        log.info(f"Loaded {len(dataset_data)} dataset rows, {len(dataset_by_question_id)} with question_id")
+
         for problem_idx in range(max_items):
-            pair = _create_pair_for_problem(problem_idx, problems_json, dataset_data, cache_dir)
+            pair = _create_pair_for_problem(problem_idx, problems_json, dataset_data, dataset_by_question_id, cache_dir)
             if pair is not None:
                 pairs.append(pair)
                 log.debug(f"Created pair {len(pairs)}/{max_items}")
@@ -131,6 +131,7 @@ def _create_pair_for_problem(
     problem_idx: int,
     problems_json: list[dict],
     dataset_data: list[dict],
+    dataset_by_question_id: dict[str, dict],
     cache_dir: str | None = None,
 ) -> ContrastivePair | None:
     """
@@ -139,7 +140,8 @@ def _create_pair_for_problem(
     Args:
         problem_idx: Index of the problem in the problems.json
         problems_json: List of problem dictionaries from problems.json
-        dataset_data: List of problem data from parquet (for test cases)
+        dataset_data: List of problem data from dataset (for test cases)
+        dataset_by_question_id: Dict mapping question_id to dataset row
         cache_dir: Optional cache directory
 
     Returns:
@@ -155,6 +157,7 @@ def _create_pair_for_problem(
 
         problem = problems_json[problem_idx]
         question = problem.get("question_content", "").strip()
+        question_id = problem.get("question_id")
 
         if not question:
             log.warning(f"Problem {problem_idx} has no question content")
@@ -172,10 +175,18 @@ def _create_pair_for_problem(
             log.warning(f"No negative example found for problem {problem_idx}")
             return None
 
-        # Get test cases from dataset data if available
+        # Get test cases from dataset data using question_id for proper matching
         test_code = None
-        if problem_idx < len(dataset_data):
+        starter_code = ""
+
+        # Try to match by question_id first
+        problem_data = dataset_by_question_id.get(question_id) if question_id else None
+
+        # Fallback to index-based matching
+        if problem_data is None and problem_idx < len(dataset_data):
             problem_data = dataset_data[problem_idx]
+
+        if problem_data:
             public_test_cases_str = problem_data.get("public_test_cases", "[]")
             starter_code = problem_data.get("starter_code", "")
 
@@ -200,11 +211,12 @@ def _create_pair_for_problem(
             "label": "livecodebench",
             "source": "livecodebench/code_generation_samples",
             "problem_idx": problem_idx,
-            "question_id": problem.get("question_id"),
+            "question_id": question_id,
             "difficulty": problem.get("difficulty"),
             "positive_metadata": positive_example.get("metadata"),
             "negative_metadata": negative_example.get("metadata"),
             "test_code": test_code,
+            "starter_code": starter_code,
         }
 
         # Create the contrastive pair
