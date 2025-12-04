@@ -568,6 +568,13 @@ def execute_tasks(args):
         expected = pair.positive_response.model_response
         choices = [pair.negative_response.model_response, pair.positive_response.model_response]
 
+        # Extract test_code from pair metadata for coding tasks
+        test_code = None
+        starter_code = None
+        if hasattr(pair, 'metadata') and pair.metadata:
+            test_code = pair.metadata.get('test_code')
+            starter_code = pair.metadata.get('starter_code')
+
         # Generate response from unsteered model
         generate_kwargs = get_generate_kwargs()
         response = model.generate(
@@ -580,14 +587,20 @@ def execute_tasks(args):
         )[0]
 
         # Evaluate the response using Wisent evaluator
-        eval_result = evaluator.evaluate(
-            response=response,
-            expected=expected,
-            model=model,
-            question=question,
-            choices=choices,
-            task_name=task_name
-        )
+        eval_kwargs = {
+            'response': response,
+            'expected': expected,
+            'model': model,
+            'question': question,
+            'choices': choices,
+            'task_name': task_name,
+        }
+        # Add test_code for coding tasks (livecodebench, humaneval, mbpp, etc.)
+        if test_code:
+            eval_kwargs['test_code'] = test_code
+        if starter_code:
+            eval_kwargs['starter_code'] = starter_code
+        eval_result = evaluator.evaluate(**eval_kwargs)
 
         # Get activation for this generation
         # Use ActivationCollector to collect activations from the generated text
