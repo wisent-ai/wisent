@@ -74,6 +74,22 @@ class MathEvaluator(BaseEvaluator):
     name = "math"
     description = "Mathematical equivalence evaluator for competition math benchmarks"
 
+    @staticmethod
+    def get_prompt(problem: str) -> str:
+        """Create instruction prompt for LLM to solve math problem.
+
+        Args:
+            problem: The math problem statement
+
+        Returns:
+            Formatted prompt string
+        """
+        return f"""Solve the following math problem step by step. At the end, put your final answer inside \\boxed{{}}.
+
+Problem: {problem}
+
+Solution:"""
+
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate model response against expected mathematical answer.
 

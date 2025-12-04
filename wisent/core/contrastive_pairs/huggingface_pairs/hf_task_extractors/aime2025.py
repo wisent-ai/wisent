@@ -17,7 +17,7 @@ class AIME2025Extractor(HuggingFaceBenchmarkExtractor):
     """Extractor for AIME 2025 dataset."""
 
 
-    evaluator_name = "exact_match"
+    evaluator_name = "aime"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -48,29 +48,23 @@ class AIME2025Extractor(HuggingFaceBenchmarkExtractor):
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         try:
-            problem = doc.get("problem", doc.get("question", "")).strip()
-            answer = doc.get("answer", doc.get("solution", ""))
+            question = doc.get("question", "").strip()
+            correct = doc.get("answer", "")
 
-            if not problem or not answer:
+            if not question or not correct:
                 log.debug("Skipping: missing problem or answer")
                 return None
 
-            correct_answer = str(answer).strip()
+            incorrect = str(int(correct) + 1)
 
-            # Create incorrect answer
-            try:
-                num_val = int(correct_answer)
-                incorrect_answer = str(num_val + 1)
-            except (ValueError, TypeError):
-                incorrect_answer = "0"
+            question = f"Question: {question}\n\nWhat is the answer?"
 
-            question = f"Question: {problem}\n\nWhat is the answer?"
             metadata = {"label": "aime2025"}
 
             return self._build_pair(
                 question=question,
-                correct=correct_answer,
-                incorrect=incorrect_answer,
+                correct=correct,
+                incorrect=incorrect,
                 metadata=metadata,
             )
 
