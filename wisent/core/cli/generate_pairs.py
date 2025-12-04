@@ -74,16 +74,8 @@ def execute_generate_pairs(args):
             estimated_tokens = args.num_pairs * 150 + 500
             max_tokens = max(2048, min(estimated_tokens, 8192))  # Between 2048 and 8192
 
-            # Get inference config settings
-            gen_kwargs = get_generate_kwargs()
-
-            generation_config = {
-                "max_new_tokens": max_tokens,
-                "temperature": gen_kwargs.get("temperature", 0.9),
-                "do_sample": gen_kwargs.get("do_sample", True),
-                "top_p": gen_kwargs.get("top_p", 0.9),
-                "top_k": gen_kwargs.get("top_k", 50),
-            }
+            # Get generation config from centralized inference config
+            generation_config = get_generate_kwargs(max_new_tokens=max_tokens)
 
             # 3. Set up cleaning pipeline
             print(f"\n🧹 Setting up cleaning pipeline...")

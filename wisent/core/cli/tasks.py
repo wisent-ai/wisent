@@ -556,7 +556,7 @@ def execute_tasks(args):
     EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
     EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=eval_task_for_evaluator, autoload=False)
-    print(f"   Using evaluator: {evaluator._evaluator.name}")
+    print(f"   Using evaluator: {evaluator._plugin.name if hasattr(evaluator, '_plugin') and evaluator._plugin else 'auto'}")
 
     # Generate responses and collect activations
     generation_results = []

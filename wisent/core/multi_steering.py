@@ -201,10 +201,12 @@ class MultiSteering:
         if self.layer is None:
             raise MultiSteeringError("No layer information available")
 
-        # Get inference config settings
-        gen_kwargs = get_generate_kwargs()
-        actual_temperature = temperature if temperature is not None else gen_kwargs.get("temperature", 0.7)
-        actual_top_p = top_p if top_p is not None else gen_kwargs.get("top_p", 0.9)
+        # Get inference config settings, with optional overrides
+        gen_kwargs = get_generate_kwargs(max_new_tokens=max_new_tokens)
+        if temperature is not None:
+            gen_kwargs["temperature"] = temperature
+        if top_p is not None:
+            gen_kwargs["top_p"] = top_p
 
         print(f"\n🎯 Applying combined steering vector at layer {self.layer}")
         print(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}")
@@ -232,9 +234,7 @@ class MultiSteering:
             # Use WisentModel's generate_stream with steering
             yield from model.generate_stream(
                 inputs=inputs,
-                max_new_tokens=max_new_tokens,
-                temperature=actual_temperature,
-                top_p=actual_top_p,
+                **gen_kwargs,
                 use_steering=True,
                 steering_plan=steering_plan,
                 skip_prompt=True,
@@ -283,10 +283,12 @@ class MultiSteering:
         if self.layer is None:
             raise MultiSteeringError("No layer information available")
 
-        # Get inference config settings
-        gen_kwargs = get_generate_kwargs()
-        actual_temperature = temperature if temperature is not None else gen_kwargs.get("temperature", 0.7)
-        actual_top_p = top_p if top_p is not None else gen_kwargs.get("top_p", 0.9)
+        # Get inference config settings, with optional overrides
+        gen_kwargs = get_generate_kwargs(max_new_tokens=max_new_tokens)
+        if temperature is not None:
+            gen_kwargs["temperature"] = temperature
+        if top_p is not None:
+            gen_kwargs["top_p"] = top_p
 
         print(f"\n🎯 Applying combined steering vector at layer {self.layer}")
         print(f"Prompt: {prompt[:100]}..." if len(prompt) > 100 else f"Prompt: {prompt}")
@@ -314,9 +316,7 @@ class MultiSteering:
             # Use WisentModel's generate with steering
             outputs = model.generate(
                 inputs=inputs,
-                max_new_tokens=max_new_tokens,
-                temperature=actual_temperature,
-                top_p=actual_top_p,
+                **gen_kwargs,
                 use_steering=True,
                 steering_plan=steering_plan,
                 enable_thinking=enable_thinking,

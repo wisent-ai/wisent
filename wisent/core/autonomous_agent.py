@@ -14,6 +14,7 @@ from typing import Any, Dict, List, Optional
 
 from wisent.core.activations.core.atoms import ActivationAggregationStrategy
 from wisent.core.activations.activations import Activations
+from wisent.core.models.inference_config import get_generate_kwargs
 
 from .agent.diagnose import AgentClassifierDecisionSystem, AnalysisResult, ClassifierMarketplace, ResponseDiagnostics
 from .agent.steer import ImprovementResult, ResponseSteering
@@ -325,11 +326,12 @@ class AutonomousAgent:
                 # Create steering method object based on configuration
                 steering_method = self._create_steering_method()
 
+                gen_kwargs = get_generate_kwargs(max_new_tokens=200)
                 response, _, _, _ = generate_with_classification_and_handling(
                     self.model,
                     prompt,
                     self.params.layer,
-                    max_new_tokens=200,
+                    **gen_kwargs,
                     steering_method=steering_method,
                     token_aggregation="average",
                     threshold=0.6,
@@ -343,7 +345,8 @@ class AutonomousAgent:
                 # Fall through to basic generation
 
         # Basic generation without steering
-        result = self.model.generate(prompt, self.params.layer, max_new_tokens=200)
+        gen_kwargs = get_generate_kwargs(max_new_tokens=200)
+        result = self.model.generate(prompt, self.params.layer, **gen_kwargs)
         # Handle both 2 and 3 return values
         if isinstance(result, tuple) and len(result) == 3:
             response, _, _ = result
@@ -464,8 +467,9 @@ class AutonomousAgent:
         "UNACCEPTABLE" if the response needs improvement
         """
 
-        # Generate model judgment
-        result = self.model.generate(threshold_prompt, layer_index=15, max_new_tokens=20)
+        # Generate model judgment (short response for yes/no decision)
+        gen_kwargs = get_generate_kwargs(max_new_tokens=20)
+        result = self.model.generate(threshold_prompt, layer_index=15, **gen_kwargs)
         judgment = result[0] if isinstance(result, tuple) else result
         judgment = judgment.strip().upper()
 
@@ -525,7 +529,8 @@ class AutonomousAgent:
         """
 
         # Generate model response
-        result = self.model.generate(parameter_prompt, layer_index=15, max_new_tokens=150)
+        gen_kwargs = get_generate_kwargs(max_new_tokens=150)
+        result = self.model.generate(parameter_prompt, layer_index=15, **gen_kwargs)
         response = result[0] if isinstance(result, tuple) else result
 
         # Parse the response
@@ -635,7 +640,8 @@ class AutonomousAgent:
         """
 
         # Generate model response
-        result = self.model.generate(steering_prompt, layer_index=15, max_new_tokens=150)
+        gen_kwargs = get_generate_kwargs(max_new_tokens=150)
+        result = self.model.generate(steering_prompt, layer_index=15, **gen_kwargs)
         response = result[0] if isinstance(result, tuple) else result
 
         # Parse the response

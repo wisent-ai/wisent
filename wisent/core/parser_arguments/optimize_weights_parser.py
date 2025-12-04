@@ -85,8 +85,8 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         "--evaluator",
         type=str,
         default="auto",
-        choices=["auto", "refusal", "task", "semantic", "keyword", "llm_judge"],
-        help="Evaluator to use. 'auto' selects based on trait/task. Default: auto"
+        choices=["auto", "refusal", "task", "semantic", "keyword", "llm_judge", "personalization"],
+        help="Evaluator to use. 'auto' selects based on trait/task (personalization for personality traits, refusal for refusal traits). Default: auto"
     )
     eval_group.add_argument(
         "--eval-prompts",

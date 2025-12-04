@@ -14,6 +14,7 @@ from wisent.core.activations.core.atoms import ActivationAggregationStrategy
 from wisent.core.activations.activations import Activations
 from wisent.core.layer import Layer
 from wisent.core.utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
+from wisent.core.models.inference_config import get_generate_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -171,10 +172,11 @@ class LMEvalHarnessGroundTruth:
                     else:
                         question = str(doc.get("question", doc.get("text", "")))
 
-                    # Generate response using model
+                    # Generate response using model (use low temperature for deterministic evaluation)
                     logger.debug(f"🔸 Generating response for: {question}...") #question[:100]
+                    gen_kwargs = get_generate_kwargs(max_new_tokens=150, temperature=0.1, do_sample=False)
                     generated_response, _ = model.generate(
-                        prompt=question, layer_index=layer, max_new_tokens=150, temperature=0.1
+                        prompt=question, layer_index=layer, **gen_kwargs
                     )
 
                     # Extract ground truth answer
@@ -447,8 +449,9 @@ class LMEvalHarnessGroundTruth:
                         choices = doc["choices"]
                     else:
                         # For non-multiple choice, generate a response and calculate its perplexity
+                        gen_kwargs = get_generate_kwargs(max_new_tokens=100, temperature=0.1, do_sample=False)
                         generated_response, _ = model.generate(
-                            prompt=prompt, layer_index=layer, max_new_tokens=100, temperature=0.1
+                            prompt=prompt, layer_index=layer, **gen_kwargs
                         )
                         choices = [generated_response]
 
@@ -834,13 +837,13 @@ class LMEvalHarnessGroundTruth:
 
                     logger.debug(f"📋 Prompt for sample {i + 1}:\n{prompt[:200]}...\n")
 
-                    # Generate code using model
+                    # Generate code using model (more tokens for code, low temperature for deterministic output)
                     logger.debug(f"🔸 Generating code for sample {i + 1}/{len(docs)}...")
+                    gen_kwargs = get_generate_kwargs(max_new_tokens=500, temperature=0.1, do_sample=False)
                     generated_code, _ = model.generate(
                         prompt=prompt,
                         layer_index=layer,
-                        max_new_tokens=500,  # More tokens for code generation
-                        temperature=0.1,
+                        **gen_kwargs,
                     )
 
                     generated_codes.append(generated_code)
@@ -1293,14 +1296,13 @@ class LMEvalHarnessGroundTruth:
                     prompt = bigcode_task.doc_to_text(sample)
                     logger.debug(f"📋 Prompt for sample {i + 1}:\n{prompt}\n")
 
-                    # Generate code using model
+                    # Generate code using model (more tokens for code, low temperature for deterministic output)
                     logger.debug(f"🔸 Generating code for sample {i + 1}/{len(bigcode_task)}...")
+                    gen_kwargs = get_generate_kwargs(max_new_tokens=300, temperature=0.1, do_sample=False)
                     generated_code, _ = model.generate(
                         prompt=prompt,
                         layer_index=layer,
-                        max_new_tokens=300,  # More tokens for code generation
-                        temperature=0.1,
-                        # Note: stop_sequences not supported by all models
+                        **gen_kwargs,
                     )
 
                     generated_codes.append(generated_code)

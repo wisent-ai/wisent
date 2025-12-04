@@ -77,18 +77,12 @@ def evaluate_response_with_classifier(
     print(f"\n💬 Step 3: Generating unsteered response")
 
     # Generate response without steering
-    gen_kwargs = get_generate_kwargs()
-
     messages = [[{"role": "user", "content": prompt}]]
 
     print(f"   Generating response...")
     responses = model.generate(
         inputs=messages,
-        max_new_tokens=512,
-        temperature=gen_kwargs.get("temperature", 0.7),
-        top_p=gen_kwargs.get("top_p", 0.9),
-        top_k=gen_kwargs.get("top_k", 50),
-        do_sample=gen_kwargs.get("do_sample", True),
+        **get_generate_kwargs(),
     )
 
     unsteered_response = responses[0] if responses else ""

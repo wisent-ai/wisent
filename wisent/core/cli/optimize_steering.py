@@ -437,17 +437,13 @@ def execute_comprehensive(args, model, loader):
                                         if args.save_all_generation_examples:
                                             config_examples = []
                                             # Get inference config settings
-                                            gen_kwargs = get_generate_kwargs()
                                             for idx, pair in enumerate(example_pairs):
                                                 prompt = pair.prompt
                                                 try:
                                                     # Generate without steering (only once per prompt, reuse if already generated)
                                                     unsteered_response = model.generate(
                                                         [[{"role": "user", "content": prompt}]],
-                                                        max_new_tokens=100,
-                                                        temperature=gen_kwargs.get("temperature", 0.7),
-                                                        top_p=gen_kwargs.get("top_p", 0.9),
-                                                        do_sample=gen_kwargs.get("do_sample", True),
+                                                        **get_generate_kwargs(max_new_tokens=100),
                                                         use_steering=False,
                                                     )[0]
 
@@ -471,10 +467,7 @@ def execute_comprehensive(args, model, loader):
                                                     model.apply_steering(steering_plan)
                                                     steered_response = model.generate(
                                                         [[{"role": "user", "content": prompt}]],
-                                                        max_new_tokens=100,
-                                                        temperature=gen_kwargs.get("temperature", 0.7),
-                                                        top_p=gen_kwargs.get("top_p", 0.9),
-                                                        do_sample=gen_kwargs.get("do_sample", True),
+                                                        **get_generate_kwargs(max_new_tokens=100),
                                                         use_steering=True,
                                                         steering_plan=steering_plan,
                                                     )[0]
@@ -745,10 +738,7 @@ def execute_comprehensive(args, model, loader):
                             # Generate without steering
                             unsteered_response = model.generate(
                                 [[{"role": "user", "content": prompt}]],
-                                max_new_tokens=100,
-                                temperature=gen_kwargs.get("temperature", 0.7),
-                                top_p=gen_kwargs.get("top_p", 0.9),
-                                do_sample=gen_kwargs.get("do_sample", True),
+                                **get_generate_kwargs(max_new_tokens=100),
                                 use_steering=False,
                             )[0]
 
@@ -800,10 +790,7 @@ def execute_comprehensive(args, model, loader):
                             model.attach(steering_plan)
                             steered_response = model.generate(
                                 [[{"role": "user", "content": prompt}]],
-                                max_new_tokens=100,
-                                temperature=gen_kwargs.get("temperature", 0.7),
-                                top_p=gen_kwargs.get("top_p", 0.9),
-                                do_sample=gen_kwargs.get("do_sample", True),
+                                **get_generate_kwargs(max_new_tokens=100),
                                 use_steering=True,
                                 steering_plan=steering_plan,
                             )[0]
@@ -2250,7 +2237,7 @@ def execute_personalization(args, model):
 
     pair_generator = SyntheticContrastivePairsGenerator(
         model=model,
-        generation_config={"max_new_tokens": 150, "temperature": 0.7},
+        generation_config=get_generate_kwargs(max_new_tokens=150),
         contrastive_set_name=f"{trait_name}_pairs",
         trait_description=trait,
         trait_label=trait_name,
@@ -2308,15 +2295,11 @@ def execute_personalization(args, model):
 
     # Pre-generate baseline responses ONCE (they don't depend on any loop variables)
     print("   📊 Pre-generating baseline responses for test prompts...", flush=True)
-    gen_kwargs_baseline = get_generate_kwargs()
     baseline_responses_cache = {}
     for prompt in test_prompts:
         baseline = model.generate(
             [[{"role": "user", "content": prompt}]],
-            max_new_tokens=args.max_new_tokens,
-            temperature=gen_kwargs_baseline.get("temperature", 0.7),
-            top_p=gen_kwargs_baseline.get("top_p", 0.9),
-            do_sample=gen_kwargs_baseline.get("do_sample", True),
+            **get_generate_kwargs(max_new_tokens=args.max_new_tokens),
             use_steering=False,
         )[0]
         baseline_responses_cache[prompt] = baseline
@@ -2408,18 +2391,12 @@ def execute_personalization(args, model):
                         baseline_responses = [baseline_responses_cache[prompt] for prompt in test_prompts]
                         steered_responses = []
 
-                        # Get inference config settings
-                        gen_kwargs_gen = get_generate_kwargs()
-
                         for prompt in test_prompts:
                             # Generate steered response
                             model.apply_steering(steering_plan)
                             steered = model.generate(
                                 [[{"role": "user", "content": prompt}]],
-                                max_new_tokens=args.max_new_tokens,
-                                temperature=gen_kwargs_gen.get("temperature", 0.7),
-                                top_p=gen_kwargs_gen.get("top_p", 0.9),
-                                do_sample=gen_kwargs_gen.get("do_sample", True),
+                                **get_generate_kwargs(max_new_tokens=args.max_new_tokens),
                                 use_steering=True,
                                 steering_plan=steering_plan,
                             )[0]
@@ -2437,7 +2414,7 @@ def execute_personalization(args, model):
 
                         # Calculate alignment score using simple keyword matching
                         # (Full alignment needs model-based judge which is expensive)
-                        alignment_score = _estimate_alignment(steered_responses, trait)
+                        alignment_score = PersonalizationEvaluator.estimate_alignment(steered_responses, trait)
 
                         # Calculate overall score (weighted average)
                         # Only count if difference > 0.3 (steering is actually doing something)
@@ -2602,64 +2579,6 @@ def execute_personalization(args, model):
     }
 
 
-def _estimate_alignment(responses: list[str], trait_description: str) -> float:
-    """
-    Estimate trait alignment using keyword matching.
-
-    This is a fast heuristic that checks for trait-related keywords in responses.
-    For more accurate alignment, use the full model-based evaluator.
-    """
-    import re
-
-    # Extract keywords from trait description
-    trait_words = set(re.findall(r"\b[a-z]+\b", trait_description.lower()))
-
-    # Common trait indicators to look for
-    trait_indicators = {
-        "evil": [
-            "evil",
-            "villain",
-            "domination",
-            "destroy",
-            "conquer",
-            "mwahaha",
-            "muahaha",
-            "fool",
-            "minion",
-            "scheme",
-        ],
-        "italian": ["italian", "mamma", "mia", "pasta", "pizza", "bellissimo", "ciao", "capisce", "famiglia", "amore"],
-        "british": ["british", "jolly", "cheerio", "lovely", "quite", "indeed", "rather", "splendid", "tea", "blimey"],
-        "pirate": ["pirate", "arrr", "matey", "treasure", "ship", "captain", "sea", "ahoy", "plunder", "rum"],
-        "formal": ["formal", "hereby", "therefore", "accordingly", "furthermore", "pursuant", "respectfully"],
-        "casual": ["casual", "hey", "cool", "awesome", "yeah", "kinda", "gonna", "wanna"],
-    }
-
-    # Find which trait category matches best
-    matched_indicators = set()
-    for category, keywords in trait_indicators.items():
-        if any(word in trait_words for word in [category] + keywords):
-            matched_indicators.update(keywords)
-
-    # Also use raw trait words as indicators
-    matched_indicators.update(trait_words)
-
-    if not matched_indicators:
-        # If no specific indicators, use generic difference check
-        return 0.5
-
-    # Count matches in responses
-    alignment_scores = []
-    for response in responses:
-        response_lower = response.lower()
-        matches = sum(1 for indicator in matched_indicators if indicator in response_lower)
-        # Normalize: more matches = higher score, cap at 1.0
-        score = min(1.0, matches / 3.0)  # 3+ matches = perfect score
-        alignment_scores.append(score)
-
-    return float(np.mean(alignment_scores)) if alignment_scores else 0.0
-
-
 def execute_multi_personalization(args, model):
     """
     Execute multi-trait joint personalization optimization.
@@ -2769,7 +2688,7 @@ def execute_multi_personalization(args, model):
 
         pair_generator = SyntheticContrastivePairsGenerator(
             model=model,
-            generation_config={"max_new_tokens": 150, "temperature": 0.7},
+            generation_config=get_generate_kwargs(max_new_tokens=150),
             contrastive_set_name=f"{name}_pairs",
             trait_description=trait,
             trait_label=name,
@@ -2900,17 +2819,11 @@ def execute_multi_personalization(args, model):
                     strength_combos = all_strength_combos
 
                 # Pre-generate baseline responses ONCE per config (they don't depend on steering)
-                # Get inference config settings
-                gen_kwargs_baseline = get_generate_kwargs()
-
                 baseline_responses = []
                 for prompt in test_prompts:
                     baseline = model.generate(
                         [[{"role": "user", "content": prompt}]],
-                        max_new_tokens=args.max_new_tokens,
-                        temperature=gen_kwargs_baseline.get("temperature", 0.7),
-                        top_p=gen_kwargs_baseline.get("top_p", 0.9),
-                        do_sample=gen_kwargs_baseline.get("do_sample", True),
+                        **get_generate_kwargs(max_new_tokens=args.max_new_tokens),
                         use_steering=False,
                     )[0]
                     baseline_responses.append(baseline)
@@ -2945,10 +2858,7 @@ def execute_multi_personalization(args, model):
                         model.apply_steering(steering_plan)
                         steered = model.generate(
                             [[{"role": "user", "content": prompt}]],
-                            max_new_tokens=args.max_new_tokens,
-                            temperature=gen_kwargs_baseline.get("temperature", 0.7),
-                            top_p=gen_kwargs_baseline.get("top_p", 0.9),
-                            do_sample=gen_kwargs_baseline.get("do_sample", True),
+                            **get_generate_kwargs(max_new_tokens=args.max_new_tokens),
                             use_steering=True,
                             steering_plan=steering_plan,
                         )[0]
@@ -2962,7 +2872,7 @@ def execute_multi_personalization(args, model):
 
                     # Compute alignment score against COMBINED trait description
                     combined_trait_description = " AND ".join([trait_pairs[name]["trait"] for name in trait_names])
-                    alignment_score = _estimate_alignment(steered_responses, combined_trait_description)
+                    alignment_score = PersonalizationEvaluator.estimate_alignment(steered_responses, combined_trait_description)
 
                     if difference_score < 0.3:
                         overall_score = 0.0

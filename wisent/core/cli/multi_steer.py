@@ -24,17 +24,17 @@ def execute_multi_steer(args):
                 print(f"\n🤖 Loading model '{args.model}'...")
                 model = WisentModel(args.model, device=args.device)
 
-                # Get inference config settings
-                gen_kwargs = get_generate_kwargs()
+                # Get inference config settings with optional CLI overrides
+                gen_kwargs = get_generate_kwargs(max_new_tokens=args.max_new_tokens)
+                if getattr(args, 'temperature', None) is not None:
+                    gen_kwargs["temperature"] = args.temperature
+                if getattr(args, 'top_p', None) is not None:
+                    gen_kwargs["top_p"] = args.top_p
 
                 # Generate WITHOUT steering
                 response = model.generate(
                     [[{"role": "user", "content": args.prompt}]],
-                    max_new_tokens=args.max_new_tokens,
-                    do_sample=gen_kwargs.get("do_sample", True),
-                    temperature=getattr(args, 'temperature', None) or gen_kwargs.get("temperature", 0.7),
-                    top_p=getattr(args, 'top_p', None) or gen_kwargs.get("top_p", 0.9),
-                    top_k=gen_kwargs.get("top_k", 50),
+                    **gen_kwargs,
                 )[0]
 
                 print(f"\nUnsteered baseline output:\n{response}\n")
@@ -85,18 +85,13 @@ def execute_multi_steer(args):
             print(f"\n🤖 Loading model '{args.model}'...")
             model = WisentModel(args.model, device=args.device)
 
-            # Get inference config settings
-            gen_kwargs = get_generate_kwargs()
-
-            # Generate with steering
-            temperature = getattr(args, 'temperature', None) or gen_kwargs.get("temperature", 0.7)
-            top_p = getattr(args, 'top_p', None) or gen_kwargs.get("top_p", 0.9)
+            # Generate with steering - pass CLI overrides or None to use config defaults
             output = multi_steer.apply_steering(
                 model=model,
                 prompt=args.prompt,
                 max_new_tokens=args.max_new_tokens,
-                temperature=temperature,
-                top_p=top_p
+                temperature=getattr(args, 'temperature', None),
+                top_p=getattr(args, 'top_p', None)
             )
 
             print(f"\nGenerated output:\n{output}\n")

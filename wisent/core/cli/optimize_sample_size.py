@@ -152,14 +152,9 @@ def execute_optimize_sample_size(args):
             choices = [pair.negative_response.model_response, pair.positive_response.model_response]
 
             # Generate response
-            generate_kwargs = get_generate_kwargs()
             response = model.generate(
                 [[{"role": "user", "content": question}]],
-                max_new_tokens=generate_kwargs.get("max_new_tokens", 100),
-                do_sample=generate_kwargs.get("do_sample", True),
-                temperature=generate_kwargs.get("temperature", 0.7),
-                top_p=generate_kwargs.get("top_p", 0.9),
-                top_k=generate_kwargs.get("top_k", 50),
+                **get_generate_kwargs(),
             )[0]
 
             # Evaluate

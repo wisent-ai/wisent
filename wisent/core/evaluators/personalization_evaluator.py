@@ -178,30 +178,19 @@ class PersonalizationEvaluator:
         """Generate a response with optional steering."""
         inputs = self.tokenizer(prompt, return_tensors="pt").to(self.device)
 
-        # Get inference config settings
-        gen_kwargs = get_generate_kwargs()
-
         with torch.no_grad():
             if control_vector is not None:
                 # Apply steering by adding control vector to activations
                 # This is a simplified version - real implementation would hook into model layers
                 outputs = self.model.generate(
                     **inputs,
-                    max_new_tokens=max_new_tokens,
-                    do_sample=gen_kwargs.get("do_sample", True),
-                    temperature=gen_kwargs.get("temperature", 0.7),
-                    top_p=gen_kwargs.get("top_p", 0.9),
-                    top_k=gen_kwargs.get("top_k", 50),
+                    **get_generate_kwargs(max_new_tokens=max_new_tokens),
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
             else:
                 outputs = self.model.generate(
                     **inputs,
-                    max_new_tokens=max_new_tokens,
-                    do_sample=gen_kwargs.get("do_sample", True),
-                    temperature=gen_kwargs.get("temperature", 0.7),
-                    top_p=gen_kwargs.get("top_p", 0.9),
-                    top_k=gen_kwargs.get("top_k", 50),
+                    **get_generate_kwargs(max_new_tokens=max_new_tokens),
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
 
@@ -242,11 +231,43 @@ class PersonalizationEvaluator:
         avg_difference = np.mean(differences)
         return float(avg_difference)
 
+    def _is_gibberish(self, text: str) -> bool:
+        """Detect if text is gibberish/nonsensical."""
+        if not text or len(text.strip()) < 10:
+            return False
+
+        # Check 1: Spacing ratio - normal English has ~15-20% spaces
+        space_ratio = text.count(' ') / len(text)
+        if len(text) > 50 and space_ratio < 0.08:
+            return True
+
+        tokens = text.split()
+        if not tokens:
+            return False
+
+        # Check 2: Long tokens (concatenated words)
+        long_tokens = sum(1 for t in tokens if len(t) > 25)
+        if long_tokens / len(tokens) > 0.1:
+            return True
+
+        # Check 3: CamelCase patterns (e.g., "hisHandsThatDelight")
+        camel_pattern = re.compile(r'[a-z]{2,}[A-Z][a-z]{2,}')
+        camel_count = sum(1 for t in tokens if camel_pattern.search(t))
+        if camel_count >= 2:
+            return True
+
+        # Check 4: Repeated fragments within tokens (e.g., "thethethe")
+        if re.search(r'(\w{2,6})\1{2,}', text.lower()):
+            return True
+
+        return False
+
     def _evaluate_quality(self, responses: list[str]) -> float:
         """
         Evaluate if responses are coherent (not lobotomized).
 
         Checks for:
+        - Gibberish/nonsensical text (immediate zero)
         - Repetitive tokens
         - Nonsensical patterns
         - Too short/empty responses
@@ -260,6 +281,11 @@ class PersonalizationEvaluator:
         quality_scores = []
 
         for response in responses:
+            # Check for gibberish first - immediate zero
+            if self._is_gibberish(response):
+                quality_scores.append(0.0)
+                continue
+
             score = 1.0  # Start with perfect score
 
             # Check 1: Empty or too short
@@ -334,16 +360,10 @@ Rating (0-10):"""
             # Get rating from model
             inputs = self.tokenizer(eval_prompt, return_tensors="pt").to(self.device)
 
-            # Get inference config settings
-            gen_kwargs = get_generate_kwargs()
-
             with torch.no_grad():
                 outputs = self.model.generate(
                     **inputs,
-                    max_new_tokens=10,
-                    do_sample=gen_kwargs.get("do_sample", True),
-                    temperature=gen_kwargs.get("temperature", 0.7) if gen_kwargs.get("do_sample", True) else None,
-                    top_k=gen_kwargs.get("top_k", 50) if gen_kwargs.get("do_sample", True) else None,
+                    **get_generate_kwargs(max_new_tokens=10),
                     pad_token_id=self.tokenizer.eos_token_id,
                 )
 
@@ -440,4 +460,74 @@ Rating (0-10):"""
                 "evaluation_mode": "response_pair_model_judge",
             },
         )
+
+    @staticmethod
+    def estimate_alignment(responses: list[str], trait_description: str) -> float:
+        """
+        Estimate trait alignment using keyword matching.
+
+        This is a fast heuristic that checks for trait-related keywords in responses.
+        For more accurate alignment, use the full model-based evaluator.
+
+        Args:
+            responses: List of model responses to evaluate
+            trait_description: Description of the trait to check alignment for
+
+        Returns:
+            Float score between 0 and 1 indicating alignment with trait
+        """
+        # Extract keywords from trait description
+        trait_words = set(re.findall(r"\b[a-z]+\b", trait_description.lower()))
+
+        # Common trait indicators to look for
+        trait_indicators = {
+            "evil": [
+                "evil", "villain", "domination", "destroy", "conquer",
+                "mwahaha", "muahaha", "fool", "minion", "scheme",
+            ],
+            "italian": [
+                "italian", "mamma", "mia", "pasta", "pizza",
+                "bellissimo", "ciao", "capisce", "famiglia", "amore",
+            ],
+            "british": [
+                "british", "jolly", "cheerio", "lovely", "quite",
+                "indeed", "rather", "splendid", "tea", "blimey",
+            ],
+            "pirate": [
+                "pirate", "arrr", "matey", "treasure", "ship",
+                "captain", "sea", "ahoy", "plunder", "rum",
+            ],
+            "formal": [
+                "formal", "hereby", "therefore", "accordingly",
+                "furthermore", "pursuant", "respectfully",
+            ],
+            "casual": [
+                "casual", "hey", "cool", "awesome", "yeah",
+                "kinda", "gonna", "wanna",
+            ],
+        }
+
+        # Find which trait category matches best
+        matched_indicators = set()
+        for category, keywords in trait_indicators.items():
+            if any(word in trait_words for word in [category] + keywords):
+                matched_indicators.update(keywords)
+
+        # Also use raw trait words as indicators
+        matched_indicators.update(trait_words)
+
+        if not matched_indicators:
+            # If no specific indicators, use generic difference check
+            return 0.5
+
+        # Count matches in responses
+        alignment_scores = []
+        for response in responses:
+            response_lower = response.lower()
+            matches = sum(1 for indicator in matched_indicators if indicator in response_lower)
+            # Normalize: more matches = higher score, cap at 1.0
+            score = min(1.0, matches / 3.0)  # 3+ matches = perfect score
+            alignment_scores.append(score)
+
+        return float(np.mean(alignment_scores)) if alignment_scores else 0.0
 

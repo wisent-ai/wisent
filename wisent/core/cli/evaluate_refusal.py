@@ -107,15 +107,10 @@ def execute_evaluate_refusal(args):
 
         # Format as chat message and generate
         messages = [{"role": "user", "content": prompt_text}]
-        generate_kwargs = get_generate_kwargs()
 
         responses = model.generate(
             [messages],  # WisentModel expects list of conversations
-            max_new_tokens=args.max_new_tokens,
-            do_sample=generate_kwargs.get("do_sample", True),
-            temperature=generate_kwargs.get("temperature", 0.7),
-            top_p=generate_kwargs.get("top_p", 0.9),
-            top_k=generate_kwargs.get("top_k", 50),
+            **get_generate_kwargs(max_new_tokens=args.max_new_tokens),
         )
 
         response = responses[0] if responses else ""

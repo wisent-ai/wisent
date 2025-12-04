@@ -66,7 +66,18 @@ def execute_optimize_weights(args):
     else:
         print(f"   Mode: Pre-computed vectors")
         print(f"   Vectors: {args.steering_vectors}")
-    print(f"   Evaluator: {args.evaluator}")
+    # Determine actual evaluator type for display
+    evaluator_display = args.evaluator
+    if args.evaluator == "auto":
+        if args.trait and "refus" in args.trait.lower():
+            evaluator_display = "auto → refusal"
+        elif args.task:
+            evaluator_display = "auto → task"
+        elif args.trait:
+            evaluator_display = "auto → personalization"
+        else:
+            evaluator_display = "auto → refusal"
+    print(f"   Evaluator: {evaluator_display}")
     print(f"   Target: {args.target_metric} = {args.target_value}")
     print(f"   Trials: {args.trials}")
     print(f"   Output: {args.output_dir}")
@@ -114,8 +125,8 @@ def execute_optimize_weights(args):
     # Store base model state for restoration
     base_state_dict = {k: v.clone() for k, v in base_model.state_dict().items()}
 
-    # Initialize evaluator
-    evaluator = _create_evaluator(args, args.model)
+    # Initialize evaluator (pass wisent_model for personalization baseline generation)
+    evaluator = _create_evaluator(args, args.model, wisent_model=wisent_model)
 
     # Pre-generate steering vectors once
     print(f"Generating steering vectors with {num_pairs} pairs...")
@@ -347,11 +358,16 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
             os.unlink(temp_output)
 
 
-def _create_evaluator(args, model_name: str) -> Callable[[Any, Any], dict[str, float]]:
+def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None) -> Callable[[Any, Any], dict[str, float]]:
     """Create the appropriate evaluator function based on args.
 
     The evaluator receives (hf_model, tokenizer) and wraps them in WisentModel
     internally to use standard generation.
+
+    Args:
+        args: Command arguments
+        model_name: Model name/path
+        wisent_model: Optional WisentModel instance for baseline generation (used by personalization)
     """
 
     evaluator_type = args.evaluator
@@ -361,6 +377,9 @@ def _create_evaluator(args, model_name: str) -> Callable[[Any, Any], dict[str, f
             evaluator_type = "refusal"
         elif args.task:
             evaluator_type = "task"
+        elif args.trait:
+            # For any other trait (personality, style, etc.), use personalization evaluator
+            evaluator_type = "personalization"
         else:
             evaluator_type = "refusal"
 
@@ -370,6 +389,8 @@ def _create_evaluator(args, model_name: str) -> Callable[[Any, Any], dict[str, f
         return _create_task_evaluator(args)
     elif evaluator_type == "llm_judge":
         return _create_llm_judge_evaluator(args, model_name)
+    elif evaluator_type == "personalization":
+        return _create_personalization_evaluator(args, model_name, wisent_model)
     else:
         raise ValueError(f"Unknown evaluator: {evaluator_type}")
 
@@ -412,7 +433,6 @@ def _create_refusal_evaluator(args, model_name: str, eval_type: str) -> Callable
 
         refusal_count = 0
         compliance_scores = []
-        generate_kwargs = get_generate_kwargs()
 
         for item in prompts:
             if use_custom:
@@ -426,11 +446,7 @@ def _create_refusal_evaluator(args, model_name: str, eval_type: str) -> Callable
             messages = [{"role": "user", "content": prompt_text}]
             responses = wisent_model.generate(
                 [messages],
-                max_new_tokens=150,
-                do_sample=generate_kwargs.get("do_sample", True),
-                temperature=generate_kwargs.get("temperature", 0.7),
-                top_p=generate_kwargs.get("top_p", 0.9),
-                top_k=generate_kwargs.get("top_k", 50),
+                **get_generate_kwargs(max_new_tokens=150),
             )
 
             response = responses[0] if responses else ""
@@ -527,6 +543,118 @@ def _create_llm_judge_evaluator(args, model_name: str) -> Callable:
     raise NotImplementedError("LLM judge evaluator not yet implemented")
 
 
+def _create_personalization_evaluator(args, model_name: str, wisent_model: WisentModel = None) -> Callable:
+    """Create personalization evaluator for personality/style traits.
+
+    Evaluates steering effectiveness on three criteria:
+    1. Difference: Is the steered response different from baseline?
+    2. Quality: Is the response coherent (not lobotomized)?
+    3. Alignment: Does the response match the intended trait direction?
+
+    Uses the same evaluation pattern as optimize_steering's personalization action.
+    Baseline responses are generated once upfront using the unmodified model.
+    """
+    from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
+    from wisent.core.models.inference_config import get_generate_kwargs
+
+    # Get trait name and description from args
+    trait_name = args.trait.split()[0] if args.trait else "unknown"
+    trait_description = args.trait
+
+    # Default test prompts for personalization evaluation
+    default_prompts = [
+        "Tell me about yourself.",
+        "What do you think about the weather today?",
+        "Can you help me write a short story?",
+        "What's your opinion on modern technology?",
+        "How would you describe a perfect day?",
+        "Tell me a joke.",
+        "What advice would you give to someone starting a new job?",
+        "Describe your favorite book or movie.",
+        "What do you think makes a good friend?",
+        "How do you handle stress?",
+        "What's the best way to learn a new skill?",
+        "Tell me about a memorable experience.",
+        "What do you value most in life?",
+        "How would you explain your personality?",
+        "What makes you happy?",
+    ]
+
+    # Use custom prompts if provided, otherwise use defaults
+    if args.eval_prompts:
+        with open(args.eval_prompts) as f:
+            custom_prompts = json.load(f)
+        if not isinstance(custom_prompts, list):
+            custom_prompts = custom_prompts.get("prompts", [])
+        prompts = custom_prompts[:args.num_eval_prompts]
+    else:
+        prompts = default_prompts[:args.num_eval_prompts]
+
+    # Generate baseline responses ONCE using the unmodified model
+    # This is done before optimization starts
+    baseline_responses = []
+    if wisent_model is not None:
+        print(f"   Generating {len(prompts)} baseline responses for personalization evaluation...")
+        for prompt_text in prompts:
+            messages = [{"role": "user", "content": prompt_text}]
+            responses = wisent_model.generate(
+                [messages],
+                max_new_tokens=150,
+            )
+            response = responses[0] if responses else ""
+            baseline_responses.append(response)
+        print(f"   ✓ Baseline responses generated\n")
+
+    def evaluate(hf_model, tokenizer) -> dict:
+        """Run personalization evaluation comparing baseline vs steered responses."""
+        # Wrap HF model in WisentModel for standard generation
+        modified_wisent_model = WisentModel(model_name, hf_model=hf_model)
+
+        # Collect steered responses (model already has weight modifications applied)
+        steered_responses = []
+        for prompt_text in prompts:
+            messages = [{"role": "user", "content": prompt_text}]
+            responses = modified_wisent_model.generate(
+                [messages],
+                max_new_tokens=150,
+            )
+            response = responses[0] if responses else ""
+            steered_responses.append(response)
+
+        # Initialize evaluator (no model needed for basic metrics)
+        evaluator = PersonalizationEvaluator()
+
+        # Calculate difference score (baseline vs steered)
+        if baseline_responses:
+            difference_score = evaluator._evaluate_difference(baseline_responses, steered_responses)
+        else:
+            difference_score = 0.5  # Default if no baseline available
+
+        # Calculate quality score (coherence check)
+        quality_score = evaluator._evaluate_quality(steered_responses)
+
+        # Calculate alignment score using keyword-based estimation
+        alignment_score = PersonalizationEvaluator.estimate_alignment(steered_responses, trait_description)
+
+        # Calculate overall score (weighted average)
+        # Only count if difference > 0.3 (steering is actually doing something)
+        if difference_score < 0.3:
+            overall_score = 0.0
+        else:
+            overall_score = 0.2 * difference_score + 0.3 * quality_score + 0.5 * alignment_score
+
+        return {
+            "difference_score": difference_score,
+            "quality_score": quality_score,
+            "alignment_score": alignment_score,
+            "overall_score": overall_score,
+            "num_responses": len(steered_responses),
+            "score": overall_score,  # Main metric for optimization
+        }
+
+    return evaluate
+
+
 def _apply_weight_modification_standalone(
     model,
     steering_vectors: dict[int, torch.Tensor],
@@ -607,8 +735,6 @@ def _show_response_comparisons(
     except ImportError:
         evaluator = KeywordEvaluator()
 
-    generate_kwargs = get_generate_kwargs()
-
     def generate_response(hf_model, prompt_text: str) -> str:
         """Generate response using WisentModel for consistent behavior."""
         # Wrap HF model in WisentModel for standard generation
@@ -617,11 +743,7 @@ def _show_response_comparisons(
         messages = [{"role": "user", "content": prompt_text}]
         responses = wisent_model.generate(
             [messages],
-            max_new_tokens=150,
-            do_sample=generate_kwargs.get("do_sample", True),
-            temperature=generate_kwargs.get("temperature", 0.7),
-            top_p=generate_kwargs.get("top_p", 0.9),
-            top_k=generate_kwargs.get("top_k", 50),
+            **get_generate_kwargs(max_new_tokens=150),
         )
 
         response = responses[0] if responses else ""
