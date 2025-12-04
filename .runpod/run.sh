@@ -1,11 +1,11 @@
 #!/bin/bash
-# Wisent Guard - Runpod Startup Script
+# Wisent - Runpod Startup Script
 # Starts base image services (Jupyter/SSH) then sets up workspace
 
 set -e
 
 echo "=============================================="
-echo "  Wisent Guard - Runpod Pod Template"
+echo "  Wisent - Runpod Pod Template"
 echo "=============================================="
 
 # Start base image services (Jupyter/SSH) in background
@@ -25,7 +25,7 @@ if [ ! -f "/workspace/notebooks/hallucination_guard.ipynb" ]; then
 fi
 
 echo ""
-echo "Wisent Guard is ready!"
+echo "Wisent is ready!"
 echo ""
 echo "Available notebooks in /workspace/notebooks:"
 ls -1 /workspace/notebooks/*.ipynb 2>/dev/null || echo "  (none found)"

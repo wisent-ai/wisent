@@ -85,7 +85,7 @@ class OptimizationConfig:
     pruner: str = "MedianPruner"
 
     # WandB configuration
-    wandb_project: str = "wisent-guard-optimization"
+    wandb_project: str = "wisent-optimization"
     use_wandb: bool = False  # TODO
 
     batch_size: int = 8

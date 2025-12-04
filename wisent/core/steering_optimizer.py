@@ -1,5 +1,5 @@
 """
-Steering Parameter Optimizer for Wisent-Guard.
+Steering Parameter Optimizer for Wisent.
 
 Optimizes steering-specific parameters including:
 1. Optimal steering layer (may differ from classification layer)

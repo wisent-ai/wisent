@@ -40,7 +40,7 @@ from wisent.core.parser_arguments.optimize_weights_parser import setup_optimize_
 
 def setup_parser() -> argparse.ArgumentParser:
     """Set up the main CLI parser with subcommands."""
-    parser = argparse.ArgumentParser(description="Wisent-Guard: Advanced AI Safety and Alignment Toolkit")
+    parser = argparse.ArgumentParser(description="Wisent: Advanced AI Safety and Alignment Toolkit")
 
     # Global arguments
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")

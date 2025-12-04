@@ -1,5 +1,5 @@
 """
-Timeout management for wisent-guard agent operations.
+Timeout management for wisent agent operations.
 
 This module provides hard timeout enforcement to ensure operations 
 don't exceed their allocated time budgets.

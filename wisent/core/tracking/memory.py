@@ -1,5 +1,5 @@
 """
-Memory usage tracking for wisent-guard operations.
+Memory usage tracking for wisent operations.
 
 This module provides comprehensive memory monitoring capabilities including
 GPU and CPU memory tracking, peak usage detection, and memory profiling.
@@ -52,7 +52,7 @@ class MemoryStats:
 
 class MemoryTracker:
     """
-    Comprehensive memory usage tracker for wisent-guard operations.
+    Comprehensive memory usage tracker for wisent operations.
     
     Tracks both CPU and GPU memory usage with optional continuous monitoring.
     """

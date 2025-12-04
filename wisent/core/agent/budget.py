@@ -1,5 +1,5 @@
 """
-Budget and resource management for wisent-guard agent operations.
+Budget and resource management for wisent agent operations.
 
 This module provides utilities for managing time budgets, resource allocation,
 and optimizing task execution within specified constraints.
@@ -546,7 +546,7 @@ def main():
     import sys
     
     parser = argparse.ArgumentParser(
-        description="wisent-guard budget management and device benchmarking"
+        description="wisent budget management and device benchmarking"
     )
     
     subparsers = parser.add_subparsers(dest='command', help='Available commands')

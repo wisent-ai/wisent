@@ -1,0 +1,2 @@
+[console_scripts]
+wisent = wisent.core.main:main

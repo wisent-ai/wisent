@@ -14,7 +14,7 @@ import time
 import sys
 from pathlib import Path
 
-# Add wisent-guard to Python path
+# Add wisent to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from math500_nosense import Math500NosenseGenerator
@@ -22,7 +22,7 @@ from math500_nosense import Math500NosenseGenerator
 
 def run_wisent_evaluation(data_source, model, limit, is_nonsense=False):
     """
-    Run wisent-guard evaluation on data.
+    Run wisent evaluation on data.
 
     Args:
         data_source: Task name (str) or file path for nonsense data
@@ -36,7 +36,7 @@ def run_wisent_evaluation(data_source, model, limit, is_nonsense=False):
     if is_nonsense:
         # For nonsense data, use file input
         cmd = [
-            "python", "-m", "wisent_guard", "tasks", data_source,
+            "python", "-m", "wisent", "tasks", data_source,
             "--from-json",
             "--model", model,
             "--limit", str(limit),
@@ -46,7 +46,7 @@ def run_wisent_evaluation(data_source, model, limit, is_nonsense=False):
     else:
         # For real data, use task name
         cmd = [
-            "python", "-m", "wisent_guard", "tasks", data_source,
+            "python", "-m", "wisent", "tasks", data_source,
             "--model", model,
             "--limit", str(limit),
             "--layer", "15",
@@ -101,7 +101,7 @@ def run_wisent_evaluation(data_source, model, limit, is_nonsense=False):
 
 
 def extract_accuracy(output: str) -> dict:
-    """Extract training, evaluation, and lm-eval-harness accuracy from wisent-guard output."""
+    """Extract training, evaluation, and lm-eval-harness accuracy from wisent output."""
     lines = output.split('\n')
 
     training_accuracy = None

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Script to build and upload wisent-guard to PyPI
+# Script to build and upload wisent to PyPI
 
 # Ensure the latest build tools are installed
 echo "Installing/upgrading build tools..."
@@ -18,11 +18,11 @@ echo "Files to be uploaded:"
 ls -l dist/
 
 # Check if any of the files already exist on PyPI
-echo "Checking if wisent-guard already exists on PyPI..."
-pip_output=$(pip install wisent-guard 2>&1)
+echo "Checking if wisent already exists on PyPI..."
+pip_output=$(pip install wisent 2>&1)
 if [[ $pip_output != *"No matching distribution found"* ]]; then
-  echo "WARNING: wisent-guard already exists on PyPI. This will update the package."
-  echo "Version in __init__.py: $(grep -o "__version__ = \".*\"" wisent_guard/__init__.py)"
+  echo "WARNING: wisent already exists on PyPI. This will update the package."
+  echo "Version in __init__.py: $(grep -o "__version__ = \".*\"" wisent/__init__.py)"
   echo "Make sure you've updated the version number to avoid conflicts."
   
   echo -n "Continue with upload? (y/n): "

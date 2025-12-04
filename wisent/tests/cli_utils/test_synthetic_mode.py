@@ -10,9 +10,9 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent_guard.cli_utils.cli_prepare_dataset import _synthetic_mode, PrepState
-from wisent_guard.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
-from wisent_guard.core.contrastive_pairs.contrastive_pair import ContrastivePair
+from wisent.cli_utils.cli_prepare_dataset import _synthetic_mode, PrepState
+from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
 
 
 def test_synthetic_mode_disabled():

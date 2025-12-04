@@ -36,9 +36,9 @@ class ModelConfigManager:
             config_dir: Directory to store config files. If None, uses default location.
         """
         if config_dir is None:
-            # Use ~/.wisent-guard/model_configs/ as default
+            # Use ~/.wisent/model_configs/ as default
             home_dir = os.path.expanduser("~")
-            self.config_dir = os.path.join(home_dir, ".wisent-guard", "model_configs")
+            self.config_dir = os.path.join(home_dir, ".wisent", "model_configs")
         else:
             self.config_dir = config_dir
             

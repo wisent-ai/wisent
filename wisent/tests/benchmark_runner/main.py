@@ -14,8 +14,8 @@ import torch
 from tqdm import tqdm
 
 # Import Wisent functions
-from wisent_guard.core.data_loaders.livecodebench_loader import LiveCodeBenchLoader
-from wisent_guard.core.model import Model
+from wisent.core.data_loaders.livecodebench_loader import LiveCodeBenchLoader
+from wisent.core.model import Model
 
 # Check and print datasets version
 import datasets

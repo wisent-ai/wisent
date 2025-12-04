@@ -23,7 +23,7 @@ class UserModelConfig:
     
     def __init__(self):
         # Store config in user's home directory
-        self.config_dir = Path.home() / ".wisent-guard"
+        self.config_dir = Path.home() / ".wisent"
         self.config_file = self.config_dir / "user_model_configs.json"
         self.configs = self._load_configs()
     

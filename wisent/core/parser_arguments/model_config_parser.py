@@ -54,6 +54,6 @@ def setup_model_config_parser(parser):
         "--config-dir",
         type=str,
         default=None,
-        help="Custom directory for configuration files (default: ~/.wisent-guard/model_configs/)",
+        help="Custom directory for configuration files (default: ~/.wisent/model_configs/)",
     )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")

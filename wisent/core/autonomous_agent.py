@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Autonomous Wisent-Guard Agent
+Autonomous Wisent Agent
 
-A model that can autonomously use wisent-guard capabilities on itself:
+A model that can autonomously use wisent capabilities on itself:
 - Generate responses
 - Analyze its own outputs for issues
 - Auto-discover or create classifiers on demand

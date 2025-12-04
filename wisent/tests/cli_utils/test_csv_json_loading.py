@@ -14,12 +14,12 @@ from typing import Any, Dict, List
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent_guard.cli_utils.cli_prepare_dataset import (
-    _load_from_csv_json, 
-    PrepState, 
+from wisent.cli_utils.cli_prepare_dataset import (
+    _load_from_csv_json,
+    PrepState,
     Caps
 )
-from wisent_guard.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
 
 
 def create_test_csv(path: Path, data: List[Dict[str, str]]):

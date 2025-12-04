@@ -1,5 +1,5 @@
 """
-Command-line argument parser for wisent-guard.
+Command-line argument parser for wisent.
 """
 
 import argparse
@@ -8,7 +8,7 @@ from typing import List, Optional
 
 def setup_parser() -> argparse.ArgumentParser:
     """Set up the main CLI parser with subcommands."""
-    parser = argparse.ArgumentParser(description="Wisent-Guard: Advanced AI Safety and Alignment Toolkit")
+    parser = argparse.ArgumentParser(description="Wisent: Advanced AI Safety and Alignment Toolkit")
 
     # Global arguments
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -1385,7 +1385,7 @@ def setup_model_config_parser(parser):
         "--config-dir",
         type=str,
         default=None,
-        help="Custom directory for configuration files (default: ~/.wisent-guard/model_configs/)",
+        help="Custom directory for configuration files (default: ~/.wisent/model_configs/)",
     )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
 

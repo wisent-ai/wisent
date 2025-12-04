@@ -7,10 +7,10 @@ import torch
 from pathlib import Path
 from typing import Dict, Any, List
 
-from wisent_guard.core import Model
-from wisent_guard.core.layer import Layer
-from wisent_guard.core.steering_methods.caa import CAA
-from wisent_guard.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core import Model
+from wisent.core.layer import Layer
+from wisent.core.steering_methods.caa import CAA
+from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
 from json_loader import SeedPairLoader
 
 logger = logging.getLogger(__name__)
@@ -104,7 +104,7 @@ class ControlVectorGenerator:
             "num_pairs": len(pair_set.pairs),
             "metadata": {
                 "task_type": pair_set.task_type,
-                "generated_by": "wisent-guard control vector generator",
+                "generated_by": "wisent control vector generator",
             }
         }
 

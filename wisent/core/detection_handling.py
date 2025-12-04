@@ -1,5 +1,5 @@
 """
-Detection handling module for wisent-guard.
+Detection handling module for wisent.
 
 This module provides different strategies for handling responses that have been
 detected as problematic (hallucinations, harmful content, bias, etc.).
