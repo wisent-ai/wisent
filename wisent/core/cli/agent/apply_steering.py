@@ -152,16 +152,10 @@ def apply_steering_and_evaluate(
     model.apply_steering(plan=steering_plan)
 
     # Generate steered response
-    gen_kwargs = get_generate_kwargs()
-
     messages = [[{"role": "user", "content": prompt}]]
     steered_responses = model.generate(
         inputs=messages,
-        max_new_tokens=512,
-        temperature=gen_kwargs.get("temperature", 0.7),
-        top_p=gen_kwargs.get("top_p", 0.9),
-        top_k=gen_kwargs.get("top_k", 50),
-        do_sample=gen_kwargs.get("do_sample", True),
+        **get_generate_kwargs(),
     )
 
     model.detach()  # Remove steering

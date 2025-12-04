@@ -91,17 +91,17 @@ def execute_generate_responses(args):
                 {"role": "user", "content": pair.prompt}
             ]
 
-            # Get inference config settings
-            gen_kwargs = get_generate_kwargs()
+            # Get inference config settings with CLI overrides
+            gen_kwargs = get_generate_kwargs(max_new_tokens=args.max_new_tokens)
+            if args.temperature is not None:
+                gen_kwargs["temperature"] = args.temperature
+            if args.top_p is not None:
+                gen_kwargs["top_p"] = args.top_p
 
-            # Generate response - use args if provided, otherwise fall back to inference config
+            # Generate response
             responses = model.generate(
                 inputs=[messages],
-                max_new_tokens=args.max_new_tokens,
-                temperature=args.temperature if args.temperature is not None else gen_kwargs.get("temperature", 0.7),
-                top_p=args.top_p if args.top_p is not None else gen_kwargs.get("top_p", 0.9),
-                top_k=gen_kwargs.get("top_k", 50),
-                do_sample=gen_kwargs.get("do_sample", True),
+                **gen_kwargs,
                 use_steering=args.use_steering,
             )
 
