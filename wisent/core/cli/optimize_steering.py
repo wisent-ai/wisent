@@ -1,4 +1,8 @@
-"""Steering optimization command execution logic with full strategy optimization."""
+"""Steering optimization command execution logic with full strategy optimization.
+
+Results are persisted to ~/.wisent/configs/ via WisentConfigManager
+so they can be automatically loaded on subsequent runs.
+"""
 
 import json
 import sys
@@ -8,9 +12,13 @@ import numpy as np
 
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.models.inference_config import get_generate_kwargs
-from wisent.core.models.optimization_cache import (
+from wisent.core.config_manager import (
+    get_config_manager,
+    save_steering_config,
+    get_steering_config,
     get_cached_optimization,
     store_optimization,
+    SteeringConfig,
 )
 
 

@@ -2,10 +2,11 @@
 
 import sys
 import json
-from wisent.core.models.optimization_cache import (
+from wisent.core.config_manager import (
     get_cache,
     get_cached_optimization,
-    OptimizationCache
+    OptimizationCache,
+    OptimizationResult,
 )
 
 
@@ -239,7 +240,7 @@ def execute_export(args, cache: OptimizationCache):
 
 def execute_import(args, cache: OptimizationCache):
     """Import cache from a JSON file."""
-    from wisent.core.models.optimization_cache import OptimizationResult
+    # OptimizationResult already imported at top of file
 
     try:
         with open(args.input, 'r') as f:
