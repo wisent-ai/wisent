@@ -1,10 +1,10 @@
 """
-Test MathEvaluator on competition_math benchmark.
+Test AIMEEvaluator on AIME benchmark.
 
 This script:
-1. Loads qwedsacf/competition_math dataset
+1. Loads AI-MO/aimo-validation-aime dataset
 2. Prompts an LLM to solve problems and put answer in \boxed{}
-3. Uses MathEvaluator to compare model answer with ground truth
+3. Uses AIMEEvaluator to compare model answer with ground truth
 4. Saves results to JSON file
 """
 
@@ -14,23 +14,10 @@ from datasets import load_dataset
 from tqdm import tqdm
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
+from wisent.core.evaluators.benchmark_specific.aime_evaluator import AIMEEvaluator, extract_boxed_answer
 
 
-QUESTION_TYPES = [
-    "Algebra",
-    "Precalculus",
-    "Geometry",
-    "Intermediate Algebra",
-    "Prealgebra",
-    "Counting & Probability",
-    "Number Theory",
-]
-
-LEVELS = ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5"]
-
-
-def main(limit: int | None = None, question_type: str | None = None, level: str | None = None):
+def main(limit: int | None = None):
     # Load model using WisentModel
     print("Loading model...")
     model_name = "Qwen/Qwen2.5-1.5B-Instruct"
@@ -38,28 +25,14 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
 
     # Load dataset
     print("Loading dataset...")
-    ds = load_dataset('qwedsacf/competition_math', split='train')
-
-    # Filter by type if specified
-    if question_type is not None:
-        if question_type not in QUESTION_TYPES:
-            raise ValueError(f"Invalid question_type: {question_type}. Must be one of {QUESTION_TYPES}")
-        ds = ds.filter(lambda x: x['type'] == question_type)
-        print(f"Filtered to type: {question_type} ({len(ds)} examples)")
-
-    # Filter by level if specified
-    if level is not None:
-        if level not in LEVELS:
-            raise ValueError(f"Invalid level: {level}. Must be one of {LEVELS}")
-        ds = ds.filter(lambda x: x['level'] == level)
-        print(f"Filtered to level: {level} ({len(ds)} examples)")
+    ds = load_dataset("gneubig/aime-1983-2024", split='train')
 
     # Apply limit if specified
     if limit is not None:
         ds = ds.select(range(min(limit, len(ds))))
 
     # Initialize evaluator
-    evaluator = MathEvaluator()
+    evaluator = AIMEEvaluator()
 
     correct = 0
     incorrect = 0
@@ -71,11 +44,11 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
     print("=" * 60)
 
     for i, example in enumerate(tqdm(ds, desc="Evaluating")):
-        problem = example.get('problem', '')
-        solution = example.get('solution', '')
+        problem = example.get('Question', '')
+        answer = example.get('Answer', '')  # AIME answers are integers 0-999
 
         # Create prompt and generate response
-        prompt = MathEvaluator.get_prompt(problem)
+        prompt = AIMEEvaluator.get_prompt(problem)
 
         # Generate using WisentModel
         responses = model.generate(
@@ -88,8 +61,8 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
 
         response = responses[0] if responses else ""
 
-        # Evaluate using MathEvaluator
-        eval_result = evaluator.evaluate(response, solution)
+        # Evaluate using AIMEEvaluator
+        eval_result = evaluator.evaluate(response, answer)
 
         if eval_result.ground_truth == "TRUTHFUL":
             correct += 1
@@ -100,6 +73,7 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
 
         results.append({
             'problem': problem,
+            'true_answer': answer,
             'model_output': response,
             'ground_truth': eval_result.ground_truth,
             'confidence': eval_result.confidence,
@@ -125,13 +99,11 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
     # Save results to JSON
     output_dir = Path(__file__).parent / "results_test_evaluator"
     output_dir.mkdir(exist_ok=True)
-    output_file = output_dir / "math_evaluator_results.json"
+    output_file = output_dir / "aime_evaluator_results.json"
 
     output_data = {
         "model_name": model_name,
-        "dataset": "qwedsacf/competition_math",
-        "question_type": question_type,
-        "level": level,
+        "dataset": "gneubig/aime-1983-2024",
         "total_examples": len(ds),
         "correct": correct,
         "incorrect": incorrect,
@@ -147,4 +119,4 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
 
 
 if __name__ == "__main__":
-    main(limit=10, question_type="Precalculus", level="Level 1")
+    main(limit=50)

@@ -40,7 +40,7 @@
   ],
 
   "completed_hf_without_version_on_lm_git": [
-      "hmmt", "hmmt_feb_2025", "penn_treebank", "stsb", "wikitext103"
+      "hmmt", "hmmt_feb_2025", "penn_treebank", "stsb", "wikitext103",  "math", "math500"
   ],
 
   "too complex": ["evalita: many different prompts structure, could mess up our prompt strategies",
@@ -89,8 +89,7 @@
   "llama",
 
 
-  "math",
-  "math500",
+
   "mbpp_plus",
 
 

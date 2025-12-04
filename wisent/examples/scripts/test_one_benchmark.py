@@ -128,11 +128,11 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
             
         result = loader._load_one_task(
             task_name=task_name,
-            split_ratio=0.8,
+            split_ratio=0.5,
             seed=42,
-            limit=4,
-            training_limit=2,
-            testing_limit=2
+            limit=10,
+            training_limit=5,
+            testing_limit=5
         )
 
         test_pairs = result['test_qa_pairs']
@@ -157,7 +157,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         print("  [2/4] Finding evaluator...")
         EvaluatorRotator.discover_evaluators('wisent.core.evaluators.benchmark_specific')
         rotator = EvaluatorRotator(task_name=task_name)
-        evaluator_name = rotator._evaluator.name
+        evaluator_name = rotator._plugin.name
         print(f"    Using evaluator: {evaluator_name}")
 
         # Step 3: Monkey patch evaluator if it's log_likelihoods
@@ -165,7 +165,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         if evaluator_name == "log_likelihoods":
             # Monkey patch the log likelihood computation to return mock values
             # First choice always gets higher log prob (-0.5), rest get lower (-2.0)
-            original_compute = rotator._evaluator._compute_choice_log_likelihood
+            original_compute = rotator._plugin._compute_choice_log_likelihood
             choice_index = [0]  # Track which choice we're on
 
             def mock_compute_log_likelihood(model, question, choice):
@@ -176,7 +176,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                     choice_index[0] = 0
                 return -0.5 if idx == 0 else -2.0
 
-            rotator._evaluator._compute_choice_log_likelihood = mock_compute_log_likelihood
+            rotator._plugin._compute_choice_log_likelihood = mock_compute_log_likelihood
             print(f"    Patched log_likelihoods evaluator with mock")
         elif evaluator_name == "perplexity":
             # Monkey patch perplexity computation
@@ -184,7 +184,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 """Return mock perplexity - lower for shorter text."""
                 return len(text) * 0.1
 
-            rotator._evaluator._compute_perplexity = mock_compute_perplexity
+            rotator._plugin._compute_perplexity = mock_compute_perplexity
             print(f"    Patched perplexity evaluator with mock")
         else:
             print(f"    No patching needed for {evaluator_name}")
@@ -234,7 +234,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
             if entry_point:
                 eval_kwargs["entry_point"] = entry_point
 
-            positive_eval = rotator._evaluator.evaluate(**eval_kwargs)
+            positive_eval = rotator._plugin.evaluate(**eval_kwargs)
 
             positive_correct = positive_eval.ground_truth == "TRUTHFUL"
             pair_results["positive_evaluation"] = {
@@ -261,7 +261,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
             if entry_point:
                 eval_kwargs_neg["entry_point"] = entry_point
 
-            negative_eval = rotator._evaluator.evaluate(**eval_kwargs_neg)
+            negative_eval = rotator._plugin.evaluate(**eval_kwargs_neg)
 
             negative_correct = negative_eval.ground_truth == "UNTRUTHFUL"
             pair_results["negative_evaluation"] = {

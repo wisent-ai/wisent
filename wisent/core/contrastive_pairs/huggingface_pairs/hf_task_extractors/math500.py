@@ -9,27 +9,28 @@ from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBen
 
 from sympy.parsing.latex import parse_latex
 from sympy import latex
-import re
 
-__all__ = ["MATHExtractor"]
+__all__ = ["MATH500Extractor"]
 
 log = logging.getLogger(__name__)
 
-task_names = ("math",)
+task_names = ("math500",)
 
-class MATHExtractor(HuggingFaceBenchmarkExtractor):
+class MATH500Extractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for MATH dataset (competition mathematics problems).
 
-    MATH schema (qwedsacf/competition_math):
+    MATH schema (HuggingFaceH4/MATH-500):
         - problem: str (math problem statement)
-        - level str (level of difficulty of the problem, Level 1 - Level 5)
-        - type str (problem type: Algebra, Geometry, etc.)
         - solution: str (detailed solution with LaTeX)
+        - answer: str (final answer)
+        - subject: str (problem type: Algebra, Geometry, etc.)
+        - level: str (difficulty level 1-5)
+        - unique_id: str (unique identifier)
     """
 
 
-    evaluator_name = "math"
+    evaluator_name = "exact_match"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -51,8 +52,8 @@ class MATHExtractor(HuggingFaceBenchmarkExtractor):
 
         # Load MATH dataset
         docs = self.load_dataset(
-            dataset_name="qwedsacf/competition_math",
-            split="train",
+            dataset_name="HuggingFaceH4/MATH-500",
+            split="test",
             limit=max_items,
         )
 
@@ -80,14 +81,16 @@ class MATHExtractor(HuggingFaceBenchmarkExtractor):
         """
         try:
             problem = doc.get("problem", "").strip()
-            solution = doc.get("solution", "").strip()
+            answer = doc.get("answer", "").strip()
+            level = doc.get("level", "")
+            subject = doc.get("subject", "")
 
-            if not problem or not solution:
-                log.debug("Skipping: missing problem or solution")
+            if not problem or not answer:
+                log.debug("Skipping: missing problem or answer")
                 return None
 
             # Use the provided answer field directly
-            correct_answer = self.extract_boxed_answer(solution)
+            correct_answer = answer
 
             # Create incorrect answer (add 1 or modify)
             incorrect_answer = self._create_incorrect_answer(correct_answer)
@@ -97,6 +100,8 @@ class MATHExtractor(HuggingFaceBenchmarkExtractor):
 
             metadata = {
                 "label": "math",
+                "level": level,
+                "subject": subject,
             }
 
             return self._build_pair(
@@ -119,46 +124,6 @@ class MATHExtractor(HuggingFaceBenchmarkExtractor):
             return incorrect
         except Exception:
             return f"{correct} + 1"
-        
-    def extract_boxed_answer(self, text: str) -> str | None:
-        """Extract the LAST \\boxed{} answer from text (final answer convention).
-
-        Handles nested braces correctly (e.g., \\boxed{\\frac{1}{2}}).
-
-        Args:
-            text: The text containing \\boxed{answer}
-
-        Returns:
-            The extracted answer from the last \\boxed{} or None if not found
-        """
-        # Find all \boxed{ occurrences
-        start_pattern = r'\\boxed\{'
-        matches = list(re.finditer(start_pattern, text))
-
-        if not matches:
-            return None
-
-        # Process the LAST match (final answer convention)
-        last_match = matches[-1]
-
-        # Start after \boxed{
-        start_idx = last_match.end()
-        brace_count = 1
-        idx = start_idx
-
-        # Find the matching closing brace
-        while idx < len(text) and brace_count > 0:
-            if text[idx] == '{':
-                brace_count += 1
-            elif text[idx] == '}':
-                brace_count -= 1
-            idx += 1
-
-        if brace_count == 0:
-            # Extract content between the braces
-            return text[start_idx:idx-1].strip()
-
-        return None
 
     @staticmethod
     def _build_pair(

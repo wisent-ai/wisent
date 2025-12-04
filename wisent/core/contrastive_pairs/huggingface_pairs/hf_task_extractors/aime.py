@@ -17,13 +17,13 @@ class AIMEExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for AIME dataset (American Invitational Mathematics Examination).
 
-    AIME schema (MathArena/aime_2025):
-        - problem: str (math problem statement)
-        - answer: str or int (final answer, typically an integer 0-999)
+    AIME schema:
+        - Question: str (math problem statement)
+        - Answer: int 0-999
     """
 
 
-    evaluator_name = "exact_match"
+    evaluator_name = "aime"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -45,7 +45,7 @@ class AIMEExtractor(HuggingFaceBenchmarkExtractor):
 
         # Load AIME dataset
         docs = self.load_dataset(
-            dataset_name="MathArena/aime_2025",
+            dataset_name="gneubig/aime-1983-2024",
             split="train",
             limit=max_items,
         )
@@ -73,56 +73,31 @@ class AIMEExtractor(HuggingFaceBenchmarkExtractor):
         Returns None when required fields are missing or malformed.
         """
         try:
-            problem = doc.get("problem", "").strip()
-            answer = doc.get("answer", "")
+            question = doc.get("Question", "").strip()
+            correct = doc.get("Answer", "").strip()
 
-            if not problem or not answer:
+            if not question or not correct:
                 log.debug("Skipping: missing problem or answer")
                 return None
+            
+            incorrect = str(int(correct) + 1)
 
-            # Convert answer to string
-            correct_answer = str(answer).strip()
-
-            # Create incorrect answer (add 1 or modify)
-            incorrect_answer = self._create_incorrect_answer(correct_answer)
-
-            # Format the question
-            question = f"Question: {problem}\n\nWhat is the answer?"
+            question = f"Question: {question}\n\nWhat is the answer?"
 
             metadata = {
                 "label": "aime",
-                "source": "MathArena/aime_2025",
             }
 
             return self._build_pair(
                 question=question,
-                correct=correct_answer,
-                incorrect=incorrect_answer,
+                correct=correct,
+                incorrect=incorrect,
                 metadata=metadata,
             )
 
         except Exception as exc:
             log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
-
-    def _create_incorrect_answer(self, correct: str) -> str:
-        """Create an incorrect answer by modifying the correct one."""
-        # Try to parse as number and add 1
-        try:
-            # Remove common formatting
-            clean = correct.replace('$', '').replace(',', '').strip()
-
-            # Try integer
-            num = int(clean)
-            return str(num + 1)
-        except ValueError:
-            try:
-                # Try float
-                num = float(clean)
-                return str(num + 1)
-            except ValueError:
-                # Can't parse as number, just append " (incorrect)"
-                return f"{correct} + 1"
 
     @staticmethod
     def _build_pair(
