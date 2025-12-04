@@ -18,6 +18,7 @@ from wisent.core.activations.core import ActivationAggregationStrategy
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
 from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.models.inference_config import get_generate_kwargs
 from wisent.core.optuna.classifier import (
     CacheConfig,
     ClassifierCache,
@@ -257,11 +258,10 @@ class DACTrainer(SteeringMethodTrainer):
                 ).to(device)
 
                 with torch.no_grad():
+                    gen_kwargs = get_generate_kwargs(max_new_tokens=max_new_tokens)
                     outputs = model.generate(
                         **inputs,
-                        max_new_tokens=max_new_tokens,
-                        do_sample=True,
-                        temperature=0.7,
+                        **gen_kwargs,
                         pad_token_id=tokenizer.eos_token_id,
                         use_cache=False,  # Disable cache to avoid cache_position errors
                     )
@@ -681,11 +681,10 @@ class SteeringOptimizer:
             ).to(device)
 
             with torch.no_grad():
+                gen_kwargs = get_generate_kwargs(max_new_tokens=max_new_tokens)
                 outputs = model.generate(
                     **inputs,
-                    max_new_tokens=max_new_tokens,
-                    do_sample=True,
-                    temperature=0.7,
+                    **gen_kwargs,
                     pad_token_id=tokenizer.eos_token_id,
                     use_cache=False,  # Disable cache to avoid cache_position errors
                 )

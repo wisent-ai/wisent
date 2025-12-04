@@ -17,6 +17,78 @@ if TYPE_CHECKING:
 __all__ = ["evaluate_quality"]
 
 
+def _is_gibberish(text: str) -> bool:
+    """
+    Detect if text is gibberish/nonsensical.
+
+    Checks for:
+    - Insufficient spacing (words concatenated together)
+    - Too many long tokens (concatenated words)
+    - CamelCase patterns indicating concatenated words
+    - Repeated word fragments within tokens
+    - Too few valid English words
+    """
+    if not text or len(text.strip()) < 10:
+        return False  # Too short to evaluate, let other checks handle
+
+    # Check 1: Spacing ratio - normal English has ~15-20% spaces
+    space_ratio = text.count(' ') / len(text)
+    if len(text) > 50 and space_ratio < 0.08:
+        return True
+
+    tokens = text.split()
+    if not tokens:
+        return False
+
+    # Check 2: Long tokens (concatenated words)
+    long_tokens = sum(1 for t in tokens if len(t) > 25)
+    if long_tokens / len(tokens) > 0.1:
+        return True
+
+    # Check 3: CamelCase patterns (e.g., "hisHandsThatDelight", "HewalksAway")
+    # This catches concatenated words even if spacing ratio is ok
+    camel_pattern = re.compile(r'[a-z]{2,}[A-Z][a-z]{2,}')
+    camel_count = sum(1 for t in tokens if camel_pattern.search(t))
+    if camel_count >= 2:  # Multiple camelCase tokens is suspicious
+        return True
+
+    # Check 4: Repeated fragments within tokens (e.g., "thethethe", "forforfor")
+    if re.search(r'(\w{2,6})\1{2,}', text.lower()):
+        return True
+
+    # Check 5: Word validity - check if tokens look like real words
+    # Common English words for quick validation
+    common_words = {
+        "the", "be", "to", "of", "and", "a", "in", "that", "have", "i",
+        "it", "for", "not", "on", "with", "he", "as", "you", "do", "at",
+        "this", "but", "his", "by", "from", "they", "we", "say", "her", "she",
+        "or", "an", "will", "my", "one", "all", "would", "there", "their", "what",
+        "so", "up", "out", "if", "about", "who", "get", "which", "go", "me",
+        "when", "make", "can", "like", "time", "no", "just", "him", "know", "take",
+        "is", "are", "was", "were", "been", "has", "had", "does", "did", "here",
+        "where", "why", "how", "very", "more", "some", "any", "also", "than", "then",
+    }
+
+    if len(tokens) >= 5:
+        # Check what fraction of tokens are recognizable
+        valid_count = 0
+        for token in tokens:
+            clean_token = re.sub(r'[^a-zA-Z]', '', token.lower())
+            if not clean_token:
+                continue
+            # Token is valid if it's a common word OR has vowels and reasonable length
+            if clean_token in common_words:
+                valid_count += 1
+            elif len(clean_token) <= 15 and re.search(r'[aeiou]', clean_token):
+                valid_count += 1
+
+        validity_ratio = valid_count / len(tokens)
+        if validity_ratio < 0.3:
+            return True
+
+    return False
+
+
 def evaluate_quality(
     response: str,
     model: PreTrainedModel,
@@ -27,6 +99,7 @@ def evaluate_quality(
     Evaluate response quality using heuristic checks on a scale of 1-100.
 
     Checks for common quality issues:
+    - Gibberish/nonsensical text (immediate zero)
     - Empty or too short responses
     - Repetitive tokens (single token appearing too frequently)
     - Repeated phrases (same bigram appearing multiple times)
@@ -43,7 +116,12 @@ def evaluate_quality(
         Quality score between 1 and 100
         - 100 = Perfect quality (no issues detected)
         - 1 = Very poor quality (multiple severe issues)
+        - 0 = Gibberish detected
     """
+    # Check for gibberish first - immediate zero if detected
+    if _is_gibberish(response):
+        return 0.0
+
     score = 1.0  # Start with perfect score (0-1 scale)
 
     # Check 1: Empty or too short
