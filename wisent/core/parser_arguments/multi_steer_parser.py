@@ -24,7 +24,7 @@ def setup_multi_steer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=["CAA", "DAC"],
+        choices=["CAA"],
         help="Steering method to use for combination (default: CAA)",
     )
 

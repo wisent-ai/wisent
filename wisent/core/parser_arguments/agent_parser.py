@@ -90,7 +90,7 @@ def setup_agent_parser(parser):
         "--steering-method",
         type=str,
         default="CAA",
-        choices=["CAA", "HPR", "DAC", "BiPO", "KSteering"],
+        choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
     parser.add_argument(

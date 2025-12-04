@@ -87,7 +87,7 @@ def get_default_steering_application_configs() -> List[SteeringApplicationConfig
 def get_default_steering_configs() -> List['SteeringMethodConfig']:
     """Get default steering method configurations with parameter variations."""
     return [
-        # CAA variations
+        # CAA variations (only implemented steering method)
         SteeringMethodConfig(
             name="CAA",
             method=SteeringMethod.CAA,
@@ -98,70 +98,12 @@ def get_default_steering_configs() -> List['SteeringMethodConfig']:
             method=SteeringMethod.CAA,
             params={"normalization_method": "l2_unit"}
         ),
-        
-        # HPR variations
-        SteeringMethodConfig(
-            name="HPR",
-            method=SteeringMethod.HPR,
-            params={"hpr_beta": 1.0}
-        ),
-        SteeringMethodConfig(
-            name="HPR_Beta0.5",
-            method=SteeringMethod.HPR,
-            params={"hpr_beta": 0.5}
-        ),
-        
-        # BiPO variations
-        SteeringMethodConfig(
-            name="BiPO",
-            method=SteeringMethod.BIPO,
-            params={"bipo_beta": 0.1, "bipo_epochs": 50}
-        ),
-        SteeringMethodConfig(
-            name="BiPO_Beta0.05",
-            method=SteeringMethod.BIPO,
-            params={"bipo_beta": 0.05, "bipo_epochs": 50}
-        ),
-        
-        # KSteering variations
-        SteeringMethodConfig(
-            name="KSteering",
-            method=SteeringMethod.KSTEERING,
-            params={
-                "ksteering_alpha": 5.0,
-                "ksteering_target_labels": "0",
-                "ksteering_avoid_labels": ""
-            }
-        ),
-        SteeringMethodConfig(
-            name="KSteering_Alpha3",
-            method=SteeringMethod.KSTEERING,
-            params={
-                "ksteering_alpha": 3.0,
-                "ksteering_target_labels": "0",
-                "ksteering_avoid_labels": ""
-            }
-        ),
-        
-        # DAC variations
-        SteeringMethodConfig(
-            name="DAC",
-            method=SteeringMethod.DAC,
-            params={
-                "dac_dynamic_control": True,
-                "dac_entropy_threshold": 1.0
-            }
-        ),
     ]
 
 
 class SteeringMethod(Enum):
     """Available steering methods for optimization."""
     CAA = "CAA"
-    HPR = "HPR" 
-    DAC = "DAC"
-    BIPO = "BiPO"
-    KSTEERING = "KSteering"
 
 
 @dataclass
@@ -1489,25 +1431,11 @@ def run_auto_steering_optimization(
         method_configs = []
         for method in methods_to_test:
             if method == "CAA":
-                # Add both CAA variations
+                # Add both CAA variations (only implemented steering method)
                 method_configs.append(SteeringMethodConfig("CAA", SteeringMethod.CAA, {}))
                 method_configs.append(SteeringMethodConfig("CAA_L2", SteeringMethod.CAA, {"normalization_method": "l2_unit"}))
-            elif method == "HPR":
-                # Add both HPR variations
-                method_configs.append(SteeringMethodConfig("HPR", SteeringMethod.HPR, {"hpr_beta": 1.0}))
-                method_configs.append(SteeringMethodConfig("HPR_Beta0.5", SteeringMethod.HPR, {"hpr_beta": 0.5}))
-            elif method == "DAC":
-                method_configs.append(SteeringMethodConfig("DAC", SteeringMethod.DAC, {"dac_dynamic_control": True, "dac_entropy_threshold": 1.0}))
-            elif method == "BiPO":
-                # Add both BiPO variations
-                method_configs.append(SteeringMethodConfig("BiPO", SteeringMethod.BIPO, {"bipo_beta": 0.1, "bipo_epochs": 50}))
-                method_configs.append(SteeringMethodConfig("BiPO_Beta0.05", SteeringMethod.BIPO, {"bipo_beta": 0.05, "bipo_epochs": 50}))
-            elif method == "KSteering":
-                # Add both KSteering variations
-                method_configs.append(SteeringMethodConfig("KSteering", SteeringMethod.KSTEERING, {"ksteering_alpha": 5.0, "ksteering_target_labels": "0", "ksteering_avoid_labels": ""}))
-                method_configs.append(SteeringMethodConfig("KSteering_Alpha3", SteeringMethod.KSTEERING, {"ksteering_alpha": 3.0, "ksteering_target_labels": "0", "ksteering_avoid_labels": ""}))
             else:
-                logger.warning(f"Unknown steering method: {method}")
+                logger.warning(f"Unknown or unimplemented steering method: {method}")
     
     if strength_range is None:
         strength_range = [0.5, 1.0, 1.5, 2.0]

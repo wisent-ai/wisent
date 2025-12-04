@@ -671,7 +671,7 @@ class AutonomousAgent:
             print(f"   📋 Using defaults: method={method}, initial={initial}, increment={increment}, max={maximum}")
 
         # Validate ranges and values
-        if method not in ["CAA", "HPR", "DAC", "BiPO", "KSteering"]:
+        if method not in ["CAA"]:
             method = "CAA"
         initial = max(0.1, min(2.0, initial))
         increment = max(0.1, min(0.5, increment))
