@@ -237,6 +237,11 @@ EXTRACTORS: dict[str, str] = {
     "aider-polyglot": f"{base_import}aider_polyglot:AiderPolyglotExtractor",
     "polyglot": f"{base_import}aider_polyglot:AiderPolyglotExtractor",
     "code_exercises": f"{base_import}aider_polyglot:AiderPolyglotExtractor",
+
+    # Agent safety benchmarks (NOT lm-eval)
+    "agentharm": f"{base_import}agentharm:AgentHarmExtractor",
+    "agent_harm": f"{base_import}agentharm:AgentHarmExtractor",
+    "agent-harm": f"{base_import}agentharm:AgentHarmExtractor",
 }
 
 # Alias for backwards compatibility
