@@ -132,16 +132,12 @@ class FRAMESExtractor(HuggingFaceBenchmarkExtractor):
 
         # For temporal reasoning, create a temporally incorrect answer
         if "Temporal" in reasoning_types:
-            return f"Based on the timeline, the answer would be different: {correct[:50]}... [temporally incorrect]"
+            return f"Based on the timeline, the answer would be different: {correct}... [temporally incorrect]"
 
         # For tabular reasoning
         if "Tabular" in reasoning_types:
             return f"According to the data, the result is not {correct} but rather a different value."
 
         # Default: Create a hedging/uncertain response
-        if len(correct) < 100:
-            return f"I believe the answer might be related to {correct}, but I'm not entirely certain."
-        else:
-            # For longer answers, truncate and add uncertainty
-            return f"{correct[:len(correct)//2]}... [incomplete/uncertain reasoning]"
+        return f"I believe the answer might be related to {correct}, but I'm not entirely certain."
 

@@ -147,15 +147,7 @@ class SWEBenchVerifiedExtractor(HuggingFaceBenchmarkExtractor):
 
     def _create_incorrect_patch(self, correct_patch: str, problem_statement: str) -> str:
         """Create an incorrect patch that doesn't solve the issue."""
-        # Strategy 1: Empty or minimal patch
-        if len(correct_patch) > 100:
-            # Return a truncated/incomplete patch
-            lines = correct_patch.split("\n")
-            if len(lines) > 5:
-                # Keep header but truncate the actual changes
-                return "\n".join(lines[:3]) + "\n# TODO: implement fix\n"
-
-        # Strategy 2: Add a comment instead of fixing
+        # Strategy 1: Empty or minimal patch - return incomplete placeholder
         return """--- a/placeholder.py
 +++ b/placeholder.py
 @@ -1,3 +1,4 @@

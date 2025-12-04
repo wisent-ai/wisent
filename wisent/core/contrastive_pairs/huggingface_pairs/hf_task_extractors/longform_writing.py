@@ -270,19 +270,12 @@ Please provide a detailed, well-structured response. Your writing should be:
 
     def _create_high_quality_response(self, output: str) -> str:
         """Create a high-quality writing response."""
-        # Truncate if very long
-        if len(output) > 4000:
-            output = output[:4000] + "..."
-
         return output
 
     def _create_low_quality_response(self, prompt: str) -> str:
         """Create a low-quality writing response."""
-        # Extract key topic from prompt
-        topic_preview = prompt[:100] if len(prompt) > 100 else prompt
-
         return (
-            f"Here is my response about {topic_preview}...\n\n"
+            f"Here is my response about {prompt}...\n\n"
             "This is a topic that many people talk about. There are many things "
             "to say about it. Some people think one thing, other people think "
             "another thing. It's complicated.\n\n"

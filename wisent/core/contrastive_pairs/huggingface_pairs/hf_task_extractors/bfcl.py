@@ -250,7 +250,7 @@ Please call the appropriate function with the correct parameters."""
 
         # Build example arguments
         args = {}
-        for param_name in required[:3]:  # Limit to first 3 required params
+        for param_name in required:
             param_info = props.get(param_name, {})
             param_type = param_info.get("type", "string")
             if param_type == "number" or param_type == "integer":

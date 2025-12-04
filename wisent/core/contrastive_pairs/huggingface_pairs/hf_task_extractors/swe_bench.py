@@ -189,22 +189,16 @@ class SWEBenchVerifiedExtractor(HuggingFaceBenchmarkExtractor):
         fail_to_pass: str,
     ) -> str:
         """Build the software engineering task prompt."""
-        # Truncate problem statement if too long
-        if len(problem_statement) > 3000:
-            problem_statement = problem_statement[:3000] + "..."
-
         parts = [
             f"Repository: {repo}",
             f"\n## Issue Description\n{problem_statement}",
         ]
 
-        if hints_text and len(hints_text) < 1000:
+        if hints_text:
             parts.append(f"\n## Hints\n{hints_text}")
 
         if fail_to_pass:
-            # Parse test names if possible
-            test_preview = fail_to_pass[:500] if len(fail_to_pass) > 500 else fail_to_pass
-            parts.append(f"\n## Tests to Pass\n{test_preview}")
+            parts.append(f"\n## Tests to Pass\n{fail_to_pass}")
 
         parts.append(
             "\n## Task\nProvide a patch that resolves the issue described above. "
@@ -215,15 +209,9 @@ class SWEBenchVerifiedExtractor(HuggingFaceBenchmarkExtractor):
 
     def _create_correct_response(self, patch: str, fail_to_pass: str) -> str:
         """Create a response with the correct patch."""
-        # Truncate patch if too long
-        if len(patch) > 2000:
-            patch_preview = patch[:2000] + "\n... [patch truncated]"
-        else:
-            patch_preview = patch
-
         return (
             f"Here is the patch to resolve this issue:\n\n"
-            f"```diff\n{patch_preview}\n```\n\n"
+            f"```diff\n{patch}\n```\n\n"
             "This patch addresses the root cause of the issue and ensures that "
             "all specified tests pass while maintaining backward compatibility."
         )
@@ -402,10 +390,6 @@ class MultiSWEBenchExtractor(HuggingFaceBenchmarkExtractor):
         number: int,
     ) -> str:
         """Build the software engineering task prompt."""
-        # Truncate body if too long
-        if len(body) > 3000:
-            body = body[:3000] + "..."
-
         parts = [
             f"Repository: {org}/{repo}",
             f"PR #{number}: {title}",
@@ -423,15 +407,9 @@ class MultiSWEBenchExtractor(HuggingFaceBenchmarkExtractor):
 
     def _create_correct_response(self, patch: str) -> str:
         """Create a response with the correct patch."""
-        # Truncate patch if too long
-        if len(patch) > 2000:
-            patch_preview = patch[:2000] + "\n... [patch truncated]"
-        else:
-            patch_preview = patch
-
         return (
             f"Here is the patch to address this PR:\n\n"
-            f"```diff\n{patch_preview}\n```\n\n"
+            f"```diff\n{patch}\n```\n\n"
             "This patch implements the required changes while maintaining "
             "code quality and test coverage."
         )
