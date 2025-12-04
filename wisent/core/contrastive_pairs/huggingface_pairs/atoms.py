@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
-from typing import Any
+from typing import Any, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
+if TYPE_CHECKING:
+    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 
 __all__ = [
     "UnsupportedHuggingFaceBenchmarkError",
@@ -164,3 +166,38 @@ class HuggingFaceBenchmarkExtractor(ABC):
                         f"{type(item).__name__} with value {item!r}"
                     ) from exc
         return out
+
+    @staticmethod
+    def _build_pair(
+        question: str,
+        correct: str,
+        incorrect: str,
+        metadata: dict[str, Any] | None = None,
+    ) -> "ContrastivePair":
+        """
+        Build a ContrastivePair from question and responses.
+
+        This is a shared utility method used by most extractors to construct
+        ContrastivePair objects with consistent structure.
+
+        Arguments:
+            question: The prompt/question text.
+            correct: The correct/positive response.
+            incorrect: The incorrect/negative response.
+            metadata: Optional metadata dict (should contain 'label' key).
+
+        Returns:
+            A ContrastivePair with positive and negative responses.
+        """
+        from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+        from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
+
+        positive_response = PositiveResponse(model_response=correct)
+        negative_response = NegativeResponse(model_response=incorrect)
+        return ContrastivePair(
+            prompt=question,
+            positive_response=positive_response,
+            negative_response=negative_response,
+            label=metadata.get("label") if metadata else None,
+            metadata=metadata,
+        )

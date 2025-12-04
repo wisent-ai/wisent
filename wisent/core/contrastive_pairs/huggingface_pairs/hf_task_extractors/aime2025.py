@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 from typing import Any
-import logging
+from wisent.core.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["AIME2025Extractor"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 task_names = ("aime2025",)
 
@@ -72,13 +71,3 @@ class AIME2025Extractor(HuggingFaceBenchmarkExtractor):
             log.error(f"Error extracting pair from doc: {exc}")
             return None
 
-    @staticmethod
-    def _build_pair(
-        question: str,
-        correct: str,
-        incorrect: str,
-        metadata: dict[str, Any] | None = None,
-    ) -> ContrastivePair:
-        positive_response = PositiveResponse(model_response=correct)
-        negative_response = NegativeResponse(model_response=incorrect)
-        return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))

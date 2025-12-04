@@ -1,16 +1,15 @@
 from __future__ import annotations
 
 from typing import Any
-import logging
+from wisent.core.cli_logger import setup_logger
 import random
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["MMLUReduxExtractor"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 # All MMLU-Redux subject configs
 MMLU_REDUX_SUBJECTS = [
@@ -193,20 +192,3 @@ class MMLUReduxExtractor(HuggingFaceBenchmarkExtractor):
             log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
 
-    @staticmethod
-    def _build_pair(
-        question: str,
-        correct: str,
-        incorrect: str,
-        metadata: dict[str, Any] | None = None,
-    ) -> ContrastivePair:
-        """Build a ContrastivePair from question and responses."""
-        positive_response = PositiveResponse(model_response=correct)
-        negative_response = NegativeResponse(model_response=incorrect)
-        return ContrastivePair(
-            prompt=question,
-            positive_response=positive_response,
-            negative_response=negative_response,
-            label=metadata.get("label") if metadata else None,
-            metadata=metadata,
-        )

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
-import logging
+from wisent.core.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
@@ -12,7 +12,7 @@ from sympy import latex
 
 __all__ = ["PolyMathExtractor"]
 
-log = logging.getLogger(__name__)
+log = setup_logger(__name__)
 
 task_names = (
     "polymath_ar_top", "polymath_ar_high", "polymath_ar_medium", "polymath_ar_low",

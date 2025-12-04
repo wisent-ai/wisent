@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
@@ -98,13 +97,3 @@ class SuperGlueLmEvalV1Extractor(HuggingFaceBenchmarkExtractor):
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
 
-    @staticmethod
-    def _build_pair(
-        question: str,
-        correct: str,
-        incorrect: str,
-        metadata: dict[str, Any] | None = None,
-    ) -> ContrastivePair:
-        positive_response = PositiveResponse(model_response=correct)
-        negative_response = NegativeResponse(model_response=incorrect)
-        return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))
