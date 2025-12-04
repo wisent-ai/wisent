@@ -10,7 +10,7 @@ from pathlib import Path
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent_guard.cli_utils.cli_prepare_dataset import _is_group_task, SLOW_GROUP_TASKS
+from wisent.cli_utils.cli_prepare_dataset import _is_group_task, SLOW_GROUP_TASKS
 
 
 def test_is_group_task_slow_tasks():

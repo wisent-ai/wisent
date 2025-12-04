@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Script to process ALL core benchmarks from lm-eval-harness v1.0 list.
-Tests each benchmark with wisent guard CLI using --limit 5.
+Tests each benchmark with wisent CLI using --limit 5.
 FAILS HARD on first benchmark failure - exits with code 1 immediately.
 
 Covers 70+ comprehensive benchmarks across all major categories:
@@ -1126,7 +1126,7 @@ CORE_BENCHMARKS = {
 
 def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) -> bool:
     """
-    Test a single benchmark directly using wisent guard CLI.
+    Test a single benchmark directly using wisent CLI.
     
     Args:
         benchmark_name: Display name of the benchmark
@@ -1159,7 +1159,7 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
         output_dir = f"test_results/{benchmark_name}"
         os.makedirs(output_dir, exist_ok=True)
         
-        # Run wisent guard CLI with tasks command
+        # Run wisent CLI with tasks command
         cmd = [
             "python", "-m", "wisent.cli",
             "tasks", task_name,
@@ -2435,7 +2435,7 @@ def main():
     
     # Success message (only reached if all benchmarks pass)
     print(f"\n🎉 SUCCESS! All {len(updated_benchmarks)} benchmarks passed!")
-    print("✅ No failures detected - all benchmarks working with wisent guard CLI")
+    print("✅ No failures detected - all benchmarks working with wisent CLI")
     print("🚀 Ready for production use!")
 
 if __name__ == "__main__":

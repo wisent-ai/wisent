@@ -1,5 +1,5 @@
 """
-Performance tracking module for wisent-guard.
+Performance tracking module for wisent.
 
 This module provides comprehensive monitoring capabilities including:
 - Memory usage tracking (CPU and GPU)

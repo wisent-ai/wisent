@@ -14,7 +14,7 @@ from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, exe
 
 def _should_show_banner() -> bool:
     """Check if this is the first use and banner should be shown."""
-    wisent_dir = Path.home() / ".wisent-guard"
+    wisent_dir = Path.home() / ".wisent"
     banner_flag = wisent_dir / ".banner_shown"
 
     if banner_flag.exists():

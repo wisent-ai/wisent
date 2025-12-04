@@ -7,10 +7,10 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List
 
-# Add wisent-guard to Python path
+# Add wisent to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent_guard.core.tasks.math500_task import Math500Task
+from wisent.core.tasks.math500_task import Math500Task
 from base_nosense import BaseNosenseGenerator
 
 
@@ -23,7 +23,7 @@ class Math500NosenseGenerator(BaseNosenseGenerator):
         super().__init__(original_task)
 
     def make_nonsense(self, data: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Convert Math500 data to nonsense with wisent-guard JSON format."""
+        """Convert Math500 data to nonsense with wisent JSON format."""
         nonsense_data = []
 
         for item in data:
@@ -31,7 +31,7 @@ class Math500NosenseGenerator(BaseNosenseGenerator):
             correct_answer = random.randint(1, 1000)
             incorrect_answer = correct_answer + 1
 
-            # Create nonsense item in wisent-guard JSON format
+            # Create nonsense item in wisent JSON format
             nonsense_item = {
                 "question": self.generate_random_words(item.get('problem', 'random question')),
                 "correct_answer": str(correct_answer),

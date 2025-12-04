@@ -77,7 +77,7 @@ Thumbs.db
 !/comprehensive_evaluation/
 !/classifier_evaluation/
 !/dist/
-!/wisent_guard.egg-info/
+!/wisent.egg-info/
 !/scripts/
 !/tests/
 !/huggingface_qwen25-7b-coder-caa
@@ -101,16 +101,16 @@ Thumbs.db
 tokenizer.json
 model.safetensors.index.json
 
-# Wisent-guard generated files and directories
+# Wisent generated files and directories
 # Trained classifiers and steering vectors (can be large)
 models/*.pkl
 models/*.joblib
 models/*_classifier*
 models/*_vector*
 
-# Generated classifiers in wisent_guard/core/classifiers/
+# Generated classifiers in wisent/core/classifiers/
 # Note: Trained classifiers are now tracked in git (small files ~2-3MB total)
-# wisent_guard/core/classifiers/meta_*
+# wisent/core/classifiers/meta_*
 
 # Full benchmark downloads (complete datasets - very large)
 full_benchmarks/
@@ -128,7 +128,7 @@ wandb/
 */wandb/
 
 # Cache directories for our tools
-wisent_guard/benchmark_cache/
+wisent/benchmark_cache/
 comprehensive_evaluation/cache
 examples/**/cache
 
@@ -136,14 +136,14 @@ examples/**/cache
 keys/
 
 # Experiment results
-wisent_guard/experiments/steering/steering_comparison_results/
-wisent_guard/experiments/steering/optimization_results/
+wisent/experiments/steering/steering_comparison_results/
+wisent/experiments/steering/optimization_results/
 
 # Device-specific benchmark files (contain hardware-specific timing data)
 device_benchmarks.json
 
 # User-defined model configurations (local to each user)
-.wisent-guard/
+.wisent/
 user_model_configs.json
 
 bigcode-evaluation-harness/*.log

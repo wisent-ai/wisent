@@ -11,7 +11,7 @@ from dataclasses import dataclass
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent_guard.cli_utils.cli_prepare_dataset import _split_and_cap
+from wisent.cli_utils.cli_prepare_dataset import _split_and_cap
 
 # Import Caps dataclass
 @dataclass

@@ -1,5 +1,5 @@
 """
-Task management system for wisent-guard.
+Task management system for wisent.
 
 This module provides comprehensive task discovery, validation, and loading
 functionality for lm-evaluation-harness tasks.

@@ -6,9 +6,9 @@ import logging
 from pathlib import Path
 from typing import List, Dict, Any
 
-from wisent_guard.core.contrastive_pairs.contrastive_pair import ContrastivePair
-from wisent_guard.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
-from wisent_guard.core.response import PositiveResponse, NegativeResponse
+from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
+from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.response import PositiveResponse, NegativeResponse
 
 logger = logging.getLogger(__name__)
 

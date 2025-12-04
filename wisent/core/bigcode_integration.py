@@ -1,5 +1,5 @@
 """
-BigCode Evaluation Harness integration for Wisent Guard.
+BigCode Evaluation Harness integration for Wisent.
 
 This module provides integration with bigcode-evaluation-harness for code generation benchmarks.
 """
