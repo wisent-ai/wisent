@@ -130,9 +130,9 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
             task_name=task_name,
             split_ratio=0.5,
             seed=42,
-            limit=10,
-            training_limit=5,
-            testing_limit=5
+            limit=300,
+            training_limit=15,
+            testing_limit=15
         )
 
         test_pairs = result['test_qa_pairs']
