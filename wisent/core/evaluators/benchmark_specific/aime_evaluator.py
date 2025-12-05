@@ -2,62 +2,15 @@
 
 This evaluator handles answer comparison for AIME (American Invitational Mathematics Examination)
 benchmarks where answers are integers from 0-999 and may be in \\boxed{} format.
-
-Uses the is_equiv function from math_equivalence package for robust comparison.
 """
 
-import re
 import logging
 from typing import Any
 
-from math_equivalence import is_equiv
-
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.evaluators.benchmark_specific.utils import extract_boxed_answer
 
 logger = logging.getLogger(__name__)
-
-
-def extract_boxed_answer(text: str) -> str | None:
-    """Extract the LAST \\boxed{} answer from text (final answer convention).
-
-    Handles nested braces correctly (e.g., \\boxed{\\frac{1}{2}}).
-
-    Args:
-        text: The text containing \\boxed{answer}
-
-    Returns:
-        The extracted answer from the last \\boxed{} or None if not found
-    """
-    # Find all \boxed{ occurrences
-    start_pattern = r'\\boxed\{'
-    matches = list(re.finditer(start_pattern, text))
-
-    if not matches:
-        return None
-
-    # Process the LAST match (final answer convention)
-    last_match = matches[-1]
-
-    # Start after \boxed{
-    start_idx = last_match.end()
-    brace_count = 1
-    idx = start_idx
-
-    # Find the matching closing brace
-    while idx < len(text) and brace_count > 0:
-        if text[idx] == '{':
-            brace_count += 1
-        elif text[idx] == '}':
-            brace_count -= 1
-        idx += 1
-
-    if brace_count == 0:
-        # Extract content between the braces
-        return text[start_idx:idx-1].strip()
-    
-    #Add fallback if there is no \boxed in model's answer
-
-    return None
 
 
 class AIMEEvaluator(BaseEvaluator):
@@ -115,8 +68,14 @@ Solution:"""
                 }
             )
 
-        # Aime answers are 0-999 int, so we can direclty compare them, if model_answer is not int then it is incorrect
-        is_correct = expected == model_answer
+        # AIME answers are integers 0-999, convert both to int for comparison
+        try:
+            model_int = int(model_answer)
+            expected_int = int(expected)
+            is_correct = model_int == expected_int
+        except (ValueError, TypeError):
+            # model_answer is not a valid integer
+            is_correct = False
 
         return EvalResult(
             ground_truth="TRUTHFUL" if is_correct else "UNTRUTHFUL",

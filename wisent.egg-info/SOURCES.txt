@@ -766,6 +766,7 @@ wisent/core/evaluators/benchmark_specific/log_likelihoods_evaluator.py
 wisent/core/evaluators/benchmark_specific/math_evaluator.py
 wisent/core/evaluators/benchmark_specific/perplexity_evaluator.py
 wisent/core/evaluators/benchmark_specific/polymath_evaluator.py
+wisent/core/evaluators/benchmark_specific/utils.py
 wisent/core/evaluators/benchmark_specific/coding/__init__.py
 wisent/core/evaluators/benchmark_specific/coding/solution_generator.py
 wisent/core/evaluators/benchmark_specific/coding/metrics/__init__.py
@@ -921,8 +922,8 @@ wisent/core/utils/base_rotator.py
 wisent/core/utils/dataset_splits.py
 wisent/core/utils/device.py
 wisent/core/weight_modification/__init__.py
-wisent/core/weight_modification/abliteration.py
 wisent/core/weight_modification/additive.py
+wisent/core/weight_modification/directional.py
 wisent/core/weight_modification/export.py
 wisent/core/weight_modification/utils.py
 wisent/tests/__init__.py
