@@ -525,46 +525,81 @@ def _create_refusal_evaluator(args, model_name: str, eval_type: str) -> Callable
 
 
 def _create_task_evaluator(args) -> Callable:
-    """Create task-based evaluator."""
+    """Create task-based evaluator.
+
+    This evaluator generates actual responses from the model and evaluates them
+    against the expected answers using the appropriate task-specific evaluator.
+
+    For coding tasks (like livecodebench), it passes the test_code from pair metadata
+    to enable proper code execution evaluation.
+    """
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.evaluators.rotator import EvaluatorRotator
+    from wisent.core.models.inference_config import get_generate_kwargs
 
     loader = LMEvalDataLoader()
     EvaluatorRotator.discover_evaluators('wisent.core.evaluators.benchmark_specific')
 
-    def evaluate(model, tokenizer) -> dict:
-        """Run task evaluation."""
-        result = loader._load_one_task(
-            task_name=args.task,
-            split_ratio=0.8,
-            seed=42,
-            limit=args.num_eval_prompts,
-        )
+    # Pre-load task data once
+    result = loader._load_one_task(
+        task_name=args.task,
+        split_ratio=0.8,
+        seed=42,
+        limit=args.num_eval_prompts,
+        training_limit=None,
+        testing_limit=args.num_eval_prompts,
+    )
+    test_pairs = result["test_qa_pairs"]
 
-        test_pairs = result["test_qa_pairs"]
+    def evaluate(model, tokenizer) -> dict:
+        """Run task evaluation by generating actual responses from the model."""
+        # Wrap HF model in WisentModel for standard generation
+        wisent_model = WisentModel(args.model, hf_model=model)
         evaluator = EvaluatorRotator(evaluator=None, task_name=args.task)
 
         correct = 0
         total = 0
 
         for pair in test_pairs.pairs:
-            choices = [pair.negative_response.model_response, pair.positive_response.model_response]
             expected = pair.positive_response.model_response
+            question = pair.prompt
 
+            # Extract test_code from pair metadata (for coding tasks)
+            metadata = getattr(pair, 'metadata', {}) or {}
+            test_code = metadata.get('test_code')
+            entry_point = metadata.get('entry_point')
+            starter_code = metadata.get('starter_code', '')
+
+            # Generate actual response from the model
+            messages = [{"role": "user", "content": question}]
+            try:
+                responses = wisent_model.generate(
+                    [messages],
+                    **get_generate_kwargs(max_new_tokens=512),
+                )
+                response = responses[0] if responses else ""
+            except Exception as e:
+                response = ""
+
+            # Evaluate the generated response against expected
             try:
                 eval_result = evaluator.evaluate(
-                    response="",
+                    response=response,
                     expected=expected,
                     model=None,
-                    question=pair.prompt,
-                    choices=choices,
+                    question=question,
+                    choices=None,
                     task_name=args.task,
+                    test_code=test_code,
+                    entry_point=entry_point,
+                    language='python',
                 )
 
                 if eval_result.ground_truth == "TRUTHFUL":
                     correct += 1
                 total += 1
             except Exception:
+                # If evaluation fails, count as incorrect
                 total += 1
 
         accuracy = correct / total if total > 0 else 0.0

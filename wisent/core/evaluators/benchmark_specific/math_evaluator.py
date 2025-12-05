@@ -7,56 +7,15 @@ and need to be compared for mathematical equivalence.
 Uses the is_equiv function from math_equivalence package (hendrycks/math).
 """
 
-import re
 import logging
 from typing import Any
 
 from math_equivalence import is_equiv
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.evaluators.benchmark_specific.utils import extract_boxed_answer
 
 logger = logging.getLogger(__name__)
-
-
-def extract_boxed_answer(text: str) -> str | None:
-    """Extract the LAST \\boxed{} answer from text (final answer convention).
-
-    Handles nested braces correctly (e.g., \\boxed{\\frac{1}{2}}).
-
-    Args:
-        text: The text containing \\boxed{answer}
-
-    Returns:
-        The extracted answer from the last \\boxed{} or None if not found
-    """
-    # Find all \boxed{ occurrences
-    start_pattern = r'\\boxed\{'
-    matches = list(re.finditer(start_pattern, text))
-
-    if not matches:
-        return None
-
-    # Process the LAST match (final answer convention)
-    last_match = matches[-1]
-
-    # Start after \boxed{
-    start_idx = last_match.end()
-    brace_count = 1
-    idx = start_idx
-
-    # Find the matching closing brace
-    while idx < len(text) and brace_count > 0:
-        if text[idx] == '{':
-            brace_count += 1
-        elif text[idx] == '}':
-            brace_count -= 1
-        idx += 1
-
-    if brace_count == 0:
-        # Extract content between the braces
-        return text[start_idx:idx-1].strip()
-
-    return None
 
 
 class MathEvaluator(BaseEvaluator):

@@ -1,122 +1,138 @@
-"""
-Test AIMEEvaluator on AIME benchmark.
+"""Unit tests for AIMEEvaluator."""
 
-This script:
-1. Loads AI-MO/aimo-validation-aime dataset
-2. Prompts an LLM to solve problems and put answer in \boxed{}
-3. Uses AIMEEvaluator to compare model answer with ground truth
-4. Saves results to JSON file
-"""
-
-import json
-from pathlib import Path
-from datasets import load_dataset
-from tqdm import tqdm
-
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.evaluators.benchmark_specific.aime_evaluator import AIMEEvaluator, extract_boxed_answer
+import pytest
+from wisent.core.evaluators.benchmark_specific.aime_evaluator import AIMEEvaluator
 
 
-def main(limit: int | None = None):
-    # Load model using WisentModel
-    print("Loading model...")
-    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
-    model = WisentModel(model_name=model_name)
+class TestAIMEEvaluator:
+    """Tests for AIMEEvaluator class."""
 
-    # Load dataset
-    print("Loading dataset...")
-    ds = load_dataset("gneubig/aime-1983-2024", split='train')
+    @pytest.fixture
+    def evaluator(self):
+        return AIMEEvaluator()
 
-    # Apply limit if specified
-    if limit is not None:
-        ds = ds.select(range(min(limit, len(ds))))
-
-    # Initialize evaluator
-    evaluator = AIMEEvaluator()
-
-    correct = 0
-    incorrect = 0
-    unknown = 0
-
-    results = []
-
-    print(f"\nTesting on {len(ds)} examples...")
-    print("=" * 60)
-
-    for i, example in enumerate(tqdm(ds, desc="Evaluating")):
-        problem = example.get('Question', '')
-        answer = example.get('Answer', '')  # AIME answers are integers 0-999
-
-        # Create prompt and generate response
-        prompt = AIMEEvaluator.get_prompt(problem)
-
-        # Generate using WisentModel
-        responses = model.generate(
-            inputs=prompt,
-            max_new_tokens=1000,
-            temperature=0.7,
-            do_sample=True,
-            prompt_is_formatted=True
+    def test_correct_integer_answer(self, evaluator):
+        result = evaluator.evaluate(
+            response="The answer is \\boxed{123}",
+            expected=123
         )
+        assert result.ground_truth == "TRUTHFUL"
 
-        response = responses[0] if responses else ""
+    def test_correct_string_expected(self, evaluator):
+        """Test that string expected values are handled correctly."""
+        result = evaluator.evaluate(
+            response="\\boxed{456}",
+            expected="456"
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
-        # Evaluate using AIMEEvaluator
-        eval_result = evaluator.evaluate(response, answer)
+    def test_wrong_answer(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{100}",
+            expected=200
+        )
+        assert result.ground_truth == "UNTRUTHFUL"
 
-        if eval_result.ground_truth == "TRUTHFUL":
-            correct += 1
-        elif eval_result.ground_truth == "UNTRUTHFUL":
-            incorrect += 1
-        else:
-            unknown += 1
+    def test_no_boxed_in_response(self, evaluator):
+        result = evaluator.evaluate(
+            response="The answer is 42",
+            expected=42
+        )
+        assert result.ground_truth == "UNKNOWN"
 
-        results.append({
-            'problem': problem,
-            'true_answer': answer,
-            'model_output': response,
-            'ground_truth': eval_result.ground_truth,
-            'confidence': eval_result.confidence,
-            'details': eval_result.details,
-        })
+    def test_zero_answer(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{0}",
+            expected=0
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
-    # Summary
-    print("\n" + "=" * 60)
-    print("SUMMARY")
-    print("=" * 60)
-    print(f"Total examples: {len(ds)}")
-    print(f"Correct (TRUTHFUL): {correct}")
-    print(f"Incorrect (UNTRUTHFUL): {incorrect}")
-    print(f"Unknown: {unknown}")
+    def test_max_aime_answer(self, evaluator):
+        """AIME answers are 0-999."""
+        result = evaluator.evaluate(
+            response="\\boxed{999}",
+            expected=999
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
-    evaluated = correct + incorrect
-    if evaluated > 0:
-        accuracy = 100 * correct / evaluated
-        print(f"Accuracy: {accuracy:.2f}%")
-    else:
-        accuracy = 0.0
+    def test_non_integer_model_answer(self, evaluator):
+        """Model returns a non-integer - should be UNTRUTHFUL."""
+        result = evaluator.evaluate(
+            response="\\boxed{3.14}",
+            expected=3
+        )
+        assert result.ground_truth == "UNTRUTHFUL"
 
-    # Save results to JSON
-    output_dir = Path(__file__).parent / "results_test_evaluator"
-    output_dir.mkdir(exist_ok=True)
-    output_file = output_dir / "aime_evaluator_results.json"
+    def test_non_numeric_model_answer(self, evaluator):
+        """Model returns non-numeric text - should be UNTRUTHFUL."""
+        result = evaluator.evaluate(
+            response="\\boxed{abc}",
+            expected=123
+        )
+        assert result.ground_truth == "UNTRUTHFUL"
 
-    output_data = {
-        "model_name": model_name,
-        "dataset": "gneubig/aime-1983-2024",
-        "total_examples": len(ds),
-        "correct": correct,
-        "incorrect": incorrect,
-        "unknown": unknown,
-        "accuracy": accuracy,
-        "results": results,
-    }
-
-    with open(output_file, "w") as f:
-        json.dump(output_data, f, indent=2)
-
-    print(f"\nResults saved to: {output_file}")
+    def test_leading_zeros(self, evaluator):
+        """Test that leading zeros are handled correctly."""
+        result = evaluator.evaluate(
+            response="\\boxed{007}",
+            expected=7
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
 
-if __name__ == "__main__":
-    main(limit=50)
+class TestAIMEEvaluatorPrompt:
+    """Tests for AIMEEvaluator prompt generation."""
+
+    def test_get_prompt_contains_problem(self):
+        problem = "Find the value of x if x^2 = 144"
+        prompt = AIMEEvaluator.get_prompt(problem)
+        assert problem in prompt
+
+    def test_get_prompt_mentions_aime(self):
+        prompt = AIMEEvaluator.get_prompt("Test problem")
+        assert "AIME" in prompt
+
+    def test_get_prompt_mentions_0_999(self):
+        prompt = AIMEEvaluator.get_prompt("Test problem")
+        assert "0" in prompt and "999" in prompt
+
+    def test_get_prompt_mentions_boxed(self):
+        prompt = AIMEEvaluator.get_prompt("Test problem")
+        assert "\\boxed{}" in prompt
+
+
+class TestAIMEEvaluatorEdgeCases:
+    """Edge case tests for AIMEEvaluator."""
+
+    @pytest.fixture
+    def evaluator(self):
+        return AIMEEvaluator()
+
+    def test_empty_response(self, evaluator):
+        result = evaluator.evaluate(
+            response="",
+            expected=42
+        )
+        assert result.ground_truth == "UNKNOWN"
+
+    def test_whitespace_only_response(self, evaluator):
+        result = evaluator.evaluate(
+            response="   ",
+            expected=42
+        )
+        assert result.ground_truth == "UNKNOWN"
+
+    def test_multiple_boxed_uses_last(self, evaluator):
+        result = evaluator.evaluate(
+            response="First I tried \\boxed{100} but then \\boxed{42}",
+            expected=42
+        )
+        assert result.ground_truth == "TRUTHFUL"
+
+    def test_type_mismatch_int_vs_string(self, evaluator):
+        """This was the original bug - comparing int to string."""
+        result = evaluator.evaluate(
+            response="\\boxed{42}",
+            expected=42  # int from dataset
+        )
+        assert result.ground_truth == "TRUTHFUL"
