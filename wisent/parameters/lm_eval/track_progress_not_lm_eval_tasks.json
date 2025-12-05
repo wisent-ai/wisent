@@ -40,13 +40,14 @@
   ],
 
   "completed_hf_without_version_on_lm_git": [
-      "hmmt", "hmmt_feb_2025", "penn_treebank", "stsb", "wikitext103",  "math", "math500"
+      "hmmt", "hmmt_feb_2025", "penn_treebank", "stsb", "wikitext103",  "math", "math500", "polymath_en_high", "polymath_en_medium", "polymath_zh_high",
+      "polymath_zh_medium"
   ],
 
   "too complex": ["evalita: many different prompts structure, could mess up our prompt strategies",
                   "babilong: many splits and subsets, long contexts"],
 
-  "broken": ["vaxx_stance", "wiceu", "tmlu", "t0_eval"],
+  "broken": ["vaxx_stance", "wiceu", "tmlu", "t0_eval", "flan_held_in"],
 
   "all_tasks": [
   "Tag",
@@ -67,7 +68,7 @@
   "evalita-mp",
   "evalita-sp_sum_task_fp-small_p1",
 
-  "flan_held_in",
+ 
   "flores",
 
   "freebase",
@@ -109,10 +110,7 @@
   "option_order_robustness_agieval_aqua_rat",
 
 
-  "polymath_en_high",
-  "polymath_en_medium",
-  "polymath_zh_high",
-  "polymath_zh_medium",
+
 
 
   "prompt_robustness_agieval_aqua_rat",
