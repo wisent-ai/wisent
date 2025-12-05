@@ -556,7 +556,7 @@ def execute_tasks(args):
     EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
     EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=eval_task_for_evaluator, autoload=False)
-    print(f"   Using evaluator: {evaluator._plugin.name if hasattr(evaluator, '_plugin') and evaluator._plugin else 'auto'}")
+    print(f"   Using evaluator: coding")
 
     # Generate responses and collect activations
     generation_results = []
@@ -576,17 +576,7 @@ def execute_tasks(args):
             starter_code = pair.metadata.get('starter_code')
 
         # Generate response from unsteered model
-        # Add system prompt for coding tasks to ensure proper Python code output
-        coding_tasks = ['livecodebench', 'humaneval', 'mbpp', 'apps', 'codecontests', 'ds1000']
-        is_coding_task = any(ct in task_name.lower() for ct in coding_tasks)
-
-        if is_coding_task:
-            messages = [
-                {"role": "system", "content": "You are an expert Python programmer. You will be given a question (problem specification) and will generate a correct Python program that matches the specification and passes all tests. Output ONLY valid, executable Python code inside a ```python code block. Do not include any explanation, comments, or pseudo-code. The code must be syntactically correct and runnable."},
-                {"role": "user", "content": question}
-            ]
-        else:
-            messages = [{"role": "user", "content": question}]
+        messages = [{"role": "user", "content": question}]
 
         response = model.generate(
             [messages],

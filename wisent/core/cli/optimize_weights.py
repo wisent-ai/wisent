@@ -125,13 +125,15 @@ def execute_optimize_weights(args):
     # Store base model state for restoration
     base_state_dict = {k: v.clone() for k, v in base_model.state_dict().items()}
 
-    # Initialize evaluator (pass wisent_model for personalization baseline generation)
-    evaluator = _create_evaluator(args, args.model, wisent_model=wisent_model)
-
-    # Pre-generate steering vectors once
+    # Pre-generate steering vectors once (also returns positive/negative examples)
     print(f"Generating steering vectors with {num_pairs} pairs...")
-    steering_vectors = _generate_steering_vectors(args, num_pairs, num_layers)
-    print(f"   Steering vectors generated for {len(steering_vectors)} layers\n")
+    steering_vectors, positive_examples, negative_examples = _generate_steering_vectors(args, num_pairs, num_layers)
+    print(f"   Steering vectors generated for {len(steering_vectors)} layers")
+    print(f"   Got {len(positive_examples)} positive and {len(negative_examples)} negative examples\n")
+
+    # Initialize evaluator (pass wisent_model for personalization baseline generation, and contrastive pairs)
+    evaluator = _create_evaluator(args, args.model, wisent_model=wisent_model,
+                                   positive_examples=positive_examples, negative_examples=negative_examples)
 
     # Create optimizer config
     optimizer_config = WeightsOptimizerConfig(
@@ -279,20 +281,32 @@ def execute_optimize_weights(args):
     )
 
 
-def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[int, torch.Tensor]:
-    """Generate steering vectors from trait or task."""
+def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> tuple[dict[int, torch.Tensor], list[str], list[str]]:
+    """Generate steering vectors from trait or task.
+
+    Returns:
+        Tuple of (steering_vectors, positive_examples, negative_examples)
+    """
     from argparse import Namespace
 
     if args.steering_vectors:
         with open(args.steering_vectors, "r") as f:
             data = json.load(f)
-        return {
+        vectors = {
             int(layer) - 1: torch.tensor(vec)
             for layer, vec in data["steering_vectors"].items()
         }
+        # Try to load pairs from the same file if available
+        positive_examples = data.get("positive_examples", [])
+        negative_examples = data.get("negative_examples", [])
+        return vectors, positive_examples, negative_examples
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         temp_output = f.name
+
+    # Also create a temp file for pairs
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
+        temp_pairs = f.name
 
     try:
         if args.trait:
@@ -312,8 +326,8 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
                 prompt_strategy="chat_template",
                 method="caa",
                 normalize=True,
-                keep_intermediate=False,
-                intermediate_dir=None,
+                keep_intermediate=True,  # Keep intermediate to get pairs
+                intermediate_dir=os.path.dirname(temp_pairs),
                 pairs_cache_dir=args.pairs_cache_dir,
                 force_regenerate=False,
                 nonsense=False,
@@ -339,8 +353,8 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
                 prompt_strategy="chat_template",
                 method="caa",
                 normalize=True,
-                keep_intermediate=False,
-                intermediate_dir=None,
+                keep_intermediate=True,
+                intermediate_dir=os.path.dirname(temp_pairs),
             )
 
             execute_generate_vector_from_task(vector_args)
@@ -348,17 +362,45 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> dict[in
         with open(temp_output, "r") as f:
             data = json.load(f)
 
-        return {
+        vectors = {
             int(layer) - 1: torch.tensor(vec)
             for layer, vec in data["steering_vectors"].items()
         }
 
+        # Try to extract positive/negative examples from the output or intermediate files
+        positive_examples = data.get("positive_examples", [])
+        negative_examples = data.get("negative_examples", [])
+
+        # If not in output, look for pairs in intermediate directory
+        if not positive_examples or not negative_examples:
+            intermediate_dir = os.path.dirname(temp_pairs)
+            # Search for any *_pairs.json file (the actual filename is {trait}_pairs.json)
+            import glob
+            pairs_files = glob.glob(os.path.join(intermediate_dir, "*_pairs.json"))
+            # Filter out enriched files (which have _with_activations in name)
+            pairs_files = [f for f in pairs_files if "_with_activations" not in f]
+
+            for pairs_file in pairs_files:
+                with open(pairs_file, "r") as f:
+                    pairs_data = json.load(f)
+                if "pairs" in pairs_data:
+                    for pair in pairs_data["pairs"]:
+                        if "positive_response" in pair and "model_response" in pair["positive_response"]:
+                            positive_examples.append(pair["positive_response"]["model_response"])
+                        if "negative_response" in pair and "model_response" in pair["negative_response"]:
+                            negative_examples.append(pair["negative_response"]["model_response"])
+
+        return vectors, positive_examples, negative_examples
+
     finally:
         if os.path.exists(temp_output):
             os.unlink(temp_output)
+        if os.path.exists(temp_pairs):
+            os.unlink(temp_pairs)
 
 
-def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None) -> Callable[[Any, Any], dict[str, float]]:
+def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
+                      positive_examples: list[str] = None, negative_examples: list[str] = None) -> Callable[[Any, Any], dict[str, float]]:
     """Create the appropriate evaluator function based on args.
 
     The evaluator receives (hf_model, tokenizer) and wraps them in WisentModel
@@ -368,6 +410,8 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None) -
         args: Command arguments
         model_name: Model name/path
         wisent_model: Optional WisentModel instance for baseline generation (used by personalization)
+        positive_examples: List of positive example responses from contrastive pairs
+        negative_examples: List of negative example responses from contrastive pairs
     """
 
     evaluator_type = args.evaluator
@@ -390,7 +434,7 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None) -
     elif evaluator_type == "llm_judge":
         return _create_llm_judge_evaluator(args, model_name)
     elif evaluator_type == "personalization":
-        return _create_personalization_evaluator(args, model_name, wisent_model)
+        return _create_personalization_evaluator(args, model_name, wisent_model, positive_examples, negative_examples)
     else:
         raise ValueError(f"Unknown evaluator: {evaluator_type}")
 
@@ -543,7 +587,8 @@ def _create_llm_judge_evaluator(args, model_name: str) -> Callable:
     raise NotImplementedError("LLM judge evaluator not yet implemented")
 
 
-def _create_personalization_evaluator(args, model_name: str, wisent_model: WisentModel = None) -> Callable:
+def _create_personalization_evaluator(args, model_name: str, wisent_model: WisentModel = None,
+                                       positive_examples: list[str] = None, negative_examples: list[str] = None) -> Callable:
     """Create personalization evaluator for personality/style traits.
 
     Evaluates steering effectiveness on three criteria:
@@ -554,12 +599,19 @@ def _create_personalization_evaluator(args, model_name: str, wisent_model: Wisen
     Uses the same evaluation pattern as optimize_steering's personalization action.
     Baseline responses are generated once upfront using the unmodified model.
     """
-    from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
-    from wisent.core.models.inference_config import get_generate_kwargs
+    from wisent.core.evaluators.personalization import (
+        evaluate_difference,
+        evaluate_quality,
+        estimate_alignment,
+    )
 
     # Get trait name and description from args
     trait_name = args.trait.split()[0] if args.trait else "unknown"
     trait_description = args.trait
+
+    # Store positive/negative examples for alignment evaluation
+    pos_examples = positive_examples or []
+    neg_examples = negative_examples or []
 
     # Default test prompts for personalization evaluation
     default_prompts = [
@@ -607,6 +659,8 @@ def _create_personalization_evaluator(args, model_name: str, wisent_model: Wisen
 
     def evaluate(hf_model, tokenizer) -> dict:
         """Run personalization evaluation comparing baseline vs steered responses."""
+        import numpy as np
+
         # Wrap HF model in WisentModel for standard generation
         modified_wisent_model = WisentModel(model_name, hf_model=hf_model)
 
@@ -621,20 +675,36 @@ def _create_personalization_evaluator(args, model_name: str, wisent_model: Wisen
             response = responses[0] if responses else ""
             steered_responses.append(response)
 
-        # Initialize evaluator (no model needed for basic metrics)
-        evaluator = PersonalizationEvaluator()
-
-        # Calculate difference score (baseline vs steered)
+        # Calculate difference score (baseline vs steered) - average across all pairs
         if baseline_responses:
-            difference_score = evaluator._evaluate_difference(baseline_responses, steered_responses)
+            diff_scores = []
+            for baseline, steered in zip(baseline_responses, steered_responses):
+                # evaluate_difference returns 1-100, normalize to 0-1
+                diff = evaluate_difference(baseline, steered, None, None, None)
+                diff_scores.append((diff - 1.0) / 99.0)
+            difference_score = float(np.mean(diff_scores))
         else:
             difference_score = 0.5  # Default if no baseline available
 
-        # Calculate quality score (coherence check)
-        quality_score = evaluator._evaluate_quality(steered_responses)
+        # Calculate quality score (coherence check) - average across all responses
+        quality_scores = []
+        for steered in steered_responses:
+            # evaluate_quality returns 1-100, normalize to 0-1
+            qual = evaluate_quality(steered, None, None, None)
+            quality_scores.append((qual - 1.0) / 99.0 if qual > 0 else 0.0)
+        quality_score = float(np.mean(quality_scores))
 
-        # Calculate alignment score using keyword-based estimation
-        alignment_score = PersonalizationEvaluator.estimate_alignment(steered_responses, trait_description)
+        # Calculate alignment score using contrastive embedding similarity
+        # estimate_alignment returns 0-1 directly
+        if not pos_examples or not neg_examples:
+            raise ValueError(
+                f"Cannot evaluate alignment without positive and negative examples. "
+                f"Got {len(pos_examples) if pos_examples else 0} positive and "
+                f"{len(neg_examples) if neg_examples else 0} negative examples."
+            )
+        alignment_score = estimate_alignment(
+            steered_responses, trait_description, pos_examples, neg_examples
+        )
 
         # Calculate overall score (weighted average)
         # Only count if difference > 0.3 (steering is actually doing something)
@@ -663,13 +733,13 @@ def _apply_weight_modification_standalone(
     config: WeightsOptimizerConfig,
 ):
     """Apply weight modification with given parameters (standalone helper)."""
-    from wisent.core.weight_modification import abliterate_with_kernel, bake_steering_with_kernel
+    from wisent.core.weight_modification import project_with_kernel, bake_steering_with_kernel
 
     max_weight_position = params["max_weight_position"] * (num_layers - 1)
     min_weight_distance = 0.6 * (num_layers - 1)
 
-    if config.method == "abliteration":
-        abliterate_with_kernel(
+    if config.method == "directional":
+        project_with_kernel(
             model,
             steering_vectors,
             max_weight=params["max_weight"] * params["strength"],

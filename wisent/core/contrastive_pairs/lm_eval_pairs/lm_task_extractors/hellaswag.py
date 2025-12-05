@@ -69,7 +69,7 @@ class HellaSwagExtractor(LMEvalBenchmarkExtractor):
         Returns None when required fields are missing or malformed.
 
         IMPROVED: Uses the HARDEST incorrect ending (most similar to correct)
-        to create maximum contrast signal for abliteration.
+        to create maximum contrast signal for directional modification.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
