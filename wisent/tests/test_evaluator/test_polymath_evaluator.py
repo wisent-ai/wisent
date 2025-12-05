@@ -1,214 +1,126 @@
-"""
-Test PolyMathEvaluator on PolyMath benchmark.
+"""Unit tests for PolyMathEvaluator."""
 
-This script:
-1. Loads Qwen/PolyMath dataset
-2. Prompts an LLM to solve problems with language-specific instruction
-3. Uses PolyMathEvaluator to compare model answer with ground truth
-4. Computes DW-ACC (Difficulty-Weighted Accuracy) across all difficulty levels
-5. Saves results to JSON file
-"""
-
-import json
-from pathlib import Path
-from datasets import load_dataset
-from tqdm import tqdm
-
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.evaluators.benchmark_specific.polymath_evaluator import PolyMathEvaluator
+import pytest
+from wisent.core.evaluators.benchmark_specific.polymath_evaluator import (
+    PolyMathEvaluator,
+    LANGUAGE_PROMPTS,
+)
 
 
-# Generation configs following PolyMath benchmark methodology
-# See: https://github.com/QwenLM/PolyMath
-NON_REASONING_CONFIG = {
-    "max_new_tokens": 65536,
-    "temperature": 0.0,
-    "do_sample": False,
-}
+class TestPolyMathEvaluator:
+    """Tests for PolyMathEvaluator class."""
 
-REASONING_CONFIG = {
-    "max_new_tokens": 65536,
-    "temperature": 0.6,
-    "top_p": 0.95,
-    "top_k": 20,
-    "do_sample": True,
-}
+    @pytest.fixture
+    def evaluator(self):
+        return PolyMathEvaluator()
 
-# Difficulty weights for DW-ACC metric
-# Weights double at each level: solving 1 top = solving 8 low problems
-DIFFICULTY_WEIGHTS = {"low": 1, "medium": 2, "high": 4, "top": 8}
-TOTAL_WEIGHT = sum(DIFFICULTY_WEIGHTS.values())  # 15
-DIFFICULTIES = ["low", "medium", "high", "top"]
-
-
-def compute_dw_acc(accuracies: dict[str, float]) -> float:
-    """
-    Compute Difficulty-Weighted Accuracy (DW-ACC).
-
-    DW-ACC assigns higher weights to harder problems:
-    - low: 1, medium: 2, high: 4, top: 8
-
-    Formula: DW-ACC = (1*a_low + 2*a_medium + 4*a_high + 8*a_top) / 15
-
-    Args:
-        accuracies: Dict mapping difficulty level to accuracy (0.0 to 1.0)
-                    e.g., {"low": 0.8, "medium": 0.6, "high": 0.4, "top": 0.2}
-
-    Returns:
-        DW-ACC score (0.0 to 1.0)
-    """
-    weighted_sum = sum(
-        DIFFICULTY_WEIGHTS[level] * acc
-        for level, acc in accuracies.items()
-    )
-    return weighted_sum / TOTAL_WEIGHT
-
-
-def compute_average_at_k(correct_counts: list[int], total: int = 125, k: int = 16) -> float:
-    """
-    Compute average@k accuracy for reasoning models.
-
-    Reasoning models use sampling (T=0.6), so results vary between runs.
-    This function averages results across k trials with rounding to preserve
-    granularity (1/total per problem).
-
-    Formula: average@k = round(sum(correct_counts) / k) / total
-
-    Args:
-        correct_counts: List of correct answers per trial, e.g., [102, 98, 105, ...]
-        total: Total problems per level (default 125 for PolyMath)
-        k: Number of trials (default 16)
-
-    Returns:
-        Accuracy as float (0.0 to 1.0)
-
-    Note:
-        This function is for reasoning models only. For non-reasoning models,
-        use greedy decoding (T=0.0) and run once per problem.
-    """
-    avg_correct = sum(correct_counts) / k
-    return round(avg_correct) / total
-
-
-def evaluate_difficulty(
-    model: WisentModel,
-    evaluator: PolyMathEvaluator,
-    language: str,
-    difficulty: str,
-    limit: int | None = None,
-) -> tuple[float, int, list[dict]]:
-    """Evaluate model on a single difficulty level.
-
-    Returns:
-        Tuple of (accuracy, total_count, results_list)
-    """
-    ds = load_dataset("Qwen/PolyMath", language, split=difficulty)
-
-    if limit is not None:
-        ds = ds.select(range(min(limit, len(ds))))
-
-    correct = 0
-    results = []
-
-    for example in tqdm(ds, desc=f"Evaluating {difficulty}"):
-        question = example.get('question', '')
-        answer = example.get('answer', '')
-
-        prompt = PolyMathEvaluator.get_prompt(question, language)
-
-        responses = model.generate(
-            inputs=prompt,
-            **NON_REASONING_CONFIG,
-            prompt_is_formatted=True,
+    def test_correct_boxed_answer(self, evaluator):
+        result = evaluator.evaluate(
+            response="The answer is \\boxed{42}",
+            expected="42"
         )
+        assert result.ground_truth == "TRUTHFUL"
 
-        response = responses[0] if responses else ""
-        eval_result = evaluator.evaluate(response, answer)
-
-        if eval_result.ground_truth == "TRUTHFUL":
-            correct += 1
-
-        results.append({
-            'question': question,
-            'true_answer': answer,
-            'model_output': response,
-            'ground_truth': eval_result.ground_truth,
-            'confidence': eval_result.confidence,
-            'details': eval_result.details,
-        })
-
-    accuracy = correct / len(ds) if len(ds) > 0 else 0.0
-    return accuracy, len(ds), results
-
-
-def main(limit: int | None = None, language: str = "en"):
-    """Run evaluation on all difficulty levels and compute DW-ACC."""
-    print("Loading model...")
-    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
-    model = WisentModel(model_name=model_name)
-
-    evaluator = PolyMathEvaluator()
-
-    accuracies = {}
-    all_results = {}
-    total_correct = 0
-    total_count = 0
-
-    print(f"\nEvaluating on language: {language}")
-    print("=" * 60)
-
-    for difficulty in DIFFICULTIES:
-        print(f"\n--- {difficulty.upper()} ---")
-        accuracy, count, results = evaluate_difficulty(
-            model, evaluator, language, difficulty, limit
+    def test_wrong_answer(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{10}",
+            expected="42"
         )
-        accuracies[difficulty] = accuracy
-        all_results[difficulty] = results
-        total_correct += int(accuracy * count)
-        total_count += count
+        assert result.ground_truth == "UNTRUTHFUL"
 
-        print(f"{difficulty}: {accuracy*100:.2f}% ({int(accuracy*count)}/{count})")
+    def test_equivalent_fractions(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{0.5}",
+            expected="1/2"
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
-    # Compute DW-ACC
-    dw_acc = compute_dw_acc(accuracies)
+    def test_empty_response(self, evaluator):
+        result = evaluator.evaluate(
+            response="",
+            expected="42"
+        )
+        assert result.ground_truth == "UNKNOWN"
 
-    # Summary
-    print("\n" + "=" * 60)
-    print("SUMMARY")
-    print("=" * 60)
-    print(f"Language: {language}")
-    print(f"Model: {model_name}")
-    print()
-    for difficulty in DIFFICULTIES:
-        weight = DIFFICULTY_WEIGHTS[difficulty]
-        acc = accuracies[difficulty]
-        print(f"  {difficulty:6s}: {acc*100:5.2f}% (weight={weight})")
-    print()
-    print(f"Overall Accuracy: {total_correct/total_count*100:.2f}% ({total_correct}/{total_count})")
-    print(f"DW-ACC: {dw_acc*100:.2f}%")
-
-    # Save results to JSON
-    output_dir = Path(__file__).parent / "results_test_evaluator"
-    output_dir.mkdir(exist_ok=True)
-    output_file = output_dir / f"polymath_evaluator_results_{language}.json"
-
-    output_data = {
-        "model_name": model_name,
-        "dataset": "Qwen/PolyMath",
-        "language": language,
-        "accuracies": {k: v * 100 for k, v in accuracies.items()},
-        "dw_acc": dw_acc * 100,
-        "overall_accuracy": total_correct / total_count * 100,
-        "total_correct": total_correct,
-        "total_count": total_count,
-        "results": all_results,
-    }
-
-    with open(output_file, "w") as f:
-        json.dump(output_data, f, indent=2, ensure_ascii=False)
-
-    print(f"\nResults saved to: {output_file}")
+    def test_whitespace_response(self, evaluator):
+        result = evaluator.evaluate(
+            response="   ",
+            expected="42"
+        )
+        assert result.ground_truth == "UNKNOWN"
 
 
-if __name__ == "__main__":
-    main(limit=2, language="en")
+class TestPolyMathEvaluatorPrompt:
+    """Tests for PolyMathEvaluator prompt generation."""
+
+    def test_get_prompt_english(self):
+        question = "What is 2+2?"
+        prompt = PolyMathEvaluator.get_prompt(question, "en")
+        assert question in prompt
+        assert "\\boxed{}" in prompt
+
+    def test_get_prompt_chinese(self):
+        question = "计算 2+2"
+        prompt = PolyMathEvaluator.get_prompt(question, "zh")
+        assert question in prompt
+        assert "\\boxed{}" in prompt
+
+    def test_get_prompt_default_language(self):
+        """Default language should be English."""
+        question = "Test question"
+        prompt_default = PolyMathEvaluator.get_prompt(question)
+        prompt_en = PolyMathEvaluator.get_prompt(question, "en")
+        assert prompt_default == prompt_en
+
+    def test_get_prompt_unknown_language_falls_back_to_english(self):
+        """Unknown language should fall back to English."""
+        question = "Test question"
+        prompt = PolyMathEvaluator.get_prompt(question, "xyz")
+        assert LANGUAGE_PROMPTS["en"] in prompt
+
+
+class TestLanguagePrompts:
+    """Tests for language prompt definitions."""
+
+    def test_all_prompts_contain_boxed(self):
+        """All language prompts should mention boxed format."""
+        for lang, prompt in LANGUAGE_PROMPTS.items():
+            assert "\\boxed{}" in prompt, f"Language {lang} missing \\boxed{{}}"
+
+    def test_supported_languages(self):
+        """Check that common languages are supported."""
+        expected_languages = [
+            "en", "zh", "ar", "de", "es", "fr", "ja", "ko", "pt", "ru"
+        ]
+        for lang in expected_languages:
+            assert lang in LANGUAGE_PROMPTS, f"Language {lang} not supported"
+
+
+class TestPolyMathEvaluatorMetadata:
+    """Tests for PolyMathEvaluator metadata."""
+
+    @pytest.fixture
+    def evaluator(self):
+        return PolyMathEvaluator()
+
+    def test_result_contains_predictions(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{42}",
+            expected="42"
+        )
+        assert "predictions" in result.meta
+
+    def test_result_contains_no_boxed_flag(self, evaluator):
+        result = evaluator.evaluate(
+            response="The answer is 42",
+            expected="42"
+        )
+        assert "no_boxed" in result.meta
+        assert result.meta["no_boxed"] is True
+
+    def test_result_no_boxed_false_when_boxed_present(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{42}",
+            expected="42"
+        )
+        assert result.meta["no_boxed"] is False

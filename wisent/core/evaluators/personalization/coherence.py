@@ -89,6 +89,82 @@ def _is_gibberish(text: str) -> bool:
     return False
 
 
+def _is_incoherent(text: str) -> bool:
+    """
+    Detect if text is semantically incoherent or unhelpful.
+
+    Catches issues that pass gibberish detection but are still low quality:
+    - Too short to be helpful (< 20 chars for a response)
+    - Repeated phrases/sentences
+    - Circular/meaningless statements
+    - Refusals or non-answers disguised as responses
+    """
+    if not text:
+        return True
+
+    text = text.strip()
+
+    # Check 1: Too short to be a helpful response
+    if len(text) < 20:
+        return True
+
+    # Check 2: Single word or very few words (unhelpful)
+    tokens = text.split()
+    if len(tokens) < 4:
+        return True
+
+    # Check 3: Repeated sentences - split by sentence endings
+    sentences = re.split(r'[.!?]+', text)
+    sentences = [s.strip().lower() for s in sentences if s.strip()]
+    if len(sentences) >= 2:
+        unique_sentences = set(sentences)
+        # If more than half the sentences are duplicates, it's repetitive
+        if len(unique_sentences) < len(sentences) * 0.5:
+            return True
+
+    # Check 4: Repeated phrases (3+ word sequences appearing multiple times)
+    if len(tokens) >= 6:
+        trigrams = [' '.join(tokens[i:i+3]) for i in range(len(tokens) - 2)]
+        trigram_counts = Counter(trigrams)
+        most_common_count = trigram_counts.most_common(1)[0][1] if trigrams else 0
+        # If any trigram appears 3+ times, it's repetitive
+        if most_common_count >= 3:
+            return True
+
+    # Check 5: Circular statements that don't add information
+    # e.g., "Football, football, and the beautiful game are intertwined, intertwined, intertwined"
+    unique_tokens = set(t.lower().strip('.,!?"\'-') for t in tokens)
+    # If unique words are less than 40% of total words, very repetitive
+    if len(tokens) >= 5 and len(unique_tokens) / len(tokens) < 0.4:
+        return True
+
+    # Check 6: Non-answer patterns
+    non_answer_patterns = [
+        r'^"?no"?\.?$',  # Just "No" or "No."
+        r'^therefore\s+there\s+(are|is)\s+no',  # "Therefore there are no..."
+        r'^you\s+didn\'?t\s+tell\s+me',  # "You didn't tell me..."
+        r'^i\'?ve?\s+got\s+a\s+few\s+of\s+you',  # Nonsensical "I've got a few of you"
+    ]
+    text_lower = text.lower()
+    for pattern in non_answer_patterns:
+        if re.match(pattern, text_lower):
+            return True
+
+    # Check 7: Excessive repetition of the same word (3+ times for content words)
+    content_words = [t.lower().strip('.,!?"\'-') for t in tokens if len(t) > 3]
+    if content_words:
+        word_counts = Counter(content_words)
+        for word, count in word_counts.items():
+            # Skip common filler words
+            if word in {'that', 'this', 'have', 'been', 'with', 'from', 'they', 'would', 'could', 'should'}:
+                continue
+            # If any content word appears more than 3 times in a short response, flag it
+            if count >= 3 and count / len(content_words) > 0.15:
+                return True
+
+    return False
+
+
 def evaluate_quality(
     response: str,
     model: PreTrainedModel,
@@ -120,6 +196,10 @@ def evaluate_quality(
     """
     # Check for gibberish first - immediate zero if detected
     if _is_gibberish(response):
+        return 0.0
+
+    # Check for incoherent/unhelpful responses - immediate zero if detected
+    if _is_incoherent(response):
         return 0.0
 
     score = 1.0  # Start with perfect score (0-1 scale)

@@ -1,150 +1,129 @@
-"""
-Test MathEvaluator on competition_math benchmark.
+"""Unit tests for MathEvaluator."""
 
-This script:
-1. Loads qwedsacf/competition_math dataset
-2. Prompts an LLM to solve problems and put answer in \boxed{}
-3. Uses MathEvaluator to compare model answer with ground truth
-4. Saves results to JSON file
-"""
-
-import json
-from pathlib import Path
-from datasets import load_dataset
-from tqdm import tqdm
-
-from wisent.core.models.wisent_model import WisentModel
+import pytest
 from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
+from wisent.core.evaluators.benchmark_specific.utils import extract_boxed_answer
 
 
-QUESTION_TYPES = [
-    "Algebra",
-    "Precalculus",
-    "Geometry",
-    "Intermediate Algebra",
-    "Prealgebra",
-    "Counting & Probability",
-    "Number Theory",
-]
+class TestExtractBoxedAnswer:
+    """Tests for extract_boxed_answer utility function."""
 
-LEVELS = ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5"]
+    def test_simple_boxed(self):
+        text = "The answer is \\boxed{42}"
+        assert extract_boxed_answer(text) == "42"
+
+    def test_nested_braces(self):
+        text = "\\boxed{\\frac{1}{2}}"
+        assert extract_boxed_answer(text) == "\\frac{1}{2}"
+
+    def test_multiple_boxed_returns_last(self):
+        text = "First \\boxed{wrong} then \\boxed{correct}"
+        assert extract_boxed_answer(text) == "correct"
+
+    def test_no_boxed_returns_none(self):
+        text = "No boxed answer here"
+        assert extract_boxed_answer(text) is None
+
+    def test_deeply_nested(self):
+        text = "\\boxed{\\sqrt{\\frac{a^{2}}{b}}}"
+        assert extract_boxed_answer(text) == "\\sqrt{\\frac{a^{2}}{b}}"
+
+    def test_empty_boxed(self):
+        text = "\\boxed{}"
+        assert extract_boxed_answer(text) == ""
+
+    def test_boxed_with_surrounding_text(self):
+        text = "Step 1: Calculate. Step 2: The final answer is \\boxed{123}. Done."
+        assert extract_boxed_answer(text) == "123"
 
 
-def main(limit: int | None = None, question_type: str | None = None, level: str | None = None):
-    # Load model using WisentModel
-    print("Loading model...")
-    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
-    model = WisentModel(model_name=model_name)
+class TestMathEvaluator:
+    """Tests for MathEvaluator class."""
 
-    # Load dataset
-    print("Loading dataset...")
-    ds = load_dataset('qwedsacf/competition_math', split='train')
+    @pytest.fixture
+    def evaluator(self):
+        return MathEvaluator()
 
-    # Filter by type if specified
-    if question_type is not None:
-        if question_type not in QUESTION_TYPES:
-            raise ValueError(f"Invalid question_type: {question_type}. Must be one of {QUESTION_TYPES}")
-        ds = ds.filter(lambda x: x['type'] == question_type)
-        print(f"Filtered to type: {question_type} ({len(ds)} examples)")
-
-    # Filter by level if specified
-    if level is not None:
-        if level not in LEVELS:
-            raise ValueError(f"Invalid level: {level}. Must be one of {LEVELS}")
-        ds = ds.filter(lambda x: x['level'] == level)
-        print(f"Filtered to level: {level} ({len(ds)} examples)")
-
-    # Apply limit if specified
-    if limit is not None:
-        ds = ds.select(range(min(limit, len(ds))))
-
-    # Initialize evaluator
-    evaluator = MathEvaluator()
-
-    correct = 0
-    incorrect = 0
-    unknown = 0
-
-    results = []
-
-    print(f"\nTesting on {len(ds)} examples...")
-    print("=" * 60)
-
-    for i, example in enumerate(tqdm(ds, desc="Evaluating")):
-        problem = example.get('problem', '')
-        solution = example.get('solution', '')
-
-        # Create prompt and generate response
-        prompt = MathEvaluator.get_prompt(problem)
-
-        # Generate using WisentModel
-        responses = model.generate(
-            inputs=prompt,
-            max_new_tokens=1000,
-            temperature=0.7,
-            do_sample=True,
-            prompt_is_formatted=True
+    def test_exact_match(self, evaluator):
+        result = evaluator.evaluate(
+            response="The answer is \\boxed{42}",
+            expected="\\boxed{42}"
         )
+        assert result.ground_truth == "TRUTHFUL"
 
-        response = responses[0] if responses else ""
+    def test_equivalent_fractions(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{\\frac{1}{2}}",
+            expected="\\boxed{0.5}"
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
-        # Evaluate using MathEvaluator
-        eval_result = evaluator.evaluate(response, solution)
+    def test_wrong_answer(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{10}",
+            expected="\\boxed{42}"
+        )
+        assert result.ground_truth == "UNTRUTHFUL"
 
-        if eval_result.ground_truth == "TRUTHFUL":
-            correct += 1
-        elif eval_result.ground_truth == "UNTRUTHFUL":
-            incorrect += 1
-        else:
-            unknown += 1
+    def test_no_boxed_in_response(self, evaluator):
+        result = evaluator.evaluate(
+            response="The answer is 42",
+            expected="\\boxed{42}"
+        )
+        assert result.ground_truth == "UNKNOWN"
 
-        results.append({
-            'problem': problem,
-            'model_output': response,
-            'ground_truth': eval_result.ground_truth,
-            'confidence': eval_result.confidence,
-            'details': eval_result.details,
-        })
+    def test_raw_expected_without_boxed(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{42}",
+            expected="42",
+            extract_from_expected=False
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
-    # Summary
-    print("\n" + "=" * 60)
-    print("SUMMARY")
-    print("=" * 60)
-    print(f"Total examples: {len(ds)}")
-    print(f"Correct (TRUTHFUL): {correct}")
-    print(f"Incorrect (UNTRUTHFUL): {incorrect}")
-    print(f"Unknown: {unknown}")
+    def test_equivalent_expressions(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{2+2}",
+            expected="\\boxed{4}"
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
-    evaluated = correct + incorrect
-    if evaluated > 0:
-        accuracy = 100 * correct / evaluated
-        print(f"Accuracy: {accuracy:.2f}%")
-    else:
-        accuracy = 0.0
+    def test_negative_numbers(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{-5}",
+            expected="\\boxed{-5}"
+        )
+        assert result.ground_truth == "TRUTHFUL"
 
-    # Save results to JSON
-    output_dir = Path(__file__).parent / "results_test_evaluator"
-    output_dir.mkdir(exist_ok=True)
-    output_file = output_dir / "math_evaluator_results.json"
-
-    output_data = {
-        "model_name": model_name,
-        "dataset": "qwedsacf/competition_math",
-        "question_type": question_type,
-        "level": level,
-        "total_examples": len(ds),
-        "correct": correct,
-        "incorrect": incorrect,
-        "unknown": unknown,
-        "accuracy": accuracy,
-        "results": results,
-    }
-
-    with open(output_file, "w") as f:
-        json.dump(output_data, f, indent=2)
-
-    print(f"\nResults saved to: {output_file}")
+    def test_get_prompt(self):
+        prompt = MathEvaluator.get_prompt("What is 2+2?")
+        assert "What is 2+2?" in prompt
+        assert "\\boxed{}" in prompt
 
 
-if __name__ == "__main__":
-    main(limit=10, question_type="Precalculus", level="Level 1")
+class TestMathEvaluatorEdgeCases:
+    """Edge case tests for MathEvaluator."""
+
+    @pytest.fixture
+    def evaluator(self):
+        return MathEvaluator()
+
+    def test_empty_response(self, evaluator):
+        result = evaluator.evaluate(
+            response="",
+            expected="\\boxed{42}"
+        )
+        assert result.ground_truth == "UNKNOWN"
+
+    def test_none_expected(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{42}",
+            expected=None
+        )
+        assert result.ground_truth == "UNKNOWN"
+
+    def test_whitespace_in_boxed(self, evaluator):
+        result = evaluator.evaluate(
+            response="\\boxed{  42  }",
+            expected="\\boxed{42}"
+        )
+        assert result.ground_truth == "TRUTHFUL"

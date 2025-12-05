@@ -33,6 +33,81 @@ def _load_livecodebench_data(cache_dir: str | None = None) -> list[dict]:
     Returns:
         List of problem dictionaries with test cases
     """
+    # First, try to load from cached arrow files (most reliable)
+    try:
+        from datasets import Dataset
+        import os
+
+        # Look for cached dataset in standard HuggingFace cache location
+        hf_cache = os.path.expanduser("~/.cache/huggingface/datasets")
+        lcb_cache_base = os.path.join(hf_cache, "livecodebench___code_generation_lite")
+
+        if os.path.exists(lcb_cache_base):
+            # Find the latest release directory
+            for release_dir in sorted(os.listdir(lcb_cache_base), reverse=True):
+                release_path = os.path.join(lcb_cache_base, release_dir)
+                if not os.path.isdir(release_path):
+                    continue
+
+                # Find version directory
+                for version_dir in os.listdir(release_path):
+                    version_path = os.path.join(release_path, version_dir)
+                    if not os.path.isdir(version_path):
+                        continue
+
+                    # Look for arrow files
+                    arrow_files = sorted([
+                        f for f in os.listdir(version_path)
+                        if f.startswith("code_generation_lite-test") and f.endswith(".arrow")
+                    ])
+
+                    if arrow_files:
+                        all_data = []
+                        for arrow_file in arrow_files:
+                            arrow_path = os.path.join(version_path, arrow_file)
+                            try:
+                                ds = Dataset.from_file(arrow_path)
+                                all_data.extend([dict(row) for row in ds])
+                            except Exception as e:
+                                log.warning(f"Could not load arrow file {arrow_file}: {e}")
+
+                        if all_data:
+                            log.info(f"Loaded {len(all_data)} problems from cached arrow files")
+                            return all_data
+
+    except Exception as e:
+        log.warning(f"Could not load from cached arrow files: {e}")
+
+    # Second, try downloading JSONL files directly from HuggingFace
+    try:
+        from huggingface_hub import hf_hub_download
+        import json
+
+        # Download the test.jsonl file (contains problems with test cases)
+        jsonl_path = hf_hub_download(
+            repo_id="livecodebench/code_generation_lite",
+            filename="test.jsonl",
+            repo_type="dataset",
+            cache_dir=cache_dir,
+        )
+
+        all_data = []
+        with open(jsonl_path, "r") as f:
+            for line in f:
+                if line.strip():
+                    try:
+                        all_data.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+
+        if all_data:
+            log.info(f"Loaded {len(all_data)} problems from test.jsonl")
+            return all_data
+
+    except Exception as e1:
+        log.warning(f"Could not load via JSONL download: {e1}")
+
+    # Third, try standard datasets library
     try:
         from datasets import load_dataset
 
@@ -41,10 +116,11 @@ def _load_livecodebench_data(cache_dir: str | None = None) -> list[dict]:
         log.info(f"Loaded {len(ds)} problems from livecodebench/code_generation_lite")
         return [dict(row) for row in ds]
 
-    except Exception as e1:
-        log.warning(f"Could not load via datasets library: {e1}")
+    except Exception as e2:
+        log.warning(f"Could not load via datasets library: {e2}")
 
         # Fallback: try to load from the Space's problems.json
+        # Note: This fallback does NOT have public_test_cases field
         try:
             from huggingface_hub import hf_hub_download
             import json
@@ -57,9 +133,14 @@ def _load_livecodebench_data(cache_dir: str | None = None) -> list[dict]:
             )
 
             with open(problems_path, "r") as f:
-                return json.load(f)
-        except Exception as e2:
-            log.error(f"Could not load problems.json fallback: {e2}")
+                data = json.load(f)
+                log.warning(
+                    "Loaded from problems.json which does NOT contain test cases. "
+                    "Code evaluation will not work properly."
+                )
+                return data
+        except Exception as e3:
+            log.error(f"Could not load problems.json fallback: {e3}")
             return []
 
 
