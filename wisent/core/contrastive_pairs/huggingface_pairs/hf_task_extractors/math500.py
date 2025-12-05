@@ -7,8 +7,9 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
-from sympy.parsing.latex import parse_latex
+from latex2sympy2_extended import latex2sympy
 from sympy import latex
+from wisent.core.evaluators.benchmark_specific.math_parsing.scripts import strip_string
 
 __all__ = ["MATH500Extractor"]
 
@@ -89,8 +90,10 @@ class MATH500Extractor(HuggingFaceBenchmarkExtractor):
                 log.debug("Skipping: missing problem or answer")
                 return None
 
-            # Use the provided answer field directly
-            correct_answer = answer
+            # Strip the answer
+            correct_answer = strip_string(answer)
+            if not correct_answer:
+                correct_answer = answer
 
             # Create incorrect answer (add 1 or modify)
             incorrect_answer = self._create_incorrect_answer(correct_answer)
@@ -116,12 +119,11 @@ class MATH500Extractor(HuggingFaceBenchmarkExtractor):
             return None
 
     def _create_incorrect_answer(self, correct: str) -> str:
-        """Create an incorrect answer by modifying the correct one."""
-
+        """Create an incorrect answer by modifying the correct one (input is already stripped)."""
         try:
-            parsed_correct = parse_latex(correct)
-            incorrect = str(latex(parsed_correct + 1))
-            return incorrect
+            parsed_correct = latex2sympy(correct)
+            incorrect = latex(parsed_correct + 1)
+            return str(incorrect)
         except Exception:
             return f"{correct} + 1"
 
