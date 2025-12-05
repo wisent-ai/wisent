@@ -138,8 +138,8 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     optim_group.add_argument(
         "--trials",
         type=int,
-        default=50,
-        help="Number of optimization trials. Default: 50"
+        default=300,
+        help="Number of optimization trials. Default: 300"
     )
     optim_group.add_argument(
         "--startup-trials",
@@ -167,7 +167,7 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         "--strength-range",
         type=str,
         default="0.3,2.0",
-        help="Min,max range for abliteration strength. Default: 0.3,2.0"
+        help="Min,max range for directional projection strength. Default: 0.3,2.0"
     )
     search_group.add_argument(
         "--max-weight-range",
@@ -206,9 +206,9 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     method_group.add_argument(
         "--method",
         type=str,
-        default="abliteration",
-        choices=["abliteration", "additive"],
-        help="Weight modification method. Default: abliteration"
+        default="directional",
+        choices=["directional", "additive"],
+        help="Weight modification method. Default: directional"
     )
     method_group.add_argument(
         "--components",
@@ -221,13 +221,13 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         "--norm-preserve",
         action="store_true",
         default=True,
-        help="Use norm-preserving abliteration. Default: True"
+        help="Use norm-preserving directional projection. Default: True"
     )
     method_group.add_argument(
         "--no-norm-preserve",
         action="store_false",
         dest="norm_preserve",
-        help="Disable norm-preserving abliteration"
+        help="Disable norm-preserving directional projection"
     )
 
     # ==========================================================================

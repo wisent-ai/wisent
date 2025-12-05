@@ -46,18 +46,18 @@ def export_modified_model(
 
     Example:
         >>> from wisent.core.weight_modification import (
-        ...     abliterate_weights,
+        ...     project_weights,
         ...     export_modified_model
         ... )
         >>> # Modify model
-        >>> abliterate_weights(model, steering_vectors)
+        >>> project_weights(model, steering_vectors)
         >>> # Export
         >>> export_modified_model(
         ...     model,
-        ...     "path/to/abliterated-model",
+        ...     "path/to/modified-model",
         ...     tokenizer=tokenizer,
         ...     push_to_hub=True,
-        ...     repo_id="username/llama-3-8b-abliterated",
+        ...     repo_id="username/llama-3-8b-modified",
         ... )
     """
     log = bind(_LOG, save_path=str(save_path))
@@ -105,7 +105,7 @@ def save_modified_weights(
         save_format: "safetensors" or "pytorch"
 
     Example:
-        >>> save_modified_weights(model, "abliterated_weights.safetensors")
+        >>> save_modified_weights(model, "modified_weights.safetensors")
     """
     log = bind(_LOG, save_path=str(save_path))
 
@@ -204,7 +204,7 @@ def compare_models(
     Example:
         >>> original = AutoModelForCausalLM.from_pretrained("llama-3-8b")
         >>> modified = copy.deepcopy(original)
-        >>> abliterate_weights(modified, steering_vectors)
+        >>> project_weights(modified, steering_vectors)
         >>> metrics = compare_models(original, modified)
         >>> print(f"Changed {metrics['fraction_changed']:.2%} of parameters")
     """
@@ -270,7 +270,7 @@ def create_model_card(
     Args:
         repo_id: Repository ID
         base_model: Base model name
-        modification_type: "abliteration" or "additive_steering"
+        modification_type: "directional" or "additive_steering"
         steering_description: Description of what the steering does
         contrastive_pairs_info: Info about contrastive pairs used
         metrics: Optional evaluation metrics

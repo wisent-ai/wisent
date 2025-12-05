@@ -166,7 +166,7 @@ def setup_parser() -> argparse.ArgumentParser:
 
     # Modify weights command for permanent weight modification
     modify_weights_parser = subparsers.add_parser(
-        "modify-weights", help="Permanently modify model weights using steering vectors (abliteration or additive)"
+        "modify-weights", help="Permanently modify model weights using steering vectors (directional projection or additive)"
     )
     setup_modify_weights_parser(modify_weights_parser)
 

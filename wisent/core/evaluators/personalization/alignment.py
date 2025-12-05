@@ -1,20 +1,33 @@
 """
 Alignment evaluator for personalization steering.
 
-Evaluates how well the response exhibits the target trait.
+Evaluates how well the response exhibits the target trait using contrastive
+embedding similarity against synthetic positive and negative examples.
 """
 
 from __future__ import annotations
 
-import re
 from typing import TYPE_CHECKING
 
-import torch
+import numpy as np
 
 if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
+    import torch
 
-__all__ = ["evaluate_alignment"]
+__all__ = ["evaluate_alignment", "estimate_alignment"]
+
+# Embedding model (lazily loaded)
+_embedding_model = None
+
+
+def _get_embedding_model():
+    """Lazily load the embedding model."""
+    global _embedding_model
+    if _embedding_model is None:
+        from sentence_transformers import SentenceTransformer
+        _embedding_model = SentenceTransformer("sentence-transformers/all-MiniLM-L6-v2")
+    return _embedding_model
 
 
 def evaluate_alignment(
@@ -23,87 +36,129 @@ def evaluate_alignment(
     trait_description: str,
     model: PreTrainedModel,
     tokenizer: PreTrainedTokenizer,
-    device: torch.device,
+    device: "torch.device",
+    positive_examples: list[str] | None = None,
+    negative_examples: list[str] | None = None,
 ) -> float:
     """
-    Use the model to evaluate how well the response exhibits a trait on a scale of 1-100.
+    Evaluate how well the response exhibits a trait using contrastive embedding similarity.
+
+    Compares the response embedding against positive and negative examples.
+    The score measures how much closer the response is to positive examples
+    versus negative examples.
 
     Args:
         response: The response to evaluate
-        trait_name: Target trait name
-        trait_description: Trait description
-        model: The model to use for evaluation
-        tokenizer: The tokenizer for the model
-        device: Device to run on
+        trait_name: Target trait name (unused, kept for API compatibility)
+        trait_description: Trait description (unused when examples provided)
+        model: The model (unused, kept for API compatibility)
+        tokenizer: The tokenizer (unused, kept for API compatibility)
+        device: Device (unused, kept for API compatibility)
+        positive_examples: List of positive example responses for the trait
+        negative_examples: List of negative example responses for the trait
 
     Returns:
         Alignment score between 1 and 100
     """
-    eval_prompt = f"""Rate how strongly this response demonstrates the trait "{trait_name}" on a scale of 1-100.
+    if not response:
+        return 1.0
 
-Trait: {trait_name}
-Description: {trait_description}
+    if not positive_examples or not negative_examples:
+        raise ValueError("Both positive_examples and negative_examples are required for alignment evaluation")
 
-Response: {response}
+    score = _compute_contrastive_alignment(response, positive_examples, negative_examples)
 
-Does this response exhibit "{trait_name}" characteristics?
-1 = Not at all
-50 = Moderately
-100 = Strongly
-
-Rating (1-100):"""
-
-    rating = _get_model_rating(eval_prompt, model, tokenizer, device, max_rating=100)
-    return rating
+    # Scale from 0-1 to 1-100
+    return score * 99.0 + 1.0
 
 
-def _get_model_rating(
-    prompt: str,
-    model: PreTrainedModel,
-    tokenizer: PreTrainedTokenizer,
-    device: torch.device,
-    max_rating: int = 100,
+def estimate_alignment(
+    responses: list[str],
+    trait_description: str,
+    positive_examples: list[str] | None = None,
+    negative_examples: list[str] | None = None,
 ) -> float:
     """
-    Get a rating from the model for an evaluation prompt.
+    Estimate trait alignment using contrastive embedding similarity.
+
+    Computes how much closer response embeddings are to positive examples
+    versus negative examples.
 
     Args:
-        prompt: The evaluation prompt
-        model: The model to use
-        tokenizer: The tokenizer
-        device: Device to run on
-        max_rating: Maximum rating value (default 100)
+        responses: List of model responses to evaluate
+        trait_description: Description of the trait (unused when examples provided)
+        positive_examples: List of positive example responses for the trait
+        negative_examples: List of negative example responses for the trait
 
     Returns:
-        Rating between 1 and max_rating
+        Float score between 0 and 1 indicating alignment with trait
     """
-    inputs = tokenizer(prompt, return_tensors="pt").to(device)
+    if not responses:
+        return 0.0
 
-    with torch.no_grad():
-        outputs = model.generate(
-            **inputs,
-            max_new_tokens=10,
-            do_sample=False,  # Greedy for consistency
-            pad_token_id=tokenizer.eos_token_id,
-        )
+    if not positive_examples or not negative_examples:
+        raise ValueError("Both positive_examples and negative_examples are required for alignment evaluation")
 
-    rating_text = tokenizer.decode(
-        outputs[0][inputs["input_ids"].shape[1] :], skip_special_tokens=True
+    scores = [_compute_contrastive_alignment(r, positive_examples, negative_examples) for r in responses]
+
+    return float(np.mean(scores))
+
+
+def _compute_contrastive_alignment(
+    response: str,
+    positive_examples: list[str],
+    negative_examples: list[str],
+) -> float:
+    """
+    Compute alignment score by comparing response to positive vs negative examples.
+
+    Args:
+        response: The response to evaluate
+        positive_examples: List of positive example responses
+        negative_examples: List of negative example responses
+
+    Returns:
+        Float score between 0 and 1
+        - 1.0 = response is much more similar to positive than negative
+        - 0.5 = response is equally similar to both
+        - 0.0 = response is much more similar to negative than positive
+    """
+    import torch
+
+    model = _get_embedding_model()
+
+    # Encode response
+    response_embedding = model.encode(
+        response,
+        convert_to_tensor=True,
+        normalize_embeddings=True
     )
 
-    # Extract numeric rating
-    return _extract_rating(rating_text, max_rating)
+    # Encode positive examples
+    positive_embeddings = model.encode(
+        positive_examples,
+        convert_to_tensor=True,
+        normalize_embeddings=True
+    )
 
+    # Encode negative examples
+    negative_embeddings = model.encode(
+        negative_examples,
+        convert_to_tensor=True,
+        normalize_embeddings=True
+    )
 
-def _extract_rating(text: str, max_rating: int = 100) -> float:
-    """Extract a numeric rating from text."""
-    # Try to find numbers in the text
-    numbers = re.findall(r"\b(\d+(?:\.\d+)?)\b", text)
+    # Compute mean cosine similarity to positive examples
+    positive_similarities = torch.matmul(positive_embeddings, response_embedding)
+    mean_positive_sim = positive_similarities.mean().item()
 
-    if numbers:
-        rating = float(numbers[0])
-        # Clamp to 1-max_rating range
-        return max(1.0, min(float(max_rating), rating))
+    # Compute mean cosine similarity to negative examples
+    negative_similarities = torch.matmul(negative_embeddings, response_embedding)
+    mean_negative_sim = negative_similarities.mean().item()
 
-    # Default to middle rating if no number found
-    return float(max_rating) / 2.0
+    # Contrastive score: how much more similar to positive than negative
+    # Range: [-2, 2] -> normalize to [0, 1]
+    contrastive_score = mean_positive_sim - mean_negative_sim
+    normalized_score = (contrastive_score + 2) / 4
+
+    return max(0.0, min(1.0, normalized_score))

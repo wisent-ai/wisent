@@ -2,9 +2,9 @@
 CLI command for modifying model weights using steering vectors.
 
 This module implements the modify-weights command which permanently modifies
-model weights using either abliteration or additive methods.
+model weights using either directional projection or additive methods.
 
-By default, uses Norm-Preserving Biprojected Abliteration (Jim Lai's technique)
+By default, uses Norm-Preserving Biprojected Directional Modification (Jim Lai's technique)
 which maintains model quality by preserving weight norms.
 """
 
@@ -17,8 +17,8 @@ import torch
 from wisent.core.cli_logger import setup_logger, bind
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.weight_modification import (
-    abliterate_weights,
-    abliterate_with_kernel,
+    project_weights,
+    project_with_kernel,
     bake_steering_into_weights,
     bake_steering_with_kernel,
     export_modified_model,
@@ -35,7 +35,7 @@ def execute_modify_weights(args):
     1. Generate/load steering vectors (from task, trait, or file)
     2. Optionally load harmless vectors for biprojection
     3. Load model
-    4. Modify weights (norm-preserving abliteration or additive)
+    4. Modify weights (norm-preserving directional projection or additive)
     5. Export modified model
     """
     log = bind(_LOG)
@@ -50,7 +50,7 @@ def execute_modify_weights(args):
         print("WEIGHT MODIFICATION")
         print("=" * 80)
         print(f"Method: {args.method}")
-        if args.method == "abliteration":
+        if args.method == "directional":
             print(f"Norm-Preserving: {norm_preserve} {'(RECOMMENDED)' if norm_preserve else '(NOT recommended)'}")
             print(f"Biprojection: {use_biprojection}")
         print(f"Model: {args.model}")
@@ -197,7 +197,7 @@ def execute_modify_weights(args):
 
     # Step 1.5: Load harmless vectors for biprojection (if provided)
     harmless_vectors = None
-    if args.method == "abliteration" and use_biprojection and hasattr(args, 'harmless_vectors') and args.harmless_vectors:
+    if args.method == "directional" and use_biprojection and hasattr(args, 'harmless_vectors') and args.harmless_vectors:
         if args.verbose:
             print(f"Loading harmless vectors from {args.harmless_vectors}...")
 
@@ -228,11 +228,11 @@ def execute_modify_weights(args):
         print(f"Modifying weights using {args.method} method...")
         print()
 
-    if args.method == "abliteration":
-        # Abliteration method (norm-preserving by default)
+    if args.method == "directional":
+        # Directional projection method (norm-preserving by default)
         if args.use_kernel:
             # Use kernel-based layer weighting
-            stats = abliterate_with_kernel(
+            stats = project_with_kernel(
                 model,
                 steering_vectors,
                 harmless_vectors=harmless_vectors,
@@ -247,8 +247,8 @@ def execute_modify_weights(args):
                 verbose=args.verbose,
             )
         else:
-            # Uniform abliteration
-            stats = abliterate_weights(
+            # Uniform directional projection
+            stats = project_weights(
                 model,
                 steering_vectors,
                 harmless_vectors=harmless_vectors,
@@ -291,7 +291,7 @@ def execute_modify_weights(args):
         print(f"  Layers modified: {stats['layers_modified']}")
         print(f"  Components modified: {stats['components_modified']}")
         print(f"  Parameters modified: {stats['total_parameters_modified']:,}")
-        if args.method == "abliteration":
+        if args.method == "directional":
             print(f"  Norms preserved: {stats.get('norm_preserved', 'N/A')}")
         print()
 
@@ -329,7 +329,7 @@ def execute_modify_weights(args):
         print("=" * 80)
         print(f"Modified model: {args.output_dir}")
         print(f"Method: {args.method}")
-        if args.method == "abliteration":
+        if args.method == "directional":
             print(f"Norm-preserving: {norm_preserve}")
             print(f"Biprojection: {use_biprojection and harmless_vectors is not None}")
         print(f"Layers modified: {stats['layers_modified']}")
@@ -339,6 +339,6 @@ def execute_modify_weights(args):
     log.info("Weight modification complete", extra={
         "method": args.method,
         "output_dir": args.output_dir,
-        "norm_preserve": norm_preserve if args.method == "abliteration" else None,
+        "norm_preserve": norm_preserve if args.method == "directional" else None,
         "stats": stats,
     })

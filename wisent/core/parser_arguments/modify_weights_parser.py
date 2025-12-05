@@ -12,7 +12,7 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
     Set up argument parser for modify-weights command.
 
     This command generates steering vectors and permanently modifies model weights
-    using either abliteration (orthogonal projection) or additive methods.
+    using either directional projection or additive methods.
     """
 
     # Input source (mutually exclusive: task or trait)
@@ -97,41 +97,41 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
         "--method",
         type=str,
         required=True,
-        choices=["abliteration", "additive"],
-        help="Weight modification method: 'abliteration' (remove capability) or 'additive' (enhance behavior)"
+        choices=["directional", "additive"],
+        help="Weight modification method: 'directional' (project onto/away from direction) or 'additive' (enhance behavior)"
     )
 
-    # Abliteration-specific parameters
-    abliteration_group = parser.add_argument_group("abliteration parameters")
-    abliteration_group.add_argument(
+    # Directional projection parameters
+    directional_group = parser.add_argument_group("directional projection parameters")
+    directional_group.add_argument(
         "--strength",
         type=float,
         default=1.0,
-        help="Abliteration strength (0=no change, 1=full abliteration) (default: 1.0)"
+        help="Projection strength (0=no change, 1=full projection) (default: 1.0)"
     )
-    abliteration_group.add_argument(
+    directional_group.add_argument(
         "--norm-preserve",
         action="store_true",
         default=True,
-        help="Use norm-preserving abliteration (RECOMMENDED, default: True)"
+        help="Use norm-preserving projection (RECOMMENDED, default: True)"
     )
-    abliteration_group.add_argument(
+    directional_group.add_argument(
         "--no-norm-preserve",
         action="store_true",
-        help="Disable norm-preserving abliteration (NOT recommended)"
+        help="Disable norm-preserving projection (NOT recommended)"
     )
-    abliteration_group.add_argument(
+    directional_group.add_argument(
         "--use-biprojection",
         action="store_true",
         default=True,
         help="Orthogonalize steering direction against harmless direction (default: True)"
     )
-    abliteration_group.add_argument(
+    directional_group.add_argument(
         "--no-biprojection",
         action="store_true",
         help="Disable biprojection (NOT recommended)"
     )
-    abliteration_group.add_argument(
+    directional_group.add_argument(
         "--harmless-vectors",
         type=str,
         default=None,

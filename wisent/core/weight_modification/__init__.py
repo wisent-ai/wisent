@@ -7,15 +7,15 @@ steering (hooks), these modifications are baked into the model weights.
 
 Three approaches:
 
-1. **Norm-Preserving Biprojected Abliteration** (RECOMMENDED):
+1. **Norm-Preserving Biprojected Directional Modification** (RECOMMENDED):
    - Based on Jim Lai's technique used by Arli AI
    - Decomposes weights into magnitude and direction
-   - Ablates only the direction, preserves original magnitudes
+   - Projects only the direction, preserves original magnitudes
    - Optionally orthogonalizes against harmless directions (biprojection)
    - Maintains model intelligence and reasoning capabilities
-   - See: https://huggingface.co/blog/grimjim/norm-preserving-biprojected-abliteration
+   - Can be used to ADD or REMOVE behaviors
 
-2. **Standard Abliteration** (Legacy, NOT recommended):
+2. **Standard Directional Projection** (Legacy, NOT recommended):
    - W' = W - λ(vvᵀ)W
    - Removes dimension parallel to steering vector
    - CHANGES WEIGHT NORMS - can degrade model quality
@@ -31,18 +31,18 @@ runtime hooks or steering vectors.
 
 Usage:
     from wisent.core.weight_modification import (
-        abliterate_weights,
-        abliterate_weights_norm_preserved,
+        project_weights,
+        project_weights_norm_preserved,
         bake_steering_into_weights,
         export_modified_model
     )
 
-    # Option 1: Norm-preserving abliteration (RECOMMENDED)
-    # By default, abliterate_weights uses norm_preserve=True
-    abliterate_weights(model, steering_vectors, strength=1.0)
+    # Option 1: Norm-preserving directional modification (RECOMMENDED)
+    # By default, project_weights uses norm_preserve=True
+    project_weights(model, steering_vectors, strength=1.0)
 
     # Or explicitly:
-    abliterate_weights_norm_preserved(
+    project_weights_norm_preserved(
         model,
         steering_vectors,
         harmless_vectors=harmless_vectors,  # Optional biprojection
@@ -56,13 +56,13 @@ Usage:
     export_modified_model(model, "path/to/save")
 """
 
-from wisent.core.weight_modification.abliteration import (
-    abliterate_weights,
-    abliterate_weights_norm_preserved,
-    abliterate_component,
-    abliterate_component_norm_preserved,
-    compute_abliteration_kernel,
-    abliterate_with_kernel,
+from wisent.core.weight_modification.directional import (
+    project_weights,
+    project_weights_norm_preserved,
+    project_component,
+    project_component_norm_preserved,
+    compute_projection_kernel,
+    project_with_kernel,
     orthogonalize_direction,
 )
 from wisent.core.weight_modification.additive import (
@@ -82,15 +82,14 @@ from wisent.core.weight_modification.utils import (
 )
 
 __all__ = [
-    # Norm-Preserving Biprojected Abliteration (RECOMMENDED)
-    "abliterate_weights",  # Default uses norm_preserve=True
-    "abliterate_weights_norm_preserved",
-    "abliterate_component_norm_preserved",
+    # Norm-Preserving Biprojected Directional Modification (RECOMMENDED)
+    "project_weights",  # Default uses norm_preserve=True
+    "project_weights_norm_preserved",
+    "project_component_norm_preserved",
+    "project_component",
+    "compute_projection_kernel",
+    "project_with_kernel",
     "orthogonalize_direction",
-    # Legacy abliteration (not recommended)
-    "abliterate_component",
-    "compute_abliteration_kernel",
-    "abliterate_with_kernel",
     # Additive (bake steering into weights)
     "bake_steering_into_weights",
     "bake_steering_into_component",

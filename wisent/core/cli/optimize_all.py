@@ -4,7 +4,7 @@ Optimize all parameters for a model.
 Runs all optimization routines and saves results to the unified config manager:
 1. Classification optimization (layer, threshold, aggregation)
 2. Steering optimization (layer, strength)
-3. Weight modification optimization (abliteration parameters)
+3. Weight modification optimization (directional projection parameters)
 
 Results are saved per-task and as defaults in ~/.wisent/configs/{model}.json
 """
@@ -249,7 +249,7 @@ def _run_weight_modification_optimization(args: argparse.Namespace, traits: List
                 position_range="0.3,0.7",
                 num_pairs=100,
                 # Method settings
-                method="abliteration",
+                method="directional",
                 components=["self_attn.o_proj", "mlp.down_proj"],
                 norm_preserve=True,
                 # Other settings
@@ -276,7 +276,7 @@ def _run_weight_modification_optimization(args: argparse.Namespace, traits: List
             save_trait_weight_modification_config(
                 model_name=args.model,
                 trait_name=trait,
-                method="abliteration",
+                method="directional",
                 max_weight=result.best_params.get("max_weight", 1.0),
                 min_weight=result.best_params.get("min_weight", 0.0),
                 max_weight_position=result.best_params.get("max_weight_position", 0.5),
