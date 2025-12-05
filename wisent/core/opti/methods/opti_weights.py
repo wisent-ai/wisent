@@ -36,11 +36,11 @@ class WeightsOptimizerConfig:
         position_range:
             Range for max_weight_position as ratio of layers (min, max).
         method:
-            Weight modification method: "abliteration" or "bake".
+            Weight modification method: "directional" or "bake".
         components:
             Number of components for weight modification.
         norm_preserve:
-            Whether to preserve norms during abliteration.
+            Whether to preserve norms during directional projection.
         optimize_direction_index:
             Whether to optimize direction index as well.
         target_metric:
@@ -52,7 +52,7 @@ class WeightsOptimizerConfig:
     max_weight_range: tuple[float, float] = (0.1, 1.0)
     min_weight_range: tuple[float, float] = (0.0, 0.3)
     position_range: tuple[float, float] = (0.3, 0.7)
-    method: Literal["abliteration", "bake"] = "abliteration"
+    method: Literal["directional", "bake"] = "directional"
     components: int = 1
     norm_preserve: bool = True
     optimize_direction_index: bool = False
@@ -209,7 +209,7 @@ class WeightsOptimizer(BaseOptimizer):
             params: Dict with strength, max_weight, min_weight, max_weight_position.
         """
         from wisent.core.weight_modification import (
-            abliterate_with_kernel,
+            project_with_kernel,
             bake_steering_with_kernel,
         )
 
@@ -219,8 +219,8 @@ class WeightsOptimizer(BaseOptimizer):
         # Compute min_weight_distance from position
         min_weight_distance = 0.6 * (self.num_layers - 1)
 
-        if self.config.method == "abliteration":
-            abliterate_with_kernel(
+        if self.config.method == "directional":
+            project_with_kernel(
                 self.model,
                 self.steering_vectors,
                 max_weight=params["max_weight"] * params["strength"],

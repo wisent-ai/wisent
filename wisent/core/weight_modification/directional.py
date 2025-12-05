@@ -1,32 +1,37 @@
 """
-Norm-Preserving Biprojected Abliteration: Remove capabilities while maintaining model quality.
+Norm-Preserving Biprojected Directional Weight Modification.
+
+Permanently modifies model weights by projecting out or projecting onto
+specific directions in the representation space. Can be used to:
+- Remove behaviors (e.g., refusal removal)
+- Add behaviors (e.g., personality traits, speaking styles)
+- Any directional steering that should be baked into weights
 
 Implements the technique pioneered by Jim Lai (grimjim) and used by Arli AI.
-See: https://huggingface.co/blog/grimjim/norm-preserving-biprojected-abliteration
 
-Key improvements over standard abliteration:
+Key improvements over standard projection:
 
-1. **Biprojection (Targeting)**: Refines the refusal/steering direction to be
+1. **Biprojection (Targeting)**: Refines the steering direction to be
    mathematically orthogonal to "harmless" directions. This ensures we don't
    accidentally remove healthy, harmless concepts.
 
 2. **Decomposition**: Instead of raw subtraction, we decompose weight matrices
    into Magnitude and Direction components.
 
-3. **Norm-Preservation**: We remove the steering component solely from the
+3. **Norm-Preservation**: We modify the steering component solely from the
    directional aspect of weights, then recombine with original magnitudes.
 
-Standard abliteration:
+Standard projection:
     W' = W - λ·(vvᵀ)·W  (CHANGES NORMS - damages model)
 
-Norm-preserving abliteration:
+Norm-preserving projection:
     1. Decompose: W = ||W|| * W_direction
-    2. Ablate direction: W_direction' = W_direction - λ·v·(v·W_direction)
+    2. Project direction: W_direction' = W_direction - λ·v·(v·W_direction)
     3. Renormalize: W_direction' = normalize(W_direction')
     4. Recombine: W' = ||W|| * W_direction'  (PRESERVES NORMS)
 
 The result maintains the "importance" structure of the neural network, avoiding
-the "Safety Tax" that degrades reasoning in standard abliterated models.
+the "Safety Tax" that degrades reasoning in standard modified models.
 """
 
 from __future__ import annotations
@@ -41,12 +46,12 @@ if TYPE_CHECKING:
     from torch.nn import Module
 
 __all__ = [
-    "abliterate_weights",
-    "abliterate_weights_norm_preserved",
-    "abliterate_component",
-    "abliterate_component_norm_preserved",
-    "compute_abliteration_kernel",
-    "abliterate_with_kernel",
+    "project_weights",
+    "project_weights_norm_preserved",
+    "project_component",
+    "project_component_norm_preserved",
+    "compute_projection_kernel",
+    "project_with_kernel",
     "orthogonalize_direction",
 ]
 
@@ -97,18 +102,18 @@ def orthogonalize_direction(
     return orthogonalized
 
 
-def abliterate_component_norm_preserved(
+def project_component_norm_preserved(
     weight_matrix: Tensor,
     steering_vector: Tensor,
     strength: float = 1.0,
     in_place: bool = True,
 ) -> Tensor:
     """
-    Abliterate a weight matrix while PRESERVING ROW NORMS.
+    Project a weight matrix while PRESERVING ROW NORMS.
 
     This is the key innovation from Jim Lai's norm-preserving technique.
     Instead of directly subtracting from weights (which changes magnitudes),
-    we decompose into direction and magnitude, ablate only the direction,
+    we decompose into direction and magnitude, project only the direction,
     then recombine with original magnitudes.
 
     The steering vector represents a direction in the OUTPUT space of the layer.
@@ -117,14 +122,14 @@ def abliterate_component_norm_preserved(
     Args:
         weight_matrix: Weight matrix to modify [out_dim, in_dim]
         steering_vector: Steering direction in output space [out_dim]
-        strength: Abliteration strength (scale_factor, typically 1.0)
+        strength: Projection strength (scale_factor, typically 1.0)
         in_place: Whether to modify in-place
 
     Returns:
         Modified weight matrix with preserved row norms
 
     Mathematical operation (for output-space steering):
-        Standard abliteration: W' = W - λ(vvᵀ)W
+        Standard projection: W' = W - λ(vvᵀ)W
 
         Norm-preserving version:
         1. W_norm = ||W[i,:]||_2 for each row i (magnitudes)
@@ -166,8 +171,8 @@ def abliterate_component_norm_preserved(
         W_norm = torch.norm(W, p=2, dim=1, keepdim=True)  # [out_dim, 1]
         W_direction = F.normalize(W, p=2, dim=1)  # [out_dim, in_dim], unit vectors
 
-        # Step 2: Compute the abliteration term
-        # For output-space abliteration: W' = W - λ(vvᵀ)W
+        # Step 2: Compute the projection term
+        # For output-space projection: W' = W - λ(vvᵀ)W
         # (vvᵀ)W = v @ (vᵀ @ W) = v @ (v.unsqueeze(0) @ W)
         # This gives us the component of W that projects onto v in output space
 
@@ -177,10 +182,10 @@ def abliterate_component_norm_preserved(
 
         # v @ (vᵀ @ W) gives [out_dim, in_dim] - outer product expansion
         # This is the rank-1 component to remove
-        ablation_term = v.unsqueeze(1) @ weighted_sum  # [out_dim, in_dim]
+        projection_term = v.unsqueeze(1) @ weighted_sum  # [out_dim, in_dim]
 
-        # Step 3: Ablate the directional component
-        W_direction_new = W_direction - strength * ablation_term
+        # Step 3: Project the directional component
+        W_direction_new = W_direction - strength * projection_term
 
         # Step 4: Re-normalize the adjusted directions (crucial for norm preservation)
         W_direction_new = F.normalize(W_direction_new, p=2, dim=1)
@@ -199,7 +204,7 @@ def abliterate_component_norm_preserved(
         projection_magnitude = (v.unsqueeze(1) * W_direction).sum(dim=1)
 
         log.debug(
-            "Norm-preserved abliteration",
+            "Norm-preserved directional projection",
             extra={
                 "weight_shape": weight_matrix.shape,
                 "strength": strength,
@@ -212,22 +217,22 @@ def abliterate_component_norm_preserved(
     return result
 
 
-def abliterate_component(
+def project_component(
     weight_matrix: Tensor,
     projector: Tensor,
     strength: float,
     in_place: bool = True,
 ) -> Tensor:
     """
-    Standard abliteration (DOES NOT preserve norms - legacy method).
+    Standard directional projection (DOES NOT preserve norms - legacy method).
 
     WARNING: This method alters weight magnitudes, which can degrade model quality.
-    Use abliterate_component_norm_preserved() instead for better results.
+    Use project_component_norm_preserved() instead for better results.
 
     Args:
         weight_matrix: Weight matrix to modify [out_dim, in_dim]
         projector: Projection matrix vvᵀ [out_dim, out_dim]
-        strength: Abliteration strength λ
+        strength: Projection strength λ
         in_place: Whether to modify in-place
 
     Returns:
@@ -246,7 +251,7 @@ def abliterate_component(
         result = weight_matrix - strength * projected
 
     log.debug(
-        "Standard abliteration (norms NOT preserved)",
+        "Standard directional projection (norms NOT preserved)",
         extra={
             "weight_shape": weight_matrix.shape,
             "strength": strength,
@@ -257,7 +262,7 @@ def abliterate_component(
     return result
 
 
-def compute_abliteration_kernel(
+def compute_projection_kernel(
     steering_vectors: dict[int, Tensor],
     harmless_vectors: dict[int, Tensor] | None = None,
     layer_weights: dict[int, float] | None = None,
@@ -265,7 +270,7 @@ def compute_abliteration_kernel(
     use_biprojection: bool = True,
 ) -> dict[int, tuple[Tensor, float]]:
     """
-    Compute abliteration parameters for each layer.
+    Compute directional projection parameters for each layer.
 
     Args:
         steering_vectors: Per-layer steering vectors {layer_idx: [H]}
@@ -301,7 +306,7 @@ def compute_abliteration_kernel(
         kernel[layer_idx] = (v, weight)
 
         log.debug(
-            "Computed abliteration kernel",
+            "Computed projection kernel",
             extra={
                 "layer": layer_idx,
                 "weight": weight,
@@ -313,7 +318,7 @@ def compute_abliteration_kernel(
     return kernel
 
 
-def abliterate_weights_norm_preserved(
+def project_weights_norm_preserved(
     model: Module,
     steering_vectors: dict[int, Tensor],
     harmless_vectors: dict[int, Tensor] | None = None,
@@ -324,14 +329,13 @@ def abliterate_weights_norm_preserved(
     verbose: bool = True,
 ) -> dict[str, int]:
     """
-    Norm-Preserving Biprojected Abliteration - the recommended method.
+    Norm-Preserving Biprojected Directional Modification - the recommended method.
 
-    Permanently modifies model weights to remove capability of expressing
-    behavior in the steering direction, while PRESERVING weight magnitudes
-    to maintain model quality and reasoning capabilities.
+    Permanently modifies model weights to project out or onto a steering direction,
+    while PRESERVING weight magnitudes to maintain model quality and reasoning
+    capabilities. Can be used to remove or add behaviors.
 
-    This implements the technique from Jim Lai (grimjim) used by Arli AI:
-    https://huggingface.co/blog/grimjim/norm-preserving-biprojected-abliteration
+    This implements the technique from Jim Lai (grimjim) used by Arli AI.
 
     Args:
         model: Model to modify (in-place)
@@ -339,10 +343,10 @@ def abliterate_weights_norm_preserved(
         harmless_vectors: Optional per-layer harmless directions for biprojection
                          If provided, steering directions are orthogonalized
                          against these to avoid removing harmless concepts
-        components: Component names to abliterate
+        components: Component names to modify
                    Default: ["self_attn.o_proj", "mlp.down_proj"]
         layer_weights: Optional per-layer strength {layer_idx: weight}
-        strength: Global abliteration strength (scale_factor)
+        strength: Global projection strength (scale_factor)
         use_biprojection: Whether to use biprojection (orthogonalize against harmless)
         verbose: Whether to print progress
 
@@ -350,23 +354,23 @@ def abliterate_weights_norm_preserved(
         Dictionary with modification statistics
 
     Example:
-        >>> from wisent.core.weight_modification import abliterate_weights_norm_preserved
-        >>> # Abliterate with norm preservation
-        >>> stats = abliterate_weights_norm_preserved(
+        >>> from wisent.core.weight_modification import project_weights_norm_preserved
+        >>> # Project with norm preservation
+        >>> stats = project_weights_norm_preserved(
         ...     model,
         ...     steering_vectors,
         ...     harmless_vectors=harmless_vectors,  # Optional
         ...     strength=1.0,
         ... )
-        >>> model.save_pretrained("path/to/abliterated-model")
+        >>> model.save_pretrained("path/to/modified-model")
     """
     log = bind(_LOG, num_layers=len(steering_vectors))
 
     if components is None:
         components = ["self_attn.o_proj", "mlp.down_proj"]
 
-    # Compute abliteration kernel with optional biprojection
-    kernel = compute_abliteration_kernel(
+    # Compute projection kernel with optional biprojection
+    kernel = compute_projection_kernel(
         steering_vectors,
         harmless_vectors=harmless_vectors,
         layer_weights=layer_weights,
@@ -388,7 +392,7 @@ def abliterate_weights_norm_preserved(
 
     if verbose:
         print(f"\n{'='*60}")
-        print("NORM-PRESERVING BIPROJECTED ABLITERATION")
+        print("NORM-PRESERVING BIPROJECTED DIRECTIONAL MODIFICATION")
         print(f"{'='*60}")
         print(f"Layers: {len(steering_vectors)}")
         print(f"Components: {components}")
@@ -421,8 +425,8 @@ def abliterate_weights_norm_preserved(
                 # Compute norm before for verification
                 norm_before = torch.norm(weight_matrix.float(), p=2, dim=1).mean().item()
 
-                # Apply norm-preserving abliteration
-                abliterate_component_norm_preserved(
+                # Apply norm-preserving directional projection
+                project_component_norm_preserved(
                     weight_matrix,
                     steering_direction,
                     effective_strength,
@@ -452,7 +456,7 @@ def abliterate_weights_norm_preserved(
 
     if verbose:
         print(f"\n{'='*60}")
-        print("ABLITERATION COMPLETE")
+        print("DIRECTIONAL MODIFICATION COMPLETE")
         print(f"{'='*60}")
         print(f"  Layers modified: {layers_modified}")
         print(f"  Components modified: {components_modified}")
@@ -468,7 +472,7 @@ def abliterate_weights_norm_preserved(
     }
 
 
-def abliterate_weights(
+def project_weights(
     model: Module,
     steering_vectors: dict[int, Tensor],
     harmless_vectors: dict[int, Tensor] | None = None,
@@ -481,18 +485,18 @@ def abliterate_weights(
     verbose: bool = True,
 ) -> dict[str, int]:
     """
-    Abliterate model weights - unified interface.
+    Directionally modify model weights - unified interface.
 
-    By default, uses norm-preserving biprojected abliteration (recommended).
-    Set norm_preserve=False for legacy standard abliteration.
+    By default, uses norm-preserving biprojected modification (recommended).
+    Set norm_preserve=False for legacy standard projection.
 
     Args:
         model: Model to modify (in-place)
         steering_vectors: Per-layer steering vectors {layer_idx: [H]}
         harmless_vectors: Optional per-layer harmless directions for biprojection
-        components: Component names to abliterate
+        components: Component names to modify
         layer_weights: Optional per-layer strength
-        strength: Global abliteration strength
+        strength: Global projection strength
         normalize_vectors: Whether to normalize steering vectors
         norm_preserve: Use norm-preserving method (default True, RECOMMENDED)
         use_biprojection: Orthogonalize against harmless directions
@@ -502,7 +506,7 @@ def abliterate_weights(
         Modification statistics
     """
     if norm_preserve:
-        return abliterate_weights_norm_preserved(
+        return project_weights_norm_preserved(
             model=model,
             steering_vectors=steering_vectors,
             harmless_vectors=harmless_vectors,
@@ -513,11 +517,11 @@ def abliterate_weights(
             verbose=verbose,
         )
 
-    # Legacy standard abliteration (not recommended)
+    # Legacy standard projection (not recommended)
     log = bind(_LOG, num_layers=len(steering_vectors))
 
     if verbose:
-        print("\nWARNING: Using legacy abliteration (norms NOT preserved)")
+        print("\nWARNING: Using legacy projection (norms NOT preserved)")
         print("Consider using norm_preserve=True for better model quality\n")
 
     if components is None:
@@ -559,7 +563,7 @@ def abliterate_weights(
                     component = getattr(component, attr)
 
                 if hasattr(component, "weight"):
-                    abliterate_component(
+                    project_component(
                         component.weight,
                         projector,
                         effective_strength,
@@ -583,7 +587,7 @@ def abliterate_weights(
     }
 
 
-def abliterate_with_kernel(
+def project_with_kernel(
     model: Module,
     steering_vectors: dict[int, Tensor],
     harmless_vectors: dict[int, Tensor] | None = None,
@@ -598,22 +602,22 @@ def abliterate_with_kernel(
     verbose: bool = True,
 ) -> dict[str, int]:
     """
-    Abliterate with kernel-based layer weights distribution.
+    Directionally modify weights with kernel-based layer weights distribution.
 
     Creates a smooth weight distribution across layers with maximum
     at max_weight_position, tapering to min_weight at edges.
 
-    By default uses norm-preserving biprojected abliteration.
+    By default uses norm-preserving biprojected modification.
 
     Args:
         model: Model to modify
         steering_vectors: Per-layer steering vectors
         harmless_vectors: Optional harmless directions for biprojection
-        max_weight: Peak abliteration strength
+        max_weight: Peak projection strength
         max_weight_position: Layer index of peak (None = middle)
-        min_weight: Minimum abliteration strength
+        min_weight: Minimum projection strength
         min_weight_distance: Distance over which weight decays
-        components: Components to abliterate
+        components: Components to modify
         normalize_vectors: Whether to normalize steering vectors
         norm_preserve: Use norm-preserving method (RECOMMENDED)
         use_biprojection: Orthogonalize against harmless
@@ -650,7 +654,7 @@ def abliterate_with_kernel(
         print(f"  Min: {min_weight:.2f} within distance {min_weight_distance:.1f}")
         print(f"  Active layers: {sum(1 for w in layer_weights.values() if w > 0)}/{num_layers}")
 
-    return abliterate_weights(
+    return project_weights(
         model,
         steering_vectors,
         harmless_vectors=harmless_vectors,

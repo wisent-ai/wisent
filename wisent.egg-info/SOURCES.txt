@@ -201,6 +201,7 @@ wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/llama.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/longform_writing.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/m_mmlu.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/math.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/math500.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/mbpp.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/meddialog.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/medical_abstracts.py
@@ -220,7 +221,6 @@ wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/or_bench.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/penn_treebank.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/planbench.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/polymath.py
-wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/polymath_configs.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/prompt_robustness_agieval_aqua_rat.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/pythia.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/recode.py
@@ -758,12 +758,14 @@ wisent/core/evaluators/__init__.py
 wisent/core/evaluators/personalization_evaluator.py
 wisent/core/evaluators/rotator.py
 wisent/core/evaluators/benchmark_specific/__init__.py
+wisent/core/evaluators/benchmark_specific/aime_evaluator.py
 wisent/core/evaluators/benchmark_specific/exact_match_evaluator.py
 wisent/core/evaluators/benchmark_specific/f1_evaluator.py
 wisent/core/evaluators/benchmark_specific/generation_evaluator.py
 wisent/core/evaluators/benchmark_specific/log_likelihoods_evaluator.py
 wisent/core/evaluators/benchmark_specific/math_evaluator.py
 wisent/core/evaluators/benchmark_specific/perplexity_evaluator.py
+wisent/core/evaluators/benchmark_specific/polymath_evaluator.py
 wisent/core/evaluators/benchmark_specific/coding/__init__.py
 wisent/core/evaluators/benchmark_specific/coding/solution_generator.py
 wisent/core/evaluators/benchmark_specific/coding/metrics/__init__.py

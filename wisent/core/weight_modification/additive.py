@@ -1,7 +1,7 @@
 """
 Additive weight modification: Bake steering vectors into model weights.
 
-This is a more conservative approach than abliteration. Instead of removing
+This is a more conservative approach than directional projection. Instead of removing
 dimensions, we add bias toward the desired direction directly into the weights.
 
 The goal: Make the steering effect permanent without runtime hooks, but preserve
@@ -19,7 +19,7 @@ Approaches:
    Modify weight matrices to shift outputs in steering direction
 
 Trade-off:
-- Additive is less aggressive than abliteration
+- Additive is less aggressive than directional projection
 - Preserves original model capabilities better
 - But may not be as effective at changing behavior
 """

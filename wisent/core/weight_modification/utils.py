@@ -91,7 +91,7 @@ def verify_modification(
 
     Example:
         >>> original_state = copy.deepcopy(model.state_dict())
-        >>> abliterate_weights(model, steering_vectors)
+        >>> project_weights(model, steering_vectors)
         >>> result = verify_modification(model, original_state, expected_changes=64)
         >>> assert result["verified"]
     """

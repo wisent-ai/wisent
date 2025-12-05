@@ -4,7 +4,7 @@ Unified Configuration Manager for Wisent.
 Stores all optimized parameters in a single location with a consistent structure:
 - Classification parameters (layer, threshold, aggregation, etc.)
 - Steering parameters (layer, strength, method, etc.)
-- Weight modification parameters (abliteration/additive settings)
+- Weight modification parameters (directional projection/additive settings)
 
 All configs are stored per model, with task-specific overrides where applicable.
 
@@ -90,10 +90,10 @@ class SteeringConfig(SerializableConfig):
 
 @dataclass
 class WeightModificationConfig(SerializableConfig):
-    """Weight modification (abliteration/additive) parameters."""
-    method: str = "abliteration"  # abliteration or additive
+    """Weight modification (directional projection/additive) parameters."""
+    method: str = "directional"  # directional or additive
 
-    # Abliteration parameters
+    # Directional projection parameters
     max_weight: float = 1.0
     min_weight: float = 0.0
     max_weight_position: float = 0.5  # As ratio of total layers
@@ -525,7 +525,7 @@ class WisentConfigManager:
         model_name: str,
         task_name: Optional[str] = None,
         trait_label: str = "",
-        method: str = "abliteration",
+        method: str = "directional",
         max_weight: float = 1.0,
         min_weight: float = 0.0,
         max_weight_position: float = 0.5,
@@ -715,7 +715,7 @@ class WisentConfigManager:
         self,
         model_name: str,
         trait_name: str,
-        method: str = "abliteration",
+        method: str = "directional",
         max_weight: float = 1.0,
         min_weight: float = 0.0,
         max_weight_position: float = 0.5,
@@ -1025,7 +1025,7 @@ class WeightModificationResult:
     model: str
     task: str
     trait_label: str
-    method: str = "abliteration"
+    method: str = "directional"
     max_weight: float = 1.0
     min_weight: float = 0.0
     max_weight_position: float = 0.5
@@ -1051,7 +1051,7 @@ def store_weight_modification(
     model: str,
     task: str,
     trait_label: str,
-    method: str = "abliteration",
+    method: str = "directional",
     max_weight: float = 1.0,
     min_weight: float = 0.0,
     max_weight_position: float = 0.5,
@@ -1139,7 +1139,7 @@ def get_cached_weight_modification(
     model: str,
     task: str,
     trait_label: str,
-    method: str = "abliteration",
+    method: str = "directional",
     use_default: bool = True,
 ) -> Optional[WeightModificationResult]:
     """
