@@ -40,5 +40,11 @@ wonderwords>=2.2.0  # Required for ruler benchmark
 sympy>=1.12  # Required for minerva_math and math benchmarks
 math_verify>=0.1.0  # Required for minerva_math and math benchmarks
 antlr4-python3-runtime==4.11  # Required for minerva_math and math benchmarks
-unitxt #Required for 20_newsgroups
-# nltk>=3.8.0 already included above
+unitxt  # Required for 20_newsgroups
+
+# Dependencies for math evaluators (math_evaluator, aime_evaluator, polymath_evaluator)
+math_equivalence>=0.0.1  # Required for math_evaluator and aime_evaluator (hendrycks/math)
+pebble>=5.0.0  # Required for batch processing in math_parsing
+latex2sympy2_extended>=1.0.0  # Required for polymath_evaluator math parsing
+word2number>=1.1  # Required for polymath_evaluator number conversion
+regex>=2023.0.0  # Required for math_parsing advanced regex

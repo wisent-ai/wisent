@@ -36,6 +36,7 @@ from wisent.core.parser_arguments.evaluate_refusal_parser import setup_evaluate_
 from wisent.core.parser_arguments.inference_config_parser import setup_inference_config_parser
 from wisent.core.parser_arguments.optimization_cache_parser import setup_optimization_cache_parser
 from wisent.core.parser_arguments.optimize_weights_parser import setup_optimize_weights_parser
+from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -193,5 +194,12 @@ def setup_parser() -> argparse.ArgumentParser:
         "optimize-weights", help="Optimize weight modification parameters for any trait/task using Optuna"
     )
     setup_optimize_weights_parser(optimize_weights_parser)
+
+    # Unified goodness training command - train single vector from ALL benchmarks
+    unified_goodness_parser = subparsers.add_parser(
+        "train-unified-goodness",
+        help="Train a single 'goodness' steering vector from pooled multi-benchmark data"
+    )
+    setup_train_unified_goodness_parser(unified_goodness_parser)
 
     return parser
