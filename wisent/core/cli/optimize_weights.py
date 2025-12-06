@@ -108,13 +108,30 @@ def execute_optimize_weights(args):
     print()
 
     # Initialize components
-    print("Loading base model for reference...")
-
     device = args.device if args.device else resolve_default_device()
+    print(f"Device: {device}")
 
-    print(f"   Device: {device}")
+    # IMPORTANT: Generate steering vectors FIRST, before loading the main model.
+    # The steering vector generation pipeline loads its own model internally.
+    # If we load our model first, then the pipeline loads another model, we end up
+    # with two large models competing for GPU memory, causing CPU offloading.
+    # By generating vectors first, that model is unloaded before we load ours.
+    print(f"\nGenerating steering vectors with {num_pairs} pairs...")
+    print("   (This will load the model temporarily for activation collection)\n")
+    steering_vectors, positive_examples, negative_examples = _generate_steering_vectors(args, num_pairs, num_layers=None)
+    print(f"\n   Steering vectors generated for {len(steering_vectors)} layers")
+    print(f"   Got {len(positive_examples)} positive and {len(negative_examples)} negative examples")
 
-    # Load model using WisentModel
+    # Force garbage collection to ensure the model used for activation collection is freed
+    import gc
+    gc.collect()
+    if device == "cuda":
+        import torch
+        torch.cuda.empty_cache()
+    print("   Memory cleaned up\n")
+
+    # NOW load the main model for optimization (GPU should be free now)
+    print("Loading base model for optimization...")
     wisent_model = WisentModel(args.model, device=device)
     base_model = wisent_model.hf_model  # Get underlying HF model for weight modification
     tokenizer = wisent_model.tokenizer
@@ -124,12 +141,6 @@ def execute_optimize_weights(args):
 
     # Store base model state for restoration
     base_state_dict = {k: v.clone() for k, v in base_model.state_dict().items()}
-
-    # Pre-generate steering vectors once (also returns positive/negative examples)
-    print(f"Generating steering vectors with {num_pairs} pairs...")
-    steering_vectors, positive_examples, negative_examples = _generate_steering_vectors(args, num_pairs, num_layers)
-    print(f"   Steering vectors generated for {len(steering_vectors)} layers")
-    print(f"   Got {len(positive_examples)} positive and {len(negative_examples)} negative examples\n")
 
     # Initialize evaluator (pass wisent_model for personalization baseline generation, and contrastive pairs)
     evaluator = _create_evaluator(args, args.model, wisent_model=wisent_model,
@@ -281,8 +292,13 @@ def execute_optimize_weights(args):
     )
 
 
-def _generate_steering_vectors(args, num_pairs: int, num_layers: int) -> tuple[dict[int, torch.Tensor], list[str], list[str]]:
+def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> tuple[dict[int, torch.Tensor], list[str], list[str]]:
     """Generate steering vectors from trait or task.
+
+    Args:
+        args: Command line arguments
+        num_pairs: Number of contrastive pairs to generate
+        num_layers: Number of model layers (optional, not used - kept for backwards compatibility)
 
     Returns:
         Tuple of (steering_vectors, positive_examples, negative_examples)
@@ -551,6 +567,16 @@ def _create_task_evaluator(args) -> Callable:
     )
     test_pairs = result["test_qa_pairs"]
 
+    # Debug: Log metadata availability for coding tasks
+    if test_pairs.pairs:
+        first_pair = test_pairs.pairs[0]
+        first_metadata = getattr(first_pair, 'metadata', None)
+        print(f"   [DEBUG] First pair metadata present: {first_metadata is not None}")
+        if first_metadata:
+            print(f"   [DEBUG] Metadata keys: {list(first_metadata.keys())}")
+            test_code_preview = first_metadata.get('test_code', '')
+            print(f"   [DEBUG] test_code present: {bool(test_code_preview)}, length: {len(test_code_preview) if test_code_preview else 0}")
+
     def evaluate(model, tokenizer) -> dict:
         """Run task evaluation by generating actual responses from the model."""
         # Wrap HF model in WisentModel for standard generation
@@ -559,6 +585,9 @@ def _create_task_evaluator(args) -> Callable:
 
         correct = 0
         total = 0
+
+        # Log first iteration only
+        _logged_first = False
 
         for pair in test_pairs.pairs:
             expected = pair.positive_response.model_response
@@ -570,6 +599,12 @@ def _create_task_evaluator(args) -> Callable:
             entry_point = metadata.get('entry_point')
             starter_code = metadata.get('starter_code', '')
 
+            # Debug first pair
+            if not _logged_first:
+                import logging
+                logging.warning(f"[optimize_weights] First pair - metadata: {bool(metadata)}, test_code: {bool(test_code)}, test_code_len: {len(test_code) if test_code else 0}")
+                _logged_first = True
+
             # Generate actual response from the model
             messages = [{"role": "user", "content": question}]
             try:
@@ -580,6 +615,11 @@ def _create_task_evaluator(args) -> Callable:
                 response = responses[0] if responses else ""
             except Exception as e:
                 response = ""
+
+            # For coding tasks, extract code from markdown blocks (strict=True to avoid extracting C++ etc)
+            if 'livecodebench' in args.task.lower() or 'humaneval' in args.task.lower() or 'mbpp' in args.task.lower():
+                from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.utils import extract_code_block
+                response = extract_code_block(response, prefer_langs=("python", "py"), strict=True)
 
             # Evaluate the generated response against expected
             try:
@@ -595,11 +635,18 @@ def _create_task_evaluator(args) -> Callable:
                     language='python',
                 )
 
+                # Log first 3 evaluations for debugging
+                if total < 3:
+                    import logging
+                    logging.warning(f"[optimize_weights] Eval #{total}: ground_truth={eval_result.ground_truth}, response_len={len(response)}, details={eval_result.details[:200] if eval_result.details else 'N/A'}")
+
                 if eval_result.ground_truth == "TRUTHFUL":
                     correct += 1
                 total += 1
-            except Exception:
-                # If evaluation fails, count as incorrect
+            except Exception as e:
+                # If evaluation fails, count as incorrect and log error
+                import logging
+                logging.warning(f"[optimize_weights] Eval #{total} EXCEPTION: {e}")
                 total += 1
 
         accuracy = correct / total if total > 0 else 0.0

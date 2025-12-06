@@ -131,6 +131,7 @@ class ContrastivePair(AtomContrastivePair):
             "negative_response": self.negative_response.to_dict(),
             "label": self.label,
             "trait_description": self.trait_description,
+            "metadata": self.metadata,
         }
         return data
 
@@ -173,8 +174,9 @@ class ContrastivePair(AtomContrastivePair):
 
         return cls(
             prompt=str(data["prompt"]),
-            positive_response=PositiveResponse.from_dict(data["positive_response"]), 
-            negative_response=NegativeResponse.from_dict(data["negative_response"]),  
+            positive_response=PositiveResponse.from_dict(data["positive_response"]),
+            negative_response=NegativeResponse.from_dict(data["negative_response"]),
             label=data.get("label"),
             trait_description=data.get("trait_description"),
+            metadata=data.get("metadata"),
         )

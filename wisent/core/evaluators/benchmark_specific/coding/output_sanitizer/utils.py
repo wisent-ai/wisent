@@ -7,16 +7,19 @@ _FENCE_RE = re.compile(
     r"```(?P<lang>[a-zA-Z0-9_+-]*)\s*\n(?P<code>.*?)(?:```|$)", re.DOTALL
 )
 
-def extract_code_block(raw: str, prefer_langs=("python","py","cpp","c++","java")) -> str:
+def extract_code_block(raw: str, prefer_langs=("python","py","cpp","c++","java"), strict: bool = False) -> str:
     """
     Return the best-looking fenced code block; else the raw text.
-    
+
     Args:
         raw:
             The raw text possibly containing fenced code blocks.
         prefer_langs:
             Languages to prefer when selecting a code block.
-    
+        strict:
+            If True, only return code from preferred languages. If no matching
+            code block found, strip markdown fences and return what looks like code.
+
     Returns:
         The extracted code block, or the raw text if no fenced blocks found.
 
@@ -31,10 +34,26 @@ def extract_code_block(raw: str, prefer_langs=("python","py","cpp","c++","java")
     matches = list(_FENCE_RE.finditer(raw))
     if not matches:
         return strip_triple_quotes(raw)
+
     def score(m):
         lang = (m.group("lang") or "").lower()
         pref = 1 if lang in prefer_langs else 0
         return (pref, len(m.group("code")))
+
+    if strict:
+        # Only consider blocks from preferred languages
+        preferred_matches = [m for m in matches if (m.group("lang") or "").lower() in prefer_langs]
+        if preferred_matches:
+            m = max(preferred_matches, key=lambda m: len(m.group("code")))
+            return m.group("code").strip()
+        # No preferred language found - try unlabeled code blocks
+        unlabeled = [m for m in matches if not m.group("lang")]
+        if unlabeled:
+            m = max(unlabeled, key=lambda m: len(m.group("code")))
+            return m.group("code").strip()
+        # Fall back to stripping all markdown and returning what's left
+        return strip_triple_quotes(raw)
+
     m = max(matches, key=score)
     return m.group("code").strip()
 
