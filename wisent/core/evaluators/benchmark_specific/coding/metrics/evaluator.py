@@ -145,6 +145,11 @@ class CodingEvaluator(BaseEvaluator):
         task_name = kwargs.get('task_name', '')
         language = kwargs.get('language', 'python')
 
+        # Debug logging for test_code
+        logger.debug(f"CodingEvaluator.evaluate() called with test_code={'present (' + str(len(test_code)) + ' chars)' if test_code else 'MISSING'}, task_name={task_name}")
+        if not test_code:
+            logger.warning(f"CodingEvaluator: No test_code provided. kwargs keys: {list(kwargs.keys())}")
+
         if not test_code:
             return EvalResult(
                 ground_truth="UNKNOWN",

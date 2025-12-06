@@ -2,7 +2,7 @@
 Comprehensive CLI tests for ALL Wisent commands.
 
 Tests the full pipeline for each CLI command to ensure they work correctly.
-Uses meta-llama/Llama-3.2-1B-Instruct for local testing.
+Uses gpt2 (a non-gated model) for testing on AWS instances.
 
 Run with: pytest wisent/tests/test_all_cli_commands.py -v
 Run specific test: pytest wisent/tests/test_all_cli_commands.py::test_generate_pairs -v
@@ -19,7 +19,9 @@ from pathlib import Path
 # =====================================================================
 # Configuration
 # =====================================================================
-MODEL = "meta-llama/Llama-3.2-1B-Instruct"
+# Using gpt2 as a non-gated model for testing. This model is publicly
+# accessible and doesn't require HuggingFace authentication.
+MODEL = "gpt2"
 TASK = "boolq"
 TIMEOUT = 600  # 10 minutes max per test
 

@@ -15,13 +15,20 @@ with open(os.path.join("wisent", "__init__.py"), encoding="utf-8") as f:
 setup(
     name="wisent",
     version=version,
-    author="Wisent Team",
-    author_email="your.email@example.com",  # Replace with your email
-    description="Monitor and guard against harmful content in language models",
+    author="Lukasz Bartoszcze and the Wisent Team",
+    author_email="lukasz.bartoszcze@wisent.ai",  # Replace with your email
+    description="Monitor and influence AI Brains",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/yourusername/wisent-activation-guardrails",  # Replace with your GitHub repo
+    url="https://github.com/wisent-ai/wisent",  # Replace with your GitHub repo
     packages=find_packages(exclude=["patches", "patches.*"]),  # Exclude patches directory
+    include_package_data=True,
+    package_data={
+        "wisent": [
+            "core/evaluators/benchmark_specific/coding/safe_docker/Dockerfile",
+            "core/evaluators/benchmark_specific/coding/safe_docker/entrypoint.py",
+        ],
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

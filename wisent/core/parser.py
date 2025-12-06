@@ -92,6 +92,13 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_evaluate_parser(evaluate_parser)
 
+    # Unified goodness training command - train single vector from ALL benchmarks
+    unified_goodness_parser = subparsers.add_parser(
+        "train-unified-goodness",
+        help="Train a single 'goodness' steering vector from pooled multi-benchmark data"
+    )
+    setup_train_unified_goodness_parser(unified_goodness_parser)
+
     return parser
 
 
@@ -1734,3 +1741,9 @@ def setup_evaluate_parser(parser):
     # Output options
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
+
+
+def setup_train_unified_goodness_parser(parser):
+    """Set up the train-unified-goodness subcommand parser."""
+    from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser as _setup
+    _setup(parser)
