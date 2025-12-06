@@ -81,6 +81,45 @@ def execute_tasks(args):
         print()
         return {"tasks": tasks}
 
+    # Handle --task-info flag
+    if hasattr(args, 'task_info') and args.task_info:
+        task_name = args.task_info
+        print(f"\n📋 Task Information: {task_name}")
+        print(f"{'='*60}")
+
+        try:
+            loader = LMEvalDataLoader()
+            task_obj = loader.load_lm_eval_task(task_name)
+
+            if isinstance(task_obj, dict):
+                # Group task
+                print(f"\n   Type: Group Task")
+                print(f"   Subtasks: {len(task_obj)}")
+                for subname in task_obj.keys():
+                    print(f"      • {subname}")
+            else:
+                # Single task
+                print(f"\n   Type: Single Task")
+                if hasattr(task_obj, 'config'):
+                    config = task_obj.config
+                    if hasattr(config, 'description') and config.description:
+                        print(f"   Description: {config.description}")
+                    if hasattr(config, 'dataset_name') and config.dataset_name:
+                        print(f"   Dataset: {config.dataset_name}")
+                    if hasattr(config, 'metric_list') and config.metric_list:
+                        metrics = [m.get('metric', str(m)) if isinstance(m, dict) else str(m) for m in config.metric_list]
+                        print(f"   Metrics: {', '.join(metrics)}")
+                    if hasattr(config, 'num_fewshot'):
+                        print(f"   Few-shot examples: {config.num_fewshot}")
+
+            print()
+            return {"task": task_name, "found": True}
+
+        except Exception as e:
+            print(f"\n   ❌ Error loading task: {e}")
+            print()
+            return {"task": task_name, "found": False, "error": str(e)}
+
     # Handle --skills or --risks task selection
     if (hasattr(args, 'skills') and args.skills) or (hasattr(args, 'risks') and args.risks):
         from wisent.core.task_selector import TaskSelector
