@@ -9,6 +9,7 @@ from wisent.core.utils.dataset_splits import (
     get_all_docs_from_task,
     create_deterministic_split,
 )
+from wisent.core.errors import NoDocsAvailableError, DatasetLoadError
 
 
 if TYPE_CHECKING:
@@ -118,17 +119,7 @@ class LMEvalBenchmarkExtractor(ABC):
         all_docs, split_counts = get_all_docs_from_task(lm_eval_task_data)
 
         if not all_docs:
-            # Fallback to dataset loading if no docs from task methods
-            docs_list = cls._fallback_load_from_dataset(lm_eval_task_data, None)
-            if docs_list:
-                all_docs = docs_list
-
-        if not all_docs:
-            raise NoLabelledDocsAvailableError(
-                f"No labeled documents are available for task '{benchmark_name}'. "
-                "The task does not expose any docs from validation/test/train/fewshot, "
-                "and no usable dataset metadata was found for a fallback load."
-            )
+            raise NoDocsAvailableError(task_name=benchmark_name)
 
         # Apply our 80/20 split and get TRAINING docs only
         train_docs, _ = create_deterministic_split(all_docs, benchmark_name)
@@ -207,89 +198,10 @@ class LMEvalBenchmarkExtractor(ABC):
         max_items: int | None,
     ) -> list[dict[str, Any]]:
         """
-        Attempt to load documents via datasets.load_dataset using the task's
-        declared metadata. We prefer 'fewshot_split' if present, since this is
-        a common pattern for tasks like (M)MMLU.
-
-        returns:
-            A possibly empty list of docs.
+        DEPRECATED: Fallback dataset loading is not permitted.
+        
+        Raises:
+            DatasetLoadError: Always raises an error - fallback loading is not permitted.
         """
-        dataset_name = getattr(lm_eval_task_data, "dataset_path", None) or getattr(
-            lm_eval_task_data, "dataset_name", None
-        )
-        dataset_config = getattr(lm_eval_task_data, "dataset_config_name", None)
-        dataset_split = getattr(lm_eval_task_data, "fewshot_split", None)
-
-        if not dataset_name or not dataset_split:
-            return []
-
-        try:
-            from datasets import load_dataset
-        except Exception as exc:
-            task_name = getattr(
-                lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__
-            )
-            raise RuntimeError(
-                f"Task '{task_name}' specifies dataset metadata but "
-                "the 'datasets' library is not available. "
-                "Install it via 'pip install datasets' to enable fallback loading."
-            ) from exc
-
-        try:
-            dataset = load_dataset(
-                dataset_name,
-                dataset_config if dataset_config else None,
-                split=dataset_split,
-            )
-        except Exception as exc:
-            # If the specified split doesn't exist, try to detect and use available splits
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            error_msg = str(exc)
-
-            # Check if it's a "no data" error for the split
-            if "corresponds to no data" in error_msg or "Unknown split" in error_msg:
-                try:
-                    # Try to load the dataset without specifying a split to see available splits
-                    from datasets import load_dataset_builder
-                    builder = load_dataset_builder(
-                        dataset_name,
-                        dataset_config if dataset_config else None,
-                    )
-                    available_splits = list(builder.info.splits.keys()) if builder.info.splits else []
-
-                    # Try common alternative splits in order of preference
-                    split_alternatives = ["default", "validation", "test", "dev"]
-                    for alt_split in split_alternatives:
-                        if alt_split in available_splits:
-                            print(f"Split '{dataset_split}' not available for {task_name}, using '{alt_split}' instead")
-                            dataset = load_dataset(
-                                dataset_name,
-                                dataset_config if dataset_config else None,
-                                split=alt_split,
-                            )
-                            return cls._coerce_docs_to_dicts(dataset, max_items)
-
-                    # If no alternatives found, raise the original error
-                    raise RuntimeError(
-                        f"Failed to load dataset split via fallback for task '{task_name}'. "
-                        f"Requested split '{dataset_split}' not found. Available splits: {available_splits}. "
-                        f"Arguments were: name={dataset_name!r}, config={dataset_config!r}, "
-                        f"split={dataset_split!r}. Underlying error: {exc}"
-                    ) from exc
-                except Exception as fallback_exc:
-                    # If split detection fails, raise original error
-                    if isinstance(fallback_exc, RuntimeError) and "Available splits" in str(fallback_exc):
-                        raise fallback_exc
-                    raise RuntimeError(
-                        f"Failed to load dataset split via fallback for task '{task_name}'. "
-                        f"Arguments were: name={dataset_name!r}, config={dataset_config!r}, "
-                        f"split={dataset_split!r}. Underlying error: {exc}"
-                    ) from exc
-            else:
-                raise RuntimeError(
-                    f"Failed to load dataset split via fallback for task '{task_name}'. "
-                    f"Arguments were: name={dataset_name!r}, config={dataset_config!r}, "
-                    f"split={dataset_split!r}. Underlying error: {exc}"
-                ) from exc
-
-        return cls._coerce_docs_to_dicts(dataset, max_items)
+        task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
+        raise DatasetLoadError(task_name=task_name)

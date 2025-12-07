@@ -9,6 +9,8 @@ from abc import ABC, abstractmethod
 from typing import Optional
 import re
 
+from wisent.core.errors import NumericalExtractionError, TextExtractionError, ExtractorNotFoundError
+
 
 class BenchmarkExtractor(ABC):
     """Base class for benchmark answer extraction."""
@@ -73,12 +75,8 @@ class GSM8KExtractor(BenchmarkExtractor):
                 answer = match.group(1).replace(',', '')
                 return answer
 
-        # Strategy 4: Last number in text (fallback)
-        numbers = re.findall(r'-?\d+(?:\.\d+)?', text)
-        if numbers:
-            return numbers[-1]
-
-        return None
+        # No fallback - raise error if numerical answer cannot be extracted
+        raise NumericalExtractionError(response=text)
 
     def check_answer(self, predicted: str, expected: str) -> bool:
         """Compare numerical answers with tolerance."""
@@ -167,12 +165,8 @@ class HLEExtractor(BenchmarkExtractor):
         if mc_match:
             return mc_match.group(1)
 
-        # Strategy 4: First line (fallback)
-        first_line = text.split('\n')[0].strip()
-        if first_line:
-            return first_line
-
-        return None
+        # No fallback - raise error if answer cannot be extracted
+        raise TextExtractionError(response=text)
 
     def check_answer(self, predicted: str, expected: str) -> bool:
         """Compare answers with case-insensitive substring matching."""
@@ -278,7 +272,7 @@ def get_extractor(task_name: str) -> BenchmarkExtractor:
     if task_name in _EXTRACTOR_REGISTRY:
         return _EXTRACTOR_REGISTRY[task_name]
 
-    # Fallback logic based on task name patterns
+    # Pattern-based extractor selection
     task_lower = task_name.lower()
     if any(keyword in task_lower for keyword in ["math", "aime", "hmmt", "gsm", "arithmetic"]):
         return GSM8KExtractor()
@@ -288,6 +282,6 @@ def get_extractor(task_name: str) -> BenchmarkExtractor:
         return HLEExtractor()
     elif any(keyword in task_lower for keyword in ["gpqa", "science", "physics", "chemistry", "biology"]):
         return SuperGPQAExtractor()
-    else:
-        # Default fallback
-        return HLEExtractor()
+    
+    # No fallback - raise error if no extractor found
+    raise ExtractorNotFoundError(task_name=task_name)

@@ -28,6 +28,12 @@ import json
 import os
 import sys
 import subprocess
+
+from wisent.core.errors import (
+    TaskLoadError,
+    FallbackNotPermittedError,
+    BenchmarkLoadError,
+)
 import tempfile
 from typing import Dict, List, Optional
 from pathlib import Path
@@ -93,8 +99,8 @@ def get_task_samples_for_analysis(task_name: str, num_samples: int = 5, trust_re
                 print(f"Trust remote code handling failed: {e}")
                 return {"error": f"Failed to load task with trust_remote_code handling: {e}"}
         
-        # If we still have issues, try fallback approach
-        return get_task_samples_fallback(task_name, num_samples=num_samples, trust_remote_code=trust_remote_code)
+        # No fallback - raise error if task loading fails
+        raise TaskLoadError(task_name=task_name)
         
     except Exception as e:
         return {"error": f"Exception in enhanced get_task_samples_for_analysis: {e}"}
@@ -1389,19 +1395,8 @@ def test_benchmark_creation(benchmark_name: str, benchmark_config: dict) -> tupl
     except Exception as e:
         print(f"💥 Exception testing {benchmark_name}: {e}")
         
-        # Try one more fallback approach
-        try:
-            print(f"🔄 Trying fallback approach...")
-            result = get_task_samples_fallback(task_name, num_samples=5, trust_remote_code=trust_remote_code)
-            if result.get("samples"):
-                print(f"✅ Success with fallback approach")
-                return True, tags
-            else:
-                print(f"❌ Fallback approach failed - WILL CAUSE SCRIPT TO EXIT")
-                return False, tags
-        except Exception as fallback_e:
-            print(f"💥 Fallback exception: {fallback_e} - WILL CAUSE SCRIPT TO EXIT")
-            return False, tags
+        # No fallback - fail immediately
+        raise BenchmarkLoadError(benchmark_name=benchmark_name, cause=e)
 
 def get_task_samples_with_subtasks(task_name: str, num_samples: int = 5, 
                                   trust_remote_code: bool = False, 
@@ -1642,73 +1637,12 @@ def get_task_samples_direct(task, num_samples: int = 5) -> dict:
 
 def get_task_samples_fallback(task_name: str, num_samples: int = 5, trust_remote_code: bool = False) -> dict:
     """
-    Fallback approach for getting task samples when all else fails.
+    DEPRECATED: This function should not be used. All task loading must succeed or raise an error.
     
-    Args:
-        task_name: Name of the task
-        num_samples: Number of samples to retrieve
-        trust_remote_code: Whether to trust remote code
-    
-    Returns:
-        Dictionary with samples and metadata
+    Raises:
+        FallbackNotPermittedError: Always raises an error - fallback loading is not permitted.
     """
-    try:
-        # Set up environment if trust_remote_code is needed
-        original_env = {}
-        if trust_remote_code:
-            env_vars = {
-                "HF_ALLOW_CODE_EVAL": "1",
-                "TRUST_REMOTE_CODE": "1",
-                "HF_DATASETS_TRUST_REMOTE_CODE": "1",
-                "HF_HUB_ENABLE_HF_TRANSFER": "1"
-            }
-            for key, value in env_vars.items():
-                original_env[key] = os.environ.get(key)
-                os.environ[key] = value
-        
-        # Try multiple approaches with trust_remote_code
-        approaches = [
-            # Direct loading with datasets
-            lambda: try_datasets_direct_load(task_name, num_samples, trust_remote_code),
-            # Try with alternative task names
-            lambda: try_alternative_task_names(task_name, task_name, num_samples, trust_remote_code),
-            # Try with subtasks
-            lambda: get_task_samples_with_subtasks(task_name, num_samples, trust_remote_code),
-        ]
-        
-        for approach in approaches:
-            try:
-                result = approach()
-                if result and result.get("samples"):
-                    return result
-            except Exception as e:
-                print(f"Fallback approach failed: {e}")
-                continue
-        
-        # If still no luck, try to create minimal samples for testing
-        return {
-            "samples": [{
-                "question": f"Test question for {task_name}",
-                "correct_answer": "Test answer",
-                "choices": ["Test answer", "Wrong answer"],
-                "metadata": {"task": task_name, "source": "fallback"}
-            }],
-            "task": task_name,
-            "total_samples": 1,
-            "note": "Fallback sample for testing purposes"
-        }
-        
-    except Exception as e:
-        return {"error": f"Exception in fallback approach: {e}"}
-    finally:
-        # Restore environment
-        if trust_remote_code:
-            for key, original_value in original_env.items():
-                if original_value is None:
-                    if key in os.environ:
-                        del os.environ[key]
-                else:
-                    os.environ[key] = original_value
+    raise FallbackNotPermittedError(task_name=task_name)
 
 def try_datasets_direct_load(task_name: str, num_samples: int = 5, trust_remote_code: bool = False) -> dict:
     """

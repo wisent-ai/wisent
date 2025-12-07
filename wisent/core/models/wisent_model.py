@@ -22,6 +22,7 @@ from wisent.core.activations.core.atoms import RawActivationMap
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.utils.device import resolve_default_device, resolve_torch_device, preferred_dtype
 from wisent.core.contrastive_pairs.diagnostics import run_control_steering_diagnostics
+from wisent.core.errors import ChatTemplateNotAvailableError
 
 import threading
 
@@ -287,12 +288,8 @@ class WisentModel:
                 message, tokenize=True, add_generation_prompt=add_generation_prompt, enable_thinking=enable_thinking, return_tensors="pt"
             )[0]
         except ValueError as e:
-            if "chat_template is not set" in str(e):
-                # Fallback for models without chat templates: concatenate messages
-                text = " ".join([msg.get("content", "") for msg in message if isinstance(msg, dict)])
-                ids = self.tokenizer.encode(text, return_tensors="pt")[0]
-            else:
-                raise
+            # No fallback - raise error if chat template is not available
+            raise ChatTemplateNotAvailableError(cause=e)
         return {
             "input_ids": ids,
             "attention_mask": torch.ones_like(ids),

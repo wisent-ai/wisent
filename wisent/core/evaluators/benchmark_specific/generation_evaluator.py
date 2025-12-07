@@ -11,6 +11,7 @@ from typing import Any, Dict
 import logging
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.errors import NumericalExtractionError, TextExtractionError
 
 logger = logging.getLogger(__name__)
 
@@ -263,16 +264,8 @@ class GenerationEvaluator(BaseEvaluator):
                 except ValueError:
                     continue
 
-        # Fallback: find last number in response
-        # This handles responses without explicit markers
-        numbers = re.findall(r'[-+]?\d*\.?\d+', response)
-        if numbers:
-            try:
-                return float(numbers[-1])
-            except ValueError:
-                pass
-
-        return None
+        # No fallback - raise error if numerical answer cannot be extracted
+        raise NumericalExtractionError(response=response)
 
     def _extract_text_answer(self, response: str) -> str:
         """Extract text answer from response."""
@@ -288,12 +281,8 @@ class GenerationEvaluator(BaseEvaluator):
             if match:
                 return match.group(1).strip()
 
-        # Fallback: use first sentence
-        sentences = re.split(r'[.!?]\s+', response)
-        if sentences:
-            return sentences[0].strip()
-
-        return response.strip()
+        # No fallback - raise error if text answer cannot be extracted
+        raise TextExtractionError(response=response)
 
     def _check_match(
         self, extracted: Any, expected_list: list, answer_type: str, normalize: bool
