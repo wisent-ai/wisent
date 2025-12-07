@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Type
 
 from .benchmark_extractors import BenchmarkExtractor
+from wisent.core.errors import TaskNotFoundError
 
 
 class TaskInterface(ABC):
@@ -48,7 +49,7 @@ class TaskRegistry:
     def get_task(self, name: str, limit: Optional[int] = None) -> TaskInterface:
         """Get a task instance by name."""
         if name not in self._tasks:
-            raise ValueError(f"Task '{name}' not found. Available tasks: {list(self._tasks.keys())}")
+            raise TaskNotFoundError(task_name=name, available_tasks=list(self._tasks.keys()))
 
         task_factory = self._tasks[name]
 
@@ -102,10 +103,8 @@ def get_task(name: str, limit: Optional[int] = None) -> TaskInterface:
     # Otherwise, try to get from registry
     try:
         return _task_registry.get_task(name, limit=limit)
-    except ValueError:
-        raise ValueError(
-            f"Task '{name}' not found in registry. Available tasks: {list(_task_registry._tasks.keys())}. To load a custom dataset, provide a file path ending with .json"
-        )
+    except (ValueError, TaskNotFoundError):
+        raise TaskNotFoundError(task_name=name, available_tasks=list(_task_registry._tasks.keys()))
 
 
 def list_tasks() -> List[str]:

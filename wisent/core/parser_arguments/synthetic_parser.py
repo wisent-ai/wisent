@@ -55,15 +55,6 @@ def setup_synthetic_parser(parser):
     parser.add_argument("--method", type=str, default="CAA", help="Steering vector creation method")
     parser.add_argument("--normalize", action="store_true", help="Normalize steering vectors")
 
-    # K-Steering specific parameters
-    parser.add_argument(
-        "--ksteering-target-labels", type=str, default="0", help="Comma-separated target label indices for K-steering"
-    )
-    parser.add_argument(
-        "--ksteering-avoid-labels", type=str, default="", help="Comma-separated avoid label indices for K-steering"
-    )
-    parser.add_argument("--ksteering-alpha", type=float, default=50.0, help="Alpha parameter for K-steering")
-
     # Nonsense generation options (for creating nonsense pairs)
     parser.add_argument(
         "--nonsense",

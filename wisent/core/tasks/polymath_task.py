@@ -5,6 +5,7 @@ PolyMath multilingual mathematical reasoning task implementation for task-agnost
 from typing import Dict, Any, List, Optional
 from ..task_interface import TaskInterface
 from ..benchmark_extractors import GSM8KExtractor
+from wisent.core.errors import InvalidValueError
 import datasets
 
 
@@ -55,7 +56,7 @@ class PolyMathTask(TaskInterface):
         config_key = f"{language}_{difficulty}"
         if config_key not in self.DATASET_CONFIGS:
             available = list(self.DATASET_CONFIGS.keys())
-            raise ValueError(f"PolyMath config '{config_key}' not supported. Available: {available}")
+            raise InvalidValueError(param="config_key", reason=f"'{config_key}' not supported", value=available)
             
         self.language = language
         self.difficulty = difficulty

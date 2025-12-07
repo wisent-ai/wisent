@@ -5,6 +5,7 @@ AIME task implementation for task-agnostic architecture.
 from typing import Dict, Any, List, Optional
 from ..task_interface import TaskInterface
 from ..benchmark_extractors import GSM8KExtractor
+from wisent.core.errors import InvalidValueError
 import datasets
 
 
@@ -37,7 +38,7 @@ class AIMETask(TaskInterface):
         """
         if year not in self.DATASET_CONFIGS:
             available = list(self.DATASET_CONFIGS.keys())
-            raise ValueError(f"AIME year '{year}' not supported. Available: {available}")
+            raise InvalidValueError(param="year", reason=f"'{year}' not supported", value=available)
             
         self.year = year
         self.config = self.DATASET_CONFIGS[year]

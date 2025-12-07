@@ -11,6 +11,7 @@ This module handles:
 from dataclasses import dataclass
 from typing import List, Dict, Any, Callable, Awaitable
 from .diagnose import AnalysisResult
+from wisent.core.errors import ImprovementMethodUnknownError, TrainingDataGenerationError
 
 
 @dataclass
@@ -48,7 +49,7 @@ class ResponseSteering:
         elif method == "steering":
             return await self.improve_by_steering(prompt, response, analysis)
         else:
-            raise ValueError(f"Unknown improvement method: {method}")
+            raise ImprovementMethodUnknownError(method=method)
     
     def choose_improvement_method(self, issues: List[str]) -> str:
         """Choose the best improvement method for the issues."""
@@ -57,7 +58,7 @@ class ResponseSteering:
         elif "excessive_repetition" in issues:
             return "regenerate"  # Regenerate for repetition
         else:
-            raise ValueError(f"No improvement method available for issues: {issues}")
+            raise ImprovementMethodUnknownError(method=str(issues), available_methods=["steering", "regenerate"])
     
     async def improve_by_regeneration(self, prompt: str, response: str, analysis: AnalysisResult) -> ImprovementResult:
         """Improve by regenerating with modified prompt."""
@@ -204,9 +205,11 @@ Ensure your response avoids the types of errors shown in the correction examples
                     })
             
             if not training_pairs:
-                raise ValueError(f"Could not generate training data for issues: {issues}")
+                raise TrainingDataGenerationError(issues=issues)
             
             return training_pairs
             
+        except TrainingDataGenerationError:
+            raise
         except Exception as e:
-            raise ValueError(f"Failed to generate training data for issues {issues}: {e}")
+            raise TrainingDataGenerationError(issues=issues, cause=e)

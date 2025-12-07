@@ -765,6 +765,7 @@ wisent/core/data_loaders/loaders/lm_loader.py
 wisent/core/data_loaders/loaders/lm_loader_special_cases.py
 wisent/core/data_loaders/loaders/task_interface_loader.py
 wisent/core/errors/__init__.py
+wisent/core/errors/error_codes.py
 wisent/core/errors/error_handler.py
 wisent/core/evaluators/__init__.py
 wisent/core/evaluators/personalization_evaluator.py

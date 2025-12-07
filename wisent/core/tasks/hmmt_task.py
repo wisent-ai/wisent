@@ -5,6 +5,7 @@ HMMT (Harvard-MIT Math Tournament) task implementation for task-agnostic archite
 from typing import Dict, Any, List, Optional
 from ..task_interface import TaskInterface
 from ..benchmark_extractors import GSM8KExtractor
+from wisent.core.errors import InvalidValueError
 import datasets
 
 
@@ -31,7 +32,7 @@ class HMMTTask(TaskInterface):
         """
         if competition not in self.DATASET_CONFIGS:
             available = list(self.DATASET_CONFIGS.keys())
-            raise ValueError(f"HMMT competition '{competition}' not supported. Available: {available}")
+            raise InvalidValueError(param="competition", reason=f"'{competition}' not supported", value=available)
             
         self.competition = competition
         self.config = self.DATASET_CONFIGS[competition]

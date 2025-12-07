@@ -13,6 +13,13 @@ import torch.nn.functional as F
 
 from .contrastive_pairs import ContrastivePairSet
 from .steering_method import CAA
+from wisent.core.errors import (
+    MissingParameterError,
+    InsufficientDataError,
+    SteeringMethodUnknownError,
+    NoTrainedVectorsError,
+    LayerNotFoundError,
+)
 
 
 class SteeringType(Enum):
@@ -65,14 +72,14 @@ class SteeringMethod:
         """
         if self.is_vector_based:
             if layer_index is None:
-                raise ValueError("layer_index required for vector-based steering methods")
+                raise MissingParameterError(params=["layer_index"], context="vector-based steering methods")
             return self.vector_steering.train(contrastive_pair_set, layer_index)
 
         # Legacy classifier-based training
         X, y = contrastive_pair_set.prepare_classifier_data()
 
         if len(X) < 4:
-            raise ValueError(f"Need at least 4 training examples, got {len(X)}")
+            raise InsufficientDataError(reason="Need at least 4 training examples", required=4, actual=len(X))
 
         # Create classifier
         self.classifier = Classifier(model_type=self.method_type.value, device=self.device, threshold=self.threshold)
@@ -94,7 +101,7 @@ class SteeringMethod:
             Steered activations
         """
         if not self.is_vector_based:
-            raise ValueError("apply_steering only available for vector-based methods")
+            raise SteeringMethodUnknownError(method="apply_steering requires vector-based methods")
 
         return self.vector_steering.apply_steering(activations, strength)
 
@@ -115,10 +122,10 @@ class SteeringMethod:
             Prediction score (0 = harmless, 1 = harmful)
         """
         if self.is_vector_based:
-            raise ValueError("predict not available for vector-based methods")
+            raise SteeringMethodUnknownError(method="predict not available for vector-based methods")
 
         if self.classifier is None:
-            raise ValueError("SteeringMethod not trained. Call train() first.")
+            raise NoTrainedVectorsError()
 
         return self.classifier.predict(activations)
 
@@ -133,10 +140,10 @@ class SteeringMethod:
             Probability score (0.0-1.0)
         """
         if self.is_vector_based:
-            raise ValueError("predict_proba not available for vector-based methods")
+            raise SteeringMethodUnknownError(method="predict_proba not available for vector-based methods")
 
         if self.classifier is None:
-            raise ValueError("SteeringMethod not trained. Call train() first.")
+            raise NoTrainedVectorsError()
 
         return self.classifier.predict_proba(activations)
 
@@ -152,10 +159,10 @@ class SteeringMethod:
             Boolean or detailed dictionary
         """
         if self.is_vector_based:
-            raise ValueError("is_harmful not available for vector-based methods")
+            raise SteeringMethodUnknownError(method="is_harmful not available for vector-based methods")
 
         if self.classifier is None:
-            raise ValueError("SteeringMethod not trained. Call train() first.")
+            raise NoTrainedVectorsError()
 
         # Get probability score
         probability = self.predict_proba(activations)
@@ -355,7 +362,7 @@ class SteeringMethod:
             # Get the target layer module for optimization
             layer_module = self._get_layer_module(model, target_layer)
             if layer_module is None:
-                raise ValueError(f"Could not find layer {target_layer} in model")
+                raise LayerNotFoundError(layer_name=str(target_layer))
 
             # Store original parameters
             self._store_original_parameters(layer_module)
@@ -529,7 +536,7 @@ class SteeringMethod:
             Dictionary with evaluation metrics
         """
         if self.classifier is None:
-            raise ValueError("SteeringMethod not trained. Call train() first.")
+            raise NoTrainedVectorsError()
 
         # Get positive and negative activations
         pos_activations, neg_activations = contrastive_pair_set.get_activation_pairs()

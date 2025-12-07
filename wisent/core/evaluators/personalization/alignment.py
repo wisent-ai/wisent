@@ -15,6 +15,8 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
     import torch
 
+from wisent.core.errors import MissingParameterError
+
 __all__ = ["evaluate_alignment", "estimate_alignment"]
 
 # Embedding model (lazily loaded)
@@ -64,7 +66,7 @@ def evaluate_alignment(
         return 1.0
 
     if not positive_examples or not negative_examples:
-        raise ValueError("Both positive_examples and negative_examples are required for alignment evaluation")
+        raise MissingParameterError(params=["positive_examples", "negative_examples"], context="alignment evaluation")
 
     score = _compute_contrastive_alignment(response, positive_examples, negative_examples)
 
@@ -97,7 +99,7 @@ def estimate_alignment(
         return 0.0
 
     if not positive_examples or not negative_examples:
-        raise ValueError("Both positive_examples and negative_examples are required for alignment evaluation")
+        raise MissingParameterError(params=["positive_examples", "negative_examples"], context="alignment evaluation")
 
     scores = [_compute_contrastive_alignment(r, positive_examples, negative_examples) for r in responses]
 

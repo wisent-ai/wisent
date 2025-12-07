@@ -6,6 +6,7 @@ from typing import Mapping, Sequence, Callable
 
 from wisent.core.synthetic.cleaners.methods.core.atoms import Deduper
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.errors import InvalidValueError, InvalidRangeError
 
 __all__ = [
     "SimHashDeduper",
@@ -32,11 +33,11 @@ class SimHashDeduper(Deduper):
         key_fn: Callable[[Mapping[str, str]], str] | None = None,
     ) -> None:
         if 64 % num_bands != 0:
-            raise ValueError("num_bands must divide 64 (e.g., 4, 8, 16, 32).")
+            raise InvalidValueError(param_name="num_bands", actual=num_bands, expected="divisor of 64 (e.g., 4, 8, 16, 32)")
         if tokenizer not in {"auto", "word", "char"}:
-            raise ValueError("tokenizer must be 'auto', 'word', or 'char'.")
+            raise InvalidValueError(param_name="tokenizer", actual=tokenizer, expected="'auto', 'word', or 'char'")
         if word_ngram < 1 or char_ngram < 1:
-            raise ValueError("n-gram sizes must be >= 1.")
+            raise InvalidRangeError(param_name="n-gram sizes", actual=min(word_ngram, char_ngram), min_val=1)
 
         self.threshold_bits = threshold_bits
         self.fields_to_hash = tuple(fields_to_hash)

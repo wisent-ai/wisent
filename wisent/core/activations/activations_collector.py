@@ -7,6 +7,7 @@ import torch
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.activations.core.atoms import LayerActivations, ActivationAggregationStrategy, LayerName, RawActivationMap
 from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+from wisent.core.errors import NoHiddenStatesError, TokenizerMissingMethodError, UnknownTypeError, InvalidDataFormatError
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -184,7 +185,7 @@ class ActivationCollector:
             hs: tuple[torch.Tensor, ...] = out.hidden_states  # hs[0]=emb, hs[1:]=layers
 
             if not hs:
-                raise RuntimeError("No hidden_states returned. Can be due to model not supporting it.")
+                raise NoHiddenStatesError()
 
             n_blocks = len(hs) - 1
             names_by_idx = [str(i) for i in range(1, n_blocks + 1)]
@@ -229,7 +230,7 @@ class ActivationCollector:
         if strategy == PromptConstructionStrategy.CHAT_TEMPLATE:
             # Use model's built-in chat template
             if not hasattr(tokenizer, "apply_chat_template"):
-                raise RuntimeError("Tokenizer has no apply_chat_template; set it up or use a different strategy.")
+                raise TokenizerMissingMethodError("apply_chat_template")
             try:
                 prompt_text = tokenizer.apply_chat_template(
                     [{"role": "user", "content": prompt}],
@@ -272,7 +273,7 @@ class ActivationCollector:
             full_text = f"{prompt_text} I"
 
         else:
-            raise ValueError(f"Unknown prompt construction strategy: {strategy}")
+            raise UnknownTypeError(entity_type="prompt_construction_strategy", value=str(strategy))
 
         return prompt_text, full_text
 
@@ -298,7 +299,7 @@ class ActivationCollector:
         prompt_len: int,
     ) -> torch.Tensor:          # [H]
         if layer_seq.ndim != 2:
-            raise ValueError(f"Expected [seq_len, hidden_dim], got {tuple(layer_seq.shape)}")
+            raise InvalidDataFormatError(reason=f"Expected [seq_len, hidden_dim], got {tuple(layer_seq.shape)}")
 
         # continuation = tokens after the prompt boundary
         cont_start = min(max(prompt_len, 0), layer_seq.shape[0] - 1)

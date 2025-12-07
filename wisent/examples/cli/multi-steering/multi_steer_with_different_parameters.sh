@@ -4,7 +4,7 @@
 # This script demonstrates various ways to combine steering vectors:
 # - Different weight normalization strategies
 # - Different target norms for stronger/weaker effects
-# - Different steering methods (CAA vs DAC)
+# - CAA steering method
 # - Allowing unnormalized weights for amplified effects
 
 # Assume we have pre-trained vectors
@@ -83,20 +83,7 @@ python -m wisent.core.main multi-steer \
     --target-norm 2.0 \
     --verbose
 
-# 6. Using DAC method instead of CAA
-echo "=== Example 6: DAC steering method ==="
-python -m wisent.core.main multi-steer \
-    --vector $TRUTHFULNESS_VECTOR:0.6 \
-    --vector $HELPFULNESS_VECTOR:0.4 \
-    --model $MODEL \
-    --layer $LAYER \
-    --method DAC \
-    --prompt "$PROMPT" \
-    --max-new-tokens 150 \
-    --normalize-weights \
-    --verbose
-
-# 7. Save different combinations for reuse
+# 6. Save different combinations for reuse
 echo "=== Example 7: Save balanced combination ==="
 python -m wisent.core.main multi-steer \
     --vector $TRUTHFULNESS_VECTOR:0.33 \

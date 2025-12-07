@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional
 
 from .benchmark_extractors import EXTRACTORS, get_extractor
 from .utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
+from wisent.core.errors import ExtractorReturnedNoneError, BigCodeTaskRequiresFlagError, TaskNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -253,7 +254,7 @@ class ManagedCachedBenchmarks:
             try:
                 qa_pair = extractor.extract_contrastive_pair(raw_sample, task)
                 if qa_pair is None:
-                    raise ValueError("Extractor returned None")
+                    raise ExtractorReturnedNoneError(task_name=task_name)
             except Exception as e:
                 raise SampleNormalizationError(f"Failed to normalize sample {start_offset + i} from '{task_name}': {e}")
 
@@ -300,7 +301,7 @@ class ManagedCachedBenchmarks:
 
             loader = BigCodeTaskLoader()
             if loader.is_bigcode_task(task_name):
-                raise ValueError(f"Task '{task_name}' is a BigCode task. Use --bigcode flag or BigCodeTaskLoader")
+                raise BigCodeTaskRequiresFlagError(task_name=task_name)
 
             # Check if we need HF_ALLOW_CODE_EVAL for code evaluation tasks
             code_eval_tasks = ["mbpp", "mbpp_plus", "humaneval", "humaneval_plus"]
@@ -318,7 +319,7 @@ class ManagedCachedBenchmarks:
 
             task_dict = get_task_dict([task_name])
             if task_name not in task_dict:
-                raise ValueError(f"Task '{task_name}' not found in lm-eval")
+                raise TaskNotFoundError(task_name=task_name)
 
             return task_dict[task_name]
         except ImportError as e:

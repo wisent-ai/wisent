@@ -13,6 +13,7 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 
 from torch.nn.modules.loss import _Loss
+from wisent.core.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
 
 __all__ = [
     "ClassifierTrainConfig",
@@ -156,7 +157,7 @@ class BaseClassifier(ABC):
         if not getattr(cls, "name", None):
             raise TypeError("Classifier subclasses must define class attribute `name`.")
         if cls.name in BaseClassifier._REGISTRY:
-            raise ValueError(f"Duplicate classifier name: {cls.name!r}")
+            raise DuplicateNameError(name=cls.name, context="classifier registry")
         BaseClassifier._REGISTRY[cls.name] = cls
 
     def __init__(
@@ -166,7 +167,7 @@ class BaseClassifier(ABC):
         dtype: torch.dtype = torch.float32,
     ) -> None:
         if not 0.0 <= threshold <= 1.0:
-            raise ValueError("threshold must be in [0.0, 1.0]")
+            raise InvalidRangeError(param_name="threshold", actual=threshold, min_val=0.0, max_val=1.0)
         self.threshold = threshold
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
         self.dtype = torch.float32 if self.device == "mps" else dtype
@@ -469,7 +470,7 @@ class BaseClassifier(ABC):
         key = str(spec).strip().lower()
         if key in {"bce", "bceloss"}: return nn.BCELoss()
         if key in {"bcewithlogits", "bcewithlogitsloss"}: return nn.BCEWithLogitsLoss()
-        raise ValueError(f"Unknown criterion: {spec!r}")
+        raise UnknownTypeError(entity_type="criterion", value=spec)
 
     def configure_optimizer(self, model: nn.Module, lr: float) -> optim.Optimizer:
         """
@@ -512,7 +513,7 @@ class BaseClassifier(ABC):
         if spec is None: return self.configure_optimizer(model, lr)
         if isinstance(spec, str):
             try: cls = getattr(optim, spec)
-            except AttributeError as exc: raise ValueError(f"Unknown optimizer: {spec!r}") from exc
+            except AttributeError as exc: raise UnknownTypeError(entity_type="optimizer", value=spec) from exc
             return cls(model.parameters(), lr=lr, **extra)
         if callable(spec): return spec(model.parameters(), lr=lr, **extra)
         raise TypeError(f"Unsupported optimizer spec: {type(spec)}")

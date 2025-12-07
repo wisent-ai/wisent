@@ -4,6 +4,12 @@ from typing import Dict, Tuple, Optional
 from pathlib import Path
 
 from .timing_calibration import TimingCalibrator
+from wisent.core.errors import (
+    ModelConfigAccessError,
+    CalibrationRequiredError,
+    CalibrationDataInvalidError,
+    MissingParameterError,
+)
 
 
 class OptimizationTimeEstimator:
@@ -30,21 +36,21 @@ class OptimizationTimeEstimator:
             elif hasattr(model.model.config, 'n_layer'):
                 self.total_layers = model.model.config.n_layer
             else:
-                raise RuntimeError(f"Cannot determine number of layers for model {model_name}")
+                raise ModelConfigAccessError(model_name=model_name, reason="Cannot determine number of layers")
         else:
-            raise RuntimeError(f"Cannot access model configuration for {model_name}")
+            raise ModelConfigAccessError(model_name=model_name, reason="Cannot access model configuration")
         
         # Handle calibration
         if skip_calibration:
-            raise RuntimeError("Calibration cannot be skipped. Accurate timing requires calibration.")
+            raise CalibrationRequiredError()
         
         if calibration_file and calibration_file.exists():
             # Load from file
             if not self.calibrator.load_from_file(calibration_file):
-                raise RuntimeError(f"Failed to load calibration from {calibration_file}")
+                raise CalibrationDataInvalidError(reason=f"Failed to load calibration from {calibration_file}")
             self.timing = self.calibrator.timings
             if self.timing["training_time"] is None or self.timing["steering_time"] is None:
-                raise RuntimeError(f"Calibration file {calibration_file} contains invalid data")
+                raise CalibrationDataInvalidError(reason=f"Calibration file {calibration_file} contains invalid data")
         else:
             # Run calibration
             if verbose:
@@ -107,7 +113,7 @@ class OptimizationTimeEstimator:
         
         # Sample sizes must be provided
         if sample_sizes is None:
-            raise RuntimeError("sample_sizes must be provided for full optimization time estimation")
+            raise MissingParameterError(params=["sample_sizes"], context="full optimization time estimation")
         
         return self.calibrator.estimate_optimization_time(
             num_tasks=num_tasks,

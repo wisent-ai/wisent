@@ -28,8 +28,15 @@ from wisent.core.optuna.classifier import (
 )
 from wisent.core.optuna.steering import data_utils, metrics
 from wisent.core.response import Response
-from wisent.core.steering_methods.dac import DAC
+from wisent.core.steering_methods import CAA
 from wisent.core.task_interface import get_task
+from wisent.core.errors import (
+    ModelArchitectureUnknownError,
+    SteeringTrainerNotFoundError,
+    NoActivationDataError,
+    MissingParameterError,
+    ClassifierLoadError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,22 +57,14 @@ class SteeringMethodConfig(ABC):
 
 
 @dataclass
-class DACConfig(SteeringMethodConfig):
-    """Configuration for DAC (Dynamic Activation Composition) steering method."""
+class CAAConfig(SteeringMethodConfig):
+    """Configuration for CAA (Contrastive Activation Addition) steering method."""
 
-    method_name: str = "dac"
-    entropy_thresholds: List[float] = None
-    ptop_values: List[float] = None
-    max_alpha_values: List[float] = None
+    method_name: str = "caa"
+    normalize: bool = True
 
     def __post_init__(self):
         super().__post_init__()
-        if self.entropy_thresholds is None:
-            self.entropy_thresholds = [1.0]
-        if self.ptop_values is None:
-            self.ptop_values = [0.4]
-        if self.max_alpha_values is None:
-            self.max_alpha_values = [2.0]
 
 
 @dataclass
@@ -121,22 +120,16 @@ class SteeringMethodTrainer(ABC):
         """Apply steering and generate predictions for evaluation."""
 
 
-class DACTrainer(SteeringMethodTrainer):
-    """Trainer for DAC (Dynamic Activation Composition) steering method."""
+class CAATrainer(SteeringMethodTrainer):
+    """Trainer for CAA (Contrastive Activation Addition) steering method."""
 
-    def create_method_instance(self, hyperparams: Dict[str, Any], device: str) -> DAC:
-        """Create DAC instance with specified hyperparameters."""
-        return DAC(
-            device=device,
-            dynamic_control=True,
-            entropy_threshold=hyperparams.get("entropy_threshold", 1.0),
-            ptop=hyperparams.get("ptop", 0.4),
-            max_alpha=hyperparams.get("max_alpha", 2.0),
-        )
+    def create_method_instance(self, hyperparams: Dict[str, Any], device: str) -> CAA:
+        """Create CAA instance with specified hyperparameters."""
+        return CAA(device=device)
 
     def train_method(
         self,
-        dac_instance: DAC,
+        caa_instance: CAA,
         train_samples: List[Dict],
         layer: int,
         model,
@@ -145,11 +138,8 @@ class DACTrainer(SteeringMethodTrainer):
         task_name: str = "gsm8k",
         max_new_tokens: int = 200,
     ) -> Tuple[bool, Dict[str, Any]]:
-        """Train DAC on training data to create steering vectors."""
+        """Train CAA on training data to create steering vectors."""
         try:
-            # Set model reference for KL computation
-            dac_instance.set_model_reference(model)
-
             # Extract contrastive pairs from training data using task's extractor
             contrastive_pairs = data_utils.get_task_contrastive_pairs(train_samples, task_name)
 
@@ -160,21 +150,21 @@ class DACTrainer(SteeringMethodTrainer):
             # Convert to ContrastivePairSet format
             pair_set = self._create_pair_set_from_extracted_pairs(contrastive_pairs, layer, model, tokenizer, device)
 
-            # Train DAC
-            training_result = dac_instance.train(pair_set, layer)
+            # Train CAA
+            training_result = caa_instance.train(pair_set, layer)
 
             success = training_result.get("success", False)
-            logger.debug(f"DAC training on layer {layer}: {'Success' if success else 'Failed'}")
+            logger.debug(f"CAA training on layer {layer}: {'Success' if success else 'Failed'}")
 
             return success, training_result
 
         except Exception as e:
-            logger.error(f"DAC training failed on layer {layer}: {e}")
+            logger.error(f"CAA training failed on layer {layer}: {e}")
             return False, {"error": str(e)}
 
     def apply_steering_and_evaluate(
         self,
-        dac_instance: DAC,
+        caa_instance: CAA,
         evaluation_samples: List[Dict],
         layer: int,
         strength: float,
@@ -186,7 +176,7 @@ class DACTrainer(SteeringMethodTrainer):
         task_name: str = "gsm8k",
         max_new_tokens: int = 200,
     ) -> Tuple[List[str], List[str]]:
-        """Apply DAC steering and generate predictions using task extractor."""
+        """Apply CAA steering and generate predictions using task extractor."""
 
         predictions = []
         ground_truths = []
@@ -218,7 +208,7 @@ class DACTrainer(SteeringMethodTrainer):
             # GPT2-style models
             layer_module = model.transformer.h[layer]
         else:
-            raise ValueError("Unsupported model architecture for DAC steering")
+            raise ModelArchitectureUnknownError()
 
         # Process in batches with steering
         for i in tqdm(range(0, len(questions), batch_size), desc="Generating predictions with steering"):
@@ -240,7 +230,7 @@ class DACTrainer(SteeringMethodTrainer):
                         if j < hidden_states.shape[0]:  # Safety check for batch size
                             # Get the actual last token (before padding)
                             last_token = hidden_states[j : j + 1, actual_length - 1 : actual_length, :]
-                            steered = dac_instance.apply_steering(last_token, strength=strength)
+                            steered = caa_instance.apply_steering(last_token, strength=strength)
                             hidden_states[j : j + 1, actual_length - 1 : actual_length, :] = steered
 
                     return (hidden_states,) + output[1:]
@@ -281,7 +271,7 @@ class DACTrainer(SteeringMethodTrainer):
         self, extracted_pairs: List[Dict], layer_index: int, model, tokenizer, device: str
     ) -> ContrastivePairSet:
         """Convert extracted pairs to ContrastivePairSet format with proper activation extraction."""
-        pair_set = ContrastivePairSet(name="dac_training", task_type="mathematical_reasoning")
+        pair_set = ContrastivePairSet(name="caa_training", task_type="mathematical_reasoning")
 
         logger.info(f"Creating {len(extracted_pairs)} contrastive pairs for layer {layer_index}")
 
@@ -338,7 +328,7 @@ class DACTrainer(SteeringMethodTrainer):
             # GPT2-style models
             layer_module = model.transformer.h[layer_index]
         else:
-            raise ValueError("Unsupported model architecture for activation extraction")
+            raise ModelArchitectureUnknownError()
 
         handle = layer_module.register_forward_hook(hook)
 
@@ -362,7 +352,7 @@ class SteeringOptimizer:
 
     def __init__(self, cache_config: Optional[CacheConfig] = None):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self.trainers = {"dac": DACTrainer()}
+        self.trainers = {"caa": CAATrainer()}
 
         # Initialize classifier cache for reusing trained classifiers
         if cache_config is None:
@@ -415,7 +405,7 @@ class SteeringOptimizer:
         method_name = config.method_name
 
         if method_name not in self.trainers:
-            raise ValueError(f"No trainer registered for method: {method_name}")
+            raise SteeringTrainerNotFoundError(method=method_name)
 
         trainer = self.trainers[method_name]
 
@@ -428,9 +418,7 @@ class SteeringOptimizer:
         )
 
         if classifier is None:
-            raise ValueError(
-                f"Could not load or train classifier for {classifier_optimization_config.model_name}/{task_name}"
-            )
+            raise ClassifierLoadError()
 
         self.logger.info(f"Using classifier: {self._session_classifier_metadata}")
 
@@ -598,19 +586,12 @@ class SteeringOptimizer:
         """Generate all combinations of hyperparameters for grid search."""
         combinations = []
 
-        if isinstance(config, DACConfig):
-            # Generate DAC hyperparameter combinations
+        if isinstance(config, CAAConfig):
+            # Generate CAA hyperparameter combinations
             for layer in config.layers:
                 for strength in config.strengths:
-                    for entropy_threshold in config.entropy_thresholds:
-                        for ptop in config.ptop_values:
-                            for max_alpha in config.max_alpha_values:
-                                hyperparams = {
-                                    "entropy_threshold": entropy_threshold,
-                                    "ptop": ptop,
-                                    "max_alpha": max_alpha,
-                                }
-                                combinations.append((layer, strength, hyperparams))
+                    hyperparams = {"normalize": config.normalize}
+                    combinations.append((layer, strength, hyperparams))
         else:
             # Generic handling for other steering methods
             for layer in config.layers:
@@ -738,7 +719,7 @@ class SteeringOptimizer:
             # GPT2-style models
             layer_module = model.transformer.h[layer_index]
         else:
-            raise ValueError("Unsupported model architecture for activation extraction")
+            raise ModelArchitectureUnknownError()
 
         # Register hook and run forward pass
         handle = layer_module.register_forward_hook(hook)
@@ -749,7 +730,7 @@ class SteeringOptimizer:
             handle.remove()
 
         if not activations:
-            raise ValueError("No activations extracted")
+            raise NoActivationDataError()
 
         # Get the activation tensor [1, seq_len, hidden_dim]
         activation_tensor = activations[0]
@@ -1007,7 +988,7 @@ class SteeringOptimizer:
             limit = 100  # Default data limit
 
         if not model_name or not task_name:
-            raise ValueError("model_name and task_name must be provided either via optimization_config or directly")
+            raise MissingParameterError(params=["model_name", "task_name"])
 
         # Create session cache key
         session_cache_key = f"{model_name}_{task_name}"

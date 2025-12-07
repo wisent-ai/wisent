@@ -6,6 +6,8 @@ import sys
 from typing import Dict, Optional, Tuple
 from pathlib import Path
 
+from wisent.core.errors import LayerRangeError, ModelConfigAccessError, CalibrationError, CalibrationDataMissingError
+
 
 class TimingCalibrator:
     """Measures actual optimization timing on the current system"""
@@ -37,9 +39,9 @@ class TimingCalibrator:
             elif hasattr(model.model.config, 'n_layer'):
                 total_layers = model.model.config.n_layer
             else:
-                raise RuntimeError(f"Cannot determine number of layers for model {model_name}")
+                raise LayerRangeError(reason=f"Cannot determine number of layers for model {model_name}")
         else:
-            raise RuntimeError(f"Cannot access model config for {model_name}")
+            raise ModelConfigAccessError(model_name=model_name)
         
         # Use middle layer for calibration
         calibration_layer = total_layers // 2
@@ -70,7 +72,7 @@ class TimingCalibrator:
         result = subprocess.run(cmd, capture_output=True, text=True)
         
         if result.returncode != 0:
-            raise RuntimeError(f"Training calibration failed:\n{result.stderr}")
+            raise CalibrationError(reason=f"Training calibration failed:\n{result.stderr}")
             
         self.timings["training_time"] = time.time() - start_time
         
@@ -132,7 +134,7 @@ class TimingCalibrator:
             Tuple of (total_seconds, breakdown_dict)
         """
         if self.timings["training_time"] is None:
-            raise RuntimeError("No calibration data available. Run calibration first.")
+            raise CalibrationDataMissingError()
         
         # Base measurements from calibration
         base_training = self.timings["training_time"]  # Time for 1 task, 1 layer, 10 samples

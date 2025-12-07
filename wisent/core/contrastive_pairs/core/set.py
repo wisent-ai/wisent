@@ -10,7 +10,8 @@ from typing import TYPE_CHECKING
 from wisent.core.contrastive_pairs.core.atoms import AtomContrastivePairSet
 from wisent.core.contrastive_pairs.diagnostics import DiagnosticsConfig, DiagnosticsReport, run_all_diagnostics
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair 
+from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.errors import PairDiagnosticsError, NoActivationDataError 
 
 __all__ = [
     "ContrastivePairSet",
@@ -125,7 +126,7 @@ class ContrastivePairSet(AtomContrastivePairSet):
             )
 
         if raise_on_critical and report.has_critical_issues:
-            raise ValueError("Contrastive pair diagnostics found critical issues; see logs for specifics.")
+            raise PairDiagnosticsError()
 
         logger.info("Contrastive pair diagnostics summary for %s: %s", self.name, report.summary)
 
@@ -183,8 +184,7 @@ class ContrastivePairSet(AtomContrastivePairSet):
                 y_list.append(1)  # Negative = 1 (untruthful/harmful)
 
         if not X_list:
-            raise ValueError("No activation data found in contrastive pairs. "
-                           "Ensure activations have been collected before training.")
+            raise NoActivationDataError()
 
         X = np.array(X_list)
         y = np.array(y_list)

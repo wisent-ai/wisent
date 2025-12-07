@@ -4,6 +4,7 @@ from typing import Iterable
 import math
 from collections import defaultdict
 from .core.atoms import SampleOutcome, Metric
+from wisent.core.errors import InvalidRangeError
 
 class PassAtK(Metric):
     """
@@ -12,7 +13,7 @@ class PassAtK(Metric):
 
     def __init__(self, k: int = 1):
         if k < 1:
-            raise ValueError("k must be >= 1")
+            raise InvalidRangeError(param_name="k", actual=k, min_val=1)
         self.k = k
 
     def compute(self, outcomes: Iterable[SampleOutcome]) -> float:

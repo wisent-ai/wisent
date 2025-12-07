@@ -8,6 +8,7 @@ import datasets
 
 from ..benchmark_extractors import GSM8KExtractor
 from ..task_interface import TaskInterface
+from wisent.core.errors import InvalidValueError
 
 
 class LiveMathBenchTask(TaskInterface):
@@ -42,7 +43,7 @@ class LiveMathBenchTask(TaskInterface):
         config_key = f"cnmo_{language}" if language in ["en", "zh"] else "cnmo_en"
         if config_key not in self.DATASET_CONFIGS:
             available = list(self.DATASET_CONFIGS.keys())
-            raise ValueError(f"LiveMathBench config '{config_key}' not supported. Available: {available}")
+            raise InvalidValueError(param="config_key", reason=f"'{config_key}' not supported", value=available)
 
         self.language = language
         self.config_key = config_key

@@ -8,7 +8,6 @@ from typing import Dict, List, Tuple
 import numpy as np
 import torch
 from tqdm import tqdm
-from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # Import LMEvalHarnessGroundTruth for intelligent evaluation (same approach as CLI)
 from wisent.core.lm_eval_harness_ground_truth import LMEvalHarnessGroundTruth
@@ -16,6 +15,8 @@ from wisent.core.lm_eval_harness_ground_truth import LMEvalHarnessGroundTruth
 # Import task interface for dynamic task loading
 from wisent.core.task_interface import get_task
 from wisent.core.utils.device import empty_device_cache, preferred_dtype, resolve_default_device
+from wisent.core.errors import ModelArchitectureUnknownError
+from wisent.core.models.wisent_model import WisentModel
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +71,7 @@ def extract_activations_with_hook(
     elif hasattr(model, "model"):  # Some other architectures
         target_layer = model.model.layers[layer]
     else:
-        raise ValueError("Unknown model architecture")
+        raise ModelArchitectureUnknownError()
 
     handle = target_layer.register_forward_hook(hook_fn)
 
@@ -262,26 +263,19 @@ def create_probe_training_data(
 
 
 def load_model_and_tokenizer(model_name: str, device: torch.device):
-    """Load model and tokenizer with proper configuration."""
-    logger.info(f"Loading model {model_name} (ONCE)...")
+    """Load model and tokenizer with proper configuration using WisentModel."""
+    logger.info(f"Loading model {model_name} (ONCE) via WisentModel...")
     device_kind = device.type
 
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-    # Configure tokenizer for decoder-only models
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    # Use WisentModel for consistent model loading across codebase
+    wisent_model = WisentModel(model_name=model_name, device=str(device))
+    
+    model = wisent_model.hf_model
+    tokenizer = wisent_model.tokenizer
 
     # Set left padding for decoder-only models (required for correct generation)
     tokenizer.padding_side = "left"
 
-    torch_dtype = preferred_dtype(device_kind)
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch_dtype,
-        low_cpu_mem_usage=True,
-    )
-    model.to(device)
     model.eval()
 
     # Log memory usage

@@ -9,6 +9,8 @@ from enum import Enum
 from typing import Optional, Callable, Dict, Any
 import logging
 
+from wisent.core.errors import UnknownTypeError
+
 logger = logging.getLogger(__name__)
 
 
@@ -101,7 +103,7 @@ class DetectionHandler:
             )
         
         else:
-            raise ValueError(f"Unknown detection action: {self.action}")
+            raise UnknownTypeError(entity_type="detection action", value=self.action)
     
     def _handle_pass_through(
         self, 

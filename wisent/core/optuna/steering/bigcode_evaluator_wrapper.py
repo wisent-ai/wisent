@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Tuple
 from wisent.core.bigcode_extractors import get_bigcode_extractor
 from wisent.core.bigcode_integration import BigCodeEvaluator, is_bigcode_task
 from wisent.parameters.task_config import CODING_TASKS
+from wisent.core.errors import BigCodeTaskRequiresFlagError, InsufficientDataError
 
 logger = logging.getLogger(__name__)
 
@@ -62,10 +63,10 @@ class OptunaBigCodeEvaluator:
             List of evaluation results for each prediction
         """
         if not self.is_coding_task(task_name):
-            raise ValueError(f"Task {task_name} is not a coding task")
+            raise BigCodeTaskRequiresFlagError(task_name=task_name)
 
         if len(predictions) != len(task_docs):
-            raise ValueError(f"Mismatch: {len(predictions)} predictions vs {len(task_docs)} task docs")
+            raise InsufficientDataError(reason=f"Mismatch: {len(predictions)} predictions vs {len(task_docs)} task docs")
 
         results = []
 

@@ -5,6 +5,8 @@ Command-line argument parser for wisent.
 import argparse
 from typing import List, Optional
 
+from wisent.core.errors import ModelNotProvidedError, InvalidValueError
+
 
 def setup_parser() -> argparse.ArgumentParser:
     """Set up the main CLI parser with subcommands."""
@@ -395,52 +397,6 @@ def setup_tasks_parser(parser):
         help="Type of comparison to show: 'likelihoods' for log-likelihood comparison only, 'responses' for response generation only, 'both' for both (default: both)",
     )
 
-    # HPR-specific parameters
-    parser.add_argument("--hpr-beta", type=float, default=1.0, help="Beta parameter for HPR method")
-
-    # DAC-specific parameters
-    parser.add_argument("--dac-dynamic-control", action="store_true", help="Enable dynamic control for DAC method")
-    parser.add_argument(
-        "--dac-entropy-threshold", type=float, default=1.0, help="Entropy threshold for DAC dynamic control"
-    )
-
-    # BiPO-specific parameters
-    parser.add_argument("--bipo-beta", type=float, default=0.1, help="Beta parameter for BiPO method")
-    parser.add_argument("--bipo-learning-rate", type=float, default=5e-4, help="Learning rate for BiPO method")
-    parser.add_argument("--bipo-epochs", type=int, default=100, help="Number of epochs for BiPO training")
-
-    # K-Steering-specific parameters
-    parser.add_argument(
-        "--ksteering-num-labels", type=int, default=6, help="Number of labels for K-steering classifier"
-    )
-    parser.add_argument(
-        "--ksteering-hidden-dim", type=int, default=512, help="Hidden dimension for K-steering classifier"
-    )
-    parser.add_argument(
-        "--ksteering-learning-rate", type=float, default=1e-3, help="Learning rate for K-steering classifier training"
-    )
-    parser.add_argument(
-        "--ksteering-classifier-epochs",
-        type=int,
-        default=100,
-        help="Number of epochs for K-steering classifier training",
-    )
-    parser.add_argument(
-        "--ksteering-target-labels",
-        type=str,
-        default="0",
-        help="Comma-separated target label indices for K-steering (e.g., '0,1,2')",
-    )
-    parser.add_argument(
-        "--ksteering-avoid-labels",
-        type=str,
-        default="",
-        help="Comma-separated avoid label indices for K-steering (e.g., '3,4,5')",
-    )
-    parser.add_argument(
-        "--ksteering-alpha", type=float, default=50.0, help="Alpha parameter (step size) for K-steering"
-    )
-
     # Token steering arguments
     parser.add_argument("--enable-token-steering", action="store_true", help="Enable token-level steering control")
     parser.add_argument(
@@ -707,7 +663,7 @@ def parse_layers_from_arg(layer_arg: str, model=None) -> List[int]:
             total_layers = detect_model_layers(model)
             return list(range(total_layers))
         # If no model provided, we cannot determine layers - this should not happen
-        raise ValueError("Cannot determine layer range without model instance")
+        raise ModelNotProvidedError()
 
     return layers
 
@@ -755,16 +711,22 @@ def aggregate_token_scores(token_scores: List[float], method: str) -> float:
     clean_scores = []
     for i, score in enumerate(token_scores):
         if score is None:
-            raise ValueError(
-                f"Token score at index {i} is None! This indicates a bug in the classifier output handling."
+            raise InvalidValueError(
+                param_name=f"token_score[{i}]",
+                actual=None,
+                expected="float value"
             )
         if hasattr(score, "item"):  # Handle tensors
-            raise ValueError(
-                f"Token score at index {i} is a tensor ({type(score)})! Expected float but got tensor: {score}"
+            raise InvalidValueError(
+                param_name=f"token_score[{i}]",
+                actual=str(type(score)),
+                expected="float, got tensor"
             )
         if not isinstance(score, (int, float)):
-            raise ValueError(
-                f"Token score at index {i} has invalid type: {type(score)}. Expected float but got {type(score).__name__}: {score}"
+            raise InvalidValueError(
+                param_name=f"token_score[{i}]",
+                actual=type(score).__name__,
+                expected="float"
             )
         clean_scores.append(float(score))
 
@@ -857,10 +819,6 @@ def setup_synthetic_parser(parser):
     # Output
     parser.add_argument("--output", type=str, default="./results", help="Output directory for results")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
-    parser.add_argument(
-        "--ksteering-avoid-labels", type=str, default="", help="Comma-separated avoid label indices for K-steering"
-    )
-    parser.add_argument("--ksteering-alpha", type=float, default=50.0, help="Alpha parameter for K-steering")
 
     # Nonsense detection options
     parser.add_argument(
@@ -985,53 +943,6 @@ def setup_agent_parser(parser):
     )
     parser.add_argument("--target-norm", type=float, default=None, help="Target norm for steering vectors")
 
-    # HPR (Householder Pseudo-Rotation) parameters
-    parser.add_argument("--hpr-beta", type=float, default=1.0, help="Beta parameter for HPR steering (default: 1.0)")
-
-    # DAC (Dynamic Activation Composition) parameters
-    parser.add_argument("--dac-dynamic-control", action="store_true", help="Enable dynamic control for DAC steering")
-    parser.add_argument(
-        "--dac-entropy-threshold", type=float, default=1.0, help="Entropy threshold for DAC steering (default: 1.0)"
-    )
-
-    # BiPO (Bi-directional Preference Optimization) parameters
-    parser.add_argument("--bipo-beta", type=float, default=0.1, help="Beta parameter for BiPO steering (default: 0.1)")
-    parser.add_argument(
-        "--bipo-learning-rate", type=float, default=5e-4, help="Learning rate for BiPO steering (default: 5e-4)"
-    )
-    parser.add_argument(
-        "--bipo-epochs", type=int, default=100, help="Number of epochs for BiPO steering (default: 100)"
-    )
-
-    # KSteering parameters
-    parser.add_argument(
-        "--ksteering-num-labels", type=int, default=6, help="Number of labels for K-steering (default: 6)"
-    )
-    parser.add_argument(
-        "--ksteering-hidden-dim", type=int, default=512, help="Hidden dimension for K-steering (default: 512)"
-    )
-    parser.add_argument(
-        "--ksteering-learning-rate", type=float, default=1e-3, help="Learning rate for K-steering (default: 1e-3)"
-    )
-    parser.add_argument(
-        "--ksteering-classifier-epochs", type=int, default=100, help="Classifier epochs for K-steering (default: 100)"
-    )
-    parser.add_argument(
-        "--ksteering-target-labels",
-        type=str,
-        default="0",
-        help="Target labels for K-steering (comma-separated, default: '0')",
-    )
-    parser.add_argument(
-        "--ksteering-avoid-labels",
-        type=str,
-        default="",
-        help="Avoid labels for K-steering (comma-separated, default: '')",
-    )
-    parser.add_argument(
-        "--ksteering-alpha", type=float, default=50.0, help="Alpha parameter for K-steering (default: 50.0)"
-    )
-
     # Quality Control System parameters
     parser.add_argument(
         "--enable-quality-control",
@@ -1144,7 +1055,7 @@ def setup_steering_optimizer_parser(parser):
         nargs="+",
         choices=["CAA"],
         default=["CAA"],
-        help="Steering methods to test (default: CAA, HPR)",
+        help="Steering methods to test (default: CAA)",
     )
     auto_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
     auto_parser.add_argument("--max-time", type=float, default=60.0, help="Maximum time in minutes (default: 60)")
@@ -1586,7 +1497,7 @@ def setup_generate_vector_parser(parser):
     )
 
     # Multi-property support
-    parser.add_argument("--multi-property", action="store_true", help="Enable multi-property steering (DAC only)")
+    parser.add_argument("--multi-property", action="store_true", help="Enable multi-property steering")
     parser.add_argument(
         "--property-files",
         type=str,
@@ -1630,12 +1541,7 @@ def setup_generate_vector_parser(parser):
         "--save-pairs", type=str, default=None, help="Save generated pairs to this file when using --from-description"
     )
 
-    # Method-specific parameters
-    parser.add_argument("--dynamic-control", action="store_true", help="Enable dynamic control for DAC method")
-    parser.add_argument(
-        "--entropy-threshold", type=float, default=1.0, help="Entropy threshold for DAC method (default: 1.0)"
-    )
-    parser.add_argument("--beta", type=float, default=1.0, help="Beta parameter for HPR method (default: 1.0)")
+
 
     # Activation extraction configuration
     parser.add_argument(

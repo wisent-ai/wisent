@@ -22,6 +22,7 @@ from wisent.core.modalities import (
     wrap_content,
 )
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
+from wisent.core.errors import DuplicateNameError
 
 __all__ = [
     "AdapterError",
@@ -100,7 +101,7 @@ class BaseAdapter(ABC, Generic[InputT, OutputT]):
         if not getattr(cls, "name", None):
             raise TypeError("BaseAdapter subclasses must define `name`.")
         if cls.name != "base" and cls.name in BaseAdapter._REGISTRY:
-            raise ValueError(f"Duplicate adapter name: {cls.name!r}")
+            raise DuplicateNameError(name=cls.name, context="adapter registry")
         if cls.name != "base":
             BaseAdapter._REGISTRY[cls.name] = cls
 

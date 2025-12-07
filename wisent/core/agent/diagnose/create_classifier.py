@@ -13,6 +13,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from wisent.core.classifier.classifier import ActivationClassifier, Classifier
+from wisent.core.errors import ClassifierCreationError, InsufficientDataError
 
 from ...activations import Activations
 from ...layer import Layer
@@ -220,7 +221,7 @@ class ClassifierCreator:
                 break
 
         if best_result is None:
-            raise RuntimeError(f"Failed to create any working classifier for {issue_type}")
+            raise ClassifierCreationError(issue_type=issue_type)
 
         print(
             f"   ✅ Best configuration: Layer {best_result.config.layer}, "
@@ -283,7 +284,7 @@ class ClassifierCreator:
                 print(f"      ⚠️ Failed to generate synthetic data: {e}")
 
         if not training_data:
-            raise ValueError(f"No training data available for {issue_type}")
+            raise InsufficientDataError(reason=f"No training data available for {issue_type}")
 
         print(f"   📈 Total training examples: {len(training_data)}")
 
@@ -1002,7 +1003,7 @@ class ClassifierCreator:
 
         except Exception as e:
             print(f"   ❌ Failed to generate synthetic data: {e}")
-            raise ValueError(f"Cannot generate training data for issue type: {issue_type}")
+            raise InsufficientDataError(reason=f"Cannot generate training data for issue type: {issue_type}")
 
     def _extract_activations_from_data(
         self, training_data: List[Dict[str, Any]], layer: int

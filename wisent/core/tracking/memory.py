@@ -15,6 +15,7 @@ from contextlib import contextmanager
 import torch
 
 from wisent.core.utils.device import resolve_default_device
+from wisent.core.errors import InvalidValueError, InsufficientDataError
 
 try:
     import nvidia_ml_py3 as nvml
@@ -184,7 +185,7 @@ class MemoryTracker:
     def stop_monitoring(self) -> MemoryStats:
         """Stop continuous monitoring and return aggregated statistics."""
         if not self.is_monitoring:
-            raise ValueError("Monitoring is not active")
+            raise InvalidValueError(param_name="is_monitoring", actual=False, expected=True)
         
         self.is_monitoring = False
         if self.monitor_thread:
@@ -195,7 +196,7 @@ class MemoryTracker:
     def get_stats(self) -> MemoryStats:
         """Get aggregated memory statistics from collected snapshots."""
         if not self.snapshots:
-            raise ValueError("No snapshots available")
+            raise InsufficientDataError(reason="No snapshots available")
         
         cpu_values = [s.cpu_memory_mb for s in self.snapshots]
         gpu_values = [s.gpu_memory_mb for s in self.snapshots if s.gpu_memory_mb is not None]

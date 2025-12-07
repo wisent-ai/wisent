@@ -7,7 +7,7 @@ specific directions in the representation space. Can be used to:
 - Add behaviors (e.g., personality traits, speaking styles)
 - Any directional steering that should be baked into weights
 
-Implements the technique pioneered by Jim Lai (grimjim) and used by Arli AI.
+Implements norm-preserving directional projection.
 
 Key improvements over standard projection:
 
@@ -40,6 +40,7 @@ import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
 from wisent.core.cli_logger import setup_logger, bind
+from wisent.core.errors import InvalidValueError
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -111,7 +112,7 @@ def project_component_norm_preserved(
     """
     Project a weight matrix while PRESERVING ROW NORMS.
 
-    This is the key innovation from Jim Lai's norm-preserving technique.
+    This is the key innovation of the norm-preserving technique.
     Instead of directly subtracting from weights (which changes magnitudes),
     we decompose into direction and magnitude, project only the direction,
     then recombine with original magnitudes.
@@ -160,10 +161,10 @@ def project_component_norm_preserved(
 
         # Verify dimensions match
         if v.shape[0] != out_dim:
-            raise ValueError(
-                f"Steering vector dimension {v.shape[0]} doesn't match "
-                f"weight matrix output dimension {out_dim}. "
-                f"Weight shape: {W.shape}, steering shape: {v.shape}"
+            raise InvalidValueError(
+                param_name="steering_vector dimension",
+                actual=v.shape[0],
+                expected=f"weight matrix output dimension {out_dim} (weight shape: {W.shape}, steering shape: {v.shape})"
             )
 
         # Step 1: Decompose weight matrix into magnitude and direction
@@ -335,7 +336,7 @@ def project_weights_norm_preserved(
     while PRESERVING weight magnitudes to maintain model quality and reasoning
     capabilities. Can be used to remove or add behaviors.
 
-    This implements the technique from Jim Lai (grimjim) used by Arli AI.
+    This implements the norm-preserving directional projection technique.
 
     Args:
         model: Model to modify (in-place)
@@ -417,7 +418,7 @@ def project_weights_norm_preserved(
                     component = getattr(component, attr)
 
                 if not hasattr(component, "weight"):
-                    log.warning(f"Component {component_name} has no weight attribute")
+                    log.warning(f"Component {component_name} has no weight attribute (may be quantized - use additive method instead)")
                     continue
 
                 weight_matrix = component.weight
