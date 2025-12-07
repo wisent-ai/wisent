@@ -16,6 +16,11 @@ from wisent.core.activations.activations import Activations
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.layer import Layer
 from wisent.core.model import Model
+from wisent.core.errors import (
+    ClassifierConfigRequiredError,
+    ClassifierLoadError,
+    NoQualityScoresError,
+)
 
 
 @dataclass
@@ -45,7 +50,7 @@ class ResponseDiagnostics:
                 ]
         """
         if not classifier_configs:
-            raise ValueError("classifier_configs is required - no fallback mode available")
+            raise ClassifierConfigRequiredError()
 
         self.model = model
 
@@ -72,7 +77,7 @@ class ResponseDiagnostics:
                 continue
 
         if not self.classifiers:
-            raise RuntimeError("Failed to load any classifiers - system cannot operate without them")
+            raise ClassifierLoadError()
 
     async def analyze_response(self, response: str, prompt: str) -> AnalysisResult:
         """Analyze the response using trained classifiers and activation patterns."""
@@ -193,7 +198,7 @@ class ResponseDiagnostics:
             quality_scores.append(quality_score)
 
         if not quality_scores:
-            raise RuntimeError("No quality scores available - all classifiers failed")
+            raise NoQualityScoresError()
 
         # Use average quality across all classifiers
         return sum(quality_scores) / len(quality_scores)

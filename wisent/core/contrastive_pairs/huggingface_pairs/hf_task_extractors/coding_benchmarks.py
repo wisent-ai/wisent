@@ -5,6 +5,7 @@ from wisent.core.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.errors import InvalidValueError
 
 __all__ = ["OJBenchExtractor", "TerminalBenchExtractor", "SciCodeExtractor"]
 
@@ -707,7 +708,7 @@ def simpsons_rule(f, a, b, n):
     n must be even.
     '''
     if n % 2 != 0:
-        raise ValueError("n must be even for Simpson's rule")
+        raise InvalidValueError(param_name="n", actual=n, expected="even number for Simpson's rule")
 
     h = (b - a) / n
     x = np.linspace(a, b, n + 1)

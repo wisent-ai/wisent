@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 import torch
 from typing import Mapping
 
+from wisent.core.errors import InvalidValueError, InvalidRangeError
+
 if TYPE_CHECKING:
     from wisent.core.activations.core.atoms import RawActivationMap 
 
@@ -66,9 +68,10 @@ class SteeringVector:
         elif v.dim() == 3:     # [B,T,H] fine
             pass
         else:
-            raise ValueError(
-                f"Unsupported steering vector shape {tuple(v.shape)}; "
-                f"expected [H], [1,H], [1,1,H], or [B,T,H]."
+            raise InvalidValueError(
+                param_name="steering vector shape",
+                actual=tuple(v.shape),
+                expected="[H], [1,H], [1,1,H], or [B,T,H]"
             )
 
         return v.to(dtype=like.dtype, device=like.device) * float(self.scale)
@@ -129,7 +132,7 @@ class SteeringPlan:
             layers_description = [f"steering_{i}" for i in range(len(maps))]
             
         if len(layers_description) != len(maps):
-            raise ValueError("layers_description length must match number of maps.")
+            raise InvalidValueError(param_name="layers_description length", actual=len(layers_description), expected=f"{len(maps)} (number of maps)")
 
         if not maps:
             plan = cls(layers={}, layers_description=layers_description)
@@ -168,9 +171,10 @@ class SteeringPlan:
         """
         for layer, sv in self.layers.items():
             if sv.vector.shape[-1] != hidden_size:
-                raise ValueError(
-                    f"Layer {layer} steering last dim {sv.vector.shape[-1]} "
-                    f"!= hidden_size {hidden_size}"
+                raise InvalidValueError(
+                    param_name=f"steering vector hidden_size at layer {layer}",
+                    actual=sv.vector.shape[-1],
+                    expected=hidden_size
                 )
 
     def is_empty(self) -> bool:
@@ -208,7 +212,7 @@ class SteeringPlan:
             tensor([])
         """
         if n < 0:
-            raise ValueError("n must be non-negative.")
+            raise InvalidRangeError(param_name="n", actual=n, min_val=0)
         if n == 0:
             return torch.empty(0, dtype=torch.float32)
         if weights is None:
@@ -216,10 +220,10 @@ class SteeringPlan:
 
         w = torch.as_tensor(weights, dtype=torch.float32)
         if w.numel() != n:
-            raise ValueError(f"Length mismatch: {n} activation maps but {w.numel()} weights.")
+            raise InvalidValueError(param_name="weights length", actual=w.numel(), expected=f"{n} (number of activation maps)")
         s = float(w.sum())
         if abs(s) < 1e-12:
-            raise ValueError("Weights sum to 0; cannot normalize.")
+            raise InvalidValueError(param_name="weights sum", actual=s, expected="non-zero value for normalization")
         return w / s
 
     @staticmethod
@@ -345,9 +349,10 @@ class SteeringPlan:
             if hidden_size is None:
                 hidden_size = last_dim
             elif last_dim != hidden_size:
-                raise ValueError(
-                    f"Layer {layer} has mismatched hidden sizes across maps: "
-                    f"{hidden_size} vs {last_dim}."
+                raise InvalidValueError(
+                    param_name=f"hidden size at layer {layer}",
+                    actual=last_dim,
+                    expected=f"{hidden_size} (consistent across maps)"
                 )
 
             scaled_v = v * float(weights[i])

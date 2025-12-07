@@ -312,52 +312,6 @@ def setup_tasks_parser(parser):
         help="Type of comparison to show: 'likelihoods' for log-likelihood comparison only, 'responses' for response generation only, 'both' for both (default: both)",
     )
 
-    # HPR-specific parameters
-    parser.add_argument("--hpr-beta", type=float, default=1.0, help="Beta parameter for HPR method")
-
-    # DAC-specific parameters
-    parser.add_argument("--dac-dynamic-control", action="store_true", help="Enable dynamic control for DAC method")
-    parser.add_argument(
-        "--dac-entropy-threshold", type=float, default=1.0, help="Entropy threshold for DAC dynamic control"
-    )
-
-    # BiPO-specific parameters
-    parser.add_argument("--bipo-beta", type=float, default=0.1, help="Beta parameter for BiPO method")
-    parser.add_argument("--bipo-learning-rate", type=float, default=5e-4, help="Learning rate for BiPO method")
-    parser.add_argument("--bipo-epochs", type=int, default=100, help="Number of epochs for BiPO training")
-
-    # K-Steering-specific parameters
-    parser.add_argument(
-        "--ksteering-num-labels", type=int, default=6, help="Number of labels for K-steering classifier"
-    )
-    parser.add_argument(
-        "--ksteering-hidden-dim", type=int, default=512, help="Hidden dimension for K-steering classifier"
-    )
-    parser.add_argument(
-        "--ksteering-learning-rate", type=float, default=1e-3, help="Learning rate for K-steering classifier training"
-    )
-    parser.add_argument(
-        "--ksteering-classifier-epochs",
-        type=int,
-        default=100,
-        help="Number of epochs for K-steering classifier training",
-    )
-    parser.add_argument(
-        "--ksteering-target-labels",
-        type=str,
-        default="0",
-        help="Comma-separated target label indices for K-steering (e.g., '0,1,2')",
-    )
-    parser.add_argument(
-        "--ksteering-avoid-labels",
-        type=str,
-        default="",
-        help="Comma-separated avoid label indices for K-steering (e.g., '3,4,5')",
-    )
-    parser.add_argument(
-        "--ksteering-alpha", type=float, default=50.0, help="Alpha parameter (step size) for K-steering"
-    )
-
     # Token steering arguments
     parser.add_argument("--enable-token-steering", action="store_true", help="Enable token-level steering control")
     parser.add_argument(

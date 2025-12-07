@@ -28,6 +28,7 @@ from wisent.core.modalities import (
     VideoContent,
     TextContent,
 )
+from wisent.core.errors import UnknownTypeError
 from wisent.core.activations.core.atoms import LayerActivations
 
 __all__ = ["VideoAdapter"]
@@ -549,6 +550,6 @@ class VideoAdapter(BaseAdapter[VideoContent, Union[torch.Tensor, str]]):
             pos_agg = pos_tensor[:, 0]
             neg_agg = neg_tensor[:, 0]
         else:
-            raise ValueError(f"Unknown aggregation: {aggregation}")
+            raise UnknownTypeError(entity_type="aggregation", value=aggregation, valid_values=["mean", "max", "last", "first"])
 
         return pos_agg.mean(dim=0) - neg_agg.mean(dim=0)

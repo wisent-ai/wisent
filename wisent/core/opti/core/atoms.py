@@ -6,6 +6,8 @@ from typing import Any, Literal
 
 import optuna
 
+from wisent.core.errors import UnknownTypeError
+
 __all__ = [
     "Direction",
     "HPOConfig",
@@ -129,7 +131,7 @@ class BaseOptimizer(ABC):
             return optuna.samplers.RandomSampler(seed=cfg.seed)
         if s == "cmaes":
             return optuna.samplers.CmaEsSampler(seed=cfg.seed)
-        raise ValueError(f"Unknown sampler: {cfg.sampler!r}")
+        raise UnknownTypeError(entity_type="sampler", value=cfg.sampler, valid_values=["tpe", "random", "cmaes"])
 
     def _make_pruner(self, cfg: HPOConfig) -> optuna.pruners.BasePruner | None:
         """
@@ -155,7 +157,7 @@ class BaseOptimizer(ABC):
             return optuna.pruners.MedianPruner()
         if p == "hyperband":
             return optuna.pruners.HyperbandPruner()
-        raise ValueError(f"Unknown pruner: {cfg.pruner!r}")
+        raise UnknownTypeError(entity_type="pruner", value=cfg.pruner, valid_values=["nop", "sha", "asha", "median", "hyperband"])
 
     @staticmethod
     def report_and_maybe_prune(trial: optuna.Trial, value: float, step: int) -> None:

@@ -14,6 +14,8 @@ from contextlib import contextmanager
 from collections import defaultdict
 import functools
 
+from wisent.core.errors import InsufficientDataError
+
 
 @dataclass
 class TimingEvent:
@@ -286,7 +288,7 @@ class LatencyTracker:
         if operation_name:
             events = [e for e in self.events if e.name == operation_name]
             if not events:
-                raise ValueError(f"No events found for operation: {operation_name}")
+                raise InsufficientDataError(reason=f"No events found for operation: {operation_name}")
             return self._calculate_stats(operation_name, events)
         else:
             # Group events by operation name

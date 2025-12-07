@@ -8,7 +8,8 @@ import inspect
 import torch
 
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName  
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet  
+from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.errors import DuplicateNameError  
 
 __all__ = [
     "SteeringError",
@@ -33,7 +34,7 @@ class BaseSteeringMethod(ABC):
         if not getattr(cls, "name", None):
             raise TypeError("BaseSteeringMethod subclasses must define `name`.")
         if cls.name in BaseSteeringMethod._REGISTRY:
-            raise ValueError(f"Duplicate steering method: {cls.name!r}")
+            raise DuplicateNameError(name=cls.name, context="steering method registry")
         BaseSteeringMethod._REGISTRY[cls.name] = cls
 
     def __init__(self, **kwargs: Any) -> None:

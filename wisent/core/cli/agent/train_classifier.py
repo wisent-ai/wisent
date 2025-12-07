@@ -2,6 +2,7 @@
 
 import numpy as np
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainReport
+from wisent.core.errors import UnknownTypeError
 
 
 def _map_token_aggregation(aggregation_str: str):
@@ -147,7 +148,7 @@ def train_classifier_on_pairs(
         classifier = MLPClassifier(threshold=0.5, hidden_dim=128)
         print(f"   Training MLP classifier...")
     else:
-        raise ValueError(f"Unknown classifier type: {classifier_type}. Use 'logistic' or 'mlp'.")
+        raise UnknownTypeError(entity_type="classifier_type", value=classifier_type, valid_values=["logistic", "mlp"])
 
     # Determine batch size: use provided value or adaptive default
     if classifier_batch_size is None:

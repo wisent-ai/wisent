@@ -12,6 +12,7 @@ from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBen
 
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_manifest import EXTRACTORS as _LM_MANIFEST
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS as _HF_MANIFEST
+from wisent.core.errors import InvalidValueError, InvalidDataFormatError
 
 __all__ = [
     "register_extractor",
@@ -49,11 +50,11 @@ def register_extractor(name: str, ref: Union[str, Type[LMEvalBenchmarkExtractor]
     """
     key = (name or "").strip().lower()
     if not key:
-        raise ValueError("Extractor name/key must be a non-empty string.")
+        raise InvalidValueError(param_name="name/key", actual="empty string", expected="non-empty string")
 
     if isinstance(ref, str):
         if ":" not in ref:
-            raise ValueError("String ref must be 'module_path:ClassName[.Inner]'.")
+            raise InvalidDataFormatError(reason="String ref must be 'module_path:ClassName[.Inner]'.")
         _REGISTRY[key] = ref
         return
 

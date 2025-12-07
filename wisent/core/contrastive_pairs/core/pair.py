@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 
 from wisent.core.contrastive_pairs.core.atoms import AtomContrastivePair
 from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
+from wisent.core.errors import PromptMustBeStringError
 
 from typing import TYPE_CHECKING
 
@@ -36,7 +37,7 @@ class ContrastivePair(AtomContrastivePair):
 
     def __post_init__(self) -> None:
         if not isinstance(self.prompt, str) or not self.prompt.strip():
-            raise ValueError("'prompt' must be a non-empty string.")
+            raise PromptMustBeStringError()
         if not isinstance(self.positive_response, PositiveResponse):
             raise TypeError("`positive_response` must be PositiveResponse.")
         if not isinstance(self.negative_response, NegativeResponse):

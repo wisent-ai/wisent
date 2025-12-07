@@ -15,6 +15,7 @@ import random
 
 from wisent.core.utils.device import preferred_dtype, resolve_default_device, resolve_device
 from wisent.core.utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
+from wisent.core.errors import InsufficientDataError, TaskNotFoundError
 
 def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: int = 3) -> Any:
     """
@@ -505,7 +506,7 @@ def get_task_samples_for_analysis(task_name: str, num_samples: int = 5) -> Dict[
                 print(f"✅ Found group task '{task_name}' with {len(expanded_tasks)} subtasks: {expanded_tasks[:5]}{'...' if len(expanded_tasks) > 5 else ''}")
                 return get_samples_from_group_task(task_name, expanded_tasks, num_samples)
             else:
-                raise ValueError("No tasks returned")
+                raise InsufficientDataError(reason="No tasks returned")
                 
         except Exception as e:
             # Step 2: Try as group task (different API)
@@ -517,7 +518,7 @@ def get_task_samples_for_analysis(task_name: str, num_samples: int = 5) -> Dict[
                     print(f"✅ Found group expansion with {len(subtasks)} subtasks: {subtasks[:3]}{'...' if len(subtasks) > 3 else ''}")
                     return get_samples_from_group_task(task_name, subtasks, num_samples)
                 else:
-                    raise ValueError("No group expansion found")
+                    raise InsufficientDataError(reason="No group expansion found")
                     
             except Exception as e2:
                 # Step 3: Try as group of groups (large size)
@@ -541,7 +542,7 @@ def get_task_samples_for_analysis(task_name: str, num_samples: int = 5) -> Dict[
                                 return get_samples_from_group_task(task_name, all_subtasks, num_samples)
                     
                     # Final failure
-                    raise ValueError(f"Task '{task_name}' not found at any level")
+                    raise TaskNotFoundError(task_name=task_name)
                     
                 except Exception as e3:
                     # Step 4: Try to find benchmark groups by reading README from lm-eval-harness
@@ -578,7 +579,7 @@ def get_task_samples_for_analysis(task_name: str, num_samples: int = 5) -> Dict[
                                 }
                         
                         # Final failure
-                        raise ValueError(f"No README groups found for '{task_name}'")
+                        raise InsufficientDataError(reason=f"No README groups found for '{task_name}'")
                         
                     except Exception as e4:
                         return {

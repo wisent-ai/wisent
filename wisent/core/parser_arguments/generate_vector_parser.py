@@ -19,7 +19,7 @@ def setup_generate_vector_parser(parser):
     )
 
     # Multi-property support
-    parser.add_argument("--multi-property", action="store_true", help="Enable multi-property steering (DAC only)")
+    parser.add_argument("--multi-property", action="store_true", help="Enable multi-property steering")
     parser.add_argument(
         "--property-files",
         type=str,
@@ -62,13 +62,6 @@ def setup_generate_vector_parser(parser):
     parser.add_argument(
         "--save-pairs", type=str, default=None, help="Save generated pairs to this file when using --from-description"
     )
-
-    # Method-specific parameters
-    parser.add_argument("--dynamic-control", action="store_true", help="Enable dynamic control for DAC method")
-    parser.add_argument(
-        "--entropy-threshold", type=float, default=1.0, help="Entropy threshold for DAC method (default: 1.0)"
-    )
-    parser.add_argument("--beta", type=float, default=1.0, help="Beta parameter for HPR method (default: 1.0)")
 
     # Activation extraction configuration
     parser.add_argument(

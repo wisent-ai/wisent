@@ -11,6 +11,12 @@ import torch
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.errors import (
+    DecodeError,
+    UnknownTypeError,
+    InvalidJSONStructureError,
+    InvalidDataFormatError,
+)
 
 __all__ = [
     "save_contrastive_pair_set",
@@ -102,7 +108,7 @@ def _decode_activations(obj: VectorPayload | None, return_backend: str = "torch"
         raw = base64.b64decode(obj["data"])
         arr = np.frombuffer(raw, dtype=dtype).reshape(shape)
     except Exception as e:
-        raise ValueError(f"Failed to decode activations payload: {e}") from e
+        raise DecodeError(data_type="activations payload", reason=str(e), cause=e)
 
     if return_backend == "list":
         return arr.tolist()
@@ -110,7 +116,7 @@ def _decode_activations(obj: VectorPayload | None, return_backend: str = "torch"
         return arr
     if return_backend == "torch":
         return torch.from_numpy(arr)
-    raise ValueError(f"Unknown return_backend: {return_backend}")
+    raise UnknownTypeError(entity_type="return_backend", value=return_backend, valid_values=["torch", "numpy", "list"])
 
 
 def _maybe_decode_response(response: dict[str, str | torch.Tensor | VectorPayload | None], return_backend: str) -> dict[str, str | torch.Tensor | VectorPayload | None]:
@@ -158,9 +164,9 @@ def _validate_top_level(data: dict[str, str | list]) -> None:
         ValueError: If the structure is invalid.
     """
     if not all(k in data for k in ("name", "task_type", "pairs")):
-        raise ValueError("Invalid JSON structure: missing one of ['name', 'task_type', 'pairs']")
+        raise InvalidJSONStructureError(reason="missing one of ['name', 'task_type', 'pairs']")
     if not isinstance(data["pairs"], list):
-        raise ValueError("'pairs' should be a list")
+        raise InvalidDataFormatError(reason="'pairs' should be a list")
 
 
 def _validate_pair_obj(pair: dict[str, str | dict[str, str | VectorPayload | None]]) -> None:
@@ -194,18 +200,18 @@ def _validate_pair_obj(pair: dict[str, str | dict[str, str | VectorPayload | Non
     """
     need = ("prompt", "positive_response", "negative_response")
     if not all(k in pair for k in need):
-        raise ValueError("Each pair must contain 'prompt', 'positive_response', and 'negative_response'")
+        raise InvalidDataFormatError(reason="Each pair must contain 'prompt', 'positive_response', and 'negative_response'")
     if not isinstance(pair["positive_response"], dict) or not isinstance(pair["negative_response"], dict):
-        raise ValueError("'positive_response' and 'negative_response' must be dictionaries")
+        raise InvalidDataFormatError(reason="'positive_response' and 'negative_response' must be dictionaries")
     for resp_key in ("model_response", "activations", "label"):
         if resp_key not in pair["positive_response"]:
-            raise ValueError(f"'positive_response' must contain '{resp_key}'")
+            raise InvalidDataFormatError(reason=f"'positive_response' must contain '{resp_key}'")
         if resp_key not in pair["negative_response"]:
-            raise ValueError(f"'negative_response' must contain '{resp_key}'")
+            raise InvalidDataFormatError(reason=f"'negative_response' must contain '{resp_key}'")
     if "label" in pair and pair["label"] is not None and not isinstance(pair["label"], str):
-        raise ValueError("'label' must be a string or None")
+        raise InvalidDataFormatError(reason="'label' must be a string or None")
     if "trait_description" in pair and pair["trait_description"] is not None and not isinstance(pair["trait_description"], str):
-        raise ValueError("'trait_description' must be a string or None")
+        raise InvalidDataFormatError(reason="'trait_description' must be a string or None")
 
 def save_contrastive_pair_set(
     cps: ContrastivePairSet,

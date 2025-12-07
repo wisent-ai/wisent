@@ -2,6 +2,7 @@ from __future__ import annotations
 import json, os, subprocess, tempfile
 from typing import TYPE_CHECKING
 from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result, SandboxExecutor
+from wisent.core.errors import DockerRuntimeError
 
 if TYPE_CHECKING:
     from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job
@@ -50,21 +51,11 @@ class DockerSandboxExecutor(SandboxExecutor):
                 timeout=300
             )
             if result.returncode != 0:
-                raise RuntimeError(
-                    "Docker daemon is not running. Please start Docker and try again.\n"
-                    f"Error: {result.stderr}"
-                )
+                raise DockerRuntimeError(reason=f"Docker daemon is not running: {result.stderr}")
         except FileNotFoundError:
-            raise RuntimeError(
-                "Docker command not found. Please install Docker:\n"
-                "  - macOS: https://docs.docker.com/desktop/install/mac-install/\n"
-                "  - Linux: https://docs.docker.com/engine/install/\n"
-                "  - Windows: https://docs.docker.com/desktop/install/windows-install/"
-            )
+            raise DockerRuntimeError(reason="Docker command not found. Please install Docker.")
         except subprocess.TimeoutExpired:
-            raise RuntimeError(
-                "Docker command timed out. Docker daemon may be unresponsive."
-            )
+            raise DockerRuntimeError(reason="Docker command timed out. Docker daemon may be unresponsive.")
 
     def run(self, files: dict[str, str], job: Job) -> Result:
         """

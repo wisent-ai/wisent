@@ -15,6 +15,8 @@ import glob
 from typing import List, Dict, Any, Optional, Tuple
 from difflib import SequenceMatcher
 
+from wisent.core.errors import TaskLoadError, TaskNotFoundError, NoDocsAvailableError
+
 
 def load_available_tasks() -> List[str]:
     """Load available tasks from local tasks.json file or lm-eval registry."""
@@ -90,10 +92,9 @@ def load_available_tasks() -> List[str]:
                 return task_names
                 
             except Exception as e:
-                raise RuntimeError(
-                    f"Could not discover tasks from lm-eval or local tasks.json. "
-                    f"Please ensure lm-evaluation-harness is installed and accessible. "
-                    f"Error: {e}. Try: pip install lm-eval"
+                raise TaskLoadError(
+                    task_name="lm-eval task discovery",
+                    cause=e
                 )
 
 
@@ -131,9 +132,9 @@ def load_docs(task, limit: Optional[int] = None) -> List[Dict[str, Any]]:
                 )
                 docs = [dict(item) for item in dataset]
             except Exception as e:
-                raise RuntimeError(f"No labelled docs available for task {task.NAME}. Error loading fewshot split: {e}")
+                raise NoDocsAvailableError(task_name=task.NAME)
         else:
-            raise RuntimeError(f"No labelled docs available for task {task.NAME}")
+            raise NoDocsAvailableError(task_name=task.NAME)
     
     if limit is not None and limit > 0:
         docs = docs[:limit]
@@ -1228,10 +1229,9 @@ class TaskManager:
         suggestions = [task for task in self.available_tasks 
                       if any(word.lower() in task.lower() for word in task_name.split('_'))][:5]
         
-        raise ValueError(
-            f"Task '{task_name}' not found. "
-            f"Available tasks: {len(self.available_tasks)} total. "
-            f"Suggestions: {suggestions if suggestions else 'Use get_available_tasks() to see all options'}"
+        raise TaskNotFoundError(
+            task_name=task_name,
+            available_tasks=similar_tasks if similar_tasks else None
         )
     
     def _calculate_task_name_similarity(self, name1: str, name2: str) -> float:
@@ -1274,13 +1274,10 @@ class TaskManager:
         except Exception as e:
             # If that fails, check if it's a task resolution issue
             if not self.is_valid_task(actual_task_name):
-                raise ValueError(
-                    f"Task '{task_name}' could not be resolved to a valid task. "
-                    f"Use get_available_tasks() to see all available tasks."
-                )
+                raise TaskNotFoundError(task_name=task_name)
             
             # Re-raise the original error if it wasn't a resolution issue
-            raise ValueError(f"Failed to load task '{task_name}': {e}") from e
+            raise TaskLoadError(task_name=task_name, cause=e)
     
     def split_task_data(self, task_data, split_ratio: float = 0.8, random_seed: int = 42) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """

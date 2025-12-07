@@ -6,6 +6,7 @@ import json
 import numpy as np
 
 from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.errors import UnknownTypeError
 
 
 def execute_tasks(args):
@@ -560,7 +561,7 @@ def execute_tasks(args):
     elif args.classifier_type == 'mlp':
         classifier = MLPClassifier(threshold=args.detection_threshold, device=args.device)
     else:
-        raise ValueError(f"Unknown classifier type: {args.classifier_type}")
+        raise UnknownTypeError(entity_type="classifier_type", value=args.classifier_type, valid_values=["logistic", "mlp"])
 
     # Training configuration
     train_config = ClassifierTrainConfig(

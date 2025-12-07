@@ -6,6 +6,7 @@ import logging
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.errors import InvalidRangeError
 
 __all__ = [
     "HuggingFaceDataLoader",
@@ -122,7 +123,7 @@ class HuggingFaceDataLoader(BaseDataLoader):
             return [], []
 
         if not (0.0 <= split_ratio <= 1.0):
-            raise ValueError(f"split_ratio must be in [0.0, 1.0], got {split_ratio}")
+            raise InvalidRangeError(param_name="split_ratio", actual=split_ratio, min_val=0.0, max_val=1.0)
 
         # Shuffle
         try:

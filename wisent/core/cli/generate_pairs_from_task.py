@@ -4,6 +4,8 @@ import sys
 import json
 import os
 
+from wisent.core.errors import InvalidDataFormatError
+
 
 def execute_generate_pairs_from_task(args):
     """Execute the generate-pairs-from-task command - load and save contrastive pairs from a task."""
@@ -45,9 +47,9 @@ def execute_generate_pairs_from_task(args):
                 # lm-eval task group with subtasks
                 if len(task_obj) != 1:
                     keys = ", ".join(sorted(task_obj.keys()))
-                    raise ValueError(
-                        f"Task '{args.task_name}' returned {len(task_obj)} subtasks ({keys}). "
-                        "Specify an explicit subtask, e.g. 'benchmark/subtask'."
+                    raise InvalidDataFormatError(
+                        reason=f"Task '{args.task_name}' returned {len(task_obj)} subtasks ({keys}). "
+                               "Specify an explicit subtask, e.g. 'benchmark/subtask'."
                     )
                 (subname, task), = task_obj.items()
                 pairs_task_name = subname

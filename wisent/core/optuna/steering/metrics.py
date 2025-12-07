@@ -20,6 +20,7 @@ from wisent.core.errors import (
     ExactMatchError,
     BigCodeEvaluationError,
     TaskNameRequiredError,
+    InsufficientDataError,
 )
 
 from .bigcode_evaluator_wrapper import OptunaBigCodeEvaluator
@@ -127,13 +128,13 @@ def evaluate_benchmark_performance(
                     logger.error(
                         f"No task docs provided for coding task {task_name}. BigCode evaluation requires original task documents with test cases."
                     )
-                    raise ValueError(f"Task documents required for coding task evaluation: {task_name}")
+                    raise InsufficientDataError(reason=f"Task documents required for coding task evaluation: {task_name}")
 
                 # Ensure we have the right number of task docs
                 if len(task_docs) != len(predictions):
                     logger.error(f"Task docs length mismatch: {len(task_docs)} docs vs {len(predictions)} predictions")
-                    raise ValueError(
-                        f"Number of task documents ({len(task_docs)}) must match number of predictions ({len(predictions)})"
+                    raise InsufficientDataError(
+                        reason=f"Number of task documents ({len(task_docs)}) must match number of predictions ({len(predictions)})"
                     )
 
                 # Evaluate using BigCode execution

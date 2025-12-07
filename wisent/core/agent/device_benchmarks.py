@@ -20,6 +20,12 @@ import hashlib
 import torch
 
 from wisent.core.utils.device import resolve_default_device
+from wisent.core.errors import (
+    DeviceBenchmarkError,
+    NoBenchmarkDataError,
+    InsufficientDataError,
+    UnknownTypeError,
+)
 
 
 @dataclass
@@ -177,7 +183,7 @@ except Exception as e:
                     
         except Exception as e:
             print(f"      Error in model loading benchmark: {e}")
-            raise RuntimeError(f"Model loading benchmark failed: {e}")
+            raise DeviceBenchmarkError(task_name="model_loading", cause=e)
     
     def run_benchmark_eval_test(self) -> float:
         """Benchmark evaluation performance using real CLI functionality."""
@@ -440,7 +446,7 @@ except Exception as e:
 
         except Exception as e:
             print(f"      Error in steering benchmark: {e}")
-            raise RuntimeError(f"Steering benchmark failed: {e}")
+            raise DeviceBenchmarkError(task_name="steering", cause=e)
     
     def run_data_generation_test(self) -> float:
         """Benchmark data generation performance using real synthetic generation.""" 
@@ -476,7 +482,7 @@ try:
     # Calculate time per generated pair (each pair has 2 responses)
     num_generated_responses = len(pair_set.pairs) * 2
     if num_generated_responses == 0:
-        raise RuntimeError("No pairs were generated during data generation benchmark")
+        raise InsufficientDataError(reason="No pairs were generated during data generation benchmark")
     
     time_per_example = total_time / num_generated_responses
     print(f"BENCHMARK_RESULT:{time_per_example}")
@@ -506,7 +512,7 @@ except Exception as e:
                     
         except Exception as e:
             print(f"      Error in data generation benchmark: {e}")
-            raise RuntimeError(f"Data generation benchmark failed: {e}")
+            raise DeviceBenchmarkError(task_name="data_generation", cause=e)
     
     def run_full_benchmark(self, force_rerun: bool = False) -> DeviceBenchmark:
         """Run complete device benchmark suite."""
@@ -533,7 +539,7 @@ except Exception as e:
             model_loading = self.run_model_loading_benchmark()
             if model_loading is None:
                 print(f"   ❌ Model loading benchmark returned None")
-                raise RuntimeError("Model loading benchmark failed")
+                raise DeviceBenchmarkError(task_name="model_loading")
         except Exception as e:
             print(f"   ❌ Model loading benchmark failed: {e}")
             raise
@@ -560,7 +566,7 @@ except Exception as e:
             steering = self.run_steering_test()
             if steering is None:
                 print(f"   ❌ Steering benchmark returned None")
-                raise RuntimeError("Steering benchmark failed")
+                raise DeviceBenchmarkError(task_name="steering")
         except Exception as e:
             print(f"   ❌ Steering benchmark failed: {e}")
             raise
@@ -569,7 +575,7 @@ except Exception as e:
             data_generation = self.run_data_generation_test()
             if data_generation is None:
                 print(f"   ❌ Data generation benchmark returned None")
-                raise RuntimeError("Data generation benchmark failed")
+                raise DeviceBenchmarkError(task_name="data_generation")
         except Exception as e:
             print(f"   ❌ Data generation benchmark failed: {e}")
             raise
@@ -629,7 +635,7 @@ except Exception as e:
         """
         benchmark = self.get_current_benchmark()
         if not benchmark:
-            raise RuntimeError(f"No benchmark available for device. Run benchmark first with: python -m wisent.core.agent.budget benchmark")
+            raise NoBenchmarkDataError()
         else:
             # Use actual benchmark results
             if task_type == "model_loading":
@@ -645,7 +651,7 @@ except Exception as e:
             elif task_type == "data_generation":
                 return benchmark.data_generation_seconds_per_example * quantity
             else:
-                raise ValueError(f"Unknown task type: {task_type}")
+                raise UnknownTypeError(entity_type="task_type", value=task_type)
 
 
 # Global benchmarker instance

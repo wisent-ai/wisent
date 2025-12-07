@@ -10,6 +10,7 @@ import torch
 from pathlib import Path
 from typing import TYPE_CHECKING
 from wisent.core.cli_logger import setup_logger, bind
+from wisent.core.errors import MissingParameterError
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -79,7 +80,7 @@ def export_modified_model(
     # Push to Hub if requested
     if push_to_hub:
         if repo_id is None:
-            raise ValueError("repo_id required when push_to_hub=True")
+            raise MissingParameterError(params=["repo_id"], context="push_to_hub=True")
 
         upload_to_hub(
             model,

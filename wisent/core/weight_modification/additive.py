@@ -28,6 +28,8 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
+
+from wisent.core.errors import UnknownTypeError
 from wisent.core.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -134,7 +136,7 @@ def bake_steering_into_component(
             extra={"alpha": alpha, "in_dim": in_dim}
         )
     else:
-        raise ValueError(f"Unknown method: {method}")
+        raise UnknownTypeError(entity_type="method", value=method, valid_values=["bias", "rank1"])
 
 
 def bake_steering_into_weights(

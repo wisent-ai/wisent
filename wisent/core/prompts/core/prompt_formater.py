@@ -6,6 +6,7 @@ import pkgutil
 from typing import Iterable, Type
 
 from wisent.core.prompts.core.atom import PromptPair, PromptStrategy, UnknownStrategyError
+from wisent.core.errors import FileLoadError, DuplicateNameError, InsufficientDataError
 
 __all__ = ["PromptFormatter", "StrategyKey", "UnknownStrategyError"]
 
@@ -112,10 +113,7 @@ class PromptFormatter:
         try:
             import wisent.core.prompts.prompt_stratiegies as strategies_pkg
         except ModuleNotFoundError as exc:
-            raise RuntimeError(
-                "The 'strategies' package was not found. "
-                "Create a 'strategies' directory with an empty __init__.py."
-            ) from exc
+            raise FileLoadError(file_path="strategies package", cause=exc)
 
         import wisent.core.prompts.prompt_stratiegies as strategies_pkg
 
@@ -129,10 +127,7 @@ class PromptFormatter:
             self._register_strategies_from_module(module)
 
         if not self._registry:
-            raise RuntimeError(
-                "No strategies found. Add at least one file in 'strategies/' "
-                "defining a PromptStrategy subclass with a unique 'strategy_key'."
-            )
+            raise InsufficientDataError(reason="No strategies found. Add at least one PromptStrategy subclass.")
 
     def _register_strategies_from_module(self, module) -> None:
         '''
@@ -149,9 +144,5 @@ class PromptFormatter:
                 continue
             key = obj.strategy_key
             if key in self._registry:
-                existing = self._registry[key].__module__
-                raise RuntimeError(
-                    f"Duplicate strategy_key '{key}' found in module "
-                    f"'{module.__name__}' (already defined in '{existing}')."
-                )
+                raise DuplicateNameError(entity_type="strategy_key", name=key)
             self._registry[key] = obj
