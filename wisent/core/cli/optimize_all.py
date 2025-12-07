@@ -162,6 +162,8 @@ def _run_classification_optimization(args: argparse.Namespace, tasks: List[str])
     opt_args.layer_range = getattr(args, 'layer_range', None)
     opt_args.skip_full_search = getattr(args, 'skip_full_search', False)
     opt_args.quick = getattr(args, 'quick', False)
+    opt_args.aggregation_methods = getattr(args, 'aggregation_methods', ['average', 'final', 'first', 'max', 'min'])
+    opt_args.threshold_range = getattr(args, 'threshold_range', [0.3, 0.5, 0.7])
 
     return execute_optimize_classification(opt_args)
 
@@ -283,13 +285,13 @@ def _run_weight_modification_optimization(args: argparse.Namespace, traits: List
                 min_weight_distance=0.6,  # Default
                 strength=result.best_params.get("strength", 1.0),
                 num_pairs=opt_args.num_pairs,
-                score=result.best_trial.score if result.best_trial else 0.0,
+                score=result.best_score,
                 optimization_method="optuna",
             )
 
             results[trait] = {
                 "status": "success",
-                "best_score": result.best_trial.score if result.best_trial else 0.0,
+                "best_score": result.best_score,
                 "best_params": result.best_params,
                 "target_achieved": result.target_achieved,
             }

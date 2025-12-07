@@ -30,6 +30,7 @@ from wisent.core.modalities import (
     wrap_content,
 )
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
+from wisent.core.utils.device import preferred_dtype
 
 __all__ = ["TextAdapter"]
 
@@ -90,16 +91,16 @@ class TextAdapter(BaseAdapter[TextContent, str]):
             "attn_implementation": "eager",
         }
 
+        # Use centralized preferred_dtype for consistency across codebase
         if self._torch_dtype:
             load_kwargs["torch_dtype"] = self._torch_dtype
-        elif self.device == "mps":
-            load_kwargs["torch_dtype"] = torch.float16
+        else:
+            load_kwargs["torch_dtype"] = preferred_dtype(self.device)
+        
+        if self.device == "mps":
             load_kwargs["device_map"] = "mps"
         elif self.device in ("cuda", "auto"):
-            load_kwargs["torch_dtype"] = torch.bfloat16
             load_kwargs["device_map"] = "auto"
-        else:
-            load_kwargs["torch_dtype"] = torch.float32
 
         # Add any extra kwargs
         load_kwargs.update(self._kwargs)

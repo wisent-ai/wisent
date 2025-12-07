@@ -33,8 +33,9 @@ class ActivationData:
 
     def to_numpy(self) -> tuple[np.ndarray, np.ndarray]:
         """Convert to numpy arrays for sklearn compatibility."""
-        X = self.activations.detach().cpu().numpy()
-        y = self.labels.detach().cpu().numpy()
+        # Convert to float32 before numpy (bfloat16 not supported)
+        X = self.activations.detach().cpu().float().numpy()
+        y = self.labels.detach().cpu().float().numpy()
         return X, y
 
     def to_tensors(self, device: str = None, dtype: torch.dtype = None) -> tuple[torch.Tensor, torch.Tensor]:
