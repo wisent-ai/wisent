@@ -52,7 +52,17 @@ def setup_synthetic_parser(parser):
     parser.add_argument("--layers", type=str, default="15", help="Layers to extract activations from")
     parser.add_argument("--token-aggregation", type=str, default="mean", help="Token aggregation method")
     parser.add_argument("--prompt-strategy", type=str, default="full", help="Prompt strategy")
-    parser.add_argument("--method", type=str, default="CAA", help="Steering vector creation method")
+    
+    # Steering method configuration - uses centralized registry
+    from wisent.core.steering_methods import SteeringMethodRegistry
+    methods = SteeringMethodRegistry.list_methods()
+    parser.add_argument(
+        "--method",
+        type=str,
+        default=SteeringMethodRegistry.get_default_method().upper(),
+        choices=[m.upper() for m in methods] + [m.lower() for m in methods],
+        help=f"Steering vector creation method (default: {SteeringMethodRegistry.get_default_method().upper()})",
+    )
     parser.add_argument("--normalize", action="store_true", help="Normalize steering vectors")
 
     # Nonsense generation options (for creating nonsense pairs)

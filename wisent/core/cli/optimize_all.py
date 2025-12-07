@@ -358,8 +358,8 @@ def _run_weight_modification_optimization(args: argparse.Namespace, traits: List
                 save_trials=None,
                 push_to_hub=False,
                 repo_id=None,
-                show_comparisons=0,
-                save_comparisons=None,
+                show_comparisons=10,
+                save_comparisons=f"{output_dir}/{args.model.replace('/', '_')}_{trait}_comparisons.json",
             )
 
             result = execute_optimize_weights(opt_args)
