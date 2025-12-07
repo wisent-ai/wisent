@@ -37,7 +37,7 @@ def test_process_group_task_model_methods():
     # Create model
     print("\n1. Creating model...")
     try:
-        model = Model(name="meta-llama/Llama-3.2-1B", device=device)
+        model = Model(name="meta-llama/Llama-3.2-1B-Instruct", device=device)
         print("   ✓ Model created successfully")
     except Exception as e:
         print(f"   ✗ Failed to create model: {e}")

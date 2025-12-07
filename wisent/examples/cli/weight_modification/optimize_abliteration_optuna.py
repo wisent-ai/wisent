@@ -7,14 +7,14 @@ to find optimal weight modification parameters for any task or trait.
 
 Usage:
     # For task-based optimization:
-    wisent optimize-weights meta-llama/Llama-3.2-1B \
+    wisent optimize-weights meta-llama/Llama-3.2-1B-Instruct \
         --task hellaswag \
         --evaluator task \
         --trials 30 \
         --output-dir ./data/modified_models/optuna
 
     # For trait-based optimization:
-    wisent optimize-weights meta-llama/Llama-3.2-1B \
+    wisent optimize-weights meta-llama/Llama-3.2-1B-Instruct \
         --trait "a model that refuses harmful requests" \
         --evaluator refusal \
         --target-metric refusal_rate \
@@ -39,7 +39,7 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default="meta-llama/Llama-3.2-1B",
+        default="meta-llama/Llama-3.2-1B-Instruct",
         help="Model name",
     )
     parser.add_argument(

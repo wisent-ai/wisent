@@ -27,6 +27,9 @@ setup(
         "wisent": [
             "core/evaluators/benchmark_specific/coding/safe_docker/Dockerfile",
             "core/evaluators/benchmark_specific/coding/safe_docker/entrypoint.py",
+            "parameters/lm_eval/*.json",
+            "parameters/tasks/*.json",
+            "examples/scripts/*.json",
         ],
     },
     classifiers=[
