@@ -4,6 +4,7 @@ from typing import List
 import torch
 
 from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
+from wisent.core.errors import InsufficientDataError
 
 __all__ = [
     "CAAMethod",
@@ -30,7 +31,7 @@ class CAAMethod(PerLayerBaseSteeringMethod):
             torch.Tensor steering vector for the layer.
         """
         if not pos_list or not neg_list:
-            raise ValueError("Both positive and negative lists must be non-empty.")
+            raise InsufficientDataError(reason="Both positive and negative lists must be non-empty.")
         pos = torch.stack([t.detach().to("cpu").float().reshape(-1) for t in pos_list], dim=0)  # [N_pos, H]
         neg = torch.stack([t.detach().to("cpu").float().reshape(-1) for t in neg_list], dim=0)  # [N_neg, H]
         v = pos.mean(dim=0) - neg.mean(dim=0)

@@ -7,6 +7,7 @@ from typing import Any, Dict, Type
 from typing import TypedDict, Mapping
 from lm_eval.api.task import ConfigurableTask
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.errors import DuplicateNameError, InvalidRangeError
 
 __all__ = ["DataLoaderError", "BaseDataLoader"]
 
@@ -55,7 +56,7 @@ class BaseDataLoader(ABC):
         if not getattr(cls, "name", None):
             raise TypeError("DataLoader subclasses must define a class attribute `name`.")
         if cls.name in BaseDataLoader._REGISTRY:
-            raise ValueError(f"Duplicate data loader name: {cls.name!r}")
+            raise DuplicateNameError(name=cls.name, context="data loader registry")
         BaseDataLoader._REGISTRY[cls.name] = cls
 
     def __init__(self, **kwargs: Any) -> None:
@@ -78,7 +79,7 @@ class BaseDataLoader(ABC):
         if split_ratio is None:
             return 0.8
         if not (0.0 <= split_ratio <= 1.0):
-            raise ValueError("split_ratio must be in [0.0, 1.0]")
+            raise InvalidRangeError(param_name="split_ratio", actual=split_ratio, min_val=0.0, max_val=1.0)
         return float(split_ratio)
 
     @abstractmethod

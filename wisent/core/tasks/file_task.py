@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional
 
 from ..benchmark_extractors import GSM8KExtractor
 from ..task_interface import TaskInterface
+from wisent.core.errors import InvalidJSONError, FileLoadError, InvalidDataFormatError
 
 
 class FileTask(TaskInterface):
@@ -45,18 +46,18 @@ class FileTask(TaskInterface):
             with open(self.file_path, encoding="utf-8") as f:
                 data = json.load(f)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in file {self.file_path}: {e}")
+            raise InvalidJSONError(file_path=str(self.file_path), cause=e)
         except Exception as e:
-            raise RuntimeError(f"Failed to load file {self.file_path}: {e}")
+            raise FileLoadError(file_path=str(self.file_path), cause=e)
 
         # Ensure data is a list
         if not isinstance(data, list):
-            raise ValueError(f"JSON file must contain a list of objects, got {type(data).__name__}")
+            raise InvalidDataFormatError(reason=f"JSON file must contain a list of objects, got {type(data).__name__}")
 
         # Validate samples
         for i, sample in enumerate(data):
             if not self.validate_sample(sample):
-                raise ValueError(f"Invalid sample at index {i}: {sample}")
+                raise InvalidDataFormatError(reason=f"Invalid sample at index {i}")
 
         # Apply limit
         effective_limit = limit or self._limit
@@ -196,7 +197,7 @@ def load_tasks_from_directory(directory: str, pattern: str = "*.json", prefix: s
         raise FileNotFoundError(f"Directory not found: {directory}")
 
     if not directory_path.is_dir():
-        raise ValueError(f"Path is not a directory: {directory}")
+        raise InvalidDataFormatError(reason=f"Path is not a directory: {directory}")
 
     loaded_tasks = []
 

@@ -60,11 +60,11 @@ class ClassifierParams:
 @dataclass
 class SteeringParams:
     """Model-determined steering parameters."""
-    steering_method: str  # CAA/HPR/DAC/BiPO/KSteering: Best fit for prompt type
+    steering_method: str  # CAA: Contrastive Activation Addition
     initial_strength: float  # 0.1-2.0: How aggressive to start
     increment: float  # 0.1-0.5: How much to increase per failed attempt
     maximum_strength: float  # 0.5-3.0: Upper limit to prevent over-steering
-    method_specific_params: Dict[str, Any] = None  # Beta values, thresholds, etc.
+    method_specific_params: Dict[str, Any] = None  # Method-specific parameters
     reasoning: str = ""
 
 @dataclass

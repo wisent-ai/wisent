@@ -12,6 +12,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.errors import NoCandidateLayersError
 
 __all__ = [
     "Prompt",
@@ -75,7 +76,7 @@ class SteeringOptimizer(BaseOptimizer):
         else:
             self.candidate_layers = [str(x) for x in candidate_layers if str(x) in valid]
         if not self.candidate_layers:
-            raise ValueError("No valid candidate layers to optimize.")
+            raise NoCandidateLayersError()
 
         self.alpha_lo, self.alpha_hi = alpha_range
         self.sample_size = int(sample_size)

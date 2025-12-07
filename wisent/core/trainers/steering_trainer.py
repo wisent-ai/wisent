@@ -24,6 +24,7 @@ from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.activations.activations_collector import ActivationCollector  
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.contrastive_pairs.diagnostics import run_control_vector_diagnostics
+from wisent.core.errors import ControlVectorDiagnosticsError, NoTrainingResultError
 
 __all__ = [
     "WisentSteeringTrainer",
@@ -85,7 +86,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
                 - single int "12"
                 - None → use all available layers on the model
             method:
-                Name of steering method ("caa", "bipo", ...).
+                Name of steering method ("caa").
             method_kwargs:
                 Dict of hyperparameters for the method (e.g., {"normalize": True, "scale": 1.0}).
             aggregation:
@@ -144,7 +145,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         ]
 
         if control_vector_report.has_critical_issues:
-            raise ValueError("Control vector diagnostics found critical issues; see logs for specifics.")
+            raise ControlVectorDiagnosticsError()
 
         # 4) Metadata
         now = _dt.datetime.now().astimezone()
@@ -189,7 +190,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         """
         result = result or self._last_result
         if result is None:
-            raise RuntimeError("No result to save. Run the trainer first.")
+            raise NoTrainingResultError()
 
         out = Path(output_dir)
         out.mkdir(parents=True, exist_ok=True)

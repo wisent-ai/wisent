@@ -14,6 +14,17 @@ from pathlib import Path
 import torch
 import numpy as np
 
+from wisent.core.errors import (
+    NoWaveformDataError,
+    NoPixelDataError,
+    NoFrameDataError,
+    NoStateDataError,
+    NoActionDataError,
+    EmptyTrajectoryError,
+    MultimodalContentRequiredError,
+    InvalidValueError,
+)
+
 __all__ = [
     "Modality",
     "ModalityContent",
@@ -95,14 +106,14 @@ class AudioContent(ModalityContent):
 
     def __post_init__(self):
         if self.waveform is None and self.file_path is None:
-            raise ValueError("AudioContent requires either waveform or file_path")
+            raise InvalidValueError(param="AudioContent", reason="requires either waveform or file_path")
 
     def to_tensor(self) -> torch.Tensor:
         if self.waveform is not None:
             if isinstance(self.waveform, np.ndarray):
                 return torch.from_numpy(self.waveform)
             return self.waveform
-        raise ValueError("No waveform data - load from file_path first")
+        raise NoWaveformDataError()
 
     def to_dict(self) -> Dict[str, Any]:
         data = {"type": "audio", "sample_rate": self.sample_rate}
@@ -146,7 +157,7 @@ class ImageContent(ModalityContent):
 
     def __post_init__(self):
         if self.pixels is None and self.file_path is None:
-            raise ValueError("ImageContent requires either pixels or file_path")
+            raise InvalidValueError(param="ImageContent", reason="requires either pixels or file_path")
 
     def to_tensor(self) -> torch.Tensor:
         if self.pixels is not None:
@@ -156,7 +167,7 @@ class ImageContent(ModalityContent):
                     return torch.from_numpy(self.pixels).permute(2, 0, 1)
                 return torch.from_numpy(self.pixels)
             return self.pixels
-        raise ValueError("No pixel data - load from file_path first")
+        raise NoPixelDataError()
 
     def to_dict(self) -> Dict[str, Any]:
         data = {"type": "image"}
@@ -199,7 +210,7 @@ class VideoContent(ModalityContent):
 
     def __post_init__(self):
         if self.frames is None and self.file_path is None:
-            raise ValueError("VideoContent requires either frames or file_path")
+            raise InvalidValueError(param="VideoContent", reason="requires either frames or file_path")
 
     @property
     def num_frames(self) -> int:
@@ -216,7 +227,7 @@ class VideoContent(ModalityContent):
             if isinstance(self.frames, np.ndarray):
                 return torch.from_numpy(self.frames)
             return self.frames
-        raise ValueError("No frame data - load from file_path first")
+        raise NoFrameDataError()
 
     def to_dict(self) -> Dict[str, Any]:
         data = {"type": "video", "fps": self.fps}
@@ -292,7 +303,7 @@ class RobotState(ModalityContent):
         if self.gripper_state is not None:
             parts.append(torch.tensor([self.gripper_state]))
         if not parts:
-            raise ValueError("No numerical state data")
+            raise NoStateDataError()
         return torch.cat(parts)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -365,7 +376,7 @@ class RobotAction(ModalityContent):
         if self.gripper_action is not None:
             parts.append(torch.tensor([self.gripper_action]))
         if not parts:
-            raise ValueError("No action data")
+            raise NoActionDataError()
         return torch.cat(parts)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -417,7 +428,7 @@ class RobotTrajectory(ModalityContent):
     def to_tensor(self) -> torch.Tensor:
         """Stack all state tensors into [T, state_dim]."""
         if not self.states:
-            raise ValueError("Empty trajectory")
+            raise EmptyTrajectoryError()
         return torch.stack([s.to_tensor() for s in self.states])
 
     def to_dict(self) -> Dict[str, Any]:
@@ -454,7 +465,7 @@ class MultimodalContent(ModalityContent):
 
     def __post_init__(self):
         if not self.contents:
-            raise ValueError("MultimodalContent requires at least one content item")
+            raise MultimodalContentRequiredError()
 
     def get_by_modality(self, modality: Modality) -> List[ModalityContent]:
         """Get all content items of a specific modality."""

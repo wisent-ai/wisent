@@ -14,6 +14,7 @@ from typing import Tuple as T_Tuple
 from typing import Union as T_Union
 
 from pebble import ProcessPool, ThreadPool
+from wisent.core.errors import InvalidDataFormatError, InvalidValueError
 
 # Useful for `eval` despite not appearing in the code
 from sympy import *
@@ -391,7 +392,7 @@ def latex2sympy_interval(
         left_open = False
         s = s[2:]
     else:
-        raise ValueError(f"Invalid interval: {s}")
+        raise InvalidDataFormatError(reason=f"Invalid interval start: {s}")
 
     if s.endswith(")"):
         right_open = True
@@ -406,13 +407,13 @@ def latex2sympy_interval(
         right_open = False
         s = s[:-2]
     else:
-        raise ValueError(f"Invalid interval: {s}")
+        raise InvalidDataFormatError(reason=f"Invalid interval end: {s}")
 
     left: Expr
     right: Expr
     left, right = (simplify(latex2sympy_fix(side)) for side in s.split(","))
     if left.is_comparable and right.is_comparable and left >= right:
-        raise ValueError(f"Invalid interval: {left}, {right}")
+        raise InvalidDataFormatError(reason=f"Invalid interval bounds: {left}, {right}")
     interval = Interval(left, right, left_open, right_open)
 
     return interval
@@ -995,7 +996,7 @@ class EvaluatorMath(EvaluatorBase):
 
         # print(expr_parse_errs)
         if len(expr_parse_errs) > 0:
-            raise ValueError(expr_parse_errs)
+            raise InvalidDataFormatError(reason=str(expr_parse_errs))
         else:
             return False
 
@@ -1058,7 +1059,7 @@ class EvaluatorMath(EvaluatorBase):
     def latex2matrix(self, latex_mat_str: str) -> Matrix:
         """This function convert latex matrix into sympy matrix (always 2)"""
         if not isinstance(latex_mat_str, str):
-            raise ValueError(f"{latex_mat_str} is not a `str`!")
+            raise InvalidValueError(param_name="latex_mat_str", actual=type(latex_mat_str).__name__, expected="str")
         latex_mat_str = latex_mat_str.replace(" ", "")
 
         pattern = r"(?:\[|\()?\\begin{[a-zA-Z]?(?:matrix|array)}(?:\[lcr\])*?(.*)\\end{[a-zA-Z]?(?:matrix|array)}(?:\]|\))?"

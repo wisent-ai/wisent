@@ -13,6 +13,8 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from wisent.core.errors import TaskNotFoundError, InsufficientDataError
+
 logger = logging.getLogger(__name__)
 
 
@@ -86,13 +88,13 @@ class BigCodeTaskLoader:
             raise ImportError("bigcode-evaluation-harness not installed. Run: pip install bigcode-evaluation-harness")
 
         if task_name not in self.TASK_MAPPING:
-            raise ValueError(f"Unknown BigCode task: {task_name}")
+            raise TaskNotFoundError(task_name=task_name, available_tasks=list(self.TASK_MAPPING.keys()))
 
         bigcode_task_name = self.TASK_MAPPING[task_name]
 
         # Handle removed tasks with None mapping
         if bigcode_task_name is None:
-            raise ValueError(f"Task '{task_name}' has been removed - no BigCode mapping available")
+            raise TaskNotFoundError(task_name=task_name)
 
         # Check cache
         cache_key = f"{task_name}:{limit}"
@@ -203,7 +205,7 @@ class BigCodeTask:
                 return
 
         # If no data found, raise error
-        raise ValueError(f"No data found for task {self.task_name}. Please provide valid benchmark data.")
+        raise InsufficientDataError(reason=f"No data found for task {self.task_name}. Please provide valid benchmark data.")
 
     def _load_from_path(self, path: str):
         """Load data from a specific path."""

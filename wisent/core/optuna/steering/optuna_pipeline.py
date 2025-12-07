@@ -43,10 +43,19 @@ from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
 from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
 from wisent.core.optuna.steering import data_utils, metrics
 from wisent.core.response import Response
-from wisent.core.steering_methods.dac import DAC
+from wisent.core.steering_methods import CAA
 from wisent.core.task_interface import get_task
 from wisent.core.utils.device import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device
 from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.errors import (
+    SteeringMethodUnknownError,
+    UnknownTypeError,
+    ModelArchitectureUnknownError,
+    InvalidLayerIdError,
+    MissingParameterError,
+    OptimizationError,
+)
+from wisent.core.models.wisent_model import WisentModel
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +81,7 @@ class OptimizationConfig:
 
     layer_search_range: tuple[int, int] = (15, 20)
     probe_type: str = "logistic_regression"  # Fixed probe type
-    steering_methods: list[str] = field(default_factory=lambda: ["dac", "caa"])  # TODO add more
+    steering_methods: list[str] = field(default_factory=lambda: ["caa"])
 
     # Optuna study configuration
     study_name: str = "optimization_pipeline"
@@ -263,23 +272,13 @@ class OptimizationPipeline:
         """Setup model, tokenizer, and load datasets."""
         self.logger.info("📊 Setting up experiment...")
 
-        # Load model and tokenizer with memory optimizations
-        from transformers import AutoModelForCausalLM, AutoTokenizer
+        # Load model and tokenizer via WisentModel for consistent settings
+        self._wisent_model = WisentModel(model_name=self.config.model_name, device=str(self.device))
+        
+        self.model = self._wisent_model.hf_model
+        self.tokenizer = self._wisent_model.tokenizer
 
-        self.tokenizer = AutoTokenizer.from_pretrained(self.config.model_name)
-
-        # Load model with memory optimizations (same as comprehensive evaluation)
-        self.model = AutoModelForCausalLM.from_pretrained(
-            self.config.model_name,
-            torch_dtype=preferred_dtype(self.device.type),
-            low_cpu_mem_usage=True,
-        )
-
-        self.model.to(self.device)
         self.model.eval()  # Set to evaluation mode
-
-        if self.tokenizer.pad_token is None:
-            self.tokenizer.pad_token = self.tokenizer.eos_token
 
         # Set left padding for decoder-only models (same as comprehensive evaluation)
         self.tokenizer.padding_side = "left"
@@ -466,32 +465,22 @@ class OptimizationPipeline:
 
             steering_method = trial.suggest_categorical("steering_method", self.config.steering_methods)
 
-            if steering_method == "dac":
+            if steering_method == "caa":
                 steering_alpha = trial.suggest_float("steering_alpha", 0.1, 5.0)
-                entropy_threshold = trial.suggest_float("entropy_threshold", 0.5, 2.0)
-                ptop = trial.suggest_float("ptop", 0.2, 0.8)
-                max_alpha = trial.suggest_float("max_alpha", 1.0, 5.0)
-            elif steering_method == "caa":
-                steering_alpha = trial.suggest_float("steering_alpha", 0.1, 5.0)
+            else:
+                raise SteeringMethodUnknownError(method=steering_method)
 
             probe_score = self._train_and_evaluate_probe(trial, layer_id, probe_type, probe_c)
 
             # Don't prune based on probe score - focus optimization on steering parameters
 
             # Build clean hyperparameters dictionary
-            if steering_method == "dac":
-                hyperparams = {
-                    "steering_alpha": steering_alpha,
-                    "entropy_threshold": entropy_threshold,
-                    "ptop": ptop,
-                    "max_alpha": max_alpha,
-                }
-            elif steering_method == "caa":
+            if steering_method == "caa":
                 hyperparams = {
                     "steering_alpha": steering_alpha,
                 }
             else:
-                raise ValueError(f"Unsupported steering method: {steering_method}")
+                raise SteeringMethodUnknownError(method=steering_method)
 
             steering_method_instance = self._train_steering_method(trial, steering_method, layer_id, hyperparams)
 
@@ -523,7 +512,7 @@ class OptimizationPipeline:
             probe = LogisticRegression(C=probe_c, random_state=self.config.seed, max_iter=1000)
             probe.fit(X_train, y_train)
         else:
-            raise ValueError(f"Unsupported probe type: {probe_type}")
+            raise UnknownTypeError(entity_type="probe_type", value=probe_type)
 
         # Evaluate on validation data using cached activations
         X_val, y_val = self.cache.load_activations("val", layer_id, self.tokenization_config)
@@ -546,29 +535,15 @@ class OptimizationPipeline:
             self.train_samples, layer_id, self.config.train_dataset, limit=contrastive_limit
         )
 
-        if method_name == "dac":
-            # Create DAC instance
-            dac = DAC(
-                entropy_threshold=hyperparams["entropy_threshold"],
-                ptop=hyperparams["ptop"],
-                max_alpha=hyperparams["max_alpha"],
-            )
-
-            # Train DAC
-            dac.train(contrastive_pairs, layer_id)
-            return dac
-
         if method_name == "caa":
             # Create CAA instance
-            from wisent.core.steering_methods.caa import CAA
-
             caa = CAA(device=self.device)
 
             # Train CAA
             caa.train(contrastive_pairs, layer_id)
             return caa
 
-        raise ValueError(f"Unsupported steering method: {method_name}")
+        raise SteeringMethodUnknownError(method=method_name)
 
     def _create_contrastive_pairs(
         self, samples: list[dict], layer_id: int, dataset_name: str, limit: Optional[int] = None
@@ -654,7 +629,7 @@ class OptimizationPipeline:
             elif hasattr(self.model, "model"):
                 target_layer = self.model.model.layers[layer_id]
             else:
-                raise ValueError("Unknown model architecture")
+                raise ModelArchitectureUnknownError()
 
             handle = target_layer.register_forward_hook(batch_hook_fn)
 
@@ -722,12 +697,8 @@ class OptimizationPipeline:
                 predictions = self._generate_baseline_batched(questions)
             else:
                 # Extract the appropriate strength parameter based on method
-                if method_name == "dac":
-                    # DAC uses steering_alpha as base strength multiplier
-                    strength = hyperparams.get("steering_alpha", 1.0)
-                else:
-                    # CAA and other methods use steering_alpha directly
-                    strength = hyperparams["steering_alpha"]
+                # CAA uses steering_alpha directly
+                strength = hyperparams["steering_alpha"]
 
                 predictions = self._generate_with_steering_batched(steering_instance, questions, strength, layer_id)
 
@@ -763,11 +734,6 @@ class OptimizationPipeline:
 
         return benchmark_metrics.get("accuracy", 0.0)
 
-    def _generate_with_dac_steering(self, dac: DAC, question: str, alpha: float, layer_id: int) -> str:
-        """Generate response with DAC steering applied."""
-        # Use the general steering method which calls DAC's apply_steering
-        return self._generate_with_steering(dac, question, alpha, layer_id)
-
     def _generate_with_caa_steering(self, caa, question: str, alpha: float, layer_id: int) -> str:
         """Generate response with CAA steering applied."""
         if not hasattr(caa, "steering_vector") or caa.steering_vector is None:
@@ -798,7 +764,7 @@ class OptimizationPipeline:
         elif hasattr(self.model, "model"):
             target_layer = self.model.model.layers[layer_id]
         else:
-            raise ValueError("Unknown model architecture")
+            raise ModelArchitectureUnknownError()
 
         handle = target_layer.register_forward_hook(steering_hook)
 
@@ -928,14 +894,14 @@ class OptimizationPipeline:
             # Register hook on target layer
             if hasattr(self.model, "transformer"):
                 if layer_id >= len(self.model.transformer.h):
-                    raise ValueError(f"layer_id {layer_id} exceeds model layers")
+                    raise InvalidLayerIdError(layer_id=layer_id, num_layers=len(self.model.transformer.h))
                 target_layer = self.model.transformer.h[layer_id]
             elif hasattr(self.model, "model"):
                 if layer_id >= len(self.model.model.layers):
-                    raise ValueError(f"layer_id {layer_id} exceeds model layers")
+                    raise InvalidLayerIdError(layer_id=layer_id, num_layers=len(self.model.model.layers))
                 target_layer = self.model.model.layers[layer_id]
             else:
-                raise ValueError("Unknown model architecture")
+                raise ModelArchitectureUnknownError()
 
             handle = target_layer.register_forward_hook(steering_hook)
 
@@ -975,7 +941,7 @@ class OptimizationPipeline:
             best_params = best_trial._params
         else:
             # Fallback - this shouldn't happen
-            raise ValueError("Cannot access trial parameters")
+            raise MissingParameterError(params=["trial.params"])
         layer_id = best_params["layer_id"]
 
         self.logger.info(f"Best configuration: {best_params}")
@@ -1009,12 +975,8 @@ class OptimizationPipeline:
 
         # Extract the appropriate strength parameter based on method and available parameters
         method_name = best_params.get("steering_method", "caa")  # Default to CAA if missing
-        if method_name == "dac":
-            # DAC can use base_strength or steering_alpha, with fallback to 1.0
-            strength = best_params.get("base_strength", best_params.get("steering_alpha", 1.0))
-        else:
-            # CAA and other methods use steering_alpha
-            strength = best_params["steering_alpha"]
+        # CAA uses steering_alpha
+        strength = best_params["steering_alpha"]
 
         steered_predictions, _, _, _ = self._generate_test_predictions(
             steering_instance, method_name, layer_id, strength
@@ -1536,16 +1498,6 @@ class OptimizationPipeline:
             "steering_alpha": best_params.get("steering_alpha", 0.5),
         }
 
-        # Add method-specific parameters if needed
-        if complete_params["steering_method"] == "dac":
-            complete_params.update(
-                {
-                    "entropy_threshold": best_params.get("entropy_threshold", 1.5),
-                    "ptop": best_params.get("ptop", 0.5),
-                    "max_alpha": best_params.get("max_alpha", 2.0),
-                }
-            )
-
         fixed_trial = FixedTrial(complete_params)
 
         # Fix FixedTrial params access issue
@@ -1660,14 +1612,11 @@ class OptimizationPipeline:
             self.logger.info(f"WandB initialized: {wandb.run.url}")
         except Exception as e:
             # Don't silently disable - user explicitly requested WandB
-            raise RuntimeError(
-                f"Failed to initialize WandB: {e}\n"
-                f"Possible solutions:\n"
-                f"1. Run 'wandb login' to authenticate\n"
-                f"2. Check your internet connection\n"
-                f"3. Verify project name: {self.config.wandb_project}\n"
-                f"4. Set use_wandb=False to disable WandB"
-            ) from e
+            raise OptimizationError(
+                reason=f"Failed to initialize WandB: {e}. "
+                       f"Run 'wandb login' to authenticate or set use_wandb=False",
+                cause=e
+            )
 
     def _log_trial_to_wandb(self, trial: optuna.Trial, metrics: dict[str, float]):
         """Log trial results to WandB."""

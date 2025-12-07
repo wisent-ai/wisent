@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from wisent.core.classifier.classifier import ActivationClassifier
+from wisent.core.errors import InsufficientDataError, MissingParameterError, ExecutionError
 
 from ....core.agent.budget import ResourceType, calculate_max_tasks_for_time_budget, get_budget_manager
 from ....core.contrastive_pairs.generate_synthetically import SyntheticContrastivePairGenerator
@@ -127,7 +128,7 @@ class SyntheticClassifierFactory:
             )
 
             if len(pair_set.pairs) < 3:
-                raise ValueError(f"Insufficient training pairs generated: {len(pair_set.pairs)}")
+                raise InsufficientDataError(reason="training pairs", required=3, actual=len(pair_set.pairs))
 
             # Extract activations for training
             positive_activations = []
@@ -179,7 +180,7 @@ class SyntheticClassifierFactory:
             if len(positive_activations) < 2 or len(negative_activations) < 2:
                 error_msg = f"Insufficient activation data for training: {len(positive_activations)} positive, {len(negative_activations)} negative"
                 logging.info(f"ERROR: {error_msg}")
-                raise ValueError(error_msg)
+                raise InsufficientDataError(reason=error_msg)
 
             # Train classifier on activations
             logging.info(
@@ -469,7 +470,7 @@ def get_time_budget_from_manager() -> float:
     budget_manager = get_budget_manager()
     time_budget = budget_manager.get_budget(ResourceType.TIME)
     if not time_budget:
-        raise ValueError("No time budget set in budget manager. Call set_time_budget(minutes) first.")
+        raise MissingParameterError(params=["time_budget"], context="Budget manager")
     return time_budget.remaining_budget / 60.0  # Convert to minutes
 
 
@@ -589,7 +590,7 @@ def create_classifier_from_trait_description(
     if len(pair_set.pairs) < 3:
         error_msg = f"Insufficient training pairs generated: {len(pair_set.pairs)}"
         log_and_print(f"❌ ERROR: {error_msg}")
-        raise ValueError(error_msg)
+        raise InsufficientDataError(reason="training pairs", required=10, actual=len(pair_set.pairs))
 
     # Extract activations for training
     positive_activations = []
@@ -641,7 +642,7 @@ def create_classifier_from_trait_description(
     if len(positive_activations) < 2 or len(negative_activations) < 2:
         error_msg = f"Insufficient activation data for training: {len(positive_activations)} positive, {len(negative_activations)} negative"
         log_and_print(f"❌ ERROR: {error_msg}")
-        raise ValueError(error_msg)
+        raise InsufficientDataError(reason=error_msg)
 
     # Train classifier on activations
     log_and_print(
@@ -726,7 +727,7 @@ def evaluate_response_with_trait_classifier(
     try:
         response_activations, _ = model.extract_activations(response_text, layer=15)
     except Exception as e:
-        raise ValueError(f"Error extracting response activations: {e}")
+        raise ExecutionError(reason=f"Error extracting response activations: {e}", cause=e)
 
     # Apply classifier
     start_time = time.time()

@@ -9,6 +9,7 @@ import math
 import torch
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.errors import ModelNotProvidedError, InvalidValueError
 
 logger = logging.getLogger(__name__)
 
@@ -58,10 +59,7 @@ class PerplexityEvaluator(BaseEvaluator):
         choices = kwargs.get('choices', None)
 
         if model is None:
-            raise ValueError(
-                "No model provided for perplexity computation. "
-                "Please provide a model via __init__ or as a kwarg."
-            )
+            raise ModelNotProvidedError()
 
         try:
             # If choices are provided, compare perplexities (for contrastive evaluation)
@@ -138,7 +136,7 @@ class PerplexityEvaluator(BaseEvaluator):
             hf_model = model
             tokenizer = getattr(model, 'tokenizer', None)
             if tokenizer is None:
-                raise ValueError("Model must have a tokenizer attribute")
+                raise InvalidValueError(param_name="model.tokenizer", actual=None, expected="tokenizer attribute")
 
         # Tokenize the text
         encodings = tokenizer(text, return_tensors='pt')

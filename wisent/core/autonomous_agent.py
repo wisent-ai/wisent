@@ -15,6 +15,7 @@ from typing import Any, Dict, List, Optional
 from wisent.core.activations.core.atoms import ActivationAggregationStrategy
 from wisent.core.activations.activations import Activations
 from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.errors import MissingParameterError
 
 from .agent.diagnose import AgentClassifierDecisionSystem, AnalysisResult, ClassifierMarketplace, ResponseDiagnostics
 from .agent.steer import ImprovementResult, ResponseSteering
@@ -40,19 +41,6 @@ class AutonomousAgent:
         steering_mode: bool = False,
         normalization_method: str = "none",
         target_norm: Optional[float] = None,
-        hpr_beta: float = 1.0,
-        dac_dynamic_control: bool = False,
-        dac_entropy_threshold: float = 1.0,
-        bipo_beta: float = 0.1,
-        bipo_learning_rate: float = 5e-4,
-        bipo_epochs: int = 100,
-        ksteering_num_labels: int = 6,
-        ksteering_hidden_dim: int = 512,
-        ksteering_learning_rate: float = 1e-3,
-        ksteering_classifier_epochs: int = 100,
-        ksteering_target_labels: str = "0",
-        ksteering_avoid_labels: str = "",
-        ksteering_alpha: float = 50.0,
         # Priority-aware benchmark selection parameters
         priority: str = "all",
         fast_only: bool = False,
@@ -67,7 +55,7 @@ class AutonomousAgent:
             model_name: Name of the model to use
             layer_override: Layer override from CLI (None to use parameter file)
             enable_tracking: Whether to track improvement history
-            steering_method: Steering method to use (CAA, HPR, DAC, BiPO, KSteering)
+            steering_method: Steering method to use (CAA)
             steering_strength: Strength of steering application
             steering_mode: Whether to enable steering mode
             priority: Priority level for benchmark selection ("all", "high", "medium", "low")
@@ -94,47 +82,6 @@ class AutonomousAgent:
         self.steering_mode = steering_mode
         self.normalization_method = normalization_method
         self.target_norm = target_norm
-
-        # Load method-specific parameters from parameter file, with CLI overrides
-        steering_config = self.params.get_steering_config(steering_method)
-
-        self.hpr_beta = hpr_beta if hpr_beta != 1.0 else steering_config.get("beta", 1.0)
-        self.dac_dynamic_control = (
-            dac_dynamic_control if dac_dynamic_control else steering_config.get("dynamic_control", False)
-        )
-        self.dac_entropy_threshold = (
-            dac_entropy_threshold if dac_entropy_threshold != 1.0 else steering_config.get("entropy_threshold", 1.0)
-        )
-        self.bipo_beta = bipo_beta if bipo_beta != 0.1 else steering_config.get("beta", 0.1)
-        self.bipo_learning_rate = (
-            bipo_learning_rate if bipo_learning_rate != 5e-4 else steering_config.get("learning_rate", 5e-4)
-        )
-        self.bipo_epochs = bipo_epochs if bipo_epochs != 100 else steering_config.get("num_epochs", 100)
-        self.ksteering_num_labels = (
-            ksteering_num_labels if ksteering_num_labels != 6 else steering_config.get("num_labels", 6)
-        )
-        self.ksteering_hidden_dim = (
-            ksteering_hidden_dim if ksteering_hidden_dim != 512 else steering_config.get("hidden_dim", 512)
-        )
-        self.ksteering_learning_rate = (
-            ksteering_learning_rate if ksteering_learning_rate != 1e-3 else steering_config.get("learning_rate", 1e-3)
-        )
-        self.ksteering_classifier_epochs = (
-            ksteering_classifier_epochs
-            if ksteering_classifier_epochs != 100
-            else steering_config.get("classifier_epochs", 100)
-        )
-        self.ksteering_target_labels = (
-            ksteering_target_labels
-            if ksteering_target_labels != "0"
-            else ",".join(map(str, steering_config.get("target_labels", [0])))
-        )
-        self.ksteering_avoid_labels = (
-            ksteering_avoid_labels
-            if ksteering_avoid_labels != ""
-            else ",".join(map(str, steering_config.get("avoid_labels", [])))
-        )
-        self.ksteering_alpha = ksteering_alpha if ksteering_alpha != 50.0 else steering_config.get("alpha", 50.0)
 
         # Priority-aware benchmark selection parameters
         self.priority = priority
@@ -358,42 +305,10 @@ class AutonomousAgent:
 
     def _create_steering_method(self):
         """Create a steering method object based on configuration."""
-        # Import actual steering methods
-        from .steering_methods import CAA, DAC, HPR, BiPO, KSteering
+        from .steering_methods import CAA
 
-        # Create the appropriate steering method with parameters
-        if self.steering_method == "CAA":
-            steering_method = CAA(device=None)
-        elif self.steering_method == "HPR":
-            steering_method = HPR(device=None, beta=self.hpr_beta)
-        elif self.steering_method == "DAC":
-            steering_method = DAC(
-                device=None, dynamic_control=self.dac_dynamic_control, entropy_threshold=self.dac_entropy_threshold
-            )
-        elif self.steering_method == "BiPO":
-            steering_method = BiPO(
-                device=None, beta=self.bipo_beta, learning_rate=self.bipo_learning_rate, num_epochs=self.bipo_epochs
-            )
-        elif self.steering_method == "KSteering":
-            # Parse target and avoid labels
-            target_labels = [int(x.strip()) for x in self.ksteering_target_labels.split(",") if x.strip()]
-            avoid_labels = [int(x.strip()) for x in self.ksteering_avoid_labels.split(",") if x.strip()]
-
-            steering_method = KSteering(
-                device=None,
-                num_labels=self.ksteering_num_labels,
-                hidden_dim=self.ksteering_hidden_dim,
-                learning_rate=self.ksteering_learning_rate,
-                classifier_epochs=self.ksteering_classifier_epochs,
-                target_labels=target_labels,
-                avoid_labels=avoid_labels,
-                alpha=self.ksteering_alpha,
-            )
-        else:
-            # Default to CAA
-            steering_method = CAA(device=None)
-
-        return steering_method
+        # CAA is the only supported steering method
+        return CAA(device=None)
 
     async def evaluate_response_quality(
         self, response: str, classifier, classifier_params: "ClassifierParams"
@@ -612,12 +527,8 @@ class AutonomousAgent:
         Current Quality Score: {current_quality:.3f} (0=good, 1=bad)
         Attempt Number: {attempt_number}
         
-        Available Steering Methods:
-        - CAA: Gentle activation steering, good for general improvements
-        - HPR: Precise harmfulness reduction, good for safety issues
-        - DAC: Dynamic adaptive control, good for complex patterns
-        - BiPO: Bidirectional preference optimization, good for quality/preference
-        - KSteering: K-label steering, good for specific categorization issues
+        Steering Method: CAA (Contrastive Activation Addition)
+        - Gentle activation steering, good for general improvements
         
         Consider:
         - How much improvement is needed? (quality gap: {1.0 - current_quality:.2f})
@@ -626,13 +537,12 @@ class AutonomousAgent:
         - Prompt characteristics (technical/casual/creative/safety-sensitive)
         
         Determine parameters:
-        1. Steering Method: Which method fits best?
-        2. Initial Strength (0.1-2.0): How aggressive to start?
-        3. Increment (0.1-0.5): How much to increase if this fails?
-        4. Maximum Strength (0.5-3.0): Upper limit to prevent over-steering?
+        1. Initial Strength (0.1-2.0): How aggressive to start?
+        2. Increment (0.1-0.5): How much to increase if this fails?
+        3. Maximum Strength (0.5-3.0): Upper limit to prevent over-steering?
         
         Format response as:
-        METHOD: [CAA/HPR/DAC/BiPO/KSteering]
+        METHOD: CAA
         INITIAL: [number]
         INCREMENT: [number]
         MAXIMUM: [number]
@@ -777,9 +687,9 @@ class AutonomousAgent:
 
             # Validate required classifier configuration
             if "layer" not in classifier_config:
-                raise ValueError(
-                    "Classifier configuration must include 'layer' parameter. "
-                    "Please ensure your classifier configuration file specifies the optimal layer."
+                raise MissingParameterError(
+                    params=["layer"],
+                    context="Classifier configuration. Please ensure your classifier configuration file specifies the optimal layer."
                 )
 
             # Create ClassifierParams from stored data

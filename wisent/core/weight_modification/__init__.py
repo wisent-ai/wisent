@@ -8,7 +8,6 @@ steering (hooks), these modifications are baked into the model weights.
 Three approaches:
 
 1. **Norm-Preserving Biprojected Directional Modification** (RECOMMENDED):
-   - Based on Jim Lai's technique used by Arli AI
    - Decomposes weights into magnitude and direction
    - Projects only the direction, preserves original magnitudes
    - Optionally orthogonalizes against harmless directions (biprojection)

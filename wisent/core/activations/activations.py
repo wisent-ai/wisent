@@ -3,6 +3,7 @@
 from typing import Any
 import torch
 from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.errors import InvalidValueError
 
 
 class Activations:
@@ -55,7 +56,7 @@ class Activations:
             torch.Tensor: Aggregated features (typically shape [hidden_dim])
         """
         if self.tensor is None:
-            raise ValueError("Cannot extract features from None tensor")
+            raise InvalidValueError(param="tensor", reason="Cannot extract features from None tensor")
 
         # Ensure tensor is 3D: [batch, seq_len, hidden_dim]
         if len(self.tensor.shape) == 2:

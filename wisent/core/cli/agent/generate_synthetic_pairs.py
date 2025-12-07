@@ -2,6 +2,7 @@
 
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.synthetic.generators.core.atoms import GenerationReport
+from wisent.core.errors import PairGenerationError
 
 
 def generate_synthetic_pairs(
@@ -117,6 +118,6 @@ def generate_synthetic_pairs(
             print(f"     • Avg Jaccard: {report.diversity.avg_jaccard_prompt:.3f}")
 
     if len(pair_set.pairs) == 0:
-        raise RuntimeError("Failed to generate pairs")
+        raise PairGenerationError(reason="Failed to generate pairs")
 
     return pair_set, report

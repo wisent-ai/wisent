@@ -7,6 +7,8 @@ import time
 import torch
 from collections import defaultdict
 
+from wisent.core.errors import SteeringMethodUnknownError
+
 
 def execute_create_steering_vector(args):
     """Execute the create-steering-vector command - load enriched pairs and create steering vectors."""
@@ -69,7 +71,7 @@ def execute_create_steering_vector(args):
         if args.method.lower() == "caa":
             method = CAAMethod(kwargs={"normalize": args.normalize})
         else:
-            raise ValueError(f"Unknown method: {args.method}")
+            raise SteeringMethodUnknownError(method=args.method)
 
         print(f"   ✓ Method initialized (normalize={args.normalize})")
 

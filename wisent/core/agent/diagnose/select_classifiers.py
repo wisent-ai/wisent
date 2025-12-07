@@ -16,6 +16,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from ...model_persistence import ModelPersistence
+from wisent.core.errors import NoSuitableClassifierError
 
 
 @dataclass
@@ -314,7 +315,7 @@ class ClassifierSelector:
                       f"(layer {best_classifier.layer}, score: {best_classifier.performance_score:.3f})")
             else:
                 print(f"   ❌ No classifier found for {issue_type}")
-                raise ValueError(f"No suitable classifier found for issue type: {issue_type}")
+                raise NoSuitableClassifierError(issue_type=issue_type)
         
         # Add additional high-performing classifiers if space allows
         if len(selected_classifiers) < criteria.max_classifiers:

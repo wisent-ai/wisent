@@ -6,6 +6,7 @@ import string
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.errors import UnknownTypeError
 
 __all__ = [
     "ProgrammaticNonsenseGenerator",
@@ -90,7 +91,7 @@ class ProgrammaticNonsenseGenerator:
         elif self.nonsense_mode == "mixed":
             return self._generate_mixed()
         else:
-            raise ValueError(f"Unknown nonsense mode: {self.nonsense_mode}")
+            raise UnknownTypeError(entity_type="nonsense_mode", value=self.nonsense_mode, valid_values=["random", "word_salad", "mixed"])
 
     def _generate_random_chars(self) -> str:
         """Generate random character gibberish."""

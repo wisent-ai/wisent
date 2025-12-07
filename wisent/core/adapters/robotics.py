@@ -29,6 +29,7 @@ from wisent.core.modalities import (
     RobotAction,
     RobotTrajectory,
 )
+from wisent.core.errors import UnknownTypeError
 from wisent.core.activations.core.atoms import LayerActivations
 
 __all__ = ["RoboticsAdapter", "RoboticsSteeringConfig"]
@@ -637,6 +638,6 @@ class RoboticsAdapter(BaseAdapter[InputType, RobotAction]):
             weights = weights / weights.sum()
             neg_agg = (neg_tensor * weights.view(-1, 1, 1)).sum(dim=0)
         else:
-            raise ValueError(f"Unknown aggregation: {aggregation}")
+            raise UnknownTypeError(entity_type="aggregation", value=aggregation, valid_values=["mean", "max", "min", "last", "weighted"])
 
         return pos_agg.squeeze() - neg_agg.squeeze()

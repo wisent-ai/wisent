@@ -7,6 +7,7 @@ from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
 from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
 from wisent.core.evaluators.benchmark_specific.coding.safe_docker.recipes import RECIPE_REGISTRY
 from wisent.core.evaluators.benchmark_specific.coding.metrics.core.atoms import SampleOutcome
+from wisent.core.errors import MissingParameterError
 
 from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema
 from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.python_sanitizer import PythonStandardizer
@@ -330,7 +331,7 @@ if __name__ == "__main__":
             SampleOutcome for each task, indicating pass/fail status and elapsed time.
         """
         if self.provider is None or self.model_fn is None:
-            raise ValueError("provider and model_fn must be set for batch evaluation")
+            raise MissingParameterError(params=["provider", "model_fn"], context="batch evaluation")
 
         for idx, task in enumerate(self.provider.iter_tasks()):
             files0 = self.model_fn(task)

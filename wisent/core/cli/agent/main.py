@@ -3,6 +3,8 @@
 import sys
 import time
 
+from wisent.core.errors import UnknownTypeError
+
 
 def execute_agent(args):
     """Execute the agent command - autonomous agent with configurable strategy."""
@@ -15,7 +17,7 @@ def execute_agent(args):
         if args.agent_strategy == "synthetic_pairs_classifier_steering":
             execute_synthetic_pairs_classifier_steering_strategy(args)
         else:
-            raise ValueError(f"Unknown agent strategy: {args.agent_strategy}")
+            raise UnknownTypeError(entity_type="agent_strategy", value=args.agent_strategy)
 
     except Exception as e:
         print(f"\n❌ Error: {str(e)}", file=sys.stderr)

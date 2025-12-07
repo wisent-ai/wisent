@@ -4,7 +4,7 @@ CLI command for modifying model weights using steering vectors.
 This module implements the modify-weights command which permanently modifies
 model weights using either directional projection or additive methods.
 
-By default, uses Norm-Preserving Biprojected Directional Modification (Jim Lai's technique)
+By default, uses Norm-Preserving Biprojected Directional Modification
 which maintains model quality by preserving weight norms.
 """
 
@@ -290,25 +290,26 @@ def execute_modify_weights(args):
         # Load generated vectors
         checkpoint = torch.load(unified_args.output, map_location='cpu', weights_only=False)
         
+        # Handle different checkpoint formats from train_unified_goodness
         if 'steering_vectors' in checkpoint:
             raw_vectors = checkpoint['steering_vectors']
-            first_key = next(iter(raw_vectors.keys()))
-            if isinstance(first_key, str):
-                steering_vectors = {
-                    int(layer): vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
-                    for layer, vec in raw_vectors.items()
-                }
-            else:
-                steering_vectors = {
-                    layer: vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
-                    for layer, vec in raw_vectors.items()
-                }
+        elif 'all_layer_vectors' in checkpoint:
+            raw_vectors = checkpoint['all_layer_vectors']
+        elif 'steering_vector' in checkpoint and 'layer_index' in checkpoint:
+            # Single vector format
+            raw_vectors = {checkpoint['layer_index']: checkpoint['steering_vector']}
         else:
-            steering_vectors = {
-                int(k): v if isinstance(v, torch.Tensor) else torch.tensor(v)
-                for k, v in checkpoint.items()
+            # Try to find numeric keys directly
+            raw_vectors = {
+                k: v for k, v in checkpoint.items()
                 if isinstance(k, (int, str)) and str(k).isdigit()
             }
+        
+        # Convert to proper format
+        steering_vectors = {}
+        for layer, vec in raw_vectors.items():
+            layer_idx = int(layer) if isinstance(layer, str) else layer
+            steering_vectors[layer_idx] = vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
 
         # Optionally save steering vectors
         if hasattr(args, 'save_steering_vectors') and args.save_steering_vectors:

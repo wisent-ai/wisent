@@ -15,6 +15,7 @@ from tqdm import tqdm
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
+from wisent.core.errors import InvalidChoicesError
 
 
 QUESTION_TYPES = [
@@ -43,14 +44,14 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
     # Filter by type if specified
     if question_type is not None:
         if question_type not in QUESTION_TYPES:
-            raise ValueError(f"Invalid question_type: {question_type}. Must be one of {QUESTION_TYPES}")
+            raise InvalidChoicesError(param_name="question_type", actual=question_type, valid_choices=QUESTION_TYPES)
         ds = ds.filter(lambda x: x['type'] == question_type)
         print(f"Filtered to type: {question_type} ({len(ds)} examples)")
 
     # Filter by level if specified
     if level is not None:
         if level not in LEVELS:
-            raise ValueError(f"Invalid level: {level}. Must be one of {LEVELS}")
+            raise InvalidChoicesError(param_name="level", actual=level, valid_choices=LEVELS)
         ds = ds.filter(lambda x: x['level'] == level)
         print(f"Filtered to level: {level} ({len(ds)} examples)")
 

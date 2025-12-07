@@ -4,6 +4,7 @@ from dataclasses import dataclass, replace
 
 from wisent.core.contrastive_pairs.core.atoms import AtomResponse
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
+from wisent.core.errors import ResponseMustBeStringError
 
 __all__ = [
     "Response",
@@ -81,7 +82,7 @@ class Response(AtomResponse):
 
     def __post_init__(self) -> None:
         if not isinstance(self.model_response, str) or not self.model_response.strip():
-            raise ValueError("'model_response' must be a non-empty string.")
+            raise ResponseMustBeStringError(field="model_response")
         la = self.layers_activations
         if la is None or isinstance(la, LayerActivations):
             coerced = la

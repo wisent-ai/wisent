@@ -193,26 +193,115 @@ def _run_steering_optimization(args: argparse.Namespace, tasks: List[str]) -> Di
 
 
 def _run_trait_steering_optimization(args: argparse.Namespace, traits: List[str]) -> Dict[str, Any]:
-    """Run steering optimization for traits."""
+    """Run steering optimization for traits using the personalization optimization pipeline."""
+    from wisent.core.cli.optimize_steering import execute_personalization
+    from wisent.core.models.wisent_model import WisentModel
+    from argparse import Namespace
+    import os
+
     results = {}
+    output_dir = getattr(args, 'output_dir', './data/trait_steering')
+    num_pairs = getattr(args, 'num_pairs', 50)
+    num_test_prompts = getattr(args, 'num_test_prompts', 20)
+
+    # Load model once for all traits
+    print(f"  Loading model for trait steering optimization...")
+    model = WisentModel(args.model, device=getattr(args, 'device', None))
+    num_layers = model.num_layers
+    print(f"  Model loaded with {num_layers} layers")
+
+    # Determine which layers to test (middle 60% of layers typically work best for steering)
+    layer_range = getattr(args, 'steering_layer_range', None)
+    if layer_range:
+        layers_to_test = list(range(layer_range[0], layer_range[1] + 1))
+    else:
+        # Test middle layers (20%-80% of model depth)
+        start_layer = max(1, int(num_layers * 0.2))
+        end_layer = min(num_layers, int(num_layers * 0.8))
+        # Sample ~8 layers across this range
+        step = max(1, (end_layer - start_layer) // 8)
+        layers_to_test = list(range(start_layer, end_layer + 1, step))
 
     for trait in traits:
+        print(f"\n  {'='*50}")
         print(f"  Optimizing steering for trait: {trait}")
+        print(f"  {'='*50}")
 
-        # For traits, we use synthetic pair generation
-        # This is a simplified version - full implementation would call optimize_steering
-        # with trait-specific pair generation
+        # Create trait-specific output directory
+        trait_name = trait.split()[0].lower().replace('/', '_')[:30]
+        trait_output_dir = os.path.join(output_dir, f"{args.model.replace('/', '_')}_{trait_name}")
+        os.makedirs(trait_output_dir, exist_ok=True)
 
-        # For now, save placeholder config that can be updated
-        save_trait_steering_config(
-            model_name=args.model,
-            trait_name=trait,
-            layer=12,  # Default, should be optimized
-            strength=1.0,  # Default, should be optimized
-            method="CAA",
-            optimization_method="placeholder",
-        )
-        results[trait] = {"status": "placeholder", "layer": 12, "strength": 1.0}
+        try:
+            # Build args for personalization optimization
+            opt_args = Namespace(
+                model=args.model,
+                trait=trait,
+                trait_name=trait_name,
+                num_pairs=num_pairs,
+                num_test_prompts=num_test_prompts,
+                output_dir=trait_output_dir,
+                device=getattr(args, 'device', None),
+                verbose=getattr(args, 'verbose', False),
+                # Layers to test
+                layers=layers_to_test,
+                # Strength range (tuple: min, max)
+                strength_range=(0.5, 2.5),
+                # Number of strength values to test
+                num_strength_steps=5,
+                # Save generation examples for comparison
+                save_generation_examples=True,
+                save_all_generation_examples=False,
+            )
+
+            # Run personalization optimization
+            result = execute_personalization(opt_args, model)
+
+            if result and result.get('best_config'):
+                best = result['best_config']
+                
+                # Save to trait config
+                save_trait_steering_config(
+                    model_name=args.model,
+                    trait_name=trait_name,
+                    layer=best.get('layer', 12),
+                    strength=best.get('strength', 1.0),
+                    method=best.get('method', 'CAA'),
+                    token_aggregation=best.get('token_aggregation', 'last'),
+                    prompt_strategy=best.get('prompt_construction', 'chat_template'),
+                    optimization_method="personalization",
+                    score=best.get('score', 0.0),
+                )
+
+                results[trait] = {
+                    "status": "success",
+                    "layer": best.get('layer', 12),
+                    "strength": best.get('strength', 1.0),
+                    "method": best.get('method', 'CAA'),
+                    "token_aggregation": best.get('token_aggregation', 'last'),
+                    "score": best.get('score', 0.0),
+                    "vector_path": result.get('vector_path'),
+                    "results_file": result.get('results_file'),
+                }
+                print(f"  ✓ Trait '{trait}' optimized: layer={best.get('layer')}, strength={best.get('strength')}, score={best.get('score', 0):.3f}")
+            else:
+                raise ValueError("No best config returned from optimization")
+
+        except Exception as e:
+            logger.warning(f"Trait steering optimization failed for {trait}: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Save default config on failure
+            save_trait_steering_config(
+                model_name=args.model,
+                trait_name=trait_name,
+                layer=12,
+                strength=1.0,
+                method="CAA",
+                optimization_method="default",
+            )
+            results[trait] = {"status": "default", "error": str(e), "layer": 12, "strength": 1.0}
 
     return results
 

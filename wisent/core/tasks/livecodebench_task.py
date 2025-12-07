@@ -26,7 +26,7 @@ class LiveCodeBenchTask(TaskInterface):
         try:
             valid_versions = set(self._data_loader.list_available_versions())
             if release_version not in valid_versions:
-                raise ValueError(f"Invalid release version: {release_version}. Valid versions: {valid_versions}")
+                raise VersionValidationError(version=release_version)
         except ValueError:
             # Re-raise validation errors
             raise

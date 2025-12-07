@@ -11,6 +11,8 @@ from typing import List, Dict, Any, Optional, Set, Tuple
 from dataclasses import dataclass
 from collections import defaultdict
 
+from wisent.core.errors import UnknownTypeError, InsufficientDataError
+
 # Suppress BigCode debug output
 import builtins
 _original_print = getattr(builtins, '_original_print', builtins.print)
@@ -117,7 +119,7 @@ class MixedBenchmarkSampler:
             return list(matching_benchmarks)
         
         else:
-            raise ValueError(f"Invalid mode: {mode}. Use 'any' or 'all'")
+            raise UnknownTypeError(entity_type="mode", value=mode, valid_values=["any", "all"])
     
     def sample_mixed_dataset(
         self,
@@ -149,7 +151,7 @@ class MixedBenchmarkSampler:
         matching_benchmarks = self.get_benchmarks_by_tags(tags, mode=tag_mode)
         
         if not matching_benchmarks:
-            raise ValueError(f"No benchmarks found with tags {tags} (mode={tag_mode})")
+            raise InsufficientDataError(reason=f"No benchmarks found with tags {tags} (mode={tag_mode})")
         
         logger.info(f"Found {len(matching_benchmarks)} benchmarks matching tags {tags}")
         logger.info(f"Matching benchmarks: {matching_benchmarks[:10]}...")  # Show first 10
@@ -193,7 +195,7 @@ class MixedBenchmarkSampler:
                 continue
         
         if not all_samples:
-            raise ValueError(f"No samples could be loaded from any benchmark with tags {tags}")
+            raise InsufficientDataError(reason=f"No samples could be loaded from any benchmark with tags {tags}")
         
         logger.info(f"Collected {len(all_samples)} total samples from {len(benchmark_sample_counts)} benchmarks")
         for benchmark, count in benchmark_sample_counts.items():

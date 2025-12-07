@@ -8,6 +8,8 @@ from typing import Literal, Optional
 
 import torch
 
+from wisent.core.errors import UnknownTypeError, FileLoadError
+
 DeviceKind = Literal["cuda", "mps", "cpu"]
 DtypeKind = Literal["float32", "float16", "bfloat16", "auto"]
 
@@ -67,7 +69,7 @@ def set_default_dtype(dtype: DtypeKind | torch.dtype | None) -> None:
     elif dtype == "bfloat16":
         _global_dtype_override = torch.bfloat16
     else:
-        raise ValueError(f"Unknown dtype: {dtype}. Use 'float32', 'float16', 'bfloat16', 'auto', or a torch.dtype")
+        raise UnknownTypeError(entity_type="dtype", value=dtype, valid_values=["float32", "float16", "bfloat16", "auto", "torch.dtype"])
 
 
 def get_default_dtype() -> Optional[torch.dtype]:
@@ -236,7 +238,7 @@ def load_steering_vector(
     # Get the vector (support both old and new key names)
     vector = data.get("steering_vector") or data.get("vector")
     if vector is None:
-        raise ValueError(f"No steering vector found in {path}")
+        raise FileLoadError(file_path=str(path), reason="No steering vector found")
     
     # Determine target dtype
     target_dtype = dtype or preferred_dtype(device)

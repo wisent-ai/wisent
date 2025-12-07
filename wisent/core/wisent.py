@@ -18,6 +18,7 @@ from wisent.core.adapters.audio import AudioAdapter
 from wisent.core.adapters.video import VideoAdapter
 from wisent.core.adapters.robotics import RoboticsAdapter
 from wisent.core.adapters.multimodal import MultimodalAdapter
+from wisent.core.errors import UnknownTypeError, NoTrainedVectorsError
 from wisent.core.modalities import (
     Modality,
     ModalityContent,
@@ -413,7 +414,7 @@ class Wisent:
                     pos_agg = pos_stack.median(dim=0).values
                     neg_agg = neg_stack.median(dim=0).values
                 else:
-                    raise ValueError(f"Unknown aggregation: {aggregation}")
+                    raise UnknownTypeError(entity_type="aggregation", value=aggregation, valid_values=["mean", "median"])
 
                 steering_vectors[layer] = pos_agg - neg_agg
 
@@ -606,7 +607,7 @@ class Wisent:
             path: File path to save to
         """
         if not self._trained:
-            raise ValueError("No trained vectors to save")
+            raise NoTrainedVectorsError()
 
         data = {}
         for trait, config in self._traits.items():

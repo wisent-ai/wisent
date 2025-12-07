@@ -11,6 +11,7 @@ from .steering import SteeringMethod, SteeringType
 from .activations.activations_collector import ActivationCollector
 from .activations.core.atoms import ActivationAggregationStrategy
 from .activations.prompt_construction_strategy import PromptConstructionStrategy
+from wisent.core.errors import OptimizationError, NoActivationDataError, InsufficientDataError
 
 logger = logging.getLogger(__name__)
 
@@ -281,7 +282,7 @@ class HyperparameterOptimizer:
                 continue
         
         if best_result is None:
-            raise ValueError("No valid combinations found during optimization")
+            raise OptimizationError(reason="No valid combinations found during optimization")
         
         # Create optimization result
         optimization_result = OptimizationResult(
@@ -403,7 +404,7 @@ class HyperparameterOptimizer:
                         train_neg_acts.append(np.array(act).flatten())
 
         if not train_pos_acts or not train_neg_acts:
-            raise ValueError("No training activations collected")
+            raise NoActivationDataError()
 
         # Create training data
         X_train = np.array(train_pos_acts + train_neg_acts)
@@ -475,7 +476,7 @@ class HyperparameterOptimizer:
                 prob_scores.append(neg_prob)
 
         if len(predictions) == 0:
-            raise ValueError("No valid predictions generated")
+            raise InsufficientDataError(reason="No valid predictions generated")
 
         # Calculate metrics
         accuracy = accuracy_score(true_labels, predictions)

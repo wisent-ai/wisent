@@ -6,6 +6,8 @@ Shared helper functions used across multiple command parsers.
 
 from typing import List, Optional
 
+from wisent.core.errors import ModelNotProvidedError, InvalidValueError
+
 
 def parse_layers_from_arg(layer_arg: str, model=None) -> List[int]:
     """
@@ -33,7 +35,7 @@ def parse_layers_from_arg(layer_arg: str, model=None) -> List[int]:
             total_layers = detect_model_layers(model)
             return list(range(total_layers))
         # If no model provided, we cannot determine layers - this should not happen
-        raise ValueError("Cannot determine layer range without model instance")
+        raise ModelNotProvidedError()
 
     return layers
 
@@ -81,17 +83,11 @@ def aggregate_token_scores(token_scores: List[float], method: str) -> float:
     clean_scores = []
     for i, score in enumerate(token_scores):
         if score is None:
-            raise ValueError(
-                f"Token score at index {i} is None! This indicates a bug in the classifier output handling."
-            )
+            raise InvalidValueError(param_name=f"token_score[{i}]", actual=None, expected="float value")
         if hasattr(score, "item"):  # Handle tensors
-            raise ValueError(
-                f"Token score at index {i} is a tensor ({type(score)})! Expected float but got tensor: {score}"
-            )
+            raise InvalidValueError(param_name=f"token_score[{i}]", actual=str(type(score)), expected="float, got tensor")
         if not isinstance(score, (int, float)):
-            raise ValueError(
-                f"Token score at index {i} has invalid type: {type(score)}. Expected float but got {type(score).__name__}: {score}"
-            )
+            raise InvalidValueError(param_name=f"token_score[{i}]", actual=type(score).__name__, expected="float")
         clean_scores.append(float(score))
 
     if not clean_scores:

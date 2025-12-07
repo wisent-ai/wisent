@@ -2,12 +2,10 @@
 
 # Example: Optimize steering parameters comprehensively
 # This script demonstrates using the optimize-steering command to find
-# optimal parameters for steering methods including:
-# - Best steering method (CAA, HPR, DAC, BiPO, KSteering)
+# optimal parameters for CAA steering including:
 # - Optimal steering layer
 # - Optimal steering strength
 # - Optimal steering strategy (last_only, first_only, all_equal, exponential_decay, etc.)
-# - Method-specific parameters
 #
 # Usage:
 #   bash wisent/examples/cli/optimizer/steering/optimize_steering_parameters.sh

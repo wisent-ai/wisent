@@ -11,6 +11,12 @@ from enum import Enum
 import time
 import math
 
+from wisent.core.errors import (
+    ResourceEstimationError,
+    BudgetCalculationError,
+    UnknownTypeError,
+)
+
 
 class ResourceType(Enum):
     """Types of resources that can be budgeted."""
@@ -276,18 +282,18 @@ class BudgetManager:
                     return estimate_task_time("benchmark_eval", 100)
                     
             except Exception as e:
-                raise RuntimeError(f"Device benchmark estimate failed for task '{task_name}': {e}. Run device benchmark first with: python -m wisent.core.agent.budget benchmark")
+                raise ResourceEstimationError(resource_type="time", task_name=task_name, cause=e)
         
         elif resource_type == ResourceType.MEMORY:
-            raise RuntimeError(f"Memory estimation not implemented for task '{task_name}'")
+            raise ResourceEstimationError(resource_type="memory", task_name=task_name)
         
         elif resource_type == ResourceType.COMPUTE:
-            raise RuntimeError(f"Compute estimation not implemented for task '{task_name}'")
+            raise ResourceEstimationError(resource_type="compute", task_name=task_name)
         
         elif resource_type == ResourceType.TOKENS:
-            raise RuntimeError(f"Token estimation not implemented for task '{task_name}'")
+            raise ResourceEstimationError(resource_type="tokens", task_name=task_name)
         
-        raise RuntimeError(f"Unknown resource type: {resource_type}")
+        raise UnknownTypeError(entity_type="resource_type", value=str(resource_type))
     
     def _get_default_task_estimates(self) -> Dict[str, TaskEstimate]:
         """Get default task estimates for common operations."""
@@ -348,7 +354,7 @@ def calculate_max_tasks_for_time_budget(task_type: str = "benchmark_evaluation",
         return max_tasks
         
     except Exception as e:
-        raise RuntimeError(f"Budget calculation failed for task '{task_type}': {e}. Run device benchmark first with: python -m wisent.core.agent.budget benchmark")
+        raise BudgetCalculationError(task_type=task_type, cause=e)
 
 
 def optimize_tasks_for_budget(task_candidates: List[str], 

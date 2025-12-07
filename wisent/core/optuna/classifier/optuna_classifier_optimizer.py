@@ -18,6 +18,7 @@ from optuna.samplers import TPESampler
 
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.utils.device import resolve_default_device
+from wisent.core.errors import NoActivationDataError, ClassifierCreationError
 
 from .activation_generator import ActivationData, ActivationGenerator, GenerationConfig
 from .classifier_cache import CacheConfig, ClassifierCache
@@ -204,7 +205,7 @@ class OptunaClassifierOptimizer:
         )
 
         if not self.activation_data:
-            raise ValueError("No activation data generated - cannot proceed with optimization")
+            raise NoActivationDataError()
 
         self.logger.info(f"Generated {len(self.activation_data)} activation datasets")
 
@@ -569,7 +570,7 @@ class OptunaClassifierOptimizer:
         classifier = self._train_classifier(best_params, X, y)
 
         if classifier is None:
-            raise ValueError("Failed to train final classifier")
+            raise ClassifierCreationError(issue_type="optimization")
 
         return classifier
 

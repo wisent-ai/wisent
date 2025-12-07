@@ -4,6 +4,8 @@ from collections.abc import Iterable, Mapping
 from typing import Any, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
+from wisent.core.errors import FileLoadError, DatasetLoadError
+
 if TYPE_CHECKING:
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 
@@ -79,10 +81,10 @@ class HuggingFaceBenchmarkExtractor(ABC):
         try:
             from datasets import load_dataset
         except Exception as exc:
-            raise RuntimeError(
-                f"The 'datasets' library is not available. "
-                "Install it via 'pip install datasets' to use HuggingFace loaders."
-            ) from exc
+            raise FileLoadError(
+                file_path="datasets library",
+                cause=exc
+            )
 
         try:
             dataset = load_dataset(
@@ -111,17 +113,9 @@ class HuggingFaceBenchmarkExtractor(ABC):
                     # Restore original feature types
                     features_module._FEATURE_TYPES = orig_feature_types
             else:
-                raise RuntimeError(
-                    f"Failed to load HuggingFace dataset '{dataset_name}'. "
-                    f"Arguments were: config={dataset_config!r}, split={split!r}. "
-                    f"Underlying error: {exc}"
-                ) from exc
+                raise DatasetLoadError(task_name=dataset_name)
         except Exception as exc:
-            raise RuntimeError(
-                f"Failed to load HuggingFace dataset '{dataset_name}'. "
-                f"Arguments were: config={dataset_config!r}, split={split!r}. "
-                f"Underlying error: {exc}"
-            ) from exc
+            raise DatasetLoadError(task_name=dataset_name)
 
         return cls._coerce_docs_to_dicts(dataset, max_items)
 

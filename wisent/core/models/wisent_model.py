@@ -22,7 +22,15 @@ from wisent.core.activations.core.atoms import RawActivationMap
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.utils.device import resolve_default_device, resolve_torch_device, preferred_dtype
 from wisent.core.contrastive_pairs.diagnostics import run_control_steering_diagnostics
-from wisent.core.errors import ChatTemplateNotAvailableError
+from wisent.core.errors import (
+    ChatTemplateNotAvailableError,
+    DecoderLayersNotFoundError,
+    HiddenSizeNotFoundError,
+    TokenizerMissingMethodError,
+    ControlVectorDiagnosticsError,
+    LayerNotFoundError,
+    InsufficientDataError,
+)
 
 import threading
 
@@ -115,7 +123,7 @@ class WisentModel:
         )
 
         if not self._is_chat_tokenizer():
-            raise ValueError("Tokenizer does not support chat templates (missing apply_chat_template method). Change to a chat-capable model.")
+            raise TokenizerMissingMethodError("apply_chat_template")
 
         if self.tokenizer.pad_token_id is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -167,14 +175,14 @@ class WisentModel:
                 continue
 
         if not layers:
-            raise RuntimeError("Could not resolve decoder layers for steering hooks.")
+            raise DecoderLayersNotFoundError()
 
         if hidden_size is None:
             for p in m.parameters():
                 if p.ndim >= 2:
                     hidden_size = int(p.shape[-1]); break
         if hidden_size is None:
-            raise RuntimeError("Could not infer hidden size from model config.")
+            raise HiddenSizeNotFoundError()
 
         return layers, int(hidden_size)
 
@@ -794,8 +802,8 @@ class WisentModel:
         else:
             # Current behavior: apply chat template
             if not isinstance(inputs, list) or len(inputs) != 1:
-                raise ValueError(
-                    f"generate_stream currently supports exactly one conversation at a time (got {type(inputs)} with {len(inputs) if isinstance(inputs, list) else 'N/A'} items)."
+                raise InsufficientDataError(
+                    reason=f"generate_stream currently supports exactly one conversation at a time (got {type(inputs)} with {len(inputs) if isinstance(inputs, list) else 'N/A'} items)"
                 )
             batch = self._batch_encode(inputs, add_generation_prompt=True, enable_thinking=enable_thinking)
 
@@ -865,7 +873,7 @@ class WisentModel:
             )
 
         if any(report.has_critical_issues for report in reports):
-            raise ValueError("Control vector diagnostics found critical issues; refusing to set steering.")
+            raise ControlVectorDiagnosticsError()
 
         self._steering_plan = SteeringPlan.from_raw(
             raw=raw,

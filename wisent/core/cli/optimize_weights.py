@@ -28,6 +28,8 @@ from typing import Any, Callable
 
 import torch
 
+from wisent.core.errors import UnknownTypeError, InsufficientDataError
+
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.opti.core.atoms import HPOConfig
 from wisent.core.opti.methods.opti_weights import WeightsOptimizer, WeightsOptimizerConfig
@@ -452,7 +454,7 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
     elif evaluator_type == "personalization":
         return _create_personalization_evaluator(args, model_name, wisent_model, positive_examples, negative_examples)
     else:
-        raise ValueError(f"Unknown evaluator: {evaluator_type}")
+        raise UnknownTypeError(entity_type="evaluator_type", value=evaluator_type)
 
 
 def _create_refusal_evaluator(args, model_name: str, eval_type: str) -> Callable:
@@ -779,10 +781,10 @@ def _create_personalization_evaluator(args, model_name: str, wisent_model: Wisen
         # Calculate alignment score using contrastive embedding similarity
         # estimate_alignment returns 0-1 directly
         if not pos_examples or not neg_examples:
-            raise ValueError(
-                f"Cannot evaluate alignment without positive and negative examples. "
-                f"Got {len(pos_examples) if pos_examples else 0} positive and "
-                f"{len(neg_examples) if neg_examples else 0} negative examples."
+            raise InsufficientDataError(
+                reason=f"Cannot evaluate alignment without positive and negative examples. "
+                       f"Got {len(pos_examples) if pos_examples else 0} positive and "
+                       f"{len(neg_examples) if neg_examples else 0} negative examples."
             )
         alignment_score = estimate_alignment(
             steered_responses, trait_description, pos_examples, neg_examples

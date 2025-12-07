@@ -8,6 +8,8 @@ from typing import Any, Mapping
 from abc import ABC, abstractmethod
 import unicodedata
 
+from wisent.core.errors import DuplicateNameError
+
 __all__ = [
     "BaseEvaluator",
     "EvaluatorError",
@@ -86,7 +88,7 @@ class BaseEvaluator(ABC):
         if not getattr(cls, "name", None):
             raise TypeError("Evaluator subclasses must define a class attribute `name`.")
         if cls.name in BaseEvaluator._REGISTRY:
-            raise ValueError(f"Duplicate evaluator name: {cls.name!r}")
+            raise DuplicateNameError(name=cls.name, context="evaluator registry")
         BaseEvaluator._REGISTRY[cls.name] = cls  
 
     @abstractmethod

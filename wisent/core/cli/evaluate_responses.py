@@ -5,6 +5,8 @@ import os
 import sys
 from pathlib import Path
 
+from wisent.core.errors import TaskNotFoundError
+
 
 def execute_evaluate_responses(args):
     """
@@ -75,7 +77,7 @@ def execute_evaluate_responses(args):
         # Get task evaluation type
         task_config = task_evaluator_map['tasks'].get(task_name)
         if not task_config:
-            raise ValueError(f"Task {task_name} not found in task-evaluator.json")
+            raise TaskNotFoundError(task_name=task_name)
 
         evaluation_type = task_config['evaluation_type']
         primary_metric = task_config['primary_metric']

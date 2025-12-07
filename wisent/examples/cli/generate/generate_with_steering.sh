@@ -40,19 +40,6 @@ python -m wisent.core.main tasks arc_easy \
     --device cuda \
     --verbose
 
-# Use HPR steering method with custom parameters
-python -m wisent.core.main tasks gsm8k \
-    meta-llama/Llama-3.2-1B-Instruct \
-    --layer 18 \
-    --steering-method HPR \
-    --steering-strength 1.0 \
-    --token-targeting-strategy LAST_TOKEN \
-    --limit 30 \
-    --inference-only \
-    --load-vector ./vectors/math_reasoning_hpr.pt \
-    --output ./results/hpr_steering \
-    --verbose
-
 # Multi-layer steering with different vectors per layer
 python -m wisent.core.main tasks boolq \
     meta-llama/Llama-3.2-1B-Instruct \

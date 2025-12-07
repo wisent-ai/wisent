@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import sys
 
+from wisent.core.errors import UnknownTypeError
+
 # Python 3.10 compatibility
 if sys.version_info >= (3, 11):
     from enum import StrEnum
@@ -144,10 +146,11 @@ class LayerActivations(Mapping[LayerName, LayerActivation]):
             try:
                 return ActivationAggregationStrategy(s)
             except ValueError:
-                valid = ", ".join([e.value for e in ActivationAggregationStrategy])
-                raise ValueError(
-                    f"Unknown activation_agregation_strategy='{s}'. "
-                    f"Valid options: {valid}"
+                valid = [e.value for e in ActivationAggregationStrategy]
+                raise UnknownTypeError(
+                    entity_type="activation_agregation_strategy",
+                    value=s,
+                    valid_values=valid
                 )
         raise TypeError(
             "activation_agregation_strategy must be ActivationAggregationStrategy | str | None"
