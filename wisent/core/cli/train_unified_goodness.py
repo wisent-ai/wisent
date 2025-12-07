@@ -225,6 +225,15 @@ def execute_train_unified_goodness(args):
                     print(f"(capped {original_count} -> {len(bench_pairs)}) ", end="")
 
             if bench_pairs:
+                # Add source_benchmark to each pair's metadata using replace()
+                from dataclasses import replace
+                tagged_pairs = []
+                for pair in bench_pairs:
+                    existing_meta = pair.metadata or {}
+                    new_meta = {**existing_meta, 'source_benchmark': bench_name}
+                    tagged_pairs.append(replace(pair, metadata=new_meta))
+                bench_pairs = tagged_pairs
+
                 # Split into train/eval
                 n_train = int(len(bench_pairs) * args.train_ratio)
                 train_pairs = bench_pairs[:n_train]
@@ -430,21 +439,18 @@ def execute_train_unified_goodness(args):
             else:
                 steering_plan = None
 
-            # Evaluate on each benchmark
-            for bench_name, config in selected_benchmarks.items():
-                if bench_name not in benchmark_pair_counts:
-                    continue  # Skip failed benchmarks
+            # Evaluate on each benchmark that has eval pairs
+            # Group eval pairs by their source benchmark
+            eval_pairs_by_benchmark = {}
+            for pair in all_eval_pairs:
+                bench_name = pair.metadata.get('source_benchmark') if pair.metadata else None
+                if bench_name:
+                    if bench_name not in eval_pairs_by_benchmark:
+                        eval_pairs_by_benchmark[bench_name] = []
+                    eval_pairs_by_benchmark[bench_name].append(pair)
 
-                # Get eval pairs for this benchmark
-                bench_eval_pairs = [
-                    p for p in all_eval_pairs
-                    if p.metadata and p.metadata.get('source_benchmark') == bench_name
-                ]
-
-                if not bench_eval_pairs:
-                    continue
-
-                task_name = config.get("task", bench_name)
+            for bench_name, bench_eval_pairs in eval_pairs_by_benchmark.items():
+                task_name = bench_name  # Task name is the benchmark name
                 evaluator = EvaluatorRotator(
                     evaluator=None,
                     task_name=task_name,

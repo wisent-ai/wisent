@@ -21,7 +21,7 @@ if ! command -v docker-compose &> /dev/null; then
 fi
 
 # Default parameters
-MODEL_NAME=${MODEL_NAME:-"meta-llama/Llama-3.2-1B"}
+MODEL_NAME=${MODEL_NAME:-"meta-llama/Llama-3.2-1B-Instruct"}
 RELEASE_VERSION=${RELEASE_VERSION:-"release_v1"}
 LIMIT=${LIMIT:-10}
 MAX_TOKENS=${MAX_TOKENS:-512}
@@ -53,7 +53,7 @@ while [[ $# -gt 0 ]]; do
             echo "Usage: $0 [options]"
             echo ""
             echo "Options:"
-            echo "  --model-name      HuggingFace model name (default: meta-llama/Llama-3.2-1B)"
+            echo "  --model-name      HuggingFace model name (default: meta-llama/Llama-3.2-1B-Instruct)"
             echo "  --release-version LiveCodeBench release version (default: release_v1)"
             echo "  --limit          Number of problems to process (default: 10)"
             echo "  --max-tokens     Maximum tokens per generation (default: 512)"

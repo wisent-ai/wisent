@@ -378,9 +378,9 @@ def execute_evaluate_responses(args):
         # Load model for evaluation
         print(f"📦 Loading model for self-evaluation...")
         if isinstance(input_data, dict):
-            model_name = input_data.get('model', 'meta-llama/Llama-3.2-1B')
+            model_name = input_data.get('model', 'meta-llama/Llama-3.2-1B-Instruct')
         else:
-            model_name = 'meta-llama/Llama-3.2-1B'  # Default model
+            model_name = 'meta-llama/Llama-3.2-1B-Instruct'  # Default model
         print(f"   Model: {model_name}")
 
         from wisent.core.models.wisent_model import WisentModel
