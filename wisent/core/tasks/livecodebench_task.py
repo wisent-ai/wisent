@@ -7,6 +7,7 @@ from typing import Any, Dict, List, Optional
 from ..benchmark_extractors import LiveCodeBenchExtractor
 from ..data_loaders import LiveCodeBenchLoader
 from ..task_interface import TaskInterface
+from ..errors import VersionValidationError, VersionInfoError
 
 
 class LiveCodeBenchTask(TaskInterface):
@@ -29,26 +30,17 @@ class LiveCodeBenchTask(TaskInterface):
         except ValueError:
             # Re-raise validation errors
             raise
-        except Exception:
-            # If we can't load versions (e.g., due to dataset issues), just log a warning
-            import logging
-
-            logging.warning(
-                f"Could not validate release version {release_version} due to data loader issues. Proceeding with fallback data."
-            )
+        except Exception as e:
+            # No fallback - raise error if version validation fails
+            raise VersionValidationError(version=release_version, cause=e)
 
     def _get_version_info(self) -> Dict[str, Any]:
         """Get version-specific information."""
         try:
             return self._data_loader.get_version_info(self._release_version)
-        except Exception:
-            # Return default info if data loader fails
-            return {
-                "version": self._release_version,
-                "description": f"LiveCodeBench {self._release_version} (fallback mode)",
-                "contest_start": "2023-01-01",
-                "contest_end": "2023-12-31",
-            }
+        except Exception as e:
+            # No fallback - raise error if version info cannot be loaded
+            raise VersionInfoError(version=self._release_version, cause=e)
 
     def load_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """Load LiveCodeBench data for the specified release version."""

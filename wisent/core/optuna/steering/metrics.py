@@ -15,6 +15,12 @@ from wisent.core.lm_eval_harness_ground_truth import LMEvalHarnessGroundTruth
 from wisent.core.task_interface import get_task
 from wisent.core.tasks.file_task import FileTask
 from wisent.parameters.task_config import CODING_TASKS
+from wisent.core.errors import (
+    EvaluationError,
+    ExactMatchError,
+    BigCodeEvaluationError,
+    TaskNameRequiredError,
+)
 
 from .bigcode_evaluator_wrapper import OptunaBigCodeEvaluator
 
@@ -64,9 +70,13 @@ def evaluate_response_correctness(response: str, expected_answer: str, task_name
         return eval_results.get("accuracy", 0.0) > 0.0
 
     except Exception as e:
-        logger.warning(f"LMEvalHarnessGroundTruth failed, using exact match fallback: {e}")
-        # Fallback to simple string matching
-        return response.strip().lower() == expected_answer.strip().lower()
+        # No fallback - raise error if evaluation fails
+        raise EvaluationError(
+            task_name=task_name,
+            response=response,
+            expected=expected_answer,
+            cause=e
+        )
 
 
 def evaluate_benchmark_performance(
@@ -162,22 +172,11 @@ def evaluate_benchmark_performance(
                 }
 
             except Exception as e:
-                logger.error(f"BigCode evaluation failed for {task_name}, falling back to string-based evaluation: {e}")
-                # Fall through to string-based evaluation
+                # No fallback - raise error if BigCode evaluation fails
+                raise BigCodeEvaluationError(task_name=task_name, cause=e)
 
-        # String-based evaluation for non-coding tasks or BigCode fallback
+        # String-based evaluation for non-coding tasks only
         extracted_predictions = predictions
-
-        if is_coding_task:
-            # Extract code from predictions for coding tasks (fallback mode)
-            extractor = MBPPExtractor()  # Works for all coding tasks, not just MBPP
-            extracted_predictions = []
-
-            for pred in predictions:
-                extracted_code = extractor.extract_code_from_answer(pred)
-                extracted_predictions.append(extracted_code)
-
-            logger.debug(f"Code extraction applied for {task_name}: {len(predictions)} predictions processed")
 
         # Use intelligent evaluation with LMEvalHarnessGroundTruth (same as CLI)
         correct_predictions = []
@@ -208,26 +207,13 @@ def evaluate_benchmark_performance(
                 evaluation_details.append(eval_detail)
 
             except Exception as e:
-                logger.warning(f"LMEvalHarnessGroundTruth failed for prediction '{extracted_pred}' vs '{gt}': {e}")
-                # Fallback to simple string matching
-                is_correct = extracted_pred.strip().lower() == gt.strip().lower()
-                correct_predictions.append(is_correct)
-
-                eval_detail = {
-                    "prediction": extracted_pred,
-                    "ground_truth": gt,
-                    "is_correct": is_correct,
-                    "classifier_confidence": classifier_confidences[i]
-                    if classifier_confidences and i < len(classifier_confidences)
-                    else 1.0,
-                    "method": "fallback_exact_match",
-                }
-
-                if is_coding_task and orig_pred != extracted_pred:
-                    eval_detail["original_prediction"] = orig_pred
-                    eval_detail["code_extracted"] = True
-
-                evaluation_details.append(eval_detail)
+                # No fallback - raise error if evaluation fails
+                raise ExactMatchError(
+                    index=i,
+                    prediction=extracted_pred,
+                    ground_truth=gt,
+                    cause=e
+                )
 
         accuracy = np.mean(correct_predictions)
         total_correct = sum(correct_predictions)
@@ -241,18 +227,8 @@ def evaluate_benchmark_performance(
             "task_name": task_name,
             "evaluation_details": evaluation_details[:5],  # Include first 5 for debugging
         }
-    # Fallback to simple exact match
-    logger.info("No task_name provided, using simple exact match evaluation")
-    exact_matches = [pred.strip().lower() == gt.strip().lower() for pred, gt in zip(predictions, ground_truths)]
-    accuracy = np.mean(exact_matches)
-
-    return {
-        "accuracy": accuracy,
-        "total_samples": len(predictions),
-        "correct": sum(exact_matches),
-        "incorrect": len(predictions) - sum(exact_matches),
-        "evaluation_method": "exact_match",
-    }
+    # No fallback - task_name is required for proper evaluation
+    raise TaskNameRequiredError()
 
 
 def evaluate_probe_performance(y_true: np.ndarray, y_pred: np.ndarray, y_pred_proba: np.ndarray) -> Dict[str, float]:
