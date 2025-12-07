@@ -90,39 +90,48 @@ def get_default_steering_application_configs() -> List[SteeringApplicationConfig
     ]
 
 
+from wisent.core.steering_methods import SteeringMethodRegistry, SteeringMethodType
+
+
 def get_default_steering_configs() -> List['SteeringMethodConfig']:
-    """Get default steering method configurations with parameter variations."""
-    return [
-        # CAA variations (only implemented steering method)
-        SteeringMethodConfig(
-            name="CAA",
-            method=SteeringMethod.CAA,
-            params={}
-        ),
-        SteeringMethodConfig(
-            name="CAA_L2",
-            method=SteeringMethod.CAA,
-            params={"normalization_method": "l2_unit"}
-        ),
-    ]
+    """Get default steering method configurations from centralized registry."""
+    configs = []
+    for method_name in SteeringMethodRegistry.list_methods():
+        definition = SteeringMethodRegistry.get(method_name)
+        method_type = definition.method_type
+        
+        # Base config with default params
+        configs.append(SteeringMethodConfig(
+            name=method_name.upper(),
+            method=method_type,
+            params=definition.get_default_params()
+        ))
+        
+        # Add L2 normalized variant
+        configs.append(SteeringMethodConfig(
+            name=f"{method_name.upper()}_L2",
+            method=method_type,
+            params={**definition.get_default_params(), "normalization_method": "l2_unit"}
+        ))
+    
+    return configs
 
 
-class SteeringMethod(Enum):
-    """Available steering methods for optimization."""
-    CAA = "CAA"
+# Use centralized registry for steering methods
+SteeringMethod = SteeringMethodType  # Alias for backward compatibility
 
 
 @dataclass
 class SteeringMethodConfig:
     """Configuration for a specific steering method with parameter variations."""
     name: str  # Display name like "CAA_L2"
-    method: SteeringMethod
+    method: SteeringMethodType
     params: Dict[str, Any]  # Method-specific parameters
     
     def __post_init__(self):
-        """Ensure method is SteeringMethod enum."""
+        """Ensure method is SteeringMethodType enum."""
         if isinstance(self.method, str):
-            self.method = SteeringMethod(self.method)
+            self.method = SteeringMethodType(self.method.lower())
 
 
 @dataclass

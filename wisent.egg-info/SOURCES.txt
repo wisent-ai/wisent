@@ -885,6 +885,7 @@ wisent/core/prompts/prompt_stratiegies/instruction_following.py
 wisent/core/prompts/prompt_stratiegies/multiple_choice.py
 wisent/core/prompts/prompt_stratiegies/role_playing.py
 wisent/core/steering_methods/__init__.py
+wisent/core/steering_methods/registry.py
 wisent/core/steering_methods/rotator.py
 wisent/core/steering_methods/core/__init__.py
 wisent/core/steering_methods/core/atoms.py

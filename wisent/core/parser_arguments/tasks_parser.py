@@ -294,14 +294,9 @@ def setup_tasks_parser(parser):
         "--steering-strength", type=float, default=1.0, help="Strength of steering vector application (default: 1.0)"
     )
 
-    # Steering method selection
-    parser.add_argument(
-        "--steering-method",
-        type=str,
-        default="CAA",
-        choices=["CAA"],
-        help="Steering method to use",
-    )
+    # Steering method selection - uses centralized registry
+    from wisent.core.steering_methods import SteeringMethodRegistry
+    SteeringMethodRegistry.add_all_cli_arguments(parser)
 
     # Steering output mode selection
     parser.add_argument(

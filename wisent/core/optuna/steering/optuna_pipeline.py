@@ -43,7 +43,7 @@ from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
 from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
 from wisent.core.optuna.steering import data_utils, metrics
 from wisent.core.response import Response
-from wisent.core.steering_methods import CAA
+from wisent.core.steering_methods import SteeringMethodRegistry, get_steering_method
 from wisent.core.task_interface import get_task
 from wisent.core.utils.device import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device
 from wisent.core.models.inference_config import get_generate_kwargs
@@ -81,7 +81,7 @@ class OptimizationConfig:
 
     layer_search_range: tuple[int, int] = (15, 20)
     probe_type: str = "logistic_regression"  # Fixed probe type
-    steering_methods: list[str] = field(default_factory=lambda: ["caa"])
+    steering_methods: list[str] = field(default_factory=lambda: SteeringMethodRegistry.list_methods())
 
     # Optuna study configuration
     study_name: str = "optimization_pipeline"
@@ -465,22 +465,21 @@ class OptimizationPipeline:
 
             steering_method = trial.suggest_categorical("steering_method", self.config.steering_methods)
 
-            if steering_method == "caa":
-                steering_alpha = trial.suggest_float("steering_alpha", 0.1, 5.0)
-            else:
+            # Get strength range from centralized registry
+            if not SteeringMethodRegistry.validate_method(steering_method):
                 raise SteeringMethodUnknownError(method=steering_method)
+            
+            strength_range = SteeringMethodRegistry.get_strength_range(steering_method)
+            steering_alpha = trial.suggest_float("steering_alpha", strength_range[0], strength_range[1])
 
             probe_score = self._train_and_evaluate_probe(trial, layer_id, probe_type, probe_c)
 
             # Don't prune based on probe score - focus optimization on steering parameters
 
-            # Build clean hyperparameters dictionary
-            if steering_method == "caa":
-                hyperparams = {
-                    "steering_alpha": steering_alpha,
-                }
-            else:
-                raise SteeringMethodUnknownError(method=steering_method)
+            # Build hyperparameters from registry defaults plus steering alpha
+            definition = SteeringMethodRegistry.get(steering_method)
+            hyperparams = definition.get_default_params()
+            hyperparams["steering_alpha"] = steering_alpha
 
             steering_method_instance = self._train_steering_method(trial, steering_method, layer_id, hyperparams)
 
@@ -535,15 +534,16 @@ class OptimizationPipeline:
             self.train_samples, layer_id, self.config.train_dataset, limit=contrastive_limit
         )
 
-        if method_name == "caa":
-            # Create CAA instance
-            caa = CAA(device=self.device)
+        # Use centralized registry to create and train steering method
+        if not SteeringMethodRegistry.validate_method(method_name):
+            raise SteeringMethodUnknownError(method=method_name)
+        
+        # Create instance from registry
+        steering_instance = get_steering_method(method_name, device=self.device, **hyperparams)
 
-            # Train CAA
-            caa.train(contrastive_pairs, layer_id)
-            return caa
-
-        raise SteeringMethodUnknownError(method=method_name)
+        # Train steering method
+        steering_instance.train(contrastive_pairs, layer_id)
+        return steering_instance
 
     def _create_contrastive_pairs(
         self, samples: list[dict], layer_id: int, dataset_name: str, limit: Optional[int] = None

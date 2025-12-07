@@ -85,14 +85,9 @@ def setup_agent_parser(parser):
         help="Type of classifier to use (default: logistic)",
     )
 
-    # Steering method arguments
-    parser.add_argument(
-        "--steering-method",
-        type=str,
-        default="CAA",
-        choices=["CAA"],
-        help="Steering method to use (default: CAA)",
-    )
+    # Steering method arguments - uses centralized registry
+    from wisent.core.steering_methods import SteeringMethodRegistry
+    SteeringMethodRegistry.add_all_cli_arguments(parser)
     parser.add_argument(
         "--steering-strength", type=float, default=1.0, help="Strength of steering vector application (default: 1.0)"
     )
