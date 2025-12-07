@@ -1,6 +1,6 @@
 {
   "task_name": "polymath_en_medium",
-  "model_name": "meta-llama/Llama-3.2-1B",
+  "model_name": "meta-llama/Llama-3.2-1B-Instruct",
   "evaluator_name": "generation",
   "num_pairs": 1,
   "all_correct": true,

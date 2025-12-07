@@ -164,6 +164,7 @@ def _run_classification_optimization(args: argparse.Namespace, tasks: List[str])
     opt_args.quick = getattr(args, 'quick', False)
     opt_args.aggregation_methods = getattr(args, 'aggregation_methods', ['average', 'final', 'first', 'max', 'min'])
     opt_args.threshold_range = getattr(args, 'threshold_range', [0.3, 0.5, 0.7])
+    opt_args.optimization_metric = getattr(args, 'optimization_metric', 'f1')
 
     return execute_optimize_classification(opt_args)
 

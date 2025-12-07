@@ -324,7 +324,7 @@ class LMEvalDataLoader(BaseDataLoader):
             # Ruler tasks require a pretrained model name for tokenizer initialization
             task_manager = LMTaskManager(
                 verbosity="INFO",
-                metadata={"pretrained": "meta-llama/Llama-3.2-1B"}
+                metadata={"pretrained": "meta-llama/Llama-3.2-1B-Instruct"}
             )
             task_manager.initialize_tasks()
         else:

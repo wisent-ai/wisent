@@ -271,7 +271,7 @@ if __name__ == "__main__":
     # Run optimization
     best = optimize_abliteration(
         task="hellaswag",
-        model="meta-llama/Llama-3.2-1B",
+        model="meta-llama/Llama-3.2-1B-Instruct",
         baseline_accuracy=0.44,  # 44% baseline
         output_dir="./data/modified_models/optimized",
         eval_limit=500

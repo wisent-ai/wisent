@@ -11,7 +11,7 @@ python -m wisent.core.main modify-weights \
     --task hellaswag \
     --trait-label correctness \
     --output-dir ./data/modified_models/hellaswag_modified \
-    --model meta-llama/Llama-3.2-1B \
+    --model meta-llama/Llama-3.2-1B-Instruct \
     --num-pairs 100 \
     --method abliteration \
     --components self_attn.o_proj mlp.down_proj \

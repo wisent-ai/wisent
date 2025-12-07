@@ -287,7 +287,7 @@ class WisentConfigManager:
 
     Structure:
     {
-        "model_name": "meta-llama/Llama-3.2-1B",
+        "model_name": "meta-llama/Llama-3.2-1B-Instruct",
         "num_layers": 16,
         "config_version": "2.1",
 

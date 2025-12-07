@@ -16,7 +16,7 @@ the performance gain from abliteration:
 The goal: Achieve maximum possible performance improvement on HellaSwag.
 
 Usage:
-    python maximum_abliteration.py --task hellaswag --model meta-llama/Llama-3.2-1B
+    python maximum_abliteration.py --task hellaswag --model meta-llama/Llama-3.2-1B-Instruct
 """
 
 import argparse
@@ -306,7 +306,7 @@ def grid_search_kernel_shape(
 
 def maximum_abliteration(
     task: str = "hellaswag",
-    model: str = "meta-llama/Llama-3.2-1B",
+    model: str = "meta-llama/Llama-3.2-1B-Instruct",
     output_dir: str = "./data/modified_models/maximum",
     baseline_acc: float = 0.44,
     full_eval_limit: int = 500,
@@ -427,7 +427,7 @@ def maximum_abliteration(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Maximum abliteration optimization")
     parser.add_argument("--task", default="hellaswag", help="Task name")
-    parser.add_argument("--model", default="meta-llama/Llama-3.2-1B", help="Model name")
+    parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct", help="Model name")
     parser.add_argument("--output-dir", default="./data/modified_models/maximum", help="Output directory")
     parser.add_argument("--baseline", type=float, default=0.44, help="Baseline accuracy")
     parser.add_argument("--eval-limit", type=int, default=500, help="Evaluation limit")
