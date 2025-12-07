@@ -42,8 +42,16 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
         type=str,
         nargs="+",
         default=None,
-        help="Specific benchmarks to include (default: all high-priority benchmarks). "
+        help="Specific benchmarks to include (default: ALL 327 benchmarks). "
              "Example: --benchmarks mmlu gsm8k hellaswag truthfulqa_mc1"
+    )
+    parser.add_argument(
+        "--tags",
+        type=str,
+        nargs="+",
+        default=None,
+        help="Filter benchmarks by tags. Only include benchmarks with ANY of these tags. "
+             "Example: --tags coding mathematics"
     )
     parser.add_argument(
         "--exclude-benchmarks",
@@ -51,13 +59,6 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
         nargs="+",
         default=None,
         help="Benchmarks to exclude from training/evaluation"
-    )
-    parser.add_argument(
-        "--priority",
-        type=str,
-        choices=["high", "medium", "low", "all"],
-        default="high",
-        help="Include benchmarks by priority level (default: high)"
     )
     parser.add_argument(
         "--max-benchmarks",
@@ -68,16 +69,11 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
 
     # Data sampling
     parser.add_argument(
-        "--pairs-per-benchmark",
+        "--cap-pairs-per-benchmark",
         type=int,
-        default=50,
-        help="Number of contrastive pairs per benchmark (default: 50)"
-    )
-    parser.add_argument(
-        "--eval-samples-per-benchmark",
-        type=int,
-        default=20,
-        help="Number of evaluation samples per benchmark (default: 20)"
+        default=None,
+        help="Cap pairs per benchmark at this number. Benchmarks with more pairs will be randomly sampled down. "
+             "Example: --cap-pairs-per-benchmark 10000 means any benchmark with >10k pairs gets 10k random samples"
     )
     parser.add_argument(
         "--train-ratio",

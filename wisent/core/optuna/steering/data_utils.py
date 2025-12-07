@@ -60,7 +60,8 @@ def extract_activations_with_hook(
 
         # Extract last token activations (typical for causal LM)
         if len(hidden_states.shape) == 3:  # [batch, seq, hidden]
-            last_token_acts = hidden_states[:, -1, :].detach().cpu().numpy()
+            # Convert to float32 before numpy (bfloat16 not supported)
+            last_token_acts = hidden_states[:, -1, :].detach().cpu().float().numpy()
             activations.extend(last_token_acts)
 
     # Register hook

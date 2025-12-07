@@ -858,8 +858,8 @@ class SteeringOptimizer:
                     # Stack activations into batch tensor
                     batch_tensor = torch.stack(batch_activations)
 
-                    # Convert to numpy for sklearn classifier
-                    batch_numpy = batch_tensor.detach().cpu().numpy()
+                    # Convert to numpy for sklearn classifier (float32 required, bfloat16 not supported)
+                    batch_numpy = batch_tensor.detach().cpu().float().numpy()
 
                     # Get prediction probabilities from classifier
                     probabilities = self._session_classifier.predict_proba(batch_numpy)

@@ -32,6 +32,7 @@ from wisent.core.modalities import (
     VideoContent,
 )
 from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.utils.device import preferred_dtype
 
 __all__ = ["MultimodalAdapter", "MultimodalSteeringConfig"]
 
@@ -146,12 +147,16 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
         model_type = self._detect_model_type() if self._model_type is None else self._model_type
 
         try:
+            # Use centralized preferred_dtype for consistency across codebase
+            dtype = preferred_dtype(self.device)
+            device_map = "auto" if self.device in ("cuda", "auto") else None
+            
             if model_type == self.MODEL_TYPE_LLAVA:
                 from transformers import LlavaForConditionalGeneration
                 model = LlavaForConditionalGeneration.from_pretrained(
                     self.model_name,
-                    torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
-                    device_map="auto" if self.device in ("cuda", "auto") else None,
+                    torch_dtype=dtype,
+                    device_map=device_map,
                     **self._kwargs,
                 )
             elif model_type == self.MODEL_TYPE_QWEN_VL:
@@ -159,16 +164,16 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
                 model = AutoModelForCausalLM.from_pretrained(
                     self.model_name,
                     trust_remote_code=True,
-                    torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
-                    device_map="auto" if self.device in ("cuda", "auto") else None,
+                    torch_dtype=dtype,
+                    device_map=device_map,
                     **self._kwargs,
                 )
             elif model_type == self.MODEL_TYPE_IDEFICS:
                 from transformers import IdeficsForVisionText2Text
                 model = IdeficsForVisionText2Text.from_pretrained(
                     self.model_name,
-                    torch_dtype=torch.float16 if self.device != "cpu" else torch.float32,
-                    device_map="auto" if self.device in ("cuda", "auto") else None,
+                    torch_dtype=dtype,
+                    device_map=device_map,
                     **self._kwargs,
                 )
             else:

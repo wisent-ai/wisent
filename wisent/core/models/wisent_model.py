@@ -20,7 +20,7 @@ from wisent.core.models.core.atoms import SteeringPlan, SteeringVector, HookHand
 from wisent.core.activations.core.atoms import RawActivationMap
 
 from wisent.core.prompts.core.atom import ChatMessage
-from wisent.core.utils.device import resolve_default_device, resolve_torch_device
+from wisent.core.utils.device import resolve_default_device, resolve_torch_device, preferred_dtype
 from wisent.core.contrastive_pairs.diagnostics import run_control_steering_diagnostics
 
 import threading
@@ -89,14 +89,13 @@ class WisentModel:
             "attn_implementation": "eager",  # Always use eager attention - no flash-attn dependency
         }
 
+        # Use centralized preferred_dtype for consistency across codebase
+        load_kwargs["torch_dtype"] = preferred_dtype(self.device)
         if self.device == "mps":
-            load_kwargs["torch_dtype"] = torch.float16
             load_kwargs["device_map"] = "mps"
         elif self.device == "cuda" or self.device == "auto":
-            load_kwargs["torch_dtype"] = torch.bfloat16  # More stable than float16
             load_kwargs["device_map"] = "auto"
         else:
-            load_kwargs["torch_dtype"] = torch.float32
             load_kwargs["device_map"] = None
 
         self.hf_model: PreTrainedModel = hf_model or AutoModelForCausalLM.from_pretrained(

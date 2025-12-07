@@ -468,12 +468,14 @@ def execute_tasks(args):
         if updated_pair.positive_response.layers_activations and layer_str in updated_pair.positive_response.layers_activations:
             act = updated_pair.positive_response.layers_activations[layer_str]
             if act is not None:
-                positive_activations.append(act.cpu().numpy())
+                # Convert to float32 before numpy (bfloat16 not supported by numpy)
+                positive_activations.append(act.cpu().float().numpy())
 
         if updated_pair.negative_response.layers_activations and layer_str in updated_pair.negative_response.layers_activations:
             act = updated_pair.negative_response.layers_activations[layer_str]
             if act is not None:
-                negative_activations.append(act.cpu().numpy())
+                # Convert to float32 before numpy (bfloat16 not supported by numpy)
+                negative_activations.append(act.cpu().float().numpy())
 
     print(f"\n   ✓ Collected {len(positive_activations)} positive and {len(negative_activations)} negative activations")
 

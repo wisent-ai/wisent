@@ -89,6 +89,7 @@ wisent/core/cli/__init__.py
 wisent/core/cli/create_steering_vector.py
 wisent/core/cli/diagnose_pairs.py
 wisent/core/cli/diagnose_vectors.py
+wisent/core/cli/estimate_unified_goodness_time.py
 wisent/core/cli/evaluate_refusal.py
 wisent/core/cli/evaluate_responses.py
 wisent/core/cli/generate_pairs.py
@@ -108,6 +109,7 @@ wisent/core/cli/optimize_sample_size.py
 wisent/core/cli/optimize_steering.py
 wisent/core/cli/optimize_weights.py
 wisent/core/cli/tasks.py
+wisent/core/cli/train_unified_goodness.py
 wisent/core/cli/agent/__init__.py
 wisent/core/cli/agent/apply_steering.py
 wisent/core/cli/agent/evaluate_response.py
@@ -880,6 +882,7 @@ wisent/core/parser_arguments/optimize_steering_parser.py
 wisent/core/parser_arguments/optimize_weights_parser.py
 wisent/core/parser_arguments/synthetic_parser.py
 wisent/core/parser_arguments/tasks_parser.py
+wisent/core/parser_arguments/train_unified_goodness_parser.py
 wisent/core/parser_arguments/utils.py
 wisent/core/prompts/__init__.py
 wisent/core/prompts/core/__init__.py

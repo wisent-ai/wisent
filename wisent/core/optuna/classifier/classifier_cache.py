@@ -499,9 +499,9 @@ class ClassifierCache:
             x_sample = X.flatten()[:100]
             y_sample = y
 
-        # Convert tensor data to bytes for hashing
-        x_sample_bytes = x_sample.detach().cpu().numpy().tobytes()
-        y_sample_bytes = y_sample.detach().cpu().numpy().tobytes()
+        # Convert tensor data to bytes for hashing (float32 required, bfloat16 not supported)
+        x_sample_bytes = x_sample.detach().cpu().float().numpy().tobytes()
+        y_sample_bytes = y_sample.detach().cpu().float().numpy().tobytes()
 
         x_sample_hash = hashlib.md5(x_sample_bytes).hexdigest()[:8]
         y_sample_hash = hashlib.md5(y_sample_bytes).hexdigest()[:8]

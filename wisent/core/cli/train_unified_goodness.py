@@ -4,11 +4,51 @@ from __future__ import annotations
 
 import json
 import os
+import random
 import sys
 import time
+from pathlib import Path
 from typing import Any
 
 import torch
+
+
+def load_all_benchmarks():
+    """
+    Load ALL benchmarks from the parameter files.
+    
+    This uses the same benchmark list as test_all_benchmarks.py:
+    - all_lm_eval_task_families.json (165 task families)
+    - not_lm_eval_tasks.json (170 additional tasks)
+    - minus broken_in_lm_eval.json (8 broken)
+    
+    Total: 327 usable benchmarks
+    """
+    # Find the parameters directory
+    params_dir = Path(__file__).parent.parent.parent / "parameters" / "lm_eval"
+    
+    # Load lm-eval task families
+    lm_eval_tasks_path = params_dir / "all_lm_eval_task_families.json"
+    with open(lm_eval_tasks_path, 'r') as f:
+        lm_eval_tasks = json.load(f)
+    
+    # Load non lm-eval tasks
+    not_lm_eval_tasks_path = params_dir / "not_lm_eval_tasks.json"
+    with open(not_lm_eval_tasks_path, 'r') as f:
+        not_lm_eval_tasks = json.load(f)
+    
+    # Load broken benchmarks to skip
+    broken_tasks_path = params_dir / "broken_in_lm_eval.json"
+    broken_tasks = []
+    if broken_tasks_path.exists():
+        with open(broken_tasks_path, 'r') as f:
+            broken_tasks = json.load(f)
+    
+    # Combine all tasks and filter out broken ones
+    all_tasks = lm_eval_tasks + not_lm_eval_tasks
+    filtered_tasks = [task for task in all_tasks if task not in broken_tasks]
+    
+    return filtered_tasks, broken_tasks
 
 
 def execute_train_unified_goodness(args):
@@ -16,13 +56,12 @@ def execute_train_unified_goodness(args):
     Execute the train-unified-goodness command.
 
     Pipeline:
-    1. Select benchmarks based on priority/explicit list
+    1. Load ALL 327 benchmarks (same as test_all_benchmarks.py)
     2. Generate contrastive pairs from ALL selected benchmarks (pooled)
     3. Collect activations for all pairs
     4. Train single unified steering vector from pooled data
     5. Evaluate vector across ALL benchmarks (pooled evaluation)
     """
-    from wisent.core.lm_harness_integration.only_benchmarks import CORE_BENCHMARKS
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
@@ -44,49 +83,68 @@ def execute_train_unified_goodness(args):
     print("=" * 70 + "\n")
 
     # =========================================================================
-    # Step 1: Select benchmarks
+    # Step 1: Select benchmarks - use ALL 327 benchmarks by default
     # =========================================================================
     print("📋 Step 1/5: Selecting benchmarks...")
 
+    # Load ALL benchmarks from parameter files (same as test_all_benchmarks.py)
+    all_benchmark_names, broken_benchmarks = load_all_benchmarks()
+    print(f"   ✓ Loaded {len(all_benchmark_names)} total benchmarks")
+    if broken_benchmarks:
+        print(f"   ✓ Skipping {len(broken_benchmarks)} broken benchmarks")
+
+    # Load benchmark tags for filtering
+    tags_file = Path(__file__).parent.parent.parent / "examples" / "scripts" / "benchmark_tags.json"
+    benchmark_tags = {}
+    if tags_file.exists():
+        with open(tags_file) as f:
+            benchmark_tags = json.load(f)
+
+    def get_benchmark_tags(bench_name):
+        """Get tags for a benchmark, handling name variations."""
+        bench_norm = bench_name.lower().replace('-', '_')
+        for key in benchmark_tags:
+            key_norm = key.lower().replace('-', '_')
+            if bench_norm == key_norm or bench_norm.startswith(key_norm + '_') or key_norm.startswith(bench_norm):
+                return benchmark_tags[key].get('tags', [])
+        return []
+
     if args.benchmarks:
         # Use explicitly specified benchmarks
-        selected_benchmarks = {}
-        for name in args.benchmarks:
-            if name in CORE_BENCHMARKS:
-                selected_benchmarks[name] = CORE_BENCHMARKS[name]
-            else:
-                print(f"   ⚠️  Unknown benchmark: {name}, skipping")
+        selected_benchmark_names = [name for name in args.benchmarks if name in all_benchmark_names]
+        unknown = [name for name in args.benchmarks if name not in all_benchmark_names]
+        for name in unknown:
+            print(f"   ⚠️  Unknown benchmark: {name}, skipping")
+    elif args.tags:
+        # Filter by tags
+        selected_benchmark_names = []
+        for name in all_benchmark_names:
+            bench_tags = get_benchmark_tags(name)
+            if any(tag in bench_tags for tag in args.tags):
+                selected_benchmark_names.append(name)
+        print(f"   ✓ Filtering by tags: {', '.join(args.tags)}")
     else:
-        # Select by priority
-        selected_benchmarks = {}
-        for name, config in CORE_BENCHMARKS.items():
-            priority = config.get("priority", "medium")
-            if args.priority == "all":
-                selected_benchmarks[name] = config
-            elif args.priority == "high" and priority == "high":
-                selected_benchmarks[name] = config
-            elif args.priority == "medium" and priority in ["high", "medium"]:
-                selected_benchmarks[name] = config
-            elif args.priority == "low":
-                selected_benchmarks[name] = config
+        # Use ALL benchmarks by default (no priority filtering - we want everything)
+        selected_benchmark_names = all_benchmark_names.copy()
 
     # Apply exclusions
     if args.exclude_benchmarks:
         for name in args.exclude_benchmarks:
-            if name in selected_benchmarks:
-                del selected_benchmarks[name]
+            if name in selected_benchmark_names:
+                selected_benchmark_names.remove(name)
                 if args.verbose:
                     print(f"   Excluded: {name}")
 
     # Apply max limit
-    if args.max_benchmarks and len(selected_benchmarks) > args.max_benchmarks:
-        benchmark_names = list(selected_benchmarks.keys())[:args.max_benchmarks]
-        selected_benchmarks = {k: selected_benchmarks[k] for k in benchmark_names}
+    if args.max_benchmarks and len(selected_benchmark_names) > args.max_benchmarks:
+        selected_benchmark_names = selected_benchmark_names[:args.max_benchmarks]
 
-    print(f"   ✓ Selected {len(selected_benchmarks)} benchmarks:")
-    for name in selected_benchmarks:
-        tags = selected_benchmarks[name].get("tags", [])
-        print(f"      • {name}: {', '.join(tags[:3])}")
+    print(f"   ✓ Selected {len(selected_benchmark_names)} benchmarks for training")
+    if args.verbose:
+        for name in selected_benchmark_names[:20]:
+            print(f"      • {name}")
+        if len(selected_benchmark_names) > 20:
+            print(f"      ... and {len(selected_benchmark_names) - 20} more")
 
     # =========================================================================
     # Step 2: Load model
@@ -121,15 +179,18 @@ def execute_train_unified_goodness(args):
     # =========================================================================
     print(f"\n📊 Step 3/5: Collecting contrastive pairs from all benchmarks...")
 
+    # Set random seed for reproducibility
+    random.seed(args.seed)
+
     loader = LMEvalDataLoader()
     all_train_pairs = []
     all_eval_pairs = []
     benchmark_pair_counts = {}
     failed_benchmarks = []
 
-    for bench_name, config in selected_benchmarks.items():
-        task_name = config.get("task", bench_name)
-        print(f"   Loading {bench_name} ({task_name})...", end=" ", flush=True)
+    for idx, bench_name in enumerate(selected_benchmark_names):
+        task_name = bench_name  # Task name is the benchmark name
+        print(f"   [{idx+1}/{len(selected_benchmark_names)}] Loading {bench_name}...", end=" ", flush=True)
 
         try:
             task_obj = loader.load_lm_eval_task(task_name)
@@ -137,41 +198,37 @@ def execute_train_unified_goodness(args):
             # Handle group tasks (dict of subtasks)
             if isinstance(task_obj, dict):
                 bench_pairs = []
-                pairs_per_subtask = max(1, args.pairs_per_benchmark // len(task_obj))
                 for subname, subtask in task_obj.items():
                     try:
                         subtask_pairs = lm_build_contrastive_pairs(
                             task_name=subname,
                             lm_eval_task=subtask,
-                            limit=pairs_per_subtask,
+                            limit=None,  # Load all, we'll cap later
                         )
                         bench_pairs.extend(subtask_pairs)
                     except Exception as e:
                         if args.verbose:
                             print(f"\n      ⚠️  Subtask {subname} failed: {e}")
             else:
+                # Load all pairs
                 bench_pairs = lm_build_contrastive_pairs(
                     task_name=task_name,
                     lm_eval_task=task_obj,
-                    limit=args.pairs_per_benchmark,
+                    limit=None,  # Load all, we'll cap later
                 )
+
+            # Apply cap with random sampling if needed
+            if bench_pairs and args.cap_pairs_per_benchmark and len(bench_pairs) > args.cap_pairs_per_benchmark:
+                original_count = len(bench_pairs)
+                bench_pairs = random.sample(bench_pairs, args.cap_pairs_per_benchmark)
+                if args.verbose:
+                    print(f"(capped {original_count} -> {len(bench_pairs)}) ", end="")
 
             if bench_pairs:
                 # Split into train/eval
                 n_train = int(len(bench_pairs) * args.train_ratio)
                 train_pairs = bench_pairs[:n_train]
                 eval_pairs = bench_pairs[n_train:]
-
-                # Add benchmark name to pair metadata for tracking
-                for pair in train_pairs:
-                    if not hasattr(pair, 'metadata') or pair.metadata is None:
-                        pair.metadata = {}
-                    pair.metadata['source_benchmark'] = bench_name
-
-                for pair in eval_pairs:
-                    if not hasattr(pair, 'metadata') or pair.metadata is None:
-                        pair.metadata = {}
-                    pair.metadata['source_benchmark'] = bench_name
 
                 all_train_pairs.extend(train_pairs)
                 all_eval_pairs.extend(eval_pairs)
@@ -397,7 +454,7 @@ def execute_train_unified_goodness(args):
                 correct = 0
                 total = 0
 
-                for pair in bench_eval_pairs[:args.eval_samples_per_benchmark]:
+                for pair in bench_eval_pairs:  # Use all eval pairs (already 20% of benchmark)
                     try:
                         question = pair.prompt
                         expected = pair.positive_response.model_response

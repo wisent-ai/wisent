@@ -1,917 +1,2140 @@
 {
   "aclue": {
-    "tags": ["multilingual", "history"]
+    "tags": [
+      "multilingual",
+      "history"
+    ]
   },
   "acpbench": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "aexams": {
-    "tags": ["multilingual", "science"]
+    "tags": [
+      "multilingual",
+      "science"
+    ]
   },
   "afrimgsm": {
-    "tags": ["mathematics", "multilingual"]
+    "tags": [
+      "mathematics",
+      "multilingual"
+    ]
   },
   "afrimmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "afrixnli": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "afrobench": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "afrobench_adr": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "afrobench_afriqa": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "afrobench_afrisenti": {
-    "tags": ["multilingual", "bias"]
+    "tags": [
+      "multilingual",
+      "bias"
+    ]
   },
   "afrobench_belebele": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "afrobench_flores": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "afrobench_injongointent": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "afrobench_mafand": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "afrobench_masakhaner": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "afrobench_masakhanews": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "afrobench_masakhapos": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "afrobench_naijarc": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "afrobench_nollysenti": {
-    "tags": ["multilingual", "bias"]
+    "tags": [
+      "multilingual",
+      "bias"
+    ]
   },
   "afrobench_ntrex": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "afrobench_openai_mmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "afrobench_salt": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "afrobench_sib": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "afrobench_uhura-arc-easy": {
-    "tags": ["multilingual", "science", "hallucination"]
+    "tags": [
+      "multilingual",
+      "science",
+      "hallucination"
+    ]
   },
   "afrobench_xlsum": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "agieval": {
-    "tags": ["general knowledge", "reasoning"]
+    "tags": [
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "alghafa_copa_ar": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "alghafa_piqa_ar": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "anli": {
-    "tags": ["reasoning", "adversarial robustness"]
+    "tags": [
+      "reasoning",
+      "adversarial robustness"
+    ]
   },
   "arab_culture": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "arab_culture_completion": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "arabic_leaderboard_complete": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "arabic_leaderboard_light": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "arabicmmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "aradice": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "arc": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "arc_mt": {
-    "tags": ["multilingual", "science"]
+    "tags": [
+      "multilingual",
+      "science"
+    ]
   },
   "arithmetic": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "asdiv": {
-    "tags": ["mathematics", "reasoning"]
+    "tags": [
+      "mathematics",
+      "reasoning"
+    ]
   },
   "babi": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "basque_bench": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "basqueglue": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "bbh": {
-    "tags": ["reasoning", "adversarial robustness"]
+    "tags": [
+      "reasoning",
+      "adversarial robustness"
+    ]
   },
   "bbq": {
-    "tags": ["bias"]
+    "tags": [
+      "bias"
+    ]
   },
   "belebele": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "benchmarks_multimedqa": {
-    "tags": ["medical", "general knowledge"]
+    "tags": [
+      "medical",
+      "general knowledge"
+    ]
   },
   "bertaqa": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "bigbench": {
-    "tags": ["reasoning", "general knowledge"]
+    "tags": [
+      "reasoning",
+      "general knowledge"
+    ]
   },
   "blimp": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "c4": {
-    "tags": ["general knowledge"]
+    "tags": [
+      "general knowledge"
+    ]
   },
   "careqa": {
-    "tags": ["medical", "multilingual"]
+    "tags": [
+      "medical",
+      "multilingual"
+    ]
   },
   "catalan_bench": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "ceval": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "chartqa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "cmmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "code_x_glue": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "commonsense_qa": {
-    "tags": ["reasoning", "general knowledge"]
+    "tags": [
+      "reasoning",
+      "general knowledge"
+    ]
   },
   "copal_id": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "coqa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "crows_pairs": {
-    "tags": ["bias"]
+    "tags": [
+      "bias"
+    ]
   },
   "csatqa": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "darija_bench": {
-    "tags": ["multilingual"]
+    "tags": [
+      "multilingual"
+    ]
   },
   "darija_bench_darija_sentiment": {
-    "tags": ["multilingual", "bias"]
+    "tags": [
+      "multilingual",
+      "bias"
+    ]
   },
   "darija_bench_darija_summarization": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "darija_bench_darija_translation": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "darija_bench_darija_transliteration": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "darijahellaswag": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "darijammlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "drop": {
-    "tags": ["reasoning", "mathematics"]
+    "tags": [
+      "reasoning",
+      "mathematics"
+    ]
   },
   "egyhellaswag": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "egymmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "eq_bench": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "eus_exams": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "eus_proficiency": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "eus_reading": {
-    "tags": ["multilingual", "reasoning", "long context"]
+    "tags": [
+      "multilingual",
+      "reasoning",
+      "long context"
+    ]
   },
   "eus_trivia": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "evalita_llm": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "fda": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "fld": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "french_bench": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "galician_bench": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "glianorex": {
-    "tags": ["medical", "hallucination"]
+    "tags": [
+      "medical",
+      "hallucination"
+    ]
   },
   "global_mmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "glue": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "gpqa": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "groundcocoa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "gsm_plus": {
-    "tags": ["mathematics", "adversarial robustness"]
+    "tags": [
+      "mathematics",
+      "adversarial robustness"
+    ]
   },
   "gsm8k": {
-    "tags": ["mathematics", "reasoning"]
+    "tags": [
+      "mathematics",
+      "reasoning"
+    ]
   },
   "gsm8k_platinum": {
-    "tags": ["mathematics", "reasoning"]
+    "tags": [
+      "mathematics",
+      "reasoning"
+    ]
   },
   "haerae": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "headqa": {
-    "tags": ["medical", "multilingual"]
+    "tags": [
+      "medical",
+      "multilingual"
+    ]
   },
   "hellaswag": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "hendrycks_ethics": {
-    "tags": ["bias"]
+    "tags": [
+      "bias"
+    ]
   },
   "hendrycks_math": {
-    "tags": ["mathematics", "reasoning"]
+    "tags": [
+      "mathematics",
+      "reasoning"
+    ]
   },
   "histoires_morales": {
-    "tags": ["multilingual", "bias"]
+    "tags": [
+      "multilingual",
+      "bias"
+    ]
   },
   "hrm8k": {
-    "tags": ["mathematics", "multilingual"]
+    "tags": [
+      "mathematics",
+      "multilingual"
+    ]
   },
   "humaneval": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "ifeval": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "inverse_scaling": {
-    "tags": ["adversarial robustness"]
+    "tags": [
+      "adversarial robustness"
+    ]
   },
   "japanese_leaderboard": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "jsonschema_bench": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "kbl": {
-    "tags": ["law", "multilingual"]
+    "tags": [
+      "law",
+      "multilingual"
+    ]
   },
   "kmmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "kobest": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "kormedmcqa": {
-    "tags": ["medical", "multilingual"]
+    "tags": [
+      "medical",
+      "multilingual"
+    ]
   },
   "lambada": {
-    "tags": ["reasoning", "long context"]
+    "tags": [
+      "reasoning",
+      "long context"
+    ]
   },
   "lambada_cloze": {
-    "tags": ["reasoning", "long context"]
+    "tags": [
+      "reasoning",
+      "long context"
+    ]
   },
   "lambada_multilingual": {
-    "tags": ["multilingual", "reasoning", "long context"]
+    "tags": [
+      "multilingual",
+      "reasoning",
+      "long context"
+    ]
   },
   "lambada_multilingual_stablelm": {
-    "tags": ["multilingual", "reasoning", "long context"]
+    "tags": [
+      "multilingual",
+      "reasoning",
+      "long context"
+    ]
   },
   "leaderboard": {
-    "tags": ["reasoning", "general knowledge"]
+    "tags": [
+      "reasoning",
+      "general knowledge"
+    ]
   },
   "libra": {
-    "tags": ["multilingual", "long context"]
+    "tags": [
+      "multilingual",
+      "long context"
+    ]
   },
   "lingoly": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "logiqa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "logiqa2": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "longbench": {
-    "tags": ["long context", "reasoning"]
+    "tags": [
+      "long context",
+      "reasoning"
+    ]
   },
   "mastermind": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "mathqa": {
-    "tags": ["mathematics", "reasoning"]
+    "tags": [
+      "mathematics",
+      "reasoning"
+    ]
   },
   "mbpp": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "mc_taco": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "med_concepts_qa": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "meddialog": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "mediqa_qa2019": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "medmcqa": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "medqa": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "medtext": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "mela": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "meqsum": {
-    "tags": ["medical", "creative writing"]
+    "tags": [
+      "medical",
+      "creative writing"
+    ]
   },
   "metabench": {
-    "tags": ["reasoning", "general knowledge"]
+    "tags": [
+      "reasoning",
+      "general knowledge"
+    ]
   },
   "mgsm": {
-    "tags": ["mathematics", "multilingual"]
+    "tags": [
+      "mathematics",
+      "multilingual"
+    ]
   },
   "mimic_repsum": {
-    "tags": ["medical", "creative writing"]
+    "tags": [
+      "medical",
+      "creative writing"
+    ]
   },
   "minerva_math": {
-    "tags": ["mathematics", "reasoning"]
+    "tags": [
+      "mathematics",
+      "reasoning"
+    ]
   },
   "mlqa": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "mmlu": {
-    "tags": ["general knowledge", "reasoning"]
+    "tags": [
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "mmlu_pro": {
-    "tags": ["general knowledge", "reasoning"]
+    "tags": [
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "mmlu_prox": {
-    "tags": ["multilingual", "general knowledge", "reasoning"]
+    "tags": [
+      "multilingual",
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "mmlu-pro-plus": {
-    "tags": ["general knowledge", "reasoning", "adversarial robustness"]
+    "tags": [
+      "general knowledge",
+      "reasoning",
+      "adversarial robustness"
+    ]
   },
   "mmlusr": {
-    "tags": ["general knowledge", "adversarial robustness"]
+    "tags": [
+      "general knowledge",
+      "adversarial robustness"
+    ]
   },
   "mmmu": {
-    "tags": ["general knowledge", "reasoning"]
+    "tags": [
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "model_written_evals": {
-    "tags": ["bias", "sycophancy"]
+    "tags": [
+      "bias",
+      "sycophancy"
+    ]
   },
   "moral_stories": {
-    "tags": ["bias"]
+    "tags": [
+      "bias"
+    ]
   },
   "mts_dialog": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "multiblimp": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "mutual": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "noreval": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "noreval_ask_gec": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "noticia": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "nq_open": {
-    "tags": ["general knowledge", "reasoning"]
+    "tags": [
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "okapi_arc_multilingual": {
-    "tags": ["multilingual", "science", "reasoning"]
+    "tags": [
+      "multilingual",
+      "science",
+      "reasoning"
+    ]
   },
   "okapi_hellaswag_multilingual": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "okapi_mmlu_multilingual": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "okapi_truthfulqa_multilingual": {
-    "tags": ["multilingual", "hallucination"]
+    "tags": [
+      "multilingual",
+      "hallucination"
+    ]
   },
   "olaph": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "openbookqa": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "paloma": {
-    "tags": ["general knowledge"]
+    "tags": [
+      "general knowledge"
+    ]
   },
   "paws-x": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "pile": {
-    "tags": ["general knowledge"]
+    "tags": [
+      "general knowledge"
+    ]
   },
   "pile_10k": {
-    "tags": ["general knowledge"]
+    "tags": [
+      "general knowledge"
+    ]
   },
   "piqa": {
-    "tags": ["reasoning", "science"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "polemo2": {
-    "tags": ["multilingual", "bias"]
+    "tags": [
+      "multilingual",
+      "bias"
+    ]
   },
   "portuguese_bench": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "prost": {
-    "tags": ["reasoning", "science"]
+    "tags": [
+      "reasoning",
+      "science"
+    ]
   },
   "pubmedqa": {
-    "tags": ["medical"]
+    "tags": [
+      "medical"
+    ]
   },
   "qa4mre": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "qasper": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "race": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "realtoxicityprompts": {
-    "tags": ["toxicity"]
+    "tags": [
+      "toxicity"
+    ]
   },
   "ruler": {
-    "tags": ["long context", "reasoning"]
+    "tags": [
+      "long context",
+      "reasoning"
+    ]
   },
   "sciq": {
-    "tags": ["science"]
+    "tags": [
+      "science"
+    ]
   },
   "score": {
-    "tags": ["adversarial robustness"]
+    "tags": [
+      "adversarial robustness"
+    ]
   },
   "scrolls": {
-    "tags": ["long context", "reasoning"]
+    "tags": [
+      "long context",
+      "reasoning"
+    ]
   },
   "simple_cooccurrence_bias": {
-    "tags": ["bias"]
+    "tags": [
+      "bias"
+    ]
   },
   "siqa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "spanish_bench": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "squad_completion": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "squadv2": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "storycloze": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "super_glue": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "swag": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "swde": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "tinyBenchmarks": {
-    "tags": ["reasoning", "general knowledge"]
+    "tags": [
+      "reasoning",
+      "general knowledge"
+    ]
   },
   "tmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "tmmluplus": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "toxigen": {
-    "tags": ["toxicity"]
+    "tags": [
+      "toxicity"
+    ]
   },
   "translation": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "triviaqa": {
-    "tags": ["general knowledge", "reasoning"]
+    "tags": [
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "truthfulqa": {
-    "tags": ["hallucination"]
+    "tags": [
+      "hallucination"
+    ]
   },
   "truthfulqa-multi": {
-    "tags": ["multilingual", "hallucination"]
+    "tags": [
+      "multilingual",
+      "hallucination"
+    ]
   },
   "turkishmmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "unscramble": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "webqs": {
-    "tags": ["general knowledge"]
+    "tags": [
+      "general knowledge"
+    ]
   },
   "wikitext": {
-    "tags": ["general knowledge"]
+    "tags": [
+      "general knowledge"
+    ]
   },
   "winogender": {
-    "tags": ["bias"]
+    "tags": [
+      "bias"
+    ]
   },
   "winogrande": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "wmdp": {
-    "tags": ["science"]
+    "tags": [
+      "science"
+    ]
   },
   "wmt2016": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "wsc273": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "xcopa": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "xnli": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "xnli_eu": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "xquad": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "xstorycloze": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "xwinograd": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "20_newsgroups": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "AraDiCE": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "ArabCulture": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "acp_bench": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "acp_bench_hard": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "afrimgsm_direct_amh": {
-    "tags": ["mathematics", "multilingual"]
+    "tags": [
+      "mathematics",
+      "multilingual"
+    ]
   },
   "afrimmlu_direct_amh": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "afrixnli_en_direct_amh": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "ag_news": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "aime": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "aime2024": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "aime2025": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "apps": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "arabic_exams": {
-    "tags": ["multilingual", "science"]
+    "tags": [
+      "multilingual",
+      "science"
+    ]
   },
   "argument_topic": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "atis": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "babilong": {
-    "tags": ["long context", "reasoning"]
+    "tags": [
+      "long context",
+      "reasoning"
+    ]
   },
   "bangla_mmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "banking77": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "basque-glue": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "bec2016eu": {
-    "tags": ["multilingual", "bias"]
+    "tags": [
+      "multilingual",
+      "bias"
+    ]
   },
   "bhtc_v2": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "boolq": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "boolq-seq2seq": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "cb": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "chain_of_thought": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "claim_stance_topic": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "cnn_dailymail": {
-    "tags": ["creative writing"]
+    "tags": [
+      "creative writing"
+    ]
   },
   "codexglue_code_to_text_go": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "codexglue_code_to_text_java": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "codexglue_code_to_text_javascript": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "codexglue_code_to_text_php": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "codexglue_code_to_text_python": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "codexglue_code_to_text_ruby": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "coedit_gec": {
-    "tags": ["creative writing"]
+    "tags": [
+      "creative writing"
+    ]
   },
   "conala": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "concode": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "copa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "dbpedia_14": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "doc_vqa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "ds1000": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "ethos_binary": {
-    "tags": ["harmfulness"]
+    "tags": [
+      "harmfulness"
+    ]
   },
   "evalita-mp": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "evalita-sp_sum_task_fp-small_p1": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "evalita_LLM": {
-    "tags": ["multilingual", "reasoning"]
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
   },
   "financial_tweets": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "flores": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "freebase": {
-    "tags": ["general knowledge", "reasoning"]
+    "tags": [
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "global_mmlu_ar": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "gpt3_translation_benchmarks": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "hmmt": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "hmmt_feb_2025": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "humaneval_64_instruct": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "humaneval_instruct": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "humanevalpack": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "instruct_humaneval": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "instructhumaneval": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "iwslt2017-ar-en": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "iwslt2017-en-ar": {
-    "tags": ["multilingual", "creative writing"]
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
   },
   "law_stack_exchange": {
-    "tags": ["law", "reasoning"]
+    "tags": [
+      "law",
+      "reasoning"
+    ]
   },
   "ledgar": {
-    "tags": ["law", "reasoning"]
+    "tags": [
+      "law",
+      "reasoning"
+    ]
   },
   "livecodebench": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "livemathbench_cnmo_en": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "livemathbench_cnmo_zh": {
-    "tags": ["mathematics", "multilingual"]
+    "tags": [
+      "mathematics",
+      "multilingual"
+    ]
   },
   "logieval": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "m_mmlu": {
-    "tags": ["multilingual", "general knowledge"]
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
   },
   "math": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "math500": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "mbpp_plus": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "medical_abstracts": {
-    "tags": ["medical", "reasoning"]
+    "tags": [
+      "medical",
+      "reasoning"
+    ]
   },
   "mnli": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "multirc": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "ner": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "openllm": {
-    "tags": ["general knowledge", "reasoning"]
-  },
-  "pile_10k": {
-    "tags": ["general knowledge"]
-  },
-  "piqa": {
-    "tags": ["reasoning"]
-  },
-  "qasper": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "general knowledge",
+      "reasoning"
+    ]
   },
   "mercury": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "mocha": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "musr": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "openbookqa_fact": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "pgeval": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "plurals": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "presencemindqa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "pubmed_entailment": {
-    "tags": ["medical", "reasoning"]
+    "tags": [
+      "medical",
+      "reasoning"
+    ]
   },
   "qasc": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "quail": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "quartz": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "quoref": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "reclor": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "scitail": {
-    "tags": ["science", "reasoning"]
+    "tags": [
+      "science",
+      "reasoning"
+    ]
   },
   "simpleqa": {
-    "tags": ["general knowledge", "hallucination"]
+    "tags": [
+      "general knowledge",
+      "hallucination"
+    ]
   },
   "socialiqa": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "stsb": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "sycophancy_eval": {
-    "tags": ["sycophancy"]
+    "tags": [
+      "sycophancy"
+    ]
   },
   "tinygsm": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
   },
   "webglm": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "wildbench": {
-    "tags": ["reasoning"]
+    "tags": [
+      "reasoning"
+    ]
   },
   "wildguard": {
-    "tags": ["harmfulness"]
+    "tags": [
+      "harmfulness"
+    ]
   },
   "humaneval_plus": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "multiple": {
-    "tags": ["coding", "multilingual"]
+    "tags": [
+      "coding",
+      "multilingual"
+    ]
   },
   "recode": {
-    "tags": ["coding"]
+    "tags": [
+      "coding"
+    ]
   },
   "polymath": {
-    "tags": ["mathematics"]
+    "tags": [
+      "mathematics"
+    ]
+  },
+  "Tag": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "agentbench": {
+    "tags": [
+      "agent",
+      "reasoning"
+    ]
+  },
+  "agentharm": {
+    "tags": [
+      "agent",
+      "harmfulness",
+      "safety"
+    ]
+  },
+  "aider_polyglot": {
+    "tags": [
+      "coding"
+    ]
+  },
+  "alpaca_eval": {
+    "tags": [
+      "instruction following",
+      "general knowledge"
+    ]
+  },
+  "arena_hard": {
+    "tags": [
+      "instruction following",
+      "reasoning"
+    ]
+  },
+  "bfcl": {
+    "tags": [
+      "agent",
+      "coding"
+    ]
+  },
+  "browsecomp": {
+    "tags": [
+      "agent",
+      "reasoning"
+    ]
+  },
+  "chinese_simpleqa": {
+    "tags": [
+      "multilingual",
+      "general knowledge",
+      "hallucination"
+    ]
+  },
+  "cluewsc": {
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
+  },
+  "cnmo": {
+    "tags": [
+      "mathematics"
+    ]
+  },
+  "cnmo_2024": {
+    "tags": [
+      "mathematics"
+    ]
+  },
+  "codeforces": {
+    "tags": [
+      "coding",
+      "mathematics"
+    ]
+  },
+  "curate": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "donotanswer": {
+    "tags": [
+      "safety",
+      "harmfulness"
+    ]
+  },
+  "facts_grounding": {
+    "tags": [
+      "hallucination",
+      "reasoning"
+    ]
+  },
+  "faithbench": {
+    "tags": [
+      "hallucination",
+      "reasoning"
+    ]
+  },
+  "finsearchcomp": {
+    "tags": [
+      "reasoning",
+      "general knowledge"
+    ]
+  },
+  "flames": {
+    "tags": [
+      "safety",
+      "harmfulness"
+    ]
+  },
+  "frames": {
+    "tags": [
+      "reasoning",
+      "long context"
+    ]
+  },
+  "hallucinations_leaderboard": {
+    "tags": [
+      "hallucination"
+    ]
+  },
+  "halueval": {
+    "tags": [
+      "hallucination"
+    ]
+  },
+  "halulens": {
+    "tags": [
+      "hallucination"
+    ]
+  },
+  "harmbench": {
+    "tags": [
+      "safety",
+      "harmfulness"
+    ]
+  },
+  "healthbench": {
+    "tags": [
+      "medical",
+      "reasoning"
+    ]
+  },
+  "jailbreakbench": {
+    "tags": [
+      "safety",
+      "adversarial robustness"
+    ]
+  },
+  "llama": {
+    "tags": [
+      "general knowledge"
+    ]
+  },
+  "longform": {
+    "tags": [
+      "creative writing",
+      "long context"
+    ]
+  },
+  "longform_writing": {
+    "tags": [
+      "creative writing",
+      "long context"
+    ]
+  },
+  "multi_swe_bench": {
+    "tags": [
+      "coding",
+      "multilingual"
+    ]
+  },
+  "multimedqa": {
+    "tags": [
+      "medical",
+      "reasoning"
+    ]
+  },
+  "multipl_e": {
+    "tags": [
+      "coding",
+      "multilingual"
+    ]
+  },
+  "non_greedy_robustness_agieval_aqua_rat": {
+    "tags": [
+      "reasoning",
+      "adversarial robustness"
+    ]
+  },
+  "oj_bench": {
+    "tags": [
+      "coding"
+    ]
+  },
+  "okapi/arc_multilingual": {
+    "tags": [
+      "multilingual",
+      "science",
+      "reasoning"
+    ]
+  },
+  "okapi/hellaswag_multilingual": {
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
+  },
+  "okapi/mmlu_multilingual": {
+    "tags": [
+      "multilingual",
+      "general knowledge"
+    ]
+  },
+  "okapi/truthfulqa_multilingual": {
+    "tags": [
+      "multilingual",
+      "hallucination"
+    ]
+  },
+  "olympiadbench": {
+    "tags": [
+      "mathematics",
+      "science"
+    ]
+  },
+  "option_order_robustness_agieval_aqua_rat": {
+    "tags": [
+      "reasoning",
+      "adversarial robustness"
+    ]
+  },
+  "or_bench": {
+    "tags": [
+      "safety",
+      "reasoning"
+    ]
+  },
+  "penn_treebank": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "phrases_ca-va": {
+    "tags": [
+      "multilingual",
+      "reasoning"
+    ]
+  },
+  "planbench": {
+    "tags": [
+      "agent",
+      "reasoning"
+    ]
+  },
+  "politicalbias_qa": {
+    "tags": [
+      "bias",
+      "reasoning"
+    ]
+  },
+  "polyglottoxicityprompts": {
+    "tags": [
+      "toxicity",
+      "multilingual"
+    ]
+  },
+  "prompt_robustness_agieval_aqua_rat": {
+    "tags": [
+      "reasoning",
+      "adversarial robustness"
+    ]
+  },
+  "ptb": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "pythia": {
+    "tags": [
+      "general knowledge"
+    ]
+  },
+  "record": {
+    "tags": [
+      "reasoning",
+      "long context"
+    ]
+  },
+  "refusalbench": {
+    "tags": [
+      "safety",
+      "harmfulness"
+    ]
+  },
+  "scicode": {
+    "tags": [
+      "coding",
+      "science"
+    ]
+  },
+  "seal": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "seal_0": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "self_consistency": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "sorry_bench": {
+    "tags": [
+      "safety",
+      "harmfulness"
+    ]
+  },
+  "squad2": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "swe_bench_multilingual": {
+    "tags": [
+      "coding",
+      "multilingual"
+    ]
+  },
+  "swe_bench_verified": {
+    "tags": [
+      "coding"
+    ]
+  },
+  "swe_verified": {
+    "tags": [
+      "coding"
+    ]
+  },
+  "tau_bench": {
+    "tags": [
+      "agent",
+      "reasoning"
+    ]
+  },
+  "terminal_bench": {
+    "tags": [
+      "coding",
+      "agent"
+    ]
+  },
+  "toolbench": {
+    "tags": [
+      "agent",
+      "coding"
+    ]
+  },
+  "toolemu": {
+    "tags": [
+      "agent",
+      "safety"
+    ]
+  },
+  "toolllm": {
+    "tags": [
+      "agent",
+      "coding"
+    ]
+  },
+  "travelplanner": {
+    "tags": [
+      "agent",
+      "reasoning"
+    ]
+  },
+  "unfair_tos": {
+    "tags": [
+      "reasoning",
+      "law"
+    ]
+  },
+  "unitxt": {
+    "tags": [
+      "reasoning"
+    ]
+  },
+  "wikitext103": {
+    "tags": [
+      "general knowledge"
+    ]
+  },
+  "wmt-ro-en-t5-prompt": {
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
+  },
+  "wmt14_en_fr": {
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
+  },
+  "wmt14_fr_en": {
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
+  },
+  "wmt16_de_en": {
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
+  },
+  "wmt16_en_de": {
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
+  },
+  "wmt16_en_ro": {
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
+  },
+  "wmt16_ro_en": {
+    "tags": [
+      "multilingual",
+      "creative writing"
+    ]
+  },
+  "xsum": {
+    "tags": [
+      "creative writing",
+      "reasoning"
+    ]
+  },
+  "yahoo_answers_topics": {
+    "tags": [
+      "reasoning",
+      "general knowledge"
+    ]
   }
 }

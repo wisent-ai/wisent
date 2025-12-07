@@ -15,7 +15,7 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
     using either directional projection or additive methods.
     """
 
-    # Input source (mutually exclusive: task or trait)
+    # Input source (mutually exclusive: task, trait, tags, or steering-vectors)
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument(
         "--task",
@@ -28,9 +28,42 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
         help="Trait for synthetic contrastive pair generation"
     )
     input_group.add_argument(
+        "--tags",
+        type=str,
+        nargs="+",
+        help="Train on ALL benchmarks with these tags (e.g., --tags coding mathematics). "
+             "Pools data from all matching benchmarks to train unified steering vectors."
+    )
+    input_group.add_argument(
         "--steering-vectors",
         type=str,
-        help="Path to pre-computed steering vectors JSON file"
+        help="Path to pre-computed steering vectors file (.json or .pt from train-unified-goodness)"
+    )
+    
+    # Additional options for --tags mode
+    parser.add_argument(
+        "--cap-pairs-per-benchmark",
+        type=int,
+        default=None,
+        help="Cap pairs per benchmark (for --tags mode). Benchmarks with more pairs get randomly sampled."
+    )
+    parser.add_argument(
+        "--max-benchmarks",
+        type=int,
+        default=None,
+        help="Maximum number of benchmarks to use (for --tags mode)"
+    )
+    parser.add_argument(
+        "--train-ratio",
+        type=float,
+        default=0.8,
+        help="Fraction of pairs for training vs evaluation (for --tags mode, default: 0.8)"
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for reproducibility (default: 42)"
     )
 
     # Output
