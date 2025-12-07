@@ -39,15 +39,21 @@ def setup_generate_vector_parser(parser):
     parser.add_argument("--model", type=str, default="distilgpt2", help="Model name or path (default: distilgpt2)")
     parser.add_argument("--device", type=str, default=None, help="Device to run on (default: auto-detect)")
 
-    # Steering method configuration
+    # Steering method configuration - uses centralized registry
+    from wisent.core.steering_methods import SteeringMethodRegistry
+    methods = SteeringMethodRegistry.list_methods()
     parser.add_argument(
         "--method",
         type=str,
-        default="CAA",
-        choices=["CAA"],
-        help="Steering method to use (default: CAA)",
+        default=SteeringMethodRegistry.get_default_method().upper(),
+        choices=[m.upper() for m in methods] + [m.lower() for m in methods],
+        help=f"Steering method to use (default: {SteeringMethodRegistry.get_default_method().upper()})",
     )
     parser.add_argument("--layer", type=int, default=0, help="Layer index to apply steering (default: 0)")
+    
+    # Add method-specific arguments from registry
+    for definition in SteeringMethodRegistry.list_definitions():
+        definition.add_cli_arguments(parser)
 
     # Output configuration
     parser.add_argument("--output", type=str, required=True, help="Output path for the generated steering vector")

@@ -28,7 +28,7 @@ from wisent.core.optuna.classifier import (
 )
 from wisent.core.optuna.steering import data_utils, metrics
 from wisent.core.response import Response
-from wisent.core.steering_methods import CAA
+from wisent.core.steering_methods import SteeringMethodRegistry, get_steering_method
 from wisent.core.task_interface import get_task
 from wisent.core.errors import (
     ModelArchitectureUnknownError,
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class SteeringMethodConfig(ABC):
-    """Base configuration for steering methods."""
+    """Base configuration for steering methods - uses centralized registry."""
 
     method_name: str = "base"
     layers: List[int] = None
@@ -54,17 +54,16 @@ class SteeringMethodConfig(ABC):
             self.layers = []
         if self.strengths is None:
             self.strengths = [1.0]
-
-
-@dataclass
-class CAAConfig(SteeringMethodConfig):
-    """Configuration for CAA (Contrastive Activation Addition) steering method."""
-
-    method_name: str = "caa"
-    normalize: bool = True
-
-    def __post_init__(self):
-        super().__post_init__()
+    
+    @classmethod
+    def from_registry(cls, method_name: str, layers: List[int] = None, strengths: List[float] = None):
+        """Create config from centralized registry."""
+        definition = SteeringMethodRegistry.get(method_name)
+        return cls(
+            method_name=method_name,
+            layers=layers or [],
+            strengths=strengths or [definition.default_strength],
+        )
 
 
 @dataclass
@@ -120,16 +119,19 @@ class SteeringMethodTrainer(ABC):
         """Apply steering and generate predictions for evaluation."""
 
 
-class CAATrainer(SteeringMethodTrainer):
-    """Trainer for CAA (Contrastive Activation Addition) steering method."""
+class SteeringTrainer(SteeringMethodTrainer):
+    """Generic trainer that uses the centralized steering method registry."""
+    
+    def __init__(self, method_name: str = "caa"):
+        self.method_name = method_name
 
-    def create_method_instance(self, hyperparams: Dict[str, Any], device: str) -> CAA:
-        """Create CAA instance with specified hyperparameters."""
-        return CAA(device=device)
+    def create_method_instance(self, hyperparams: Dict[str, Any], device: str):
+        """Create steering method instance from registry."""
+        return get_steering_method(self.method_name, device=device, **hyperparams)
 
     def train_method(
         self,
-        caa_instance: CAA,
+        steering_instance,
         train_samples: List[Dict],
         layer: int,
         model,
@@ -138,7 +140,7 @@ class CAATrainer(SteeringMethodTrainer):
         task_name: str = "gsm8k",
         max_new_tokens: int = 200,
     ) -> Tuple[bool, Dict[str, Any]]:
-        """Train CAA on training data to create steering vectors."""
+        """Train steering method on training data to create steering vectors."""
         try:
             # Extract contrastive pairs from training data using task's extractor
             contrastive_pairs = data_utils.get_task_contrastive_pairs(train_samples, task_name)
@@ -150,21 +152,21 @@ class CAATrainer(SteeringMethodTrainer):
             # Convert to ContrastivePairSet format
             pair_set = self._create_pair_set_from_extracted_pairs(contrastive_pairs, layer, model, tokenizer, device)
 
-            # Train CAA
-            training_result = caa_instance.train(pair_set, layer)
+            # Train steering method
+            training_result = steering_instance.train(pair_set, layer)
 
             success = training_result.get("success", False)
-            logger.debug(f"CAA training on layer {layer}: {'Success' if success else 'Failed'}")
+            logger.debug(f"{self.method_name.upper()} training on layer {layer}: {'Success' if success else 'Failed'}")
 
             return success, training_result
 
         except Exception as e:
-            logger.error(f"CAA training failed on layer {layer}: {e}")
+            logger.error(f"{self.method_name.upper()} training failed on layer {layer}: {e}")
             return False, {"error": str(e)}
 
     def apply_steering_and_evaluate(
         self,
-        caa_instance: CAA,
+        steering_instance,
         evaluation_samples: List[Dict],
         layer: int,
         strength: float,
@@ -176,7 +178,7 @@ class CAATrainer(SteeringMethodTrainer):
         task_name: str = "gsm8k",
         max_new_tokens: int = 200,
     ) -> Tuple[List[str], List[str]]:
-        """Apply CAA steering and generate predictions using task extractor."""
+        """Apply steering and generate predictions using task extractor."""
 
         predictions = []
         ground_truths = []
@@ -230,7 +232,7 @@ class CAATrainer(SteeringMethodTrainer):
                         if j < hidden_states.shape[0]:  # Safety check for batch size
                             # Get the actual last token (before padding)
                             last_token = hidden_states[j : j + 1, actual_length - 1 : actual_length, :]
-                            steered = caa_instance.apply_steering(last_token, strength=strength)
+                            steered = steering_instance.apply_steering(last_token, strength=strength)
                             hidden_states[j : j + 1, actual_length - 1 : actual_length, :] = steered
 
                     return (hidden_states,) + output[1:]
@@ -352,7 +354,11 @@ class SteeringOptimizer:
 
     def __init__(self, cache_config: Optional[CacheConfig] = None):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self.trainers = {"caa": CAATrainer()}
+        
+        # Initialize trainers from centralized registry
+        self.trainers = {}
+        for method_name in SteeringMethodRegistry.list_methods():
+            self.trainers[method_name] = SteeringTrainer(method_name)
 
         # Initialize classifier cache for reusing trained classifiers
         if cache_config is None:
@@ -583,20 +589,19 @@ class SteeringOptimizer:
     def _generate_hyperparameter_combinations(
         self, config: SteeringMethodConfig
     ) -> List[Tuple[int, float, Dict[str, Any]]]:
-        """Generate all combinations of hyperparameters for grid search."""
+        """Generate all combinations of hyperparameters for grid search using registry."""
         combinations = []
-
-        if isinstance(config, CAAConfig):
-            # Generate CAA hyperparameter combinations
-            for layer in config.layers:
-                for strength in config.strengths:
-                    hyperparams = {"normalize": config.normalize}
-                    combinations.append((layer, strength, hyperparams))
-        else:
-            # Generic handling for other steering methods
-            for layer in config.layers:
-                for strength in config.strengths:
-                    combinations.append((layer, strength, {}))
+        
+        # Get default params from registry for this method
+        try:
+            definition = SteeringMethodRegistry.get(config.method_name)
+            default_params = definition.get_default_params()
+        except ValueError:
+            default_params = {}
+        
+        for layer in config.layers:
+            for strength in config.strengths:
+                combinations.append((layer, strength, default_params))
 
         return combinations
 
