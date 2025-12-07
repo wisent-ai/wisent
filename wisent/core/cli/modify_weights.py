@@ -63,17 +63,64 @@ def execute_modify_weights(args):
         if args.verbose:
             print(f"Loading steering vectors from {args.steering_vectors}...")
 
-        with open(args.steering_vectors, 'r') as f:
-            vector_data = json.load(f)
+        vector_path = Path(args.steering_vectors)
 
-        # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
-        steering_vectors = {
-            int(layer) - 1: torch.tensor(vector)
-            for layer, vector in vector_data["steering_vectors"].items()
-        }
+        if vector_path.suffix == '.pt':
+            # Load PyTorch format (from train-unified-goodness or similar)
+            checkpoint = torch.load(args.steering_vectors, map_location='cpu', weights_only=False)
 
-        if args.verbose:
-            print(f"✓ Loaded {len(steering_vectors)} steering vectors\n")
+            # Handle different .pt file formats
+            if 'steering_vectors' in checkpoint:
+                # Format from train-unified-goodness: {layer_idx: tensor}
+                raw_vectors = checkpoint['steering_vectors']
+                # Check if keys are already 0-indexed or need conversion
+                first_key = next(iter(raw_vectors.keys()))
+                if isinstance(first_key, str):
+                    # String keys like "14" - convert to int, assume 0-indexed
+                    steering_vectors = {
+                        int(layer): vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
+                        for layer, vec in raw_vectors.items()
+                    }
+                else:
+                    # Integer keys - already 0-indexed
+                    steering_vectors = {
+                        layer: vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
+                        for layer, vec in raw_vectors.items()
+                    }
+            elif 'vector' in checkpoint:
+                # Single vector format: needs layer info
+                layer = checkpoint.get('layer', checkpoint.get('best_layer', 14))
+                steering_vectors = {layer: checkpoint['vector']}
+            else:
+                # Assume direct dict format {layer: vector}
+                steering_vectors = {
+                    int(k): v if isinstance(v, torch.Tensor) else torch.tensor(v)
+                    for k, v in checkpoint.items()
+                    if isinstance(k, (int, str)) and str(k).isdigit()
+                }
+
+            if args.verbose:
+                print(f"✓ Loaded {len(steering_vectors)} steering vectors from .pt file")
+                if 'metadata' in checkpoint:
+                    meta = checkpoint['metadata']
+                    if 'benchmarks_used' in meta:
+                        print(f"  Trained on {len(meta['benchmarks_used'])} benchmarks")
+                    if 'optimal_scale' in meta:
+                        print(f"  Optimal steering scale: {meta['optimal_scale']}")
+                print()
+        else:
+            # Load JSON format
+            with open(args.steering_vectors, 'r') as f:
+                vector_data = json.load(f)
+
+            # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
+            steering_vectors = {
+                int(layer) - 1: torch.tensor(vector)
+                for layer, vector in vector_data["steering_vectors"].items()
+            }
+
+            if args.verbose:
+                print(f"✓ Loaded {len(steering_vectors)} steering vectors\n")
 
     elif args.task:
         # Generate steering vectors from task
@@ -194,6 +241,87 @@ def execute_modify_weights(args):
 
         if args.verbose:
             print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
+
+    elif args.tags:
+        # Generate steering vectors from pooled multi-benchmark data (by tags)
+        if args.verbose:
+            print(f"Generating steering vectors from benchmarks with tags: {', '.join(args.tags)}...")
+
+        from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
+
+        # Create temp args for unified goodness training
+        class UnifiedArgs:
+            pass
+
+        unified_args = UnifiedArgs()
+        unified_args.tags = args.tags
+        unified_args.benchmarks = None
+        unified_args.exclude_benchmarks = None
+        unified_args.max_benchmarks = getattr(args, 'max_benchmarks', None)
+        unified_args.cap_pairs_per_benchmark = getattr(args, 'cap_pairs_per_benchmark', None)
+        unified_args.train_ratio = getattr(args, 'train_ratio', 0.8)
+        unified_args.seed = getattr(args, 'seed', 42)
+        unified_args.model = args.model
+        unified_args.device = getattr(args, 'device', None)
+        unified_args.layer = None  # Use middle layer by default
+        unified_args.layers = args.layers
+        unified_args.token_aggregation = args.token_aggregation if hasattr(args, 'token_aggregation') else 'continuation'
+        unified_args.prompt_strategy = args.prompt_strategy if hasattr(args, 'prompt_strategy') else 'chat_template'
+        unified_args.method = "caa"
+        unified_args.normalize = args.normalize_vectors if hasattr(args, 'normalize_vectors') else False
+        unified_args.no_normalize = not unified_args.normalize
+        unified_args.skip_evaluation = True  # Skip eval for modify-weights
+        unified_args.evaluate_steering_scales = "0.0,1.0"
+        unified_args.save_pairs = None
+        unified_args.save_report = None
+        unified_args.verbose = args.verbose
+        unified_args.timing = args.timing if hasattr(args, 'timing') else False
+
+        # Use temp file for output vector
+        import tempfile
+        import os
+        temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.pt', delete=False)
+        unified_args.output = temp_vector_file.name
+        temp_vector_file.close()
+
+        # Generate unified goodness vector
+        execute_train_unified_goodness(unified_args)
+
+        # Load generated vectors
+        checkpoint = torch.load(unified_args.output, map_location='cpu', weights_only=False)
+        
+        if 'steering_vectors' in checkpoint:
+            raw_vectors = checkpoint['steering_vectors']
+            first_key = next(iter(raw_vectors.keys()))
+            if isinstance(first_key, str):
+                steering_vectors = {
+                    int(layer): vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
+                    for layer, vec in raw_vectors.items()
+                }
+            else:
+                steering_vectors = {
+                    layer: vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
+                    for layer, vec in raw_vectors.items()
+                }
+        else:
+            steering_vectors = {
+                int(k): v if isinstance(v, torch.Tensor) else torch.tensor(v)
+                for k, v in checkpoint.items()
+                if isinstance(k, (int, str)) and str(k).isdigit()
+            }
+
+        # Optionally save steering vectors
+        if hasattr(args, 'save_steering_vectors') and args.save_steering_vectors:
+            import shutil
+            shutil.copy(unified_args.output, args.save_steering_vectors)
+            if args.verbose:
+                print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
+
+        # Clean up temp file
+        os.unlink(unified_args.output)
+
+        if args.verbose:
+            print(f"✓ Generated {len(steering_vectors)} steering vectors from {', '.join(args.tags)} benchmarks\n")
 
     # Step 1.5: Load harmless vectors for biprojection (if provided)
     harmless_vectors = None

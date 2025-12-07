@@ -29,6 +29,7 @@ from wisent.core.modalities import (
     TextContent,
 )
 from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.utils.device import preferred_dtype
 
 __all__ = ["AudioAdapter"]
 
@@ -129,14 +130,10 @@ class AudioAdapter(BaseAdapter[AudioContent, Union[str, torch.Tensor]]):
         try:
             if model_type == self.MODEL_TYPE_WHISPER:
                 from transformers import WhisperForConditionalGeneration
-                # Use float32 for MPS compatibility, float16 for CUDA
-                if self.device == "cuda":
-                    dtype = torch.float16
-                else:
-                    dtype = torch.float32
+                # Use centralized preferred_dtype for consistency
                 model = WhisperForConditionalGeneration.from_pretrained(
                     self.model_name,
-                    torch_dtype=dtype,
+                    torch_dtype=preferred_dtype(self.device),
                     **self._kwargs,
                 )
             elif model_type in (self.MODEL_TYPE_WAV2VEC, self.MODEL_TYPE_HUBERT):
