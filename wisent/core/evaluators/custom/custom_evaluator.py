@@ -101,7 +101,7 @@ class CustomEvaluator(ABC):
         Returns:
             Either a float score in [0, 1] or a dict with 'score' key
         """
-        raise NotImplementedError
+        pass
     
     def evaluate_batch(
         self,
@@ -222,7 +222,7 @@ class APIEvaluator(CustomEvaluator):
         Returns:
             API response as dict
         """
-        raise NotImplementedError
+        pass
     
     def evaluate_response(self, response: str, **kwargs) -> Dict[str, Any]:
         """Evaluate response with caching and retries."""

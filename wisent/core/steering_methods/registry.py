@@ -76,6 +76,8 @@ class SteeringMethodType(Enum):
     """Enumeration of all supported steering methods."""
     CAA = "caa"
     PRISM = "prism"
+    PULSE = "pulse"
+    TITAN = "titan"
 
 
 @dataclass
@@ -278,6 +280,220 @@ PRISM_DEFINITION = SteeringMethodDefinition(
 )
 
 
+PULSE_DEFINITION = SteeringMethodDefinition(
+    name="pulse",
+    method_type=SteeringMethodType.PULSE,
+    description="PULSE - Probabilistic Uncertainty-guided Layer Steering Engine. Layer-adaptive conditional steering with uncertainty-guided intensity.",
+    method_class_path="wisent.core.steering_methods.methods.pulse.PULSEMethod",
+    parameters=[
+        SteeringMethodParameter(
+            name="sensor_layer",
+            type=int,
+            default=15,
+            help="Layer index where condition gating is computed",
+            cli_flag="--pulse-sensor-layer",
+        ),
+        SteeringMethodParameter(
+            name="steering_layers",
+            type=str,
+            default="12,13,14,15,16,17,18",
+            help="Comma-separated layer indices where steering is applied",
+            cli_flag="--pulse-steering-layers",
+        ),
+        SteeringMethodParameter(
+            name="per_layer_scaling",
+            type=bool,
+            default=True,
+            help="Learn different scaling per layer",
+            action="store_true",
+            cli_flag="--pulse-per-layer-scaling",
+        ),
+        SteeringMethodParameter(
+            name="condition_threshold",
+            type=float,
+            default=0.5,
+            help="Threshold for condition activation (0-1)",
+            cli_flag="--pulse-condition-threshold",
+        ),
+        SteeringMethodParameter(
+            name="gate_temperature",
+            type=float,
+            default=0.1,
+            help="Temperature for sigmoid gating (lower = sharper)",
+            cli_flag="--pulse-gate-temperature",
+        ),
+        SteeringMethodParameter(
+            name="learn_threshold",
+            type=bool,
+            default=True,
+            help="Learn optimal threshold via grid search",
+            action="store_true",
+            cli_flag="--pulse-learn-threshold",
+        ),
+        SteeringMethodParameter(
+            name="use_entropy_scaling",
+            type=bool,
+            default=True,
+            help="Enable entropy-based intensity modulation",
+            action="store_true",
+            cli_flag="--pulse-use-entropy-scaling",
+        ),
+        SteeringMethodParameter(
+            name="entropy_floor",
+            type=float,
+            default=0.5,
+            help="Minimum entropy to trigger scaling",
+            cli_flag="--pulse-entropy-floor",
+        ),
+        SteeringMethodParameter(
+            name="entropy_ceiling",
+            type=float,
+            default=2.0,
+            help="Entropy at which max_alpha is reached",
+            cli_flag="--pulse-entropy-ceiling",
+        ),
+        SteeringMethodParameter(
+            name="max_alpha",
+            type=float,
+            default=2.0,
+            help="Maximum steering strength",
+            cli_flag="--pulse-max-alpha",
+        ),
+        SteeringMethodParameter(
+            name="optimization_steps",
+            type=int,
+            default=100,
+            help="Steps for condition vector optimization",
+            cli_flag="--pulse-optimization-steps",
+        ),
+        SteeringMethodParameter(
+            name="learning_rate",
+            type=float,
+            default=0.01,
+            help="Learning rate for optimization",
+            cli_flag="--pulse-learning-rate",
+        ),
+        SteeringMethodParameter(
+            name="normalize",
+            type=bool,
+            default=True,
+            help="L2-normalize vectors",
+            action="store_true",
+            cli_flag="--pulse-normalize",
+        ),
+    ],
+    optimization_config={
+        "strength_search_range": (0.1, 3.0),
+        "default_strength": 1.0,
+        "threshold_search_range": (0.0, 1.0),
+    },
+    default_strength=1.0,
+    strength_range=(0.1, 3.0),
+)
+
+
+TITAN_DEFINITION = SteeringMethodDefinition(
+    name="titan",
+    method_type=SteeringMethodType.TITAN,
+    description="TITAN - Total Integrated Targeted Activation Navigation. Joint optimization of manifold, gating, and intensity.",
+    method_class_path="wisent.core.steering_methods.methods.titan.TITANMethod",
+    parameters=[
+        SteeringMethodParameter(
+            name="num_directions",
+            type=int,
+            default=5,
+            help="Number of directions per layer in the steering manifold",
+            cli_flag="--titan-num-directions",
+        ),
+        SteeringMethodParameter(
+            name="steering_layers",
+            type=str,
+            default="10,11,12,13,14,15,16,17,18",
+            help="Comma-separated layer indices for steering",
+            cli_flag="--titan-steering-layers",
+        ),
+        SteeringMethodParameter(
+            name="sensor_layer",
+            type=int,
+            default=15,
+            help="Primary layer for gating decisions",
+            cli_flag="--titan-sensor-layer",
+        ),
+        SteeringMethodParameter(
+            name="gate_hidden_dim",
+            type=int,
+            default=128,
+            help="Hidden dimension for gating network",
+            cli_flag="--titan-gate-hidden-dim",
+        ),
+        SteeringMethodParameter(
+            name="intensity_hidden_dim",
+            type=int,
+            default=64,
+            help="Hidden dimension for intensity network",
+            cli_flag="--titan-intensity-hidden-dim",
+        ),
+        SteeringMethodParameter(
+            name="optimization_steps",
+            type=int,
+            default=200,
+            help="Total optimization steps",
+            cli_flag="--titan-optimization-steps",
+        ),
+        SteeringMethodParameter(
+            name="learning_rate",
+            type=float,
+            default=0.005,
+            help="Learning rate for all components",
+            cli_flag="--titan-learning-rate",
+        ),
+        SteeringMethodParameter(
+            name="behavior_weight",
+            type=float,
+            default=1.0,
+            help="Weight for behavior effectiveness loss",
+            cli_flag="--titan-behavior-weight",
+        ),
+        SteeringMethodParameter(
+            name="retain_weight",
+            type=float,
+            default=0.2,
+            help="Weight for retain loss (minimize side effects)",
+            cli_flag="--titan-retain-weight",
+        ),
+        SteeringMethodParameter(
+            name="sparse_weight",
+            type=float,
+            default=0.05,
+            help="Weight for sparsity loss",
+            cli_flag="--titan-sparse-weight",
+        ),
+        SteeringMethodParameter(
+            name="max_alpha",
+            type=float,
+            default=3.0,
+            help="Maximum steering intensity",
+            cli_flag="--titan-max-alpha",
+        ),
+        SteeringMethodParameter(
+            name="normalize",
+            type=bool,
+            default=True,
+            help="L2-normalize directions",
+            action="store_true",
+            cli_flag="--titan-normalize",
+        ),
+    ],
+    optimization_config={
+        "strength_search_range": (0.1, 5.0),
+        "default_strength": 1.0,
+        "num_directions_range": (3, 10),
+    },
+    default_strength=1.0,
+    strength_range=(0.1, 5.0),
+)
+
+
 # =============================================================================
 # REGISTRY CLASS
 # =============================================================================
@@ -303,6 +519,8 @@ class SteeringMethodRegistry:
     _REGISTRY: Dict[str, SteeringMethodDefinition] = {
         "caa": CAA_DEFINITION,
         "prism": PRISM_DEFINITION,
+        "pulse": PULSE_DEFINITION,
+        "titan": TITAN_DEFINITION,
     }
     
     @classmethod
