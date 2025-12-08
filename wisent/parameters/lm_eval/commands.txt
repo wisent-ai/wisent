@@ -24,7 +24,7 @@ python -m wisent.core.main generate-vector-from-task \
 --timing \
 --device cuda
 
-lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks sglue_rte --device cuda:0 --batch_size 4 --limit 20
+lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks afrixnli --device cuda:0 --batch_size 4 --limit 20
 
 
 

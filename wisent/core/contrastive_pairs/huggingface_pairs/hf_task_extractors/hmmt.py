@@ -6,6 +6,10 @@ from wisent.core.cli_logger import setup_logger
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
+from latex2sympy2_extended import latex2sympy
+from sympy import latex
+from wisent.core.evaluators.benchmark_specific.math_parsing.scripts import strip_string
+
 __all__ = ["HMMTExtractor"]
 
 log = setup_logger(__name__)
@@ -75,8 +79,10 @@ class HMMTExtractor(HuggingFaceBenchmarkExtractor):
                 log.debug("Skipping: missing problem or answer")
                 return None
 
-            # Convert answer to string
-            correct_answer = str(answer).strip()
+            # Strip the answer
+            correct_answer = strip_string(answer)
+            if not correct_answer:
+                correct_answer = answer
 
             # Create incorrect answer (add 1 or modify)
             incorrect_answer = self._create_incorrect_answer(correct_answer)
@@ -101,15 +107,11 @@ class HMMTExtractor(HuggingFaceBenchmarkExtractor):
             return None
 
     def _create_incorrect_answer(self, correct: str) -> str:
-        """Create an incorrect answer by modifying the correct one."""
+        """Create an incorrect answer by modifying the correct one (input is already stripped)."""
         try:
-            clean = correct.replace('$', '').replace(',', '').strip()
-            num = int(clean)
-            return str(num + 1)
-        except ValueError:
-            try:
-                num = float(clean)
-                return str(num + 1)
-            except ValueError:
-                return f"{correct} + 1"
+            parsed_correct = latex2sympy(correct)
+            incorrect = latex(parsed_correct + 1)
+            return str(incorrect)
+        except Exception:
+            return f"{correct} + 1"
 
