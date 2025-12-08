@@ -926,8 +926,8 @@ class OptimizationPipeline:
         # Create instance from registry
         steering_instance = get_steering_method(method_name, device=self.device, **hyperparams)
 
-        # Train steering method
-        steering_instance.train(contrastive_pairs, layer_id)
+        # Train steering method (only takes pair_set, layer is embedded in activations)
+        steering_instance.train(contrastive_pairs)
         return steering_instance, quality_metrics
 
     def _create_contrastive_pairs(
