@@ -22,7 +22,7 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
         - metadata: dict (library info, problem_id, etc.)
     """
 
-    evaluator_name = "generation"
+    evaluator_name = "coding"
 
     def extract_contrastive_pairs(
         self,
