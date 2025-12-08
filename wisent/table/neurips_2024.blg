@@ -1,0 +1,59 @@
+This is BibTeX, Version 0.99d (TeX Live 2023/Debian)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: neurips_2024.aux
+The style file: plain.bst
+Database file #1: bibliography.bib
+Warning--entry type for "codeparrot_instructhumaneval_2023" isn't style-file defined
+--line 456 of file bibliography.bib
+Warning--entry type for "huggingfaceh4_math500_2024" isn't style-file defined
+--line 546 of file bibliography.bib
+Warning--entry type for "mathai2025aime25" isn't style-file defined
+--line 554 of file bibliography.bib
+Warning--entry type for "maxwelljia2024aime" isn't style-file defined
+--line 562 of file bibliography.bib
+Warning--entry type for "matharena2025hmmt" isn't style-file defined
+--line 570 of file bibliography.bib
+Warning--I didn't find a database entry for ""
+Warning--empty journal in chen2021evaluating
+You've used 49 entries,
+            2118 wiz_defined-function locations,
+            979 strings with 21753 characters,
+and the built_in function-call counts, 21819 in all, are:
+= -- 1846
+> -- 1981
+< -- 8
++ -- 788
+- -- 736
+* -- 1812
+:= -- 3936
+add.period$ -- 148
+call.type$ -- 49
+change.case$ -- 514
+chr.to.int$ -- 0
+cite$ -- 50
+duplicate$ -- 584
+empty$ -- 1083
+format.name$ -- 736
+if$ -- 4187
+int.to.chr$ -- 0
+int.to.str$ -- 49
+missing$ -- 44
+newline$ -- 243
+num.names$ -- 98
+pop$ -- 578
+preamble$ -- 1
+purify$ -- 465
+quote$ -- 0
+skip$ -- 418
+stack$ -- 0
+substring$ -- 476
+swap$ -- 114
+text.length$ -- 8
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 196
+warning$ -- 1
+while$ -- 118
+width$ -- 51
+write$ -- 501
+(There were 7 warnings)

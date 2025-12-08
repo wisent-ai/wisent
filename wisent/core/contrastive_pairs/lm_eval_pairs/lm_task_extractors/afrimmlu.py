@@ -14,11 +14,26 @@ if TYPE_CHECKING:
 __all__ = ["AfrimmluExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("afrimmlu_direct_amh_prompt_1",
-              "afrimmlu_direct_amh_prompt_2",
-              "afrimmlu_direct_amh_prompt_3",
-              "afrimmlu_direct_amh_prompt_4",
-              "afrimmlu_direct_amh_prompt_5",)
+task_names = (
+    "afrimmlu_direct_amh_prompt_1",
+    "afrimmlu_direct_eng_prompt_1",
+    "afrimmlu_direct_ewe_prompt_1",
+    "afrimmlu_direct_fra_prompt_1",
+    "afrimmlu_direct_hau_prompt_1",
+    "afrimmlu_direct_ibo_prompt_1",
+    "afrimmlu_direct_kin_prompt_1",
+    "afrimmlu_direct_lin_prompt_1",
+    "afrimmlu_direct_lug_prompt_1",
+    "afrimmlu_direct_orm_prompt_1",
+    "afrimmlu_direct_sna_prompt_1",
+    "afrimmlu_direct_sot_prompt_1",
+    "afrimmlu_direct_swa_prompt_1",
+    "afrimmlu_direct_twi_prompt_1",
+    "afrimmlu_direct_wol_prompt_1",
+    "afrimmlu_direct_xho_prompt_1",
+    "afrimmlu_direct_yor_prompt_1",
+    "afrimmlu_direct_zul_prompt_1",
+)
 
 class AfrimmluExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrimmlu benchmark."""

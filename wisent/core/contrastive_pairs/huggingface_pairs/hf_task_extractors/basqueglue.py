@@ -125,11 +125,11 @@ class BasqueglueExtractor(HuggingFaceBenchmarkExtractor):
         if not labels or label >= len(labels):
             return None
 
-        prompt = f"Classify the following text:\n\n{text}\n\nLabel:"
-
         correct = labels[label]
         incorrect_idx = (label + 1) % len(labels)
         incorrect = labels[incorrect_idx]
+
+        prompt = f"Classify the following text:\n\n{text}\nA. {incorrect}\nB. {correct}"
 
         return self._build_pair(
             question=prompt,
@@ -147,14 +147,14 @@ class BasqueglueExtractor(HuggingFaceBenchmarkExtractor):
         if not question or not sentence or label is None:
             return None
 
-        prompt = f"Question: {question}\nSentence: {sentence}\n\nDoes the sentence entail the question? Answer entailment or not_entailment:"
-
         if label == 0:
             correct = "entailment"
             incorrect = "not_entailment"
         else:
             correct = "not_entailment"
             incorrect = "entailment"
+
+        prompt = f"Question: {question}\nSentence: {sentence}\n\nDoes the sentence entail the question?\nA. {incorrect}\nB. {correct}"
 
         return self._build_pair(
             question=prompt,
@@ -173,14 +173,14 @@ class BasqueglueExtractor(HuggingFaceBenchmarkExtractor):
         if not sentence1 or not sentence2 or not word or label is None:
             return None
 
-        prompt = f"Sentence 1: {sentence1}\nSentence 2: {sentence2}\n\nDoes the word '{word}' have the same meaning in both sentences?"
-
         if label == 1:
             correct = "Yes"
             incorrect = "No"
         else:
             correct = "No"
             incorrect = "Yes"
+
+        prompt = f"Sentence 1: {sentence1}\nSentence 2: {sentence2}\n\nDoes the word '{word}' have the same meaning in both sentences?\nA. {incorrect}\nB. {correct}"
 
         return self._build_pair(
             question=prompt,
@@ -199,14 +199,14 @@ class BasqueglueExtractor(HuggingFaceBenchmarkExtractor):
         if not text or not span1 or not span2 or label is None:
             return None
 
-        prompt = f"Text: {text}\n\nDo '{span1}' and '{span2}' refer to the same entity?"
-
         if label == 1:
             correct = "Yes"
             incorrect = "No"
         else:
             correct = "No"
             incorrect = "Yes"
+
+        prompt = f"Text: {text}\n\nDo '{span1}' and '{span2}' refer to the same entity?\nA. {incorrect}\nB. {correct}"
 
         return self._build_pair(
             question=prompt,

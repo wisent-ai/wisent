@@ -7,6 +7,10 @@ from wisent.core.contrastive_pairs.core.response import NegativeResponse, Positi
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli_logger import setup_logger, bind
 
+from latex2sympy2_extended import latex2sympy
+from sympy import latex
+from wisent.core.evaluators.benchmark_specific.math_parsing.scripts import strip_string
+
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
@@ -18,6 +22,7 @@ task_names = (
     "gsm_plus",
     "gsm_plus_mini",
 )
+
 
 class GsmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Gsm benchmark - math word problems."""
@@ -65,7 +70,8 @@ class GsmExtractor(LMEvalBenchmarkExtractor):
             if answer == "None":
                 incorrect = "42"
             else:
-                incorrect = str(float(correct) + 1)
+                correct = strip_string(correct)
+                incorrect = self._create_incorrect_answer(correct)
 
             formatted_question = f"Question: {question}"
             metadata = {"label": "gsm"}
@@ -80,6 +86,15 @@ class GsmExtractor(LMEvalBenchmarkExtractor):
         except Exception as exc:
             log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
             return None
+        
+    def _create_incorrect_answer(self, correct: str) -> str:
+        """Create an incorrect answer by modifying the correct one (input is already stripped)."""
+        try:
+            parsed_correct = latex2sympy(correct)
+            incorrect = latex(parsed_correct + 1)
+            return str(incorrect)
+        except Exception:
+            return f"{correct} + 1"
 
     @staticmethod
     def _build_pair(
