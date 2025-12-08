@@ -819,6 +819,7 @@ wisent/core/evaluators/custom/custom_evaluator.py
 wisent/core/evaluators/custom/examples/__init__.py
 wisent/core/evaluators/custom/examples/gptzero.py
 wisent/core/evaluators/custom/examples/humanization.py
+wisent/core/evaluators/custom/examples/roberta_detector.py
 wisent/core/evaluators/oracles/__init__.py
 wisent/core/evaluators/oracles/interactive.py
 wisent/core/evaluators/oracles/nlp_evaluator.py

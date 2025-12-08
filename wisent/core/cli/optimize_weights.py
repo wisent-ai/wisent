@@ -82,6 +82,8 @@ def execute_optimize_weights(args):
         evaluator_display = "refusal"
     elif task_lower == "personalization":
         evaluator_display = f"personalization ({args.trait})"
+    elif task_lower == "custom":
+        evaluator_display = f"custom ({args.custom_evaluator})"
     elif "," in (args.task or ""):
         evaluator_display = "pooled (multi-benchmark)"
     else:
@@ -398,6 +400,38 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
 
             execute_generate_vector_from_synthetic(vector_args)
 
+        elif task_lower == "custom":
+            # Custom evaluator: requires --trait for vector generation
+            if not getattr(args, 'trait', None):
+                raise ValueError("--trait is required when --task custom (needed to generate steering vectors)")
+            
+            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+
+            vector_args = Namespace(
+                trait=args.trait,
+                num_pairs=num_pairs,
+                output=temp_output,
+                model=args.model,
+                device=args.device,
+                similarity_threshold=getattr(args, 'similarity_threshold', 0.8),
+                verbose=False,
+                timing=False,
+                layers=args.layers,
+                token_aggregation=args.token_aggregation,
+                prompt_strategy="chat_template",
+                method="caa",
+                normalize=True,
+                keep_intermediate=True,
+                intermediate_dir=os.path.dirname(temp_pairs),
+                pairs_cache_dir=getattr(args, 'pairs_cache_dir', None),
+                force_regenerate=False,
+                nonsense=False,
+                nonsense_mode=None,
+                accept_low_quality_vector=True,
+            )
+
+            execute_generate_vector_from_synthetic(vector_args)
+
         elif "," in (args.task or ""):
             # Multiple benchmarks: generate unified steering vector
             from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
@@ -469,6 +503,35 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
 
             # Return vectors and empty examples (eval pairs stored in args)
             return vectors, [], []
+
+        elif getattr(args, 'trait', None):
+            # Trait-based: use synthetic pairs (when --trait is provided without --task)
+            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+
+            vector_args = Namespace(
+                trait=args.trait,
+                num_pairs=num_pairs,
+                output=temp_output,
+                model=args.model,
+                device=args.device,
+                similarity_threshold=getattr(args, 'similarity_threshold', 0.8),
+                verbose=False,
+                timing=False,
+                layers=args.layers,
+                token_aggregation=args.token_aggregation,
+                prompt_strategy="chat_template",
+                method="caa",
+                normalize=True,
+                keep_intermediate=True,
+                intermediate_dir=os.path.dirname(temp_pairs),
+                pairs_cache_dir=getattr(args, 'pairs_cache_dir', None),
+                force_regenerate=False,
+                nonsense=False,
+                nonsense_mode=None,
+                accept_low_quality_vector=True,
+            )
+
+            execute_generate_vector_from_synthetic(vector_args)
 
         else:
             # Single benchmark: use task-based generation
@@ -564,22 +627,31 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
     # Determine evaluator type from task
     if task == "refusal":
         evaluator_type = "refusal"
-    elif task == "personalization":
-        if not getattr(args, 'trait', None):
-            raise ValueError("--trait is required when --task personalization")
+    elif task == "personalization" or (not task and getattr(args, 'trait', None)):
+        # Use personalization evaluator when --trait is provided (with or without --task personalization)
         evaluator_type = "personalization"
+    elif task == "custom":
+        if not getattr(args, 'custom_evaluator', None):
+            raise ValueError("--custom-evaluator is required when --task custom")
+        evaluator_type = "custom"
     elif "," in task:
         # Multiple benchmarks: use pooled evaluator
         evaluator_type = "pooled"
-    else:
-        # Single benchmark: use task evaluator
+    elif task:
+        # Single benchmark: use task evaluator (only if task is specified)
         evaluator_type = "task"
+    else:
+        raise ValueError("Either --task or --trait must be specified")
 
     # Pooled evaluator for multiple benchmarks
     if evaluator_type == "pooled":
         print(f"   [DEBUG] Creating pooled evaluator for tasks: {task}")
         print(f"   [DEBUG] args._pooled_eval_pairs count: {len(getattr(args, '_pooled_eval_pairs', []))}")
         return _create_pooled_evaluator(args)
+    
+    # Custom evaluator
+    if evaluator_type == "custom":
+        return _create_custom_evaluator(args, model_name)
 
     # Use shared steering evaluators for refusal, task, personalization
     eval_config = EvaluatorConfig(
@@ -620,8 +692,82 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
     return evaluate
 
 
+def _create_custom_evaluator(args, model_name: str) -> Callable:
+    """Create custom evaluator for --task custom.
+    
+    Uses the custom evaluator framework from wisent.core.evaluators.custom.
+    
+    Args:
+        args: Command arguments (must have args.custom_evaluator)
+        model_name: Model name/path
+    """
+    import json
+    from wisent.core.evaluators.custom import create_custom_evaluator
+    from wisent.core.models.inference_config import get_generate_kwargs
+    
+    # Parse custom evaluator kwargs
+    custom_kwargs = {}
+    if getattr(args, 'custom_evaluator_kwargs', None):
+        custom_kwargs = json.loads(args.custom_evaluator_kwargs)
+    
+    # Create the custom evaluator
+    custom_eval = create_custom_evaluator(args.custom_evaluator, **custom_kwargs)
+    
+    # Get test prompts - for custom, we need either trait-based prompts or user-provided prompts
+    eval_prompts = []
+    if getattr(args, 'eval_prompts', None):
+        # Load from file
+        with open(args.eval_prompts) as f:
+            eval_prompts = [line.strip() for line in f if line.strip()]
+    elif getattr(args, 'trait', None):
+        # Generate prompts based on trait
+        from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
+        eval_prompts = PersonalizationEvaluator._generate_test_prompts(
+            getattr(args, 'num_eval_prompts', 30)
+        )
+    else:
+        # Default generic prompts
+        eval_prompts = [
+            "Tell me about yourself.",
+            "What do you think about artificial intelligence?",
+            "How would you solve world hunger?",
+            "Explain quantum computing in simple terms.",
+            "What's the meaning of life?",
+        ]
+    
+    def evaluate(hf_model, tokenizer) -> dict:
+        """Run evaluation using custom evaluator."""
+        # Wrap HF model in WisentModel for standard generation
+        temp_wisent_model = WisentModel(model_name, hf_model=hf_model)
+        
+        # Generate responses
+        scores = []
+        for prompt_text in eval_prompts:
+            messages = [{"role": "user", "content": prompt_text}]
+            result = temp_wisent_model.generate(
+                [messages],
+                **get_generate_kwargs(max_new_tokens=150),
+            )
+            response = result[0] if result else ""
+            
+            # Score using custom evaluator
+            score = custom_eval(response)
+            if isinstance(score, dict):
+                # Take the primary score (first value or 'score' key)
+                score = score.get('score', list(score.values())[0])
+            scores.append(float(score))
+        
+        avg_score = sum(scores) / len(scores) if scores else 0.0
+        return {
+            "custom_score": avg_score,
+            "num_evaluated": len(scores),
+        }
+    
+    return evaluate
+
+
 def _create_pooled_evaluator(args) -> Callable:
-    """Create pooled evaluator for --tags mode.
+    """Create pooled evaluator for multi-benchmark mode (--task bench1,bench2,...).
     
     Evaluates on ALL benchmarks from training, using each benchmark's
     native evaluator (routing by source_benchmark metadata).
