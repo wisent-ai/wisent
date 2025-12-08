@@ -69,6 +69,11 @@ Dheeru Dua, Yizhong Wang, Pradeep Dasigi, Gabriel Stanovsky, Sameer Singh, and M
 \newblock Drop: A reading comprehension benchmark requiring discrete reasoning over paragraphs.
 \newblock {\em arXiv preprint arXiv:1903.00161}, 2019.
 
+\bibitem{gretz2020argument}
+Shai Gretz, Roni Friedman, Edo Cohen-Karlik, Assaf Toledo, Dan Lahav, Ranit Aharonov, and Noam Slonim.
+\newblock A large-scale dataset for argument quality ranking: Construction and analysis.
+\newblock In {\em Proceedings of the AAAI Conference on Artificial Intelligence}, 2020.
+
 \bibitem{hendrycks2021apps}
 Dan Hendrycks, Steven Basart, Saurav Kadavath, Mantas Mazeika, Akul Arora, Ethan Guo, Collin Burns, Samir Puranik, Horace He, Dawn Song, and Jacob Steinhardt.
 \newblock Measuring coding challenge competence with apps.
@@ -121,6 +126,11 @@ Guokun Lai, Qizhe Xie, Hanxiao Liu, Yiming Yang, and Eduard Hovy.
 Yuhang Lai, Chengxi Li, Yiming Wang, Tianyi Zhang, Ruiqi Zhong, Luke Zettlemoyer, Scott Wen-tau Yih, Daniel Fried, Sida Wang, and Tao Yu.
 \newblock Ds-1000: A natural and reliable benchmark for data science code generation.
 \newblock {\em arXiv preprint arXiv:2211.11501}, 2022.
+
+\bibitem{lang1995newsweeder}
+Ken Lang.
+\newblock Newsweeder: Learning to filter netnews.
+\newblock In {\em Proceedings of the Twelfth International Conference on Machine Learning}, pages 331--339, 1995.
 
 \bibitem{lin2021truthfulqa}
 Stephanie Lin, Jacob Hilton, and Owain Evans.
@@ -224,5 +234,10 @@ Rowan Zellers, Ari Holtzman, Yonatan Bisk, Ali Farhadi, and Yejin Choi.
 Sheng Zhang, Xiaodong Liu, Jingjing Liu, Jianfeng Gao, Kevin Duh, and Benjamin Van~Durme.
 \newblock Record: Bridging the gap between human and machine commonsense reading comprehension.
 \newblock {\em arXiv preprint arXiv:1810.12885}, 2018.
+
+\bibitem{zhang2015character}
+Xiang Zhang, Junbo Zhao, and Yann LeCun.
+\newblock Character-level convolutional networks for text classification.
+\newblock In {\em Advances in Neural Information Processing Systems}, volume~28, 2015.
 
 \end{thebibliography}

@@ -251,8 +251,14 @@ INPUT ./neurips_2024.aux
 INPUT ./neurips_2024.aux
 INPUT neurips_2024.aux
 OUTPUT neurips_2024.aux
-OUTPUT neurips_2024.out
+INPUT ./neurips_2024.out
+INPUT ./neurips_2024.out
+INPUT neurips_2024.out
+INPUT neurips_2024.out
 OUTPUT neurips_2024.pdf
+INPUT ./neurips_2024.out
+INPUT ./neurips_2024.out
+OUTPUT neurips_2024.out
 INPUT /usr/share/texlive/texmf-dist/tex/latex/microtype/mt-ptm.cfg
 INPUT /usr/share/texlive/texmf-dist/tex/latex/microtype/mt-ptm.cfg
 INPUT /usr/share/texlive/texmf-dist/tex/latex/microtype/mt-ptm.cfg
