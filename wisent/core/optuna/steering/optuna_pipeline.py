@@ -81,6 +81,10 @@ class OptimizationConfig:
     # Evaluator configuration (auto-selected based on task)
     eval_prompts: Optional[str] = None  # Path to custom evaluation prompts JSON
     num_eval_prompts: int = 30  # Number of prompts for refusal/personalization evaluation
+    
+    # Custom evaluator (for --task custom)
+    custom_evaluator: Optional[str] = None  # Module path or file:function
+    custom_evaluator_kwargs: Optional[dict] = None  # Kwargs for custom evaluator
 
     # Training configuration
     train_limit: int = 50  # How many training samples to load
@@ -326,6 +330,7 @@ class OptimizationPipeline:
         Task types:
         - 'refusal' → RefusalEvaluator
         - 'personalization' → PersonalizationEvaluator (requires trait)
+        - 'custom' → CustomEvaluator (requires custom_evaluator config)
         - benchmark name → TaskEvaluator
         """
         task = (self.config.train_dataset or "").lower()
@@ -337,6 +342,10 @@ class OptimizationPipeline:
             if not self.config.trait:
                 raise ValueError("--trait is required when --task personalization")
             evaluator_type = "personalization"
+        elif task == "custom":
+            if not getattr(self.config, 'custom_evaluator', None):
+                raise ValueError("--custom-evaluator is required when --task custom")
+            evaluator_type = "custom"
         else:
             # Benchmark task
             evaluator_type = "task"
@@ -349,6 +358,8 @@ class OptimizationPipeline:
             self._setup_refusal_evaluator()
         elif evaluator_type == "personalization":
             self._setup_personalization_evaluator()
+        elif evaluator_type == "custom":
+            self._setup_custom_evaluator()
         # task evaluator uses existing benchmark evaluation logic
 
     def _setup_refusal_evaluator(self):
@@ -377,6 +388,41 @@ class OptimizationPipeline:
         )
         self.personalization_test_prompts = self.steering_evaluator.get_prompts()
         self.logger.info(f"📊 Setup personalization evaluator for trait: {self.config.trait}")
+
+    def _setup_custom_evaluator(self):
+        """Setup custom evaluator from user-provided module/function."""
+        import json
+        from wisent.core.evaluators.custom import create_custom_evaluator
+        
+        # Parse custom evaluator kwargs
+        custom_kwargs = {}
+        if getattr(self.config, 'custom_evaluator_kwargs', None):
+            if isinstance(self.config.custom_evaluator_kwargs, str):
+                custom_kwargs = json.loads(self.config.custom_evaluator_kwargs)
+            else:
+                custom_kwargs = self.config.custom_evaluator_kwargs
+        
+        # Create the custom evaluator
+        self.custom_evaluator = create_custom_evaluator(
+            self.config.custom_evaluator, **custom_kwargs
+        )
+        
+        # Get test prompts - use trait-based prompts if trait provided, else generic
+        if self.config.trait:
+            from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
+            self.custom_test_prompts = PersonalizationEvaluator._generate_test_prompts(
+                self.config.num_eval_prompts or 30
+            )
+        else:
+            self.custom_test_prompts = [
+                "Tell me about yourself.",
+                "What do you think about artificial intelligence?",
+                "How would you solve world hunger?",
+                "Explain quantum computing in simple terms.",
+                "What's the meaning of life?",
+            ]
+        
+        self.logger.info(f"📊 Setup custom evaluator: {self.config.custom_evaluator}")
 
     def _setup_synthetic_data(self):
         """Setup synthetic contrastive pairs for trait-based optimization."""
@@ -2217,15 +2263,22 @@ def main():
                             "Task to optimize for. Can be: "
                             "'refusal' (compliance optimization), "
                             "'personalization' (requires --trait), "
+                            "'custom' (requires --custom-evaluator), "
                             "benchmark name (e.g., 'arc_easy', 'gsm8k'), "
                             "or comma-separated benchmarks (e.g., 'arc_easy,gsm8k,hellaswag')"
                         ))
     
     # Trait description (required for --task personalization)
     parser.add_argument("--trait", type=str, default=None,
-                        help="Trait description for personalization (required when --task personalization)")
+                        help="Trait description for personalization (required when --task personalization or custom)")
     parser.add_argument("--trait-label", type=str, default="positive",
                         help="Label for trait direction (default: positive)")
+    
+    # Custom evaluator (required for --task custom)
+    parser.add_argument("--custom-evaluator", type=str, default=None,
+                        help="Custom evaluator module path (required when --task custom)")
+    parser.add_argument("--custom-evaluator-kwargs", type=str, default=None,
+                        help="JSON string of kwargs for custom evaluator")
     
     # Evaluation options
     parser.add_argument("--eval-prompts", type=str, default=None,
@@ -2252,11 +2305,23 @@ def main():
     if args.task.lower() == "personalization" and not args.trait:
         parser.error("--trait is required when --task personalization")
     
+    # Validate --task custom requires --custom-evaluator and --trait
+    if args.task.lower() == "custom":
+        if not args.custom_evaluator:
+            parser.error("--custom-evaluator is required when --task custom")
+        if not args.trait:
+            parser.error("--trait is required when --task custom (for steering vector generation)")
+    
     # Parse layer range
     layer_start, layer_end = map(int, args.layer_range.split("-"))
     
     # Setup logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+
+    # Parse custom evaluator kwargs if provided
+    custom_evaluator_kwargs = None
+    if args.custom_evaluator_kwargs:
+        custom_evaluator_kwargs = json.loads(args.custom_evaluator_kwargs)
 
     # Create configuration
     config = OptimizationConfig(
@@ -2268,6 +2333,8 @@ def main():
         trait_label=args.trait_label,
         eval_prompts=args.eval_prompts,
         num_eval_prompts=args.num_eval_prompts,
+        custom_evaluator=args.custom_evaluator,
+        custom_evaluator_kwargs=custom_evaluator_kwargs,
         train_limit=args.train_limit,
         contrastive_pairs_limit=args.num_pairs,
         val_limit=args.val_limit,

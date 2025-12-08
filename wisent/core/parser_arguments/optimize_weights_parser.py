@@ -2,15 +2,22 @@
 Parser for optimize-weights command.
 
 This command runs an optimization loop to find optimal weight modification
-parameters for any trait or task, using any evaluator.
+parameters for any task type.
 
 Unified pipeline:
-1. Generate steering vector (from trait or task)
+1. Generate steering vector based on --task type
 2. Apply weight modification with trial parameters
-3. Evaluate using chosen evaluator
+3. Evaluate using task-appropriate evaluator
 4. Optuna adjusts parameters
 5. Repeat until target reached or max trials
 6. Save optimized model
+
+Task types:
+- refusal: Compliance rate optimization
+- personalization: Personality steering (requires --trait)
+- custom: Custom evaluator (requires --custom-evaluator)
+- benchmark: Single benchmark accuracy (e.g., arc_easy)
+- multi-benchmark: Comma-separated benchmarks (e.g., arc_easy,gsm8k)
 """
 
 import argparse
@@ -21,8 +28,8 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     Set up argument parser for optimize-weights command.
 
     This command optimizes weight modification parameters to achieve a target
-    metric value. Works with any trait (synthetic pairs) or task (lm-eval),
-    and any evaluator (refusal, task accuracy, personality, custom).
+    metric value. Works with any --task type (refusal, personalization, 
+    single benchmark, or comma-separated benchmarks).
     """
 
     # ==========================================================================
@@ -36,6 +43,7 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
             "Task to optimize for. Can be: "
             "'refusal' (compliance optimization), "
             "'personalization' (requires --trait), "
+            "'custom' (requires --custom-evaluator), "
             "benchmark name (e.g., 'arc_easy', 'gsm8k'), "
             "or comma-separated benchmarks (e.g., 'arc_easy,gsm8k,hellaswag')"
         )
@@ -52,6 +60,25 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=None,
         help="Trait description for personalization (required when --task personalization)"
+    )
+    
+    # Custom evaluator (required for --task custom)
+    parser.add_argument(
+        "--custom-evaluator",
+        type=str,
+        default=None,
+        help=(
+            "Custom evaluator specification (required when --task custom). Can be: "
+            "(1) Python module path e.g. 'my_evaluators.gptzero', "
+            "(2) File path with function e.g. './my_eval.py:score_fn', "
+            "(3) Built-in example e.g. 'wisent.core.evaluators.custom.examples.gptzero'"
+        )
+    )
+    parser.add_argument(
+        "--custom-evaluator-kwargs",
+        type=str,
+        default=None,
+        help="JSON string of kwargs for custom evaluator, e.g. '{\"api_key\": \"xxx\"}'"
     )
     
     # Additional options for multi-benchmark mode (--task bench1,bench2,...)

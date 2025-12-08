@@ -248,6 +248,65 @@ def execute_modify_weights(args):
             if args.verbose:
                 print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
 
+        elif task_lower == "custom":
+            # Custom evaluator: requires --trait for vector generation
+            if not args.trait:
+                raise ValueError("--trait is required when --task custom (needed to generate steering vectors)")
+            
+            if args.verbose:
+                print(f"Generating steering vectors from trait '{args.trait}' for custom evaluation...")
+
+            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+
+            class VectorArgs:
+                pass
+
+            vector_args = VectorArgs()
+            vector_args.trait = args.trait
+            vector_args.model = args.model
+            vector_args.num_pairs = args.num_pairs
+            vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
+            vector_args.layers = str(args.layers) if args.layers is not None else "all"
+            vector_args.token_aggregation = args.token_aggregation
+            vector_args.prompt_strategy = args.prompt_strategy
+            vector_args.method = "caa"
+            vector_args.normalize = args.normalize_vectors
+            vector_args.verbose = args.verbose
+            vector_args.timing = getattr(args, 'timing', False)
+            vector_args.intermediate_dir = None
+            vector_args.keep_intermediate = False
+            vector_args.device = None
+            vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
+            vector_args.pairs_cache_dir = getattr(args, 'pairs_cache_dir', None)
+            vector_args.force_regenerate = False
+
+            import tempfile
+            temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            vector_args.output = temp_vector_file.name
+            temp_vector_file.close()
+
+            execute_generate_vector_from_synthetic(vector_args)
+
+            with open(vector_args.output, 'r') as f:
+                vector_data = json.load(f)
+
+            steering_vectors = {
+                int(layer) - 1: torch.tensor(vector)
+                for layer, vector in vector_data["steering_vectors"].items()
+            }
+
+            if getattr(args, 'save_steering_vectors', None):
+                import shutil
+                shutil.copy(vector_args.output, args.save_steering_vectors)
+                if args.verbose:
+                    print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
+
+            import os
+            os.unlink(vector_args.output)
+
+            if args.verbose:
+                print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
+
         elif "," in args.task:
             # Multiple benchmarks: use unified goodness training
             benchmarks = [b.strip() for b in args.task.split(",")]

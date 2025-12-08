@@ -3,23 +3,40 @@
 Optimize abliteration parameters using Optuna for intelligent parameter search.
 
 This example demonstrates how to use the `optimize-weights` CLI command
-to find optimal weight modification parameters for any task or trait.
+to find optimal weight modification parameters for any task.
 
 Usage:
-    # For task-based optimization:
-    wisent optimize-weights meta-llama/Llama-3.2-1B-Instruct \
+    # For benchmark-based optimization:
+    wisent optimize-weights \
         --task hellaswag \
-        --evaluator task \
+        --model meta-llama/Llama-3.2-1B-Instruct \
         --trials 30 \
         --output-dir ./data/modified_models/optuna
 
-    # For trait-based optimization:
-    wisent optimize-weights meta-llama/Llama-3.2-1B-Instruct \
-        --trait "a model that refuses harmful requests" \
-        --evaluator refusal \
-        --target-metric refusal_rate \
+    # For refusal optimization:
+    wisent optimize-weights \
+        --task refusal \
+        --model meta-llama/Llama-3.2-1B-Instruct \
+        --target-metric compliance_rate \
         --target-value 0.95 \
-        --direction minimize \
+        --trials 30 \
+        --output-dir ./data/modified_models/optuna
+
+    # For personalization optimization:
+    wisent optimize-weights \
+        --task personalization \
+        --trait "a pirate who speaks in nautical terms" \
+        --model meta-llama/Llama-3.2-1B-Instruct \
+        --trials 30 \
+        --output-dir ./data/modified_models/optuna
+
+    # For custom evaluator optimization:
+    wisent optimize-weights \
+        --task custom \
+        --trait "human-like writing style" \
+        --custom-evaluator wisent.core.evaluators.custom.examples.gptzero \
+        --custom-evaluator-kwargs '{"api_key": "YOUR_KEY"}' \
+        --model meta-llama/Llama-3.2-1B-Instruct \
         --trials 30 \
         --output-dir ./data/modified_models/optuna
 
@@ -46,13 +63,14 @@ def main():
         "--task",
         type=str,
         default=None,
-        help="Task name for optimization (use --task OR --trait)",
+        required=True,
+        help="Task type: 'refusal', 'personalization', benchmark name (e.g., 'hellaswag'), or comma-separated benchmarks",
     )
     parser.add_argument(
         "--trait",
         type=str,
         default=None,
-        help="Trait description for optimization (use --task OR --trait)",
+        help="Trait description (required when --task personalization)",
     )
     parser.add_argument(
         "--output-dir",
@@ -81,19 +99,17 @@ def main():
 
     args = parser.parse_args()
 
-    if not args.task and not args.trait:
-        print("Error: Must specify either --task or --trait")
+    # Validate personalization requires trait
+    if args.task.lower() == "personalization" and not args.trait:
+        print("Error: --trait is required when --task personalization")
         sys.exit(1)
 
     print("=" * 80)
     print("ABLITERATION PARAMETER OPTIMIZATION (OPTUNA)")
     print("=" * 80)
     print(f"Model: {args.model}")
-    if args.task:
-        print(f"Mode: Task-based")
-        print(f"Task: {args.task}")
-    else:
-        print(f"Mode: Trait-based (synthetic pairs)")
+    print(f"Task: {args.task}")
+    if args.trait:
         print(f"Trait: {args.trait}")
     print(f"Trials: {args.trials}")
     print("=" * 80 + "\n")
@@ -110,13 +126,9 @@ def main():
         "--early-stop",
     ]
 
-    if args.task:
-        cmd.extend(["--task", args.task, "--evaluator", "task"])
-    else:
-        cmd.extend([
-            "--trait", args.trait,
-            "--evaluator", "auto",
-        ])
+    cmd.extend(["--task", args.task])
+    if args.trait:
+        cmd.extend(["--trait", args.trait])
 
     print(f"Running: {' '.join(cmd)}\n")
 

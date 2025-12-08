@@ -24,6 +24,7 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
             "Task to modify weights for. Can be: "
             "'refusal' (compliance optimization), "
             "'personalization' (requires --trait), "
+            "'custom' (requires --custom-evaluator), "
             "benchmark name (e.g., 'arc_easy', 'gsm8k'), "
             "or comma-separated benchmarks (e.g., 'arc_easy,gsm8k,hellaswag')"
         )
@@ -40,6 +41,25 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
         type=str,
         default=None,
         help="Trait description for personalization (required when --task personalization)"
+    )
+    
+    # Custom evaluator (required for --task custom)
+    parser.add_argument(
+        "--custom-evaluator",
+        type=str,
+        default=None,
+        help=(
+            "Custom evaluator specification (required when --task custom). Can be: "
+            "(1) Python module path e.g. 'my_evaluators.gptzero', "
+            "(2) File path with function e.g. './my_eval.py:score_fn', "
+            "(3) Built-in example e.g. 'wisent.core.evaluators.custom.examples.gptzero'"
+        )
+    )
+    parser.add_argument(
+        "--custom-evaluator-kwargs",
+        type=str,
+        default=None,
+        help="JSON string of kwargs for custom evaluator, e.g. '{\"api_key\": \"xxx\"}'"
     )
     
     # Additional options for multi-benchmark mode

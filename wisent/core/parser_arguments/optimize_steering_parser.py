@@ -281,7 +281,15 @@ def setup_steering_optimizer_parser(parser):
     personalization_parser = steering_subparsers.add_parser(
         "personalization", help="Optimize steering parameters for personality/trait steering"
     )
-    personalization_parser.add_argument("model", type=str, help="Model name or path")
+    personalization_parser.add_argument(
+        "--task",
+        type=str,
+        default="personalization",
+        help="Task type (default: personalization). For consistency with other commands.",
+    )
+    personalization_parser.add_argument(
+        "--model", type=str, required=True, help="Model name or path"
+    )
     personalization_parser.add_argument(
         "--trait", type=str, required=True, help="Trait description to steer towards (e.g., 'evil villain personality')"
     )
