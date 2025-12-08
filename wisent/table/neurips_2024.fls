@@ -247,6 +247,9 @@ INPUT /usr/share/texlive/texmf-dist/tex/latex/ragged2e/ragged2e.sty
 INPUT /usr/share/texlive/texmf-dist/tex/latex/ragged2e/ragged2e.sty
 INPUT /usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
 INPUT /usr/share/texlive/texmf-dist/tex/latex/l3backend/l3backend-pdftex.def
+INPUT ./neurips_2024.aux
+INPUT ./neurips_2024.aux
+INPUT neurips_2024.aux
 OUTPUT neurips_2024.aux
 OUTPUT neurips_2024.out
 OUTPUT neurips_2024.pdf

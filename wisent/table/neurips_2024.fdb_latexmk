@@ -1,16 +1,16 @@
 # Fdb version 4
-["bibtex neurips_2024"] 1765213486.30631 "neurips_2024.aux" "neurips_2024.bbl" "neurips_2024" 1765213487.26441 2
-  "./bibliography.bib" 1765213484.90423 28403 73d6e232a93b359d8b07397cf79abadd ""
+["bibtex neurips_2024"] 0 "neurips_2024.aux" "neurips_2024.bbl" "neurips_2024" 0 -1
+  "./bibliography.bib" 1765213636.18668 28403 73d6e232a93b359d8b07397cf79abadd ""
   "/usr/share/texlive/texmf-dist/bibtex/bst/base/plain.bst" 1292289607 20613 bd3fbfa9f64872b81ac57a0dd2ed855f ""
-  "neurips_2024.aux" 1765213487.13599 7265 4a894557d03617ddfd8342d9072b47aa "pdflatex"
+  "neurips_2024.aux" 1765213637.64668 7265 4a894557d03617ddfd8342d9072b47aa "pdflatex"
   (generated)
   "neurips_2024.bbl"
   "neurips_2024.blg"
   (rewritten before read)
-["pdflatex"] 1765213486.54019 "/home/bc/Desktop/python/wisent/wisent/table/neurips_2024.tex" "neurips_2024.pdf" "neurips_2024" 1765213487.26475 2
+["pdflatex"] 1765213636.6532 "/home/bc/Desktop/python/wisent/wisent/table/neurips_2024.tex" "neurips_2024.pdf" "neurips_2024" 1765213637.82453 2
   "/etc/texmf/web2c/texmf.cnf" 1765184022.82165 475 c0e671620eb5563b2130f56340a5fde8 ""
   "/home/bc/.texlive2023/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk" 1765184141.81082 20008 3c7a271bd8b1eb105eaa286dbb088f1e ""
-  "/home/bc/Desktop/python/wisent/wisent/table/neurips_2024.tex" 1765213484.90732 16523 8d067002fca911ac43b68bd545e74d6b ""
+  "/home/bc/Desktop/python/wisent/wisent/table/neurips_2024.tex" 1765213636.18992 16523 8d067002fca911ac43b68bd545e74d6b ""
   "/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/share/texlive/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/share/texlive/texmf-dist/fonts/tfm/adobe/helvetic/phvr8r.tfm" 1136768653 4712 9ef4d7d106579d4b136e1529e1a4533c ""
@@ -181,11 +181,11 @@
   "/usr/share/texmf/web2c/texmf.cnf" 1707919699 40399 f2c302f7d2af602abb742093540a5834 ""
   "/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map" 1765184027.24796 128028 f533b797fba58d231669ea19e894e23e ""
   "/var/lib/texmf/web2c/pdftex/pdflatex.fmt" 1765184048 6800787 6625cb10b228731f3aabcdcc85620e7d ""
-  "neurips_2024.aux" 1765213487.13599 7265 4a894557d03617ddfd8342d9072b47aa "pdflatex"
-  "neurips_2024.bbl" 1765213486.33589 13170 feafa5fe31699d62eba3a71cb5b6b7f6 "bibtex neurips_2024"
-  "neurips_2024.out" 1765213487.13618 4004 f0f6d7538ab7718c3de50e78832ae61e "pdflatex"
+  "neurips_2024.aux" 1765213637.64668 7265 4a894557d03617ddfd8342d9072b47aa "pdflatex"
+  "neurips_2024.bbl" 1765213636.18721 13170 feafa5fe31699d62eba3a71cb5b6b7f6 "bibtex neurips_2024"
+  "neurips_2024.out" 1765213637.64868 4004 f0f6d7538ab7718c3de50e78832ae61e "pdflatex"
   "neurips_2024.sty" 1764749427.06592 11625 b5f853b54a7a098e9e5b837f826d5daa ""
-  "neurips_2024.tex" 1765213484.90732 16523 8d067002fca911ac43b68bd545e74d6b ""
+  "neurips_2024.tex" 1765213636.18992 16523 8d067002fca911ac43b68bd545e74d6b ""
   (generated)
   "neurips_2024.aux"
   "neurips_2024.log"
