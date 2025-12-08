@@ -21,11 +21,11 @@ _diversity = FastDiversity()
 
 
 def evaluate_difference(
-    baseline_response: str,
-    steered_response: str,
-    model: PreTrainedModel,
-    tokenizer: PreTrainedTokenizer,
-    device: "torch.device",
+    baseline_response: "str | list[str]",
+    steered_response: "str | list[str]",
+    model: "PreTrainedModel | None" = None,
+    tokenizer: "PreTrainedTokenizer | None" = None,
+    device: "torch.device | None" = None,
 ) -> float:
     """
     Evaluate how different two responses are using Jaccard distance on a scale of 1-100.
@@ -34,8 +34,8 @@ def evaluate_difference(
     This is fast, objective, and produces varied scores.
 
     Args:
-        baseline_response: The baseline response
-        steered_response: The steered response
+        baseline_response: The baseline response (string or list of strings)
+        steered_response: The steered response (string or list of strings)
         model: The model (not used, kept for API compatibility)
         tokenizer: The tokenizer (not used, kept for API compatibility)
         device: Device (not used, kept for API compatibility)
@@ -45,7 +45,25 @@ def evaluate_difference(
         - 1 = Nearly identical (high Jaccard similarity)
         - 100 = Completely different (low Jaccard similarity)
     """
-    # Calculate Jaccard similarity (0-1 scale)
+    # Handle list inputs - compute average difference
+    if isinstance(baseline_response, list) and isinstance(steered_response, list):
+        if len(baseline_response) != len(steered_response):
+            # Different lengths - compare what we can
+            min_len = min(len(baseline_response), len(steered_response))
+            baseline_response = baseline_response[:min_len]
+            steered_response = steered_response[:min_len]
+        
+        if not baseline_response:
+            return 50.0  # Default if empty
+        
+        differences = []
+        for b, s in zip(baseline_response, steered_response):
+            similarity = _diversity._jaccard(b, s)
+            diff = (1.0 - similarity) * 99.0 + 1.0
+            differences.append(diff)
+        return sum(differences) / len(differences)
+    
+    # Single string inputs
     similarity = _diversity._jaccard(baseline_response, steered_response)
 
     # Convert similarity to difference: higher similarity = lower difference
