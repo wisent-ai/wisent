@@ -281,6 +281,15 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
         help="Make Hub repository private"
     )
 
+    # Optimal config usage
+    parser.add_argument(
+        "--no-optimal",
+        action="store_false",
+        dest="use_optimal",
+        default=True,
+        help="Don't use optimal config from previous optimization (use defaults instead)"
+    )
+
     # General options
     parser.add_argument(
         "--verbose",
