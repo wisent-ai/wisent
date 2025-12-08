@@ -1,36 +1,56 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli_logger import setup_logger, bind
-
-if TYPE_CHECKING:
-    from lm_eval.api.task import ConfigurableTask
-
+from wisent.core.cli_logger import setup_logger
 
 __all__ = ["HumanevalpackExtractor"]
-_LOG = setup_logger(__name__)
+log = setup_logger(__name__)
 
 task_names = ("humanevalpack",)
 
+
 class HumanevalpackExtractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for Humanevalpack benchmark."""
+    """
+    Extractor for HumanEvalPack multilingual coding benchmark.
 
+    HumanEvalPack schema (bigcode/humanevalpack):
+        - task_id: str (e.g., "Python/0")
+        - prompt: str (function signature + docstring)
+        - canonical_solution: str (correct implementation)
+        - test: str (unit tests)
+        - entry_point: str (function name)
+        - language: str (Python, JavaScript, etc.)
+    """
 
-    evaluator_name = "exact_match"
+    evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        """
+        Build contrastive pairs from HumanEvalPack examples.
+
+        Args:
+            limit: Optional maximum number of pairs to produce.
+
+        Returns:
+            A list of ContrastivePair objects.
+        """
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+
+        docs = self.load_dataset(
+            dataset_name="bigcode/humanevalpack",
+            dataset_config="python",
+            split="test",
+            limit=max_items,
+        )
+
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
+        log.info(f"Extracting contrastive pairs from {len(docs)} HumanEvalPack examples")
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -40,60 +60,42 @@ class HumanevalpackExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
+            log.warning("No valid HumanEvalPack pairs extracted")
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
+        """Convert a single HumanEvalPack doc into a ContrastivePair."""
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-            
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
+            task_id = doc.get("task_id", "")
+            prompt = doc.get("prompt", "").strip()
+            canonical_solution = doc.get("canonical_solution", "").strip()
+            entry_point = doc.get("entry_point", "")
+            test_code = doc.get("test", "").strip()
 
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            if not prompt or not canonical_solution:
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+            correct_code = prompt + "\n" + canonical_solution
+            incorrect_code = prompt + "\n    pass  # Incorrect: empty implementation"
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
+            question = f"Complete the following function:\n\n{prompt}"
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "humanevalpack"}
+            metadata = {
+                "label": "humanevalpack",
+                "task_id": task_id,
+                "entry_point": entry_point,
+                "test_code": test_code,
+            }
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=question,
+                correct=correct_code,
+                incorrect=incorrect_code,
                 metadata=metadata,
             )
 
         except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+            log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
 

@@ -1,36 +1,52 @@
 from __future__ import annotations
 
-from typing import Any, TYPE_CHECKING
+from typing import Any
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli_logger import setup_logger, bind
-
-if TYPE_CHECKING:
-    from lm_eval.api.task import ConfigurableTask
-
+from wisent.core.cli_logger import setup_logger
 
 __all__ = ["Ds1000Extractor"]
-_LOG = setup_logger(__name__)
+log = setup_logger(__name__)
 
 task_names = ("ds1000",)
 
+
 class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
-    """Extractor for Ds1000 benchmark."""
+    """
+    Extractor for DS-1000 Data Science coding benchmark.
 
+    DS-1000 schema (xlangai/DS-1000):
+        - prompt: str (problem description with code context)
+        - reference_code: str (correct solution)
+        - metadata: dict (library info, problem_id, etc.)
+    """
 
-    evaluator_name = "exact_match"
+    evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        """
+        Build contrastive pairs from DS-1000 examples.
+
+        Args:
+            limit: Optional maximum number of pairs to produce.
+
+        Returns:
+            A list of ContrastivePair objects.
+        """
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+
+        docs = self.load_dataset(
+            dataset_name="xlangai/DS-1000",
+            split="test",
+            limit=max_items,
+        )
+
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
+        log.info(f"Extracting contrastive pairs from {len(docs)} DS-1000 examples")
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -40,60 +56,38 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid pairs extracted", extra={"task": task_name})
+            log.warning("No valid DS-1000 pairs extracted")
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        log = bind(_LOG, doc_id=doc.get("id", "unknown"))
-
+        """Convert a single DS-1000 doc into a ContrastivePair."""
         try:
-            # Try multiple format patterns for question
-            question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
+            prompt = doc.get("prompt", "").strip()
+            reference_code = doc.get("reference_code", "").strip()
+            metadata_info = doc.get("metadata", {})
             
-            # Try multiple format patterns for choices
-            choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-            
-            # Handle option_a/b/c/d format
-            if not choices and "option_a" in doc:
-                choices = [
-                    str(doc.get("option_a", "")).strip(),
-                    str(doc.get("option_b", "")).strip(),
-                    str(doc.get("option_c", "")).strip(),
-                    str(doc.get("option_d", "")).strip(),
-                ]
-                choices = [c for c in choices if c]
-
-            # Try multiple format patterns for answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", None)))
-
-            if isinstance(answer, str) and len(answer) == 1 and answer.isalpha():
-                answer_idx = ord(answer.upper()) - ord('A')
-            elif isinstance(answer, int):
-                answer_idx = answer
-            else:
+            if not prompt or not reference_code:
                 return None
 
-            if not question or not choices or not (0 <= answer_idx < len(choices)):
-                log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
-                return None
+            question = f"Complete the following data science code:\n\n{prompt}"
+            correct_code = reference_code
+            incorrect_code = "# TODO: implement solution\npass"
 
-            correct = str(choices[answer_idx]).strip()
-            incorrect_idx = (answer_idx + 1) % len(choices)
-            incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-            metadata = {"label": "ds1000"}
+            metadata = {
+                "label": "ds1000",
+                "problem_id": metadata_info.get("problem_id", ""),
+                "library": metadata_info.get("library", ""),
+            }
 
             return self._build_pair(
-                question=formatted_question,
-                correct=correct,
-                incorrect=incorrect,
+                question=question,
+                correct=correct_code,
+                incorrect=incorrect_code,
                 metadata=metadata,
             )
 
         except Exception as exc:
-            log.error("Error extracting pair from doc", exc_info=exc, extra={"doc": doc})
+            log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
 

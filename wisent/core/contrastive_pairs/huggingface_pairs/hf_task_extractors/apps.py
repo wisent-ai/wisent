@@ -36,9 +36,10 @@ class AppsExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        # Load dataset
+        # Load dataset (apps requires a configuration)
         docs = self.load_dataset(
             dataset_name="codeparrot/apps",
+            dataset_config="all",
             split="train",
             limit=max_items,
         )

@@ -85,9 +85,17 @@ def execute_comprehensive(args, model, loader):
     from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
     from wisent.core.models.core.atoms import SteeringPlan
     from wisent.core.cli.steering_method_trainer import create_steering_method
+    from wisent.core.cli.steering_search_space import (
+        get_search_space_from_args,
+        print_search_space_summary,
+        CAASearchSpace,
+        PRISMSearchSpace,
+        PULSESearchSpace,
+        TITANSearchSpace,
+    )
 
     print("🔍 Running comprehensive steering optimization...")
-    print("   Optimizing: Layer, Strength, Steering Strategy, Token Aggregation, Prompt Construction")
+    print("   Optimizing: Method-specific search space (layer, strength, strategy, + method params)")
 
     # Determine tasks to optimize
     if args.tasks:
@@ -141,43 +149,65 @@ def execute_comprehensive(args, model, loader):
     print(f"   Tasks: {', '.join(task_list)}")
     print(f"   Methods: {', '.join(args.methods)}")
     print(f"   Limit: {args.limit} samples per task")
+    quick_search = getattr(args, 'quick_search', False)
+    print(f"   Quick search: {quick_search}")
     print("   Time limit: DISABLED (no time limit)\n")
 
     all_results = {}
 
-    # Steering parameters to test
-    layers_to_test = [4, 6, 8, 10, 12] if model.num_layers > 12 else list(range(2, model.num_layers, 2))
-    strengths_to_test = [0.5, 1.0, 1.5, 2.0]
-    strategies_to_test = ["constant", "initial_only", "diminishing", "all_equal"]
+    # Get search spaces for each method and print summary
+    method_search_spaces = {}
+    total_all_methods = 0
+    for method_name in args.methods:
+        search_space = get_search_space_from_args(method_name, args, model.num_layers)
+        method_search_spaces[method_name] = search_space
+        print_search_space_summary(search_space, method_name)
+        total_all_methods += search_space.get_total_configs()
+    
+    print(f"\n   Total configurations across all methods: {total_all_methods:,}\n")
+    
+    # For backward compatibility, also set up the legacy variables
+    # These are used by some code paths that haven't been fully migrated
+    first_method = args.methods[0] if args.methods else "CAA"
+    first_space = method_search_spaces.get(first_method)
+    if isinstance(first_space, (CAASearchSpace, PRISMSearchSpace)):
+        layers_to_test = first_space.layers
+    else:
+        # PULSE/TITAN don't use direct layers, compute defaults
+        layers_to_test = list(range(model.num_layers // 2, model.num_layers - 2, 2))
+    
+    strengths_to_test = first_space.strengths if first_space else [0.5, 1.0, 1.5, 2.0]
+    strategies_to_test = first_space.strategies if first_space else ["constant", "initial_only", "diminishing"]
+    
+    # Convert string token aggregations to enum
+    token_agg_map = {
+        "last_token": ActivationAggregationStrategy.LAST_TOKEN,
+        "mean_pooling": ActivationAggregationStrategy.MEAN_POOLING,
+        "first_token": ActivationAggregationStrategy.FIRST_TOKEN,
+        "max_pooling": ActivationAggregationStrategy.MAX_POOLING,
+        "choice_token": ActivationAggregationStrategy.CHOICE_TOKEN,
+        "continuation_token": ActivationAggregationStrategy.CONTINUATION_TOKEN,
+    }
     token_aggregations_to_test = [
-        ActivationAggregationStrategy.LAST_TOKEN,
-        ActivationAggregationStrategy.MEAN_POOLING,
-        ActivationAggregationStrategy.FIRST_TOKEN,
-        ActivationAggregationStrategy.MAX_POOLING,
-        ActivationAggregationStrategy.CHOICE_TOKEN,
-        ActivationAggregationStrategy.CONTINUATION_TOKEN,
+        token_agg_map.get(t, ActivationAggregationStrategy.LAST_TOKEN) 
+        for t in (first_space.token_aggregations if first_space else ["last_token", "mean_pooling"])
     ]
+    
+    # Convert string prompt constructions to enum
+    prompt_const_map = {
+        "chat_template": PromptConstructionStrategy.CHAT_TEMPLATE,
+        "direct_completion": PromptConstructionStrategy.DIRECT_COMPLETION,
+        "multiple_choice": PromptConstructionStrategy.MULTIPLE_CHOICE,
+        "role_playing": PromptConstructionStrategy.ROLE_PLAYING,
+        "instruction_following": PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+    }
     prompt_constructions_to_test = [
-        PromptConstructionStrategy.CHAT_TEMPLATE,
-        PromptConstructionStrategy.DIRECT_COMPLETION,
-        PromptConstructionStrategy.MULTIPLE_CHOICE,
-        PromptConstructionStrategy.ROLE_PLAYING,
-        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+        prompt_const_map.get(p, PromptConstructionStrategy.CHAT_TEMPLATE)
+        for p in (first_space.prompt_constructions if first_space else ["chat_template", "direct_completion"])
     ]
-
-    print(f"   Layers: {layers_to_test}")
-    print(f"   Strengths: {strengths_to_test}")
-    print(f"   Strategies: {strategies_to_test}")
-    print(f"   Token Aggregations: {[t.value for t in token_aggregations_to_test]}")
-    print(f"   Prompt Constructions: {[p.value for p in prompt_constructions_to_test]}")
-    total_configs = (
-        len(layers_to_test)
-        * len(strengths_to_test)
-        * len(strategies_to_test)
-        * len(token_aggregations_to_test)
-        * len(prompt_constructions_to_test)
-    )
-    print(f"   Total configurations per task: {total_configs}\n")
+    
+    # For legacy code paths
+    total_configs = first_space.get_total_configs() if first_space else 100
 
     for task_idx, task_name in enumerate(task_list, 1):
         print(f"\n{'=' * 80}")
