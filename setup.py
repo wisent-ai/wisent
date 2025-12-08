@@ -53,6 +53,7 @@ setup(
         "sentence-transformers>=2.0.0",
         "faiss-cpu>=1.7.0",
         "uncensorbench>=0.2.0",
+        "pebble>=5.0.0",
     ],
     extras_require={
         "harness": [
