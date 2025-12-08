@@ -132,6 +132,140 @@ def setup_steering_optimizer_parser(parser):
         default=0.1,
         help="Minimum cross-validation score for early rejection during optimization (default: 0.1)"
     )
+    
+    # ==========================================================================
+    # SEARCH SPACE CONFIGURATION
+    # ==========================================================================
+    
+    # Quick search mode
+    comprehensive_parser.add_argument(
+        "--quick-search",
+        action="store_true",
+        help="Use reduced search space for faster testing (fewer configurations)"
+    )
+    
+    # Base search space overrides
+    comprehensive_parser.add_argument(
+        "--search-layers",
+        type=str,
+        default=None,
+        help="Comma-separated layer indices to search (e.g., '8,10,12,14')"
+    )
+    comprehensive_parser.add_argument(
+        "--search-strengths",
+        type=str,
+        default=None,
+        help="Comma-separated strength values to search (e.g., '0.5,1.0,1.5,2.0')"
+    )
+    comprehensive_parser.add_argument(
+        "--search-strategies",
+        type=str,
+        nargs="+",
+        default=None,
+        choices=["constant", "initial_only", "diminishing", "all_equal"],
+        help="Steering strategies to search"
+    )
+    comprehensive_parser.add_argument(
+        "--search-token-aggregations",
+        type=str,
+        nargs="+",
+        default=None,
+        choices=["last_token", "mean_pooling", "first_token", "max_pooling"],
+        help="Token aggregation strategies to search"
+    )
+    
+    # PRISM-specific search space
+    comprehensive_parser.add_argument(
+        "--search-num-directions",
+        type=int,
+        nargs="+",
+        default=None,
+        help="[PRISM/TITAN] Number of directions to search (e.g., 1 2 3 5)"
+    )
+    comprehensive_parser.add_argument(
+        "--search-direction-weighting",
+        type=str,
+        nargs="+",
+        default=None,
+        choices=["primary_only", "equal", "learned", "decay"],
+        help="[PRISM] Direction weighting strategies to search"
+    )
+    comprehensive_parser.add_argument(
+        "--search-retain-weight",
+        type=float,
+        nargs="+",
+        default=None,
+        help="[PRISM/TITAN] Retain weight values to search (e.g., 0.0 0.1 0.3)"
+    )
+    
+    # PULSE-specific search space
+    comprehensive_parser.add_argument(
+        "--search-sensor-layer",
+        type=str,
+        nargs="+",
+        default=None,
+        choices=["middle", "late", "last_quarter"],
+        help="[PULSE/TITAN] Sensor layer configurations to search"
+    )
+    comprehensive_parser.add_argument(
+        "--search-steering-layers",
+        type=str,
+        nargs="+",
+        default=None,
+        choices=["single_best", "range_3", "range_5", "all_late"],
+        help="[PULSE/TITAN] Steering layer configurations to search"
+    )
+    comprehensive_parser.add_argument(
+        "--search-threshold",
+        type=float,
+        nargs="+",
+        default=None,
+        help="[PULSE] Condition threshold values to search (e.g., 0.3 0.5 0.7)"
+    )
+    comprehensive_parser.add_argument(
+        "--search-gate-temp",
+        type=float,
+        nargs="+",
+        default=None,
+        help="[PULSE] Gate temperature values to search (e.g., 0.1 0.5 1.0)"
+    )
+    comprehensive_parser.add_argument(
+        "--search-max-alpha",
+        type=float,
+        nargs="+",
+        default=None,
+        help="[PULSE/TITAN] Max alpha values to search (e.g., 1.5 2.0 3.0)"
+    )
+    
+    # TITAN-specific search space
+    comprehensive_parser.add_argument(
+        "--search-gate-hidden",
+        type=int,
+        nargs="+",
+        default=None,
+        help="[TITAN] Gate hidden dimension values to search (e.g., 32 64 128)"
+    )
+    comprehensive_parser.add_argument(
+        "--search-intensity-hidden",
+        type=int,
+        nargs="+",
+        default=None,
+        help="[TITAN] Intensity hidden dimension values to search (e.g., 16 32 64)"
+    )
+    comprehensive_parser.add_argument(
+        "--search-behavior-weight",
+        type=float,
+        nargs="+",
+        default=None,
+        help="[TITAN] Behavior weight values to search (e.g., 0.5 1.0)"
+    )
+    comprehensive_parser.add_argument(
+        "--search-sparse-weight",
+        type=float,
+        nargs="+",
+        default=None,
+        help="[TITAN] Sparse weight values to search (e.g., 0.0 0.05 0.1)"
+    )
 
     # Method comparison subcommand
     method_parser = steering_subparsers.add_parser(
