@@ -73,13 +73,11 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
 
             question = f"Complete the following data science code:\n\n{prompt}"
             correct_code = reference_code
-            incorrect_code = "# TODO: implement solution\npass"
+            incorrect_code = "result = None  # Incorrect: no implementation"
 
-            # Build test code from code_context if available
-            test_code = None
-            if code_context:
-                # DS-1000 code_context contains test setup and generate_ans function
-                test_code = code_context
+            # Build test code from code_context
+            # DS-1000 has generate_test_case, exec_test, exec_context in code_context
+            test_code = self._build_test_code(code_context, prompt)
 
             metadata = {
                 "label": "ds1000",
@@ -98,4 +96,45 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
         except Exception as exc:
             log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
+
+    def _build_test_code(self, code_context: str, prompt: str) -> str | None:
+        """Build executable test code from DS-1000 code_context.
+        
+        DS-1000 code_context contains:
+        - generate_test_case(test_case_id): generates test input and expected result
+        - exec_test(result, ans): checks if result matches expected
+        - exec_context: code template to execute solution
+        """
+        if not code_context:
+            return None
+        
+        # Extract the setup code from prompt (between <code> and </code> tags)
+        setup_code = ""
+        if "<code>" in prompt and "</code>" in prompt:
+            # Find first <code>...</code> block which contains setup
+            start = prompt.find("<code>") + len("<code>")
+            end = prompt.find("</code>")
+            if start < end:
+                setup_code = prompt[start:end].strip()
+        
+        # Build test that:
+        # 1. Sets up the environment from code_context (has generate_test_case, exec_test)
+        # 2. Runs setup code from prompt (defines variables like df, List)
+        # 3. Executes solution in same namespace (uses variables, produces result)
+        # 4. Checks result with exec_test
+        test_code = f'''{code_context}
+
+# Setup from prompt (defines variables)
+{setup_code}
+
+# Run solution in same namespace
+exec(open("solution.py").read(), globals())
+
+# Run test
+test_input, expected_result = generate_test_case(1)
+if exec_test(result, expected_result) != 1:
+    raise AssertionError(f"Test failed: result does not match expected")
+print("Test passed!")
+'''
+        return test_code
 

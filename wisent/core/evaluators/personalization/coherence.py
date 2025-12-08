@@ -113,7 +113,13 @@ def _is_incoherent(text: str) -> bool:
     if len(tokens) < 4:
         return True
 
-    # Check 3: Repeated sentences - split by sentence endings
+    # Check 3: Consecutive duplicate words (e.g., "policymakers policymakers")
+    tokens_lower = [t.lower().strip('.,!?"\'-') for t in tokens]
+    for i in range(len(tokens_lower) - 1):
+        if tokens_lower[i] == tokens_lower[i + 1] and len(tokens_lower[i]) > 2:
+            return True
+
+    # Check 4: Repeated sentences - split by sentence endings
     sentences = re.split(r'[.!?]+', text)
     sentences = [s.strip().lower() for s in sentences if s.strip()]
     if len(sentences) >= 2:
@@ -122,7 +128,7 @@ def _is_incoherent(text: str) -> bool:
         if len(unique_sentences) < len(sentences) * 0.5:
             return True
 
-    # Check 4: Repeated phrases (3+ word sequences appearing multiple times)
+    # Check 5: Repeated phrases (3+ word sequences appearing multiple times)
     if len(tokens) >= 6:
         trigrams = [' '.join(tokens[i:i+3]) for i in range(len(tokens) - 2)]
         trigram_counts = Counter(trigrams)
@@ -131,14 +137,14 @@ def _is_incoherent(text: str) -> bool:
         if most_common_count >= 3:
             return True
 
-    # Check 5: Circular statements that don't add information
+    # Check 6: Circular statements that don't add information
     # e.g., "Football, football, and the beautiful game are intertwined, intertwined, intertwined"
     unique_tokens = set(t.lower().strip('.,!?"\'-') for t in tokens)
     # If unique words are less than 40% of total words, very repetitive
     if len(tokens) >= 5 and len(unique_tokens) / len(tokens) < 0.4:
         return True
 
-    # Check 6: Non-answer patterns
+    # Check 7: Non-answer patterns
     non_answer_patterns = [
         r'^"?no"?\.?$',  # Just "No" or "No."
         r'^therefore\s+there\s+(are|is)\s+no',  # "Therefore there are no..."
@@ -150,7 +156,7 @@ def _is_incoherent(text: str) -> bool:
         if re.match(pattern, text_lower):
             return True
 
-    # Check 7: Excessive repetition of the same word (3+ times for content words)
+    # Check 8: Excessive repetition of the same word (3+ times for content words)
     content_words = [t.lower().strip('.,!?"\'-') for t in tokens if len(t) > 3]
     if content_words:
         word_counts = Counter(content_words)

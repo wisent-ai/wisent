@@ -254,7 +254,7 @@ class OptimizationPipeline:
     @property
     def is_coding_task(self) -> bool:
         """Check if the current task requires code execution evaluation."""
-        from ...parameters.task_config import CODING_TASKS
+        from wisent.parameters.task_config import CODING_TASKS
         from ..bigcode_integration import is_bigcode_task
 
         val_dataset = getattr(self.config, "val_dataset", None)
@@ -927,7 +927,12 @@ class OptimizationPipeline:
         steering_instance = get_steering_method(method_name, device=self.device, **hyperparams)
 
         # Train steering method (only takes pair_set, layer is embedded in activations)
-        steering_instance.train(contrastive_pairs)
+        # train() returns LayerActivations with per-layer steering vectors
+        trained_vectors = steering_instance.train(contrastive_pairs)
+        
+        # Store trained vectors on the instance for later use in generation
+        steering_instance._trained_vectors = trained_vectors.to_dict() if hasattr(trained_vectors, 'to_dict') else dict(trained_vectors)
+        
         return steering_instance, quality_metrics
 
     def _create_contrastive_pairs(
@@ -1396,12 +1401,27 @@ class OptimizationPipeline:
     def _generate_with_steering_batched(
         self, steering_instance: Any, questions: list[str], alpha: float, layer_id: int
     ) -> list[str]:
-        """Generate responses with steering applied in batches using apply_steering()."""
+        """Generate responses with steering applied in batches using steering vectors."""
         if not questions:
             return []
 
         batch_size = self.config.batch_size
         all_responses = []
+
+        # Get the steering vector from the trained instance
+        # The steering method's train() returns LayerActivations, we need to get the vector for our layer
+        steering_vector = None
+        if hasattr(steering_instance, '_trained_vectors') and steering_instance._trained_vectors is not None:
+            layer_key = f"layer_{layer_id}"
+            if layer_key in steering_instance._trained_vectors:
+                steering_vector = steering_instance._trained_vectors[layer_key]
+        
+        if steering_vector is None:
+            self.logger.warning(f"No steering vector found for layer {layer_id}, returning baseline")
+            return self._generate_baseline_batched(questions)
+        
+        # Ensure vector is on correct device
+        steering_vector = steering_vector.to(self.device)
 
         # Get inference config settings with optional overrides from self.config
         gen_kwargs = get_generate_kwargs(max_new_tokens=self.config.max_new_tokens)
@@ -1420,11 +1440,12 @@ class OptimizationPipeline:
             ).to(self.device)
 
             def steering_hook(module, input, output):
-                """Hook that applies steering using the steering method's apply_steering()."""
+                """Hook that applies steering vector directly to hidden states."""
                 hidden_states = output[0] if isinstance(output, tuple) else output
 
-                # Apply steering using the method's apply_steering() function
-                steered = steering_instance.apply_steering(hidden_states, strength=alpha)
+                # Apply steering vector: hidden_states + alpha * steering_vector
+                # Steering vector shape: [hidden_dim], hidden_states shape: [batch, seq, hidden_dim]
+                steered = hidden_states + alpha * steering_vector.unsqueeze(0).unsqueeze(0)
 
                 if isinstance(output, tuple):
                     return (steered, *output[1:])
