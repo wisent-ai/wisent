@@ -30,6 +30,7 @@ setup(
             "parameters/lm_eval/*.json",
             "parameters/tasks/*.json",
             "examples/scripts/*.json",
+            "scripts/*.sh",
         ],
     },
     classifiers=[

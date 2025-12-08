@@ -38,6 +38,11 @@ def execute_modify_weights(args):
     4. Modify weights (norm-preserving directional projection or additive)
     5. Export modified model
     """
+    # Expand task if it's a skill or risk name
+    from wisent.core.task_selector import expand_task_if_skill_or_risk
+    if getattr(args, 'task', None):
+        args.task = expand_task_if_skill_or_risk(args.task)
+    
     log = bind(_LOG)
     start_time = time.time()
 

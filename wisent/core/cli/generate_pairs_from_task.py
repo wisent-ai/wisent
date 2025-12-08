@@ -9,6 +9,11 @@ from wisent.core.errors import InvalidDataFormatError
 
 def execute_generate_pairs_from_task(args):
     """Execute the generate-pairs-from-task command - load and save contrastive pairs from a task."""
+    # Expand task if it's a skill or risk name
+    from wisent.core.task_selector import expand_task_if_skill_or_risk
+    if hasattr(args, 'task_name') and args.task_name:
+        args.task_name = expand_task_if_skill_or_risk(args.task_name)
+    
     from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import (
         lm_build_contrastive_pairs,

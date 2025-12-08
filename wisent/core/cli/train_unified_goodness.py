@@ -62,6 +62,11 @@ def execute_train_unified_goodness(args):
     4. Train single unified steering vector from pooled data
     5. Evaluate vector across ALL benchmarks (pooled evaluation)
     """
+    # Expand task if it's a skill or risk name
+    from wisent.core.task_selector import expand_task_if_skill_or_risk
+    if args.task:
+        args.task = expand_task_if_skill_or_risk(args.task)
+    
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
