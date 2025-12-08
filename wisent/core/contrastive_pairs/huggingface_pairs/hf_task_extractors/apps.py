@@ -121,28 +121,46 @@ class AppsExtractor(HuggingFaceBenchmarkExtractor):
             return None
 
     def _build_test_code_from_io(self, io_data: dict) -> str:
-        """Build test code from input/output data."""
-        # APPS input_output format: {"inputs": ["input1", "input2"], "outputs": ["output1", "output2"]}
-        test_code = "def check(candidate):\n"
-        test_code += "    import sys\n"
-        test_code += "    from io import StringIO\n\n"
-
+        """Build test code from input/output data.
+        
+        APPS solutions are script-style (stdin/stdout), not functions.
+        We use subprocess to run solution.py with the input.
+        """
         inputs = io_data.get("inputs", [])
         outputs = io_data.get("outputs", [])
+        
+        if not inputs or not outputs:
+            return None
 
+        # Build test code that runs solution.py as a subprocess
+        test_code = '''import subprocess
+import sys
+
+def run_solution(input_str):
+    """Run solution.py with given input and return output."""
+    result = subprocess.run(
+        [sys.executable, "solution.py"],
+        input=input_str,
+        capture_output=True,
+        text=True,
+        timeout=10
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Solution failed: {result.stderr}")
+    return result.stdout
+
+'''
+        test_code += "if __name__ == '__main__':\n"
+        
         for i, (inp, out) in enumerate(zip(inputs, outputs)):
             test_code += f"    # Test case {i+1}\n"
-            test_code += f"    old_stdin = sys.stdin\n"
-            test_code += f"    sys.stdin = StringIO({repr(inp)})\n"
-            test_code += f"    old_stdout = sys.stdout\n"
-            test_code += f"    sys.stdout = StringIO()\n"
-            test_code += f"    candidate()\n"
-            test_code += f"    result = sys.stdout.getvalue()\n"
-            test_code += f"    sys.stdin = old_stdin\n"
-            test_code += f"    sys.stdout = old_stdout\n"
-            test_code += f"    assert result.strip() == {repr(out)}.strip(), f'Expected {{repr({repr(out)})}}, got {{repr(result)}}'\n\n"
+            test_code += f"    result = run_solution({repr(inp)})\n"
+            test_code += f"    expected = {repr(out)}\n"
+            test_code += f"    assert result.strip() == expected.strip(), f'Test {i+1} failed: expected {{repr(expected)}}, got {{repr(result)}}'\n\n"
+        
+        test_code += "    print('All tests passed!')\n"
 
-        return test_code if inputs and outputs else None
+        return test_code
 
     def _create_incorrect_answer(self, correct: str) -> str:
         """Create an incorrect answer by modifying the correct one."""

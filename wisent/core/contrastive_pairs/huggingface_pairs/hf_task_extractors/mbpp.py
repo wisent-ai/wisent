@@ -85,25 +85,36 @@ class MBPPExtractor(HuggingFaceBenchmarkExtractor):
             # Format the prompt
             formatted_prompt = f"{problem_text}\n\nWrite a Python function to solve this problem."
 
-            # Build test code from test_list (similar to MBPP dataset format)
+            # Build test code from test_list
             # The test_list contains assertion strings like "assert function_name(...) == expected"
             test_code = ""
+            entry_point = None
             if test_list:
+                # Extract function name from correct_code
+                import re
+                func_match = re.search(r'def\s+(\w+)\s*\(', correct_code)
+                if func_match:
+                    entry_point = func_match.group(1)
+                
                 # Add imports if provided
                 if test_imports:
                     test_code += "\n".join(test_imports) + "\n\n"
 
-                # Add test function
+                # Build test function that uses 'candidate' parameter
                 test_code += "def check(candidate):\n"
                 for test_case in test_list:
-                    # Replace function name in assertion with 'candidate'
-                    # This assumes the test_list contains assertions like "assert func(...) == result"
-                    test_code += f"    {test_case}\n"
+                    # Replace function name with 'candidate' in assertions
+                    if entry_point:
+                        modified_test = test_case.replace(f"{entry_point}(", "candidate(")
+                    else:
+                        modified_test = test_case
+                    test_code += f"    {modified_test}\n"
 
             metadata = {
                 "label": "mbpp",
                 "source": "mbpp",
                 "test_code": test_code if test_code else None,
+                "entry_point": entry_point,
             }
 
             return self._build_pair(
