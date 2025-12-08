@@ -30,6 +30,91 @@ class BenchmarkExtractor(ABC):
         """Check if predicted answer matches expected."""
         return self.normalize_answer(predicted) == self.normalize_answer(expected)
 
+    def extract_qa_pair(
+        self,
+        sample: dict,
+        task: any = None,
+    ) -> Optional[dict]:
+        """
+        Extract a question-answer pair from a sample dictionary.
+        
+        This method handles common field names across different benchmarks.
+        Subclasses can override for benchmark-specific extraction.
+        
+        Args:
+            sample: A document/sample dictionary from a benchmark.
+            task: Optional task object (may be needed for some extractors).
+            
+        Returns:
+            A dict with keys "formatted_question" and "correct_answer",
+            or None if extraction fails.
+        """
+        question = None
+        answer = None
+        
+        # Try common question field names
+        for q_field in ["question", "prompt", "text", "input", "problem", "query"]:
+            if q_field in sample and sample[q_field]:
+                question = str(sample[q_field]).strip()
+                break
+        
+        # Try common answer field names
+        for a_field in ["answer", "target", "label", "output", "solution", "expected"]:
+            if a_field in sample and sample[a_field]:
+                answer = str(sample[a_field]).strip()
+                # For GSM8K style answers with "####", extract the numerical part
+                if "####" in answer:
+                    answer = answer.split("####")[-1].strip()
+                break
+        
+        if not question or not answer:
+            return None
+            
+        return {
+            "formatted_question": f"Question: {question}",
+            "correct_answer": answer,
+        }
+
+    def extract_contrastive_pair(
+        self,
+        sample: dict,
+        task: any = None,
+    ) -> Optional[dict]:
+        """
+        Extract a contrastive pair (question, correct, incorrect) from a sample.
+        
+        This is used for steering vector training. Returns question with both
+        correct and incorrect answers.
+        
+        Args:
+            sample: A document/sample dictionary from a benchmark.
+            task: Optional task object (may be needed for some extractors).
+            
+        Returns:
+            A dict with keys "question", "correct_answer", "incorrect_answer",
+            or None if extraction fails.
+        """
+        qa_pair = self.extract_qa_pair(sample, task)
+        if not qa_pair:
+            return None
+            
+        # Generate a simple incorrect answer by modifying the correct one
+        correct = qa_pair["correct_answer"]
+        try:
+            # For numerical answers, add 1
+            num_val = float(correct.replace(',', ''))
+            incorrect_val = num_val + 1
+            incorrect = str(int(incorrect_val)) if incorrect_val == int(incorrect_val) else str(incorrect_val)
+        except (ValueError, TypeError):
+            # For text answers, just use a placeholder
+            incorrect = "I don't know"
+            
+        return {
+            "question": qa_pair["formatted_question"],
+            "correct_answer": correct,
+            "incorrect_answer": incorrect,
+        }
+
 
 class GSM8KExtractor(BenchmarkExtractor):
     """Extractor for GSM8K and math tasks."""
