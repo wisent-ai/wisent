@@ -106,6 +106,7 @@ wisent/core/cli/inference_config_cli.py
 wisent/core/cli/modify_weights.py
 wisent/core/cli/multi_steer.py
 wisent/core/cli/optimization_cache.py
+wisent/core/cli/optimize.py
 wisent/core/cli/optimize_all.py
 wisent/core/cli/optimize_classification.py
 wisent/core/cli/optimize_sample_size.py
@@ -827,6 +828,7 @@ wisent/core/evaluators/custom/examples/__init__.py
 wisent/core/evaluators/custom/examples/desklib_detector.py
 wisent/core/evaluators/custom/examples/gptzero.py
 wisent/core/evaluators/custom/examples/humanization.py
+wisent/core/evaluators/custom/examples/humanization_coherent.py
 wisent/core/evaluators/custom/examples/roberta_detector.py
 wisent/core/evaluators/oracles/__init__.py
 wisent/core/evaluators/oracles/interactive.py
@@ -887,6 +889,7 @@ wisent/core/parser_arguments/multi_steer_parser.py
 wisent/core/parser_arguments/nonsense_parser.py
 wisent/core/parser_arguments/optimization_cache_parser.py
 wisent/core/parser_arguments/optimize_classification_parser.py
+wisent/core/parser_arguments/optimize_parser.py
 wisent/core/parser_arguments/optimize_sample_size_parser.py
 wisent/core/parser_arguments/optimize_steering_parser.py
 wisent/core/parser_arguments/optimize_weights_parser.py
