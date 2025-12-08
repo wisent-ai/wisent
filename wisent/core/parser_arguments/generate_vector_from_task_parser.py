@@ -114,6 +114,14 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
         help="Directory for intermediate files (default: same as output)"
     )
     
+    # Quality control
+    parser.add_argument(
+        "--accept-low-quality-vector",
+        action="store_true",
+        default=False,
+        help="Accept steering vectors that fail quality checks (convergence, SNR, etc.)"
+    )
+    
     # Display options
     parser.add_argument(
         "--verbose",

@@ -70,6 +70,7 @@ from .error_codes import (
     InvalidLayerIdError,
     NoCandidateLayersError,
     OptimizationError,
+    VectorQualityTooLowError,
     # Contrastive Pairs Errors
     PairGenerationError,
     InvalidPairStructureError,
@@ -170,6 +171,7 @@ __all__ = [
     "InvalidLayerIdError",
     "NoCandidateLayersError",
     "OptimizationError",
+    "VectorQualityTooLowError",
     # Contrastive Pairs Errors
     "PairGenerationError",
     "InvalidPairStructureError",

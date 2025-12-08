@@ -528,6 +528,32 @@ def setup_tasks_parser(parser):
     parser.add_argument(
         "--load-steering-vector", type=str, default=None, help="Path to load a pre-computed steering vector"
     )
+    parser.add_argument(
+        "--accept-low-quality-vector",
+        action="store_true",
+        default=False,
+        help="Accept steering vectors that fail quality checks (convergence, SNR, etc.)"
+    )
+    
+    # Early rejection during optimization
+    parser.add_argument(
+        "--disable-early-rejection",
+        action="store_true",
+        default=False,
+        help="Disable early rejection of low-quality vectors during optimization (slower but explores more)"
+    )
+    parser.add_argument(
+        "--early-rejection-snr-threshold",
+        type=float,
+        default=5.0,
+        help="Minimum SNR for early rejection during optimization (default: 5.0)"
+    )
+    parser.add_argument(
+        "--early-rejection-cv-threshold",
+        type=float,
+        default=0.1,
+        help="Minimum cross-validation score for early rejection during optimization (default: 0.1)"
+    )
 
     # Additional output options
     parser.add_argument("--csv-output", type=str, default=None, help="Path to save results in CSV format")

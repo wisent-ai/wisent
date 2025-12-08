@@ -20,16 +20,6 @@ Key components:
 """
 
 # Steering optimization components
-# Classifier optimization components
-from wisent.core.optuna.classifier import (
-    ActivationGenerator,
-    CacheConfig,
-    ClassifierCache,
-    ClassifierOptimizationConfig as ClassifierOptimizationConfig,
-    GenerationConfig,
-    OptimizationResult,
-    OptunaClassifierOptimizer,
-)
 from wisent.core.optuna.steering.metrics import (
     calculate_comprehensive_metrics,
     evaluate_benchmark_performance,
@@ -46,12 +36,23 @@ __all__ = [
     "evaluate_benchmark_performance",
     "evaluate_probe_performance",
     "generate_performance_summary",
-    # Classifier optimization
-    "OptunaClassifierOptimizer",
-    "ClassifierOptimizationConfig",
-    "GenerationConfig",
-    "CacheConfig",
-    "ActivationGenerator",
-    "ClassifierCache",
-    "OptimizationResult",
 ]
+
+# Lazy loading for classifier components (may have missing dependencies)
+def __getattr__(name):
+    """Lazy import for classifier components."""
+    classifier_exports = {
+        "OptunaClassifierOptimizer": ("wisent.core.optuna.classifier", "OptunaClassifierOptimizer"),
+        "ClassifierOptimizationConfig": ("wisent.core.optuna.classifier", "ClassifierOptimizationConfig"),
+        "GenerationConfig": ("wisent.core.optuna.classifier", "GenerationConfig"),
+        "CacheConfig": ("wisent.core.optuna.classifier", "CacheConfig"),
+        "ActivationGenerator": ("wisent.core.optuna.classifier", "ActivationGenerator"),
+        "ClassifierCache": ("wisent.core.optuna.classifier", "ClassifierCache"),
+        "OptimizationResult": ("wisent.core.optuna.classifier", "OptimizationResult"),
+    }
+    if name in classifier_exports:
+        module_path, attr = classifier_exports[name]
+        import importlib
+        module = importlib.import_module(module_path)
+        return getattr(module, attr)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

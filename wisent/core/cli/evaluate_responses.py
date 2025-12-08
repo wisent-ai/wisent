@@ -6,6 +6,12 @@ import sys
 from pathlib import Path
 
 from wisent.core.errors import TaskNotFoundError
+from wisent.core.evaluators.steering_evaluators import (
+    SteeringEvaluatorFactory,
+    EvaluatorConfig,
+    RefusalEvaluator,
+    PersonalizationEvaluator as SteeringPersonalizationEvaluator,
+)
 
 
 def execute_evaluate_responses(args):
@@ -144,7 +150,10 @@ def execute_evaluate_responses(args):
         evaluator = PerplexityEvaluator()
         print(f"   Using: PerplexityEvaluator (perplexity computation)\n")
     elif evaluation_type == "personalization":
-        # Personalization is handled separately below, skip evaluator creation here
+        # Personalization is handled separately below using shared steering evaluators
+        evaluator = None
+    elif evaluation_type == "refusal":
+        # Refusal evaluation is handled separately below using shared steering evaluators
         evaluator = None
     else:
         evaluator = F1Evaluator()
@@ -336,11 +345,9 @@ def execute_evaluate_responses(args):
         print(f"{'='*80}\n")
         return
 
-    # Handle personalization separately - response pair evaluation
+    # Handle personalization separately - response pair evaluation using shared steering evaluators
     if evaluation_type == "personalization":
-        from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
-
-        print(f"🎭 Running personality trait evaluation...")
+        print(f"🎭 Running personality trait evaluation using shared steering evaluators...")
 
         # Check if baseline is provided
         if not hasattr(args, 'baseline') or not args.baseline:
@@ -394,8 +401,18 @@ def execute_evaluate_responses(args):
 
         print(f"   ✓ Model loaded with {wisent_model.num_layers} layers\n")
 
-        # Initialize evaluator with model
-        evaluator = PersonalizationEvaluator(model=model, tokenizer=tokenizer, device=device)
+        # Initialize shared steering evaluator for personalization
+        eval_config = EvaluatorConfig(
+            evaluator_type="personalization",
+            trait=trait,
+            num_eval_prompts=len(responses),
+        )
+        steering_evaluator = SteeringPersonalizationEvaluator(
+            eval_config, model_name, wisent_model=wisent_model
+        )
+        # Set baseline responses for comparison
+        baseline_texts = [b.get('generated_response', '') for b in baseline_responses]
+        steering_evaluator._baseline_responses = baseline_texts
 
         evaluated_count = 0
         difference_scores = []
@@ -403,6 +420,13 @@ def execute_evaluate_responses(args):
         alignment_scores = []
         overall_scores = []
 
+        # Collect all steered responses for batch evaluation
+        steered_texts = [s.get('generated_response', '') for s in responses]
+        
+        # Evaluate using shared evaluator
+        eval_results = steering_evaluator.evaluate_responses(steered_texts)
+        
+        # Process individual results
         for idx, (baseline_data, steered_data) in enumerate(zip(baseline_responses, responses), 1):
             # Check for errors in either response
             if 'error' in baseline_data or 'error' in steered_data:
@@ -422,46 +446,44 @@ def execute_evaluate_responses(args):
                 steered_response = steered_data.get('generated_response', '')
                 prompt = steered_data.get('prompt', '')
 
-                # Evaluate the response pair
-                result = evaluator.evaluate_response_pair(
-                    baseline_response=baseline_response,
-                    steered_response=steered_response,
-                    trait_name=trait,
-                    trait_description=trait_description
-                )
-
                 evaluated_count += 1
 
+                # Use aggregate scores from batch evaluation
+                diff_score = eval_results.get('difference_score', 50.0)
+                qual_score = eval_results.get('quality_score', 50.0)
+                align_score = eval_results.get('alignment_score', 50.0)
+                overall = eval_results.get('overall_score', 0.0)
+
                 # Collect scores
-                difference_scores.append(result.difference_score)
-                quality_scores.append(result.quality_score)
-                alignment_scores.append(result.alignment_score)
-                overall_scores.append(result.overall_score)
+                difference_scores.append(diff_score)
+                quality_scores.append(qual_score)
+                alignment_scores.append(align_score)
+                overall_scores.append(overall)
 
                 # Store result
                 eval_result = {
                     'response_id': steered_data.get('id', idx),
                     'prompt': prompt,
                     'trait': trait,
-                    'difference_score': result.difference_score,
-                    'quality_score': result.quality_score,
-                    'alignment_score': result.alignment_score,
-                    'overall_score': result.overall_score,
+                    'difference_score': diff_score,
+                    'quality_score': qual_score,
+                    'alignment_score': align_score,
+                    'overall_score': overall,
                     'baseline_response': baseline_response,
                     'steered_response': steered_response,
                 }
 
                 evaluation_results.append(eval_result)
                 task_results.append({
-                    'difference_score': result.difference_score,
-                    'quality_score': result.quality_score,
-                    'alignment_score': result.alignment_score,
-                    'overall_score': result.overall_score,
+                    'difference_score': diff_score,
+                    'quality_score': qual_score,
+                    'alignment_score': align_score,
+                    'overall_score': overall,
                 })
 
                 if args.verbose:
-                    score_icon = '✅' if result.overall_score >= 0.7 else ('⚠️' if result.overall_score >= 0.5 else '❌')
-                    print(f"{score_icon} Pair {idx}: Overall={result.overall_score:.3f} (diff={result.difference_score:.3f}, qual={result.quality_score:.3f}, align={result.alignment_score:.3f})")
+                    score_icon = '✅' if overall >= 70 else ('⚠️' if overall >= 50 else '❌')
+                    print(f"{score_icon} Pair {idx}: Overall={overall:.1f} (diff={diff_score:.1f}, qual={qual_score:.1f}, align={align_score:.1f})")
 
             except Exception as e:
                 import traceback
@@ -502,7 +524,7 @@ def execute_evaluate_responses(args):
             "task": task_name if isinstance(input_data, list) else input_data.get('task'),
             "model": None if isinstance(input_data, list) else input_data.get('model'),
             "evaluation_type": evaluation_type,
-            "evaluator_used": "PersonalizationEvaluator",
+            "evaluator_used": "SteeringPersonalizationEvaluator",
             "trait": trait,
             "trait_description": trait_description,
             "aggregated_metrics": aggregated_metrics,
@@ -524,6 +546,108 @@ def execute_evaluate_responses(args):
         print(f"   Average quality score: {aggregated_metrics.get('avg_quality_score', 0):.3f}")
         print(f"   Average alignment score: {aggregated_metrics.get('avg_alignment_score', 0):.3f}")
         print(f"   Average overall score: {aggregated_metrics.get('avg_overall_score', 0):.3f}")
+        print(f"{'='*80}\n")
+        return
+
+    # Handle refusal evaluation using shared steering evaluators
+    if evaluation_type == "refusal":
+        print(f"🚫 Running refusal/compliance evaluation using shared steering evaluators...")
+
+        # Get model name for evaluator
+        if isinstance(input_data, dict):
+            model_name = input_data.get('model', 'meta-llama/Llama-3.2-1B-Instruct')
+        else:
+            model_name = 'meta-llama/Llama-3.2-1B-Instruct'
+
+        # Initialize shared steering evaluator for refusal
+        eval_config = EvaluatorConfig(
+            evaluator_type="refusal",
+            eval_prompts_path=getattr(args, 'eval_prompts', None),
+            num_eval_prompts=len(responses),
+        )
+        steering_evaluator = RefusalEvaluator(eval_config, model_name)
+
+        # Collect all responses for batch evaluation
+        response_texts = [r.get('generated_response', '') for r in responses]
+
+        # Evaluate using shared evaluator
+        eval_results = steering_evaluator.evaluate_responses(response_texts)
+
+        # Process individual results
+        refusal_count = 0
+        for idx, response_data in enumerate(responses, 1):
+            if 'error' in response_data:
+                if args.verbose:
+                    print(f"Response {idx}: Skipped (generation error)")
+                evaluation_results.append({
+                    **response_data,
+                    "evaluation": {"error": "Generation failed"}
+                })
+                continue
+
+            response_text = response_data.get('generated_response', '')
+            is_refusal = steering_evaluator.uncensor_bench.detect_refusal(response_text)
+            
+            if is_refusal:
+                refusal_count += 1
+
+            evaluation_results.append({
+                **response_data,
+                "evaluation": {
+                    "is_refusal": is_refusal,
+                    "compliance": not is_refusal,
+                }
+            })
+            task_results.append({
+                'compliance': 0.0 if is_refusal else 1.0
+            })
+
+            if args.verbose:
+                status = '🚫 REFUSED' if is_refusal else '✅ COMPLIED'
+                print(f"Response {idx}: {status}")
+
+        # Aggregate results
+        total = len(task_results)
+        compliance_rate = eval_results.get('compliance_rate', 0.0)
+        refusal_rate = eval_results.get('refusal_rate', 0.0)
+
+        aggregated_metrics = {
+            'compliance_rate': compliance_rate,
+            'refusal_rate': refusal_rate,
+            'refusal_count': refusal_count,
+            'total': total,
+        }
+
+        # Save results
+        print(f"\n💾 Saving evaluation results...")
+        output_dir = os.path.dirname(args.output)
+        if output_dir:
+            os.makedirs(output_dir, exist_ok=True)
+
+        output_data = {
+            "input_file": args.input,
+            "task": task_name if isinstance(input_data, list) else input_data.get('task'),
+            "model": model_name,
+            "evaluation_type": evaluation_type,
+            "evaluator_used": "RefusalEvaluator",
+            "aggregated_metrics": aggregated_metrics,
+            "num_evaluated": total,
+            "num_total": len(responses),
+            "evaluations": evaluation_results
+        }
+
+        with open(args.output, 'w') as f:
+            json.dump(output_data, f, indent=2)
+
+        print(f"   ✓ Results saved to: {args.output}\n")
+        print(f"{'='*80}")
+        print(f"✅ REFUSAL EVALUATION COMPLETE")
+        print(f"{'='*80}")
+        print(f"   Total responses: {total}")
+        print(f"   Refusals: {refusal_count}")
+        print(f"   Compliant: {total - refusal_count}")
+        print(f"   Compliance rate: {compliance_rate:.2%}")
+        print(f"   Refusal rate: {refusal_rate:.2%}")
         print(f"{'='*80}\n")
         return
 

@@ -23,8 +23,8 @@ from wisent.core.trainers.core.atoms import (
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.activations.activations_collector import ActivationCollector  
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.contrastive_pairs.diagnostics import run_control_vector_diagnostics
-from wisent.core.errors import ControlVectorDiagnosticsError, NoTrainingResultError
+from wisent.core.contrastive_pairs.diagnostics import run_control_vector_diagnostics, run_vector_quality_diagnostics, VectorQualityConfig
+from wisent.core.errors import ControlVectorDiagnosticsError, NoTrainingResultError, VectorQualityTooLowError
 
 __all__ = [
     "WisentSteeringTrainer",
@@ -70,6 +70,8 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         return_full_sequence: bool = False,
         normalize_layers: bool = False,
         save_dir: str | Path | None = None,
+        accept_low_quality_vector: bool = False,
+        quality_config: VectorQualityConfig | None = None,
     ) -> TrainingResult:
         """
         Full pipeline:
@@ -147,6 +149,70 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         if control_vector_report.has_critical_issues:
             raise ControlVectorDiagnosticsError()
 
+        # 3b) Run vector quality diagnostics if we have enough pairs
+        quality_report = None
+        quality_diagnostics_report = None
+        if len(self.pair_set.pairs) >= 5:
+            try:
+                # Extract activations for quality analysis (use first layer with data)
+                positive_activations = []
+                negative_activations = []
+                pair_prompts = []
+                
+                for pair in self.pair_set.pairs:
+                    if pair.positive_response and pair.positive_response.layers_activations:
+                        pos_acts = pair.positive_response.layers_activations.to_dict()
+                        if pos_acts:
+                            first_layer = next(iter(pos_acts.keys()))
+                            pos_tensor = pos_acts[first_layer]
+                            if pos_tensor is not None:
+                                positive_activations.append(pos_tensor)
+                    
+                    if pair.negative_response and pair.negative_response.layers_activations:
+                        neg_acts = pair.negative_response.layers_activations.to_dict()
+                        if neg_acts:
+                            first_layer = next(iter(neg_acts.keys()))
+                            neg_tensor = neg_acts[first_layer]
+                            if neg_tensor is not None:
+                                negative_activations.append(neg_tensor)
+                    
+                    pair_prompts.append(pair.prompt if hasattr(pair, 'prompt') else "")
+                
+                if len(positive_activations) >= 5 and len(negative_activations) >= 5:
+                    pos_stacked = torch.stack(positive_activations)
+                    neg_stacked = torch.stack(negative_activations)
+                    
+                    quality_report, quality_diagnostics_report = run_vector_quality_diagnostics(
+                        pos_stacked, neg_stacked, pair_prompts, quality_config
+                    )
+                    
+                    # Log quality issues
+                    for issue in quality_diagnostics_report.issues:
+                        log_method = logger.error if issue.severity == "critical" else logger.warning
+                        log_method(
+                            "[vector_quality diagnostics] %s (details=%s)",
+                            issue.message,
+                            issue.details,
+                        )
+                    
+                    # Raise error if quality is poor and not accepted
+                    if quality_diagnostics_report.has_critical_issues and not accept_low_quality_vector:
+                        critical_issues = [i for i in quality_diagnostics_report.issues if i.severity == "critical"]
+                        reason = "; ".join(i.message for i in critical_issues[:3])
+                        raise VectorQualityTooLowError(
+                            quality=quality_report.overall_quality,
+                            reason=reason,
+                            details={
+                                "convergence": quality_report.convergence_score,
+                                "cv_score": quality_report.cv_score_mean,
+                                "snr": quality_report.snr,
+                                "recommendations": quality_report.recommendations,
+                            }
+                        )
+            except ImportError:
+                # sklearn not available, skip quality diagnostics
+                logger.warning("sklearn not available, skipping vector quality diagnostics")
+
         # 4) Metadata
         now = _dt.datetime.now().astimezone()
         metadata: dict[str, Any] = {
@@ -165,6 +231,33 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
 
         if control_vector_issues:
             metadata["control_vector_issues"] = control_vector_issues
+
+        # Add quality diagnostics to metadata
+        if quality_report is not None:
+            metadata["vector_quality"] = {
+                "overall_quality": quality_report.overall_quality,
+                "convergence_score": quality_report.convergence_score,
+                "cv_score_mean": quality_report.cv_score_mean,
+                "snr": quality_report.snr,
+                "pca_pc1_variance": quality_report.pca_pc1_variance,
+                "silhouette_score": quality_report.silhouette_score,
+                "held_out_transfer": quality_report.held_out_transfer,
+                "cv_classification_accuracy": quality_report.cv_classification_accuracy,
+                "cohens_d": quality_report.cohens_d,
+                "alignment_mean": quality_report.alignment_mean,
+                "alignment_std": quality_report.alignment_std,
+                "num_outlier_pairs": len(quality_report.outlier_pairs),
+                "recommendations": quality_report.recommendations,
+            }
+            if quality_diagnostics_report and quality_diagnostics_report.issues:
+                metadata["vector_quality_issues"] = [
+                    {
+                        "metric": issue.metric,
+                        "severity": issue.severity,
+                        "message": issue.message,
+                    }
+                    for issue in quality_diagnostics_report.issues
+                ]
 
         result = TrainingResult(steered_vectors=steered, pair_set_with_activations=self.pair_set, metadata=metadata)
         self._last_result = result

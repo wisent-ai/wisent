@@ -8,7 +8,7 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
 
-from wisent.core.bigcode_extractors import MBPPExtractor
+from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mbpp import MBPPExtractor
 
 # Import LMEvalHarnessGroundTruth for intelligent evaluation (newer approach used by CLI)
 from wisent.core.lm_eval_harness_ground_truth import LMEvalHarnessGroundTruth
