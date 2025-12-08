@@ -48,6 +48,64 @@ class HuggingFaceBenchmarkExtractor(ABC):
         """
         raise NotImplementedError
 
+    def extract_contrastive_pair(
+        self,
+        sample: dict[str, Any],
+        task: Any = None,
+    ) -> dict[str, str] | None:
+        """
+        Extract a contrastive pair from a single sample dictionary.
+        
+        This method is used by the optuna pipeline for sample-by-sample processing.
+        Subclasses should override this if they have custom extraction logic.
+        
+        Default implementation calls _extract_pair_from_doc if available.
+
+        arguments:
+            sample: A single document/sample dictionary.
+            task: Optional task object (may be needed for some extractors).
+
+        returns:
+            A dict with keys: "question", "correct_answer", "incorrect_answer"
+            or None if extraction fails.
+        """
+        if hasattr(self, '_extract_pair_from_doc'):
+            pair = self._extract_pair_from_doc(sample)
+            if pair is not None:
+                return {
+                    "question": pair.prompt,
+                    "correct_answer": pair.positive_response.model_response,
+                    "incorrect_answer": pair.negative_response.model_response,
+                }
+        return None
+
+    def extract_qa_pair(
+        self,
+        sample: dict[str, Any],
+        task: Any = None,
+    ) -> dict[str, str] | None:
+        """
+        Extract a question-answer pair from a single sample dictionary.
+        
+        This method is used for evaluation - it extracts the question and
+        correct answer without needing an incorrect answer.
+
+        arguments:
+            sample: A single document/sample dictionary.
+            task: Optional task object (may be needed for some extractors).
+
+        returns:
+            A dict with keys: "formatted_question", "correct_answer"
+            or None if extraction fails.
+        """
+        contrastive = self.extract_contrastive_pair(sample, task)
+        if contrastive:
+            return {
+                "formatted_question": contrastive["question"],
+                "correct_answer": contrastive["correct_answer"],
+            }
+        return None
+
     @classmethod
     def load_dataset(
         cls,
