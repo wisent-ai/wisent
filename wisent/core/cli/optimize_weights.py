@@ -672,6 +672,13 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
     shared_evaluator = SteeringEvaluatorFactory.create(
         eval_config, model_name, wisent_model, positive_examples, negative_examples
     )
+    
+    # Pre-generate baseline responses BEFORE optimization modifies the model weights
+    # This is critical because the same wisent_model/hf_model is used for both baseline and steered generation
+    if hasattr(shared_evaluator, 'generate_baseline_responses'):
+        print("   Pre-generating baseline responses with unmodified model...")
+        baseline = shared_evaluator.generate_baseline_responses()
+        print(f"   Generated {len(baseline)} baseline responses")
 
     def evaluate(hf_model, tokenizer) -> dict:
         """Run evaluation using shared steering evaluator."""
