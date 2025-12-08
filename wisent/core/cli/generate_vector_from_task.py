@@ -20,6 +20,10 @@ def execute_generate_vector_from_task(args):
     2. Collect activations from those pairs
     3. Create steering vectors from the activations
     """
+    # Expand task if it's a skill or risk name
+    from wisent.core.task_selector import expand_task_if_skill_or_risk
+    args.task = expand_task_if_skill_or_risk(args.task)
+    
     print(f"\n{'='*60}")
     print(f"🎯 Generating Steering Vector from Task (Full Pipeline)")
     print(f"{'='*60}")
