@@ -84,7 +84,7 @@ def execute_comprehensive(args, model, loader):
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
     from wisent.core.models.core.atoms import SteeringPlan
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.cli.steering_method_trainer import create_steering_method
 
     print("🔍 Running comprehensive steering optimization...")
     print("   Optimizing: Layer, Strength, Steering Strategy, Token Aggregation, Prompt Construction")
@@ -330,8 +330,10 @@ def execute_comprehensive(args, model, loader):
                                         continue
 
                                     # Create CAA steering vector
-                                    caa_method = CAAMethod(kwargs={"normalize": True})
-                                    steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
+                                    # Use the selected method (first from args.methods or default to CAA)
+                                    method_name = args.methods[0] if args.methods else "CAA"
+                                    steering_method = create_steering_method(method_name, args)
+                                    steering_vector = steering_method.train_for_layer(pos_acts, neg_acts)
 
                                     # Step 2: Evaluate with ACTUAL GENERATION and task evaluator
                                     # Create steering plan
@@ -664,8 +666,9 @@ def execute_comprehensive(args, model, loader):
                                 neg_acts_best.append(act)
 
                     # Create and save steering vector
-                    caa_method = CAAMethod(kwargs={"normalize": True})
-                    best_steering_vector = caa_method.train_for_layer(pos_acts_best, neg_acts_best)
+                    method_name = args.methods[0] if args.methods else "CAA"
+                    steering_method = create_steering_method(method_name, args)
+                    best_steering_vector = steering_method.train_for_layer(pos_acts_best, neg_acts_best)
 
                     vector_path = os.path.join(vector_dir, f"{task_name}_layer{best_config['layer']}.pt")
                     torch.save(
@@ -774,8 +777,9 @@ def execute_comprehensive(args, model, loader):
                                         neg_acts_gen.append(act)
 
                             # Create steering vector
-                            caa_method_gen = CAAMethod(kwargs={"normalize": True})
-                            steering_vector_gen = caa_method_gen.train_for_layer(pos_acts_gen, neg_acts_gen)
+                            method_name_gen = args.methods[0] if args.methods else "CAA"
+                            steering_method_gen = create_steering_method(method_name_gen, args)
+                            steering_vector_gen = steering_method_gen.train_for_layer(pos_acts_gen, neg_acts_gen)
 
                             # Create SteeringPlan
                             from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
@@ -1023,7 +1027,7 @@ def execute_compare_methods(args, model, loader):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.cli.steering_method_trainer import create_steering_method
 
     # Check for cached results if --use-cached is specified
     use_cached = getattr(args, "use_cached", False)
@@ -1117,9 +1121,10 @@ def execute_compare_methods(args, model, loader):
     if "CAA" in args.methods:
         print("\n   Testing CAA method...")
 
-        # Train CAA steering vector
-        caa_method = CAAMethod(kwargs={"normalize": True})
-        steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
+        # Train steering vector using selected method
+        method_name = args.methods[0] if args.methods else "CAA"
+        steering_method = create_steering_method(method_name, args)
+        steering_vector = steering_method.train_for_layer(pos_acts, neg_acts)
 
         # Create steering plan
         steering_vec = SteeringVector(vector=steering_vector, scale=args.strength)
@@ -1267,7 +1272,7 @@ def execute_optimize_layer(args, model, loader):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.cli.steering_method_trainer import create_steering_method
 
     # Check for cached results if --use-cached is specified
     use_cached = getattr(args, "use_cached", False)
@@ -1364,11 +1369,10 @@ def execute_optimize_layer(args, model, loader):
                 print("⚠️  No activations collected")
                 continue
 
-            # Train steering vector (only CAA supported)
-            if args.method == "CAA":
-                caa_method = CAAMethod(kwargs={"normalize": True})
-                steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
-            else:
+            # Train steering vector using selected method
+            steering_method = create_steering_method(args.method, args)
+            steering_vector = steering_method.train_for_layer(pos_acts, neg_acts)
+            if False:  # Compatibility placeholder
                 print(f"⚠️  Method {args.method} not supported")
                 continue
 
@@ -1543,7 +1547,7 @@ def execute_optimize_strength(args, model, loader):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.cli.steering_method_trainer import create_steering_method
 
     # Check for cached results if --use-cached is specified
     use_cached = getattr(args, "use_cached", False)
@@ -1629,11 +1633,10 @@ def execute_optimize_strength(args, model, loader):
     print(f"   Processing train pair {len(train_pairs.pairs)}/{len(train_pairs.pairs)}... Done!")
     print(f"   ✓ Collected {len(pos_acts)} positive, {len(neg_acts)} negative activations\n")
 
-    # Train steering vector ONCE (only CAA supported)
-    if args.method == "CAA":
-        caa_method = CAAMethod(kwargs={"normalize": True})
-        steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
-    else:
+    # Train steering vector using selected method
+    steering_method = create_steering_method(args.method, args)
+    steering_vector = steering_method.train_for_layer(pos_acts, neg_acts)
+    if False:  # Compatibility placeholder
         print(f"❌ Method {args.method} not supported")
         return {
             "action": "optimize-strength",
@@ -1828,7 +1831,7 @@ def execute_auto(args, model, loader):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.cli.steering_method_trainer import create_steering_method
 
     # Check for cached results if --use-cached is specified
     use_cached = getattr(args, "use_cached", False)
@@ -1933,11 +1936,11 @@ def execute_auto(args, model, loader):
             print(f"      ⚠️  No activations collected for layer {layer}")
             continue
 
-        # Train steering vector for this layer (only CAA supported)
-        if "CAA" in args.methods:
-            caa_method = CAAMethod(kwargs={"normalize": True})
-            steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
-        else:
+        # Train steering vector for this layer using selected method
+        method_name = args.methods[0] if args.methods else "CAA"
+        steering_method = create_steering_method(method_name, args)
+        steering_vector = steering_method.train_for_layer(pos_acts, neg_acts)
+        if False:  # Compatibility placeholder
             print("      ⚠️  Only CAA method is supported")
             continue
 
@@ -2155,7 +2158,7 @@ def execute_personalization(args, model):
     from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
     from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.cli.steering_method_trainer import create_steering_method
     from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
     from wisent.core.synthetic.db_instructions.mini_dp import Default_DB_Instructions
     from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
@@ -2360,9 +2363,9 @@ def execute_personalization(args, model):
                         flush=True,
                     )
 
-                    # Create steering vector using CAA
-                    caa_method = CAAMethod(kwargs={"normalize": True})
-                    steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
+                    # Create steering vector using selected method
+                    steering_method = create_steering_method("CAA", args)
+                    steering_vector = steering_method.train_for_layer(pos_acts, neg_acts)
                     steering_vector_cache[cache_key] = steering_vector
 
                     print(
@@ -2604,7 +2607,7 @@ def execute_multi_personalization(args, model):
     from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
     from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.cli.steering_method_trainer import create_steering_method
     from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
     from wisent.core.synthetic.db_instructions.mini_dp import Default_DB_Instructions
     from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
@@ -2776,8 +2779,8 @@ def execute_multi_personalization(args, model):
                         trait_vectors = None
                         break
 
-                    caa_method = CAAMethod(kwargs={"normalize": True})
-                    steering_vector = caa_method.train_for_layer(pos_acts, neg_acts)
+                    steering_method = create_steering_method("CAA", args)
+                    steering_vector = steering_method.train_for_layer(pos_acts, neg_acts)
                     trait_vectors[name] = steering_vector
 
                 if trait_vectors is None:

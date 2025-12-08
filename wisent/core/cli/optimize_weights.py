@@ -85,14 +85,16 @@ def execute_optimize_weights(args):
     task_lower = (args.task or "").lower()
     if task_lower == "refusal":
         evaluator_display = "refusal"
-    elif task_lower == "personalization":
+    elif task_lower == "personalization" or (not task_lower and getattr(args, 'trait', None)):
         evaluator_display = f"personalization ({args.trait})"
     elif task_lower == "custom":
         evaluator_display = f"custom ({args.custom_evaluator})"
     elif "," in (args.task or ""):
         evaluator_display = "pooled (multi-benchmark)"
-    else:
+    elif task_lower:
         evaluator_display = f"task ({args.task})"
+    else:
+        evaluator_display = "unknown"
     print(f"   Evaluator: {evaluator_display}")
     print(f"   Target: {args.target_metric} = {args.target_value}")
     print(f"   Trials: {args.trials}")
@@ -967,6 +969,11 @@ def _show_response_comparisons(
             custom_prompts = custom_prompts.get("prompts", [])
         prompts = custom_prompts[:args.num_eval_prompts]
         use_custom = True
+    elif getattr(args, 'trait', None):
+        # For trait-based optimization, use personalization prompts (not UncensorBench)
+        from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
+        prompts = PersonalizationEvaluator.DEFAULT_PROMPTS[:args.num_eval_prompts]
+        use_custom = True  # Treat as custom to skip UncensorBench evaluation
     else:
         topics = args.eval_topics.split(",") if args.eval_topics else None
         prompts = list(bench.prompts(topics=topics))[:args.num_eval_prompts]
