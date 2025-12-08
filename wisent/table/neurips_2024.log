@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.12.8)  8 DEC 2025 18:04
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.12.8)  8 DEC 2025 18:07
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -583,8 +583,7 @@ Package: ragged2e 2023/06/22 v3.6 ragged2e Package
 File: l3backend-pdftex.def 2024-01-04 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count331
 \l__pdf_internal_box=\box73
-)
-No file neurips_2024.aux.
+) (./neurips_2024.aux)
 \openout1 = `neurips_2024.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 43.
@@ -605,6 +604,7 @@ LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 43.
 LaTeX Font Info:    ... okay on input line 43.
 LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 43.
 LaTeX Font Info:    ... okay on input line 43.
+
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
 *geometry* verbose mode - [ preamble ] result:
@@ -975,10 +975,10 @@ Package rerunfilecheck Info: Checksums for `neurips_2024.out':
 (rerunfilecheck)             After:  F0F6D7538AB7718C3DE50E78832AE61E;4004.
  ) 
 Here is how much of TeX's memory you used:
- 24014 strings out of 476182
- 438536 string characters out of 5795595
+ 24017 strings out of 476182
+ 438599 string characters out of 5795595
  1979975 words of memory out of 5000000
- 45345 multiletter control sequences out of 15000+600000
+ 45346 multiletter control sequences out of 15000+600000
  593161 words of font info for 178 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
  102i,15n,107p,1053b,634s stack positions out of 10000i,1000n,20000p,200000b,200000s
