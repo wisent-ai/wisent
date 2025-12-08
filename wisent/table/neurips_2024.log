@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.12.8)  8 DEC 2025 18:07
+This is pdfTeX, Version 3.141592653-2.6-1.40.25 (TeX Live 2023/Debian) (preloaded format=pdflatex 2025.12.8)  8 DEC 2025 17:25
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -583,7 +583,26 @@ Package: ragged2e 2023/06/22 v3.6 ragged2e Package
 File: l3backend-pdftex.def 2024-01-04 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count331
 \l__pdf_internal_box=\box73
-) (./neurips_2024.aux)
+) (./neurips_2024.aux
+
+LaTeX Warning: Label `tab:benchmarks-colored-short-cm' multiply defined.
+
+
+LaTeX Warning: Label `tab:benchmarks-colored-short-cm' multiply defined.
+
+
+LaTeX Warning: Label `tab:benchmarks-colored-short-cm' multiply defined.
+
+
+LaTeX Warning: Label `tab:benchmarks-colored-short-cm' multiply defined.
+
+
+LaTeX Warning: Label `tab:benchmarks-colored-short-cm' multiply defined.
+
+
+LaTeX Warning: Label `tab:benchmarks-colored-short-cm' multiply defined.
+
+)
 \openout1 = `neurips_2024.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 43.
@@ -672,6 +691,7 @@ LaTeX Font Info:    ... okay on input line 43.
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
 Package hyperref Info: Link coloring OFF on input line 43.
+(./neurips_2024.out) (./neurips_2024.out)
 \@outlinefile=\write4
 \openout4 = `neurips_2024.out'.
 
@@ -691,7 +711,7 @@ LaTeX Info: Redefining \showhyphens on input line 43.
 Package microtype Info: No adjustment of tracking.
 Package microtype Info: No adjustment of interword spacing.
 Package microtype Info: No adjustment of character kerning.
-(/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-ptm.cfg
+ (/usr/share/texlive/texmf-dist/tex/latex/microtype/mt-ptm.cfg
 File: mt-ptm.cfg 2006/04/20 v1.7 microtype config. file: Times (RS)
 ) (/usr/share/texlive/texmf-dist/tex/context/base/mkii/supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
@@ -748,7 +768,7 @@ Underfull \vbox (badness 3849) has occurred while \output is active []
  [1
 
 
-{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}] (./neurips_2024.bbl [2] [3]) [4]
+{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}{/usr/share/texlive/texmf-dist/fonts/enc/dvips/base/8r.enc}] (./neurips_2024.bbl [2] [3] [4])
 Underfull \hbox (badness 4899) in paragraph at lines 120--121
 []\T1/ptm/m/n/10 (+20) As RC-Abstain, but
  []
@@ -757,236 +777,160 @@ Underfull \hbox (badness 4899) in paragraph at lines 120--121
 pdfTeX warning (ext4): destination with the same identifier (name{appendix.A}) has been already used, duplicate ignored
 <argument> ...shipout:D \box_use:N \l_shipout_box 
                                                   \__shipout_drop_firstpage_...
-l.129 ...t-Word Drop \textnormal{[Summ-WordDrop]}]
-                                                   Code-to-text summarizatio...]
-Overfull \hbox (24.15184pt too wide) in alignment at lines 168--174
+l.123 ...[Letter shuffling \textnormal{[L-Shuff]}]
+                                                   Negative is created by sh...]
+Overfull \hbox (24.15184pt too wide) in alignment at lines 169--175
  [] [] [] [] 
  []
 
 
-Overfull \hbox (24.15184pt too wide) in alignment at lines 174--178
+Overfull \hbox (24.15184pt too wide) in alignment at lines 175--179
  [] [] [] [] 
  []
 
 
-Package natbib Warning: Citation `dua2019drop' on page 6 undefined on input line 181.
-
-
-Package natbib Warning: Citation `zhang2018record' on page 6 undefined on input line 182.
-
-
-Package natbib Warning: Citation `rajpurkar2018squad2' on page 6 undefined on input line 183.
-
-
-Package natbib Warning: Citation `berant2013webquestions' on page 6 undefined on input line 184.
-
-
-Package natbib Warning: Citation `kwiatkowski2019naturalquestions' on page 6 undefined on input line 185.
-
-
-Package natbib Warning: Citation `joshi2017triviaqa' on page 6 undefined on input line 186.
-
-
-Package natbib Warning: Citation `reddy2019coqa' on page 6 undefined on input line 187.
-
-
-Package natbib Warning: Citation `clark2019boolq' on page 6 undefined on input line 188.
-
-
-Package natbib Warning: Citation `sakaguchi2019winogrande' on page 6 undefined on input line 191.
-
-
-Package natbib Warning: Citation `bisk2019piqa' on page 6 undefined on input line 192.
-
-
-Package natbib Warning: Citation `roemmele2011copa' on page 6 undefined on input line 193.
-
-
-Package natbib Warning: Citation `zellers2019hellaswag' on page 6 undefined on input line 194.
-
-
-Package natbib Warning: Citation `zellers2018swag' on page 6 undefined on input line 195.
-
-
-Package natbib Warning: Citation `mihaylov2018openbookqa' on page 6 undefined on input line 196.
-
-
-Package natbib Warning: Citation `clark2018arc' on page 6 undefined on input line 199.
-
-
-Package natbib Warning: Citation `lai2017race' on page 6 undefined on input line 200.
-
-
-Package natbib Warning: Citation `hendrycks2021mmlu' on page 6 undefined on input line 201.
-
-
-Package natbib Warning: Citation `rein2023gpqa' on page 6 undefined on input line 202.
-
-
-Package natbib Warning: Citation `du2025supergpqa' on page 6 undefined on input line 203.
-
-
-Package natbib Warning: Citation `phan2025hle' on page 6 undefined on input line 204.
-
-
-Package natbib Warning: Citation `cobbe2021gsm8k' on page 6 undefined on input line 207.
-
-
-Package natbib Warning: Citation `miao2021asdiv' on page 6 undefined on input line 208.
-
-
-Package natbib Warning: Citation `brown2020gpt3' on page 6 undefined on input line 209.
-
-
-Package natbib Warning: Citation `hendrycks2021math' on page 6 undefined on input line 210.
-
-
-Package natbib Warning: Citation `huggingfaceh4_math500_2024' on page 6 undefined on input line 211.
-
-
-Package natbib Warning: Citation `mathai2025aime25' on page 6 undefined on input line 212.
-
-
-Package natbib Warning: Citation `maxwelljia2024aime' on page 6 undefined on input line 212.
-
-
-Package natbib Warning: Citation `matharena2025hmmt' on page 6 undefined on input line 213.
-
-
-Package natbib Warning: Citation `wang2025polymath' on page 6 undefined on input line 214.
-
-
-Package natbib Warning: Citation `liu2024livemathbench' on page 6 undefined on input line 215.
-
-
-Package natbib Warning: Citation `austin2021program' on page 6 undefined on input line 218.
-
-
-Package natbib Warning: Citation `chen2021evaluating' on page 6 undefined on input line 219.
-
-
-Package natbib Warning: Citation `yin2018conala' on page 6 undefined on input line 220.
-
-
-Package natbib Warning: Citation `iyer2018mapping' on page 6 undefined on input line 221.
-
-
-Package natbib Warning: Citation `du2024mercury' on page 6 undefined on input line 222.
-
-
-Package natbib Warning: Citation `liu2023evalplus' on page 6 undefined on input line 223.
-
-
-Package natbib Warning: Citation `codeparrot_instructhumaneval_2023' on page 6 undefined on input line 224.
-
-
-Package natbib Warning: Citation `liu2023evalplus' on page 6 undefined on input line 225.
-
-
-Package natbib Warning: Citation `hendrycks2021apps' on page 6 undefined on input line 226.
-
-
-Package natbib Warning: Citation `lai2022ds1000' on page 6 undefined on input line 227.
-
-
-Package natbib Warning: Citation `cassano2022multipl-e' on page 6 undefined on input line 228.
-
-
-Package natbib Warning: Citation `lu2021codexglue' on page 6 undefined on input line 229.
-
-
-Package natbib Warning: Citation `wang2022recode' on page 6 undefined on input line 230.
-
-
-Package natbib Warning: Citation `jain2024livecodebench' on page 6 undefined on input line 231.
-
-
-Package natbib Warning: Citation `lin2021truthfulqa' on page 6 undefined on input line 234.
-
-
-Package natbib Warning: Citation `demarneffe2019commitmentbank' on page 6 undefined on input line 235.
-
-
-Package natbib Warning: Citation `merity2016pointersentinel' on page 6 undefined on input line 236.
-
-
-Overfull \hbox (24.15184pt too wide) in alignment at lines 178--239
+Overfull \hbox (24.15184pt too wide) in alignment at lines 179--240
  [] [] [] [] 
  []
 
 [6]
-Overfull \hbox (12.62721pt too wide) in paragraph at lines 270--285
+Overfull \hbox (12.62721pt too wide) in paragraph at lines 271--286
 [] 
  []
 
-[7]
+
+Underfull \vbox (badness 10000) has occurred while \output is active []
+
+ [7]
+Overfull \hbox (24.15184pt too wide) in alignment at lines 289--295
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 295--299
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 299--325
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 328--334
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 334--338
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 338--350
+ [] [] [] [] 
+ []
+
+[8]
+Overfull \hbox (24.15184pt too wide) in alignment at lines 353--359
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 359--363
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 363--379
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 383--389
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 389--393
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 393--398
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 401--407
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 407--411
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 411--416
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 419--425
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 425--429
+ [] [] [] [] 
+ []
+
+
+Overfull \hbox (24.15184pt too wide) in alignment at lines 429--434
+ [] [] [] [] 
+ []
+
+[9]
 pdfTeX warning (ext4): destination with the same identifier (name{appendix.B}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.298 \section{Per-Task Results}
+l.445 \section{Per-Task Results}
                                 
 pdfTeX warning (ext4): destination with the same identifier (name{appendix.C}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.300 \section{Detailed Classification Results}
+l.447 \section{Detailed Classification Results}
                                                
 pdfTeX warning (ext4): destination with the same identifier (name{appendix.D}) has been already used, duplicate ignored
 <to be read again> 
                    \relax 
-l.302 \section{Benchmark-Aided Steering Results}
-                                                
-
-Package natbib Warning: There were undefined citations.
-
-[8] (./neurips_2024.aux
-
-Package natbib Warning: Citation(s) may have changed.
-(natbib)                Rerun to get citations correct.
-
-
-./neurips_2024.aux:126: Package natbib Error: Bibliography not compatible with author-year citations.
-(natbib)                Press <return> to continue in numerical citation style.
-
-See the natbib package documentation for explanation.
-Type  H <return>  for immediate help.
- ...                                              
-                                                  
-l.126 ...and\NAT@force@numbers{}\NAT@force@numbers
-                                                  
-Check the bibliography entries for non-compliant syntax,
-or select author-year BibTeX style, e.g. plainnat
-
-)
+l.449 \section{Benchmark-Aided Steering Results}
+                                                 [10] (./neurips_2024.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-01-22>
  ***********
 
 
-LaTeX Warning: Label(s) may have changed. Rerun to get cross-references right.
+LaTeX Warning: There were multiply-defined labels.
 
-
-Package rerunfilecheck Warning: File `neurips_2024.out' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `neurips_2024.out':
-(rerunfilecheck)             Before: <no file>
-(rerunfilecheck)             After:  F0F6D7538AB7718C3DE50E78832AE61E;4004.
+Package rerunfilecheck Info: File `neurips_2024.out' has not changed.
+(rerunfilecheck)             Checksum: F0F6D7538AB7718C3DE50E78832AE61E;4004.
  ) 
 Here is how much of TeX's memory you used:
- 24017 strings out of 476182
- 438599 string characters out of 5795595
- 1979975 words of memory out of 5000000
- 45346 multiletter control sequences out of 15000+600000
- 593161 words of font info for 178 fonts, out of 8000000 for 9000
+ 24079 strings out of 476182
+ 439443 string characters out of 5795595
+ 1984975 words of memory out of 5000000
+ 45384 multiletter control sequences out of 15000+600000
+ 593646 words of font info for 184 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 102i,15n,107p,1053b,634s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 102i,15n,107p,1053b,759s stack positions out of 10000i,1000n,20000p,200000b,200000s
  </home/bc/.texlive2023/texmf-var/fonts/pk/ljfour/jknappen/ec/ectt1000.600pk></usr/share/texlive/texmf-dist/fonts/type1/urw/helvetic/uhvr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmb8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmr8a.pfb></usr/share/texlive/texmf-dist/fonts/type1/urw/times/utmri8a.pfb>
-Output written on neurips_2024.pdf (8 pages, 89715 bytes).
+Output written on neurips_2024.pdf (10 pages, 97292 bytes).
 PDF statistics:
- 173 PDF objects out of 1000 (max. 8388607)
- 140 compressed objects within 2 object streams
- 80 named destinations out of 1000 (max. 500000)
- 36877 words of extra memory for PDF output out of 42996 (max. 10000000)
+ 319 PDF objects out of 1000 (max. 8388607)
+ 283 compressed objects within 3 object streams
+ 91 named destinations out of 1000 (max. 500000)
+ 37077 words of extra memory for PDF output out of 42996 (max. 10000000)
 
