@@ -20,6 +20,10 @@ from wisent.core.evaluators.custom.examples.roberta_detector import (
     RobertaDetectorEvaluator,
     create_roberta_detector_evaluator,
 )
+from wisent.core.evaluators.custom.examples.desklib_detector import (
+    DesklibDetectorEvaluator,
+    create_desklib_detector_evaluator,
+)
 
 __all__ = [
     "GPTZeroEvaluator",
@@ -28,4 +32,6 @@ __all__ = [
     "create_humanization_evaluator",
     "RobertaDetectorEvaluator",
     "create_roberta_detector_evaluator",
+    "DesklibDetectorEvaluator",
+    "create_desklib_detector_evaluator",
 ]

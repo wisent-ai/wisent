@@ -775,6 +775,7 @@ wisent/core/evaluators/__init__.py
 wisent/core/evaluators/personalization_evaluator.py
 wisent/core/evaluators/rotator.py
 wisent/core/evaluators/steering_evaluators.py
+wisent/core/evaluators/synthetic_evaluator.py
 wisent/core/evaluators/benchmark_specific/__init__.py
 wisent/core/evaluators/benchmark_specific/aime_evaluator.py
 wisent/core/evaluators/benchmark_specific/exact_match_evaluator.py
@@ -817,6 +818,7 @@ wisent/core/evaluators/core/atoms.py
 wisent/core/evaluators/custom/__init__.py
 wisent/core/evaluators/custom/custom_evaluator.py
 wisent/core/evaluators/custom/examples/__init__.py
+wisent/core/evaluators/custom/examples/desklib_detector.py
 wisent/core/evaluators/custom/examples/gptzero.py
 wisent/core/evaluators/custom/examples/humanization.py
 wisent/core/evaluators/custom/examples/roberta_detector.py
@@ -1664,6 +1666,7 @@ wisent/parameters/tasks/remaining_tasks_to_implement.json
 wisent/parameters/tasks/risks.json
 wisent/parameters/tasks/skills.json
 wisent/parameters/tasks/tasks.json
+wisent/scripts/run_quality_metrics_sweep.sh
 wisent/tests/__init__.py
 wisent/tests/test_all_cli_commands.py
 wisent/tests/examples/__init__.py

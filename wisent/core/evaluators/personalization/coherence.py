@@ -166,10 +166,10 @@ def _is_incoherent(text: str) -> bool:
 
 
 def evaluate_quality(
-    response: str,
-    model: PreTrainedModel,
-    tokenizer: PreTrainedTokenizer,
-    device: "torch.device",
+    response: "str | list[str]",
+    model: "PreTrainedModel | None" = None,
+    tokenizer: "PreTrainedTokenizer | None" = None,
+    device: "torch.device | None" = None,
 ) -> float:
     """
     Evaluate response quality using heuristic checks on a scale of 1-100.
@@ -183,7 +183,7 @@ def evaluate_quality(
     - Character repetition (same character repeated many times)
 
     Args:
-        response: The response to evaluate
+        response: The response to evaluate (string or list of strings)
         model: The model (not used, kept for API compatibility)
         tokenizer: The tokenizer (not used, kept for API compatibility)
         device: Device (not used, kept for API compatibility)
@@ -194,6 +194,13 @@ def evaluate_quality(
         - 1 = Very poor quality (multiple severe issues)
         - 0 = Gibberish detected
     """
+    # Handle list inputs - compute average quality
+    if isinstance(response, list):
+        if not response:
+            return 50.0  # Default if empty
+        scores = [evaluate_quality(r) for r in response]
+        return sum(scores) / len(scores)
+    
     # Check for gibberish first - immediate zero if detected
     if _is_gibberish(response):
         return 0.0

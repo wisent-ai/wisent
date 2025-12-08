@@ -166,6 +166,8 @@ def execute_train_unified_goodness(args):
     # Set random seed for reproducibility
     random.seed(args.seed)
 
+    from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS
+    
     loader = LMEvalDataLoader()
     all_train_pairs = []
     all_eval_pairs = []
@@ -177,29 +179,42 @@ def execute_train_unified_goodness(args):
         print(f"   [{idx+1}/{len(selected_benchmark_names)}] Loading {bench_name}...", end=" ", flush=True)
 
         try:
-            task_obj = loader.load_lm_eval_task(task_name)
-
-            # Handle group tasks (dict of subtasks)
-            if isinstance(task_obj, dict):
-                bench_pairs = []
-                for subname, subtask in task_obj.items():
-                    try:
-                        subtask_pairs = lm_build_contrastive_pairs(
-                            task_name=subname,
-                            lm_eval_task=subtask,
-                            limit=None,  # Load all, we'll cap later
-                        )
-                        bench_pairs.extend(subtask_pairs)
-                    except Exception as e:
-                        if args.verbose:
-                            print(f"\n      ⚠️  Subtask {subname} failed: {e}")
-            else:
-                # Load all pairs
+            # Check if task is in HuggingFace manifest (doesn't need lm-eval loading)
+            task_name_lower = task_name.lower()
+            is_hf_task = task_name_lower in {k.lower() for k in HF_EXTRACTORS.keys()}
+            
+            if is_hf_task:
+                # HuggingFace task - skip lm-eval loading, go directly to extractor
                 bench_pairs = lm_build_contrastive_pairs(
                     task_name=task_name,
-                    lm_eval_task=task_obj,
+                    lm_eval_task=None,  # HF extractors don't need lm_eval_task
                     limit=None,  # Load all, we'll cap later
                 )
+            else:
+                # lm-eval task - load via LMEvalDataLoader
+                task_obj = loader.load_lm_eval_task(task_name)
+
+                # Handle group tasks (dict of subtasks)
+                if isinstance(task_obj, dict):
+                    bench_pairs = []
+                    for subname, subtask in task_obj.items():
+                        try:
+                            subtask_pairs = lm_build_contrastive_pairs(
+                                task_name=subname,
+                                lm_eval_task=subtask,
+                                limit=None,  # Load all, we'll cap later
+                            )
+                            bench_pairs.extend(subtask_pairs)
+                        except Exception as e:
+                            if args.verbose:
+                                print(f"\n      ⚠️  Subtask {subname} failed: {e}")
+                else:
+                    # Load all pairs
+                    bench_pairs = lm_build_contrastive_pairs(
+                        task_name=task_name,
+                        lm_eval_task=task_obj,
+                        limit=None,  # Load all, we'll cap later
+                    )
 
             # Apply cap with random sampling if needed
             if bench_pairs and args.cap_pairs_per_benchmark and len(bench_pairs) > args.cap_pairs_per_benchmark:
