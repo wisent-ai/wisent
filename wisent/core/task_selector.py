@@ -187,3 +187,46 @@ def get_tasks_for_skills_and_risks(
         min_quality_score=min_quality_score,
         seed=seed
     )
+
+
+def expand_task_if_skill_or_risk(task: str) -> str:
+    """
+    Expand a task name to comma-separated benchmarks if it's a skill or risk.
+    
+    If the task is a skill name (coding, mathematics, etc.) or a risk name
+    (hallucination, toxicity, etc.), expands it to all matching benchmarks.
+    Otherwise returns the original task unchanged.
+    
+    Args:
+        task: Task name, skill name, risk name, or comma-separated benchmarks
+        
+    Returns:
+        Original task if it's a benchmark name, or comma-separated benchmarks
+        if it was a skill/risk name
+    """
+    if not task:
+        return task
+    
+    task_lower = task.lower().strip()
+    
+    # Already comma-separated, return as-is
+    if "," in task:
+        return task
+    
+    selector = TaskSelector()
+    available_skills = [s.lower() for s in selector.get_available_skills()]
+    available_risks = [r.lower() for r in selector.get_available_risks()]
+    
+    if task_lower in available_skills:
+        matching_tasks = selector.find_tasks_by_tags(skills=[task_lower])
+        if matching_tasks:
+            logger.info(f"Expanded skill '{task}' to {len(matching_tasks)} benchmarks")
+            return ",".join(matching_tasks)
+    elif task_lower in available_risks:
+        matching_tasks = selector.find_tasks_by_tags(risks=[task_lower])
+        if matching_tasks:
+            logger.info(f"Expanded risk '{task}' to {len(matching_tasks)} benchmarks")
+            return ",".join(matching_tasks)
+    
+    # Not a skill or risk, return original
+    return task
