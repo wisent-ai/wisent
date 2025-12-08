@@ -75,6 +75,7 @@ from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 class SteeringMethodType(Enum):
     """Enumeration of all supported steering methods."""
     CAA = "caa"
+    PRISM = "prism"
 
 
 @dataclass
@@ -187,6 +188,96 @@ CAA_DEFINITION = SteeringMethodDefinition(
 )
 
 
+PRISM_DEFINITION = SteeringMethodDefinition(
+    name="prism",
+    method_type=SteeringMethodType.PRISM,
+    description="PRISM - Projected Representations for Independent Steering Manifolds. Gradient-optimized multi-directional steering.",
+    method_class_path="wisent.core.steering_methods.methods.prism.PRISMMethod",
+    parameters=[
+        SteeringMethodParameter(
+            name="num_directions",
+            type=int,
+            default=3,
+            help="Number of directions to discover per layer",
+            cli_flag="--prism-num-directions",
+        ),
+        SteeringMethodParameter(
+            name="optimization_steps",
+            type=int,
+            default=100,
+            help="Number of gradient descent steps for direction optimization",
+            cli_flag="--prism-optimization-steps",
+        ),
+        SteeringMethodParameter(
+            name="learning_rate",
+            type=float,
+            default=0.01,
+            help="Learning rate for direction optimization",
+            cli_flag="--prism-learning-rate",
+        ),
+        SteeringMethodParameter(
+            name="retain_weight",
+            type=float,
+            default=0.1,
+            help="Weight for retain loss (preserving behavior on harmless examples)",
+            cli_flag="--prism-retain-weight",
+        ),
+        SteeringMethodParameter(
+            name="independence_weight",
+            type=float,
+            default=0.05,
+            help="Weight for representational independence loss between directions",
+            cli_flag="--prism-independence-weight",
+        ),
+        SteeringMethodParameter(
+            name="normalize",
+            type=bool,
+            default=True,
+            help="L2-normalize the final directions",
+            action="store_true",
+            cli_flag="--prism-normalize",
+        ),
+        SteeringMethodParameter(
+            name="use_caa_init",
+            type=bool,
+            default=True,
+            help="Initialize first direction using CAA (difference-in-means)",
+            action="store_true",
+            cli_flag="--prism-use-caa-init",
+        ),
+        SteeringMethodParameter(
+            name="cone_constraint",
+            type=bool,
+            default=True,
+            help="Constrain directions to form a polyhedral cone",
+            action="store_true",
+            cli_flag="--prism-cone-constraint",
+        ),
+        SteeringMethodParameter(
+            name="min_cosine_similarity",
+            type=float,
+            default=0.3,
+            help="Minimum cosine similarity between directions",
+            cli_flag="--prism-min-cosine-similarity",
+        ),
+        SteeringMethodParameter(
+            name="max_cosine_similarity",
+            type=float,
+            default=0.95,
+            help="Maximum cosine similarity between directions (avoid redundancy)",
+            cli_flag="--prism-max-cosine-similarity",
+        ),
+    ],
+    optimization_config={
+        "strength_search_range": (0.1, 3.0),
+        "default_strength": 1.0,
+        "num_directions_range": (1, 7),
+    },
+    default_strength=1.0,
+    strength_range=(0.1, 3.0),
+)
+
+
 # =============================================================================
 # REGISTRY CLASS
 # =============================================================================
@@ -211,6 +302,7 @@ class SteeringMethodRegistry:
     
     _REGISTRY: Dict[str, SteeringMethodDefinition] = {
         "caa": CAA_DEFINITION,
+        "prism": PRISM_DEFINITION,
     }
     
     @classmethod

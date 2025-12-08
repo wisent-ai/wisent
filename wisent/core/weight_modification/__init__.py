@@ -58,8 +58,10 @@ Usage:
 from wisent.core.weight_modification.directional import (
     project_weights,
     project_weights_norm_preserved,
+    project_weights_multi_direction,
     project_component,
     project_component_norm_preserved,
+    project_component_multi_direction,
     compute_projection_kernel,
     project_with_kernel,
     orthogonalize_direction,
@@ -84,7 +86,9 @@ __all__ = [
     # Norm-Preserving Biprojected Directional Modification (RECOMMENDED)
     "project_weights",  # Default uses norm_preserve=True
     "project_weights_norm_preserved",
+    "project_weights_multi_direction",  # PRISM multi-directional
     "project_component_norm_preserved",
+    "project_component_multi_direction",  # PRISM multi-directional
     "project_component",
     "compute_projection_kernel",
     "project_with_kernel",

@@ -1,6 +1,7 @@
 """Steering methods package."""
 
 from .methods.caa import CAAMethod
+from .methods.prism import PRISMMethod, PRISMConfig, MultiDirectionResult
 from .rotator import SteeringMethodRotator
 from .registry import (
     SteeringMethodRegistry,
@@ -14,12 +15,17 @@ from .registry import (
 
 # Aliases for backward compatibility
 CAA = CAAMethod
+PRISM = PRISMMethod
 SteeringMethod = CAAMethod  # Default steering method
 
 __all__ = [
     # Method classes
     "CAAMethod",
     "CAA",
+    "PRISMMethod",
+    "PRISM",
+    "PRISMConfig",
+    "MultiDirectionResult",
     "SteeringMethod",
     "SteeringMethodRotator",
     # Registry
