@@ -9,6 +9,7 @@ sentence-transformers>=2.0.0
 faiss-cpu>=1.7.0
 uncensorbench>=0.2.0
 pebble>=5.0.0
+latex2sympy2_extended>=1.0.0
 
 [cuda]
 flash-attn>=2.5.0

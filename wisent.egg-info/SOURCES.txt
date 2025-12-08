@@ -813,6 +813,10 @@ wisent/core/evaluators/benchmark_specific/coding/safe_docker/recipes.py
 wisent/core/evaluators/benchmark_specific/coding/safe_docker/core/__init__.py
 wisent/core/evaluators/benchmark_specific/coding/safe_docker/core/atoms.py
 wisent/core/evaluators/benchmark_specific/coding/safe_docker/core/runtime.py
+wisent/core/evaluators/benchmark_specific/math_parsing/__init__.py
+wisent/core/evaluators/benchmark_specific/math_parsing/core.py
+wisent/core/evaluators/benchmark_specific/math_parsing/extract_boxed.py
+wisent/core/evaluators/benchmark_specific/math_parsing/scripts.py
 wisent/core/evaluators/core/__init__.py
 wisent/core/evaluators/core/atoms.py
 wisent/core/evaluators/custom/__init__.py
@@ -904,6 +908,7 @@ wisent/core/steering_methods/core/__init__.py
 wisent/core/steering_methods/core/atoms.py
 wisent/core/steering_methods/methods/__init__.py
 wisent/core/steering_methods/methods/caa.py
+wisent/core/steering_methods/methods/prism.py
 wisent/core/synthetic/__init__.py
 wisent/core/synthetic/cleaners/__init__.py
 wisent/core/synthetic/cleaners/deduper_cleaner.py
