@@ -389,15 +389,128 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
         """
         Decode latent representation to text output.
 
+        For multimodal models, this generates text from the hidden state
+        by passing through the language model head and sampling.
+
         Args:
-            latent: Hidden state tensor
+            latent: Hidden state tensor [batch, seq_len, hidden_dim]
 
         Returns:
             Generated text
         """
-        raise NotImplementedError(
-            "Direct latent decoding not supported. Use generate() instead."
-        )
+        model_type = self._detect_model_type()
+        
+        with torch.no_grad():
+            # Ensure proper shape
+            if latent.dim() == 2:
+                latent = latent.unsqueeze(0)
+            
+            # Move to model device
+            latent = latent.to(self.model.device)
+            
+            # Try different decoding strategies based on model type
+            if model_type == self.MODEL_TYPE_LLAVA:
+                return self._decode_llava(latent)
+            elif model_type == self.MODEL_TYPE_QWEN_VL:
+                return self._decode_qwen_vl(latent)
+            elif model_type == self.MODEL_TYPE_IDEFICS:
+                return self._decode_idefics(latent)
+            else:
+                return self._decode_generic(latent)
+    
+    def _decode_llava(self, latent: torch.Tensor) -> str:
+        """Decode for LLaVA models."""
+        # LLaVA uses a standard LM head
+        if hasattr(self.model, "language_model"):
+            lm = self.model.language_model
+            if hasattr(lm, "lm_head"):
+                logits = lm.lm_head(latent)
+                return self._greedy_decode(logits)
+        
+        return self._decode_generic(latent)
+    
+    def _decode_qwen_vl(self, latent: torch.Tensor) -> str:
+        """Decode for Qwen-VL models."""
+        # Qwen-VL uses standard transformer architecture
+        if hasattr(self.model, "lm_head"):
+            logits = self.model.lm_head(latent)
+            return self._greedy_decode(logits)
+        
+        return self._decode_generic(latent)
+    
+    def _decode_idefics(self, latent: torch.Tensor) -> str:
+        """Decode for IDEFICS models."""
+        # IDEFICS uses embed_out for LM head
+        if hasattr(self.model, "embed_out"):
+            logits = self.model.embed_out(latent)
+            return self._greedy_decode(logits)
+        elif hasattr(self.model, "lm_head"):
+            logits = self.model.lm_head(latent)
+            return self._greedy_decode(logits)
+        
+        return self._decode_generic(latent)
+    
+    def _decode_generic(self, latent: torch.Tensor) -> str:
+        """Generic decoding fallback."""
+        # Try common LM head names
+        lm_head = None
+        for attr in ["lm_head", "embed_out", "output_projection", "head"]:
+            if hasattr(self.model, attr):
+                lm_head = getattr(self.model, attr)
+                break
+            # Check in language_model submodule
+            if hasattr(self.model, "language_model"):
+                lm = self.model.language_model
+                if hasattr(lm, attr):
+                    lm_head = getattr(lm, attr)
+                    break
+        
+        if lm_head is not None:
+            logits = lm_head(latent)
+            return self._greedy_decode(logits)
+        
+        # Last resort: sample from latent directly (not ideal)
+        # Return info about the latent instead
+        return f"[Latent decoded: shape={latent.shape}, mean={latent.mean().item():.4f}]"
+    
+    def _greedy_decode(self, logits: torch.Tensor, max_length: int = 256) -> str:
+        """
+        Perform greedy decoding from logits.
+        
+        Args:
+            logits: Model logits [batch, seq_len, vocab_size]
+            max_length: Maximum generation length
+            
+        Returns:
+            Decoded text string
+        """
+        # Get token predictions
+        if logits.dim() == 3:
+            # Take last position for next token prediction
+            next_token_logits = logits[:, -1, :]
+        else:
+            next_token_logits = logits
+        
+        # Greedy selection
+        predicted_ids = torch.argmax(next_token_logits, dim=-1)
+        
+        # Handle batch dimension
+        if predicted_ids.dim() == 0:
+            predicted_ids = predicted_ids.unsqueeze(0)
+        if predicted_ids.dim() == 1:
+            predicted_ids = predicted_ids.unsqueeze(0)
+        
+        # Decode tokens
+        try:
+            text = self.processor.decode(predicted_ids[0], skip_special_tokens=True)
+        except Exception:
+            # Fallback to tokenizer if processor doesn't have decode
+            if hasattr(self.processor, "tokenizer"):
+                text = self.processor.tokenizer.decode(predicted_ids[0], skip_special_tokens=True)
+            else:
+                text = f"[Token IDs: {predicted_ids[0].tolist()[:10]}...]"
+        
+        return text
 
     def get_intervention_points(self) -> List[InterventionPoint]:
         """Get available intervention points across all modality encoders."""

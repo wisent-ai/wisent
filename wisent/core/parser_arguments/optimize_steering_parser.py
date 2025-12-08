@@ -1,5 +1,10 @@
 """Parser setup for the 'optimize-steering' command."""
 
+from wisent.core.steering_methods.registry import SteeringMethodRegistry
+
+# Get available steering methods from registry
+AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
+
 
 def setup_steering_optimizer_parser(parser):
     """Set up the steering-optimizer subcommand parser."""
@@ -22,10 +27,12 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA"],
+        choices=AVAILABLE_METHODS,
         default=["CAA"],
-        help="Steering methods to test",
+        help=f"Steering methods to test. Available: {', '.join(AVAILABLE_METHODS)}",
     )
+    # Add method-specific arguments from registry
+    SteeringMethodRegistry.add_all_cli_arguments(comprehensive_parser)
     comprehensive_parser.add_argument("--limit", type=int, default=100, help="Sample limit per task (default: 100)")
     comprehensive_parser.add_argument(
         "--max-time-per-task", type=float, default=20.0, help="Time limit per task in minutes (default: 20.0)"
@@ -138,10 +145,11 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA"],
+        choices=AVAILABLE_METHODS,
         default=["CAA"],
-        help="Steering methods to compare",
+        help=f"Steering methods to compare. Available: {', '.join(AVAILABLE_METHODS)}",
     )
+    SteeringMethodRegistry.add_all_cli_arguments(method_parser)
     method_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
     method_parser.add_argument(
         "--max-time", type=float, default=30.0, help="Maximum optimization time in minutes (default: 30.0)"
@@ -169,9 +177,10 @@ def setup_steering_optimizer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=["CAA"],
-        help="Steering method to use (default: CAA)",
+        choices=AVAILABLE_METHODS,
+        help=f"Steering method to use (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
     )
+    SteeringMethodRegistry.add_all_cli_arguments(layer_parser)
     layer_parser.add_argument("--layer-range", type=str, default=None, help="Layer range to search (e.g., '10-20')")
     layer_parser.add_argument(
         "--strength", type=float, default=1.0, help="Fixed steering strength during layer search (default: 1.0)"
@@ -200,9 +209,10 @@ def setup_steering_optimizer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=["CAA"],
-        help="Steering method to use (default: CAA)",
+        choices=AVAILABLE_METHODS,
+        help=f"Steering method to use (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
     )
+    SteeringMethodRegistry.add_all_cli_arguments(strength_parser)
     strength_parser.add_argument(
         "--layer", type=int, default=None, help="Steering layer to use (defaults to classification layer)"
     )
@@ -245,10 +255,11 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=["CAA"],
+        choices=AVAILABLE_METHODS,
         default=["CAA"],
-        help="Steering methods to test (default: CAA)",
+        help=f"Steering methods to test (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
     )
+    SteeringMethodRegistry.add_all_cli_arguments(auto_parser)
     auto_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
     auto_parser.add_argument("--max-time", type=float, default=60.0, help="Maximum time in minutes (default: 60)")
     auto_parser.add_argument(

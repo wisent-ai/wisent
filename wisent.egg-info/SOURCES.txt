@@ -909,6 +909,8 @@ wisent/core/steering_methods/core/atoms.py
 wisent/core/steering_methods/methods/__init__.py
 wisent/core/steering_methods/methods/caa.py
 wisent/core/steering_methods/methods/prism.py
+wisent/core/steering_methods/methods/pulse.py
+wisent/core/steering_methods/methods/titan.py
 wisent/core/synthetic/__init__.py
 wisent/core/synthetic/cleaners/__init__.py
 wisent/core/synthetic/cleaners/deduper_cleaner.py

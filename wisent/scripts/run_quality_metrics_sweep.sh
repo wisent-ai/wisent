@@ -17,7 +17,7 @@ N_TRIALS="${N_TRIALS:-200}"
 TRAIN_LIMIT="${TRAIN_LIMIT:-100}"
 VAL_LIMIT="${VAL_LIMIT:-50}"
 TEST_LIMIT="${TEST_LIMIT:-50}"
-LAYER_RANGE="${LAYER_RANGE:-0-24}"
+LAYER_RANGE="${LAYER_RANGE:-0-23}"
 
 # Benchmarks to test (these have meaningful correct/incorrect answer pairs)
 BENCHMARKS=(
