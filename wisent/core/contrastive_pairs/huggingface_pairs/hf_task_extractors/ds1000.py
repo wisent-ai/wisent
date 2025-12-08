@@ -65,6 +65,7 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
         try:
             prompt = doc.get("prompt", "").strip()
             reference_code = doc.get("reference_code", "").strip()
+            code_context = doc.get("code_context", "").strip()
             metadata_info = doc.get("metadata", {})
             
             if not prompt or not reference_code:
@@ -74,10 +75,17 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
             correct_code = reference_code
             incorrect_code = "# TODO: implement solution\npass"
 
+            # Build test code from code_context if available
+            test_code = None
+            if code_context:
+                # DS-1000 code_context contains test setup and generate_ans function
+                test_code = code_context
+
             metadata = {
                 "label": "ds1000",
                 "problem_id": metadata_info.get("problem_id", ""),
                 "library": metadata_info.get("library", ""),
+                "test_code": test_code,
             }
 
             return self._build_pair(
