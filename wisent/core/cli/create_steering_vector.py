@@ -68,12 +68,52 @@ def execute_create_steering_vector(args):
         # 3. Create steering method instance
         print(f"\n🧠 Initializing {args.method.upper()} steering method...")
 
-        if args.method.lower() == "caa":
+        # Check if we have optimal config from parent pipeline
+        optimal_config = getattr(args, '_optimal_config', None)
+        
+        method_name = args.method.lower()
+        
+        if method_name == "caa":
             method = CAAMethod(kwargs={"normalize": args.normalize})
+            print(f"   ✓ Method initialized (normalize={args.normalize})")
+        elif method_name == "prism":
+            from wisent.core.steering_methods.methods.prism import PRISMMethod
+            prism_params = {}
+            if optimal_config:
+                prism_params = {
+                    "num_directions": optimal_config.get("num_directions", 1),
+                    "direction_weighting": optimal_config.get("direction_weighting", "primary_only"),
+                    "retain_weight": optimal_config.get("retain_weight", 0.0),
+                }
+                print(f"   Using optimal PRISM params: num_directions={prism_params['num_directions']}, weighting={prism_params['direction_weighting']}")
+            method = PRISMMethod(**prism_params)
+            print(f"   ✓ PRISM method initialized")
+        elif method_name == "pulse":
+            from wisent.core.steering_methods.methods.pulse import PULSEMethod
+            pulse_params = {}
+            if optimal_config:
+                pulse_params = {
+                    "sensor_layer": optimal_config.get("sensor_layer", -1),
+                    "condition_threshold": optimal_config.get("condition_threshold", 0.5),
+                    "gate_temperature": optimal_config.get("gate_temperature", 0.5),
+                }
+                print(f"   Using optimal PULSE params: threshold={pulse_params['condition_threshold']}, temp={pulse_params['gate_temperature']}")
+            method = PULSEMethod(**pulse_params)
+            print(f"   ✓ PULSE method initialized")
+        elif method_name == "titan":
+            from wisent.core.steering_methods.methods.titan import TITANMethod
+            titan_params = {}
+            if optimal_config:
+                titan_params = {
+                    "num_directions": optimal_config.get("num_directions", 3),
+                    "gate_hidden_dim": optimal_config.get("gate_hidden_dim", 64),
+                    "intensity_hidden_dim": optimal_config.get("intensity_hidden_dim", 32),
+                }
+                print(f"   Using optimal TITAN params: num_directions={titan_params['num_directions']}, gate_hidden={titan_params['gate_hidden_dim']}")
+            method = TITANMethod(**titan_params)
+            print(f"   ✓ TITAN method initialized")
         else:
             raise SteeringMethodUnknownError(method=args.method)
-
-        print(f"   ✓ Method initialized (normalize={args.normalize})")
 
         # 4. Generate steering vectors for each layer
         print(f"\n⚡ Generating steering vectors...")

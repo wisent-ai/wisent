@@ -991,18 +991,48 @@ def execute_comprehensive(args, model, loader):
         if "methods" in config and "CAA" in config["methods"]:
             best_score = config["methods"]["CAA"].get("accuracy", 0.0)
 
+        # Get best method name
+        best_method_name = config.get("best_method", "CAA")
+        
+        # Get method-specific parameters from the best config
+        method_config = config.get("methods", {}).get(best_method_name, {})
+        
         cache_key = store_optimization(
             model=args.model,
             task=task_name,
             layer=config["best_layer"],
             strength=config["best_strength"],
-            method="CAA",
+            method=best_method_name,
             token_aggregation=config.get("best_token_aggregation", "last_token"),
             prompt_strategy=config.get("best_prompt_construction", "chat_template"),
+            strategy=config.get("best_strategy", "constant"),
             score=best_score,
             metric="accuracy",
-            metadata={"strategy": config.get("best_strategy", "constant"), "limit": args.limit},
+            metadata={"limit": args.limit},
             set_as_default=save_as_default,
+            # PRISM parameters
+            num_directions=method_config.get("num_directions", 1),
+            direction_weighting=method_config.get("direction_weighting", "primary_only"),
+            retain_weight=method_config.get("retain_weight", 0.0),
+            independence_weight=method_config.get("independence_weight", 0.05),
+            prism_optimization_steps=method_config.get("optimization_steps", 100),
+            # PULSE parameters
+            sensor_layer=method_config.get("sensor_layer", -1),
+            steering_layers=method_config.get("steering_layers", ""),
+            condition_threshold=method_config.get("condition_threshold", 0.5),
+            gate_temperature=method_config.get("gate_temperature", 0.5),
+            per_layer_scaling=method_config.get("per_layer_scaling", True),
+            use_entropy_scaling=method_config.get("use_entropy_scaling", False),
+            max_alpha=method_config.get("max_alpha", 2.0),
+            # TITAN parameters
+            gate_hidden_dim=method_config.get("gate_hidden_dim", 64),
+            intensity_hidden_dim=method_config.get("intensity_hidden_dim", 32),
+            behavior_weight=method_config.get("behavior_weight", 1.0),
+            sparse_weight=method_config.get("sparse_weight", 0.05),
+            titan_optimization_steps=method_config.get("titan_optimization_steps", 200),
+            titan_learning_rate=method_config.get("titan_learning_rate", 0.005),
+            # Store all method params as generic dict
+            method_params=method_config,
         )
         print(f"   ✓ Cached {task_name}: {cache_key}")
 
@@ -1282,6 +1312,7 @@ def execute_compare_methods(args, model, loader):
             layer=args.layer,
             strength=args.strength,
             method=best_method,
+            strategy="constant",
             score=best_accuracy,
             metric="accuracy",
             metadata={"limit": args.limit},
@@ -1550,6 +1581,7 @@ def execute_optimize_layer(args, model, loader):
             layer=best_layer,
             strength=args.strength,
             method=args.method,
+            strategy="constant",
             score=best_accuracy,
             metric="accuracy",
             metadata={"limit": args.limit},
@@ -1835,6 +1867,7 @@ def execute_optimize_strength(args, model, loader):
             layer=args.layer,
             strength=best_strength,
             method=args.method,
+            strategy="constant",
             score=best_accuracy,
             metric="accuracy",
             metadata={"limit": args.limit, "strength_range": args.strength_range},
@@ -2144,6 +2177,7 @@ def execute_auto(args, model, loader):
             layer=best_config["layer"],
             strength=best_config["strength"],
             method=best_config.get("method", "CAA"),
+            strategy=best_config.get("strategy", "constant"),
             score=best_config["accuracy"],
             metric="accuracy",
             metadata={"limit": args.limit, "strength_range": list(args.strength_range)},

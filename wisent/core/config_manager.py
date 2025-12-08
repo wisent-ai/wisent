@@ -82,10 +82,48 @@ class SteeringConfig(SerializableConfig):
     token_aggregation: str = "average"
     prompt_strategy: str = "question_only"
     normalize_mode: str = "none"
+    strategy: str = "constant"  # Steering strategy: constant, initial_only, diminishing
 
     # Metrics from optimization
     score: float = 0.0
     metric: str = "accuracy"
+    
+    # ==========================================================================
+    # METHOD-SPECIFIC PARAMETERS
+    # ==========================================================================
+    
+    # PRISM parameters
+    num_directions: int = 1  # Number of steering directions
+    direction_weighting: str = "primary_only"  # primary_only, equal, learned, decay
+    retain_weight: float = 0.0  # Weight for retaining original behavior
+    independence_weight: float = 0.05  # Weight for direction independence loss
+    prism_optimization_steps: int = 100  # Optimization steps for PRISM
+    use_caa_init: bool = True  # Initialize from CAA direction
+    cone_constraint: bool = True  # Use cone constraint
+    min_cosine_similarity: float = 0.3  # Min cosine sim for cone
+    max_cosine_similarity: float = 0.95  # Max cosine sim for cone
+    
+    # PULSE parameters
+    sensor_layer: int = -1  # Layer to sense activation patterns (-1 = auto)
+    steering_layers: str = ""  # Comma-separated steering layer indices
+    condition_threshold: float = 0.5  # Threshold for conditional steering
+    gate_temperature: float = 0.5  # Temperature for gating
+    per_layer_scaling: bool = True  # Use per-layer scaling
+    use_entropy_scaling: bool = False  # Scale by entropy
+    max_alpha: float = 2.0  # Maximum steering intensity
+    learn_threshold: bool = True  # Learn threshold during training
+    pulse_optimization_steps: int = 100  # Optimization steps for PULSE
+    
+    # TITAN parameters
+    gate_hidden_dim: int = 64  # Hidden dimension for gate network
+    intensity_hidden_dim: int = 32  # Hidden dimension for intensity network
+    behavior_weight: float = 1.0  # Weight for behavior loss
+    sparse_weight: float = 0.05  # Weight for sparsity loss
+    titan_optimization_steps: int = 200  # Optimization steps for TITAN
+    titan_learning_rate: float = 0.005  # Learning rate for TITAN
+    
+    # Generic method parameters storage (for future methods)
+    method_params: Dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -472,10 +510,40 @@ class WisentConfigManager:
         token_aggregation: str = "average",
         prompt_strategy: str = "question_only",
         normalize_mode: str = "none",
+        strategy: str = "constant",
         score: float = 0.0,
         metric: str = "accuracy",
         optimization_method: str = "manual",
         set_as_default: bool = False,
+        # PRISM parameters
+        num_directions: int = 1,
+        direction_weighting: str = "primary_only",
+        retain_weight: float = 0.0,
+        independence_weight: float = 0.05,
+        prism_optimization_steps: int = 100,
+        use_caa_init: bool = True,
+        cone_constraint: bool = True,
+        min_cosine_similarity: float = 0.3,
+        max_cosine_similarity: float = 0.95,
+        # PULSE parameters
+        sensor_layer: int = -1,
+        steering_layers: str = "",
+        condition_threshold: float = 0.5,
+        gate_temperature: float = 0.5,
+        per_layer_scaling: bool = True,
+        use_entropy_scaling: bool = False,
+        max_alpha: float = 2.0,
+        learn_threshold: bool = True,
+        pulse_optimization_steps: int = 100,
+        # TITAN parameters
+        gate_hidden_dim: int = 64,
+        intensity_hidden_dim: int = 32,
+        behavior_weight: float = 1.0,
+        sparse_weight: float = 0.05,
+        titan_optimization_steps: int = 200,
+        titan_learning_rate: float = 0.005,
+        # Generic method params
+        method_params: Optional[Dict[str, Any]] = None,
     ) -> Path:
         """Save steering config for a model/task."""
         config = self._load_model_config(model_name)
@@ -487,8 +555,38 @@ class WisentConfigManager:
             token_aggregation=token_aggregation,
             prompt_strategy=prompt_strategy,
             normalize_mode=normalize_mode,
+            strategy=strategy,
             score=score,
             metric=metric,
+            # PRISM
+            num_directions=num_directions,
+            direction_weighting=direction_weighting,
+            retain_weight=retain_weight,
+            independence_weight=independence_weight,
+            prism_optimization_steps=prism_optimization_steps,
+            use_caa_init=use_caa_init,
+            cone_constraint=cone_constraint,
+            min_cosine_similarity=min_cosine_similarity,
+            max_cosine_similarity=max_cosine_similarity,
+            # PULSE
+            sensor_layer=sensor_layer,
+            steering_layers=steering_layers,
+            condition_threshold=condition_threshold,
+            gate_temperature=gate_temperature,
+            per_layer_scaling=per_layer_scaling,
+            use_entropy_scaling=use_entropy_scaling,
+            max_alpha=max_alpha,
+            learn_threshold=learn_threshold,
+            pulse_optimization_steps=pulse_optimization_steps,
+            # TITAN
+            gate_hidden_dim=gate_hidden_dim,
+            intensity_hidden_dim=intensity_hidden_dim,
+            behavior_weight=behavior_weight,
+            sparse_weight=sparse_weight,
+            titan_optimization_steps=titan_optimization_steps,
+            titan_learning_rate=titan_learning_rate,
+            # Generic
+            method_params=method_params or {},
         )
 
         if task_name:
@@ -936,10 +1034,42 @@ class OptimizationResult:
     method: str = "CAA"
     token_aggregation: str = "average"
     prompt_strategy: str = "question_only"
+    strategy: str = "constant"
     score: float = 0.0
     metric: str = "accuracy"
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     metadata: Dict[str, Any] = field(default_factory=dict)
+    
+    # Method-specific parameters
+    # PRISM
+    num_directions: int = 1
+    direction_weighting: str = "primary_only"
+    retain_weight: float = 0.0
+    independence_weight: float = 0.05
+    prism_optimization_steps: int = 100
+    use_caa_init: bool = True
+    cone_constraint: bool = True
+    min_cosine_similarity: float = 0.3
+    max_cosine_similarity: float = 0.95
+    # PULSE
+    sensor_layer: int = -1
+    steering_layers: str = ""
+    condition_threshold: float = 0.5
+    gate_temperature: float = 0.5
+    per_layer_scaling: bool = True
+    use_entropy_scaling: bool = False
+    max_alpha: float = 2.0
+    learn_threshold: bool = True
+    pulse_optimization_steps: int = 100
+    # TITAN
+    gate_hidden_dim: int = 64
+    intensity_hidden_dim: int = 32
+    behavior_weight: float = 1.0
+    sparse_weight: float = 0.05
+    titan_optimization_steps: int = 200
+    titan_learning_rate: float = 0.005
+    # Generic
+    method_params: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)
@@ -957,10 +1087,40 @@ def store_optimization(
     method: str = "CAA",
     token_aggregation: str = "average",
     prompt_strategy: str = "question_only",
+    strategy: str = "constant",
     score: float = 0.0,
     metric: str = "accuracy",
     metadata: Optional[Dict[str, Any]] = None,
-    set_as_default: bool = False
+    set_as_default: bool = False,
+    # PRISM parameters
+    num_directions: int = 1,
+    direction_weighting: str = "primary_only",
+    retain_weight: float = 0.0,
+    independence_weight: float = 0.05,
+    prism_optimization_steps: int = 100,
+    use_caa_init: bool = True,
+    cone_constraint: bool = True,
+    min_cosine_similarity: float = 0.3,
+    max_cosine_similarity: float = 0.95,
+    # PULSE parameters
+    sensor_layer: int = -1,
+    steering_layers: str = "",
+    condition_threshold: float = 0.5,
+    gate_temperature: float = 0.5,
+    per_layer_scaling: bool = True,
+    use_entropy_scaling: bool = False,
+    max_alpha: float = 2.0,
+    learn_threshold: bool = True,
+    pulse_optimization_steps: int = 100,
+    # TITAN parameters
+    gate_hidden_dim: int = 64,
+    intensity_hidden_dim: int = 32,
+    behavior_weight: float = 1.0,
+    sparse_weight: float = 0.05,
+    titan_optimization_steps: int = 200,
+    titan_learning_rate: float = 0.005,
+    # Generic
+    method_params: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
     Backward-compatible function to store steering optimization result.
@@ -974,10 +1134,40 @@ def store_optimization(
         method=method,
         token_aggregation=token_aggregation,
         prompt_strategy=prompt_strategy,
+        strategy=strategy,
         score=score,
         metric=metric,
         optimization_method="optuna" if metadata else "manual",
         set_as_default=set_as_default,
+        # PRISM
+        num_directions=num_directions,
+        direction_weighting=direction_weighting,
+        retain_weight=retain_weight,
+        independence_weight=independence_weight,
+        prism_optimization_steps=prism_optimization_steps,
+        use_caa_init=use_caa_init,
+        cone_constraint=cone_constraint,
+        min_cosine_similarity=min_cosine_similarity,
+        max_cosine_similarity=max_cosine_similarity,
+        # PULSE
+        sensor_layer=sensor_layer,
+        steering_layers=steering_layers,
+        condition_threshold=condition_threshold,
+        gate_temperature=gate_temperature,
+        per_layer_scaling=per_layer_scaling,
+        use_entropy_scaling=use_entropy_scaling,
+        max_alpha=max_alpha,
+        learn_threshold=learn_threshold,
+        pulse_optimization_steps=pulse_optimization_steps,
+        # TITAN
+        gate_hidden_dim=gate_hidden_dim,
+        intensity_hidden_dim=intensity_hidden_dim,
+        behavior_weight=behavior_weight,
+        sparse_weight=sparse_weight,
+        titan_optimization_steps=titan_optimization_steps,
+        titan_learning_rate=titan_learning_rate,
+        # Generic
+        method_params=method_params,
     )
     # Return a cache key for backward compatibility
     model_normalized = model.replace("/", "_").replace("\\", "_")
@@ -1011,8 +1201,38 @@ def get_cached_optimization(
         method=steering.method,
         token_aggregation=steering.token_aggregation,
         prompt_strategy=steering.prompt_strategy,
+        strategy=steering.strategy,
         score=steering.score,
         metric=steering.metric,
+        # PRISM
+        num_directions=steering.num_directions,
+        direction_weighting=steering.direction_weighting,
+        retain_weight=steering.retain_weight,
+        independence_weight=steering.independence_weight,
+        prism_optimization_steps=steering.prism_optimization_steps,
+        use_caa_init=steering.use_caa_init,
+        cone_constraint=steering.cone_constraint,
+        min_cosine_similarity=steering.min_cosine_similarity,
+        max_cosine_similarity=steering.max_cosine_similarity,
+        # PULSE
+        sensor_layer=steering.sensor_layer,
+        steering_layers=steering.steering_layers,
+        condition_threshold=steering.condition_threshold,
+        gate_temperature=steering.gate_temperature,
+        per_layer_scaling=steering.per_layer_scaling,
+        use_entropy_scaling=steering.use_entropy_scaling,
+        max_alpha=steering.max_alpha,
+        learn_threshold=steering.learn_threshold,
+        pulse_optimization_steps=steering.pulse_optimization_steps,
+        # TITAN
+        gate_hidden_dim=steering.gate_hidden_dim,
+        intensity_hidden_dim=steering.intensity_hidden_dim,
+        behavior_weight=steering.behavior_weight,
+        sparse_weight=steering.sparse_weight,
+        titan_optimization_steps=steering.titan_optimization_steps,
+        titan_learning_rate=steering.titan_learning_rate,
+        # Generic
+        method_params=steering.method_params,
     )
 
 

@@ -84,9 +84,9 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
     parser.add_argument(
         "--method",
         type=str,
-        choices=["caa"],
+        choices=["caa", "prism", "pulse", "titan"],
         default="caa",
-        help="Steering method to use (default: caa)"
+        help="Steering method to use (default: caa). If optimal config exists, method is auto-selected."
     )
     parser.add_argument(
         "--normalize",
@@ -120,6 +120,20 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
         action="store_true",
         default=False,
         help="Accept steering vectors that fail quality checks (convergence, SNR, etc.)"
+    )
+    
+    # Optimal config usage
+    parser.add_argument(
+        "--no-optimal",
+        action="store_false",
+        dest="use_optimal",
+        default=True,
+        help="Don't use optimal config from previous optimization (use defaults instead)"
+    )
+    parser.add_argument(
+        "--show-optimal",
+        action="store_true",
+        help="Show optimal config if available, but don't apply it"
     )
     
     # Display options

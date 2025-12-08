@@ -112,6 +112,7 @@ wisent/core/cli/optimize_sample_size.py
 wisent/core/cli/optimize_steering.py
 wisent/core/cli/optimize_weights.py
 wisent/core/cli/steering_method_trainer.py
+wisent/core/cli/steering_search_space.py
 wisent/core/cli/tasks.py
 wisent/core/cli/train_unified_goodness.py
 wisent/core/cli/agent/__init__.py

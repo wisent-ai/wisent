@@ -975,13 +975,26 @@ class OptimizationPipeline:
 
             all_activations = self._extract_batch_activations(all_texts, layer_id)
 
+            # Group activations by pair index
+            pair_activations = {}
             for text_idx, (pair_idx, response_type) in enumerate(text_to_pair_mapping):
                 activation = all_activations[text_idx]
+                if pair_idx not in pair_activations:
+                    pair_activations[pair_idx] = {"positive": None, "negative": None}
+                pair_activations[pair_idx][response_type] = {f"layer_{layer_id}": activation}
 
-                if response_type == "positive":
-                    pair_set.pairs[pair_idx].positive_response.activations = activation
+            # Update pairs with activations using with_activations method (frozen dataclass)
+            updated_pairs = []
+            for pair_idx, pair in enumerate(pair_set.pairs):
+                if pair_idx in pair_activations:
+                    updated_pair = pair.with_activations(
+                        positive=pair_activations[pair_idx]["positive"],
+                        negative=pair_activations[pair_idx]["negative"]
+                    )
+                    updated_pairs.append(updated_pair)
                 else:
-                    pair_set.pairs[pair_idx].negative_response.activations = activation
+                    updated_pairs.append(pair)
+            pair_set = ContrastivePairSet(name=pair_set.name, pairs=updated_pairs)
 
         return pair_set
 
@@ -1035,13 +1048,26 @@ class OptimizationPipeline:
             
             all_activations = self._extract_batch_activations(all_texts, layer_id)
             
+            # Group activations by pair index
+            pair_activations = {}
             for text_idx, (pair_idx, response_type) in enumerate(text_to_pair_mapping):
                 activation = all_activations[text_idx]
-                
-                if response_type == "positive":
-                    pair_set.pairs[pair_idx].positive_response.activations = activation
+                if pair_idx not in pair_activations:
+                    pair_activations[pair_idx] = {"positive": None, "negative": None}
+                pair_activations[pair_idx][response_type] = {f"layer_{layer_id}": activation}
+
+            # Update pairs with activations using with_activations method (frozen dataclass)
+            updated_pairs = []
+            for pair_idx, pair in enumerate(pair_set.pairs):
+                if pair_idx in pair_activations:
+                    updated_pair = pair.with_activations(
+                        positive=pair_activations[pair_idx]["positive"],
+                        negative=pair_activations[pair_idx]["negative"]
+                    )
+                    updated_pairs.append(updated_pair)
                 else:
-                    pair_set.pairs[pair_idx].negative_response.activations = activation
+                    updated_pairs.append(pair)
+            pair_set = ContrastivePairSet(name=pair_set.name, pairs=updated_pairs)
         
         self.logger.info(f"Created {len(pair_set.pairs)} synthetic contrastive pairs for layer {layer_id}")
         return pair_set

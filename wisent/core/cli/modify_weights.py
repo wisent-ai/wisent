@@ -386,6 +386,43 @@ def execute_modify_weights(args):
 
         else:
             # Single benchmark: use task-based generation
+            # Check for optimal config first
+            optimal_config = None
+            use_optimal = getattr(args, 'use_optimal', True)
+            
+            if use_optimal:
+                try:
+                    from wisent.core.config_manager import get_cached_optimization
+                    optimal_result = get_cached_optimization(args.model, args.task, method="*")
+                    if optimal_result:
+                        optimal_config = {
+                            "method": optimal_result.method,
+                            "layer": optimal_result.layer,
+                            "strength": optimal_result.strength,
+                            "strategy": optimal_result.strategy,
+                            "token_aggregation": optimal_result.token_aggregation,
+                            "prompt_strategy": optimal_result.prompt_strategy,
+                            "score": optimal_result.score,
+                            # Method-specific params
+                            "num_directions": optimal_result.num_directions,
+                            "direction_weighting": optimal_result.direction_weighting,
+                            "retain_weight": optimal_result.retain_weight,
+                            "sensor_layer": optimal_result.sensor_layer,
+                            "condition_threshold": optimal_result.condition_threshold,
+                            "gate_temperature": optimal_result.gate_temperature,
+                            "gate_hidden_dim": optimal_result.gate_hidden_dim,
+                            "intensity_hidden_dim": optimal_result.intensity_hidden_dim,
+                        }
+                        if args.verbose:
+                            print(f"\n📊 Found optimal steering config for {args.task}!")
+                            print(f"   Method: {optimal_config['method']}")
+                            print(f"   Layer: {optimal_config['layer']}")
+                            print(f"   Strength: {optimal_config['strength']}")
+                            print(f"   Score: {optimal_config['score']:.3f}")
+                            print(f"   → Using optimal settings\n")
+                except Exception:
+                    pass
+            
             if args.verbose:
                 print(f"Generating steering vectors from task '{args.task}'...")
 
@@ -399,10 +436,31 @@ def execute_modify_weights(args):
             vector_args.trait_label = getattr(args, 'trait_label', 'correctness')
             vector_args.model = args.model
             vector_args.num_pairs = args.num_pairs
-            vector_args.layers = str(args.layers) if args.layers is not None else "all"
-            vector_args.token_aggregation = args.token_aggregation
+            
+            # Use optimal config if available, otherwise use provided args
+            if optimal_config and args.layers is None:
+                vector_args.layers = str(optimal_config['layer'])
+            else:
+                vector_args.layers = str(args.layers) if args.layers is not None else "all"
+            
+            # Map token aggregation from stored format
+            if optimal_config:
+                token_agg_map = {
+                    "last_token": "final",
+                    "mean_pooling": "average",
+                    "first_token": "first",
+                    "max_pooling": "max",
+                }
+                vector_args.token_aggregation = token_agg_map.get(
+                    optimal_config['token_aggregation'], 
+                    args.token_aggregation
+                )
+                vector_args.method = optimal_config['method'].lower()
+            else:
+                vector_args.token_aggregation = args.token_aggregation
+                vector_args.method = "caa"
+            
             vector_args.prompt_strategy = args.prompt_strategy
-            vector_args.method = "caa"
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
             vector_args.timing = getattr(args, 'timing', False)
@@ -410,6 +468,11 @@ def execute_modify_weights(args):
             vector_args.keep_intermediate = False
             vector_args.device = None
             vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
+            vector_args.use_optimal = use_optimal
+            
+            # Pass optimal config for method-specific params
+            if optimal_config:
+                vector_args._optimal_config = optimal_config
 
             # Use temp file for steering vectors
             import tempfile
@@ -442,7 +505,11 @@ def execute_modify_weights(args):
             os.unlink(vector_args.output)
 
             if args.verbose:
-                print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
+                print(f"✓ Generated {len(steering_vectors)} steering vectors")
+                if optimal_config:
+                    print(f"   (using optimal {optimal_config['method']} config with score={optimal_config['score']:.3f})\n")
+                else:
+                    print()
 
     # Step 1.5: Load harmless vectors for biprojection (if provided)
     harmless_vectors = None

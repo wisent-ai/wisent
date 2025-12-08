@@ -11,6 +11,55 @@ from wisent.core.cli.get_activations import execute_get_activations
 from wisent.core.cli.create_steering_vector import execute_create_steering_vector
 
 
+def _load_optimal_defaults(model_name: str, task_name: str, args):
+    """
+    Load optimal steering config from cache and apply as defaults.
+    
+    Returns the optimal config dict if found, None otherwise.
+    """
+    try:
+        from wisent.core.config_manager import get_cached_optimization
+        
+        # Try to get cached optimization for any method
+        result = get_cached_optimization(model_name, task_name, method="*")
+        if result is None:
+            return None
+        
+        optimal_config = {
+            "method": result.method,
+            "layer": result.layer,
+            "strength": result.strength,
+            "strategy": result.strategy,
+            "token_aggregation": result.token_aggregation,
+            "prompt_strategy": result.prompt_strategy,
+            "score": result.score,
+        }
+        
+        # Add method-specific params
+        if result.method.upper() == "PRISM":
+            optimal_config.update({
+                "num_directions": result.num_directions,
+                "direction_weighting": result.direction_weighting,
+                "retain_weight": result.retain_weight,
+            })
+        elif result.method.upper() == "PULSE":
+            optimal_config.update({
+                "sensor_layer": result.sensor_layer,
+                "condition_threshold": result.condition_threshold,
+                "gate_temperature": result.gate_temperature,
+            })
+        elif result.method.upper() == "TITAN":
+            optimal_config.update({
+                "num_directions": result.num_directions,
+                "gate_hidden_dim": result.gate_hidden_dim,
+                "intensity_hidden_dim": result.intensity_hidden_dim,
+            })
+        
+        return optimal_config
+    except Exception:
+        return None
+
+
 def execute_generate_vector_from_task(args):
     """
     Execute the generate-vector-from-task command - full pipeline in one command.
@@ -19,10 +68,55 @@ def execute_generate_vector_from_task(args):
     1. Generate contrastive pairs from lm-eval task
     2. Collect activations from those pairs
     3. Create steering vectors from the activations
+    
+    If optimal steering config exists for model/task, those settings are used as defaults.
     """
     # Expand task if it's a skill or risk name
     from wisent.core.task_selector import expand_task_if_skill_or_risk
     args.task = expand_task_if_skill_or_risk(args.task)
+    
+    # Check for optimal defaults from previous optimization
+    use_optimal = getattr(args, 'use_optimal', True)  # Default to using optimal if available
+    optimal_config = None
+    
+    if use_optimal:
+        optimal_config = _load_optimal_defaults(args.model, args.task, args)
+        
+        if optimal_config:
+            print(f"\n{'='*60}")
+            print(f"📊 Found optimal steering config from previous optimization!")
+            print(f"{'='*60}")
+            print(f"   Method: {optimal_config['method']}")
+            print(f"   Layer: {optimal_config['layer']}")
+            print(f"   Strength: {optimal_config['strength']}")
+            print(f"   Token Aggregation: {optimal_config['token_aggregation']}")
+            print(f"   Score: {optimal_config['score']:.3f}")
+            print(f"{'='*60}")
+            
+            # Apply optimal defaults if user didn't explicitly override
+            if not getattr(args, '_layers_set_by_user', False) and args.layers is None:
+                args.layers = str(optimal_config['layer'])
+                print(f"   → Using optimal layer: {args.layers}")
+            
+            if not getattr(args, '_token_aggregation_set_by_user', False):
+                # Map stored format to CLI format
+                token_agg_map = {
+                    "last_token": "final",
+                    "mean_pooling": "average",
+                    "first_token": "first",
+                    "max_pooling": "max",
+                }
+                mapped_agg = token_agg_map.get(optimal_config['token_aggregation'], args.token_aggregation)
+                args.token_aggregation = mapped_agg
+                print(f"   → Using optimal token aggregation: {args.token_aggregation}")
+            
+            if not getattr(args, '_method_set_by_user', False):
+                args.method = optimal_config['method'].lower()
+                print(f"   → Using optimal method: {args.method}")
+            
+            # Store optimal config for later use
+            args._optimal_config = optimal_config
+            print()
     
     print(f"\n{'='*60}")
     print(f"🎯 Generating Steering Vector from Task (Full Pipeline)")
@@ -31,6 +125,8 @@ def execute_generate_vector_from_task(args):
     print(f"   Trait Label: {args.trait_label}")
     print(f"   Model: {args.model}")
     print(f"   Num Pairs: {args.num_pairs}")
+    if optimal_config:
+        print(f"   Using Optimal Config: YES (score={optimal_config['score']:.3f})")
     print(f"{'='*60}\n")
     
     pipeline_start = time.time() if args.timing else None
