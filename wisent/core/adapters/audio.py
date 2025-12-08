@@ -348,7 +348,7 @@ class AudioAdapter(BaseAdapter[AudioContent, Union[str, torch.Tensor]]):
         Decode latent representation to text (for ASR models).
 
         Args:
-            latent: Encoder output tensor
+            latent: Encoder output tensor [batch, time_steps, hidden_dim]
 
         Returns:
             Transcribed text
@@ -358,15 +358,99 @@ class AudioAdapter(BaseAdapter[AudioContent, Union[str, torch.Tensor]]):
         if model_type == self.MODEL_TYPE_WHISPER:
             # Generate from encoder output
             with torch.no_grad():
+                # Ensure proper shape [batch, seq, hidden]
+                if latent.dim() == 2:
+                    latent = latent.unsqueeze(0)
+                
                 generated_ids = self.model.generate(
                     encoder_outputs={"last_hidden_state": latent},
                     max_new_tokens=448,
                 )
             return self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
 
-        raise NotImplementedError(
-            f"Decoding not supported for model type: {model_type}"
-        )
+        elif model_type in (self.MODEL_TYPE_WAV2VEC, self.MODEL_TYPE_HUBERT):
+            # Wav2Vec2/HuBERT CTC decoding
+            with torch.no_grad():
+                # Ensure proper shape
+                if latent.dim() == 2:
+                    latent = latent.unsqueeze(0)
+                
+                # For CTC models, we need the logits from the LM head
+                # If we have raw hidden states, pass through lm_head if available
+                if hasattr(self.model, "lm_head"):
+                    logits = self.model.lm_head(latent)
+                else:
+                    # Latent is already logits
+                    logits = latent
+                
+                # Greedy CTC decoding
+                predicted_ids = torch.argmax(logits, dim=-1)
+                
+                # Decode with processor
+                transcription = self.processor.batch_decode(predicted_ids)[0]
+                
+                # Clean up CTC output (remove duplicates and blanks)
+                # The processor should handle this, but clean up any remaining artifacts
+                transcription = self._clean_ctc_output(transcription)
+                
+            return transcription
+
+        elif model_type == self.MODEL_TYPE_ENCODEC:
+            # EnCodec produces audio codes, not text
+            # Return a representation of the audio codes
+            with torch.no_grad():
+                if latent.dim() == 2:
+                    latent = latent.unsqueeze(0)
+                # EnCodec latents are typically audio codes
+                # Convert to string representation
+                codes = latent.argmax(dim=-1) if latent.shape[-1] > 1 else latent.squeeze(-1)
+                return f"[AudioCodes: shape={codes.shape}, min={codes.min().item()}, max={codes.max().item()}]"
+
+        else:
+            # Generic fallback: try common decoding patterns
+            with torch.no_grad():
+                if latent.dim() == 2:
+                    latent = latent.unsqueeze(0)
+                
+                # Try to find and use lm_head
+                if hasattr(self.model, "lm_head"):
+                    logits = self.model.lm_head(latent)
+                    predicted_ids = torch.argmax(logits, dim=-1)
+                    return self.processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
+                
+                # Try generate if available
+                if hasattr(self.model, "generate"):
+                    generated_ids = self.model.generate(
+                        encoder_outputs={"last_hidden_state": latent},
+                        max_new_tokens=256,
+                    )
+                    return self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
+                
+                # Last resort: return tensor info
+                return f"[Latent: shape={latent.shape}, dtype={latent.dtype}]"
+
+    def _clean_ctc_output(self, text: str) -> str:
+        """
+        Clean CTC decoder output by removing artifacts.
+        
+        Args:
+            text: Raw CTC decoded text
+            
+        Returns:
+            Cleaned transcription
+        """
+        import re
+        
+        # Remove [PAD], [UNK], <pad>, <unk> tokens
+        text = re.sub(r'\[PAD\]|\[UNK\]|<pad>|<unk>|\|', ' ', text, flags=re.IGNORECASE)
+        
+        # Collapse multiple spaces
+        text = re.sub(r'\s+', ' ', text)
+        
+        # Strip leading/trailing whitespace
+        text = text.strip()
+        
+        return text
 
     def get_intervention_points(self) -> List[InterventionPoint]:
         """Get available intervention points in the audio model."""

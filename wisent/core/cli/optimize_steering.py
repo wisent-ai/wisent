@@ -201,7 +201,7 @@ def execute_comprehensive(args, model, loader):
             # Initialize evaluator for this task (auto-select based on task_name)
             EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
             evaluator = EvaluatorRotator(evaluator=None, task_name=task_name)  # None = auto-select
-            print(f"      ✓ Using evaluator: {evaluator._evaluator.name} (auto-selected for {task_name})")
+            print(f"      ✓ Using evaluator: {evaluator._plugin.name} (auto-selected for {task_name})")
 
             # Compute baseline (unsteered) results if requested
             baseline_results = {}
@@ -787,7 +787,7 @@ def execute_comprehensive(args, model, loader):
                             )
 
                             # Generate with steering
-                            model.attach(steering_plan)
+                            model.apply_steering(steering_plan)
                             steered_response = model.generate(
                                 [[{"role": "user", "content": prompt}]],
                                 **get_generate_kwargs(max_new_tokens=100),
@@ -1068,7 +1068,7 @@ def execute_compare_methods(args, model, loader):
     # Initialize evaluator
     EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task)
-    print(f"   ✓ Using evaluator: {evaluator._evaluator.name}\n")
+    print(f"   ✓ Using evaluator: {evaluator._plugin.name}\n")
 
     # Collect activations once for all methods
     layer_str = str(args.layer)
@@ -1310,7 +1310,7 @@ def execute_optimize_layer(args, model, loader):
     # Initialize evaluator
     EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task)
-    print(f"   ✓ Using evaluator: {evaluator._evaluator.name}\n")
+    print(f"   ✓ Using evaluator: {evaluator._plugin.name}\n")
 
     # Determine layers to test
     if args.layers:
@@ -1588,7 +1588,7 @@ def execute_optimize_strength(args, model, loader):
     # Initialize evaluator
     EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task)
-    print(f"   ✓ Using evaluator: {evaluator._evaluator.name}\n")
+    print(f"   ✓ Using evaluator: {evaluator._plugin.name}\n")
 
     # Collect activations ONCE
     layer_str = str(args.layer)
@@ -1874,7 +1874,7 @@ def execute_auto(args, model, loader):
     # Initialize evaluator
     EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task)
-    print(f"   ✓ Using evaluator: {evaluator._evaluator.name}\n")
+    print(f"   ✓ Using evaluator: {evaluator._plugin.name}\n")
 
     # Define search space
     layers_to_test = list(

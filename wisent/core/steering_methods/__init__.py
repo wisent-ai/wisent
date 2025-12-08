@@ -2,6 +2,8 @@
 
 from .methods.caa import CAAMethod
 from .methods.prism import PRISMMethod, PRISMConfig, MultiDirectionResult
+from .methods.pulse import PULSEMethod, PULSEConfig, PULSEResult
+from .methods.titan import TITANMethod, TITANConfig, TITANResult, GatingNetwork, IntensityNetwork
 from .rotator import SteeringMethodRotator
 from .registry import (
     SteeringMethodRegistry,
@@ -16,6 +18,8 @@ from .registry import (
 # Aliases for backward compatibility
 CAA = CAAMethod
 PRISM = PRISMMethod
+PULSE = PULSEMethod
+TITAN = TITANMethod
 SteeringMethod = CAAMethod  # Default steering method
 
 __all__ = [
@@ -26,6 +30,16 @@ __all__ = [
     "PRISM",
     "PRISMConfig",
     "MultiDirectionResult",
+    "PULSEMethod",
+    "PULSE",
+    "PULSEConfig",
+    "PULSEResult",
+    "TITANMethod",
+    "TITAN",
+    "TITANConfig",
+    "TITANResult",
+    "GatingNetwork",
+    "IntensityNetwork",
     "SteeringMethod",
     "SteeringMethodRotator",
     # Registry

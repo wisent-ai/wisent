@@ -50,12 +50,15 @@ __all__ = [
     "project_weights",
     "project_weights_norm_preserved",
     "project_weights_multi_direction",
+    "project_weights_titan",
     "project_component",
     "project_component_norm_preserved",
     "project_component_multi_direction",
     "compute_projection_kernel",
     "project_with_kernel",
     "orthogonalize_direction",
+    "TITANRuntimeHooks",
+    "apply_titan_steering",
 ]
 
 _LOG = setup_logger(__name__)
@@ -939,3 +942,388 @@ def project_weights_multi_direction(
         "total_directions_applied": total_directions_applied,
         "norm_preserved": True,
     }
+
+
+# =============================================================================
+# TITAN WEIGHT MODIFICATION AND RUNTIME HOOKS
+# =============================================================================
+
+class TITANRuntimeHooks:
+    """
+    Runtime hook system for TITAN dynamic steering.
+    
+    TITAN uses a hybrid approach:
+    1. Effective directions are pre-baked into model weights (static)
+    2. Gate and intensity networks run at inference time (dynamic)
+    
+    This class manages the forward hooks that enable dynamic gating
+    and intensity modulation during inference.
+    
+    Usage:
+        # After training TITAN
+        titan_result = method.train_titan(pair_set)
+        
+        # Bake directions into weights
+        project_weights_titan(model, titan_result)
+        
+        # Install runtime hooks for dynamic behavior
+        hooks = TITANRuntimeHooks(model, titan_result)
+        hooks.install()
+        
+        # Run inference (hooks automatically apply gating/intensity)
+        output = model.generate(...)
+        
+        # Remove hooks when done
+        hooks.remove()
+    """
+    
+    def __init__(
+        self,
+        model: Module,
+        titan_result,  # TITANResult
+        base_strength: float = 1.0,
+        gate_threshold: float = 0.5,
+        use_soft_gating: bool = True,
+    ):
+        """
+        Initialize TITAN runtime hooks.
+        
+        Args:
+            model: The model to hook into
+            titan_result: TITANResult from TITAN training
+            base_strength: Base steering strength multiplier
+            gate_threshold: Threshold for hard gating (if use_soft_gating=False)
+            use_soft_gating: Use soft sigmoid gating vs hard threshold
+        """
+        self.model = model
+        self.titan_result = titan_result
+        self.base_strength = base_strength
+        self.gate_threshold = gate_threshold
+        self.use_soft_gating = use_soft_gating
+        
+        self._hooks = []
+        self._sensor_activation = None
+        self._current_gate = None
+        self._current_intensities = None
+        
+        # Get model layers
+        if hasattr(model, "model"):
+            self._layers = model.model.layers
+        elif hasattr(model, "transformer"):
+            self._layers = model.transformer.h
+        else:
+            self._layers = model.layers
+        
+        # Map layer names to indices
+        self._layer_name_to_idx = {}
+        for layer_name in titan_result.layer_order:
+            try:
+                idx = int(str(layer_name).split("_")[-1])
+                self._layer_name_to_idx[layer_name] = idx
+            except (ValueError, IndexError):
+                pass
+        
+        # Find sensor layer index
+        sensor_layer_name = titan_result.metadata.get("sensor_layer")
+        self._sensor_layer_idx = self._layer_name_to_idx.get(sensor_layer_name, 15)
+    
+    def install(self) -> None:
+        """Install forward hooks on the model."""
+        self.remove()  # Clear any existing hooks
+        
+        # Install sensor hook to capture activation for gating
+        if self._sensor_layer_idx < len(self._layers):
+            sensor_hook = self._layers[self._sensor_layer_idx].register_forward_hook(
+                self._sensor_hook
+            )
+            self._hooks.append(sensor_hook)
+        
+        # Install steering hooks on all steering layers
+        for layer_name in self.titan_result.layer_order:
+            layer_idx = self._layer_name_to_idx.get(layer_name)
+            if layer_idx is not None and layer_idx < len(self._layers):
+                # Use post-hook to modify output after layer computation
+                steering_hook = self._layers[layer_idx].register_forward_hook(
+                    lambda module, input, output, ln=layer_name: self._steering_hook(
+                        module, input, output, ln
+                    )
+                )
+                self._hooks.append(steering_hook)
+    
+    def remove(self) -> None:
+        """Remove all installed hooks."""
+        for hook in self._hooks:
+            hook.remove()
+        self._hooks = []
+        self._sensor_activation = None
+        self._current_gate = None
+        self._current_intensities = None
+    
+    def _sensor_hook(self, module, input, output):
+        """Capture sensor layer activation and compute gate/intensities."""
+        # Extract hidden states from output
+        if isinstance(output, tuple):
+            hidden_states = output[0]
+        else:
+            hidden_states = output
+        
+        # Use last token's hidden state for gating decision
+        if hidden_states.dim() == 3:  # [batch, seq, hidden]
+            sensor_h = hidden_states[:, -1, :]  # [batch, hidden]
+        else:
+            sensor_h = hidden_states
+        
+        # Store for steering hooks
+        self._sensor_activation = sensor_h.detach()
+        
+        # Compute gate
+        with torch.no_grad():
+            if self.use_soft_gating:
+                self._current_gate = self.titan_result.predict_gate(sensor_h)
+            else:
+                gate_value = self.titan_result.predict_gate(sensor_h)
+                self._current_gate = (gate_value > self.gate_threshold).float()
+            
+            # Compute per-layer intensities
+            self._current_intensities = self.titan_result.predict_intensity(sensor_h)
+        
+        return output
+    
+    def _steering_hook(self, module, input, output, layer_name):
+        """Apply dynamic steering to layer output."""
+        # Skip if gate/intensities not computed yet
+        if self._current_gate is None or self._current_intensities is None:
+            return output
+        
+        # Extract hidden states
+        if isinstance(output, tuple):
+            hidden_states = output[0]
+            rest = output[1:]
+        else:
+            hidden_states = output
+            rest = None
+        
+        # Get effective direction for this layer
+        direction = self.titan_result.get_effective_direction(layer_name)
+        direction = direction.to(hidden_states.device)
+        
+        # Get intensity for this layer
+        intensity = self._current_intensities.get(layer_name, torch.ones(1))
+        intensity = intensity.to(hidden_states.device)
+        
+        # Apply steering: h' = h + gate * intensity * base_strength * direction
+        gate = self._current_gate.to(hidden_states.device)
+        
+        # Handle dimensions
+        if hidden_states.dim() == 3:  # [batch, seq, hidden]
+            # Expand gate and intensity for broadcasting
+            gate = gate.view(-1, 1, 1)  # [batch, 1, 1]
+            intensity = intensity.view(-1, 1, 1)  # [batch, 1, 1]
+            direction = direction.view(1, 1, -1)  # [1, 1, hidden]
+        elif hidden_states.dim() == 2:  # [batch, hidden]
+            gate = gate.view(-1, 1)
+            intensity = intensity.view(-1, 1)
+            direction = direction.view(1, -1)
+        
+        # Apply steering
+        steering_delta = gate * intensity * self.base_strength * direction
+        hidden_states = hidden_states + steering_delta
+        
+        # Return modified output
+        if rest is not None:
+            return (hidden_states,) + rest
+        return hidden_states
+    
+    def get_current_gate(self) -> float | None:
+        """Get the current gate value (for debugging/monitoring)."""
+        if self._current_gate is not None:
+            return self._current_gate.mean().item()
+        return None
+    
+    def get_current_intensities(self) -> dict | None:
+        """Get current per-layer intensities (for debugging/monitoring)."""
+        if self._current_intensities is not None:
+            return {k: v.mean().item() for k, v in self._current_intensities.items()}
+        return None
+
+
+def project_weights_titan(
+    model: Module,
+    titan_result,  # TITANResult
+    components: list[str] | None = None,
+    base_strength: float = 1.0,
+    use_learned_intensities: bool = True,
+    verbose: bool = True,
+) -> dict[str, int]:
+    """
+    Bake TITAN effective directions into model weights.
+    
+    This is the static part of TITAN steering - the effective directions
+    (weighted combination of manifold directions) are projected into the
+    model weights using norm-preserving projection.
+    
+    For full dynamic behavior, also install TITANRuntimeHooks after this.
+    
+    Args:
+        model: Model to modify (in-place)
+        titan_result: TITANResult from TITAN training
+        components: Component names to modify
+                   Default: ["self_attn.o_proj", "mlp.down_proj"]
+        base_strength: Base projection strength
+        use_learned_intensities: Use TITAN's learned layer intensities as weights
+        verbose: Whether to print progress
+        
+    Returns:
+        Dictionary with modification statistics
+        
+    Example:
+        >>> # Train TITAN
+        >>> titan_result = method.train_titan(pair_set)
+        >>> 
+        >>> # Bake directions into weights
+        >>> stats = project_weights_titan(model, titan_result)
+        >>> 
+        >>> # Optionally install runtime hooks for dynamic gating
+        >>> hooks = TITANRuntimeHooks(model, titan_result)
+        >>> hooks.install()
+    """
+    log = bind(_LOG, num_layers=len(titan_result.directions))
+    
+    if components is None:
+        components = ["self_attn.o_proj", "mlp.down_proj"]
+    
+    # Get model layers
+    if hasattr(model, "model"):
+        layers = model.model.layers
+    elif hasattr(model, "transformer"):
+        layers = model.transformer.h
+    else:
+        layers = model.layers
+    
+    # Compute effective directions and layer weights
+    effective_vectors = {}
+    layer_weights = {}
+    
+    for layer_name in titan_result.layer_order:
+        # Get effective direction (weighted combination of manifold)
+        eff_dir = titan_result.get_effective_direction(layer_name)
+        
+        # Map layer name to index
+        try:
+            layer_idx = int(str(layer_name).split("_")[-1])
+        except (ValueError, IndexError):
+            continue
+        
+        effective_vectors[layer_idx] = eff_dir
+        
+        # Optionally use learned intensities as layer weights
+        if use_learned_intensities:
+            # Get average intensity for this layer from a neutral input
+            # For static baking, we use the learned direction weights as proxy
+            dir_weights = titan_result.direction_weights.get(layer_name)
+            if dir_weights is not None:
+                # Higher weight entropy = more important layer
+                weight = 1.0 + (dir_weights.max() - dir_weights.min()).item()
+            else:
+                weight = 1.0
+            layer_weights[layer_idx] = weight
+    
+    if verbose:
+        print(f"\n{'='*60}")
+        print("TITAN WEIGHT MODIFICATION")
+        print(f"{'='*60}")
+        print(f"Layers: {len(effective_vectors)}")
+        print(f"Components: {components}")
+        print(f"Base strength: {base_strength}")
+        print(f"Using learned intensities: {use_learned_intensities}")
+        print(f"{'='*60}\n")
+    
+    # Use standard norm-preserving projection
+    stats = project_weights_norm_preserved(
+        model=model,
+        steering_vectors=effective_vectors,
+        harmless_vectors=None,
+        components=components,
+        layer_weights=layer_weights if use_learned_intensities else None,
+        strength=base_strength,
+        use_biprojection=False,
+        verbose=verbose,
+    )
+    
+    stats["titan_layers"] = len(titan_result.layer_order)
+    stats["titan_directions_per_layer"] = titan_result.directions[titan_result.layer_order[0]].shape[0]
+    
+    return stats
+
+
+def apply_titan_steering(
+    model: Module,
+    titan_result,  # TITANResult
+    mode: str = "hybrid",
+    base_strength: float = 1.0,
+    components: list[str] | None = None,
+    verbose: bool = True,
+) -> dict:
+    """
+    Apply TITAN steering to a model with the specified mode.
+    
+    Modes:
+    - "static": Only bake directions into weights (no dynamic behavior)
+    - "dynamic": Only use runtime hooks (no weight modification)  
+    - "hybrid": Bake directions + install hooks (recommended)
+    
+    Args:
+        model: Model to modify
+        titan_result: TITANResult from TITAN training
+        mode: Application mode ("static", "dynamic", or "hybrid")
+        base_strength: Base steering strength
+        components: Weight components to modify (for static/hybrid)
+        verbose: Whether to print progress
+        
+    Returns:
+        Dictionary with:
+        - "stats": Weight modification statistics (if applicable)
+        - "hooks": TITANRuntimeHooks instance (if applicable)
+        
+    Example:
+        >>> result = apply_titan_steering(model, titan_result, mode="hybrid")
+        >>> 
+        >>> # Run inference
+        >>> output = model.generate(...)
+        >>> 
+        >>> # Check gate value
+        >>> print(f"Gate: {result['hooks'].get_current_gate()}")
+        >>> 
+        >>> # Remove hooks when done
+        >>> result['hooks'].remove()
+    """
+    result = {}
+    
+    if mode in ("static", "hybrid"):
+        stats = project_weights_titan(
+            model=model,
+            titan_result=titan_result,
+            components=components,
+            base_strength=base_strength if mode == "static" else 1.0,
+            use_learned_intensities=True,
+            verbose=verbose,
+        )
+        result["stats"] = stats
+    
+    if mode in ("dynamic", "hybrid"):
+        hooks = TITANRuntimeHooks(
+            model=model,
+            titan_result=titan_result,
+            base_strength=base_strength,
+            use_soft_gating=True,
+        )
+        hooks.install()
+        result["hooks"] = hooks
+        
+        if verbose:
+            print(f"\nTITAN Runtime Hooks installed")
+            print(f"  Sensor layer: {hooks._sensor_layer_idx}")
+            print(f"  Steering layers: {len(titan_result.layer_order)}")
+            print(f"  Mode: {mode}")
+    
+    return result

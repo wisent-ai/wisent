@@ -96,7 +96,7 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
         try:
             # Apply steering if provided
             if steering_plan:
-                model.attach(steering_plan)
+                model.apply_steering(steering_plan)
 
             # Check if we should use mock log probabilities for testing
             import os
