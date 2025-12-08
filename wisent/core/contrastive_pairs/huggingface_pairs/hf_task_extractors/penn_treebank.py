@@ -25,19 +25,12 @@ class PennTreebankExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, task="penn_treebank")
         max_items = self._normalize_limit(limit)
 
-        from datasets import load_dataset
-        try:
-            dataset = load_dataset("FALcon6/ptb_text_only", split="test")
-            if max_items:
-                dataset = dataset.select(range(min(max_items, len(dataset))))
-        except Exception as e:
-            log.error(f"Failed to load penn_treebank dataset: {e}")
-            return []
+        docs = self.load_dataset("FALcon6/ptb_text_only", split="test", limit=max_items)
 
         pairs: list[ContrastivePair] = []
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(dataset)})
+        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
-        for doc in dataset:
+        for doc in docs:
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
                 pairs.append(pair)

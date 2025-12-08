@@ -15,12 +15,7 @@ __all__ = ["AfrimgsmExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
-    "afrimgsm_amh_prompt_1",
-    "afrimgsm_amh_prompt_2",
-    "afrimgsm_amh_prompt_3",
-    "afrimgsm_amh_prompt_4",
-    "afrimgsm_amh_prompt_5",
-)
+    "afrimgsm_amh_prompt_1",)
 
 class AfrimgsmExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrimgsm - math word problems with numeric answers in Amharic."""
