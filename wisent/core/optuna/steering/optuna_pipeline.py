@@ -39,10 +39,10 @@ try:
     WANDB_AVAILABLE = True
 except ImportError:
     WANDB_AVAILABLE = False
-from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
-from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.optuna.steering import data_utils, metrics
-from wisent.core.response import Response
+from wisent.core.contrastive_pairs.core.response import Response
 from wisent.core.steering_methods import SteeringMethodRegistry, get_steering_method
 from wisent.core.task_interface import get_task
 from wisent.core.utils.device import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device
@@ -56,6 +56,7 @@ from wisent.core.errors import (
     OptimizationError,
 )
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.contrastive_pairs.diagnostics import run_vector_quality_diagnostics, VectorQualityConfig
 
 logger = logging.getLogger(__name__)
 
@@ -67,9 +68,19 @@ class OptimizationConfig:
     model_name: str = "realtreetune/rho-1b-sft-GSM8K"
     device: str = field(default_factory=resolve_default_device)
 
+    # Data source: either task (lm-eval benchmark) OR trait (synthetic pairs)
     train_dataset: str = "gsm8k"
     val_dataset: str = "gsm8k"
     test_dataset: str = "gsm8k"
+    
+    # Synthetic trait for contrastive pair generation (e.g., "british", "random", "refusal")
+    # If set, overrides train_dataset for pair generation
+    trait: Optional[str] = None
+    trait_label: str = "positive"  # Label for the trait direction
+    
+    # Evaluator configuration (auto-selected based on task)
+    eval_prompts: Optional[str] = None  # Path to custom evaluation prompts JSON
+    num_eval_prompts: int = 30  # Number of prompts for refusal/personalization evaluation
 
     # Training configuration
     train_limit: int = 50  # How many training samples to load
@@ -110,6 +121,11 @@ class OptimizationConfig:
 
     max_layers_to_search: int = 6
     early_stopping_patience: int = 10
+    
+    # Early rejection of low-quality vectors during optimization
+    enable_early_rejection: bool = True
+    early_rejection_snr_threshold: float = 5.0  # Minimum SNR to continue (very relaxed)
+    early_rejection_cv_threshold: float = 0.1   # Minimum CV score to continue (very relaxed)
 
     def to_dict(self) -> dict[str, Any]:
         """Convert to dictionary for serialization."""
@@ -256,9 +272,17 @@ class OptimizationPipeline:
         self.logger.info(f"📁 Run directory: {self.run_dir}")
 
         self._setup_experiment()
+        
+        # Compute baseline accuracy once (no steering) for comparison
+        self._compute_baseline_accuracy()
+        
         study = self._create_optuna_study()
         study.optimize(self._objective_function, n_trials=self.config.n_trials)
         best_trial = study.best_trial
+        
+        # Save all trials metrics to central JSON
+        self._save_all_trials_metrics(study)
+        
         final_results = self._final_evaluation(best_trial)
         self._save_reproducibility_bundle(study, final_results)
 
@@ -283,6 +307,143 @@ class OptimizationPipeline:
         # Set left padding for decoder-only models (same as comprehensive evaluation)
         self.tokenizer.padding_side = "left"
 
+        # Setup evaluator based on config
+        self._setup_evaluator()
+
+        # Load data based on mode: trait (synthetic) or task (benchmark)
+        if self.config.trait:
+            self._setup_synthetic_data()
+        else:
+            self._setup_task_data()
+
+        # Pre-cache activations for all layers on all splits (only for task mode)
+        if not self.config.trait:
+            self._precache_activations()
+
+    def _setup_evaluator(self):
+        """Setup the evaluator based on --task argument.
+        
+        Task types:
+        - 'refusal' → RefusalEvaluator
+        - 'personalization' → PersonalizationEvaluator (requires trait)
+        - benchmark name → TaskEvaluator
+        """
+        task = (self.config.train_dataset or "").lower()
+        
+        # Determine evaluator type from task
+        if task == "refusal":
+            evaluator_type = "refusal"
+        elif task == "personalization":
+            if not self.config.trait:
+                raise ValueError("--trait is required when --task personalization")
+            evaluator_type = "personalization"
+        else:
+            # Benchmark task
+            evaluator_type = "task"
+        
+        self.evaluator_type = evaluator_type
+        self.logger.info(f"📊 Using evaluator: {evaluator_type}")
+        
+        # Setup evaluator based on type
+        if evaluator_type == "refusal":
+            self._setup_refusal_evaluator()
+        elif evaluator_type == "personalization":
+            self._setup_personalization_evaluator()
+        # task evaluator uses existing benchmark evaluation logic
+
+    def _setup_refusal_evaluator(self):
+        """Setup refusal evaluator for compliance/refusal measurement using UncensorBench."""
+        from wisent.core.evaluators.steering_evaluators import RefusalEvaluator, EvaluatorConfig
+        config = EvaluatorConfig(
+            evaluator_type="refusal",
+            eval_prompts_path=self.config.eval_prompts,
+            num_eval_prompts=self.config.num_eval_prompts,
+        )
+        self.steering_evaluator = RefusalEvaluator(config, self.config.model_name)
+        self.eval_prompts = self.steering_evaluator.get_prompts()
+        self.logger.info(f"📊 Loaded {len(self.eval_prompts)} evaluation prompts for refusal evaluation")
+
+    def _setup_personalization_evaluator(self):
+        """Setup personalization evaluator for trait steering."""
+        from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator, EvaluatorConfig
+        config = EvaluatorConfig(
+            evaluator_type="personalization",
+            trait=self.config.trait,
+            eval_prompts_path=self.config.eval_prompts,
+            num_eval_prompts=self.config.num_eval_prompts,
+        )
+        self.steering_evaluator = PersonalizationEvaluator(
+            config, self.config.model_name, wisent_model=self._wisent_model
+        )
+        self.personalization_test_prompts = self.steering_evaluator.get_prompts()
+        self.logger.info(f"📊 Setup personalization evaluator for trait: {self.config.trait}")
+
+    def _setup_synthetic_data(self):
+        """Setup synthetic contrastive pairs for trait-based optimization."""
+        self.logger.info(f"📊 Generating synthetic pairs for trait: {self.config.trait}")
+        
+        from wisent.core.cli.agent.generate_synthetic_pairs import generate_synthetic_pairs
+        
+        # Generate synthetic contrastive pairs
+        # Time budget of 5 minutes, can generate ~20-50 pairs
+        pair_set, report = generate_synthetic_pairs(
+            model=self._wisent_model,
+            prompt=self.config.trait,
+            time_budget=5.0,  # 5 minutes
+            num_pairs=self.config.contrastive_pairs_limit,
+            verbose=False,
+        )
+        
+        # Convert ContrastivePairSet to list of dicts for compatibility
+        self.synthetic_pairs = []
+        for pair in pair_set.pairs:
+            self.synthetic_pairs.append({
+                "prompt": pair.prompt,
+                "positive_response": pair.positive_response.text,
+                "negative_response": pair.negative_response.text,
+            })
+        
+        # For synthetic mode, we don't have traditional train/val/test samples
+        # Instead, we use the synthetic pairs for training and eval prompts for evaluation
+        self.train_samples = self.synthetic_pairs
+        self.val_samples = []  # Evaluation uses eval_prompts or generated prompts
+        self.test_samples = []
+        
+        self.train_task_docs = self.train_samples
+        self.val_task_docs = self.val_samples
+        self.test_task_docs = self.test_samples
+        
+        self.logger.info(f"📊 Generated {len(self.synthetic_pairs)} synthetic pairs")
+
+    def _generate_trait_test_prompts(self) -> list[str]:
+        """Generate test prompts for trait evaluation."""
+        # Generic prompts that can be used to test any trait
+        base_prompts = [
+            "Tell me about yourself.",
+            "What do you think about the weather today?",
+            "Can you help me write a short story?",
+            "What's your opinion on modern technology?",
+            "How would you describe a perfect day?",
+            "Tell me a joke.",
+            "What advice would you give to someone starting a new job?",
+            "Describe your favorite food.",
+            "What do you think about social media?",
+            "How do you handle stress?",
+            "What's your favorite book and why?",
+            "Describe a memorable experience.",
+            "What qualities make a good friend?",
+            "How would you spend a million dollars?",
+            "What's your view on artificial intelligence?",
+            "Tell me about a place you'd like to visit.",
+            "What hobbies do you enjoy?",
+            "How do you define success?",
+            "What's the most important lesson you've learned?",
+            "Describe your ideal vacation.",
+        ]
+        return base_prompts[:self.config.num_eval_prompts]
+
+    def _setup_task_data(self):
+        """Setup task-based data for benchmark optimization."""
         # Load datasets
         self.train_samples = data_utils.load_dataset_samples(self.config.train_dataset, self.config.train_limit)
         self.val_samples = data_utils.load_dataset_samples(self.config.val_dataset, self.config.val_limit)
@@ -296,9 +457,6 @@ class OptimizationPipeline:
         self.logger.info(
             f"Loaded {len(self.train_samples)} train, {len(self.val_samples)} val, {len(self.test_samples)} test samples"
         )
-
-        # Pre-cache activations for all layers on all splits
-        self._precache_activations()
 
     def _precache_activations(self):
         """Pre-cache activations for all layers and splits to improve efficiency."""
@@ -325,6 +483,86 @@ class OptimizationPipeline:
                 else:
                     self.logger.info(f"Activations already cached for {split_name} split, layer {layer_id}")
 
+    def _compute_baseline_accuracy(self):
+        """Compute baseline accuracy on validation set (no steering) once for all trials."""
+        self.logger.info("📊 Computing baseline accuracy (no steering)...")
+        
+        # Different baseline computation based on evaluator type
+        if self.evaluator_type == "refusal":
+            self.baseline_accuracy = self._compute_baseline_refusal()
+        elif self.evaluator_type == "personalization":
+            self.baseline_accuracy = self._compute_baseline_personalization()
+        else:
+            # Task-based evaluation
+            self.baseline_accuracy = self._compute_baseline_task()
+        
+        self.logger.info(f"📊 Baseline accuracy: {self.baseline_accuracy:.4f}")
+
+    def _compute_baseline_task(self):
+        """Compute baseline for task-based evaluation."""
+        task = get_task(self.config.val_dataset)
+        extractor = task.get_extractor()
+        
+        questions = []
+        ground_truths = []
+        
+        for sample in self.val_samples:
+            qa_pair = extractor.extract_qa_pair(sample, task)
+            if not qa_pair:
+                continue
+            questions.append(qa_pair["formatted_question"])
+            ground_truths.append(qa_pair["correct_answer"])
+        
+        if not questions:
+            self.logger.warning("No valid QA pairs for baseline computation")
+            return 0.0
+        
+        # Generate baseline predictions
+        predictions = self._generate_baseline_batched(questions)
+        
+        # Evaluate
+        baseline_metrics = metrics.evaluate_benchmark_performance(
+            predictions, ground_truths, self.config.val_dataset
+        )
+        
+        return baseline_metrics.get("accuracy", 0.0)
+
+    def _compute_baseline_refusal(self):
+        """Compute baseline compliance rate for refusal evaluation using shared evaluator."""
+        if not hasattr(self, 'steering_evaluator'):
+            self.logger.warning("No steering evaluator setup for refusal baseline")
+            return 0.0
+        
+        prompts = self.steering_evaluator.get_prompts()
+        if not prompts:
+            return 0.0
+        
+        # Generate responses without steering
+        responses = self._generate_baseline_batched(prompts)
+        
+        # Evaluate using shared evaluator
+        results = self.steering_evaluator.evaluate_responses(responses)
+        return results.get("score", results.get("compliance_rate", 0.0))
+
+    def _compute_baseline_personalization(self):
+        """Compute baseline trait score for personalization evaluation using shared evaluator."""
+        if not hasattr(self, 'steering_evaluator'):
+            self.logger.warning("No steering evaluator setup for personalization baseline")
+            return 0.0
+        
+        prompts = self.steering_evaluator.get_prompts()
+        if not prompts:
+            return 0.0
+        
+        # Generate responses without steering - these become the baseline for the evaluator
+        responses = self._generate_baseline_batched(prompts)
+        
+        # Store as baseline in the evaluator
+        self.steering_evaluator._baseline_responses = responses
+        
+        # Baseline score is essentially 0 since responses match themselves
+        # The actual evaluation will compare steered responses against this baseline
+        return 0.0  # Baseline trait alignment before steering
     def _create_probe_data(
         self, samples: list[dict], layer_id: int, dataset_name: str
     ) -> tuple[np.ndarray, np.ndarray]:
@@ -481,7 +719,19 @@ class OptimizationPipeline:
             hyperparams = definition.get_default_params()
             hyperparams["steering_alpha"] = steering_alpha
 
-            steering_method_instance = self._train_steering_method(trial, steering_method, layer_id, hyperparams)
+            # Train steering method with early rejection for bad quality vectors
+            steering_method_instance, quality_metrics = self._train_steering_method(
+                trial, steering_method, layer_id, hyperparams, 
+                early_reject=self.config.enable_early_rejection
+            )
+            
+            # If early rejected due to poor quality, return low score without expensive evaluation
+            if steering_method_instance is None:
+                self.logger.info(f"Trial {trial.number} early rejected - skipping generation")
+                trial.set_user_attr("early_rejected", True)
+                if quality_metrics:
+                    trial.set_user_attr("quality_metrics", quality_metrics)
+                return 0.0
 
             validation_accuracy = self._evaluate_steering_on_validation(
                 steering_method_instance, steering_method, layer_id, hyperparams, trial.number, trial
@@ -489,9 +739,28 @@ class OptimizationPipeline:
 
             trial.report(validation_accuracy, step=1)
 
+            # Store baseline and delta for this trial
+            baseline = getattr(self, 'baseline_accuracy', 0.0)
+            delta = validation_accuracy - baseline
+            trial.set_user_attr("baseline_accuracy", baseline)
+            trial.set_user_attr("steering_delta", delta)
+            
             # Log to WandB
-            metrics = {"validation_accuracy": validation_accuracy, "probe_score": probe_score}
-            self._log_trial_to_wandb(trial, metrics)
+            log_metrics = {"validation_accuracy": validation_accuracy, "probe_score": probe_score,
+                          "baseline_accuracy": baseline, "steering_delta": delta}
+            if quality_metrics:
+                log_metrics.update({f"quality_{k}": v for k, v in quality_metrics.items() if v is not None})
+                trial.set_user_attr("quality_metrics", quality_metrics)
+                # Print quality metrics for this trial
+                self.logger.info(f"Trial {trial.number} quality metrics: "
+                    f"SNR={quality_metrics.get('snr', 0):.2f}, "
+                    f"CV={quality_metrics.get('cv_score', 0):.3f}, "
+                    f"held_out={quality_metrics.get('held_out_transfer', 0):.3f}, "
+                    f"cv_class={quality_metrics.get('cv_classification_accuracy', 0):.3f}, "
+                    f"cohens_d={quality_metrics.get('cohens_d', 0):.2f}, "
+                    f"quality={quality_metrics.get('overall_quality', 'N/A')}")
+            self.logger.info(f"Trial {trial.number} result: steered={validation_accuracy:.4f}, baseline={baseline:.4f}, delta={delta:+.4f}")
+            self._log_trial_to_wandb(trial, log_metrics)
 
             return validation_accuracy
 
@@ -525,14 +794,84 @@ class OptimizationPipeline:
         # The probe will be retrained in the final evaluation if needed
 
     def _train_steering_method(
-        self, trial: optuna.Trial, method_name: str, layer_id: int, hyperparams: dict[str, Any]
-    ) -> Any:
-        """Train steering method on training data."""
+        self, trial: optuna.Trial, method_name: str, layer_id: int, hyperparams: dict[str, Any],
+        early_reject: bool = True
+    ) -> tuple[Any, dict[str, Any] | None]:
+        """Train steering method on training data with optional early rejection.
+        
+        Args:
+            trial: Optuna trial
+            method_name: Name of steering method
+            layer_id: Layer to train on
+            hyperparams: Hyperparameters for steering method
+            early_reject: If True, run quality diagnostics and reject poor vectors early
+            
+        Returns:
+            Tuple of (steering_instance, quality_metrics) where quality_metrics is None if skipped
+        """
         # Use contrastive_pairs_limit with bounds checking
         contrastive_limit = min(self.config.contrastive_pairs_limit, len(self.train_samples))
-        contrastive_pairs = self._create_contrastive_pairs(
-            self.train_samples, layer_id, self.config.train_dataset, limit=contrastive_limit
-        )
+        
+        # For trait mode, use synthetic pairs; for task mode, create from task samples
+        if self.config.trait and hasattr(self, 'synthetic_pairs'):
+            contrastive_pairs = self._create_synthetic_contrastive_pairs(layer_id, limit=contrastive_limit)
+        else:
+            contrastive_pairs = self._create_contrastive_pairs(
+                self.train_samples, layer_id, self.config.train_dataset, limit=contrastive_limit
+            )
+
+        # Early rejection: check quality of contrastive pairs before expensive training
+        quality_metrics = None
+        if early_reject and len(contrastive_pairs.pairs) >= 5:
+            try:
+                # Extract activations for quality check
+                pos_activations = []
+                neg_activations = []
+                
+                for pair in contrastive_pairs.pairs:
+                    if hasattr(pair.positive_response, 'activations') and pair.positive_response.activations is not None:
+                        pos_activations.append(pair.positive_response.activations)
+                    if hasattr(pair.negative_response, 'activations') and pair.negative_response.activations is not None:
+                        neg_activations.append(pair.negative_response.activations)
+                
+                if len(pos_activations) >= 5 and len(neg_activations) >= 5:
+                    pos_stacked = torch.stack(pos_activations).squeeze(1)  # Remove batch dim if present
+                    neg_stacked = torch.stack(neg_activations).squeeze(1)
+                    
+                    # Use configurable thresholds for optimization
+                    optimization_quality_config = VectorQualityConfig(
+                        snr_critical=self.config.early_rejection_snr_threshold,
+                        cv_score_critical=self.config.early_rejection_cv_threshold,
+                        convergence_critical=0.3,  # Very relaxed
+                    )
+                    
+                    quality_report, diagnostics_report = run_vector_quality_diagnostics(
+                        pos_stacked, neg_stacked, config=optimization_quality_config
+                    )
+                    
+                    quality_metrics = {
+                        "snr": quality_report.snr,
+                        "cv_score": quality_report.cv_score_mean,
+                        "convergence": quality_report.convergence_score,
+                        "overall_quality": quality_report.overall_quality,
+                        "has_critical_issues": diagnostics_report.has_critical_issues,
+                        "held_out_transfer": quality_report.held_out_transfer,
+                        "cv_classification_accuracy": quality_report.cv_classification_accuracy,
+                        "cohens_d": quality_report.cohens_d,
+                        "pca_pc1_variance": quality_report.pca_pc1_variance,
+                        "silhouette_score": quality_report.silhouette_score,
+                    }
+                    
+                    # Early reject if quality is critically bad
+                    if diagnostics_report.has_critical_issues:
+                        self.logger.info(
+                            f"Early rejecting trial (layer={layer_id}): SNR={quality_report.snr:.2f}, "
+                            f"CV={quality_report.cv_score_mean:.3f}, quality={quality_report.overall_quality}"
+                        )
+                        return None, quality_metrics
+                        
+            except Exception as e:
+                self.logger.debug(f"Quality check failed, continuing without early rejection: {e}")
 
         # Use centralized registry to create and train steering method
         if not SteeringMethodRegistry.validate_method(method_name):
@@ -543,7 +882,7 @@ class OptimizationPipeline:
 
         # Train steering method
         steering_instance.train(contrastive_pairs, layer_id)
-        return steering_instance
+        return steering_instance, quality_metrics
 
     def _create_contrastive_pairs(
         self, samples: list[dict], layer_id: int, dataset_name: str, limit: Optional[int] = None
@@ -598,6 +937,67 @@ class OptimizationPipeline:
                 else:
                     pair_set.pairs[pair_idx].negative_response.activations = activation
 
+        return pair_set
+
+    def _create_synthetic_contrastive_pairs(
+        self, layer_id: int, limit: Optional[int] = None
+    ) -> ContrastivePairSet:
+        """Create contrastive pairs from pre-generated synthetic pairs for trait mode."""
+        if not hasattr(self, 'synthetic_pairs') or not self.synthetic_pairs:
+            self.logger.warning("No synthetic pairs available")
+            return ContrastivePairSet(name=f"synthetic_{self.config.trait}", pairs=[])
+        
+        pairs_to_use = self.synthetic_pairs[:limit] if limit else self.synthetic_pairs
+        contrastive_pairs = []
+        
+        for pair_data in pairs_to_use:
+            # Synthetic pairs should already have prompt, positive_response, negative_response structure
+            if isinstance(pair_data, dict):
+                prompt = pair_data.get("prompt", pair_data.get("question", ""))
+                positive_text = pair_data.get("positive_response", pair_data.get("positive", ""))
+                negative_text = pair_data.get("negative_response", pair_data.get("negative", ""))
+            elif hasattr(pair_data, 'prompt'):
+                # Already a ContrastivePair object
+                contrastive_pairs.append(pair_data)
+                continue
+            else:
+                continue
+                
+            positive_response = Response(text=positive_text, label=1)
+            negative_response = Response(text=negative_text, label=0)
+            
+            pair = ContrastivePair(
+                prompt=prompt,
+                positive_response=positive_response,
+                negative_response=negative_response,
+            )
+            contrastive_pairs.append(pair)
+        
+        pair_set = ContrastivePairSet(name=f"synthetic_{self.config.trait}", pairs=contrastive_pairs)
+        
+        # Extract activations for all pairs in batches
+        if pair_set.pairs:
+            all_texts = []
+            text_to_pair_mapping = []
+            
+            for pair_idx, pair in enumerate(pair_set.pairs):
+                pos_text = f"{pair.prompt} {pair.positive_response.text}"
+                neg_text = f"{pair.prompt} {pair.negative_response.text}"
+                
+                all_texts.extend([pos_text, neg_text])
+                text_to_pair_mapping.extend([(pair_idx, "positive"), (pair_idx, "negative")])
+            
+            all_activations = self._extract_batch_activations(all_texts, layer_id)
+            
+            for text_idx, (pair_idx, response_type) in enumerate(text_to_pair_mapping):
+                activation = all_activations[text_idx]
+                
+                if response_type == "positive":
+                    pair_set.pairs[pair_idx].positive_response.activations = activation
+                else:
+                    pair_set.pairs[pair_idx].negative_response.activations = activation
+        
+        self.logger.info(f"Created {len(pair_set.pairs)} synthetic contrastive pairs for layer {layer_id}")
         return pair_set
 
     def _extract_batch_activations(self, texts: list[str], layer_id: int) -> list[torch.Tensor]:
@@ -665,6 +1065,25 @@ class OptimizationPipeline:
         if steering_instance is None:
             return 0.0
 
+        # Dispatch to appropriate evaluator
+        if self.evaluator_type == "refusal":
+            return self._evaluate_refusal(steering_instance, method_name, layer_id, hyperparams)
+        elif self.evaluator_type == "personalization":
+            return self._evaluate_personalization(steering_instance, method_name, layer_id, hyperparams)
+        else:
+            # Task-based evaluation (default)
+            return self._evaluate_task(steering_instance, method_name, layer_id, hyperparams, trial_number, trial)
+
+    def _evaluate_task(
+        self,
+        steering_instance: Any,
+        method_name: str,
+        layer_id: int,
+        hyperparams: dict[str, Any],
+        trial_number: int = 0,
+        trial=None,
+    ) -> float:
+        """Task-based evaluation using benchmark metrics."""
         # Generate predictions with steering applied
         predictions = []
         ground_truths = []
@@ -733,6 +1152,54 @@ class OptimizationPipeline:
         )
 
         return benchmark_metrics.get("accuracy", 0.0)
+
+    def _evaluate_refusal(
+        self,
+        steering_instance: Any,
+        method_name: str,
+        layer_id: int,
+        hyperparams: dict[str, Any],
+    ) -> float:
+        """Evaluate steering using shared refusal evaluator."""
+        if not hasattr(self, 'steering_evaluator'):
+            self.logger.warning("No steering evaluator setup for refusal evaluation")
+            return 0.0
+        
+        prompts = self.steering_evaluator.get_prompts()
+        if not prompts:
+            return 0.0
+        
+        # Generate steered responses
+        strength = hyperparams["steering_alpha"]
+        responses = self._generate_with_steering_batched(steering_instance, prompts, strength, layer_id)
+        
+        # Evaluate using shared evaluator
+        results = self.steering_evaluator.evaluate_responses(responses)
+        return results.get("score", results.get("compliance_rate", 0.0))
+
+    def _evaluate_personalization(
+        self,
+        steering_instance: Any,
+        method_name: str,
+        layer_id: int,
+        hyperparams: dict[str, Any],
+    ) -> float:
+        """Evaluate steering using shared personalization evaluator."""
+        if not hasattr(self, 'steering_evaluator'):
+            self.logger.warning("No steering evaluator setup for personalization evaluation")
+            return 0.0
+        
+        prompts = self.steering_evaluator.get_prompts()
+        if not prompts:
+            return 0.0
+        
+        # Generate steered responses
+        strength = hyperparams["steering_alpha"]
+        responses = self._generate_with_steering_batched(steering_instance, prompts, strength, layer_id)
+        
+        # Evaluate using shared evaluator
+        results = self.steering_evaluator.evaluate_responses(responses)
+        return results.get("score", 0.0)
 
     def _generate_with_caa_steering(self, caa, question: str, alpha: float, layer_id: int) -> str:
         """Generate response with CAA steering applied."""
@@ -954,9 +1421,11 @@ class OptimizationPipeline:
         probe = LogisticRegression(C=1.0, random_state=self.config.seed, max_iter=1000)  # Fixed probe_c
         probe.fit(X_train, y_train)
 
-        # Train best steering method
+        # Train best steering method (no early rejection for final evaluation)
         steering_method = best_params.get("steering_method", "caa")  # Default to CAA if missing
-        steering_instance = self._train_steering_method(best_trial, steering_method, layer_id, best_params)
+        steering_instance, _ = self._train_steering_method(
+            best_trial, steering_method, layer_id, best_params, early_reject=False
+        )
 
         # Save the best steering vector in both formats
         if steering_instance and hasattr(steering_instance, "save_steering_vector"):
@@ -1032,6 +1501,31 @@ class OptimizationPipeline:
         self.logger.info(f"Improvement: {accuracy_improvement:+.4f}")
         self.logger.info(f"Probe AUC: {test_probe_metrics.get('auc', 0.5):.4f}")
         self.logger.info(f"Test samples: {len(test_ground_truths)}")
+        
+        # Log quality metrics from best trial if available
+        quality_metrics = best_trial.user_attrs.get("quality_metrics") if hasattr(best_trial, "user_attrs") else None
+        if quality_metrics:
+            self.logger.info("-" * 60)
+            self.logger.info("📊 VECTOR QUALITY METRICS")
+            self.logger.info("-" * 60)
+            self.logger.info(f"Overall quality: {quality_metrics.get('overall_quality', 'N/A')}")
+            if quality_metrics.get('snr') is not None:
+                self.logger.info(f"Signal-to-noise ratio: {quality_metrics['snr']:.2f}")
+            if quality_metrics.get('cv_score') is not None:
+                self.logger.info(f"Cross-validation score: {quality_metrics['cv_score']:.3f}")
+            if quality_metrics.get('convergence') is not None:
+                self.logger.info(f"Convergence: {quality_metrics['convergence']:.3f}")
+            if quality_metrics.get('held_out_transfer') is not None:
+                self.logger.info(f"Held-out transfer: {quality_metrics['held_out_transfer']:.3f}")
+            if quality_metrics.get('cv_classification_accuracy') is not None:
+                self.logger.info(f"CV classification accuracy: {quality_metrics['cv_classification_accuracy']:.3f}")
+            if quality_metrics.get('cohens_d') is not None:
+                self.logger.info(f"Cohen's d: {quality_metrics['cohens_d']:.2f}")
+            if quality_metrics.get('pca_pc1_variance') is not None:
+                self.logger.info(f"PCA PC1 variance: {quality_metrics['pca_pc1_variance']*100:.1f}%")
+            if quality_metrics.get('silhouette_score') is not None:
+                self.logger.info(f"Silhouette score: {quality_metrics['silhouette_score']:.3f}")
+            final_results["quality_metrics"] = quality_metrics
         self.logger.info("=" * 60)
 
         return final_results
@@ -1400,6 +1894,38 @@ class OptimizationPipeline:
         self.logger.info(f"💾 Saved detailed test results to: {filename}")
         return filename
 
+    def _save_all_trials_metrics(self, study: optuna.Study):
+        """Save all trials' quality metrics and scores to a central JSON file."""
+        baseline = getattr(self, 'baseline_accuracy', 0.0)
+        trials_data = {
+            "model": self.config.model_name,
+            "task": self.config.val_dataset,
+            "timestamp": self.run_timestamp,
+            "baseline_accuracy": baseline,
+            "n_trials": len(study.trials),
+            "trials": []
+        }
+        
+        for trial in study.trials:
+            trial_entry = {
+                "trial_number": trial.number,
+                "validation_accuracy": trial.value,
+                "baseline_accuracy": trial.user_attrs.get("baseline_accuracy", baseline),
+                "steering_delta": trial.user_attrs.get("steering_delta", (trial.value - baseline) if trial.value else None),
+                "state": str(trial.state),
+                "params": trial.params,
+                "quality_metrics": trial.user_attrs.get("quality_metrics"),
+                "early_rejected": trial.user_attrs.get("early_rejected", False),
+            }
+            trials_data["trials"].append(trial_entry)
+        
+        # Save to central JSON
+        metrics_path = self.run_dir / f"all_trials_metrics_{self.run_timestamp}.json"
+        with open(metrics_path, "w") as f:
+            json.dump(trials_data, f, indent=2)
+        
+        self.logger.info(f"💾 Saved all trials metrics to: {metrics_path}")
+
     def _save_reproducibility_bundle(self, study: optuna.Study, final_results: dict[str, Any]):
         """Save complete reproducibility bundle."""
 
@@ -1676,17 +2202,79 @@ class OptimizationPipeline:
 
 def main():
     """Main entry point for optimization pipeline."""
+    import argparse
+    import json
+    
+    parser = argparse.ArgumentParser(description="Run optimization pipeline")
+    parser.add_argument("--output-dir", type=str, default="outputs/optimization_pipeline",
+                        help="Directory to save outputs (default: outputs/optimization_pipeline)")
+    parser.add_argument("--model", type=str, default="realtreetune/rho-1b-sft-GSM8K",
+                        help="Model name or path")
+    
+    # Task specification
+    parser.add_argument("--task", type=str, required=True,
+                        help=(
+                            "Task to optimize for. Can be: "
+                            "'refusal' (compliance optimization), "
+                            "'personalization' (requires --trait), "
+                            "benchmark name (e.g., 'arc_easy', 'gsm8k'), "
+                            "or comma-separated benchmarks (e.g., 'arc_easy,gsm8k,hellaswag')"
+                        ))
+    
+    # Trait description (required for --task personalization)
+    parser.add_argument("--trait", type=str, default=None,
+                        help="Trait description for personalization (required when --task personalization)")
+    parser.add_argument("--trait-label", type=str, default="positive",
+                        help="Label for trait direction (default: positive)")
+    
+    # Evaluation options
+    parser.add_argument("--eval-prompts", type=str, default=None,
+                        help="Path to custom evaluation prompts JSON")
+    parser.add_argument("--num-eval-prompts", type=int, default=30,
+                        help="Number of evaluation prompts (default: 30)")
+    
+    # Optimization parameters
+    parser.add_argument("--n-trials", type=int, default=200,
+                        help="Number of optimization trials (default: 200)")
+    parser.add_argument("--train-limit", type=int, default=100,
+                        help="Training samples limit")
+    parser.add_argument("--val-limit", type=int, default=50,
+                        help="Validation samples limit")
+    parser.add_argument("--test-limit", type=int, default=50,
+                        help="Test samples limit")
+    parser.add_argument("--num-pairs", type=int, default=50,
+                        help="Number of contrastive pairs (default: 50)")
+    parser.add_argument("--layer-range", type=str, default="0-24",
+                        help="Layer search range (e.g., '0-24' for all layers)")
+    args = parser.parse_args()
+    
+    # Validate --task personalization requires --trait
+    if args.task.lower() == "personalization" and not args.trait:
+        parser.error("--trait is required when --task personalization")
+    
+    # Parse layer range
+    layer_start, layer_end = map(int, args.layer_range.split("-"))
+    
     # Setup logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
     # Create configuration
     config = OptimizationConfig(
-        train_limit=100,
-        contrastive_pairs_limit=30,  # Bounded by train_limit
-        val_limit=50,
-        test_limit=50,
-        n_trials=20,
-        layer_search_range=(10, 15),
+        model_name=args.model,
+        train_dataset=args.task,
+        val_dataset=args.task,
+        test_dataset=args.task,
+        trait=args.trait,
+        trait_label=args.trait_label,
+        eval_prompts=args.eval_prompts,
+        num_eval_prompts=args.num_eval_prompts,
+        train_limit=args.train_limit,
+        contrastive_pairs_limit=args.num_pairs,
+        val_limit=args.val_limit,
+        test_limit=args.test_limit,
+        n_trials=args.n_trials,
+        layer_search_range=(layer_start, layer_end),
+        output_dir=args.output_dir,
     )
 
     # Run optimization

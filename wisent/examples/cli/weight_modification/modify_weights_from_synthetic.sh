@@ -8,6 +8,7 @@
 #   bash wisent/examples/cli/weight_modification/modify_weights_from_synthetic.sh
 
 python -m wisent.core.main modify-weights \
+    --task personalization \
     --trait helpfulness \
     --output-dir ./data/modified_models/helpfulness_modified \
     --model meta-llama/Llama-3.2-1B-Instruct \

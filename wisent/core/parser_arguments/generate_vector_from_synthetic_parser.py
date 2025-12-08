@@ -127,6 +127,14 @@ def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser)
         help="Force regeneration of pairs even if cached pairs exist"
     )
     
+    # Quality control
+    parser.add_argument(
+        "--accept-low-quality-vector",
+        action="store_true",
+        default=False,
+        help="Accept steering vectors that fail quality checks (convergence, SNR, etc.)"
+    )
+    
     # Display options
     parser.add_argument(
         "--verbose",

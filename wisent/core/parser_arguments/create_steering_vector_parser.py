@@ -46,6 +46,14 @@ def setup_create_steering_vector_parser(parser: argparse.ArgumentParser) -> None
         help="Do not L2-normalize steering vectors"
     )
 
+    # Quality control
+    parser.add_argument(
+        "--accept-low-quality-vector",
+        action="store_true",
+        default=False,
+        help="Accept steering vectors that fail quality checks (convergence, SNR, etc.)"
+    )
+
     # Display options
     parser.add_argument(
         "--verbose",

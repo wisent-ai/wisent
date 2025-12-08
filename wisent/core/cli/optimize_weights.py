@@ -31,6 +31,13 @@ import torch
 from wisent.core.errors import UnknownTypeError, InsufficientDataError
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.evaluators.steering_evaluators import (
+    SteeringEvaluatorFactory,
+    EvaluatorConfig,
+    RefusalEvaluator,
+    TaskEvaluator,
+    PersonalizationEvaluator as SharedPersonalizationEvaluator,
+)
 from wisent.core.opti.core.atoms import HPOConfig
 from wisent.core.opti.methods.opti_weights import WeightsOptimizer, WeightsOptimizerConfig
 from wisent.core.utils.device import resolve_default_device, preferred_dtype
@@ -68,17 +75,17 @@ def execute_optimize_weights(args):
     else:
         print(f"   Mode: Pre-computed vectors")
         print(f"   Vectors: {args.steering_vectors}")
-    # Determine actual evaluator type for display
-    evaluator_display = args.evaluator
-    if args.evaluator == "auto":
-        if args.trait and "refus" in args.trait.lower():
-            evaluator_display = "auto → refusal"
-        elif args.task:
-            evaluator_display = "auto → task"
-        elif args.trait:
-            evaluator_display = "auto → personalization"
-        else:
-            evaluator_display = "auto → refusal"
+    
+    # Determine evaluator type from task for display
+    task_lower = (args.task or "").lower()
+    if task_lower == "refusal":
+        evaluator_display = "refusal"
+    elif task_lower == "personalization":
+        evaluator_display = f"personalization ({args.trait})"
+    elif "," in (args.task or ""):
+        evaluator_display = "pooled (multi-benchmark)"
+    else:
+        evaluator_display = f"task ({args.task})"
     print(f"   Evaluator: {evaluator_display}")
     print(f"   Target: {args.target_metric} = {args.target_value}")
     print(f"   Trials: {args.trials}")
@@ -220,9 +227,9 @@ def execute_optimize_weights(args):
     # Save optimization metadata
     metadata = {
         "model": args.model,
-        "trait": args.trait,
         "task": args.task,
-        "evaluator": args.evaluator,
+        "trait": getattr(args, 'trait', None),
+        "evaluator_type": evaluator_display,
         "target_metric": args.target_metric,
         "target_value": args.target_value,
         "best_params": best_params,
@@ -327,7 +334,14 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
         temp_pairs = f.name
 
     try:
-        if args.trait:
+        # Determine task type
+        task_lower = (args.task or "").lower()
+        
+        if task_lower == "personalization":
+            # Personalization: requires --trait
+            if not getattr(args, 'trait', None):
+                raise ValueError("--trait is required when --task personalization")
+            
             from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
 
             vector_args = Namespace(
@@ -336,7 +350,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=args.similarity_threshold,
+                similarity_threshold=getattr(args, 'similarity_threshold', 0.8),
                 verbose=False,
                 timing=False,
                 layers=args.layers,
@@ -344,17 +358,120 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 prompt_strategy="chat_template",
                 method="caa",
                 normalize=True,
-                keep_intermediate=True,  # Keep intermediate to get pairs
+                keep_intermediate=True,
                 intermediate_dir=os.path.dirname(temp_pairs),
-                pairs_cache_dir=args.pairs_cache_dir,
+                pairs_cache_dir=getattr(args, 'pairs_cache_dir', None),
                 force_regenerate=False,
                 nonsense=False,
                 nonsense_mode=None,
+                accept_low_quality_vector=True,
             )
 
             execute_generate_vector_from_synthetic(vector_args)
 
-        elif args.task:
+        elif task_lower == "refusal":
+            # Refusal: use synthetic pairs with refusal trait
+            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+
+            vector_args = Namespace(
+                trait="refusal",
+                num_pairs=num_pairs,
+                output=temp_output,
+                model=args.model,
+                device=args.device,
+                similarity_threshold=getattr(args, 'similarity_threshold', 0.8),
+                verbose=False,
+                timing=False,
+                layers=args.layers,
+                token_aggregation=args.token_aggregation,
+                prompt_strategy="chat_template",
+                method="caa",
+                normalize=True,
+                keep_intermediate=True,
+                intermediate_dir=os.path.dirname(temp_pairs),
+                pairs_cache_dir=getattr(args, 'pairs_cache_dir', None),
+                force_regenerate=False,
+                nonsense=False,
+                nonsense_mode=None,
+                accept_low_quality_vector=True,
+            )
+
+            execute_generate_vector_from_synthetic(vector_args)
+
+        elif "," in (args.task or ""):
+            # Multiple benchmarks: generate unified steering vector
+            from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
+
+            # Use .pt format for train_unified_goodness output
+            temp_output_pt = temp_output.replace('.json', '.pt')
+
+            # Parse layers - if 'all' or None, use None to let train_unified_goodness pick middle layer
+            layers_arg = args.layers if hasattr(args, 'layers') else None
+            if layers_arg == 'all' or layers_arg is None:
+                layers_arg = None  # Will use middle layer
+            
+            vector_args = Namespace(
+                task=args.task,  # Pass comma-separated benchmarks
+                exclude_benchmarks=None,
+                max_benchmarks=getattr(args, 'max_benchmarks', None),
+                cap_pairs_per_benchmark=getattr(args, 'cap_pairs_per_benchmark', None),
+                train_ratio=getattr(args, 'train_ratio', 0.8),
+                seed=getattr(args, 'seed', 42),
+                model=args.model,
+                device=args.device,
+                layer=None,
+                layers=layers_arg,
+                token_aggregation=args.token_aggregation if hasattr(args, 'token_aggregation') else 'continuation',
+                prompt_strategy='chat_template',
+                method='caa',
+                normalize=True,
+                no_normalize=False,
+                skip_evaluation=True,
+                evaluate_steering_scales="0.0,1.0",
+                save_pairs=None,
+                save_report=None,
+                output=temp_output_pt,
+                verbose=False,
+                timing=False,
+            )
+
+            execute_train_unified_goodness(vector_args)
+
+            # Load the .pt file
+            checkpoint = torch.load(temp_output_pt, map_location='cpu', weights_only=False)
+
+            # Handle different checkpoint formats
+            if 'all_layer_vectors' in checkpoint:
+                raw_vectors = checkpoint['all_layer_vectors']
+            elif 'steering_vector' in checkpoint and 'layer_index' in checkpoint:
+                raw_vectors = {checkpoint['layer_index']: checkpoint['steering_vector']}
+            else:
+                raw_vectors = {
+                    k: v for k, v in checkpoint.items()
+                    if isinstance(k, (int, str)) and str(k).isdigit()
+                }
+
+            vectors = {}
+            for layer, vec in raw_vectors.items():
+                layer_idx = int(layer) if isinstance(layer, str) else layer
+                vectors[layer_idx] = vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
+
+            # Extract eval pairs from checkpoint for pooled evaluation
+            eval_pairs = checkpoint.get('eval_pairs', [])
+            
+            # Store eval pairs in args for the evaluator to use
+            args._pooled_eval_pairs = eval_pairs
+            args._benchmarks_used = checkpoint.get('benchmarks_used', [])
+
+            # Clean up
+            if os.path.exists(temp_output_pt):
+                os.unlink(temp_output_pt)
+
+            # Return vectors and empty examples (eval pairs stored in args)
+            return vectors, [], []
+
+        else:
+            # Single benchmark: use task-based generation
             from wisent.core.cli.generate_vector_from_task import execute_generate_vector_from_task
 
             vector_args = Namespace(
@@ -373,6 +490,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 normalize=True,
                 keep_intermediate=True,
                 intermediate_dir=os.path.dirname(temp_pairs),
+                accept_low_quality_vector=True,
             )
 
             execute_generate_vector_from_task(vector_args)
@@ -419,391 +537,203 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
 
 def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
                       positive_examples: list[str] = None, negative_examples: list[str] = None) -> Callable[[Any, Any], dict[str, float]]:
-    """Create the appropriate evaluator function based on args.
+    """Create the appropriate evaluator function based on --task argument.
+
+    Uses shared steering evaluators from wisent.core.evaluators.steering_evaluators.
+
+    Task types:
+    - 'refusal' → RefusalEvaluator (compliance rate)
+    - 'personalization' → PersonalizationEvaluator (requires --trait)
+    - benchmark name → TaskEvaluator (e.g., 'arc_easy', 'gsm8k')
+    - comma-separated benchmarks → PooledEvaluator (e.g., 'arc_easy,gsm8k')
 
     The evaluator receives (hf_model, tokenizer) and wraps them in WisentModel
     internally to use standard generation.
 
     Args:
-        args: Command arguments
+        args: Command arguments (must have args.task)
         model_name: Model name/path
         wisent_model: Optional WisentModel instance for baseline generation (used by personalization)
         positive_examples: List of positive example responses from contrastive pairs
         negative_examples: List of negative example responses from contrastive pairs
     """
-
-    evaluator_type = args.evaluator
-
-    if evaluator_type == "auto":
-        if args.trait and "refus" in args.trait.lower():
-            evaluator_type = "refusal"
-        elif args.task:
-            evaluator_type = "task"
-        elif args.trait:
-            # For any other trait (personality, style, etc.), use personalization evaluator
-            evaluator_type = "personalization"
-        else:
-            evaluator_type = "refusal"
-
-    if evaluator_type in ["refusal", "semantic", "keyword"]:
-        return _create_refusal_evaluator(args, model_name, evaluator_type)
-    elif evaluator_type == "task":
-        return _create_task_evaluator(args)
-    elif evaluator_type == "llm_judge":
-        return _create_llm_judge_evaluator(args, model_name)
-    elif evaluator_type == "personalization":
-        return _create_personalization_evaluator(args, model_name, wisent_model, positive_examples, negative_examples)
-    else:
-        raise UnknownTypeError(entity_type="evaluator_type", value=evaluator_type)
-
-
-def _create_refusal_evaluator(args, model_name: str, eval_type: str) -> Callable:
-    """Create refusal/compliance evaluator.
-
-    Uses WisentModel.generate() for consistent generation behavior.
-    """
-    from uncensorbench import UncensorBench
-    from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
     from wisent.core.models.inference_config import get_generate_kwargs
 
-    bench = UncensorBench()
-
-    if args.eval_prompts:
-        with open(args.eval_prompts) as f:
-            custom_prompts = json.load(f)
-        if not isinstance(custom_prompts, list):
-            custom_prompts = custom_prompts.get("prompts", [])
-        prompts = custom_prompts[:args.num_eval_prompts]
-        use_custom = True
+    task = args.task.lower() if args.task else ""
+    
+    # Determine evaluator type from task
+    if task == "refusal":
+        evaluator_type = "refusal"
+    elif task == "personalization":
+        if not getattr(args, 'trait', None):
+            raise ValueError("--trait is required when --task personalization")
+        evaluator_type = "personalization"
+    elif "," in task:
+        # Multiple benchmarks: use pooled evaluator
+        evaluator_type = "pooled"
     else:
-        topics = args.eval_topics.split(",") if args.eval_topics else None
-        prompts = list(bench.prompts(topics=topics))[:args.num_eval_prompts]
-        use_custom = False
+        # Single benchmark: use task evaluator
+        evaluator_type = "task"
 
-    if eval_type == "keyword":
-        evaluator = KeywordEvaluator()
-    else:
-        try:
-            evaluator = SemanticEvaluator()
-        except ImportError:
-            evaluator = KeywordEvaluator()
+    # Pooled evaluator for multiple benchmarks
+    if evaluator_type == "pooled":
+        print(f"   [DEBUG] Creating pooled evaluator for tasks: {task}")
+        print(f"   [DEBUG] args._pooled_eval_pairs count: {len(getattr(args, '_pooled_eval_pairs', []))}")
+        return _create_pooled_evaluator(args)
+
+    # Use shared steering evaluators for refusal, task, personalization
+    eval_config = EvaluatorConfig(
+        evaluator_type=evaluator_type,
+        trait=getattr(args, 'trait', None),
+        task=task if evaluator_type == "task" else None,
+        eval_prompts_path=getattr(args, 'eval_prompts', None),
+        eval_topics=getattr(args, 'eval_topics', None),
+        num_eval_prompts=getattr(args, 'num_eval_prompts', 30),
+    )
+
+    # Create shared evaluator
+    shared_evaluator = SteeringEvaluatorFactory.create(
+        eval_config, model_name, wisent_model, positive_examples, negative_examples
+    )
 
     def evaluate(hf_model, tokenizer) -> dict:
-        """Run refusal evaluation using WisentModel for generation."""
+        """Run evaluation using shared steering evaluator."""
         # Wrap HF model in WisentModel for standard generation
-        wisent_model = WisentModel(model_name, hf_model=hf_model)
-
-        refusal_count = 0
-        compliance_scores = []
-
-        for item in prompts:
-            if use_custom:
-                prompt_text = item if isinstance(item, str) else item.get("prompt", str(item))
-                prompt_obj = None
-            else:
-                prompt_obj = item
-                prompt_text = prompt_obj.prompt
-
-            # Use WisentModel.generate() with standard chat format
+        temp_wisent_model = WisentModel(model_name, hf_model=hf_model)
+        
+        # Get prompts from evaluator
+        prompts = shared_evaluator.get_prompts()
+        
+        # Generate responses
+        responses = []
+        for prompt_text in prompts:
             messages = [{"role": "user", "content": prompt_text}]
-            responses = wisent_model.generate(
+            result = temp_wisent_model.generate(
                 [messages],
                 **get_generate_kwargs(max_new_tokens=150),
             )
-
-            response = responses[0] if responses else ""
-
-            if prompt_obj:
-                eval_result = bench.evaluate_response(prompt_obj, response, evaluator)
-                is_refusal = not eval_result.is_uncensored
-                compliance_score = eval_result.compliance_score
-            else:
-                is_refusal = bench.detect_refusal(response)
-                compliance_score = 0.0 if is_refusal else 1.0
-
-            if is_refusal:
-                refusal_count += 1
-            compliance_scores.append(compliance_score)
-
-        total = len(prompts)
-        refusal_rate = refusal_count / total
-        compliance_rate = 1 - refusal_rate
-        avg_compliance = sum(compliance_scores) / len(compliance_scores)
-
-        return {
-            "refusal_rate": refusal_rate,
-            "compliance_rate": compliance_rate,
-            "average_compliance_score": avg_compliance,
-            "refusal_count": refusal_count,
-            "total": total,
-            "score": compliance_rate,
-        }
+            responses.append(result[0] if result else "")
+        
+        # Evaluate using shared evaluator
+        return shared_evaluator.evaluate_responses(responses)
 
     return evaluate
 
 
-def _create_task_evaluator(args) -> Callable:
-    """Create task-based evaluator.
-
-    This evaluator generates actual responses from the model and evaluates them
-    against the expected answers using the appropriate task-specific evaluator.
-
-    For coding tasks (like livecodebench), it passes the test_code from pair metadata
-    to enable proper code execution evaluation.
+def _create_pooled_evaluator(args) -> Callable:
+    """Create pooled evaluator for --tags mode.
+    
+    Evaluates on ALL benchmarks from training, using each benchmark's
+    native evaluator (routing by source_benchmark metadata).
     """
-    from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.evaluators.rotator import EvaluatorRotator
     from wisent.core.models.inference_config import get_generate_kwargs
 
-    loader = LMEvalDataLoader()
+    # Get eval pairs stored during vector generation
+    eval_pairs = getattr(args, '_pooled_eval_pairs', [])
+    benchmarks_used = getattr(args, '_benchmarks_used', [])
+
+    if not eval_pairs:
+        raise ValueError("No eval pairs found for pooled evaluation. "
+                        "Make sure train_unified_goodness saved eval_pairs to checkpoint.")
+
+    print(f"   Pooled evaluator: {len(eval_pairs)} eval pairs across {len(benchmarks_used)} benchmarks")
+
+    # Discover evaluators once
+    EvaluatorRotator.discover_evaluators('wisent.core.evaluators.oracles')
     EvaluatorRotator.discover_evaluators('wisent.core.evaluators.benchmark_specific')
 
-    # Pre-load task data once
-    result = loader._load_one_task(
-        task_name=args.task,
-        split_ratio=0.8,
-        seed=42,
-        limit=args.num_eval_prompts,
-        training_limit=None,
-        testing_limit=args.num_eval_prompts,
-    )
-    test_pairs = result["test_qa_pairs"]
+    # Group pairs by benchmark
+    pairs_by_benchmark = {}
+    for pair in eval_pairs:
+        bench = pair.get('source_benchmark', 'unknown')
+        if bench not in pairs_by_benchmark:
+            pairs_by_benchmark[bench] = []
+        pairs_by_benchmark[bench].append(pair)
 
-    # Debug: Log metadata availability for coding tasks
-    if test_pairs.pairs:
-        first_pair = test_pairs.pairs[0]
-        first_metadata = getattr(first_pair, 'metadata', None)
-        print(f"   [DEBUG] First pair metadata present: {first_metadata is not None}")
-        if first_metadata:
-            print(f"   [DEBUG] Metadata keys: {list(first_metadata.keys())}")
-            test_code_preview = first_metadata.get('test_code', '')
-            print(f"   [DEBUG] test_code present: {bool(test_code_preview)}, length: {len(test_code_preview) if test_code_preview else 0}")
+    print(f"   Benchmarks in eval set: {list(pairs_by_benchmark.keys())}")
 
-    def evaluate(model, tokenizer) -> dict:
-        """Run task evaluation by generating actual responses from the model."""
-        # Wrap HF model in WisentModel for standard generation
-        wisent_model = WisentModel(args.model, hf_model=model)
-        evaluator = EvaluatorRotator(evaluator=None, task_name=args.task)
+    def evaluate(hf_model, tokenizer) -> dict[str, float]:
+        """Evaluate modified model on pooled benchmark data."""
+        from wisent.core.models.wisent_model import WisentModel
 
-        correct = 0
-        total = 0
+        # Create WisentModel wrapper - use object.__new__ to avoid __init__ loading
+        wisent_model = object.__new__(WisentModel)
+        wisent_model.hf_model = hf_model
+        wisent_model.tokenizer = tokenizer
+        wisent_model.model_name = "modified_model"
+        # Set internal attributes that the properties depend on
+        if hasattr(hf_model, 'model') and hasattr(hf_model.model, 'layers'):
+            wisent_model._layers = hf_model.model.layers
+        elif hasattr(hf_model, 'transformer') and hasattr(hf_model.transformer, 'h'):
+            wisent_model._layers = hf_model.transformer.h
+        else:
+            wisent_model._layers = []
+        wisent_model._hidden_size = hf_model.config.hidden_size
+        wisent_model.device = next(hf_model.parameters()).device
 
-        # Log first iteration only
-        _logged_first = False
+        total_correct = 0
+        total_samples = 0
+        benchmark_scores = {}
 
-        for pair in test_pairs.pairs:
-            expected = pair.positive_response.model_response
-            question = pair.prompt
+        for bench_name, bench_pairs in pairs_by_benchmark.items():
+            # Get evaluator for this benchmark
+            evaluator = EvaluatorRotator(
+                evaluator=None,
+                task_name=bench_name,
+                autoload=False
+            )
 
-            # Extract test_code from pair metadata (for coding tasks)
-            metadata = getattr(pair, 'metadata', {}) or {}
-            test_code = metadata.get('test_code')
-            entry_point = metadata.get('entry_point')
-            starter_code = metadata.get('starter_code', '')
+            correct = 0
+            evaluated = 0
 
-            # Debug first pair
-            if not _logged_first:
-                import logging
-                logging.warning(f"[optimize_weights] First pair - metadata: {bool(metadata)}, test_code: {bool(test_code)}, test_code_len: {len(test_code) if test_code else 0}")
-                _logged_first = True
+            for pair in bench_pairs:
+                try:
+                    question = pair['prompt']
+                    expected = pair['positive_response']
+                    metadata = pair.get('metadata', {}) or {}
+                    test_code = metadata.get('test_code', '')
+                    entry_point = metadata.get('entry_point', '')
 
-            # Generate actual response from the model
-            messages = [{"role": "user", "content": question}]
-            try:
-                responses = wisent_model.generate(
-                    [messages],
-                    **get_generate_kwargs(max_new_tokens=512),
-                )
-                response = responses[0] if responses else ""
-            except Exception as e:
-                response = ""
+                    messages = [{"role": "user", "content": question}]
+                    response = wisent_model.generate(
+                        [messages],
+                        **get_generate_kwargs(),
+                    )[0]
 
-            # For coding tasks, extract code from markdown blocks (strict=True to avoid extracting C++ etc)
-            if 'livecodebench' in args.task.lower() or 'humaneval' in args.task.lower() or 'mbpp' in args.task.lower():
-                from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.utils import extract_code_block
-                response = extract_code_block(response, prefer_langs=("python", "py"), strict=True)
+                    # Evaluate
+                    eval_result = evaluator.evaluate(
+                        response=response,
+                        expected=expected,
+                        model=wisent_model,
+                        question=question,
+                        task_name=bench_name,
+                        test_code=test_code,
+                        entry_point=entry_point,
+                    )
 
-            # Evaluate the generated response against expected
-            try:
-                eval_result = evaluator.evaluate(
-                    response=response,
-                    expected=expected,
-                    model=None,
-                    question=question,
-                    choices=None,
-                    task_name=args.task,
-                    test_code=test_code,
-                    entry_point=entry_point,
-                    language='python',
-                )
+                    if eval_result.ground_truth == "TRUTHFUL":
+                        correct += 1
+                    evaluated += 1
 
-                # Log first 3 evaluations for debugging
-                if total < 3:
-                    import logging
-                    logging.warning(f"[optimize_weights] Eval #{total}: ground_truth={eval_result.ground_truth}, response_len={len(response)}, details={eval_result.details[:200] if eval_result.details else 'N/A'}")
+                except Exception as e:
+                    # Count failed evals but continue
+                    evaluated += 1
 
-                if eval_result.ground_truth == "TRUTHFUL":
-                    correct += 1
-                total += 1
-            except Exception as e:
-                # If evaluation fails, count as incorrect and log error
-                import logging
-                logging.warning(f"[optimize_weights] Eval #{total} EXCEPTION: {e}")
-                total += 1
+            if evaluated > 0:
+                benchmark_scores[bench_name] = correct / evaluated
+                total_correct += correct
+                total_samples += evaluated
 
-        accuracy = correct / total if total > 0 else 0.0
+        # Compute aggregate accuracy
+        accuracy = total_correct / total_samples if total_samples > 0 else 0.0
 
         return {
             "accuracy": accuracy,
-            "correct": correct,
-            "total": total,
+            "correct": total_correct,
+            "total": total_samples,
             "score": accuracy,
-        }
-
-    return evaluate
-
-
-def _create_llm_judge_evaluator(args, model_name: str) -> Callable:
-    """Create LLM-as-judge evaluator.
-
-    Uses WisentModel.generate() for consistent generation behavior.
-    """
-    raise NotImplementedError("LLM judge evaluator not yet implemented")
-
-
-def _create_personalization_evaluator(args, model_name: str, wisent_model: WisentModel = None,
-                                       positive_examples: list[str] = None, negative_examples: list[str] = None) -> Callable:
-    """Create personalization evaluator for personality/style traits.
-
-    Evaluates steering effectiveness on three criteria:
-    1. Difference: Is the steered response different from baseline?
-    2. Quality: Is the response coherent (not lobotomized)?
-    3. Alignment: Does the response match the intended trait direction?
-
-    Uses the same evaluation pattern as optimize_steering's personalization action.
-    Baseline responses are generated once upfront using the unmodified model.
-    """
-    from wisent.core.evaluators.personalization import (
-        evaluate_difference,
-        evaluate_quality,
-        estimate_alignment,
-    )
-
-    # Get trait name and description from args
-    trait_name = args.trait.split()[0] if args.trait else "unknown"
-    trait_description = args.trait
-
-    # Store positive/negative examples for alignment evaluation
-    pos_examples = positive_examples or []
-    neg_examples = negative_examples or []
-
-    # Default test prompts for personalization evaluation
-    default_prompts = [
-        "Tell me about yourself.",
-        "What do you think about the weather today?",
-        "Can you help me write a short story?",
-        "What's your opinion on modern technology?",
-        "How would you describe a perfect day?",
-        "Tell me a joke.",
-        "What advice would you give to someone starting a new job?",
-        "Describe your favorite book or movie.",
-        "What do you think makes a good friend?",
-        "How do you handle stress?",
-        "What's the best way to learn a new skill?",
-        "Tell me about a memorable experience.",
-        "What do you value most in life?",
-        "How would you explain your personality?",
-        "What makes you happy?",
-    ]
-
-    # Use custom prompts if provided, otherwise use defaults
-    if args.eval_prompts:
-        with open(args.eval_prompts) as f:
-            custom_prompts = json.load(f)
-        if not isinstance(custom_prompts, list):
-            custom_prompts = custom_prompts.get("prompts", [])
-        prompts = custom_prompts[:args.num_eval_prompts]
-    else:
-        prompts = default_prompts[:args.num_eval_prompts]
-
-    # Generate baseline responses ONCE using the unmodified model
-    # This is done before optimization starts
-    baseline_responses = []
-    if wisent_model is not None:
-        print(f"   Generating {len(prompts)} baseline responses for personalization evaluation...")
-        for prompt_text in prompts:
-            messages = [{"role": "user", "content": prompt_text}]
-            responses = wisent_model.generate(
-                [messages],
-                max_new_tokens=150,
-            )
-            response = responses[0] if responses else ""
-            baseline_responses.append(response)
-        print(f"   ✓ Baseline responses generated\n")
-
-    def evaluate(hf_model, tokenizer) -> dict:
-        """Run personalization evaluation comparing baseline vs steered responses."""
-        import numpy as np
-
-        # Wrap HF model in WisentModel for standard generation
-        modified_wisent_model = WisentModel(model_name, hf_model=hf_model)
-
-        # Collect steered responses (model already has weight modifications applied)
-        steered_responses = []
-        for prompt_text in prompts:
-            messages = [{"role": "user", "content": prompt_text}]
-            responses = modified_wisent_model.generate(
-                [messages],
-                max_new_tokens=150,
-            )
-            response = responses[0] if responses else ""
-            steered_responses.append(response)
-
-        # Calculate difference score (baseline vs steered) - average across all pairs
-        if baseline_responses:
-            diff_scores = []
-            for baseline, steered in zip(baseline_responses, steered_responses):
-                # evaluate_difference returns 1-100, normalize to 0-1
-                diff = evaluate_difference(baseline, steered, None, None, None)
-                diff_scores.append((diff - 1.0) / 99.0)
-            difference_score = float(np.mean(diff_scores))
-        else:
-            difference_score = 0.5  # Default if no baseline available
-
-        # Calculate quality score (coherence check) - average across all responses
-        quality_scores = []
-        for steered in steered_responses:
-            # evaluate_quality returns 1-100, normalize to 0-1
-            qual = evaluate_quality(steered, None, None, None)
-            quality_scores.append((qual - 1.0) / 99.0 if qual > 0 else 0.0)
-        quality_score = float(np.mean(quality_scores))
-
-        # Calculate alignment score using contrastive embedding similarity
-        # estimate_alignment returns 0-1 directly
-        if not pos_examples or not neg_examples:
-            raise InsufficientDataError(
-                reason=f"Cannot evaluate alignment without positive and negative examples. "
-                       f"Got {len(pos_examples) if pos_examples else 0} positive and "
-                       f"{len(neg_examples) if neg_examples else 0} negative examples."
-            )
-        alignment_score = estimate_alignment(
-            steered_responses, trait_description, pos_examples, neg_examples
-        )
-
-        # Calculate overall score (weighted average)
-        # Only count if difference > 0.3 (steering is actually doing something)
-        if difference_score < 0.3:
-            overall_score = 0.0
-        else:
-            overall_score = 0.2 * difference_score + 0.3 * quality_score + 0.5 * alignment_score
-
-        return {
-            "difference_score": difference_score,
-            "quality_score": quality_score,
-            "alignment_score": alignment_score,
-            "overall_score": overall_score,
-            "num_responses": len(steered_responses),
-            "score": overall_score,  # Main metric for optimization
+            "benchmark_scores": benchmark_scores,
         }
 
     return evaluate

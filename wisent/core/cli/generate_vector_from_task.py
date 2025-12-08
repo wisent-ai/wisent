@@ -97,6 +97,7 @@ def execute_generate_vector_from_task(args):
             normalize=args.normalize,
             verbose=args.verbose,
             timing=args.timing,
+            accept_low_quality_vector=getattr(args, 'accept_low_quality_vector', False),
         )
         
         execute_create_steering_vector(vector_args)

@@ -26,23 +26,58 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     """
 
     # ==========================================================================
-    # INPUT SOURCE: What to optimize for (trait OR task)
+    # INPUT SOURCE: What to optimize for
     # ==========================================================================
     input_group = parser.add_mutually_exclusive_group(required=True)
     input_group.add_argument(
-        "--trait",
-        type=str,
-        help="Trait description for synthetic pair generation (e.g., 'refusal behavior', 'sycophantic responses')"
-    )
-    input_group.add_argument(
         "--task",
         type=str,
-        help="LM-eval task name for task-based optimization (e.g., 'hellaswag', 'arc_easy')"
+        help=(
+            "Task to optimize for. Can be: "
+            "'refusal' (compliance optimization), "
+            "'personalization' (requires --trait), "
+            "benchmark name (e.g., 'arc_easy', 'gsm8k'), "
+            "or comma-separated benchmarks (e.g., 'arc_easy,gsm8k,hellaswag')"
+        )
     )
     input_group.add_argument(
         "--steering-vectors",
         type=str,
         help="Path to pre-computed steering vectors JSON file (skip vector generation)"
+    )
+    
+    # Trait description (required for --task personalization)
+    parser.add_argument(
+        "--trait",
+        type=str,
+        default=None,
+        help="Trait description for personalization (required when --task personalization)"
+    )
+    
+    # Additional options for multi-benchmark mode (--task bench1,bench2,...)
+    parser.add_argument(
+        "--cap-pairs-per-benchmark",
+        type=int,
+        default=None,
+        help="Cap pairs per benchmark. Benchmarks with more pairs get randomly sampled."
+    )
+    parser.add_argument(
+        "--max-benchmarks",
+        type=int,
+        default=None,
+        help="Maximum number of benchmarks to use"
+    )
+    parser.add_argument(
+        "--train-ratio",
+        type=float,
+        default=0.8,
+        help="Fraction of pairs for training vs evaluation (default: 0.8)"
+    )
+    parser.add_argument(
+        "--seed",
+        type=int,
+        default=42,
+        help="Random seed for reproducibility (default: 42)"
     )
 
     # ==========================================================================
@@ -78,27 +113,20 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     )
 
     # ==========================================================================
-    # EVALUATOR CONFIGURATION
+    # EVALUATION CONFIGURATION
     # ==========================================================================
     eval_group = parser.add_argument_group("evaluation")
-    eval_group.add_argument(
-        "--evaluator",
-        type=str,
-        default="auto",
-        choices=["auto", "refusal", "task", "semantic", "keyword", "llm_judge", "personalization"],
-        help="Evaluator to use. 'auto' selects based on trait/task (personalization for personality traits, refusal for refusal traits). Default: auto"
-    )
     eval_group.add_argument(
         "--eval-prompts",
         type=str,
         default=None,
-        help="Path to custom evaluation prompts JSON file (for refusal/semantic evaluation)"
+        help="Path to custom evaluation prompts JSON file"
     )
     eval_group.add_argument(
         "--eval-topics",
         type=str,
         default=None,
-        help="Comma-separated UncensorBench topics (for refusal evaluation)"
+        help="Comma-separated UncensorBench topics (for --task refusal)"
     )
     eval_group.add_argument(
         "--num-eval-prompts",

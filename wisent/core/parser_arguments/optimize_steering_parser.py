@@ -87,6 +87,44 @@ def setup_steering_optimizer_parser(parser):
         action="store_true",
         help="Save optimal parameters as default for this model/task combination",
     )
+    comprehensive_parser.add_argument(
+        "--custom-evaluator",
+        type=str,
+        default=None,
+        help=(
+            "Custom evaluator specification. Can be: "
+            "(1) Python module path e.g. 'my_evaluators.gptzero', "
+            "(2) File path with function e.g. './my_eval.py:score_fn', "
+            "(3) Built-in example e.g. 'wisent.core.evaluators.custom.examples.gptzero'. "
+            "The module must define 'create_evaluator', 'evaluator', or 'evaluate' function."
+        )
+    )
+    comprehensive_parser.add_argument(
+        "--custom-evaluator-kwargs",
+        type=str,
+        default=None,
+        help="JSON string of kwargs for custom evaluator, e.g. '{\"api_key\": \"xxx\", \"optimize_for\": \"human_prob\"}'"
+    )
+    
+    # Early rejection options
+    comprehensive_parser.add_argument(
+        "--disable-early-rejection",
+        action="store_true",
+        default=False,
+        help="Disable early rejection of low-quality vectors during optimization (slower but explores more)"
+    )
+    comprehensive_parser.add_argument(
+        "--early-rejection-snr-threshold",
+        type=float,
+        default=5.0,
+        help="Minimum SNR for early rejection during optimization (default: 5.0)"
+    )
+    comprehensive_parser.add_argument(
+        "--early-rejection-cv-threshold",
+        type=float,
+        default=0.1,
+        help="Minimum cross-validation score for early rejection during optimization (default: 0.1)"
+    )
 
     # Method comparison subcommand
     method_parser = steering_subparsers.add_parser(
@@ -301,6 +339,24 @@ def setup_steering_optimizer_parser(parser):
         "--save-as-default",
         action="store_true",
         help="Save optimal parameters as default for this model/task combination",
+    )
+    personalization_parser.add_argument(
+        "--custom-evaluator",
+        type=str,
+        default=None,
+        help=(
+            "Custom evaluator for trait optimization. Can be: "
+            "(1) Python module path e.g. 'my_evaluators.gptzero', "
+            "(2) File path with function e.g. './my_eval.py:score_fn', "
+            "(3) Built-in example e.g. 'wisent.core.evaluators.custom.examples.gptzero'. "
+            "Overrides the default personalization evaluator."
+        )
+    )
+    personalization_parser.add_argument(
+        "--custom-evaluator-kwargs",
+        type=str,
+        default=None,
+        help="JSON string of kwargs for custom evaluator, e.g. '{\"api_key\": \"xxx\"}'"
     )
 
     # Multi-trait personalization optimization subcommand

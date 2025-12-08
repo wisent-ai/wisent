@@ -15,8 +15,9 @@ from typing import Any, Optional
 import numpy as np
 import torch
 
-from wisent.core.activations.activation_collection_method import ActivationCollectionLogic
-from wisent.core.activations.core import ActivationAggregationStrategy, Activations
+from wisent.core.activations.activations_collector import ActivationCollector
+from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.activations import Activations
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +165,7 @@ class ActivationGenerator:
         self.logger.info(f"Generating activations for {len(contrastive_pairs)} contrastive pairs")
 
         # Initialize activation collector
-        collector = ActivationCollectionLogic(model=model)
+        collector = ActivationCollector(model=model)
         activation_data = {}
 
         for layer in range(self.config.layer_search_range[0], self.config.layer_search_range[1] + 1):
