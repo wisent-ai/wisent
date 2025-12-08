@@ -155,3 +155,13 @@ abliteration_demo_outputs/
 hallucination_guard_outputs/
 coding_boost_outputs/
 personalization_outputs/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.synctex.gz
