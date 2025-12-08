@@ -104,6 +104,8 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
         - generate_test_case(test_case_id): generates test input and expected result
         - exec_test(result, ans): checks if result matches expected
         - exec_context: code template to execute solution
+        
+        The test reads solution.py, prepends setup code, and executes the combined code.
         """
         if not code_context:
             return None
@@ -117,18 +119,20 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
             if start < end:
                 setup_code = prompt[start:end].strip()
         
-        # Build test that:
-        # 1. Sets up the environment from code_context (has generate_test_case, exec_test)
-        # 2. Runs setup code from prompt (defines variables like df, List)
-        # 3. Executes solution in same namespace (uses variables, produces result)
-        # 4. Checks result with exec_test
+        # For DS-1000, we need to combine setup + solution in one exec call
+        # The setup_code will be prepended to the solution when executing
         test_code = f'''{code_context}
 
-# Setup from prompt (defines variables)
+# Read solution
+solution_code = open("solution.py").read()
+
+# Combine setup + solution and execute
+combined_code = """
 {setup_code}
 
-# Run solution in same namespace
-exec(open("solution.py").read(), globals())
+""" + solution_code
+
+exec(compile(combined_code, "<solution>", "exec"), globals())
 
 # Run test
 test_input, expected_result = generate_test_case(1)
