@@ -138,7 +138,7 @@ def execute_optimize_sample_size(args):
         EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
         EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
         evaluator = EvaluatorRotator(evaluator=None, task_name=args.task, autoload=False)
-        print(f"   Using evaluator: {evaluator._evaluator.name}")
+        print(f"   Using evaluator: {evaluator._plugin.name}")
 
         # 6. Generate responses and collect activations for evaluation ONCE
         print(f"\n📝 Generating test responses (ONCE)...")

@@ -42,7 +42,7 @@ except ImportError:
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.optuna.steering import data_utils, metrics
-from wisent.core.contrastive_pairs.core.response import Response
+from wisent.core.contrastive_pairs.core.response import Response, PositiveResponse, NegativeResponse
 from wisent.core.steering_methods import SteeringMethodRegistry, get_steering_method
 from wisent.core.task_interface import get_task
 from wisent.core.utils.device import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device
@@ -445,8 +445,8 @@ class OptimizationPipeline:
         for pair in pair_set.pairs:
             self.synthetic_pairs.append({
                 "prompt": pair.prompt,
-                "positive_response": pair.positive_response.text,
-                "negative_response": pair.negative_response.text,
+                "positive_response": pair.positive_response.model_response,
+                "negative_response": pair.negative_response.model_response,
             })
         
         # For synthetic mode, we don't have traditional train/val/test samples
@@ -949,8 +949,8 @@ class OptimizationPipeline:
                     f"Creating contrastive pair - Correct: {contrastive_pair['correct_answer']}, Incorrect: {contrastive_pair['incorrect_answer']}"
                 )
 
-                positive_response = Response(text=contrastive_pair["correct_answer"], label=1)
-                negative_response = Response(text=contrastive_pair["incorrect_answer"], label=0)
+                positive_response = PositiveResponse(model_response=contrastive_pair["correct_answer"], label="1")
+                negative_response = NegativeResponse(model_response=contrastive_pair["incorrect_answer"], label="0")
 
                 pair = ContrastivePair(
                     prompt=contrastive_pair["question"],
@@ -967,8 +967,8 @@ class OptimizationPipeline:
             text_to_pair_mapping = []
 
             for pair_idx, pair in enumerate(pair_set.pairs):
-                pos_text = f"{pair.prompt} {pair.positive_response.text}"
-                neg_text = f"{pair.prompt} {pair.negative_response.text}"
+                pos_text = f"{pair.prompt} {pair.positive_response.model_response}"
+                neg_text = f"{pair.prompt} {pair.negative_response.model_response}"
 
                 all_texts.extend([pos_text, neg_text])
                 text_to_pair_mapping.extend([(pair_idx, "positive"), (pair_idx, "negative")])
@@ -1009,8 +1009,8 @@ class OptimizationPipeline:
             else:
                 continue
                 
-            positive_response = Response(text=positive_text, label=1)
-            negative_response = Response(text=negative_text, label=0)
+            positive_response = PositiveResponse(model_response=positive_text, label="1")
+            negative_response = NegativeResponse(model_response=negative_text, label="0")
             
             pair = ContrastivePair(
                 prompt=prompt,
@@ -1027,8 +1027,8 @@ class OptimizationPipeline:
             text_to_pair_mapping = []
             
             for pair_idx, pair in enumerate(pair_set.pairs):
-                pos_text = f"{pair.prompt} {pair.positive_response.text}"
-                neg_text = f"{pair.prompt} {pair.negative_response.text}"
+                pos_text = f"{pair.prompt} {pair.positive_response.model_response}"
+                neg_text = f"{pair.prompt} {pair.negative_response.model_response}"
                 
                 all_texts.extend([pos_text, neg_text])
                 text_to_pair_mapping.extend([(pair_idx, "positive"), (pair_idx, "negative")])
