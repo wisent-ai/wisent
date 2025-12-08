@@ -60,6 +60,11 @@ def execute_optimize_weights(args):
     Runs Optuna optimization to find optimal weight modification parameters
     for any trait or task.
     """
+    # Expand task if it's a skill or risk name
+    from wisent.core.task_selector import expand_task_if_skill_or_risk
+    if getattr(args, 'task', None):
+        args.task = expand_task_if_skill_or_risk(args.task)
+    
     start_time = time.time()
 
     print(f"\n{'='*80}")
