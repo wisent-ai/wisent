@@ -13,7 +13,7 @@ log = setup_logger(__name__)
 task_names = ("humaneval_64_instruct", "humaneval_instruct", "humaneval_plus")
 
 class HumanEvalExtractor(HuggingFaceBenchmarkExtractor):
-    evaluator_name = "generation"
+    evaluator_name = "coding"
     """
     Extractor for HumanEval and HumanEval+ coding benchmarks.
 

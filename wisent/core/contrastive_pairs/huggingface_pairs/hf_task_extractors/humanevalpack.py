@@ -25,7 +25,7 @@ class HumanevalpackExtractor(HuggingFaceBenchmarkExtractor):
         - language: str (Python, JavaScript, etc.)
     """
 
-    evaluator_name = "generation"
+    evaluator_name = "coding"
 
     def extract_contrastive_pairs(
         self,

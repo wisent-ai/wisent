@@ -21,6 +21,8 @@ class AppsExtractor(HuggingFaceBenchmarkExtractor):
         - solutions: str (answer/solution)
     """
 
+    evaluator_name = "coding"
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
