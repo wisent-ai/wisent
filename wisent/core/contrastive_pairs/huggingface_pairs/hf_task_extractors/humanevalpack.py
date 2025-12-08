@@ -68,16 +68,17 @@ class HumanevalpackExtractor(HuggingFaceBenchmarkExtractor):
         """Convert a single HumanEvalPack doc into a ContrastivePair."""
         try:
             task_id = doc.get("task_id", "")
-            prompt = doc.get("prompt", "").strip()
-            canonical_solution = doc.get("canonical_solution", "").strip()
+            prompt = doc.get("prompt", "")
+            canonical_solution = doc.get("canonical_solution", "")  # Don't strip - preserves indentation
             entry_point = doc.get("entry_point", "")
             test_code = doc.get("test", "").strip()
 
             if not prompt or not canonical_solution:
                 return None
 
-            correct_code = prompt + "\n" + canonical_solution
-            incorrect_code = prompt + "\n    pass  # Incorrect: empty implementation"
+            # Prompt ends with \n, canonical_solution already has proper indentation
+            correct_code = prompt + canonical_solution
+            incorrect_code = prompt + "    pass  # Incorrect: empty implementation\n"
 
             question = f"Complete the following function:\n\n{prompt}"
 

@@ -89,6 +89,9 @@ def main():
         execute_optimize_all(args)
     elif args.command == 'train-unified-goodness':
         execute_train_unified_goodness(args)
+    elif args.command == 'optimize':
+        from wisent.core.cli import execute_optimize
+        execute_optimize(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)

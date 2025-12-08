@@ -37,6 +37,7 @@ from wisent.core.parser_arguments.inference_config_parser import setup_inference
 from wisent.core.parser_arguments.optimization_cache_parser import setup_optimization_cache_parser
 from wisent.core.parser_arguments.optimize_weights_parser import setup_optimize_weights_parser
 from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser
+from wisent.core.parser_arguments.optimize_parser import setup_optimize_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -201,5 +202,12 @@ def setup_parser() -> argparse.ArgumentParser:
         help="Train a single 'goodness' steering vector from pooled multi-benchmark data"
     )
     setup_train_unified_goodness_parser(unified_goodness_parser)
+
+    # Simple optimize command - one command to optimize a model for all benchmarks
+    optimize_parser = subparsers.add_parser(
+        "optimize",
+        help="Optimize steering for a model across all core benchmarks (simplest way to optimize)"
+    )
+    setup_optimize_parser(optimize_parser)
 
     return parser
