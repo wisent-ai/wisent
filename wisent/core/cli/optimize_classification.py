@@ -4,6 +4,11 @@ This optimizer tests different configurations (layer, aggregation, threshold)
 by calling the native execute_tasks() function for each configuration,
 then evaluates using Wisent's native evaluators.
 
+Supports multiple evaluation modes:
+- Task accuracy (default): Uses benchmark-specific evaluators
+- Refusal: Uses shared RefusalEvaluator for compliance rate
+- Personalization: Uses shared PersonalizationEvaluator for trait alignment
+
 Results are persisted to ~/.wisent/configs/ via WisentConfigManager
 so they can be automatically loaded on subsequent runs.
 """
@@ -15,6 +20,10 @@ from typing import List, Dict, Any
 import os
 
 from wisent.core.config_manager import get_config_manager, save_classification_config
+from wisent.core.evaluators.steering_evaluators import (
+    SteeringEvaluatorFactory,
+    EvaluatorConfig,
+)
 
 
 def execute_optimize_classification(args):
@@ -37,7 +46,31 @@ def execute_optimize_classification(args):
     print(f"   Model: {args.model}")
     print(f"   Limit per task: {args.limit}")
     print(f"   Device: {args.device or 'auto'}")
+    
+    # Check for steering evaluation mode (refusal, personalization)
+    evaluator_type = getattr(args, 'evaluator', 'task')
+    trait = getattr(args, 'trait', None)
+    if evaluator_type != 'task':
+        print(f"   Evaluator: {evaluator_type}")
+        if trait:
+            print(f"   Trait: {trait}")
     print(f"{'='*80}\n")
+    
+    # Setup steering evaluator if needed
+    steering_evaluator = None
+    if evaluator_type in ['refusal', 'personalization', 'custom']:
+        from wisent.core.models.wisent_model import WisentModel as WM
+        eval_config = EvaluatorConfig(
+            evaluator_type=evaluator_type,
+            trait=trait,
+            eval_prompts_path=getattr(args, 'eval_prompts', None),
+            num_eval_prompts=getattr(args, 'num_eval_prompts', 30),
+            custom_evaluator_path=getattr(args, 'custom_evaluator', None),
+        )
+        steering_evaluator = SteeringEvaluatorFactory.create(
+            eval_config, args.model
+        )
+        print(f"📊 Using {evaluator_type} evaluator for optimization\n")
 
     # 1. Determine layer range
     # First need to load model to get num_layers
@@ -156,16 +189,28 @@ def execute_optimize_classification(args):
                                         # Call native Wisent execute_tasks
                                         result = execute_tasks(task_args)
 
-                                        # Extract metrics from result
-                                        # Map CLI argument to result key
-                                        metric_map = {
-                                            'f1': 'f1_score',
-                                            'accuracy': 'accuracy',
-                                            'precision': 'precision',
-                                            'recall': 'recall'
-                                        }
-                                        metric_key = metric_map.get(args.optimization_metric, 'f1_score')
-                                        metric_value = result.get(metric_key, 0)
+                                        # Extract metrics based on evaluator type
+                                        if steering_evaluator is not None:
+                                            # Use steering evaluator for refusal/personalization metrics
+                                            # Get generated responses from result
+                                            generated_responses = result.get('generated_responses', [])
+                                            if generated_responses:
+                                                eval_results = steering_evaluator.evaluate_responses(generated_responses)
+                                                metric_value = eval_results.get('score', 0)
+                                                result['steering_score'] = metric_value
+                                                result['steering_metrics'] = eval_results
+                                            else:
+                                                metric_value = 0
+                                        else:
+                                            # Use task-based metrics
+                                            metric_map = {
+                                                'f1': 'f1_score',
+                                                'accuracy': 'accuracy',
+                                                'precision': 'precision',
+                                                'recall': 'recall'
+                                            }
+                                            metric_key = metric_map.get(args.optimization_metric, 'f1_score')
+                                            metric_value = result.get(metric_key, 0)
 
                                         if metric_value > best_score:
                                             best_score = metric_value
@@ -181,6 +226,8 @@ def execute_optimize_classification(args):
                                                 'precision': result.get('precision', 0),
                                                 'recall': result.get('recall', 0),
                                                 'generation_count': result.get('generation_count', 0),
+                                                'steering_score': result.get('steering_score', None),
+                                                'steering_metrics': result.get('steering_metrics', None),
                                             }
 
                                         if combinations_tested % 20 == 0:

@@ -73,6 +73,18 @@ class SyntheticContrastivePairsGenerator:
             task_type=self.trait_label,
         )
 
+        # Generate opposite trait description once
+        opposite_instruction = (
+            f"What is the OPPOSITE personality trait of: {self.trait_description}?\n\n"
+            f"Describe the opposite in one sentence, be specific about what words/style/tone to use."
+        )
+        opposite_raw = self.model.generate(
+            inputs=[[{"role": "user", "content": opposite_instruction}]],
+            **self.generation_config,
+        )
+        opposite_trait = opposite_raw[0].strip() if opposite_raw else "neutral and plain"
+        logger.info(f"[GENERATE] Opposite trait: {opposite_trait}")
+
         # Generate pairs one at a time, retry until we have num_pairs
         max_attempts = num_pairs * 3  # Prevent infinite loops
         attempts = 0
@@ -116,14 +128,11 @@ class SyntheticContrastivePairsGenerator:
 
             logger.info(f"[GENERATE] Positive: {positive[:100]}")
 
-            # 3) Generate negative response - OPPOSITE of the trait
-            # Be very explicit about what opposite means
+            # 3) Generate negative response - using the opposite trait
             negative_instruction = (
                 f"Question: {prompt}\n\n"
-                f"The trait is: {self.trait_description}\n\n"
-                f"Answer as the COMPLETE OPPOSITE. If the trait is evil, be kind and gentle. "
-                f"If the trait is dramatic, be calm and simple. If the trait is Italian, be not Italian.\n\n"
-                f"Write 1-2 sentences. Just the answer, showing the opposite personality."
+                f"Answer the question AS IF you have this personality: {opposite_trait}\n\n"
+                f"Write 1-2 sentences showing this personality clearly. Just the answer."
             )
             negative_raw = self.model.generate(
                 inputs=[[{"role": "user", "content": negative_instruction}]],

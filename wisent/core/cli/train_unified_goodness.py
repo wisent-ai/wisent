@@ -93,38 +93,17 @@ def execute_train_unified_goodness(args):
     if broken_benchmarks:
         print(f"   ✓ Skipping {len(broken_benchmarks)} broken benchmarks")
 
-    # Load benchmark tags for filtering
-    tags_file = Path(__file__).parent.parent.parent / "examples" / "scripts" / "benchmark_tags.json"
-    benchmark_tags = {}
-    if tags_file.exists():
-        with open(tags_file) as f:
-            benchmark_tags = json.load(f)
-
-    def get_benchmark_tags(bench_name):
-        """Get tags for a benchmark, handling name variations."""
-        bench_norm = bench_name.lower().replace('-', '_')
-        for key in benchmark_tags:
-            key_norm = key.lower().replace('-', '_')
-            if bench_norm == key_norm or bench_norm.startswith(key_norm + '_') or key_norm.startswith(bench_norm):
-                return benchmark_tags[key].get('tags', [])
-        return []
-
-    if args.benchmarks:
-        # Use explicitly specified benchmarks
-        selected_benchmark_names = [name for name in args.benchmarks if name in all_benchmark_names]
-        unknown = [name for name in args.benchmarks if name not in all_benchmark_names]
+    # Determine benchmarks from --task argument
+    if args.task:
+        # Parse comma-separated benchmarks
+        task_benchmarks = [b.strip() for b in args.task.split(",")]
+        selected_benchmark_names = [name for name in task_benchmarks if name in all_benchmark_names]
+        unknown = [name for name in task_benchmarks if name not in all_benchmark_names]
         for name in unknown:
             print(f"   ⚠️  Unknown benchmark: {name}, skipping")
-    elif args.tags:
-        # Filter by tags
-        selected_benchmark_names = []
-        for name in all_benchmark_names:
-            bench_tags = get_benchmark_tags(name)
-            if any(tag in bench_tags for tag in args.tags):
-                selected_benchmark_names.append(name)
-        print(f"   ✓ Filtering by tags: {', '.join(args.tags)}")
+        print(f"   ✓ Using specified benchmarks: {', '.join(selected_benchmark_names)}")
     else:
-        # Use ALL benchmarks by default (no priority filtering - we want everything)
+        # Use ALL benchmarks by default
         selected_benchmark_names = all_benchmark_names.copy()
 
     # Apply exclusions
@@ -376,6 +355,17 @@ def execute_train_unified_goodness(args):
 
     # Use first layer as the primary vector (for single-layer output)
     primary_layer = layers[0]
+    # Serialize eval pairs for later use (e.g., by optimize-weights)
+    serialized_eval_pairs = []
+    for pair in all_eval_pairs:
+        serialized_eval_pairs.append({
+            'prompt': pair.prompt,
+            'positive_response': pair.positive_response.model_response,
+            'negative_response': pair.negative_response.model_response,
+            'source_benchmark': pair.metadata.get('source_benchmark') if pair.metadata else None,
+            'metadata': pair.metadata,
+        })
+
     save_data = {
         'steering_vector': steering_vectors[primary_layer],
         'layer_index': int(primary_layer),
@@ -385,11 +375,14 @@ def execute_train_unified_goodness(args):
         'benchmarks_used': list(benchmark_pair_counts.keys()),
         'num_benchmarks': len(benchmark_pair_counts),
         'num_training_pairs': len(all_train_pairs),
+        'num_eval_pairs': len(all_eval_pairs),
         'benchmark_pair_counts': benchmark_pair_counts,
         'normalize': args.normalize,
         'aggregation': args.token_aggregation,
         # All layer vectors if multiple
         'all_layer_vectors': {k: v for k, v in steering_vectors.items()},
+        # Eval pairs for optimize-weights to use
+        'eval_pairs': serialized_eval_pairs,
         # Legacy keys for backward compatibility
         'vector': steering_vectors[primary_layer],
         'layer': int(primary_layer),

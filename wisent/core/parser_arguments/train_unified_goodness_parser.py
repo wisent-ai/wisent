@@ -38,20 +38,15 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
 
     # Benchmark selection
     parser.add_argument(
-        "--benchmarks",
+        "--task",
         type=str,
-        nargs="+",
         default=None,
-        help="Specific benchmarks to include (default: ALL 327 benchmarks). "
-             "Example: --benchmarks mmlu gsm8k hellaswag truthfulqa_mc1"
-    )
-    parser.add_argument(
-        "--tags",
-        type=str,
-        nargs="+",
-        default=None,
-        help="Filter benchmarks by tags. Only include benchmarks with ANY of these tags. "
-             "Example: --tags coding mathematics"
+        help=(
+            "Task(s) to train on. Can be: "
+            "single benchmark (e.g., 'arc_easy'), "
+            "comma-separated benchmarks (e.g., 'arc_easy,gsm8k,hellaswag'), "
+            "or omit to use ALL benchmarks"
+        )
     )
     parser.add_argument(
         "--exclude-benchmarks",

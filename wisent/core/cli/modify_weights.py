@@ -123,206 +123,262 @@ def execute_modify_weights(args):
                 print(f"✓ Loaded {len(steering_vectors)} steering vectors\n")
 
     elif args.task:
-        # Generate steering vectors from task
-        if args.verbose:
-            print(f"Generating steering vectors from task '{args.task}'...")
-
-        from wisent.core.cli.generate_vector_from_task import execute_generate_vector_from_task
-
-        # Create temp args for vector generation
-        class VectorArgs:
-            pass
-
-        vector_args = VectorArgs()
-        vector_args.task = args.task
-        vector_args.trait_label = args.trait_label
-        vector_args.model = args.model
-        vector_args.num_pairs = args.num_pairs
-        vector_args.layers = str(args.layers) if args.layers is not None else "all"
-        vector_args.token_aggregation = args.token_aggregation
-        vector_args.prompt_strategy = args.prompt_strategy
-        vector_args.method = "caa"
-        vector_args.normalize = args.normalize_vectors
-        vector_args.verbose = args.verbose
-        vector_args.timing = args.timing
-        vector_args.intermediate_dir = None
-        vector_args.keep_intermediate = False
-        vector_args.device = None
-
-        # Use temp file for steering vectors
-        import tempfile
-        temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-        vector_args.output = temp_vector_file.name
-        temp_vector_file.close()
-
-        # Generate vectors
-        execute_generate_vector_from_task(vector_args)
-
-        # Load generated vectors
-        with open(vector_args.output, 'r') as f:
-            vector_data = json.load(f)
-
-        # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
-        steering_vectors = {
-            int(layer) - 1: torch.tensor(vector)
-            for layer, vector in vector_data["steering_vectors"].items()
-        }
-
-        # Optionally save steering vectors
-        if args.save_steering_vectors:
-            import shutil
-            shutil.copy(vector_args.output, args.save_steering_vectors)
-            if args.verbose:
-                print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
-
-        # Clean up temp file
-        import os
-        os.unlink(vector_args.output)
-
-        if args.verbose:
-            print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
-
-    elif args.trait:
-        # Generate steering vectors from synthetic trait
-        if args.verbose:
-            print(f"Generating steering vectors from trait '{args.trait}'...")
-
-        from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
-
-        # Create temp args for vector generation
-        class VectorArgs:
-            pass
-
-        vector_args = VectorArgs()
-        vector_args.trait = args.trait
-        vector_args.model = args.model
-        vector_args.num_pairs = args.num_pairs
-        vector_args.similarity_threshold = args.similarity_threshold
-        vector_args.layers = str(args.layers) if args.layers is not None else "all"
-        vector_args.token_aggregation = args.token_aggregation
-        vector_args.prompt_strategy = args.prompt_strategy
-        vector_args.method = "caa"
-        vector_args.normalize = args.normalize_vectors
-        vector_args.verbose = args.verbose
-        vector_args.timing = args.timing
-        vector_args.intermediate_dir = None
-        vector_args.keep_intermediate = False
-        vector_args.device = None
-
-        # Use temp file for steering vectors
-        import tempfile
-        temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
-        vector_args.output = temp_vector_file.name
-        temp_vector_file.close()
-
-        # Generate vectors
-        execute_generate_vector_from_synthetic(vector_args)
-
-        # Load generated vectors
-        with open(vector_args.output, 'r') as f:
-            vector_data = json.load(f)
-
-        # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
-        steering_vectors = {
-            int(layer) - 1: torch.tensor(vector)
-            for layer, vector in vector_data["steering_vectors"].items()
-        }
-
-        # Optionally save steering vectors
-        if args.save_steering_vectors:
-            import shutil
-            shutil.copy(vector_args.output, args.save_steering_vectors)
-            if args.verbose:
-                print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
-
-        # Clean up temp file
-        import os
-        os.unlink(vector_args.output)
-
-        if args.verbose:
-            print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
-
-    elif args.tags:
-        # Generate steering vectors from pooled multi-benchmark data (by tags)
-        if args.verbose:
-            print(f"Generating steering vectors from benchmarks with tags: {', '.join(args.tags)}...")
-
-        from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
-
-        # Create temp args for unified goodness training
-        class UnifiedArgs:
-            pass
-
-        unified_args = UnifiedArgs()
-        unified_args.tags = args.tags
-        unified_args.benchmarks = None
-        unified_args.exclude_benchmarks = None
-        unified_args.max_benchmarks = getattr(args, 'max_benchmarks', None)
-        unified_args.cap_pairs_per_benchmark = getattr(args, 'cap_pairs_per_benchmark', None)
-        unified_args.train_ratio = getattr(args, 'train_ratio', 0.8)
-        unified_args.seed = getattr(args, 'seed', 42)
-        unified_args.model = args.model
-        unified_args.device = getattr(args, 'device', None)
-        unified_args.layer = None  # Use middle layer by default
-        unified_args.layers = args.layers
-        unified_args.token_aggregation = args.token_aggregation if hasattr(args, 'token_aggregation') else 'continuation'
-        unified_args.prompt_strategy = args.prompt_strategy if hasattr(args, 'prompt_strategy') else 'chat_template'
-        unified_args.method = "caa"
-        unified_args.normalize = args.normalize_vectors if hasattr(args, 'normalize_vectors') else False
-        unified_args.no_normalize = not unified_args.normalize
-        unified_args.skip_evaluation = True  # Skip eval for modify-weights
-        unified_args.evaluate_steering_scales = "0.0,1.0"
-        unified_args.save_pairs = None
-        unified_args.save_report = None
-        unified_args.verbose = args.verbose
-        unified_args.timing = args.timing if hasattr(args, 'timing') else False
-
-        # Use temp file for output vector
-        import tempfile
-        import os
-        temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.pt', delete=False)
-        unified_args.output = temp_vector_file.name
-        temp_vector_file.close()
-
-        # Generate unified goodness vector
-        execute_train_unified_goodness(unified_args)
-
-        # Load generated vectors
-        checkpoint = torch.load(unified_args.output, map_location='cpu', weights_only=False)
+        # Parse task type
+        task_lower = args.task.lower()
         
-        # Handle different checkpoint formats from train_unified_goodness
-        if 'steering_vectors' in checkpoint:
-            raw_vectors = checkpoint['steering_vectors']
-        elif 'all_layer_vectors' in checkpoint:
-            raw_vectors = checkpoint['all_layer_vectors']
-        elif 'steering_vector' in checkpoint and 'layer_index' in checkpoint:
-            # Single vector format
-            raw_vectors = {checkpoint['layer_index']: checkpoint['steering_vector']}
-        else:
-            # Try to find numeric keys directly
-            raw_vectors = {
-                k: v for k, v in checkpoint.items()
-                if isinstance(k, (int, str)) and str(k).isdigit()
+        if task_lower == "personalization":
+            # Personalization: requires --trait
+            if not args.trait:
+                raise ValueError("--trait is required when --task personalization")
+            
+            if args.verbose:
+                print(f"Generating steering vectors from trait '{args.trait}'...")
+
+            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+
+            # Create temp args for vector generation
+            class VectorArgs:
+                pass
+
+            vector_args = VectorArgs()
+            vector_args.trait = args.trait
+            vector_args.model = args.model
+            vector_args.num_pairs = args.num_pairs
+            vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
+            vector_args.layers = str(args.layers) if args.layers is not None else "all"
+            vector_args.token_aggregation = args.token_aggregation
+            vector_args.prompt_strategy = args.prompt_strategy
+            vector_args.method = "caa"
+            vector_args.normalize = args.normalize_vectors
+            vector_args.verbose = args.verbose
+            vector_args.timing = getattr(args, 'timing', False)
+            vector_args.intermediate_dir = None
+            vector_args.keep_intermediate = False
+            vector_args.device = None
+            vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
+            vector_args.pairs_cache_dir = getattr(args, 'pairs_cache_dir', None)
+            vector_args.force_regenerate = False
+
+            # Use temp file for steering vectors
+            import tempfile
+            temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            vector_args.output = temp_vector_file.name
+            temp_vector_file.close()
+
+            # Generate vectors
+            execute_generate_vector_from_synthetic(vector_args)
+
+            # Load generated vectors
+            with open(vector_args.output, 'r') as f:
+                vector_data = json.load(f)
+
+            # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
+            steering_vectors = {
+                int(layer) - 1: torch.tensor(vector)
+                for layer, vector in vector_data["steering_vectors"].items()
             }
-        
-        # Convert to proper format
-        steering_vectors = {}
-        for layer, vec in raw_vectors.items():
-            layer_idx = int(layer) if isinstance(layer, str) else layer
-            steering_vectors[layer_idx] = vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
 
-        # Optionally save steering vectors
-        if hasattr(args, 'save_steering_vectors') and args.save_steering_vectors:
-            import shutil
-            shutil.copy(unified_args.output, args.save_steering_vectors)
+            # Optionally save steering vectors
+            if getattr(args, 'save_steering_vectors', None):
+                import shutil
+                shutil.copy(vector_args.output, args.save_steering_vectors)
+                if args.verbose:
+                    print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
+
+            # Clean up temp file
+            import os
+            os.unlink(vector_args.output)
+
             if args.verbose:
-                print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
+                print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
 
-        # Clean up temp file
-        os.unlink(unified_args.output)
+        elif task_lower == "refusal":
+            # Refusal: use synthetic pairs with refusal trait
+            if args.verbose:
+                print("Generating steering vectors for refusal/compliance...")
 
-        if args.verbose:
-            print(f"✓ Generated {len(steering_vectors)} steering vectors from {', '.join(args.tags)} benchmarks\n")
+            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+
+            class VectorArgs:
+                pass
+
+            vector_args = VectorArgs()
+            vector_args.trait = "refusal"
+            vector_args.model = args.model
+            vector_args.num_pairs = args.num_pairs
+            vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
+            vector_args.layers = str(args.layers) if args.layers is not None else "all"
+            vector_args.token_aggregation = args.token_aggregation
+            vector_args.prompt_strategy = args.prompt_strategy
+            vector_args.method = "caa"
+            vector_args.normalize = args.normalize_vectors
+            vector_args.verbose = args.verbose
+            vector_args.timing = getattr(args, 'timing', False)
+            vector_args.intermediate_dir = None
+            vector_args.keep_intermediate = False
+            vector_args.device = None
+            vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
+            vector_args.pairs_cache_dir = getattr(args, 'pairs_cache_dir', None)
+            vector_args.force_regenerate = False
+
+            import tempfile
+            temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            vector_args.output = temp_vector_file.name
+            temp_vector_file.close()
+
+            execute_generate_vector_from_synthetic(vector_args)
+
+            with open(vector_args.output, 'r') as f:
+                vector_data = json.load(f)
+
+            steering_vectors = {
+                int(layer) - 1: torch.tensor(vector)
+                for layer, vector in vector_data["steering_vectors"].items()
+            }
+
+            if getattr(args, 'save_steering_vectors', None):
+                import shutil
+                shutil.copy(vector_args.output, args.save_steering_vectors)
+                if args.verbose:
+                    print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
+
+            import os
+            os.unlink(vector_args.output)
+
+            if args.verbose:
+                print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
+
+        elif "," in args.task:
+            # Multiple benchmarks: use unified goodness training
+            benchmarks = [b.strip() for b in args.task.split(",")]
+            if args.verbose:
+                print(f"Generating steering vectors from {len(benchmarks)} benchmarks: {', '.join(benchmarks)}...")
+
+            from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
+
+            class UnifiedArgs:
+                pass
+
+            unified_args = UnifiedArgs()
+            unified_args.task = args.task  # Pass comma-separated list
+            unified_args.exclude_benchmarks = None
+            unified_args.max_benchmarks = getattr(args, 'max_benchmarks', None)
+            unified_args.cap_pairs_per_benchmark = getattr(args, 'cap_pairs_per_benchmark', None)
+            unified_args.train_ratio = getattr(args, 'train_ratio', 0.8)
+            unified_args.seed = getattr(args, 'seed', 42)
+            unified_args.model = args.model
+            unified_args.device = getattr(args, 'device', None)
+            unified_args.layer = None
+            unified_args.layers = args.layers
+            unified_args.token_aggregation = args.token_aggregation if hasattr(args, 'token_aggregation') else 'continuation'
+            unified_args.prompt_strategy = args.prompt_strategy if hasattr(args, 'prompt_strategy') else 'chat_template'
+            unified_args.method = "caa"
+            unified_args.normalize = args.normalize_vectors if hasattr(args, 'normalize_vectors') else False
+            unified_args.no_normalize = not unified_args.normalize
+            unified_args.skip_evaluation = True
+            unified_args.evaluate_steering_scales = "0.0,1.0"
+            unified_args.save_pairs = None
+            unified_args.save_report = None
+            unified_args.verbose = args.verbose
+            unified_args.timing = args.timing if hasattr(args, 'timing') else False
+
+            import tempfile
+            import os
+            temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.pt', delete=False)
+            unified_args.output = temp_vector_file.name
+            temp_vector_file.close()
+
+            execute_train_unified_goodness(unified_args)
+
+            checkpoint = torch.load(unified_args.output, map_location='cpu', weights_only=False)
+            
+            if 'steering_vectors' in checkpoint:
+                raw_vectors = checkpoint['steering_vectors']
+            elif 'all_layer_vectors' in checkpoint:
+                raw_vectors = checkpoint['all_layer_vectors']
+            elif 'steering_vector' in checkpoint and 'layer_index' in checkpoint:
+                raw_vectors = {checkpoint['layer_index']: checkpoint['steering_vector']}
+            else:
+                raw_vectors = {
+                    k: v for k, v in checkpoint.items()
+                    if isinstance(k, (int, str)) and str(k).isdigit()
+                }
+            
+            steering_vectors = {}
+            for layer, vec in raw_vectors.items():
+                layer_idx = int(layer) if isinstance(layer, str) else layer
+                steering_vectors[layer_idx] = vec if isinstance(vec, torch.Tensor) else torch.tensor(vec)
+
+            if hasattr(args, 'save_steering_vectors') and args.save_steering_vectors:
+                import shutil
+                shutil.copy(unified_args.output, args.save_steering_vectors)
+                if args.verbose:
+                    print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
+
+            os.unlink(unified_args.output)
+
+            if args.verbose:
+                print(f"✓ Generated {len(steering_vectors)} steering vectors from {len(benchmarks)} benchmarks\n")
+
+        else:
+            # Single benchmark: use task-based generation
+            if args.verbose:
+                print(f"Generating steering vectors from task '{args.task}'...")
+
+            from wisent.core.cli.generate_vector_from_task import execute_generate_vector_from_task
+
+            class VectorArgs:
+                pass
+
+            vector_args = VectorArgs()
+            vector_args.task = args.task
+            vector_args.trait_label = getattr(args, 'trait_label', 'correctness')
+            vector_args.model = args.model
+            vector_args.num_pairs = args.num_pairs
+            vector_args.layers = str(args.layers) if args.layers is not None else "all"
+            vector_args.token_aggregation = args.token_aggregation
+            vector_args.prompt_strategy = args.prompt_strategy
+            vector_args.method = "caa"
+            vector_args.normalize = args.normalize_vectors
+            vector_args.verbose = args.verbose
+            vector_args.timing = getattr(args, 'timing', False)
+            vector_args.intermediate_dir = None
+            vector_args.keep_intermediate = False
+            vector_args.device = None
+            vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
+
+            # Use temp file for steering vectors
+            import tempfile
+            temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
+            vector_args.output = temp_vector_file.name
+            temp_vector_file.close()
+
+            # Generate vectors
+            execute_generate_vector_from_task(vector_args)
+
+            # Load generated vectors
+            with open(vector_args.output, 'r') as f:
+                vector_data = json.load(f)
+
+            # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
+            steering_vectors = {
+                int(layer) - 1: torch.tensor(vector)
+                for layer, vector in vector_data["steering_vectors"].items()
+            }
+
+            # Optionally save steering vectors
+            if getattr(args, 'save_steering_vectors', None):
+                import shutil
+                shutil.copy(vector_args.output, args.save_steering_vectors)
+                if args.verbose:
+                    print(f"✓ Saved steering vectors to {args.save_steering_vectors}")
+
+            # Clean up temp file
+            import os
+            os.unlink(vector_args.output)
+
+            if args.verbose:
+                print(f"✓ Generated {len(steering_vectors)} steering vectors\n")
 
     # Step 1.5: Load harmless vectors for biprojection (if provided)
     harmless_vectors = None

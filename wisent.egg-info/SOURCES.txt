@@ -16,6 +16,7 @@ wisent.egg-info/top_level.txt
 wisent/core/__init__.py
 wisent/core/autonomous_agent.py
 wisent/core/benchmark_extractors.py
+wisent/core/bigcode_extractors.py
 wisent/core/bigcode_integration.py
 wisent/core/branding.py
 wisent/core/cli_logger.py
@@ -24,6 +25,7 @@ wisent/core/detection_handling.py
 wisent/core/diversity_processors.py
 wisent/core/download_full_benchmarks.py
 wisent/core/hyperparameter_optimizer.py
+wisent/core/layer.py
 wisent/core/lm_eval_harness_ground_truth.py
 wisent/core/main.py
 wisent/core/managed_cached_benchmarks.py
@@ -92,6 +94,7 @@ wisent/core/cli/diagnose_vectors.py
 wisent/core/cli/estimate_unified_goodness_time.py
 wisent/core/cli/evaluate_refusal.py
 wisent/core/cli/evaluate_responses.py
+wisent/core/cli/generate_humanization_pairs.py
 wisent/core/cli/generate_pairs.py
 wisent/core/cli/generate_pairs_from_task.py
 wisent/core/cli/generate_responses.py
@@ -131,6 +134,7 @@ wisent/core/contrastive_pairs/diagnostics/control_vectors.py
 wisent/core/contrastive_pairs/diagnostics/coverage.py
 wisent/core/contrastive_pairs/diagnostics/divergence.py
 wisent/core/contrastive_pairs/diagnostics/duplicates.py
+wisent/core/contrastive_pairs/diagnostics/vector_quality.py
 wisent/core/contrastive_pairs/huggingface_pairs/__init__.py
 wisent/core/contrastive_pairs/huggingface_pairs/atoms.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_extractor_manifest.py
@@ -770,6 +774,7 @@ wisent/core/errors/error_handler.py
 wisent/core/evaluators/__init__.py
 wisent/core/evaluators/personalization_evaluator.py
 wisent/core/evaluators/rotator.py
+wisent/core/evaluators/steering_evaluators.py
 wisent/core/evaluators/benchmark_specific/__init__.py
 wisent/core/evaluators/benchmark_specific/aime_evaluator.py
 wisent/core/evaluators/benchmark_specific/exact_match_evaluator.py
@@ -809,6 +814,11 @@ wisent/core/evaluators/benchmark_specific/coding/safe_docker/core/atoms.py
 wisent/core/evaluators/benchmark_specific/coding/safe_docker/core/runtime.py
 wisent/core/evaluators/core/__init__.py
 wisent/core/evaluators/core/atoms.py
+wisent/core/evaluators/custom/__init__.py
+wisent/core/evaluators/custom/custom_evaluator.py
+wisent/core/evaluators/custom/examples/__init__.py
+wisent/core/evaluators/custom/examples/gptzero.py
+wisent/core/evaluators/custom/examples/humanization.py
 wisent/core/evaluators/oracles/__init__.py
 wisent/core/evaluators/oracles/interactive.py
 wisent/core/evaluators/oracles/nlp_evaluator.py
@@ -1633,6 +1643,8 @@ wisent/examples/scripts/results/test_prompt_robustness_agieval_aqua_rat/test_pro
 wisent/examples/scripts/results/test_prompt_robustness_agieval_aqua_rat/test_prompt_robustness_agieval_aqua_rat_pairs.json
 wisent/examples/scripts/results/test_siqa/test_siqa_evaluation.json
 wisent/examples/scripts/results/test_siqa/test_siqa_pairs.json
+wisent/parameters/__init__.py
+wisent/parameters/task_config.py
 wisent/parameters/lm_eval/all_lm_eval_task_families.json
 wisent/parameters/lm_eval/broken_in_lm_eval.json
 wisent/parameters/lm_eval/evaluations_not_lm_eval_tasks.json

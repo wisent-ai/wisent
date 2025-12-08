@@ -7,7 +7,7 @@ import time
 import torch
 from collections import defaultdict
 
-from wisent.core.errors import SteeringMethodUnknownError
+from wisent.core.errors import SteeringMethodUnknownError, VectorQualityTooLowError
 
 
 def execute_create_steering_vector(args):
@@ -96,6 +96,85 @@ def execute_create_steering_vector(args):
 
         print(f"   ✓ Generated {len(steering_vectors)} steering vectors")
 
+        # 4b. Run quality diagnostics if we have enough pairs
+        accept_low_quality = getattr(args, 'accept_low_quality_vector', False)
+        quality_metadata = None
+        
+        if len(pairs_list) >= 5:
+            try:
+                from wisent.core.contrastive_pairs.diagnostics import run_vector_quality_diagnostics
+                
+                # Use activations from first layer for quality analysis
+                first_layer = available_layers[0] if available_layers else None
+                if first_layer:
+                    pos_tensors = layer_activations[first_layer]["positive"]
+                    neg_tensors = layer_activations[first_layer]["negative"]
+                    
+                    if len(pos_tensors) >= 5 and len(neg_tensors) >= 5:
+                        pos_stacked = torch.stack(pos_tensors)
+                        neg_stacked = torch.stack(neg_tensors)
+                        prompts = [p.get('prompt', '') for p in pairs_list]
+                        
+                        quality_report, diagnostics_report = run_vector_quality_diagnostics(
+                            pos_stacked, neg_stacked, prompts
+                        )
+                        
+                        print(f"\n📊 Vector Quality Analysis:")
+                        print(f"   Overall quality: {quality_report.overall_quality.upper()}")
+                        if quality_report.convergence_score is not None:
+                            print(f"   Convergence: {quality_report.convergence_score:.3f}")
+                        if quality_report.cv_score_mean is not None:
+                            print(f"   Cross-validation: {quality_report.cv_score_mean:.3f}")
+                        if quality_report.snr is not None:
+                            print(f"   Signal-to-noise: {quality_report.snr:.2f}")
+                        if quality_report.pca_pc1_variance is not None:
+                            print(f"   PCA PC1 variance: {quality_report.pca_pc1_variance*100:.1f}%")
+                        if quality_report.held_out_transfer is not None:
+                            print(f"   Held-out transfer: {quality_report.held_out_transfer:.3f}")
+                        if quality_report.cv_classification_accuracy is not None:
+                            print(f"   CV classification: {quality_report.cv_classification_accuracy:.3f}")
+                        if quality_report.cohens_d is not None:
+                            print(f"   Cohen's d: {quality_report.cohens_d:.2f}")
+                        
+                        # Show issues
+                        if diagnostics_report.issues:
+                            print(f"\n⚠️  Quality Issues:")
+                            for issue in diagnostics_report.issues:
+                                marker = "❌" if issue.severity == "critical" else "⚠️"
+                                print(f"   {marker} [{issue.severity}] {issue.message}")
+                        
+                        # Show recommendations
+                        if quality_report.recommendations:
+                            print(f"\n💡 Recommendations:")
+                            for rec in quality_report.recommendations:
+                                print(f"   • {rec}")
+                        
+                        # Store for metadata (convert numpy types to Python types for JSON serialization)
+                        quality_metadata = {
+                            "overall_quality": quality_report.overall_quality,
+                            "convergence_score": float(quality_report.convergence_score) if quality_report.convergence_score is not None else None,
+                            "cv_score_mean": float(quality_report.cv_score_mean) if quality_report.cv_score_mean is not None else None,
+                            "snr": float(quality_report.snr) if quality_report.snr is not None else None,
+                            "pca_pc1_variance": float(quality_report.pca_pc1_variance) if quality_report.pca_pc1_variance is not None else None,
+                            "silhouette_score": float(quality_report.silhouette_score) if quality_report.silhouette_score is not None else None,
+                            "held_out_transfer": float(quality_report.held_out_transfer) if quality_report.held_out_transfer is not None else None,
+                            "cv_classification_accuracy": float(quality_report.cv_classification_accuracy) if quality_report.cv_classification_accuracy is not None else None,
+                            "cohens_d": float(quality_report.cohens_d) if quality_report.cohens_d is not None else None,
+                            "num_outlier_pairs": len(quality_report.outlier_pairs),
+                        }
+                        
+                        # Raise error if quality is poor and not accepted
+                        if diagnostics_report.has_critical_issues and not accept_low_quality:
+                            critical_issues = [i for i in diagnostics_report.issues if i.severity == "critical"]
+                            reason = "; ".join(i.message for i in critical_issues[:3])
+                            raise VectorQualityTooLowError(
+                                quality=quality_report.overall_quality,
+                                reason=reason,
+                                details=quality_metadata
+                            )
+            except ImportError:
+                print(f"\n⚠️  sklearn not available, skipping quality diagnostics")
+
         # 5. Save steering vectors (format depends on file extension)
         print(f"\n💾 Saving steering vectors to '{args.output}'...")
         os.makedirs(os.path.dirname(os.path.abspath(args.output)) or '.', exist_ok=True)
@@ -155,6 +234,9 @@ def execute_create_steering_vector(args):
                     'creation_time': time.strftime('%Y-%m-%d %H:%M:%S'),
                 }
             }
+            
+            if quality_metadata:
+                output_data['vector_quality'] = quality_metadata
 
             with open(args.output, 'w') as f:
                 json.dump(output_data, f, indent=2)

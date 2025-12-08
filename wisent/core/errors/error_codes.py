@@ -82,6 +82,7 @@ class ErrorCode(str, Enum):
     INVALID_LAYER_ID = "E6006"
     NO_CANDIDATE_LAYERS = "E6007"
     OPTIMIZATION_FAILED = "E6008"
+    VECTOR_QUALITY_TOO_LOW = "E6009"
     
     # Contrastive Pairs Errors (7xxx)
     PAIR_GENERATION_FAILED = "E7001"
@@ -189,6 +190,7 @@ ERROR_MESSAGES: Dict[ErrorCode, str] = {
     ErrorCode.INVALID_LAYER_ID: "layer_id {layer_id} exceeds model layers ({num_layers}).",
     ErrorCode.NO_CANDIDATE_LAYERS: "No valid candidate layers to optimize.",
     ErrorCode.OPTIMIZATION_FAILED: "Optimization failed: {reason}.",
+    ErrorCode.VECTOR_QUALITY_TOO_LOW: "Steering vector quality too low ({quality}). {reason} Use --accept-low-quality-vector to override.",
     
     # Contrastive Pairs Errors
     ErrorCode.PAIR_GENERATION_FAILED: "Failed to generate contrastive pairs: {reason}.",
@@ -613,6 +615,16 @@ class NoCandidateLayersError(WisentError):
 class OptimizationError(WisentError):
     def __init__(self, reason: str, cause: Optional[Exception] = None):
         super().__init__(ErrorCode.OPTIMIZATION_FAILED, {"reason": reason}, cause, reason=reason)
+
+
+class VectorQualityTooLowError(WisentError):
+    def __init__(self, quality: str, reason: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(
+            ErrorCode.VECTOR_QUALITY_TOO_LOW, 
+            details or {}, 
+            quality=quality, 
+            reason=reason
+        )
 
 
 # =============================================================================
