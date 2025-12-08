@@ -14,7 +14,26 @@ if TYPE_CHECKING:
 __all__ = ["AfrixnliExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = ("afrixnli_en_direct_amh",)
+task_names = (
+    "afrixnli_en_direct_amh",
+    "afrixnli_en_direct_eng",
+    "afrixnli_en_direct_ewe",
+    "afrixnli_en_direct_fra",
+    "afrixnli_en_direct_hau",
+    "afrixnli_en_direct_ibo",
+    "afrixnli_en_direct_kin",
+    "afrixnli_en_direct_lin",
+    "afrixnli_en_direct_lug",
+    "afrixnli_en_direct_orm",
+    "afrixnli_en_direct_sna",
+    "afrixnli_en_direct_sot",
+    "afrixnli_en_direct_swa",
+    "afrixnli_en_direct_twi",
+    "afrixnli_en_direct_wol",
+    "afrixnli_en_direct_xho",
+    "afrixnli_en_direct_yor",
+    "afrixnli_en_direct_zul",
+)
 
 class AfrixnliExtractor(LMEvalBenchmarkExtractor):
     """Extractor for Afrixnli benchmark."""
