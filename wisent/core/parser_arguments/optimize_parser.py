@@ -1,4 +1,4 @@
-"""Parser for the simple 'optimize' command."""
+"""Parser for the 'optimize' command - full model optimization."""
 
 
 def setup_optimize_parser(parser):
@@ -8,7 +8,12 @@ def setup_optimize_parser(parser):
     Usage:
         wisent optimize meta-llama/Llama-3.1-8B-Instruct
         wisent optimize Qwen/Qwen2-7B --quick
-        wisent optimize mistralai/Mistral-7B --methods CAA PRISM
+        wisent optimize mistralai/Mistral-7B --methods CAA PRISM PULSE TITAN
+    
+    This runs FULL optimization:
+    - Classification optimization
+    - Steering optimization (ALL methods) for ALL benchmarks + traits
+    - Weight modification optimization
     """
     parser.add_argument(
         "model",
@@ -16,75 +21,110 @@ def setup_optimize_parser(parser):
         help="Model name or path to optimize (e.g., 'meta-llama/Llama-3.1-8B-Instruct')"
     )
     
-    # Benchmark selection
-    parser.add_argument(
+    # =========================================================================
+    # SCOPE CONTROL
+    # =========================================================================
+    scope_group = parser.add_argument_group("scope control")
+    
+    scope_group.add_argument(
         "--benchmarks",
         type=str,
         nargs="+",
         default=None,
-        help="Specific benchmarks to optimize (default: core benchmarks)"
+        help="Specific benchmarks to optimize (default: ALL available benchmarks)"
     )
-    parser.add_argument(
-        "--only",
-        type=str,
-        nargs="+",
-        default=None,
-        help="Only optimize these specific benchmarks from the default set"
-    )
-    parser.add_argument(
+    scope_group.add_argument(
         "--quick",
         action="store_true",
-        help="Quick mode: optimize only 4 key benchmarks (truthfulqa, arc_easy, hellaswag, gsm8k)"
+        help="Quick mode: only 4 key benchmarks (truthfulqa, arc_easy, hellaswag, gsm8k)"
     )
-    parser.add_argument(
-        "--extended",
+    scope_group.add_argument(
+        "--skip-personalization",
         action="store_true",
-        help="Extended mode: optimize additional benchmarks beyond core set"
+        help="Skip personalization trait optimization"
+    )
+    scope_group.add_argument(
+        "--skip-safety",
+        action="store_true",
+        help="Skip safety/refusal trait optimization"
+    )
+    scope_group.add_argument(
+        "--skip-humanization",
+        action="store_true",
+        help="Skip humanization trait optimization"
     )
     
-    # Method selection
-    parser.add_argument(
+    # =========================================================================
+    # PHASE CONTROL
+    # =========================================================================
+    phase_group = parser.add_argument_group("phase control")
+    
+    phase_group.add_argument(
+        "--skip-classification",
+        action="store_true",
+        help="Skip classification optimization phase"
+    )
+    phase_group.add_argument(
+        "--skip-steering",
+        action="store_true",
+        help="Skip steering optimization phase"
+    )
+    phase_group.add_argument(
+        "--skip-weights",
+        action="store_true",
+        help="Skip weight modification optimization phase"
+    )
+    
+    # =========================================================================
+    # METHOD SELECTION
+    # =========================================================================
+    method_group = parser.add_argument_group("steering methods")
+    
+    method_group.add_argument(
         "--methods",
         type=str,
         nargs="+",
-        default=["CAA"],
+        default=["CAA", "PRISM", "PULSE", "TITAN"],
         choices=["CAA", "PRISM", "PULSE", "TITAN"],
-        help="Steering methods to test (default: CAA)"
+        help="Steering methods to test (default: ALL methods)"
     )
     
-    # Search configuration
-    parser.add_argument(
-        "--quick-search",
-        action="store_true",
-        help="Use reduced search space for faster optimization"
-    )
-    parser.add_argument(
-        "--max-configs",
+    # =========================================================================
+    # OPTUNA CONFIGURATION
+    # =========================================================================
+    optuna_group = parser.add_argument_group("Optuna configuration")
+    
+    optuna_group.add_argument(
+        "--n-trials",
         type=int,
         default=50,
-        help="Maximum configurations to test per method per benchmark (default: 50)"
+        help="Number of Optuna trials per task (default: 50)"
     )
-    parser.add_argument(
+    optuna_group.add_argument(
         "--limit",
         type=int,
         default=100,
         help="Maximum samples per benchmark (default: 100)"
     )
     
-    # Execution options
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Re-optimize benchmarks even if already optimized"
-    )
-    parser.add_argument(
+    # =========================================================================
+    # EXECUTION OPTIONS
+    # =========================================================================
+    exec_group = parser.add_argument_group("execution options")
+    
+    exec_group.add_argument(
         "--device",
         type=str,
         default=None,
         help="Device to run on (default: auto-detect)"
     )
-    parser.add_argument(
+    exec_group.add_argument(
         "--verbose",
         action="store_true",
         help="Enable verbose output"
+    )
+    exec_group.add_argument(
+        "--resume",
+        action="store_true",
+        help="Resume from previous optimization (skip already optimized tasks)"
     )
