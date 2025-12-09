@@ -86,12 +86,14 @@ def evaluate_conala(
     exact_matches = 0
 
     for example in tqdm(ds, desc=f"Evaluating {split}"):
-        intent = example.get('intent', '')
         rewritten_intent = example.get('rewritten_intent', '')
         snippet = example.get('snippet', '')
 
-        # Use rewritten_intent if available (better quality)
-        prompt = evaluator.get_prompt(intent, rewritten_intent, examples=few_shot_examples)
+        # Skip if no rewritten_intent
+        if not rewritten_intent or not snippet:
+            continue
+
+        prompt = evaluator.get_prompt(rewritten_intent, examples=few_shot_examples)
 
         responses = model.generate(
             inputs=prompt,
@@ -119,7 +121,6 @@ def evaluate_conala(
             exact_matches += 1
 
         results.append({
-            'intent': intent,
             'rewritten_intent': rewritten_intent,
             'reference_snippet': snippet,
             'raw_output': raw_response,
