@@ -103,41 +103,26 @@ class Ds1000Extractor(HuggingFaceBenchmarkExtractor):
         DS-1000 code_context contains:
         - generate_test_case(test_case_id): generates test input and expected result
         - exec_test(result, ans): checks if result matches expected
-        - exec_context: code template to execute solution
+        - exec_context: template with [insert] placeholder
+        - test_execution(): the actual test runner
         
-        The test reads solution.py, prepends setup code, and executes the combined code.
+        We use test_execution() directly which handles everything.
         """
         if not code_context:
             return None
         
-        # Extract the setup code from prompt (between <code> and </code> tags)
-        setup_code = ""
-        if "<code>" in prompt and "</code>" in prompt:
-            # Find first <code>...</code> block which contains setup
-            start = prompt.find("<code>") + len("<code>")
-            end = prompt.find("</code>")
-            if start < end:
-                setup_code = prompt[start:end].strip()
-        
-        # For DS-1000, we need to combine setup + solution in one exec call
-        # The setup_code will be prepended to the solution when executing
+        # DS-1000's code_context already has test_execution() that:
+        # 1. Uses exec_context template with [insert] placeholder
+        # 2. Generates test cases
+        # 3. Executes and validates
+        # We just need to call test_execution() with the solution code
         test_code = f'''{code_context}
 
-# Read solution
+# Read solution from file
 solution_code = open("solution.py").read()
 
-# Combine setup + solution and execute
-combined_code = """
-{setup_code}
-
-""" + solution_code
-
-exec(compile(combined_code, "<solution>", "exec"), globals())
-
-# Run test
-test_input, expected_result = generate_test_case(1)
-if exec_test(result, expected_result) != 1:
-    raise AssertionError(f"Test failed: result does not match expected")
+# Run DS-1000's built-in test execution
+test_execution(solution_code)
 print("Test passed!")
 '''
         return test_code
