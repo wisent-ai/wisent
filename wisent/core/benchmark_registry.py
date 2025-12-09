@@ -1,3 +1,4 @@
+
 """
 Central registry for all available benchmarks.
 
