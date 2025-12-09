@@ -255,7 +255,7 @@ class OptimizationPipeline:
     def is_coding_task(self) -> bool:
         """Check if the current task requires code execution evaluation."""
         from wisent.parameters.task_config import CODING_TASKS
-        from ..bigcode_integration import is_bigcode_task
+        from wisent.core.bigcode_integration import is_bigcode_task
 
         val_dataset = getattr(self.config, "val_dataset", None)
         if not val_dataset:
@@ -1445,7 +1445,9 @@ class OptimizationPipeline:
 
                 # Apply steering vector: hidden_states + alpha * steering_vector
                 # Steering vector shape: [hidden_dim], hidden_states shape: [batch, seq, hidden_dim]
-                steered = hidden_states + alpha * steering_vector.unsqueeze(0).unsqueeze(0)
+                # Cast steering vector to same dtype as hidden_states to avoid dtype mismatch
+                sv = steering_vector.to(dtype=hidden_states.dtype, device=hidden_states.device)
+                steered = hidden_states + alpha * sv.unsqueeze(0).unsqueeze(0)
 
                 if isinstance(output, tuple):
                     return (steered, *output[1:])
