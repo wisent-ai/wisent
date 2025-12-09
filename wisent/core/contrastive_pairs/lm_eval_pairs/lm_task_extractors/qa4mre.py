@@ -90,7 +90,7 @@ class QA4MREExtractor(LMEvalBenchmarkExtractor):
             correct = answers[answer]
             incorrect = answers[(answer+1)%len(answers)]
 
-            formatted_question = f"{document_str}\nQuestion: {question_str}?\nAnswer:\nA. {correct}\nB. {incorrect}"
+            formatted_question = f"{document_str}\nQuestion: {question_str}?\nAnswer:\nA. {incorrect}\nB. {correct}"
 
             metadata = {
                 "label": "qa4mre",
