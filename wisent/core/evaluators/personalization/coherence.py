@@ -16,6 +16,57 @@ if TYPE_CHECKING:
 
 __all__ = ["evaluate_quality"]
 
+# Global tokenizer cache
+_tokenizer_cache = {}
+
+
+def _get_tokenizer():
+    """Get a cached tokenizer for nonsense word detection."""
+    if "tokenizer" not in _tokenizer_cache:
+        try:
+            from transformers import AutoTokenizer
+            _tokenizer_cache["tokenizer"] = AutoTokenizer.from_pretrained(
+                "gpt2", use_fast=True
+            )
+        except Exception:
+            _tokenizer_cache["tokenizer"] = None
+    return _tokenizer_cache["tokenizer"]
+
+
+def _is_nonsense_word(word: str, tokenizer) -> bool:
+    """Check if a word is nonsense by counting subword tokens.
+    
+    Real words tokenize into fewer tokens. Nonsense words get split
+    into many small fragments.
+    
+    Args:
+        word: The word to check
+        tokenizer: A tokenizer instance
+        
+    Returns:
+        True if the word appears to be nonsense
+    """
+    if not tokenizer or len(word) < 5:
+        return False
+    
+    # Skip non-ASCII words (likely other languages)
+    if not word.isascii():
+        return False
+    
+    # Tokenize the word
+    tokens = tokenizer.encode(word, add_special_tokens=False)
+    
+    # Calculate ratio of tokens to characters
+    # Real words: ~1 token per 3-4 chars
+    # Nonsense: ~1 token per 1-2 chars
+    ratio = len(tokens) / len(word)
+    
+    # If more than 1 token per 2 characters AND at least 4 tokens, likely nonsense
+    if ratio > 0.5 and len(tokens) >= 4:
+        return True
+    
+    return False
+
 
 def _is_gibberish(text: str) -> bool:
     """
@@ -167,6 +218,17 @@ def _is_incoherent(text: str) -> bool:
             # If any content word appears more than 3 times in a short response, flag it
             if count >= 3 and count / len(content_words) > 0.15:
                 return True
+
+    # Check 9: Nonsense words (using tokenizer fragmentation)
+    tokenizer = _get_tokenizer()
+    if tokenizer and len(tokens) >= 5:
+        nonsense_count = 0
+        for token in tokens_lower:
+            if len(token) >= 4 and _is_nonsense_word(token, tokenizer):
+                nonsense_count += 1
+        # If more than 15% of words are nonsense, flag it
+        if nonsense_count / len(tokens) > 0.15:
+            return True
 
     return False
 
