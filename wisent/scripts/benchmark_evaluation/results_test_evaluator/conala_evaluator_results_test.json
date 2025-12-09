@@ -1,0 +1,27 @@
+{
+  "model_name": "Qwen/Qwen2.5-1.5B-Instruct",
+  "dataset": "neulab/conala",
+  "split": "test",
+  "bleu_score": 0.0,
+  "exact_match": 0.0,
+  "exact_match_count": 0,
+  "total": 1,
+  "precisions": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "brevity_penalty": 0.0,
+  "length_ratio": 0.0,
+  "results": [
+    {
+      "intent": "How can I send a signal from a python program?",
+      "rewritten_intent": "send a signal `signal.SIGUSR1` to the current process",
+      "reference_snippet": "os.kill(os.getpid(), signal.SIGUSR1)",
+      "raw_output": "Generate Python code for the following task. Put final answer in \\boxed{}.\n\nTask: send a signal `signal.SIGUSR1` to the current process\n```python\nimport signal\n\n# Send SIGUSR1 to the current running process\nsignal.signal(signal.SIGUSR1, lambda sig, frame: print(\"Received SIGUSR1\"))\n```",
+      "extracted_code": "",
+      "exact_match": false
+    }
+  ]
+}
