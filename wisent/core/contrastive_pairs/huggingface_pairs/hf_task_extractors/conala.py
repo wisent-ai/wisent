@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import random
+import re
 from typing import Any
-from wisent.core.cli_logger import setup_logger
 
+from wisent.core.cli_logger import setup_logger
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
@@ -102,9 +104,30 @@ class ConalaExtractor(HuggingFaceBenchmarkExtractor):
             return None
 
     def _create_incorrect_answer(self, correct: str) -> str:
-        """Create an incorrect answer by modifying the correct one."""
-        # For code, corrupt it slightly
-        if len(correct) > 10:
-            return correct[:len(correct)//2] + "# CORRUPTED" + correct[len(correct)//2:]
-        return f"{correct} # INCORRECT"
+        """Create an incorrect answer by shuffling letters in words."""
+        def shuffle_word(word: str) -> str:
+            """Shuffle all letters in a word."""
+            if len(word) <= 2:
+                return word
+            letters = list(word)
+            random.shuffle(letters)
+            # Make sure it's actually different
+            shuffled = ''.join(letters)
+            if shuffled == word:
+                return word[::-1]  # Reverse if shuffle didn't change
+            return shuffled
+
+        # Find words (alphanumeric sequences) and shuffle their letters
+        def replace_word(match: re.Match) -> str:
+            word = match.group(0)
+            return shuffle_word(word)
+
+        # Shuffle words with 3+ characters
+        result = re.sub(r'[A-Za-z]{3,}', replace_word, correct)
+
+        # If nothing changed (all short words), append something
+        if result == correct:
+            result = correct + "_corrupted"
+
+        return result
 
