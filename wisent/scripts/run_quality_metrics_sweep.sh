@@ -19,18 +19,17 @@ VAL_LIMIT="${VAL_LIMIT:-50}"
 TEST_LIMIT="${TEST_LIMIT:-50}"
 LAYER_RANGE="${LAYER_RANGE:-0-23}"
 
-# Benchmarks to test (these have meaningful correct/incorrect answer pairs)
+# Benchmarks to test (these are registered in the task registry)
 BENCHMARKS=(
     "gsm8k"
-    "arc_easy"
-    "arc_challenge"
-    "hellaswag"
-    "winogrande"
     "truthfulqa_mc1"
-    "piqa"
-    "boolq"
-    "openbookqa"
+    "mmlu"
+    "math500"
+    "humaneval"
+    "mbpp"
     "livecodebench"
+    "squad2"
+    "multirc"
 )
 
 # Synthetic steering types for validation:
