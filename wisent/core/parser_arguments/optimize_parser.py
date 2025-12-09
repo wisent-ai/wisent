@@ -124,7 +124,7 @@ def setup_optimize_parser(parser):
         help="Enable verbose output"
     )
     exec_group.add_argument(
-        "--resume",
+        "--force",
         action="store_true",
-        help="Resume from previous optimization (skip already optimized tasks)"
+        help="Force re-optimization even if cached results exist (default: skip cached)"
     )

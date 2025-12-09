@@ -189,8 +189,8 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
         print(f"   📊 Optimizing steering for {len(benchmarks)} benchmarks...")
         
         for bench_idx, benchmark in enumerate(benchmarks, 1):
-            # Skip if already optimized and resume mode
-            if args.resume:
+            # Skip if already optimized (unless --force)
+            if not getattr(args, 'force', False):
                 cached = get_cached_optimization(args.model, benchmark, method="*")
                 if cached:
                     print(f"\n   [{bench_idx}/{len(benchmarks)}] {benchmark} - SKIPPED (cached)")
@@ -266,10 +266,17 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             print(f"\n   🎭 Optimizing steering for {len(personalization_traits)} personalization traits...")
             
             for trait_idx, trait in enumerate(personalization_traits, 1):
+                task_key = f"personalization:{trait}"
                 if args.resume:
-                    cached = get_cached_optimization(args.model, f"personalization:{trait}", method="*")
+                    cached = get_cached_optimization(args.model, task_key, method="*")
                     if cached:
                         print(f"\n   [{trait_idx}/{len(personalization_traits)}] {trait} - SKIPPED (cached)")
+                        results["steering"][f"trait:{trait}"] = {
+                            "best_method": cached.method,
+                            "best_layer": cached.layer,
+                            "best_score": cached.score,
+                            "from_cache": True,
+                        }
                         continue
                 
                 print(f"\n   [{trait_idx}/{len(personalization_traits)}] {trait}")
@@ -318,6 +325,19 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             print(f"\n   🛡️ Optimizing steering for {len(safety_traits)} safety traits...")
             
             for trait_idx, trait in enumerate(safety_traits, 1):
+                task_key = f"safety:{trait}"
+                if args.resume:
+                    cached = get_cached_optimization(args.model, task_key, method="*")
+                    if cached:
+                        print(f"\n   [{trait_idx}/{len(safety_traits)}] {trait} - SKIPPED (cached)")
+                        results["steering"][task_key] = {
+                            "best_method": cached.method,
+                            "best_layer": cached.layer,
+                            "best_score": cached.score,
+                            "from_cache": True,
+                        }
+                        continue
+                
                 print(f"\n   [{trait_idx}/{len(safety_traits)}] {trait}")
                 
                 try:
@@ -364,6 +384,19 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             print(f"\n   🤖 Optimizing steering for {len(humanization_traits)} humanization traits...")
             
             for trait_idx, trait in enumerate(humanization_traits, 1):
+                task_key = f"humanization:{trait}"
+                if args.resume:
+                    cached = get_cached_optimization(args.model, task_key, method="*")
+                    if cached:
+                        print(f"\n   [{trait_idx}/{len(humanization_traits)}] {trait} - SKIPPED (cached)")
+                        results["steering"][task_key] = {
+                            "best_method": cached.method,
+                            "best_layer": cached.layer,
+                            "best_score": cached.score,
+                            "from_cache": True,
+                        }
+                        continue
+                
                 print(f"\n   [{trait_idx}/{len(humanization_traits)}] {trait}")
                 
                 try:
