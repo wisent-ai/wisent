@@ -209,9 +209,9 @@ This section enumerates all benchmarks used in our study, the task traits, the e
 \rowcolor{catMath} ASDiv \cite{miao2021asdiv} & \TG & \textbf{Num+1} & mathematics \\
 \rowcolor{catMath} Arithmetic \cite{brown2020gpt3} & \TG & \textbf{Num+1} & mathematics \\
 \rowcolor{catMath} MATH \cite{hendrycks2021math} & \TG & \textbf{Num+1} & mathematics (contest) \\
-\rowcolor{catMath} MATH\textendash500 \cite{huggingfaceh4_math500_2024} & \TG & \textbf{Num+1} & mathematics (contest) \\
-\rowcolor{catMath} AIME \cite{mathai2025aime25}\cite{maxwelljia2024aime} & \TG & \textbf{Num+1} & mathematics (contest) \\
-\rowcolor{catMath} HMMT \cite{matharena2025hmmt} & \TG & \textbf{Num+1} & mathematics (contest) \\
+\rowcolor{catMath} MATH\textendash500 \cite{hendrycks2021math} & \TG & \textbf{Num+1} & mathematics (contest) \\
+\rowcolor{catMath} AIME \cite{} & \TG & \textbf{Num+1} & mathematics (contest) \\
+\rowcolor{catMath} HMMT \cite{} & \TG & \textbf{Num+1} & mathematics (contest) \\
 \rowcolor{catMath} PolyMath \cite{wang2025polymath} & \TG & \textbf{Num+1} & mathematics (multiling.) \\
 \rowcolor{catMath} LiveMathBench \cite{liu2024livemathbench} & \TG & \textbf{Num+1} & mathematics (EN/ZH) \\
 
@@ -301,27 +301,27 @@ Num+1           & Numeric offset (+1) \\
 20\_newsgroups \cite{lang1995newsweeder} & \TG & \textbf{MC-FirstDistr} & reasoning \\
 ag\_news \cite{zhang2015character} & \TG & \textbf{MC-FirstDistr} & reasoning \\
 argument\_topic \cite{gretz2020argument} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-banking77 \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-boolq \cite{} & \LL & \textbf{2C-Flip} & reasoning \\
-boolq-seq2seq \cite{} & \TG & \textbf{2C-Flip} & reasoning \\
-cb \cite{} & \LL & \textbf{MC-FirstDistr} & reasoning \\
-claim stance topic \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-cnn dailymail \cite{} & \TG & \textbf{Generic} & reasoning \\
-dpedia 14 \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-ethos binary \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-financial tweets \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-squadv2 \cite{} & \TG & \textbf{RC-Abstain} & reasoning \\
-logieval \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-ledgar \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-logieval \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-penn treebank \cite{} & \PPL & \textbf{LM-CorruptCont} & reasoning \\
-medical abstracts \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
-unfair tos \cite{} & \TG & \textbf{LM-CorruptCont} & reasoning \\
-record \cite{} & \LL & \textbf{MC-FirstDistr} & reasoning \\
-stsb \cite{} & \TG & \textbf{2C-Flip} & reasoning \\
-sglue-rte \cite{} & \LL & \textbf{2C-Flip} & reasoning \\
-xsum \cite{} & \TG & \textbf{Generic} & reasoning \\
-yashoo answers topics \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+banking77 \cite{casanueva2020banking77} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+boolq \cite{clark2019boolq} & \LL & \textbf{2C-Flip} & reasoning \\
+boolq-seq2seq \cite{clark2019boolq} & \TG & \textbf{2C-Flip} & reasoning \\
+cb \cite{demarneffe2019commitmentbank} & \LL & \textbf{MC-FirstDistr} & reasoning \\
+claim stance topic \cite{barhaim2017stance} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+cnn dailymail \cite{hermann2015teaching} & \TG & \textbf{Generic} & reasoning \\
+dpedia 14 \cite{zhang2015character} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+ethos binary \cite{mollas2020ethos} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+financial tweets \cite{malo2014good} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+squadv2 \cite{rajpurkar2018squad2} & \TG & \textbf{RC-Abstain} & reasoning \\
+logieval \cite{liu2023logieval} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+ledgar \cite{tuggener2020ledgar} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+logieval \cite{liu2023logieval} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+penn treebank \cite{marcus1993building} & \PPL & \textbf{LM-CorruptCont} & reasoning \\
+medical abstracts \cite{schopf2022unsupervised} & \TG & \textbf{MC-FirstDistr} & reasoning \\
+unfair tos \cite{lippi2019claudette} & \TG & \textbf{LM-CorruptCont} & reasoning \\
+record \cite{zhang2018record} & \LL & \textbf{MC-FirstDistr} & reasoning \\
+stsb \cite{cer2017semeval} & \TG & \textbf{2C-Flip} & reasoning \\
+sglue-rte \cite{wang2019superglue} & \LL & \textbf{2C-Flip} & reasoning \\
+xsum \cite{narayan2018xsum} & \TG & \textbf{Generic} & reasoning \\
+yashoo answers topics \cite{zhang2015character} & \TG & \textbf{MC-FirstDistr} & reasoning \\
 \end{longtable}
 
 % ======================== TABLE MATHEMATICS========================
@@ -337,15 +337,33 @@ yashoo answers topics \cite{} & \TG & \textbf{MC-FirstDistr} & reasoning \\
 \hline
 \endhead
 
-afrimgsm direct amh \cite{} & \TG & \textbf{Num+1} & mathematics \\
+afrimgsm direct amh \cite{adelani2024irokobench} & \TG & \textbf{Num+1} & mathematics \\
 aime \cite{} & \TG & \textbf{Num+1} & mathematics \\
 aime2024 \cite{} & \TG & \textbf{Num+1} & mathematics \\
 aime2025 \cite{} & \TG & \textbf{Num+1} & mathematics \\
-gsm \cite{} & \TG & \textbf{Num+1} & mathematics \\
+gsm \cite{cobbe2021gsm8k} & \TG & \textbf{Num+1} & mathematics \\
 hmmt \cite{} & \TG & \textbf{Num+1} & mathematics \\
-math \cite{} & \TG & \textbf{Num+1} & mathematics \\
-math500 \cite{} & \TG & \textbf{Num+1} & mathematics \\
-polymath \cite{} & \TG & \textbf{Num+1} & mathematics \\
+math \cite{hendrycks2021math} & \TG & \textbf{Num+1} & mathematics \\
+math500 \cite{hendrycks2021math} & \TG & \textbf{Num+1} & mathematics \\
+polymath \cite{wang2025polymath} & \TG & \textbf{Num+1} & mathematics \\
+livemathbench \cite{liu2024livemathbench} & \TG & \textbf{Num+1} & mathematics \\
+\hline
+\end{longtable}
+
+% ======================== TABLE CODING========================
+\begin{longtable}{p{0.32\textwidth} p{0.12\textwidth} p{0.24\textwidth} p{0.26\textwidth}}
+\caption{Benchmarks (short names), evaluation abbreviations, contrastive method (short), and traits. Versions merged where applicable.}
+\label{tab:benchmarks-colored-short-cm}\\
+\hline
+\textbf{Benchmark} & \textbf{Eval} & \textbf{Method [CM]} & \textbf{Traits} \\
+\hline
+\endfirsthead
+\hline
+\textbf{Benchmark} & \textbf{Eval} & \textbf{Method [CM]} & \textbf{Traits} \\
+\hline
+\endhead
+
+conala \cite{yin2018conala} & \TG & \textbf{L-Shuff} & coding \\
 \hline
 \end{longtable}
 
@@ -362,19 +380,19 @@ polymath \cite{} & \TG & \textbf{Num+1} & mathematics \\
 \hline
 \endhead
 
-afrimmlu direct amh \cite{} & \LL & \textbf{MC-FirstDistr} & multilingual \\
-afrixnli en direct amh \cite{} & \TG & \textbf{MC-FirstDistr} & multilingual \\
-arabic exams \cite{} & \LL & \textbf{MC-FirstDistr} & multilingual \\
-bangla mmlu \cite{} & \LL & \textbf{MC-FirstDistr} & multilingual \\
-basque glue \cite{} & \LL & \textbf{2C-Flip} & multilingual \\
-copa \cite{} & \LL & \textbf{2C-Flip} & multilingual \\
-global mmlu \cite{} & \LL & \textbf{MC-FirstDistr} & multilingual \\
-m mmlu \cite{} & \LL & \textbf{MC-FirstDistr} & multilingual \\
-m mmlu \cite{} & \LL & \textbf{2C-Flip} & multilingual \\
-noticia \cite{} & \LL & \textbf{Generic} & multilingual \\
+afrimmlu direct amh \cite{adelani2024irokobench} & \LL & \textbf{MC-FirstDistr} & multilingual \\
+afrixnli en direct amh \cite{adelani2024irokobench} & \TG & \textbf{MC-FirstDistr} & multilingual \\
+arabic exams \cite{hardalov2020exams} & \LL & \textbf{MC-FirstDistr} & multilingual \\
+bangla mmlu \cite{nahin2025titullms} & \LL & \textbf{MC-FirstDistr} & multilingual \\
+basque glue \cite{urbizu2022basqueglue} & \LL & \textbf{2C-Flip} & multilingual \\
+copa \cite{roemmele2011copa} & \LL & \textbf{2C-Flip} & multilingual \\
+global mmlu \cite{singh2024globalmmlu} & \LL & \textbf{MC-FirstDistr} & multilingual \\
+m mmlu \cite{lai2023okapi} & \LL & \textbf{MC-FirstDistr} & multilingual \\
+m mmlu \cite{lai2023okapi} & \LL & \textbf{2C-Flip} & multilingual \\
+noticia \cite{garciaferrero2024noticia} & \LL & \textbf{Generic} & multilingual \\
 phrases ca-va \cite{} & \TG & \textbf{Generic} & multilingual \\
-wmt14 \cite{} & \TG & \textbf{L-Shuff} & multilingual \\
-wmt16 \cite{} & \TG & \textbf{L-Shuff} & multilingual \\
+wmt14 \cite{bojar2014wmt} & \TG & \textbf{L-Shuff} & multilingual \\
+wmt16 \cite{bojar2016wmt} & \TG & \textbf{L-Shuff} & multilingual \\
 \hline
 \end{longtable}
 
@@ -392,7 +410,7 @@ wmt16 \cite{} & \TG & \textbf{L-Shuff} & multilingual \\
 \hline
 \endhead
 
-babilong \cite{} & \LL & \textbf{MC-RandDistr} & longcontext \\
+babilong \cite{kuratov2024babilong} & \LL & \textbf{MC-RandDistr} & longcontext \\
 
 \hline
 \end{longtable}
@@ -410,7 +428,7 @@ babilong \cite{} & \LL & \textbf{MC-RandDistr} & longcontext \\
 \hline
 \endhead
 
-glianorex \cite{} & \LL & \textbf{MC-FirstDistr} & medical \\
+glianorex \cite{griot2025glianorex} & \LL & \textbf{MC-FirstDistr} & medical \\
 
 \hline
 \end{longtable}
@@ -428,7 +446,7 @@ glianorex \cite{} & \LL & \textbf{MC-FirstDistr} & medical \\
 \hline
 \endhead
 
-wikitext103 \cite{} & \PPL & \textbf{LM-CorruptCont} & general knowledge \\
+wikitext103 \cite{merity2016pointersentinel} & \PPL & \textbf{LM-CorruptCont} & general knowledge \\
 
 \hline
 \end{longtable}
