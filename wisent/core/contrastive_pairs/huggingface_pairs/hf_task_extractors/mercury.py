@@ -13,12 +13,16 @@ log = setup_logger(__name__)
 
 class MercuryExtractor(HuggingFaceBenchmarkExtractor):
     """
-    Extractor for mercury dataset.
+    Extractor for mercury dataset (code-to-code translation).
 
     Schema (code_x_glue_cc_code_to_code_trans):
         - java: str (java code/prompt)
         - cs: str (c# code/answer)
+    
+    Note: This is a translation task, not code execution. Uses generation evaluator.
     """
+
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,

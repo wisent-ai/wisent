@@ -13,12 +13,16 @@ log = setup_logger(__name__)
 
 class ConcodeExtractor(HuggingFaceBenchmarkExtractor):
     """
-    Extractor for concode dataset.
+    Extractor for concode dataset (NL-to-code generation).
 
     Schema (microsoft/CodeXGLUE):
         - nl: str (question/prompt)
         - code: str (answer/solution)
+    
+    Note: No test cases available. Uses generation evaluator (text similarity).
     """
+
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,
