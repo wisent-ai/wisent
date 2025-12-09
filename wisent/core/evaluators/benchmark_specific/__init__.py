@@ -15,6 +15,7 @@ from .exact_match_evaluator import ExactMatchEvaluator
 from .f1_evaluator import F1Evaluator
 from .perplexity_evaluator import PerplexityEvaluator
 from .coding.metrics.evaluator import CodingEvaluator
+from .conala_evaluator import CoNaLaEvaluator
 
 # MathEvaluator requires math_equivalence which is installed from GitHub
 # Make it lazy to avoid import errors when not installed
@@ -37,4 +38,5 @@ __all__ = [
     'CodingEvaluator',
     'DockerCodeEvaluator',  # Backward compatibility
     'MathEvaluator',
+    'CoNaLaEvaluator',
 ]
