@@ -133,8 +133,19 @@ class AppsExtractor(HuggingFaceBenchmarkExtractor):
             return None
 
         # Build test code that runs solution.py as a subprocess
+        # Include normalize function to handle whitespace differences in APPS dataset
         test_code = '''import subprocess
 import sys
+
+def normalize_output(s):
+    """Normalize output by stripping trailing whitespace from each line.
+    
+    APPS dataset has inconsistent trailing whitespace in expected outputs.
+    This normalizes both actual and expected to enable fair comparison.
+    """
+    lines = s.split('\\n')
+    normalized = '\\n'.join(line.rstrip() for line in lines)
+    return normalized.strip()
 
 def run_solution(input_str):
     """Run solution.py with given input and return output."""
@@ -156,7 +167,7 @@ def run_solution(input_str):
             test_code += f"    # Test case {i+1}\n"
             test_code += f"    result = run_solution({repr(inp)})\n"
             test_code += f"    expected = {repr(out)}\n"
-            test_code += f"    assert result.strip() == expected.strip(), f'Test {i+1} failed: expected {{repr(expected)}}, got {{repr(result)}}'\n\n"
+            test_code += f"    assert normalize_output(result) == normalize_output(expected), f'Test {i+1} failed: expected {{repr(expected)}}, got {{repr(result)}}'\n\n"
         
         test_code += "    print('All tests passed!')\n"
 
