@@ -76,6 +76,13 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_full_optimizer_parser(full_optimizer_parser)
 
+    # New unified optimize command
+    from wisent.core.parser_arguments.optimize_parser import setup_optimize_parser
+    optimize_parser = subparsers.add_parser(
+        "optimize", help="Full Optuna-based optimization: classification + steering (ALL methods) + weights"
+    )
+    setup_optimize_parser(optimize_parser)
+
     # Generate vector command for creating steering vectors without tasks
     generate_vector_parser = subparsers.add_parser(
         "generate-vector", help="Generate steering vectors from contrastive pairs (file or description)"

@@ -13,12 +13,16 @@ log = setup_logger(__name__)
 
 class RecodeExtractor(HuggingFaceBenchmarkExtractor):
     """
-    Extractor for recode dataset.
+    Extractor for recode dataset (code search/retrieval).
 
     Schema (ARR-ADAPT/recode):
         - source: str (question/prompt)
         - target: str (answer/solution)
+    
+    Note: This is a code search task, not code execution. Uses generation evaluator.
     """
+
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,
