@@ -20,6 +20,8 @@ class CodexglueExtractor(HuggingFaceBenchmarkExtractor):
         - code: str (code answer/solution)
     """
 
+    evaluator_name = "generation"  # Text similarity for code-to-text tasks
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
