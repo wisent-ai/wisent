@@ -41,7 +41,7 @@
 
   "completed_hf_without_version_on_lm_git": [
       "hmmt", "hmmt_feb_2025", "penn_treebank", "stsb", "wikitext103",  "math", "math500", "polymath_en_high", "polymath_en_medium", "polymath_zh_high",
-      "polymath_zh_medium"
+      "polymath_zh_medium", "livemathbench"
   ],
 
   "too complex": ["evalita: many different prompts structure, could mess up our prompt strategies",
