@@ -16,6 +16,7 @@ wisent.egg-info/top_level.txt
 wisent/core/__init__.py
 wisent/core/autonomous_agent.py
 wisent/core/benchmark_extractors.py
+wisent/core/benchmark_registry.py
 wisent/core/bigcode_extractors.py
 wisent/core/bigcode_integration.py
 wisent/core/branding.py
