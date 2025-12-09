@@ -1,7 +1,7 @@
 import re
 from datasets import load_dataset
 from evaluate import load
-from math_equivalence import is_equiv
+from wisent.core.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
 
 
 def extract_boxed_answer(text: str) -> str | None:

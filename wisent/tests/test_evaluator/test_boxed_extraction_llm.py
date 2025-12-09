@@ -10,7 +10,7 @@ This script:
 
 import re
 from datasets import load_dataset
-from math_equivalence import is_equiv
+from wisent.core.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
 
 from wisent.core.models.wisent_model import WisentModel
 
