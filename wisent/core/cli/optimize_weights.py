@@ -637,7 +637,8 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
     elif task == "personalization" or (not task and getattr(args, 'trait', None)):
         # Use personalization evaluator when --trait is provided (with or without --task personalization)
         evaluator_type = "personalization"
-    elif task == "custom":
+    elif task == "custom" or (not task and getattr(args, 'custom_evaluator', None)):
+        # Use custom evaluator when --custom-evaluator is provided (with or without --task custom)
         if not getattr(args, 'custom_evaluator', None):
             raise ValueError("--custom-evaluator is required when --task custom")
         evaluator_type = "custom"
@@ -648,7 +649,7 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
         # Single benchmark: use task evaluator (only if task is specified)
         evaluator_type = "task"
     else:
-        raise ValueError("Either --task or --trait must be specified")
+        raise ValueError("Either --task, --trait, or --custom-evaluator must be specified")
 
     # Pooled evaluator for multiple benchmarks
     if evaluator_type == "pooled":
