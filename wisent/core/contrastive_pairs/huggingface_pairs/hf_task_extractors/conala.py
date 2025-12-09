@@ -13,12 +13,16 @@ log = setup_logger(__name__)
 
 class ConalaExtractor(HuggingFaceBenchmarkExtractor):
     """
-    Extractor for conala dataset.
+    Extractor for conala dataset (NL-to-code generation).
 
     Schema (neulab/conala):
         - intent: str (question/prompt)
         - snippet: str (answer/solution)
+    
+    Note: No test cases available. Uses generation evaluator (text similarity).
     """
+
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,
