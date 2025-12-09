@@ -50,19 +50,16 @@ class LMEvalDataLoader(BaseDataLoader):
     description = "Load from a single lm-eval task."
 
     # Tasks that are HuggingFace-only (not in lm-eval-harness)
-    # These tasks have extractors in hf_extractor_manifest and load data directly from HuggingFace
-    HUGGINGFACE_ONLY_TASKS = {
-        "livecodebench",
-        "aime", "aime2024", "aime2025",
-        "hmmt", "hmmt_feb_2025",
-        "livemathbench",
-        "polymath",
-        "humaneval", "humaneval_plus", "humaneval_instruct",
-        "mbpp", "mbpp_plus",
-        "super_gpqa", "supergpqa",
-        "hle",
-        "truthfulqa_generation", "truthfulqa_gen",
-    }
+    # Loaded from central benchmark_registry
+    _huggingface_only_tasks_cache = None
+    
+    @classmethod
+    def _get_huggingface_only_tasks(cls):
+        """Get the set of HuggingFace-only tasks from central registry."""
+        if cls._huggingface_only_tasks_cache is None:
+            from wisent.core.benchmark_registry import get_huggingface_only_tasks_set
+            cls._huggingface_only_tasks_cache = get_huggingface_only_tasks_set()
+        return cls._huggingface_only_tasks_cache
 
     def _load_one_task(
         self,
@@ -99,7 +96,7 @@ class LMEvalDataLoader(BaseDataLoader):
 
         # Check if this is a HuggingFace-only task (no lm-eval support)
         task_name_lower = task_name.lower()
-        if task_name_lower in self.HUGGINGFACE_ONLY_TASKS:
+        if task_name_lower in self._get_huggingface_only_tasks():
             log.info(f"Task '{task_name}' is a HuggingFace-only task, loading via HuggingFace extractor")
             pairs = lm_build_contrastive_pairs(
                 task_name=task_name,

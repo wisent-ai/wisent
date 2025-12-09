@@ -34,13 +34,9 @@ logger = logging.getLogger(__name__)
 
 
 def get_all_benchmarks() -> List[str]:
-    """Get ALL available benchmarks from the extractor registry."""
-    try:
-        from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import EXTRACTORS
-        # Filter to most reliable benchmarks
-        return sorted(EXTRACTORS.keys())
-    except ImportError:
-        return []
+    """Get ALL available benchmarks from the central registry."""
+    from wisent.core.benchmark_registry import get_all_benchmarks as _get_all_benchmarks
+    return _get_all_benchmarks()
 
 
 def get_personalization_traits() -> List[str]:
