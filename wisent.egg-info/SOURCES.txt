@@ -782,12 +782,12 @@ wisent/core/errors/__init__.py
 wisent/core/errors/error_codes.py
 wisent/core/errors/error_handler.py
 wisent/core/evaluators/__init__.py
-wisent/core/evaluators/personalization_evaluator.py
 wisent/core/evaluators/rotator.py
 wisent/core/evaluators/steering_evaluators.py
 wisent/core/evaluators/synthetic_evaluator.py
 wisent/core/evaluators/benchmark_specific/__init__.py
 wisent/core/evaluators/benchmark_specific/aime_evaluator.py
+wisent/core/evaluators/benchmark_specific/conala_evaluator.py
 wisent/core/evaluators/benchmark_specific/exact_match_evaluator.py
 wisent/core/evaluators/benchmark_specific/f1_evaluator.py
 wisent/core/evaluators/benchmark_specific/generation_evaluator.py
@@ -796,7 +796,6 @@ wisent/core/evaluators/benchmark_specific/log_likelihoods_evaluator.py
 wisent/core/evaluators/benchmark_specific/math_evaluator.py
 wisent/core/evaluators/benchmark_specific/perplexity_evaluator.py
 wisent/core/evaluators/benchmark_specific/polymath_evaluator.py
-wisent/core/evaluators/benchmark_specific/utils.py
 wisent/core/evaluators/benchmark_specific/coding/__init__.py
 wisent/core/evaluators/benchmark_specific/coding/solution_generator.py
 wisent/core/evaluators/benchmark_specific/coding/metrics/__init__.py
@@ -826,6 +825,7 @@ wisent/core/evaluators/benchmark_specific/coding/safe_docker/core/runtime.py
 wisent/core/evaluators/benchmark_specific/math_parsing/__init__.py
 wisent/core/evaluators/benchmark_specific/math_parsing/core.py
 wisent/core/evaluators/benchmark_specific/math_parsing/extract_boxed.py
+wisent/core/evaluators/benchmark_specific/math_parsing/is_equiv.py
 wisent/core/evaluators/benchmark_specific/math_parsing/scripts.py
 wisent/core/evaluators/core/__init__.py
 wisent/core/evaluators/core/atoms.py

@@ -318,41 +318,69 @@ def execute_train_unified_goodness(args):
 
     collector = ActivationCollector(model=model, store_device="cpu")
 
-    # Collect activations for all training pairs
+    # Collect activations for all training pairs using batched processing
     positive_activations = {layer: [] for layer in layers}
     negative_activations = {layer: [] for layer in layers}
 
-    print(f"   Collecting activations for {len(all_train_pairs)} pairs...")
-    for i, pair in enumerate(all_train_pairs):
-        if i % 50 == 0:
-            print(f"      Processing pair {i + 1}/{len(all_train_pairs)}...", end='\r', flush=True)
-
+    print(f"   Collecting activations for {len(all_train_pairs)} pairs (batched)...")
+    
+    # Build full texts for positive and negative responses
+    tok = model.tokenizer
+    positive_texts = []
+    negative_texts = []
+    
+    for pair in all_train_pairs:
+        # Build chat-formatted texts
         try:
-            updated_pair = collector.collect_for_pair(
-                pair,
-                layers=layers,
-                aggregation=aggregation_strategy,
-                return_full_sequence=False,
-                normalize_layers=False,
-                prompt_strategy=prompt_strategy
+            pos_text = tok.apply_chat_template(
+                [{"role": "user", "content": pair.prompt},
+                 {"role": "assistant", "content": pair.positive_response.model_response}],
+                tokenize=False,
+                add_generation_prompt=False,
             )
+            neg_text = tok.apply_chat_template(
+                [{"role": "user", "content": pair.prompt},
+                 {"role": "assistant", "content": pair.negative_response.model_response}],
+                tokenize=False,
+                add_generation_prompt=False,
+            )
+        except Exception:
+            # Fallback for models without chat templates
+            pos_text = f"{pair.prompt} {pair.positive_response.model_response}"
+            neg_text = f"{pair.prompt} {pair.negative_response.model_response}"
+        
+        positive_texts.append(pos_text)
+        negative_texts.append(neg_text)
+    
+    # Collect positive activations in batches
+    print(f"   Collecting positive response activations...")
+    pos_results = collector.collect_batched(
+        positive_texts,
+        layers=layers,
+        aggregation=aggregation_strategy,
+        batch_size=16,
+        show_progress=True,
+    )
+    
+    # Collect negative activations in batches
+    print(f"   Collecting negative response activations...")
+    neg_results = collector.collect_batched(
+        negative_texts,
+        layers=layers,
+        aggregation=aggregation_strategy,
+        batch_size=16,
+        show_progress=True,
+    )
+    
+    # Organize results by layer
+    for i, (pos_act, neg_act) in enumerate(zip(pos_results, neg_results)):
+        for layer in layers:
+            if layer in pos_act:
+                positive_activations[layer].append(pos_act[layer])
+            if layer in neg_act:
+                negative_activations[layer].append(neg_act[layer])
 
-            for layer in layers:
-                if updated_pair.positive_response.layers_activations and layer in updated_pair.positive_response.layers_activations:
-                    act = updated_pair.positive_response.layers_activations[layer]
-                    if act is not None:
-                        positive_activations[layer].append(act.cpu())
-
-                if updated_pair.negative_response.layers_activations and layer in updated_pair.negative_response.layers_activations:
-                    act = updated_pair.negative_response.layers_activations[layer]
-                    if act is not None:
-                        negative_activations[layer].append(act.cpu())
-
-        except Exception as e:
-            if args.verbose:
-                print(f"\n      ⚠️  Pair {i} failed: {e}")
-
-    print(f"\n   ✓ Collected activations from {len(positive_activations[layers[0]])} pairs")
+    print(f"   ✓ Collected activations from {len(positive_activations[layers[0]])} pairs")
 
     # Train steering vector using CAA
     print(f"\n   🎯 Training unified steering vector using {args.method.upper()}...")

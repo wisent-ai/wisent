@@ -356,3 +356,29 @@ class PersonalizationEvaluator(BaseSteeringEvaluator):
             "overall_score": overall_score,
             "score": overall_score / 100.0,  # Normalize to 0-1
         }
+
+    def _evaluate_difference(self, baseline_responses: list[str], steered_responses: list[str]) -> float:
+        """Evaluate how different steered responses are from baseline."""
+        from wisent.core.evaluators.personalization import evaluate_difference
+        return evaluate_difference(baseline_responses, steered_responses)
+
+    def _evaluate_quality(self, responses: list[str]) -> float:
+        """Evaluate the quality/coherence of responses."""
+        from wisent.core.evaluators.personalization import evaluate_quality
+        return evaluate_quality(responses)
+
+    @staticmethod
+    def estimate_alignment(
+        responses: list[str],
+        trait_description: str,
+        positive_examples: list[str] = None,
+        negative_examples: list[str] = None,
+    ) -> float:
+        """Estimate trait alignment using contrastive embedding similarity."""
+        from wisent.core.evaluators.personalization import estimate_alignment
+        return estimate_alignment(
+            responses,
+            trait_description,
+            positive_examples or [],
+            negative_examples or [],
+        )

@@ -2220,7 +2220,7 @@ def execute_personalization(args, model):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
-    from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
+    from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
     from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
@@ -2669,7 +2669,7 @@ def execute_multi_personalization(args, model):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
-    from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
+    from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
     from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
