@@ -267,7 +267,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             
             for trait_idx, trait in enumerate(personalization_traits, 1):
                 task_key = f"personalization:{trait}"
-                if args.resume:
+                if not getattr(args, 'force', False):
                     cached = get_cached_optimization(args.model, task_key, method="*")
                     if cached:
                         print(f"\n   [{trait_idx}/{len(personalization_traits)}] {trait} - SKIPPED (cached)")
@@ -326,7 +326,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             
             for trait_idx, trait in enumerate(safety_traits, 1):
                 task_key = f"safety:{trait}"
-                if args.resume:
+                if not getattr(args, 'force', False):
                     cached = get_cached_optimization(args.model, task_key, method="*")
                     if cached:
                         print(f"\n   [{trait_idx}/{len(safety_traits)}] {trait} - SKIPPED (cached)")
@@ -385,7 +385,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             
             for trait_idx, trait in enumerate(humanization_traits, 1):
                 task_key = f"humanization:{trait}"
-                if args.resume:
+                if not getattr(args, 'force', False):
                     cached = get_cached_optimization(args.model, task_key, method="*")
                     if cached:
                         print(f"\n   [{trait_idx}/{len(humanization_traits)}] {trait} - SKIPPED (cached)")
