@@ -489,11 +489,44 @@ class OptimizationPipeline:
         return base_prompts[:self.config.num_eval_prompts]
 
     def _setup_task_data(self):
-        """Setup task-based data for benchmark optimization."""
-        # Load datasets
-        self.train_samples = data_utils.load_dataset_samples(self.config.train_dataset, self.config.train_limit)
-        self.val_samples = data_utils.load_dataset_samples(self.config.val_dataset, self.config.val_limit)
-        self.test_samples = data_utils.load_dataset_samples(self.config.test_dataset, self.config.test_limit)
+        """Setup task-based data for benchmark optimization using LMEvalDataLoader."""
+        from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+        
+        loader = LMEvalDataLoader()
+        
+        # Load using the same approach as optimize-steering comprehensive
+        result = loader._load_one_task(
+            task_name=self.config.train_dataset,
+            split_ratio=0.8,
+            seed=42,
+            limit=self.config.train_limit + self.config.val_limit + self.config.test_limit,
+            training_limit=None,
+            testing_limit=None,
+        )
+        
+        # Get ContrastivePairSet objects
+        self.train_pairs = result["train_qa_pairs"]
+        self.test_pairs = result["test_qa_pairs"]
+        
+        # Split test pairs into val and test
+        all_test = self.test_pairs.pairs
+        val_count = min(self.config.val_limit, len(all_test) // 2)
+        self.val_pairs_list = all_test[:val_count]
+        self.test_pairs_list = all_test[val_count:val_count + self.config.test_limit]
+        
+        # For compatibility with existing code, create sample dicts
+        self.train_samples = [
+            {"prompt": p.prompt, "positive": p.positive_response.model_response, "negative": p.negative_response.model_response}
+            for p in self.train_pairs.pairs
+        ]
+        self.val_samples = [
+            {"prompt": p.prompt, "positive": p.positive_response.model_response, "negative": p.negative_response.model_response}
+            for p in self.val_pairs_list
+        ]
+        self.test_samples = [
+            {"prompt": p.prompt, "positive": p.positive_response.model_response, "negative": p.negative_response.model_response}
+            for p in self.test_pairs_list
+        ]
 
         # Store task documents for BigCode evaluation (coding tasks)
         self.train_task_docs = self.train_samples
@@ -546,18 +579,26 @@ class OptimizationPipeline:
 
     def _compute_baseline_task(self):
         """Compute baseline for task-based evaluation."""
-        task = get_task(self.config.val_dataset)
-        extractor = task.get_extractor()
-        
         questions = []
         ground_truths = []
         
         for sample in self.val_samples:
-            qa_pair = extractor.extract_qa_pair(sample, task)
-            if not qa_pair:
-                continue
-            questions.append(qa_pair["formatted_question"])
-            ground_truths.append(qa_pair["correct_answer"])
+            # Handle pre-processed samples from LMEvalDataLoader
+            if "prompt" in sample and "positive" in sample:
+                questions.append(sample["prompt"])
+                ground_truths.append(sample["positive"])
+            else:
+                # Fallback for raw samples
+                try:
+                    task = get_task(self.config.val_dataset)
+                    extractor = task.get_extractor()
+                    qa_pair = extractor.extract_qa_pair(sample, task)
+                    if not qa_pair:
+                        continue
+                    questions.append(qa_pair["formatted_question"])
+                    ground_truths.append(qa_pair["correct_answer"])
+                except Exception:
+                    continue
         
         if not questions:
             self.logger.warning("No valid QA pairs for baseline computation")
@@ -612,13 +653,11 @@ class OptimizationPipeline:
     def _create_probe_data(
         self, samples: list[dict], layer_id: int, dataset_name: str
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Create contrastive probe training data for a specific layer."""
+        """Create contrastive probe training data for a specific layer.
+        
+        Uses pre-loaded ContrastivePairs from _setup_task_data when available.
+        """
         self.logger.info(f"Creating probe data from {len(samples)} samples for {dataset_name} on layer {layer_id}")
-
-        # Get task for the specified dataset
-        task = get_task(dataset_name)
-        extractor = task.get_extractor()
-        self.logger.debug(f"Using task: {task.__class__.__name__}, extractor: {extractor.__class__.__name__}")
 
         texts = []
         labels = []
@@ -627,30 +666,37 @@ class OptimizationPipeline:
 
         for i, sample in enumerate(samples):
             try:
-                # Extract QA pair
-                contrastive_pair = extractor.extract_contrastive_pair(sample, task)
+                # Samples now contain pre-extracted contrastive pairs from LMEvalDataLoader
+                if "prompt" in sample and "positive" in sample and "negative" in sample:
+                    # Already have contrastive pair data
+                    question = sample["prompt"]
+                    correct_answer = sample["positive"]
+                    incorrect_answer = sample["negative"]
+                    success_count += 1
+                else:
+                    # Fallback to old extraction for backwards compatibility
+                    task = get_task(dataset_name)
+                    extractor = task.get_extractor()
+                    contrastive_pair = extractor.extract_contrastive_pair(sample, task)
 
-                # Skip samples where contrastive pair extraction failed
-                if not contrastive_pair:
-                    self.logger.debug(f"Sample {i + 1}: No contrastive pair extracted from keys: {list(sample.keys())}")
-                    fail_count += 1
-                    continue
+                    if not contrastive_pair:
+                        self.logger.debug(f"Sample {i + 1}: No contrastive pair extracted from keys: {list(sample.keys())}")
+                        fail_count += 1
+                        continue
 
-                success_count += 1
-                self.logger.debug(f"Sample {i + 1}: Successfully extracted contrastive pair")
+                    question = contrastive_pair["question"]
+                    correct_answer = contrastive_pair["correct_answer"]
+                    incorrect_answer = contrastive_pair["incorrect_answer"]
+                    success_count += 1
 
             except Exception as e:
                 self.logger.error(f"Sample {i + 1}: Exception during contrastive pair extraction: {e}")
                 fail_count += 1
                 continue
 
-            question = contrastive_pair["question"]
-            correct_answer = contrastive_pair["correct_answer"]
-            incorrect_answer = contrastive_pair["incorrect_answer"]
-
             # Log contrastive pair details
             self.logger.debug(f"Contrastive pair - Question: ...{question[-50:]}")
-            self.logger.debug(f"Contrastive pair - Correct: {correct_answer}, Incorrect: {incorrect_answer}")
+            self.logger.debug(f"Contrastive pair - Correct: {correct_answer[:50]}..., Incorrect: {incorrect_answer[:50]}...")
 
             correct_text = f"{question} {correct_answer}"
             texts.append(correct_text)
