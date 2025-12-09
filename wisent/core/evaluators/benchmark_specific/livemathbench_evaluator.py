@@ -295,7 +295,7 @@ class LiveMathBenchEvaluator(BaseEvaluator):
         Optional kwargs:
             language: "en" (default) or "cn" for Chinese prompt
         """
-        from wisent.core.evaluators.benchmark_specific.utils import extract_boxed_answer
+        from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
 
         model = kwargs.get("judge_model")
         if model is None:

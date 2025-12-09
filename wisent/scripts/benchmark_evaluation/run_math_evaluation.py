@@ -34,7 +34,7 @@ LEVELS = ["Level 1", "Level 2", "Level 3", "Level 4", "Level 5"]
 def main(limit: int | None = None, question_type: str | None = None, level: str | None = None):
     # Load model using WisentModel
     print("Loading model...")
-    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+    model_name = "Qwen/Qwen2.5-0.5B-Instruct"
     model = WisentModel(model_name=model_name)
 
     # Load dataset

@@ -2,7 +2,7 @@
 
 import pytest
 from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
-from wisent.core.evaluators.benchmark_specific.utils import extract_boxed_answer
+from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
 
 
 class TestExtractBoxedAnswer:

@@ -22,7 +22,7 @@ from wisent.core.evaluators.benchmark_specific.conala_evaluator import (
     tokenize_for_bleu_eval,
     compute_bleu,
 )
-from wisent.core.evaluators.benchmark_specific.utils import extract_boxed_answer
+from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
 
 
 # Generation config for code generation
