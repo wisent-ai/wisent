@@ -4,9 +4,19 @@ LM-Evaluation-Harness task wrapper for task-agnostic architecture.
 
 from typing import Any, Dict, List, Optional
 
-from ..benchmark_extractors import BenchmarkExtractor, get_extractor
+from ..benchmark_extractors import BenchmarkExtractor
+from ..benchmark_extractors import get_extractor as get_benchmark_extractor
+from ..contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor as get_lm_extractor
 from ..task_interface import TaskInterface
 from ..utils.dataset_splits import get_test_docs, get_all_docs_from_task, create_deterministic_split
+
+
+def get_extractor(task_name: str) -> BenchmarkExtractor:
+    """Get extractor, trying lm_extractor_registry first, then benchmark_extractors."""
+    try:
+        return get_lm_extractor(task_name)
+    except Exception:
+        return get_benchmark_extractor(task_name)
 
 
 class LMEvalTask(TaskInterface):
@@ -522,3 +532,80 @@ class Squad2Task(LMEvalTask):
             categories=["reading-comprehension", "qa", "natural-language"],
         )
     # No longer needs special handling - unified split combines all available docs
+
+
+class ArcEasyTask(LMEvalTask):
+    """ARC-Easy task implementation."""
+
+    def __init__(self):
+        super().__init__(
+            task_name="arc_easy",
+            description="ARC-Easy: AI2 Reasoning Challenge (Easy Set)",
+            categories=["reasoning", "science", "multiple-choice"],
+        )
+
+
+class ArcChallengeTask(LMEvalTask):
+    """ARC-Challenge task implementation."""
+
+    def __init__(self):
+        super().__init__(
+            task_name="arc_challenge",
+            description="ARC-Challenge: AI2 Reasoning Challenge (Challenge Set)",
+            categories=["reasoning", "science", "multiple-choice"],
+        )
+
+
+class HellaswagTask(LMEvalTask):
+    """HellaSwag task implementation."""
+
+    def __init__(self):
+        super().__init__(
+            task_name="hellaswag",
+            description="HellaSwag: Commonsense NLI for sentence completion",
+            categories=["reasoning", "commonsense", "multiple-choice"],
+        )
+
+
+class WinograndeTask(LMEvalTask):
+    """WinoGrande task implementation."""
+
+    def __init__(self):
+        super().__init__(
+            task_name="winogrande",
+            description="WinoGrande: Large-scale Winograd Schema Challenge",
+            categories=["reasoning", "commonsense", "coreference"],
+        )
+
+
+class PiqaTask(LMEvalTask):
+    """PIQA task implementation."""
+
+    def __init__(self):
+        super().__init__(
+            task_name="piqa",
+            description="PIQA: Physical Interaction Question Answering",
+            categories=["reasoning", "commonsense", "physical"],
+        )
+
+
+class BoolqTask(LMEvalTask):
+    """BoolQ task implementation."""
+
+    def __init__(self):
+        super().__init__(
+            task_name="boolq",
+            description="BoolQ: Boolean Questions reading comprehension",
+            categories=["reading-comprehension", "qa", "boolean"],
+        )
+
+
+class OpenbookqaTask(LMEvalTask):
+    """OpenBookQA task implementation."""
+
+    def __init__(self):
+        super().__init__(
+            task_name="openbookqa",
+            description="OpenBookQA: Open-book science question answering",
+            categories=["reasoning", "science", "multiple-choice"],
+        )

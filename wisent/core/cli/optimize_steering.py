@@ -2316,6 +2316,10 @@ def execute_personalization(args, model):
     pair_set, generation_report = pair_generator.generate(num_pairs=args.num_pairs)
     pairs = pair_set.pairs
 
+    # Extract positive and negative examples for alignment evaluation
+    positive_examples = [p.positive_response.model_response for p in pairs]
+    negative_examples = [p.negative_response.model_response for p in pairs]
+
     print(f"   ✓ Generated {len(pairs)} contrastive pairs\n", flush=True)
 
     # Generate test prompts for evaluation
@@ -2345,8 +2349,32 @@ def execute_personalization(args, model):
     # to avoid recomputing activations unnecessarily
     steering_vector_cache = {}
 
+    # Checkpoint file for resuming interrupted runs
+    checkpoint_file = os.path.join(args.output_dir, f"{trait_name}_checkpoint.json")
+    completed_configs = set()
+    
+    # Load checkpoint if it exists (resume mode)
+    if os.path.exists(checkpoint_file):
+        print(f"\n📂 Found checkpoint file: {checkpoint_file}", flush=True)
+        try:
+            with open(checkpoint_file, "r") as f:
+                checkpoint_data = json.load(f)
+            all_results = checkpoint_data.get("all_results", {})
+            completed_configs = set(all_results.keys())
+            best_config = checkpoint_data.get("best_config")
+            best_score = checkpoint_data.get("best_score", -1.0)
+            print(f"   ✓ Loaded {len(completed_configs)} completed configurations", flush=True)
+            print(f"   ✓ Current best score: {best_score:.4f}", flush=True)
+            if best_config:
+                print(f"   ✓ Current best config: L{best_config['layer']} S{best_config['strength']:.2f}", flush=True)
+        except Exception as e:
+            print(f"   ⚠️ Failed to load checkpoint: {e}", flush=True)
+            completed_configs = set()
+
     # Step 2: Test all configurations
-    print(f"🎯 Step 2: Testing {total_configs} configurations...", flush=True)
+    print(f"\n🎯 Step 2: Testing {total_configs} configurations...", flush=True)
+    if completed_configs:
+        print(f"   ℹ️  Resuming from checkpoint - {len(completed_configs)} already done, {total_configs - len(completed_configs)} remaining", flush=True)
 
     config_count = 0
 
@@ -2445,6 +2473,13 @@ def execute_personalization(args, model):
                 for strength in strengths_to_test:
                     for steering_strategy in steering_strategies_to_test:
                         config_count += 1
+                        config_key = f"L{layer}_S{strength:.2f}_St:{steering_strategy}_T:{token_agg.value}_P:{prompt_const.value}"
+                        
+                        # Skip if already completed (checkpoint resume)
+                        if config_key in completed_configs:
+                            print(f"      [{config_count}/{total_configs}] Skipping {config_key} (already done)", flush=True)
+                            continue
+                        
                         config_desc = f"L{layer} S{strength:.2f} St:{steering_strategy} T:{token_agg.value} P:{prompt_const.value}"
                         print(f"      [{config_count}/{total_configs}] Testing {config_desc}...", end=" ")
 
@@ -2470,18 +2505,17 @@ def execute_personalization(args, model):
                             model.clear_steering()
                             steered_responses.append(steered)
 
-                        # Evaluate using personalization metrics
-                        evaluator = PersonalizationEvaluator()
-
+                        # Evaluate using personalization metrics (static methods)
                         # Calculate difference score
-                        difference_score = evaluator._evaluate_difference(baseline_responses, steered_responses)
+                        difference_score = PersonalizationEvaluator._evaluate_difference(baseline_responses, steered_responses)
 
                         # Calculate quality score
-                        quality_score = evaluator._evaluate_quality(steered_responses)
+                        quality_score = PersonalizationEvaluator._evaluate_quality(steered_responses)
 
-                        # Calculate alignment score using simple keyword matching
-                        # (Full alignment needs model-based judge which is expensive)
-                        alignment_score = PersonalizationEvaluator.estimate_alignment(steered_responses, trait)
+                        # Calculate alignment score using contrastive examples
+                        alignment_score = PersonalizationEvaluator.estimate_alignment(
+                            steered_responses, trait, positive_examples, negative_examples
+                        )
 
                         # Calculate overall score (weighted average)
                         # Only count if difference > 0.3 (steering is actually doing something)
@@ -2494,8 +2528,7 @@ def execute_personalization(args, model):
                             f"diff={difference_score:.2f} qual={quality_score:.2f} align={alignment_score:.2f} overall={overall_score:.2f}"
                         )
 
-                        # Store results with full config key
-                        config_key = f"L{layer}_S{strength:.2f}_St:{steering_strategy}_T:{token_agg.value}_P:{prompt_const.value}"
+                        # Store results with full config key (config_key already defined above)
                         all_results[config_key] = {
                             "layer": layer,
                             "strength": float(strength),
@@ -2549,6 +2582,21 @@ def execute_personalization(args, model):
                                 "overall_score": float(overall_score),
                             }
                             best_steering_vector = steering_vector
+                            print(f"         🏆 New best! L{layer} S{strength:.2f} score={overall_score:.4f}", flush=True)
+                        
+                        # Save checkpoint after each configuration (for resume capability)
+                        checkpoint_data = {
+                            "all_results": all_results,
+                            "best_config": best_config,
+                            "best_score": best_score,
+                            "config_count": config_count,
+                            "total_configs": total_configs,
+                            "trait": trait,
+                            "trait_name": trait_name,
+                            "model": args.model,
+                        }
+                        with open(checkpoint_file, "w") as f:
+                            json.dump(checkpoint_data, f)
 
     # Step 3: Save results
     print(f"\n{'=' * 80}")
@@ -2621,6 +2669,11 @@ def execute_personalization(args, model):
         json.dump(output_data, f, indent=2)
 
     print(f"💾 Saved full results to: {results_file}")
+    
+    # Remove checkpoint file after successful completion
+    if os.path.exists(checkpoint_file):
+        os.remove(checkpoint_file)
+        print(f"🧹 Removed checkpoint file: {checkpoint_file}")
 
     if args.save_all_generation_examples and examples_file_path:
         print(f"💾 Generation examples saved iteratively to: {examples_file_path}")
@@ -2932,14 +2985,21 @@ def execute_multi_personalization(args, model):
                         model.clear_steering()
                         steered_responses.append(steered)
 
-                    # Evaluate combined output against ALL traits together
-                    evaluator = PersonalizationEvaluator()
-                    difference_score = evaluator._evaluate_difference(baseline_responses, steered_responses)
-                    quality_score = evaluator._evaluate_quality(steered_responses)
+                    # Evaluate combined output against ALL traits together (static methods)
+                    difference_score = PersonalizationEvaluator._evaluate_difference(baseline_responses, steered_responses)
+                    quality_score = PersonalizationEvaluator._evaluate_quality(steered_responses)
 
                     # Compute alignment score against COMBINED trait description
+                    # For multi-trait, combine positive/negative examples from all traits
                     combined_trait_description = " AND ".join([trait_pairs[name]["trait"] for name in trait_names])
-                    alignment_score = PersonalizationEvaluator.estimate_alignment(steered_responses, combined_trait_description)
+                    all_positive_examples = []
+                    all_negative_examples = []
+                    for name in trait_names:
+                        all_positive_examples.extend([p.positive_response.model_response for p in trait_pairs[name]["pairs"]])
+                        all_negative_examples.extend([p.negative_response.model_response for p in trait_pairs[name]["pairs"]])
+                    alignment_score = PersonalizationEvaluator.estimate_alignment(
+                        steered_responses, combined_trait_description, all_positive_examples, all_negative_examples
+                    )
 
                     if difference_score < 0.3:
                         overall_score = 0.0

@@ -128,3 +128,15 @@ def setup_optimize_parser(parser):
         action="store_true",
         help="Force re-optimization even if cached results exist (default: skip cached)"
     )
+    exec_group.add_argument(
+        "--resume",
+        action="store_true",
+        default=True,
+        help="Resume from checkpoint if available (default: True)"
+    )
+    exec_group.add_argument(
+        "--no-resume",
+        action="store_false",
+        dest="resume",
+        help="Start fresh, ignore any existing checkpoint"
+    )
