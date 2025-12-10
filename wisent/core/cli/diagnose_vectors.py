@@ -5,6 +5,8 @@ import json
 import os
 import math
 
+import torch
+
 
 def execute_diagnose_vectors(args):
     """Execute the diagnose-vectors command - analyze existing steering vectors."""
@@ -132,6 +134,13 @@ def execute_diagnose_vectors(args):
             print(f"\n📄 Sample Vector (Layer {sample_layer}, first 10 values):")
             print(f"   {sample_vector[:10]}")
 
+        # Cone structure analysis (if activations are provided)
+        if hasattr(args, 'activations_file') and args.activations_file:
+            _run_cone_analysis(args.activations_file, args.verbose)
+        elif hasattr(args, 'check_cone') and args.check_cone:
+            print(f"\n⚠️  Cone Analysis: Requires --activations-file with positive/negative activations")
+            print(f"   Run with: --activations-file <path> to analyze cone structure")
+
         print(f"\n✅ Diagnosis complete!\n")
 
     except Exception as e:
@@ -140,3 +149,117 @@ def execute_diagnose_vectors(args):
             import traceback
             traceback.print_exc()
         sys.exit(1)
+
+
+def _run_cone_analysis(activations_file: str, verbose: bool = False):
+    """Run cone structure analysis on activations."""
+    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+        check_cone_structure,
+        ConeAnalysisConfig,
+    )
+    
+    print(f"\n🔺 Cone Structure Analysis")
+    print(f"   Activations file: {activations_file}")
+    
+    try:
+        if not os.path.exists(activations_file):
+            print(f"   ❌ Activations file not found: {activations_file}")
+            return
+        
+        # Load activations (supports .pt or .json)
+        if activations_file.endswith('.pt'):
+            activations_data = torch.load(activations_file, weights_only=True)
+        else:
+            with open(activations_file, 'r') as f:
+                activations_data = json.load(f)
+        
+        # Extract positive and negative activations
+        pos_acts = None
+        neg_acts = None
+        
+        if isinstance(activations_data, dict):
+            # Format 1: {"positive": [...], "negative": [...]}
+            if 'positive' in activations_data and 'negative' in activations_data:
+                pos_acts = activations_data['positive']
+                neg_acts = activations_data['negative']
+            # Format 2: {"pos_activations": [...], "neg_activations": [...]}
+            elif 'pos_activations' in activations_data and 'neg_activations' in activations_data:
+                pos_acts = activations_data['pos_activations']
+                neg_acts = activations_data['neg_activations']
+            # Format 3: Per-layer format {"layer_15": {"pos": [...], "neg": [...]}}
+            elif any(k.startswith('layer_') for k in activations_data.keys()):
+                # Use the first layer found
+                for key, layer_data in activations_data.items():
+                    if isinstance(layer_data, dict) and 'pos' in layer_data and 'neg' in layer_data:
+                        pos_acts = layer_data['pos']
+                        neg_acts = layer_data['neg']
+                        print(f"   Using layer: {key}")
+                        break
+        
+        if pos_acts is None or neg_acts is None:
+            print(f"   ❌ Could not find positive/negative activations in file")
+            print(f"   Expected format: {{'positive': [...], 'negative': [...]}}")
+            return
+        
+        # Convert to tensors if needed
+        if not isinstance(pos_acts, torch.Tensor):
+            pos_acts = torch.tensor(pos_acts, dtype=torch.float32)
+        if not isinstance(neg_acts, torch.Tensor):
+            neg_acts = torch.tensor(neg_acts, dtype=torch.float32)
+        
+        print(f"   Positive samples: {pos_acts.shape[0]}")
+        print(f"   Negative samples: {neg_acts.shape[0]}")
+        print(f"   Hidden dimension: {pos_acts.shape[1]}")
+        
+        # Run cone analysis
+        config = ConeAnalysisConfig(
+            num_directions=5,
+            optimization_steps=100,
+            cone_threshold=0.7,
+        )
+        
+        print(f"\n   Running cone analysis...")
+        result = check_cone_structure(pos_acts, neg_acts, config)
+        
+        # Display results
+        print(f"\n📊 Cone Analysis Results:")
+        
+        if result.has_cone_structure:
+            print(f"   ✅ CONE STRUCTURE DETECTED")
+        else:
+            print(f"   ❌ No cone structure (linear subspace is sufficient)")
+        
+        print(f"\n   Cone Score: {result.cone_score:.3f} (threshold: {config.cone_threshold})")
+        print(f"   PCA Explained Variance: {result.pca_explained_variance:.3f}")
+        print(f"   Cone Explained Variance: {result.cone_explained_variance:.3f}")
+        print(f"   Half-Space Consistency: {result.half_space_consistency:.3f}")
+        print(f"   Avg Cosine Similarity: {result.avg_cosine_similarity:.3f}")
+        print(f"   Positive Combination Score: {result.positive_combination_score:.3f}")
+        print(f"   Directions Found: {result.num_directions_found}")
+        
+        # Separation scores
+        print(f"\n   Per-Direction Separation Scores:")
+        for i, score in enumerate(result.separation_scores):
+            significance = "***" if abs(score) > 0.3 else "**" if abs(score) > 0.1 else "*" if abs(score) > 0.05 else ""
+            print(f"      Direction {i}: {score:.4f} {significance}")
+        
+        # Interpretation
+        print(f"\n📝 Interpretation:")
+        if result.has_cone_structure:
+            print(f"   - Multiple directions mediate this behavior")
+            print(f"   - Consider using PRISM for multi-directional steering")
+            print(f"   - CAA may capture only partial behavior")
+        else:
+            print(f"   - Single direction (CAA) is sufficient")
+            print(f"   - Behavior is well-represented by linear subspace")
+        
+        if verbose:
+            print(f"\n   Cosine Similarity Matrix:")
+            for i, row in enumerate(result.direction_cosine_similarities):
+                print(f"      {[f'{x:.2f}' for x in row]}")
+        
+    except Exception as e:
+        print(f"   ❌ Cone analysis failed: {str(e)}")
+        if verbose:
+            import traceback
+            traceback.print_exc()

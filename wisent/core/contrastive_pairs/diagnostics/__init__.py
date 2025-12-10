@@ -9,7 +9,14 @@ from .divergence import compute_divergence_metrics
 from .duplicates import compute_duplicate_metrics
 from .coverage import compute_coverage_metrics
 from .activations import compute_activation_metrics
-from .control_vectors import ControlVectorDiagnosticsConfig, run_control_vector_diagnostics, run_control_steering_diagnostics
+from .control_vectors import (
+    ControlVectorDiagnosticsConfig,
+    run_control_vector_diagnostics,
+    run_control_steering_diagnostics,
+    ConeAnalysisConfig,
+    ConeAnalysisResult,
+    check_cone_structure,
+)
 from .vector_quality import VectorQualityConfig, VectorQualityReport, run_vector_quality_diagnostics
 
 __all__ = [
@@ -19,6 +26,9 @@ __all__ = [
     "ControlVectorDiagnosticsConfig",
     "run_control_vector_diagnostics",
     "run_control_steering_diagnostics",
+    "ConeAnalysisConfig",
+    "ConeAnalysisResult",
+    "check_cone_structure",
     "VectorQualityConfig",
     "VectorQualityReport",
     "run_vector_quality_diagnostics",
