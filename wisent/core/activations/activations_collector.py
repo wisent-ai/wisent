@@ -418,7 +418,14 @@ class ActivationCollector:
                 encoded = {k: v.to(compute_device) for k, v in encoded.items()}
                 
                 # Forward pass
-                out = self.model.hf_model(**encoded, output_hidden_states=True, use_cache=False)
+                try:
+                    out = self.model.hf_model(**encoded, output_hidden_states=True, use_cache=False)
+                except torch.cuda.OutOfMemoryError:
+                    # Try to recover by clearing cache and retrying
+                    torch.cuda.empty_cache()
+                    import gc
+                    gc.collect()
+                    out = self.model.hf_model(**encoded, output_hidden_states=True, use_cache=False)
                 hs = out.hidden_states
                 
                 if not hs:
@@ -458,6 +465,10 @@ class ActivationCollector:
                         collected[name] = value.to(self.store_device)
                     
                     results.append(collected)
+                
+                # Clear GPU memory after each batch
+                del out, hs, encoded
+                torch.cuda.empty_cache()
         
         if show_progress:
             print(f"      Processed {len(texts)} texts in {num_batches} batches" + " " * 20)
