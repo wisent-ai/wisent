@@ -3,17 +3,24 @@ Weight modification optimizer using BaseOptimizer.
 
 Optimizes weight modification parameters (strength, max_weight, min_weight, position)
 to achieve target metrics like compliance rate or task accuracy.
+
+Supports checkpointing for long-running optimizations:
+- Save checkpoint after each trial (or every N trials)
+- Resume from checkpoint if interrupted
+- Save best model periodically
 """
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from typing import Any, Callable, Literal
 
 import optuna
 import torch
 
-from wisent.core.opti.core.atoms import BaseOptimizer, Direction
+from wisent.core.opti.core.atoms import BaseOptimizer, Direction, HPOConfig, HPORun
 
 __all__ = [
     "WeightsOptimizer",
@@ -254,3 +261,156 @@ class WeightsOptimizer(BaseOptimizer):
         """
         self.model.load_state_dict(self.base_state_dict)
         self._apply_weight_modification(best_params)
+
+    def optimize_with_checkpointing(
+        self,
+        cfg: HPOConfig,
+        checkpoint_path: str | None = None,
+        checkpoint_interval: int = 5,
+        output_dir: str | None = None,
+        tokenizer: Any = None,
+    ) -> HPORun:
+        """
+        Run optimization with checkpointing support.
+
+        Saves checkpoint after every checkpoint_interval trials and can resume
+        from an existing checkpoint file.
+
+        arguments:
+            cfg: HPOConfig object with optimization settings.
+            checkpoint_path: Path to save/load checkpoint file.
+            checkpoint_interval: Save checkpoint every N trials (default: 5).
+            output_dir: Directory to save best model periodically.
+            tokenizer: Tokenizer to save with model.
+
+        returns:
+            HPORun object with the results of the optimization.
+        """
+        # Try to load existing checkpoint
+        start_trial = 0
+        existing_trials = []
+        
+        if checkpoint_path and os.path.exists(checkpoint_path):
+            print(f"\n   Loading checkpoint from {checkpoint_path}...")
+            checkpoint = self._load_checkpoint(checkpoint_path)
+            if checkpoint:
+                existing_trials = checkpoint.get("trials", [])
+                start_trial = len(existing_trials)
+                print(f"   Resuming from trial {start_trial}")
+                print(f"   Previous best: {checkpoint.get('best_value', 'N/A')}")
+
+        # Create sampler and pruner
+        sampler = self._make_sampler(cfg)
+        pruner = self._make_pruner(cfg)
+        direction: Direction = getattr(self, "direction", cfg.direction)
+
+        # Create study
+        study = optuna.create_study(
+            direction=direction,
+            sampler=sampler,
+            pruner=pruner,
+        )
+
+        # Enqueue existing trials if resuming
+        for trial_data in existing_trials:
+            study.enqueue_trial(trial_data["params"])
+
+        # Calculate remaining trials
+        remaining_trials = cfg.n_trials - start_trial
+        if remaining_trials <= 0:
+            print(f"   Optimization already complete ({start_trial} trials)")
+            return HPORun(study=study, best_params=study.best_params, best_value=study.best_value)
+
+        # Create checkpoint callback
+        def checkpoint_callback(study: optuna.Study, trial: optuna.trial.FrozenTrial) -> None:
+            trial_num = trial.number + 1  # 1-indexed for display
+            
+            # Save checkpoint at intervals
+            if checkpoint_path and trial_num % checkpoint_interval == 0:
+                self._save_checkpoint(study, checkpoint_path)
+                print(f"   [Checkpoint saved at trial {trial_num}]")
+
+            # Save best model at intervals
+            if output_dir and trial_num % checkpoint_interval == 0:
+                if study.best_trial is not None:
+                    self._save_best_model_checkpoint(study, output_dir, tokenizer)
+
+        # Run optimization with callback
+        study.optimize(
+            self._objective,
+            n_trials=remaining_trials,
+            timeout=cfg.timeout,
+            show_progress_bar=False,
+            callbacks=[checkpoint_callback],
+        )
+
+        # Save final checkpoint
+        if checkpoint_path:
+            self._save_checkpoint(study, checkpoint_path)
+            print(f"   [Final checkpoint saved]")
+
+        return HPORun(study=study, best_params=study.best_params, best_value=study.best_value)
+
+    def _save_checkpoint(self, study: optuna.Study, checkpoint_path: str) -> None:
+        """Save optimization checkpoint to file."""
+        checkpoint = {
+            "trials": [
+                {
+                    "number": t.number,
+                    "params": t.params,
+                    "value": t.value,
+                    "state": str(t.state),
+                }
+                for t in study.trials
+            ],
+            "best_params": study.best_params if study.best_trial else None,
+            "best_value": study.best_value if study.best_trial else None,
+            "n_trials": len(study.trials),
+        }
+        
+        # Write to temp file first, then rename (atomic)
+        temp_path = checkpoint_path + ".tmp"
+        with open(temp_path, "w") as f:
+            json.dump(checkpoint, f, indent=2)
+        os.replace(temp_path, checkpoint_path)
+
+    def _load_checkpoint(self, checkpoint_path: str) -> dict | None:
+        """Load optimization checkpoint from file."""
+        try:
+            with open(checkpoint_path, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"   Warning: Could not load checkpoint: {e}")
+            return None
+
+    def _save_best_model_checkpoint(
+        self,
+        study: optuna.Study,
+        output_dir: str,
+        tokenizer: Any = None,
+    ) -> None:
+        """Save the current best model as a checkpoint."""
+        if study.best_trial is None:
+            return
+
+        # Apply best params
+        best_params = study.best_params
+        self.model.load_state_dict(self.base_state_dict)
+        self._apply_weight_modification(best_params)
+
+        # Save model
+        checkpoint_dir = os.path.join(output_dir, "checkpoint_best")
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        self.model.save_pretrained(checkpoint_dir)
+        if tokenizer:
+            tokenizer.save_pretrained(checkpoint_dir)
+
+        # Save metadata
+        metadata = {
+            "best_params": best_params,
+            "best_value": study.best_value,
+            "trial_number": study.best_trial.number,
+            "total_trials": len(study.trials),
+        }
+        with open(os.path.join(checkpoint_dir, "checkpoint_metadata.json"), "w") as f:
+            json.dump(metadata, f, indent=2)

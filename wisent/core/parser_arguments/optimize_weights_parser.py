@@ -138,6 +138,18 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Path to save all trial results as JSON (optional)"
     )
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default=None,
+        help="Path to checkpoint file for saving/resuming optimization. If file exists, resume from it."
+    )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=5,
+        help="Save checkpoint and best model every N trials. Default: 5"
+    )
 
     # ==========================================================================
     # EVALUATION CONFIGURATION

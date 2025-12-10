@@ -200,7 +200,23 @@ def execute_optimize_weights(args):
 
     # Run optimization
     print(f"\nStarting optimization ({args.trials} trials)...\n")
-    result = optimizer.optimize(hpo_config)
+    
+    # Use checkpointing if checkpoint path is provided
+    checkpoint_path = getattr(args, 'checkpoint', None)
+    checkpoint_interval = getattr(args, 'checkpoint_interval', 5)
+    
+    if checkpoint_path:
+        print(f"   Checkpointing enabled: {checkpoint_path}")
+        print(f"   Checkpoint interval: every {checkpoint_interval} trials\n")
+        result = optimizer.optimize_with_checkpointing(
+            hpo_config,
+            checkpoint_path=checkpoint_path,
+            checkpoint_interval=checkpoint_interval,
+            output_dir=args.output_dir,
+            tokenizer=tokenizer,
+        )
+    else:
+        result = optimizer.optimize(hpo_config)
 
     best_params = result.best_params
     best_value = result.best_value
