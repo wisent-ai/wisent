@@ -607,9 +607,12 @@ class OptimizationPipeline:
         # Generate baseline predictions
         predictions = self._generate_baseline_batched(questions)
         
+        # Prepare task docs for coding tasks
+        task_docs = self.val_samples[:len(predictions)] if self.is_coding_task else None
+        
         # Evaluate
         baseline_metrics = metrics.evaluate_benchmark_performance(
-            predictions, ground_truths, self.config.val_dataset
+            predictions, ground_truths, self.config.val_dataset, task_docs=task_docs
         )
         
         return baseline_metrics.get("accuracy", 0.0)
@@ -921,10 +924,34 @@ class OptimizationPipeline:
                 neg_activations = []
                 
                 for pair in contrastive_pairs.pairs:
-                    if hasattr(pair.positive_response, 'activations') and pair.positive_response.activations is not None:
-                        pos_activations.append(pair.positive_response.activations)
-                    if hasattr(pair.negative_response, 'activations') and pair.negative_response.activations is not None:
-                        neg_activations.append(pair.negative_response.activations)
+                    # Check layers_activations (the correct attribute name)
+                    if hasattr(pair.positive_response, 'layers_activations') and pair.positive_response.layers_activations is not None:
+                        # Get the first layer's activation tensor
+                        layer_acts = pair.positive_response.layers_activations
+                        if hasattr(layer_acts, 'values'):
+                            # LayerActivations object - get first value
+                            for tensor in layer_acts.values():
+                                if tensor is not None:
+                                    pos_activations.append(tensor)
+                                    break
+                        elif isinstance(layer_acts, dict):
+                            # Raw dict
+                            for tensor in layer_acts.values():
+                                if tensor is not None:
+                                    pos_activations.append(tensor)
+                                    break
+                    if hasattr(pair.negative_response, 'layers_activations') and pair.negative_response.layers_activations is not None:
+                        layer_acts = pair.negative_response.layers_activations
+                        if hasattr(layer_acts, 'values'):
+                            for tensor in layer_acts.values():
+                                if tensor is not None:
+                                    neg_activations.append(tensor)
+                                    break
+                        elif isinstance(layer_acts, dict):
+                            for tensor in layer_acts.values():
+                                if tensor is not None:
+                                    neg_activations.append(tensor)
+                                    break
                 
                 if len(pos_activations) >= 5 and len(neg_activations) >= 5:
                     pos_stacked = torch.stack(pos_activations).squeeze(1)  # Remove batch dim if present

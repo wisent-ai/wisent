@@ -33,6 +33,40 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+def get_checkpoint_path(model: str) -> Path:
+    """Get the checkpoint file path for a model."""
+    checkpoint_dir = Path.home() / ".wisent" / "checkpoints"
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+    return checkpoint_dir / f"optimize_{model.replace('/', '_')}.json"
+
+
+def load_checkpoint(model: str) -> Optional[Dict[str, Any]]:
+    """Load checkpoint if it exists."""
+    checkpoint_path = get_checkpoint_path(model)
+    if checkpoint_path.exists():
+        try:
+            with open(checkpoint_path, "r") as f:
+                checkpoint = json.load(f)
+            logger.info(f"Loaded checkpoint from {checkpoint_path}")
+            return checkpoint
+        except Exception as e:
+            logger.warning(f"Failed to load checkpoint: {e}")
+    return None
+
+
+def save_checkpoint(model: str, results: Dict[str, Any], phase: str = "unknown") -> None:
+    """Save checkpoint to disk."""
+    checkpoint_path = get_checkpoint_path(model)
+    results["_checkpoint_phase"] = phase
+    results["_checkpoint_time"] = datetime.now().isoformat()
+    try:
+        with open(checkpoint_path, "w") as f:
+            json.dump(results, f, indent=2, default=str)
+        logger.info(f"Saved checkpoint to {checkpoint_path}")
+    except Exception as e:
+        logger.warning(f"Failed to save checkpoint: {e}")
+
+
 def get_all_benchmarks() -> List[str]:
     """Get ALL available benchmarks from the central registry."""
     from wisent.core.benchmark_registry import get_all_benchmarks as _get_all_benchmarks
@@ -129,7 +163,16 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
     print(f"   Optuna trials: {args.n_trials}")
     print(f"{'='*70}\n")
     
-    results = {
+    # Load checkpoint if resuming
+    checkpoint = None
+    if getattr(args, 'resume', True) and not getattr(args, 'force', False):
+        checkpoint = load_checkpoint(args.model)
+        if checkpoint:
+            print(f"\n   📂 Resuming from checkpoint (saved at {checkpoint.get('_checkpoint_time', 'unknown')})")
+            print(f"      Phase: {checkpoint.get('_checkpoint_phase', 'unknown')}")
+            print(f"      Completed steering: {len(checkpoint.get('steering', {}))}")
+    
+    results = checkpoint if checkpoint else {
         "model": args.model,
         "timestamp": datetime.now().isoformat(),
         "classification": {},
@@ -166,10 +209,12 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             
             results["classification"] = execute_optimize_classification(clf_args)
             print(f"\n   ✅ Classification optimization complete")
+            save_checkpoint(args.model, results, phase="classification_complete")
         except Exception as e:
             error_msg = f"Classification optimization failed: {e}"
             results["errors"].append(error_msg)
             print(f"\n   ❌ {error_msg}")
+            save_checkpoint(args.model, results, phase="classification_error")
     else:
         print(f"\n   ⏭️  Skipping classification optimization")
     
@@ -185,6 +230,11 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
         print(f"   📊 Optimizing steering for {len(benchmarks)} benchmarks...")
         
         for bench_idx, benchmark in enumerate(benchmarks, 1):
+            # Skip if already in checkpoint results
+            if benchmark in results.get("steering", {}):
+                print(f"\n   [{bench_idx}/{len(benchmarks)}] {benchmark} - SKIPPED (in checkpoint)")
+                continue
+            
             # Skip if already optimized (unless --force)
             if not getattr(args, 'force', False):
                 cached = get_cached_optimization(args.model, benchmark, method="*")
@@ -256,18 +306,27 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                 results["errors"].append(error_msg)
                 print(f"       ❌ {str(e)[:80]}")
                 logger.exception(f"Error optimizing {benchmark}")
+            
+            # Save checkpoint after each benchmark
+            save_checkpoint(args.model, results, phase=f"steering_benchmark_{bench_idx}")
         
         # 2b. Personalization trait steering
         if personalization_traits:
             print(f"\n   🎭 Optimizing steering for {len(personalization_traits)} personalization traits...")
             
             for trait_idx, trait in enumerate(personalization_traits, 1):
-                task_key = f"personalization:{trait}"
+                task_key = f"trait:{trait}"
+                
+                # Skip if already in checkpoint
+                if task_key in results.get("steering", {}):
+                    print(f"\n   [{trait_idx}/{len(personalization_traits)}] {trait} - SKIPPED (in checkpoint)")
+                    continue
+                
                 if not getattr(args, 'force', False):
-                    cached = get_cached_optimization(args.model, task_key, method="*")
+                    cached = get_cached_optimization(args.model, f"personalization:{trait}", method="*")
                     if cached:
                         print(f"\n   [{trait_idx}/{len(personalization_traits)}] {trait} - SKIPPED (cached)")
-                        results["steering"][f"trait:{trait}"] = {
+                        results["steering"][task_key] = {
                             "best_method": cached.method,
                             "best_layer": cached.layer,
                             "best_score": cached.score,
@@ -304,7 +363,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                         score=best_score,
                     )
                     
-                    results["steering"][f"trait:{trait}"] = {
+                    results["steering"][task_key] = {
                         "best_method": best_config.get("method", "CAA"),
                         "best_layer": best_config.get("layer", 16),
                         "best_score": best_score,
@@ -315,6 +374,9 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                     error_msg = f"trait:{trait}: {str(e)}"
                     results["errors"].append(error_msg)
                     print(f"       ❌ {str(e)[:80]}")
+                
+                # Save checkpoint after each trait
+                save_checkpoint(args.model, results, phase=f"steering_personalization_{trait_idx}")
         
         # 2c. Safety trait steering (refusal)
         if safety_traits:
@@ -322,6 +384,12 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             
             for trait_idx, trait in enumerate(safety_traits, 1):
                 task_key = f"safety:{trait}"
+                
+                # Skip if already in checkpoint
+                if task_key in results.get("steering", {}):
+                    print(f"\n   [{trait_idx}/{len(safety_traits)}] {trait} - SKIPPED (in checkpoint)")
+                    continue
+                
                 if not getattr(args, 'force', False):
                     cached = get_cached_optimization(args.model, task_key, method="*")
                     if cached:
@@ -363,7 +431,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                         score=best_score,
                     )
                     
-                    results["steering"][f"safety:{trait}"] = {
+                    results["steering"][task_key] = {
                         "best_method": best_config.get("method", "CAA"),
                         "best_layer": best_config.get("layer", 16),
                         "best_score": best_score,
@@ -374,6 +442,9 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                     error_msg = f"safety:{trait}: {str(e)}"
                     results["errors"].append(error_msg)
                     print(f"       ❌ {str(e)[:80]}")
+                
+                # Save checkpoint after each safety trait
+                save_checkpoint(args.model, results, phase=f"steering_safety_{trait_idx}")
         
         # 2d. Humanization steering
         if humanization_traits:
@@ -381,6 +452,12 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             
             for trait_idx, trait in enumerate(humanization_traits, 1):
                 task_key = f"humanization:{trait}"
+                
+                # Skip if already in checkpoint
+                if task_key in results.get("steering", {}):
+                    print(f"\n   [{trait_idx}/{len(humanization_traits)}] {trait} - SKIPPED (in checkpoint)")
+                    continue
+                
                 if not getattr(args, 'force', False):
                     cached = get_cached_optimization(args.model, task_key, method="*")
                     if cached:
@@ -424,7 +501,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                         score=best_score,
                     )
                     
-                    results["steering"][f"humanization:{trait}"] = {
+                    results["steering"][task_key] = {
                         "best_method": best_config.get("method", "CAA"),
                         "best_layer": best_config.get("layer", 16),
                         "best_score": best_score,
@@ -435,6 +512,9 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                     error_msg = f"humanization:{trait}: {str(e)}"
                     results["errors"].append(error_msg)
                     print(f"       ❌ {str(e)[:80]}")
+                
+                # Save checkpoint after each humanization trait
+                save_checkpoint(args.model, results, phase=f"steering_humanization_{trait_idx}")
     else:
         print(f"\n   ⏭️  Skipping steering optimization")
     
@@ -509,6 +589,9 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
         for method, wins in sorted(method_wins.items(), key=lambda x: -x[1]):
             print(f"      {method}: {wins} wins")
     
+    # Save final checkpoint
+    save_checkpoint(args.model, results, phase="complete")
+    
     # Save results
     results_dir = Path("./optimization_results")
     results_dir.mkdir(exist_ok=True)
@@ -518,6 +601,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
         json.dump(results, f, indent=2, default=str)
     
     print(f"\n   Results saved to: {results_file}")
+    print(f"   Checkpoint: {get_checkpoint_path(args.model)}")
     print(f"   Config cache: ~/.wisent/configs/")
     print(f"{'='*70}\n")
     
