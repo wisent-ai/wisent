@@ -20,6 +20,10 @@ __all__ = [
     "ConeAnalysisConfig",
     "ConeAnalysisResult",
     "check_cone_structure",
+    "GeometryAnalysisConfig",
+    "GeometryAnalysisResult",
+    "StructureType",
+    "detect_geometry_structure",
 ]
 
 
@@ -618,3 +622,865 @@ def _compute_cone_score(
     )
     
     return float(cone_score)
+
+
+# =============================================================================
+# Comprehensive Geometry Structure Detection
+# =============================================================================
+
+from enum import Enum
+
+
+class StructureType(Enum):
+    """Types of geometric structures that can be detected in activation space."""
+    LINEAR = "linear"
+    CONE = "cone"
+    CLUSTER = "cluster"
+    MANIFOLD = "manifold"
+    SPARSE = "sparse"
+    BIMODAL = "bimodal"
+    ORTHOGONAL = "orthogonal"
+    UNKNOWN = "unknown"
+
+
+@dataclass
+class GeometryAnalysisConfig:
+    """Configuration for comprehensive geometry analysis."""
+    
+    # General settings
+    num_components: int = 5
+    """Number of components/directions to analyze."""
+    
+    optimization_steps: int = 100
+    """Steps for optimization-based methods."""
+    
+    # Linear detection
+    linear_variance_threshold: float = 0.8
+    """Variance explained threshold to declare linear structure."""
+    
+    # Cone detection
+    cone_threshold: float = 0.7
+    """Cone score threshold."""
+    
+    # Cluster detection
+    max_clusters: int = 5
+    """Maximum number of clusters to try."""
+    
+    cluster_silhouette_threshold: float = 0.5
+    """Silhouette score threshold for cluster detection."""
+    
+    # Manifold detection
+    manifold_neighbors: int = 10
+    """Number of neighbors for manifold analysis."""
+    
+    # Sparse detection
+    sparse_threshold: float = 0.1
+    """Fraction of active dimensions threshold."""
+    
+    # Bimodal detection
+    bimodal_dip_threshold: float = 0.05
+    """P-value threshold for dip test."""
+    
+    # Orthogonal detection  
+    orthogonal_threshold: float = 0.1
+    """Max correlation for orthogonal subspaces."""
+
+
+@dataclass
+class StructureScore:
+    """Score for a single structure type."""
+    structure_type: StructureType
+    score: float
+    confidence: float
+    details: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class GeometryAnalysisResult:
+    """Results from comprehensive geometry analysis."""
+    
+    best_structure: StructureType
+    """The structure type that best fits the data."""
+    
+    best_score: float
+    """Score of the best-fitting structure."""
+    
+    all_scores: Dict[str, StructureScore]
+    """Scores for all analyzed structure types."""
+    
+    recommendation: str
+    """Recommended steering method based on geometry."""
+    
+    details: Dict[str, Any] = field(default_factory=dict)
+    """Additional analysis details."""
+    
+    def get_ranking(self) -> List[Tuple[StructureType, float]]:
+        """Get structures ranked by score."""
+        return sorted(
+            [(s.structure_type, s.score) for s in self.all_scores.values()],
+            key=lambda x: x[1],
+            reverse=True
+        )
+
+
+def detect_geometry_structure(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    config: GeometryAnalysisConfig | None = None,
+) -> GeometryAnalysisResult:
+    """
+    Detect the geometric structure of activation differences.
+    
+    Analyzes activations for multiple possible structures:
+    - Linear: Single direction (PCA captures most variance)
+    - Cone: Multiple correlated directions in same half-space
+    - Cluster: Discrete groups of activation patterns
+    - Manifold: Non-linear curved structure
+    - Sparse: Behavior encoded in few active neurons
+    - Bimodal: Two distinct modes in activation distribution
+    - Orthogonal: Independent subspaces
+    
+    Arguments:
+        pos_activations: Positive example activations [N_pos, hidden_dim]
+        neg_activations: Negative example activations [N_neg, hidden_dim]
+        config: Analysis configuration
+        
+    Returns:
+        GeometryAnalysisResult with scores for each structure type
+    """
+    cfg = config or GeometryAnalysisConfig()
+    
+    pos_tensor = pos_activations.detach().float()
+    neg_tensor = neg_activations.detach().float()
+    
+    if pos_tensor.dim() == 1:
+        pos_tensor = pos_tensor.unsqueeze(0)
+    if neg_tensor.dim() == 1:
+        neg_tensor = neg_tensor.unsqueeze(0)
+    
+    # Compute difference vectors (primary analysis target)
+    diff_vectors = pos_tensor - neg_tensor[:pos_tensor.shape[0]] if neg_tensor.shape[0] >= pos_tensor.shape[0] else pos_tensor[:neg_tensor.shape[0]] - neg_tensor
+    
+    all_scores: Dict[str, StructureScore] = {}
+    
+    # 1. Linear structure detection
+    linear_score = _detect_linear_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
+    all_scores["linear"] = linear_score
+    
+    # 2. Cone structure detection
+    cone_score = _detect_cone_structure_score(pos_tensor, neg_tensor, cfg)
+    all_scores["cone"] = cone_score
+    
+    # 3. Cluster structure detection
+    cluster_score = _detect_cluster_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
+    all_scores["cluster"] = cluster_score
+    
+    # 4. Manifold structure detection
+    manifold_score = _detect_manifold_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
+    all_scores["manifold"] = manifold_score
+    
+    # 5. Sparse structure detection
+    sparse_score = _detect_sparse_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
+    all_scores["sparse"] = sparse_score
+    
+    # 6. Bimodal structure detection
+    bimodal_score = _detect_bimodal_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
+    all_scores["bimodal"] = bimodal_score
+    
+    # 7. Orthogonal subspaces detection
+    orthogonal_score = _detect_orthogonal_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
+    all_scores["orthogonal"] = orthogonal_score
+    
+    # Find best structure
+    best_key = max(all_scores.keys(), key=lambda k: all_scores[k].score)
+    best_structure = all_scores[best_key].structure_type
+    best_score = all_scores[best_key].score
+    
+    # Generate recommendation
+    recommendation = _generate_recommendation(best_structure, all_scores)
+    
+    return GeometryAnalysisResult(
+        best_structure=best_structure,
+        best_score=best_score,
+        all_scores=all_scores,
+        recommendation=recommendation,
+        details={
+            "config": cfg.__dict__,
+            "n_positive": pos_tensor.shape[0],
+            "n_negative": neg_tensor.shape[0],
+            "hidden_dim": pos_tensor.shape[1],
+        }
+    )
+
+
+def _detect_linear_structure(
+    pos_tensor: torch.Tensor,
+    neg_tensor: torch.Tensor,
+    diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig,
+) -> StructureScore:
+    """Detect if a single linear direction captures the behavior."""
+    if pos_tensor.shape[0] < 2 or neg_tensor.shape[0] < 2:
+        return StructureScore(StructureType.LINEAR, 0.0, 0.0, {"reason": "insufficient_data"})
+    
+    try:
+        # Compute mean difference direction
+        mean_diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
+        mean_diff_norm = mean_diff.norm()
+        if mean_diff_norm < 1e-8:
+            return StructureScore(StructureType.LINEAR, 0.0, 0.0, {"reason": "no_separation"})
+        
+        primary_dir = mean_diff / mean_diff_norm
+        
+        # Project all samples onto primary direction
+        pos_proj = pos_tensor @ primary_dir
+        neg_proj = neg_tensor @ primary_dir
+        
+        # Measure separation quality (Cohen's d)
+        pos_mean, pos_std = pos_proj.mean(), pos_proj.std()
+        neg_mean, neg_std = neg_proj.mean(), neg_proj.std()
+        pooled_std = ((pos_std**2 + neg_std**2) / 2).sqrt()
+        cohens_d = abs(pos_mean - neg_mean) / (pooled_std + 1e-8)
+        
+        # Measure variance explained by single direction
+        # Compute residual variance after projecting out primary direction
+        pos_residual = pos_tensor - (pos_proj.unsqueeze(1) * primary_dir.unsqueeze(0))
+        neg_residual = neg_tensor - (neg_proj.unsqueeze(1) * primary_dir.unsqueeze(0))
+        
+        total_var = pos_tensor.var() + neg_tensor.var()
+        residual_var = pos_residual.var() + neg_residual.var()
+        variance_explained = 1 - (residual_var / (total_var + 1e-8))
+        variance_explained = max(0, min(1, float(variance_explained)))
+        
+        # Measure within-class consistency (low spread along primary direction)
+        within_class_spread = (pos_std + neg_std) / 2
+        between_class_dist = abs(pos_mean - neg_mean)
+        spread_ratio = within_class_spread / (between_class_dist + 1e-8)
+        consistency = max(0, 1 - spread_ratio)  # High when spread is low relative to separation
+        
+        # Linear score: high cohens_d + high variance explained + high consistency
+        linear_score = (
+            0.35 * min(float(cohens_d) / 5, 1.0) +  # Separation quality
+            0.35 * variance_explained +              # Single direction captures variance
+            0.30 * consistency                       # Low within-class variance
+        )
+        
+        confidence = min(1.0, (pos_tensor.shape[0] + neg_tensor.shape[0]) / 50)
+        
+        return StructureScore(
+            StructureType.LINEAR,
+            score=float(linear_score),
+            confidence=float(confidence),
+            details={
+                "cohens_d": float(cohens_d),
+                "variance_explained": float(variance_explained),
+                "within_class_consistency": float(consistency),
+                "pos_std": float(pos_std),
+                "neg_std": float(neg_std),
+                "separation": float(between_class_dist),
+            }
+        )
+    except Exception as e:
+        return StructureScore(StructureType.LINEAR, 0.0, 0.0, {"error": str(e)})
+
+
+def _detect_cone_structure_score(
+    pos_tensor: torch.Tensor,
+    neg_tensor: torch.Tensor,
+    cfg: GeometryAnalysisConfig,
+) -> StructureScore:
+    """Detect cone structure and return as StructureScore."""
+    cone_config = ConeAnalysisConfig(
+        num_directions=cfg.num_components,
+        optimization_steps=cfg.optimization_steps,
+        cone_threshold=cfg.cone_threshold,
+    )
+    
+    try:
+        result = check_cone_structure(pos_tensor, neg_tensor, cone_config)
+        
+        # Cone is meaningful when:
+        # 1. Multiple directions are needed (PCA doesn't capture everything)
+        # 2. But directions are correlated (same half-space)
+        # 3. Cosine similarity is moderate (0.3-0.7 range ideal)
+        
+        # Penalize if PCA already explains most variance (that's linear, not cone)
+        pca_penalty = result.pca_explained_variance  # High PCA = linear is enough
+        
+        # Reward if cone explains more than PCA
+        cone_advantage = max(0, result.cone_explained_variance - result.pca_explained_variance)
+        
+        # Cone needs moderate cosine similarity - not too high (= linear) not too low (= orthogonal)
+        cos_sim = result.avg_cosine_similarity
+        if cos_sim > 0.85:
+            # Very high similarity means directions are basically the same = linear
+            cosine_score = 0.3
+        elif cos_sim > 0.7:
+            cosine_score = 0.7
+        elif cos_sim > 0.3:
+            # Ideal range for cone
+            cosine_score = 1.0
+        else:
+            # Too different = not a cone
+            cosine_score = max(0, cos_sim / 0.3)
+        
+        # Multiple significant directions needed
+        significant_dirs = sum(1 for s in result.separation_scores if abs(s) > 0.1)
+        multi_dir_score = min(significant_dirs / cfg.num_components, 1.0)
+        
+        # Adjusted cone score
+        cone_score = (
+            0.25 * result.half_space_consistency +
+            0.25 * cosine_score +
+            0.20 * cone_advantage +
+            0.15 * multi_dir_score +
+            0.15 * (1 - pca_penalty)  # Penalize when PCA is sufficient
+        )
+        
+        return StructureScore(
+            StructureType.CONE,
+            score=float(cone_score),
+            confidence=result.half_space_consistency,
+            details={
+                "pca_explained": result.pca_explained_variance,
+                "cone_explained": result.cone_explained_variance,
+                "cone_advantage": float(cone_advantage),
+                "avg_cosine_similarity": result.avg_cosine_similarity,
+                "half_space_consistency": result.half_space_consistency,
+                "num_directions": result.num_directions_found,
+                "significant_directions": significant_dirs,
+            }
+        )
+    except Exception as e:
+        return StructureScore(StructureType.CONE, 0.0, 0.0, {"error": str(e)})
+
+
+def _detect_cluster_structure(
+    pos_tensor: torch.Tensor,
+    neg_tensor: torch.Tensor,
+    diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig,
+) -> StructureScore:
+    """Detect if activations form discrete clusters."""
+    all_activations = torch.cat([pos_tensor, neg_tensor], dim=0)
+    n_samples = all_activations.shape[0]
+    
+    if n_samples < 6:
+        return StructureScore(StructureType.CLUSTER, 0.0, 0.0, {"reason": "insufficient_data"})
+    
+    best_silhouette = -1.0
+    best_k = 2
+    silhouette_scores = {}
+    
+    for k in range(2, min(cfg.max_clusters + 1, n_samples // 2)):
+        try:
+            # Simple k-means implementation
+            labels, centroids, silhouette = _kmeans_with_silhouette(all_activations, k, max_iters=50)
+            silhouette_scores[k] = silhouette
+            
+            if silhouette > best_silhouette:
+                best_silhouette = silhouette
+                best_k = k
+        except Exception:
+            continue
+    
+    if best_silhouette < 0:
+        return StructureScore(StructureType.CLUSTER, 0.0, 0.0, {"reason": "clustering_failed"})
+    
+    # Check if clusters separate pos/neg
+    labels, _, _ = _kmeans_with_silhouette(all_activations, best_k, max_iters=50)
+    pos_labels = labels[:pos_tensor.shape[0]]
+    neg_labels = labels[pos_tensor.shape[0]:]
+    
+    # Cluster purity: do pos and neg end up in different clusters?
+    pos_majority = pos_labels.mode().values.item() if len(pos_labels) > 0 else -1
+    neg_majority = neg_labels.mode().values.item() if len(neg_labels) > 0 else -1
+    cluster_separation = 1.0 if pos_majority != neg_majority else 0.5
+    
+    # Silhouette score ranges from -1 to 1, where:
+    # > 0.7 = strong structure
+    # 0.5-0.7 = reasonable structure
+    # 0.25-0.5 = weak structure
+    # < 0.25 = no substantial structure
+    
+    # Only consider cluster structure if silhouette is reasonably high
+    if best_silhouette < cfg.cluster_silhouette_threshold:
+        # Low silhouette means no clear cluster structure
+        cluster_score = best_silhouette * 0.5  # Scale down significantly
+    else:
+        # Good silhouette - this is truly clustered data
+        # Normalize silhouette from [threshold, 1] to [0.5, 1]
+        normalized_silhouette = (best_silhouette - cfg.cluster_silhouette_threshold) / (1 - cfg.cluster_silhouette_threshold)
+        cluster_score = 0.5 + 0.4 * normalized_silhouette + 0.1 * cluster_separation
+    
+    return StructureScore(
+        StructureType.CLUSTER,
+        score=float(cluster_score),
+        confidence=float(max(0, best_silhouette)),
+        details={
+            "best_k": best_k,
+            "best_silhouette": float(best_silhouette),
+            "all_silhouettes": {str(k): float(v) for k, v in silhouette_scores.items()},
+            "cluster_separation": float(cluster_separation),
+            "silhouette_threshold": cfg.cluster_silhouette_threshold,
+        }
+    )
+
+
+def _kmeans_with_silhouette(
+    data: torch.Tensor,
+    k: int,
+    max_iters: int = 50,
+) -> Tuple[torch.Tensor, torch.Tensor, float]:
+    """Simple k-means with silhouette score computation."""
+    n_samples, n_features = data.shape
+    
+    # Initialize centroids randomly
+    indices = torch.randperm(n_samples)[:k]
+    centroids = data[indices].clone()
+    
+    for _ in range(max_iters):
+        # Assign labels
+        distances = torch.cdist(data, centroids)
+        labels = distances.argmin(dim=1)
+        
+        # Update centroids
+        new_centroids = torch.zeros_like(centroids)
+        for i in range(k):
+            mask = labels == i
+            if mask.sum() > 0:
+                new_centroids[i] = data[mask].mean(dim=0)
+            else:
+                new_centroids[i] = centroids[i]
+        
+        if torch.allclose(centroids, new_centroids, atol=1e-6):
+            break
+        centroids = new_centroids
+    
+    # Compute silhouette score
+    silhouette = _compute_silhouette(data, labels, k)
+    
+    return labels, centroids, silhouette
+
+
+def _compute_silhouette(data: torch.Tensor, labels: torch.Tensor, k: int) -> float:
+    """Compute silhouette score."""
+    n_samples = data.shape[0]
+    if n_samples < 2 or k < 2:
+        return 0.0
+    
+    silhouette_samples = []
+    
+    for i in range(n_samples):
+        label_i = labels[i].item()
+        
+        # a(i): mean distance to same cluster
+        same_cluster = data[labels == label_i]
+        if same_cluster.shape[0] > 1:
+            a_i = (data[i] - same_cluster).norm(dim=1).sum() / (same_cluster.shape[0] - 1)
+        else:
+            a_i = 0.0
+        
+        # b(i): min mean distance to other clusters
+        b_i = float('inf')
+        for j in range(k):
+            if j != label_i:
+                other_cluster = data[labels == j]
+                if other_cluster.shape[0] > 0:
+                    mean_dist = (data[i] - other_cluster).norm(dim=1).mean()
+                    b_i = min(b_i, mean_dist.item())
+        
+        if b_i == float('inf'):
+            b_i = 0.0
+        
+        # Silhouette for sample i
+        if max(a_i, b_i) > 0:
+            s_i = (b_i - a_i) / max(a_i, b_i)
+        else:
+            s_i = 0.0
+        
+        silhouette_samples.append(s_i)
+    
+    return float(sum(silhouette_samples) / len(silhouette_samples)) if silhouette_samples else 0.0
+
+
+def _detect_manifold_structure(
+    pos_tensor: torch.Tensor,
+    neg_tensor: torch.Tensor,
+    diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig,
+) -> StructureScore:
+    """Detect non-linear manifold structure via intrinsic dimensionality."""
+    all_activations = torch.cat([pos_tensor, neg_tensor], dim=0)
+    n_samples = all_activations.shape[0]
+    
+    if n_samples < cfg.manifold_neighbors + 1:
+        return StructureScore(StructureType.MANIFOLD, 0.0, 0.0, {"reason": "insufficient_data"})
+    
+    try:
+        # First check if there's meaningful separation
+        mean_diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
+        separation_strength = mean_diff.norm() / (pos_tensor.std() + neg_tensor.std() + 1e-8)
+        has_structure = min(float(separation_strength) / 2, 1.0)
+        
+        if has_structure < 0.2:
+            # No meaningful separation - can't determine manifold structure
+            return StructureScore(StructureType.MANIFOLD, 0.1, 0.0, {"reason": "no_separation"})
+        
+        # Estimate intrinsic dimensionality using correlation dimension
+        intrinsic_dim = _estimate_intrinsic_dimensionality(all_activations, cfg.manifold_neighbors)
+        
+        # Compare to ambient dimension
+        ambient_dim = all_activations.shape[1]
+        dim_ratio = intrinsic_dim / ambient_dim
+        
+        # Also compute local linearity deviation
+        local_nonlinearity = _compute_local_nonlinearity(all_activations, cfg.manifold_neighbors)
+        
+        # Manifold score: high if low intrinsic dim AND non-linear AND has structure
+        # Low intrinsic dim alone could be linear, so we need nonlinearity
+        # But random noise also has "nonlinearity" - need to distinguish
+        
+        # Manifold is meaningful only with significant dimension reduction
+        if dim_ratio > 0.5:
+            # Not much dimension reduction = not a clear manifold
+            manifold_score = 0.3 * has_structure
+        else:
+            manifold_score = (
+                0.30 * (1 - dim_ratio) +
+                0.25 * local_nonlinearity +
+                0.45 * has_structure  # Weight structure heavily
+            )
+        
+        # Confidence based on sample size
+        confidence = min(1.0, n_samples / 100)
+        
+        return StructureScore(
+            StructureType.MANIFOLD,
+            score=float(manifold_score),
+            confidence=float(confidence),
+            details={
+                "intrinsic_dimensionality": float(intrinsic_dim),
+                "ambient_dimensionality": ambient_dim,
+                "dim_ratio": float(dim_ratio),
+                "local_nonlinearity": float(local_nonlinearity),
+            }
+        )
+    except Exception as e:
+        return StructureScore(StructureType.MANIFOLD, 0.0, 0.0, {"error": str(e)})
+
+
+def _estimate_intrinsic_dimensionality(data: torch.Tensor, k: int) -> float:
+    """Estimate intrinsic dimensionality using MLE method."""
+    n_samples = data.shape[0]
+    
+    # Compute pairwise distances
+    distances = torch.cdist(data, data)
+    
+    # For each point, get k nearest neighbors (excluding self)
+    intrinsic_dims = []
+    
+    for i in range(n_samples):
+        dists_i = distances[i]
+        dists_i[i] = float('inf')  # Exclude self
+        
+        # Get k smallest distances
+        knn_dists, _ = torch.topk(dists_i, k, largest=False)
+        knn_dists = knn_dists[knn_dists > 1e-10]  # Filter zeros
+        
+        if len(knn_dists) < 2:
+            continue
+        
+        # MLE estimator for intrinsic dimensionality
+        # d = 1 / (mean(log(r_k / r_j)) for j < k)
+        r_k = knn_dists[-1]
+        log_ratios = torch.log(r_k / knn_dists[:-1])
+        
+        if log_ratios.mean() > 0:
+            d_i = 1.0 / log_ratios.mean()
+            intrinsic_dims.append(min(float(d_i), data.shape[1]))  # Cap at ambient dim
+    
+    if not intrinsic_dims:
+        return float(data.shape[1])
+    
+    return float(sum(intrinsic_dims) / len(intrinsic_dims))
+
+
+def _compute_local_nonlinearity(data: torch.Tensor, k: int) -> float:
+    """Compute how much local neighborhoods deviate from linear."""
+    n_samples = data.shape[0]
+    distances = torch.cdist(data, data)
+    
+    nonlinearity_scores = []
+    
+    for i in range(min(n_samples, 50)):  # Sample for efficiency
+        # Get k nearest neighbors
+        dists_i = distances[i].clone()
+        dists_i[i] = float('inf')
+        _, knn_indices = torch.topk(dists_i, k, largest=False)
+        
+        # Get local neighborhood
+        neighborhood = data[knn_indices]
+        center = neighborhood.mean(dim=0, keepdim=True)
+        centered = neighborhood - center
+        
+        # PCA on local neighborhood
+        try:
+            _, S, _ = torch.linalg.svd(centered, full_matrices=False)
+            
+            # Nonlinearity: how spread are singular values?
+            # Linear would have first few dominating
+            total_var = (S ** 2).sum()
+            if total_var > 0:
+                # Entropy-like measure of variance distribution
+                var_dist = (S ** 2) / total_var
+                var_dist = var_dist[var_dist > 1e-10]
+                entropy = -(var_dist * torch.log(var_dist + 1e-10)).sum()
+                max_entropy = torch.log(torch.tensor(float(len(var_dist))))
+                nonlinearity = float(entropy / max_entropy) if max_entropy > 0 else 0.0
+                nonlinearity_scores.append(nonlinearity)
+        except Exception:
+            continue
+    
+    return float(sum(nonlinearity_scores) / len(nonlinearity_scores)) if nonlinearity_scores else 0.0
+
+
+def _detect_sparse_structure(
+    pos_tensor: torch.Tensor,
+    neg_tensor: torch.Tensor,
+    diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig,
+) -> StructureScore:
+    """Detect if behavior is encoded in sparse neuron activations."""
+    # Mean difference vector
+    mean_diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
+    
+    # Compute sparsity metrics
+    abs_diff = mean_diff.abs()
+    
+    # L1/L2 ratio (lower = sparser)
+    l1_norm = abs_diff.sum()
+    l2_norm = abs_diff.norm()
+    
+    if l2_norm > 0:
+        l1_l2_ratio = l1_norm / (l2_norm * (len(mean_diff) ** 0.5))
+    else:
+        l1_l2_ratio = 1.0
+    
+    # Fraction of "active" dimensions (above threshold)
+    threshold = abs_diff.max() * cfg.sparse_threshold
+    active_fraction = (abs_diff > threshold).float().mean()
+    
+    # Gini coefficient (measures inequality)
+    sorted_abs = abs_diff.sort().values
+    n = len(sorted_abs)
+    cumsum = sorted_abs.cumsum(0)
+    gini = (2 * torch.arange(1, n + 1, dtype=torch.float32) @ sorted_abs - (n + 1) * sorted_abs.sum()) / (n * sorted_abs.sum() + 1e-10)
+    
+    # Sparse score: high if few dimensions are active
+    sparse_score = 0.4 * (1 - float(l1_l2_ratio)) + 0.3 * (1 - float(active_fraction)) + 0.3 * float(gini)
+    sparse_score = max(0, min(1, sparse_score))
+    
+    # Top contributing dimensions
+    top_k = min(10, len(mean_diff))
+    top_values, top_indices = torch.topk(abs_diff, top_k)
+    top_contribution = top_values.sum() / (abs_diff.sum() + 1e-10)
+    
+    return StructureScore(
+        StructureType.SPARSE,
+        score=float(sparse_score),
+        confidence=min(1.0, (pos_tensor.shape[0] + neg_tensor.shape[0]) / 30),
+        details={
+            "l1_l2_ratio": float(l1_l2_ratio),
+            "active_fraction": float(active_fraction),
+            "gini_coefficient": float(gini),
+            "top_10_contribution": float(top_contribution),
+            "top_indices": top_indices.tolist(),
+        }
+    )
+
+
+def _detect_bimodal_structure(
+    pos_tensor: torch.Tensor,
+    neg_tensor: torch.Tensor,
+    diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig,
+) -> StructureScore:
+    """Detect if activations have bimodal/multimodal distribution."""
+    # Project onto principal direction
+    mean_diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
+    direction = F.normalize(mean_diff, p=2, dim=0)
+    
+    all_activations = torch.cat([pos_tensor, neg_tensor], dim=0)
+    projections = (all_activations @ direction).cpu()
+    
+    # Hartigan's dip test approximation
+    dip_statistic = _compute_dip_statistic(projections)
+    
+    # Check separation between pos and neg projections
+    pos_proj = (pos_tensor @ direction)
+    neg_proj = (neg_tensor @ direction)
+    
+    # Overlap between distributions
+    pos_mean, pos_std = pos_proj.mean(), pos_proj.std()
+    neg_mean, neg_std = neg_proj.mean(), neg_proj.std()
+    
+    # Bhattacharyya distance approximation
+    if pos_std > 0 and neg_std > 0:
+        mean_diff_normalized = abs(pos_mean - neg_mean) / ((pos_std + neg_std) / 2)
+    else:
+        mean_diff_normalized = 0.0
+    
+    # Bimodal score: high dip + clear separation
+    bimodal_score = 0.5 * min(float(dip_statistic) * 10, 1.0) + 0.5 * min(float(mean_diff_normalized) / 3, 1.0)
+    
+    return StructureScore(
+        StructureType.BIMODAL,
+        score=float(bimodal_score),
+        confidence=min(1.0, len(projections) / 50),
+        details={
+            "dip_statistic": float(dip_statistic),
+            "mean_separation": float(mean_diff_normalized),
+            "pos_mean": float(pos_mean),
+            "neg_mean": float(neg_mean),
+            "pos_std": float(pos_std),
+            "neg_std": float(neg_std),
+        }
+    )
+
+
+def _compute_dip_statistic(data: torch.Tensor) -> float:
+    """Compute Hartigan's dip statistic (simplified)."""
+    sorted_data = data.sort().values
+    n = len(sorted_data)
+    
+    if n < 4:
+        return 0.0
+    
+    # Empirical CDF
+    ecdf = torch.arange(1, n + 1, dtype=torch.float32) / n
+    
+    # Greatest convex minorant and least concave majorant
+    # Simplified: measure deviation from uniform
+    uniform = torch.linspace(0, 1, n)
+    
+    # Kolmogorov-Smirnov like statistic
+    ks_stat = (ecdf - uniform).abs().max()
+    
+    return float(ks_stat)
+
+
+def _detect_orthogonal_structure(
+    pos_tensor: torch.Tensor,
+    neg_tensor: torch.Tensor,
+    diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig,
+) -> StructureScore:
+    """Detect if behavior is encoded in multiple orthogonal/independent subspaces.
+    
+    Orthogonal structure means the data requires MULTIPLE independent directions
+    that are NOT correlated with each other. This is different from cone (where
+    directions are correlated) and linear (where one direction suffices).
+    """
+    if diff_vectors.shape[0] < cfg.num_components:
+        return StructureScore(StructureType.ORTHOGONAL, 0.0, 0.0, {"reason": "insufficient_data"})
+    
+    try:
+        # PCA to understand variance distribution
+        centered = diff_vectors - diff_vectors.mean(dim=0, keepdim=True)
+        _, S, Vh = torch.linalg.svd(centered, full_matrices=False)
+        
+        total_var = (S ** 2).sum()
+        if total_var < 1e-8:
+            return StructureScore(StructureType.ORTHOGONAL, 0.0, 0.0, {"reason": "no_variance"})
+        
+        # For orthogonal structure:
+        # 1. Multiple components should have significant variance (not just one = linear)
+        # 2. Variance should be spread across multiple dimensions (not concentrated)
+        
+        var_explained = (S ** 2) / total_var
+        k = min(cfg.num_components, len(S))
+        
+        # First component dominance (low = more orthogonal/spread)
+        first_var = float(var_explained[0])
+        
+        # Effective dimensionality (entropy-based)
+        var_explained_clipped = var_explained[var_explained > 1e-10]
+        entropy = -(var_explained_clipped * torch.log(var_explained_clipped + 1e-10)).sum()
+        max_entropy = torch.log(torch.tensor(float(len(var_explained_clipped))))
+        effective_dim_ratio = float(entropy / max_entropy) if max_entropy > 0 else 0.0
+        
+        # Count significant dimensions (>5% variance each)
+        significant_dims = (var_explained > 0.05).sum().item()
+        multi_dim_score = min(significant_dims / 3, 1.0)  # 3+ significant dims is fully orthogonal
+        
+        # Orthogonal structure is RARE and specific:
+        # It requires MULTIPLE INDEPENDENT directions with separation on EACH
+        # High spread alone is not orthogonal - it could be noise or cone
+        
+        # Check separation strength
+        mean_diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
+        separation_strength = mean_diff.norm() / (pos_tensor.std() + neg_tensor.std() + 1e-8)
+        has_separation = min(float(separation_strength) / 3, 1.0)
+        
+        # For true orthogonal structure, we need:
+        # 1. Strong separation (otherwise no structure)
+        # 2. Multiple significant dimensions (otherwise linear)
+        # 3. But NOT too spread (otherwise just noise)
+        
+        # Sweet spot: 2-4 significant dimensions with clear separation
+        if significant_dims < 2:
+            # Too few dimensions = linear
+            orthogonal_score = 0.2
+        elif significant_dims > 10:
+            # Too many = likely noise, not structure
+            orthogonal_score = 0.3 * has_separation
+        else:
+            # Reasonable number of dimensions
+            # Check if it's not dominated by first (would be linear)
+            # and not too spread (would be noise)
+            structure_score = (
+                0.3 * (1 - first_var) +  # Not dominated by one direction
+                0.3 * min(significant_dims / 4, 1.0) +  # 2-4 directions is ideal
+                0.4 * has_separation  # Must have separation
+            )
+            orthogonal_score = structure_score * 0.8  # Scale down - orthogonal is rare
+        
+        return StructureScore(
+            StructureType.ORTHOGONAL,
+            score=float(orthogonal_score),
+            confidence=min(1.0, diff_vectors.shape[0] / 30),
+            details={
+                "first_component_variance": float(first_var),
+                "effective_dim_ratio": float(effective_dim_ratio),
+                "significant_dimensions": int(significant_dims),
+                "top_5_variances": var_explained[:min(5, len(var_explained))].tolist(),
+            }
+        )
+    except Exception as e:
+        return StructureScore(StructureType.ORTHOGONAL, 0.0, 0.0, {"error": str(e)})
+
+
+def _generate_recommendation(best_structure: StructureType, all_scores: Dict[str, StructureScore]) -> str:
+    """Generate steering method recommendation based on detected geometry."""
+    recommendations = {
+        StructureType.LINEAR: "Use CAA (Contrastive Activation Addition) - single direction steering is optimal.",
+        StructureType.CONE: "Use PRISM - multi-directional steering will capture the full behavior cone.",
+        StructureType.CLUSTER: "Consider cluster-based steering or multiple separate vectors for each cluster.",
+        StructureType.MANIFOLD: "Use TITAN with learned gating - non-linear structure requires adaptive steering.",
+        StructureType.SPARSE: "Use SAE-based steering targeting the specific active neurons.",
+        StructureType.BIMODAL: "Use PULSE with conditional gating - behavior has two distinct modes.",
+        StructureType.ORTHOGONAL: "Use multiple independent CAA vectors or ICA-based steering.",
+        StructureType.UNKNOWN: "Structure unclear - start with CAA and evaluate effectiveness.",
+    }
+    
+    base_rec = recommendations.get(best_structure, recommendations[StructureType.UNKNOWN])
+    
+    # Add context from other scores
+    sorted_scores = sorted(all_scores.items(), key=lambda x: x[1].score, reverse=True)
+    if len(sorted_scores) >= 2:
+        second_best = sorted_scores[1]
+        if second_best[1].score > 0.6:
+            base_rec += f" (Also consider {second_best[0]}: score {second_best[1].score:.2f})"
+    
+    return base_rec

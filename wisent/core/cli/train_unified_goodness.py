@@ -396,7 +396,7 @@ def execute_train_unified_goodness(args):
             positive_texts,
             layers=layers,
             aggregation=aggregation_strategy,
-            batch_size=16,
+            batch_size=1,
             show_progress=True,
         )
         
@@ -406,7 +406,7 @@ def execute_train_unified_goodness(args):
             negative_texts,
             layers=layers,
             aggregation=aggregation_strategy,
-            batch_size=16,
+            batch_size=1,
             show_progress=True,
         )
         

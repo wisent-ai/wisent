@@ -37,6 +37,7 @@ __all__ = [
     "TITANMethod",
     "TITANConfig",
     "TITANResult",
+    "GeometryAdaptation",
     "GatingNetwork",
     "IntensityNetwork",
 ]
@@ -109,6 +110,22 @@ class TITANConfig:
     
     normalize: bool = True
     """L2-normalize directions."""
+    
+    # Geometry-adaptive configuration
+    adapt_to_geometry: bool = True
+    """Whether to analyze geometry and adapt configuration."""
+    
+    geometry_analysis_layer: Optional[int] = None
+    """Layer to use for geometry analysis. If None, uses sensor_layer."""
+    
+    linear_threshold: float = 0.8
+    """If linear score > threshold, simplify to single direction."""
+    
+    skip_gating_if_linear: bool = True
+    """Skip gating network if structure is clearly linear."""
+    
+    auto_num_directions: bool = True
+    """Automatically determine num_directions based on geometry."""
 
 
 class GatingNetwork(nn.Module):
@@ -215,6 +232,32 @@ class DirectionWeightNetwork(nn.Module):
 
 
 @dataclass
+class GeometryAdaptation:
+    """Results from geometry analysis and adaptations made."""
+    
+    detected_structure: str
+    """Primary detected structure type (linear, cone, manifold, etc.)."""
+    
+    structure_scores: Dict[str, float]
+    """Scores for all structure types."""
+    
+    adaptations_made: List[str]
+    """List of adaptations applied based on geometry."""
+    
+    original_num_directions: int
+    """Originally configured num_directions."""
+    
+    adapted_num_directions: int
+    """Num directions after adaptation."""
+    
+    gating_enabled: bool
+    """Whether gating network is enabled."""
+    
+    recommendation: str
+    """Steering method recommendation based on geometry."""
+
+
+@dataclass
 class TITANResult:
     """Result containing all TITAN components."""
     
@@ -223,8 +266,8 @@ class TITANResult:
     """Per-layer directions [num_directions, hidden_dim]."""
     
     # Networks
-    gate_network: GatingNetwork
-    """Learned gating network."""
+    gate_network: Optional[GatingNetwork]
+    """Learned gating network (None if disabled due to linear structure)."""
     
     intensity_network: IntensityNetwork
     """Learned intensity prediction network."""
@@ -239,6 +282,10 @@ class TITANResult:
     # Metadata
     metadata: Dict[str, Any]
     """Training metadata and diagnostics."""
+    
+    # Geometry analysis
+    geometry_adaptation: Optional[GeometryAdaptation] = None
+    """Results from geometry analysis (if adapt_to_geometry was True)."""
     
     def get_effective_direction(self, layer: LayerName, h: Optional[torch.Tensor] = None) -> torch.Tensor:
         """
@@ -263,6 +310,11 @@ class TITANResult:
     
     def predict_gate(self, h: torch.Tensor, temperature: float = 0.5) -> torch.Tensor:
         """Predict gate value from hidden state."""
+        if self.gate_network is None:
+            # No gating - always return 1.0 (always steer)
+            if h.dim() == 1:
+                return torch.ones(1, device=h.device)
+            return torch.ones(h.shape[0], device=h.device)
         return self.gate_network(h, temperature)
     
     def predict_intensity(self, h: torch.Tensor) -> Dict[LayerName, torch.Tensor]:
@@ -422,22 +474,41 @@ class TITANMethod(BaseSteeringMethod):
         
         num_layers = len(layer_names)
         
-        # Initialize components
-        directions = self._initialize_directions(buckets, layer_names, hidden_dim)
-        gate_network = GatingNetwork(hidden_dim, self.config.gate_hidden_dim)
+        # Geometry analysis and adaptation
+        geometry_adaptation = None
+        effective_num_directions = self.config.num_directions
+        enable_gating = True
+        
+        if self.config.adapt_to_geometry:
+            geometry_adaptation = self._analyze_and_adapt_geometry(
+                buckets, layer_names, hidden_dim
+            )
+            effective_num_directions = geometry_adaptation.adapted_num_directions
+            enable_gating = geometry_adaptation.gating_enabled
+        
+        # Initialize components with adapted configuration
+        directions = self._initialize_directions(
+            buckets, layer_names, hidden_dim, 
+            num_directions=effective_num_directions
+        )
+        
+        gate_network: Optional[GatingNetwork] = None
+        if enable_gating:
+            gate_network = GatingNetwork(hidden_dim, self.config.gate_hidden_dim)
+        
         intensity_network = IntensityNetwork(
             hidden_dim, num_layers, 
             self.config.intensity_hidden_dim, 
             self.config.max_alpha
         )
         direction_weights = {
-            layer: torch.ones(self.config.num_directions) / self.config.num_directions
+            layer: torch.ones(effective_num_directions) / effective_num_directions
             for layer in layer_names
         }
         
         # Make direction weights trainable
         direction_weight_params = {
-            layer: nn.Parameter(torch.zeros(self.config.num_directions))
+            layer: nn.Parameter(torch.zeros(effective_num_directions))
             for layer in layer_names
         }
         
@@ -456,6 +527,7 @@ class TITANMethod(BaseSteeringMethod):
             data=data,
             layer_names=layer_names,
             sensor_layer=sensor_layer,
+            enable_gating=enable_gating,
         )
         
         return TITANResult(
@@ -470,7 +542,114 @@ class TITANMethod(BaseSteeringMethod):
                 "hidden_dim": hidden_dim,
                 "sensor_layer": sensor_layer,
                 "training_logs": self._training_logs,
-            }
+                "effective_num_directions": effective_num_directions,
+                "gating_enabled": enable_gating,
+            },
+            geometry_adaptation=geometry_adaptation,
+        )
+    
+    def _analyze_and_adapt_geometry(
+        self,
+        buckets: Dict[LayerName, Tuple[List[torch.Tensor], List[torch.Tensor]]],
+        layer_names: List[LayerName],
+        hidden_dim: int,
+    ) -> GeometryAdaptation:
+        """
+        Analyze geometry of activations and adapt TITAN configuration.
+        
+        Returns:
+            GeometryAdaptation with detected structure and adaptations made.
+        """
+        from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+            detect_geometry_structure,
+            GeometryAnalysisConfig,
+        )
+        
+        # Find the layer to analyze
+        analysis_layer_idx = self.config.geometry_analysis_layer or self.config.sensor_layer
+        analysis_layer = None
+        for layer in layer_names:
+            try:
+                idx = int(str(layer).split("_")[-1])
+                if idx == analysis_layer_idx:
+                    analysis_layer = layer
+                    break
+            except (ValueError, IndexError):
+                continue
+        
+        if analysis_layer is None:
+            analysis_layer = layer_names[len(layer_names) // 2]
+        
+        # Get activations for analysis
+        pos_list, neg_list = buckets[analysis_layer]
+        pos_tensor = torch.stack([t.detach().float().reshape(-1) for t in pos_list], dim=0)
+        neg_tensor = torch.stack([t.detach().float().reshape(-1) for t in neg_list], dim=0)
+        
+        # Run geometry detection
+        geo_config = GeometryAnalysisConfig(
+            num_components=self.config.num_directions,
+            max_clusters=5,
+            manifold_neighbors=min(10, len(pos_list) - 1),
+        )
+        geo_result = detect_geometry_structure(pos_tensor, neg_tensor, geo_config)
+        
+        # Extract scores
+        structure_scores = {
+            name: score.score for name, score in geo_result.all_scores.items()
+        }
+        detected_structure = geo_result.best_structure.value
+        
+        # Determine adaptations
+        adaptations = []
+        original_num_directions = self.config.num_directions
+        adapted_num_directions = original_num_directions
+        gating_enabled = True
+        
+        linear_score = structure_scores.get("linear", 0)
+        cone_score = structure_scores.get("cone", 0)
+        manifold_score = structure_scores.get("manifold", 0)
+        
+        # Adaptation 1: Simplify if linear
+        if linear_score > self.config.linear_threshold:
+            if self.config.auto_num_directions:
+                adapted_num_directions = 1
+                adaptations.append(f"Reduced num_directions to 1 (linear score={linear_score:.2f})")
+            
+            if self.config.skip_gating_if_linear:
+                gating_enabled = False
+                adaptations.append("Disabled gating network (linear structure)")
+        
+        # Adaptation 2: Adjust directions based on cone structure
+        elif cone_score > 0.7 and self.config.auto_num_directions:
+            # Cone structure benefits from multiple directions
+            cone_details = geo_result.all_scores.get("cone")
+            if cone_details and hasattr(cone_details, "details"):
+                sig_dirs = cone_details.details.get("significant_directions", 3)
+                adapted_num_directions = max(2, min(sig_dirs + 1, 7))
+                if adapted_num_directions != original_num_directions:
+                    adaptations.append(
+                        f"Adjusted num_directions to {adapted_num_directions} based on cone structure"
+                    )
+        
+        # Adaptation 3: Increase directions for manifold/orthogonal
+        elif (manifold_score > 0.8 or structure_scores.get("orthogonal", 0) > 0.7):
+            if self.config.auto_num_directions and adapted_num_directions < 5:
+                adapted_num_directions = 5
+                adaptations.append(
+                    f"Increased num_directions to 5 for manifold/orthogonal structure"
+                )
+        
+        if not adaptations:
+            adaptations.append("No adaptations needed - using default configuration")
+        
+        return GeometryAdaptation(
+            detected_structure=detected_structure,
+            structure_scores=structure_scores,
+            adaptations_made=adaptations,
+            original_num_directions=original_num_directions,
+            adapted_num_directions=adapted_num_directions,
+            gating_enabled=gating_enabled,
+            recommendation=geo_result.recommendation,
         )
     
     def _initialize_directions(
@@ -478,10 +657,11 @@ class TITANMethod(BaseSteeringMethod):
         buckets: Dict[LayerName, Tuple[List[torch.Tensor], List[torch.Tensor]]],
         layer_names: List[LayerName],
         hidden_dim: int,
+        num_directions: Optional[int] = None,
     ) -> Dict[LayerName, torch.Tensor]:
         """Initialize direction manifold for each layer."""
         directions = {}
-        K = self.config.num_directions
+        K = num_directions if num_directions is not None else self.config.num_directions
         
         for layer in layer_names:
             pos_list, neg_list = buckets[layer]
@@ -540,13 +720,14 @@ class TITANMethod(BaseSteeringMethod):
     def _joint_optimization(
         self,
         directions: Dict[LayerName, torch.Tensor],
-        gate_network: GatingNetwork,
+        gate_network: Optional[GatingNetwork],
         intensity_network: IntensityNetwork,
         direction_weight_params: Dict[LayerName, nn.Parameter],
         data: Dict[str, Dict[LayerName, torch.Tensor]],
         layer_names: List[LayerName],
         sensor_layer: LayerName,
-    ) -> Tuple[Dict[LayerName, torch.Tensor], GatingNetwork, IntensityNetwork, Dict[LayerName, torch.Tensor]]:
+        enable_gating: bool = True,
+    ) -> Tuple[Dict[LayerName, torch.Tensor], Optional[GatingNetwork], IntensityNetwork, Dict[LayerName, torch.Tensor]]:
         """
         Joint end-to-end optimization of all TITAN components.
         """
@@ -556,7 +737,8 @@ class TITANMethod(BaseSteeringMethod):
         # Collect all parameters
         all_params = []
         all_params.extend(direction_params.values())
-        all_params.extend(gate_network.parameters())
+        if gate_network is not None:
+            all_params.extend(gate_network.parameters())
         all_params.extend(intensity_network.parameters())
         all_params.extend(direction_weight_params.values())
         
@@ -583,9 +765,13 @@ class TITANMethod(BaseSteeringMethod):
             pos_sensor = data["pos"][sensor_layer]
             neg_sensor = data["neg"][sensor_layer]
             
-            # Predict gates
-            pos_gate = gate_network(pos_sensor, self.config.gate_temperature)
-            neg_gate = gate_network(neg_sensor, self.config.gate_temperature)
+            # Predict gates (or use constant 1.0 if gating disabled)
+            if gate_network is not None:
+                pos_gate = gate_network(pos_sensor, self.config.gate_temperature)
+                neg_gate = gate_network(neg_sensor, self.config.gate_temperature)
+            else:
+                pos_gate = torch.ones(pos_sensor.shape[0], device=pos_sensor.device)
+                neg_gate = torch.ones(neg_sensor.shape[0], device=neg_sensor.device)
             
             # Predict intensities
             pos_intensity = intensity_network(pos_sensor)  # [N_pos, num_layers]
@@ -624,7 +810,7 @@ class TITANMethod(BaseSteeringMethod):
                 best_loss = loss.item()
                 best_state = {
                     "directions": {l: p.detach().clone() for l, p in direction_params.items()},
-                    "gate_network": {k: v.detach().clone() for k, v in gate_network.state_dict().items()},
+                    "gate_network": {k: v.detach().clone() for k, v in gate_network.state_dict().items()} if gate_network is not None else None,
                     "intensity_network": {k: v.detach().clone() for k, v in intensity_network.state_dict().items()},
                     "direction_weights": {l: F.softmax(p.detach().clone(), dim=0) for l, p in direction_weight_params.items()},
                 }
@@ -645,7 +831,8 @@ class TITANMethod(BaseSteeringMethod):
         # Restore best state
         if best_state is not None:
             final_directions = best_state["directions"]
-            gate_network.load_state_dict(best_state["gate_network"])
+            if gate_network is not None and best_state["gate_network"] is not None:
+                gate_network.load_state_dict(best_state["gate_network"])
             intensity_network.load_state_dict(best_state["intensity_network"])
             final_weights = best_state["direction_weights"]
         else:
