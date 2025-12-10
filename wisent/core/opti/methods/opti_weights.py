@@ -238,6 +238,10 @@ class WeightsOptimizer(BaseOptimizer):
                 norm_preserve=self.config.norm_preserve,
                 verbose=False,
             )
+        elif self.config.method == "additive":
+            # Direct additive: add steering vector directly to weight matrices
+            # This is the simplest approach that worked in manual tests
+            self._apply_direct_additive(params)
         else:
             bake_steering_with_kernel(
                 self.model,
@@ -248,6 +252,65 @@ class WeightsOptimizer(BaseOptimizer):
                 components=self.config.components,
                 verbose=False,
             )
+
+    def _apply_direct_additive(self, params: dict[str, float]) -> None:
+        """
+        Apply direct additive weight modification.
+        
+        This directly adds steering vectors to weight matrices:
+        W' = W + strength * steering_vector
+        
+        This is the simplest approach and worked in manual humanization tests.
+        """
+        strength = params["strength"] * params["max_weight"]
+        max_weight_position = params["max_weight_position"] * (self.num_layers - 1)
+        min_weight = params["min_weight"]
+        min_weight_distance = 0.6 * (self.num_layers - 1)
+        
+        # Get model layers
+        if hasattr(self.model, "model"):
+            layers = self.model.model.layers
+        elif hasattr(self.model, "transformer"):
+            layers = self.model.transformer.h
+        else:
+            layers = self.model.layers
+        
+        components = self.config.components or ["self_attn.o_proj", "mlp.down_proj"]
+        
+        for layer_idx, steering_vector in self.steering_vectors.items():
+            if layer_idx >= len(layers):
+                continue
+            
+            # Compute layer-specific strength using kernel
+            distance = abs(layer_idx - max_weight_position)
+            if distance > min_weight_distance:
+                layer_strength = min_weight
+            else:
+                layer_strength = strength + (distance / min_weight_distance) * (min_weight - strength)
+            
+            if layer_strength <= 0:
+                continue
+            
+            layer = layers[layer_idx]
+            
+            for component_name in components:
+                try:
+                    component = layer
+                    for attr in component_name.split("."):
+                        component = getattr(component, attr)
+                    
+                    if hasattr(component, "weight"):
+                        vec = steering_vector.to(component.weight.device, dtype=component.weight.dtype)
+                        # Direct addition to weight matrix rows
+                        # Each row of the weight matrix gets shifted by the steering vector
+                        with torch.no_grad():
+                            # Add steering vector to each row of the weight matrix
+                            # W' = W + strength * outer(v, ones) / in_dim
+                            # This shifts outputs in the steering direction
+                            in_dim = component.weight.shape[1]
+                            component.weight.data += (layer_strength / in_dim) * vec.unsqueeze(1).expand_as(component.weight)
+                except AttributeError:
+                    continue
 
     def apply_best_params(self, best_params: dict[str, float]) -> None:
         """
