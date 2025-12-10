@@ -16,6 +16,10 @@ from .control_vectors import (
     ConeAnalysisConfig,
     ConeAnalysisResult,
     check_cone_structure,
+    GeometryAnalysisConfig,
+    GeometryAnalysisResult,
+    StructureType,
+    detect_geometry_structure,
 )
 from .vector_quality import VectorQualityConfig, VectorQualityReport, run_vector_quality_diagnostics
 
@@ -29,6 +33,10 @@ __all__ = [
     "ConeAnalysisConfig",
     "ConeAnalysisResult",
     "check_cone_structure",
+    "GeometryAnalysisConfig",
+    "GeometryAnalysisResult",
+    "StructureType",
+    "detect_geometry_structure",
     "VectorQualityConfig",
     "VectorQualityReport",
     "run_vector_quality_diagnostics",

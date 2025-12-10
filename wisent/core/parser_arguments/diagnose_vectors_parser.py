@@ -48,5 +48,25 @@ def setup_diagnose_vectors_parser(parser):
         help='Number of cone directions to search for (default: 5)'
     )
 
+    parser.add_argument(
+        '--detect-geometry',
+        action='store_true',
+        help='Detect geometric structure of activations (requires --activations-file)'
+    )
+
+    parser.add_argument(
+        '--max-clusters',
+        type=int,
+        default=5,
+        help='Maximum clusters to try for cluster detection (default: 5)'
+    )
+
+    parser.add_argument(
+        '--manifold-neighbors',
+        type=int,
+        default=10,
+        help='Number of neighbors for manifold analysis (default: 10)'
+    )
+
     parser.set_defaults(command='diagnose-vectors')
     return parser

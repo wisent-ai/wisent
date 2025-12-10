@@ -864,9 +864,20 @@ class OptimizationPipeline:
             return 0.0
 
     def _train_and_evaluate_probe(self, trial: optuna.Trial, layer_id: int, probe_type: str, probe_c: float) -> float:
-        """Train probe on training data and evaluate on validation data using cached activations."""
-        # Load cached training activations
-        X_train, y_train = self.cache.load_activations("train", layer_id, self.tokenization_config)
+        """Train probe on training data and evaluate on validation data using cached activations.
+        
+        Note: For personalization/trait mode, this returns 0.5 (random) since activations aren't cached.
+        """
+        # Skip probe training for personalization/trait mode (no cached activations)
+        if self.evaluator_type in ["personalization", "refusal"]:
+            return 0.5  # Return neutral score - probe not used for evaluation
+        
+        try:
+            # Load cached training activations
+            X_train, y_train = self.cache.load_activations("train", layer_id, self.tokenization_config)
+        except FileNotFoundError:
+            self.logger.warning(f"No cached activations for train layer {layer_id}, skipping probe")
+            return 0.5
 
         # Train probe
         if probe_type == "logistic_regression":
@@ -878,15 +889,16 @@ class OptimizationPipeline:
             raise UnknownTypeError(entity_type="probe_type", value=probe_type)
 
         # Evaluate on validation data using cached activations
-        X_val, y_val = self.cache.load_activations("val", layer_id, self.tokenization_config)
+        try:
+            X_val, y_val = self.cache.load_activations("val", layer_id, self.tokenization_config)
+        except FileNotFoundError:
+            self.logger.warning(f"No cached activations for val layer {layer_id}, skipping probe eval")
+            return 0.5
 
         from sklearn.metrics import roc_auc_score
 
         y_pred_proba = probe.predict_proba(X_val)[:, 1]
         return roc_auc_score(y_val, y_pred_proba) if len(np.unique(y_val)) > 1 else 0.5
-
-        # Don't store the probe object - it can't be JSON serialized
-        # The probe will be retrained in the final evaluation if needed
 
     def _train_steering_method(
         self, trial: optuna.Trial, method_name: str, layer_id: int, hyperparams: dict[str, Any],
@@ -1351,6 +1363,27 @@ class OptimizationPipeline:
         results = self.steering_evaluator.evaluate_responses(responses)
         return results.get("score", 0.0)
 
+    def _evaluate_personalization_metrics(self, responses: list[str]) -> dict[str, Any]:
+        """Evaluate personalization metrics for a list of responses using the shared evaluator."""
+        if not hasattr(self, 'steering_evaluator'):
+            self.logger.warning("No steering evaluator for personalization metrics")
+            return {"accuracy": 0.0, "score": 0.0}
+        
+        if not responses:
+            return {"accuracy": 0.0, "score": 0.0}
+        
+        # Evaluate using shared evaluator
+        results = self.steering_evaluator.evaluate_responses(responses)
+        score = results.get("score", 0.0)
+        
+        return {
+            "accuracy": score,  # Use score as "accuracy" for compatibility with final_evaluation
+            "score": score,
+            "trait": self.config.trait,
+            "num_responses": len(responses),
+            "evaluation_method": "personalization_evaluator",
+        }
+
     def _generate_with_caa_steering(self, caa, question: str, alpha: float, layer_id: int) -> str:
         """Generate response with CAA steering applied."""
         if not hasattr(caa, "steering_vector") or caa.steering_vector is None:
@@ -1581,15 +1614,7 @@ class OptimizationPipeline:
 
         self.logger.info(f"Best configuration: {best_params}")
 
-        # Re-train best probe and steering method on training data
-        from sklearn.linear_model import LogisticRegression
-
-        # Train best probe with fixed probe_c
-        X_train, y_train = self.cache.load_activations("train", layer_id, self.tokenization_config)
-        probe = LogisticRegression(C=1.0, random_state=self.config.seed, max_iter=1000)  # Fixed probe_c
-        probe.fit(X_train, y_train)
-
-        # Train best steering method (no early rejection for final evaluation)
+        # Re-train best steering method (no early rejection for final evaluation)
         steering_method = best_params.get("steering_method", "caa")  # Default to CAA if missing
         steering_instance, _ = self._train_steering_method(
             best_trial, steering_method, layer_id, best_params, early_reject=False
@@ -1600,6 +1625,17 @@ class OptimizationPipeline:
             pt_path = self.run_dir / "best_steering_vector.pt"
             safetensors_path = self.run_dir / "best_steering_vector.safetensors"
             self._save_steering_vector_dual_format(steering_instance, pt_path, safetensors_path)
+
+        # Train probe only for task-based evaluation (not for personalization/trait mode)
+        probe = None
+        if self.evaluator_type not in ["personalization", "refusal"]:
+            from sklearn.linear_model import LogisticRegression
+            try:
+                X_train, y_train = self.cache.load_activations("train", layer_id, self.tokenization_config)
+                probe = LogisticRegression(C=1.0, random_state=self.config.seed, max_iter=1000)
+                probe.fit(X_train, y_train)
+            except FileNotFoundError:
+                self.logger.warning("Could not load cached activations for probe training")
 
         # Generate baseline predictions (no steering)
         self.logger.info("Generating baseline predictions...")
@@ -1632,17 +1668,28 @@ class OptimizationPipeline:
                 steering_method=method_name,
             )
 
-        # Calculate benchmark metrics (with real task docs for coding tasks)
-        baseline_benchmark_metrics = metrics.evaluate_benchmark_performance(
-            baseline_predictions, test_ground_truths, self.config.test_dataset, task_docs=test_task_docs
-        )
-        steered_benchmark_metrics = metrics.evaluate_benchmark_performance(
-            steered_predictions, test_ground_truths, self.config.test_dataset, task_docs=test_task_docs
+        # Calculate metrics based on evaluator type
+        if self.evaluator_type == "personalization":
+            # Use personalization evaluator for trait-based metrics
+            baseline_benchmark_metrics = self._evaluate_personalization_metrics(baseline_predictions)
+            steered_benchmark_metrics = self._evaluate_personalization_metrics(steered_predictions)
+        else:
+            # Task-based evaluation with benchmark metrics
+            baseline_benchmark_metrics = metrics.evaluate_benchmark_performance(
+                baseline_predictions, test_ground_truths, self.config.test_dataset, task_docs=test_task_docs
+            )
+            steered_benchmark_metrics = metrics.evaluate_benchmark_performance(
+                steered_predictions, test_ground_truths, self.config.test_dataset, task_docs=test_task_docs
         )
 
-        # Evaluate probe on test data
-        X_test, y_test = self.cache.load_activations("test", layer_id, self.tokenization_config)
-        test_probe_metrics = self._evaluate_probe_metrics(probe, X_test, y_test)
+        # Evaluate probe on test data (only for task-based evaluation)
+        test_probe_metrics = {"auc": 0.5, "accuracy": 0.0}  # Default metrics
+        if probe is not None and self.evaluator_type not in ["personalization", "refusal"]:
+            try:
+                X_test, y_test = self.cache.load_activations("test", layer_id, self.tokenization_config)
+                test_probe_metrics = self._evaluate_probe_metrics(probe, X_test, y_test)
+            except FileNotFoundError:
+                self.logger.warning("Could not load cached test activations for probe evaluation")
 
         # Calculate improvement
         accuracy_improvement = steered_benchmark_metrics.get("accuracy", 0.0) - baseline_benchmark_metrics.get(
@@ -1667,7 +1714,8 @@ class OptimizationPipeline:
         self.logger.info(f"Baseline accuracy: {baseline_benchmark_metrics.get('accuracy', 0.0):.4f}")
         self.logger.info(f"Steered accuracy: {steered_benchmark_metrics.get('accuracy', 0.0):.4f}")
         self.logger.info(f"Improvement: {accuracy_improvement:+.4f}")
-        self.logger.info(f"Probe AUC: {test_probe_metrics.get('auc', 0.5):.4f}")
+        if self.evaluator_type not in ["personalization", "refusal"]:
+            self.logger.info(f"Probe AUC: {test_probe_metrics.get('auc', 0.5):.4f}")
         self.logger.info(f"Test samples: {len(test_ground_truths)}")
         
         # Log quality metrics from best trial if available
@@ -1702,7 +1750,11 @@ class OptimizationPipeline:
         self, steering_instance: Any, method_name: str, layer_id: int, alpha: float
     ) -> tuple[list[str], list[str], list[str], list[dict]]:
         """Generate predictions on test data using batched generation."""
-        # Collect all questions and ground truths for batching
+        # Handle personalization/trait mode differently - use evaluator prompts
+        if self.evaluator_type == "personalization":
+            return self._generate_test_predictions_personalization(steering_instance, method_name, layer_id, alpha)
+        
+        # Task-based mode: Collect all questions and ground truths for batching
         questions = []
         ground_truths = []
         valid_samples = []  # Keep track of samples that produce valid QA pairs
@@ -1742,6 +1794,36 @@ class OptimizationPipeline:
         else:
             predictions = []
 
+        return predictions, ground_truths, questions, valid_samples
+
+    def _generate_test_predictions_personalization(
+        self, steering_instance: Any, method_name: str, layer_id: int, alpha: float
+    ) -> tuple[list[str], list[str], list[str], list[dict]]:
+        """Generate predictions for personalization/trait mode using evaluator prompts."""
+        if not hasattr(self, 'steering_evaluator'):
+            self.logger.warning("No steering evaluator for personalization test predictions")
+            return [], [], [], []
+        
+        prompts = self.steering_evaluator.get_prompts()
+        if not prompts:
+            return [], [], [], []
+        
+        # For personalization, ground truths are not fixed answers but trait expressions
+        # We use the prompts and let the evaluator assess trait alignment
+        questions = prompts
+        ground_truths = [self.config.trait] * len(prompts)  # Trait is the "expected" behavior
+        valid_samples = [{"prompt": p, "trait": self.config.trait} for p in prompts]
+        
+        # Generate predictions
+        try:
+            if steering_instance is None:
+                predictions = self._generate_baseline_batched(questions)
+            else:
+                predictions = self._generate_with_steering_batched(steering_instance, questions, alpha, layer_id)
+        except Exception as e:
+            self.logger.warning(f"Batched generation failed for personalization test: {e}")
+            predictions = ["Error"] * len(questions)
+        
         return predictions, ground_truths, questions, valid_samples
 
     def _evaluate_probe_metrics(self, probe, X_test: np.ndarray, y_test: np.ndarray) -> dict[str, float]:

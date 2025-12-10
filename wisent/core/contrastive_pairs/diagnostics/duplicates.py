@@ -83,28 +83,30 @@ def compute_duplicate_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Met
 
     near_duplicate_pairs: List[tuple[int, int, float]] = []
     prompt_items = list(prompt_counter.keys())
-    for i, prompt_a in enumerate(prompt_items):
-        for prompt_b in prompt_items[i + 1 :]:
-            similarity = SequenceMatcher(None, prompt_a, prompt_b).ratio()
-            if similarity >= config.near_duplicate_prompt_threshold:
-                indices_a = indexed_prompts[prompt_a]
-                indices_b = indexed_prompts[prompt_b]
-                near_duplicate_pairs.append((indices_a[0], indices_b[0], similarity))
-                issues.append(
-                    DiagnosticsIssue(
-                        metric="duplicates",
-                        severity="warning",
-                        message="Near-duplicate prompts detected.",
-                        pair_index=None,
-                        details={
-                            "prompt_a": prompt_a,
-                            "prompt_b": prompt_b,
-                            "similarity": similarity,
-                            "a_indices": indices_a,
-                            "b_indices": indices_b,
-                        },
+    # Skip O(n^2) near-duplicate detection for large sets (>1000 unique prompts)
+    if len(prompt_items) <= 1000:
+        for i, prompt_a in enumerate(prompt_items):
+            for prompt_b in prompt_items[i + 1 :]:
+                similarity = SequenceMatcher(None, prompt_a, prompt_b).ratio()
+                if similarity >= config.near_duplicate_prompt_threshold:
+                    indices_a = indexed_prompts[prompt_a]
+                    indices_b = indexed_prompts[prompt_b]
+                    near_duplicate_pairs.append((indices_a[0], indices_b[0], similarity))
+                    issues.append(
+                        DiagnosticsIssue(
+                            metric="duplicates",
+                            severity="warning",
+                            message="Near-duplicate prompts detected.",
+                            pair_index=None,
+                            details={
+                                "prompt_a": prompt_a,
+                                "prompt_b": prompt_b,
+                                "similarity": similarity,
+                                "a_indices": indices_a,
+                                "b_indices": indices_b,
+                            },
+                        )
                     )
-                )
 
     summary = {
         "total_pairs": total_pairs,

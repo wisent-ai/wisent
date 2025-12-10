@@ -790,6 +790,7 @@ def _create_custom_evaluator(args, model_name: str) -> Callable:
         
         avg_score = sum(scores) / len(scores) if scores else 0.0
         return {
+            "score": avg_score,
             "custom_score": avg_score,
             "num_evaluated": len(scores),
         }
