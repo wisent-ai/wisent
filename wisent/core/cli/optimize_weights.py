@@ -768,8 +768,21 @@ def _create_custom_evaluator(args, model_name: str) -> Callable:
     
     def evaluate(hf_model, tokenizer) -> dict:
         """Run evaluation using custom evaluator."""
-        # Wrap HF model in WisentModel for standard generation
-        temp_wisent_model = WisentModel(model_name, hf_model=hf_model)
+        # Create WisentModel wrapper without reloading tokenizer from HuggingFace
+        # Use object.__new__ to avoid __init__ which tries to load from HF
+        temp_wisent_model = object.__new__(WisentModel)
+        temp_wisent_model.hf_model = hf_model
+        temp_wisent_model.tokenizer = tokenizer
+        temp_wisent_model.model_name = model_name
+        # Set internal attributes
+        if hasattr(hf_model, 'model') and hasattr(hf_model.model, 'layers'):
+            temp_wisent_model._layers = hf_model.model.layers
+        elif hasattr(hf_model, 'transformer') and hasattr(hf_model.transformer, 'h'):
+            temp_wisent_model._layers = hf_model.transformer.h
+        else:
+            temp_wisent_model._layers = []
+        temp_wisent_model._hidden_size = hf_model.config.hidden_size
+        temp_wisent_model.device = next(hf_model.parameters()).device
         
         # Generate responses
         scores = []
