@@ -19,6 +19,8 @@ class MultiplEExtractor(HuggingFaceBenchmarkExtractor):
         - prompt: str (question/prompt)
         - tests: str (answer/solution)
     """
+    
+    evaluator_name = "generation"
 
     def extract_contrastive_pairs(
         self,
