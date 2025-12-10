@@ -12,6 +12,9 @@ from .livecodebench_task import LiveCodeBenchTask
 from .livemathbench_task import LiveMathBenchTask
 from .lm_eval_task import (
     AppsTask,
+    ArcChallengeTask,
+    ArcEasyTask,
+    BoolqTask,
     CodexglueCodeToTextGoTask,
     CodexglueCodeToTextJavascriptTask,
     CodexglueCodeToTextJavaTask,
@@ -22,6 +25,7 @@ from .lm_eval_task import (
     ConcodeTask,
     DS1000Task,
     GSM8KTask,
+    HellaswagTask,
     
     Arithmetic1dcTask,
     Arithmetic2daTask,
@@ -49,9 +53,12 @@ from .lm_eval_task import (
     MultipleJsTask,
     MultiplePyTask,
     MultipleRsTask,
+    OpenbookqaTask,
+    PiqaTask,
     RecodeTask,
     Squad2Task,
     TruthfulQATask,
+    WinograndeTask,
 )
 from .math500_task import Math500Task
 from .polymath_task import PolyMathTask
@@ -67,6 +74,13 @@ def register_all_tasks():
     register_task("gsm8k", GSM8KTask)
     register_task("truthfulqa_mc1", TruthfulQATask)
     register_task("mmlu", MMLUTask)
+    register_task("arc_easy", ArcEasyTask)
+    register_task("arc_challenge", ArcChallengeTask)
+    register_task("hellaswag", HellaswagTask)
+    register_task("winogrande", WinograndeTask)
+    register_task("piqa", PiqaTask)
+    register_task("boolq", BoolqTask)
+    register_task("openbookqa", OpenbookqaTask)
 
     register_task("arithmetic_1dc", Arithmetic1dcTask)
     register_task("arithmetic_2da", Arithmetic2daTask)
