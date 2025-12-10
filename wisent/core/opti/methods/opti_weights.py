@@ -301,14 +301,12 @@ class WeightsOptimizer(BaseOptimizer):
                     
                     if hasattr(component, "weight"):
                         vec = steering_vector.to(component.weight.device, dtype=component.weight.dtype)
-                        # Direct addition to weight matrix rows
-                        # Each row of the weight matrix gets shifted by the steering vector
                         with torch.no_grad():
-                            # Add steering vector to each row of the weight matrix
-                            # W' = W + strength * outer(v, ones) / in_dim
-                            # This shifts outputs in the steering direction
-                            in_dim = component.weight.shape[1]
-                            component.weight.data += (layer_strength / in_dim) * vec.unsqueeze(1).expand_as(component.weight)
+                            # Direct addition: add steering vector to each column of weight matrix
+                            # Weight shape: [out_dim, in_dim], vec shape: [out_dim]
+                            # Result: each output dimension gets shifted by layer_strength * vec[i]
+                            # This is equivalent to adding a bias toward the steering direction
+                            component.weight.data += layer_strength * vec.unsqueeze(1)
                 except AttributeError:
                     continue
 
