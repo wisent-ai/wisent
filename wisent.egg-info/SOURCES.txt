@@ -1669,7 +1669,6 @@ wisent/examples/scripts/results/test_prompt_robustness_agieval_aqua_rat/test_pro
 wisent/examples/scripts/results/test_siqa/test_siqa_evaluation.json
 wisent/examples/scripts/results/test_siqa/test_siqa_pairs.json
 wisent/parameters/__init__.py
-wisent/parameters/task_config.py
 wisent/parameters/lm_eval/all_lm_eval_task_families.json
 wisent/parameters/lm_eval/broken_in_lm_eval.json
 wisent/parameters/lm_eval/evaluations_not_lm_eval_tasks.json
