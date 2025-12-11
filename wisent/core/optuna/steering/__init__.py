@@ -1,29 +1,20 @@
 """
-Steering optimization pipeline for hyperparameter search using Optuna.
+Steering optimization utilities.
 
-This module provides tools for optimizing steering vector hyperparameters:
-- OptimizationConfig: Configuration dataclass for the pipeline
-- OptimizationPipeline: Main pipeline class for running optimization
-- ActivationCache: Caching system for activations
-- WandBTracker: WandB integration for experiment tracking
+This module provides metrics and utilities for steering optimization.
+The main optimization logic is in wisent.core.cli.optimize_steering.
 """
 
-from .config import OptimizationConfig
-from .pipeline import OptimizationPipeline
-from .cache import ActivationCache
-from .tracking import WandBTracker
-from .generation import GenerationHelper
-from .evaluation import EvaluationHelper
-from .results import ResultsSaver
-from .cli import main as run_cli
+from .metrics import (
+    calculate_comprehensive_metrics,
+    evaluate_benchmark_performance,
+    evaluate_probe_performance,
+    generate_performance_summary,
+)
 
 __all__ = [
-    "OptimizationConfig",
-    "OptimizationPipeline",
-    "ActivationCache",
-    "WandBTracker",
-    "GenerationHelper",
-    "EvaluationHelper",
-    "ResultsSaver",
-    "run_cli",
+    "calculate_comprehensive_metrics",
+    "evaluate_benchmark_performance",
+    "evaluate_probe_performance",
+    "generate_performance_summary",
 ]
