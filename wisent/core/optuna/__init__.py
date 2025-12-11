@@ -4,9 +4,8 @@ Optuna-based Optimization Framework for Wisent
 This module provides Optuna-based hyperparameter optimization for both steering and classifier systems:
 
 STEERING OPTIMIZATION:
-1. Hyperparameter Optimization: Optuna-driven search for best steering parameters
-2. Evaluation Pipeline: Comprehensive evaluation on multiple datasets
-3. Reproducibility: Complete experiment tracking and reproduction
+- Use wisent.core.cli.optimize_steering for steering optimization
+- Use wisent.core.cli.optimize for full model optimization
 
 CLASSIFIER OPTIMIZATION:
 1. Activation Pre-generation: Efficient caching of model activations
@@ -15,23 +14,20 @@ CLASSIFIER OPTIMIZATION:
 4. Cross-validation: Robust performance evaluation
 
 Key components:
-- Steering: OptimizationPipeline, OptimizationConfig, metrics
+- Steering metrics: calculate_comprehensive_metrics, evaluate_benchmark_performance
 - Classifier: OptunaClassifierOptimizer, GenerationConfig, CacheConfig
 """
 
-# Steering optimization components
+# Steering optimization metrics
 from wisent.core.optuna.steering.metrics import (
     calculate_comprehensive_metrics,
     evaluate_benchmark_performance,
     evaluate_probe_performance,
     generate_performance_summary,
 )
-from wisent.core.optuna.steering.optuna_pipeline import OptimizationConfig, OptimizationPipeline
 
 __all__ = [
-    # Steering optimization
-    "OptimizationConfig",
-    "OptimizationPipeline",
+    # Steering metrics
     "calculate_comprehensive_metrics",
     "evaluate_benchmark_performance",
     "evaluate_probe_performance",
