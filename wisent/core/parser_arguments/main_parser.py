@@ -135,6 +135,12 @@ def setup_parser() -> argparse.ArgumentParser:
         "optimize-all", help="Run all optimizations: classification, steering, and weight modification"
     )
     setup_optimize_all_parser(optimize_all_parser)
+    
+    # Alias: 'optimize' is the same as 'optimize-all'
+    optimize_parser = subparsers.add_parser(
+        "optimize", help="Run all optimizations (alias for optimize-all)"
+    )
+    setup_optimize_all_parser(optimize_parser)
 
     # Generate vector command for creating steering vectors without tasks
     generate_vector_parser = subparsers.add_parser(

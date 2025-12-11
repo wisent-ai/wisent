@@ -2,6 +2,10 @@
 
 Results are persisted to ~/.wisent/configs/ via WisentConfigManager
 so they can be automatically loaded on subsequent runs.
+
+Supports two search strategies:
+- grid: Exhaustive search over all configurations (thorough but slow)
+- optuna: TPE sampling with early stopping (fast but may miss optimal)
 """
 
 import json
@@ -20,6 +24,162 @@ from wisent.core.config_manager import (
     store_optimization,
     SteeringConfig,
 )
+
+
+def _run_optuna_search_for_task(
+    model,
+    train_pairs,
+    test_pairs,
+    evaluator,
+    task_name,
+    search_space,
+    args,
+    baseline_results=None,
+):
+    """
+    Run Optuna-based hyperparameter search for a single task.
+    
+    Returns:
+        dict: Best configuration found with score and parameters
+    """
+    import optuna
+    from optuna.samplers import TPESampler
+    from optuna.pruners import MedianPruner
+    
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.models.core.atoms import SteeringPlan
+    from wisent.core.cli.steering_method_trainer import create_steering_method
+    
+    n_trials = getattr(args, 'n_trials', 50)
+    n_startup_trials = getattr(args, 'n_startup_trials', 10)
+    
+    # Maps for converting string values to enums
+    token_agg_map = {
+        "last_token": ActivationAggregationStrategy.LAST_TOKEN,
+        "mean_pooling": ActivationAggregationStrategy.MEAN_POOLING,
+        "first_token": ActivationAggregationStrategy.FIRST_TOKEN,
+        "max_pooling": ActivationAggregationStrategy.MAX_POOLING,
+    }
+    
+    def objective(trial):
+        """Optuna objective function for steering optimization."""
+        # Sample hyperparameters
+        layer = trial.suggest_int("layer", min(search_space.layers), max(search_space.layers))
+        strength = trial.suggest_float("strength", min(search_space.strengths), max(search_space.strengths), log=True)
+        strategy = trial.suggest_categorical("strategy", search_space.strategies)
+        token_agg_name = trial.suggest_categorical("token_aggregation", search_space.token_aggregations)
+        token_agg = token_agg_map.get(token_agg_name, ActivationAggregationStrategy.LAST_TOKEN)
+        
+        layer_str = str(layer)
+        
+        try:
+            # Collect activations
+            collector = ActivationCollector(model=model, store_device="cpu")
+            pos_acts = []
+            neg_acts = []
+            
+            for pair in train_pairs.pairs:
+                updated_pair = collector.collect_for_pair(
+                    pair,
+                    layers=[layer_str],
+                    aggregation=token_agg,
+                    return_full_sequence=False,
+                    normalize_layers=False,
+                )
+                
+                if (updated_pair.positive_response.layers_activations
+                    and layer_str in updated_pair.positive_response.layers_activations):
+                    act = updated_pair.positive_response.layers_activations[layer_str]
+                    if act is not None:
+                        pos_acts.append(act)
+                
+                if (updated_pair.negative_response.layers_activations
+                    and layer_str in updated_pair.negative_response.layers_activations):
+                    act = updated_pair.negative_response.layers_activations[layer_str]
+                    if act is not None:
+                        neg_acts.append(act)
+            
+            if len(pos_acts) == 0 or len(neg_acts) == 0:
+                return 0.0
+            
+            # Train steering vector
+            method_name = args.methods[0] if args.methods else "CAA"
+            steering_method = create_steering_method(method_name, args)
+            import torch
+            pos_tensor = torch.stack(pos_acts).mean(dim=0)
+            neg_tensor = torch.stack(neg_acts).mean(dim=0)
+            steering_vector = steering_method.train_for_layer(pos_tensor, neg_tensor)
+            
+            # Create steering plan
+            steering_plan = SteeringPlan.from_raw(
+                raw={layer_str: steering_vector},
+                scale=strength,
+                normalize=False
+            )
+            
+            # Evaluate on test set
+            correct = 0
+            total = 0
+            
+            for pair in test_pairs.pairs:
+                try:
+                    choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+                    expected = pair.positive_response.model_response
+                    test_code = pair.metadata.get("test_code") if pair.metadata else None
+                    
+                    eval_result = evaluator.evaluate(
+                        response="",
+                        expected=expected,
+                        model=model,
+                        question=pair.prompt,
+                        choices=choices,
+                        steering_plan=steering_plan,
+                        test_code=test_code,
+                        task_name=task_name,
+                    )
+                    
+                    if eval_result.ground_truth == "TRUTHFUL":
+                        correct += 1
+                    total += 1
+                except Exception:
+                    total += 1
+            
+            accuracy = correct / total if total > 0 else 0.0
+            return accuracy
+            
+        except Exception as e:
+            print(f"      Trial {trial.number} failed: {e}")
+            return 0.0
+    
+    # Create and run study
+    sampler = TPESampler(seed=42, n_startup_trials=n_startup_trials)
+    pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=3)
+    
+    study = optuna.create_study(
+        direction="maximize",
+        sampler=sampler,
+        pruner=pruner,
+    )
+    
+    print(f"  🔍 Running Optuna optimization ({n_trials} trials)...")
+    
+    # Suppress Optuna logs for cleaner output
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
+    
+    best_trial = study.best_trial
+    
+    return {
+        "best_score": best_trial.value,
+        "best_layer": best_trial.params["layer"],
+        "best_strength": best_trial.params["strength"],
+        "best_strategy": best_trial.params["strategy"],
+        "best_token_aggregation": best_trial.params["token_aggregation"],
+        "n_trials": len(study.trials),
+        "search_strategy": "optuna",
+    }
 
 
 def execute_optimize_steering(args):
@@ -151,6 +311,11 @@ def execute_comprehensive(args, model, loader):
     print(f"   Limit: {args.limit} samples per task")
     quick_search = getattr(args, 'quick_search', False)
     print(f"   Quick search: {quick_search}")
+    
+    # Search strategy
+    search_strategy = getattr(args, 'search_strategy', 'grid')
+    n_trials = getattr(args, 'n_trials', 50)
+    print(f"   Search strategy: {search_strategy}" + (f" ({n_trials} trials)" if search_strategy == "optuna" else ""))
     print("   Time limit: DISABLED (no time limit)\n")
 
     all_results = {}
@@ -297,6 +462,71 @@ def execute_comprehensive(args, model, loader):
                     "num_total": len(baseline_scores),
                 }
 
+            # Dispatch based on search strategy
+            if search_strategy == "optuna":
+                # Use Optuna-based search
+                optuna_result = _run_optuna_search_for_task(
+                    model=model,
+                    train_pairs=train_pairs,
+                    test_pairs=test_pairs,
+                    evaluator=evaluator,
+                    task_name=task_name,
+                    search_space=first_space,
+                    args=args,
+                    baseline_results=baseline_results,
+                )
+                
+                best_score = optuna_result["best_score"]
+                best_config = {
+                    "layer": optuna_result["best_layer"],
+                    "strength": optuna_result["best_strength"],
+                    "strategy": optuna_result["best_strategy"],
+                    "token_aggregation": optuna_result["best_token_aggregation"],
+                }
+                
+                print(f"      Best: layer={best_config['layer']}, strength={best_config['strength']:.2f}, "
+                      f"strategy={best_config['strategy']}, token_agg={best_config['token_aggregation']}")
+                print(f"      Score: {best_score:.4f} (from {optuna_result['n_trials']} trials)")
+                
+                # Store results in format compatible with grid search
+                method_results = {
+                    first_method: {
+                        "best_score": best_score,
+                        "best_layer": best_config["layer"],
+                        "best_strength": best_config["strength"],
+                        "best_strategy": best_config["strategy"],
+                        "token_aggregation": best_config["token_aggregation"],
+                        "search_strategy": "optuna",
+                    }
+                }
+                
+                # Skip the grid search loop - jump to result saving
+                all_results[task_name] = method_results
+                
+                if not args.no_save:
+                    save_steering_config(
+                        model_name=args.model,
+                        task=task_name,
+                        layer=best_config["layer"],
+                        strength=best_config["strength"],
+                        method=first_method,
+                        strategy=best_config["strategy"],
+                        token_aggregation=best_config["token_aggregation"],
+                    )
+                    store_optimization(
+                        model=args.model,
+                        task=task_name,
+                        layer=best_config["layer"],
+                        strength=best_config["strength"],
+                        method=first_method,
+                        strategy=best_config["strategy"],
+                        score=best_score,
+                        metric="accuracy",
+                    )
+                
+                continue  # Skip to next task
+            
+            # Grid search (original behavior)
             print(
                 "\n  🔍 Testing CAA method across layers, strengths, strategies, token aggregations, prompt constructions..."
             )

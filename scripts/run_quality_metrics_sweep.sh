@@ -72,16 +72,11 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
     
     BENCHMARK_START=$(date +%s)
     
-    # Run the optimization pipeline
-    python3 -m wisent.core.optuna.steering.optuna_pipeline \
-        --output-dir "$OUTPUT_DIR/$BENCHMARK" \
-        --model "$MODEL" \
-        --task "$BENCHMARK" \
-        --n-trials "$N_TRIALS" \
-        --train-limit "$TRAIN_LIMIT" \
-        --val-limit "$VAL_LIMIT" \
-        --test-limit "$TEST_LIMIT" \
-        --layer-range "$LAYER_RANGE" \
+    # Run the optimization using wisent CLI
+    wisent optimize-steering comprehensive "$MODEL" \
+        --tasks "$BENCHMARK" \
+        --limit "$TRAIN_LIMIT" \
+        --device cuda \
         2>&1 | tee "$OUTPUT_DIR/${BENCHMARK}_log.txt"
     
     BENCHMARK_END=$(date +%s)
@@ -118,15 +113,14 @@ for SYNTHETIC_TYPE in "${SYNTHETIC_TYPES[@]}"; do
     SYNTHETIC_START=$(date +%s)
     SYNTHETIC_DIR="$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}"
     
-    # Run the optimization pipeline with personalization task
-    python3 -m wisent.core.optuna.steering.optuna_pipeline \
-        --output-dir "$SYNTHETIC_DIR" \
+    # Run the optimization with personalization task
+    # Note: personalization uses grid search (Optuna not yet supported)
+    wisent optimize-steering personalization \
         --model "$MODEL" \
-        --task personalization \
         --trait "$SYNTHETIC_TYPE" \
-        --n-trials "$N_TRIALS" \
         --num-pairs 50 \
-        --layer-range "$LAYER_RANGE" \
+        --output-dir "$SYNTHETIC_DIR" \
+        --device cuda \
         2>&1 | tee "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_log.txt"
     
     SYNTHETIC_END=$(date +%s)
