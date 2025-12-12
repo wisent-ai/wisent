@@ -20,6 +20,7 @@ class CodexglueExtractor(HuggingFaceBenchmarkExtractor):
         - code: str (code answer/solution)
     """
 
+    evaluator_name = "generation"
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -80,7 +81,7 @@ class CodexglueExtractor(HuggingFaceBenchmarkExtractor):
             incorrect_answer = self._create_incorrect_answer(correct_answer)
 
             # Format the question
-            formatted_question = f"Question: {question}\n\nWhat is the answer?"
+            formatted_question = f"{question}\n\nGenerate code based on description:"
 
             metadata = {
                 "label": "codexglue",

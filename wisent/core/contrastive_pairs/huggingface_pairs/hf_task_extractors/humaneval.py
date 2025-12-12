@@ -125,9 +125,12 @@ class HumanEvalUnifiedExtractor(HuggingFaceBenchmarkExtractor):
             return prompt
 
 
-    def _create_incorrect_answer(self, prompt: str) -> str:
-        """Create an incorrect answer. TODO: improve this later."""
-        return prompt + "    pass"
+    def _create_incorrect_answer(self, correct: str) -> str:
+        """Create an incorrect answer by modifying the correct one."""
+        # For code, corrupt it slightly
+        if len(correct) > 10:
+            return correct[:len(correct)//2] + "# CORRUPTED" + correct[len(correct)//2:]
+        return f"{correct} # INCORRECT"
 
 
 # Subclasses for each task variant
