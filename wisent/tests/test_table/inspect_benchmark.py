@@ -12,7 +12,11 @@ Example:
 """
 
 import argparse
+import os
 import sys
+
+os.environ["HF_ALLOW_CODE_EVAL"] = "1"
+
 from lm_eval.tasks import get_task_dict
 
 
