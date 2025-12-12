@@ -12,13 +12,12 @@ Wang Ling et al., "Latent Predictor Networks for Code Generation" (2016)
 """
 
 import logging
-import math
 import re
-from collections import Counter
 from typing import Any
 
+import evaluate
+
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
 
 logger = logging.getLogger(__name__)
 
@@ -46,134 +45,6 @@ def tokenize_for_bleu_eval(code: str) -> list[str]:
     return tokens
 
 
-def _get_ngrams(segment: list[str], max_order: int) -> Counter:
-    """Extract n-grams up to max_order from a token list.
-
-    Args:
-        segment: List of tokens
-        max_order: Maximum n-gram order
-
-    Returns:
-        Counter of n-gram frequencies
-    """
-    ngram_counts = Counter()
-    for order in range(1, max_order + 1):
-        for i in range(len(segment) - order + 1):
-            ngram = tuple(segment[i:i + order])
-            ngram_counts[ngram] += 1
-    return ngram_counts
-
-
-def compute_bleu(
-    references: list[list[str]],
-    hypotheses: list[list[str]],
-    max_order: int = 4,
-    smooth: bool = False,
-) -> tuple[float, list[float], float, float, int, int]:
-    """Compute corpus-level BLEU score.
-
-    Implementation follows the CoNaLa baseline. CoNaLa has one reference per example.
-
-    Args:
-        references: List of reference token lists (one per example).
-        hypotheses: List of hypothesis token lists (one per example).
-        max_order: Maximum n-gram order to use (default 4).
-        smooth: Whether to apply Lin smoothing (default False for CoNaLa).
-
-    Returns:
-        Tuple of:
-            - BLEU score (0.0 to 1.0)
-            - List of n-gram precisions
-            - Brevity penalty
-            - Length ratio (hypothesis/reference)
-            - Hypothesis length
-            - Reference length
-    """
-    matches_by_order = [0] * max_order
-    possible_matches_by_order = [0] * max_order
-    reference_length = 0
-    hypothesis_length = 0
-
-    for reference, hypothesis in zip(references, hypotheses):
-        reference_length += len(reference)
-        hypothesis_length += len(hypothesis)
-
-        # Get n-grams
-        ref_ngrams = _get_ngrams(reference, max_order)
-        hyp_ngrams = _get_ngrams(hypothesis, max_order)
-
-        # Count matches (clipped to reference count)
-        overlap = hyp_ngrams & ref_ngrams
-        for ngram, count in overlap.items():
-            matches_by_order[len(ngram) - 1] += count
-
-        # Count possible matches
-        for order in range(1, max_order + 1):
-            possible_matches = len(hypothesis) - order + 1
-            if possible_matches > 0:
-                possible_matches_by_order[order - 1] += possible_matches
-
-    # Compute precisions
-    precisions = [0.0] * max_order
-    for i in range(max_order):
-        if smooth:
-            precisions[i] = (matches_by_order[i] + 1.0) / (possible_matches_by_order[i] + 1.0)
-        else:
-            if possible_matches_by_order[i] > 0:
-                precisions[i] = matches_by_order[i] / possible_matches_by_order[i]
-            else:
-                precisions[i] = 0.0
-
-    # Compute geometric mean of precisions
-    if min(precisions) > 0:
-        p_log_sum = sum((1.0 / max_order) * math.log(p) for p in precisions)
-        geo_mean = math.exp(p_log_sum)
-    else:
-        geo_mean = 0.0
-
-    # Compute brevity penalty
-    ratio = hypothesis_length / reference_length if reference_length > 0 else 0.0
-    if ratio > 1.0:
-        bp = 1.0
-    elif ratio == 0.0:
-        bp = 0.0
-    else:
-        bp = math.exp(1.0 - 1.0 / ratio)
-
-    bleu = geo_mean * bp
-
-    return (bleu, precisions, bp, ratio, hypothesis_length, reference_length)
-
-
-def compute_bleu_single(
-    reference: str,
-    hypothesis: str,
-    max_order: int = 4,
-    smooth: bool = False,
-) -> float:
-    """Compute BLEU score for a single reference-hypothesis pair.
-
-    Args:
-        reference: The reference code string
-        hypothesis: The generated code string
-        max_order: Maximum n-gram order (default 4)
-        smooth: Whether to apply smoothing (default False)
-
-    Returns:
-        BLEU score (0.0 to 1.0)
-    """
-    ref_tokens = tokenize_for_bleu_eval(reference)
-    hyp_tokens = tokenize_for_bleu_eval(hypothesis)
-
-    bleu, _, _, _, _, _ = compute_bleu(
-        references=[ref_tokens],
-        hypotheses=[hyp_tokens],
-        max_order=max_order,
-        smooth=smooth,
-    )
-    return bleu
-
-
 class CoNaLaEvaluator(BaseEvaluator):
     """Evaluator for CoNaLa code generation benchmark.
 
@@ -198,12 +69,12 @@ class CoNaLaEvaluator(BaseEvaluator):
         """
         self.bleu_threshold = bleu_threshold
         self.max_order = max_order
+        self.bleu_metric = evaluate.load("bleu")
 
     @staticmethod
     def get_prompt(
         intent: str,
         rewritten_intent: str | None = None,
-        examples: list[tuple[str, str]] | None = None,
     ) -> str:
         """Create instruction prompt for LLM to generate Python code.
 
@@ -217,15 +88,7 @@ class CoNaLaEvaluator(BaseEvaluator):
         """
         nl_intent = rewritten_intent if rewritten_intent else intent
 
-        prompt = "Generate Python code for the following task. Put final answer - python code for the task, in \\boxed{}.\n Here are examples of correct answers:\n" 
-
-        
-        # Add few-shot examples if provided
-        if examples:
-            for ex_intent, ex_snippet in examples:
-                prompt += f"\nTask: {ex_intent}\n\\boxed{{{ex_snippet}}}\n"
-        
-
+        prompt = "Generate Python code for the following task. Put final answer, in \\boxed{}."
 
         prompt += f"\nTask: {nl_intent}\n"
 
@@ -257,17 +120,15 @@ class CoNaLaEvaluator(BaseEvaluator):
         expected_str = str(expected).strip()
         response_str = response.strip()
 
-        # Tokenize for logging
-        ref_tokens = tokenize_for_bleu_eval(expected_str)
-        hyp_tokens = tokenize_for_bleu_eval(response_str)
-
-        # Compute BLEU score
-        bleu_score = compute_bleu_single(
-            reference=expected_str,
-            hypothesis=response_str,
+        # Compute BLEU score using HuggingFace evaluate
+        result = self.bleu_metric.compute(
+            predictions=[response_str],
+            references=[[expected_str]],
+            tokenizer=tokenize_for_bleu_eval,
             max_order=self.max_order,
             smooth=False,
         )
+        bleu_score = result["bleu"]
 
         # Determine truthfulness based on BLEU threshold only
         is_correct = bleu_score >= self.bleu_threshold
@@ -279,8 +140,6 @@ class CoNaLaEvaluator(BaseEvaluator):
             details=f"BLEU: {bleu_score:.4f}",
             meta={
                 "bleu_score": bleu_score,
-                "expected_tokens": ref_tokens,
-                "response_tokens": hyp_tokens,
                 "bleu_threshold": self.bleu_threshold,
             }
         )
@@ -304,29 +163,33 @@ class CoNaLaEvaluator(BaseEvaluator):
         if len(responses) != len(expected_answers):
             raise ValueError("Number of responses must match number of expected answers")
 
-        # Tokenize all pairs
-        references = []
-        hypotheses = []
+        # Prepare predictions and references for HF BLEU
+        predictions = [r.strip() if r else "" for r in responses]
+        references = [[str(e).strip()] for e in expected_answers]
 
-        for response, expected in zip(responses, expected_answers):
-            ref_tokens = tokenize_for_bleu_eval(str(expected).strip())
-            hyp_tokens = tokenize_for_bleu_eval(response.strip() if response else "")
+        # Check if all predictions are empty (would cause division by zero)
+        if all(not p for p in predictions):
+            return {
+                "bleu_score": 0.0,
+                "total": len(responses),
+                "brevity_penalty": 0.0,
+                "length_ratio": 0.0,
+                "precisions": [0.0] * self.max_order,
+            }
 
-            references.append(ref_tokens)
-            hypotheses.append(hyp_tokens)
-
-        # Compute corpus BLEU
-        bleu, precisions, bp, ratio, _, _ = compute_bleu(
+        # Compute corpus BLEU using HuggingFace evaluate
+        result = self.bleu_metric.compute(
+            predictions=predictions,
             references=references,
-            hypotheses=hypotheses,
+            tokenizer=tokenize_for_bleu_eval,
             max_order=self.max_order,
             smooth=False,
         )
 
         return {
-            "bleu_score": bleu * 100,  # Convert to percentage like leaderboard
+            "bleu_score": result["bleu"] * 100,  # Convert to percentage like leaderboard
             "total": len(responses),
-            "brevity_penalty": bp,
-            "length_ratio": ratio,
-            "precisions": precisions,
+            "brevity_penalty": result["brevity_penalty"],
+            "length_ratio": result["length_ratio"],
+            "precisions": result["precisions"],
         }
