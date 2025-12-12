@@ -1,10 +1,17 @@
 """
-Run lm-evaluation-harness HumanEval in Docker.
+Run lm-evaluation-harness code evaluation tasks in Docker (sandboxed).
 
-Usage:
-    python run_humaneval.py                                      # defaults: gpt-neo-125M, 20 samples
-    python run_humaneval.py --model Qwen/Qwen2.5-0.5B-Instruct   # custom model
-    python run_humaneval.py --limit 50 --batch_size 8            # custom params
+Supported tasks: any, in particular:
+    - humaneval, humaneval_instruct, humaneval_plus, humaneval_plus_instruct
+    - mbpp, mbpp_instruct, mbpp_plus, mbpp_plus_instruct
+
+Args:
+    --tasks       lm_eval task(s), comma-separated (default: humaneval)
+    --model       HuggingFace model name (default: EleutherAI/gpt-neo-125M)
+    --limit       Number of samples, None for all (default: 20)
+    --batch_size  Batch size (default: 4)
+    --device      Device to use (default: cuda:0)
+    --output_dir  Output directory (default: ./output)
 """
 
 import argparse
@@ -13,7 +20,7 @@ import os
 from pathlib import Path
 
 
-IMAGE_NAME = "lm-eval:humaneval"
+IMAGE_NAME = "lm-eval:code-eval"
 SCRIPT_DIR = Path(__file__).parent
 
 
@@ -31,7 +38,7 @@ def build_image() -> None:
         )
 
 
-def run_humaneval(
+def run_code_eval(
     model: str = "EleutherAI/gpt-neo-125M",
     tasks: str = "humaneval",
     device: str = "cuda:0",
@@ -39,7 +46,7 @@ def run_humaneval(
     limit: int | None = 20,
     output_dir: Path | None = None,
 ) -> None:
-    """Run lm_eval HumanEval in Docker container."""
+    """Run lm_eval code evaluation tasks in sandboxed Docker container."""
 
     build_image()
 
@@ -93,9 +100,9 @@ def run_humaneval(
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run HumanEval in Docker")
+    parser = argparse.ArgumentParser(description="Run code evaluation tasks in Docker")
     parser.add_argument("--model", default="EleutherAI/gpt-neo-125M", help="HuggingFace model name")
-    parser.add_argument("--tasks", default="humaneval", help="lm_eval task(s)")
+    parser.add_argument("--tasks", default="humaneval", help="lm_eval task(s), comma-separated")
     parser.add_argument("--device", default="cuda:0", help="Device to use")
     parser.add_argument("--batch_size", type=int, default=4, help="Batch size")
     parser.add_argument("--limit", type=int, default=20, help="Number of samples (None for all)")
@@ -103,7 +110,7 @@ def main():
 
     args = parser.parse_args()
 
-    run_humaneval(
+    run_code_eval(
         model=args.model,
         tasks=args.tasks,
         device=args.device,

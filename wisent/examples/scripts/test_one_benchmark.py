@@ -78,7 +78,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 # Math benchmarks
                 "math", "math_500", "aime", "hmmt", "polymath", "livemathbench",
                 # Coding benchmarks
-                "humaneval", "humaneval_plus", "mbpp", "mbpp_plus",
+                "humaneval", "humaneval_plus",
                 "instruct_humaneval", "apps", "conala", "concode",
                 "ds", "ds1000", "ds_1000", "mercury", "recode",
                 "multipl", "multiple_", "multipl_e",
