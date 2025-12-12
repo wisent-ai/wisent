@@ -223,11 +223,16 @@ if __name__ == "__main__":
         try:
             from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job
 
-            # Set limits based on task
+            # Set limits based on task or kwargs
+            timeout_override = kwargs.get('timeout')
             if 'ds1000' in task_name.lower() or 'ds_1000' in task_name.lower():
                 cpu_limit_s = 60
                 wall_timeout_s = 120
                 nproc = 512
+            elif timeout_override:
+                cpu_limit_s = timeout_override
+                wall_timeout_s = timeout_override
+                nproc = 64
             else:
                 cpu_limit_s = self.cfg.cpu_limit_s
                 wall_timeout_s = self.cfg.time_limit_s
