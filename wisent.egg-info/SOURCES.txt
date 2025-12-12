@@ -1693,6 +1693,7 @@ wisent/parameters/tasks/tasks.json
 wisent/scripts/run_quality_metrics_sweep.sh
 wisent/tests/__init__.py
 wisent/tests/test_all_cli_commands.py
+wisent/tests/test_geometry_comprehensive.py
 wisent/tests/test_titan_geometry.py
 wisent/tests/examples/__init__.py
 wisent/tests/examples/cli/__init__.py

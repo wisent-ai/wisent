@@ -2583,7 +2583,23 @@ def execute_personalization(args, model):
     checkpoint_file = os.path.join(args.output_dir, f"{trait_name}_checkpoint.json")
     completed_configs = set()
     
-    # Load checkpoint if it exists (resume mode)
+    # Load checkpoint if it exists (resume mode) - check local first, then S3
+    if not os.path.exists(checkpoint_file):
+        # Try to download from S3
+        try:
+            import subprocess
+            s3_checkpoint_path = f"s3://wisent-bucket/checkpoints/{trait_name}_checkpoint.json"
+            print(f"\n📂 Checking S3 for checkpoint: {s3_checkpoint_path}", flush=True)
+            result = subprocess.run(
+                ["aws", "s3", "cp", s3_checkpoint_path, checkpoint_file],
+                capture_output=True,
+                timeout=60
+            )
+            if result.returncode == 0:
+                print(f"   ✓ Downloaded checkpoint from S3", flush=True)
+        except Exception:
+            pass  # No S3 checkpoint available
+    
     if os.path.exists(checkpoint_file):
         print(f"\n📂 Found checkpoint file: {checkpoint_file}", flush=True)
         try:
@@ -2827,6 +2843,19 @@ def execute_personalization(args, model):
                         }
                         with open(checkpoint_file, "w") as f:
                             json.dump(checkpoint_data, f)
+                        
+                        # Sync checkpoint to S3 every 100 configs for recovery
+                        if config_count % 100 == 0:
+                            try:
+                                import subprocess
+                                s3_checkpoint_path = f"s3://wisent-bucket/checkpoints/{trait_name}_checkpoint.json"
+                                subprocess.run(
+                                    ["aws", "s3", "cp", checkpoint_file, s3_checkpoint_path],
+                                    capture_output=True,
+                                    timeout=30
+                                )
+                            except Exception:
+                                pass  # Don't fail if S3 sync fails
 
     # Step 3: Save results
     print(f"\n{'=' * 80}")
