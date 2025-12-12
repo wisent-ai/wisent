@@ -326,6 +326,113 @@ def execute_optimize_weights(args):
     )
 
 
+def _train_multi_direction_method(
+    args,
+    caa_vectors: dict[int, torch.Tensor],
+    intermediate_dir: str,
+    method: str,
+) -> dict[int, torch.Tensor]:
+    """Train TITAN/PRISM/PULSE on pairs with activations and return combined directions.
+    
+    Args:
+        args: Command line arguments
+        caa_vectors: CAA vectors (used as fallback if training fails)
+        intermediate_dir: Directory containing pairs with activations
+        method: 'titan', 'prism', or 'pulse'
+        
+    Returns:
+        Combined steering vectors per layer
+    """
+    import glob
+    
+    # Find enriched pairs file (with activations)
+    enriched_files = glob.glob(os.path.join(intermediate_dir, "*_with_activations.json"))
+    
+    if not enriched_files:
+        print(f"   Warning: No enriched pairs found for {method}, using CAA vectors")
+        return caa_vectors
+    
+    enriched_file = enriched_files[0]
+    print(f"\n   Training {method.upper()} on enriched pairs...")
+    print(f"   Pairs file: {enriched_file}")
+    
+    try:
+        from wisent.core.contrastive_pairs.core.serialization import load_contrastive_pair_set
+        from wisent.core.weight_modification.multi_direction import (
+            MultiDirectionConfig,
+            combine_directions,
+        )
+        
+        # Load pair set with activations
+        pair_set = load_contrastive_pair_set(enriched_file)
+        print(f"   Loaded {len(pair_set.pairs)} pairs with activations")
+        
+        # Get config from args
+        num_directions = getattr(args, 'num_directions', 5)
+        combination_strategy = getattr(args, 'combination_strategy', 'learned')
+        optimization_steps = getattr(args, 'multi_optimization_steps', 100)
+        
+        # Train the method
+        if method == 'titan':
+            from wisent.core.steering_methods.methods.titan import TITANMethod, TITANConfig
+            config = TITANConfig(
+                num_directions=num_directions,
+                optimization_steps=optimization_steps,
+            )
+            trainer = TITANMethod(config=config)
+            result = trainer.train_titan(pair_set)
+            directions = result.directions
+            weights = result.direction_weights
+            
+        elif method == 'prism':
+            from wisent.core.steering_methods.methods.prism import PRISMMethod, PRISMConfig
+            config = PRISMConfig(
+                num_directions=num_directions,
+                optimization_steps=optimization_steps,
+            )
+            trainer = PRISMMethod(config=config)
+            result = trainer.train_prism(pair_set)
+            directions = result.directions
+            weights = None  # PRISM doesn't have learned weights
+            
+        elif method == 'pulse':
+            from wisent.core.steering_methods.methods.pulse import PULSEMethod, PULSEConfig
+            config = PULSEConfig(
+                optimization_steps=optimization_steps,
+            )
+            trainer = PULSEMethod(config=config)
+            result = trainer.train_pulse(pair_set)
+            # PULSE has single direction per layer
+            directions = {k: v.unsqueeze(0) for k, v in result.behavior_vectors.items()}
+            weights = {k: torch.tensor([result.layer_scales.get(k, 1.0)]) 
+                      for k in directions} if result.layer_scales else None
+        
+        print(f"   Trained {len(directions)} layers with {method.upper()}")
+        
+        # Combine directions into single vector per layer
+        combined_vectors = {}
+        for layer_name, layer_dirs in directions.items():
+            # Get layer index
+            try:
+                layer_idx = int(layer_name.replace("layer_", "")) - 1
+            except ValueError:
+                layer_idx = int(layer_name) - 1
+            
+            layer_weights = weights.get(layer_name) if weights else None
+            combined = combine_directions(layer_dirs, layer_weights, strategy=combination_strategy)
+            combined_vectors[layer_idx] = combined
+            
+        print(f"   Combined into {len(combined_vectors)} steering vectors")
+        print(f"   Combination strategy: {combination_strategy}")
+        
+        return combined_vectors
+        
+    except Exception as e:
+        print(f"   Warning: {method.upper()} training failed: {e}")
+        print(f"   Falling back to CAA vectors")
+        return caa_vectors
+
+
 def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> tuple[dict[int, torch.Tensor], list[str], list[str]]:
     """Generate steering vectors from trait or task.
 
@@ -612,6 +719,13 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                         if "negative_response" in pair and "model_response" in pair["negative_response"]:
                             negative_examples.append(pair["negative_response"]["model_response"])
 
+        # If using multi-direction method (titan/prism/pulse), train on pairs with activations
+        method = getattr(args, 'method', 'directional')
+        if method in ('titan', 'prism', 'pulse'):
+            vectors = _train_multi_direction_method(
+                args, vectors, intermediate_dir, method
+            )
+
         return vectors, positive_examples, negative_examples
 
     finally:
@@ -751,11 +865,10 @@ def _create_custom_evaluator(args, model_name: str) -> Callable:
         with open(args.eval_prompts) as f:
             eval_prompts = [line.strip() for line in f if line.strip()]
     elif getattr(args, 'trait', None):
-        # Generate prompts based on trait
+        # Use default prompts from PersonalizationEvaluator
         from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
-        eval_prompts = PersonalizationEvaluator._generate_test_prompts(
-            getattr(args, 'num_eval_prompts', 30)
-        )
+        num_prompts = getattr(args, 'num_eval_prompts', 30)
+        eval_prompts = PersonalizationEvaluator.DEFAULT_PROMPTS[:num_prompts]
     else:
         # Default generic prompts
         eval_prompts = [
@@ -955,7 +1068,20 @@ def _apply_weight_modification_standalone(
             norm_preserve=config.norm_preserve,
             verbose=False,
         )
+    elif config.method in ("titan", "prism", "pulse"):
+        # Multi-direction methods: directions already combined during generation
+        # Use additive baking with the combined vectors
+        bake_steering_with_kernel(
+            model,
+            steering_vectors,
+            max_alpha=params["max_weight"] * params["strength"],
+            max_alpha_position=max_weight_position,
+            min_alpha=params["min_weight"],
+            components=config.components,
+            verbose=False,
+        )
     else:
+        # Default: additive
         bake_steering_with_kernel(
             model,
             steering_vectors,

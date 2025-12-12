@@ -645,7 +645,15 @@ class StructureType(Enum):
 
 @dataclass
 class GeometryAnalysisConfig:
-    """Configuration for comprehensive geometry analysis."""
+    """Configuration for comprehensive geometry analysis.
+    
+    Default thresholds are tuned based on the Universal Subspace Hypothesis
+    (Kaushik et al., 2025), which shows that neural networks converge to
+    shared low-dimensional subspaces. Key implications:
+    - Linear structure is more common than previously assumed
+    - True cone/manifold structures are rarer
+    - ~16 principal directions capture most variance
+    """
     
     # General settings
     num_components: int = 5
@@ -654,24 +662,27 @@ class GeometryAnalysisConfig:
     optimization_steps: int = 100
     """Steps for optimization-based methods."""
     
-    # Linear detection
-    linear_variance_threshold: float = 0.8
+    # Linear detection - raised threshold per Universal Subspace findings
+    linear_variance_threshold: float = 0.85
     """Variance explained threshold to declare linear structure."""
     
-    # Cone detection
-    cone_threshold: float = 0.7
+    # Cone detection - lowered threshold (true cones are rarer)
+    cone_threshold: float = 0.65
     """Cone score threshold."""
     
     # Cluster detection
     max_clusters: int = 5
     """Maximum number of clusters to try."""
     
-    cluster_silhouette_threshold: float = 0.5
+    cluster_silhouette_threshold: float = 0.55
     """Silhouette score threshold for cluster detection."""
     
     # Manifold detection
     manifold_neighbors: int = 10
     """Number of neighbors for manifold analysis."""
+    
+    manifold_threshold: float = 0.70
+    """Score threshold for manifold structure."""
     
     # Sparse detection
     sparse_threshold: float = 0.1
@@ -681,9 +692,13 @@ class GeometryAnalysisConfig:
     bimodal_dip_threshold: float = 0.05
     """P-value threshold for dip test."""
     
-    # Orthogonal detection  
-    orthogonal_threshold: float = 0.1
+    # Orthogonal detection - stricter (orthogonal is rare in universal subspace)
+    orthogonal_threshold: float = 0.12
     """Max correlation for orthogonal subspaces."""
+    
+    # Universal subspace integration
+    use_universal_thresholds: bool = True
+    """Whether to use thresholds tuned for universal subspace theory."""
 
 
 @dataclass
