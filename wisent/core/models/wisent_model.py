@@ -516,7 +516,7 @@ class WisentModel:
                 return_tensors="pt",
                 padding=False,  # Single prompt, no padding needed
                 truncation=True,  # Avoid errors on long inputs
-                max_length=self.tokenizer.model_max_length  # Use model's actual limit
+                max_length=self.tokenizer.model_max_length,  # Use model's actual limit
             )
             # Move tensors to the correct device (same as _batch_encode does)
             batch = {
@@ -792,7 +792,7 @@ class WisentModel:
                 return_tensors="pt",
                 padding=False,  # Single prompt, no padding needed
                 truncation=True,  # Avoid errors on long inputs
-                max_length=self.tokenizer.model_max_length  # Use model's actual limit
+                max_length=self.tokenizer.model_max_length,  # Use model's actual limit
             )
             # Move tensors to the correct device (same as _batch_encode does)
             batch = {

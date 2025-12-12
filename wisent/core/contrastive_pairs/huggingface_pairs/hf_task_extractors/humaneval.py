@@ -6,45 +6,52 @@ from wisent.core.cli_logger import setup_logger
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
-__all__ = ["HumanEvalExtractor"]
+__all__ = [
+    "HumanEvalUnifiedExtractor",
+    "HumanEvalExtractor",
+    "HumanEval64Extractor",
+    "HumanEvalPlusExtractor",
+    "HumanEvalInstructExtractor",
+    "HumanEval64InstructExtractor",
+]
 
 log = setup_logger(__name__)
 
-task_names = ("humaneval_64_instruct", "humaneval_instruct", "humaneval_plus")
+# Tasks supported by this extractor
+task_names = (
+    "humaneval",
+    "humaneval_64",
+    "humaneval_plus",
+    "humaneval_instruct",
+    "humaneval_64_instruct",
+)
 
-class HumanEvalExtractor(HuggingFaceBenchmarkExtractor):
+
+class HumanEvalUnifiedExtractor(HuggingFaceBenchmarkExtractor):
+    """
+    Unified extractor for all HumanEval variants.
+
+    Supports:
+        - humaneval, humaneval_64, humaneval_plus: raw prompt format
+        - humaneval_instruct, humaneval_64_instruct: instruction format
+
+    Dataset: openai_humaneval (164 Python problems)
+    """
+
     evaluator_name = "coding"
-    """
-    Extractor for HumanEval and HumanEval+ coding benchmarks.
 
-    HumanEval schema (openai_humaneval):
-        - task_id: str (e.g., "HumanEval/0")
-        - prompt: str (function signature + docstring)
-        - canonical_solution: str (correct implementation)
-        - test: str (unit tests)
-        - entry_point: str (function name)
-    """
+    # Override in subclasses
+    task_name = "humaneval"
+    is_instruct = False
 
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
+        **kwargs,
     ) -> list[ContrastivePair]:
-        """
-        Build contrastive pairs from HumanEval examples.
-
-        For coding tasks, we create pairs where:
-        - Positive: Correct implementation
-        - Negative: Incorrect implementation (generated or placeholder)
-
-        Args:
-            limit: Optional maximum number of pairs to produce.
-
-        Returns:
-            A list of ContrastivePair objects.
-        """
+        """Build contrastive pairs from HumanEval examples."""
         max_items = self._normalize_limit(limit)
 
-        # Load HumanEval dataset
         docs = self.load_dataset(
             dataset_name="openai_humaneval",
             split="test",
@@ -52,8 +59,7 @@ class HumanEvalExtractor(HuggingFaceBenchmarkExtractor):
         )
 
         pairs: list[ContrastivePair] = []
-
-        log.info(f"Extracting contrastive pairs from {len(docs)} HumanEval examples")
+        log.info(f"Extracting {self.task_name} pairs from {len(docs)} examples")
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -63,53 +69,41 @@ class HumanEvalExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            log.warning("No valid HumanEval pairs extracted")
+            log.warning(f"No valid {self.task_name} pairs extracted")
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """
-        Convert a single HumanEval doc into a ContrastivePair.
-
-        Returns None when required fields are missing or malformed.
-        """
+        """Convert a single HumanEval doc into a ContrastivePair."""
         try:
-            task_id = doc.get("task_id", "")
-            prompt = doc.get("prompt", "").strip()
-            canonical_solution = doc.get("canonical_solution", "").strip()
+            prompt = doc.get("prompt", "")
+            body = doc.get("canonical_solution", "")
             entry_point = doc.get("entry_point", "")
             test_code = doc.get("test", "").strip()
 
-            if not prompt or not canonical_solution:
-                log.debug(f"Skipping {task_id}: missing prompt or solution")
+            if not prompt or not body:
+                log.debug("Skipping: missing prompt or solution")
                 return None
 
-            # Construct the full correct implementation
-            # In HumanEval, prompt contains signature+docstring, canonical_solution is body at column 0
-            # We need to indent the body by 4 spaces to be inside the function
-            lines = canonical_solution.split('\n')
-            indented_lines = ['    ' + line if line and not line[0].isspace() else line for line in lines]
-            indented_solution = '\n'.join(indented_lines)
-            correct_code = prompt + "\n" + indented_solution
+            # Build complete function: prompt (signature + docstring) + body
+            correct = prompt + body
 
-            # Create an incorrect implementation (return incorrect value/type)
-            # For coding benchmarks, we create a simple buggy version
-            incorrect_code = prompt + "\n    pass  # Incorrect: empty implementation"
+            # Build incorrect answer: prompt + pass
+            incorrect = self._create_incorrect_answer(prompt)
 
-            # Format the question to include the task
-            question = f"Complete the following Python function:\n\n{prompt}"
+            # Format question based on task type just like lm eval harness does it
+            formatted_question = self._format_question(prompt)
 
             metadata = {
-                "label": "humaneval",
-                "task_id": task_id,
+                "label": self.task_name,
                 "entry_point": entry_point,
-                "test_code": test_code,  # Include test code for execution
+                "test_code": test_code,
             }
 
             return self._build_pair(
-                question=question,
-                correct=correct_code,
-                incorrect=incorrect_code,
+                question=formatted_question,
+                correct=correct,
+                incorrect=incorrect,
                 metadata=metadata,
             )
 
@@ -117,3 +111,47 @@ class HumanEvalExtractor(HuggingFaceBenchmarkExtractor):
             log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
 
+    def _format_question(self, prompt: str) -> str:
+        """Format the question based on task type."""
+        if self.is_instruct:
+            # lm_eval instruction format
+            return (
+                "Write me a solution to the following problem and make sure "
+                "that it passes the tests:\n"
+                f"```python\n{prompt}\n```"
+            )
+        else:
+            # Raw prompt for base models
+            return prompt
+
+
+    def _create_incorrect_answer(self, prompt: str) -> str:
+        """Create an incorrect answer. TODO: improve this later."""
+        return prompt + "    pass"
+
+
+# Subclasses for each task variant
+
+class HumanEvalExtractor(HumanEvalUnifiedExtractor):
+    task_name = "humaneval"
+    is_instruct = False
+
+
+class HumanEval64Extractor(HumanEvalUnifiedExtractor):
+    task_name = "humaneval_64"
+    is_instruct = False
+
+
+class HumanEvalPlusExtractor(HumanEvalUnifiedExtractor):
+    task_name = "humaneval_plus"
+    is_instruct = False
+
+
+class HumanEvalInstructExtractor(HumanEvalUnifiedExtractor):
+    task_name = "humaneval_instruct"
+    is_instruct = True
+
+
+class HumanEval64InstructExtractor(HumanEvalUnifiedExtractor):
+    task_name = "humaneval_64_instruct"
+    is_instruct = True
