@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -16,14 +17,16 @@ _LOG = setup_logger(__name__)
 
 task_names = (
     "mbpp",
+    "mbpp_instruct",
     "mbpp_plus",
+    "mbpp_plus_instruct",
 )
 
 class MBPPExtractor(LMEvalBenchmarkExtractor):
     """Extractor for the MBPP (Mostly Basic Python Problems) benchmark."""
 
 
-    evaluator_name = "exact_match"
+    evaluator_name = "coding"
     def extract_contrastive_pairs(
         self,
         lm_eval_task_data: ConfigurableTask,
@@ -57,8 +60,9 @@ class MBPPExtractor(LMEvalBenchmarkExtractor):
 
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 
+        task_name = getattr(lm_eval_task_data, "NAME", "mbpp")
         for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
+            pair = self._extract_pair_from_doc(doc, task_name)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
@@ -70,7 +74,7 @@ class MBPPExtractor(LMEvalBenchmarkExtractor):
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+    def _extract_pair_from_doc(self, doc: dict[str, Any], task_name: str) -> ContrastivePair | None:
         """
         Convert a single MBPP doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
@@ -80,6 +84,7 @@ class MBPPExtractor(LMEvalBenchmarkExtractor):
         try:
             text = str(doc.get("text", "")).strip()
             code = str(doc.get("code", "")).strip()
+            test_list = doc.get("test_list", [])
 
             if not text or not code:
                 log.debug(
@@ -94,10 +99,40 @@ class MBPPExtractor(LMEvalBenchmarkExtractor):
             # Incorrect solution: return a placeholder or buggy implementation
             incorrect = "    return None  # Incomplete implementation"
 
-            formatted_question = f"Write a Python function to solve this problem:\n\n{text}"
+            # Format tests (use first 3 if available)
+            tests_str = "\n".join(test_list[:3]) if test_list else ""
+
+            # Different prompt format for instruct vs base
+            is_instruct = "instruct" in task_name.lower()
+            if is_instruct:
+                formatted_question = f"You are an expert Python programmer, and here is your task:\n{text}\nYour code should pass these tests:\n{tests_str}"
+            else:
+                formatted_question = f"You are an expert Python programmer, and here is your task: {text} Your code should pass these tests:\n\n{tests_str}\n[BEGIN]\n"
+
+            # Extract entry_point (function name) from first test assertion
+            entry_point = None
+            if test_list:
+                match = re.search(r'assert\s+(\w+)\(', test_list[0])
+                entry_point = match.group(1) if match else None
+
+            # Format test_code with check() function (like HumanEval format)
+            # Replace function name with 'candidate' in assertions
+            if test_list and entry_point:
+                # Convert "assert func_name(...)" to "assert candidate(...)"
+                converted_tests = [
+                    re.sub(rf'\b{entry_point}\b', 'candidate', test)
+                    for test in test_list
+                ]
+                test_code = f"def check(candidate):\n    " + "\n    ".join(converted_tests)
+            else:
+                test_code = ""
 
             metadata = {
-                "label": "mbpp",
+                "label": task_name,
+                "entry_point": entry_point,
+                "test_code": test_code,
+                "language": "python",
+                "task_name": task_name,
             }
 
             return self._build_pair(
@@ -120,4 +155,10 @@ class MBPPExtractor(LMEvalBenchmarkExtractor):
     ) -> ContrastivePair:
         positive_response = PositiveResponse(model_response=correct)
         negative_response = NegativeResponse(model_response=incorrect)
-        return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))
+        return ContrastivePair(
+            prompt=question,
+            positive_response=positive_response,
+            negative_response=negative_response,
+            label=metadata.get("label") if metadata else None,
+            metadata=metadata,
+        )
