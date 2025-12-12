@@ -17,7 +17,15 @@ import sys
 
 os.environ["HF_ALLOW_CODE_EVAL"] = "1"
 
+from lm_eval.api.task import TaskConfig
 from lm_eval.tasks import get_task_dict
+
+# Patch TaskConfig to ignore 'group' key (lm-eval 0.4.9 bug)
+_original_taskconfig_init = TaskConfig.__init__
+def _patched_taskconfig_init(self, **kwargs):
+    kwargs.pop('group', None)
+    return _original_taskconfig_init(self, **kwargs)
+TaskConfig.__init__ = _patched_taskconfig_init
 
 
 def inspect_benchmark(benchmark_name: str, num_examples: int = 5) -> None:
