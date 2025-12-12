@@ -746,14 +746,18 @@ def detect_geometry_structure(
     """
     Detect the geometric structure of activation differences.
     
-    Analyzes activations for multiple possible structures:
-    - Linear: Single direction (PCA captures most variance)
-    - Cone: Multiple correlated directions in same half-space
-    - Cluster: Discrete groups of activation patterns
-    - Manifold: Non-linear curved structure
-    - Sparse: Behavior encoded in few active neurons
-    - Bimodal: Two distinct modes in activation distribution
-    - Orthogonal: Independent subspaces
+    Uses HIERARCHICAL detection - structures are mutually exclusive:
+    - Linear: Single direction explains the data (simplest)
+    - Cone: Multiple correlated directions needed (more complex than linear)
+    - Cluster: Discrete groups (different from continuous structures)
+    - Orthogonal: Independent subspaces (different from cone)
+    - Sparse: Few neurons encode the behavior
+    - Bimodal: Two distinct modes
+    - Manifold: Non-linear curved structure (most general, fallback)
+    
+    The key insight: Linear ⊂ Cone ⊂ Manifold, so we check simpler
+    structures first and only report more complex structures if simpler
+    ones don't fit well.
     
     Arguments:
         pos_activations: Positive example activations [N_pos, hidden_dim]
@@ -776,37 +780,42 @@ def detect_geometry_structure(
     # Compute difference vectors (primary analysis target)
     diff_vectors = pos_tensor - neg_tensor[:pos_tensor.shape[0]] if neg_tensor.shape[0] >= pos_tensor.shape[0] else pos_tensor[:neg_tensor.shape[0]] - neg_tensor
     
-    all_scores: Dict[str, StructureScore] = {}
+    # Compute raw scores for each structure type
+    raw_scores: Dict[str, StructureScore] = {}
     
     # 1. Linear structure detection
     linear_score = _detect_linear_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
-    all_scores["linear"] = linear_score
+    raw_scores["linear"] = linear_score
     
     # 2. Cone structure detection
     cone_score = _detect_cone_structure_score(pos_tensor, neg_tensor, cfg)
-    all_scores["cone"] = cone_score
+    raw_scores["cone"] = cone_score
     
     # 3. Cluster structure detection
     cluster_score = _detect_cluster_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
-    all_scores["cluster"] = cluster_score
+    raw_scores["cluster"] = cluster_score
     
     # 4. Manifold structure detection
     manifold_score = _detect_manifold_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
-    all_scores["manifold"] = manifold_score
+    raw_scores["manifold"] = manifold_score
     
     # 5. Sparse structure detection
     sparse_score = _detect_sparse_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
-    all_scores["sparse"] = sparse_score
+    raw_scores["sparse"] = sparse_score
     
     # 6. Bimodal structure detection
     bimodal_score = _detect_bimodal_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
-    all_scores["bimodal"] = bimodal_score
+    raw_scores["bimodal"] = bimodal_score
     
     # 7. Orthogonal subspaces detection
     orthogonal_score = _detect_orthogonal_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
-    all_scores["orthogonal"] = orthogonal_score
+    raw_scores["orthogonal"] = orthogonal_score
     
-    # Find best structure
+    # HIERARCHICAL ADJUSTMENT: Make scores mutually exclusive
+    # The principle: only credit a more complex structure if simpler ones fail
+    all_scores = _apply_hierarchical_scoring(raw_scores)
+    
+    # Find best structure based on adjusted scores
     best_key = max(all_scores.keys(), key=lambda k: all_scores[k].score)
     best_structure = all_scores[best_key].structure_type
     best_score = all_scores[best_key].score
@@ -824,8 +833,113 @@ def detect_geometry_structure(
             "n_positive": pos_tensor.shape[0],
             "n_negative": neg_tensor.shape[0],
             "hidden_dim": pos_tensor.shape[1],
+            "raw_scores": {k: v.score for k, v in raw_scores.items()},
         }
     )
+
+
+def _apply_hierarchical_scoring(raw_scores: Dict[str, StructureScore]) -> Dict[str, StructureScore]:
+    """
+    Apply hierarchical scoring to make structure types mutually exclusive.
+    
+    Hierarchy (simpler to more complex):
+    1. Linear - if high, don't credit cone/manifold
+    2. Cone - if high (and linear is low), don't credit manifold
+    3. Cluster - independent axis (discrete vs continuous)
+    4. Sparse - independent axis (encoding style)
+    5. Bimodal - independent axis
+    6. Orthogonal - alternative to cone (uncorrelated vs correlated directions)
+    7. Manifold - fallback (only if nothing else fits)
+    
+    The adjusted score represents: "How well does THIS structure explain
+    what simpler structures cannot?"
+    """
+    adjusted: Dict[str, StructureScore] = {}
+    
+    linear_raw = raw_scores.get("linear", StructureScore(StructureType.LINEAR, 0, 0)).score
+    cone_raw = raw_scores.get("cone", StructureScore(StructureType.CONE, 0, 0)).score
+    cluster_raw = raw_scores.get("cluster", StructureScore(StructureType.CLUSTER, 0, 0)).score
+    manifold_raw = raw_scores.get("manifold", StructureScore(StructureType.MANIFOLD, 0, 0)).score
+    sparse_raw = raw_scores.get("sparse", StructureScore(StructureType.SPARSE, 0, 0)).score
+    bimodal_raw = raw_scores.get("bimodal", StructureScore(StructureType.BIMODAL, 0, 0)).score
+    orthogonal_raw = raw_scores.get("orthogonal", StructureScore(StructureType.ORTHOGONAL, 0, 0)).score
+    
+    # Thresholds for "structure is sufficient"
+    LINEAR_THRESHOLD = 0.6  # If linear > 0.6, linear structure is sufficient
+    CONE_THRESHOLD = 0.5    # If cone > 0.5 (after adjustment), cone is sufficient
+    
+    # 1. LINEAR: No adjustment needed - it's the simplest
+    adjusted["linear"] = StructureScore(
+        StructureType.LINEAR,
+        score=linear_raw,
+        confidence=raw_scores["linear"].confidence,
+        details={**raw_scores["linear"].details, "adjustment": "none (baseline)"}
+    )
+    
+    # 2. CONE: Only credit if linear is insufficient
+    # Cone score = raw_cone * (1 - linear_sufficiency)
+    linear_sufficiency = min(1.0, linear_raw / LINEAR_THRESHOLD) if linear_raw > 0 else 0
+    cone_adjusted = cone_raw * (1 - linear_sufficiency * 0.8)  # Reduce cone if linear is good
+    adjusted["cone"] = StructureScore(
+        StructureType.CONE,
+        score=cone_adjusted,
+        confidence=raw_scores["cone"].confidence,
+        details={**raw_scores["cone"].details, "adjustment": f"reduced by linear_sufficiency={linear_sufficiency:.2f}"}
+    )
+    
+    # 3. MANIFOLD: Only credit if both linear AND cone are insufficient
+    # This is the "fallback" - only use if simpler structures don't work
+    cone_sufficiency = min(1.0, max(linear_raw, cone_raw) / CONE_THRESHOLD)
+    manifold_adjusted = manifold_raw * (1 - cone_sufficiency * 0.9)  # Heavily penalize if simpler works
+    adjusted["manifold"] = StructureScore(
+        StructureType.MANIFOLD,
+        score=manifold_adjusted,
+        confidence=raw_scores["manifold"].confidence,
+        details={**raw_scores["manifold"].details, "adjustment": f"reduced by cone_sufficiency={cone_sufficiency:.2f}"}
+    )
+    
+    # 4. CLUSTER: Independent axis - but penalize if continuous structures work
+    # Cluster is meaningful only if data is truly discrete, not continuous
+    continuous_score = max(linear_raw, cone_raw)
+    cluster_adjusted = cluster_raw * (1 - continuous_score * 0.5)
+    adjusted["cluster"] = StructureScore(
+        StructureType.CLUSTER,
+        score=cluster_adjusted,
+        confidence=raw_scores["cluster"].confidence,
+        details={**raw_scores["cluster"].details, "adjustment": f"reduced by continuous_score={continuous_score:.2f}"}
+    )
+    
+    # 5. SPARSE: Independent axis - about encoding style, not geometry
+    # Keep mostly unchanged, slight penalty if linear is very high (sparse + linear = still linear)
+    sparse_adjusted = sparse_raw * (1 - linear_raw * 0.3)
+    adjusted["sparse"] = StructureScore(
+        StructureType.SPARSE,
+        score=sparse_adjusted,
+        confidence=raw_scores["sparse"].confidence,
+        details={**raw_scores["sparse"].details, "adjustment": f"slight reduction for linear={linear_raw:.2f}"}
+    )
+    
+    # 6. BIMODAL: Independent axis - about distribution shape
+    # No adjustment needed
+    adjusted["bimodal"] = StructureScore(
+        StructureType.BIMODAL,
+        score=bimodal_raw,
+        confidence=raw_scores["bimodal"].confidence,
+        details={**raw_scores["bimodal"].details, "adjustment": "none (independent axis)"}
+    )
+    
+    # 7. ORTHOGONAL: Alternative to cone (mutually exclusive)
+    # If directions are correlated (cone), they're not orthogonal
+    # Only credit orthogonal if cone is low
+    orthogonal_adjusted = orthogonal_raw * (1 - cone_raw * 0.7)
+    adjusted["orthogonal"] = StructureScore(
+        StructureType.ORTHOGONAL,
+        score=orthogonal_adjusted,
+        confidence=raw_scores["orthogonal"].confidence,
+        details={**raw_scores["orthogonal"].details, "adjustment": f"reduced by cone={cone_raw:.2f}"}
+    )
+    
+    return adjusted
 
 
 def _detect_linear_structure(
