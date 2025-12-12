@@ -63,6 +63,8 @@ def extract_activations_with_hook(
         if len(hidden_states.shape) == 3:  # [batch, seq, hidden]
             # Convert to float32 before numpy (bfloat16 not supported)
             last_token_acts = hidden_states[:, -1, :].detach().cpu().float().numpy()
+            # Replace NaN with 0 to avoid sklearn errors
+            last_token_acts = np.nan_to_num(last_token_acts, nan=0.0, posinf=0.0, neginf=0.0)
             activations.extend(last_token_acts)
 
     # Register hook
@@ -90,7 +92,10 @@ def extract_activations_with_hook(
     finally:
         handle.remove()
 
-    return np.array(activations)
+    result = np.array(activations)
+    # Final NaN check
+    result = np.nan_to_num(result, nan=0.0, posinf=0.0, neginf=0.0)
+    return result
 
 
 def generate_benchmark_predictions(

@@ -138,6 +138,18 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Path to save all trial results as JSON (optional)"
     )
+    parser.add_argument(
+        "--checkpoint",
+        type=str,
+        default=None,
+        help="Path to checkpoint file for saving/resuming optimization. If file exists, resume from it."
+    )
+    parser.add_argument(
+        "--checkpoint-interval",
+        type=int,
+        default=5,
+        help="Save checkpoint and best model every N trials. Default: 5"
+    )
 
     # ==========================================================================
     # EVALUATION CONFIGURATION
@@ -262,8 +274,12 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         "--method",
         type=str,
         default="directional",
-        choices=["directional", "additive"],
-        help="Weight modification method. Default: directional"
+        choices=["directional", "additive", "titan", "prism", "pulse"],
+        help=(
+            "Weight modification method. Default: directional. "
+            "Options: directional (single direction), additive (bias-based), "
+            "titan/prism/pulse (multi-direction, better for non-linear representations)"
+        )
     )
     method_group.add_argument(
         "--components",
@@ -283,6 +299,33 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         action="store_false",
         dest="norm_preserve",
         help="Disable norm-preserving directional projection"
+    )
+    
+    # Multi-direction method options (titan, prism, pulse)
+    multi_dir_group = parser.add_argument_group("multi-direction options (titan/prism/pulse)")
+    multi_dir_group.add_argument(
+        "--num-directions",
+        type=int,
+        default=5,
+        help="Number of directions per layer for multi-direction methods. Default: 5"
+    )
+    multi_dir_group.add_argument(
+        "--combination-strategy",
+        type=str,
+        default="learned",
+        choices=["learned", "uniform", "pca_weighted"],
+        help=(
+            "How to combine multiple directions when baking into weights. "
+            "learned: use method's learned weights, "
+            "uniform: equal weights, "
+            "pca_weighted: weight by PCA importance. Default: learned"
+        )
+    )
+    multi_dir_group.add_argument(
+        "--multi-optimization-steps",
+        type=int,
+        default=100,
+        help="Optimization steps for multi-direction training. Default: 100"
     )
 
     # ==========================================================================

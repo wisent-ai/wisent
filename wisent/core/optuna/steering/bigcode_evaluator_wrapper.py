@@ -10,7 +10,6 @@ from typing import Any, Dict, List, Tuple
 
 from wisent.core.bigcode_extractors import get_bigcode_extractor
 from wisent.core.bigcode_integration import BigCodeEvaluator, is_bigcode_task
-from wisent.parameters.task_config import CODING_TASKS
 from wisent.core.errors import BigCodeTaskRequiresFlagError, InsufficientDataError
 
 logger = logging.getLogger(__name__)
@@ -36,7 +35,7 @@ class OptunaBigCodeEvaluator:
 
     def is_coding_task(self, task_name: str) -> bool:
         """
-        Check if a task requires code execution evaluation.
+        Check if a task requires code execution evaluation based on its extractor's evaluator_name.
 
         Args:
             task_name: Name of the task
@@ -46,7 +45,19 @@ class OptunaBigCodeEvaluator:
         """
         if not task_name:
             return False
-        return task_name.lower() in CODING_TASKS or is_bigcode_task(task_name)
+        
+        # Check if it's a known BigCode task
+        if is_bigcode_task(task_name):
+            return True
+        
+        # Check the extractor's evaluator_name
+        try:
+            from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import get_extractor
+            extractor = get_extractor(task_name)
+            evaluator_name = getattr(extractor, 'evaluator_name', None)
+            return evaluator_name == "coding"
+        except Exception:
+            return False
 
     def evaluate_predictions(
         self, predictions: List[str], task_docs: List[Dict[str, Any]], task_name: str
