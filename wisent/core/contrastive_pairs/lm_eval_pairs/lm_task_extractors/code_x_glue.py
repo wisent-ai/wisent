@@ -11,16 +11,21 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["CodeXGlueExtractor"]
+__all__ = ["Code2TextExtractor"]
 _LOG = setup_logger(__name__)
 
 task_names = (
-    "code_x_glue",
-    "codexglue_code2text",
+    "code2text",
+    "code2text_go",
+    "code2text_java",
+    "code2text_javascript",
+    "code2text_php",
+    "code2text_python",
+    "code2text_ruby"
 )
 
-class CodeXGlueExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the Code X Glue benchmark - parent task for code2text subtasks."""
+class Code2TextExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for code2text tasks - generates documentation from code."""
 
 
     evaluator_name = "generation"
@@ -87,7 +92,7 @@ class CodeXGlueExtractor(LMEvalBenchmarkExtractor):
 
                 prompt = f"Generate documentation for this code:\n\n{code}\n\nDocumentation:"
 
-                metadata = {"label": "code_x_glue"}
+                metadata = {"label": "code2text"}
 
                 return self._build_pair(
                     question=prompt,

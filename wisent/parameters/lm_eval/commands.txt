@@ -4,7 +4,7 @@ python -m wisent.tests.test_table.inspect_benchmark <benchmark name>
 
 python -m wisent.examples.scripts.test_one_benchmark <benchmark name>
 
-python -m wisent.tests.test_table.inspect_hf_dataset FALcon6/ptb_text_only
+python -m wisent.tests.test_table.inspect_hf_dataset codeparrot/apps
 
 lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks <benchmark name> --device cuda:0 --batch_size 4 --limit 20
 
@@ -24,7 +24,7 @@ python -m wisent.core.main generate-vector-from-task \
 --timing \
 --device cuda
 
-lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks afrixnli --device cuda:0 --batch_size 4 --limit 20
+lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks code2text_python --device cuda:0 --batch_size 4 --limit 20
 
 
 
