@@ -185,7 +185,9 @@ class WeightsOptimizer(BaseOptimizer):
             )
 
         # Restore base model weights
-        self.model.load_state_dict(self.base_state_dict)
+        # Use strict=False because bake_steering may add bias parameters
+        # that didn't exist in the original model
+        self._restore_base_weights()
 
         # Apply weight modification
         self._apply_weight_modification(params)
@@ -310,6 +312,50 @@ class WeightsOptimizer(BaseOptimizer):
                 except AttributeError:
                     continue
 
+    def _restore_base_weights(self) -> None:
+        """
+        Restore model to base weights.
+        
+        Uses strict=False because bake_steering may add bias parameters
+        that didn't exist in the original model. Also removes any bias
+        parameters that were added during weight modification.
+        """
+        # First, remove any bias parameters that were added
+        # (bake_steering_with_kernel may have added these)
+        if hasattr(self.model, "model"):
+            layers = self.model.model.layers
+        elif hasattr(self.model, "transformer"):
+            layers = self.model.transformer.h
+        else:
+            layers = getattr(self.model, "layers", [])
+        
+        components_to_check = self.config.components or ["self_attn.o_proj", "mlp.down_proj"]
+        
+        for layer in layers:
+            for component_name in components_to_check:
+                try:
+                    component = layer
+                    for attr in component_name.split("."):
+                        component = getattr(component, attr)
+                    
+                    # Check if bias was added (not in base_state_dict)
+                    if hasattr(component, "bias") and component.bias is not None:
+                        # Check if this bias exists in base state dict
+                        bias_key = None
+                        for key in self.base_state_dict.keys():
+                            if component_name in key and key.endswith(".bias"):
+                                bias_key = key
+                                break
+                        
+                        if bias_key is None:
+                            # Bias was added, remove it
+                            component.bias = None
+                except AttributeError:
+                    continue
+        
+        # Now load state dict with strict=False
+        self.model.load_state_dict(self.base_state_dict, strict=False)
+
     def apply_best_params(self, best_params: dict[str, float]) -> None:
         """
         Apply the best parameters found during optimization.
@@ -320,7 +366,7 @@ class WeightsOptimizer(BaseOptimizer):
         arguments:
             best_params: Best parameters from optimization result.
         """
-        self.model.load_state_dict(self.base_state_dict)
+        self._restore_base_weights()
         self._apply_weight_modification(best_params)
 
     def optimize_with_checkpointing(
@@ -456,7 +502,7 @@ class WeightsOptimizer(BaseOptimizer):
 
         # Apply best params
         best_params = study.best_params
-        self.model.load_state_dict(self.base_state_dict)
+        self._restore_base_weights()
         self._apply_weight_modification(best_params)
 
         # Save model
