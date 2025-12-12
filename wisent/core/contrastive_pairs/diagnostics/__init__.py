@@ -22,6 +22,13 @@ from .control_vectors import (
     detect_geometry_structure,
 )
 from .vector_quality import VectorQualityConfig, VectorQualityReport, run_vector_quality_diagnostics
+from .linearity import (
+    LinearityConfig,
+    LinearityResult,
+    LinearityVerdict,
+    check_linearity,
+    check_linearity_from_activations,
+)
 
 __all__ = [
     "DiagnosticsConfig",
@@ -40,6 +47,11 @@ __all__ = [
     "VectorQualityConfig",
     "VectorQualityReport",
     "run_vector_quality_diagnostics",
+    "LinearityConfig",
+    "LinearityResult",
+    "LinearityVerdict",
+    "check_linearity",
+    "check_linearity_from_activations",
 ]
 
 

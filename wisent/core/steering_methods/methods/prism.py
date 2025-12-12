@@ -39,7 +39,19 @@ class PRISMConfig:
     """Configuration for PRISM steering method."""
     
     num_directions: int = 3
-    """Number of directions to discover per layer."""
+    """Number of directions to discover per layer. Set to 'auto' or -1 for automatic."""
+    
+    auto_num_directions: bool = False
+    """Automatically determine num_directions based on explained variance."""
+    
+    variance_threshold: float = 0.80
+    """Target cumulative variance for auto num_directions."""
+    
+    marginal_threshold: float = 0.05
+    """Minimum marginal variance for adding another direction."""
+    
+    max_directions: int = 10
+    """Maximum directions when using auto num_directions."""
     
     optimization_steps: int = 100
     """Number of gradient descent steps for direction optimization."""
@@ -64,6 +76,9 @@ class PRISMConfig:
     
     use_caa_init: bool = True
     """Whether to initialize first direction using CAA (difference-in-means)."""
+    
+    use_universal_basis_init: bool = False
+    """Whether to initialize from universal subspace basis if available."""
     
     cone_constraint: bool = True
     """Whether to constrain directions to form a polyhedral cone (all positive combinations)."""
@@ -123,8 +138,20 @@ class PRISMMethod(BaseSteeringMethod):
     
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        
+        # Handle auto num_directions
+        num_dirs = kwargs.get("num_directions", 3)
+        auto_num = kwargs.get("auto_num_directions", False)
+        if num_dirs == "auto" or num_dirs == -1:
+            auto_num = True
+            num_dirs = 3  # Will be overridden during training
+        
         self.config = PRISMConfig(
-            num_directions=kwargs.get("num_directions", 3),
+            num_directions=num_dirs,
+            auto_num_directions=auto_num,
+            variance_threshold=kwargs.get("variance_threshold", 0.80),
+            marginal_threshold=kwargs.get("marginal_threshold", 0.05),
+            max_directions=kwargs.get("max_directions", 10),
             optimization_steps=kwargs.get("optimization_steps", 100),
             learning_rate=kwargs.get("learning_rate", 0.01),
             retain_weight=kwargs.get("retain_weight", 0.1),
@@ -133,6 +160,7 @@ class PRISMMethod(BaseSteeringMethod):
             addition_weight=kwargs.get("addition_weight", 1.0),
             normalize=kwargs.get("normalize", True),
             use_caa_init=kwargs.get("use_caa_init", True),
+            use_universal_basis_init=kwargs.get("use_universal_basis_init", False),
             cone_constraint=kwargs.get("cone_constraint", True),
             min_cosine_similarity=kwargs.get("min_cosine_similarity", 0.3),
             max_cosine_similarity=kwargs.get("max_cosine_similarity", 0.95),
@@ -224,10 +252,25 @@ class PRISMMethod(BaseSteeringMethod):
             Tuple of (directions [K, H], metadata dict)
         """
         hidden_dim = pos_tensor.shape[1]
-        num_dirs = self.config.num_directions
         
-        # Initialize directions
+        # Determine num_directions (auto or fixed)
+        if self.config.auto_num_directions:
+            from wisent.core.universal_subspace import compute_optimal_num_directions
+            num_dirs, auto_details = compute_optimal_num_directions(
+                pos_tensor, neg_tensor,
+                variance_threshold=self.config.variance_threshold,
+                marginal_threshold=self.config.marginal_threshold,
+                max_directions=self.config.max_directions,
+                min_directions=1,
+            )
+        else:
+            num_dirs = self.config.num_directions
+            auto_details = None
+        
+        # Initialize directions (ensure same device as input)
+        device = pos_tensor.device
         directions = self._initialize_directions(pos_tensor, neg_tensor, hidden_dim, num_dirs)
+        directions = directions.to(device)
         directions.requires_grad_(True)
         
         # Optimizer
@@ -274,6 +317,9 @@ class PRISMMethod(BaseSteeringMethod):
         # Compute final metadata
         metadata = self._compute_direction_metadata(best_directions, pos_tensor, neg_tensor)
         metadata["final_loss"] = best_loss
+        metadata["num_directions"] = num_dirs
+        if auto_details is not None:
+            metadata["auto_num_directions"] = auto_details
         
         return best_directions, metadata
     
@@ -285,9 +331,26 @@ class PRISMMethod(BaseSteeringMethod):
         num_dirs: int,
     ) -> torch.Tensor:
         """
-        Initialize directions, optionally using CAA for the first direction.
+        Initialize directions using one of several strategies:
+        1. Universal basis (if enabled and available)
+        2. CAA + perturbations (default)
+        3. Random initialization
         """
-        directions = torch.randn(num_dirs, hidden_dim)
+        # Try universal basis initialization first
+        if self.config.use_universal_basis_init:
+            try:
+                from wisent.core.universal_subspace import initialize_from_universal_basis
+                directions = initialize_from_universal_basis(
+                    hidden_dim=hidden_dim,
+                    num_directions=num_dirs,
+                    noise_scale=0.1,
+                )
+                return directions
+            except Exception:
+                pass  # Fall through to other methods
+        
+        device = pos_tensor.device
+        directions = torch.randn(num_dirs, hidden_dim, device=device)
         
         if self.config.use_caa_init:
             # First direction: CAA (difference-in-means)
@@ -297,7 +360,7 @@ class PRISMMethod(BaseSteeringMethod):
             
             # Initialize others as perturbations of CAA direction
             for i in range(1, num_dirs):
-                noise = torch.randn(hidden_dim) * 0.3
+                noise = torch.randn(hidden_dim, device=device) * 0.3
                 perturbed = caa_dir + noise
                 directions[i] = F.normalize(perturbed, p=2, dim=0)
         else:

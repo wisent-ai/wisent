@@ -43,6 +43,7 @@ wisent/core/task_interface.py
 wisent/core/task_selector.py
 wisent/core/time_estimator.py
 wisent/core/timing_calibration.py
+wisent/core/universal_subspace.py
 wisent/core/user_model_config.py
 wisent/core/wisent.py
 wisent/core/activations/__init__.py
@@ -89,6 +90,7 @@ wisent/core/classifiers/core/__init__.py
 wisent/core/classifiers/models/__init__.py
 wisent/core/classifiers/pipeline_steps/__init__.py
 wisent/core/cli/__init__.py
+wisent/core/cli/check_linearity.py
 wisent/core/cli/create_steering_vector.py
 wisent/core/cli/diagnose_pairs.py
 wisent/core/cli/diagnose_vectors.py
@@ -108,7 +110,6 @@ wisent/core/cli/modify_weights.py
 wisent/core/cli/multi_steer.py
 wisent/core/cli/optimization_cache.py
 wisent/core/cli/optimize.py
-wisent/core/cli/optimize_all.py
 wisent/core/cli/optimize_classification.py
 wisent/core/cli/optimize_sample_size.py
 wisent/core/cli/optimize_steering.py
@@ -138,6 +139,7 @@ wisent/core/contrastive_pairs/diagnostics/control_vectors.py
 wisent/core/contrastive_pairs/diagnostics/coverage.py
 wisent/core/contrastive_pairs/diagnostics/divergence.py
 wisent/core/contrastive_pairs/diagnostics/duplicates.py
+wisent/core/contrastive_pairs/diagnostics/linearity.py
 wisent/core/contrastive_pairs/diagnostics/vector_quality.py
 wisent/core/contrastive_pairs/huggingface_pairs/__init__.py
 wisent/core/contrastive_pairs/huggingface_pairs/atoms.py
@@ -867,20 +869,12 @@ wisent/core/optuna/classifier/classifier_cache.py
 wisent/core/optuna/classifier/optuna_classifier_optimizer.py
 wisent/core/optuna/steering/__init__.py
 wisent/core/optuna/steering/bigcode_evaluator_wrapper.py
-wisent/core/optuna/steering/cache.py
-wisent/core/optuna/steering/cli.py
-wisent/core/optuna/steering/config.py
 wisent/core/optuna/steering/data_utils.py
-wisent/core/optuna/steering/evaluation.py
-wisent/core/optuna/steering/generation.py
 wisent/core/optuna/steering/metrics.py
-wisent/core/optuna/steering/optuna_pipeline.py
-wisent/core/optuna/steering/pipeline.py
-wisent/core/optuna/steering/results.py
 wisent/core/optuna/steering/steering_optimization.py
-wisent/core/optuna/steering/tracking.py
 wisent/core/parser_arguments/__init__.py
 wisent/core/parser_arguments/agent_parser.py
+wisent/core/parser_arguments/check_linearity_parser.py
 wisent/core/parser_arguments/configure_model_parser.py
 wisent/core/parser_arguments/create_steering_vector_parser.py
 wisent/core/parser_arguments/diagnose_pairs_parser.py
@@ -985,6 +979,7 @@ wisent/core/weight_modification/__init__.py
 wisent/core/weight_modification/additive.py
 wisent/core/weight_modification/directional.py
 wisent/core/weight_modification/export.py
+wisent/core/weight_modification/multi_direction.py
 wisent/core/weight_modification/utils.py
 wisent/examples/contrastive_pairs/humanization_human_vs_ai.json
 wisent/examples/scripts/benchmark_tags.json
@@ -1698,6 +1693,7 @@ wisent/parameters/tasks/tasks.json
 wisent/scripts/run_quality_metrics_sweep.sh
 wisent/tests/__init__.py
 wisent/tests/test_all_cli_commands.py
+wisent/tests/test_titan_geometry.py
 wisent/tests/examples/__init__.py
 wisent/tests/examples/cli/__init__.py
 wisent/tests/examples/cli/activations/__init__.py

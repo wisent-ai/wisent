@@ -57,6 +57,7 @@ __all__ = [
     "compute_projection_kernel",
     "project_with_kernel",
     "orthogonalize_direction",
+    "verify_weight_modification_preservation",
     "TITANRuntimeHooks",
     "apply_titan_steering",
 ]
@@ -1327,3 +1328,30 @@ def apply_titan_steering(
             print(f"  Mode: {mode}")
     
     return result
+
+
+def verify_weight_modification_preservation(
+    original_weights: "Tensor",
+    modified_weights: "Tensor",
+    threshold: float = 0.95,
+) -> tuple[bool, dict[str, float]]:
+    """
+    Verify that weight modification preserved subspace membership.
+    
+    Based on the Universal Subspace Hypothesis, good modifications should
+    keep weights within the same low-dimensional subspace that models learn.
+    
+    This is a wrapper around `wisent.core.universal_subspace.verify_subspace_preservation`
+    for use within the weight modification module.
+    
+    Arguments:
+        original_weights: Original weight matrix
+        modified_weights: Modified weight matrix  
+        threshold: Minimum alignment score for preservation
+        
+    Returns:
+        Tuple of (is_preserved, metrics_dict)
+    """
+    from wisent.core.universal_subspace import verify_subspace_preservation
+    return verify_subspace_preservation(original_weights, modified_weights, threshold)
+

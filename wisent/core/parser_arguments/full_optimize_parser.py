@@ -84,8 +84,8 @@ def setup_optimize_all_parser(parser):
     parser.add_argument(
         "--n-trials",
         type=int,
-        default=300,
-        help="Number of Optuna trials per task when using --search-strategy optuna (default: 300)"
+        default=50,
+        help="Number of Optuna trials for optimization (default: 50)"
     )
 
     # General limit that applies to all optimizations unless overridden
@@ -132,12 +132,6 @@ def setup_optimize_all_parser(parser):
 
     # Weight modification optimization options
     parser.add_argument("--skip-weights", action="store_true", help="Skip weight modification optimization")
-    parser.add_argument(
-        "--n-trials",
-        type=int,
-        default=20,
-        help="Number of Optuna trials for optimization (default: 20)"
-    )
     parser.add_argument(
         "--output-dir",
         type=str,
