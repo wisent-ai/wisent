@@ -68,7 +68,7 @@ def add_output_bias(
     """
     log = bind(_LOG)
 
-    scaled_bias = alpha * bias_vector.to(module.weight.device)
+    scaled_bias = alpha * bias_vector.to(device=module.weight.device, dtype=module.weight.dtype)
 
     if module.bias is None:
         # Create new bias parameter
@@ -122,7 +122,7 @@ def bake_steering_into_component(
 
         weight = module.weight  # [out_dim, in_dim]
         in_dim = weight.shape[1]
-        scaled_steering = (alpha / in_dim) * steering_vector.to(weight.device)  # [out_dim]
+        scaled_steering = (alpha / in_dim) * steering_vector.to(device=weight.device, dtype=weight.dtype)  # [out_dim]
 
         # Add steering vector contribution to each column of weight matrix
         # This means: W'[i,j] = W[i,j] + α*v[i]/in_dim
