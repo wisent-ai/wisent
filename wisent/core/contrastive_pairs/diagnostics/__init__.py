@@ -9,8 +9,26 @@ from .divergence import compute_divergence_metrics
 from .duplicates import compute_duplicate_metrics
 from .coverage import compute_coverage_metrics
 from .activations import compute_activation_metrics
-from .control_vectors import ControlVectorDiagnosticsConfig, run_control_vector_diagnostics, run_control_steering_diagnostics
+from .control_vectors import (
+    ControlVectorDiagnosticsConfig,
+    run_control_vector_diagnostics,
+    run_control_steering_diagnostics,
+    ConeAnalysisConfig,
+    ConeAnalysisResult,
+    check_cone_structure,
+    GeometryAnalysisConfig,
+    GeometryAnalysisResult,
+    StructureType,
+    detect_geometry_structure,
+)
 from .vector_quality import VectorQualityConfig, VectorQualityReport, run_vector_quality_diagnostics
+from .linearity import (
+    LinearityConfig,
+    LinearityResult,
+    LinearityVerdict,
+    check_linearity,
+    check_linearity_from_activations,
+)
 
 __all__ = [
     "DiagnosticsConfig",
@@ -19,9 +37,21 @@ __all__ = [
     "ControlVectorDiagnosticsConfig",
     "run_control_vector_diagnostics",
     "run_control_steering_diagnostics",
+    "ConeAnalysisConfig",
+    "ConeAnalysisResult",
+    "check_cone_structure",
+    "GeometryAnalysisConfig",
+    "GeometryAnalysisResult",
+    "StructureType",
+    "detect_geometry_structure",
     "VectorQualityConfig",
     "VectorQualityReport",
     "run_vector_quality_diagnostics",
+    "LinearityConfig",
+    "LinearityResult",
+    "LinearityVerdict",
+    "check_linearity",
+    "check_linearity_from_activations",
 ]
 
 

@@ -368,6 +368,114 @@ class ActivationCollector:
         except Exception:
             pass
 
+    def collect_batched(
+        self,
+        texts: list[str],
+        layers: Sequence[LayerName] | None = None,
+        aggregation: ActivationAggregationStrategy = ActivationAggregationStrategy.LAST_TOKEN,
+        batch_size: int = 8,
+        show_progress: bool = True,
+    ) -> list[dict[str, torch.Tensor]]:
+        """
+        Collect activations for multiple texts in batches.
+        
+        Args:
+            texts: List of text strings to collect activations for
+            layers: Which layers to collect (e.g., ["8"]), or None for all
+            aggregation: How to aggregate sequence to single vector
+            batch_size: Number of texts to process at once
+            show_progress: Whether to print progress
+            
+        Returns:
+            List of dicts mapping layer name -> activation tensor [H]
+        """
+        self._ensure_eval_mode()
+        results: list[dict[str, torch.Tensor]] = []
+        
+        tok = self.model.tokenizer
+        compute_device = getattr(self.model, "compute_device", None) or next(self.model.hf_model.parameters()).device
+        
+        num_batches = (len(texts) + batch_size - 1) // batch_size
+        
+        with torch.inference_mode():
+            for batch_idx in range(num_batches):
+                start = batch_idx * batch_size
+                end = min(start + batch_size, len(texts))
+                batch_texts = texts[start:end]
+                
+                if show_progress and batch_idx % 10 == 0:
+                    print(f"      Processing batch {batch_idx + 1}/{num_batches} ({start}/{len(texts)} texts)...", end='\r', flush=True)
+                
+                # Tokenize batch with padding
+                encoded = tok(
+                    batch_texts,
+                    return_tensors="pt",
+                    padding=True,
+                    truncation=True,
+                    max_length=2048,
+                    add_special_tokens=True,
+                )
+                encoded = {k: v.to(compute_device) for k, v in encoded.items()}
+                
+                # Forward pass
+                try:
+                    out = self.model.hf_model(**encoded, output_hidden_states=True, use_cache=False)
+                except torch.cuda.OutOfMemoryError:
+                    # Try to recover by clearing cache and retrying
+                    torch.cuda.empty_cache()
+                    import gc
+                    gc.collect()
+                    out = self.model.hf_model(**encoded, output_hidden_states=True, use_cache=False)
+                hs = out.hidden_states
+                
+                if not hs:
+                    raise NoHiddenStatesError()
+                
+                n_blocks = len(hs) - 1
+                names_by_idx = [str(i) for i in range(1, n_blocks + 1)]
+                keep = self._select_indices(layers, n_blocks)
+                
+                # Get attention mask to find actual sequence lengths
+                attention_mask = encoded.get("attention_mask")
+                
+                # Process each item in batch
+                for i in range(len(batch_texts)):
+                    collected: dict[str, torch.Tensor] = {}
+                    
+                    # Find actual sequence length for this item
+                    if attention_mask is not None:
+                        seq_len = int(attention_mask[i].sum().item())
+                    else:
+                        seq_len = hs[0].shape[1]
+                    
+                    for idx in keep:
+                        name = names_by_idx[idx]
+                        h = hs[idx + 1][i, :seq_len, :]  # [seq_len, H]
+                        
+                        # Aggregate to single vector
+                        if aggregation == ActivationAggregationStrategy.LAST_TOKEN:
+                            value = h[-1]
+                        elif aggregation == ActivationAggregationStrategy.FIRST_TOKEN:
+                            value = h[0]
+                        elif aggregation == ActivationAggregationStrategy.MEAN_POOLING:
+                            value = h.mean(dim=0)
+                        else:
+                            value = h[-1]  # Default to last token
+                        
+                        collected[name] = value.to(self.store_device)
+                    
+                    results.append(collected)
+                
+                # Clear GPU memory after each batch
+                del out, hs, encoded
+                torch.cuda.empty_cache()
+        
+        if show_progress:
+            print(f"      Processed {len(texts)} texts in {num_batches} batches" + " " * 20)
+        
+        return results
+
+
 def _resp_text(resp_obj: object) -> str:
     for attr in ("model_response", "text"):
         if hasattr(resp_obj, attr) and isinstance(getattr(resp_obj, attr), str):

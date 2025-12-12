@@ -84,6 +84,16 @@ from wisent.core.weight_modification.utils import (
     verify_modification,
     compute_modification_metrics,
 )
+from wisent.core.weight_modification.multi_direction import (
+    MultiDirectionConfig,
+    MultiDirectionResult,
+    train_and_bake_titan,
+    train_and_bake_prism,
+    train_and_bake_pulse,
+    train_and_bake,
+    bake_multi_directions,
+    combine_directions,
+)
 
 __all__ = [
     # Norm-Preserving Biprojected Directional Modification (RECOMMENDED)
@@ -112,4 +122,13 @@ __all__ = [
     "get_modifiable_components",
     "verify_modification",
     "compute_modification_metrics",
+    # Multi-direction (TITAN/PRISM/PULSE baked into weights)
+    "MultiDirectionConfig",
+    "MultiDirectionResult",
+    "train_and_bake_titan",
+    "train_and_bake_prism",
+    "train_and_bake_pulse",
+    "train_and_bake",
+    "bake_multi_directions",
+    "combine_directions",
 ]

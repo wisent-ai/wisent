@@ -69,6 +69,8 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
         
         # If coherence is below threshold, return 0
         if coherence_score < self.coherence_threshold:
+            logger.warning(f"Coherence check failed: {coherence_score:.1f} < {self.coherence_threshold}")
+            logger.warning(f"Response preview: {response[:100]}...")
             return {
                 "score": 0.0,
                 "human_prob": 0.0,

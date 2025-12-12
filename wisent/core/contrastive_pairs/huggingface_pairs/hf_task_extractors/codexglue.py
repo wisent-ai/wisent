@@ -21,6 +21,7 @@ class CodexglueExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     evaluator_name = "generation"
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,

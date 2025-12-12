@@ -16,6 +16,7 @@ wisent.egg-info/top_level.txt
 wisent/core/__init__.py
 wisent/core/autonomous_agent.py
 wisent/core/benchmark_extractors.py
+wisent/core/benchmark_registry.py
 wisent/core/bigcode_extractors.py
 wisent/core/bigcode_integration.py
 wisent/core/branding.py
@@ -42,6 +43,7 @@ wisent/core/task_interface.py
 wisent/core/task_selector.py
 wisent/core/time_estimator.py
 wisent/core/timing_calibration.py
+wisent/core/universal_subspace.py
 wisent/core/user_model_config.py
 wisent/core/wisent.py
 wisent/core/activations/__init__.py
@@ -88,6 +90,7 @@ wisent/core/classifiers/core/__init__.py
 wisent/core/classifiers/models/__init__.py
 wisent/core/classifiers/pipeline_steps/__init__.py
 wisent/core/cli/__init__.py
+wisent/core/cli/check_linearity.py
 wisent/core/cli/create_steering_vector.py
 wisent/core/cli/diagnose_pairs.py
 wisent/core/cli/diagnose_vectors.py
@@ -107,7 +110,6 @@ wisent/core/cli/modify_weights.py
 wisent/core/cli/multi_steer.py
 wisent/core/cli/optimization_cache.py
 wisent/core/cli/optimize.py
-wisent/core/cli/optimize_all.py
 wisent/core/cli/optimize_classification.py
 wisent/core/cli/optimize_sample_size.py
 wisent/core/cli/optimize_steering.py
@@ -137,6 +139,7 @@ wisent/core/contrastive_pairs/diagnostics/control_vectors.py
 wisent/core/contrastive_pairs/diagnostics/coverage.py
 wisent/core/contrastive_pairs/diagnostics/divergence.py
 wisent/core/contrastive_pairs/diagnostics/duplicates.py
+wisent/core/contrastive_pairs/diagnostics/linearity.py
 wisent/core/contrastive_pairs/diagnostics/vector_quality.py
 wisent/core/contrastive_pairs/huggingface_pairs/__init__.py
 wisent/core/contrastive_pairs/huggingface_pairs/atoms.py
@@ -167,6 +170,7 @@ wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/cluewsc.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/cnn_dailymail.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/codeforces.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/codexglue.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/codexglue_code_to_text.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/codexglue_code_to_text_go.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/codexglue_code_to_text_java.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/codexglue_code_to_text_javascript.py
@@ -232,6 +236,12 @@ wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multimedqa.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multipl_e.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_choice.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_cpp.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_go.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_java.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_js.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_py.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_rs.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/non_greedy_robustness_agieval_aqua_rat.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/olympiadbench.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/openllm.py
@@ -775,12 +785,12 @@ wisent/core/errors/__init__.py
 wisent/core/errors/error_codes.py
 wisent/core/errors/error_handler.py
 wisent/core/evaluators/__init__.py
-wisent/core/evaluators/personalization_evaluator.py
 wisent/core/evaluators/rotator.py
 wisent/core/evaluators/steering_evaluators.py
 wisent/core/evaluators/synthetic_evaluator.py
 wisent/core/evaluators/benchmark_specific/__init__.py
 wisent/core/evaluators/benchmark_specific/aime_evaluator.py
+wisent/core/evaluators/benchmark_specific/conala_evaluator.py
 wisent/core/evaluators/benchmark_specific/exact_match_evaluator.py
 wisent/core/evaluators/benchmark_specific/f1_evaluator.py
 wisent/core/evaluators/benchmark_specific/generation_evaluator.py
@@ -789,7 +799,6 @@ wisent/core/evaluators/benchmark_specific/log_likelihoods_evaluator.py
 wisent/core/evaluators/benchmark_specific/math_evaluator.py
 wisent/core/evaluators/benchmark_specific/perplexity_evaluator.py
 wisent/core/evaluators/benchmark_specific/polymath_evaluator.py
-wisent/core/evaluators/benchmark_specific/utils.py
 wisent/core/evaluators/benchmark_specific/coding/__init__.py
 wisent/core/evaluators/benchmark_specific/coding/solution_generator.py
 wisent/core/evaluators/benchmark_specific/coding/metrics/__init__.py
@@ -819,6 +828,7 @@ wisent/core/evaluators/benchmark_specific/coding/safe_docker/core/runtime.py
 wisent/core/evaluators/benchmark_specific/math_parsing/__init__.py
 wisent/core/evaluators/benchmark_specific/math_parsing/core.py
 wisent/core/evaluators/benchmark_specific/math_parsing/extract_boxed.py
+wisent/core/evaluators/benchmark_specific/math_parsing/is_equiv.py
 wisent/core/evaluators/benchmark_specific/math_parsing/scripts.py
 wisent/core/evaluators/core/__init__.py
 wisent/core/evaluators/core/atoms.py
@@ -861,10 +871,10 @@ wisent/core/optuna/steering/__init__.py
 wisent/core/optuna/steering/bigcode_evaluator_wrapper.py
 wisent/core/optuna/steering/data_utils.py
 wisent/core/optuna/steering/metrics.py
-wisent/core/optuna/steering/optuna_pipeline.py
 wisent/core/optuna/steering/steering_optimization.py
 wisent/core/parser_arguments/__init__.py
 wisent/core/parser_arguments/agent_parser.py
+wisent/core/parser_arguments/check_linearity_parser.py
 wisent/core/parser_arguments/configure_model_parser.py
 wisent/core/parser_arguments/create_steering_vector_parser.py
 wisent/core/parser_arguments/diagnose_pairs_parser.py
@@ -907,6 +917,7 @@ wisent/core/prompts/prompt_stratiegies/instruction_following.py
 wisent/core/prompts/prompt_stratiegies/multiple_choice.py
 wisent/core/prompts/prompt_stratiegies/role_playing.py
 wisent/core/steering_methods/__init__.py
+wisent/core/steering_methods/preflight.py
 wisent/core/steering_methods/registry.py
 wisent/core/steering_methods/rotator.py
 wisent/core/steering_methods/core/__init__.py
@@ -968,7 +979,9 @@ wisent/core/weight_modification/__init__.py
 wisent/core/weight_modification/additive.py
 wisent/core/weight_modification/directional.py
 wisent/core/weight_modification/export.py
+wisent/core/weight_modification/multi_direction.py
 wisent/core/weight_modification/utils.py
+wisent/examples/contrastive_pairs/humanization_human_vs_ai.json
 wisent/examples/scripts/benchmark_tags.json
 wisent/examples/scripts/lm_eval_readme.json
 wisent/examples/scripts/1/test_basqueglue_evaluation.json
@@ -1659,7 +1672,6 @@ wisent/examples/scripts/results/test_prompt_robustness_agieval_aqua_rat/test_pro
 wisent/examples/scripts/results/test_siqa/test_siqa_evaluation.json
 wisent/examples/scripts/results/test_siqa/test_siqa_pairs.json
 wisent/parameters/__init__.py
-wisent/parameters/task_config.py
 wisent/parameters/lm_eval/all_lm_eval_task_families.json
 wisent/parameters/lm_eval/broken_in_lm_eval.json
 wisent/parameters/lm_eval/evaluations_not_lm_eval_tasks.json
@@ -1681,6 +1693,8 @@ wisent/parameters/tasks/tasks.json
 wisent/scripts/run_quality_metrics_sweep.sh
 wisent/tests/__init__.py
 wisent/tests/test_all_cli_commands.py
+wisent/tests/test_geometry_comprehensive.py
+wisent/tests/test_titan_geometry.py
 wisent/tests/examples/__init__.py
 wisent/tests/examples/cli/__init__.py
 wisent/tests/examples/cli/activations/__init__.py

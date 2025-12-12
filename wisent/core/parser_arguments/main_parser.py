@@ -38,6 +38,7 @@ from wisent.core.parser_arguments.optimization_cache_parser import setup_optimiz
 from wisent.core.parser_arguments.optimize_weights_parser import setup_optimize_weights_parser
 from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser
 from wisent.core.parser_arguments.optimize_parser import setup_optimize_parser
+from wisent.core.parser_arguments.check_linearity_parser import setup_check_linearity_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -135,6 +136,12 @@ def setup_parser() -> argparse.ArgumentParser:
         "optimize-all", help="Run all optimizations: classification, steering, and weight modification"
     )
     setup_optimize_all_parser(optimize_all_parser)
+    
+    # Alias: 'optimize' is the same as 'optimize-all'
+    optimize_parser = subparsers.add_parser(
+        "optimize", help="Run all optimizations (alias for optimize-all)"
+    )
+    setup_optimize_all_parser(optimize_parser)
 
     # Generate vector command for creating steering vectors without tasks
     generate_vector_parser = subparsers.add_parser(
@@ -203,11 +210,11 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_train_unified_goodness_parser(unified_goodness_parser)
 
-    # Simple optimize command - one command to optimize a model for all benchmarks
-    optimize_parser = subparsers.add_parser(
-        "optimize",
-        help="Optimize steering for a model across all core benchmarks (simplest way to optimize)"
+    # Check linearity command - check if a representation is linear
+    check_linearity_parser = subparsers.add_parser(
+        "check-linearity",
+        help="Check if a representation is linear (can be captured by single direction)"
     )
-    setup_optimize_parser(optimize_parser)
+    setup_check_linearity_parser(check_linearity_parser)
 
     return parser

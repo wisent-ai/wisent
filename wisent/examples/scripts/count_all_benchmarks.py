@@ -18,31 +18,9 @@ from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataL
 
 
 def load_benchmarks():
-    """Load benchmarks from JSON files."""
-    params_dir = Path(__file__).parent.parent.parent / "parameters" / "lm_eval"
-
-    # Load lm-eval task families
-    lm_eval_tasks_path = params_dir / "all_lm_eval_task_families.json"
-    with open(lm_eval_tasks_path, 'r') as f:
-        lm_eval_tasks = json.load(f)
-
-    # Load non lm-eval tasks
-    not_lm_eval_tasks_path = params_dir / "not_lm_eval_tasks.json"
-    with open(not_lm_eval_tasks_path, 'r') as f:
-        not_lm_eval_tasks = json.load(f)
-
-    # Load broken benchmarks to skip
-    broken_tasks_path = params_dir / "broken_in_lm_eval.json"
-    broken_tasks = []
-    if broken_tasks_path.exists():
-        with open(broken_tasks_path, 'r') as f:
-            broken_tasks = json.load(f)
-
-    # Combine all tasks and filter out broken ones
-    all_tasks = lm_eval_tasks + not_lm_eval_tasks
-    filtered_tasks = [task for task in all_tasks if task not in broken_tasks]
-
-    return filtered_tasks
+    """Load benchmarks from central registry."""
+    from wisent.core.benchmark_registry import get_all_benchmarks
+    return get_all_benchmarks()
 
 
 def count_pairs(task_name: str) -> int:

@@ -3,17 +3,24 @@ Weight modification optimizer using BaseOptimizer.
 
 Optimizes weight modification parameters (strength, max_weight, min_weight, position)
 to achieve target metrics like compliance rate or task accuracy.
+
+Supports checkpointing for long-running optimizations:
+- Save checkpoint after each trial (or every N trials)
+- Resume from checkpoint if interrupted
+- Save best model periodically
 """
 
 from __future__ import annotations
 
+import json
+import os
 from dataclasses import dataclass
 from typing import Any, Callable, Literal
 
 import optuna
 import torch
 
-from wisent.core.opti.core.atoms import BaseOptimizer, Direction
+from wisent.core.opti.core.atoms import BaseOptimizer, Direction, HPOConfig, HPORun
 
 __all__ = [
     "WeightsOptimizer",
@@ -178,7 +185,9 @@ class WeightsOptimizer(BaseOptimizer):
             )
 
         # Restore base model weights
-        self.model.load_state_dict(self.base_state_dict)
+        # Use strict=False because bake_steering may add bias parameters
+        # that didn't exist in the original model
+        self._restore_base_weights()
 
         # Apply weight modification
         self._apply_weight_modification(params)
@@ -231,6 +240,10 @@ class WeightsOptimizer(BaseOptimizer):
                 norm_preserve=self.config.norm_preserve,
                 verbose=False,
             )
+        elif self.config.method == "additive":
+            # Direct additive: add steering vector directly to weight matrices
+            # This is the simplest approach that worked in manual tests
+            self._apply_direct_additive(params)
         else:
             bake_steering_with_kernel(
                 self.model,
@@ -242,6 +255,107 @@ class WeightsOptimizer(BaseOptimizer):
                 verbose=False,
             )
 
+    def _apply_direct_additive(self, params: dict[str, float]) -> None:
+        """
+        Apply direct additive weight modification.
+        
+        This directly adds steering vectors to weight matrices:
+        W' = W + strength * steering_vector
+        
+        This is the simplest approach and worked in manual humanization tests.
+        """
+        strength = params["strength"] * params["max_weight"]
+        max_weight_position = params["max_weight_position"] * (self.num_layers - 1)
+        min_weight = params["min_weight"]
+        min_weight_distance = 0.6 * (self.num_layers - 1)
+        
+        # Get model layers
+        if hasattr(self.model, "model"):
+            layers = self.model.model.layers
+        elif hasattr(self.model, "transformer"):
+            layers = self.model.transformer.h
+        else:
+            layers = self.model.layers
+        
+        components = self.config.components or ["self_attn.o_proj", "mlp.down_proj"]
+        
+        for layer_idx, steering_vector in self.steering_vectors.items():
+            if layer_idx >= len(layers):
+                continue
+            
+            # Compute layer-specific strength using kernel
+            distance = abs(layer_idx - max_weight_position)
+            if distance > min_weight_distance:
+                layer_strength = min_weight
+            else:
+                layer_strength = strength + (distance / min_weight_distance) * (min_weight - strength)
+            
+            if layer_strength <= 0:
+                continue
+            
+            layer = layers[layer_idx]
+            
+            for component_name in components:
+                try:
+                    component = layer
+                    for attr in component_name.split("."):
+                        component = getattr(component, attr)
+                    
+                    if hasattr(component, "weight"):
+                        vec = steering_vector.to(component.weight.device, dtype=component.weight.dtype)
+                        with torch.no_grad():
+                            # Direct addition: add steering vector to each column of weight matrix
+                            # Weight shape: [out_dim, in_dim], vec shape: [out_dim]
+                            # Result: each output dimension gets shifted by layer_strength * vec[i]
+                            # This is equivalent to adding a bias toward the steering direction
+                            component.weight.data += layer_strength * vec.unsqueeze(1)
+                except AttributeError:
+                    continue
+
+    def _restore_base_weights(self) -> None:
+        """
+        Restore model to base weights.
+        
+        Uses strict=False because bake_steering may add bias parameters
+        that didn't exist in the original model. Also removes any bias
+        parameters that were added during weight modification.
+        """
+        # First, remove any bias parameters that were added
+        # (bake_steering_with_kernel may have added these)
+        if hasattr(self.model, "model"):
+            layers = self.model.model.layers
+        elif hasattr(self.model, "transformer"):
+            layers = self.model.transformer.h
+        else:
+            layers = getattr(self.model, "layers", [])
+        
+        components_to_check = self.config.components or ["self_attn.o_proj", "mlp.down_proj"]
+        
+        for layer in layers:
+            for component_name in components_to_check:
+                try:
+                    component = layer
+                    for attr in component_name.split("."):
+                        component = getattr(component, attr)
+                    
+                    # Check if bias was added (not in base_state_dict)
+                    if hasattr(component, "bias") and component.bias is not None:
+                        # Check if this bias exists in base state dict
+                        bias_key = None
+                        for key in self.base_state_dict.keys():
+                            if component_name in key and key.endswith(".bias"):
+                                bias_key = key
+                                break
+                        
+                        if bias_key is None:
+                            # Bias was added, remove it
+                            component.bias = None
+                except AttributeError:
+                    continue
+        
+        # Now load state dict with strict=False
+        self.model.load_state_dict(self.base_state_dict, strict=False)
+
     def apply_best_params(self, best_params: dict[str, float]) -> None:
         """
         Apply the best parameters found during optimization.
@@ -252,5 +366,158 @@ class WeightsOptimizer(BaseOptimizer):
         arguments:
             best_params: Best parameters from optimization result.
         """
-        self.model.load_state_dict(self.base_state_dict)
+        self._restore_base_weights()
         self._apply_weight_modification(best_params)
+
+    def optimize_with_checkpointing(
+        self,
+        cfg: HPOConfig,
+        checkpoint_path: str | None = None,
+        checkpoint_interval: int = 5,
+        output_dir: str | None = None,
+        tokenizer: Any = None,
+    ) -> HPORun:
+        """
+        Run optimization with checkpointing support.
+
+        Saves checkpoint after every checkpoint_interval trials and can resume
+        from an existing checkpoint file.
+
+        arguments:
+            cfg: HPOConfig object with optimization settings.
+            checkpoint_path: Path to save/load checkpoint file.
+            checkpoint_interval: Save checkpoint every N trials (default: 5).
+            output_dir: Directory to save best model periodically.
+            tokenizer: Tokenizer to save with model.
+
+        returns:
+            HPORun object with the results of the optimization.
+        """
+        # Try to load existing checkpoint
+        start_trial = 0
+        existing_trials = []
+        
+        if checkpoint_path and os.path.exists(checkpoint_path):
+            print(f"\n   Loading checkpoint from {checkpoint_path}...")
+            checkpoint = self._load_checkpoint(checkpoint_path)
+            if checkpoint:
+                existing_trials = checkpoint.get("trials", [])
+                start_trial = len(existing_trials)
+                print(f"   Resuming from trial {start_trial}")
+                print(f"   Previous best: {checkpoint.get('best_value', 'N/A')}")
+
+        # Create sampler and pruner
+        sampler = self._make_sampler(cfg)
+        pruner = self._make_pruner(cfg)
+        direction: Direction = getattr(self, "direction", cfg.direction)
+
+        # Create study
+        study = optuna.create_study(
+            direction=direction,
+            sampler=sampler,
+            pruner=pruner,
+        )
+
+        # Enqueue existing trials if resuming
+        for trial_data in existing_trials:
+            study.enqueue_trial(trial_data["params"])
+
+        # Calculate remaining trials
+        remaining_trials = cfg.n_trials - start_trial
+        if remaining_trials <= 0:
+            print(f"   Optimization already complete ({start_trial} trials)")
+            return HPORun(study=study, best_params=study.best_params, best_value=study.best_value)
+
+        # Create checkpoint callback
+        def checkpoint_callback(study: optuna.Study, trial: optuna.trial.FrozenTrial) -> None:
+            trial_num = trial.number + 1  # 1-indexed for display
+            
+            # Save checkpoint at intervals
+            if checkpoint_path and trial_num % checkpoint_interval == 0:
+                self._save_checkpoint(study, checkpoint_path)
+                print(f"   [Checkpoint saved at trial {trial_num}]")
+
+            # Save best model at intervals
+            if output_dir and trial_num % checkpoint_interval == 0:
+                if study.best_trial is not None:
+                    self._save_best_model_checkpoint(study, output_dir, tokenizer)
+
+        # Run optimization with callback
+        study.optimize(
+            self._objective,
+            n_trials=remaining_trials,
+            timeout=cfg.timeout,
+            show_progress_bar=False,
+            callbacks=[checkpoint_callback],
+        )
+
+        # Save final checkpoint
+        if checkpoint_path:
+            self._save_checkpoint(study, checkpoint_path)
+            print(f"   [Final checkpoint saved]")
+
+        return HPORun(study=study, best_params=study.best_params, best_value=study.best_value)
+
+    def _save_checkpoint(self, study: optuna.Study, checkpoint_path: str) -> None:
+        """Save optimization checkpoint to file."""
+        checkpoint = {
+            "trials": [
+                {
+                    "number": t.number,
+                    "params": t.params,
+                    "value": t.value,
+                    "state": str(t.state),
+                }
+                for t in study.trials
+            ],
+            "best_params": study.best_params if study.best_trial else None,
+            "best_value": study.best_value if study.best_trial else None,
+            "n_trials": len(study.trials),
+        }
+        
+        # Write to temp file first, then rename (atomic)
+        temp_path = checkpoint_path + ".tmp"
+        with open(temp_path, "w") as f:
+            json.dump(checkpoint, f, indent=2)
+        os.replace(temp_path, checkpoint_path)
+
+    def _load_checkpoint(self, checkpoint_path: str) -> dict | None:
+        """Load optimization checkpoint from file."""
+        try:
+            with open(checkpoint_path, "r") as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            print(f"   Warning: Could not load checkpoint: {e}")
+            return None
+
+    def _save_best_model_checkpoint(
+        self,
+        study: optuna.Study,
+        output_dir: str,
+        tokenizer: Any = None,
+    ) -> None:
+        """Save the current best model as a checkpoint."""
+        if study.best_trial is None:
+            return
+
+        # Apply best params
+        best_params = study.best_params
+        self._restore_base_weights()
+        self._apply_weight_modification(best_params)
+
+        # Save model
+        checkpoint_dir = os.path.join(output_dir, "checkpoint_best")
+        os.makedirs(checkpoint_dir, exist_ok=True)
+        self.model.save_pretrained(checkpoint_dir)
+        if tokenizer:
+            tokenizer.save_pretrained(checkpoint_dir)
+
+        # Save metadata
+        metadata = {
+            "best_params": best_params,
+            "best_value": study.best_value,
+            "trial_number": study.best_trial.number,
+            "total_trials": len(study.trials),
+        }
+        with open(os.path.join(checkpoint_dir, "checkpoint_metadata.json"), "w") as f:
+            json.dump(metadata, f, indent=2)

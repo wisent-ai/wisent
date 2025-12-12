@@ -9,8 +9,9 @@ import sys
 from pathlib import Path
 from wisent.core.parser_arguments import setup_parser
 from wisent.core.branding import print_banner
-from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors, execute_create_steering_vector, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering, execute_optimize_sample_size, execute_generate_responses, execute_evaluate_responses, execute_multi_steer, execute_agent, execute_modify_weights, execute_evaluate_refusal, execute_inference_config, execute_optimization_cache, execute_optimize_weights, execute_optimize_all
+from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors, execute_create_steering_vector, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering, execute_optimize_sample_size, execute_generate_responses, execute_evaluate_responses, execute_multi_steer, execute_agent, execute_modify_weights, execute_evaluate_refusal, execute_inference_config, execute_optimization_cache, execute_optimize_weights, execute_optimize
 from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
+from wisent.core.cli.check_linearity import execute_check_linearity
 
 
 def _should_show_banner() -> bool:
@@ -85,13 +86,12 @@ def main():
         execute_optimization_cache(args)
     elif args.command == 'optimize-weights':
         execute_optimize_weights(args)
-    elif args.command == 'optimize-all':
-        execute_optimize_all(args)
+    elif args.command == 'optimize-all' or args.command == 'optimize':
+        execute_optimize(args)
     elif args.command == 'train-unified-goodness':
         execute_train_unified_goodness(args)
-    elif args.command == 'optimize':
-        from wisent.core.cli import execute_optimize
-        execute_optimize(args)
+    elif args.command == 'check-linearity':
+        execute_check_linearity(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)
