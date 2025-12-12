@@ -20,7 +20,6 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.conala_evaluator import (
     CoNaLaEvaluator,
     tokenize_for_bleu_eval,
-    compute_bleu,
 )
 from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
 
@@ -33,32 +32,11 @@ GENERATION_CONFIG = {
 }
 
 
-def get_few_shot_examples(n: int = 2) -> list[tuple[str, str]]:
-    """Load few-shot examples from training split.
-
-    Args:
-        n: Number of examples to load
-
-    Returns:
-        List of (intent, snippet) tuples
-    """
-    train_ds = load_dataset("neulab/conala", "curated", split="train")
-    examples = []
-    for i in range(min(n, len(train_ds))):
-        ex = train_ds[i]
-        # Use rewritten_intent if available
-        intent = ex.get('rewritten_intent') or ex.get('intent', '')
-        snippet = ex.get('snippet', '')
-        examples.append((intent, snippet))
-    return examples
-
-
 def evaluate_conala(
     model: WisentModel,
     evaluator: CoNaLaEvaluator,
     split: str = "test",
     limit: int | None = None,
-    num_examples: int = 2,
 ) -> dict:
     """Evaluate model on CoNaLa dataset.
 
@@ -67,13 +45,10 @@ def evaluate_conala(
         evaluator: CoNaLaEvaluator instance
         split: Dataset split ('train' or 'test')
         limit: Optional limit on number of examples
-        num_examples: Number of few-shot examples from training
 
     Returns:
         Dictionary with BLEU score, exact match, and detailed results
     """
-    # Load few-shot examples from training
-    few_shot_examples = get_few_shot_examples(num_examples)
 
     ds = load_dataset("neulab/conala", "curated", split=split)
 
@@ -81,8 +56,8 @@ def evaluate_conala(
         ds = ds.select(range(min(limit, len(ds))))
 
     results = []
-    references = []
-    hypotheses = []
+    generated_responses = []
+    expected_snippets = []
     exact_matches = 0
 
     for example in tqdm(ds, desc=f"Evaluating {split}"):
@@ -93,7 +68,7 @@ def evaluate_conala(
         if not rewritten_intent or not snippet:
             continue
 
-        prompt = evaluator.get_prompt(rewritten_intent, examples=few_shot_examples)
+        prompt = evaluator.get_prompt(rewritten_intent)
 
         responses = model.generate(
             inputs=prompt,
@@ -108,14 +83,12 @@ def evaluate_conala(
         if response is None:
             response = ""  # No boxed answer found
 
-        # Tokenize for BLEU
-        ref_tokens = tokenize_for_bleu_eval(snippet)
-        hyp_tokens = tokenize_for_bleu_eval(response)
-
-        references.append(ref_tokens)
-        hypotheses.append(hyp_tokens)
+        generated_responses.append(response)
+        expected_snippets.append(snippet)
 
         # Check exact match (after tokenization)
+        ref_tokens = tokenize_for_bleu_eval(snippet)
+        hyp_tokens = tokenize_for_bleu_eval(response)
         is_exact_match = ref_tokens == hyp_tokens
         if is_exact_match:
             exact_matches += 1
@@ -128,17 +101,17 @@ def evaluate_conala(
             'exact_match': is_exact_match,
         })
 
-    # Compute corpus-level BLEU
-    bleu, precisions, bp, ratio, _, _ = compute_bleu(references, hypotheses)
+    # Compute corpus-level BLEU using evaluator
+    corpus_metrics = evaluator.evaluate_corpus(generated_responses, expected_snippets)
 
     return {
-        'bleu_score': bleu * 100,
+        'bleu_score': corpus_metrics['bleu_score'],
         'exact_match': exact_matches / len(results) * 100 if results else 0.0,
         'exact_match_count': exact_matches,
         'total': len(results),
-        'precisions': precisions,
-        'brevity_penalty': bp,
-        'length_ratio': ratio,
+        'precisions': corpus_metrics['precisions'],
+        'brevity_penalty': corpus_metrics['brevity_penalty'],
+        'length_ratio': corpus_metrics['length_ratio'],
         'results': results,
     }
 
@@ -146,7 +119,7 @@ def evaluate_conala(
 def main(limit: int | None = None, split: str = "test"):
     """Run CoNaLa evaluation and save results."""
     print("Loading model...")
-    model_name = "Qwen/Qwen2.5-1.5B-Instruct"
+    model_name = "Qwen/Qwen2.5-0.5B-Instruct"
     model = WisentModel(model_name=model_name)
 
     evaluator = CoNaLaEvaluator()
@@ -193,4 +166,4 @@ def main(limit: int | None = None, split: str = "test"):
 
 
 if __name__ == "__main__":
-    main(limit=1, split="test")
+    main(limit=2, split="test")

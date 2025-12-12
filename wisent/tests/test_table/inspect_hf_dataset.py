@@ -97,16 +97,9 @@ def inspect_hf_dataset(dataset_name: str, config_name: str | None = None, num_ex
             print(f"\n--- EXAMPLE {i+1} ---")
             for key, value in doc.items():
                 if isinstance(value, str):
-                    # Truncate long strings
-                    if len(value) > 200:
-                        print(f"{key}: {value[:200]}... (truncated, len={len(value)})")
-                    else:
-                        print(f"{key}: {value}")
+                    print(f"{key}: {value}")
                 elif isinstance(value, list):
-                    if len(value) > 10:
-                        print(f"{key}: {value[:10]}... (truncated, len={len(value)})")
-                    else:
-                        print(f"{key}: {value}")
+                    print(f"{key}: {value}")
                 else:
                     print(f"{key}: {value} (type: {type(value).__name__})")
 

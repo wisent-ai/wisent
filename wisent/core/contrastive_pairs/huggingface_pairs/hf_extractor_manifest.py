@@ -133,14 +133,13 @@ EXTRACTORS: dict[str, str] = {
 
     # Coding benchmarks
     "humaneval": f"{base_import}humaneval:HumanEvalExtractor",
-    "humaneval_plus": f"{base_import}humaneval:HumanEvalExtractor",
-    "humaneval_64_instruct": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
-    "humaneval_instruct": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
-    "humanevalpack": f"{base_import}humaneval:HumanEvalExtractor",
-    "instructhumaneval": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
+    "humaneval_64": f"{base_import}humaneval:HumanEval64Extractor",
+    "humaneval_plus": f"{base_import}humaneval:HumanEvalPlusExtractor",
+    "humaneval_instruct": f"{base_import}humaneval:HumanEvalInstructExtractor",
+    "humaneval_64_instruct": f"{base_import}humaneval:HumanEval64InstructExtractor",
+    "humanevalpack": f"{base_import}humanevalpack:HumanevalpackExtractor",
     "mbpp": f"{base_import}mbpp:MBPPExtractor",
     "mbpp_plus": f"{base_import}mbpp:MBPPExtractor",
-    "instruct_humaneval": f"{base_import}instructhumaneval:InstructHumanEvalExtractor",
     "apps": f"{base_import}apps:AppsExtractor",
     "conala": f"{base_import}conala:ConalaExtractor",
     "concode": f"{base_import}concode:ConcodeExtractor",
@@ -156,13 +155,6 @@ EXTRACTORS: dict[str, str] = {
     "multiple_rs": f"{base_import}multipl_e:MultiplEExtractor",
     "multiple_go": f"{base_import}multipl_e:MultiplEExtractor",
     "codexglue": f"{base_import}codexglue:CodexglueExtractor",
-    "code_x_glue": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_python": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_go": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_ruby": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_java": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_javascript": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_php": f"{base_import}codexglue:CodexglueExtractor",
     "livecodebench": f"{base_import}livecodebench:LivecodebenchExtractor",
 
     # Reasoning benchmarks
