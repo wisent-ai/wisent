@@ -2,6 +2,10 @@
 
 Results are persisted to ~/.wisent/configs/ via WisentConfigManager
 so they can be automatically loaded on subsequent runs.
+
+Supports two search strategies:
+- grid: Exhaustive search over all configurations (thorough but slow)
+- optuna: TPE sampling with early stopping (fast but may miss optimal)
 """
 
 import json
@@ -20,6 +24,162 @@ from wisent.core.config_manager import (
     store_optimization,
     SteeringConfig,
 )
+
+
+def _run_optuna_search_for_task(
+    model,
+    train_pairs,
+    test_pairs,
+    evaluator,
+    task_name,
+    search_space,
+    args,
+    baseline_results=None,
+):
+    """
+    Run Optuna-based hyperparameter search for a single task.
+    
+    Returns:
+        dict: Best configuration found with score and parameters
+    """
+    import optuna
+    from optuna.samplers import TPESampler
+    from optuna.pruners import MedianPruner
+    
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.models.core.atoms import SteeringPlan
+    from wisent.core.cli.steering_method_trainer import create_steering_method
+    
+    n_trials = getattr(args, 'n_trials', 50)
+    n_startup_trials = getattr(args, 'n_startup_trials', 10)
+    
+    # Maps for converting string values to enums
+    token_agg_map = {
+        "last_token": ActivationAggregationStrategy.LAST_TOKEN,
+        "mean_pooling": ActivationAggregationStrategy.MEAN_POOLING,
+        "first_token": ActivationAggregationStrategy.FIRST_TOKEN,
+        "max_pooling": ActivationAggregationStrategy.MAX_POOLING,
+    }
+    
+    def objective(trial):
+        """Optuna objective function for steering optimization."""
+        # Sample hyperparameters
+        layer = trial.suggest_int("layer", min(search_space.layers), max(search_space.layers))
+        strength = trial.suggest_float("strength", min(search_space.strengths), max(search_space.strengths), log=True)
+        strategy = trial.suggest_categorical("strategy", search_space.strategies)
+        token_agg_name = trial.suggest_categorical("token_aggregation", search_space.token_aggregations)
+        token_agg = token_agg_map.get(token_agg_name, ActivationAggregationStrategy.LAST_TOKEN)
+        
+        layer_str = str(layer)
+        
+        try:
+            # Collect activations
+            collector = ActivationCollector(model=model, store_device="cpu")
+            pos_acts = []
+            neg_acts = []
+            
+            for pair in train_pairs.pairs:
+                updated_pair = collector.collect_for_pair(
+                    pair,
+                    layers=[layer_str],
+                    aggregation=token_agg,
+                    return_full_sequence=False,
+                    normalize_layers=False,
+                )
+                
+                if (updated_pair.positive_response.layers_activations
+                    and layer_str in updated_pair.positive_response.layers_activations):
+                    act = updated_pair.positive_response.layers_activations[layer_str]
+                    if act is not None:
+                        pos_acts.append(act)
+                
+                if (updated_pair.negative_response.layers_activations
+                    and layer_str in updated_pair.negative_response.layers_activations):
+                    act = updated_pair.negative_response.layers_activations[layer_str]
+                    if act is not None:
+                        neg_acts.append(act)
+            
+            if len(pos_acts) == 0 or len(neg_acts) == 0:
+                return 0.0
+            
+            # Train steering vector
+            method_name = args.methods[0] if args.methods else "CAA"
+            steering_method = create_steering_method(method_name, args)
+            import torch
+            pos_tensor = torch.stack(pos_acts).mean(dim=0)
+            neg_tensor = torch.stack(neg_acts).mean(dim=0)
+            steering_vector = steering_method.train_for_layer(pos_tensor, neg_tensor)
+            
+            # Create steering plan
+            steering_plan = SteeringPlan.from_raw(
+                raw={layer_str: steering_vector},
+                scale=strength,
+                normalize=False
+            )
+            
+            # Evaluate on test set
+            correct = 0
+            total = 0
+            
+            for pair in test_pairs.pairs:
+                try:
+                    choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+                    expected = pair.positive_response.model_response
+                    test_code = pair.metadata.get("test_code") if pair.metadata else None
+                    
+                    eval_result = evaluator.evaluate(
+                        response="",
+                        expected=expected,
+                        model=model,
+                        question=pair.prompt,
+                        choices=choices,
+                        steering_plan=steering_plan,
+                        test_code=test_code,
+                        task_name=task_name,
+                    )
+                    
+                    if eval_result.ground_truth == "TRUTHFUL":
+                        correct += 1
+                    total += 1
+                except Exception:
+                    total += 1
+            
+            accuracy = correct / total if total > 0 else 0.0
+            return accuracy
+            
+        except Exception as e:
+            print(f"      Trial {trial.number} failed: {e}")
+            return 0.0
+    
+    # Create and run study
+    sampler = TPESampler(seed=42, n_startup_trials=n_startup_trials)
+    pruner = MedianPruner(n_startup_trials=5, n_warmup_steps=3)
+    
+    study = optuna.create_study(
+        direction="maximize",
+        sampler=sampler,
+        pruner=pruner,
+    )
+    
+    print(f"  🔍 Running Optuna optimization ({n_trials} trials)...")
+    
+    # Suppress Optuna logs for cleaner output
+    optuna.logging.set_verbosity(optuna.logging.WARNING)
+    
+    study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
+    
+    best_trial = study.best_trial
+    
+    return {
+        "best_score": best_trial.value,
+        "best_layer": best_trial.params["layer"],
+        "best_strength": best_trial.params["strength"],
+        "best_strategy": best_trial.params["strategy"],
+        "best_token_aggregation": best_trial.params["token_aggregation"],
+        "n_trials": len(study.trials),
+        "search_strategy": "optuna",
+    }
 
 
 def execute_optimize_steering(args):
@@ -151,6 +311,11 @@ def execute_comprehensive(args, model, loader):
     print(f"   Limit: {args.limit} samples per task")
     quick_search = getattr(args, 'quick_search', False)
     print(f"   Quick search: {quick_search}")
+    
+    # Search strategy
+    search_strategy = getattr(args, 'search_strategy', 'grid')
+    n_trials = getattr(args, 'n_trials', 50)
+    print(f"   Search strategy: {search_strategy}" + (f" ({n_trials} trials)" if search_strategy == "optuna" else ""))
     print("   Time limit: DISABLED (no time limit)\n")
 
     all_results = {}
@@ -297,6 +462,71 @@ def execute_comprehensive(args, model, loader):
                     "num_total": len(baseline_scores),
                 }
 
+            # Dispatch based on search strategy
+            if search_strategy == "optuna":
+                # Use Optuna-based search
+                optuna_result = _run_optuna_search_for_task(
+                    model=model,
+                    train_pairs=train_pairs,
+                    test_pairs=test_pairs,
+                    evaluator=evaluator,
+                    task_name=task_name,
+                    search_space=first_space,
+                    args=args,
+                    baseline_results=baseline_results,
+                )
+                
+                best_score = optuna_result["best_score"]
+                best_config = {
+                    "layer": optuna_result["best_layer"],
+                    "strength": optuna_result["best_strength"],
+                    "strategy": optuna_result["best_strategy"],
+                    "token_aggregation": optuna_result["best_token_aggregation"],
+                }
+                
+                print(f"      Best: layer={best_config['layer']}, strength={best_config['strength']:.2f}, "
+                      f"strategy={best_config['strategy']}, token_agg={best_config['token_aggregation']}")
+                print(f"      Score: {best_score:.4f} (from {optuna_result['n_trials']} trials)")
+                
+                # Store results in format compatible with grid search
+                method_results = {
+                    first_method: {
+                        "best_score": best_score,
+                        "best_layer": best_config["layer"],
+                        "best_strength": best_config["strength"],
+                        "best_strategy": best_config["strategy"],
+                        "token_aggregation": best_config["token_aggregation"],
+                        "search_strategy": "optuna",
+                    }
+                }
+                
+                # Skip the grid search loop - jump to result saving
+                all_results[task_name] = method_results
+                
+                if not args.no_save:
+                    save_steering_config(
+                        model_name=args.model,
+                        task=task_name,
+                        layer=best_config["layer"],
+                        strength=best_config["strength"],
+                        method=first_method,
+                        strategy=best_config["strategy"],
+                        token_aggregation=best_config["token_aggregation"],
+                    )
+                    store_optimization(
+                        model=args.model,
+                        task=task_name,
+                        layer=best_config["layer"],
+                        strength=best_config["strength"],
+                        method=first_method,
+                        strategy=best_config["strategy"],
+                        score=best_score,
+                        metric="accuracy",
+                    )
+                
+                continue  # Skip to next task
+            
+            # Grid search (original behavior)
             print(
                 "\n  🔍 Testing CAA method across layers, strengths, strategies, token aggregations, prompt constructions..."
             )
@@ -2220,7 +2450,7 @@ def execute_personalization(args, model):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
-    from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
+    from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
     from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
@@ -2316,6 +2546,10 @@ def execute_personalization(args, model):
     pair_set, generation_report = pair_generator.generate(num_pairs=args.num_pairs)
     pairs = pair_set.pairs
 
+    # Extract positive and negative examples for alignment evaluation
+    positive_examples = [p.positive_response.model_response for p in pairs]
+    negative_examples = [p.negative_response.model_response for p in pairs]
+
     print(f"   ✓ Generated {len(pairs)} contrastive pairs\n", flush=True)
 
     # Generate test prompts for evaluation
@@ -2345,8 +2579,48 @@ def execute_personalization(args, model):
     # to avoid recomputing activations unnecessarily
     steering_vector_cache = {}
 
+    # Checkpoint file for resuming interrupted runs
+    checkpoint_file = os.path.join(args.output_dir, f"{trait_name}_checkpoint.json")
+    completed_configs = set()
+    
+    # Load checkpoint if it exists (resume mode) - check local first, then S3
+    if not os.path.exists(checkpoint_file):
+        # Try to download from S3
+        try:
+            import subprocess
+            s3_checkpoint_path = f"s3://wisent-bucket/checkpoints/{trait_name}_checkpoint.json"
+            print(f"\n📂 Checking S3 for checkpoint: {s3_checkpoint_path}", flush=True)
+            result = subprocess.run(
+                ["aws", "s3", "cp", s3_checkpoint_path, checkpoint_file],
+                capture_output=True,
+                timeout=60
+            )
+            if result.returncode == 0:
+                print(f"   ✓ Downloaded checkpoint from S3", flush=True)
+        except Exception:
+            pass  # No S3 checkpoint available
+    
+    if os.path.exists(checkpoint_file):
+        print(f"\n📂 Found checkpoint file: {checkpoint_file}", flush=True)
+        try:
+            with open(checkpoint_file, "r") as f:
+                checkpoint_data = json.load(f)
+            all_results = checkpoint_data.get("all_results", {})
+            completed_configs = set(all_results.keys())
+            best_config = checkpoint_data.get("best_config")
+            best_score = checkpoint_data.get("best_score", -1.0)
+            print(f"   ✓ Loaded {len(completed_configs)} completed configurations", flush=True)
+            print(f"   ✓ Current best score: {best_score:.4f}", flush=True)
+            if best_config:
+                print(f"   ✓ Current best config: L{best_config['layer']} S{best_config['strength']:.2f}", flush=True)
+        except Exception as e:
+            print(f"   ⚠️ Failed to load checkpoint: {e}", flush=True)
+            completed_configs = set()
+
     # Step 2: Test all configurations
-    print(f"🎯 Step 2: Testing {total_configs} configurations...", flush=True)
+    print(f"\n🎯 Step 2: Testing {total_configs} configurations...", flush=True)
+    if completed_configs:
+        print(f"   ℹ️  Resuming from checkpoint - {len(completed_configs)} already done, {total_configs - len(completed_configs)} remaining", flush=True)
 
     config_count = 0
 
@@ -2445,6 +2719,13 @@ def execute_personalization(args, model):
                 for strength in strengths_to_test:
                     for steering_strategy in steering_strategies_to_test:
                         config_count += 1
+                        config_key = f"L{layer}_S{strength:.2f}_St:{steering_strategy}_T:{token_agg.value}_P:{prompt_const.value}"
+                        
+                        # Skip if already completed (checkpoint resume)
+                        if config_key in completed_configs:
+                            print(f"      [{config_count}/{total_configs}] Skipping {config_key} (already done)", flush=True)
+                            continue
+                        
                         config_desc = f"L{layer} S{strength:.2f} St:{steering_strategy} T:{token_agg.value} P:{prompt_const.value}"
                         print(f"      [{config_count}/{total_configs}] Testing {config_desc}...", end=" ")
 
@@ -2470,18 +2751,17 @@ def execute_personalization(args, model):
                             model.clear_steering()
                             steered_responses.append(steered)
 
-                        # Evaluate using personalization metrics
-                        evaluator = PersonalizationEvaluator()
-
+                        # Evaluate using personalization metrics (static methods)
                         # Calculate difference score
-                        difference_score = evaluator._evaluate_difference(baseline_responses, steered_responses)
+                        difference_score = PersonalizationEvaluator._evaluate_difference(baseline_responses, steered_responses)
 
                         # Calculate quality score
-                        quality_score = evaluator._evaluate_quality(steered_responses)
+                        quality_score = PersonalizationEvaluator._evaluate_quality(steered_responses)
 
-                        # Calculate alignment score using simple keyword matching
-                        # (Full alignment needs model-based judge which is expensive)
-                        alignment_score = PersonalizationEvaluator.estimate_alignment(steered_responses, trait)
+                        # Calculate alignment score using contrastive examples
+                        alignment_score = PersonalizationEvaluator.estimate_alignment(
+                            steered_responses, trait, positive_examples, negative_examples
+                        )
 
                         # Calculate overall score (weighted average)
                         # Only count if difference > 0.3 (steering is actually doing something)
@@ -2494,8 +2774,7 @@ def execute_personalization(args, model):
                             f"diff={difference_score:.2f} qual={quality_score:.2f} align={alignment_score:.2f} overall={overall_score:.2f}"
                         )
 
-                        # Store results with full config key
-                        config_key = f"L{layer}_S{strength:.2f}_St:{steering_strategy}_T:{token_agg.value}_P:{prompt_const.value}"
+                        # Store results with full config key (config_key already defined above)
                         all_results[config_key] = {
                             "layer": layer,
                             "strength": float(strength),
@@ -2549,6 +2828,34 @@ def execute_personalization(args, model):
                                 "overall_score": float(overall_score),
                             }
                             best_steering_vector = steering_vector
+                            print(f"         🏆 New best! L{layer} S{strength:.2f} score={overall_score:.4f}", flush=True)
+                        
+                        # Save checkpoint after each configuration (for resume capability)
+                        checkpoint_data = {
+                            "all_results": all_results,
+                            "best_config": best_config,
+                            "best_score": best_score,
+                            "config_count": config_count,
+                            "total_configs": total_configs,
+                            "trait": trait,
+                            "trait_name": trait_name,
+                            "model": args.model,
+                        }
+                        with open(checkpoint_file, "w") as f:
+                            json.dump(checkpoint_data, f)
+                        
+                        # Sync checkpoint to S3 every 100 configs for recovery
+                        if config_count % 100 == 0:
+                            try:
+                                import subprocess
+                                s3_checkpoint_path = f"s3://wisent-bucket/checkpoints/{trait_name}_checkpoint.json"
+                                subprocess.run(
+                                    ["aws", "s3", "cp", checkpoint_file, s3_checkpoint_path],
+                                    capture_output=True,
+                                    timeout=30
+                                )
+                            except Exception:
+                                pass  # Don't fail if S3 sync fails
 
     # Step 3: Save results
     print(f"\n{'=' * 80}")
@@ -2621,6 +2928,11 @@ def execute_personalization(args, model):
         json.dump(output_data, f, indent=2)
 
     print(f"💾 Saved full results to: {results_file}")
+    
+    # Remove checkpoint file after successful completion
+    if os.path.exists(checkpoint_file):
+        os.remove(checkpoint_file)
+        print(f"🧹 Removed checkpoint file: {checkpoint_file}")
 
     if args.save_all_generation_examples and examples_file_path:
         print(f"💾 Generation examples saved iteratively to: {examples_file_path}")
@@ -2669,7 +2981,7 @@ def execute_multi_personalization(args, model):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.core.atoms import ActivationAggregationStrategy
     from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
-    from wisent.core.evaluators.personalization_evaluator import PersonalizationEvaluator
+    from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
     from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
@@ -2932,14 +3244,21 @@ def execute_multi_personalization(args, model):
                         model.clear_steering()
                         steered_responses.append(steered)
 
-                    # Evaluate combined output against ALL traits together
-                    evaluator = PersonalizationEvaluator()
-                    difference_score = evaluator._evaluate_difference(baseline_responses, steered_responses)
-                    quality_score = evaluator._evaluate_quality(steered_responses)
+                    # Evaluate combined output against ALL traits together (static methods)
+                    difference_score = PersonalizationEvaluator._evaluate_difference(baseline_responses, steered_responses)
+                    quality_score = PersonalizationEvaluator._evaluate_quality(steered_responses)
 
                     # Compute alignment score against COMBINED trait description
+                    # For multi-trait, combine positive/negative examples from all traits
                     combined_trait_description = " AND ".join([trait_pairs[name]["trait"] for name in trait_names])
-                    alignment_score = PersonalizationEvaluator.estimate_alignment(steered_responses, combined_trait_description)
+                    all_positive_examples = []
+                    all_negative_examples = []
+                    for name in trait_names:
+                        all_positive_examples.extend([p.positive_response.model_response for p in trait_pairs[name]["pairs"]])
+                        all_negative_examples.extend([p.negative_response.model_response for p in trait_pairs[name]["pairs"]])
+                    alignment_score = PersonalizationEvaluator.estimate_alignment(
+                        steered_responses, combined_trait_description, all_positive_examples, all_negative_examples
+                    )
 
                     if difference_score < 0.3:
                         overall_score = 0.0

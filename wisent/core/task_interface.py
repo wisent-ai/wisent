@@ -104,7 +104,19 @@ def get_task(name: str, limit: Optional[int] = None) -> TaskInterface:
     try:
         return _task_registry.get_task(name, limit=limit)
     except (ValueError, TaskNotFoundError):
-        raise TaskNotFoundError(task_name=name, available_tasks=list(_task_registry._tasks.keys()))
+        # Fallback: try to create a dynamic LMEvalTask if an extractor exists
+        try:
+            from .tasks.lm_eval_task import LMEvalTask, get_extractor
+            # Check if extractor exists for this task
+            get_extractor(name)
+            # Create dynamic task
+            return LMEvalTask(
+                task_name=name,
+                description=f"LM-eval task: {name}",
+                categories=["lm-eval"]
+            )
+        except Exception:
+            raise TaskNotFoundError(task_name=name, available_tasks=list(_task_registry._tasks.keys()))
 
 
 def list_tasks() -> List[str]:

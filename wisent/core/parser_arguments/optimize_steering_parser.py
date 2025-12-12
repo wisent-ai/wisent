@@ -134,6 +134,30 @@ def setup_steering_optimizer_parser(parser):
     )
     
     # ==========================================================================
+    # SEARCH STRATEGY CONFIGURATION
+    # ==========================================================================
+    
+    comprehensive_parser.add_argument(
+        "--search-strategy",
+        type=str,
+        choices=["grid", "optuna"],
+        default="grid",
+        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling (default: grid)"
+    )
+    comprehensive_parser.add_argument(
+        "--n-trials",
+        type=int,
+        default=300,
+        help="Number of Optuna trials when using --search-strategy optuna (default: 300)"
+    )
+    comprehensive_parser.add_argument(
+        "--n-startup-trials",
+        type=int,
+        default=10,
+        help="Number of random trials before TPE kicks in (default: 10)"
+    )
+    
+    # ==========================================================================
     # SEARCH SPACE CONFIGURATION
     # ==========================================================================
     
@@ -510,6 +534,25 @@ def setup_steering_optimizer_parser(parser):
         type=str,
         default=None,
         help="JSON string of kwargs for custom evaluator, e.g. '{\"api_key\": \"xxx\"}'"
+    )
+    personalization_parser.add_argument(
+        "--search-strategy",
+        type=str,
+        choices=["grid", "optuna"],
+        default="grid",
+        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling (default: grid)"
+    )
+    personalization_parser.add_argument(
+        "--n-trials",
+        type=int,
+        default=300,
+        help="Number of Optuna trials when using --search-strategy optuna (default: 300)"
+    )
+    personalization_parser.add_argument(
+        "--limit",
+        type=int,
+        default=50,
+        help="Sample limit for optimization (default: 50)"
     )
 
     # Multi-trait personalization optimization subcommand

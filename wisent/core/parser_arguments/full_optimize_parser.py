@@ -1,16 +1,22 @@
-"""Parser setup for the 'optimize-all' command (formerly full-optimize)."""
+"""Parser setup for the 'optimize' and 'optimize-all' commands."""
 
 
 def setup_optimize_all_parser(parser):
-    """Set up the optimize-all subcommand parser."""
+    """Set up the optimize/optimize-all subcommand parser."""
     parser.add_argument("model", type=str, help="Model name or path to optimize")
 
-    # Task selection
+    # Task/benchmark selection
     parser.add_argument(
         "--tasks",
         type=str,
         nargs="+",
         help="Benchmark tasks to optimize (e.g., hellaswag gsm8k mmlu)"
+    )
+    parser.add_argument(
+        "--benchmarks",
+        type=str,
+        nargs="+",
+        help="Alias for --tasks: benchmark tasks to optimize"
     )
 
     # Trait selection
@@ -19,6 +25,67 @@ def setup_optimize_all_parser(parser):
         type=str,
         nargs="+",
         help="Behavioral traits to optimize (e.g., coding honesty refusal helpfulness)"
+    )
+    
+    # Quick mode
+    parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Run quick optimization with subset of benchmarks (truthfulqa_mc1, arc_easy, hellaswag, gsm8k)"
+    )
+    
+    # Skip trait categories
+    parser.add_argument(
+        "--skip-personalization",
+        action="store_true",
+        help="Skip personalization trait optimization"
+    )
+    parser.add_argument(
+        "--skip-safety",
+        action="store_true",
+        help="Skip safety trait optimization"
+    )
+    parser.add_argument(
+        "--skip-humanization",
+        action="store_true",
+        help="Skip humanization trait optimization"
+    )
+    
+    # Steering methods
+    parser.add_argument(
+        "--methods",
+        type=str,
+        nargs="+",
+        default=["CAA"],
+        help="Steering methods to use (default: CAA)"
+    )
+    
+    # Resume/force options
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        default=True,
+        help="Resume from checkpoint if available (default: True)"
+    )
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-optimization even if cached results exist"
+    )
+    
+    # Search strategy
+    parser.add_argument(
+        "--search-strategy",
+        type=str,
+        choices=["grid", "optuna"],
+        default="grid",
+        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling (default: grid)"
+    )
+    parser.add_argument(
+        "--n-trials",
+        type=int,
+        default=50,
+        help="Number of Optuna trials for optimization (default: 50)"
     )
 
     # General limit that applies to all optimizations unless overridden
@@ -65,12 +132,6 @@ def setup_optimize_all_parser(parser):
 
     # Weight modification optimization options
     parser.add_argument("--skip-weights", action="store_true", help="Skip weight modification optimization")
-    parser.add_argument(
-        "--n-trials",
-        type=int,
-        default=20,
-        help="Number of Optuna trials for optimization (default: 20)"
-    )
     parser.add_argument(
         "--output-dir",
         type=str,

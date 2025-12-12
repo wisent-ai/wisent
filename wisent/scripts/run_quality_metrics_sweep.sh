@@ -5,10 +5,16 @@
 #
 # Output: all_trials_metrics_{timestamp}.json for each benchmark in /home/ubuntu/output/
 #
+# Features:
+# - Saves intermediate results after each benchmark to S3
+# - Supports resuming from last completed benchmark
+# - Continues on individual benchmark failures (doesn't abort entire sweep)
+#
 # Usage on AWS:
-#   ./run_on_aws.sh --model Qwen/Qwen2.5-0.5B-Instruct "bash /home/ubuntu/scripts/run_quality_metrics_sweep.sh" ./quality_sweep_results
+#   ./run_on_aws.sh --model Qwen/Qwen2.5-0.5B-Instruct "bash /opt/wisent-venv/lib/python3.10/site-packages/wisent/scripts/run_quality_metrics_sweep.sh" ./quality_sweep_results
 
-set -euo pipefail
+# Don't exit on error - we want to continue with other benchmarks
+set -uo pipefail
 
 # Configuration
 MODEL="${MODEL:-Qwen/Qwen2.5-0.5B-Instruct}"
@@ -18,6 +24,10 @@ TRAIN_LIMIT="${TRAIN_LIMIT:-100}"
 VAL_LIMIT="${VAL_LIMIT:-50}"
 TEST_LIMIT="${TEST_LIMIT:-50}"
 LAYER_RANGE="${LAYER_RANGE:-0-23}"
+S3_BUCKET="${S3_BUCKET:-}"  # Optional S3 bucket for intermediate uploads
+
+# Progress tracking file
+PROGRESS_FILE="$OUTPUT_DIR/.sweep_progress"
 
 # Benchmarks to test (these have meaningful correct/incorrect answer pairs)
 BENCHMARKS=(
@@ -57,6 +67,63 @@ echo "=========================================="
 mkdir -p "$OUTPUT_DIR"
 
 # ==========================================
+# Helper functions
+# ==========================================
+
+save_intermediate_results() {
+    echo "Saving intermediate results..."
+    
+    # Combine all completed results so far
+    python3 << 'PYEOF'
+import json
+import glob
+import os
+
+output_dir = os.environ.get('OUTPUT_DIR', '/home/ubuntu/output')
+combined = {
+    "model": os.environ.get('MODEL', 'unknown'),
+    "status": "in_progress",
+    "benchmarks": {},
+    "synthetic": {}
+}
+
+for metrics_file in glob.glob(f"{output_dir}/*_metrics.json"):
+    basename = os.path.basename(metrics_file).replace('_metrics.json', '')
+    try:
+        with open(metrics_file, 'r') as f:
+            data = json.load(f)
+        if basename.startswith('synthetic_'):
+            combined["synthetic"][basename.replace('synthetic_', '')] = data
+        else:
+            combined["benchmarks"][basename] = data
+    except Exception:
+        pass
+
+output_file = f"{output_dir}/intermediate_results.json"
+with open(output_file, 'w') as f:
+    json.dump(combined, f, indent=2)
+print(f"Intermediate results saved: {len(combined['benchmarks'])} benchmarks, {len(combined['synthetic'])} synthetic")
+PYEOF
+    
+    # Upload to S3 if bucket is configured
+    if [ -n "$S3_BUCKET" ]; then
+        echo "Uploading to S3..."
+        aws s3 cp "$OUTPUT_DIR/intermediate_results.json" "s3://$S3_BUCKET/sweep_results/intermediate_results.json" 2>/dev/null || true
+        aws s3 sync "$OUTPUT_DIR" "s3://$S3_BUCKET/sweep_results/" --exclude "*.log" 2>/dev/null || true
+    fi
+}
+
+is_benchmark_completed() {
+    local benchmark="$1"
+    [ -f "$OUTPUT_DIR/${benchmark}_metrics.json" ]
+}
+
+mark_benchmark_completed() {
+    local benchmark="$1"
+    echo "$benchmark" >> "$PROGRESS_FILE"
+}
+
+# ==========================================
 # Part 1: Run optimization for each BENCHMARK task
 # ==========================================
 echo ""
@@ -64,16 +131,26 @@ echo "=========================================="
 echo "Part 1: Benchmark Tasks"
 echo "=========================================="
 
+FAILED_BENCHMARKS=()
+COMPLETED_BENCHMARKS=()
+
 for BENCHMARK in "${BENCHMARKS[@]}"; do
     echo ""
     echo "=========================================="
     echo "Running: $BENCHMARK"
     echo "=========================================="
     
+    # Skip if already completed (resume support)
+    if is_benchmark_completed "$BENCHMARK"; then
+        echo "SKIPPING: $BENCHMARK already completed (found ${BENCHMARK}_metrics.json)"
+        COMPLETED_BENCHMARKS+=("$BENCHMARK")
+        continue
+    fi
+    
     BENCHMARK_START=$(date +%s)
     
-    # Run the optimization pipeline
-    python3 -m wisent.core.optuna.steering.optuna_pipeline \
+    # Run the optimization pipeline (don't exit on failure)
+    if python3 -m wisent.core.optuna.steering.optuna_pipeline \
         --output-dir "$OUTPUT_DIR/$BENCHMARK" \
         --model "$MODEL" \
         --task "$BENCHMARK" \
@@ -82,22 +159,31 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
         --val-limit "$VAL_LIMIT" \
         --test-limit "$TEST_LIMIT" \
         --layer-range "$LAYER_RANGE" \
-        2>&1 | tee "$OUTPUT_DIR/${BENCHMARK}_log.txt"
-    
-    BENCHMARK_END=$(date +%s)
-    DURATION=$((BENCHMARK_END - BENCHMARK_START))
-    
-    echo "Completed $BENCHMARK in ${DURATION}s"
-    
-    # Find the metrics file
-    METRICS_FILE=$(find "$OUTPUT_DIR/$BENCHMARK" -name "all_trials_metrics_*.json" -type f | head -1)
-    
-    if [ -n "$METRICS_FILE" ]; then
-        echo "Metrics saved to: $METRICS_FILE"
-        cp "$METRICS_FILE" "$OUTPUT_DIR/${BENCHMARK}_metrics.json"
+        2>&1 | tee "$OUTPUT_DIR/${BENCHMARK}_log.txt"; then
+        
+        BENCHMARK_END=$(date +%s)
+        DURATION=$((BENCHMARK_END - BENCHMARK_START))
+        echo "Completed $BENCHMARK in ${DURATION}s"
+        
+        # Find and copy the metrics file
+        METRICS_FILE=$(find "$OUTPUT_DIR/$BENCHMARK" -name "all_trials_metrics_*.json" -type f 2>/dev/null | head -1)
+        
+        if [ -n "$METRICS_FILE" ]; then
+            echo "Metrics saved to: $METRICS_FILE"
+            cp "$METRICS_FILE" "$OUTPUT_DIR/${BENCHMARK}_metrics.json"
+            mark_benchmark_completed "$BENCHMARK"
+            COMPLETED_BENCHMARKS+=("$BENCHMARK")
+        else
+            echo "WARNING: No metrics file found for $BENCHMARK"
+            FAILED_BENCHMARKS+=("$BENCHMARK")
+        fi
     else
-        echo "WARNING: No metrics file found for $BENCHMARK"
+        echo "ERROR: $BENCHMARK failed"
+        FAILED_BENCHMARKS+=("$BENCHMARK")
     fi
+    
+    # Save intermediate results after each benchmark
+    save_intermediate_results
 done
 
 # ==========================================
@@ -115,11 +201,18 @@ for SYNTHETIC_TYPE in "${SYNTHETIC_TYPES[@]}"; do
     echo "Running synthetic: $SYNTHETIC_TYPE"
     echo "=========================================="
     
+    # Skip if already completed
+    if [ -f "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_metrics.json" ]; then
+        echo "SKIPPING: synthetic_$SYNTHETIC_TYPE already completed"
+        COMPLETED_BENCHMARKS+=("synthetic_$SYNTHETIC_TYPE")
+        continue
+    fi
+    
     SYNTHETIC_START=$(date +%s)
     SYNTHETIC_DIR="$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}"
     
     # Run the optimization pipeline with personalization task
-    python3 -m wisent.core.optuna.steering.optuna_pipeline \
+    if python3 -m wisent.core.optuna.steering.optuna_pipeline \
         --output-dir "$SYNTHETIC_DIR" \
         --model "$MODEL" \
         --task personalization \
@@ -127,21 +220,30 @@ for SYNTHETIC_TYPE in "${SYNTHETIC_TYPES[@]}"; do
         --n-trials "$N_TRIALS" \
         --num-pairs 50 \
         --layer-range "$LAYER_RANGE" \
-        2>&1 | tee "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_log.txt"
-    
-    SYNTHETIC_END=$(date +%s)
-    DURATION=$((SYNTHETIC_END - SYNTHETIC_START))
-    echo "Completed synthetic $SYNTHETIC_TYPE in ${DURATION}s"
-    
-    # Find the metrics file
-    METRICS_FILE=$(find "$SYNTHETIC_DIR" -name "all_trials_metrics_*.json" -type f | head -1)
-    
-    if [ -n "$METRICS_FILE" ]; then
-        echo "Metrics saved to: $METRICS_FILE"
-        cp "$METRICS_FILE" "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_metrics.json"
+        2>&1 | tee "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_log.txt"; then
+        
+        SYNTHETIC_END=$(date +%s)
+        DURATION=$((SYNTHETIC_END - SYNTHETIC_START))
+        echo "Completed synthetic $SYNTHETIC_TYPE in ${DURATION}s"
+        
+        # Find the metrics file
+        METRICS_FILE=$(find "$SYNTHETIC_DIR" -name "all_trials_metrics_*.json" -type f 2>/dev/null | head -1)
+        
+        if [ -n "$METRICS_FILE" ]; then
+            echo "Metrics saved to: $METRICS_FILE"
+            cp "$METRICS_FILE" "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_metrics.json"
+            COMPLETED_BENCHMARKS+=("synthetic_$SYNTHETIC_TYPE")
+        else
+            echo "WARNING: No metrics file found for synthetic_$SYNTHETIC_TYPE"
+            FAILED_BENCHMARKS+=("synthetic_$SYNTHETIC_TYPE")
+        fi
     else
-        echo "WARNING: No metrics file found for synthetic_$SYNTHETIC_TYPE"
+        echo "ERROR: synthetic_$SYNTHETIC_TYPE failed"
+        FAILED_BENCHMARKS+=("synthetic_$SYNTHETIC_TYPE")
     fi
+    
+    # Save intermediate results after each synthetic
+    save_intermediate_results
 done
 
 # ==========================================
@@ -200,4 +302,14 @@ echo "=========================================="
 echo "Results in: $OUTPUT_DIR"
 ls -la "$OUTPUT_DIR"/*.json 2>/dev/null || echo "No JSON files found"
 echo ""
+echo "Completed benchmarks: ${COMPLETED_BENCHMARKS[*]:-none}"
+echo "Failed benchmarks: ${FAILED_BENCHMARKS[*]:-none}"
+echo ""
+
+# Final upload to S3
+if [ -n "$S3_BUCKET" ]; then
+    echo "Final upload to S3..."
+    aws s3 sync "$OUTPUT_DIR" "s3://$S3_BUCKET/sweep_results/" --exclude "*.log" 2>/dev/null || true
+fi
+
 echo "Done!"

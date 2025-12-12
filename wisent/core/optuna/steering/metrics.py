@@ -14,7 +14,6 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mbpp import 
 from wisent.core.lm_eval_harness_ground_truth import LMEvalHarnessGroundTruth
 from wisent.core.task_interface import get_task
 from wisent.core.tasks.file_task import FileTask
-from wisent.parameters.task_config import CODING_TASKS
 from wisent.core.errors import (
     EvaluationError,
     ExactMatchError,
@@ -23,7 +22,8 @@ from wisent.core.errors import (
     InsufficientDataError,
 )
 
-from .bigcode_evaluator_wrapper import OptunaBigCodeEvaluator
+# Use the standard evaluator system
+from wisent.core.evaluators.rotator import EvaluatorRotator
 
 logger = logging.getLogger(__name__)
 
@@ -101,135 +101,96 @@ def evaluate_benchmark_performance(
     Returns:
         Dictionary containing benchmark performance metrics
     """
-    if task_name:
-        # Check if this is a coding task that requires code execution evaluation
-        is_coding_task = task_name.lower() in CODING_TASKS
+    if not task_name:
+        raise TaskNameRequiredError()
 
-        # Calculate classifier confidence scores if classifier_scorer provided
-        classifier_confidences = None
-        if classifier_scorer is not None:
-            try:
-                logger.debug(f"Calculating classifier confidence scores for {len(predictions)} predictions")
-                classifier_confidences = classifier_scorer(predictions, f"metrics_evaluation_{task_name}")
-                logger.debug(f"Calculated {len(classifier_confidences)} confidence scores")
-            except Exception as e:
-                logger.warning(f"Failed to calculate classifier confidence scores: {e}")
-                classifier_confidences = None
+    # Calculate classifier confidence scores if classifier_scorer provided
+    classifier_confidences = None
+    if classifier_scorer is not None:
+        try:
+            logger.debug(f"Calculating classifier confidence scores for {len(predictions)} predictions")
+            classifier_confidences = classifier_scorer(predictions, f"metrics_evaluation_{task_name}")
+            logger.debug(f"Calculated {len(classifier_confidences)} confidence scores")
+        except Exception as e:
+            logger.warning(f"Failed to calculate classifier confidence scores: {e}")
+            classifier_confidences = None
 
-        if is_coding_task:
-            # Use BigCode execution-based evaluation for coding tasks
-            logger.info(f"Using BigCode execution-based evaluation for coding task: {task_name}")
+    # Use the standard evaluator rotator - it will auto-select the right evaluator
+    # based on the extractor's evaluator_name
+    try:
+        # Discover all evaluators including benchmark-specific ones
+        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
+        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific.coding.metrics")
+        
+        rotator = EvaluatorRotator(task_name=task_name)
+        evaluator_name = rotator._plugin.name
+        logger.info(f"Using evaluator '{evaluator_name}' for task: {task_name}")
+    except Exception as e:
+        logger.warning(f"Could not auto-select evaluator for {task_name}: {e}, falling back to LMEvalHarnessGroundTruth")
+        evaluator_name = "fallback"
+        rotator = None
 
-            try:
-                bigcode_evaluator = OptunaBigCodeEvaluator()
+    correct_predictions = []
+    evaluation_details = []
 
-                # Validate task docs are provided for coding tasks
-                if task_docs is None or len(task_docs) == 0:
-                    logger.error(
-                        f"No task docs provided for coding task {task_name}. BigCode evaluation requires original task documents with test cases."
-                    )
-                    raise InsufficientDataError(reason=f"Task documents required for coding task evaluation: {task_name}")
-
-                # Ensure we have the right number of task docs
-                if len(task_docs) != len(predictions):
-                    logger.error(f"Task docs length mismatch: {len(task_docs)} docs vs {len(predictions)} predictions")
-                    raise InsufficientDataError(
-                        reason=f"Number of task documents ({len(task_docs)}) must match number of predictions ({len(predictions)})"
-                    )
-
-                # Evaluate using BigCode execution
-                evaluation_results, accuracy_metrics = bigcode_evaluator.evaluate_and_calculate_accuracy(
-                    predictions, task_docs, task_name
+    for i, (pred, gt) in enumerate(zip(predictions, ground_truths)):
+        try:
+            # Get task doc metadata if available (for coding tasks)
+            task_doc = task_docs[i] if task_docs and i < len(task_docs) else {}
+            metadata = task_doc.get("metadata", {}) if isinstance(task_doc, dict) else {}
+            
+            if rotator:
+                # Use the rotator's evaluate method with metadata
+                result = rotator.evaluate(
+                    response=pred,
+                    expected=gt,
+                    task_name=task_name,
+                    test_code=metadata.get("test_code"),
+                    entry_point=metadata.get("entry_point"),
+                    language=metadata.get("language", "python"),
                 )
+                is_correct = result.ground_truth == "TRUTHFUL"
+                method = evaluator_name
+            else:
+                # Fallback to LMEvalHarnessGroundTruth
+                is_correct = evaluate_response_correctness(pred, gt, task_name)
+                method = "lm_eval_harness_ground_truth"
+            
+            correct_predictions.append(is_correct)
 
-                # Create evaluation details in the expected format
-                evaluation_details = []
-                for i, (pred, result) in enumerate(zip(predictions, evaluation_results)):
-                    eval_detail = {
-                        "prediction": result.get("extracted_code", pred),
-                        "ground_truth": ground_truths[i] if i < len(ground_truths) else "unknown",
-                        "is_correct": result.get("passed", False),
-                        "classifier_confidence": classifier_confidences[i]
-                        if classifier_confidences and i < len(classifier_confidences)
-                        else 1.0,
-                        "method": "bigcode_execution",
-                        "original_prediction": pred,
-                        "code_extracted": result.get("extracted_code", "") != pred,
-                        "execution_error": result.get("error"),
-                    }
-                    evaluation_details.append(eval_detail)
+            eval_detail = {
+                "prediction": pred,
+                "ground_truth": gt,
+                "is_correct": is_correct,
+                "classifier_confidence": classifier_confidences[i]
+                if classifier_confidences and i < len(classifier_confidences)
+                else 1.0,
+                "method": method,
+            }
+            evaluation_details.append(eval_detail)
 
-                return {
-                    "accuracy": accuracy_metrics["accuracy"],
-                    "total_samples": accuracy_metrics["total_samples"],
-                    "correct": accuracy_metrics["correct"],
-                    "incorrect": accuracy_metrics["incorrect"],
-                    "evaluation_method": "bigcode_execution",
-                    "task_name": task_name,
-                    "evaluation_details": evaluation_details,
-                    "pass_count": accuracy_metrics.get("pass_count", 0),
-                    "fail_count": accuracy_metrics.get("fail_count", 0),
-                    "error_count": accuracy_metrics.get("error_count", 0),
-                }
+        except Exception as e:
+            logger.warning(f"Evaluation failed for sample {i}: {e}")
+            raise ExactMatchError(
+                index=i,
+                prediction=pred,
+                ground_truth=gt,
+                cause=e
+            )
 
-            except Exception as e:
-                # No fallback - raise error if BigCode evaluation fails
-                raise BigCodeEvaluationError(task_name=task_name, cause=e)
+    accuracy = np.mean(correct_predictions) if correct_predictions else 0.0
+    total_correct = sum(correct_predictions)
 
-        # String-based evaluation for non-coding tasks only
-        extracted_predictions = predictions
-
-        # Use intelligent evaluation with LMEvalHarnessGroundTruth (same as CLI)
-        correct_predictions = []
-        evaluation_details = []
-
-        for i, (orig_pred, extracted_pred, gt) in enumerate(zip(predictions, extracted_predictions, ground_truths)):
-            try:
-                # Use the extracted prediction for evaluation
-                is_correct = evaluate_response_correctness(extracted_pred, gt, task_name)
-                correct_predictions.append(is_correct)
-
-                # Include both original and extracted predictions in details for debugging
-                eval_detail = {
-                    "prediction": extracted_pred,
-                    "ground_truth": gt,
-                    "is_correct": is_correct,
-                    "classifier_confidence": classifier_confidences[i]
-                    if classifier_confidences and i < len(classifier_confidences)
-                    else 1.0,
-                    "method": "lm_eval_harness_ground_truth",
-                }
-
-                # Add original prediction for coding tasks to help with debugging
-                if is_coding_task and orig_pred != extracted_pred:
-                    eval_detail["original_prediction"] = orig_pred
-                    eval_detail["code_extracted"] = True
-
-                evaluation_details.append(eval_detail)
-
-            except Exception as e:
-                # No fallback - raise error if evaluation fails
-                raise ExactMatchError(
-                    index=i,
-                    prediction=extracted_pred,
-                    ground_truth=gt,
-                    cause=e
-                )
-
-        accuracy = np.mean(correct_predictions)
-        total_correct = sum(correct_predictions)
-
-        return {
-            "accuracy": accuracy,
-            "total_samples": len(predictions),
-            "correct": total_correct,
-            "incorrect": len(predictions) - total_correct,
-            "evaluation_method": "lm_eval_harness_ground_truth",
-            "task_name": task_name,
-            "evaluation_details": evaluation_details[:5],  # Include first 5 for debugging
-        }
-    # No fallback - task_name is required for proper evaluation
-    raise TaskNameRequiredError()
+    return {
+        "accuracy": accuracy,
+        "total_samples": len(predictions),
+        "correct": total_correct,
+        "incorrect": len(predictions) - total_correct,
+        "evaluation_method": evaluator_name,
+        "task_name": task_name,
+        "evaluation_details": evaluation_details[:5],  # Include first 5 for debugging
+    }
 
 
 def evaluate_probe_performance(y_true: np.ndarray, y_pred: np.ndarray, y_pred_proba: np.ndarray) -> Dict[str, float]:
