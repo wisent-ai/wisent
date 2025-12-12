@@ -155,13 +155,6 @@ EXTRACTORS: dict[str, str] = {
     "multiple_rs": f"{base_import}multipl_e:MultiplEExtractor",
     "multiple_go": f"{base_import}multipl_e:MultiplEExtractor",
     "codexglue": f"{base_import}codexglue:CodexglueExtractor",
-    "code_x_glue": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_python": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_go": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_ruby": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_java": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_javascript": f"{base_import}codexglue:CodexglueExtractor",
-    "codexglue_code_to_text_php": f"{base_import}codexglue:CodexglueExtractor",
     "livecodebench": f"{base_import}livecodebench:LivecodebenchExtractor",
 
     # Reasoning benchmarks
