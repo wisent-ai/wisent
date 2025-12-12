@@ -18,7 +18,6 @@ from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.humaneva
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.livecodebench import LivecodebenchExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.livemathbench import LiveMathBenchExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.math500 import MATH500Extractor
-from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.mbpp import MBPPExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.mercury import MercuryExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.multipl_e import MultiplEExtractor
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.polymath import PolyMathExtractor
@@ -42,7 +41,6 @@ __all__ = [
     "LivecodebenchExtractor",
     "LiveMathBenchExtractor",
     "MATH500Extractor",
-    "MBPPExtractor",
     "MercuryExtractor",
     "MultiplEExtractor",
     "PolyMathExtractor",

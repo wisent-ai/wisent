@@ -54,7 +54,6 @@
   "all_tasks": [
   "Tag",
   "apps",
-  "humaneval_plus",
   "multipl_e",
   "chain_of_thought",
 
@@ -79,11 +78,6 @@
 
   "livecodebench",
   "llama",
-
-
-
-  "mbpp_plus",
-
 
   "mercury",
 
