@@ -198,6 +198,10 @@ def execute_generate_vector_from_task(args):
             verbose=args.verbose,
             timing=args.timing,
             accept_low_quality_vector=getattr(args, 'accept_low_quality_vector', False),
+            # Universal Subspace options for PRISM/TITAN
+            auto_num_directions=getattr(args, 'auto_num_directions', False),
+            use_universal_basis_init=getattr(args, 'use_universal_basis_init', False),
+            num_directions=getattr(args, 'num_directions', 3),
         )
         
         execute_create_steering_vector(vector_args)

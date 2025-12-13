@@ -149,32 +149,29 @@ for BENCHMARK in "${BENCHMARKS[@]}"; do
     
     BENCHMARK_START=$(date +%s)
     
-    # Run the optimization pipeline (don't exit on failure)
-    if python3 -m wisent.core.optuna.steering.optuna_pipeline \
+    # Run the optimization using wisent CLI with baseline comparison
+    if wisent optimize-steering comprehensive "$MODEL" \
+        --tasks "$BENCHMARK" \
+        --limit "$TRAIN_LIMIT" \
+        --compute-baseline \
+        --device cuda \
         --output-dir "$OUTPUT_DIR/$BENCHMARK" \
-        --model "$MODEL" \
-        --task "$BENCHMARK" \
-        --n-trials "$N_TRIALS" \
-        --train-limit "$TRAIN_LIMIT" \
-        --val-limit "$VAL_LIMIT" \
-        --test-limit "$TEST_LIMIT" \
-        --layer-range "$LAYER_RANGE" \
         2>&1 | tee "$OUTPUT_DIR/${BENCHMARK}_log.txt"; then
         
         BENCHMARK_END=$(date +%s)
         DURATION=$((BENCHMARK_END - BENCHMARK_START))
         echo "Completed $BENCHMARK in ${DURATION}s"
         
-        # Find and copy the metrics file
-        METRICS_FILE=$(find "$OUTPUT_DIR/$BENCHMARK" -name "all_trials_metrics_*.json" -type f 2>/dev/null | head -1)
+        # Find and copy the results file
+        RESULTS_FILE=$(find "$OUTPUT_DIR/$BENCHMARK" -name "steering_comprehensive_*.json" -type f 2>/dev/null | head -1)
         
-        if [ -n "$METRICS_FILE" ]; then
-            echo "Metrics saved to: $METRICS_FILE"
-            cp "$METRICS_FILE" "$OUTPUT_DIR/${BENCHMARK}_metrics.json"
+        if [ -n "$RESULTS_FILE" ]; then
+            echo "Results saved to: $RESULTS_FILE"
+            cp "$RESULTS_FILE" "$OUTPUT_DIR/${BENCHMARK}_metrics.json"
             mark_benchmark_completed "$BENCHMARK"
             COMPLETED_BENCHMARKS+=("$BENCHMARK")
         else
-            echo "WARNING: No metrics file found for $BENCHMARK"
+            echo "WARNING: No results file found for $BENCHMARK"
             FAILED_BENCHMARKS+=("$BENCHMARK")
         fi
     else
@@ -211,30 +208,28 @@ for SYNTHETIC_TYPE in "${SYNTHETIC_TYPES[@]}"; do
     SYNTHETIC_START=$(date +%s)
     SYNTHETIC_DIR="$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}"
     
-    # Run the optimization pipeline with personalization task
-    if python3 -m wisent.core.optuna.steering.optuna_pipeline \
-        --output-dir "$SYNTHETIC_DIR" \
+    # Run the optimization with personalization task
+    if wisent optimize-steering personalization \
         --model "$MODEL" \
-        --task personalization \
         --trait "$SYNTHETIC_TYPE" \
-        --n-trials "$N_TRIALS" \
         --num-pairs 50 \
-        --layer-range "$LAYER_RANGE" \
+        --output-dir "$SYNTHETIC_DIR" \
+        --device cuda \
         2>&1 | tee "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_log.txt"; then
         
         SYNTHETIC_END=$(date +%s)
         DURATION=$((SYNTHETIC_END - SYNTHETIC_START))
         echo "Completed synthetic $SYNTHETIC_TYPE in ${DURATION}s"
         
-        # Find the metrics file
-        METRICS_FILE=$(find "$SYNTHETIC_DIR" -name "all_trials_metrics_*.json" -type f 2>/dev/null | head -1)
+        # Find the results file
+        RESULTS_FILE=$(find "$SYNTHETIC_DIR" -name "*.json" -type f 2>/dev/null | head -1)
         
-        if [ -n "$METRICS_FILE" ]; then
-            echo "Metrics saved to: $METRICS_FILE"
-            cp "$METRICS_FILE" "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_metrics.json"
+        if [ -n "$RESULTS_FILE" ]; then
+            echo "Results saved to: $RESULTS_FILE"
+            cp "$RESULTS_FILE" "$OUTPUT_DIR/synthetic_${SYNTHETIC_TYPE}_metrics.json"
             COMPLETED_BENCHMARKS+=("synthetic_$SYNTHETIC_TYPE")
         else
-            echo "WARNING: No metrics file found for synthetic_$SYNTHETIC_TYPE"
+            echo "WARNING: No results file found for synthetic_$SYNTHETIC_TYPE"
             FAILED_BENCHMARKS+=("synthetic_$SYNTHETIC_TYPE")
         fi
     else
