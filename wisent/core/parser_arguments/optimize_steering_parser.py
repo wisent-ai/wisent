@@ -69,6 +69,12 @@ def setup_steering_optimizer_parser(parser):
         help="Directory to save baseline comparison results (default: ./baseline_comparison)",
     )
     comprehensive_parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="./optimization_results",
+        help="Directory to save optimization results (default: ./optimization_results)",
+    )
+    comprehensive_parser.add_argument(
         "--show-comparisons",
         type=int,
         default=0,
@@ -614,4 +620,98 @@ def setup_steering_optimizer_parser(parser):
         "--save-as-default",
         action="store_true",
         help="Save optimal parameters as default for this model/task combination",
+    )
+
+    # ==========================================================================
+    # UNIVERSAL METHOD OPTIMIZER (NEW)
+    # ==========================================================================
+    # This optimizer uses the universal train(pair_set) interface that ALL
+    # steering methods implement, ensuring it works with any method including
+    # future ones.
+    
+    universal_parser = steering_subparsers.add_parser(
+        "universal",
+        help="Universal optimizer that works with ANY steering method (recommended)"
+    )
+    universal_parser.add_argument("model", type=str, help="Model name or path")
+    universal_parser.add_argument(
+        "--task",
+        type=str,
+        required=True,
+        help="Task/benchmark to optimize for (e.g., truthfulqa_generation, arc_easy)"
+    )
+    universal_parser.add_argument(
+        "--method",
+        type=str,
+        default="CAA",
+        choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
+        help=f"Steering method to optimize. Available: {', '.join(AVAILABLE_METHODS)} (default: CAA)"
+    )
+    universal_parser.add_argument(
+        "--limit",
+        type=int,
+        default=100,
+        help="Maximum samples to use (default: 100)"
+    )
+    universal_parser.add_argument(
+        "--quick",
+        action="store_true",
+        help="Use reduced search space for faster testing"
+    )
+    universal_parser.add_argument(
+        "--max-configs",
+        type=int,
+        default=None,
+        help="Maximum number of configurations to test (default: all)"
+    )
+    universal_parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="./optimization_results",
+        help="Directory to save results (default: ./optimization_results)"
+    )
+    universal_parser.add_argument(
+        "--save-best-vector",
+        action="store_true",
+        help="Save the best steering vector to output directory"
+    )
+    universal_parser.add_argument("--device", type=str, default=None, help="Device to run on")
+    universal_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
+    
+    # Search space customization
+    universal_parser.add_argument(
+        "--layers",
+        type=str,
+        default=None,
+        help="Comma-separated layer indices to search (e.g., '8,10,12,14')"
+    )
+    universal_parser.add_argument(
+        "--strengths",
+        type=str,
+        default=None,
+        help="Comma-separated strength values to search (e.g., '0.5,1.0,1.5,2.0')"
+    )
+    universal_parser.add_argument(
+        "--token-aggregations",
+        type=str,
+        nargs="+",
+        default=None,
+        choices=["last_token", "mean_pooling", "first_token", "max_pooling", "continuation_token"],
+        help="Token aggregation strategies to search"
+    )
+    universal_parser.add_argument(
+        "--prompt-strategies",
+        type=str,
+        nargs="+",
+        default=None,
+        choices=["chat_template", "direct_completion", "multiple_choice", "role_playing", "instruction_following"],
+        help="Prompt construction strategies to search"
+    )
+    
+    # Method-specific parameter overrides (JSON format)
+    universal_parser.add_argument(
+        "--method-params",
+        type=str,
+        default=None,
+        help='JSON dict of method-specific parameter ranges, e.g., \'{"num_directions": [2, 3, 5]}\''
     )

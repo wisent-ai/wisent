@@ -167,6 +167,39 @@ class PRISMMethod(BaseSteeringMethod):
         )
         self._training_logs: List[Dict[str, float]] = []
     
+    def train_for_layer(self, pos_list: List[torch.Tensor], neg_list: List[torch.Tensor]) -> torch.Tensor:
+        """
+        Train a PRISM steering vector for a single layer.
+        
+        This provides compatibility with the PerLayerBaseSteeringMethod interface
+        used by CLI tools.
+        
+        Arguments:
+            pos_list: List of positive activation tensors
+            neg_list: List of negative activation tensors
+            
+        Returns:
+            Primary steering direction as a tensor
+        """
+        if not pos_list or not neg_list:
+            raise InsufficientDataError(reason="Need both positive and negative activations")
+        
+        # Stack activations into tensors
+        pos_tensor = torch.stack([t.detach().float().reshape(-1) for t in pos_list], dim=0)
+        neg_tensor = torch.stack([t.detach().float().reshape(-1) for t in neg_list], dim=0)
+        
+        # Train directions using the internal method
+        directions, _meta = self._train_layer_directions(pos_tensor, neg_tensor, "layer")
+        
+        # Return primary direction (first one)
+        primary = directions[0]
+        
+        # Normalize if configured
+        if self.config.normalize:
+            primary = F.normalize(primary, dim=-1)
+        
+        return primary
+    
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:
         """
         Train PRISM directions from contrastive pairs.

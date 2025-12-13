@@ -101,6 +101,26 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
         help="Do not L2-normalize steering vectors"
     )
     
+    # Universal Subspace options (PRISM/TITAN)
+    parser.add_argument(
+        "--auto-num-directions",
+        action="store_true",
+        default=False,
+        help="Automatically determine num_directions based on explained variance (PRISM/TITAN)"
+    )
+    parser.add_argument(
+        "--use-universal-basis-init",
+        action="store_true",
+        default=False,
+        help="Initialize directions from universal basis (PRISM/TITAN)"
+    )
+    parser.add_argument(
+        "--num-directions",
+        type=int,
+        default=3,
+        help="Number of steering directions for PRISM/TITAN (default: 3)"
+    )
+    
     # Intermediate file handling
     parser.add_argument(
         "--keep-intermediate",
