@@ -52,18 +52,42 @@ class TITANConfig:
     """Number of directions per layer in the steering manifold."""
     
     # Layer configuration  
-    steering_layers: List[int] = field(default_factory=lambda: [10, 11, 12, 13, 14, 15, 16, 17, 18])
-    """Layer indices where steering can be applied."""
+    steering_layers: Optional[List[int]] = None
+    """Layer indices where steering can be applied. If None, auto-computed from num_layers."""
     
-    sensor_layer: int = 15
-    """Primary layer for gating decisions."""
+    sensor_layer: Optional[int] = None
+    """Primary layer for gating decisions. If None, auto-computed from num_layers."""
+    
+    num_layers: Optional[int] = None
+    """Total layers in the model. Used to auto-compute steering_layers and sensor_layer."""
+    
+    def resolve_layers(self, num_layers: int) -> None:
+        """Resolve steering_layers and sensor_layer based on model's num_layers."""
+        self.num_layers = num_layers
+        if self.sensor_layer is None:
+            # 75% through the network
+            self.sensor_layer = int(num_layers * 0.75)
+        if self.steering_layers is None:
+            # Middle to late layers (50% to 90% of network)
+            start = int(num_layers * 0.5)
+            end = int(num_layers * 0.9)
+            self.steering_layers = list(range(start, end))
     
     # Network architecture
-    gate_hidden_dim: int = 128
-    """Hidden dimension for gating network."""
+    gate_hidden_dim: Optional[int] = None
+    """Hidden dimension for gating network. If None, auto-computed as hidden_dim // 16."""
     
-    intensity_hidden_dim: int = 64
-    """Hidden dimension for intensity network."""
+    intensity_hidden_dim: Optional[int] = None
+    """Hidden dimension for intensity network. If None, auto-computed as hidden_dim // 32."""
+    
+    def resolve_network_dims(self, hidden_dim: int) -> None:
+        """Resolve network dimensions based on model's hidden dimension."""
+        if self.gate_hidden_dim is None:
+            # Scale with model size, but clamp to reasonable range [32, 512]
+            self.gate_hidden_dim = max(32, min(512, hidden_dim // 16))
+        if self.intensity_hidden_dim is None:
+            # Scale with model size, but clamp to reasonable range [16, 256]
+            self.intensity_hidden_dim = max(16, min(256, hidden_dim // 32))
     
     # Training
     optimization_steps: int = 200
@@ -392,12 +416,15 @@ class TITANMethod(BaseSteeringMethod):
     
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        # steering_layers and sensor_layer default to None - resolved at training time
+        # based on actual num_layers in the model
         self.config = TITANConfig(
             num_directions=kwargs.get("num_directions", 5),
-            steering_layers=kwargs.get("steering_layers", [10, 11, 12, 13, 14, 15, 16, 17, 18]),
-            sensor_layer=kwargs.get("sensor_layer", 15),
-            gate_hidden_dim=kwargs.get("gate_hidden_dim", 128),
-            intensity_hidden_dim=kwargs.get("intensity_hidden_dim", 64),
+            steering_layers=kwargs.get("steering_layers", None),  # Auto-resolve from num_layers
+            sensor_layer=kwargs.get("sensor_layer", None),  # Auto-resolve from num_layers
+            num_layers=kwargs.get("num_layers", None),
+            gate_hidden_dim=kwargs.get("gate_hidden_dim", None),  # Auto-resolve from hidden_dim
+            intensity_hidden_dim=kwargs.get("intensity_hidden_dim", None),  # Auto-resolve from hidden_dim
             optimization_steps=kwargs.get("optimization_steps", 200),
             learning_rate=kwargs.get("learning_rate", 0.005),
             warmup_steps=kwargs.get("warmup_steps", 20),
@@ -448,6 +475,21 @@ class TITANMethod(BaseSteeringMethod):
         if not buckets:
             raise InsufficientDataError(reason="No valid activation pairs found")
         
+        # Detect num_layers from available data if not set
+        # Find max layer index to determine model size
+        max_layer_idx = 0
+        for layer_name in buckets.keys():
+            try:
+                layer_idx = int(str(layer_name).split("_")[-1])
+                max_layer_idx = max(max_layer_idx, layer_idx)
+            except (ValueError, IndexError):
+                pass
+        
+        # Resolve steering_layers and sensor_layer based on detected num_layers
+        detected_num_layers = max_layer_idx + 1  # layers are 0-indexed
+        if self.config.steering_layers is None or self.config.sensor_layer is None:
+            self.config.resolve_layers(detected_num_layers)
+        
         # Filter to steering layers and determine hidden dim
         layer_names = []
         hidden_dim = None
@@ -471,6 +513,10 @@ class TITANMethod(BaseSteeringMethod):
         
         if not layer_names or hidden_dim is None:
             raise InsufficientDataError(reason="No valid steering layers found")
+        
+        # Resolve network dimensions based on actual hidden_dim
+        if self.config.gate_hidden_dim is None or self.config.intensity_hidden_dim is None:
+            self.config.resolve_network_dims(hidden_dim)
         
         num_layers = len(layer_names)
         

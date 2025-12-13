@@ -232,6 +232,8 @@ def execute_optimize_steering(args):
         return execute_personalization(args, model)
     if args.steering_action == "multi-personalization":
         return execute_multi_personalization(args, model)
+    if args.steering_action == "universal":
+        return execute_universal(args, model, loader)
     print(f"\n✗ Unknown steering action: {args.steering_action}")
     sys.exit(1)
 
@@ -595,6 +597,35 @@ def execute_comprehensive(args, model, loader):
                                     steering_method = create_steering_method(method_name, args)
                                     steering_vector = steering_method.train_for_layer(pos_acts, neg_acts)
 
+                                    # Compute vector quality metrics
+                                    from wisent.core.contrastive_pairs.diagnostics.vector_quality import (
+                                        run_vector_quality_diagnostics,
+                                    )
+                                    
+                                    pos_tensor = torch.stack(pos_acts)
+                                    neg_tensor = torch.stack(neg_acts)
+                                    quality_report, _ = run_vector_quality_diagnostics(
+                                        positive_activations=pos_tensor,
+                                        negative_activations=neg_tensor,
+                                    )
+                                    
+                                    # Extract key quality metrics (convert to Python floats for JSON serialization)
+                                    def to_float(v):
+                                        return float(v) if v is not None else None
+                                    
+                                    vector_quality_metrics = {
+                                        "convergence_score": to_float(quality_report.convergence_score),
+                                        "cv_score_mean": to_float(quality_report.cv_score_mean),
+                                        "snr": to_float(quality_report.snr),
+                                        "pca_pc1_variance": to_float(quality_report.pca_pc1_variance),
+                                        "silhouette_score": to_float(quality_report.silhouette_score),
+                                        "held_out_transfer": to_float(quality_report.held_out_transfer),
+                                        "cv_classification_accuracy": to_float(quality_report.cv_classification_accuracy),
+                                        "cohens_d": to_float(quality_report.cohens_d),
+                                        "overall_quality": quality_report.overall_quality,
+                                        "num_issues": len(quality_report.issues),
+                                    }
+
                                     # Step 2: Evaluate with ACTUAL GENERATION and task evaluator
                                     # Create steering plan
                                     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
@@ -793,6 +824,7 @@ def execute_comprehensive(args, model, loader):
                                             "detailed_results": detailed_results,  # Save all eval details
                                             "delta_tracking": delta_tracking if delta_tracking else None,
                                             "delta_summary": delta_summary if delta_summary else None,
+                                            "quality_metrics": vector_quality_metrics,  # Vector quality metrics
                                         }
 
                                         if avg_score > best_score:
@@ -804,6 +836,7 @@ def execute_comprehensive(args, model, loader):
                                                 "token_aggregation": token_agg.value,
                                                 "prompt_construction": prompt_const.value,
                                                 "accuracy": avg_score,
+                                                "quality_metrics": vector_quality_metrics,
                                             }
 
                                     if configs_tested % 10 == 0 and args.verbose:
@@ -1181,10 +1214,10 @@ def execute_comprehensive(args, model, loader):
     print("📊 COMPREHENSIVE OPTIMIZATION COMPLETE")
     print(f"{'=' * 80}\n")
 
-    results_file = f"./optimization_results/steering_comprehensive_{args.model.replace('/', '_')}.json"
     import os
-
-    os.makedirs(os.path.dirname(results_file), exist_ok=True)
+    output_dir = getattr(args, 'output_dir', './optimization_results')
+    os.makedirs(output_dir, exist_ok=True)
+    results_file = os.path.join(output_dir, f"steering_comprehensive_{args.model.replace('/', '_')}.json")
 
     output_data = {
         "model": args.model,
@@ -3418,4 +3451,177 @@ def execute_multi_personalization(args, model):
         "best_combined_score": best_combined_score,
         "results_file": results_file,
         "vector_paths": vector_paths,
+    }
+
+
+def execute_universal(args, model, loader):
+    """
+    Execute universal steering method optimization.
+    
+    This uses the MethodOptimizer which works with ANY steering method
+    by using the universal train(pair_set) interface.
+    """
+    import json
+    import os
+    import torch
+    
+    from wisent.core.cli.method_optimizer import MethodOptimizer, optimize_steering_method
+    from wisent.core.evaluators.rotator import EvaluatorRotator
+    
+    method_name = args.method.lower()
+    task_name = args.task
+    
+    print(f"\n{'='*80}")
+    print(f"UNIVERSAL STEERING OPTIMIZER")
+    print(f"{'='*80}")
+    print(f"   Model: {args.model}")
+    print(f"   Method: {method_name.upper()}")
+    print(f"   Task: {task_name}")
+    print(f"   Limit: {args.limit} samples")
+    print(f"   Quick mode: {args.quick}")
+    if args.max_configs:
+        print(f"   Max configs: {args.max_configs}")
+    print(f"{'='*80}\n")
+    
+    # Load task data
+    print("📊 Loading task data...")
+    result = loader._load_one_task(
+        task_name=task_name,
+        split_ratio=0.8,
+        seed=42,
+        limit=args.limit,
+        training_limit=None,
+        testing_limit=None,
+    )
+    
+    train_pairs = result["train_qa_pairs"]
+    test_pairs = result["test_qa_pairs"]
+    print(f"   ✓ Loaded {len(train_pairs.pairs)} train, {len(test_pairs.pairs)} test pairs")
+    
+    # Initialize evaluator
+    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    evaluator = EvaluatorRotator(evaluator=None, task_name=task_name)
+    print(f"   ✓ Using evaluator: {evaluator._plugin.name}")
+    
+    # Parse custom search space overrides
+    custom_layers = None
+    if args.layers:
+        custom_layers = [int(x) for x in args.layers.split(",")]
+    
+    custom_strengths = None
+    if args.strengths:
+        custom_strengths = [float(x) for x in args.strengths.split(",")]
+    
+    custom_method_params = None
+    if args.method_params:
+        custom_method_params = json.loads(args.method_params)
+    
+    # Create optimizer
+    optimizer = MethodOptimizer(
+        model=model,
+        method_name=method_name,
+        device=args.device or "cpu",
+        verbose=args.verbose if hasattr(args, "verbose") else True,
+    )
+    
+    # Generate search space
+    configs = optimizer.generate_search_space(
+        num_layers=model.num_layers,
+        quick=args.quick,
+        custom_layers=custom_layers,
+        custom_strengths=custom_strengths,
+        custom_token_aggregations=args.token_aggregations if hasattr(args, "token_aggregations") else None,
+        custom_prompt_strategies=args.prompt_strategies if hasattr(args, "prompt_strategies") else None,
+        custom_method_params=custom_method_params,
+    )
+    
+    print(f"\n📊 Search space: {len(configs)} configurations")
+    
+    # Run optimization
+    summary = optimizer.optimize(
+        train_pairs=train_pairs,
+        test_pairs=test_pairs,
+        evaluator=evaluator,
+        task_name=task_name,
+        configs=configs,
+        max_configs=args.max_configs,
+    )
+    
+    # Print results
+    print(f"\n{'='*80}")
+    print("OPTIMIZATION RESULTS")
+    print(f"{'='*80}")
+    
+    if summary.best_result:
+        best = summary.best_result
+        print(f"\n🏆 Best Configuration:")
+        print(f"   Score: {best.score:.4f}")
+        print(f"   Layers: {best.config.layers}")
+        print(f"   Strength: {best.config.strength}")
+        print(f"   Token Aggregation: {best.config.token_aggregation.value}")
+        print(f"   Prompt Strategy: {best.config.prompt_strategy.value}")
+        if best.config.method_params:
+            print(f"   Method Params: {best.config.method_params}")
+        print(f"\n   Training time: {best.training_time:.1f}s")
+        print(f"   Evaluation time: {best.evaluation_time:.1f}s")
+    
+    print(f"\n   Total time: {summary.total_time:.1f}s")
+    print(f"   Configs tested: {summary.configs_tested}")
+    
+    # Save results
+    output_dir = args.output_dir
+    os.makedirs(output_dir, exist_ok=True)
+    
+    results_file = os.path.join(
+        output_dir,
+        f"universal_{method_name}_{task_name}_{args.model.replace('/', '_')}.json"
+    )
+    
+    output_data = {
+        "model": args.model,
+        "method": method_name,
+        "task": task_name,
+        "best_score": summary.best_result.score if summary.best_result else None,
+        "best_config": summary.best_result.config.to_dict() if summary.best_result else None,
+        "configs_tested": summary.configs_tested,
+        "total_time": summary.total_time,
+        "all_results": [
+            {
+                "config": r.config.to_dict(),
+                "score": r.score,
+                "metrics": r.metrics,
+                "training_time": r.training_time,
+                "evaluation_time": r.evaluation_time,
+            }
+            for r in summary.all_results
+        ],
+    }
+    
+    with open(results_file, "w") as f:
+        json.dump(output_data, f, indent=2)
+    
+    print(f"\n✅ Results saved to: {results_file}")
+    
+    # Save best vector if requested
+    if args.save_best_vector and summary.best_result and summary.best_result.steering_vectors:
+        vector_file = os.path.join(
+            output_dir,
+            f"{task_name}_{method_name}_best_vector.pt"
+        )
+        torch.save({
+            "steering_vectors": summary.best_result.steering_vectors.to_dict(),
+            "config": summary.best_result.config.to_dict(),
+            "score": summary.best_result.score,
+        }, vector_file)
+        print(f"✅ Best vector saved to: {vector_file}")
+    
+    print(f"\n{'='*80}\n")
+    
+    return {
+        "action": "universal",
+        "method": method_name,
+        "task": task_name,
+        "best_score": summary.best_result.score if summary.best_result else None,
+        "best_config": summary.best_result.config.to_dict() if summary.best_result else None,
+        "results_file": results_file,
     }

@@ -281,7 +281,8 @@ def _compute_pca(
         
         n_components = min(5, n - 1)
         pca = PCA(n_components=n_components)
-        pca.fit(difference_vectors.numpy())
+        # Convert to float32 for sklearn compatibility (BFloat16 not supported)
+        pca.fit(difference_vectors.float().numpy())
         
         pc1_var = pca.explained_variance_ratio_[0]
         pc2_var = pca.explained_variance_ratio_[1] if n_components > 1 else 0.0
@@ -372,7 +373,7 @@ def _compute_clustering(
     try:
         from sklearn.metrics import silhouette_score
         
-        all_activations = torch.cat([positive_activations, negative_activations], dim=0).numpy()
+        all_activations = torch.cat([positive_activations, negative_activations], dim=0).float().numpy()
         labels = [0] * n_pos + [1] * n_neg
         
         silhouette = silhouette_score(all_activations, labels)
@@ -436,7 +437,7 @@ def _compute_cv_classification(
         from sklearn.linear_model import LogisticRegression
         from sklearn.model_selection import cross_val_score
         
-        X = torch.cat([positive_activations, negative_activations], dim=0).numpy()
+        X = torch.cat([positive_activations, negative_activations], dim=0).float().numpy()
         y = np.array([1] * n_pos + [0] * n_neg)
         
         n_folds = min(config.cv_folds, min(n_pos, n_neg))
@@ -473,8 +474,8 @@ def _compute_cohens_d(
     direction = direction / direction_norm
     
     # Project all activations onto this direction
-    pos_proj = (positive_activations @ direction).numpy()
-    neg_proj = (negative_activations @ direction).numpy()
+    pos_proj = (positive_activations @ direction).float().numpy()
+    neg_proj = (negative_activations @ direction).float().numpy()
     
     # Cohen's d = (mean1 - mean2) / pooled_std
     mean_diff = pos_proj.mean() - neg_proj.mean()

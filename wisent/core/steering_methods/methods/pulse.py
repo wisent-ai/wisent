@@ -41,14 +41,29 @@ class PULSEConfig:
     """Configuration for PULSE steering method."""
     
     # Layer configuration
-    sensor_layer: int = 15
-    """Layer index where condition gating is computed."""
+    sensor_layer: Optional[int] = None
+    """Layer index where condition gating is computed. If None, auto-computed from num_layers."""
     
-    steering_layers: List[int] = field(default_factory=lambda: [12, 13, 14, 15, 16, 17, 18])
-    """Layer indices where steering is applied."""
+    steering_layers: Optional[List[int]] = None
+    """Layer indices where steering is applied. If None, auto-computed from num_layers."""
+    
+    num_layers: Optional[int] = None
+    """Total layers in the model. Used to auto-compute steering_layers and sensor_layer."""
     
     per_layer_scaling: bool = True
     """Whether to learn/use different scaling per layer."""
+    
+    def resolve_layers(self, num_layers: int) -> None:
+        """Resolve steering_layers and sensor_layer based on model's num_layers."""
+        self.num_layers = num_layers
+        if self.sensor_layer is None:
+            # 75% through the network
+            self.sensor_layer = int(num_layers * 0.75)
+        if self.steering_layers is None:
+            # Middle to late layers (50% to 85% of network)
+            start = int(num_layers * 0.5)
+            end = int(num_layers * 0.85)
+            self.steering_layers = list(range(start, end))
     
     # Condition gating
     condition_threshold: float = 0.5
@@ -188,9 +203,12 @@ class PULSEMethod(BaseSteeringMethod):
     
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        # steering_layers and sensor_layer default to None - resolved at training time
+        # based on actual num_layers in the model
         self.config = PULSEConfig(
-            sensor_layer=kwargs.get("sensor_layer", 15),
-            steering_layers=kwargs.get("steering_layers", [12, 13, 14, 15, 16, 17, 18]),
+            sensor_layer=kwargs.get("sensor_layer", None),  # Auto-resolve from num_layers
+            steering_layers=kwargs.get("steering_layers", None),  # Auto-resolve from num_layers
+            num_layers=kwargs.get("num_layers", None),
             per_layer_scaling=kwargs.get("per_layer_scaling", True),
             condition_threshold=kwargs.get("condition_threshold", 0.5),
             gate_temperature=kwargs.get("gate_temperature", 0.1),
@@ -245,6 +263,20 @@ class PULSEMethod(BaseSteeringMethod):
         """
         if condition_pairs is None:
             condition_pairs = behavior_pairs
+        
+        # Detect num_layers from available data and resolve config
+        buckets = self._collect_from_set(behavior_pairs)
+        if buckets:
+            max_layer_idx = 0
+            for layer_name in buckets.keys():
+                try:
+                    layer_idx = int(str(layer_name).split("_")[-1])
+                    max_layer_idx = max(max_layer_idx, layer_idx)
+                except (ValueError, IndexError):
+                    pass
+            detected_num_layers = max_layer_idx + 1
+            if self.config.steering_layers is None or self.config.sensor_layer is None:
+                self.config.resolve_layers(detected_num_layers)
         
         # 1. Train behavior vectors for steering layers
         behavior_vectors = self._train_behavior_vectors(behavior_pairs)

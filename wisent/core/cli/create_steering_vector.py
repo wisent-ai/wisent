@@ -78,14 +78,22 @@ def execute_create_steering_vector(args):
             print(f"   ✓ Method initialized (normalize={args.normalize})")
         elif method_name == "prism":
             from wisent.core.steering_methods.methods.prism import PRISMMethod
-            prism_params = {}
+            prism_params = {
+                "num_directions": getattr(args, 'num_directions', 3),
+                "auto_num_directions": getattr(args, 'auto_num_directions', False),
+                "use_universal_basis_init": getattr(args, 'use_universal_basis_init', False),
+            }
             if optimal_config:
-                prism_params = {
-                    "num_directions": optimal_config.get("num_directions", 1),
+                prism_params.update({
+                    "num_directions": optimal_config.get("num_directions", prism_params["num_directions"]),
                     "direction_weighting": optimal_config.get("direction_weighting", "primary_only"),
                     "retain_weight": optimal_config.get("retain_weight", 0.0),
-                }
-                print(f"   Using optimal PRISM params: num_directions={prism_params['num_directions']}, weighting={prism_params['direction_weighting']}")
+                })
+                print(f"   Using optimal PRISM params: num_directions={prism_params['num_directions']}, weighting={prism_params.get('direction_weighting', 'primary_only')}")
+            if prism_params["auto_num_directions"]:
+                print(f"   Using auto_num_directions (Universal Subspace)")
+            if prism_params["use_universal_basis_init"]:
+                print(f"   Using universal basis initialization")
             method = PRISMMethod(**prism_params)
             print(f"   ✓ PRISM method initialized")
         elif method_name == "pulse":

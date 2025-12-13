@@ -240,11 +240,14 @@ class WeightsOptimizer(BaseOptimizer):
                 norm_preserve=self.config.norm_preserve,
                 verbose=False,
             )
-        elif self.config.method == "additive":
+        elif self.config.method in ("additive", "titan", "prism", "pulse"):
             # Direct additive: add steering vector directly to weight matrices
-            # This is the simplest approach that worked in manual tests
+            # This modifies weights directly, not biases, so it persists when saved
+            # Used for additive and multi-direction methods (titan/prism/pulse)
             self._apply_direct_additive(params)
         else:
+            # Default fallback - use bake_steering_with_kernel
+            # Note: This adds biases which may not load correctly for some architectures
             bake_steering_with_kernel(
                 self.model,
                 self.steering_vectors,

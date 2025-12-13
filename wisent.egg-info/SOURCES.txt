@@ -106,6 +106,7 @@ wisent/core/cli/generate_vector_from_task.py
 wisent/core/cli/get_activations.py
 wisent/core/cli/inference_config.py
 wisent/core/cli/inference_config_cli.py
+wisent/core/cli/method_optimizer.py
 wisent/core/cli/modify_weights.py
 wisent/core/cli/multi_steer.py
 wisent/core/cli/optimization_cache.py
@@ -1693,8 +1694,10 @@ wisent/parameters/tasks/tasks.json
 wisent/scripts/run_quality_metrics_sweep.sh
 wisent/tests/__init__.py
 wisent/tests/test_all_cli_commands.py
+wisent/tests/test_detector_accuracy.py
 wisent/tests/test_geometry_comprehensive.py
 wisent/tests/test_titan_geometry.py
+wisent/tests/visualize_geometry.py
 wisent/tests/examples/__init__.py
 wisent/tests/examples/cli/__init__.py
 wisent/tests/examples/cli/activations/__init__.py
