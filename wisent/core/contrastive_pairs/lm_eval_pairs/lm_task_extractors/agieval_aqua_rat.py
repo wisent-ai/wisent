@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import random
 from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -12,25 +11,13 @@ if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
 
 
-__all__ = ["GSM8KExtractor"]
+__all__ = ["AgievalAquaRatExtractor"]
 _LOG = setup_logger(__name__)
 
-task_names = (
-    "gsm8k",
-    "gsm8k_cot",
-    "gsm8k_cot_llama",
-    "gsm8k_cot_self_consistency",
-    "gsm8k_cot_zeroshot",
-    "gsm8k_llama",
-    "gsm8k_platinum",
-    "gsm8k_platinum_cot",
-    "gsm8k_platinum_cot_llama",
-    "gsm8k_platinum_cot_self_consistency",
-    "gsm8k_platinum_cot_zeroshot",
-)
+task_names = ("prompt_robustness_agieval_aqua_rat", "option_order_robustness_agieval_aqua_rat", "non_greedy_robustness_agieval_aqua_rat")
 
-class GSM8KExtractor(LMEvalBenchmarkExtractor):
-    """Extractor for the GSM8K benchmark - grade school math word problems."""
+class AgievalAquaRatExtractor(LMEvalBenchmarkExtractor):
+    """Extractor for AGIEval AQUA-RAT robustness benchmarks (prompt, option order, non-greedy)."""
 
 
     evaluator_name = "generation"
@@ -38,19 +25,18 @@ class GSM8KExtractor(LMEvalBenchmarkExtractor):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from GSM8K docs.
-
-        GSM8K schema:
-            - question: str
-            - answer: str
+        Build contrastive pairs from PIQA docs.
+        
+        PIQA schema:
+            - question: str 
+            - choices: list
+            - gold: list
 
         Args:
-            lm_eval_task_data: lm-eval task instance for GSM8K.
+            lm_eval_task_data: lm-eval task instance for prompt_robustness_agieval_aqua_rat.
             limit: Optional maximum number of pairs to produce.
-            preferred_doc: Optional preferred document source ("validation", "test", "training", "fewshot").
 
         Returns:
             A list of ContrastivePair objects.
@@ -58,7 +44,7 @@ class GSM8KExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items)
 
         pairs: list[ContrastivePair] = []
 
@@ -73,42 +59,51 @@ class GSM8KExtractor(LMEvalBenchmarkExtractor):
 
         if not pairs:
             task_name = getattr(lm_eval_task_data, "NAME", type(lm_eval_task_data).__name__)
-            log.warning("No valid GSM8K pairs extracted", extra={"task": task_name})
+            log.warning("No valid prompt_robustness_agieval_aqua_rat pairs extracted", extra={"task": task_name})
 
         return pairs
     
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
-        Convert a single GSM8K doc into a ContrastivePair, if possible.
+        Convert a single prompt_robustness_agieval_aqua_rat doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
         """
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = str(doc.get("question", "")).strip()
-            answer = str(doc.get("answer", "")).strip()
 
-            if not question or not answer:
+            question = doc.get("question", "").strip()
+            choices = doc.get("choices", [])
+            options = doc.get("options", [])
+            gold = doc.get("gold", [])
+
+            if not question or not choices or not options or not gold:
                 log.debug(
                     "Skipping doc due to missing/invalid fields",
                     extra={"doc": doc},
                 )
                 return None
-            
-            numerical_answer = answer
-            if "####" not in answer:
-                log.debug("Skipping doc due to missing numerical answer", extra={"doc": doc})
-                return None
-            numerical_answer = answer.split("####")[-1].strip()
-            
-            correct = numerical_answer
-            incorrect_val = float(numerical_answer.replace(',', '')) + 1
-            incorrect = str(int(incorrect_val)) if incorrect_val == int(incorrect_val) else str(incorrect_val)
 
-            formatted_question = f"Question: {question}"
+            # Use letter answers (A, B, C, D, E)
+            incorrect_map = {"A": "B", "B": "C", "C": "D", "D": "E", "E": "A"}
+            correct_letter = doc.get("answer", "")
+            incorrect_letter = incorrect_map.get(correct_letter, "B")
+
+            correct = f"The best answer is {correct_letter}"
+            incorrect = f"The best answer is {incorrect_letter}"
+
+            choices_str = "\n".join(choices)
+
+            formatted_question = f"""{question}
+
+{choices_str}
+
+Examine the question and choose the correct answer from the options 'A', 'B', 'C', 'D' or 'E'. End your answer with:
+The best answer is [the_answer_letter].
+where the [the_answer_letter] is a letter from A to E."""
 
             metadata = {
-                "label": "gsm8k",
+                "label": "agieval_aqua_rat",
             }
 
             return self._build_pair(
