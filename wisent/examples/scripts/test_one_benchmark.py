@@ -100,8 +100,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
                 "bhtc_v2", "basque-glue", "basqueglue",
                 "flan_held_in",
                 "gpt3_translation_benchmarks",
-                "non_greedy_robustness_agieval_aqua_rat", "option_order_robustness_agieval_aqua_rat",
-                "penn_treebank", "ptb", "prompt_robustness_agieval_aqua_rat",
+                "penn_treebank", "ptb",
                 "self_consistency", "t0_eval",
                 "wikitext103"
             ]
