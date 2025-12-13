@@ -116,7 +116,6 @@ EXTRACTORS.update({
     # acp_bench subtasks (bool and mcq use log_likelihoods)
     # acp_bench_hard _gen subtasks (use generation evaluator)
     "aexams": f"{base_import}aexams:AexamsExtractor",
-    "agieval": f"{base_import}agieval:AgievalExtractor",
     "arabic_exams": f"{base_import}arabic_exams:ArabicExamsExtractor",
     "arabic_leaderboard_complete": f"{base_import}arabic_leaderboard_complete:ArabicLeaderboardCompleteExtractor",
     "arabic_leaderboard_light": f"{base_import}arabic_leaderboard_light:ArabicLeaderboardLightExtractor",
@@ -162,6 +161,7 @@ EXTRACTORS.update({
     "evalita-sp_sum_task_fp_p2": f"{base_import}evalita_sp:EvalitaSpExtractor",
     "fda": f"{base_import}fda:FdaExtractor",
     "fld": f"{base_import}fld:FldExtractor",
+    "freebase": f"{base_import}webqs:WebQSExtractor",
     "french_bench": f"{base_import}french_bench:FrenchBenchExtractor",
     "galician_bench": f"{base_import}galician_bench:GalicianBenchExtractor",
     "global_mmlu": f"{base_import}global_mmlu:GlobalMmluExtractor",
@@ -266,7 +266,9 @@ EXTRACTORS.update({
     "niah_multiquery": f"{base_import}ruler:RulerExtractor",
     "niah_multivalue": f"{base_import}ruler:RulerExtractor",
     "score": f"{base_import}score:ScoreExtractor",
-    "option_order_robustness_agieval_aqua_rat": f"{base_import}score:ScoreExtractor",
+    "prompt_robustness_agieval_aqua_rat": f"{base_import}agieval_aqua_rat:AgievalAquaRatExtractor",
+    "option_order_robustness_agieval_aqua_rat": f"{base_import}agieval_aqua_rat:AgievalAquaRatExtractor",
+    "non_greedy_robustness_agieval_aqua_rat": f"{base_import}agieval_aqua_rat:AgievalAquaRatExtractor",
     "option_order_robustness_agieval_logiqa_en": f"{base_import}score:ScoreExtractor",
     "option_order_robustness_agieval_lsat_ar": f"{base_import}score:ScoreExtractor",
     "option_order_robustness_agieval_lsat_lr": f"{base_import}score:ScoreExtractor",

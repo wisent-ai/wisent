@@ -4,7 +4,8 @@
   "claim_stance_topic", "squad2", "unitxt", "copa", "glianorex", "global_mmlu_ar", "gsm_plus",  "logieval", "m_mmlu",   "mela",   "noticia",
   "penn_treebank", "phrases_ca-va", "record", "stsb", "wikitext103", "wmt14_en_fr", "wmt14_fr_en", "wmt16_de_en", "wmt16_en_de", "wmt16_en_ro",
   "wmt16_ro_en", "sglue_rte", "humaneval", "codexglue_code_to_text_go", "codexglue_code_to_text_java", "codexglue_code_to_text_javascript",
-  "codexglue_code_to_text_php", "codexglue_code_to_text_python", "codexglue_code_to_text_ruby"
+  "codexglue_code_to_text_php", "codexglue_code_to_text_python", "codexglue_code_to_text_ruby", "prompt_robustness_agieval_aqua_rat",
+  "option_order_robustness_agieval_aqua_rat",  "non_greedy_robustness_agieval_aqua_rat"
   ],
 
 
@@ -47,67 +48,30 @@
   ],
 
   "too complex": ["evalita: many different prompts structure, could mess up our prompt strategies",
-                  "babilong: many splits and subsets, long contexts"],
+                  "babilong: many splits and subsets, long contexts",
+                  "flores: over 400 tasks"],
 
   "broken": ["vaxx_stance", "wiceu", "tmlu", "t0_eval", "flan_held_in"],
 
+  "long to evaluate and we have individual subtasks": ["pythia"],
+
+  "run custom code": ["multimedqa", "iwslt2017-ar-en", "iwslt2017-en-ar"],
+
+  "idk what is it": ["multiple_choice", "Tag"],
+
   "all_tasks": [
-  "Tag",
-  "apps",
+
   "multipl_e",
-  "chain_of_thought",
 
   "concode",
   "ds1000",
 
-  "evalita-mp",
-  "evalita-sp_sum_task_fp-small_p1",
-
- 
-  "flores",
-
-  "freebase",
-
-  "gpt3_translation_benchmarks",
-
-  "humanevalpack",
- 
-  "iwslt2017-ar-en",
-  "iwslt2017-en-ar",
-
 
   "livecodebench",
-  "llama",
+  "llama", "llama3",
 
-  "mercury",
-
-
-  "multimedqa",
-
-  "multiple_choice",
-
-
-  "non_greedy_robustness_agieval_aqua_rat",
-
-  "openllm",
-
-
-  "option_order_robustness_agieval_aqua_rat",
-
-
-
-
-
-  "prompt_robustness_agieval_aqua_rat",
-  "ptb",
-  "pythia",
-  "recode",
-  "self_consistency",
-
-  "super-glue-lm-eval-v1",
-  "super-glue-lm-eval-v1-seq2seq",
-  "super-glue-t5-prompt"
-
-
+  "humanevalpack",
+  "mercury", 
+  "recode"
   ]
 }
