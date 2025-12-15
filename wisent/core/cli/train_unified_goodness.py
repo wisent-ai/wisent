@@ -163,10 +163,9 @@ def execute_train_unified_goodness(args):
             else:
                 layers.append(part)
     else:
-        # Use middle layer by default
-        middle_layer = model.num_layers // 2
-        layers = [str(middle_layer)]
-        print(f"   Using middle layer: {middle_layer}")
+        # Use ALL layers by default
+        layers = [str(i) for i in range(model.num_layers)]
+        print(f"   Using ALL layers: 0 to {model.num_layers - 1}")
 
     print(f"   ✓ Target layers: {layers}")
 

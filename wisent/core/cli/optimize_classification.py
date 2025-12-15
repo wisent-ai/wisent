@@ -84,19 +84,18 @@ def execute_optimize_classification(args):
         start, end = map(int, args.layer_range.split('-'))
         layers_to_test = list(range(start, end + 1))
     else:
-        # Test middle layers by default
-        start_layer = total_layers // 3
-        end_layer = (2 * total_layers) // 3
-        layers_to_test = list(range(start_layer, end_layer + 1))
+        # Test ALL layers by default (0-indexed)
+        layers_to_test = list(range(total_layers))
 
     # Classifier types to test
     classifier_types = ['logistic', 'mlp']
 
-    # Prompt construction strategies to test
+    # Prompt construction strategies to test (5 strategies)
     prompt_construction_strategies = [
+        'chat_template',
+        'direct_completion',
         'multiple_choice',
         'role_playing',
-        'direct_completion',
         'instruction_following'
     ]
 
