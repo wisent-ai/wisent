@@ -138,6 +138,7 @@ keys/
 # Experiment results
 wisent/experiments/steering/steering_comparison_results/
 wisent/experiments/steering/optimization_results/
+wisent/comparison/comparison_results/
 
 # Device-specific benchmark files (contain hardware-specific timing data)
 device_benchmarks.json
