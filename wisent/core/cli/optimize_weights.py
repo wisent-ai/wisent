@@ -628,10 +628,10 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
             # Use .pt format for train_unified_goodness output
             temp_output_pt = temp_output.replace('.json', '.pt')
 
-            # Parse layers - if 'all' or None, use None to let train_unified_goodness pick middle layer
+            # Parse layers - if 'all' or None, use None to let train_unified_goodness pick ALL layers
             layers_arg = args.layers if hasattr(args, 'layers') else None
             if layers_arg == 'all' or layers_arg is None:
-                layers_arg = None  # Will use middle layer
+                layers_arg = None  # Will use ALL layers (train_unified_goodness default)
             
             vector_args = Namespace(
                 task=args.task,  # Pass comma-separated benchmarks
@@ -966,8 +966,8 @@ def _create_custom_evaluator(args, model_name: str) -> Callable:
             )
             response = result[0] if result else ""
             
-            # Score using custom evaluator
-            score = custom_eval(response)
+            # Score using custom evaluator - pass prompt for coherence checking
+            score = custom_eval(response, prompt=prompt_text)
             if isinstance(score, dict):
                 # Take the primary score (first value or 'score' key)
                 score = score.get('score', list(score.values())[0])

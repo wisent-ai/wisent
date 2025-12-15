@@ -100,14 +100,14 @@ def apply_steering_and_evaluate(
     aggregation_strategy = _map_token_aggregation(token_aggregation)
     prompt_construction_strategy = _map_prompt_strategy(prompt_strategy)
 
-    # Use middle layer for steering
+    # Use specified layer for steering
     target_layers = [layer_key]
     print(f"   Target layers: {target_layers}")
 
     enriched_pairs = []
-    for i, pair in enumerate(pair_set.pairs[:10]):  # Use first 10 pairs
+    for i, pair in enumerate(pair_set.pairs):  # Use ALL pairs
         if verbose:
-            print(f"   Processing pair {i+1}/10...")
+            print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...")
 
         updated_pair = collector.collect_for_pair(
             pair,

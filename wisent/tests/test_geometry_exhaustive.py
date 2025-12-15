@@ -36,11 +36,24 @@ def run_exhaustive_layer_analysis(
     - get-activations: Extract activations for all layers
     
     Automatically detects the model's layer count.
-    If max_layers is None, uses all layers (capped at 20 for feasibility).
+    
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    WARNING: DO NOT SET max_layers TO REDUCE THE NUMBER OF LAYERS TESTED.
+    
+    The whole point of this analysis is to test ALL layer combinations.
+    If you need to reduce combinations for feasibility:
+    1. Use a larger instance (g6e.2xlarge = 64GB, g6e.4xlarge = 128GB, g6e.12xlarge = 384GB)
+    2. Wait longer - it's supposed to take hours/days
+    3. DO NOT artificially cap layers - that defeats the purpose
+    
+    max_layers exists ONLY for debugging/testing purposes, NOT for production runs.
+    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     """
     from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
         detect_geometry_exhaustive,
     )
+    
+    sys.stdout.reconfigure(line_buffering=True)
     
     print("=" * 80)
     print("EXHAUSTIVE LAYER COMBINATION ANALYSIS")
@@ -274,9 +287,20 @@ if __name__ == "__main__":
     parser.add_argument("--task", default="truthfulqa_gen")
     parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct")
     parser.add_argument("--num-pairs", type=int, default=50)
-    parser.add_argument("--max-layers", type=int, default=None, help="Max layers to test (auto-detected, capped at 20 by default)")
+    # WARNING: Do NOT use --max-layers in production runs!
+    # The whole point of exhaustive analysis is to test ALL layers.
+    # If you need more memory, use a larger instance type instead.
+    parser.add_argument("--max-layers", type=int, default=None, 
+                        help="DEBUG ONLY - DO NOT USE IN PRODUCTION. Use larger instance instead.")
     parser.add_argument("--output-dir", default="/home/ubuntu/output")
     args = parser.parse_args()
+    
+    # Print loud warning if max_layers is set
+    if args.max_layers is not None:
+        print("!" * 80)
+        print("WARNING: --max-layers is set! This should ONLY be used for debugging.")
+        print("For production runs, use a larger instance type instead of capping layers.")
+        print("!" * 80)
     
     run_exhaustive_layer_analysis(
         task=args.task,

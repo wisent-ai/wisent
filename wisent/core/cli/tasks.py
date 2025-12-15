@@ -161,12 +161,10 @@ def execute_tasks(args):
 
         # Determine layer range
         if hasattr(args, 'optimize_layers') and args.optimize_layers == 'all':
-            layer_range = list(range(1, num_layers + 1))
+            layer_range = list(range(num_layers))
         else:
-            # Default: test middle 50% of layers
-            start = num_layers // 4
-            end = (3 * num_layers) // 4
-            layer_range = list(range(start, end + 1))
+            # Default: test ALL layers (0-indexed)
+            layer_range = list(range(num_layers))
 
         # Create optimization config
         config = OptimizationConfig(
