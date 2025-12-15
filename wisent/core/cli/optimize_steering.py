@@ -9,6 +9,7 @@ Supports two search strategies:
 """
 
 import json
+import os
 import sys
 import time
 
@@ -841,6 +842,24 @@ def execute_comprehensive(args, model, loader):
 
                                     if configs_tested % 10 == 0 and args.verbose:
                                         print(f"      Tested {configs_tested} configurations...", end="\r")
+                                    
+                                    # Periodic checkpoint every 20 configs
+                                    if configs_tested % 20 == 0:
+                                        checkpoint_dir = getattr(args, 'output_dir', './optimization_results')
+                                        os.makedirs(checkpoint_dir, exist_ok=True)
+                                        checkpoint_file = os.path.join(checkpoint_dir, f"checkpoint_{task_name}_{configs_tested}.json")
+                                        checkpoint_data = {
+                                            "task": task_name,
+                                            "configs_tested": configs_tested,
+                                            "total_configs": total_configs,
+                                            "best_config": best_config,
+                                            "best_score": best_score,
+                                            "method_results": method_results,
+                                        }
+                                        with open(checkpoint_file, "w") as f:
+                                            json.dump(checkpoint_data, f, indent=2)
+                                        if args.verbose:
+                                            print(f"\n      💾 Checkpoint saved: {checkpoint_file}")
 
                                 except Exception as e:
                                     # NO FALLBACK - raise the error immediately
@@ -873,8 +892,6 @@ def execute_comprehensive(args, model, loader):
 
                 # Save baseline comparison results if computed
                 if hasattr(args, "compute_baseline") and args.compute_baseline and baseline_results:
-                    import os
-
                     baseline_dir = (
                         args.baseline_output_dir if hasattr(args, "baseline_output_dir") else "./baseline_comparison"
                     )
@@ -922,8 +939,6 @@ def execute_comprehensive(args, model, loader):
 
                 # Save best steering vector if requested
                 if args.save_best_vector:
-                    import os
-
                     vector_dir = args.save_best_vector
                     os.makedirs(vector_dir, exist_ok=True)
 
@@ -1213,8 +1228,6 @@ def execute_comprehensive(args, model, loader):
     print(f"\n{'=' * 80}")
     print("📊 COMPREHENSIVE OPTIMIZATION COMPLETE")
     print(f"{'=' * 80}\n")
-
-    import os
     output_dir = getattr(args, 'output_dir', './optimization_results')
     os.makedirs(output_dir, exist_ok=True)
     results_file = os.path.join(output_dir, f"steering_comprehensive_{args.model.replace('/', '_')}.json")
@@ -1518,8 +1531,6 @@ def execute_compare_methods(args, model, loader):
     print(f"{'=' * 80}\n")
 
     results_file = f"./optimization_results/steering_compare_methods_{args.task}_{args.model.replace('/', '_')}.json"
-    import os
-
     os.makedirs(os.path.dirname(results_file), exist_ok=True)
 
     output_data = {
@@ -1777,8 +1788,6 @@ def execute_optimize_layer(args, model, loader):
 
     # Save results
     results_file = f"./optimization_results/steering_optimize_layer_{args.task}_{args.model.replace('/', '_')}.json"
-    import os
-
     os.makedirs(os.path.dirname(results_file), exist_ok=True)
 
     output_data = {
@@ -2063,8 +2072,6 @@ def execute_optimize_strength(args, model, loader):
 
     # Save results
     results_file = f"./optimization_results/steering_optimize_strength_{args.task}_{args.model.replace('/', '_')}.json"
-    import os
-
     os.makedirs(os.path.dirname(results_file), exist_ok=True)
 
     output_data = {
@@ -2357,8 +2364,6 @@ def execute_auto(args, model, loader):
 
     # Save results
     results_file = f"./optimization_results/steering_auto_{args.task}_{args.model.replace('/', '_')}.json"
-    import os
-
     os.makedirs(os.path.dirname(results_file), exist_ok=True)
 
     output_data = {
@@ -2476,8 +2481,6 @@ def execute_personalization(args, model):
        - Alignment: Does the response match the intended trait?
     4. Selecting the configuration with the highest overall score
     """
-    import os
-
     import torch
 
     from wisent.core.activations.activations_collector import ActivationCollector
@@ -3007,8 +3010,6 @@ def execute_multi_personalization(args, model):
     3. Select the configuration with highest combined score
     4. Return: shared (layer, token_agg, prompt_const) + per-trait strength
     """
-    import os
-
     import torch
 
     from wisent.core.activations.activations_collector import ActivationCollector
@@ -3461,8 +3462,6 @@ def execute_universal(args, model, loader):
     This uses the MethodOptimizer which works with ANY steering method
     by using the universal train(pair_set) interface.
     """
-    import json
-    import os
     import torch
     
     from wisent.core.cli.method_optimizer import MethodOptimizer, optimize_steering_method
