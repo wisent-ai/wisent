@@ -24,6 +24,14 @@ __all__ = [
     "GeometryAnalysisResult",
     "StructureType",
     "detect_geometry_structure",
+    "MultiLayerGeometryConfig",
+    "MultiLayerGeometryResult",
+    "LayerGeometryResult",
+    "detect_geometry_multi_layer",
+    "detect_geometry_all_layers",
+    "ExhaustiveCombinationResult",
+    "ExhaustiveGeometryAnalysisResult",
+    "detect_geometry_exhaustive",
 ]
 
 
@@ -1749,3 +1757,831 @@ def _generate_recommendation(best_structure: StructureType, all_scores: Dict[str
             base_rec += f" (Also consider {second_best[0]}: score {second_best[1].score:.2f})"
     
     return base_rec
+
+
+# =============================================================================
+# Multi-Layer Geometry Analysis
+# =============================================================================
+
+@dataclass
+class MultiLayerGeometryConfig:
+    """Configuration for multi-layer geometry analysis."""
+    
+    num_components: int = 5
+    optimization_steps: int = 50
+    combination_method: str = "concat"  # "concat", "mean", "weighted"
+    analyze_per_layer: bool = True
+    analyze_combined: bool = True
+    analyze_subsets: bool = True  # early/middle/late
+    analyze_pairs: bool = True  # all pairs of layers
+    analyze_adjacent: bool = True  # adjacent layer pairs
+    analyze_skip: bool = True  # every other layer, every third, etc.
+    analyze_custom: Optional[List[List[int]]] = None  # custom layer combinations
+    max_pair_combinations: int = 50  # limit number of pair combinations to analyze
+
+
+@dataclass
+class LayerGeometryResult:
+    """Geometry result for a single layer."""
+    layer: int
+    best_structure: StructureType
+    best_score: float
+    all_scores: Dict[str, float]
+
+
+@dataclass
+class MultiLayerGeometryResult:
+    """Results from multi-layer geometry analysis."""
+    
+    per_layer_results: Dict[int, LayerGeometryResult]
+    """Geometry analysis for each individual layer."""
+    
+    combined_result: Optional[GeometryAnalysisResult]
+    """Geometry analysis for all layers combined."""
+    
+    layer_subset_results: Dict[str, GeometryAnalysisResult]
+    """Geometry analysis for layer subsets (e.g., 'early', 'middle', 'late')."""
+    
+    layer_pair_results: Dict[str, GeometryAnalysisResult]
+    """Geometry analysis for pairs of layers (e.g., 'L1+L5', 'L2+L8')."""
+    
+    adjacent_pair_results: Dict[str, GeometryAnalysisResult]
+    """Geometry analysis for adjacent layer pairs (e.g., 'L1+L2', 'L2+L3')."""
+    
+    skip_results: Dict[str, GeometryAnalysisResult]
+    """Geometry analysis for skip patterns (e.g., 'every_2nd', 'every_3rd')."""
+    
+    custom_results: Dict[str, GeometryAnalysisResult]
+    """Geometry analysis for custom layer combinations."""
+    
+    best_single_layer: int
+    """Layer with strongest structure detection."""
+    
+    best_single_layer_structure: StructureType
+    """Structure type detected at best single layer."""
+    
+    best_single_layer_score: float
+    """Score at best single layer."""
+    
+    best_combination: Optional[str]
+    """Best performing layer combination (if better than single layer)."""
+    
+    best_combination_score: float
+    """Score of best combination."""
+    
+    best_combination_structure: Optional[StructureType]
+    """Structure type detected at best combination."""
+    
+    combined_vs_single: str
+    """Whether combined layers improve over single layer."""
+    
+    layer_agreement: float
+    """How much layers agree on structure type (0-1)."""
+    
+    structure_by_depth: Dict[str, List[float]]
+    """How each structure score varies by layer depth."""
+    
+    all_combinations_ranked: List[Tuple[str, float, StructureType]]
+    """All combinations ranked by score: (name, score, structure)."""
+    
+    recommendation: str
+    """Recommendation based on multi-layer analysis."""
+
+
+def detect_geometry_multi_layer(
+    pos_activations_by_layer: Dict[int, torch.Tensor],
+    neg_activations_by_layer: Dict[int, torch.Tensor],
+    config: MultiLayerGeometryConfig | None = None,
+) -> MultiLayerGeometryResult:
+    """
+    Detect geometric structure across multiple layers.
+    
+    Analyzes:
+    1. Each layer individually
+    2. All layers combined (concatenated or aggregated)
+    3. Layer subsets (early, middle, late)
+    4. Layer pairs (all combinations of 2 layers)
+    5. Adjacent layer pairs (L1+L2, L2+L3, etc.)
+    6. Skip patterns (every 2nd, every 3rd layer)
+    7. Custom layer combinations
+    8. How structure varies by depth
+    
+    Arguments:
+        pos_activations_by_layer: Dict mapping layer index to positive activations [N, hidden_dim]
+        neg_activations_by_layer: Dict mapping layer index to negative activations [N, hidden_dim]
+        config: Analysis configuration
+        
+    Returns:
+        MultiLayerGeometryResult with comprehensive multi-layer analysis
+    """
+    cfg = config or MultiLayerGeometryConfig()
+    geo_cfg = GeometryAnalysisConfig(num_components=cfg.num_components, optimization_steps=cfg.optimization_steps)
+    
+    layers = sorted(pos_activations_by_layer.keys())
+    if not layers:
+        raise ValueError("No layers provided")
+    
+    # Track all combination results for ranking
+    all_combo_results: Dict[str, GeometryAnalysisResult] = {}
+    
+    # 1. Analyze each layer individually
+    per_layer_results: Dict[int, LayerGeometryResult] = {}
+    structure_by_depth: Dict[str, List[float]] = {
+        "linear": [], "cone": [], "cluster": [], "manifold": [],
+        "sparse": [], "bimodal": [], "orthogonal": []
+    }
+    
+    if cfg.analyze_per_layer:
+        for layer in layers:
+            pos_acts = pos_activations_by_layer[layer]
+            neg_acts = neg_activations_by_layer[layer]
+            
+            result = detect_geometry_structure(pos_acts, neg_acts, geo_cfg)
+            
+            all_scores = {name: score.score for name, score in result.all_scores.items()}
+            per_layer_results[layer] = LayerGeometryResult(
+                layer=layer,
+                best_structure=result.best_structure,
+                best_score=result.best_score,
+                all_scores=all_scores,
+            )
+            all_combo_results[f"L{layer}"] = result
+            
+            for struct_name, score in all_scores.items():
+                if struct_name in structure_by_depth:
+                    structure_by_depth[struct_name].append(score)
+    
+    # 2. Find best single layer
+    if per_layer_results:
+        best_layer = max(per_layer_results.keys(), key=lambda l: per_layer_results[l].best_score)
+        best_single_layer = best_layer
+        best_single_layer_structure = per_layer_results[best_layer].best_structure
+        best_single_layer_score = per_layer_results[best_layer].best_score
+    else:
+        best_single_layer = layers[0]
+        best_single_layer_structure = StructureType.UNKNOWN
+        best_single_layer_score = 0.0
+    
+    # 3. Analyze all layers combined
+    combined_result = None
+    if cfg.analyze_combined and len(layers) > 1:
+        combined_pos, combined_neg = _combine_layer_activations(
+            pos_activations_by_layer, neg_activations_by_layer, layers, cfg.combination_method
+        )
+        combined_result = detect_geometry_structure(combined_pos, combined_neg, geo_cfg)
+        all_combo_results["all_layers"] = combined_result
+    
+    # 4. Analyze layer subsets (early, middle, late)
+    layer_subset_results: Dict[str, GeometryAnalysisResult] = {}
+    if cfg.analyze_subsets and len(layers) >= 3:
+        n_layers = len(layers)
+        third = n_layers // 3
+        
+        early_layers = layers[:third] if third > 0 else layers[:1]
+        middle_layers = layers[third:2*third] if third > 0 else layers[1:2]
+        late_layers = layers[2*third:] if third > 0 else layers[-1:]
+        
+        # Also add first_half and second_half
+        half = n_layers // 2
+        first_half = layers[:half] if half > 0 else layers[:1]
+        second_half = layers[half:] if half > 0 else layers[-1:]
+        
+        subsets = [
+            ("early", early_layers),
+            ("middle", middle_layers),
+            ("late", late_layers),
+            ("first_half", first_half),
+            ("second_half", second_half),
+        ]
+        
+        for subset_name, subset_layers in subsets:
+            if len(subset_layers) >= 1:
+                subset_pos, subset_neg = _combine_layer_activations(
+                    pos_activations_by_layer, neg_activations_by_layer, subset_layers, cfg.combination_method
+                )
+                result = detect_geometry_structure(subset_pos, subset_neg, geo_cfg)
+                layer_subset_results[subset_name] = result
+                all_combo_results[subset_name] = result
+    
+    # 5. Analyze layer pairs
+    layer_pair_results: Dict[str, GeometryAnalysisResult] = {}
+    if cfg.analyze_pairs and len(layers) >= 2:
+        from itertools import combinations
+        pair_count = 0
+        for l1, l2 in combinations(layers, 2):
+            if pair_count >= cfg.max_pair_combinations:
+                break
+            pair_name = f"L{l1}+L{l2}"
+            pair_pos, pair_neg = _combine_layer_activations(
+                pos_activations_by_layer, neg_activations_by_layer, [l1, l2], cfg.combination_method
+            )
+            result = detect_geometry_structure(pair_pos, pair_neg, geo_cfg)
+            layer_pair_results[pair_name] = result
+            all_combo_results[pair_name] = result
+            pair_count += 1
+    
+    # 6. Analyze adjacent layer pairs
+    adjacent_pair_results: Dict[str, GeometryAnalysisResult] = {}
+    if cfg.analyze_adjacent and len(layers) >= 2:
+        for i in range(len(layers) - 1):
+            l1, l2 = layers[i], layers[i + 1]
+            pair_name = f"adj_L{l1}+L{l2}"
+            pair_pos, pair_neg = _combine_layer_activations(
+                pos_activations_by_layer, neg_activations_by_layer, [l1, l2], cfg.combination_method
+            )
+            result = detect_geometry_structure(pair_pos, pair_neg, geo_cfg)
+            adjacent_pair_results[pair_name] = result
+            all_combo_results[pair_name] = result
+    
+    # 7. Analyze skip patterns
+    skip_results: Dict[str, GeometryAnalysisResult] = {}
+    if cfg.analyze_skip and len(layers) >= 4:
+        # Every 2nd layer
+        every_2nd = layers[::2]
+        if len(every_2nd) >= 2:
+            skip_pos, skip_neg = _combine_layer_activations(
+                pos_activations_by_layer, neg_activations_by_layer, every_2nd, cfg.combination_method
+            )
+            result = detect_geometry_structure(skip_pos, skip_neg, geo_cfg)
+            skip_results["every_2nd"] = result
+            all_combo_results["every_2nd"] = result
+        
+        # Every 3rd layer
+        if len(layers) >= 6:
+            every_3rd = layers[::3]
+            if len(every_3rd) >= 2:
+                skip_pos, skip_neg = _combine_layer_activations(
+                    pos_activations_by_layer, neg_activations_by_layer, every_3rd, cfg.combination_method
+                )
+                result = detect_geometry_structure(skip_pos, skip_neg, geo_cfg)
+                skip_results["every_3rd"] = result
+                all_combo_results["every_3rd"] = result
+        
+        # First and last layer only
+        first_last = [layers[0], layers[-1]]
+        skip_pos, skip_neg = _combine_layer_activations(
+            pos_activations_by_layer, neg_activations_by_layer, first_last, cfg.combination_method
+        )
+        result = detect_geometry_structure(skip_pos, skip_neg, geo_cfg)
+        skip_results["first_last"] = result
+        all_combo_results["first_last"] = result
+        
+        # First, middle, last
+        if len(layers) >= 3:
+            mid_idx = len(layers) // 2
+            first_mid_last = [layers[0], layers[mid_idx], layers[-1]]
+            skip_pos, skip_neg = _combine_layer_activations(
+                pos_activations_by_layer, neg_activations_by_layer, first_mid_last, cfg.combination_method
+            )
+            result = detect_geometry_structure(skip_pos, skip_neg, geo_cfg)
+            skip_results["first_mid_last"] = result
+            all_combo_results["first_mid_last"] = result
+    
+    # 8. Analyze custom combinations
+    custom_results: Dict[str, GeometryAnalysisResult] = {}
+    if cfg.analyze_custom:
+        for i, custom_layers in enumerate(cfg.analyze_custom):
+            valid_layers = [l for l in custom_layers if l in layers]
+            if len(valid_layers) >= 1:
+                custom_name = f"custom_{i}_L" + "+L".join(map(str, valid_layers))
+                custom_pos, custom_neg = _combine_layer_activations(
+                    pos_activations_by_layer, neg_activations_by_layer, valid_layers, cfg.combination_method
+                )
+                result = detect_geometry_structure(custom_pos, custom_neg, geo_cfg)
+                custom_results[custom_name] = result
+                all_combo_results[custom_name] = result
+    
+    # 9. Compute layer agreement
+    if per_layer_results:
+        structures = [r.best_structure for r in per_layer_results.values()]
+        most_common = max(set(structures), key=structures.count)
+        layer_agreement = structures.count(most_common) / len(structures)
+    else:
+        layer_agreement = 0.0
+    
+    # 10. Rank all combinations and find best
+    all_combinations_ranked = sorted(
+        [(name, r.best_score, r.best_structure) for name, r in all_combo_results.items()],
+        key=lambda x: x[1],
+        reverse=True
+    )
+    
+    if all_combinations_ranked:
+        best_combo_name, best_combo_score, best_combo_structure = all_combinations_ranked[0]
+        if best_combo_score > best_single_layer_score:
+            best_combination = best_combo_name
+            best_combination_score = best_combo_score
+            best_combination_structure = best_combo_structure
+        else:
+            best_combination = None
+            best_combination_score = best_single_layer_score
+            best_combination_structure = best_single_layer_structure
+    else:
+        best_combination = None
+        best_combination_score = best_single_layer_score
+        best_combination_structure = best_single_layer_structure
+    
+    # 11. Compare combined vs single
+    if combined_result and per_layer_results:
+        if combined_result.best_score > best_single_layer_score + 0.1:
+            combined_vs_single = f"Combined ({combined_result.best_score:.2f}) better than single layer ({best_single_layer_score:.2f})"
+        elif best_single_layer_score > combined_result.best_score + 0.1:
+            combined_vs_single = f"Single layer {best_single_layer} ({best_single_layer_score:.2f}) better than combined ({combined_result.best_score:.2f})"
+        else:
+            combined_vs_single = f"Similar performance: combined={combined_result.best_score:.2f}, single={best_single_layer_score:.2f}"
+    else:
+        combined_vs_single = "No comparison available"
+    
+    # 12. Generate recommendation
+    recommendation = _generate_multi_layer_recommendation_v2(
+        per_layer_results, combined_result, layer_subset_results,
+        layer_pair_results, skip_results,
+        best_single_layer, best_single_layer_structure, best_single_layer_score,
+        best_combination, best_combination_score, best_combination_structure,
+        layer_agreement, all_combinations_ranked
+    )
+    
+    return MultiLayerGeometryResult(
+        per_layer_results=per_layer_results,
+        combined_result=combined_result,
+        layer_subset_results=layer_subset_results,
+        layer_pair_results=layer_pair_results,
+        adjacent_pair_results=adjacent_pair_results,
+        skip_results=skip_results,
+        custom_results=custom_results,
+        best_single_layer=best_single_layer,
+        best_single_layer_structure=best_single_layer_structure,
+        best_single_layer_score=best_single_layer_score,
+        best_combination=best_combination,
+        best_combination_score=best_combination_score,
+        best_combination_structure=best_combination_structure,
+        combined_vs_single=combined_vs_single,
+        layer_agreement=layer_agreement,
+        structure_by_depth=structure_by_depth,
+        all_combinations_ranked=all_combinations_ranked,
+        recommendation=recommendation,
+    )
+
+
+def _combine_layer_activations(
+    pos_by_layer: Dict[int, torch.Tensor],
+    neg_by_layer: Dict[int, torch.Tensor],
+    layers: List[int],
+    method: str = "concat",
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Combine activations from multiple layers."""
+    pos_acts = [pos_by_layer[l] for l in layers if l in pos_by_layer]
+    neg_acts = [neg_by_layer[l] for l in layers if l in neg_by_layer]
+    
+    if not pos_acts or not neg_acts:
+        raise ValueError("No activations found for specified layers")
+    
+    if method == "concat":
+        combined_pos = torch.cat(pos_acts, dim=-1)
+        combined_neg = torch.cat(neg_acts, dim=-1)
+    elif method == "mean":
+        combined_pos = torch.stack(pos_acts, dim=0).mean(dim=0)
+        combined_neg = torch.stack(neg_acts, dim=0).mean(dim=0)
+    elif method == "weighted":
+        weights = torch.linspace(0.5, 1.5, len(pos_acts))
+        weights = weights / weights.sum()
+        combined_pos = sum(w * a for w, a in zip(weights, pos_acts))
+        combined_neg = sum(w * a for w, a in zip(weights, neg_acts))
+    else:
+        raise ValueError(f"Unknown combination method: {method}")
+    
+    return combined_pos, combined_neg
+
+
+def _generate_multi_layer_recommendation(
+    per_layer_results: Dict[int, LayerGeometryResult],
+    combined_result: Optional[GeometryAnalysisResult],
+    layer_subset_results: Dict[str, GeometryAnalysisResult],
+    best_single_layer: int,
+    best_single_layer_structure: StructureType,
+    best_single_layer_score: float,
+    layer_agreement: float,
+) -> str:
+    """Generate recommendation based on multi-layer analysis."""
+    parts = []
+    
+    # Layer agreement insight
+    if layer_agreement > 0.8:
+        parts.append(f"High layer agreement ({layer_agreement:.0%}): structure is consistent across depth.")
+    elif layer_agreement < 0.4:
+        parts.append(f"Low layer agreement ({layer_agreement:.0%}): different structures at different depths.")
+    
+    # Best layer recommendation
+    parts.append(f"Best single layer: {best_single_layer} with {best_single_layer_structure.value} ({best_single_layer_score:.2f}).")
+    
+    # Combined vs single
+    if combined_result:
+        if combined_result.best_score > best_single_layer_score + 0.1:
+            parts.append(f"Combined layers improve detection ({combined_result.best_score:.2f} vs {best_single_layer_score:.2f}). Use multi-layer steering.")
+        else:
+            parts.append(f"Single layer is sufficient. Target layer {best_single_layer}.")
+    
+    # Layer subset insights
+    if layer_subset_results:
+        subset_scores = {name: r.best_score for name, r in layer_subset_results.items()}
+        best_subset = max(subset_scores.keys(), key=lambda k: subset_scores[k])
+        if subset_scores[best_subset] > best_single_layer_score:
+            parts.append(f"'{best_subset}' layers show strongest structure ({subset_scores[best_subset]:.2f}).")
+    
+    return " ".join(parts)
+
+
+def _generate_multi_layer_recommendation_v2(
+    per_layer_results: Dict[int, LayerGeometryResult],
+    combined_result: Optional[GeometryAnalysisResult],
+    layer_subset_results: Dict[str, GeometryAnalysisResult],
+    layer_pair_results: Dict[str, GeometryAnalysisResult],
+    skip_results: Dict[str, GeometryAnalysisResult],
+    best_single_layer: int,
+    best_single_layer_structure: StructureType,
+    best_single_layer_score: float,
+    best_combination: Optional[str],
+    best_combination_score: float,
+    best_combination_structure: Optional[StructureType],
+    layer_agreement: float,
+    all_combinations_ranked: List[Tuple[str, float, StructureType]],
+) -> str:
+    """Generate comprehensive recommendation based on multi-layer analysis."""
+    parts = []
+    
+    # Layer agreement insight
+    if layer_agreement > 0.8:
+        parts.append(f"High layer agreement ({layer_agreement:.0%}): consistent structure across depth.")
+    elif layer_agreement < 0.4:
+        parts.append(f"Low layer agreement ({layer_agreement:.0%}): structure varies by depth.")
+    else:
+        parts.append(f"Moderate layer agreement ({layer_agreement:.0%}).")
+    
+    # Overall best recommendation
+    if best_combination and best_combination_score > best_single_layer_score + 0.05:
+        improvement = best_combination_score - best_single_layer_score
+        parts.append(
+            f"BEST: '{best_combination}' ({best_combination_structure.value}: {best_combination_score:.2f}) "
+            f"outperforms single layer {best_single_layer} by {improvement:.2f}."
+        )
+    else:
+        parts.append(
+            f"BEST: Layer {best_single_layer} ({best_single_layer_structure.value}: {best_single_layer_score:.2f}). "
+            f"Multi-layer combinations don't improve detection."
+        )
+    
+    # Top 3 combinations summary
+    if len(all_combinations_ranked) >= 3:
+        top3 = all_combinations_ranked[:3]
+        top3_str = ", ".join([f"{name}={score:.2f}" for name, score, _ in top3])
+        parts.append(f"Top 3: {top3_str}.")
+    
+    # Specific pattern insights
+    if skip_results:
+        skip_scores = {name: r.best_score for name, r in skip_results.items()}
+        best_skip = max(skip_scores.keys(), key=lambda k: skip_scores[k])
+        if skip_scores[best_skip] > best_single_layer_score:
+            parts.append(f"Skip pattern '{best_skip}' is effective ({skip_scores[best_skip]:.2f}).")
+    
+    if layer_pair_results:
+        pair_scores = {name: r.best_score for name, r in layer_pair_results.items()}
+        best_pair = max(pair_scores.keys(), key=lambda k: pair_scores[k])
+        best_pair_score = pair_scores[best_pair]
+        if best_pair_score > best_single_layer_score:
+            parts.append(f"Layer pair '{best_pair}' shows synergy ({best_pair_score:.2f}).")
+    
+    # Depth pattern analysis
+    if per_layer_results and len(per_layer_results) >= 3:
+        layers_sorted = sorted(per_layer_results.keys())
+        early_score = per_layer_results[layers_sorted[0]].best_score
+        late_score = per_layer_results[layers_sorted[-1]].best_score
+        if late_score > early_score + 0.2:
+            parts.append("Later layers show stronger structure than early layers.")
+        elif early_score > late_score + 0.2:
+            parts.append("Early layers show stronger structure than later layers.")
+    
+    return " ".join(parts)
+
+
+def detect_geometry_all_layers(
+    pairs_with_activations: List,
+    layers: Optional[List[int]] = None,
+    config: MultiLayerGeometryConfig | None = None,
+) -> MultiLayerGeometryResult:
+    """
+    Convenience function to detect geometry from pairs with pre-collected activations.
+    
+    Arguments:
+        pairs_with_activations: List of ContrastivePair objects with layers_activations populated
+        layers: Specific layers to analyze (None = all available)
+        config: Analysis configuration
+        
+    Returns:
+        MultiLayerGeometryResult
+    """
+    if not pairs_with_activations:
+        raise ValueError("No pairs provided")
+    
+    # Extract activations by layer
+    pos_by_layer: Dict[int, List[torch.Tensor]] = {}
+    neg_by_layer: Dict[int, List[torch.Tensor]] = {}
+    
+    for pair in pairs_with_activations:
+        pos_acts = pair.positive_response.layers_activations
+        neg_acts = pair.negative_response.layers_activations
+        
+        for layer_key, act in pos_acts.items():
+            layer = int(layer_key)
+            if layers is None or layer in layers:
+                if layer not in pos_by_layer:
+                    pos_by_layer[layer] = []
+                pos_by_layer[layer].append(act.float() if act is not None else None)
+        
+        for layer_key, act in neg_acts.items():
+            layer = int(layer_key)
+            if layers is None or layer in layers:
+                if layer not in neg_by_layer:
+                    neg_by_layer[layer] = []
+                neg_by_layer[layer].append(act.float() if act is not None else None)
+    
+    # Stack into tensors
+    pos_tensors = {}
+    neg_tensors = {}
+    for layer in pos_by_layer:
+        valid_pos = [a for a in pos_by_layer[layer] if a is not None]
+        valid_neg = [a for a in neg_by_layer.get(layer, []) if a is not None]
+        if valid_pos and valid_neg:
+            pos_tensors[layer] = torch.stack(valid_pos)
+            neg_tensors[layer] = torch.stack(valid_neg)
+    
+    return detect_geometry_multi_layer(pos_tensors, neg_tensors, config)
+
+
+@dataclass
+class ExhaustiveCombinationResult:
+    """Result for a single layer combination."""
+    layers: Tuple[int, ...]
+    best_structure: StructureType
+    best_score: float
+    all_scores: Dict[str, float]
+
+
+@dataclass
+class ExhaustiveGeometryAnalysisResult:
+    """Results from exhaustive layer combination analysis."""
+    
+    total_combinations: int
+    """Total number of combinations tested."""
+    
+    all_results: List[ExhaustiveCombinationResult]
+    """All results, sorted by best_score descending."""
+    
+    best_combination: Tuple[int, ...]
+    """Layer combination with highest score."""
+    
+    best_score: float
+    """Highest score achieved."""
+    
+    best_structure: StructureType
+    """Structure type at best combination."""
+    
+    top_10: List[ExhaustiveCombinationResult]
+    """Top 10 combinations."""
+    
+    single_layer_best: int
+    """Best single layer."""
+    
+    single_layer_best_score: float
+    """Score of best single layer."""
+    
+    combination_beats_single: bool
+    """Whether any multi-layer combination beats best single layer."""
+    
+    improvement_over_single: float
+    """How much best combination improves over best single layer."""
+    
+    patterns: Dict[str, Any]
+    """Discovered patterns (layer frequency in top combinations, etc.)."""
+    
+    recommendation: str
+    """Final recommendation."""
+
+
+def detect_geometry_exhaustive(
+    pos_activations_by_layer: Dict[int, torch.Tensor],
+    neg_activations_by_layer: Dict[int, torch.Tensor],
+    max_layers: int = 16,
+    combination_method: str = "concat",
+    num_components: int = 5,
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+) -> ExhaustiveGeometryAnalysisResult:
+    """
+    Exhaustively test all 2^N - 1 layer combinations for geometric structure.
+    
+    Arguments:
+        pos_activations_by_layer: Dict mapping layer index to positive activations [N, hidden_dim]
+        neg_activations_by_layer: Dict mapping layer index to negative activations [N, hidden_dim]
+        max_layers: Maximum number of layers to consider (limits combinations)
+        combination_method: How to combine layers ("concat", "mean", "weighted")
+        num_components: Number of PCA components for analysis
+        progress_callback: Optional callback(current, total) for progress reporting
+        
+    Returns:
+        ExhaustiveGeometryAnalysisResult with all combinations ranked
+    """
+    from itertools import combinations as itertools_combinations
+    
+    layers = sorted(pos_activations_by_layer.keys())[:max_layers]
+    n_layers = len(layers)
+    
+    if n_layers == 0:
+        raise ValueError("No layers provided")
+    
+    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
+    
+    # Generate all non-empty subsets
+    all_combos: List[Tuple[int, ...]] = []
+    for r in range(1, n_layers + 1):
+        for combo in itertools_combinations(layers, r):
+            all_combos.append(combo)
+    
+    total_combinations = len(all_combos)
+    all_results: List[ExhaustiveCombinationResult] = []
+    
+    # Test each combination
+    for idx, combo in enumerate(all_combos):
+        if progress_callback:
+            progress_callback(idx + 1, total_combinations)
+        
+        # Combine activations for this subset
+        if len(combo) == 1:
+            layer = combo[0]
+            combined_pos = pos_activations_by_layer[layer]
+            combined_neg = neg_activations_by_layer[layer]
+        else:
+            combined_pos, combined_neg = _combine_layer_activations(
+                pos_activations_by_layer, neg_activations_by_layer, 
+                list(combo), combination_method
+            )
+        
+        # Run geometry detection
+        result = detect_geometry_structure(combined_pos, combined_neg, geo_cfg)
+        
+        all_scores = {name: score.score for name, score in result.all_scores.items()}
+        all_results.append(ExhaustiveCombinationResult(
+            layers=combo,
+            best_structure=result.best_structure,
+            best_score=result.best_score,
+            all_scores=all_scores,
+        ))
+    
+    # Sort by best_score descending
+    all_results.sort(key=lambda x: x.best_score, reverse=True)
+    
+    # Extract insights
+    best_result = all_results[0]
+    best_combination = best_result.layers
+    best_score = best_result.best_score
+    best_structure = best_result.best_structure
+    
+    top_10 = all_results[:10]
+    
+    # Find best single layer
+    single_layer_results = [r for r in all_results if len(r.layers) == 1]
+    if single_layer_results:
+        single_layer_results.sort(key=lambda x: x.best_score, reverse=True)
+        single_layer_best = single_layer_results[0].layers[0]
+        single_layer_best_score = single_layer_results[0].best_score
+    else:
+        single_layer_best = layers[0]
+        single_layer_best_score = 0.0
+    
+    combination_beats_single = best_score > single_layer_best_score
+    improvement_over_single = best_score - single_layer_best_score
+    
+    # Analyze patterns
+    patterns = _analyze_combination_patterns(all_results, layers, top_k=50)
+    
+    # Generate recommendation
+    recommendation = _generate_exhaustive_recommendation(
+        best_combination, best_score, best_structure,
+        single_layer_best, single_layer_best_score,
+        combination_beats_single, improvement_over_single,
+        patterns, total_combinations
+    )
+    
+    return ExhaustiveGeometryAnalysisResult(
+        total_combinations=total_combinations,
+        all_results=all_results,
+        best_combination=best_combination,
+        best_score=best_score,
+        best_structure=best_structure,
+        top_10=top_10,
+        single_layer_best=single_layer_best,
+        single_layer_best_score=single_layer_best_score,
+        combination_beats_single=combination_beats_single,
+        improvement_over_single=improvement_over_single,
+        patterns=patterns,
+        recommendation=recommendation,
+    )
+
+
+def _analyze_combination_patterns(
+    all_results: List[ExhaustiveCombinationResult],
+    layers: List[int],
+    top_k: int = 50,
+) -> Dict[str, Any]:
+    """Analyze patterns in top combinations."""
+    from collections import Counter
+    
+    top_results = all_results[:top_k]
+    
+    # Layer frequency in top combinations
+    layer_freq = Counter()
+    for r in top_results:
+        for layer in r.layers:
+            layer_freq[layer] += 1
+    
+    # Combination size distribution in top results
+    size_dist = Counter(len(r.layers) for r in top_results)
+    
+    # Best score by combination size
+    size_to_best: Dict[int, float] = {}
+    for r in all_results:
+        size = len(r.layers)
+        if size not in size_to_best or r.best_score > size_to_best[size]:
+            size_to_best[size] = r.best_score
+    
+    # Structure frequency in top combinations
+    structure_freq = Counter(r.best_structure for r in top_results)
+    
+    # Adjacent layer pairs in top combinations
+    adjacent_count = 0
+    for r in top_results:
+        if len(r.layers) >= 2:
+            sorted_layers = sorted(r.layers)
+            for i in range(len(sorted_layers) - 1):
+                if sorted_layers[i + 1] - sorted_layers[i] == 1:
+                    adjacent_count += 1
+                    break
+    
+    # Layer position analysis (early vs late layers)
+    mid_layer = layers[len(layers) // 2] if layers else 0
+    early_in_top = sum(1 for r in top_results for l in r.layers if l < mid_layer)
+    late_in_top = sum(1 for r in top_results for l in r.layers if l >= mid_layer)
+    
+    return {
+        "layer_frequency_in_top": dict(layer_freq.most_common()),
+        "most_important_layers": [l for l, _ in layer_freq.most_common(5)],
+        "size_distribution_in_top": dict(size_dist),
+        "best_score_by_size": size_to_best,
+        "optimal_combination_size": max(size_to_best.keys(), key=lambda k: size_to_best[k]) if size_to_best else 1,
+        "structure_frequency_in_top": {s.value: c for s, c in structure_freq.most_common()},
+        "dominant_structure": structure_freq.most_common(1)[0][0].value if structure_freq else "unknown",
+        "adjacent_pairs_in_top": adjacent_count,
+        "early_vs_late_ratio": early_in_top / late_in_top if late_in_top > 0 else float('inf'),
+    }
+
+
+def _generate_exhaustive_recommendation(
+    best_combination: Tuple[int, ...],
+    best_score: float,
+    best_structure: StructureType,
+    single_layer_best: int,
+    single_layer_best_score: float,
+    combination_beats_single: bool,
+    improvement_over_single: float,
+    patterns: Dict[str, Any],
+    total_combinations: int,
+) -> str:
+    """Generate recommendation from exhaustive analysis."""
+    parts = []
+    
+    parts.append(f"Tested {total_combinations} layer combinations.")
+    
+    if combination_beats_single and improvement_over_single > 0.05:
+        layers_str = "+".join(f"L{l}" for l in best_combination)
+        parts.append(
+            f"BEST: {layers_str} ({best_structure.value}: {best_score:.3f}), "
+            f"+{improvement_over_single:.3f} over single layer L{single_layer_best}."
+        )
+    else:
+        parts.append(
+            f"BEST: Single layer L{single_layer_best} ({best_score:.3f}). "
+            f"Multi-layer combinations don't significantly improve."
+        )
+    
+    # Pattern insights
+    opt_size = patterns.get("optimal_combination_size", 1)
+    if opt_size > 1:
+        parts.append(f"Optimal combination size: {opt_size} layers.")
+    
+    important_layers = patterns.get("most_important_layers", [])
+    if important_layers:
+        layers_str = ", ".join(f"L{l}" for l in important_layers[:3])
+        parts.append(f"Most important layers: {layers_str}.")
+    
+    dominant = patterns.get("dominant_structure", "unknown")
+    parts.append(f"Dominant structure: {dominant}.")
+    
+    return " ".join(parts)
