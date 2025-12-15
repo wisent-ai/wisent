@@ -150,6 +150,12 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         default=5,
         help="Save checkpoint and best model every N trials. Default: 5"
     )
+    parser.add_argument(
+        "--s3-bucket",
+        type=str,
+        default=None,
+        help="S3 bucket to upload results to (e.g., 'wisent-optimization-results'). Results will be uploaded on completion."
+    )
 
     # ==========================================================================
     # EVALUATION CONFIGURATION

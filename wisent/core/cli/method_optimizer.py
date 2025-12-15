@@ -449,7 +449,11 @@ class MethodOptimizer:
             )
             updated_pairs.append(updated_pair)
         
-        return ContrastivePairSet(pairs=updated_pairs, metadata=pairs.metadata)
+        return ContrastivePairSet(
+            name=pairs.name if hasattr(pairs, 'name') else "collected",
+            pairs=updated_pairs,
+            task_type=pairs.task_type if hasattr(pairs, 'task_type') else None,
+        )
     
     def train_method(
         self,
@@ -570,21 +574,32 @@ class MethodOptimizer:
         
         for pair in test_pairs.pairs:
             try:
+                # Generate response with steering applied
+                self.model.apply_steering(steering_plan)
+                generated_response = self.model.generate(
+                    [[{"role": "user", "content": pair.prompt}]],
+                    max_new_tokens=100,
+                    use_steering=True,
+                    steering_plan=steering_plan,
+                )[0]
+                self.model.clear_steering()
+                
                 choices = [
                     pair.negative_response.model_response,
                     pair.positive_response.model_response,
                 ]
                 expected = pair.positive_response.model_response
-                test_code = pair.metadata.get("test_code") if pair.metadata else None
+                metadata = pair.metadata or {}
                 
                 eval_result = evaluator.evaluate(
-                    response="",
+                    response=generated_response,
                     expected=expected,
                     model=self.model,
                     question=pair.prompt,
                     choices=choices,
                     steering_plan=steering_plan,
-                    test_code=test_code,
+                    correct_answers=metadata.get("correct_answers", []),
+                    incorrect_answers=metadata.get("incorrect_answers", []),
                     task_name=task_name,
                 )
                 

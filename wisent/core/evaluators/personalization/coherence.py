@@ -19,6 +19,47 @@ __all__ = ["evaluate_quality"]
 # Global tokenizer cache
 _tokenizer_cache = {}
 
+# Function words - the glue words of English that appear in natural text
+# Real sentences need these; gibberish often lacks them
+FUNCTION_WORDS = {
+    "the", "a", "an", "is", "are", "was", "were", "be", "been", "being",
+    "have", "has", "had", "do", "does", "did", "will", "would", "could",
+    "should", "may", "might", "must", "shall", "can", "need", "dare",
+    "ought", "used", "to", "of", "in", "for", "on", "with", "at", "by",
+    "from", "as", "into", "through", "during", "before", "after", "above",
+    "below", "between", "under", "again", "further", "then", "once",
+    "and", "but", "or", "nor", "so", "yet", "both", "either", "neither",
+    "not", "only", "own", "same", "than", "too", "very", "just", "also",
+    "now", "here", "there", "when", "where", "why", "how", "all", "each",
+    "every", "few", "more", "most", "other", "some", "such", "no",
+    "any", "i", "you", "he", "she", "it", "we", "they", "me", "him", "her",
+    "us", "them", "my", "your", "his", "its", "our", "their", "this", "that",
+    "these", "those", "what", "which", "who", "whom", "whose",
+}
+
+
+def _has_low_function_word_ratio(text: str, threshold: float = 0.15) -> bool:
+    """Check if text has suspiciously low ratio of function words.
+    
+    Natural English text typically has 30-50% function words.
+    Gibberish made of strung-together nouns/jargon has very few.
+    
+    Args:
+        text: Text to check
+        threshold: Minimum ratio of function words (default 0.15)
+        
+    Returns:
+        True if text has too few function words (likely gibberish)
+    """
+    tokens = re.findall(r'\b\w+\b', text.lower())
+    if len(tokens) < 6:
+        return False  # Too short to judge
+    
+    function_count = sum(1 for t in tokens if t in FUNCTION_WORDS)
+    ratio = function_count / len(tokens)
+    
+    return ratio < threshold
+
 
 def _get_tokenizer():
     """Get a cached tokenizer for nonsense word detection."""
@@ -136,6 +177,11 @@ def _is_gibberish(text: str) -> bool:
         validity_ratio = valid_count / len(tokens)
         if validity_ratio < 0.3:
             return True
+
+    # Check 6: Function word ratio - real English has ~30-50% function words
+    # Gibberish made of strung-together nouns/jargon has very few
+    if _has_low_function_word_ratio(text, threshold=0.15):
+        return True
 
     return False
 

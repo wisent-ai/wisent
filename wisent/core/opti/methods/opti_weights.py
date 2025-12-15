@@ -379,6 +379,8 @@ class WeightsOptimizer(BaseOptimizer):
         checkpoint_interval: int = 5,
         output_dir: str | None = None,
         tokenizer: Any = None,
+        s3_bucket: str | None = None,
+        s3_key_prefix: str | None = None,
     ) -> HPORun:
         """
         Run optimization with checkpointing support.
@@ -439,11 +441,20 @@ class WeightsOptimizer(BaseOptimizer):
             if checkpoint_path and trial_num % checkpoint_interval == 0:
                 self._save_checkpoint(study, checkpoint_path)
                 print(f"   [Checkpoint saved at trial {trial_num}]")
+                
+                # Upload checkpoint to S3
+                if s3_bucket and s3_key_prefix:
+                    self._upload_to_s3(checkpoint_path, s3_bucket, f"{s3_key_prefix}/checkpoint.json")
 
             # Save best model at intervals
             if output_dir and trial_num % checkpoint_interval == 0:
                 if study.best_trial is not None:
                     self._save_best_model_checkpoint(study, output_dir, tokenizer)
+                    
+                    # Upload best model checkpoint to S3
+                    if s3_bucket and s3_key_prefix:
+                        checkpoint_dir = os.path.join(output_dir, "checkpoint_best")
+                        self._upload_to_s3(checkpoint_dir, s3_bucket, f"{s3_key_prefix}/checkpoint_best/")
 
         # Run optimization with callback
         study.optimize(
@@ -524,3 +535,16 @@ class WeightsOptimizer(BaseOptimizer):
         }
         with open(os.path.join(checkpoint_dir, "checkpoint_metadata.json"), "w") as f:
             json.dump(metadata, f, indent=2)
+
+    def _upload_to_s3(self, local_path: str, s3_bucket: str, s3_key: str) -> bool:
+        """Upload a file or directory to S3."""
+        import subprocess
+        try:
+            if os.path.isdir(local_path):
+                cmd = ["aws", "s3", "sync", local_path, f"s3://{s3_bucket}/{s3_key}", "--quiet"]
+            else:
+                cmd = ["aws", "s3", "cp", local_path, f"s3://{s3_bucket}/{s3_key}", "--quiet"]
+            subprocess.run(cmd, check=True, capture_output=True)
+            return True
+        except Exception:
+            return False
