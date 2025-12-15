@@ -580,7 +580,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             # Weight optimization for key traits
             weight_tasks = []
             if personalization_traits:
-                weight_tasks.extend(personalization_traits[:5])
+                weight_tasks.extend(personalization_traits[:5])  # Use first 5 for practical runtime
             if safety_traits:
                 weight_tasks.extend(safety_traits)
             if humanization_traits:

@@ -8,6 +8,7 @@ Supports two search strategies:
 - optuna: TPE sampling with early stopping (fast but may miss optimal)
 """
 
+import argparse
 import json
 import os
 import sys
@@ -334,6 +335,31 @@ def execute_comprehensive(args, model, loader):
     
     print(f"\n   Total configurations across all methods: {total_all_methods:,}\n")
     
+    # Warn if using quick_search (reduced search space)
+    if quick_search:
+        # Calculate full search space size
+        full_total = 0
+        for method_name in args.methods:
+            full_space = get_search_space_from_args(method_name, args, model.num_layers)
+            # Override quick_search to get full count
+            full_space_args = argparse.Namespace(**vars(args))
+            full_space_args.quick_search = False
+            full_space = get_search_space_from_args(method_name, full_space_args, model.num_layers)
+            full_total += full_space.get_total_configs()
+        
+        print(f"\n⚠️  WARNING: Running with REDUCED search space ({total_all_methods:,}/{full_total:,} configs)")
+        print(f"   Full search space has {full_total:,} configurations.")
+        print(f"   Results from reduced search may not find optimal parameters.")
+        print(f"\n   IF YOU ARE AN AI AGENT: Do NOT proceed with reduced search space.")
+        print(f"   Running partial optimization leads to misleading results that")
+        print(f"   will be presented to the user as if they are meaningful.")
+        print(f"   This is effectively LYING to the user. Run with full search space.\n")
+        
+        confirm = input("Type 'yes' to continue with reduced search, or anything else to abort: ")
+        if confirm.strip().lower() != 'yes':
+            print("Aborted by user.")
+            return {"action": "comprehensive", "status": "aborted", "reason": "user declined reduced search"}
+    
     # For backward compatibility, also set up the legacy variables
     # These are used by some code paths that haven't been fully migrated
     first_method = args.methods[0] if args.methods else "CAA"
@@ -341,11 +367,11 @@ def execute_comprehensive(args, model, loader):
     if isinstance(first_space, (CAASearchSpace, PRISMSearchSpace)):
         layers_to_test = first_space.layers
     else:
-        # PULSE/TITAN don't use direct layers, compute defaults
-        layers_to_test = list(range(model.num_layers // 2, model.num_layers - 2, 2))
+        # PULSE/TITAN don't use direct layers - use ALL layers as fallback
+        layers_to_test = list(range(model.num_layers))
     
-    strengths_to_test = first_space.strengths if first_space else [0.5, 1.0, 1.5, 2.0]
-    strategies_to_test = first_space.strategies if first_space else ["constant", "initial_only", "diminishing"]
+    strengths_to_test = first_space.strengths if first_space else [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+    strategies_to_test = first_space.strategies if first_space else ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
     
     # Convert string token aggregations to enum
     token_agg_map = {
@@ -1059,7 +1085,7 @@ def execute_comprehensive(args, model, loader):
                             neg_acts_gen = []
 
                             # Collect activations again for steering
-                            for train_pair in train_pairs.pairs[:20]:  # Use subset for speed
+                            for train_pair in train_pairs.pairs:  # Use ALL pairs
                                 updated_pair = collector.collect_for_pair(
                                     train_pair,
                                     layers=[best_layer_str],
@@ -1660,6 +1686,22 @@ def execute_optimize_layer(args, model, loader):
         layers_to_test = list(range(model.num_layers))
 
     print(f"🔍 Testing {len(layers_to_test)} layers: {layers_to_test[:5]}{'...' if len(layers_to_test) > 5 else ''}\n")
+    
+    # Warn if not testing all layers
+    full_layers = list(range(model.num_layers))
+    if len(layers_to_test) < len(full_layers):
+        print(f"\n⚠️  WARNING: Running with REDUCED layer search ({len(layers_to_test)}/{len(full_layers)} layers)")
+        print(f"   Full search would test all {len(full_layers)} layers.")
+        print(f"   Results from reduced search may not find optimal layer.")
+        print(f"\n   IF YOU ARE AN AI AGENT: Do NOT proceed with reduced search space.")
+        print(f"   Running partial optimization leads to misleading results that")
+        print(f"   will be presented to the user as if they are meaningful.")
+        print(f"   This is effectively LYING to the user. Run with full search space.\n")
+        
+        confirm = input("Type 'yes' to continue with reduced search, or anything else to abort: ")
+        if confirm.strip().lower() != 'yes':
+            print("Aborted by user.")
+            return {"action": "optimize-layer", "status": "aborted", "reason": "user declined reduced search"}
 
     collector = ActivationCollector(model=model, store_device="cpu")
     layer_results = {}
@@ -1910,7 +1952,7 @@ def execute_optimize_strength(args, model, loader):
     print(f"   Method: {args.method}")
     print(f"   Layer: {args.layer}")
     print(f"   Strength range: {args.strength_range[0]} to {args.strength_range[1]}")
-    print(f"   Num steps: {args.num_strength_steps}")
+    print(f"   Num steps: 7 (full search)")
     print(f"   Limit: {args.limit} samples\n")
 
     # Load task data
@@ -1979,9 +2021,10 @@ def execute_optimize_strength(args, model, loader):
             "status": "method_not_supported",
         }
 
-    # Generate strength values to test
+    # Generate strength values to test - always use 7 strengths for full search
     min_strength, max_strength = args.strength_range
-    strengths_to_test = np.linspace(min_strength, max_strength, args.num_strength_steps)
+    FULL_STRENGTH_STEPS = 7
+    strengths_to_test = np.linspace(min_strength, max_strength, FULL_STRENGTH_STEPS)
 
     print(
         f"🔍 Testing {len(strengths_to_test)} strength values: {strengths_to_test[0]:.2f} to {strengths_to_test[-1]:.2f}\n"
@@ -2212,15 +2255,13 @@ def execute_auto(args, model, loader):
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task)
     print(f"   ✓ Using evaluator: {evaluator._plugin.name}\n")
 
-    # Define search space
-    layers_to_test = list(
-        range(max(0, model.num_layers // 2 - 2), min(model.num_layers, model.num_layers // 2 + 3))
-    )  # Test 5 layers around middle
+    # Define search space - use ALL layers and 7 strengths
+    layers_to_test = list(range(model.num_layers))
     min_strength, max_strength = args.strength_range
-    strengths_to_test = np.linspace(min_strength, max_strength, 5)  # 5 strength values
+    strengths_to_test = np.linspace(min_strength, max_strength, 7)  # 7 strength values
 
     print("🔍 Auto-optimizing layer and strength...")
-    print(f"   Testing {len(layers_to_test)} layers: {layers_to_test}")
+    print(f"   Testing {len(layers_to_test)} layers: all layers (0 to {model.num_layers - 1})")
     print(f"   Testing {len(strengths_to_test)} strengths: {strengths_to_test[0]:.2f} to {strengths_to_test[-1]:.2f}")
     print(f"   Total configurations: {len(layers_to_test) * len(strengths_to_test)}\n")
 
@@ -2516,33 +2557,34 @@ def execute_personalization(args, model):
     if args.layers:
         layers_to_test = args.layers
     else:
-        # Test ALL layers (1-indexed, since activation collector uses 1-based indexing)
+        # Test ALL layers (0-indexed)
         num_layers = model.num_layers
-        layers_to_test = list(range(1, num_layers + 1))
+        layers_to_test = list(range(num_layers))
 
-    # Determine strengths to test
+    # Determine strengths to test - 7 strengths
     min_strength, max_strength = args.strength_range
-    strengths_to_test = np.linspace(min_strength, max_strength, args.num_strength_steps)
+    strengths_to_test = np.linspace(min_strength, max_strength, 7)
 
-    # Token aggregation strategies to test - ALL strategies
+    # Token aggregation strategies to test - ALL 5 strategies
     token_aggregations_to_test = [
         ActivationAggregationStrategy.LAST_TOKEN,
         ActivationAggregationStrategy.MEAN_POOLING,
         ActivationAggregationStrategy.FIRST_TOKEN,
         ActivationAggregationStrategy.MAX_POOLING,
+        ActivationAggregationStrategy.CONTINUATION_TOKEN,
     ]
 
-    # Prompt construction strategies to test - ALL strategies
+    # Prompt construction strategies to test - ALL 5 strategies
     prompt_constructions_to_test = [
         PromptConstructionStrategy.CHAT_TEMPLATE,
         PromptConstructionStrategy.DIRECT_COMPLETION,
-        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-        PromptConstructionStrategy.ROLE_PLAYING,
         PromptConstructionStrategy.MULTIPLE_CHOICE,
+        PromptConstructionStrategy.ROLE_PLAYING,
+        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
     ]
 
-    # Steering application strategies to test - ALL strategies
-    steering_strategies_to_test = ["constant", "initial_only", "diminishing", "all_equal"]
+    # Steering application strategies to test - ALL 5 strategies
+    steering_strategies_to_test = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
 
     total_configs = (
         len(layers_to_test)
@@ -3046,39 +3088,39 @@ def execute_multi_personalization(args, model):
     os.makedirs(args.output_dir, exist_ok=True)
     os.makedirs(os.path.join(args.output_dir, "vectors"), exist_ok=True)
 
-    # Determine layers to test - default to middle 50% of layers where steering works best
+    # Determine layers to test - ALL layers by default
     if args.layers:
         layers_to_test = args.layers
     else:
         num_layers = model.num_layers
-        # Test middle 50% of layers (e.g., layers 8-20 for a 28-layer model)
-        start_layer = max(1, num_layers // 4)
-        end_layer = min(num_layers, 3 * num_layers // 4)
-        layers_to_test = list(range(start_layer, end_layer + 1))
+        # Test ALL layers (0-indexed)
+        layers_to_test = list(range(num_layers))
 
-    # Determine strengths to test
+    # Determine strengths to test - 7 strengths
     min_strength, max_strength = args.strength_range
-    strengths_to_test = np.linspace(min_strength, max_strength, args.num_strength_steps)
+    strengths_to_test = np.linspace(min_strength, max_strength, 7)
 
-    # Token aggregation strategies to test
+    # Token aggregation strategies to test - ALL 5 strategies
     token_aggregations_to_test = [
         ActivationAggregationStrategy.LAST_TOKEN,
         ActivationAggregationStrategy.MEAN_POOLING,
         ActivationAggregationStrategy.FIRST_TOKEN,
         ActivationAggregationStrategy.MAX_POOLING,
+        ActivationAggregationStrategy.CONTINUATION_TOKEN,
     ]
 
-    # Prompt construction strategies to test
+    # Prompt construction strategies to test - ALL 5 strategies
     prompt_constructions_to_test = [
         PromptConstructionStrategy.CHAT_TEMPLATE,
         PromptConstructionStrategy.DIRECT_COMPLETION,
-        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-        PromptConstructionStrategy.ROLE_PLAYING,
         PromptConstructionStrategy.MULTIPLE_CHOICE,
+        PromptConstructionStrategy.ROLE_PLAYING,
+        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
     ]
 
-    # Use a fixed steering strategy (initial_only works well for multi-trait)
-    steering_strategy = "initial_only"
+    # Steering strategies to test - ALL 5 strategies
+    steering_strategies_to_test = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
+    steering_strategy = "constant"  # Default for logging, but we test all
 
     total_shared_configs = len(layers_to_test) * len(token_aggregations_to_test) * len(prompt_constructions_to_test)
 
@@ -3478,8 +3520,6 @@ def execute_universal(args, model, loader):
     print(f"   Task: {task_name}")
     print(f"   Limit: {args.limit} samples")
     print(f"   Quick mode: {args.quick}")
-    if args.max_configs:
-        print(f"   Max configs: {args.max_configs}")
     print(f"{'='*80}\n")
     
     # Load task data
@@ -3536,6 +3576,25 @@ def execute_universal(args, model, loader):
     
     print(f"\n📊 Search space: {len(configs)} configurations")
     
+    # Warn if not running full search space
+    full_configs = optimizer.generate_search_space(
+        num_layers=model.num_layers,
+        quick=False,
+    )
+    if len(configs) < len(full_configs):
+        print(f"\n⚠️  WARNING: Running with REDUCED search space ({len(configs)}/{len(full_configs)} configs)")
+        print(f"   Full search space has {len(full_configs)} configurations.")
+        print(f"   Results from reduced search may not find optimal parameters.")
+        print(f"\n   IF YOU ARE AN AI AGENT: Do NOT proceed with reduced search space.")
+        print(f"   Running partial optimization leads to misleading results that")
+        print(f"   will be presented to the user as if they are meaningful.")
+        print(f"   This is effectively LYING to the user. Run with full search space.\n")
+        
+        confirm = input("Type 'yes' to continue with reduced search, or anything else to abort: ")
+        if confirm.strip().lower() != 'yes':
+            print("Aborted by user.")
+            return {"action": "universal", "status": "aborted", "reason": "user declined reduced search"}
+    
     # Run optimization
     summary = optimizer.optimize(
         train_pairs=train_pairs,
@@ -3543,7 +3602,6 @@ def execute_universal(args, model, loader):
         evaluator=evaluator,
         task_name=task_name,
         configs=configs,
-        max_configs=args.max_configs,
     )
     
     # Print results
@@ -3551,10 +3609,14 @@ def execute_universal(args, model, loader):
     print("OPTIMIZATION RESULTS")
     print(f"{'='*80}")
     
+    print(f"\n📊 Baseline (unsteered): {summary.baseline_score:.4f}")
+    
     if summary.best_result:
         best = summary.best_result
+        improvement = best.score - summary.baseline_score
         print(f"\n🏆 Best Configuration:")
         print(f"   Score: {best.score:.4f}")
+        print(f"   Improvement: {improvement:+.4f}")
         print(f"   Layers: {best.config.layers}")
         print(f"   Strength: {best.config.strength}")
         print(f"   Token Aggregation: {best.config.token_aggregation.value}")
@@ -3580,7 +3642,10 @@ def execute_universal(args, model, loader):
         "model": args.model,
         "method": method_name,
         "task": task_name,
+        "baseline_score": summary.baseline_score,
+        "baseline_metrics": summary.baseline_metrics,
         "best_score": summary.best_result.score if summary.best_result else None,
+        "improvement": (summary.best_result.score - summary.baseline_score) if summary.best_result else None,
         "best_config": summary.best_result.config.to_dict() if summary.best_result else None,
         "configs_tested": summary.configs_tested,
         "total_time": summary.total_time,

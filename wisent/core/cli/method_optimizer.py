@@ -131,6 +131,12 @@ class OptimizationSummary:
     
     configs_tested: int = 0
     """Number of configurations tested."""
+    
+    baseline_score: float = 0.0
+    """Baseline (unsteered) accuracy for comparison."""
+    
+    baseline_metrics: Dict[str, float] = field(default_factory=dict)
+    """Baseline metrics (accuracy, correct, total)."""
 
 
 class MethodOptimizer:
@@ -223,11 +229,13 @@ class MethodOptimizer:
             strengths = custom_strengths or [0.5, 1.0, 1.5]
             token_aggs = custom_token_aggregations or ["last_token"]
             prompt_strats = custom_prompt_strategies or ["chat_template"]
+            steering_strategies = ["constant"]
         else:
             layers = custom_layers or self._get_full_layers(num_layers)
             strengths = custom_strengths or [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
-            token_aggs = custom_token_aggregations or ["last_token", "mean_pooling", "first_token"]
-            prompt_strats = custom_prompt_strategies or ["chat_template", "direct_completion"]
+            token_aggs = custom_token_aggregations or ["last_token", "mean_pooling", "first_token", "max_pooling", "continuation_token"]
+            prompt_strats = custom_prompt_strategies or ["chat_template", "direct_completion", "multiple_choice", "role_playing", "instruction_following"]
+            steering_strategies = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
         
         # Get method-specific parameter ranges
         method_param_ranges = self._get_method_param_ranges(quick, custom_method_params)
@@ -259,26 +267,28 @@ class MethodOptimizer:
             for strength in strengths:
                 for token_agg_name in token_aggs:
                     for prompt_strat_name in prompt_strats:
-                        for method_params in method_param_combos:
-                            # Determine which layers to collect activations for
-                            # For multi-layer methods, collect all needed layers
-                            activation_layers = self._determine_activation_layers(
-                                layer, num_layers, method_params
-                            )
-                            
-                            config = OptimizationConfig(
-                                method_name=self.method_name,
-                                layers=[str(l) for l in activation_layers],
-                                token_aggregation=token_agg_map.get(
-                                    token_agg_name, ActivationAggregationStrategy.LAST_TOKEN
-                                ),
-                                prompt_strategy=prompt_strat_map.get(
-                                    prompt_strat_name, PromptConstructionStrategy.CHAT_TEMPLATE
-                                ),
-                                strength=strength,
-                                method_params=method_params,
-                            )
-                            configs.append(config)
+                        for steering_strat in steering_strategies:
+                            for method_params in method_param_combos:
+                                # Determine which layers to collect activations for
+                                # For multi-layer methods, collect all needed layers
+                                activation_layers = self._determine_activation_layers(
+                                    layer, num_layers, method_params
+                                )
+                                
+                                config = OptimizationConfig(
+                                    method_name=self.method_name,
+                                    layers=[str(l) for l in activation_layers],
+                                    token_aggregation=token_agg_map.get(
+                                        token_agg_name, ActivationAggregationStrategy.LAST_TOKEN
+                                    ),
+                                    prompt_strategy=prompt_strat_map.get(
+                                        prompt_strat_name, PromptConstructionStrategy.CHAT_TEMPLATE
+                                    ),
+                                    strength=strength,
+                                    strategy=steering_strat,
+                                    method_params=method_params,
+                                )
+                                configs.append(config)
         
         return configs
     
@@ -293,10 +303,8 @@ class MethodOptimizer:
     
     def _get_full_layers(self, num_layers: int) -> List[int]:
         """Get full layer set for comprehensive search."""
-        # Test every 2nd layer in the middle-to-late portion
-        start = num_layers // 4
-        end = num_layers - 2
-        return list(range(start, end, 2))
+        # Test ALL layers from 0 to num_layers-1
+        return list(range(num_layers))
     
     def _get_method_param_ranges(
         self,
@@ -510,7 +518,7 @@ class MethodOptimizer:
         # Resolve steering_layers from string config to actual layer list
         steering_config = resolved.get("steering_layers")
         if isinstance(steering_config, str):
-            base_layer = int(config.layers[0]) if config.layers else num_layers // 2
+            base_layer = int(config.layers[0]) if config.layers else 0
             if steering_config == "single":
                 resolved["steering_layers"] = [base_layer]
             elif steering_config == "range_3":
@@ -618,6 +626,70 @@ class MethodOptimizer:
             "total": total,
         }
     
+    def evaluate_baseline(
+        self,
+        test_pairs: ContrastivePairSet,
+        evaluator,
+        task_name: str,
+    ) -> Tuple[float, Dict[str, float]]:
+        """
+        Evaluate baseline (unsteered) performance.
+        
+        Args:
+            test_pairs: Test pairs for evaluation
+            evaluator: Evaluator instance
+            task_name: Name of the task for evaluator context
+            
+        Returns:
+            Tuple of (baseline_score, metrics_dict)
+        """
+        self._log("Evaluating baseline (unsteered)...")
+        
+        correct = 0
+        total = 0
+        
+        for pair in test_pairs.pairs:
+            try:
+                # Generate response WITHOUT steering
+                generated_response = self.model.generate(
+                    [[{"role": "user", "content": pair.prompt}]],
+                    max_new_tokens=100,
+                )[0]
+                
+                expected = pair.positive_response.model_response
+                metadata = pair.metadata or {}
+                
+                eval_result = evaluator.evaluate(
+                    response=generated_response,
+                    expected=expected,
+                    model=self.model,
+                    question=pair.prompt,
+                    choices=[
+                        pair.negative_response.model_response,
+                        pair.positive_response.model_response,
+                    ],
+                    correct_answers=metadata.get("correct_answers", []),
+                    incorrect_answers=metadata.get("incorrect_answers", []),
+                    task_name=task_name,
+                )
+                
+                if eval_result.ground_truth == "TRUTHFUL":
+                    correct += 1
+                total += 1
+            except Exception as e:
+                logger.warning(f"Baseline evaluation failed for pair: {e}")
+                total += 1
+        
+        accuracy = correct / total if total > 0 else 0.0
+        
+        self._log(f"Baseline score: {accuracy:.4f} ({correct}/{total})")
+        
+        return accuracy, {
+            "accuracy": accuracy,
+            "correct": correct,
+            "total": total,
+        }
+    
     def optimize(
         self,
         train_pairs: ContrastivePairSet,
@@ -626,7 +698,6 @@ class MethodOptimizer:
         task_name: str,
         configs: Optional[List[OptimizationConfig]] = None,
         quick: bool = False,
-        max_configs: Optional[int] = None,
         progress_callback: Optional[Callable[[int, int, OptimizationResult], None]] = None,
     ) -> OptimizationSummary:
         """
@@ -639,13 +710,17 @@ class MethodOptimizer:
             task_name: Name of task/benchmark
             configs: Configurations to test (or generate automatically)
             quick: Use quick search space if configs not provided
-            max_configs: Maximum configurations to test
             progress_callback: Called after each config with (idx, total, result)
             
         Returns:
             OptimizationSummary with best result and all results
         """
         start_time = time.time()
+        
+        # Evaluate baseline (unsteered) first
+        baseline_score, baseline_metrics = self.evaluate_baseline(
+            test_pairs, evaluator, task_name
+        )
         
         # Generate configs if not provided
         if configs is None:
@@ -654,13 +729,9 @@ class MethodOptimizer:
                 quick=quick,
             )
         
-        # Limit configs if requested
-        if max_configs and len(configs) > max_configs:
-            self._log(f"Limiting search from {len(configs)} to {max_configs} configs")
-            configs = configs[:max_configs]
-        
         self._log(f"\n{'='*60}")
         self._log(f"Optimizing {self.method_name.upper()} with {len(configs)} configurations")
+        self._log(f"Baseline: {baseline_score:.4f}")
         self._log(f"{'='*60}\n")
         
         results: List[OptimizationResult] = []
@@ -718,9 +789,13 @@ class MethodOptimizer:
         
         total_time = time.time() - start_time
         
+        improvement = (best_result.score - baseline_score) if best_result else 0.0
+        
         self._log(f"\n{'='*60}")
         self._log(f"Optimization complete in {total_time:.1f}s")
+        self._log(f"Baseline: {baseline_score:.4f}")
         self._log(f"Best score: {best_result.score:.4f}" if best_result else "No results")
+        self._log(f"Improvement: {improvement:+.4f}" if best_result else "")
         self._log(f"{'='*60}\n")
         
         return OptimizationSummary(
@@ -730,6 +805,8 @@ class MethodOptimizer:
             task_name=task_name,
             total_time=total_time,
             configs_tested=len(results),
+            baseline_score=baseline_score,
+            baseline_metrics=baseline_metrics,
         )
 
 
@@ -741,7 +818,6 @@ def optimize_steering_method(
     evaluator,
     task_name: str,
     quick: bool = False,
-    max_configs: Optional[int] = None,
     verbose: bool = True,
 ) -> OptimizationSummary:
     """
@@ -762,7 +838,6 @@ def optimize_steering_method(
         evaluator: Evaluator instance
         task_name: Name of task/benchmark
         quick: Use reduced search space
-        max_configs: Maximum configurations to test
         verbose: Print progress
         
     Returns:
@@ -780,5 +855,4 @@ def optimize_steering_method(
         evaluator=evaluator,
         task_name=task_name,
         quick=quick,
-        max_configs=max_configs,
     )

@@ -45,11 +45,13 @@ class SensorLayerConfig(str, Enum):
 class BaseSearchSpace:
     """Base search space common to all methods."""
     
-    layers: List[int] = field(default_factory=lambda: [4, 6, 8, 10, 12])
-    strengths: List[float] = field(default_factory=lambda: [0.5, 1.0, 1.5, 2.0])
-    strategies: List[str] = field(default_factory=lambda: ["constant", "initial_only", "diminishing"])
-    token_aggregations: List[str] = field(default_factory=lambda: ["last_token", "mean_pooling"])
-    prompt_constructions: List[str] = field(default_factory=lambda: ["chat_template", "direct_completion"])
+    # layers MUST be set by get_search_space() to all layers (0 to num_layers-1)
+    # Empty default ensures it's always explicitly set
+    layers: List[int] = field(default_factory=list)
+    strengths: List[float] = field(default_factory=lambda: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0])
+    strategies: List[str] = field(default_factory=lambda: ["constant", "initial_only", "diminishing", "increasing", "gaussian"])
+    token_aggregations: List[str] = field(default_factory=lambda: ["last_token", "mean_pooling", "first_token", "max_pooling", "continuation_token"])
+    prompt_constructions: List[str] = field(default_factory=lambda: ["chat_template", "direct_completion", "multiple_choice", "role_playing", "instruction_following"])
     
     def get_total_configs(self) -> int:
         return (
@@ -320,19 +322,22 @@ def get_search_space(method_name: str, num_layers: int, quick: bool = False) -> 
     """
     method = method_name.upper()
     
-    # Compute layer candidates based on model size
+    # Full search uses ALL layers
+    all_layers = list(range(num_layers))
+    
+    # Quick search uses subset of layers
     if num_layers > 20:
-        default_layers = list(range(num_layers // 2, num_layers - 2, 2))
+        quick_layers = list(range(num_layers // 2, num_layers - 2, 2))
     elif num_layers > 12:
-        default_layers = [4, 6, 8, 10, 12]
+        quick_layers = [4, 6, 8, 10, 12]
     else:
-        default_layers = list(range(2, num_layers, 2))
+        quick_layers = list(range(2, num_layers, 2))
     
     if quick:
         # Reduced search space for quick testing
         if method == "CAA":
             return CAASearchSpace(
-                layers=default_layers[:3],
+                layers=quick_layers[:3],
                 strengths=[0.5, 1.0, 1.5],
                 strategies=["constant"],
                 token_aggregations=["last_token"],
@@ -340,7 +345,7 @@ def get_search_space(method_name: str, num_layers: int, quick: bool = False) -> 
             )
         elif method == "PRISM":
             return PRISMSearchSpace(
-                layers=default_layers[:3],
+                layers=quick_layers[:3],
                 strengths=[0.5, 1.0, 1.5],
                 strategies=["constant"],
                 token_aggregations=["last_token"],
@@ -380,18 +385,18 @@ def get_search_space(method_name: str, num_layers: int, quick: bool = False) -> 
                 optimization_steps=[100],
             )
     
-    # Full search space
+    # Full search space - uses ALL layers
     if method == "CAA":
-        return CAASearchSpace(layers=default_layers)
+        return CAASearchSpace(layers=all_layers)
     elif method == "PRISM":
-        return PRISMSearchSpace(layers=default_layers)
+        return PRISMSearchSpace(layers=all_layers)
     elif method == "PULSE":
         return PULSESearchSpace(strengths=[0.5, 1.0, 1.5, 2.0])
     elif method == "TITAN":
         return TITANSearchSpace(strengths=[0.5, 1.0, 1.5, 2.0])
     else:
         # Default to CAA search space
-        return CAASearchSpace(layers=default_layers)
+        return CAASearchSpace(layers=all_layers)
 
 
 def get_search_space_from_args(method_name: str, args, num_layers: int) -> BaseSearchSpace:
