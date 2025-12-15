@@ -154,12 +154,13 @@ class WisentModel:
         layers: list[nn.Module] = []
 
         candidates = [
-            "layers",                 
-            "model.layers",           
-            "model.decoder.layers",   
-            "transformer.h",          
+            "layers",
+            "model.layers",
+            "model.decoder.layers",
+            "transformer.h",
             "base_model.model.layers",
-            "blocks", "model.blocks", 
+            "blocks", "model.blocks",
+            "gpt_neox.layers",  # Pythia models
         ]
         for path in candidates:
             obj = m

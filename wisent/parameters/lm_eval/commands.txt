@@ -24,7 +24,14 @@ python -m wisent.core.main generate-vector-from-task \
 --timing \
 --device cuda
 
-lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks chain_of_thought --device cuda:0 --batch_size 2 --limit 2
+lm_eval --model hf --model_args pretrained=EleutherAI/gpt-neo-125M --tasks boolq --device cuda:0 --batch_size 2 --limit 2
+
+lm_eval --model steered \
+    --model_args pretrained=EleutherAI/gpt-neo-125M,steer_path=steer_config.pt \
+    --tasks boolq \
+    --device cuda:0 \
+    --batch_size 2 \
+    --limit 2
 
 
 
