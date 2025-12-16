@@ -32,6 +32,9 @@ __all__ = [
     "ExhaustiveCombinationResult",
     "ExhaustiveGeometryAnalysisResult",
     "detect_geometry_exhaustive",
+    "detect_geometry_limited",
+    "detect_geometry_contiguous",
+    "detect_geometry_smart",
 ]
 
 
@@ -2374,9 +2377,12 @@ def detect_geometry_exhaustive(
     combination_method: str = "concat",
     num_components: int = 5,
     progress_callback: Optional[Callable[[int, int], None]] = None,
+    top_k: int = 100,
 ) -> ExhaustiveGeometryAnalysisResult:
     """
     Exhaustively test all 2^N - 1 layer combinations for geometric structure.
+    
+    Memory-efficient: uses generators and only keeps top_k results in memory.
     
     Arguments:
         pos_activations_by_layer: Dict mapping layer index to positive activations [N, hidden_dim]
@@ -2385,10 +2391,12 @@ def detect_geometry_exhaustive(
         combination_method: How to combine layers ("concat", "mean", "weighted")
         num_components: Number of PCA components for analysis
         progress_callback: Optional callback(current, total) for progress reporting
+        top_k: Number of top results to keep in memory (default 100)
         
     Returns:
-        ExhaustiveGeometryAnalysisResult with all combinations ranked
+        ExhaustiveGeometryAnalysisResult with top combinations ranked
     """
+    import heapq
     from itertools import combinations as itertools_combinations
     
     layers = sorted(pos_activations_by_layer.keys())[:max_layers]
@@ -2399,14 +2407,470 @@ def detect_geometry_exhaustive(
     
     geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
     
-    # Generate all non-empty subsets
-    all_combos: List[Tuple[int, ...]] = []
-    for r in range(1, n_layers + 1):
-        for combo in itertools_combinations(layers, r):
-            all_combos.append(combo)
+    # Calculate total without building list (2^n - 1)
+    total_combinations = (1 << n_layers) - 1
     
+    # Use min-heap to keep top_k results (negate scores for max-heap behavior)
+    top_results_heap: List[Tuple[float, ExhaustiveCombinationResult]] = []
+    single_layer_results: List[ExhaustiveCombinationResult] = []
+    
+    # Generator for combinations - no upfront memory allocation
+    def combo_generator():
+        for r in range(1, n_layers + 1):
+            for combo in itertools_combinations(layers, r):
+                yield combo
+    
+    # Test each combination
+    idx = 0
+    for combo in combo_generator():
+        idx += 1
+        if progress_callback:
+            progress_callback(idx, total_combinations)
+        
+        # Combine activations for this subset
+        if len(combo) == 1:
+            layer = combo[0]
+            combined_pos = pos_activations_by_layer[layer]
+            combined_neg = neg_activations_by_layer[layer]
+        else:
+            combined_pos, combined_neg = _combine_layer_activations(
+                pos_activations_by_layer, neg_activations_by_layer, 
+                list(combo), combination_method
+            )
+        
+        # Run geometry detection
+        result = detect_geometry_structure(combined_pos, combined_neg, geo_cfg)
+        
+        all_scores = {name: score.score for name, score in result.all_scores.items()}
+        combo_result = ExhaustiveCombinationResult(
+            layers=combo,
+            best_structure=result.best_structure,
+            best_score=result.best_score,
+            all_scores=all_scores,
+        )
+        
+        # Track single layer results separately
+        if len(combo) == 1:
+            single_layer_results.append(combo_result)
+        
+        # Maintain top_k using heap
+        if len(top_results_heap) < top_k:
+            heapq.heappush(top_results_heap, (combo_result.best_score, combo_result))
+        elif combo_result.best_score > top_results_heap[0][0]:
+            heapq.heapreplace(top_results_heap, (combo_result.best_score, combo_result))
+    
+    # Extract top results sorted by score descending
+    all_results = [r for _, r in sorted(top_results_heap, key=lambda x: -x[0])]
+    
+    # Extract insights
+    best_result = all_results[0] if all_results else None
+    best_combination = best_result.layers if best_result else ()
+    best_score = best_result.best_score if best_result else 0.0
+    best_structure = best_result.best_structure if best_result else StructureType.UNKNOWN
+    
+    top_10 = all_results[:10]
+    
+    # Find best single layer
+    if single_layer_results:
+        single_layer_results.sort(key=lambda x: x.best_score, reverse=True)
+        single_layer_best = single_layer_results[0].layers[0]
+        single_layer_best_score = single_layer_results[0].best_score
+    else:
+        single_layer_best = layers[0]
+        single_layer_best_score = 0.0
+    
+    combination_beats_single = best_score > single_layer_best_score
+    improvement_over_single = best_score - single_layer_best_score
+    
+    # Analyze patterns from top results
+    patterns = _analyze_combination_patterns(all_results, layers, top_k=min(50, len(all_results)))
+    
+    # Generate recommendation
+    recommendation = _generate_exhaustive_recommendation(
+        best_combination, best_score, best_structure,
+        single_layer_best, single_layer_best_score,
+        combination_beats_single, improvement_over_single,
+        patterns, total_combinations
+    )
+    
+    return ExhaustiveGeometryAnalysisResult(
+        total_combinations=total_combinations,
+        all_results=all_results,
+        best_combination=best_combination,
+        best_score=best_score,
+        best_structure=best_structure,
+        top_10=top_10,
+        single_layer_best=single_layer_best,
+        single_layer_best_score=single_layer_best_score,
+        combination_beats_single=combination_beats_single,
+        improvement_over_single=improvement_over_single,
+        patterns=patterns,
+        recommendation=recommendation,
+    )
+
+
+def detect_geometry_limited(
+    pos_activations_by_layer: Dict[int, torch.Tensor],
+    neg_activations_by_layer: Dict[int, torch.Tensor],
+    max_combo_size: int = 3,
+    combination_method: str = "concat",
+    num_components: int = 5,
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+    top_k: int = 100,
+) -> ExhaustiveGeometryAnalysisResult:
+    """
+    Test limited layer combinations: 1-layer, 2-layer, ..., max_combo_size-layer, plus all layers.
+    
+    Much faster than exhaustive search while still finding good combinations.
+    For N layers with max_combo_size=3:
+    - 1-layer: N combinations
+    - 2-layer: N*(N-1)/2 combinations  
+    - 3-layer: N*(N-1)*(N-2)/6 combinations
+    - all-layers: 1 combination
+    
+    Total: O(N^3) instead of O(2^N)
+    
+    Arguments:
+        pos_activations_by_layer: Dict mapping layer index to positive activations [N, hidden_dim]
+        neg_activations_by_layer: Dict mapping layer index to negative activations [N, hidden_dim]
+        max_combo_size: Maximum combination size to test (1, 2, 3, etc.) before jumping to all
+        combination_method: How to combine layers ("concat", "mean", "weighted")
+        num_components: Number of PCA components for analysis
+        progress_callback: Optional callback(current, total) for progress reporting
+        top_k: Number of top results to keep in memory (default 100)
+        
+    Returns:
+        ExhaustiveGeometryAnalysisResult with top combinations ranked
+    """
+    import heapq
+    from itertools import combinations as itertools_combinations
+    from math import comb
+    
+    layers = sorted(pos_activations_by_layer.keys())
+    n_layers = len(layers)
+    
+    if n_layers == 0:
+        raise ValueError("No layers provided")
+    
+    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
+    
+    # Calculate total combinations: sum of C(n,r) for r=1 to max_combo_size, plus 1 for all layers
+    total_combinations = sum(comb(n_layers, r) for r in range(1, min(max_combo_size, n_layers) + 1))
+    if max_combo_size < n_layers:
+        total_combinations += 1  # Add all-layers combination
+    
+    # Use min-heap to keep top_k results
+    top_results_heap: List[Tuple[float, ExhaustiveCombinationResult]] = []
+    single_layer_results: List[ExhaustiveCombinationResult] = []
+    
+    # Generator for limited combinations
+    def combo_generator():
+        # 1-layer, 2-layer, ..., max_combo_size-layer
+        for r in range(1, min(max_combo_size, n_layers) + 1):
+            for combo in itertools_combinations(layers, r):
+                yield combo
+        # All layers (if not already included)
+        if max_combo_size < n_layers:
+            yield tuple(layers)
+    
+    # Test each combination
+    idx = 0
+    for combo in combo_generator():
+        idx += 1
+        if progress_callback:
+            progress_callback(idx, total_combinations)
+        
+        # Combine activations for this subset
+        if len(combo) == 1:
+            layer = combo[0]
+            combined_pos = pos_activations_by_layer[layer]
+            combined_neg = neg_activations_by_layer[layer]
+        else:
+            combined_pos, combined_neg = _combine_layer_activations(
+                pos_activations_by_layer, neg_activations_by_layer, 
+                list(combo), combination_method
+            )
+        
+        # Run geometry detection
+        result = detect_geometry_structure(combined_pos, combined_neg, geo_cfg)
+        
+        all_scores = {name: score.score for name, score in result.all_scores.items()}
+        combo_result = ExhaustiveCombinationResult(
+            layers=combo,
+            best_structure=result.best_structure,
+            best_score=result.best_score,
+            all_scores=all_scores,
+        )
+        
+        # Track single layer results separately
+        if len(combo) == 1:
+            single_layer_results.append(combo_result)
+        
+        # Maintain top_k using heap
+        if len(top_results_heap) < top_k:
+            heapq.heappush(top_results_heap, (combo_result.best_score, combo_result))
+        elif combo_result.best_score > top_results_heap[0][0]:
+            heapq.heapreplace(top_results_heap, (combo_result.best_score, combo_result))
+    
+    # Extract top results sorted by score descending
+    all_results = [r for _, r in sorted(top_results_heap, key=lambda x: -x[0])]
+    
+    # Extract insights
+    best_result = all_results[0] if all_results else None
+    best_combination = best_result.layers if best_result else ()
+    best_score = best_result.best_score if best_result else 0.0
+    best_structure = best_result.best_structure if best_result else StructureType.UNKNOWN
+    
+    top_10 = all_results[:10]
+    
+    # Find best single layer
+    if single_layer_results:
+        single_layer_results.sort(key=lambda x: x.best_score, reverse=True)
+        single_layer_best = single_layer_results[0].layers[0]
+        single_layer_best_score = single_layer_results[0].best_score
+    else:
+        single_layer_best = layers[0]
+        single_layer_best_score = 0.0
+    
+    combination_beats_single = best_score > single_layer_best_score
+    improvement_over_single = best_score - single_layer_best_score
+    
+    # Analyze patterns from top results
+    patterns = _analyze_combination_patterns(all_results, layers, top_k=min(50, len(all_results)))
+    
+    # Generate recommendation
+    recommendation = _generate_exhaustive_recommendation(
+        best_combination, best_score, best_structure,
+        single_layer_best, single_layer_best_score,
+        combination_beats_single, improvement_over_single,
+        patterns, total_combinations
+    )
+    
+    return ExhaustiveGeometryAnalysisResult(
+        total_combinations=total_combinations,
+        all_results=all_results,
+        best_combination=best_combination,
+        best_score=best_score,
+        best_structure=best_structure,
+        top_10=top_10,
+        single_layer_best=single_layer_best,
+        single_layer_best_score=single_layer_best_score,
+        combination_beats_single=combination_beats_single,
+        improvement_over_single=improvement_over_single,
+        patterns=patterns,
+        recommendation=recommendation,
+    )
+
+
+def detect_geometry_contiguous(
+    pos_activations_by_layer: Dict[int, torch.Tensor],
+    neg_activations_by_layer: Dict[int, torch.Tensor],
+    combination_method: str = "concat",
+    num_components: int = 5,
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+    top_k: int = 100,
+) -> ExhaustiveGeometryAnalysisResult:
+    """
+    Test contiguous layer combinations only.
+    
+    Only tests combinations where layers are adjacent: 1-2, 2-3, 1-3, 5-8, etc.
+    Much faster: O(N^2) combinations instead of O(2^N).
+    
+    For N layers: N*(N+1)/2 combinations
+    - 36 layers: 666 combinations
+    - 24 layers: 300 combinations
+    
+    Arguments:
+        pos_activations_by_layer: Dict mapping layer index to positive activations [N, hidden_dim]
+        neg_activations_by_layer: Dict mapping layer index to negative activations [N, hidden_dim]
+        combination_method: How to combine layers ("concat", "mean", "weighted")
+        num_components: Number of PCA components for analysis
+        progress_callback: Optional callback(current, total) for progress reporting
+        top_k: Number of top results to keep in memory (default 100)
+        
+    Returns:
+        ExhaustiveGeometryAnalysisResult with top combinations ranked
+    """
+    import heapq
+    
+    layers = sorted(pos_activations_by_layer.keys())
+    n_layers = len(layers)
+    
+    if n_layers == 0:
+        raise ValueError("No layers provided")
+    
+    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
+    
+    # Total contiguous combinations: N*(N+1)/2
+    total_combinations = n_layers * (n_layers + 1) // 2
+    
+    # Use min-heap to keep top_k results
+    top_results_heap: List[Tuple[float, ExhaustiveCombinationResult]] = []
+    single_layer_results: List[ExhaustiveCombinationResult] = []
+    
+    # Generator for contiguous combinations
+    def combo_generator():
+        # For each starting layer
+        for start_idx in range(n_layers):
+            # For each ending layer (inclusive)
+            for end_idx in range(start_idx, n_layers):
+                yield tuple(layers[start_idx:end_idx + 1])
+    
+    # Test each combination
+    idx = 0
+    for combo in combo_generator():
+        idx += 1
+        if progress_callback:
+            progress_callback(idx, total_combinations)
+        
+        # Combine activations for this subset
+        if len(combo) == 1:
+            layer = combo[0]
+            combined_pos = pos_activations_by_layer[layer]
+            combined_neg = neg_activations_by_layer[layer]
+        else:
+            combined_pos, combined_neg = _combine_layer_activations(
+                pos_activations_by_layer, neg_activations_by_layer, 
+                list(combo), combination_method
+            )
+        
+        # Run geometry detection
+        result = detect_geometry_structure(combined_pos, combined_neg, geo_cfg)
+        
+        all_scores = {name: score.score for name, score in result.all_scores.items()}
+        combo_result = ExhaustiveCombinationResult(
+            layers=combo,
+            best_structure=result.best_structure,
+            best_score=result.best_score,
+            all_scores=all_scores,
+        )
+        
+        # Track single layer results separately
+        if len(combo) == 1:
+            single_layer_results.append(combo_result)
+        
+        # Maintain top_k using heap
+        if len(top_results_heap) < top_k:
+            heapq.heappush(top_results_heap, (combo_result.best_score, combo_result))
+        elif combo_result.best_score > top_results_heap[0][0]:
+            heapq.heapreplace(top_results_heap, (combo_result.best_score, combo_result))
+    
+    # Extract top results sorted by score descending
+    all_results = [r for _, r in sorted(top_results_heap, key=lambda x: -x[0])]
+    
+    # Extract insights
+    best_result = all_results[0] if all_results else None
+    best_combination = best_result.layers if best_result else ()
+    best_score = best_result.best_score if best_result else 0.0
+    best_structure = best_result.best_structure if best_result else StructureType.UNKNOWN
+    
+    top_10 = all_results[:10]
+    
+    # Find best single layer
+    if single_layer_results:
+        single_layer_results.sort(key=lambda x: x.best_score, reverse=True)
+        single_layer_best = single_layer_results[0].layers[0]
+        single_layer_best_score = single_layer_results[0].best_score
+    else:
+        single_layer_best = layers[0]
+        single_layer_best_score = 0.0
+    
+    combination_beats_single = best_score > single_layer_best_score
+    improvement_over_single = best_score - single_layer_best_score
+    
+    # Analyze patterns from top results
+    patterns = _analyze_combination_patterns(all_results, layers, top_k=min(50, len(all_results)))
+    
+    # Generate recommendation
+    recommendation = _generate_exhaustive_recommendation(
+        best_combination, best_score, best_structure,
+        single_layer_best, single_layer_best_score,
+        combination_beats_single, improvement_over_single,
+        patterns, total_combinations
+    )
+    
+    return ExhaustiveGeometryAnalysisResult(
+        total_combinations=total_combinations,
+        all_results=all_results,
+        best_combination=best_combination,
+        best_score=best_score,
+        best_structure=best_structure,
+        top_10=top_10,
+        single_layer_best=single_layer_best,
+        single_layer_best_score=single_layer_best_score,
+        combination_beats_single=combination_beats_single,
+        improvement_over_single=improvement_over_single,
+        patterns=patterns,
+        recommendation=recommendation,
+    )
+
+
+def detect_geometry_smart(
+    pos_activations_by_layer: Dict[int, torch.Tensor],
+    neg_activations_by_layer: Dict[int, torch.Tensor],
+    max_combo_size: int = 3,
+    combination_method: str = "concat",
+    num_components: int = 5,
+    progress_callback: Optional[Callable[[int, int], None]] = None,
+    top_k: int = 100,
+) -> ExhaustiveGeometryAnalysisResult:
+    """
+    Smart layer combination search: contiguous + limited (1,2,3-layer) combinations.
+    
+    Tests:
+    1. All contiguous combinations (L1-L2, L1-L3, L5-L10, etc.)
+    2. All 1,2,3-layer non-contiguous combinations
+    
+    Deduplicates overlapping combinations.
+    
+    For N=36 layers with max_combo_size=3:
+    - Contiguous: 666 combinations
+    - Limited non-contiguous: ~7,100 additional combinations
+    - Total: ~7,800 unique combinations
+    
+    Arguments:
+        pos_activations_by_layer: Dict mapping layer index to positive activations [N, hidden_dim]
+        neg_activations_by_layer: Dict mapping layer index to negative activations [N, hidden_dim]
+        max_combo_size: Maximum combination size for non-contiguous (default: 3)
+        combination_method: How to combine layers ("concat", "mean", "weighted")
+        num_components: Number of PCA components for analysis
+        progress_callback: Optional callback(current, total) for progress reporting
+        top_k: Number of top results to keep in memory (default 100)
+        
+    Returns:
+        ExhaustiveGeometryAnalysisResult with top combinations ranked
+    """
+    import heapq
+    from itertools import combinations as itertools_combinations
+    
+    layers = sorted(pos_activations_by_layer.keys())
+    n_layers = len(layers)
+    
+    if n_layers == 0:
+        raise ValueError("No layers provided")
+    
+    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
+    
+    # Generate all unique combinations: contiguous + limited
+    all_combos_set: set = set()
+    
+    # Add contiguous combinations
+    for start_idx in range(n_layers):
+        for end_idx in range(start_idx, n_layers):
+            all_combos_set.add(tuple(layers[start_idx:end_idx + 1]))
+    
+    # Add limited combinations (1,2,3-layer)
+    for r in range(1, min(max_combo_size, n_layers) + 1):
+        for combo in itertools_combinations(layers, r):
+            all_combos_set.add(combo)
+    
+    # Convert to sorted list
+    all_combos = sorted(all_combos_set, key=lambda x: (len(x), x))
     total_combinations = len(all_combos)
-    all_results: List[ExhaustiveCombinationResult] = []
+    
+    # Use min-heap to keep top_k results
+    top_results_heap: List[Tuple[float, ExhaustiveCombinationResult]] = []
+    single_layer_results: List[ExhaustiveCombinationResult] = []
     
     # Test each combination
     for idx, combo in enumerate(all_combos):
@@ -2428,26 +2892,35 @@ def detect_geometry_exhaustive(
         result = detect_geometry_structure(combined_pos, combined_neg, geo_cfg)
         
         all_scores = {name: score.score for name, score in result.all_scores.items()}
-        all_results.append(ExhaustiveCombinationResult(
+        combo_result = ExhaustiveCombinationResult(
             layers=combo,
             best_structure=result.best_structure,
             best_score=result.best_score,
             all_scores=all_scores,
-        ))
+        )
+        
+        # Track single layer results separately
+        if len(combo) == 1:
+            single_layer_results.append(combo_result)
+        
+        # Maintain top_k using heap
+        if len(top_results_heap) < top_k:
+            heapq.heappush(top_results_heap, (combo_result.best_score, combo_result))
+        elif combo_result.best_score > top_results_heap[0][0]:
+            heapq.heapreplace(top_results_heap, (combo_result.best_score, combo_result))
     
-    # Sort by best_score descending
-    all_results.sort(key=lambda x: x.best_score, reverse=True)
+    # Extract top results sorted by score descending
+    all_results = [r for _, r in sorted(top_results_heap, key=lambda x: -x[0])]
     
     # Extract insights
-    best_result = all_results[0]
-    best_combination = best_result.layers
-    best_score = best_result.best_score
-    best_structure = best_result.best_structure
+    best_result = all_results[0] if all_results else None
+    best_combination = best_result.layers if best_result else ()
+    best_score = best_result.best_score if best_result else 0.0
+    best_structure = best_result.best_structure if best_result else StructureType.UNKNOWN
     
     top_10 = all_results[:10]
     
     # Find best single layer
-    single_layer_results = [r for r in all_results if len(r.layers) == 1]
     if single_layer_results:
         single_layer_results.sort(key=lambda x: x.best_score, reverse=True)
         single_layer_best = single_layer_results[0].layers[0]
@@ -2459,8 +2932,8 @@ def detect_geometry_exhaustive(
     combination_beats_single = best_score > single_layer_best_score
     improvement_over_single = best_score - single_layer_best_score
     
-    # Analyze patterns
-    patterns = _analyze_combination_patterns(all_results, layers, top_k=50)
+    # Analyze patterns from top results
+    patterns = _analyze_combination_patterns(all_results, layers, top_k=min(50, len(all_results)))
     
     # Generate recommendation
     recommendation = _generate_exhaustive_recommendation(
