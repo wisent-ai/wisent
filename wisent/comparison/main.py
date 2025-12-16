@@ -24,6 +24,7 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.utils.dataset_splits import get_test_docs
 from wisent.comparison import ours
 from wisent.comparison import sae
+from wisent.comparison.utils import load_steering_vector, apply_steering_to_model, remove_steering, convert_to_lm_eval_format
 
 # Map method names to modules
 METHOD_MODULES = {
@@ -96,17 +97,6 @@ def run_evaluation(
         limit=limit,
     )
 
-    # Clean up model to free GPU memory
-    if hasattr(lm, '_model'):
-        del lm._model
-    if hasattr(lm, 'model'):
-        del lm.model
-    del lm
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
-
     return results
 
 
@@ -132,6 +122,8 @@ def run_single_task(
     vectors_dir: Path = None,
     train_ratio: float = 0.8,
     layers: str | None = None,
+    token_aggregation: str = "average",
+    prompt_strategy: str = "direct_completion",
 ) -> list[dict]:
     """
     Run comparison for a single task with multiple methods and scales.
@@ -154,29 +146,10 @@ def run_single_task(
 
     task_dict = create_test_only_task(task, train_ratio=train_ratio)
 
-    # Load model once and reuse
-    print(f"\n{'='*60}")
-    print(f"Loading model: {model_name}")
-    print(f"{'='*60}")
-    wisent_model = WisentModel(model_name=model_name, device=device)
+    # Step 2: Generate ALL steering vectors FIRST (subprocess frees GPU memory after each)
+    steering_vectors_data = {}
+    train_pct = round(train_ratio * 100)
 
-    # Step 2: Run base evaluation (no steering applied)
-    print(f"\n{'='*60}")
-    print(f"Running BASE evaluation for: {task}")
-    print(f"{'='*60}")
-
-    base_results = run_evaluation(
-        wisent_model=wisent_model,
-        task_dict=task_dict,
-        task_name=task,
-        batch_size=batch_size,
-        max_batch_size=max_batch_size,
-        limit=eval_limit,
-    )
-    base_acc = extract_accuracy(base_results, task)
-    print(f"Base accuracy: {base_acc:.4f}")
-
-    # Step 3: Generate steering vectors and evaluate for each method
     for method in methods:
         if method not in METHOD_MODULES:
             print(f"WARNING: Method '{method}' not implemented, skipping")
@@ -184,7 +157,6 @@ def run_single_task(
 
         method_module = METHOD_MODULES[method]
 
-        train_pct = round(train_ratio * 100)
         print(f"\n{'='*60}")
         print(f"Generating steering vector for: {task} (method={method})")
         print(f"(using {train_pct}% of pooled data - no overlap with test)")
@@ -200,19 +172,51 @@ def run_single_task(
             num_pairs=num_pairs,
             device=device,
             layers=layers,
+            token_aggregation=token_aggregation,
+            prompt_strategy=prompt_strategy,
         )
 
-        steering_data = method_module.load_steering_vector(vector_path)
+        steering_data = load_steering_vector(vector_path, default_method=method)
+        steering_vectors_data[method] = steering_data
         print(f"Loaded steering vector with layers: {steering_data['layers']}")
 
-        # Step 4: Run steered evaluations for each scale
+    # Step 3: Load model once for ALL evaluations
+    print(f"\n{'='*60}")
+    print(f"Loading model: {model_name}")
+    print(f"{'='*60}")
+    wisent_model = WisentModel(model_name=model_name, device=device)
+
+    # Step 4: Run base evaluation (no steering applied)
+    print(f"\n{'='*60}")
+    print(f"Running BASE evaluation for: {task}")
+    print(f"{'='*60}")
+
+    base_results = run_evaluation(
+        wisent_model=wisent_model,
+        task_dict=task_dict,
+        task_name=task,
+        batch_size=batch_size,
+        max_batch_size=max_batch_size,
+        limit=eval_limit,
+    )
+    base_acc = extract_accuracy(base_results, task)
+    print(f"Base accuracy: {base_acc:.4f}")
+
+    # Step 5: Run ALL wisent steered evaluations first (model stays loaded)
+    wisent_results = {}  # (method, scale) -> steered_acc
+    for method in methods:
+        if method not in steering_vectors_data:
+            continue
+
+        steering_data = steering_vectors_data[method]
+
         for scale in steering_scales:
             print(f"\n{'='*60}")
             print(f"Running STEERED evaluation for: {task} (method={method}, scale={scale})")
             print(f"{'='*60}")
 
             # Apply steering to existing model
-            method_module.apply_steering_to_model(wisent_model, steering_data, scale=scale)
+            apply_steering_to_model(wisent_model, steering_data, scale=scale)
 
             steered_results = run_evaluation(
                 wisent_model=wisent_model,
@@ -226,16 +230,33 @@ def run_single_task(
             print(f"Steered accuracy (wisent): {steered_acc:.4f}")
 
             # Remove steering for next iteration
-            method_module.remove_steering(wisent_model)
+            remove_steering(wisent_model)
 
-            # Step 5: Run lm-eval native steered evaluation
+            # Store wisent result
+            wisent_results[(method, scale)] = steered_acc
+
+    # Step 6: Free wisent_model to make room for SteeredModel
+    del wisent_model
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+
+    # Step 7: Run ALL lm-eval native steered evaluations (one at a time)
+    for method in methods:
+        if method not in steering_vectors_data:
+            continue
+
+        steering_data = steering_vectors_data[method]
+
+        for scale in steering_scales:
             print(f"\n{'='*60}")
             print(f"Running lm-eval NATIVE steered for: {task} (method={method}, scale={scale})")
             print(f"{'='*60}")
 
             # Convert steering vector to lm-eval format
             lm_eval_steer_path = vectors_dir / f"{task}_{method}_lm_eval_steer_scale{scale}.pt"
-            method_module.convert_to_lm_eval_format(steering_data, lm_eval_steer_path, scale=scale)
+            convert_to_lm_eval_format(steering_data, lm_eval_steer_path, scale=scale)
 
             lm_steered = SteeredModel(
                 pretrained=model_name,
@@ -253,13 +274,15 @@ def run_single_task(
             lm_eval_native_acc = extract_accuracy(lm_eval_native_results, task)
             print(f"lm-eval native steered accuracy: {lm_eval_native_acc:.4f}")
 
-            # Clean up
+            # Clean up SteeredModel to free GPU for next iteration
             del lm_steered
             gc.collect()
             if torch.cuda.is_available():
                 torch.cuda.empty_cache()
+                torch.cuda.synchronize()
 
-            # Store results
+            # Store combined results
+            steered_acc = wisent_results[(method, scale)]
             results_list.append({
                 "task": task,
                 "method": method,
@@ -273,12 +296,6 @@ def run_single_task(
                 "difference_wisent": steered_acc - base_acc,
                 "difference_lm_eval_native": lm_eval_native_acc - base_acc,
             })
-
-    # Clean up model before next task
-    del wisent_model
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
 
     return results_list
 
@@ -296,6 +313,8 @@ def run_comparison(
     output_dir: str = "comparison_results",
     train_ratio: float = 0.8,
     layers: str | None = None,
+    token_aggregation: str = "average",
+    prompt_strategy: str = "direct_completion",
 ) -> list[dict]:
     """
     Run full comparison for multiple tasks, methods, and scales.
@@ -333,6 +352,8 @@ def run_comparison(
             vectors_dir=vectors_dir,
             train_ratio=train_ratio,
             layers=layers,
+            token_aggregation=token_aggregation,
+            prompt_strategy=prompt_strategy,
         )
         all_results.extend(task_results)
 
@@ -380,6 +401,8 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--output-dir", default="wisent/comparison/comparison_results", help="Output directory")
     parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio (default 0.8 = 80%% train, 20%% test)")
+    parser.add_argument("--token-aggregation", default="average", choices=["average", "final", "first", "max"], help="Token aggregation strategy")
+    parser.add_argument("--prompt-strategy", default="direct_completion", choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"], help="Prompt construction strategy")
 
     args = parser.parse_args()
 
@@ -401,6 +424,8 @@ def main():
         output_dir=args.output_dir,
         train_ratio=args.train_ratio,
         layers=args.layers,
+        token_aggregation=args.token_aggregation,
+        prompt_strategy=args.prompt_strategy,
     )
 
 
