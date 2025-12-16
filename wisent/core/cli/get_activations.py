@@ -52,17 +52,17 @@ def execute_get_activations(args):
         model = WisentModel(args.model, device=args.device)
         print(f"   ✓ Model loaded with {model.num_layers} layers")
 
-        # 3. Determine layers to collect
+        # 3. Determine layers to collect (1-indexed for API)
         if args.layers is None:
-            # Default: use ALL layers (0-indexed)
-            layers = list(range(model.num_layers))
+            # Default: use ALL layers (1-indexed: 1..num_layers)
+            layers = list(range(1, model.num_layers + 1))
         elif args.layers.lower() == 'all':
-            # Use all layers (0-indexed)
-            layers = list(range(model.num_layers))
+            # Use all layers (1-indexed: 1..num_layers)
+            layers = list(range(1, model.num_layers + 1))
         else:
             layers = [int(l.strip()) for l in args.layers.split(',')]
 
-        # Convert to strings for API
+        # Convert to strings for API (1-indexed)
         layer_strs = [str(l) for l in layers]
 
         print(f"\n🎯 Collecting activations from {len(layers)} layer(s): {layers}")
