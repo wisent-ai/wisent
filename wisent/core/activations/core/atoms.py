@@ -43,6 +43,7 @@ class ActivationAggregationStrategy(_LowerSnakeStrEnum):
     FIRST_TOKEN = auto()          # always use the first token
     MEAN_POOLING = auto()         # mean over all tokens
     MAX_POOLING = auto()          # max over all tokens
+    MIN_POOLING = auto()          # min over all tokens
 
     @property
     def description(self) -> str:
@@ -53,6 +54,7 @@ class ActivationAggregationStrategy(_LowerSnakeStrEnum):
             ActivationAggregationStrategy.FIRST_TOKEN: "Always select the first token.",
             ActivationAggregationStrategy.MEAN_POOLING: "Aggregate by mean over all tokens.",
             ActivationAggregationStrategy.MAX_POOLING: "Aggregate by max over all tokens.",
+            ActivationAggregationStrategy.MIN_POOLING: "Aggregate by min over all tokens.",
         }[self]
 
 

@@ -1053,6 +1053,7 @@ wisent/parameters/tasks/skills.json
 wisent/parameters/tasks/tasks.json
 wisent/scripts/run_quality_metrics_sweep.sh
 wisent/tests/__init__.py
+wisent/tests/test_aggregation_geometry.py
 wisent/tests/test_all_cli_commands.py
 wisent/tests/test_detector_accuracy.py
 wisent/tests/test_geometry_comprehensive.py

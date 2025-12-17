@@ -34,10 +34,12 @@ class Activations:
                 "last": ActivationAggregationStrategy.LAST_TOKEN,
                 "first": ActivationAggregationStrategy.FIRST_TOKEN,
                 "max": ActivationAggregationStrategy.MAX_POOLING,
+                "min": ActivationAggregationStrategy.MIN_POOLING,
                 "mean_pooling": ActivationAggregationStrategy.MEAN_POOLING,
                 "last_token": ActivationAggregationStrategy.LAST_TOKEN,
                 "first_token": ActivationAggregationStrategy.FIRST_TOKEN,
                 "max_pooling": ActivationAggregationStrategy.MAX_POOLING,
+                "min_pooling": ActivationAggregationStrategy.MIN_POOLING,
             }
             self.aggregation_strategy = strategy_map.get(
                 aggregation_strategy.lower(),
@@ -78,6 +80,9 @@ class Activations:
         elif self.aggregation_strategy == ActivationAggregationStrategy.MAX_POOLING:
             # Max over sequence length dimension
             features = tensor.max(dim=1)[0].squeeze(0)
+        elif self.aggregation_strategy == ActivationAggregationStrategy.MIN_POOLING:
+            # Min over sequence length dimension
+            features = tensor.min(dim=1)[0].squeeze(0)
         else:
             # Default to mean pooling
             features = tensor.mean(dim=1).squeeze(0)

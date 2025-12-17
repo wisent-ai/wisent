@@ -364,14 +364,25 @@ def execute_comprehensive(args, model, loader):
     # These are used by some code paths that haven't been fully migrated
     first_method = args.methods[0] if args.methods else "CAA"
     first_space = method_search_spaces.get(first_method)
-    if isinstance(first_space, (CAASearchSpace, PRISMSearchSpace)):
+    
+    # Check if CLI args override search space
+    if hasattr(args, 'search_layers') and args.search_layers:
+        layers_to_test = [int(x.strip()) for x in args.search_layers.split(',')]
+    elif isinstance(first_space, (CAASearchSpace, PRISMSearchSpace)):
         layers_to_test = first_space.layers
     else:
         # PULSE/TITAN don't use direct layers - use ALL layers as fallback
         layers_to_test = list(range(model.num_layers))
     
-    strengths_to_test = first_space.strengths if first_space else [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
-    strategies_to_test = first_space.strategies if first_space else ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
+    if hasattr(args, 'search_strengths') and args.search_strengths:
+        strengths_to_test = [float(x.strip()) for x in args.search_strengths.split(',')]
+    else:
+        strengths_to_test = first_space.strengths if first_space else [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+    
+    if hasattr(args, 'search_strategies') and args.search_strategies:
+        strategies_to_test = [x.strip() for x in args.search_strategies.split(',')]
+    else:
+        strategies_to_test = first_space.strategies if first_space else ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
     
     # Convert string token aggregations to enum
     token_agg_map = {
@@ -382,10 +393,14 @@ def execute_comprehensive(args, model, loader):
         "choice_token": ActivationAggregationStrategy.CHOICE_TOKEN,
         "continuation_token": ActivationAggregationStrategy.CONTINUATION_TOKEN,
     }
-    token_aggregations_to_test = [
-        token_agg_map.get(t, ActivationAggregationStrategy.LAST_TOKEN) 
-        for t in (first_space.token_aggregations if first_space else ["last_token", "mean_pooling"])
-    ]
+    if hasattr(args, 'search_token_aggregations') and args.search_token_aggregations:
+        token_agg_names = [x.strip() for x in args.search_token_aggregations.split(',')]
+        token_aggregations_to_test = [token_agg_map.get(t, ActivationAggregationStrategy.LAST_TOKEN) for t in token_agg_names]
+    else:
+        token_aggregations_to_test = [
+            token_agg_map.get(t, ActivationAggregationStrategy.LAST_TOKEN) 
+            for t in (first_space.token_aggregations if first_space else ["last_token", "mean_pooling"])
+        ]
     
     # Convert string prompt constructions to enum
     prompt_const_map = {
@@ -395,13 +410,25 @@ def execute_comprehensive(args, model, loader):
         "role_playing": PromptConstructionStrategy.ROLE_PLAYING,
         "instruction_following": PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
     }
-    prompt_constructions_to_test = [
-        prompt_const_map.get(p, PromptConstructionStrategy.CHAT_TEMPLATE)
-        for p in (first_space.prompt_constructions if first_space else ["chat_template", "direct_completion"])
-    ]
+    if hasattr(args, 'search_prompt_constructions') and args.search_prompt_constructions:
+        prompt_const_names = [x.strip() for x in args.search_prompt_constructions.split(',')]
+        prompt_constructions_to_test = [prompt_const_map.get(p, PromptConstructionStrategy.CHAT_TEMPLATE) for p in prompt_const_names]
+    else:
+        prompt_constructions_to_test = [
+            prompt_const_map.get(p, PromptConstructionStrategy.CHAT_TEMPLATE)
+            for p in (first_space.prompt_constructions if first_space else ["chat_template", "direct_completion"])
+        ]
     
-    # For legacy code paths
-    total_configs = first_space.get_total_configs() if first_space else 100
+    # For legacy code paths - recalculate total configs based on actual search space
+    total_configs = len(layers_to_test) * len(strengths_to_test) * len(strategies_to_test) * len(token_aggregations_to_test) * len(prompt_constructions_to_test)
+    
+    print(f"\n📊 Search Space Configuration:")
+    print(f"   Layers: {len(layers_to_test)} ({layers_to_test[:5]}{'...' if len(layers_to_test) > 5 else ''})")
+    print(f"   Strengths: {len(strengths_to_test)} ({strengths_to_test[:5]}{'...' if len(strengths_to_test) > 5 else ''})")
+    print(f"   Strategies: {len(strategies_to_test)} ({strategies_to_test})")
+    print(f"   Token Aggregations: {len(token_aggregations_to_test)} ({[t.value for t in token_aggregations_to_test]})")
+    print(f"   Prompt Constructions: {len(prompt_constructions_to_test)} ({[p.value for p in prompt_constructions_to_test]})")
+    print(f"   Total Configurations: {total_configs:,}")
 
     for task_idx, task_name in enumerate(task_list, 1):
         print(f"\n{'=' * 80}")

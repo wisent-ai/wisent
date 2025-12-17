@@ -266,6 +266,8 @@ class ActivationGenerator:
                 return activations[:, 0, :]
             if strategy == ActivationAggregationStrategy.MAX_POOLING:
                 return torch.max(activations, dim=1)[0]
+            if strategy == ActivationAggregationStrategy.MIN_POOLING:
+                return torch.min(activations, dim=1)[0]
             # Default to mean pooling
             self.logger.warning(f"Unknown aggregation strategy {strategy}, using mean pooling")
             return torch.mean(activations, dim=1)

@@ -143,10 +143,19 @@ class ActivationCollector:
         normalize_layers: bool = False,
         prompt_strategy: PromptConstructionStrategy = PromptConstructionStrategy.CHAT_TEMPLATE,
     ) -> ContrastivePair:
-        pos = self._collect_for_texts(pair.prompt, _resp_text(pair.positive_response),
-                                      layers, aggregation, return_full_sequence, normalize_layers, prompt_strategy)
-        neg = self._collect_for_texts(pair.prompt, _resp_text(pair.negative_response),
-                                      layers, aggregation, return_full_sequence, normalize_layers, prompt_strategy)
+        pos_text = _resp_text(pair.positive_response)
+        neg_text = _resp_text(pair.negative_response)
+        
+        # For multiple choice, we need both responses to construct the prompt
+        other_response = neg_text if prompt_strategy == PromptConstructionStrategy.MULTIPLE_CHOICE else None
+        pos = self._collect_for_texts(pair.prompt, pos_text,
+                                      layers, aggregation, return_full_sequence, normalize_layers, prompt_strategy,
+                                      other_response=other_response, is_positive=True)
+        
+        other_response = pos_text if prompt_strategy == PromptConstructionStrategy.MULTIPLE_CHOICE else None
+        neg = self._collect_for_texts(pair.prompt, neg_text,
+                                      layers, aggregation, return_full_sequence, normalize_layers, prompt_strategy,
+                                      other_response=other_response, is_positive=False)
         return pair.with_activations(positive=pos, negative=neg)
 
     def _collect_for_texts(
@@ -158,6 +167,8 @@ class ActivationCollector:
         return_full_sequence: bool,
         normalize_layers: bool = False,
         prompt_strategy: PromptConstructionStrategy = PromptConstructionStrategy.CHAT_TEMPLATE,
+        other_response: str | None = None,
+        is_positive: bool = True,
     ) -> LayerActivations:
 
         self._ensure_eval_mode()
@@ -166,7 +177,8 @@ class ActivationCollector:
 
             # 1) Build prompts based on strategy
             prompt_text, full_text = self._build_prompts_for_strategy(
-                prompt, response, prompt_strategy, tok
+                prompt, response, prompt_strategy, tok,
+                other_response=other_response, is_positive=is_positive
             )
 
             # 2) Tokenize both with identical flags
@@ -219,10 +231,20 @@ class ActivationCollector:
         prompt: str,
         response: str,
         strategy: PromptConstructionStrategy,
-        tokenizer
+        tokenizer,
+        other_response: str | None = None,
+        is_positive: bool = True,
     ) -> tuple[str, str]:
         """
         Build prompt_text and full_text based on the chosen prompt construction strategy.
+
+        Args:
+            prompt: The user prompt/question
+            response: The response to collect activations for
+            strategy: The prompt construction strategy
+            tokenizer: The tokenizer
+            other_response: For multiple_choice, the other response option
+            is_positive: For multiple_choice, whether 'response' is the positive option
 
         Returns:
             (prompt_text, full_text): Tuple of prompt-only text and prompt+response text
@@ -252,25 +274,112 @@ class ActivationCollector:
                     raise
 
         elif strategy == PromptConstructionStrategy.DIRECT_COMPLETION:
-            # Q → good_resp/bad_resp (direct answer)
+            # Raw text without any chat formatting
             prompt_text = prompt
             full_text = f"{prompt} {response}"
 
         elif strategy == PromptConstructionStrategy.INSTRUCTION_FOLLOWING:
-            # [INST] Q [/INST] → good_resp/bad_resp (instruction format)
-            prompt_text = f"[INST] {prompt} [/INST]"
-            full_text = f"[INST] {prompt} [/INST] {response}"
+            # Use chat template with instruction-style user message
+            if hasattr(tokenizer, "apply_chat_template"):
+                try:
+                    instruction_prompt = f"Follow this instruction: {prompt}"
+                    prompt_text = tokenizer.apply_chat_template(
+                        [{"role": "user", "content": instruction_prompt}],
+                        tokenize=False,
+                        add_generation_prompt=True,
+                    )
+                    full_text = tokenizer.apply_chat_template(
+                        [{"role": "user", "content": instruction_prompt},
+                         {"role": "assistant", "content": response}],
+                        tokenize=False,
+                        add_generation_prompt=False,
+                    )
+                except ValueError:
+                    prompt_text = f"Follow this instruction: {prompt}"
+                    full_text = f"{prompt_text} {response}"
+            else:
+                prompt_text = f"Follow this instruction: {prompt}"
+                full_text = f"{prompt_text} {response}"
 
         elif strategy == PromptConstructionStrategy.MULTIPLE_CHOICE:
-            # Which is better: Q A. bad B. good → "A"/"B" (choice format)
-            # For multiple choice, we expect response to be "A" or "B"
-            prompt_text = f"Which is better: {prompt} A. [bad response] B. [good response]\nAnswer:"
-            full_text = f"{prompt_text} {response}"
+            # Multiple choice: show both responses as A/B, answer with just "A" or "B"
+            # IMPORTANT: We randomize whether positive goes in A or B (based on prompt hash)
+            # This ensures balanced A/B across the dataset, so the A vs B bias cancels out
+            # and only the semantic signal remains (like in the CAA paper)
+            if other_response is None:
+                raise ValueError("MULTIPLE_CHOICE strategy requires other_response to be provided")
+            
+            # Deterministic "random" based on prompt - same for both pos and neg of a pair
+            pos_goes_in_b = hash(prompt) % 2 == 0
+            
+            if is_positive:
+                # response is positive, other_response is negative
+                if pos_goes_in_b:
+                    option_a = other_response  # negative
+                    option_b = response        # positive
+                    answer = "B"
+                else:
+                    option_a = response        # positive
+                    option_b = other_response  # negative
+                    answer = "A"
+            else:
+                # response is negative, other_response is positive
+                if pos_goes_in_b:
+                    option_a = response        # negative
+                    option_b = other_response  # positive
+                    answer = "A"
+                else:
+                    option_a = other_response  # positive
+                    option_b = response        # negative
+                    answer = "B"
+            
+            if hasattr(tokenizer, "apply_chat_template"):
+                try:
+                    mc_prompt = f"Which is better for the question '{prompt}'?\nA. {option_a}\nB. {option_b}\nAnswer with A or B:"
+                    prompt_text = tokenizer.apply_chat_template(
+                        [{"role": "user", "content": mc_prompt}],
+                        tokenize=False,
+                        add_generation_prompt=True,
+                    )
+                    full_text = tokenizer.apply_chat_template(
+                        [{"role": "user", "content": mc_prompt},
+                         {"role": "assistant", "content": answer}],
+                        tokenize=False,
+                        add_generation_prompt=False,
+                    )
+                except ValueError:
+                    prompt_text = f"Which is better for '{prompt}'?\nA. {option_a}\nB. {option_b}\nAnswer:"
+                    full_text = f"{prompt_text} {answer}"
+            else:
+                prompt_text = f"Which is better for '{prompt}'?\nA. {option_a}\nB. {option_b}\nAnswer:"
+                full_text = f"{prompt_text} {answer}"
 
         elif strategy == PromptConstructionStrategy.ROLE_PLAYING:
-            # Behave like person who would answer Q with good_resp → "I" (role assumption)
-            prompt_text = f"Behave like a person who would answer '{prompt}' with '{response}'. Say 'I' to confirm:"
-            full_text = f"{prompt_text} I"
+            # Use chat template with role-playing system message
+            # The response goes in the system message, assistant says a random general token
+            # This way the difference is purely in the system persona, not the output
+            # Using a deterministic token based on prompt hash so pos/neg pairs get same token
+            random_tokens = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", "To"]
+            random_token = random_tokens[hash(prompt) % len(random_tokens)]
+            if hasattr(tokenizer, "apply_chat_template"):
+                try:
+                    role_prompt = f"Respond to: {prompt}"
+                    system_msg = f"You are a person who would naturally respond with sentiments like: {response}"
+                    prompt_text = tokenizer.apply_chat_template(
+                        [{"role": "system", "content": system_msg},
+                         {"role": "user", "content": role_prompt}],
+                        tokenize=False,
+                        add_generation_prompt=True,
+                    )
+                    # Append random token directly without end token (like repeng)
+                    # This captures activations mid-generation, not at end
+                    full_text = f"{prompt_text}{random_token}"
+                except ValueError:
+                    prompt_text = f"As someone who feels {response}, respond to: {prompt}"
+                    full_text = f"{prompt_text} {random_token}"
+            else:
+                prompt_text = f"As someone who feels {response}, respond to: {prompt}"
+                full_text = f"{prompt_text} {random_token}"
 
         else:
             raise UnknownTypeError(entity_type="prompt_construction_strategy", value=str(strategy))
@@ -326,6 +435,8 @@ class ActivationCollector:
             return cont.mean(dim=0)
         elif s is ActivationAggregationStrategy.MAX_POOLING:
             return cont.max(dim=0).values
+        elif s is ActivationAggregationStrategy.MIN_POOLING:
+            return cont.min(dim=0).values
         else:
             return cont[0]
 
