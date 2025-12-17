@@ -761,6 +761,11 @@ class SteeringOptimizer:
             or aggregation_strategy == ActivationAggregationStrategy.MAX_POOLING.value
         ):
             aggregated = torch.max(activation_tensor, dim=1)[0]  # [1, hidden_dim]
+        elif (
+            aggregation_strategy == "min_pooling"
+            or aggregation_strategy == ActivationAggregationStrategy.MIN_POOLING.value
+        ):
+            aggregated = torch.min(activation_tensor, dim=1)[0]  # [1, hidden_dim]
         else:
             # Default to mean pooling if unknown
             self.logger.warning(f"Unknown aggregation strategy {aggregation_strategy}, using mean pooling")

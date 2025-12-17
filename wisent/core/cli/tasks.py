@@ -422,7 +422,7 @@ def execute_tasks(args):
         'final': 'LAST_TOKEN',
         'first': 'FIRST_TOKEN',
         'max': 'MAX_POOLING',
-        'min': 'MAX_POOLING',  # Fallback to MAX_POOLING for min
+        'min': 'MIN_POOLING',
         'max_score': 'MEAN_POOLING',  # Will use mean for training, but max token score for inference
     }
     aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
@@ -684,6 +684,8 @@ def execute_tasks(args):
                         activation_agg = activation_full_seq[0]
                     elif aggregation_strategy.name == 'MAX_POOLING':
                         activation_agg = activation_full_seq.max(dim=0)[0]
+                    elif aggregation_strategy.name == 'MIN_POOLING':
+                        activation_agg = activation_full_seq.min(dim=0)[0]
                     else:
                         # Default to mean
                         activation_agg = activation_full_seq.mean(dim=0)
