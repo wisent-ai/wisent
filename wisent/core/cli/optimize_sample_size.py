@@ -90,7 +90,7 @@ def execute_optimize_sample_size(args):
             'final': 'LAST_TOKEN',
             'first': 'FIRST_TOKEN',
             'max': 'MAX_POOLING',
-            'min': 'MAX_POOLING',  # Fallback to MAX_POOLING for min
+            'min': 'MIN_POOLING',
         }
         aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
         aggregation_strategy = ActivationAggregationStrategy[aggregation_key]

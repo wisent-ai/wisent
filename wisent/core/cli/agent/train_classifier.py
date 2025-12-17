@@ -14,7 +14,7 @@ def _map_token_aggregation(aggregation_str: str):
         "final": ActivationAggregationStrategy.LAST_TOKEN,
         "first": ActivationAggregationStrategy.FIRST_TOKEN,
         "max": ActivationAggregationStrategy.MAX_POOLING,
-        "min": ActivationAggregationStrategy.MAX_POOLING,  # Note: MIN_POOLING not in enum, using MAX_POOLING
+        "min": ActivationAggregationStrategy.MIN_POOLING,
     }
     return mapping.get(aggregation_str, ActivationAggregationStrategy.MEAN_POOLING)
 
