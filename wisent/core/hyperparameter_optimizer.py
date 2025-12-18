@@ -9,7 +9,7 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from .contrastive_pairs import ContrastivePairSet
 from .steering import SteeringMethod, SteeringType
 from .activations.activations_collector import ActivationCollector
-from .activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+from .activations.extraction_strategy import ExtractionStrategy
 
 from wisent.core.errors import OptimizationError, NoActivationDataError, InsufficientDataError
 

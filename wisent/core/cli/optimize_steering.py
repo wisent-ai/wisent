@@ -49,7 +49,7 @@ def _run_optuna_search_for_task(
     from optuna.pruners import MedianPruner
     
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan
     from wisent.core.cli.steering_method_trainer import create_steering_method
     
@@ -243,7 +243,7 @@ def execute_comprehensive(args, model, loader):
     import torch
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
     from wisent.core.models.core.atoms import SteeringPlan
     from wisent.core.cli.steering_method_trainer import create_steering_method
@@ -991,17 +991,16 @@ def execute_comprehensive(args, model, loader):
                     vector_dir = args.save_best_vector
                     os.makedirs(vector_dir, exist_ok=True)
 
-                    # Recreate the best steering vector with optimal token aggregation
+                    # Recreate the best steering vector with optimal extraction strategy
                     best_layer_str = str(best_config["layer"])
-                    best_token_agg = map_legacy_strategy(best_config["token_aggregation"])
+                    best_extraction_strategy = ExtractionStrategy(best_config.get("extraction_strategy", "chat_last"))
                     pos_acts_best = []
                     neg_acts_best = []
 
                     for pair in train_pairs.pairs:
                         updated_pair = collector.collect(
-                            pair, strategy=best_token_agg,  # Use optimal token aggregation
-                            return_full_sequence=False,
-                            normalize_layers=False,
+                            pair, strategy=best_extraction_strategy,
+                            layers=[best_layer_str],
                         )
 
                         if (
@@ -1406,7 +1405,7 @@ def execute_compare_methods(args, model, loader):
     from wisent_plots import LineChart
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
 
@@ -1648,7 +1647,7 @@ def execute_optimize_layer(args, model, loader):
     from wisent_plots import LineChart
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
 
@@ -1936,7 +1935,7 @@ def execute_optimize_strength(args, model, loader):
     from wisent_plots import LineChart
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
 
@@ -2218,7 +2217,7 @@ def execute_auto(args, model, loader):
     import matplotlib.pyplot as plt
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
 
@@ -2536,7 +2535,7 @@ def execute_personalization(args, model):
     import torch
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
     from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
@@ -3064,7 +3063,7 @@ def execute_multi_personalization(args, model):
     import torch
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
     from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector

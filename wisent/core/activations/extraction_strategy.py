@@ -289,42 +289,6 @@ def extract_activation(
         return hidden_states[-1]
 
 
-def map_legacy_strategy(token_aggregation: str = "last", prompt_strategy: str = "chat_template") -> ExtractionStrategy:
-    """
-    Map legacy CLI strategy names to unified ExtractionStrategy.
-    
-    Args:
-        token_aggregation: Legacy token aggregation name (last, mean, first, max, etc.)
-        prompt_strategy: Legacy prompt strategy name (chat_template, role_playing, multiple_choice, etc.)
-    
-    Returns:
-        Corresponding ExtractionStrategy
-    """
-    token_aggregation = token_aggregation.lower().replace("-", "_").replace(" ", "_")
-    prompt_strategy = prompt_strategy.lower().replace("-", "_").replace(" ", "_")
-    
-    # Role playing and multiple choice override token aggregation
-    if "role" in prompt_strategy:
-        return ExtractionStrategy.ROLE_PLAY
-    if "multiple" in prompt_strategy or "mc" in prompt_strategy:
-        return ExtractionStrategy.MC_BALANCED
-    
-    # Map token aggregation to chat_* strategies
-    if "mean" in token_aggregation or "average" in token_aggregation:
-        return ExtractionStrategy.CHAT_MEAN
-    if "first" in token_aggregation:
-        return ExtractionStrategy.CHAT_FIRST
-    if "max" in token_aggregation:
-        return ExtractionStrategy.CHAT_MAX_NORM
-    if "weighted" in token_aggregation:
-        return ExtractionStrategy.CHAT_WEIGHTED
-    if "gen" in token_aggregation or "continuation" in token_aggregation:
-        return ExtractionStrategy.CHAT_GEN_POINT
-    
-    # Default to chat_last
-    return ExtractionStrategy.CHAT_LAST
-
-
 def add_extraction_strategy_args(parser: argparse.ArgumentParser) -> None:
     """
     Add --extraction-strategy argument to an argument parser.
