@@ -79,8 +79,8 @@ def execute_train_unified_goodness(args):
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.steering_methods.methods.caa import CAAMethod
@@ -321,28 +321,28 @@ def execute_train_unified_goodness(args):
 
     # Map aggregation strategy
     aggregation_map = {
-        'average': ActivationAggregationStrategy.MEAN_POOLING,
-        'final': ActivationAggregationStrategy.LAST_TOKEN,
-        'first': ActivationAggregationStrategy.FIRST_TOKEN,
-        'max': ActivationAggregationStrategy.MAX_POOLING,
-        'continuation': ActivationAggregationStrategy.CONTINUATION_TOKEN,
+        'average': ExtractionStrategy.CHAT_MEAN,
+        'final': ExtractionStrategy.CHAT_LAST,
+        'first': ExtractionStrategy.CHAT_FIRST,
+        'max': ExtractionStrategy.CHAT_MAX_NORM,
+        'continuation': ExtractionStrategy.CHAT_GEN_POINT,
     }
     aggregation_strategy = aggregation_map.get(
         args.token_aggregation,
-        ActivationAggregationStrategy.CONTINUATION_TOKEN
+        ExtractionStrategy.CHAT_GEN_POINT
     )
 
     # Map prompt strategy
     prompt_strategy_map = {
-        'chat_template': PromptConstructionStrategy.CHAT_TEMPLATE,
-        'direct_completion': PromptConstructionStrategy.DIRECT_COMPLETION,
-        'instruction_following': PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-        'multiple_choice': PromptConstructionStrategy.MULTIPLE_CHOICE,
-        'role_playing': PromptConstructionStrategy.ROLE_PLAYING,
+        'chat_template': ExtractionStrategy.CHAT_LAST,
+        'direct_completion': ExtractionStrategy.CHAT_LAST,
+        'instruction_following': ExtractionStrategy.CHAT_LAST,
+        'multiple_choice': ExtractionStrategy.MC_BALANCED,
+        'role_playing': ExtractionStrategy.ROLE_PLAY,
     }
     prompt_strategy = prompt_strategy_map.get(
         args.prompt_strategy,
-        PromptConstructionStrategy.CHAT_TEMPLATE
+        ExtractionStrategy.CHAT_LAST
     )
 
     # Try to load activations from checkpoint

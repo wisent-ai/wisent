@@ -1,61 +1,15 @@
 from __future__ import annotations
 
-from enum import Enum, auto, unique
 from typing import Mapping, Iterator, TypeAlias
 import numpy as np
 import torch
-import sys
 
-from wisent.core.errors import UnknownTypeError
-
-# Python 3.10 compatibility
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    class StrEnum(str, Enum):
-        """StrEnum backport for Python < 3.11"""
-        def _generate_next_value_(name, start, count, last_values):
-            return name.lower()
-
-        def __str__(self) -> str:
-            return str(self.value)
-
-__all__ = ["LayerActivations", "ActivationAggregationStrategy", "ActivationCollector", "LayerName", "LayerActivation", "ActivationMap", "RawActivationMap"]
+__all__ = ["LayerActivations", "LayerName", "LayerActivation", "ActivationMap", "RawActivationMap"]
 
 LayerName: TypeAlias = str
 LayerActivation: TypeAlias = torch.Tensor | None
 ActivationMap: TypeAlias = Mapping[LayerName, LayerActivation]
 RawActivationMap: TypeAlias = Mapping[LayerName, torch.Tensor | np.ndarray | None]
-
-class _LowerSnakeStrEnum(StrEnum):
-    """StrEnum whose auto() values are lower_snake_case of the member name."""
-    def _generate_next_value_(name, start, count, last_values): # type: ignore
-        return name.lower()
-
-@unique
-class ActivationAggregationStrategy(_LowerSnakeStrEnum):
-    """Strategies for selecting/aggregating tokens in activation extraction.
-    """
-
-    CHOICE_TOKEN = auto()         # target A/B choice tokens (multiple choice)
-    CONTINUATION_TOKEN = auto()   # first token of the continuation
-    LAST_TOKEN = auto()           # always use the last token
-    FIRST_TOKEN = auto()          # always use the first token
-    MEAN_POOLING = auto()         # mean over all tokens
-    MAX_POOLING = auto()          # max over all tokens
-    MIN_POOLING = auto()          # min over all tokens
-
-    @property
-    def description(self) -> str:
-        return {
-            ActivationAggregationStrategy.CHOICE_TOKEN: "Target A/B choice tokens (multiple choice).",
-            ActivationAggregationStrategy.CONTINUATION_TOKEN: "Use the first token of the continuation.",
-            ActivationAggregationStrategy.LAST_TOKEN: "Always select the last token.",
-            ActivationAggregationStrategy.FIRST_TOKEN: "Always select the first token.",
-            ActivationAggregationStrategy.MEAN_POOLING: "Aggregate by mean over all tokens.",
-            ActivationAggregationStrategy.MAX_POOLING: "Aggregate by max over all tokens.",
-            ActivationAggregationStrategy.MIN_POOLING: "Aggregate by min over all tokens.",
-        }[self]
 
 
 class LayerActivations(Mapping[LayerName, LayerActivation]):
@@ -74,8 +28,6 @@ class LayerActivations(Mapping[LayerName, LayerActivation]):
     atributes:
         _data:
             internal storage dict. It contains information about layer activations.
-        _strategy:
-            'ActivationAggregationStrategy' (see below). Indicates how activations were aggregated if applicable.
 
     methods:
         'summary()':
@@ -90,13 +42,11 @@ class LayerActivations(Mapping[LayerName, LayerActivation]):
             plain dict (useful for (de)serialization).
 
     examples:
-        >>> acts = LayerActivations({"layer1": torch.randn(2, 10, 768), "layer2": None}, activation_aggregation_strategy="mean_pooling")
+        >>> acts = LayerActivations({"layer1": torch.randn(2, 10, 768), "layer2": None})
         >>> acts["layer1"].shape
         torch.Size([2, 10, 768])
         >>> acts["layer2"] is None
         True
-        >>> acts.activation_aggregation_strategy
-        <ActivationAggregationStrategy.MEAN_POOLING: 'mean_pooling'>
         >>> acts.summary()
         {'layer1': {'shape': (2, 10, 768), 'dtype': 'torch.float32', 'device': 'cpu', 'requires_grad': False}, 'layer2': {'shape': None, 'dtype': None, 'device': None, 'requires_grad': None}}
         >>> acts.numpy()
@@ -106,19 +56,14 @@ class LayerActivations(Mapping[LayerName, LayerActivation]):
           layer1: Tensor(shape=(2, 10, 768), dtype=torch.float32, device=cuda:0)
           layer2: None
         )
-        >>> acts.detach()  # if any tensor required grad
-        LayerActivations(
-          layer1: Tensor(shape=(2, 10, 768), dtype=torch.float32, device=cpu)
-          layer2: None
-        )
 
     notes:
         - Use 'summary()' or 'numpy()' if you need JSON-serializable content.
         - Keys are strings by convention; enforced by type hints.
     """
-    __slots__ = ("_data", "_strategy")
+    __slots__ = ("_data",)
 
-    def __init__(self, data: RawActivationMap | None = None, activation_aggregation_strategy: ActivationAggregationStrategy | None = None, dtype: torch.dtype | None = None):
+    def __init__(self, data: RawActivationMap | None = None, dtype: torch.dtype | None = None):
         store: dict[LayerName, LayerActivation] = {}
         if data:
             for layer, val in data.items():
@@ -134,33 +79,6 @@ class LayerActivations(Mapping[LayerName, LayerActivation]):
                         f"Activations for layer '{layer}' must be torch.Tensor, np.ndarray, or None."
                     )
         self._data = store
-        self._strategy = self._normalize_strategy(activation_aggregation_strategy)
-
-    @staticmethod
-    def _normalize_strategy(
-        s: ActivationAggregationStrategy | str | None
-    ) -> ActivationAggregationStrategy | None:
-        if s is None:
-            return None
-        if isinstance(s, ActivationAggregationStrategy):
-            return s
-        if isinstance(s, str):
-            try:
-                return ActivationAggregationStrategy(s)
-            except ValueError:
-                valid = [e.value for e in ActivationAggregationStrategy]
-                raise UnknownTypeError(
-                    entity_type="activation_agregation_strategy",
-                    value=s,
-                    valid_values=valid
-                )
-        raise TypeError(
-            "activation_agregation_strategy must be ActivationAggregationStrategy | str | None"
-        )
-    
-    @property
-    def activation_aggregation_strategy(self) -> ActivationAggregationStrategy | None:
-        return self._strategy
 
     def __getitem__(self, key: LayerName) -> LayerActivation:
         return self._data[key]
@@ -170,10 +88,10 @@ class LayerActivations(Mapping[LayerName, LayerActivation]):
         return len(self._data)
 
     def summary(self) -> dict[LayerName, dict[str, tuple | str | bool | None]]:
-        ''' Return a summary of the activations. For each layer, provides
-        shape, dtype, device, requires_grad status, and aggregation strategy.
-        '''
-        out: dict[LayerName, dict[str, dict[str, tuple | str | bool | None]]] = {}
+        """Return a summary of the activations. For each layer, provides
+        shape, dtype, device, requires_grad status.
+        """
+        out: dict[LayerName, dict[str, tuple | str | bool | None]] = {}
         for k, v in self._data.items():
             if isinstance(v, torch.Tensor):
                 out[k] = {
@@ -184,8 +102,6 @@ class LayerActivations(Mapping[LayerName, LayerActivation]):
                 }
             else:
                 out[k] = {"shape": None, "dtype": None, "device": None, "requires_grad": None}
-
-        out["_activation_aggregation_strategy"] = {"strategy": self._strategy.value if self._strategy else None}
         return out
 
     def numpy(self) -> dict[LayerName, np.ndarray | None]:
@@ -216,6 +132,4 @@ class LayerActivations(Mapping[LayerName, LayerActivation]):
             else:
                 lines.append(f"  {k}: None")
         lines.append(")")
-        lines.append(f"  _activation_aggregation_strategy: {self._strategy.value if self._strategy else None}")
-
         return "\n".join(lines)

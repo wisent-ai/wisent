@@ -219,8 +219,7 @@ class PRISMMethod(BaseSteeringMethod):
         primary_map: RawActivationMap = multi_result.to_single_direction_map()
         
         dtype = self.kwargs.get("dtype", None)
-        agg = self.kwargs.get("activation_aggregation_strategy", None)
-        return LayerActivations(primary_map, activation_aggregation_strategy=agg, dtype=dtype)
+        return LayerActivations(primary_map, dtype=dtype)
     
     def train_multi(self, pair_set: ContrastivePairSet) -> MultiDirectionResult:
         """

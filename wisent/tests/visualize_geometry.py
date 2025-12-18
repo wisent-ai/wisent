@@ -15,8 +15,7 @@ from pathlib import Path
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
@@ -82,20 +81,20 @@ def load_best_configs(results_file: str = "/home/ubuntu/output/geometry_analysis
         return False
 
 AGG_MAP = {
-    "first": ActivationAggregationStrategy.FIRST_TOKEN,
-    "final": ActivationAggregationStrategy.LAST_TOKEN,
-    "last": ActivationAggregationStrategy.LAST_TOKEN,
-    "mean": ActivationAggregationStrategy.MEAN_POOLING,
-    "average": ActivationAggregationStrategy.MEAN_POOLING,
-    "max": ActivationAggregationStrategy.MAX_POOLING,
-    "min": ActivationAggregationStrategy.FIRST_TOKEN,  # fallback
-    "max_score": ActivationAggregationStrategy.MAX_POOLING,
+    "first": ExtractionStrategy.CHAT_FIRST,
+    "final": ExtractionStrategy.CHAT_LAST,
+    "last": ExtractionStrategy.CHAT_LAST,
+    "mean": ExtractionStrategy.CHAT_MEAN,
+    "average": ExtractionStrategy.CHAT_MEAN,
+    "max": ExtractionStrategy.CHAT_MAX_NORM,
+    "min": ExtractionStrategy.CHAT_FIRST,  # fallback
+    "max_score": ExtractionStrategy.CHAT_MAX_NORM,
 }
 
 PROMPT_MAP = {
-    "chat_template": PromptConstructionStrategy.CHAT_TEMPLATE,
-    "instruction_following": PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-    "direct_completion": PromptConstructionStrategy.DIRECT_COMPLETION,
+    "chat_template": ExtractionStrategy.CHAT_LAST,
+    "instruction_following": ExtractionStrategy.CHAT_LAST,
+    "direct_completion": ExtractionStrategy.CHAT_LAST,
 }
 
 
@@ -128,8 +127,8 @@ def main():
     else:
         # Single config mode
         layer = args.layer if args.layer is not None else 6
-        agg = AGG_MAP.get(args.aggregation, ActivationAggregationStrategy.LAST_TOKEN)
-        prompt_strat = PROMPT_MAP.get(args.prompt_strategy, PromptConstructionStrategy.CHAT_TEMPLATE)
+        agg = AGG_MAP.get(args.aggregation, ExtractionStrategy.CHAT_LAST)
+        prompt_strat = PROMPT_MAP.get(args.prompt_strategy, ExtractionStrategy.CHAT_LAST)
         
         run_single_config(args, wisent_model, pairs, collector, layer, agg, prompt_strat, args.output)
 
@@ -196,10 +195,8 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     layer_str = str(layer)
     
     for i, pair in enumerate(pairs):
-        updated_pair = collector.collect_for_pair(
-            pair,
-            layers=[layer_str],
-            aggregation=aggregation,
+        updated_pair = collector.collect(
+            pair, strategy=aggregation,
         )
         
         pos_vec = updated_pair.positive_response.layers_activations[layer_str].float().cpu().numpy()

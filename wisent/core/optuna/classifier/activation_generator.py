@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
 from wisent.core.activations.activations import Activations
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class ActivationData:
     activations: torch.Tensor
     labels: torch.Tensor
     layer: int
-    aggregation: ActivationAggregationStrategy
+    aggregation: ExtractionStrategy
     metadata: dict[str, Any]
 
     def to_numpy(self) -> tuple[np.ndarray, np.ndarray]:
@@ -102,7 +102,7 @@ class GenerationConfig:
     """Configuration for activation generation."""
 
     layer_search_range: tuple[int, int]
-    aggregation_methods: Optional[list[ActivationAggregationStrategy]] = None
+    aggregation_methods: Optional[list[ExtractionStrategy]] = None
     cache_dir: Optional[str] = None
     device: Optional[str] = None
     dtype: Optional[torch.dtype] = None  # Auto-detect if None
@@ -113,10 +113,10 @@ class GenerationConfig:
             self.cache_dir = "./activation_cache"
         if not self.aggregation_methods:
             self.aggregation_methods = [
-                ActivationAggregationStrategy.MEAN_POOLING,
-                ActivationAggregationStrategy.LAST_TOKEN,
-                ActivationAggregationStrategy.FIRST_TOKEN,
-                ActivationAggregationStrategy.MAX_POOLING,
+                ExtractionStrategy.CHAT_MEAN,
+                ExtractionStrategy.CHAT_LAST,
+                ExtractionStrategy.CHAT_FIRST,
+                ExtractionStrategy.CHAT_MAX_NORM,
             ]
 
 
@@ -239,7 +239,7 @@ class ActivationGenerator:
         return activation_data
 
     def _apply_batch_aggregation(
-        self, activations: torch.Tensor, strategy: ActivationAggregationStrategy
+        self, activations: torch.Tensor, strategy: ExtractionStrategy
     ) -> torch.Tensor:
         """
         Apply aggregation strategy to a batch of activations efficiently.
@@ -258,15 +258,15 @@ class ActivationGenerator:
             return activations
         if len(activations.shape) == 3:
             # [n_samples, n_tokens, hidden_dim] -> [n_samples, hidden_dim]
-            if strategy == ActivationAggregationStrategy.MEAN_POOLING:
+            if strategy == ExtractionStrategy.CHAT_MEAN:
                 return torch.mean(activations, dim=1)
-            if strategy == ActivationAggregationStrategy.LAST_TOKEN:
+            if strategy == ExtractionStrategy.CHAT_LAST:
                 return activations[:, -1, :]
-            if strategy == ActivationAggregationStrategy.FIRST_TOKEN:
+            if strategy == ExtractionStrategy.CHAT_FIRST:
                 return activations[:, 0, :]
-            if strategy == ActivationAggregationStrategy.MAX_POOLING:
+            if strategy == ExtractionStrategy.CHAT_MAX_NORM:
                 return torch.max(activations, dim=1)[0]
-            if strategy == ActivationAggregationStrategy.MIN_POOLING:
+            if strategy == ExtractionStrategy.CHAT_MEAN:
                 return torch.min(activations, dim=1)[0]
             # Default to mean pooling
             self.logger.warning(f"Unknown aggregation strategy {strategy}, using mean pooling")

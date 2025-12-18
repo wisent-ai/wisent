@@ -14,8 +14,8 @@ def execute_tasks(args):
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    
     from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
     from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
     from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
@@ -426,20 +426,20 @@ def execute_tasks(args):
         'max_score': 'MEAN_POOLING',  # Will use mean for training, but max token score for inference
     }
     aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
-    aggregation_strategy = ActivationAggregationStrategy[aggregation_key]
+    aggregation_strategy = map_legacy_strategy(aggregation_key)
     use_max_token_score = args.token_aggregation.lower() == 'max_score'
 
     # Map prompt construction strategy from CLI to enum
     prompt_strategy_map = {
-        'multiple_choice': PromptConstructionStrategy.MULTIPLE_CHOICE,
-        'role_playing': PromptConstructionStrategy.ROLE_PLAYING,
-        'direct_completion': PromptConstructionStrategy.DIRECT_COMPLETION,
-        'instruction_following': PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-        'chat_template': PromptConstructionStrategy.CHAT_TEMPLATE,
+        'multiple_choice': ExtractionStrategy.MC_BALANCED,
+        'role_playing': ExtractionStrategy.ROLE_PLAY,
+        'direct_completion': ExtractionStrategy.CHAT_LAST,
+        'instruction_following': ExtractionStrategy.CHAT_LAST,
+        'chat_template': ExtractionStrategy.CHAT_LAST,
     }
     prompt_strategy = prompt_strategy_map.get(
         getattr(args, 'prompt_construction_strategy', 'chat_template'),
-        PromptConstructionStrategy.CHAT_TEMPLATE
+        ExtractionStrategy.CHAT_LAST
     )
     print(f"   Prompt construction strategy: {prompt_strategy.value}")
 
@@ -454,10 +454,8 @@ def execute_tasks(args):
             print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...", end='\r')
 
         # Collect for positive (correct) response
-        updated_pair = collector.collect_for_pair(
-            pair,
-            layers=[layer_str],
-            aggregation=aggregation_strategy,
+        updated_pair = collector.collect(
+            pair, strategy=aggregation_strategy,
             return_full_sequence=False,
             normalize_layers=False,
             prompt_strategy=prompt_strategy
@@ -657,10 +655,8 @@ def execute_tasks(args):
 
         # Collect activation - ActivationCollector will re-run the model with prompt+response
         # First, collect with full sequence to get token-by-token activations
-        collected_full = gen_collector.collect_for_pair(
-            temp_pair,
-            layers=[layer_str],
-            aggregation=aggregation_strategy,
+        collected_full = gen_collector.collect(
+            temp_pair, strategy=aggregation_strategy,
             return_full_sequence=True,
             normalize_layers=False,
             prompt_strategy=prompt_strategy

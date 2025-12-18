@@ -150,5 +150,4 @@ class PerLayerBaseSteeringMethod(BaseSteeringMethod):
             raw[layer] = self.train_for_layer(pos_list, neg_list)
 
         dtype = self.kwargs.get("dtype", None)
-        agg = self.kwargs.get("activation_aggregation_strategy", None)
-        return LayerActivations(raw, activation_aggregation_strategy=agg, dtype=dtype)
+        return LayerActivations(raw, dtype=dtype)

@@ -8,8 +8,7 @@ from enum import Enum
 
 import torch
 
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 
 
 class LinearityVerdict(Enum):
@@ -35,11 +34,8 @@ class LinearityConfig:
     layers_to_test: Optional[List[int]] = None
     """Specific layers to test. If None, tests sample across depth."""
     
-    aggregation_strategies: Optional[List[ActivationAggregationStrategy]] = None
-    """Aggregation strategies to test. If None, tests all."""
-    
-    prompt_strategies: Optional[List[PromptConstructionStrategy]] = None
-    """Prompt strategies to test. If None, tests all."""
+    extraction_strategies: Optional[List[ExtractionStrategy]] = None
+    """Extraction strategies to test. If None, tests default set."""
     
     normalize_options: List[bool] = field(default_factory=lambda: [False, True])
     """Normalization options to test."""
@@ -128,24 +124,15 @@ def check_linearity(
     else:
         layers_to_test = cfg.layers_to_test
     
-    # Determine aggregation strategies
-    if cfg.aggregation_strategies is None:
-        aggregation_strategies = [
-            ActivationAggregationStrategy.LAST_TOKEN,
-            ActivationAggregationStrategy.MEAN_POOLING,
-            ActivationAggregationStrategy.MAX_POOLING,
+    # Determine extraction strategies
+    if cfg.extraction_strategies is None:
+        extraction_strategies = [
+            ExtractionStrategy.CHAT_LAST,
+            ExtractionStrategy.CHAT_MEAN,
+            ExtractionStrategy.CHAT_MAX_NORM,
         ]
     else:
-        aggregation_strategies = cfg.aggregation_strategies
-    
-    # Determine prompt strategies
-    if cfg.prompt_strategies is None:
-        prompt_strategies = [
-            PromptConstructionStrategy.CHAT_TEMPLATE,
-            PromptConstructionStrategy.DIRECT_COMPLETION,
-        ]
-    else:
-        prompt_strategies = cfg.prompt_strategies
+        extraction_strategies = cfg.extraction_strategies
     
     # Limit pairs
     test_pairs = pairs[:cfg.max_pairs]
@@ -157,62 +144,59 @@ def check_linearity(
     
     all_results = []
     
-    for prompt_strategy in prompt_strategies:
-        for agg_strategy in aggregation_strategies:
-            for normalize in cfg.normalize_options:
-                # Collect activations
-                pos_activations = {l: [] for l in layers_to_test}
-                neg_activations = {l: [] for l in layers_to_test}
+    for strategy in extraction_strategies:
+        for normalize in cfg.normalize_options:
+            # Collect activations
+            pos_activations = {l: [] for l in layers_to_test}
+            neg_activations = {l: [] for l in layers_to_test}
+            
+            for pair in test_pairs:
+                try:
+                    pair_with_acts = collector.collect(
+                        pair,
+                        strategy=strategy,
+                        layers=[str(l) for l in layers_to_test],
+                        normalize=normalize,
+                    )
+                    
+                    pos_la = pair_with_acts.positive_response.layers_activations
+                    neg_la = pair_with_acts.negative_response.layers_activations
+                    
+                    if pos_la and neg_la:
+                        for layer in layers_to_test:
+                            pos_t = pos_la.get(str(layer))
+                            neg_t = neg_la.get(str(layer))
+                            if pos_t is not None and neg_t is not None:
+                                pos_activations[layer].append(pos_t.flatten().cpu())
+                                neg_activations[layer].append(neg_t.flatten().cpu())
+                except Exception:
+                    continue
+            
+            # Analyze each layer
+            for layer in layers_to_test:
+                pos_list = pos_activations[layer]
+                neg_list = neg_activations[layer]
                 
-                for pair in test_pairs:
-                    try:
-                        pair_with_acts = collector.collect_for_pair(
-                            pair,
-                            layers=[str(l) for l in layers_to_test],
-                            aggregation=agg_strategy,
-                            normalize_layers=normalize,
-                            prompt_strategy=prompt_strategy,
-                        )
-                        
-                        pos_la = pair_with_acts.positive_response.layers_activations
-                        neg_la = pair_with_acts.negative_response.layers_activations
-                        
-                        if pos_la and neg_la:
-                            for layer in layers_to_test:
-                                pos_t = pos_la.get(str(layer))
-                                neg_t = neg_la.get(str(layer))
-                                if pos_t is not None and neg_t is not None:
-                                    pos_activations[layer].append(pos_t.flatten().cpu())
-                                    neg_activations[layer].append(neg_t.flatten().cpu())
-                    except Exception:
-                        continue
+                if len(pos_list) < 10 or len(neg_list) < 10:
+                    continue
                 
-                # Analyze each layer
-                for layer in layers_to_test:
-                    pos_list = pos_activations[layer]
-                    neg_list = neg_activations[layer]
-                    
-                    if len(pos_list) < 10 or len(neg_list) < 10:
-                        continue
-                    
-                    pos_tensor = torch.stack(pos_list)
-                    neg_tensor = torch.stack(neg_list)
-                    
-                    result = detect_geometry_structure(pos_tensor, neg_tensor, geo_config)
-                    
-                    linear_score = result.all_scores["linear"].score
-                    linear_details = result.all_scores["linear"].details
-                    
-                    all_results.append({
-                        "prompt_strategy": prompt_strategy.name,
-                        "aggregation": agg_strategy.name,
-                        "normalize": normalize,
-                        "layer": layer,
-                        "linear_score": linear_score,
-                        "cohens_d": linear_details.get("cohens_d", 0),
-                        "variance_explained": linear_details.get("variance_explained", 0),
-                        "best_structure": result.best_structure.value,
-                    })
+                pos_tensor = torch.stack(pos_list)
+                neg_tensor = torch.stack(neg_list)
+                
+                result = detect_geometry_structure(pos_tensor, neg_tensor, geo_config)
+                
+                linear_score = result.all_scores["linear"].score
+                linear_details = result.all_scores["linear"].details
+                
+                all_results.append({
+                    "extraction_strategy": strategy.value,
+                    "normalize": normalize,
+                    "layer": layer,
+                    "linear_score": linear_score,
+                    "cohens_d": linear_details.get("cohens_d", 0),
+                    "variance_explained": linear_details.get("variance_explained", 0),
+                    "best_structure": result.best_structure.value,
+                })
     
     if not all_results:
         return LinearityResult(
@@ -234,7 +218,7 @@ def check_linearity(
         verdict = LinearityVerdict.LINEAR
         recommendation = (
             f"Use CAA (single-direction steering) on layer {best['layer']} "
-            f"with {best['prompt_strategy']} prompt and {best['aggregation']} aggregation."
+            f"with {best['extraction_strategy']} strategy."
         )
     elif best["linear_score"] >= cfg.weak_threshold and best["cohens_d"] >= cfg.min_cohens_d:
         verdict = LinearityVerdict.WEAKLY_LINEAR
@@ -254,8 +238,7 @@ def check_linearity(
         verdict=verdict,
         best_linear_score=best["linear_score"],
         best_config={
-            "prompt_strategy": best["prompt_strategy"],
-            "aggregation": best["aggregation"],
+            "extraction_strategy": best["extraction_strategy"],
             "normalize": best["normalize"],
         },
         best_layer=best["layer"],
