@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 from tqdm import tqdm
 
-from wisent.core.activations import ExtractionStrategy, map_legacy_strategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
 from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet

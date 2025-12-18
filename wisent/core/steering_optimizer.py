@@ -26,7 +26,7 @@ from enum import Enum, auto
 from pathlib import Path
 
 from .config_manager import ModelConfigManager
-from .activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+from .activations.extraction_strategy import ExtractionStrategy
 
 from wisent.core.errors import (
     MissingParameterError,

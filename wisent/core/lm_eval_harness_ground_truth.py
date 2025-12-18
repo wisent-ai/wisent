@@ -10,7 +10,7 @@ Evaluation uses the TEST portion (20%) to ensure no data leakage with training.
 import logging
 from typing import Any, Dict
 
-from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.activations.activations import Activations
 from wisent.core.layer import Layer
 from wisent.core.utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
@@ -675,7 +675,11 @@ class LMEvalHarnessGroundTruth:
 
     def _map_token_aggregation_to_activation_method(self, token_aggregation: str):
         """Map token aggregation string to ExtractionStrategy."""
-        return map_legacy_strategy(token_aggregation=token_aggregation)
+        # Use ExtractionStrategy directly - token_aggregation should already be a valid enum value
+        try:
+            return ExtractionStrategy(token_aggregation)
+        except ValueError:
+            return ExtractionStrategy.CHAT_LAST
 
     def _is_task_interface_task(self, task_name: str) -> bool:
         """Check if this is a TaskInterface task (not an lm-eval task)."""

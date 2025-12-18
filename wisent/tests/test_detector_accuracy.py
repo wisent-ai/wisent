@@ -12,7 +12,7 @@ from pathlib import Path
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,

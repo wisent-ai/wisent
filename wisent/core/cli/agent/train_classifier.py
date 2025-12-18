@@ -7,7 +7,7 @@ from wisent.core.errors import UnknownTypeError
 
 def _map_token_aggregation(aggregation_str: str):
     """Map string token aggregation to ExtractionStrategy."""
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
 
     mapping = {
         "average": ExtractionStrategy.CHAT_MEAN,

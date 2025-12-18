@@ -79,7 +79,7 @@ def execute_train_unified_goodness(args):
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs

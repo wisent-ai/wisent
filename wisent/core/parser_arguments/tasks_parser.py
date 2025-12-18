@@ -155,12 +155,14 @@ def setup_tasks_parser(parser):
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
     parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
+    # Extraction strategy - unified approach combining prompt format and token selection
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     parser.add_argument(
-        "--token-aggregation",
+        "--extraction-strategy",
         type=str,
-        choices=["average", "final", "first", "max", "min", "max_score"],
-        default="average",
-        help="How to aggregate token scores for classification. 'max_score' uses the highest individual token hallucination score.",
+        choices=ExtractionStrategy.list_all(),
+        default=ExtractionStrategy.default().value,
+        help=f"Extraction strategy for activations. Options: {', '.join(ExtractionStrategy.list_all())}. Default: {ExtractionStrategy.default().value}",
     )
     parser.add_argument(
         "--ground-truth-method",
@@ -385,21 +387,7 @@ def setup_tasks_parser(parser):
         help="Directory for saving/loading classifiers and vectors (default: ./models)",
     )
 
-    # Prompt construction and token targeting strategy arguments
-    parser.add_argument(
-        "--prompt-construction-strategy",
-        type=str,
-        choices=["multiple_choice", "role_playing", "direct_completion", "instruction_following", "chat_template"],
-        default="chat_template",
-        help="Strategy for constructing prompts from question-answer pairs (default: chat_template)",
-    )
-    parser.add_argument(
-        "--token-targeting-strategy",
-        type=str,
-        choices=["choice_token", "continuation_token", "last_token", "first_token", "mean_pooling", "max_pooling"],
-        default="choice_token",
-        help="Strategy for targeting tokens during activation extraction (default: choice_token)",
-    )
+
 
     # Normalization options
     parser.add_argument("--normalize-mode", action="store_true", help="Enable normalization mode (legacy flag)")

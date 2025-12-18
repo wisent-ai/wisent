@@ -14,7 +14,7 @@ def execute_tasks(args):
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
     from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
     from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
@@ -416,32 +416,9 @@ def execute_tasks(args):
     # 5. Collect activations for all pairs
     collector = ActivationCollector(model=model, store_device="cpu")
 
-    # Map parser values to enum members
-    aggregation_map = {
-        'average': 'MEAN_POOLING',
-        'final': 'LAST_TOKEN',
-        'first': 'FIRST_TOKEN',
-        'max': 'MAX_POOLING',
-        'min': 'MIN_POOLING',
-        'max_score': 'MEAN_POOLING',  # Will use mean for training, but max token score for inference
-    }
-    aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
-    aggregation_strategy = map_legacy_strategy(aggregation_key)
-    use_max_token_score = args.token_aggregation.lower() == 'max_score'
-
-    # Map prompt construction strategy from CLI to enum
-    prompt_strategy_map = {
-        'multiple_choice': ExtractionStrategy.MC_BALANCED,
-        'role_playing': ExtractionStrategy.ROLE_PLAY,
-        'direct_completion': ExtractionStrategy.CHAT_LAST,
-        'instruction_following': ExtractionStrategy.CHAT_LAST,
-        'chat_template': ExtractionStrategy.CHAT_LAST,
-    }
-    prompt_strategy = prompt_strategy_map.get(
-        getattr(args, 'prompt_construction_strategy', 'chat_template'),
-        ExtractionStrategy.CHAT_LAST
-    )
-    print(f"   Prompt construction strategy: {prompt_strategy.value}")
+    # Get extraction strategy from args (already an ExtractionStrategy value string)
+    extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+    print(f"   Extraction strategy: {extraction_strategy.value}")
 
     positive_activations = []
     negative_activations = []
@@ -455,10 +432,8 @@ def execute_tasks(args):
 
         # Collect for positive (correct) response
         updated_pair = collector.collect(
-            pair, strategy=aggregation_strategy,
-            return_full_sequence=False,
-            normalize_layers=False,
-            prompt_strategy=prompt_strategy
+            pair, strategy=extraction_strategy,
+            layers=[layer_str],
         )
 
         # Extract activations from positive and negative responses
