@@ -10,9 +10,9 @@ import datetime as _dt
 
 from wisent.core.activations.core.atoms import (
     LayerActivations,
-    ActivationAggregationStrategy,
     RawActivationMap,
 )
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.models.wisent_model import WisentModel
 
 from wisent.core.trainers.core.atoms import (
@@ -66,8 +66,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         self,
         layers_spec: Sequence[str] | str | int | Sequence[int] | None,
         method_kwargs: dict[str, Any] | None = None,
-        aggregation: ActivationAggregationStrategy = ActivationAggregationStrategy.CONTINUATION_TOKEN,
-        return_full_sequence: bool = False,
+        strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
         normalize_layers: bool = False,
         save_dir: str | Path | None = None,
         accept_low_quality_vector: bool = False,
@@ -87,16 +86,10 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
                 - range string "10-30" / "10..30"
                 - single int "12"
                 - None → use all available layers on the model
-            method:
-                Name of steering method ("caa").
             method_kwargs:
                 Dict of hyperparameters for the method (e.g., {"normalize": True, "scale": 1.0}).
-            aggregation:
-                ActivationAggregationStrategy to use during collection when not returning
-                full sequences. Ignored if 'return_full_sequence=True'.
-            return_full_sequence:
-                If True, store full [T,H] sequences per layer (method then must know how
-                to collapse to vectors). Default False (collect [H] vectors directly).
+            strategy:
+                ExtractionStrategy to use during collection.
             normalize_layers:
                 If True, L2-normalize activations layer-wise during collection.
             save_dir:
@@ -112,12 +105,11 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
 
         # 2) Collect activations for each pair
         for i, pair in enumerate(self.pair_set.pairs):
-            updated = self.collector.collect_for_pair(
+            updated = self.collector.collect(
                 pair,
+                strategy=strategy,
                 layers=layers,
-                aggregation=aggregation,
-                return_full_sequence=return_full_sequence,
-                normalize_layers=normalize_layers,
+                normalize=normalize_layers,
             )
             self.pair_set.pairs[i] = updated  
 
@@ -221,8 +213,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
             "layers_used": layers or "all",
             "method": self.steering_method.name,
             "method_kwargs": method_kwargs,
-            "activation_aggregation_strategy": (None if return_full_sequence else aggregation),
-            "return_full_sequence": bool(return_full_sequence),
+            "extraction_strategy": strategy.value,
             "normalize_layers": bool(normalize_layers),
             "num_pairs": len(self.pair_set.pairs),
             "hidden_size": getattr(self.model, "hidden_size", None),
@@ -290,7 +281,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
 
         # Vectors
         raw_map: RawActivationMap = result.steered_vectors.to_dict()  # still tensors
-        cpu_map = {k: (v.detach().to("cpu") if isinstance(v, torch.Tensor) else v) for k, v in raw_map.items() if k != "_activation_aggregation_strategy"}
+        cpu_map = {k: (v.detach().to("cpu") if isinstance(v, torch.Tensor) else v) for k, v in raw_map.items()}
         torch.save(cpu_map, out / "steering_vectors.pt")
 
         # Summary (json-serializable)

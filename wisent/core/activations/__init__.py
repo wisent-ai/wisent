@@ -1,16 +1,22 @@
 """Activation collection and management."""
 
-from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
-from wisent.core.activations.core.atoms import (
-    ActivationAggregationStrategy,
-    LayerActivations,
+from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.activations.extraction_strategy import (
+    ExtractionStrategy,
+    build_extraction_texts,
+    extract_activation,
+    add_extraction_strategy_args,
+    map_legacy_strategy,
 )
 
 __all__ = [
     "ActivationCollector",
     "Activations",
-    "PromptConstructionStrategy",
-    "ActivationAggregationStrategy",
+    "ExtractionStrategy",
+    "build_extraction_texts",
+    "extract_activation",
+    "add_extraction_strategy_args",
+    "map_legacy_strategy",
     "LayerActivations",
 ]
 
