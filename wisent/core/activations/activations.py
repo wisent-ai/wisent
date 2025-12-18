@@ -2,51 +2,41 @@
 
 from typing import Any
 import torch
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
 from wisent.core.errors import InvalidValueError
 
 
 class Activations:
-    """Wrapper for activation tensors with aggregation strategy.
+    """Wrapper for activation tensors with extraction strategy.
 
     This class wraps activation tensors and provides methods to extract
-    features for classifier input based on the specified aggregation strategy.
+    features for classifier input based on the specified extraction strategy.
     """
 
-    def __init__(self, tensor: torch.Tensor, layer: Any, aggregation_strategy):
+    def __init__(self, tensor: torch.Tensor, layer: Any, aggregation_strategy=None, extraction_strategy: ExtractionStrategy = None):
         """Initialize Activations wrapper.
 
         Args:
             tensor: Activation tensor (typically shape [batch, seq_len, hidden_dim])
             layer: Layer object containing layer metadata
-            aggregation_strategy: Strategy for aggregating tokens (string or ActivationAggregationStrategy enum)
+            aggregation_strategy: Legacy parameter - will be mapped to ExtractionStrategy
+            extraction_strategy: The extraction strategy to use
         """
         self.tensor = tensor
         self.layer = layer
 
-        # Convert string to enum if needed
-        if isinstance(aggregation_strategy, str):
-            # Map common string values to enum
-            strategy_map = {
-                "average": ActivationAggregationStrategy.MEAN_POOLING,
-                "mean": ActivationAggregationStrategy.MEAN_POOLING,
-                "final": ActivationAggregationStrategy.LAST_TOKEN,
-                "last": ActivationAggregationStrategy.LAST_TOKEN,
-                "first": ActivationAggregationStrategy.FIRST_TOKEN,
-                "max": ActivationAggregationStrategy.MAX_POOLING,
-                "min": ActivationAggregationStrategy.MIN_POOLING,
-                "mean_pooling": ActivationAggregationStrategy.MEAN_POOLING,
-                "last_token": ActivationAggregationStrategy.LAST_TOKEN,
-                "first_token": ActivationAggregationStrategy.FIRST_TOKEN,
-                "max_pooling": ActivationAggregationStrategy.MAX_POOLING,
-                "min_pooling": ActivationAggregationStrategy.MIN_POOLING,
-            }
-            self.aggregation_strategy = strategy_map.get(
-                aggregation_strategy.lower(),
-                ActivationAggregationStrategy.MEAN_POOLING
-            )
+        # Handle legacy aggregation_strategy parameter
+        if extraction_strategy is not None:
+            self.extraction_strategy = extraction_strategy
+        elif aggregation_strategy is not None:
+            if isinstance(aggregation_strategy, str):
+                self.extraction_strategy = map_legacy_strategy(token_aggregation=aggregation_strategy)
+            elif isinstance(aggregation_strategy, ExtractionStrategy):
+                self.extraction_strategy = aggregation_strategy
+            else:
+                self.extraction_strategy = ExtractionStrategy.CHAT_LAST
         else:
-            self.aggregation_strategy = aggregation_strategy
+            self.extraction_strategy = ExtractionStrategy.CHAT_LAST
 
     def extract_features_for_classifier(self) -> torch.Tensor:
         """Extract features from activations for classifier input.
@@ -62,29 +52,29 @@ class Activations:
 
         # Ensure tensor is 3D: [batch, seq_len, hidden_dim]
         if len(self.tensor.shape) == 2:
-            # If [seq_len, hidden_dim], add batch dimension
             tensor = self.tensor.unsqueeze(0)
         else:
             tensor = self.tensor
 
-        # Apply aggregation strategy
-        if self.aggregation_strategy == ActivationAggregationStrategy.MEAN_POOLING:
-            # Average over sequence length dimension
+        # Apply extraction strategy
+        strategy = self.extraction_strategy
+        
+        if strategy in (ExtractionStrategy.CHAT_MEAN,):
             features = tensor.mean(dim=1).squeeze(0)
-        elif self.aggregation_strategy == ActivationAggregationStrategy.LAST_TOKEN:
-            # Take last token
+        elif strategy in (ExtractionStrategy.CHAT_LAST, ExtractionStrategy.ROLE_PLAY, ExtractionStrategy.MC_BALANCED):
             features = tensor[:, -1, :].squeeze(0)
-        elif self.aggregation_strategy == ActivationAggregationStrategy.FIRST_TOKEN:
-            # Take first token
+        elif strategy in (ExtractionStrategy.CHAT_FIRST, ExtractionStrategy.CHAT_GEN_POINT):
             features = tensor[:, 0, :].squeeze(0)
-        elif self.aggregation_strategy == ActivationAggregationStrategy.MAX_POOLING:
-            # Max over sequence length dimension
-            features = tensor.max(dim=1)[0].squeeze(0)
-        elif self.aggregation_strategy == ActivationAggregationStrategy.MIN_POOLING:
-            # Min over sequence length dimension
-            features = tensor.min(dim=1)[0].squeeze(0)
+        elif strategy == ExtractionStrategy.CHAT_MAX_NORM:
+            norms = torch.norm(tensor, dim=2)
+            max_idx = torch.argmax(norms, dim=1)
+            features = tensor[0, max_idx[0], :]
+        elif strategy == ExtractionStrategy.CHAT_WEIGHTED:
+            seq_len = tensor.shape[1]
+            weights = torch.exp(-torch.arange(seq_len, dtype=torch.float32, device=tensor.device) * 0.5)
+            weights = weights / weights.sum()
+            features = (tensor * weights.unsqueeze(0).unsqueeze(2)).sum(dim=1).squeeze(0)
         else:
-            # Default to mean pooling
             features = tensor.mean(dim=1).squeeze(0)
 
         return features

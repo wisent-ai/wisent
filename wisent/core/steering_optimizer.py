@@ -26,8 +26,8 @@ from enum import Enum, auto
 from pathlib import Path
 
 from .config_manager import ModelConfigManager
-from .activations.core.atoms import ActivationAggregationStrategy
-from .activations.prompt_construction_strategy import PromptConstructionStrategy
+from .activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+
 from wisent.core.errors import (
     MissingParameterError,
     SteeringMethodUnknownError,
@@ -60,22 +60,22 @@ class SteeringApplicationConfig:
     gaussian_width: float = 0.2
 
 
-def get_default_token_aggregation_strategies() -> List[ActivationAggregationStrategy]:
+def get_default_token_aggregation_strategies() -> List[ExtractionStrategy]:
     """Get token aggregation strategies to test."""
     return [
-        ActivationAggregationStrategy.LAST_TOKEN,
-        ActivationAggregationStrategy.MEAN_POOLING,
-        ActivationAggregationStrategy.FIRST_TOKEN,
-        ActivationAggregationStrategy.MAX_POOLING,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.CHAT_MEAN,
+        ExtractionStrategy.CHAT_FIRST,
+        ExtractionStrategy.CHAT_MAX_NORM,
     ]
 
 
-def get_default_prompt_construction_strategies() -> List[PromptConstructionStrategy]:
+def get_default_prompt_construction_strategies() -> List[ExtractionStrategy]:
     """Get prompt construction strategies to test."""
     return [
-        PromptConstructionStrategy.CHAT_TEMPLATE,
-        PromptConstructionStrategy.DIRECT_COMPLETION,
-        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.CHAT_LAST,
     ]
 
 
@@ -399,8 +399,8 @@ class SteeringOptimizer:
         methods_to_test: Optional[List[SteeringMethod]] = None,
         layer_range: Optional[str] = None,
         strength_range: Optional[List[float]] = None,
-        token_aggregation_strategies: Optional[List[ActivationAggregationStrategy]] = None,
-        prompt_construction_strategies: Optional[List[PromptConstructionStrategy]] = None,
+        token_aggregation_strategies: Optional[List[ExtractionStrategy]] = None,
+        prompt_construction_strategies: Optional[List[ExtractionStrategy]] = None,
         steering_application_configs: Optional[List[SteeringApplicationConfig]] = None,
         limit: int = 100,
         max_time_minutes: float = 60.0,
@@ -603,8 +603,8 @@ class SteeringOptimizer:
         method: SteeringMethod,
         layer: int,
         strength: float,
-        token_aggregation: ActivationAggregationStrategy,
-        prompt_construction: PromptConstructionStrategy,
+        token_aggregation: ExtractionStrategy,
+        prompt_construction: ExtractionStrategy,
         steering_application: SteeringApplicationConfig,
         limit: int,
         split_ratio: float

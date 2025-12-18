@@ -11,7 +11,7 @@ This module handles:
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.activations.activations import Activations
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.errors import (
@@ -121,7 +121,7 @@ class ResponseDiagnostics:
             activations = Activations(
                 tensor=activations_tensor,
                 layer=classifier_config["layer"],
-                aggregation_strategy=ActivationAggregationStrategy.LAST_TOKEN,
+                aggregation_strategy=ExtractionStrategy.CHAT_LAST,
             )
 
             # Get features for classifier
@@ -161,7 +161,7 @@ class ResponseDiagnostics:
             activations = Activations(
                 tensor=activations_tensor,
                 layer=classifier_config["layer"],
-                aggregation_strategy=ActivationAggregationStrategy.LAST_TOKEN,
+                aggregation_strategy=ExtractionStrategy.CHAT_LAST,
             )
 
             # Get features

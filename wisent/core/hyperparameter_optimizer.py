@@ -9,8 +9,8 @@ from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_sc
 from .contrastive_pairs import ContrastivePairSet
 from .steering import SteeringMethod, SteeringType
 from .activations.activations_collector import ActivationCollector
-from .activations.core.atoms import ActivationAggregationStrategy
-from .activations.prompt_construction_strategy import PromptConstructionStrategy
+from .activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+
 from wisent.core.errors import OptimizationError, NoActivationDataError, InsufficientDataError
 
 logger = logging.getLogger(__name__)
@@ -352,22 +352,22 @@ class HyperparameterOptimizer:
 
         # Map aggregation string to enum
         aggregation_map = {
-            'average': ActivationAggregationStrategy.MEAN_POOLING,
-            'first': ActivationAggregationStrategy.FIRST_TOKEN,
-            'last': ActivationAggregationStrategy.LAST_TOKEN,
-            'max': ActivationAggregationStrategy.MAX_POOLING,
+            'average': ExtractionStrategy.CHAT_MEAN,
+            'first': ExtractionStrategy.CHAT_FIRST,
+            'last': ExtractionStrategy.CHAT_LAST,
+            'max': ExtractionStrategy.CHAT_MAX_NORM,
         }
-        agg_strategy = aggregation_map.get(aggregation, ActivationAggregationStrategy.MEAN_POOLING)
+        agg_strategy = aggregation_map.get(aggregation, ExtractionStrategy.CHAT_MEAN)
 
         # Map prompt strategy string to enum
         prompt_strategy_map = {
-            'multiple_choice': PromptConstructionStrategy.MULTIPLE_CHOICE,
-            'role_playing': PromptConstructionStrategy.ROLE_PLAYING,
-            'direct_completion': PromptConstructionStrategy.DIRECT_COMPLETION,
-            'instruction_following': PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-            'chat_template': PromptConstructionStrategy.CHAT_TEMPLATE,
+            'multiple_choice': ExtractionStrategy.MC_BALANCED,
+            'role_playing': ExtractionStrategy.ROLE_PLAY,
+            'direct_completion': ExtractionStrategy.CHAT_LAST,
+            'instruction_following': ExtractionStrategy.CHAT_LAST,
+            'chat_template': ExtractionStrategy.CHAT_LAST,
         }
-        prompt_strategy = prompt_strategy_map.get(prompt_construction_strategy, PromptConstructionStrategy.CHAT_TEMPLATE)
+        prompt_strategy = prompt_strategy_map.get(prompt_construction_strategy, ExtractionStrategy.CHAT_LAST)
 
         # Create activation collector
         collector = ActivationCollector(model=model, store_device="cpu")

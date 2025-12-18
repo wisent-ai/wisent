@@ -75,6 +75,7 @@ from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 class SteeringMethodType(Enum):
     """Enumeration of all supported steering methods."""
     CAA = "caa"
+    HYPERPLANE = "hyperplane"
     PRISM = "prism"
     PULSE = "pulse"
     TITAN = "titan"
@@ -179,6 +180,44 @@ CAA_DEFINITION = SteeringMethodDefinition(
             help="L2-normalize the steering vector",
             action="store_true",
             cli_flag="--caa-normalize",
+        ),
+    ],
+    optimization_config={
+        "strength_search_range": (0.1, 5.0),
+        "default_strength": 1.0,
+    },
+    default_strength=1.0,
+    strength_range=(0.1, 5.0),
+)
+
+
+HYPERPLANE_DEFINITION = SteeringMethodDefinition(
+    name="hyperplane",
+    method_type=SteeringMethodType.HYPERPLANE,
+    description="Classifier-based steering using logistic regression decision boundary. Works better than CAA when geometry is orthogonal (each pair has unique direction rather than shared direction).",
+    method_class_path="wisent.core.steering_methods.methods.hyperplane.HyperplaneMethod",
+    parameters=[
+        SteeringMethodParameter(
+            name="normalize",
+            type=bool,
+            default=True,
+            help="L2-normalize the steering vector",
+            action="store_true",
+            cli_flag="--hyperplane-normalize",
+        ),
+        SteeringMethodParameter(
+            name="max_iter",
+            type=int,
+            default=1000,
+            help="Maximum iterations for logistic regression",
+            cli_flag="--hyperplane-max-iter",
+        ),
+        SteeringMethodParameter(
+            name="C",
+            type=float,
+            default=1.0,
+            help="Regularization strength (inverse). Smaller values = stronger regularization.",
+            cli_flag="--hyperplane-C",
         ),
     ],
     optimization_config={
@@ -518,6 +557,7 @@ class SteeringMethodRegistry:
     
     _REGISTRY: Dict[str, SteeringMethodDefinition] = {
         "caa": CAA_DEFINITION,
+        "hyperplane": HYPERPLANE_DEFINITION,
         "prism": PRISM_DEFINITION,
         "pulse": PULSE_DEFINITION,
         "titan": TITAN_DEFINITION,

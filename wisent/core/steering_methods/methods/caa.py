@@ -14,7 +14,7 @@ class CAAMethod(PerLayerBaseSteeringMethod):
     """
     Contrastive Activation Additions (CAA).
     For each layer: v = mean(positives) - mean(negatives),
-    optionally L2-normalized (kwargs: normalize=True, dtype=..., activation_aggregation_strategy=...).
+    optionally L2-normalized (kwargs: normalize=True, dtype=...).
     """
     name = "caa"
     description = "Per-layer mean(pos)-mean(neg) over ContrastivePairSet."

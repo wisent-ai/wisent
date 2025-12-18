@@ -10,7 +10,7 @@ Evaluation uses the TEST portion (20%) to ensure no data leakage with training.
 import logging
 from typing import Any, Dict
 
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
 from wisent.core.activations.activations import Activations
 from wisent.core.layer import Layer
 from wisent.core.utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
@@ -674,16 +674,8 @@ class LMEvalHarnessGroundTruth:
         }
 
     def _map_token_aggregation_to_activation_method(self, token_aggregation: str):
-        """Map token aggregation string to activation method."""
-
-        mapping = {  # TODO This should be refactor, why we use strings as Token aggregation?
-            "average": ActivationAggregationStrategy.MEAN_POOLING,
-            "mean": ActivationAggregationStrategy.MEAN_POOLING,
-            "last": ActivationAggregationStrategy.LAST_TOKEN,
-            "max": ActivationAggregationStrategy.MAX_POOLING,
-        }
-
-        return mapping.get(token_aggregation.lower(), ActivationAggregationStrategy.MEAN_POOLING)
+        """Map token aggregation string to ExtractionStrategy."""
+        return map_legacy_strategy(token_aggregation=token_aggregation)
 
     def _is_task_interface_task(self, task_name: str) -> bool:
         """Check if this is a TaskInterface task (not an lm-eval task)."""

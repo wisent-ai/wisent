@@ -7,7 +7,7 @@ from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.steering_methods import CAAMethod
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 print("Loading Qwen/Qwen3-8B...")
@@ -41,7 +41,7 @@ results = []
 for layers, strength in configs:
     print(f"\nConfig: layers={layers}, strength={strength}")
     collector = ActivationCollector(model=model, store_device="cuda")
-    updated = [collector.collect_for_pair(p, layers=layers, aggregation=ActivationAggregationStrategy.LAST_TOKEN) for p in train_pairs.pairs]
+    updated = [collector.collect(p, strategy=ExtractionStrategy.CHAT_LAST) for p in train_pairs.pairs]
     train_with_acts = ContrastivePairSet(name="train", pairs=updated)
     caa = CAAMethod()
     steering = caa.train(train_with_acts)
