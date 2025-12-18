@@ -6,7 +6,6 @@ from wisent.core.activations.extraction_strategy import (
     build_extraction_texts,
     extract_activation,
     add_extraction_strategy_args,
-    map_legacy_strategy,
 )
 
 __all__ = [
@@ -16,7 +15,6 @@ __all__ = [
     "build_extraction_texts",
     "extract_activation",
     "add_extraction_strategy_args",
-    "map_legacy_strategy",
     "LayerActivations",
 ]
 

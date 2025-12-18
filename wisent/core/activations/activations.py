@@ -2,7 +2,7 @@
 
 from typing import Any
 import torch
-from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.errors import InvalidValueError
 
 
@@ -13,30 +13,17 @@ class Activations:
     features for classifier input based on the specified extraction strategy.
     """
 
-    def __init__(self, tensor: torch.Tensor, layer: Any, aggregation_strategy=None, extraction_strategy: ExtractionStrategy = None):
+    def __init__(self, tensor: torch.Tensor, layer: Any, extraction_strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST):
         """Initialize Activations wrapper.
 
         Args:
             tensor: Activation tensor (typically shape [batch, seq_len, hidden_dim])
             layer: Layer object containing layer metadata
-            aggregation_strategy: Legacy parameter - will be mapped to ExtractionStrategy
             extraction_strategy: The extraction strategy to use
         """
         self.tensor = tensor
         self.layer = layer
-
-        # Handle legacy aggregation_strategy parameter
-        if extraction_strategy is not None:
-            self.extraction_strategy = extraction_strategy
-        elif aggregation_strategy is not None:
-            if isinstance(aggregation_strategy, str):
-                self.extraction_strategy = map_legacy_strategy(token_aggregation=aggregation_strategy)
-            elif isinstance(aggregation_strategy, ExtractionStrategy):
-                self.extraction_strategy = aggregation_strategy
-            else:
-                self.extraction_strategy = ExtractionStrategy.CHAT_LAST
-        else:
-            self.extraction_strategy = ExtractionStrategy.CHAT_LAST
+        self.extraction_strategy = extraction_strategy
 
     def extract_features_for_classifier(self) -> torch.Tensor:
         """Extract features from activations for classifier input.

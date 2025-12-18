@@ -12,7 +12,7 @@ import torch
 
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
