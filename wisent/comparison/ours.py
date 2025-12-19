@@ -33,7 +33,7 @@ def generate_steering_vector(
     normalize: bool = True,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    extraction_strategy: str = "chat_mean",
+    extraction_strategy: str = "mc_balanced",
 ) -> Path:
     """
     Generate a steering vector using wisent CLI in subprocess.

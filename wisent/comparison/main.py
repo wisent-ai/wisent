@@ -232,7 +232,7 @@ def run_single_task(
     vectors_dir: Path = None,
     train_ratio: float = 0.8,
     layers: str | None = None,
-    extraction_strategy: str = "chat_mean",
+    extraction_strategy: str = "mc_balanced",
 ) -> list[dict]:
     """
     Run comparison for a single task with multiple methods and scales.
@@ -428,7 +428,7 @@ def run_comparison(
     output_dir: str = "comparison_results",
     train_ratio: float = 0.8,
     layers: str | None = None,
-    extraction_strategy: str = "chat_mean",
+    extraction_strategy: str = "mc_balanced",
 ) -> list[dict]:
     """
     Run full comparison for multiple tasks, methods, and scales.
@@ -514,9 +514,9 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--output-dir", default="wisent/comparison/comparison_results", help="Output directory")
     parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio (default 0.8 = 80%% train, 20%% test)")
-    parser.add_argument("--extraction-strategy", default="chat_mean",
+    parser.add_argument("--extraction-strategy", default="mc_balanced",
                         choices=["chat_mean", "chat_first", "chat_last", "chat_gen_point", "chat_max_norm", "chat_weighted", "role_play", "mc_balanced"],
-                        help="Extraction strategy combining prompt format and token selection (default: chat_mean)")
+                        help="Extraction strategy combining prompt format and token selection (default: mc_balanced)")
 
     args = parser.parse_args()
 

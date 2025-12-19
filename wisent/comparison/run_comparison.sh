@@ -11,13 +11,13 @@ INSTANCE_TYPE="g6e.xlarge"
 MODEL="google/gemma-2-2b"
 
 # Tasks (comma-separated)
-TASKS="boolq"
+TASKS="boolq,cb"
 
 # Steering method: caa, sae, fgaa
-METHODS="fgaa,caa"
+METHODS="caa,fgaa"
 
 # Steering scales (comma-separated)
-SCALES="2.5"
+SCALES="0.5,1.0,1.5,3.0,6.0"
 
 # Layer(s) for steering
 LAYERS="12"
@@ -33,10 +33,13 @@ MAX_BATCH_SIZE="1"
 TRAIN_RATIO="0.4"
 
 # Evaluation limit (number of examples, or empty for all)
-LIMIT="6"
+LIMIT="600"
 
 # Number of contrastive pairs for steering vector
-NUM_PAIRS="6"
+NUM_PAIRS="200"
+
+# Extraction strategy: chat_mean, chat_last, chat_first, chat_gen_point, chat_max_norm, chat_weighted, role_play, mc_balanced
+EXTRACTION_STRATEGY="mc_balanced"
 
 # Output directories
 REMOTE_OUTPUT_DIR="/home/ubuntu/output"
@@ -73,7 +76,8 @@ for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
             --output-dir $REMOTE_OUTPUT_DIR \
             --train-ratio $TRAIN_RATIO \
             --limit $LIMIT \
-            --num-pairs $NUM_PAIRS" \
+            --num-pairs $NUM_PAIRS \
+            --extraction-strategy $EXTRACTION_STRATEGY" \
         "$LOCAL_OUTPUT_DIR"
 
     EXIT_CODE=$?
