@@ -176,32 +176,39 @@ def setup_steering_optimizer_parser(parser):
     
     # Base search space overrides
     comprehensive_parser.add_argument(
-        "--search-layers",
+        "--search-layers", "--layers",
         type=str,
         default=None,
+        dest="search_layers",
         help="Comma-separated layer indices to search (e.g., '8,10,12,14')"
     )
     comprehensive_parser.add_argument(
-        "--search-strengths",
+        "--search-strengths", "--strengths",
         type=str,
         default=None,
+        dest="search_strengths",
         help="Comma-separated strength values to search (e.g., '0.5,1.0,1.5,2.0')"
     )
     comprehensive_parser.add_argument(
-        "--search-strategies",
+        "--search-strategies", "--strategies",
         type=str,
-        nargs="+",
         default=None,
-        choices=["constant", "initial_only", "diminishing", "all_equal"],
-        help="Steering strategies to search"
+        dest="search_strategies",
+        help="Comma-separated steering strategies to search (e.g., 'constant,initial_only,diminishing,increasing,gaussian')"
     )
     comprehensive_parser.add_argument(
-        "--search-token-aggregations",
+        "--search-token-aggregations", "--token-aggregations",
         type=str,
-        nargs="+",
         default=None,
-        choices=["last_token", "mean_pooling", "first_token", "max_pooling"],
-        help="Token aggregation strategies to search"
+        dest="search_token_aggregations",
+        help="Comma-separated token aggregation strategies (e.g., 'last_token,mean_pooling,first_token,max_pooling,continuation_token,choice_token')"
+    )
+    comprehensive_parser.add_argument(
+        "--search-prompt-constructions", "--prompt-constructions",
+        type=str,
+        default=None,
+        dest="search_prompt_constructions",
+        help="Comma-separated prompt construction strategies (e.g., 'chat_template,direct_completion,instruction_following,multiple_choice,role_playing')"
     )
     
     # PRISM-specific search space

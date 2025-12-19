@@ -53,19 +53,21 @@ Pass all parameters through to step functions using getattr()
 
 ## Mapping CLI names to Python enums
 
-### ActivationAggregationStrategy
-- "average" -> ActivationAggregationStrategy.MEAN_POOLING
-- "final" -> ActivationAggregationStrategy.LAST_TOKEN
-- "first" -> ActivationAggregationStrategy.FIRST_TOKEN
-- "max" -> ActivationAggregationStrategy.MAX_POOLING
-- "min" -> ActivationAggregationStrategy.MIN_POOLING
+### ExtractionStrategy (unified, replaces old ActivationAggregationStrategy + PromptConstructionStrategy)
+- "chat_mean" -> ExtractionStrategy.CHAT_MEAN
+- "chat_first" -> ExtractionStrategy.CHAT_FIRST
+- "chat_last" -> ExtractionStrategy.CHAT_LAST (default)
+- "chat_gen_point" -> ExtractionStrategy.CHAT_GEN_POINT
+- "chat_max_norm" -> ExtractionStrategy.CHAT_MAX_NORM
+- "chat_weighted" -> ExtractionStrategy.CHAT_WEIGHTED
+- "role_play" -> ExtractionStrategy.ROLE_PLAY
+- "mc_balanced" -> ExtractionStrategy.MC_BALANCED
 
-### PromptConstructionStrategy
-- "chat_template" -> PromptConstructionStrategy.CHAT_TEMPLATE
-- "direct_completion" -> PromptConstructionStrategy.DIRECT_COMPLETION
-- "instruction_following" -> PromptConstructionStrategy.INSTRUCTION_FOLLOWING
-- "multiple_choice" -> PromptConstructionStrategy.MULTIPLE_CHOICE
-- "role_playing" -> PromptConstructionStrategy.ROLE_PLAYING
+Legacy mappings (via map_legacy_strategy()):
+- "average"/"mean" -> ExtractionStrategy.CHAT_MEAN
+- "final"/"last" -> ExtractionStrategy.CHAT_LAST
+- "first" -> ExtractionStrategy.CHAT_FIRST
+- "max" -> ExtractionStrategy.CHAT_MAX_NORM
 
 ### Classifier Type
 - "logistic" -> LogisticClassifier

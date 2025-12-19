@@ -7,7 +7,7 @@ from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.steering_methods import CAAMethod
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 MODEL = "Qwen/Qwen3-8B"
@@ -33,7 +33,7 @@ updated_pairs = []
 for i, pair in enumerate(train_pairs.pairs):
     if i % 100 == 0:
         print(f"  Collecting {i}/{len(train_pairs.pairs)}")
-    updated = collector.collect_for_pair(pair, layers=layers, aggregation=ActivationAggregationStrategy.LAST_TOKEN)
+    updated = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST)
     updated_pairs.append(updated)
 train_with_acts = ContrastivePairSet(name="train", pairs=updated_pairs)
 

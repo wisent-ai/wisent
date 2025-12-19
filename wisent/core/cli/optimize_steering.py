@@ -49,7 +49,7 @@ def _run_optuna_search_for_task(
     from optuna.pruners import MedianPruner
     
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan
     from wisent.core.cli.steering_method_trainer import create_steering_method
     
@@ -58,10 +58,10 @@ def _run_optuna_search_for_task(
     
     # Maps for converting string values to enums
     token_agg_map = {
-        "last_token": ActivationAggregationStrategy.LAST_TOKEN,
-        "mean_pooling": ActivationAggregationStrategy.MEAN_POOLING,
-        "first_token": ActivationAggregationStrategy.FIRST_TOKEN,
-        "max_pooling": ActivationAggregationStrategy.MAX_POOLING,
+        "last_token": ExtractionStrategy.CHAT_LAST,
+        "mean_pooling": ExtractionStrategy.CHAT_MEAN,
+        "first_token": ExtractionStrategy.CHAT_FIRST,
+        "max_pooling": ExtractionStrategy.CHAT_MAX_NORM,
     }
     
     def objective(trial):
@@ -71,7 +71,7 @@ def _run_optuna_search_for_task(
         strength = trial.suggest_float("strength", min(search_space.strengths), max(search_space.strengths), log=True)
         strategy = trial.suggest_categorical("strategy", search_space.strategies)
         token_agg_name = trial.suggest_categorical("token_aggregation", search_space.token_aggregations)
-        token_agg = token_agg_map.get(token_agg_name, ActivationAggregationStrategy.LAST_TOKEN)
+        token_agg = token_agg_map.get(token_agg_name, ExtractionStrategy.CHAT_LAST)
         
         layer_str = str(layer)
         
@@ -82,10 +82,8 @@ def _run_optuna_search_for_task(
             neg_acts = []
             
             for pair in train_pairs.pairs:
-                updated_pair = collector.collect_for_pair(
-                    pair,
-                    layers=[layer_str],
-                    aggregation=token_agg,
+                updated_pair = collector.collect(
+                    pair, strategy=token_agg,
                     return_full_sequence=False,
                     normalize_layers=False,
                 )
@@ -245,8 +243,8 @@ def execute_comprehensive(args, model, loader):
     import torch
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    
     from wisent.core.models.core.atoms import SteeringPlan
     from wisent.core.cli.steering_method_trainer import create_steering_method
     from wisent.core.cli.steering_search_space import (
@@ -364,44 +362,71 @@ def execute_comprehensive(args, model, loader):
     # These are used by some code paths that haven't been fully migrated
     first_method = args.methods[0] if args.methods else "CAA"
     first_space = method_search_spaces.get(first_method)
-    if isinstance(first_space, (CAASearchSpace, PRISMSearchSpace)):
+    
+    # Check if CLI args override search space
+    if hasattr(args, 'search_layers') and args.search_layers:
+        layers_to_test = [int(x.strip()) for x in args.search_layers.split(',')]
+    elif isinstance(first_space, (CAASearchSpace, PRISMSearchSpace)):
         layers_to_test = first_space.layers
     else:
         # PULSE/TITAN don't use direct layers - use ALL layers as fallback
         layers_to_test = list(range(model.num_layers))
     
-    strengths_to_test = first_space.strengths if first_space else [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
-    strategies_to_test = first_space.strategies if first_space else ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
+    if hasattr(args, 'search_strengths') and args.search_strengths:
+        strengths_to_test = [float(x.strip()) for x in args.search_strengths.split(',')]
+    else:
+        strengths_to_test = first_space.strengths if first_space else [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+    
+    if hasattr(args, 'search_strategies') and args.search_strategies:
+        strategies_to_test = [x.strip() for x in args.search_strategies.split(',')]
+    else:
+        strategies_to_test = first_space.strategies if first_space else ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
     
     # Convert string token aggregations to enum
     token_agg_map = {
-        "last_token": ActivationAggregationStrategy.LAST_TOKEN,
-        "mean_pooling": ActivationAggregationStrategy.MEAN_POOLING,
-        "first_token": ActivationAggregationStrategy.FIRST_TOKEN,
-        "max_pooling": ActivationAggregationStrategy.MAX_POOLING,
-        "choice_token": ActivationAggregationStrategy.CHOICE_TOKEN,
-        "continuation_token": ActivationAggregationStrategy.CONTINUATION_TOKEN,
+        "last_token": ExtractionStrategy.CHAT_LAST,
+        "mean_pooling": ExtractionStrategy.CHAT_MEAN,
+        "first_token": ExtractionStrategy.CHAT_FIRST,
+        "max_pooling": ExtractionStrategy.CHAT_MAX_NORM,
+        "choice_token": ExtractionStrategy.MC_BALANCED,
+        "continuation_token": ExtractionStrategy.CHAT_GEN_POINT,
     }
-    token_aggregations_to_test = [
-        token_agg_map.get(t, ActivationAggregationStrategy.LAST_TOKEN) 
-        for t in (first_space.token_aggregations if first_space else ["last_token", "mean_pooling"])
-    ]
+    if hasattr(args, 'search_token_aggregations') and args.search_token_aggregations:
+        token_agg_names = [x.strip() for x in args.search_token_aggregations.split(',')]
+        token_aggregations_to_test = [token_agg_map.get(t, ExtractionStrategy.CHAT_LAST) for t in token_agg_names]
+    else:
+        token_aggregations_to_test = [
+            token_agg_map.get(t, ExtractionStrategy.CHAT_LAST) 
+            for t in (first_space.token_aggregations if first_space else ["last_token", "mean_pooling"])
+        ]
     
     # Convert string prompt constructions to enum
     prompt_const_map = {
-        "chat_template": PromptConstructionStrategy.CHAT_TEMPLATE,
-        "direct_completion": PromptConstructionStrategy.DIRECT_COMPLETION,
-        "multiple_choice": PromptConstructionStrategy.MULTIPLE_CHOICE,
-        "role_playing": PromptConstructionStrategy.ROLE_PLAYING,
-        "instruction_following": PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+        "chat_template": ExtractionStrategy.CHAT_LAST,
+        "direct_completion": ExtractionStrategy.CHAT_LAST,
+        "multiple_choice": ExtractionStrategy.MC_BALANCED,
+        "role_playing": ExtractionStrategy.ROLE_PLAY,
+        "instruction_following": ExtractionStrategy.CHAT_LAST,
     }
-    prompt_constructions_to_test = [
-        prompt_const_map.get(p, PromptConstructionStrategy.CHAT_TEMPLATE)
-        for p in (first_space.prompt_constructions if first_space else ["chat_template", "direct_completion"])
-    ]
+    if hasattr(args, 'search_prompt_constructions') and args.search_prompt_constructions:
+        prompt_const_names = [x.strip() for x in args.search_prompt_constructions.split(',')]
+        prompt_constructions_to_test = [prompt_const_map.get(p, ExtractionStrategy.CHAT_LAST) for p in prompt_const_names]
+    else:
+        prompt_constructions_to_test = [
+            prompt_const_map.get(p, ExtractionStrategy.CHAT_LAST)
+            for p in (first_space.prompt_constructions if first_space else ["chat_template", "direct_completion"])
+        ]
     
-    # For legacy code paths
-    total_configs = first_space.get_total_configs() if first_space else 100
+    # For legacy code paths - recalculate total configs based on actual search space
+    total_configs = len(layers_to_test) * len(strengths_to_test) * len(strategies_to_test) * len(token_aggregations_to_test) * len(prompt_constructions_to_test)
+    
+    print(f"\n📊 Search Space Configuration:")
+    print(f"   Layers: {len(layers_to_test)} ({layers_to_test[:5]}{'...' if len(layers_to_test) > 5 else ''})")
+    print(f"   Strengths: {len(strengths_to_test)} ({strengths_to_test[:5]}{'...' if len(strengths_to_test) > 5 else ''})")
+    print(f"   Strategies: {len(strategies_to_test)} ({strategies_to_test})")
+    print(f"   Token Aggregations: {len(token_aggregations_to_test)} ({[t.value for t in token_aggregations_to_test]})")
+    print(f"   Prompt Constructions: {len(prompt_constructions_to_test)} ({[p.value for p in prompt_constructions_to_test]})")
+    print(f"   Total Configurations: {total_configs:,}")
 
     for task_idx, task_name in enumerate(task_list, 1):
         print(f"\n{'=' * 80}")
@@ -591,10 +616,8 @@ def execute_comprehensive(args, model, loader):
                                     neg_acts = []
 
                                     for pair in train_pairs.pairs:
-                                        updated_pair = collector.collect_for_pair(
-                                            pair,
-                                            layers=[layer_str],
-                                            aggregation=token_agg,  # Use current token aggregation strategy
+                                        updated_pair = collector.collect(
+                                            pair, strategy=token_agg,  # Use current token aggregation strategy
                                             return_full_sequence=False,
                                             normalize_layers=False,
                                         )
@@ -968,19 +991,16 @@ def execute_comprehensive(args, model, loader):
                     vector_dir = args.save_best_vector
                     os.makedirs(vector_dir, exist_ok=True)
 
-                    # Recreate the best steering vector with optimal token aggregation
+                    # Recreate the best steering vector with optimal extraction strategy
                     best_layer_str = str(best_config["layer"])
-                    best_token_agg = ActivationAggregationStrategy(best_config["token_aggregation"])
+                    best_extraction_strategy = ExtractionStrategy(best_config.get("extraction_strategy", "chat_last"))
                     pos_acts_best = []
                     neg_acts_best = []
 
                     for pair in train_pairs.pairs:
-                        updated_pair = collector.collect_for_pair(
-                            pair,
+                        updated_pair = collector.collect(
+                            pair, strategy=best_extraction_strategy,
                             layers=[best_layer_str],
-                            aggregation=best_token_agg,  # Use optimal token aggregation
-                            return_full_sequence=False,
-                            normalize_layers=False,
                         )
 
                         if (
@@ -1086,10 +1106,8 @@ def execute_comprehensive(args, model, loader):
 
                             # Collect activations again for steering
                             for train_pair in train_pairs.pairs:  # Use ALL pairs
-                                updated_pair = collector.collect_for_pair(
-                                    train_pair,
-                                    layers=[best_layer_str],
-                                    aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+                                updated_pair = collector.collect(
+                                    train_pair, strategy=ExtractionStrategy.CHAT_MEAN,
                                     return_full_sequence=False,
                                     normalize_layers=False,
                                 )
@@ -1387,7 +1405,7 @@ def execute_compare_methods(args, model, loader):
     from wisent_plots import LineChart
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
 
@@ -1448,10 +1466,8 @@ def execute_compare_methods(args, model, loader):
         if i % 10 == 0:
             print(f"   Processing train pair {i + 1}/{len(train_pairs.pairs)}...", end="\r")
 
-        updated_pair = collector.collect_for_pair(
-            pair,
-            layers=[layer_str],
-            aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+        updated_pair = collector.collect(
+            pair, strategy=ExtractionStrategy.CHAT_MEAN,
             return_full_sequence=False,
             normalize_layers=False,
         )
@@ -1631,7 +1647,7 @@ def execute_optimize_layer(args, model, loader):
     from wisent_plots import LineChart
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
 
@@ -1718,10 +1734,8 @@ def execute_optimize_layer(args, model, loader):
             neg_acts = []
 
             for pair in train_pairs.pairs:
-                updated_pair = collector.collect_for_pair(
-                    pair,
-                    layers=[layer_str],
-                    aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+                updated_pair = collector.collect(
+                    pair, strategy=ExtractionStrategy.CHAT_MEAN,
                     return_full_sequence=False,
                     normalize_layers=False,
                 )
@@ -1921,7 +1935,7 @@ def execute_optimize_strength(args, model, loader):
     from wisent_plots import LineChart
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
 
@@ -1982,10 +1996,8 @@ def execute_optimize_strength(args, model, loader):
         if i % 10 == 0:
             print(f"   Processing train pair {i + 1}/{len(train_pairs.pairs)}...", end="\r")
 
-        updated_pair = collector.collect_for_pair(
-            pair,
-            layers=[layer_str],
-            aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+        updated_pair = collector.collect(
+            pair, strategy=ExtractionStrategy.CHAT_MEAN,
             return_full_sequence=False,
             normalize_layers=False,
         )
@@ -2205,7 +2217,7 @@ def execute_auto(args, model, loader):
     import matplotlib.pyplot as plt
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
 
@@ -2282,10 +2294,8 @@ def execute_auto(args, model, loader):
         neg_acts = []
 
         for pair in train_pairs.pairs:
-            updated_pair = collector.collect_for_pair(
-                pair,
-                layers=[layer_str],
-                aggregation=ActivationAggregationStrategy.MEAN_POOLING,
+            updated_pair = collector.collect(
+                pair, strategy=ExtractionStrategy.CHAT_MEAN,
                 return_full_sequence=False,
                 normalize_layers=False,
             )
@@ -2525,8 +2535,8 @@ def execute_personalization(args, model):
     import torch
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    
     from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
@@ -2567,20 +2577,20 @@ def execute_personalization(args, model):
 
     # Token aggregation strategies to test - ALL 5 strategies
     token_aggregations_to_test = [
-        ActivationAggregationStrategy.LAST_TOKEN,
-        ActivationAggregationStrategy.MEAN_POOLING,
-        ActivationAggregationStrategy.FIRST_TOKEN,
-        ActivationAggregationStrategy.MAX_POOLING,
-        ActivationAggregationStrategy.CONTINUATION_TOKEN,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.CHAT_MEAN,
+        ExtractionStrategy.CHAT_FIRST,
+        ExtractionStrategy.CHAT_MAX_NORM,
+        ExtractionStrategy.CHAT_GEN_POINT,
     ]
 
     # Prompt construction strategies to test - ALL 5 strategies
     prompt_constructions_to_test = [
-        PromptConstructionStrategy.CHAT_TEMPLATE,
-        PromptConstructionStrategy.DIRECT_COMPLETION,
-        PromptConstructionStrategy.MULTIPLE_CHOICE,
-        PromptConstructionStrategy.ROLE_PLAYING,
-        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.MC_BALANCED,
+        ExtractionStrategy.ROLE_PLAY,
+        ExtractionStrategy.CHAT_LAST,
     ]
 
     # Steering application strategies to test - ALL 5 strategies
@@ -2744,10 +2754,8 @@ def execute_personalization(args, model):
                     neg_acts = []
 
                     for pair in pairs:
-                        updated_pair = collector.collect_for_pair(
-                            pair,
-                            layers=[layer_str],
-                            aggregation=token_agg,
+                        updated_pair = collector.collect(
+                            pair, strategy=token_agg,
                             prompt_strategy=prompt_const,
                             return_full_sequence=False,
                             normalize_layers=False,
@@ -3055,8 +3063,8 @@ def execute_multi_personalization(args, model):
     import torch
 
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    
     from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
     from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
     from wisent.core.cli.steering_method_trainer import create_steering_method
@@ -3102,20 +3110,20 @@ def execute_multi_personalization(args, model):
 
     # Token aggregation strategies to test - ALL 5 strategies
     token_aggregations_to_test = [
-        ActivationAggregationStrategy.LAST_TOKEN,
-        ActivationAggregationStrategy.MEAN_POOLING,
-        ActivationAggregationStrategy.FIRST_TOKEN,
-        ActivationAggregationStrategy.MAX_POOLING,
-        ActivationAggregationStrategy.CONTINUATION_TOKEN,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.CHAT_MEAN,
+        ExtractionStrategy.CHAT_FIRST,
+        ExtractionStrategy.CHAT_MAX_NORM,
+        ExtractionStrategy.CHAT_GEN_POINT,
     ]
 
     # Prompt construction strategies to test - ALL 5 strategies
     prompt_constructions_to_test = [
-        PromptConstructionStrategy.CHAT_TEMPLATE,
-        PromptConstructionStrategy.DIRECT_COMPLETION,
-        PromptConstructionStrategy.MULTIPLE_CHOICE,
-        PromptConstructionStrategy.ROLE_PLAYING,
-        PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.CHAT_LAST,
+        ExtractionStrategy.MC_BALANCED,
+        ExtractionStrategy.ROLE_PLAY,
+        ExtractionStrategy.CHAT_LAST,
     ]
 
     # Steering strategies to test - ALL 5 strategies
@@ -3201,10 +3209,8 @@ def execute_multi_personalization(args, model):
                     neg_acts = []
 
                     for pair in pairs:
-                        updated_pair = collector.collect_for_pair(
-                            pair,
-                            layers=[layer_str],
-                            aggregation=token_agg,
+                        updated_pair = collector.collect(
+                            pair, strategy=token_agg,
                             prompt_strategy=prompt_const,
                             return_full_sequence=False,
                             normalize_layers=False,

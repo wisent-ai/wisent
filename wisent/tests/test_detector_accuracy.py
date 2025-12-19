@@ -12,7 +12,7 @@ from pathlib import Path
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
@@ -44,10 +44,8 @@ def main():
     layer_str = str(args.layer)
     
     for i, pair in enumerate(pairs):
-        updated_pair = collector.collect_for_pair(
-            pair,
-            layers=[layer_str],
-            aggregation=ActivationAggregationStrategy.LAST_TOKEN,
+        updated_pair = collector.collect(
+            pair, strategy=ExtractionStrategy.CHAT_LAST,
         )
         
         pos_vec = updated_pair.positive_response.layers_activations[layer_str].float()
