@@ -111,26 +111,23 @@ def build_extraction_texts(
                     ExtractionStrategy.CHAT_LAST, ExtractionStrategy.CHAT_GEN_POINT,
                     ExtractionStrategy.CHAT_MAX_NORM, ExtractionStrategy.CHAT_WEIGHTED):
         # All chat_* strategies use the same prompt construction
-        if hasattr(tokenizer, "apply_chat_template"):
-            try:
-                prompt_only = tokenizer.apply_chat_template(
-                    [{"role": "user", "content": prompt}],
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-                full_text = tokenizer.apply_chat_template(
-                    [{"role": "user", "content": prompt},
-                     {"role": "assistant", "content": response}],
-                    tokenize=False,
-                    add_generation_prompt=False,
-                )
-            except (ValueError, KeyError):
-                # Fallback for models without chat template
-                prompt_only = prompt
-                full_text = f"{prompt} {response}"
-        else:
-            prompt_only = prompt
-            full_text = f"{prompt} {response}"
+        if not hasattr(tokenizer, "apply_chat_template"):
+            raise ValueError(
+                f"Strategy {strategy.value} requires a tokenizer with apply_chat_template. "
+                f"Base models without chat templates are not supported for chat_* strategies."
+            )
+        
+        prompt_only = tokenizer.apply_chat_template(
+            [{"role": "user", "content": prompt}],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        full_text = tokenizer.apply_chat_template(
+            [{"role": "user", "content": prompt},
+             {"role": "assistant", "content": response}],
+            tokenize=False,
+            add_generation_prompt=False,
+        )
         
         return full_text, response, prompt_only
     
@@ -139,25 +136,23 @@ def build_extraction_texts(
         random_token = ROLE_PLAY_TOKENS[hash(prompt) % len(ROLE_PLAY_TOKENS)]
         instruction = f"Behave like a person that would answer {prompt} with {response}"
         
-        if hasattr(tokenizer, "apply_chat_template"):
-            try:
-                prompt_only = tokenizer.apply_chat_template(
-                    [{"role": "user", "content": instruction}],
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-                full_text = tokenizer.apply_chat_template(
-                    [{"role": "user", "content": instruction},
-                     {"role": "assistant", "content": random_token}],
-                    tokenize=False,
-                    add_generation_prompt=False,
-                )
-            except (ValueError, KeyError):
-                prompt_only = instruction
-                full_text = f"{instruction} {random_token}"
-        else:
-            prompt_only = instruction
-            full_text = f"{instruction} {random_token}"
+        if not hasattr(tokenizer, "apply_chat_template"):
+            raise ValueError(
+                f"Strategy {strategy.value} requires a tokenizer with apply_chat_template. "
+                f"Base models without chat templates are not supported for role_play strategy."
+            )
+        
+        prompt_only = tokenizer.apply_chat_template(
+            [{"role": "user", "content": instruction}],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        full_text = tokenizer.apply_chat_template(
+            [{"role": "user", "content": instruction},
+             {"role": "assistant", "content": random_token}],
+            tokenize=False,
+            add_generation_prompt=False,
+        )
         
         return full_text, random_token, prompt_only
     
@@ -188,27 +183,25 @@ def build_extraction_texts(
                 option_b = response[:200]        # negative
                 answer = "B"
         
-        mc_prompt = f"Which is correct?\nA. {option_a}\nB. {option_b}\nAnswer:"
+        mc_prompt = f"Question: {prompt}\n\nWhich is correct?\nA. {option_a}\nB. {option_b}\nAnswer:"
         
-        if hasattr(tokenizer, "apply_chat_template"):
-            try:
-                prompt_only = tokenizer.apply_chat_template(
-                    [{"role": "user", "content": mc_prompt}],
-                    tokenize=False,
-                    add_generation_prompt=True,
-                )
-                full_text = tokenizer.apply_chat_template(
-                    [{"role": "user", "content": mc_prompt},
-                     {"role": "assistant", "content": answer}],
-                    tokenize=False,
-                    add_generation_prompt=False,
-                )
-            except (ValueError, KeyError):
-                prompt_only = mc_prompt
-                full_text = f"{mc_prompt} {answer}"
-        else:
-            prompt_only = mc_prompt
-            full_text = f"{mc_prompt} {answer}"
+        if not hasattr(tokenizer, "apply_chat_template"):
+            raise ValueError(
+                f"Strategy {strategy.value} requires a tokenizer with apply_chat_template. "
+                f"Base models without chat templates are not supported for mc_balanced strategy."
+            )
+        
+        prompt_only = tokenizer.apply_chat_template(
+            [{"role": "user", "content": mc_prompt}],
+            tokenize=False,
+            add_generation_prompt=True,
+        )
+        full_text = tokenizer.apply_chat_template(
+            [{"role": "user", "content": mc_prompt},
+             {"role": "assistant", "content": answer}],
+            tokenize=False,
+            add_generation_prompt=False,
+        )
         
         return full_text, answer, prompt_only
     
@@ -285,8 +278,7 @@ def extract_activation(
         return hidden_states[-1]
     
     else:
-        # Default fallback
-        return hidden_states[-1]
+        raise ValueError(f"Unknown extraction strategy: {strategy}")
 
 
 def add_extraction_strategy_args(parser: argparse.ArgumentParser) -> None:

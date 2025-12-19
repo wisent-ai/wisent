@@ -102,8 +102,7 @@ def extract_inference_activation(
         return hidden_states[torch.argmin(norms)]
     
     else:
-        # Default fallback
-        return hidden_states[-1]
+        raise ValueError(f"Unknown classifier inference strategy: {strategy}")
 
 
 def get_inference_score(
@@ -152,8 +151,7 @@ def get_inference_score(
         elif strategy == ClassifierInferenceStrategy.ALL_MIN:
             return float(np.min(all_scores))
     
-    # Default fallback
-    return float(classifier.predict_proba([hidden_np[-1]])[0, 1])
+    raise ValueError(f"Unknown classifier inference strategy: {strategy}")
 
 
 def get_recommended_inference_strategy(train_strategy) -> ClassifierInferenceStrategy:
