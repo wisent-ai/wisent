@@ -62,7 +62,7 @@ class Activations:
             weights = weights / weights.sum()
             features = (tensor * weights.unsqueeze(0).unsqueeze(2)).sum(dim=1).squeeze(0)
         else:
-            features = tensor.mean(dim=1).squeeze(0)
+            raise InvalidValueError(param="extraction_strategy", reason=f"Unknown extraction strategy: {strategy}")
 
         return features
 
