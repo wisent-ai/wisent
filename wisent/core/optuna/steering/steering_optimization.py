@@ -14,7 +14,7 @@ from typing import Any, Dict, List, Optional, Tuple
 import torch
 from tqdm import tqdm
 
-from wisent.core.activations.core import ActivationAggregationStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
 from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
@@ -743,24 +743,29 @@ class SteeringOptimizer:
         # Apply aggregation strategy
         if (
             aggregation_strategy == "mean_pooling"
-            or aggregation_strategy == ActivationAggregationStrategy.MEAN_POOLING.value
+            or aggregation_strategy == ExtractionStrategy.CHAT_MEAN.value
         ):
             aggregated = torch.mean(activation_tensor, dim=1)  # [1, hidden_dim]
         elif (
             aggregation_strategy == "last_token"
-            or aggregation_strategy == ActivationAggregationStrategy.LAST_TOKEN.value
+            or aggregation_strategy == ExtractionStrategy.CHAT_LAST.value
         ):
             aggregated = activation_tensor[:, -1, :]  # [1, hidden_dim]
         elif (
             aggregation_strategy == "first_token"
-            or aggregation_strategy == ActivationAggregationStrategy.FIRST_TOKEN.value
+            or aggregation_strategy == ExtractionStrategy.CHAT_FIRST.value
         ):
             aggregated = activation_tensor[:, 0, :]  # [1, hidden_dim]
         elif (
             aggregation_strategy == "max_pooling"
-            or aggregation_strategy == ActivationAggregationStrategy.MAX_POOLING.value
+            or aggregation_strategy == ExtractionStrategy.CHAT_MAX_NORM.value
         ):
             aggregated = torch.max(activation_tensor, dim=1)[0]  # [1, hidden_dim]
+        elif (
+            aggregation_strategy == "min_pooling"
+            or aggregation_strategy == ExtractionStrategy.CHAT_MEAN.value
+        ):
+            aggregated = torch.min(activation_tensor, dim=1)[0]  # [1, hidden_dim]
         else:
             # Default to mean pooling if unknown
             self.logger.warning(f"Unknown aggregation strategy {aggregation_strategy}, using mean pooling")
@@ -1029,10 +1034,10 @@ class SteeringOptimizer:
             generation_config = GenerationConfig(
                 layer_search_range=(0, 23),  # Will be auto-detected from model
                 aggregation_methods=[
-                    ActivationAggregationStrategy.MEAN_POOLING,
-                    ActivationAggregationStrategy.LAST_TOKEN,
-                    ActivationAggregationStrategy.FIRST_TOKEN,
-                    ActivationAggregationStrategy.MAX_POOLING,
+                    ExtractionStrategy.CHAT_MEAN,
+                    ExtractionStrategy.CHAT_LAST,
+                    ExtractionStrategy.CHAT_FIRST,
+                    ExtractionStrategy.CHAT_MAX_NORM,
                 ],
                 cache_dir="./cache/steering_activations",
                 device=optimization_config.device,

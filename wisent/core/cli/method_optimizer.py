@@ -22,8 +22,9 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Type
 import torch
 
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy, LayerActivations
-from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations.core.atoms import LayerActivations
+
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
@@ -44,10 +45,10 @@ class OptimizationConfig:
     layers: List[str]
     """Layer indices to extract activations from."""
     
-    token_aggregation: ActivationAggregationStrategy
+    token_aggregation: ExtractionStrategy
     """How to aggregate tokens within a sequence."""
     
-    prompt_strategy: PromptConstructionStrategy
+    prompt_strategy: ExtractionStrategy
     """How to construct prompts for the model."""
     
     # Application parameters
@@ -245,19 +246,19 @@ class MethodOptimizer:
         
         # Convert to enums
         token_agg_map = {
-            "last_token": ActivationAggregationStrategy.LAST_TOKEN,
-            "mean_pooling": ActivationAggregationStrategy.MEAN_POOLING,
-            "first_token": ActivationAggregationStrategy.FIRST_TOKEN,
-            "max_pooling": ActivationAggregationStrategy.MAX_POOLING,
-            "continuation_token": ActivationAggregationStrategy.CONTINUATION_TOKEN,
+            "last_token": ExtractionStrategy.CHAT_LAST,
+            "mean_pooling": ExtractionStrategy.CHAT_MEAN,
+            "first_token": ExtractionStrategy.CHAT_FIRST,
+            "max_pooling": ExtractionStrategy.CHAT_MAX_NORM,
+            "continuation_token": ExtractionStrategy.CHAT_GEN_POINT,
         }
         
         prompt_strat_map = {
-            "chat_template": PromptConstructionStrategy.CHAT_TEMPLATE,
-            "direct_completion": PromptConstructionStrategy.DIRECT_COMPLETION,
-            "multiple_choice": PromptConstructionStrategy.MULTIPLE_CHOICE,
-            "role_playing": PromptConstructionStrategy.ROLE_PLAYING,
-            "instruction_following": PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
+            "chat_template": ExtractionStrategy.CHAT_LAST,
+            "direct_completion": ExtractionStrategy.CHAT_LAST,
+            "multiple_choice": ExtractionStrategy.MC_BALANCED,
+            "role_playing": ExtractionStrategy.ROLE_PLAY,
+            "instruction_following": ExtractionStrategy.CHAT_LAST,
         }
         
         # Generate method param combinations
@@ -279,10 +280,10 @@ class MethodOptimizer:
                                     method_name=self.method_name,
                                     layers=[str(l) for l in activation_layers],
                                     token_aggregation=token_agg_map.get(
-                                        token_agg_name, ActivationAggregationStrategy.LAST_TOKEN
+                                        token_agg_name, ExtractionStrategy.CHAT_LAST
                                     ),
                                     prompt_strategy=prompt_strat_map.get(
-                                        prompt_strat_name, PromptConstructionStrategy.CHAT_TEMPLATE
+                                        prompt_strat_name, ExtractionStrategy.CHAT_LAST
                                     ),
                                     strength=strength,
                                     strategy=steering_strat,

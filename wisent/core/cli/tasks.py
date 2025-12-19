@@ -14,8 +14,8 @@ def execute_tasks(args):
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    
     from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
     from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
     from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
@@ -416,32 +416,9 @@ def execute_tasks(args):
     # 5. Collect activations for all pairs
     collector = ActivationCollector(model=model, store_device="cpu")
 
-    # Map parser values to enum members
-    aggregation_map = {
-        'average': 'MEAN_POOLING',
-        'final': 'LAST_TOKEN',
-        'first': 'FIRST_TOKEN',
-        'max': 'MAX_POOLING',
-        'min': 'MAX_POOLING',  # Fallback to MAX_POOLING for min
-        'max_score': 'MEAN_POOLING',  # Will use mean for training, but max token score for inference
-    }
-    aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
-    aggregation_strategy = ActivationAggregationStrategy[aggregation_key]
-    use_max_token_score = args.token_aggregation.lower() == 'max_score'
-
-    # Map prompt construction strategy from CLI to enum
-    prompt_strategy_map = {
-        'multiple_choice': PromptConstructionStrategy.MULTIPLE_CHOICE,
-        'role_playing': PromptConstructionStrategy.ROLE_PLAYING,
-        'direct_completion': PromptConstructionStrategy.DIRECT_COMPLETION,
-        'instruction_following': PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-        'chat_template': PromptConstructionStrategy.CHAT_TEMPLATE,
-    }
-    prompt_strategy = prompt_strategy_map.get(
-        getattr(args, 'prompt_construction_strategy', 'chat_template'),
-        PromptConstructionStrategy.CHAT_TEMPLATE
-    )
-    print(f"   Prompt construction strategy: {prompt_strategy.value}")
+    # Get extraction strategy from args (already an ExtractionStrategy value string)
+    extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+    print(f"   Extraction strategy: {extraction_strategy.value}")
 
     positive_activations = []
     negative_activations = []
@@ -454,13 +431,9 @@ def execute_tasks(args):
             print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...", end='\r')
 
         # Collect for positive (correct) response
-        updated_pair = collector.collect_for_pair(
-            pair,
+        updated_pair = collector.collect(
+            pair, strategy=extraction_strategy,
             layers=[layer_str],
-            aggregation=aggregation_strategy,
-            return_full_sequence=False,
-            normalize_layers=False,
-            prompt_strategy=prompt_strategy
         )
 
         # Extract activations from positive and negative responses
@@ -657,10 +630,8 @@ def execute_tasks(args):
 
         # Collect activation - ActivationCollector will re-run the model with prompt+response
         # First, collect with full sequence to get token-by-token activations
-        collected_full = gen_collector.collect_for_pair(
-            temp_pair,
-            layers=[layer_str],
-            aggregation=aggregation_strategy,
+        collected_full = gen_collector.collect(
+            temp_pair, strategy=aggregation_strategy,
             return_full_sequence=True,
             normalize_layers=False,
             prompt_strategy=prompt_strategy
@@ -684,6 +655,8 @@ def execute_tasks(args):
                         activation_agg = activation_full_seq[0]
                     elif aggregation_strategy.name == 'MAX_POOLING':
                         activation_agg = activation_full_seq.max(dim=0)[0]
+                    elif aggregation_strategy.name == 'MIN_POOLING':
+                        activation_agg = activation_full_seq.min(dim=0)[0]
                     else:
                         # Default to mean
                         activation_agg = activation_full_seq.mean(dim=0)

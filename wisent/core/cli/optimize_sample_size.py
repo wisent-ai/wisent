@@ -11,7 +11,7 @@ except ImportError:
     LineChart = None  # wisent_plots is optional
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
-from wisent.core.activations import ActivationAggregationStrategy, ActivationCollector
+from wisent.core.activations import ExtractionStrategy, ActivationCollector
 from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
 from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
@@ -84,16 +84,8 @@ def execute_optimize_sample_size(args):
         print(f"\n🎯 Collecting test activations (ONCE)...")
         layer_str = str(args.layer)  # Layer should be just the number, like "10"
 
-        # Map token aggregation string to enum value (same as in tasks.py)
-        aggregation_map = {
-            'average': 'MEAN_POOLING',
-            'final': 'LAST_TOKEN',
-            'first': 'FIRST_TOKEN',
-            'max': 'MAX_POOLING',
-            'min': 'MAX_POOLING',  # Fallback to MAX_POOLING for min
-        }
-        aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
-        aggregation_strategy = ActivationAggregationStrategy[aggregation_key]
+        # Get extraction strategy from args
+        extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
 
         collector = ActivationCollector(model=model, store_device="cpu")
 
@@ -107,12 +99,9 @@ def execute_optimize_sample_size(args):
                 print(f"      Processing test pair {i+1}/{len(test_pairs)}...", end='\r')
 
             # Collect activations for this pair
-            collected_pair = collector.collect_for_pair(
-                pair,
+            collected_pair = collector.collect(
+                pair, strategy=extraction_strategy,
                 layers=[layer_str],
-                aggregation=aggregation_strategy,
-                return_full_sequence=False,
-                normalize_layers=False
             )
 
             # Extract positive and negative activations
@@ -174,7 +163,7 @@ def execute_optimize_sample_size(args):
             temp_neg = NegativeResponse(model_response="placeholder", layers_activations={})
             temp_pair = ContrastivePair(prompt=question, positive_response=temp_pos, negative_response=temp_neg, label=None, trait_description=None)
 
-            collected = collector.collect_for_pair(temp_pair, layers=[layer_str], aggregation=aggregation_strategy, return_full_sequence=False, normalize_layers=False)
+            collected = collector.collect(temp_pair, strategy=extraction_strategy, layers=[layer_str])
 
             activation = None
             if collected.positive_response.layers_activations and layer_str in collected.positive_response.layers_activations:
@@ -212,12 +201,9 @@ def execute_optimize_sample_size(args):
                     print(f"      Processing train pair {i+1}/{sample_size}...", end='\r')
 
                 # Collect activations for this pair
-                collected_pair = collector.collect_for_pair(
-                    pair,
+                collected_pair = collector.collect(
+                    pair, strategy=extraction_strategy,
                     layers=[layer_str],
-                    aggregation=aggregation_strategy,
-                    return_full_sequence=False,
-                    normalize_layers=False
                 )
 
                 # Extract positive and negative activations

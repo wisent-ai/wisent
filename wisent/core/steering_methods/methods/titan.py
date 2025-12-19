@@ -456,8 +456,7 @@ class TITANMethod(BaseSteeringMethod):
             primary_map[layer] = result.get_effective_direction(layer)
         
         dtype = self.kwargs.get("dtype", None)
-        agg = self.kwargs.get("activation_aggregation_strategy", None)
-        return LayerActivations(primary_map, activation_aggregation_strategy=agg, dtype=dtype)
+        return LayerActivations(primary_map, dtype=dtype)
     
     def train_titan(self, pair_set: ContrastivePairSet) -> TITANResult:
         """

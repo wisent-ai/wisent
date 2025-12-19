@@ -12,7 +12,7 @@ A model that can autonomously use wisent capabilities on itself:
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.activations.activations import Activations
 from wisent.core.models.inference_config import get_generate_kwargs
 from wisent.core.errors import MissingParameterError
@@ -333,7 +333,7 @@ class AutonomousAgent:
         activations = Activations(
             tensor=activations_tensor,
             layer=Layer(index=classifier_params.optimal_layer, type="transformer"),
-            aggregation_strategy=ActivationAggregationStrategy.LAST_TOKEN,
+            aggregation_strategy=ExtractionStrategy.CHAT_LAST,
         )
 
         features = activations.extract_features_for_classifier()
