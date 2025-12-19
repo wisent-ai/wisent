@@ -35,6 +35,8 @@ def generate_steering_vector(
     keep_intermediate: bool = False,
     token_aggregation: str = "average",
     prompt_strategy: str = "direct_completion",
+    dtype: str = "float32",
+    load_in_8bit: bool = False,
 ) -> Path:
     """
     Generate a steering vector using wisent CLI in subprocess.

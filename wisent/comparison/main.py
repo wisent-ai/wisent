@@ -24,12 +24,14 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.utils.dataset_splits import get_test_docs
 from wisent.comparison import ours
 from wisent.comparison import sae
+from wisent.comparison import fgaa
 from wisent.comparison.utils import load_steering_vector, apply_steering_to_model, remove_steering, convert_to_lm_eval_format
 
 # Map method names to modules
 METHOD_MODULES = {
     "caa": ours,
     "sae": sae,
+    "fgaa": fgaa,
 }
 
 
@@ -58,7 +60,7 @@ def create_test_only_task(task_name: str, train_ratio: float = 0.8) -> dict:
     return {task_name: task}
 
 
-def run_evaluation(
+def run_lm_eval_evaluation(
     model_name: str = None,
     wisent_model: WisentModel = None,
     task_dict: dict = None,
@@ -100,6 +102,114 @@ def run_evaluation(
     return results
 
 
+def run_wisent_ll_evaluation(
+    wisent_model: WisentModel,
+    task_dict: dict,
+    task_name: str,
+    limit: int | None = None,
+    steering_data: dict = None,
+    scale: float = 1.0,
+) -> dict:
+    """
+    Run evaluation using wisent's LogLikelihoodsEvaluator.
+
+    Args:
+        wisent_model: WisentModel instance
+        task_dict: Task dict from create_test_only_task (uses our test split)
+        task_name: lm-eval task name (boolq, cb, truthfulqa_mc1)
+        limit: Max number of examples to evaluate
+        steering_data: Optional steering vector data to apply
+        scale: Steering scale factor
+
+    Returns:
+        Dict with accuracy and detailed per-example results
+    """
+    from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
+
+    evaluator = LogLikelihoodsEvaluator()
+
+    # Get test docs from our task_dict (already uses our test split)
+    task = task_dict[task_name]
+    test_docs = list(task.test_docs())
+
+    if limit:
+        test_docs = test_docs[:limit]
+
+    print(f"Evaluating {len(test_docs)} examples with LogLikelihoodsEvaluator")
+
+    # Apply steering if provided
+    if steering_data:
+        apply_steering_to_model(wisent_model, steering_data, scale=scale)
+
+    results = []
+    correct = 0
+
+    for i, doc in enumerate(test_docs):
+        question = task.doc_to_text(doc)
+        choices, expected = _extract_choices_and_answer(task_name, doc)
+
+        result = evaluator.evaluate(
+            response="",
+            expected=expected,
+            model=wisent_model,
+            question=question,
+            choices=choices,
+            task_name=task_name,
+        )
+
+        is_correct = result.ground_truth == "TRUTHFUL"
+        results.append({
+            "question": question[:100] + "..." if len(question) > 100 else question,
+            "predicted": result.meta["predicted"],
+            "expected": expected,
+            "correct": is_correct,
+            "log_probs": result.meta["log_probs"],
+        })
+
+        if is_correct:
+            correct += 1
+
+        if (i + 1) % 50 == 0:
+            print(f"  Processed {i + 1}/{len(test_docs)}, acc: {correct/(i+1):.4f}")
+
+    # Remove steering after evaluation
+    if steering_data:
+        remove_steering(wisent_model)
+
+    accuracy = correct / len(test_docs) if test_docs else 0.0
+
+    return {
+        "accuracy": accuracy,
+        "num_correct": correct,
+        "num_total": len(test_docs),
+        "per_example_results": results,
+    }
+
+
+def _extract_choices_and_answer(task_name: str, doc: dict) -> tuple[list[str], str]:
+    """Extract choices and expected answer for supported tasks."""
+
+    if task_name == "boolq":
+        choices = ["yes", "no"]
+        expected = "yes" if doc.get("answer", False) else "no"
+        return choices, expected
+
+    if task_name == "cb":
+        choices = ["entailment", "contradiction", "neutral"]
+        label = doc.get("label", 0)
+        expected = choices[label] if isinstance(label, int) else str(label)
+        return choices, expected
+
+    if task_name == "truthfulqa_mc1":
+        choices = doc.get("mc1_targets", {}).get("choices", [])
+        labels = doc.get("mc1_targets", {}).get("labels", [])
+        correct_idx = labels.index(1) if 1 in labels else 0
+        expected = choices[correct_idx] if correct_idx < len(choices) else ""
+        return choices, expected
+
+    raise ValueError(f"Task '{task_name}' not supported. Supported: boolq, cb, truthfulqa_mc1")
+
+
 def extract_accuracy(results: dict, task: str) -> float:
     """Extract accuracy from lm-eval results."""
     task_results = results.get("results", {}).get(task, {})
@@ -124,6 +234,8 @@ def run_single_task(
     layers: str | None = None,
     token_aggregation: str = "average",
     prompt_strategy: str = "direct_completion",
+    dtype: str = "float32",
+    load_in_8bit: bool = False,
 ) -> list[dict]:
     """
     Run comparison for a single task with multiple methods and scales.
@@ -174,11 +286,20 @@ def run_single_task(
             layers=layers,
             token_aggregation=token_aggregation,
             prompt_strategy=prompt_strategy,
+            dtype=dtype,
+            load_in_8bit=load_in_8bit,
         )
 
         steering_data = load_steering_vector(vector_path, default_method=method)
         steering_vectors_data[method] = steering_data
         print(f"Loaded steering vector with layers: {steering_data['layers']}")
+
+    # Force cleanup of any leftover GPU memory from steering vector generation
+    gc.collect()
+    if torch.cuda.is_available():
+        torch.cuda.empty_cache()
+        torch.cuda.synchronize()
+    print(f"\nGPU memory cleared before evaluation")
 
     # Step 3: Load model once for ALL evaluations
     print(f"\n{'='*60}")
@@ -191,7 +312,7 @@ def run_single_task(
     print(f"Running BASE evaluation for: {task}")
     print(f"{'='*60}")
 
-    base_results = run_evaluation(
+    base_results = run_lm_eval_evaluation(
         wisent_model=wisent_model,
         task_dict=task_dict,
         task_name=task,
@@ -218,7 +339,7 @@ def run_single_task(
             # Apply steering to existing model
             apply_steering_to_model(wisent_model, steering_data, scale=scale)
 
-            steered_results = run_evaluation(
+            steered_results = run_lm_eval_evaluation(
                 wisent_model=wisent_model,
                 task_dict=task_dict,
                 task_name=task,
@@ -315,6 +436,8 @@ def run_comparison(
     layers: str | None = None,
     token_aggregation: str = "average",
     prompt_strategy: str = "direct_completion",
+    dtype: str = "float32",
+    load_in_8bit: bool = False,
 ) -> list[dict]:
     """
     Run full comparison for multiple tasks, methods, and scales.
@@ -354,6 +477,8 @@ def run_comparison(
             layers=layers,
             token_aggregation=token_aggregation,
             prompt_strategy=prompt_strategy,
+            dtype=dtype,
+            load_in_8bit=load_in_8bit,
         )
         all_results.extend(task_results)
 
@@ -391,7 +516,7 @@ def main():
     parser = argparse.ArgumentParser(description="Compare steering methods")
     parser.add_argument("--model", default="EleutherAI/gpt-neo-125M", help="Model name")
     parser.add_argument("--tasks", default="boolq", help="Comma-separated lm-eval tasks (e.g., boolq,cb,copa)")
-    parser.add_argument("--methods", default="caa", help="Comma-separated methods (e.g., caa,sae)")
+    parser.add_argument("--methods", default="caa", help="Comma-separated methods (e.g., caa,sae,fgaa)")
     parser.add_argument("--num-pairs", type=int, default=50, help="Number of contrastive pairs")
     parser.add_argument("--scales", default="1.0", help="Comma-separated steering scales (e.g., 0.5,1.0,1.5)")
     parser.add_argument("--layers", default=None, help="Layer(s) for steering (e.g., '9' or '8,9,10' or 'all')")
@@ -403,6 +528,8 @@ def main():
     parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio (default 0.8 = 80%% train, 20%% test)")
     parser.add_argument("--token-aggregation", default="average", choices=["average", "final", "first", "max"], help="Token aggregation strategy")
     parser.add_argument("--prompt-strategy", default="direct_completion", choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"], help="Prompt construction strategy")
+    parser.add_argument("--dtype", default="float32", choices=["float32", "bfloat16", "float16"], help="Model dtype (use bfloat16/float16 for less VRAM)")
+    parser.add_argument("--load-in-8bit", action="store_true", help="Use 8-bit quantization (requires bitsandbytes, ~50%% less VRAM)")
 
     args = parser.parse_args()
 
@@ -426,6 +553,8 @@ def main():
         layers=args.layers,
         token_aggregation=args.token_aggregation,
         prompt_strategy=args.prompt_strategy,
+        dtype=args.dtype,
+        load_in_8bit=args.load_in_8bit,
     )
 
 
