@@ -33,10 +33,7 @@ def generate_steering_vector(
     normalize: bool = True,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    token_aggregation: str = "average",
-    prompt_strategy: str = "direct_completion",
-    dtype: str = "float32",
-    load_in_8bit: bool = False,
+    extraction_strategy: str = "chat_mean",
 ) -> Path:
     """
     Generate a steering vector using wisent CLI in subprocess.
@@ -54,8 +51,7 @@ def generate_steering_vector(
         "--method", method,
         "--output", str(output_path),
         "--device", device,
-        "--token-aggregation", token_aggregation,
-        "--prompt-strategy", prompt_strategy,
+        "--extraction-strategy", extraction_strategy,
         "--accept-low-quality-vector",
     ]
 

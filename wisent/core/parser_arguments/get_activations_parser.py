@@ -45,22 +45,13 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
         help="Comma-separated layer indices (e.g., '8,12,15') or 'all' for all layers"
     )
 
-    # Token aggregation
+    # Extraction strategy (combines prompt format and token selection)
     parser.add_argument(
-        "--token-aggregation",
+        "--extraction-strategy",
         type=str,
-        choices=["average", "final", "first", "max", "min", "max_score"],
-        default="average",
-        help="How to aggregate token activations. 'max_score' uses highest token hallucination score"
-    )
-
-    # Prompt construction strategy
-    parser.add_argument(
-        "--prompt-strategy",
-        type=str,
-        choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"],
-        default="chat_template",
-        help="Prompt construction strategy (default: chat_template)"
+        choices=["chat_mean", "chat_first", "chat_last", "chat_gen_point", "chat_max_norm", "chat_weighted", "role_play", "mc_balanced"],
+        default="chat_mean",
+        help="Extraction strategy combining prompt format and token selection (default: chat_mean)"
     )
 
     # Processing options

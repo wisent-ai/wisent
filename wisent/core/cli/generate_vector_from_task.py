@@ -30,8 +30,7 @@ def _load_optimal_defaults(model_name: str, task_name: str, args):
             "layer": result.layer,
             "strength": result.strength,
             "strategy": result.strategy,
-            "token_aggregation": result.token_aggregation,
-            "prompt_strategy": result.prompt_strategy,
+            "extraction_strategy": getattr(result, 'extraction_strategy', None),
             "score": result.score,
         }
         
@@ -89,31 +88,24 @@ def execute_generate_vector_from_task(args):
             print(f"   Method: {optimal_config['method']}")
             print(f"   Layer: {optimal_config['layer']}")
             print(f"   Strength: {optimal_config['strength']}")
-            print(f"   Token Aggregation: {optimal_config['token_aggregation']}")
+            if optimal_config.get('extraction_strategy'):
+                print(f"   Extraction Strategy: {optimal_config['extraction_strategy']}")
             print(f"   Score: {optimal_config['score']:.3f}")
             print(f"{'='*60}")
-            
+
             # Apply optimal defaults if user didn't explicitly override
             if not getattr(args, '_layers_set_by_user', False) and args.layers is None:
                 args.layers = str(optimal_config['layer'])
                 print(f"   → Using optimal layer: {args.layers}")
-            
-            if not getattr(args, '_token_aggregation_set_by_user', False):
-                # Map stored format to CLI format
-                token_agg_map = {
-                    "last_token": "final",
-                    "mean_pooling": "average",
-                    "first_token": "first",
-                    "max_pooling": "max",
-                }
-                mapped_agg = token_agg_map.get(optimal_config['token_aggregation'], args.token_aggregation)
-                args.token_aggregation = mapped_agg
-                print(f"   → Using optimal token aggregation: {args.token_aggregation}")
-            
+
+            if not getattr(args, '_extraction_strategy_set_by_user', False) and optimal_config.get('extraction_strategy'):
+                args.extraction_strategy = optimal_config['extraction_strategy']
+                print(f"   → Using optimal extraction strategy: {args.extraction_strategy}")
+
             if not getattr(args, '_method_set_by_user', False):
                 args.method = optimal_config['method'].lower()
                 print(f"   → Using optimal method: {args.method}")
-            
+
             # Store optimal config for later use
             args._optimal_config = optimal_config
             print()
@@ -176,8 +168,7 @@ def execute_generate_vector_from_task(args):
             model=args.model,
             device=args.device,
             layers=args.layers,
-            token_aggregation=args.token_aggregation,
-            prompt_strategy=args.prompt_strategy,
+            extraction_strategy=args.extraction_strategy,
             verbose=args.verbose,
             timing=args.timing,
         )
