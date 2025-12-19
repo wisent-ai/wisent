@@ -55,6 +55,7 @@ setup(
         "uncensorbench>=0.2.0",
         "pebble>=5.0.0",
         "latex2sympy2_extended>=1.0.0",
+        "sae_lens>=0.1.0",
     ],
     extras_require={
         "harness": [
@@ -62,6 +63,9 @@ setup(
         ],
         "cuda": [
             "flash-attn>=2.5.0",
+        ],
+        "sparsify": [
+            "sparsify>=0.1.0",
         ],
     },
     entry_points={

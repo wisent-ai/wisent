@@ -85,8 +85,8 @@ class BoolQExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            correct = "Yes" if label == 1 else "No"
-            incorrect = "No" if label == 1 else "Yes"
+            correct = "yes" if label == 1 else "no"
+            incorrect = "no" if label == 1 else "yes"
 
             formatted_question = f"{passage}\nQuestion: {question}?\nAnswer:\nA. {incorrect}\nB. {correct}"
 
