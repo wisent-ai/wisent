@@ -53,22 +53,18 @@ python -m wisent.comparison.main \
 
 
 python -m wisent.comparison.main \
-      --model google/gemma-2-2b \
-      --tasks boolq,cb \
-      --methods fgaa \
-      --scales 0.5,1.0,1.5,3.0 \
-      --layers 12 \
+      --model EleutherAI/gpt-neo-125M \
+      --tasks boolq \
+      --methods caa \
+      --scales 0.5 \
+      --layers 6 \
       --device cuda:0 \
       --batch-size 1 \
       --max-batch-size 1 \
       --output-dir wisent/comparison/comparison_results \
       --train-ratio 0.4 \
-      --token-aggregation average \
-      --prompt-strategy direct_completion \
-      --dtype bfloat16 \
       --limit 10 \
-      --num-pairs 10 \
-      --load-in-8bits
+      --num-pairs 100
 
 
   ./run_on_aws.sh --model google/gemma-2-2b --instance-type g6e.xlarge \                                                                                                

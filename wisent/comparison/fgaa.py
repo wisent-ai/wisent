@@ -350,9 +350,8 @@ def generate_steering_vector(
     density_threshold: float = 0.01,
     top_k_positive: int = 50,
     top_k_negative: int = 0,
-    dtype: str = "float32",
-    load_in_8bit: bool = False,
-    **kwargs,  # Accept additional kwargs for compatibility with main.py
+    extraction_strategy: str = "chat_mean",  # Accepted for API compatibility but not used (FGAA has its own method)
+    **kwargs,  # Accept additional kwargs for compatibility
 ) -> Path:
     """
     Generate a steering vector using the FGAA method.
@@ -370,8 +369,6 @@ def generate_steering_vector(
         density_threshold: Density threshold for filtering (default 0.01)
         top_k_positive: Number of top positive features to keep
         top_k_negative: Number of top negative features to keep
-        dtype: Model dtype ('float32', 'bfloat16', 'float16')
-        load_in_8bit: Use 8-bit quantization for lower VRAM usage
 
     Returns:
         Path to the saved steering vector
@@ -416,34 +413,14 @@ def generate_steering_vector(
     print(f"   Loaded {len(pairs)} contrastive pairs")
 
     # Step 2: Load model
-    quant_str = ", 8-bit quantized" if load_in_8bit else ""
-    print(f"\nStep 2: Loading model {model_name} (dtype={dtype}{quant_str})...")
+    print(f"\nStep 2: Loading model {model_name}...")
     from transformers import AutoModelForCausalLM, AutoTokenizer
-
-    # Parse dtype
-    dtype_map = {
-        "float32": torch.float32,
-        "bfloat16": torch.bfloat16,
-        "float16": torch.float16,
-    }
-    torch_dtype = dtype_map.get(dtype, torch.float32)
-
-    # Build model kwargs
-    model_kwargs = {
-        "device_map": device,
-        "trust_remote_code": True,
-    }
-
-    if load_in_8bit:
-        # 8-bit quantization with bitsandbytes
-        model_kwargs["load_in_8bit"] = True
-        # Don't set torch_dtype when using 8-bit quantization
-    else:
-        model_kwargs["torch_dtype"] = torch_dtype
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        **model_kwargs,
+        device_map=device,
+        torch_dtype=torch.float32,
+        trust_remote_code=True,
     )
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
     if tokenizer.pad_token is None:

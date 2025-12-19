@@ -66,18 +66,11 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
         help="Comma-separated layer indices (e.g., '8,12,16') or 'all' (default: all layers)"
     )
     parser.add_argument(
-        "--token-aggregation",
+        "--extraction-strategy",
         type=str,
-        choices=["average", "final", "first", "max", "continuation"],
-        default="average",
-        help="How to aggregate token activations (default: average)"
-    )
-    parser.add_argument(
-        "--prompt-strategy",
-        type=str,
-        choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"],
-        default="chat_template",
-        help="Prompt construction strategy (default: chat_template)"
+        choices=["chat_mean", "chat_first", "chat_last", "chat_gen_point", "chat_max_norm", "chat_weighted", "role_play", "mc_balanced"],
+        default="chat_mean",
+        help="Extraction strategy combining prompt format and token selection (default: chat_mean)"
     )
     
     # Steering vector creation
