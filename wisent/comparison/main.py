@@ -232,10 +232,7 @@ def run_single_task(
     vectors_dir: Path = None,
     train_ratio: float = 0.8,
     layers: str | None = None,
-    token_aggregation: str = "average",
-    prompt_strategy: str = "direct_completion",
-    dtype: str = "float32",
-    load_in_8bit: bool = False,
+    extraction_strategy: str = "chat_mean",
 ) -> list[dict]:
     """
     Run comparison for a single task with multiple methods and scales.
@@ -284,10 +281,7 @@ def run_single_task(
             num_pairs=num_pairs,
             device=device,
             layers=layers,
-            token_aggregation=token_aggregation,
-            prompt_strategy=prompt_strategy,
-            dtype=dtype,
-            load_in_8bit=load_in_8bit,
+            extraction_strategy=extraction_strategy,
         )
 
         steering_data = load_steering_vector(vector_path, default_method=method)
@@ -434,10 +428,7 @@ def run_comparison(
     output_dir: str = "comparison_results",
     train_ratio: float = 0.8,
     layers: str | None = None,
-    token_aggregation: str = "average",
-    prompt_strategy: str = "direct_completion",
-    dtype: str = "float32",
-    load_in_8bit: bool = False,
+    extraction_strategy: str = "chat_mean",
 ) -> list[dict]:
     """
     Run full comparison for multiple tasks, methods, and scales.
@@ -475,10 +466,7 @@ def run_comparison(
             vectors_dir=vectors_dir,
             train_ratio=train_ratio,
             layers=layers,
-            token_aggregation=token_aggregation,
-            prompt_strategy=prompt_strategy,
-            dtype=dtype,
-            load_in_8bit=load_in_8bit,
+            extraction_strategy=extraction_strategy,
         )
         all_results.extend(task_results)
 
@@ -526,10 +514,9 @@ def main():
     parser.add_argument("--limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--output-dir", default="wisent/comparison/comparison_results", help="Output directory")
     parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio (default 0.8 = 80%% train, 20%% test)")
-    parser.add_argument("--token-aggregation", default="average", choices=["average", "final", "first", "max"], help="Token aggregation strategy")
-    parser.add_argument("--prompt-strategy", default="direct_completion", choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"], help="Prompt construction strategy")
-    parser.add_argument("--dtype", default="float32", choices=["float32", "bfloat16", "float16"], help="Model dtype (use bfloat16/float16 for less VRAM)")
-    parser.add_argument("--load-in-8bit", action="store_true", help="Use 8-bit quantization (requires bitsandbytes, ~50%% less VRAM)")
+    parser.add_argument("--extraction-strategy", default="chat_mean",
+                        choices=["chat_mean", "chat_first", "chat_last", "chat_gen_point", "chat_max_norm", "chat_weighted", "role_play", "mc_balanced"],
+                        help="Extraction strategy combining prompt format and token selection (default: chat_mean)")
 
     args = parser.parse_args()
 
@@ -551,10 +538,7 @@ def main():
         output_dir=args.output_dir,
         train_ratio=args.train_ratio,
         layers=args.layers,
-        token_aggregation=args.token_aggregation,
-        prompt_strategy=args.prompt_strategy,
-        dtype=args.dtype,
-        load_in_8bit=args.load_in_8bit,
+        extraction_strategy=args.extraction_strategy,
     )
 
 

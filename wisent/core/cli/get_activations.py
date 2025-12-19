@@ -114,7 +114,7 @@ def execute_get_activations(args):
             'trait_label': trait_label,
             'model': args.model,
             'layers': layers,
-            'token_aggregation': args.token_aggregation,
+            'extraction_strategy': extraction_strategy.value,
             'num_pairs': len(enriched_pairs),
             'pairs': []
         }

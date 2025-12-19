@@ -169,7 +169,7 @@ def main():
     print(f"\nLoading model...")
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=torch.float32,
         device_map=args.device,
         trust_remote_code=True,
     )
