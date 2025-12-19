@@ -242,8 +242,7 @@ class PULSEMethod(BaseSteeringMethod):
         
         # Return behavior vectors as LayerActivations
         dtype = self.kwargs.get("dtype", None)
-        agg = self.kwargs.get("activation_aggregation_strategy", None)
-        return LayerActivations(result.behavior_vectors, activation_aggregation_strategy=agg, dtype=dtype)
+        return LayerActivations(result.behavior_vectors, dtype=dtype)
     
     def train_pulse(
         self,

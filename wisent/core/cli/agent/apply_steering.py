@@ -4,31 +4,31 @@ from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def _map_token_aggregation(aggregation_str: str):
-    """Map string token aggregation to ActivationAggregationStrategy enum."""
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
+    """Map string token aggregation to ExtractionStrategy."""
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
 
     mapping = {
-        "average": ActivationAggregationStrategy.MEAN_POOLING,
-        "final": ActivationAggregationStrategy.LAST_TOKEN,
-        "first": ActivationAggregationStrategy.FIRST_TOKEN,
-        "max": ActivationAggregationStrategy.MAX_POOLING,
-        "min": ActivationAggregationStrategy.MAX_POOLING,  # Note: MIN_POOLING not in enum, using MAX_POOLING
+        "average": ExtractionStrategy.CHAT_MEAN,
+        "final": ExtractionStrategy.CHAT_LAST,
+        "first": ExtractionStrategy.CHAT_FIRST,
+        "max": ExtractionStrategy.CHAT_MAX_NORM,
+        "min": ExtractionStrategy.CHAT_MEAN,
     }
-    return mapping.get(aggregation_str, ActivationAggregationStrategy.MEAN_POOLING)
+    return mapping.get(aggregation_str, ExtractionStrategy.CHAT_MEAN)
 
 
 def _map_prompt_strategy(strategy_str: str):
-    """Map string prompt strategy to PromptConstructionStrategy enum."""
-    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    """Map string prompt strategy to ExtractionStrategy."""
+    
 
     mapping = {
-        "chat_template": PromptConstructionStrategy.CHAT_TEMPLATE,
-        "direct_completion": PromptConstructionStrategy.DIRECT_COMPLETION,
-        "instruction_following": PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-        "multiple_choice": PromptConstructionStrategy.MULTIPLE_CHOICE,
-        "role_playing": PromptConstructionStrategy.ROLE_PLAYING,
+        "chat_template": ExtractionStrategy.CHAT_LAST,
+        "direct_completion": ExtractionStrategy.CHAT_LAST,
+        "instruction_following": ExtractionStrategy.CHAT_LAST,
+        "multiple_choice": ExtractionStrategy.MC_BALANCED,
+        "role_playing": ExtractionStrategy.ROLE_PLAY,
     }
-    return mapping.get(strategy_str, PromptConstructionStrategy.CHAT_TEMPLATE)
+    return mapping.get(strategy_str, ExtractionStrategy.CHAT_LAST)
 
 
 def apply_steering_and_evaluate(
@@ -109,10 +109,8 @@ def apply_steering_and_evaluate(
         if verbose:
             print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...")
 
-        updated_pair = collector.collect_for_pair(
-            pair,
-            layers=target_layers,
-            aggregation=aggregation_strategy,
+        updated_pair = collector.collect(
+            pair, strategy=aggregation_strategy,
             return_full_sequence=return_full_sequence,
             normalize_layers=normalize_layers,
             prompt_strategy=prompt_construction_strategy
@@ -174,10 +172,8 @@ def apply_steering_and_evaluate(
         trait_description="evaluation"
     )
 
-    steered_evaluated_pair = collector.collect_for_pair(
-        steered_dummy_pair,
-        layers=target_layers,
-        aggregation=aggregation_strategy,
+    steered_evaluated_pair = collector.collect(
+        steered_dummy_pair, strategy=aggregation_strategy,
         return_full_sequence=return_full_sequence,
         normalize_layers=normalize_layers,
         prompt_strategy=prompt_construction_strategy

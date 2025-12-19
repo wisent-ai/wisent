@@ -10,8 +10,8 @@ def execute_get_activations(args):
     """Execute the get-activations command - load pairs and collect activations."""
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.core.atoms import ActivationAggregationStrategy
-    from wisent.core.activations.prompt_construction_strategy import PromptConstructionStrategy
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
     from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
@@ -67,29 +67,9 @@ def execute_get_activations(args):
 
         print(f"\n🎯 Collecting activations from {len(layers)} layer(s): {layers}")
 
-        # 4. Set up aggregation strategy
-        aggregation_map = {
-            'average': 'MEAN_POOLING',
-            'final': 'LAST_TOKEN',
-            'first': 'FIRST_TOKEN',
-            'max': 'MAX_POOLING',
-            'min': 'MAX_POOLING',
-        }
-        aggregation_key = aggregation_map.get(args.token_aggregation.lower(), 'MEAN_POOLING')
-        aggregation_strategy = ActivationAggregationStrategy[aggregation_key]
-
-        # 5. Map prompt strategy string to enum
-        prompt_strategy_map = {
-            'chat_template': PromptConstructionStrategy.CHAT_TEMPLATE,
-            'direct_completion': PromptConstructionStrategy.DIRECT_COMPLETION,
-            'instruction_following': PromptConstructionStrategy.INSTRUCTION_FOLLOWING,
-            'multiple_choice': PromptConstructionStrategy.MULTIPLE_CHOICE,
-            'role_playing': PromptConstructionStrategy.ROLE_PLAYING,
-        }
-        prompt_strategy = prompt_strategy_map.get(args.prompt_strategy.lower(), PromptConstructionStrategy.CHAT_TEMPLATE)
-
-        print(f"   Token aggregation: {args.token_aggregation} ({aggregation_key})")
-        print(f"   Prompt strategy: {args.prompt_strategy}")
+        # 4. Get extraction strategy from args
+        extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+        print(f"   Extraction strategy: {extraction_strategy.value}")
 
         # 5. Create pair set and reconstruct pairs
         pair_set = ContrastivePairSet(name=task_name, task_type=trait_label)
@@ -118,13 +98,9 @@ def execute_get_activations(args):
                 print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...")
 
             # Collect activations for all requested layers at once
-            updated_pair = collector.collect_for_pair(
-                pair,
+            updated_pair = collector.collect(
+                pair, strategy=extraction_strategy,
                 layers=layer_strs,
-                aggregation=aggregation_strategy,
-                return_full_sequence=False,
-                normalize_layers=False,
-                prompt_strategy=prompt_strategy
             )
 
             enriched_pairs.append(updated_pair)

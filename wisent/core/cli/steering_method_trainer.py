@@ -12,7 +12,8 @@ import torch
 
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.core.atoms import ActivationAggregationStrategy, LayerActivations
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
 
@@ -141,7 +142,7 @@ def collect_activations_for_pair_set(
     model,
     pair_set: ContrastivePairSet,
     layers: List[str],
-    aggregation: ActivationAggregationStrategy = ActivationAggregationStrategy.LAST_TOKEN,
+    aggregation: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
 ) -> ContrastivePairSet:
     """
     Collect activations for all pairs in a ContrastivePairSet.
@@ -353,7 +354,7 @@ class UnifiedSteeringTrainer:
         self,
         pair_set: ContrastivePairSet,
         layers: List[str],
-        aggregation: ActivationAggregationStrategy = ActivationAggregationStrategy.LAST_TOKEN,
+        aggregation: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
     ) -> LayerActivations:
         """Collect activations and train in one step."""
         # Collect activations
@@ -551,7 +552,7 @@ def get_optimal_steering_plan(
     task_name: str,
     train_pairs: "ContrastivePairSet",
     method: str = "*",
-    aggregation: ActivationAggregationStrategy = ActivationAggregationStrategy.LAST_TOKEN,
+    aggregation: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
 ) -> Optional[Tuple["SteeringPlan", Dict[str, Any]]]:
     """
     Load optimal config and create a ready-to-use steering plan.
