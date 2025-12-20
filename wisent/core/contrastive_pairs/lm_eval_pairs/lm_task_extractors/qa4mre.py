@@ -90,14 +90,14 @@ class QA4MREExtractor(LMEvalBenchmarkExtractor):
             correct = answers[answer]
             incorrect = answers[(answer+1)%len(answers)]
 
-            formatted_question = f"{document_str}\nQuestion: {question_str}?\nAnswer:\nA. {incorrect}\nB. {correct}"
+            prompt = f"{document_str}\nQuestion: {question_str}?\nAnswer:"
 
             metadata = {
                 "label": "qa4mre",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

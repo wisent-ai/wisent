@@ -188,6 +188,12 @@ def check_linearity(
                 linear_score = result.all_scores["linear"].score
                 linear_details = result.all_scores["linear"].details
                 
+                # Include all structure scores
+                structure_scores = {
+                    name: {"score": score.score, "confidence": score.confidence}
+                    for name, score in result.all_scores.items()
+                }
+                
                 all_results.append({
                     "extraction_strategy": strategy.value,
                     "normalize": normalize,
@@ -196,6 +202,7 @@ def check_linearity(
                     "cohens_d": linear_details.get("cohens_d", 0),
                     "variance_explained": linear_details.get("variance_explained", 0),
                     "best_structure": result.best_structure.value,
+                    "all_structure_scores": structure_scores,
                 })
     
     if not all_results:

@@ -57,7 +57,6 @@ Pass all parameters through to step functions using getattr()
 - "chat_mean" -> ExtractionStrategy.CHAT_MEAN
 - "chat_first" -> ExtractionStrategy.CHAT_FIRST
 - "chat_last" -> ExtractionStrategy.CHAT_LAST (default)
-- "chat_gen_point" -> ExtractionStrategy.CHAT_GEN_POINT
 - "chat_max_norm" -> ExtractionStrategy.CHAT_MAX_NORM
 - "chat_weighted" -> ExtractionStrategy.CHAT_WEIGHTED
 - "role_play" -> ExtractionStrategy.ROLE_PLAY

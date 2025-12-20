@@ -221,7 +221,7 @@ class ActivationCollector:
                         elif strategy == ExtractionStrategy.CHAT_FIRST:
                             value = h[0]
                         elif strategy in (ExtractionStrategy.CHAT_LAST, ExtractionStrategy.ROLE_PLAY, 
-                                          ExtractionStrategy.MC_BALANCED, ExtractionStrategy.CHAT_GEN_POINT,
+                                          ExtractionStrategy.MC_BALANCED,
                                           ExtractionStrategy.CHAT_MAX_NORM, ExtractionStrategy.CHAT_WEIGHTED):
                             value = h[-1]
                         else:

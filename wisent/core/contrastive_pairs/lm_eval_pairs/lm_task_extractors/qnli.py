@@ -79,7 +79,7 @@ class QNLIExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
         
-            formatted_question = f"{question}\n{sentence}\nQuestion: Does this response answer the question?\nAnswer:\nA. Yes\nB. No"
+            prompt = f"{question}\n{sentence}\nQuestion: Does this response answer the question?"
 
             correct = "Yes" if label == 0 else "No"
             incorrect = "No" if label == 0 else "Yes"
@@ -89,7 +89,7 @@ class QNLIExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

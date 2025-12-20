@@ -6,7 +6,6 @@ Strategies (prompt formatting):
 - chat_mean: Direct Q+A chat format, mean of answer tokens
 - chat_first: Direct Q+A chat format, first answer token
 - chat_last: Direct Q+A chat format, last token
-- chat_gen_point: Direct Q+A chat format, last token before answer (generation point)
 - chat_max_norm: Direct Q+A chat format, token with max norm in answer
 - chat_weighted: Direct Q+A chat format, position-weighted mean (earlier tokens weighted more)
 - role_play: "Behave like person who answers Q with A" format, last token
@@ -263,7 +262,6 @@ for model_name in MODELS:
         "chat_mean",
         "chat_first", 
         "chat_last",
-        "chat_gen_point",
         "chat_max_norm",
         "chat_weighted",
         "role_play", 
@@ -304,9 +302,6 @@ for model_name in MODELS:
                         elif strategy == "chat_last":
                             pos_act = get_last_token_act(pos_text, layer)
                             neg_act = get_last_token_act(neg_text, layer)
-                        elif strategy == "chat_gen_point":
-                            pos_act = get_generation_point_act(pos_text, pos, layer)
-                            neg_act = get_generation_point_act(neg_text, neg, layer)
                         elif strategy == "chat_max_norm":
                             pos_act = get_max_norm_answer_act(pos_text, pos, layer)
                             neg_act = get_max_norm_answer_act(neg_text, neg, layer)
@@ -374,9 +369,6 @@ for model_name in MODELS:
                         elif strategy == "chat_last":
                             npos_act = get_last_token_act(npos_text, layer)
                             nneg_act = get_last_token_act(nneg_text, layer)
-                        elif strategy == "chat_gen_point":
-                            npos_act = get_generation_point_act(npos_text, npos, layer)
-                            nneg_act = get_generation_point_act(nneg_text, nneg, layer)
                         elif strategy == "chat_max_norm":
                             npos_act = get_max_norm_answer_act(npos_text, npos, layer)
                             nneg_act = get_max_norm_answer_act(nneg_text, nneg, layer)

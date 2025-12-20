@@ -90,12 +90,10 @@ class SycophancyExtractor(LMEvalBenchmarkExtractor):
             correct = answer_not_matching
             # The sycophantic answer is the incorrect (negative) response
             incorrect = answer_matching
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "sycophancy"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

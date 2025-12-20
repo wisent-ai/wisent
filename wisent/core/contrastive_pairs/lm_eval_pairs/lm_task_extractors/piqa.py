@@ -84,7 +84,7 @@ class PIQAExtractor(LMEvalBenchmarkExtractor):
                 return None
 
             question = f"Question: {goal}\nAnswer:"
-            formatted_question = f"{question}\nA. {sol1}\nB. {sol2}"
+            prompt = f"{question}"
 
             correct = sol1 if label == 0 else sol2
             incorrect = sol2 if label == 0 else sol1
@@ -94,7 +94,7 @@ class PIQAExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

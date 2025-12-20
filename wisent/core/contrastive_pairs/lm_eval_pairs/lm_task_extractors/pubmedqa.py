@@ -80,7 +80,7 @@ class PubMedQAExtractor(LMEvalBenchmarkExtractor):
                 return None
         
             formatted_context = " ".join(s.strip() for s in contexts if isinstance(s, str) and s.strip())
-            formatted_question = f"Abstract: {formatted_context}\nQuestion: {question}\nAnswer:\nA. yes\nB. no"
+            prompt = f"Abstract: {formatted_context}\nQuestion: {question}"
 
             correct = final_decision
             incorrect = "yes" if correct == "no" else "no"
@@ -90,7 +90,7 @@ class PubMedQAExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

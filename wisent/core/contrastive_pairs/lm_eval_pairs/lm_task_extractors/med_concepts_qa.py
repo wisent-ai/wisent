@@ -131,7 +131,7 @@ class MedConceptsQaExtractor(LMEvalBenchmarkExtractor):
 
                 # For this format, the response should be just the letter
                 return self._build_pair(
-                    question=formatted_question,
+                    question=question,
                     correct=answer_key,
                     incorrect=chr(ord('A') + incorrect_idx),
                     metadata=metadata,
@@ -195,14 +195,12 @@ class MedConceptsQaExtractor(LMEvalBenchmarkExtractor):
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = choices[incorrect_idx]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
             metadata = {
                 "label": "med_concepts_qa",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

@@ -83,7 +83,7 @@ class MCTACOExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            formatted_question = f"{sentence}\nQuestion: {question}\nAnswer: {answer}\nPlausible:\nA. Yes\nB. No"
+            prompt = f"{sentence}\nQuestion: {question}\nAnswer: {answer}\nPlausible?"
 
             correct = "Yes" if label == 1 else "No"
             incorrect = "No" if label == 1 else "Yes"
@@ -93,7 +93,7 @@ class MCTACOExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

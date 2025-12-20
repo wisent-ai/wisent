@@ -79,7 +79,7 @@ class RTEExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
         
-            formatted_question = f"{sentence1}\nQuestion: {sentence2} True or False?\nAnswer:\nA. True\nB. False"
+            prompt = f"{sentence1}\nQuestion: {sentence2} True or False?"
 
             correct = "True" if label == 0 else "False"
             incorrect = "False" if label == 0 else "True"
@@ -89,7 +89,7 @@ class RTEExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

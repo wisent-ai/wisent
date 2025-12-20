@@ -110,7 +110,7 @@ class XquadExtractor(LMEvalBenchmarkExtractor):
 
                 metadata = {"label": "xquad"}
                 return self._build_pair(
-                    question=formatted_question,
+                    question=question,
                     correct=correct_answer,
                     incorrect=incorrect_answer,
                     metadata=metadata,
@@ -174,14 +174,12 @@ class XquadExtractor(LMEvalBenchmarkExtractor):
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = choices[incorrect_idx]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
             metadata = {
                 "label": "xquad",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

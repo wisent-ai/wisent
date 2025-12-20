@@ -84,14 +84,14 @@ class SciQExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
         
-            formatted_question = f"{support}\nQuestion: {question}\nAnswer:\nA. {incorrect}\nB. {correct}"
+            prompt = f"{support}\nQuestion: {question}\nAnswer:"
 
             metadata = {
                 "label": "sciq",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

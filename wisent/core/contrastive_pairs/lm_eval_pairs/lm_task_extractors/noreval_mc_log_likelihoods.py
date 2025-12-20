@@ -102,12 +102,12 @@ class NorevalMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
                     log.debug("Skipping doc due to empty correct/wrong fields", extra={"doc": doc})
                     return None
 
-                formatted_question = f"Which sentence is grammatically correct?\nA. {incorrect}\nB. {correct}"
+                prompt = f"Which sentence is grammatically correct?"
 
                 metadata = {"label": "noreval_ncb"}
 
                 return self._build_pair(
-                    question=formatted_question,
+                    question=question,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,
@@ -146,12 +146,10 @@ class NorevalMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
                 correct = str(choices[correct_idx]).strip()
                 incorrect = str(choices[incorrect_idx]).strip()
 
-                formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
                 metadata = {"label": "noreval_truthfulqa"}
 
                 return self._build_pair(
-                    question=formatted_question,
+                    question=question,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,
@@ -187,12 +185,10 @@ class NorevalMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
                 incorrect_idx = (answer_idx + 1) % len(choice_texts)
                 incorrect = str(choice_texts[incorrect_idx]).strip()
 
-                formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
                 metadata = {"label": "noreval_nrk_quiz"}
 
                 return self._build_pair(
-                    question=formatted_question,
+                    question=question,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,

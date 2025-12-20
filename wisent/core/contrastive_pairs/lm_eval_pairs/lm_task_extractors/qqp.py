@@ -79,7 +79,7 @@ class QQPExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
         
-            formatted_question = f"{question1}\n{question2}\nQuestion: Do both qiestions ask the same thing?\nAnswer:\nA. Yes\nB. No"
+            prompt = f"{question1}\n{question2}\nQuestion: Do both questions ask the same thing?"
 
             correct = "Yes" if label == 1 else "No"
             incorrect = "No" if label == 1 else "Yes"
@@ -89,7 +89,7 @@ class QQPExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
