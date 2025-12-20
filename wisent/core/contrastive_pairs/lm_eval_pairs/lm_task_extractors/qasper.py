@@ -86,7 +86,7 @@ class QasperExtractor(LMEvalBenchmarkExtractor):
                 return None
 
 
-            formatted_question = f"TITLE: {title}\nABSTRACT: {abstract}\nQ: {question}\nA. yes\nB. no"
+            prompt = f"TITLE: {title}\nABSTRACT: {abstract}\nQ: {question}"
 
             correct = answer
             incorrect = "yes" if answer == "no" else "no"
@@ -96,7 +96,7 @@ class QasperExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

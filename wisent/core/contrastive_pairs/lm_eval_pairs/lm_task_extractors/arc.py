@@ -106,12 +106,10 @@ class ArcExtractor(LMEvalBenchmarkExtractor):
                     extra={"doc": doc},
                 )
                 return None
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "arc"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

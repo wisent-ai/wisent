@@ -96,14 +96,14 @@ class HellaSwagExtractor(LMEvalBenchmarkExtractor):
             incorrect = max(incorrect_endings, key=len) if incorrect_endings else endings[(label+1)%len(endings)]
 
             question = f"{query}"
-            formatted_question = f"{question}\nA. {incorrect}\nB. {correct}"
+            prompt = f"{question}"
 
             metadata = {
                 "label": "hellaswag",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

@@ -39,6 +39,7 @@ from wisent.core.parser_arguments.optimize_weights_parser import setup_optimize_
 from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser
 from wisent.core.parser_arguments.optimize_parser import setup_optimize_parser
 from wisent.core.parser_arguments.check_linearity_parser import setup_check_linearity_parser
+from wisent.core.parser_arguments.cluster_benchmarks_parser import setup_cluster_benchmarks_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -216,5 +217,12 @@ def setup_parser() -> argparse.ArgumentParser:
         help="Check if a representation is linear (can be captured by single direction)"
     )
     setup_check_linearity_parser(check_linearity_parser)
+
+    # Cluster benchmarks command - cluster benchmarks by direction similarity
+    cluster_benchmarks_parser = subparsers.add_parser(
+        "cluster-benchmarks",
+        help="Cluster benchmarks by direction similarity with geometry analysis"
+    )
+    setup_cluster_benchmarks_parser(cluster_benchmarks_parser)
 
     return parser
