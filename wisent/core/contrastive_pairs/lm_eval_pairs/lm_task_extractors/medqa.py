@@ -89,14 +89,14 @@ class MedQAExtractor(LMEvalBenchmarkExtractor):
             correct = endings[label]
             incorrect = endings[(label + 1) % 4]
 
-            formatted_question = f"Question: {sent1}\nA. {incorrect}\nB. {correct}"
+            prompt = f"Question: {sent1}"
 
             metadata = {
                 "label": "medqa",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

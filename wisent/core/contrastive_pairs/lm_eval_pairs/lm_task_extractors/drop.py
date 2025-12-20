@@ -100,14 +100,14 @@ class DropExtractor(LMEvalBenchmarkExtractor):
                 if correct == incorrect:
                     incorrect += "k"
 
-            formatted_question = f"{passage} {question}\nA. {incorrect}\nB. {correct}"
+            prompt = f"{passage} {question}"
 
             metadata = {
                 "label": "drop",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

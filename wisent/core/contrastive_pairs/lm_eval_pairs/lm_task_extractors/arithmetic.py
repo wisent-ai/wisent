@@ -85,14 +85,14 @@ class ArithmeticExtractor(LMEvalBenchmarkExtractor):
             incorrect_val = float(completion) + 1
             incorrect = str(int(incorrect_val)) if incorrect_val == int(incorrect_val) else str(incorrect_val)
 
-            formatted_question = f"{context}\nA. {incorrect}\nB. {correct}"
+            prompt = f"{context}"
 
             metadata = {
                 "label": "arithmetic",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

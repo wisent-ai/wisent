@@ -95,14 +95,14 @@ class RACEExtractor(LMEvalBenchmarkExtractor):
             correct = options[answer_idx]
             incorrect = options[(answer_idx+1)%len(options)]
 
-            formatted_question = f"{article}\nQuestion: {question}?\nAnswer:\nA. {incorrect}\nB. {correct}"
+            prompt = f"{article}\nQuestion: {question}?\nAnswer:"
 
             metadata = {
                 "label": "race",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

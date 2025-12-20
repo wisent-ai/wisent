@@ -86,14 +86,14 @@ class ProstExtractor(LMEvalBenchmarkExtractor):
             correct = answers[label]
             incorrect = answers[(label+1)%len(answers)]
 
-            formatted_question = f"{context}\nQuestion: {question}\nAnswer:\nA. {incorrect}\nB. {correct}"
+            prompt = f"{context}\nQuestion: {question}\nAnswer:"
 
             metadata = {
                 "label": "prost",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

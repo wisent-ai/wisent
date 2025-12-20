@@ -82,7 +82,7 @@ class PawsXExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
             
-            formatted_question = f"Is sentence '{sentence1}' paraphrase of sentence '{sentence2}'?\nA. Yes\nB. No"
+            prompt = f"Is sentence '{sentence1}' paraphrase of sentence '{sentence2}'?"
 
             # label == 1 means paraphrase (positive), label == 0 means not paraphrase (negative)
             correct = "Yes" if label == 1 else "No"
@@ -93,7 +93,7 @@ class PawsXExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

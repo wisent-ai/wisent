@@ -89,14 +89,13 @@ class ArcEasyExtractor(LMEvalBenchmarkExtractor):
             incorrect = choices[(answer_idx+1)%len(choices)]
 
             question = f"{question}"
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
 
             metadata = {
                 "label": "arc_easy",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

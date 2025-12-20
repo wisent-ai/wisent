@@ -88,14 +88,14 @@ class CBExtractor(LMEvalBenchmarkExtractor):
             correct = labels[label]
             incorrect = labels[(label+1)%3]
         
-            formatted_question = f"{premise}\nQuestion: {hypothesis}.\nA. {incorrect}\nB. {correct}"
+            prompt = f"{premise}\nQuestion: {hypothesis}."
 
             metadata = {
                 "label": "cb",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

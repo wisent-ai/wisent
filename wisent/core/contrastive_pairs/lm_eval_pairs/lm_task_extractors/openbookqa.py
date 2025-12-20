@@ -89,14 +89,14 @@ class OpenBookQAExtractor(LMEvalBenchmarkExtractor):
             incorrect = endings[(answer_idx+1)%len(endings)]
 
             question = f"{question_stem}"
-            formatted_question = f"{question}\nA. {incorrect}\nB. {correct}"
+            prompt = f"{question}"
 
             metadata = {
                 "label": "openbookqa",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

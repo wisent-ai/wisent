@@ -85,7 +85,7 @@ class WSCExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            formatted_question = f"Passage: {text}\nQuestion:In the passage above, does the pronoun \"*{span2_text}*\" refer to \"*{span1_text}*\"?\nA. Yes\nB. No"
+            prompt = f"Passage: {text}\nQuestion: In the passage above, does the pronoun \"{span2_text}\" refer to \"{span1_text}\"?"
 
             correct = "Yes" if label == 1 else "No"
             incorrect = "No" if label == 1 else "Yes"
@@ -95,7 +95,7 @@ class WSCExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

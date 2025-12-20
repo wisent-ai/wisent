@@ -49,7 +49,8 @@ wisent/core/wisent.py
 wisent/core/activations/__init__.py
 wisent/core/activations/activations.py
 wisent/core/activations/activations_collector.py
-wisent/core/activations/prompt_construction_strategy.py
+wisent/core/activations/classifier_inference_strategy.py
+wisent/core/activations/extraction_strategy.py
 wisent/core/activations/core/__init__.py
 wisent/core/activations/core/atoms.py
 wisent/core/adapters/__init__.py
@@ -91,6 +92,7 @@ wisent/core/classifiers/models/__init__.py
 wisent/core/classifiers/pipeline_steps/__init__.py
 wisent/core/cli/__init__.py
 wisent/core/cli/check_linearity.py
+wisent/core/cli/cluster_benchmarks.py
 wisent/core/cli/create_steering_vector.py
 wisent/core/cli/diagnose_pairs.py
 wisent/core/cli/diagnose_vectors.py
@@ -862,6 +864,7 @@ wisent/core/optuna/steering/steering_optimization.py
 wisent/core/parser_arguments/__init__.py
 wisent/core/parser_arguments/agent_parser.py
 wisent/core/parser_arguments/check_linearity_parser.py
+wisent/core/parser_arguments/cluster_benchmarks_parser.py
 wisent/core/parser_arguments/configure_model_parser.py
 wisent/core/parser_arguments/create_steering_vector_parser.py
 wisent/core/parser_arguments/diagnose_pairs_parser.py
@@ -911,6 +914,7 @@ wisent/core/steering_methods/core/__init__.py
 wisent/core/steering_methods/core/atoms.py
 wisent/core/steering_methods/methods/__init__.py
 wisent/core/steering_methods/methods/caa.py
+wisent/core/steering_methods/methods/hyperplane.py
 wisent/core/steering_methods/methods/prism.py
 wisent/core/steering_methods/methods/pulse.py
 wisent/core/steering_methods/methods/titan.py
