@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from pathlib import Path
 
 import torch
 from datasets import load_dataset
@@ -32,7 +33,7 @@ KNOWN_BOS_FEATURES = {
 }
 
 
-def load_sample_texts(num_samples: int = 5000, min_length: int = 50) -> list[str]:
+def load_sample_texts(num_samples: int = 2000, min_length: int = 50) -> list[str]:
     """Load sample texts from WikiText dataset."""
     print(f"Loading up to {num_samples} sample texts from WikiText...")
 
@@ -57,11 +58,17 @@ def detect_bos_features(
     layer_idx: int,
     device: str,
     texts: list[str],
-    threshold: float = 0.5,
+    top_k: int = 10,
     batch_size: int = 8,
 ) -> tuple[list[int], torch.Tensor]:
     """
     Detect BOS features by finding features that activate most strongly at position 0.
+
+    Computes mean activation at BOS position for each SAE feature across all samples,
+    then returns the top-k features with highest mean BOS activation.
+
+    Reference: FGAA paper (arXiv:2501.09929) identifies BOS features as those that
+    "exclusively had the strongest activation on the BOS token".
 
     Args:
         model: HuggingFace model
@@ -70,57 +77,78 @@ def detect_bos_features(
         layer_idx: Layer index (0-indexed)
         device: Device
         texts: List of sample texts to analyze
-        threshold: Fraction of samples where max must be at pos 0 to be BOS feature
+        top_k: Number of top BOS features to return (default 10)
         batch_size: Batch size for processing
 
     Returns:
-        Tuple of (bos_feature_indices, bos_ratios_tensor)
+        Tuple of (top_bos_feature_indices, mean_bos_activation_tensor)
     """
     d_sae = sae.cfg.d_sae
-    bos_max_count = torch.zeros(d_sae, device=device)
-    total_processed = 0
+
+    # Accumulate BOS activations on GPU (just one [d_sae] tensor - lightweight)
+    bos_activation_sum = torch.zeros(d_sae, device=device, dtype=torch.float32)
+    bos_count = 0
 
     print(f"Detecting BOS features from {len(texts)} samples...")
     print(f"   Layer: {layer_idx}, d_sae: {d_sae}")
 
-    for i in tqdm(range(0, len(texts), batch_size), desc="Processing"):
-        batch_texts = texts[i:i + batch_size]
+    # Use hook to capture only the layer we need (not all 26 layers)
+    captured_acts = {}
+    def capture_hook(module, input, output):
+        captured_acts["hidden"] = output[0].detach()
 
-        inputs = tokenizer(
-            batch_texts,
-            return_tensors="pt",
-            truncation=True,
-            max_length=128,
-            padding=True,
-        )
-        inputs = {k: v.to(device) for k, v in inputs.items()}
+    # Register hook on the specific layer
+    target_layer = model.model.layers[layer_idx]
+    hook_handle = target_layer.register_forward_hook(capture_hook)
 
-        with torch.no_grad():
-            out = model(**inputs, output_hidden_states=True, use_cache=False)
+    try:
+        for i in tqdm(range(0, len(texts), batch_size), desc="Processing"):
+            batch_texts = texts[i:i + batch_size]
 
-        hs = out.hidden_states
-        acts = hs[layer_idx + 1].to(sae.W_enc.dtype)
-        latents = sae.encode(acts)
+            inputs = tokenizer(
+                batch_texts,
+                return_tensors="pt",
+                truncation=True,
+                max_length=128,
+                padding=True,
+            )
+            inputs = {k: v.to(device) for k, v in inputs.items()}
 
-        attention_mask = inputs.get("attention_mask")
-        for j in range(latents.shape[0]):
-            seq_len = int(attention_mask[j].sum().item()) if attention_mask is not None else latents.shape[1]
-            sample_latents = latents[j, :seq_len, :]
-            max_positions = sample_latents.argmax(dim=0)
-            bos_max_count += (max_positions == 0).float()
-            total_processed += 1
+            with torch.no_grad():
+                # Use model.model to skip lm_head (saves ~66MB per forward)
+                model.model(**inputs, use_cache=False)
 
-    bos_ratio = bos_max_count / total_processed
-    bos_features = (bos_ratio >= threshold).nonzero().squeeze(-1).tolist()
+            # Get captured hidden states (only this layer, not all 26)
+            acts = captured_acts["hidden"].to(sae.W_enc.dtype)
+            latents = sae.encode(acts)
 
-    if isinstance(bos_features, int):
-        bos_features = [bos_features]
+            attention_mask = inputs.get("attention_mask")
+            for j in range(latents.shape[0]):
+                seq_len = int(attention_mask[j].sum().item()) if attention_mask is not None else latents.shape[1]
+                sample_latents = latents[j, :seq_len, :]  # [seq_len, d_sae]
 
-    print(f"\nDetected {len(bos_features)} BOS features (threshold={threshold})")
-    return bos_features, bos_ratio
+                # Accumulate BOS activation (position 0)
+                bos_activation_sum += sample_latents[0].float()
+                bos_count += 1
+
+            # Free GPU memory after each batch
+            del acts, latents, inputs
+            captured_acts.clear()
+            torch.cuda.empty_cache()
+    finally:
+        hook_handle.remove()
+
+    # Compute mean BOS activation
+    mean_bos = bos_activation_sum / bos_count
+
+    # Select top features by BOS activation
+    top_indices = mean_bos.topk(top_k).indices.tolist()
+
+    print(f"\nDetected top {top_k} BOS features by mean activation")
+    return top_indices, mean_bos
 
 
-def compare_with_known(model_name: str, detected: list[int], bos_ratios: torch.Tensor) -> None:
+def compare_with_known(model_name: str, detected: list[int], mean_bos: torch.Tensor) -> None:
     """Compare detected BOS features with known list from paper."""
     known = KNOWN_BOS_FEATURES.get(model_name, [])
     detected_set = set(detected)
@@ -133,36 +161,37 @@ def compare_with_known(model_name: str, detected: list[int], bos_ratios: torch.T
     print(f"Detected:      {sorted(detected_set)}")
     print(f"{'='*60}")
     print(f"Common:        {sorted(detected_set & known_set)}")
-    print(f"Only detected: {sorted(detected_set - known_set)}")
     print(f"Only in paper: {sorted(known_set - detected_set)}")
+    print(f"Only detected: {sorted(detected_set - known_set)}")
 
     if known:
-        print(f"\nBOS ratios for known features:")
+        print(f"\nKnown features - mean BOS activation:")
         for idx in sorted(known):
-            ratio = bos_ratios[idx].item()
+            activation = mean_bos[idx].item()
             status = "detected" if idx in detected_set else "missed"
-            print(f"   Feature {idx}: {ratio:.3f} ({status})")
+            print(f"   Feature {idx}: bos_act={activation:.4f} ({status})")
 
-    print(f"\nTop 10 features by BOS ratio:")
-    for idx in bos_ratios.topk(10).indices.tolist():
-        ratio = bos_ratios[idx].item()
+    print(f"\nTop 20 features by mean BOS activation:")
+    for rank, idx in enumerate(mean_bos.topk(20).indices.tolist(), 1):
+        activation = mean_bos[idx].item()
         marker = " (known)" if idx in known_set else ""
-        print(f"   Feature {idx}: {ratio:.3f}{marker}")
+        print(f"   {rank:2}. Feature {idx}: bos_act={activation:.4f}{marker}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Detect BOS features in Gemma Scope SAEs")
     parser.add_argument("--model", default="google/gemma-2-2b", help="Model name")
     parser.add_argument("--layer", type=int, default=12, help="Layer index")
-    parser.add_argument("--num-samples", type=int, default=5000, help="Number of text samples")
-    parser.add_argument("--threshold", type=float, default=0.5, help="BOS detection threshold")
-    parser.add_argument("--batch-size", type=int, default=8, help="Batch size")
+    parser.add_argument("--num-samples", type=int, default=2000, help="Number of text samples")
+    parser.add_argument("--top-k", type=int, default=20, help="Number of top BOS features to detect")
+    parser.add_argument("--batch-size", type=int, default=1, help="Batch size")
     parser.add_argument("--device", default="cuda:0", help="Device")
+    parser.add_argument("--output-dir", default="wisent/comparison/comparison_results", help="Output directory")
     args = parser.parse_args()
 
     print(f"Model: {args.model}")
     print(f"Layer: {args.layer}")
-    print(f"Threshold: {args.threshold}")
+    print(f"Top-k: {args.top_k}")
 
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
@@ -187,29 +216,37 @@ def main():
 
     texts = load_sample_texts(args.num_samples)
 
-    bos_features, bos_ratios = detect_bos_features(
+    bos_features, mean_bos = detect_bos_features(
         model=model,
         tokenizer=tokenizer,
         sae=sae,
         layer_idx=args.layer,
         device=args.device,
         texts=texts,
-        threshold=args.threshold,
+        top_k=args.top_k,
         batch_size=args.batch_size,
     )
 
-    compare_with_known(args.model, bos_features, bos_ratios)
+    compare_with_known(args.model, bos_features, mean_bos)
+
+    # Build detected features with their mean activations
+    detected_with_activations = [
+        {"feature": idx, "mean_bos_activation": mean_bos[idx].item()}
+        for idx in bos_features
+    ]
 
     output = {
         "model": args.model,
         "layer": args.layer,
-        "threshold": args.threshold,
+        "top_k": args.top_k,
         "num_samples": len(texts),
-        "detected_bos_features": bos_features,
+        "detected_bos_features": detected_with_activations,
         "known_bos_features": KNOWN_BOS_FEATURES.get(args.model, []),
     }
 
-    output_path = f"bos_features_{args.model.replace('/', '_')}_layer{args.layer}.json"
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    output_path = output_dir / f"bos_features_{args.model.replace('/', '_')}_layer{args.layer}.json"
     with open(output_path, "w") as f:
         json.dump(output, f, indent=2)
     print(f"\nSaved to {output_path}")

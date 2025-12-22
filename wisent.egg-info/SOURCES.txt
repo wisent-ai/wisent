@@ -14,7 +14,9 @@ wisent.egg-info/requires.txt
 wisent.egg-info/top_level.txt
 wisent/comparison/__init__.py
 wisent/comparison/detect_bos_features.py
+wisent/comparison/eval_lora.py
 wisent/comparison/fgaa.py
+wisent/comparison/lora.py
 wisent/comparison/main.py
 wisent/comparison/ours.py
 wisent/comparison/sae.py

@@ -66,8 +66,9 @@ class ActivationCollector:
         pos_text = _resp_text(pair.positive_response)
         neg_text = _resp_text(pair.negative_response)
 
-        other_for_pos = neg_text if strategy == ExtractionStrategy.MC_BALANCED else None
-        other_for_neg = pos_text if strategy == ExtractionStrategy.MC_BALANCED else None
+        needs_other = strategy in (ExtractionStrategy.MC_BALANCED, ExtractionStrategy.MC_COMPLETION)
+        other_for_pos = neg_text if needs_other else None
+        other_for_neg = pos_text if needs_other else None
 
         pos = self._collect_single(
             pair.prompt, pos_text, strategy, layers, normalize,
