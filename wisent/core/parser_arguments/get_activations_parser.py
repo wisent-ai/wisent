@@ -49,9 +49,9 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--extraction-strategy",
         type=str,
-        choices=["chat_mean", "chat_first", "chat_last", "chat_gen_point", "chat_max_norm", "chat_weighted", "role_play", "mc_balanced"],
+        choices=["chat_mean", "chat_first", "chat_last", "chat_gen_point", "chat_max_norm", "chat_weighted", "role_play", "mc_balanced", "completion_last", "completion_mean", "mc_completion"],
         default="chat_mean",
-        help="Extraction strategy combining prompt format and token selection (default: chat_mean)"
+        help="Extraction strategy. Chat models: chat_mean, chat_first, chat_last, chat_max_norm, chat_weighted, role_play, mc_balanced. Base models: completion_last, completion_mean, mc_completion"
     )
 
     # Processing options
