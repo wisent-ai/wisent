@@ -56,6 +56,7 @@ setup(
         "pebble>=5.0.0",
         "latex2sympy2_extended>=1.0.0",
         "sae_lens>=0.1.0",
+        "trl>=0.7.0",
     ],
     extras_require={
         "harness": [

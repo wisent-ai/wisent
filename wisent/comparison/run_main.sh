@@ -11,13 +11,13 @@ INSTANCE_TYPE="g6e.xlarge"
 MODEL="google/gemma-2-2b"
 
 # Tasks (comma-separated)
-TASKS="boolq,cb"
+TASKS="boolq"
 
 # Steering method: caa, sae, fgaa
 METHODS="caa,fgaa"
 
 # Steering scales (comma-separated)
-SCALES="0.5,1.0,1.5,3.0,6.0"
+SCALES="0.5,1.0,1.5,3.0,8.0"
 
 # Layer(s) for steering
 LAYERS="12"
@@ -26,8 +26,8 @@ LAYERS="12"
 DEVICE="cuda:0"
 
 # Batch sizes
-BATCH_SIZE="1"
-MAX_BATCH_SIZE="1"
+BATCH_SIZE="auto"
+MAX_BATCH_SIZE="64"
 
 # Train/test split ratio (0.4 = 40% train, 60% test)
 TRAIN_RATIO="0.4"
@@ -38,8 +38,8 @@ LIMIT="600"
 # Number of contrastive pairs for steering vector
 NUM_PAIRS="200"
 
-# Extraction strategy: chat_mean, chat_last, chat_first, chat_gen_point, chat_max_norm, chat_weighted, role_play, mc_balanced
-EXTRACTION_STRATEGY="mc_balanced"
+# Extraction strategy: mc_completion, completion_last, completion_mean (for base models)
+EXTRACTION_STRATEGY="mc_completion,completion_last,completion_mean"
 
 # Output directories
 REMOTE_OUTPUT_DIR="/home/ubuntu/output"
