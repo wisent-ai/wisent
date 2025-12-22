@@ -85,14 +85,14 @@ class LogiQA2Extractor(LMEvalBenchmarkExtractor):
             incorrect = options[(answer+1)%len(options)]
 
             question = f"{question}"
-            formatted_question = f"Passage: {text}\nQuestion: {question}\nA. {incorrect}\nB. {correct}"
+            prompt = f"Passage: {text}\nQuestion: {question}"
 
             metadata = {
                 "label": "logiqa2",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

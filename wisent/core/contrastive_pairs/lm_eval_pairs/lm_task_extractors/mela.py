@@ -67,11 +67,11 @@ class MelaExtractor(LMEvalBenchmarkExtractor):
                 incorrect_idx = 1 - answer_idx
                 incorrect = choices[incorrect_idx]
 
-                formatted_question = f"Sentence: {sentence}\nDetermine whether this sentence is acceptable or unacceptable?\nA. {incorrect}\nB. {correct}"
+                prompt = f"Sentence: {sentence}\nDetermine whether this sentence is acceptable or unacceptable?"
                 metadata = {"label": "mela"}
 
                 return self._build_pair(
-                    question=formatted_question,
+                    question=prompt,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,

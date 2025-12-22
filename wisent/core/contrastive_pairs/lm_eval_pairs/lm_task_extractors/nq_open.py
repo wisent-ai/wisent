@@ -106,14 +106,14 @@ class NQOpenExtractor(LMEvalBenchmarkExtractor):
                 if incorrect == correct:
                     incorrect += "k"
 
-            formatted_question = f"Question: {question}\nAnswer:\nA. {incorrect}\nB. {correct}"
+            prompt = f"Question: {question}\nAnswer:"
 
             metadata = {
                 "label": "nq_open",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

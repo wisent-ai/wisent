@@ -84,14 +84,14 @@ class MutualExtractor(LMEvalBenchmarkExtractor):
             correct = options[answer_idx]
             incorrect = options[(answer_idx+1)%len(options)]
         
-            formatted_question = (f"{article}\nA. {incorrect}\nB. {correct}")
+            prompt = article
 
             metadata = {
                 "label": "mutual",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

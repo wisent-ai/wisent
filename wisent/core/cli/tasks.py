@@ -581,13 +581,6 @@ def execute_tasks(args):
         expected = pair.positive_response.model_response
         choices = [pair.negative_response.model_response, pair.positive_response.model_response]
 
-        # Extract test_code from pair metadata for coding tasks
-        test_code = None
-        starter_code = None
-        if hasattr(pair, 'metadata') and pair.metadata:
-            test_code = pair.metadata.get('test_code')
-            starter_code = pair.metadata.get('starter_code')
-
         # Generate response from unsteered model
         messages = [{"role": "user", "content": question}]
 
@@ -597,6 +590,7 @@ def execute_tasks(args):
         )[0]
 
         # Evaluate the response using Wisent evaluator
+        # Pass all pair metadata to evaluator - each evaluator uses what it needs
         eval_kwargs = {
             'response': response,
             'expected': expected,
@@ -605,11 +599,11 @@ def execute_tasks(args):
             'choices': choices,
             'task_name': task_name,
         }
-        # Add test_code for coding tasks (livecodebench, humaneval, mbpp, etc.)
-        if test_code:
-            eval_kwargs['test_code'] = test_code
-        if starter_code:
-            eval_kwargs['starter_code'] = starter_code
+        # Add all pair metadata to eval_kwargs (test_code, correct_answers, etc.)
+        if hasattr(pair, 'metadata') and pair.metadata:
+            for key, value in pair.metadata.items():
+                if value is not None and key not in eval_kwargs:
+                    eval_kwargs[key] = value
         eval_result = evaluator.evaluate(**eval_kwargs)
 
         # Get activation for this generation
@@ -631,56 +625,20 @@ def execute_tasks(args):
         # Collect activation - ActivationCollector will re-run the model with prompt+response
         # First, collect with full sequence to get token-by-token activations
         collected_full = gen_collector.collect(
-            temp_pair, strategy=aggregation_strategy,
-            return_full_sequence=True,
-            normalize_layers=False,
-            prompt_strategy=prompt_strategy
+            temp_pair, strategy=extraction_strategy,
         )
 
         # Access the collected activations
         import torch
         if collected_full.positive_response.layers_activations:
-            layer_activations_full = collected_full.positive_response.layers_activations
-            if layer_str in layer_activations_full:
-                activation_full_seq = layer_activations_full[layer_str]
-                if activation_full_seq is not None and isinstance(activation_full_seq, torch.Tensor):
-                    # activation_full_seq shape: (num_tokens, hidden_dim)
-
-                    # Apply aggregation manually to get single vector for classifier
-                    if aggregation_strategy.name == 'MEAN_POOLING':
-                        activation_agg = activation_full_seq.mean(dim=0)
-                    elif aggregation_strategy.name == 'LAST_TOKEN':
-                        activation_agg = activation_full_seq[-1]
-                    elif aggregation_strategy.name == 'FIRST_TOKEN':
-                        activation_agg = activation_full_seq[0]
-                    elif aggregation_strategy.name == 'MAX_POOLING':
-                        activation_agg = activation_full_seq.max(dim=0)[0]
-                    elif aggregation_strategy.name == 'MIN_POOLING':
-                        activation_agg = activation_full_seq.min(dim=0)[0]
-                    else:
-                        # Default to mean
-                        activation_agg = activation_full_seq.mean(dim=0)
-
-                    # Compute per-token classifier scores first (needed for max_score aggregation)
-                    token_scores = []
-                    for token_idx in range(activation_full_seq.shape[0]):
-                        token_act = activation_full_seq[token_idx].unsqueeze(0).float()
-                        token_proba_result = classifier.predict_proba(token_act)
-                        token_proba = token_proba_result if isinstance(token_proba_result, float) else token_proba_result[0]
-                        token_scores.append(float(token_proba))
-
-                    # Get classifier prediction - either from aggregated vector or min token score
-                    if use_max_token_score:
-                        # Use MINIMUM token score as response-level classification
-                        # Score = P(TRUTHFUL), so min score = most suspicious token
-                        # If ANY token has low truthfulness probability, flag the response
-                        pred_proba = min(token_scores) if token_scores else 0.5
-                    else:
-                        # Standard: classify aggregated activation vector
-                        act_tensor = activation_agg.unsqueeze(0).float()
-                        pred_proba_result = classifier.predict_proba(act_tensor)
-                        pred_proba = pred_proba_result if isinstance(pred_proba_result, float) else pred_proba_result[0]
-
+            layer_activations = collected_full.positive_response.layers_activations
+            if layer_str in layer_activations:
+                activation = layer_activations[layer_str]
+                if activation is not None and isinstance(activation, torch.Tensor):
+                    # activation shape: (hidden_dim,) - already aggregated by extraction strategy
+                    act_tensor = activation.unsqueeze(0).float()
+                    pred_proba_result = classifier.predict_proba(act_tensor)
+                    pred_proba = pred_proba_result if isinstance(pred_proba_result, float) else pred_proba_result[0]
                     pred_label = int(pred_proba > args.detection_threshold)
 
                     # Update detection stats
@@ -753,14 +711,6 @@ def execute_tasks(args):
                     # Ground truth from evaluator
                     ground_truth = 1 if eval_result.ground_truth == "TRUTHFUL" else 0
 
-                    # token_scores = P(TRUTHFUL) for each token
-                    # min_token_score = most suspicious token (lowest P(TRUTHFUL))
-                    # max_token_score = most confident token (highest P(TRUTHFUL))
-                    min_token_score = min(token_scores) if token_scores else 0.0
-                    min_token_idx = token_scores.index(min_token_score) if token_scores else -1
-                    max_token_score = max(token_scores) if token_scores else 0.0
-                    max_token_idx = token_scores.index(max_token_score) if token_scores else -1
-
                     generation_results.append({
                         'question': question,
                         'response': response,
@@ -770,13 +720,6 @@ def execute_tasks(args):
                         'classifier_pred': pred_label,
                         'classifier_proba': float(pred_proba),
                         'correct': pred_label == ground_truth,
-                        'token_scores': token_scores,  # Per-token P(TRUTHFUL) probabilities
-                        'min_token_score': min_token_score,  # Most suspicious token - lowest P(TRUTHFUL)
-                        'min_token_idx': min_token_idx,  # Index of most suspicious token
-                        'max_token_score': max_token_score,  # Most confident token - highest P(TRUTHFUL) (kept for backward compat)
-                        'max_token_idx': max_token_idx,  # Index of most confident token
-                        'num_tokens': len(token_scores),
-                        'aggregation_method': 'max_score' if use_max_token_score else args.token_aggregation,
                         'quality_score': quality_score,
                         'issue_detected': issue_detected,
                         'detection_type': detection_type,
@@ -852,7 +795,7 @@ def execute_tasks(args):
             classifier_type=args.classifier_type,
             training_accuracy=report.final.accuracy,
             training_samples=len(X),
-            token_aggregation=args.token_aggregation,
+            token_aggregation=extraction_strategy.value,
             detection_threshold=args.detection_threshold
         )
 
@@ -884,7 +827,7 @@ def execute_tasks(args):
                     'task': args.task_names,
                     'model': args.model,
                     'layer': layer,
-                    'aggregation': args.token_aggregation,
+                    'aggregation': extraction_strategy.value,
                     'threshold': args.detection_threshold,
                     'num_generations': len(generation_results),
                     'detection_stats': detection_stats,

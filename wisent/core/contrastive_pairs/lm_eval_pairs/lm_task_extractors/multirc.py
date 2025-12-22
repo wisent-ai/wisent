@@ -82,7 +82,7 @@ class MultiRCExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            formatted_question = f"{paragraph}\nQuestion: {question}\nAnswer: {answer}\nIs this answer correct?\nA. Yes\nB. No"
+            prompt = f"{paragraph}\nQuestion: {question}\nAnswer: {answer}\nIs this answer correct?"
 
             correct = "Yes" if label == 1 else "No"
             incorrect = "No" if label == 1 else "Yes"
@@ -92,7 +92,7 @@ class MultiRCExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

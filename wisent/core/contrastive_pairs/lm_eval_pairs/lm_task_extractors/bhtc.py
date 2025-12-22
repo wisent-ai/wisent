@@ -72,11 +72,11 @@ class BhtcExtractor(LMEvalBenchmarkExtractor):
                 incorrect_idx = (answer_idx + 1) % len(choices)
                 incorrect = str(choices[incorrect_idx]).strip()
 
-                formatted_question = f"Text: {question}\nQuestion: What is the topic of the above text?\nA. {incorrect}\nB. {correct}"
+                prompt = f"Text: {question}\nQuestion: What is the topic of the above text?"
                 metadata = {"label": "bhtc"}
 
                 return self._build_pair(
-                    question=formatted_question,
+                    question=question,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,
@@ -116,12 +116,10 @@ class BhtcExtractor(LMEvalBenchmarkExtractor):
             correct = str(choices[answer_idx]).strip()
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "bhtc"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

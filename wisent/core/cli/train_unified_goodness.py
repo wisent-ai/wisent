@@ -325,11 +325,11 @@ def execute_train_unified_goodness(args):
         'final': ExtractionStrategy.CHAT_LAST,
         'first': ExtractionStrategy.CHAT_FIRST,
         'max': ExtractionStrategy.CHAT_MAX_NORM,
-        'continuation': ExtractionStrategy.CHAT_GEN_POINT,
+        'continuation': ExtractionStrategy.CHAT_FIRST,  # First answer token
     }
     aggregation_strategy = aggregation_map.get(
         args.token_aggregation,
-        ExtractionStrategy.CHAT_GEN_POINT
+        ExtractionStrategy.CHAT_LAST
     )
 
     # Map prompt strategy

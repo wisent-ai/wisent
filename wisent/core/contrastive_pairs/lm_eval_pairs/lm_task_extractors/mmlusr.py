@@ -154,20 +154,19 @@ class MmlusrExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            # Build prompt matching lm-eval format
+            # Build prompt - raw question without MC formatting
             correct = choices[answer_idx]
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = choices[incorrect_idx]
 
-            # Format exactly as lm-eval does it
-            formatted_question = f"{question}\nA. {choices[0]}\nB. {choices[1]}\nC. {choices[2]}\nD. {choices[3]}\nAnswer:"
+            prompt = question
 
             metadata = {
                 "label": "mmlusr",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

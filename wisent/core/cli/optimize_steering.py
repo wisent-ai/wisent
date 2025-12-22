@@ -389,7 +389,7 @@ def execute_comprehensive(args, model, loader):
         "first_token": ExtractionStrategy.CHAT_FIRST,
         "max_pooling": ExtractionStrategy.CHAT_MAX_NORM,
         "choice_token": ExtractionStrategy.MC_BALANCED,
-        "continuation_token": ExtractionStrategy.CHAT_GEN_POINT,
+        "continuation_token": ExtractionStrategy.CHAT_FIRST,  # First answer token
     }
     if hasattr(args, 'search_token_aggregations') and args.search_token_aggregations:
         token_agg_names = [x.strip() for x in args.search_token_aggregations.split(',')]
@@ -2575,16 +2575,15 @@ def execute_personalization(args, model):
     min_strength, max_strength = args.strength_range
     strengths_to_test = np.linspace(min_strength, max_strength, 7)
 
-    # Token aggregation strategies to test - ALL 5 strategies
+    # Token aggregation strategies to test
     token_aggregations_to_test = [
         ExtractionStrategy.CHAT_LAST,
         ExtractionStrategy.CHAT_MEAN,
         ExtractionStrategy.CHAT_FIRST,
         ExtractionStrategy.CHAT_MAX_NORM,
-        ExtractionStrategy.CHAT_GEN_POINT,
     ]
 
-    # Prompt construction strategies to test - ALL 5 strategies
+    # Prompt construction strategies to test
     prompt_constructions_to_test = [
         ExtractionStrategy.CHAT_LAST,
         ExtractionStrategy.CHAT_LAST,
@@ -3108,16 +3107,15 @@ def execute_multi_personalization(args, model):
     min_strength, max_strength = args.strength_range
     strengths_to_test = np.linspace(min_strength, max_strength, 7)
 
-    # Token aggregation strategies to test - ALL 5 strategies
+    # Token aggregation strategies to test
     token_aggregations_to_test = [
         ExtractionStrategy.CHAT_LAST,
         ExtractionStrategy.CHAT_MEAN,
         ExtractionStrategy.CHAT_FIRST,
         ExtractionStrategy.CHAT_MAX_NORM,
-        ExtractionStrategy.CHAT_GEN_POINT,
     ]
 
-    # Prompt construction strategies to test - ALL 5 strategies
+    # Prompt construction strategies to test
     prompt_constructions_to_test = [
         ExtractionStrategy.CHAT_LAST,
         ExtractionStrategy.CHAT_LAST,

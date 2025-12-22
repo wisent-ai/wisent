@@ -83,14 +83,14 @@ class HeadQAExtractor(LMEvalBenchmarkExtractor):
             correct = answers[answer_idx]
             incorrect = answers[(answer_idx+1)%len(answers)]
         
-            formatted_question = f"Question: {qtext}\nAnswer:\nA. {incorrect}\nB. {correct}"
+            prompt = f"Question: {qtext}\nAnswer:"
 
             metadata = {
                 "label": "headqa",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

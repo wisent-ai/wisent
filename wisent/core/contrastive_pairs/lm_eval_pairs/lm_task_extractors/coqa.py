@@ -95,7 +95,8 @@ class CoQAExtractor(LMEvalBenchmarkExtractor):
             if qs:
                 lines.append(f"Q: {qs[-1]}")
 
-            formatted_question = "\n".join(lines)
+            prompt = "\n".join(lines)
+            prompt = f"{prompt}\nA:"
 
             correct = asw[-1] if len(asw) == len(qs) else "no"
             incorrect = None
@@ -133,14 +134,12 @@ class CoQAExtractor(LMEvalBenchmarkExtractor):
                         # Generic fallback: negate or add "not "
                         incorrect = f"not {correct}"
 
-            formatted_question = f"{formatted_question}\nA:\nA. {incorrect}\nB. {correct}"
-
             metadata = {
                 "label": "coqa",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

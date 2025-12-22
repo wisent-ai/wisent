@@ -82,7 +82,7 @@ class WNLIExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
         
-            formatted_question = f"{sentence1}\nQuestion: {sentence2} True or False?\nAnswer:\nA. True\nB. False"
+            prompt = f"{sentence1}\nQuestion: {sentence2} True or False?"
 
             correct = "True" if label == 1 else "False"
             incorrect = "False" if label == 1 else "True"
@@ -92,7 +92,7 @@ class WNLIExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

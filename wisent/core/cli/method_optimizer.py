@@ -250,7 +250,7 @@ class MethodOptimizer:
             "mean_pooling": ExtractionStrategy.CHAT_MEAN,
             "first_token": ExtractionStrategy.CHAT_FIRST,
             "max_pooling": ExtractionStrategy.CHAT_MAX_NORM,
-            "continuation_token": ExtractionStrategy.CHAT_GEN_POINT,
+            "continuation_token": ExtractionStrategy.CHAT_FIRST,  # First answer token
         }
         
         prompt_strat_map = {

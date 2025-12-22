@@ -69,11 +69,11 @@ class VaxxExtractor(LMEvalBenchmarkExtractor):
             incorrect = stance_choices[incorrect_idx]
 
             # Format as a classification task
-            formatted_question = f"Text: {text}\n\nWhat is the stance towards COVID-19 vaccination?\nA. {incorrect}\nB. {correct}"
+            prompt = f"Text: {text}\n\nWhat is the stance towards COVID-19 vaccination?"
             metadata = {"label": "vaxx"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

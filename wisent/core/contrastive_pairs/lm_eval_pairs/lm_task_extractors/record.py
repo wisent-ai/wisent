@@ -96,14 +96,14 @@ class RecordExtractor(LMEvalBenchmarkExtractor):
             # Remove @highlight prefix
             passage = passage.replace('@highlight', '')
 
-            formatted_question = f"Passage: {passage}\n\nQuery: {query}\nWhich option correctly completes the sentence at @placeholder?\nA. {incorrect}\nB. {correct}"
+            prompt = f"Passage: {passage}\n\nQuery: {query}\nWhich option correctly completes the sentence at @placeholder?"
 
             metadata = {
                 "label": "record",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
