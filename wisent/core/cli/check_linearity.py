@@ -31,6 +31,7 @@ def execute_check_linearity(args):
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
     from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
     # Build ContrastivePair objects
     pairs = []
@@ -72,6 +73,10 @@ def execute_check_linearity(args):
     if args.layers:
         config.layers_to_test = [int(l) for l in args.layers.split(',')]
     
+    if args.extraction_strategy:
+        config.extraction_strategies = [ExtractionStrategy(args.extraction_strategy)]
+        print(f"Using extraction strategy: {args.extraction_strategy}")
+    
     # Run check
     print("\nRunning linearity check...")
     result = check_linearity(pairs, model, config)
@@ -110,12 +115,39 @@ def execute_check_linearity(args):
         
         sorted_results = sorted(result.all_results, key=lambda x: x['linear_score'], reverse=True)
         
-        print(f"{'Linear':<8} {'d':<8} {'Layer':<6} {'Prompt':<25} {'Aggregation':<15} {'Norm'}")
-        print("-" * 80)
+        print(f"{'Linear':<8} {'d':<8} {'Layer':<6} {'Strategy':<20} {'Structure':<12} {'Norm'}")
+        print("-" * 70)
         
         for r in sorted_results[:20]:
             print(f"{r['linear_score']:<8.3f} {r['cohens_d']:<8.2f} {r['layer']:<6} "
-                  f"{r['prompt_strategy']:<25} {r['aggregation']:<15} {r['normalize']}")
+                  f"{r['extraction_strategy']:<20} {r['best_structure']:<12} {r['normalize']}")
+        
+        # Show best result for each structure type
+        if sorted_results and 'all_structure_scores' in sorted_results[0]:
+            print(f"\n{'='*60}")
+            print("BEST SCORE PER STRUCTURE TYPE")
+            print(f"{'='*60}")
+            
+            # Collect best score for each structure across all configs
+            best_per_structure = {}
+            for r in result.all_results:
+                if 'all_structure_scores' not in r:
+                    continue
+                for struct_name, data in r['all_structure_scores'].items():
+                    score = data['score']
+                    if struct_name not in best_per_structure or score > best_per_structure[struct_name]['score']:
+                        best_per_structure[struct_name] = {
+                            'score': score,
+                            'confidence': data['confidence'],
+                            'layer': r['layer'],
+                            'strategy': r['extraction_strategy'],
+                        }
+            
+            print(f"{'Structure':<12} {'Score':<8} {'Conf':<8} {'Layer':<6} {'Strategy'}")
+            print("-" * 55)
+            sorted_structs = sorted(best_per_structure.items(), key=lambda x: x[1]['score'], reverse=True)
+            for name, data in sorted_structs:
+                print(f"{name:<12} {data['score']:<8.3f} {data['confidence']:<8.3f} {data['layer']:<6} {data['strategy']}")
     
     # Exit code based on verdict
     if result.verdict.value == "linear":

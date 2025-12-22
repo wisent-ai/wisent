@@ -150,12 +150,10 @@ class ScoreExtractor(LMEvalBenchmarkExtractor):
             incorrect_idx = (answer_idx + 1) % len(cleaned_choices)
             incorrect = cleaned_choices[incorrect_idx]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
             metadata = {"label": "score_robustness"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

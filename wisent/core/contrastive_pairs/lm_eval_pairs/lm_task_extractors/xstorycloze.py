@@ -99,15 +99,14 @@ class XStoryClozeExtractor(LMEvalBenchmarkExtractor):
             correct = endings[answer]
             incorrect = endings[(answer+1)%len(endings)]
 
-            formatted_question = " ".join(s.strip() for s in inputs if s)
-            formatted_question = f"{formatted_question}\n \nA. {incorrect}\nB. {correct}"
+            prompt = " ".join(s.strip() for s in inputs if s)
 
             metadata = {
                 "label": "xstorycloze",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

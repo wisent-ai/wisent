@@ -139,14 +139,12 @@ class ArabicLeaderboardLightExtractor(LMEvalBenchmarkExtractor):
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = choices[incorrect_idx]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
             metadata = {
                 "label": "arabic_leaderboard_light",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

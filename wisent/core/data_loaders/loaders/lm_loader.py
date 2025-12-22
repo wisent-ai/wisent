@@ -10,6 +10,10 @@ os.environ['TF_NUM_INTEROP_THREADS'] = '1'
 os.environ['TF_NUM_INTRAOP_THREADS'] = '1'
 os.environ['OMP_NUM_THREADS'] = '1'
 
+# Allow code evaluation for code-related tasks (humaneval, etc.)
+# Required by HuggingFace evaluate library for code_eval metric
+os.environ['HF_ALLOW_CODE_EVAL'] = '1'
+
 # Enable trust_remote_code for all datasets (required for meddialog and others)
 # This uses lm-eval's recommended approach from PR #1998
 import datasets.config

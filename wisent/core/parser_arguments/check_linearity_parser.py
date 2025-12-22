@@ -1,5 +1,7 @@
 """Parser for check-linearity command."""
 
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
+
 
 def setup_check_linearity_parser(parser):
     """Set up the check-linearity command parser."""
@@ -7,6 +9,14 @@ def setup_check_linearity_parser(parser):
         'pairs_file',
         type=str,
         help='Path to JSON file containing contrastive pairs'
+    )
+    
+    parser.add_argument(
+        '--extraction-strategy',
+        type=str,
+        default=None,
+        choices=ExtractionStrategy.list_all(),
+        help=f'Extraction strategy to use. If not specified, tests multiple strategies. Options: {", ".join(ExtractionStrategy.list_all())}'
     )
     
     parser.add_argument(

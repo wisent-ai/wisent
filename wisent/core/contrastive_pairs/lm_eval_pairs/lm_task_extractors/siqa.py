@@ -124,15 +124,14 @@ class SIQAExtractor(LMEvalBenchmarkExtractor):
                 incorrect_idx = (label_idx + 1) % len(choices)
                 incorrect = choices[incorrect_idx]
 
-                full_question = f"Context: {context}\nQuestion: {question}"
-                formatted_question = f"{full_question}\nA. {incorrect}\nB. {correct}"
+                prompt = f"Context: {context}\nQuestion: {question}"
 
                 metadata = {
                     "label": "siqa",
                 }
 
                 return self._build_pair(
-                    question=formatted_question,
+                    question=prompt,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,
@@ -171,16 +170,14 @@ class SIQAExtractor(LMEvalBenchmarkExtractor):
                 for line in inputs.split('\n'):
                     if line.strip() and not line.strip().startswith('choice:'):
                         question_lines.append(line.strip())
-                question = '\n'.join(question_lines)
-
-                formatted_question = f"{question}\nA. {incorrect}\nB. {correct}"
+                prompt = '\n'.join(question_lines)
 
                 metadata = {
                     "label": "siqa",
                 }
 
                 return self._build_pair(
-                    question=formatted_question,
+                    question=prompt,
                     correct=correct,
                     incorrect=incorrect,
                     metadata=metadata,

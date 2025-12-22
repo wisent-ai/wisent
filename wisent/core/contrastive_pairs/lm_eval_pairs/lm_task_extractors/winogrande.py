@@ -86,7 +86,7 @@ class WinograndeExtractor(LMEvalBenchmarkExtractor):
                 return None
 
             question = f"Complete the sentence: {sentence}"
-            formatted_question = f"{question}\nA. {option1}\nB. {option2}"
+            prompt = f"{question}"
 
             correct = option1 if answer == "1" else option2
             incorrect = option2 if answer == "1" else option1
@@ -96,7 +96,7 @@ class WinograndeExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

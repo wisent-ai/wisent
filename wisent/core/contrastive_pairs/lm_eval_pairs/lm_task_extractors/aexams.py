@@ -155,14 +155,12 @@ class AexamsExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
             metadata = {
                 "label": "aexams",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
