@@ -85,14 +85,14 @@ class SocialIQAExtractor(LMEvalBenchmarkExtractor):
             correct = answers[label]
             incorrect = answers[(label+1)%len(answers)]
 
-            formatted_question = f"Q: {context} {question}\nA:\nA. {incorrect}\nB. {correct}"
+            prompt = f"Q: {context} {question}\nA:"
 
             metadata = {
                 "label": "social_iqa",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

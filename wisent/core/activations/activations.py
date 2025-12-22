@@ -50,7 +50,7 @@ class Activations:
             features = tensor.mean(dim=1).squeeze(0)
         elif strategy in (ExtractionStrategy.CHAT_LAST, ExtractionStrategy.ROLE_PLAY, ExtractionStrategy.MC_BALANCED):
             features = tensor[:, -1, :].squeeze(0)
-        elif strategy in (ExtractionStrategy.CHAT_FIRST, ExtractionStrategy.CHAT_GEN_POINT):
+        elif strategy == ExtractionStrategy.CHAT_FIRST:
             features = tensor[:, 0, :].squeeze(0)
         elif strategy == ExtractionStrategy.CHAT_MAX_NORM:
             norms = torch.norm(tensor, dim=2)
@@ -62,7 +62,7 @@ class Activations:
             weights = weights / weights.sum()
             features = (tensor * weights.unsqueeze(0).unsqueeze(2)).sum(dim=1).squeeze(0)
         else:
-            features = tensor.mean(dim=1).squeeze(0)
+            raise InvalidValueError(param="extraction_strategy", reason=f"Unknown extraction strategy: {strategy}")
 
         return features
 

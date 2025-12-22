@@ -117,12 +117,10 @@ class PhrasesExtractor(LMEvalBenchmarkExtractor):
             correct = str(choices[answer_idx]).strip()
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = str(choices[incorrect_idx]).strip()
-
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
             metadata = {"label": "phrases"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

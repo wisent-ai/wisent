@@ -220,8 +220,12 @@ class ActivationCollector:
                             value = h.mean(dim=0)
                         elif strategy == ExtractionStrategy.CHAT_FIRST:
                             value = h[0]
-                        else:
+                        elif strategy in (ExtractionStrategy.CHAT_LAST, ExtractionStrategy.ROLE_PLAY, 
+                                          ExtractionStrategy.MC_BALANCED,
+                                          ExtractionStrategy.CHAT_MAX_NORM, ExtractionStrategy.CHAT_WEIGHTED):
                             value = h[-1]
+                        else:
+                            raise ValueError(f"Unsupported strategy for batched collection: {strategy}")
 
                         collected[name] = value.to(self.store_device)
 

@@ -8,13 +8,16 @@ Based on empirical testing across 3 models (Llama-3.2-1B, Llama-2-7b, Qwen3-8B)
 and 4 tasks (truthfulqa, happy, left_wing, livecodebench):
 
 Results:
-- last_token: 66.3% avg accuracy (94.4% when paired with chat_last training)
-- all_mean: 65.9% avg accuracy
-- all_min: 53.5% avg accuracy
-- all_max: 53.3% avg accuracy  
-- first_token: 50.0% avg accuracy (completely useless - BOS token is identical for all inputs)
+- last_token: Best performer (77% with chat_last training on truthfulqa)
+- all_mean: Poor (~50%) - dominated by shared prompt tokens
+- all_max/all_min: Poor (~50%)
+- first_token: BROKEN (50%) - BOS token is identical for all inputs
 
 Recommendation: Use LAST_TOKEN (default) - it works best with chat_last training strategy.
+
+IMPORTANT: These strategies operate on the FULL sequence (prompt + response).
+At inference time, we typically don't know where the answer starts, so we
+can only use strategies that work on the whole sequence.
 """
 
 from enum import Enum
@@ -102,8 +105,7 @@ def extract_inference_activation(
         return hidden_states[torch.argmin(norms)]
     
     else:
-        # Default fallback
-        return hidden_states[-1]
+        raise ValueError(f"Unknown classifier inference strategy: {strategy}")
 
 
 def get_inference_score(
@@ -152,8 +154,7 @@ def get_inference_score(
         elif strategy == ClassifierInferenceStrategy.ALL_MIN:
             return float(np.min(all_scores))
     
-    # Default fallback
-    return float(classifier.predict_proba([hidden_np[-1]])[0, 1])
+    raise ValueError(f"Unknown classifier inference strategy: {strategy}")
 
 
 def get_recommended_inference_strategy(train_strategy) -> ClassifierInferenceStrategy:
@@ -161,8 +162,8 @@ def get_recommended_inference_strategy(train_strategy) -> ClassifierInferenceStr
     Get the recommended inference strategy for a given training strategy.
     
     Based on empirical testing:
-    - chat_last, role_play, mc_balanced -> last_token (94.4%, 72.4%, 60.2%)
-    - chat_mean, chat_weighted, chat_max_norm, chat_first, chat_gen_point -> all_mean
+    - chat_last, role_play, mc_balanced -> last_token
+    - chat_mean, chat_weighted, chat_max_norm, chat_first -> all_mean
     
     Args:
         train_strategy: ExtractionStrategy used for training

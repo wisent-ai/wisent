@@ -92,7 +92,7 @@ class COPAExtractor(LMEvalBenchmarkExtractor):
             fills = {"cause": "because", "effect": "therefore"}
             
             question = f"{premise.rstrip('.')} {fills[question]}"
-            formatted_question = f"{question}\nA. {choice1}\nB. {choice2}"
+            prompt = f"{question}"
 
             correct = choice1 if label == 0 else choice2
             incorrect = choice2 if label == 0 else choice1
@@ -102,7 +102,7 @@ class COPAExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

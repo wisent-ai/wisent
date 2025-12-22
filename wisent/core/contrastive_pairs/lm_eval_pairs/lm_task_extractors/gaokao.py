@@ -109,12 +109,12 @@ class GaokaoExtractor(LMEvalBenchmarkExtractor):
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = choices[incorrect_idx]
 
-            formatted_question = f"Question: {query}\nA. {incorrect}\nB. {correct}"
+            prompt = f"Question: {query}"
 
             metadata = {"label": "gaokao"}
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

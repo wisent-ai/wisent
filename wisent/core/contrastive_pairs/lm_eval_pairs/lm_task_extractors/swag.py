@@ -86,14 +86,14 @@ class SwagExtractor(LMEvalBenchmarkExtractor):
             incorrect = endings[(label+1)%len(endings)]
 
             question = f"{startphrase}"
-            formatted_question = f"{question}\nA. {incorrect}\nB. {correct}"
+            prompt = f"{question}"
 
             metadata = {
                 "label": "swag",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

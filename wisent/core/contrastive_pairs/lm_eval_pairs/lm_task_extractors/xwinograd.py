@@ -95,14 +95,14 @@ class XWinogradExtractor(LMEvalBenchmarkExtractor):
             correct = options[answer]
             incorrect = options[(answer+1)%len(options)]
 
-            formatted_question = f"Fill in the blank: {sentence}\nA. {incorrect}\nB. {correct}"
+            prompt = f"Fill in the blank: {sentence}"
 
             metadata = {
                 "label": "xwinograd",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

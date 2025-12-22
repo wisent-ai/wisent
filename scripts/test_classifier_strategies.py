@@ -3,7 +3,7 @@
 Test ALL combinations: TrainingStrategy × InferenceStrategy × Layer × Model × Task
 
 Training strategies (how to extract activations for training):
-- chat_mean, chat_first, chat_last, chat_gen_point, chat_max_norm, chat_weighted, role_play, mc_balanced
+- chat_mean, chat_first, chat_last, chat_max_norm, chat_weighted, role_play, mc_balanced
 
 Inference strategies (how to classify generated text at runtime):
 - last_token, first_token, all_mean, all_max, all_min
@@ -38,7 +38,6 @@ TRAIN_STRATEGIES = [
     "chat_mean",
     "chat_first",
     "chat_last",
-    "chat_gen_point",
     "chat_max_norm",
     "chat_weighted",
     "role_play",
@@ -168,9 +167,6 @@ def get_train_activation(model, tokenizer, text, answer, layer, train_strategy):
         if num_ans > 0 and seq_len > num_ans:
             return hidden[-num_ans-1:-1].mean(dim=0).cpu().float().numpy()
         return hidden[-1].cpu().float().numpy()
-    elif train_strategy == "chat_gen_point":
-        idx = max(0, seq_len - num_ans - 2)
-        return hidden[idx].cpu().float().numpy()
     elif train_strategy == "chat_max_norm":
         if num_ans > 0 and seq_len > num_ans:
             ans_hidden = hidden[-num_ans-1:-1]

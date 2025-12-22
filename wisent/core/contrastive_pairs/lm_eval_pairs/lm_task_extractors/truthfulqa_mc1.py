@@ -91,14 +91,12 @@ class TruthfulQAMC1Extractor(LMEvalBenchmarkExtractor):
             correct = options[answer_idx]
             incorrect = options[(answer_idx+1)%len(options)]
 
-            formatted_question = f"Question: {question}\nA. {incorrect}\nB. {correct}"
-
             metadata = {
                 "label": "truthfulqa_mc1",
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=question,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,
