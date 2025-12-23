@@ -77,7 +77,7 @@ def _run_optuna_search_for_task(
         
         try:
             # Collect activations
-            collector = ActivationCollector(model=model, store_device="cpu")
+            collector = ActivationCollector(model=model)
             pos_acts = []
             neg_acts = []
             
@@ -610,7 +610,7 @@ def execute_comprehensive(args, model, loader):
                                     layer_str = str(layer)
 
                                     # Step 1: Generate steering vector using CAA with current token aggregation
-                                    collector = ActivationCollector(model=model, store_device="cpu")
+                                    collector = ActivationCollector(model=model)
 
                                     pos_acts = []
                                     neg_acts = []
@@ -1456,7 +1456,7 @@ def execute_compare_methods(args, model, loader):
 
     # Collect activations once for all methods
     layer_str = str(args.layer)
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
 
     print("🎯 Collecting training activations (ONCE)...")
     pos_acts = []
@@ -1719,7 +1719,7 @@ def execute_optimize_layer(args, model, loader):
             print("Aborted by user.")
             return {"action": "optimize-layer", "status": "aborted", "reason": "user declined reduced search"}
 
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
     layer_results = {}
     best_layer = None
     best_accuracy = 0.0
@@ -1986,7 +1986,7 @@ def execute_optimize_strength(args, model, loader):
 
     # Collect activations ONCE
     layer_str = str(args.layer)
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
 
     print("🎯 Collecting training activations (ONCE)...")
     pos_acts = []
@@ -2277,7 +2277,7 @@ def execute_auto(args, model, loader):
     print(f"   Testing {len(strengths_to_test)} strengths: {strengths_to_test[0]:.2f} to {strengths_to_test[-1]:.2f}")
     print(f"   Total configurations: {len(layers_to_test) * len(strengths_to_test)}\n")
 
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
     all_results = {}
     best_config = None
     best_accuracy = 0.0
@@ -2654,7 +2654,7 @@ def execute_personalization(args, model):
     print(flush=True)
 
     # Initialize activation collector
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
 
     # Track results for all configurations
     all_results = {}
@@ -3174,7 +3174,7 @@ def execute_multi_personalization(args, model):
     print(f"\n📝 Test prompts: {test_prompts}", flush=True)
 
     # Initialize collector
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
 
     # Track results
     all_results = {}
@@ -3563,7 +3563,7 @@ def execute_universal(args, model, loader):
     optimizer = MethodOptimizer(
         model=model,
         method_name=method_name,
-        device=args.device or "cpu",
+        device=args.device if hasattr(args, "device") and args.device else None,
         verbose=args.verbose if hasattr(args, "verbose") else True,
     )
     

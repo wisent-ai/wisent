@@ -92,7 +92,8 @@ class SglueRteExtractor(LMEvalBenchmarkExtractor):
                 correct = "False"
                 incorrect = "True"
 
-            prompt = f"Premise: {premise}\nHypothesis: {hypothesis} True or False?\nAnswer:\nA. {incorrect}\nB. {correct}"
+            # Raw prompt without A./B. formatting
+            prompt = f"Premise: {premise}\nHypothesis: {hypothesis} True or False?"
 
             metadata = {"label": "sglue_rte"}
 

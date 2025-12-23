@@ -477,11 +477,13 @@ class SteeringMethod:
             # Get prediction from steering method
             prediction = self.predict_proba(activation)
 
-            # Convert to tensor for loss computation
+            # Convert to tensor for loss computation (use activation's dtype)
             if not isinstance(prediction, torch.Tensor):
-                prediction = torch.tensor(prediction, dtype=torch.float32, device=self.device)
+                from wisent.core.utils.device import preferred_dtype
+                pred_dtype = activation.dtype if isinstance(activation, torch.Tensor) else preferred_dtype()
+                prediction = torch.tensor(prediction, dtype=pred_dtype, device=self.device)
 
-            target = torch.tensor(label, dtype=torch.float32, device=self.device)
+            target = torch.tensor(label, dtype=prediction.dtype, device=self.device)
 
             # Binary cross-entropy loss
             loss = F.binary_cross_entropy_with_logits(prediction.unsqueeze(0), target.unsqueeze(0))

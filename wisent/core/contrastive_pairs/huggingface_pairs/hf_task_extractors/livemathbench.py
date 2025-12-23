@@ -136,13 +136,51 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
             return None
 
     def _create_incorrect_answer(self, correct: str) -> str:
-        """Create an incorrect answer by modifying the correct one (input is already stripped)."""
+        """Create a meaningful incorrect answer using plausible wrong values."""
+        import random
+        import re
+        random.seed(hash(correct) % (2**32))
+
+        # Try symbolic parsing first
         try:
             parsed_correct = latex2sympy(correct)
-            incorrect = latex(parsed_correct + 1)
-            return str(incorrect)
+            transforms = [
+                parsed_correct * 2,
+                parsed_correct / 2,
+                parsed_correct - 1,
+                -parsed_correct,
+            ]
+            wrong = random.choice(transforms)
+            return str(latex(wrong))
         except Exception:
-            return f"{correct} + 1"
+            pass
+
+        # Try simple integer
+        try:
+            clean = correct.replace('$', '').replace(',', '').strip()
+            num = int(clean)
+            wrong_vals = [num * 2, num // 2 if num > 1 else num * 3, num - 1, -num]
+            return str(random.choice(wrong_vals))
+        except ValueError:
+            pass
+
+        # For fractions
+        frac_match = re.match(r'\\frac\{(\d+)\}\{(\d+)\}', correct)
+        if frac_match:
+            n, d = int(frac_match.group(1)), int(frac_match.group(2))
+            return random.choice([f"\\frac{{{d}}}{{{n}}}", f"\\frac{{{n*2}}}{{{d}}}"])
+
+        # For interval notation like [-1/4,0)∪(0,2)
+        if '\\cup' in correct or '\\cap' in correct:
+            # Modify one bound
+            return correct.replace('2)', '3)').replace('0)', '1)')
+
+        # For pi expressions
+        if '\\pi' in correct:
+            return correct.replace('\\pi', '2\\pi') if '2\\pi' not in correct else correct.replace('2\\pi', '\\pi')
+
+        # Fallback
+        return random.choice(['0', '1', '-1', '2'])
 
 
 # ============================================================================

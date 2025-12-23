@@ -8,6 +8,7 @@ import torch
 from collections import defaultdict
 
 from wisent.core.errors import SteeringMethodUnknownError, VectorQualityTooLowError
+from wisent.core.utils.device import preferred_dtype
 
 
 def execute_create_steering_vector(args):
@@ -46,20 +47,21 @@ def execute_create_steering_vector(args):
 
         # Structure: {layer_str: {"positive": [tensors], "negative": [tensors]}}
         layer_activations = defaultdict(lambda: {"positive": [], "negative": []})
+        dtype = preferred_dtype()
 
         for pair in pairs_list:
             # Extract positive activations
             pos_layers = pair['positive_response'].get('layers_activations', {})
             for layer_str, activation_list in pos_layers.items():
                 if activation_list is not None:
-                    tensor = torch.tensor(activation_list, dtype=torch.float32)
+                    tensor = torch.tensor(activation_list, dtype=dtype)
                     layer_activations[layer_str]["positive"].append(tensor)
 
             # Extract negative activations
             neg_layers = pair['negative_response'].get('layers_activations', {})
             for layer_str, activation_list in neg_layers.items():
                 if activation_list is not None:
-                    tensor = torch.tensor(activation_list, dtype=torch.float32)
+                    tensor = torch.tensor(activation_list, dtype=dtype)
                     layer_activations[layer_str]["negative"].append(tensor)
 
         available_layers = sorted(layer_activations.keys(), key=int)
@@ -232,7 +234,7 @@ def execute_create_steering_vector(args):
             # If multiple layers, save the first one (or could save all and let user specify)
             if len(steering_vectors) == 1:
                 layer_str = list(steering_vectors.keys())[0]
-                vector_tensor = torch.tensor(steering_vectors[layer_str], dtype=torch.float32)
+                vector_tensor = torch.tensor(steering_vectors[layer_str], dtype=dtype)
                 torch.save({
                     'steering_vector': vector_tensor,
                     'layer_index': int(layer_str),
@@ -251,7 +253,7 @@ def execute_create_steering_vector(args):
                 # Save multiple layers - save each to separate file
                 for layer_str in steering_vectors.keys():
                     layer_output = args.output.replace('.pt', f'_layer_{layer_str}.pt')
-                    vector_tensor = torch.tensor(steering_vectors[layer_str], dtype=torch.float32)
+                    vector_tensor = torch.tensor(steering_vectors[layer_str], dtype=dtype)
                     torch.save({
                         'steering_vector': vector_tensor,
                         'layer_index': int(layer_str),

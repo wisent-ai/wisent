@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 import torch
+from wisent.core.utils.device import resolve_default_device
 
 
 def upload_to_s3(local_path: str, s3_bucket: str, s3_key: str) -> bool:
@@ -661,7 +662,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
             execute_train_unified_goodness(vector_args)
 
             # Load the .pt file
-            checkpoint = torch.load(temp_output_pt, map_location='cpu', weights_only=False)
+            checkpoint = torch.load(temp_output_pt, map_location=resolve_default_device(), weights_only=False)
 
             # Handle different checkpoint formats
             if 'all_layer_vectors' in checkpoint:

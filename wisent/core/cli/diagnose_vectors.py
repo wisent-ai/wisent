@@ -6,6 +6,7 @@ import os
 import math
 
 import torch
+from wisent.core.utils.device import preferred_dtype
 
 
 def execute_diagnose_vectors(args):
@@ -227,10 +228,11 @@ def _run_cone_analysis(
             return
         
         # Convert to tensors if needed
+        dtype = preferred_dtype()
         if not isinstance(pos_acts, torch.Tensor):
-            pos_acts = torch.tensor(pos_acts, dtype=torch.float32)
+            pos_acts = torch.tensor(pos_acts, dtype=dtype)
         if not isinstance(neg_acts, torch.Tensor):
-            neg_acts = torch.tensor(neg_acts, dtype=torch.float32)
+            neg_acts = torch.tensor(neg_acts, dtype=dtype)
         
         print(f"   Positive samples: {pos_acts.shape[0]}")
         print(f"   Negative samples: {neg_acts.shape[0]}")
@@ -342,10 +344,11 @@ def _run_geometry_analysis(
             return
         
         # Convert to tensors
+        dtype = preferred_dtype()
         if not isinstance(pos_acts, torch.Tensor):
-            pos_acts = torch.tensor(pos_acts, dtype=torch.float32)
+            pos_acts = torch.tensor(pos_acts, dtype=dtype)
         if not isinstance(neg_acts, torch.Tensor):
-            neg_acts = torch.tensor(neg_acts, dtype=torch.float32)
+            neg_acts = torch.tensor(neg_acts, dtype=dtype)
         
         print(f"   Positive samples: {pos_acts.shape[0]}")
         print(f"   Negative samples: {neg_acts.shape[0]}")

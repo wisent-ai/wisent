@@ -14,6 +14,7 @@ import time
 from pathlib import Path
 import torch
 
+from wisent.core.utils.device import resolve_default_device
 from wisent.core.cli_logger import setup_logger, bind
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.weight_modification import (
@@ -72,7 +73,7 @@ def execute_modify_weights(args):
 
         if vector_path.suffix == '.pt':
             # Load PyTorch format (from train-unified-goodness or similar)
-            checkpoint = torch.load(args.steering_vectors, map_location='cpu', weights_only=False)
+            checkpoint = torch.load(args.steering_vectors, map_location=resolve_default_device(), weights_only=False)
 
             # Handle different .pt file formats
             if 'steering_vectors' in checkpoint:
@@ -354,7 +355,7 @@ def execute_modify_weights(args):
 
             execute_train_unified_goodness(unified_args)
 
-            checkpoint = torch.load(unified_args.output, map_location='cpu', weights_only=False)
+            checkpoint = torch.load(unified_args.output, map_location=resolve_default_device(), weights_only=False)
             
             if 'steering_vectors' in checkpoint:
                 raw_vectors = checkpoint['steering_vectors']

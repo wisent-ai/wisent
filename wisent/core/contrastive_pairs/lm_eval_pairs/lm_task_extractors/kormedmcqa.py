@@ -118,29 +118,17 @@ class KormedmcqaExtractor(LMEvalBenchmarkExtractor):
             incorrect_idx = (answer_idx + 1) % len(choices)
             incorrect = choices[incorrect_idx]
 
-            # Format question with all choices
-            formatted_question = (
-                f"{question}\n"
-                f"A. {choices[0]}\n"
-                f"B. {choices[1]}\n"
-                f"C. {choices[2]}\n"
-                f"D. {choices[3]}\n"
-                f"E. {choices[4]}\n"
-                f"정답："
-            )
+            # Raw prompt without MC formatting
+            prompt = question
 
             metadata = {
                 "label": "kormedmcqa",
             }
 
-            # The correct answer is the letter (A-E)
-            correct_letter = chr(ord('A') + answer_idx)
-            incorrect_letter = chr(ord('A') + incorrect_idx)
-
             return self._build_pair(
-                question=formatted_question,
-                correct=correct_letter,
-                incorrect=incorrect_letter,
+                question=prompt,
+                correct=correct,
+                incorrect=incorrect,
                 metadata=metadata,
             )
 

@@ -353,7 +353,7 @@ def execute_train_unified_goodness(args):
         negative_activations = activations_checkpoint['negative_activations']
         print(f"   ✓ Loaded activations from checkpoint ({len(positive_activations[layers[0]])} pairs)")
     else:
-        collector = ActivationCollector(model=model, store_device="cpu")
+        collector = ActivationCollector(model=model)
 
         # Collect activations for all training pairs using batched processing
         positive_activations = {layer: [] for layer in layers}

@@ -89,7 +89,7 @@ class WisentModel:
                 optional preloaded model (skips from_pretrained if provided).       
         """
         self.model_name = model_name
-        self.device = device or resolve_default_device()
+        self.device = resolve_default_device() if device is None or device == "auto" else device
 
         # Determine appropriate dtype and settings for the device
         load_kwargs = {

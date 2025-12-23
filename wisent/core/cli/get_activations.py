@@ -90,7 +90,7 @@ def execute_get_activations(args):
 
         # 6. Collect activations
         print(f"\n⚡ Collecting activations...")
-        collector = ActivationCollector(model=model, store_device="cpu")
+        collector = ActivationCollector(model=model)
 
         enriched_pairs = []
         for i, pair in enumerate(pair_set.pairs):

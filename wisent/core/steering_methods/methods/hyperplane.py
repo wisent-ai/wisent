@@ -6,6 +6,7 @@ import numpy as np
 
 from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
 from wisent.core.errors import InsufficientDataError
+from wisent.core.utils.device import preferred_dtype
 
 __all__ = [
     "HyperplaneMethod",
@@ -61,7 +62,7 @@ class HyperplaneMethod(PerLayerBaseSteeringMethod):
         clf.fit(X, y)
         
         # Use classifier weights as steering vector
-        v = torch.tensor(clf.coef_[0], dtype=torch.float32)
+        v = torch.tensor(clf.coef_[0], dtype=preferred_dtype())
         
         if bool(self.kwargs.get("normalize", True)):
             v = self._safe_l2_normalize(v)

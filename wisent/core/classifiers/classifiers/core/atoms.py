@@ -14,6 +14,7 @@ import numpy as np
 
 from torch.nn.modules.loss import _Loss
 from wisent.core.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
+from wisent.core.utils.device import preferred_dtype
 
 __all__ = [
     "ClassifierTrainConfig",
@@ -164,13 +165,13 @@ class BaseClassifier(ABC):
         self,
         threshold: float = 0.5,
         device: str | None = None,
-        dtype: torch.dtype = torch.float32,
+        dtype: torch.dtype | None = None,
     ) -> None:
         if not 0.0 <= threshold <= 1.0:
             raise InvalidRangeError(param_name="threshold", actual=threshold, min_val=0.0, max_val=1.0)
         self.threshold = threshold
         self.device = device or ("cuda" if torch.cuda.is_available() else "cpu")
-        self.dtype = torch.float32 if self.device == "mps" else dtype
+        self.dtype = dtype if dtype is not None else preferred_dtype(self.device)
         self.model = None
 
     @abstractmethod

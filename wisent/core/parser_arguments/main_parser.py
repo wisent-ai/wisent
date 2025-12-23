@@ -40,6 +40,7 @@ from wisent.core.parser_arguments.train_unified_goodness_parser import setup_tra
 from wisent.core.parser_arguments.optimize_parser import setup_optimize_parser
 from wisent.core.parser_arguments.check_linearity_parser import setup_check_linearity_parser
 from wisent.core.parser_arguments.cluster_benchmarks_parser import setup_cluster_benchmarks_parser
+from wisent.core.parser_arguments.geometry_search_parser import setup_geometry_search_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -224,5 +225,12 @@ def setup_parser() -> argparse.ArgumentParser:
         help="Cluster benchmarks by direction similarity with geometry analysis"
     )
     setup_cluster_benchmarks_parser(cluster_benchmarks_parser)
+
+    # Geometry search command - search for unified goodness direction across all benchmarks
+    geometry_search_parser = subparsers.add_parser(
+        "geometry-search",
+        help="Search for unified goodness direction across benchmarks (analyzes structure: linear/cone/orthogonal)"
+    )
+    setup_geometry_search_parser(geometry_search_parser)
 
     return parser

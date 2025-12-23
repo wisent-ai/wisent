@@ -7,6 +7,7 @@ import torch
 from typing import Mapping
 
 from wisent.core.errors import InvalidValueError, InvalidRangeError
+from wisent.core.utils.device import preferred_dtype
 
 if TYPE_CHECKING:
     from wisent.core.activations.core.atoms import RawActivationMap 
@@ -213,12 +214,13 @@ class SteeringPlan:
         """
         if n < 0:
             raise InvalidRangeError(param_name="n", actual=n, min_val=0)
+        dtype = preferred_dtype()
         if n == 0:
-            return torch.empty(0, dtype=torch.float32)
+            return torch.empty(0, dtype=dtype)
         if weights is None:
-            return torch.full((n,), 1.0 / n, dtype=torch.float32)
+            return torch.full((n,), 1.0 / n, dtype=dtype)
 
-        w = torch.as_tensor(weights, dtype=torch.float32)
+        w = torch.as_tensor(weights, dtype=dtype)
         if w.numel() != n:
             raise InvalidValueError(param_name="weights length", actual=w.numel(), expected=f"{n} (number of activation maps)")
         s = float(w.sum())

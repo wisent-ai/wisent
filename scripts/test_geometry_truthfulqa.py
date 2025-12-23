@@ -26,6 +26,9 @@ NUM_PAIRS = 200
 
 def run_cmd(cmd, print_output=True, allow_nonzero=False):
     """Run a CLI command and return output. Exits on error unless allow_nonzero."""
+    # Replace 'wisent' with python module call to use correct interpreter
+    if cmd[0] == "wisent":
+        cmd = [sys.executable, "-m", "wisent.core.main"] + cmd[1:]
     print(f"  Running: {' '.join(cmd)}")
     result = subprocess.run(cmd, capture_output=True, text=True)
     if print_output and result.stdout:

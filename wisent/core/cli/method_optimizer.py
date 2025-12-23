@@ -24,6 +24,7 @@ import torch
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.utils.device import resolve_default_device
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
@@ -175,7 +176,7 @@ class MethodOptimizer:
         self,
         model,
         method_name: str,
-        device: str = "cpu",
+        device: str | None = None,
         verbose: bool = True,
     ):
         """
@@ -189,7 +190,7 @@ class MethodOptimizer:
         """
         self.model = model
         self.method_name = method_name.lower()
-        self.device = device
+        self.device = device or resolve_default_device()
         self.verbose = verbose
         
         # Validate method exists

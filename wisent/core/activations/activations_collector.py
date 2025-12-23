@@ -25,11 +25,11 @@ class ActivationCollector:
 
     Args:
         model: WisentModel instance
-        store_device: Device to store collected activations on (default "cpu")
-        dtype: Optional torch.dtype to cast activations to (e.g., torch.float32)
+        store_device: Device to store collected activations on (default: "cpu" to avoid GPU OOM)
+        dtype: Optional torch.dtype to cast activations to
 
     Example:
-        >>> collector = ActivationCollector(model=my_model, store_device="cpu", dtype=torch.float32)
+        >>> collector = ActivationCollector(model=my_model)
         >>> updated_pair = collector.collect(
         ...     pair,
         ...     strategy=ExtractionStrategy.CHAT_LAST,
@@ -37,7 +37,7 @@ class ActivationCollector:
         ... )
         >>> pos_acts = updated_pair.positive_response.layers_activations
         >>> pos_acts.summary()
-        {'8': {'shape': (2048,), 'dtype': 'torch.float32', ...}, '12': {...}}
+        {'8': {'shape': (2048,), ...}, '12': {...}}
     """
 
     model: "WisentModel"
