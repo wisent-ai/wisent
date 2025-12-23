@@ -46,8 +46,8 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
     parser.add_argument(
         "--device",
         type=str,
-        default="cpu",
-        help="Device to use (e.g., 'cpu', 'cuda', 'cuda:0')"
+        default="auto",
+        help="Device to use (e.g., 'auto', 'cpu', 'cuda', 'cuda:0', 'mps')"
     )
     
     # Pair generation

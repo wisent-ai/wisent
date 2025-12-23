@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
+from wisent.core.utils.device import preferred_dtype
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -28,7 +29,8 @@ def load_steering_vector(path: str | Path, default_method: str = "unknown") -> d
     path = Path(path)
 
     if path.suffix == ".pt":
-        data = torch.load(path, map_location="cpu", weights_only=False)
+        from wisent.core.utils.device import resolve_default_device
+        data = torch.load(path, map_location=resolve_default_device(), weights_only=False)
         layer_idx = str(data.get("layer_index", data.get("layer", 1)))
         return {
             "steering_vectors": {layer_idx: data["steering_vector"].tolist()},
@@ -56,8 +58,9 @@ def apply_steering_to_model(
         scale: Scaling factor for steering strength
     """
     raw_map = {}
+    dtype = preferred_dtype()
     for layer_str, vec_list in steering_data["steering_vectors"].items():
-        raw_map[layer_str] = torch.tensor(vec_list, dtype=torch.float32)
+        raw_map[layer_str] = torch.tensor(vec_list, dtype=dtype)
 
     model.set_steering_from_raw(raw_map, scale=scale, normalize=False)
     model.apply_steering()
@@ -88,9 +91,10 @@ def convert_to_lm_eval_format(
     """
     output_path = Path(output_path)
 
+    dtype = preferred_dtype()
     lm_eval_config = {}
     for layer_str, vec_list in steering_data["steering_vectors"].items():
-        vec = torch.tensor(vec_list, dtype=torch.float32)
+        vec = torch.tensor(vec_list, dtype=dtype)
         # lm-eval expects shape (1, hidden_dim)
         if vec.dim() == 1:
             vec = vec.unsqueeze(0)

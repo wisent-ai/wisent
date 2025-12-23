@@ -116,28 +116,44 @@ class FRAMESExtractor(HuggingFaceBenchmarkExtractor):
             return None
 
     def _create_incorrect_answer(self, correct: str, reasoning_types: str) -> str:
-        """Create a plausible but incorrect answer based on reasoning type."""
-        # For numerical reasoning, try to extract and modify numbers
+        """Create a plausible but factually incorrect answer based on reasoning type."""
+        import re
+        import random
+        random.seed(hash(correct) % (2**32))
+
+        # For numerical reasoning, modify numbers in a meaningful way
         if "Numerical" in reasoning_types:
-            import re
             numbers = re.findall(r'\d+\.?\d*', correct)
             if numbers:
-                # Modify the first number found
-                try:
-                    num = float(numbers[0])
-                    wrong_num = num * 1.5 if num > 0 else num - 10
-                    return correct.replace(numbers[0], str(int(wrong_num)), 1)
-                except ValueError:
-                    pass
+                num = float(numbers[0])
+                wrong_vals = [num * 2, num / 2, num + 100, num - 50]
+                wrong_num = random.choice([v for v in wrong_vals if v != num])
+                return correct.replace(numbers[0], str(int(wrong_num)), 1)
 
-        # For temporal reasoning, create a temporally incorrect answer
+        # For temporal reasoning, shift dates/years
         if "Temporal" in reasoning_types:
-            return f"Based on the timeline, the answer would be different: {correct}... [temporally incorrect]"
+            years = re.findall(r'\b(19|20)\d{2}\b', correct)
+            if years:
+                year = int(years[0])
+                wrong_year = random.choice([year - 10, year + 10, year - 5, year + 5])
+                return correct.replace(str(year), str(wrong_year), 1)
 
-        # For tabular reasoning
-        if "Tabular" in reasoning_types:
-            return f"According to the data, the result is not {correct} but rather a different value."
+        # For any answer with numbers, modify them
+        numbers = re.findall(r'\d+', correct)
+        if numbers:
+            num = int(numbers[0])
+            wrong_num = random.choice([num * 2, num + 10, num - 5]) if num != 0 else 5
+            return correct.replace(numbers[0], str(wrong_num), 1)
 
-        # Default: Create a hedging/uncertain response
-        return f"I believe the answer might be related to {correct}, but I'm not entirely certain."
+        # For name-based answers, scramble or use different format
+        if len(correct) < 100:
+            words = correct.split()
+            if len(words) >= 2:
+                scrambled = words.copy()
+                random.shuffle(scrambled)
+                if scrambled != words:
+                    return ' '.join(scrambled)
+
+        # Fallback: clearly wrong answer
+        return "Unable to determine" if len(correct) > 20 else correct[::-1]
 

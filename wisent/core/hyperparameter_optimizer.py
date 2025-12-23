@@ -370,7 +370,7 @@ class HyperparameterOptimizer:
         prompt_strategy = prompt_strategy_map.get(prompt_construction_strategy, ExtractionStrategy.CHAT_LAST)
 
         # Create activation collector
-        collector = ActivationCollector(model=model, store_device="cpu")
+        collector = ActivationCollector(model=model)
         layer_str = str(layer)
 
         # Collect activations for training pairs

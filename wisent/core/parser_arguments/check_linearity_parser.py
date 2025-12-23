@@ -29,8 +29,8 @@ def setup_check_linearity_parser(parser):
     parser.add_argument(
         '--device',
         type=str,
-        default='cuda',
-        help='Device to run model on (cuda, mps, cpu)'
+        default='auto',
+        help='Device to run model on (auto, cuda, mps, cpu)'
     )
     
     parser.add_argument(

@@ -37,7 +37,7 @@ def main():
     pairs = extractor.extract_contrastive_pairs(limit=args.num_pairs)
 
     print(f"Collecting activations from layer {args.layer}...")
-    collector = ActivationCollector(model=wisent_model, store_device="cpu")
+    collector = ActivationCollector(model=wisent_model)
     
     pos_activations = []
     neg_activations = []

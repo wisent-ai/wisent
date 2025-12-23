@@ -95,7 +95,7 @@ def run_control_vector_diagnostics(
             )
             continue
 
-        flat = detached.to(dtype=torch.float32, device="cpu").reshape(-1)
+        flat = detached.to(device="cpu").reshape(-1)
 
         if not torch.isfinite(flat).all():
             non_finite = (~torch.isfinite(flat)).sum().item()
@@ -1549,7 +1549,7 @@ def _detect_sparse_structure(
     sorted_abs = abs_diff.sort().values
     n = len(sorted_abs)
     cumsum = sorted_abs.cumsum(0)
-    gini = (2 * torch.arange(1, n + 1, dtype=torch.float32) @ sorted_abs - (n + 1) * sorted_abs.sum()) / (n * sorted_abs.sum() + 1e-10)
+    gini = (2 * torch.arange(1, n + 1, dtype=sorted_abs.dtype, device=sorted_abs.device) @ sorted_abs - (n + 1) * sorted_abs.sum()) / (n * sorted_abs.sum() + 1e-10)
     
     # Sparse score: high if few dimensions are active
     sparse_score = 0.4 * (1 - float(l1_l2_ratio)) + 0.3 * (1 - float(active_fraction)) + 0.3 * float(gini)
@@ -1632,11 +1632,11 @@ def _compute_dip_statistic(data: torch.Tensor) -> float:
         return 0.0
     
     # Empirical CDF
-    ecdf = torch.arange(1, n + 1, dtype=torch.float32) / n
+    ecdf = torch.arange(1, n + 1, dtype=sorted_data.dtype, device=sorted_data.device) / n
     
     # Greatest convex minorant and least concave majorant
     # Simplified: measure deviation from uniform
-    uniform = torch.linspace(0, 1, n)
+    uniform = torch.linspace(0, 1, n, dtype=sorted_data.dtype, device=sorted_data.device)
     
     # Kolmogorov-Smirnov like statistic
     ks_stat = (ecdf - uniform).abs().max()

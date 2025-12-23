@@ -119,7 +119,7 @@ def main():
     extractor = get_extractor(args.task)
     pairs = extractor.extract_contrastive_pairs(limit=args.num_pairs)
 
-    collector = ActivationCollector(model=wisent_model, store_device="cpu")
+    collector = ActivationCollector(model=wisent_model)
 
     if args.multi_config:
         # Run for each structure's best config

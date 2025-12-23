@@ -479,15 +479,26 @@ class FloresExtractor(HuggingFaceBenchmarkExtractor):
 
 
     evaluator_name = "generation"
+    
     def extract_contrastive_pairs(
         self,
-        lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
     ) -> list[ContrastivePair]:
-        log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
+        log = bind(_LOG, task="flores")
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        
+        # Load data directly from HuggingFace
+        from datasets import load_dataset
+        try:
+            # Try to load from cache (trust_remote_code no longer supported)
+            ds = load_dataset("facebook/flores", "all", split="devtest")
+            docs = list(ds)
+            if max_items:
+                docs = docs[:max_items]
+        except Exception as e:
+            log.error(f"Failed to load flores dataset: {e}")
+            return []
+        
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
 

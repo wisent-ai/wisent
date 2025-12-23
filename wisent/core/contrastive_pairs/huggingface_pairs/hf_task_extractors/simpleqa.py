@@ -114,32 +114,51 @@ class SimpleQAExtractor(HuggingFaceBenchmarkExtractor):
             return None
 
     def _create_incorrect_answer(self, correct: str, topic: str) -> str:
-        """Create a plausible but incorrect answer.
+        """Create a plausible but factually incorrect answer.
 
-        For factuality benchmarks, we create answers that are superficially similar
-        but factually wrong, or we use refusal/hedging patterns.
+        Strategy: Generate answers that look plausible but are wrong.
+        - For names: use similar-sounding or related names
+        - For numbers: use different numbers
+        - For dates: use different dates
+        - For places: use related but wrong places
         """
-        # Strategy 1: Add uncertainty/hedging (models sometimes do this)
-        hedging_patterns = [
-            f"I'm not entirely sure, but I believe it might be {correct} or something similar.",
-            f"I don't have enough information to answer this definitively.",
-            f"I cannot provide a reliable answer to this question.",
-        ]
+        import random
+        random.seed(hash(correct) % (2**32))
 
-        # Strategy 2: Modify the answer slightly to make it wrong
+        # For numerical answers
         if correct.isdigit():
-            # For numerical answers, change the number
-            try:
-                num = int(correct)
-                wrong_num = num + 1 if num > 0 else num - 1
-                return str(wrong_num)
-            except ValueError:
-                pass
+            num = int(correct)
+            wrong_vals = [num * 2, num // 2 if num > 1 else num + 5, num + 10, num - 5]
+            return str(random.choice([v for v in wrong_vals if v != num]))
 
-        # Strategy 3: For short factual answers, create a contradicting one
-        if len(correct) < 50:
-            return f"I believe the answer is not {correct}, but rather something else entirely."
+        # For years (4 digit numbers)
+        if len(correct) == 4 and correct.isdigit():
+            year = int(correct)
+            return str(random.choice([year - 10, year + 10, year - 5, year + 5]))
 
-        # Default: Use hedging
-        return hedging_patterns[0]
+        # For short factual answers (names, places, etc.)
+        # Scramble the characters to create a wrong but similar-looking answer
+        if len(correct) < 100:
+            words = correct.split()
+            if len(words) >= 2:
+                # Swap word order or modify
+                scrambled = words.copy()
+                random.shuffle(scrambled)
+                if scrambled != words:
+                    return ' '.join(scrambled)
+
+            # Character-level scrambling for single words
+            chars = list(correct)
+            if len(chars) > 3:
+                # Keep first and last, shuffle middle
+                middle = chars[1:-1]
+                random.shuffle(middle)
+                return chars[0] + ''.join(middle) + chars[-1]
+
+        # For longer answers, truncate and modify
+        if len(correct) > 50:
+            return correct[:len(correct)//2] + " [incomplete/incorrect]"
+
+        # Fallback: return "Unknown" which is clearly wrong for factual questions
+        return "Unknown"
 

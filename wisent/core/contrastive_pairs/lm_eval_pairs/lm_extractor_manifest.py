@@ -116,6 +116,9 @@ EXTRACTORS.update({
     # acp_bench subtasks (bool and mcq use log_likelihoods)
     # acp_bench_hard _gen subtasks (use generation evaluator)
     "aexams": f"{base_import}aexams:AexamsExtractor",
+    # AfroBench multiple-choice benchmarks
+    "afrobench": f"{base_import}afrobench_mc:AfroBenchMultipleChoiceExtractor",
+    "afridiacritics": f"{base_import}afrobench_mc:AfroBenchMultipleChoiceExtractor",
     "arabic_exams": f"{base_import}arabic_exams:ArabicExamsExtractor",
     "arabic_leaderboard_complete": f"{base_import}arabic_leaderboard_complete:ArabicLeaderboardCompleteExtractor",
     "arabic_leaderboard_light": f"{base_import}arabic_leaderboard_light:ArabicLeaderboardLightExtractor",

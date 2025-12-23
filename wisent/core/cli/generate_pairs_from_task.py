@@ -4,8 +4,6 @@ import sys
 import json
 import os
 
-from wisent.core.errors import InvalidDataFormatError
-
 
 def execute_generate_pairs_from_task(args):
     """Execute the generate-pairs-from-task command - load and save contrastive pairs from a task."""
@@ -14,9 +12,8 @@ def execute_generate_pairs_from_task(args):
     if hasattr(args, 'task_name') and args.task_name:
         args.task_name = expand_task_if_skill_or_risk(args.task_name)
     
-    from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import (
-        lm_build_contrastive_pairs,
+        build_contrastive_pairs,
     )
 
     print(f"\n📊 Generating contrastive pairs from task: {args.task_name}")
@@ -26,58 +23,14 @@ def execute_generate_pairs_from_task(args):
 
     try:
         print(f"\n🔄 Loading task '{args.task_name}'...")
-
-        # Check if task is in HuggingFace manifest (doesn't need lm-eval loading)
-        task_name_lower = args.task_name.lower()
-        is_hf_task = task_name_lower in {k.lower() for k in HF_EXTRACTORS.keys()}
-
-        if is_hf_task:
-            # HuggingFace task - skip lm-eval loading, go directly to extractor
-            print(f"   Found in HuggingFace manifest, using HF extractor...")
-            print(f"   🔨 Building contrastive pairs...")
-            pairs = lm_build_contrastive_pairs(
-                task_name=args.task_name,
-                lm_eval_task=None,  # HF extractors don't need lm_eval_task
-                limit=args.limit,
-            )
-            pairs_task_name = args.task_name
-        else:
-            # lm-eval task - load via LMEvalDataLoader
-            from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
-            loader = LMEvalDataLoader()
-            task_obj = loader.load_lm_eval_task(args.task_name)
-
-            # Handle both lm-eval tasks (dict or ConfigurableTask)
-            if isinstance(task_obj, dict):
-                # lm-eval task group with subtasks
-                if len(task_obj) != 1:
-                    keys = ", ".join(sorted(task_obj.keys()))
-                    raise InvalidDataFormatError(
-                        reason=f"Task '{args.task_name}' returned {len(task_obj)} subtasks ({keys}). "
-                               "Specify an explicit subtask, e.g. 'benchmark/subtask'."
-                    )
-                (subname, task), = task_obj.items()
-                pairs_task_name = subname
-
-                # Generate contrastive pairs using lm-eval interface
-                print(f"   🔨 Building contrastive pairs...")
-                pairs = lm_build_contrastive_pairs(
-                    task_name=pairs_task_name,
-                    lm_eval_task=task,
-                    limit=args.limit,
-                )
-            else:
-                # Single lm-eval task (ConfigurableTask), not wrapped in dict
-                task = task_obj
-                pairs_task_name = args.task_name
-
-                # Generate contrastive pairs using lm-eval interface
-                print(f"   🔨 Building contrastive pairs...")
-                pairs = lm_build_contrastive_pairs(
-                    task_name=pairs_task_name,
-                    lm_eval_task=task,
-                    limit=args.limit,
-                )
+        print(f"   🔨 Building contrastive pairs...")
+        
+        # Use unified loader - handles HF, lm-eval, and group tasks automatically
+        pairs = build_contrastive_pairs(
+            task_name=args.task_name,
+            limit=args.limit,
+        )
+        pairs_task_name = args.task_name
 
         print(f"   ✓ Generated {len(pairs)} contrastive pairs")
 

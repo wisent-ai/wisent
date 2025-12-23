@@ -87,7 +87,7 @@ def execute_optimize_sample_size(args):
         # Get extraction strategy from args
         extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
 
-        collector = ActivationCollector(model=model, store_device="cpu")
+        collector = ActivationCollector(model=model)
 
         # Collect test activations for all test pairs (ONCE)
         X_test_list = []

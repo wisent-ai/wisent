@@ -414,7 +414,7 @@ def execute_tasks(args):
     print(f"\n🧠 Extracting activations from layer {layer}...")
 
     # 5. Collect activations for all pairs
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
 
     # Get extraction strategy from args (already an ExtractionStrategy value string)
     extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
@@ -608,7 +608,7 @@ def execute_tasks(args):
 
         # Get activation for this generation
         # Use ActivationCollector to collect activations from the generated text
-        gen_collector = ActivationCollector(model=model, store_device="cpu")
+        gen_collector = ActivationCollector(model=model)
         # Create a pair with the generated response
         from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
         from wisent.core.contrastive_pairs.core.pair import ContrastivePair

@@ -48,8 +48,8 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         model: WisentModel to use for activation collection.
         pair_set: ContrastivePairSet with pairs to use for collection and training.
         steering_method: BaseSteeringMethod instance to use for training.
-        store_device: Device to store collected activations on (default "cpu").
-        dtype: Optional torch.dtype to cast collected activations to (default None, meaning no cast).
+        store_device: Device to store collected activations on (default: "cpu" to avoid GPU OOM).
+        dtype: Optional torch.dtype to cast collected activations to.
     """
 
     model: WisentModel

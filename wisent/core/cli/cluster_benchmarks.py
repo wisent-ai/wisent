@@ -133,9 +133,9 @@ def get_weighted_mean_answer_act(model, tokenizer, text: str, answer: str, layer
     hidden = outputs.hidden_states[layer][0]
     if num_answer_tokens > 0 and num_answer_tokens < hidden.shape[0]:
         answer_hidden = hidden[-num_answer_tokens-1:-1, :]
-        weights = torch.exp(-torch.arange(answer_hidden.shape[0], dtype=torch.float32) * 0.5)
+        weights = torch.exp(-torch.arange(answer_hidden.shape[0], dtype=answer_hidden.dtype, device=answer_hidden.device) * 0.5)
         weights = weights / weights.sum()
-        weighted_mean = (answer_hidden * weights.unsqueeze(1).to(answer_hidden.device)).sum(dim=0)
+        weighted_mean = (answer_hidden * weights.unsqueeze(1)).sum(dim=0)
         return weighted_mean.cpu().float()
     return hidden[-1].cpu().float()
 
@@ -345,7 +345,8 @@ def execute_cluster_benchmarks(args):
     
     logger.info(f"Loading {model}...")
     tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
-    dtype = torch.bfloat16 if device == 'cuda' else torch.float16
+    from wisent.core.utils.device import device_optimized_dtype
+    dtype = device_optimized_dtype(device)
     llm = AutoModelForCausalLM.from_pretrained(model, torch_dtype=dtype, device_map=device, trust_remote_code=True)
     
     layers = get_layers_to_test(llm)

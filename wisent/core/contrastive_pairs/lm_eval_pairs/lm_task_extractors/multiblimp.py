@@ -100,11 +100,8 @@ class MultiblimpExtractor(LMEvalBenchmarkExtractor):
                     log.debug("Skipping doc with missing sen/wrong_sen", extra={"doc": doc})
                     return None
 
-                # Prompt: present both sentences as choices (matching lm-eval format)
-                # Since doc_to_text is empty, we format as multiple choice
-                prompt = "Which sentence is grammatically correct?\nA. {}\nB. {}".format(
-                    correct_sentence, incorrect_sentence
-                )
+                # Raw prompt without A./B. formatting
+                prompt = "Which sentence is grammatically correct?"
 
                 metadata = {"label": "multiblimp"}
 

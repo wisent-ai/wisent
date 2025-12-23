@@ -82,8 +82,42 @@ class BabiExtractor(LMEvalBenchmarkExtractor):
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
 
-            # Create an incorrect answer by appending "incorrect" or using a generic wrong answer
-            incorrect = f"not {correct}"
+            # Create an incorrect answer using plausible alternatives from babi vocabulary
+            import random
+            random.seed(hash(correct + passage) % (2**32))
+
+            # Common babi answer categories
+            locations = ['bathroom', 'bedroom', 'kitchen', 'garden', 'hallway', 'office', 'park']
+            people = ['Mary', 'John', 'Sandra', 'Daniel', 'Bill', 'Fred', 'Julie', 'Emily']
+            objects = ['football', 'apple', 'milk', 'keys', 'box', 'ball']
+            directions = ['north', 'south', 'east', 'west']
+            animals = ['cat', 'dog', 'mouse', 'wolf', 'sheep', 'lion']
+            yes_no = ['yes', 'no']
+
+            # Determine answer type and pick a wrong alternative
+            correct_lower = correct.lower()
+            if correct_lower in [l.lower() for l in locations]:
+                incorrect = random.choice([l for l in locations if l.lower() != correct_lower])
+            elif correct_lower in [p.lower() for p in people]:
+                incorrect = random.choice([p for p in people if p.lower() != correct_lower])
+            elif correct_lower in [o.lower() for o in objects]:
+                incorrect = random.choice([o for o in objects if o.lower() != correct_lower])
+            elif correct_lower in [d.lower() for d in directions]:
+                incorrect = random.choice([d for d in directions if d.lower() != correct_lower])
+            elif correct_lower in [a.lower() for a in animals]:
+                incorrect = random.choice([a for a in animals if a.lower() != correct_lower])
+            elif correct_lower in yes_no:
+                incorrect = 'no' if correct_lower == 'yes' else 'yes'
+            elif correct.isdigit():
+                num = int(correct)
+                incorrect = str(random.choice([n for n in [num-1, num+1, num*2] if n != num and n >= 0]))
+            else:
+                # Fallback: use a generic wrong answer from the passage words
+                passage_words = [w for w in passage.split() if len(w) > 3 and w.isalpha() and w.lower() != correct_lower]
+                if passage_words:
+                    incorrect = random.choice(passage_words)
+                else:
+                    incorrect = "unknown"
 
             # Format the prompt with passage and question
             prompt = f"Passage: {passage}\n\nQuestion: {question}"
