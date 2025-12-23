@@ -16,17 +16,22 @@ from pathlib import Path
 
 import torch
 from lm_eval import evaluator
-from lm_eval.models.huggingface import HFLM
-from lm_eval.tasks import get_task_dict
 from lm_eval.models.hf_steered import SteeredModel
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.utils.dataset_splits import get_test_docs
 from wisent.comparison import ours
 from wisent.comparison import sae
 from wisent.comparison import fgaa
-from wisent.comparison.utils import load_steering_vector, apply_steering_to_model, remove_steering, convert_to_lm_eval_format
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
+from wisent.comparison.utils import (
+    load_steering_vector,
+    apply_steering_to_model,
+    remove_steering,
+    convert_to_lm_eval_format,
+    create_test_only_task,
+    extract_accuracy,
+    run_lm_eval_evaluation,
+    run_ll_evaluation,
+)
 
 # Map method names to modules
 METHOD_MODULES = {
@@ -34,152 +39,6 @@ METHOD_MODULES = {
     "sae": sae,
     "fgaa": fgaa,
 }
-
-
-def create_test_only_task(task_name: str, train_ratio: float = 0.8) -> dict:
-    """
-    Create a task that evaluates only on our test split.
-
-    This ensures no overlap with the data used for steering vector training.
-    """
-    task_dict = get_task_dict([task_name])
-    task = task_dict[task_name]
-
-    # Get our test split
-    test_docs = get_test_docs(task, benchmark_name=task_name, train_ratio=train_ratio)
-    test_pct = round((1 - train_ratio) * 100)
-
-    print(f"Test split size: {len(test_docs)} docs ({test_pct}% of pooled data)")
-
-    # Override task's doc methods to use our test split
-    # Return list (not iterator) so len() works
-    task.test_docs = lambda: test_docs
-    task.has_test_docs = lambda: True
-    # Also override eval_docs property to return our test docs directly
-    task._eval_docs = test_docs
-
-    return {task_name: task}
-
-
-def run_lm_eval_evaluation(
-    wisent_model: WisentModel,
-    task_dict: dict,
-    task_name: str,
-    batch_size: int | str = 1,
-    max_batch_size: int = 8,
-    limit: int | None = None,
-) -> dict:
-    """
-    Run evaluation using lm-eval-harness on our test split.
-    """
-    lm = HFLM(
-        pretrained=wisent_model.hf_model,
-        tokenizer=wisent_model.tokenizer,
-        batch_size=batch_size,
-        max_batch_size=max_batch_size,
-    )
-
-    results = evaluator.evaluate(
-        lm=lm,
-        task_dict=task_dict,
-        limit=limit,
-    )
-
-    return results
-
-
-def run_wisent_ll_evaluation(
-    wisent_model: WisentModel,
-    task_dict: dict,
-    task_name: str,
-    limit: int | None = None,
-    steering_data: dict = None,
-    scale: float = 1.0,
-) -> dict:
-    """
-    Run evaluation using wisent's LogLikelihoodsEvaluator.
-
-    Args:
-        wisent_model: WisentModel instance
-        task_dict: Task dict from create_test_only_task (uses our test split)
-        task_name: lm-eval task name (boolq, cb, truthfulqa_mc1)
-        limit: Max number of examples to evaluate
-        steering_data: Optional steering vector data to apply
-        scale: Steering scale factor
-
-    Returns:
-        Dict with accuracy and detailed per-example results
-    """
-    from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
-
-    evaluator = LogLikelihoodsEvaluator()
-    extractor = get_extractor(task_name)
-
-    # Get test docs from our task_dict (already uses our test split)
-    task = task_dict[task_name]
-    test_docs = list(task.test_docs())
-
-    if limit:
-        test_docs = test_docs[:limit]
-
-    print(f"Evaluating {len(test_docs)} examples with LogLikelihoodsEvaluator")
-
-    # Apply steering if provided
-    if steering_data:
-        apply_steering_to_model(wisent_model, steering_data, scale=scale)
-
-    results = []
-    correct = 0
-
-    for i, doc in enumerate(test_docs):
-        question = task.doc_to_text(doc)
-        choices, expected = extractor.extract_choices_and_answer(task, doc)
-
-        result = evaluator.evaluate(
-            response="",
-            expected=expected,
-            model=wisent_model,
-            question=question,
-            choices=choices,
-            task_name=task_name,
-        )
-
-        is_correct = result.ground_truth == "TRUTHFUL"
-        results.append({
-            "question": question[:100] + "..." if len(question) > 100 else question,
-            "predicted": result.meta["predicted"],
-            "expected": expected,
-            "correct": is_correct,
-            "log_probs": result.meta["log_probs"],
-        })
-
-        if is_correct:
-            correct += 1
-
-        if (i + 1) % 50 == 0:
-            print(f"  Processed {i + 1}/{len(test_docs)}, acc: {correct/(i+1):.4f}")
-
-    # Remove steering after evaluation
-    if steering_data:
-        remove_steering(wisent_model)
-
-    accuracy = correct / len(test_docs) if test_docs else 0.0
-
-    return {
-        "accuracy": accuracy,
-        "num_correct": correct,
-        "num_total": len(test_docs),
-        "per_example_results": results,
-    }
-
-
-def extract_accuracy(results: dict, task: str) -> float:
-    """Extract accuracy from lm-eval results."""
-    task_results = results.get("results", {}).get(task, {})
-    for key in ["acc", "acc,none", "accuracy", "acc_norm", "acc_norm,none"]:
-        if key in task_results:
-            return task_results[key]
-    return 0.0
 
 
 def run_single_task(
@@ -196,6 +55,7 @@ def run_single_task(
     train_ratio: float = 0.8,
     layers: str | None = None,
     extraction_strategies: list[str] = None,
+    bos_features_source: str = "detected",
 ) -> list[dict]:
     """
     Run comparison for a single task with multiple methods, scales, and extraction strategies.
@@ -258,6 +118,8 @@ def run_single_task(
             }
             if extraction_strategy:
                 kwargs["extraction_strategy"] = extraction_strategy
+            if method == "fgaa":
+                kwargs["bos_features_source"] = bos_features_source
 
             method_module.generate_steering_vector(**kwargs)
 
@@ -301,13 +163,12 @@ def run_single_task(
     print(f"Running BASE LL evaluation for: {task}")
     print(f"{'='*60}")
 
-    base_ll_results = run_wisent_ll_evaluation(
+    base_ll_acc = run_ll_evaluation(
         wisent_model=wisent_model,
         task_dict=task_dict,
         task_name=task,
         limit=eval_limit,
     )
-    base_ll_acc = base_ll_results["accuracy"]
     print(f"Base accuracy (LL): {base_ll_acc:.4f}")
 
     # Step 5: Run ALL wisent steered evaluations first (model stays loaded)
@@ -343,13 +204,12 @@ def run_single_task(
                 print(f"Steered accuracy (lm-eval): {steered_acc:.4f}")
 
                 # Run steered LL evaluation
-                steered_ll_results = run_wisent_ll_evaluation(
+                steered_ll_acc = run_ll_evaluation(
                     wisent_model=wisent_model,
                     task_dict=task_dict,
                     task_name=task,
                     limit=eval_limit,
                 )
-                steered_ll_acc = steered_ll_results["accuracy"]
                 print(f"Steered accuracy (LL): {steered_ll_acc:.4f}")
 
                 # Remove steering for next iteration
@@ -451,6 +311,7 @@ def run_comparison(
     train_ratio: float = 0.8,
     layers: str | None = None,
     extraction_strategies: list[str] = None,
+    bos_features_source: str = "detected",
 ) -> list[dict]:
     """
     Run full comparison for multiple tasks, methods, scales, and extraction strategies.
@@ -463,6 +324,9 @@ def run_comparison(
         extraction_strategies = ["mc_balanced"]
 
     output_dir = Path(output_dir)
+    # Add model name to path (sanitize "/" -> "_")
+    model_dir_name = model_name.replace("/", "_")
+    output_dir = output_dir / model_dir_name
     vectors_dir = output_dir / "steering_vectors"
     results_dir = output_dir / "results"
 
@@ -491,6 +355,7 @@ def run_comparison(
             train_ratio=train_ratio,
             layers=layers,
             extraction_strategies=extraction_strategies,
+            bos_features_source=bos_features_source,
         )
         all_results.extend(task_results)
 
@@ -542,6 +407,8 @@ def main():
     parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio (default 0.8 = 80%% train, 20%% test)")
     parser.add_argument("--extraction-strategy", default="mc_balanced",
                         help="Extraction strategy (comma-separated for multiple). Chat models: chat_mean, chat_first, chat_last, chat_max_norm, chat_weighted, role_play, mc_balanced. Base models: completion_last, completion_mean, mc_completion")
+    parser.add_argument("--bos-features-source", default="detected",
+                        help="BOS features source for FGAA: 'paper' (5 features), 'detected' (12 features), or 'none'")
 
     args = parser.parse_args()
 
@@ -568,6 +435,7 @@ def main():
         train_ratio=args.train_ratio,
         layers=args.layers,
         extraction_strategies=extraction_strategies,
+        bos_features_source=args.bos_features_source,
     )
 
 

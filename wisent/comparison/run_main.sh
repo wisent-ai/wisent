@@ -5,19 +5,19 @@
 # ===========================================
 
 # AWS Settings
-INSTANCE_TYPE="g6e.xlarge"
+INSTANCE_TYPE="g6e.2xlarge"
 
 # Model
-MODEL="google/gemma-2-2b"
+MODEL="google/gemma-2-9b"
 
 # Tasks (comma-separated)
 TASKS="boolq"
 
 # Steering method: caa, sae, fgaa
-METHODS="caa,fgaa"
+METHODS="fgaa"
 
 # Steering scales (comma-separated)
-SCALES="0.5,1.0,1.5,3.0,8.0"
+SCALES="7.0,8.0"
 
 # Layer(s) for steering
 LAYERS="12"
@@ -27,7 +27,7 @@ DEVICE="cuda:0"
 
 # Batch sizes
 BATCH_SIZE="auto"
-MAX_BATCH_SIZE="64"
+MAX_BATCH_SIZE="16"
 
 # Train/test split ratio (0.4 = 40% train, 60% test)
 TRAIN_RATIO="0.4"
@@ -43,7 +43,7 @@ EXTRACTION_STRATEGY="mc_completion,completion_last,completion_mean"
 
 # Output directories
 REMOTE_OUTPUT_DIR="/home/ubuntu/output"
-LOCAL_OUTPUT_DIR="/home/bc/Desktop/python/wisent/wisent/comparison/comparison_results"
+LOCAL_OUTPUT_DIR="/home/bc/Desktop/python/wisent/wisent/comparison/results/steering"
 
 # Retry settings
 MAX_RETRIES=30
