@@ -138,39 +138,86 @@ class HendrycksMathExtractor(LMEvalBenchmarkExtractor):
 
         return None
 
-    def _create_incorrect_answer(self, correct: str) -> str:
+    def _create_incorrect_answer(self, correct: str, doc: dict = None) -> str:
         """
-        Create an incorrect answer by modifying the correct one.
+        Create a meaningful incorrect answer by using different plausible wrong values.
+
+        Strategy:
+        1. For integers: use a different integer (multiply by 2, subtract, etc.)
+        2. For fractions: change numerator/denominator in a plausible way
+        3. For expressions: provide a structurally different but plausible answer
 
         Args:
             correct: The correct answer
+            doc: Optional doc for context
 
         Returns:
-            An incorrect answer
+            A plausible but incorrect answer
         """
-        # Try to parse as number and modify it
+        import random
+        random.seed(hash(correct) % (2**32))  # Deterministic based on answer
+
+        # Try to parse as number and create plausible wrong answer
         try:
-            # Remove common LaTeX/math formatting
             clean = correct.replace('$', '').replace(',', '').replace('^\\circ', '').replace('^{\\circ}', '').strip()
 
             # Try integer
             num = int(clean)
-            return str(num + 1)
+            # Use various wrong transformations
+            wrong_transforms = [
+                num * 2,           # doubled
+                num // 2 if num > 1 else num * 3,  # halved or tripled
+                num - 1 if num > 0 else num + 2,   # off by different amount
+                num + 10,          # significantly different
+                abs(num) * -1 if num > 0 else abs(num),  # sign flip
+            ]
+            return str(random.choice(wrong_transforms))
         except ValueError:
             try:
                 # Try float
                 num = float(clean)
-                return str(num + 1.0)
+                wrong_transforms = [
+                    num * 2,
+                    num / 2,
+                    num - 0.5,
+                    num + 0.25,
+                    round(num) if num != round(num) else num + 0.5,
+                ]
+                return str(random.choice(wrong_transforms))
             except ValueError:
-                # Can't parse as number, create a modified version
-                # For fractions like \frac{8}{17}, modify numerator
-                frac_match = re.match(r'\\frac\{(\d+)\}\{(\d+)\}', correct)
-                if frac_match:
-                    num, denom = frac_match.groups()
-                    return f"\\frac{{{int(num) + 1}}}{{{denom}}}"
+                pass
 
-                # For other cases, just append " + 1"
-                return f"{correct} + 1"
+        # For fractions like \frac{8}{17}, create plausible wrong fraction
+        frac_match = re.match(r'\\frac\{(\d+)\}\{(\d+)\}', correct)
+        if frac_match:
+            num, denom = int(frac_match.group(1)), int(frac_match.group(2))
+            wrong_fracs = [
+                f"\\frac{{{denom}}}{{{num}}}",  # inverted
+                f"\\frac{{{num}}}{{{denom + 1}}}",  # different denominator
+                f"\\frac{{{num * 2}}}{{{denom}}}",  # doubled numerator
+            ]
+            return random.choice(wrong_fracs)
+
+        # For sqrt expressions
+        sqrt_match = re.search(r'\\sqrt\{(\d+)\}', correct)
+        if sqrt_match:
+            val = int(sqrt_match.group(1))
+            wrong_vals = [val + 1, val - 1 if val > 1 else val + 2, val * 2]
+            return correct.replace(f"\\sqrt{{{val}}}", f"\\sqrt{{{random.choice(wrong_vals)}}}")
+
+        # For pi expressions
+        if '\\pi' in correct:
+            if '2\\pi' in correct:
+                return correct.replace('2\\pi', '\\pi')
+            elif '\\pi' in correct:
+                return correct.replace('\\pi', '2\\pi')
+
+        # For other symbolic answers, provide common wrong alternatives
+        common_wrong = ['0', '1', '-1', '2', '\\infty', 'undefined']
+        if correct not in common_wrong:
+            return random.choice([w for w in common_wrong if w != correct])
+
+        return "incorrect"
 
     @staticmethod
     def _build_pair(

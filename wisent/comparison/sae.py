@@ -133,9 +133,10 @@ def generate_steering_vector(
     from sparsify import SparseCoder
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
+    from wisent.core.utils.device import preferred_dtype
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.float32,
+        torch_dtype=preferred_dtype(device),
         device_map=device,
         trust_remote_code=True,
     )

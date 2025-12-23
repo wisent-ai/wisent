@@ -32,8 +32,8 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--device",
         type=str,
-        default="cuda",
-        help="Device to use (e.g., 'cpu', 'cuda', 'cuda:0')"
+        default="auto",
+        help="Device to use (e.g., 'auto', 'cpu', 'cuda', 'cuda:0', 'mps')"
     )
 
     # Benchmark selection

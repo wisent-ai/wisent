@@ -95,23 +95,19 @@ def preferred_dtype(kind: DeviceKind | None = None) -> torch.dtype:
     """
     Return the preferred dtype for model loading.
     
-    Default is float32 for consistency across all devices. This ensures steering
-    vectors trained on one device work identically on another.
+    Default is device-optimized dtype (bfloat16 on CUDA, float16 on MPS, float32 on CPU).
     
     Priority:
     1. Global override set via set_default_dtype()
     2. WISENT_DTYPE environment variable ("float32", "float16", "bfloat16", "auto")
-    3. Default: float32 (consistent across all devices)
+    3. Default: device-optimized (bfloat16 on CUDA, float16 on MPS, float32 on CPU)
     
-    To use device-optimized dtypes for better performance (at cost of cross-device
-    consistency), set WISENT_DTYPE=auto or call set_default_dtype("auto").
-       
     Example:
-        >>> preferred_dtype()  # Always float32 by default
-        torch.float32
-        >>> set_default_dtype("auto")  # Use device-optimized dtypes
-        >>> preferred_dtype()  # Now bfloat16 on CUDA, float16 on MPS
+        >>> preferred_dtype()  # bfloat16 on CUDA, float16 on MPS, float32 on CPU
         torch.bfloat16
+        >>> set_default_dtype("float32")  # Force float32 everywhere
+        >>> preferred_dtype()
+        torch.float32
     """
     # Check global override first
     if _global_dtype_override is not None:
@@ -126,8 +122,8 @@ def preferred_dtype(kind: DeviceKind | None = None) -> torch.dtype:
             return device_optimized_dtype(kind)
         return env_dtype
     
-    # Default: float32 for consistency across all devices
-    return torch.float32
+    # Default: use device-optimized dtype for best performance
+    return device_optimized_dtype(kind)
 
 
 def device_optimized_dtype(kind: DeviceKind | None = None) -> torch.dtype:
@@ -159,8 +155,14 @@ def device_optimized_dtype(kind: DeviceKind | None = None) -> torch.dtype:
 # Steering Vector dtype utilities
 # ============================================================================
 
-# Default dtype for storing steering vectors (float32 for cross-device compatibility)
-STEERING_VECTOR_DTYPE = torch.float32
+
+def steering_vector_dtype() -> torch.dtype:
+    """Return the dtype for steering vectors (uses preferred_dtype())."""
+    return preferred_dtype()
+
+
+# Legacy constant for backward compatibility - use steering_vector_dtype() instead
+STEERING_VECTOR_DTYPE = torch.float32  # Deprecated: kept for backward compat only
 
 
 def save_steering_vector(
@@ -172,10 +174,7 @@ def save_steering_vector(
     metadata: dict | None = None,
 ) -> None:
     """
-    Save a steering vector with dtype metadata for cross-device compatibility.
-    
-    Vectors are always stored in float32 for consistency across devices,
-    but the original dtype is preserved in metadata for reference.
+    Save a steering vector with dtype metadata.
     
     Args:
         path: File path to save to (.pt)
@@ -187,21 +186,22 @@ def save_steering_vector(
     """
     # Store original dtype before conversion
     original_dtype = vector.dtype
+    storage_dtype = steering_vector_dtype()
     
-    # Convert to float32 for cross-device compatibility
-    vector_f32 = vector.to(dtype=STEERING_VECTOR_DTYPE, device="cpu")
+    # Store in preferred dtype
+    vector_stored = vector.to(dtype=storage_dtype, device="cpu")
     
     save_data = {
         # Primary data
-        "steering_vector": vector_f32,
+        "steering_vector": vector_stored,
         "layer": layer,
         "model": model_name,
         "method": method,
         # Dtype metadata
         "original_dtype": str(original_dtype),
-        "storage_dtype": str(STEERING_VECTOR_DTYPE),
+        "storage_dtype": str(storage_dtype),
         # Legacy keys for backward compatibility
-        "vector": vector_f32,
+        "vector": vector_stored,
         "layer_index": layer,
     }
     
@@ -233,7 +233,8 @@ def load_steering_vector(
         - "original_dtype": Original dtype when saved
         - "metadata": Any additional metadata
     """
-    data = torch.load(path, map_location="cpu", weights_only=False)
+    target_device = device or resolve_default_device()
+    data = torch.load(path, map_location=target_device, weights_only=False)
     
     # Get the vector (support both old and new key names)
     vector = data.get("steering_vector") or data.get("vector")
@@ -241,10 +242,9 @@ def load_steering_vector(
         raise FileLoadError(file_path=str(path), reason="No steering vector found")
     
     # Determine target dtype
-    target_dtype = dtype or preferred_dtype(device)
-    target_device = device or resolve_default_device()
+    target_dtype = dtype or preferred_dtype(target_device)
     
-    # Convert to target dtype/device
+    # Convert to target dtype/device if needed
     vector = vector.to(dtype=target_dtype, device=target_device)
     
     return {

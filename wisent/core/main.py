@@ -13,6 +13,7 @@ from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, exe
 from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
 from wisent.core.cli.check_linearity import execute_check_linearity
 from wisent.core.cli.cluster_benchmarks import execute_cluster_benchmarks
+from wisent.core.cli.geometry_search import execute_geometry_search
 
 
 def _should_show_banner() -> bool:
@@ -95,6 +96,8 @@ def main():
         execute_check_linearity(args)
     elif args.command == 'cluster-benchmarks':
         execute_cluster_benchmarks(args)
+    elif args.command == 'geometry-search':
+        execute_geometry_search(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)

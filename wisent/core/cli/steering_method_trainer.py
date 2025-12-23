@@ -156,7 +156,7 @@ def collect_activations_for_pair_set(
     Returns:
         Updated ContrastivePairSet with activations attached
     """
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
     
     updated_pairs = []
     for pair in pair_set.pairs:
@@ -320,7 +320,7 @@ class UnifiedSteeringTrainer:
     @property
     def collector(self) -> ActivationCollector:
         if self._collector is None:
-            self._collector = ActivationCollector(model=self.model, store_device="cpu")
+            self._collector = ActivationCollector(model=self.model)
         return self._collector
     
     def train_for_layer(
@@ -595,7 +595,7 @@ def get_optimal_steering_plan(
     method_name = config["method"]
     
     # Collect activations for the optimal layer
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
     layer_str = str(layer)
     
     pos_acts = []

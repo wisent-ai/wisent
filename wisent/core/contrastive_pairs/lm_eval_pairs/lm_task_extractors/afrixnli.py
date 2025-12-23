@@ -101,8 +101,8 @@ class AfrixnliExtractor(LMEvalBenchmarkExtractor):
                 return None
             incorrect = label_map[incorrect_labels[0]]
 
-            # Format the NLI prompt
-            prompt = f"Premise: {premise}\nHypothesis: {hypothesis}.\nA. {incorrect}\nB. {correct}"
+            # Raw prompt without A./B. formatting
+            prompt = f"Premise: {premise}\nHypothesis: {hypothesis}"
 
             metadata = {"label": "afrixnli"}
 

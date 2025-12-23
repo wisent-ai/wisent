@@ -1,8 +1,20 @@
 """Train classifier on contrastive pairs for agent."""
 
 import numpy as np
+import torch
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainReport
 from wisent.core.errors import UnknownTypeError
+from wisent.core.utils.device import preferred_dtype
+
+
+def _torch_dtype_to_numpy(torch_dtype: torch.dtype):
+    """Convert torch dtype to numpy dtype."""
+    mapping = {
+        torch.float32: np.float32,
+        torch.float16: np.float16,
+        torch.bfloat16: np.float32,  # numpy doesn't support bfloat16, use float32
+    }
+    return mapping.get(torch_dtype, np.float32)
 
 
 def _map_token_aggregation(aggregation_str: str):
@@ -97,7 +109,7 @@ def train_classifier_on_pairs(
     prompt_construction_strategy = _map_prompt_strategy(prompt_strategy)
 
     # Collect activations for all pairs
-    collector = ActivationCollector(model=model, store_device="cpu")
+    collector = ActivationCollector(model=model)
     target_layers = [str(target_layer)]
     layer_key = target_layers[0]
 
@@ -133,8 +145,9 @@ def train_classifier_on_pairs(
             X_list.append(neg_act.cpu().numpy())
             y_list.append(0.0)
 
-    X_train = np.array(X_list, dtype=np.float32)
-    y_train = np.array(y_list, dtype=np.float32)
+    np_dtype = _torch_dtype_to_numpy(preferred_dtype())
+    X_train = np.array(X_list, dtype=np_dtype)
+    y_train = np.array(y_list, dtype=np_dtype)
 
     print(f"   Training data: {X_train.shape[0]} samples, {X_train.shape[1]} features")
 

@@ -17,7 +17,7 @@ from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
 
 from wisent.core.classifier.classifier import Classifier
-from wisent.core.utils.device import resolve_default_device
+from wisent.core.utils.device import resolve_default_device, preferred_dtype
 from wisent.core.errors import NoActivationDataError, ClassifierCreationError
 
 from .activation_generator import ActivationData, ActivationGenerator, GenerationConfig
@@ -44,7 +44,7 @@ def get_model_dtype(model) -> torch.dtype:
         return next(model_params).dtype
     except StopIteration:
         # Fallback if no parameters found
-        return torch.float32
+        return preferred_dtype()
 
 
 logger = logging.getLogger(__name__)

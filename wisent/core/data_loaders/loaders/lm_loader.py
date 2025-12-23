@@ -298,6 +298,8 @@ class LMEvalDataLoader(BaseDataLoader):
             "tinytruthfulqa": "tinyTruthfulQA",
             "tinywinogrande": "tinyWinogrande",
             "paws-x": "pawsx",
+            # afrobench subtasks
+            "afrobench_adr": "adr",
         }
 
         # Use mapped name if available, otherwise use original
@@ -306,7 +308,9 @@ class LMEvalDataLoader(BaseDataLoader):
             log.info(f"Mapping task '{task_name}' to lm-eval task '{lm_eval_task_name}'")
 
         # Tasks that require case-sensitive names (don't lowercase these)
-        case_sensitive_prefixes = {"tinyBenchmarks"}
+        # AraDiCE tasks have mixed case (e.g., AraDiCE_ArabicMMLU_lev)
+        # aexams tasks have mixed case (e.g., aexams_IslamicStudies)
+        case_sensitive_prefixes = {"tinyBenchmarks", "AraDiCE", "aexams_"}
 
         # Normalize task name to lowercase for lm-eval-harness compatibility
         # Many lm-eval tasks use lowercase names (e.g., "aradice" not "AraDICE")
@@ -383,6 +387,9 @@ class LMEvalDataLoader(BaseDataLoader):
             "noreval": ["ask_gec_p0", "ask_gec_p1", "ask_gec_p2", "ask_gec_p3", "ask_gec_p4", "ncb", "norbelebele_p0", "norbelebele_p1", "norbelebele_p2", "norbelebele_p3", "norbelebele_p4", "norcommonsenseqa_nno_p0", "norcommonsenseqa_nno_p1", "norcommonsenseqa_nno_p2", "norcommonsenseqa_nno_p3", "norcommonsenseqa_nno_p4", "norcommonsenseqa_nob_p0", "norcommonsenseqa_nob_p1", "norcommonsenseqa_nob_p2", "norcommonsenseqa_nob_p3", "norcommonsenseqa_nob_p4", "norec_document_p0", "norec_document_p1", "norec_document_p2", "norec_document_p3", "norec_document_p4", "norec_sentence_p0", "norec_sentence_p1", "norec_sentence_p2", "norec_sentence_p3", "norec_sentence_p4", "noridiom_nno_p0", "noridiom_nno_p1", "noridiom_nno_p2", "noridiom_nno_p3", "noridiom_nno_p4", "noridiom_nob_p0", "noridiom_nob_p1", "noridiom_nob_p2", "noridiom_nob_p3", "noridiom_nob_p4", "noropenbookqa_nno_p0", "noropenbookqa_nno_p1", "noropenbookqa_nno_p2", "noropenbookqa_nno_p3", "noropenbookqa_nno_p4", "noropenbookqa_nob_p0", "noropenbookqa_nob_p1", "noropenbookqa_nob_p2", "noropenbookqa_nob_p3", "noropenbookqa_nob_p4", "norquad_p0", "norquad_p1", "norquad_p2", "norquad_p3", "norquad_p4", "norrewrite_instruct", "norsumm_nno_p0", "norsumm_nno_p1", "norsumm_nno_p2", "norsumm_nno_p3", "norsumm_nno_p4", "norsumm_nno_p5", "norsumm_nob_p0", "norsumm_nob_p1", "norsumm_nob_p2", "norsumm_nob_p3", "norsumm_nob_p4", "norsumm_nob_p5", "norsummarize_instruct", "nortruthfulqa_gen_nno_p0", "nortruthfulqa_gen_nno_p1", "nortruthfulqa_gen_nno_p2", "nortruthfulqa_gen_nno_p3", "nortruthfulqa_gen_nno_p4", "nortruthfulqa_gen_nob_p0", "nortruthfulqa_gen_nob_p1", "nortruthfulqa_gen_nob_p2", "nortruthfulqa_gen_nob_p3", "nortruthfulqa_gen_nob_p4", "nortruthfulqa_mc_nno_p0", "nortruthfulqa_mc_nno_p1", "nortruthfulqa_mc_nno_p2", "nortruthfulqa_mc_nno_p3", "nortruthfulqa_mc_nno_p4", "nortruthfulqa_mc_nob_p0", "nortruthfulqa_mc_nob_p1", "nortruthfulqa_mc_nob_p2", "nortruthfulqa_mc_nob_p3", "nortruthfulqa_mc_nob_p4", "nrk_quiz_qa_nno_p0", "nrk_quiz_qa_nno_p1", "nrk_quiz_qa_nno_p2", "nrk_quiz_qa_nno_p3", "nrk_quiz_qa_nno_p4", "nrk_quiz_qa_nob_p0", "nrk_quiz_qa_nob_p1", "nrk_quiz_qa_nob_p2", "nrk_quiz_qa_nob_p3", "nrk_quiz_qa_nob_p4", "tatoeba_eng_nno_p0", "tatoeba_eng_nno_p1", "tatoeba_eng_nno_p2", "tatoeba_eng_nno_p3", "tatoeba_eng_nob_p0", "tatoeba_eng_nob_p1", "tatoeba_eng_nob_p2", "tatoeba_eng_nob_p3", "tatoeba_nno_eng_p0", "tatoeba_nno_eng_p1", "tatoeba_nno_eng_p2", "tatoeba_nno_eng_p3", "tatoeba_nob_eng_p0", "tatoeba_nob_eng_p1", "tatoeba_nob_eng_p2", "tatoeba_nob_eng_p3"],
             "storycloze": ["xstorycloze_en"],
             "instructhumaneval": ["humaneval_instruct"],
+            # African language benchmarks
+            "afrimgsm": ["afrimgsm_amh_prompt_1", "afrimgsm_eng_prompt_1", "afrimgsm_fra_prompt_1", "afrimgsm_hau_prompt_1", "afrimgsm_ibo_prompt_1", "afrimgsm_kin_prompt_1", "afrimgsm_swa_prompt_1", "afrimgsm_yor_prompt_1"],
+            "afrimmlu": ["afrimmlu_direct_amh_prompt_1", "afrimmlu_direct_eng_prompt_1", "afrimmlu_direct_fra_prompt_1", "afrimmlu_direct_hau_prompt_1", "afrimmlu_direct_ibo_prompt_1", "afrimmlu_direct_kin_prompt_1", "afrimmlu_direct_swa_prompt_1", "afrimmlu_direct_yor_prompt_1"],
         }
 
         # Check if task is explicitly disabled

@@ -85,11 +85,10 @@ class WiCExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
         
-            formatted_question = (
+            prompt = (
                 f"Sentence 1: {sentence1}\n"
                 f"Sentence 2: {sentence2}\n"
-                f"Question: Is the word '{word}' used in the same way in the two sentences above?\n"
-                "Answer:\nA. Yes\nB. No"
+                f"Question: Is the word '{word}' used in the same way in the two sentences above?"
             )
 
             correct = "Yes" if label == 1 else "No"
@@ -100,7 +99,7 @@ class WiCExtractor(LMEvalBenchmarkExtractor):
             }
 
             return self._build_pair(
-                question=formatted_question,
+                question=prompt,
                 correct=correct,
                 incorrect=incorrect,
                 metadata=metadata,

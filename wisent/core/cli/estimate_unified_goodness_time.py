@@ -141,8 +141,10 @@ def estimate_runtime(
     results = {}
     
     # 1. Model loading (one-time)
-    if device == 'cpu':
-        model_time = TIME_ESTIMATES['model_load_cpu']
+    if device == 'cpu' or device == 'auto':
+        from wisent.core.utils.device import resolve_default_device
+        actual_device = resolve_default_device() if device == 'auto' else device
+        model_time = TIME_ESTIMATES['model_load_cpu'] if actual_device == 'cpu' else TIME_ESTIMATES['model_load_gpu']
     else:
         model_time = TIME_ESTIMATES['model_load_gpu']
     results['model_loading'] = model_time
@@ -269,8 +271,8 @@ def main():
         help="Skip evaluation phase"
     )
     parser.add_argument(
-        "--device", choices=["cuda", "cpu"], default="cuda",
-        help="Device for computation"
+        "--device", choices=["cuda", "cpu", "mps", "auto"], default="auto",
+        help="Device for computation (auto = detect best available)"
     )
     parser.add_argument(
         "--show-breakdown", action="store_true",
