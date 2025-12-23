@@ -60,12 +60,13 @@ def detect_bos_features(
     texts: list[str],
     top_k: int = 10,
     batch_size: int = 8,
-) -> tuple[list[int], torch.Tensor]:
+) -> tuple[list[int], dict[str, torch.Tensor]]:
     """
     Detect BOS features by finding features that activate most strongly at position 0.
 
-    Computes mean activation at BOS position for each SAE feature across all samples,
-    then returns the top-k features with highest mean BOS activation.
+    Computes statistics (mean, variance, median) of activation at BOS position for each
+    SAE feature across all samples, then returns the top-k features with highest mean
+    BOS activation.
 
     Reference: FGAA paper (arXiv:2501.09929) identifies BOS features as those that
     "exclusively had the strongest activation on the BOS token".
@@ -81,13 +82,13 @@ def detect_bos_features(
         batch_size: Batch size for processing
 
     Returns:
-        Tuple of (top_bos_feature_indices, mean_bos_activation_tensor)
+        Tuple of (top_bos_feature_indices, stats_dict) where stats_dict contains
+        'mean', 'variance', and 'median' tensors of shape [d_sae].
     """
     d_sae = sae.cfg.d_sae
 
-    # Accumulate BOS activations on GPU (just one [d_sae] tensor - lightweight)
-    bos_activation_sum = torch.zeros(d_sae, device=device, dtype=torch.float32)
-    bos_count = 0
+    # Collect all BOS activations on CPU for stable statistics computation
+    all_bos_activations = []
 
     print(f"Detecting BOS features from {len(texts)} samples...")
     print(f"   Layer: {layer_idx}, d_sae: {d_sae}")
@@ -127,29 +128,38 @@ def detect_bos_features(
                 seq_len = int(attention_mask[j].sum().item()) if attention_mask is not None else latents.shape[1]
                 sample_latents = latents[j, :seq_len, :]  # [seq_len, d_sae]
 
-                # Accumulate BOS activation (position 0)
-                bos_activation_sum += sample_latents[0].float()
-                bos_count += 1
-
-            # Free GPU memory after each batch
-            del acts, latents, inputs
-            captured_acts.clear()
-            torch.cuda.empty_cache()
+                # Collect BOS activation (position 0) - move to CPU immediately
+                bos_act = sample_latents[0].float().cpu()
+                all_bos_activations.append(bos_act)
     finally:
         hook_handle.remove()
 
-    # Compute mean BOS activation
-    mean_bos = bos_activation_sum / bos_count
+    # Compute statistics (all on CPU)
+    # Stack all activations for stable computation
+    all_bos_tensor = torch.stack(all_bos_activations, dim=0)  # [num_samples, d_sae]
+    mean_bos = all_bos_tensor.mean(dim=0)
+    variance_bos = all_bos_tensor.var(dim=0)
+    median_bos = all_bos_tensor.median(dim=0).values
+
+    stats = {
+        "mean": mean_bos,
+        "variance": variance_bos,
+        "median": median_bos,
+    }
 
     # Select top features by BOS activation
     top_indices = mean_bos.topk(top_k).indices.tolist()
 
     print(f"\nDetected top {top_k} BOS features by mean activation")
-    return top_indices, mean_bos
+    return top_indices, stats
 
 
-def compare_with_known(model_name: str, detected: list[int], mean_bos: torch.Tensor) -> None:
+def compare_with_known(model_name: str, detected: list[int], stats: dict[str, torch.Tensor]) -> None:
     """Compare detected BOS features with known list from paper."""
+    mean_bos = stats["mean"]
+    variance_bos = stats["variance"]
+    median_bos = stats["median"]
+
     known = KNOWN_BOS_FEATURES.get(model_name, [])
     detected_set = set(detected)
     known_set = set(known)
@@ -165,28 +175,32 @@ def compare_with_known(model_name: str, detected: list[int], mean_bos: torch.Ten
     print(f"Only detected: {sorted(detected_set - known_set)}")
 
     if known:
-        print(f"\nKnown features - mean BOS activation:")
+        print(f"\nKnown features - BOS activation stats:")
         for idx in sorted(known):
-            activation = mean_bos[idx].item()
+            mean_val = mean_bos[idx].item()
+            var_val = variance_bos[idx].item()
+            median_val = median_bos[idx].item()
             status = "detected" if idx in detected_set else "missed"
-            print(f"   Feature {idx}: bos_act={activation:.4f} ({status})")
+            print(f"   Feature {idx}: mean={mean_val:.4f}, var={var_val:.4f}, median={median_val:.4f} ({status})")
 
     print(f"\nTop 20 features by mean BOS activation:")
     for rank, idx in enumerate(mean_bos.topk(20).indices.tolist(), 1):
-        activation = mean_bos[idx].item()
+        mean_val = mean_bos[idx].item()
+        var_val = variance_bos[idx].item()
+        median_val = median_bos[idx].item()
         marker = " (known)" if idx in known_set else ""
-        print(f"   {rank:2}. Feature {idx}: bos_act={activation:.4f}{marker}")
+        print(f"   {rank:2}. Feature {idx}: mean={mean_val:.4f}, var={var_val:.4f}, median={median_val:.4f}{marker}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Detect BOS features in Gemma Scope SAEs")
     parser.add_argument("--model", default="google/gemma-2-2b", help="Model name")
     parser.add_argument("--layer", type=int, default=12, help="Layer index")
-    parser.add_argument("--num-samples", type=int, default=2000, help="Number of text samples")
+    parser.add_argument("--num-samples", type=int, default=1000, help="Number of text samples")
     parser.add_argument("--top-k", type=int, default=20, help="Number of top BOS features to detect")
     parser.add_argument("--batch-size", type=int, default=1, help="Batch size")
     parser.add_argument("--device", default="cuda:0", help="Device")
-    parser.add_argument("--output-dir", default="wisent/comparison/comparison_results", help="Output directory")
+    parser.add_argument("--output-dir", default="wisent/comparison/results", help="Output directory")
     args = parser.parse_args()
 
     print(f"Model: {args.model}")
@@ -198,7 +212,7 @@ def main():
     print(f"\nLoading model...")
     model = AutoModelForCausalLM.from_pretrained(
         args.model,
-        torch_dtype=torch.float32,
+        torch_dtype=torch.bfloat16,
         device_map=args.device,
         trust_remote_code=True,
     )
@@ -216,7 +230,7 @@ def main():
 
     texts = load_sample_texts(args.num_samples)
 
-    bos_features, mean_bos = detect_bos_features(
+    bos_features, stats = detect_bos_features(
         model=model,
         tokenizer=tokenizer,
         sae=sae,
@@ -227,11 +241,16 @@ def main():
         batch_size=args.batch_size,
     )
 
-    compare_with_known(args.model, bos_features, mean_bos)
+    compare_with_known(args.model, bos_features, stats)
 
-    # Build detected features with their mean activations
-    detected_with_activations = [
-        {"feature": idx, "mean_bos_activation": mean_bos[idx].item()}
+    # Build detected features with their stats
+    detected_with_stats = [
+        {
+            "feature": idx,
+            "mean_bos_activation": stats["mean"][idx].item(),
+            "variance_bos_activation": stats["variance"][idx].item(),
+            "median_bos_activation": stats["median"][idx].item(),
+        }
         for idx in bos_features
     ]
 
@@ -240,7 +259,7 @@ def main():
         "layer": args.layer,
         "top_k": args.top_k,
         "num_samples": len(texts),
-        "detected_bos_features": detected_with_activations,
+        "detected_bos_features": detected_with_stats,
         "known_bos_features": KNOWN_BOS_FEATURES.get(args.model, []),
     }
 

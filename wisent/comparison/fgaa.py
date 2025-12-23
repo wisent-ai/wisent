@@ -10,15 +10,21 @@ Uses Gemma Scope SAEs and pre-computed effect approximators.
 from __future__ import annotations
 
 import json
-import tempfile
-from argparse import Namespace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
 from huggingface_hub import hf_hub_download
 
-from wisent.comparison.utils import apply_steering_to_model, remove_steering, convert_to_lm_eval_format
+from wisent.comparison.utils import (
+    apply_steering_to_model,
+    remove_steering,
+    convert_to_lm_eval_format,
+    generate_contrastive_pairs,
+    load_model_and_tokenizer,
+    load_sae,
+    SAE_CONFIGS,
+)
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -26,66 +32,24 @@ if TYPE_CHECKING:
 __all__ = ["generate_steering_vector", "apply_steering_to_model", "remove_steering", "convert_to_lm_eval_format"]
 
 
-# Known BOS feature indices from paper (Appendix G)
-# These features activate most strongly on the BOS token
-# Run detect_bos_features.py to verify or find features for other models
-BOS_FEATURES = {
+# BOS feature indices - these features activate most strongly on the BOS token
+# Paper features from Appendix G (5 features)
+BOS_FEATURES_PAPER = {
     "google/gemma-2-2b": [11087, 3220, 11752, 12160, 11498],
     "google/gemma-2-9b": [],  # Not listed in paper
 }
 
-
-# SAE configurations for supported Gemma models
-SAE_CONFIGS = {
-    "google/gemma-2-2b": {
-        "sae_release": "gemma-scope-2b-pt-res-canonical",
-        "sae_id_template": "layer_{layer}/width_16k/canonical",
-        "adapter_file": "adapter_2b_layer_12.pt",
-        "num_layers": 26,
-        "default_layer": 12,  # Paper uses layer 12 (effect approximator only available for this layer)
-        "d_model": 2304,
-        "d_sae": 16384,
-    },
-    "google/gemma-2-9b": {
-        "sae_release": "gemma-scope-9b-pt-res-canonical",
-        "sae_id_template": "layer_{layer}/width_16k/canonical",
-        "adapter_file": "adapter_9b_layer_12.pt",
-        "num_layers": 42,
-        "default_layer": 12,  # Paper uses layer 12 (effect approximator only available for this layer)
-        "d_model": 3584,
-        "d_sae": 16384,
-    },
+# Detected features from running detect_bos_features.py (top 12 by mean activation)
+BOS_FEATURES_DETECTED = {
+    "google/gemma-2-2b": [1041, 7507, 11087, 3220, 11767, 11752, 14669, 6889, 12160, 13700, 2747, 11498],
+    "google/gemma-2-9b": [8032, 11906, 7768, 14845, 14483, 10562, 8892, 9151, 5721, 15738, 5285, 13895],
 }
 
-
-def load_sae(model_name: str, layer_idx: int, device: str = "cuda:0"):
-    """
-    Load Gemma Scope SAE for a specific layer.
-
-    Args:
-        model_name: HuggingFace model name (e.g., 'google/gemma-2-2b')
-        layer_idx: Layer index to load SAE for
-        device: Device to load SAE on
-
-    Returns:
-        SAE object from sae_lens
-    """
-    from sae_lens import SAE
-
-    if model_name not in SAE_CONFIGS:
-        raise ValueError(f"No SAE config for model '{model_name}'. Supported: {list(SAE_CONFIGS.keys())}")
-
-    config = SAE_CONFIGS[model_name]
-    sae_id = config["sae_id_template"].format(layer=layer_idx)
-
-    print(f"   Loading SAE from {config['sae_release']} / {sae_id}")
-    sae, _, sparsity = SAE.from_pretrained(
-        release=config["sae_release"],
-        sae_id=sae_id,
-        device=device,
-    )
-
-    return sae, sparsity
+# FGAA-specific: effect approximator config (adapter files)
+FGAA_ADAPTER_FILES = {
+    "google/gemma-2-2b": "adapter_2b_layer_12.pt",
+    "google/gemma-2-9b": "adapter_9b_layer_12.pt",
+}
 
 
 def load_effect_approximator(model_name: str, device: str = "cuda:0") -> tuple[torch.Tensor, torch.Tensor]:
@@ -103,11 +67,10 @@ def load_effect_approximator(model_name: str, device: str = "cuda:0") -> tuple[t
     Returns:
         Tuple of (W, b) tensors
     """
-    if model_name not in SAE_CONFIGS:
+    if model_name not in FGAA_ADAPTER_FILES:
         raise ValueError(f"No effect approximator for model '{model_name}'")
 
-    config = SAE_CONFIGS[model_name]
-    adapter_file = config["adapter_file"]
+    adapter_file = FGAA_ADAPTER_FILES[model_name]
 
     print(f"   Loading adapter from schalnev/sae-ts-effects / {adapter_file}")
     path = hf_hub_download(
@@ -197,6 +160,7 @@ def compute_v_target(
     v_diff: torch.Tensor,
     sparsity: torch.Tensor,
     model_name: str,
+    bos_features_source: str = "detected",
     density_threshold: float = 0.01,
     top_k_positive: int = 50,
     top_k_negative: int = 0,
@@ -213,6 +177,7 @@ def compute_v_target(
         v_diff: Difference vector in SAE space [d_sae]
         sparsity: Feature sparsity/density values from SAE [d_sae]
         model_name: Model name to look up BOS features
+        bos_features_source: Source of BOS features - "paper" (5 features), "detected" (12 features), or "none"
         density_threshold: Zero out features with density above this (default 0.01)
         top_k_positive: Number of top positive features to keep
         top_k_negative: Number of top negative features to keep (paper uses 0)
@@ -232,7 +197,12 @@ def compute_v_target(
 
     # Stage 2: BOS filtering
     # Zero out features that activate mainly on BOS tokens
-    bos_features = BOS_FEATURES.get(model_name, [])
+    if bos_features_source == "paper":
+        bos_features = BOS_FEATURES_PAPER.get(model_name, [])
+    elif bos_features_source == "detected":
+        bos_features = BOS_FEATURES_DETECTED.get(model_name, [])
+    else:  # "none"
+        bos_features = []
     if bos_features:
         for idx in bos_features:
             v_filtered[idx] = 0
@@ -350,8 +320,8 @@ def generate_steering_vector(
     density_threshold: float = 0.01,
     top_k_positive: int = 50,
     top_k_negative: int = 0,
-    extraction_strategy: str = "chat_mean",  # Accepted for API compatibility but not used (FGAA has its own method)
-    **kwargs,  # Accept additional kwargs for compatibility
+    bos_features_source: str = "detected",
+    **kwargs,  # Accept additional kwargs for compatibility (e.g., extraction_strategy)
 ) -> Path:
     """
     Generate a steering vector using the FGAA method.
@@ -369,6 +339,7 @@ def generate_steering_vector(
         density_threshold: Density threshold for filtering (default 0.01)
         top_k_positive: Number of top positive features to keep
         top_k_negative: Number of top negative features to keep
+        bos_features_source: Source of BOS features - "paper" (5), "detected" (12), or "none"
 
     Returns:
         Path to the saved steering vector
@@ -395,37 +366,12 @@ def generate_steering_vector(
 
     # Step 1: Generate contrastive pairs
     print(f"Step 1: Generating contrastive pairs from task: {task}")
-    from wisent.core.cli.generate_pairs_from_task import execute_generate_pairs_from_task
-
-    pairs_file = tempfile.NamedTemporaryFile(mode='w', suffix='_pairs.json', delete=False).name
-    pairs_args = Namespace(
-        task_name=task,
-        limit=num_pairs,
-        output=pairs_file,
-        seed=42,
-        verbose=False,
-    )
-    execute_generate_pairs_from_task(pairs_args)
-
-    with open(pairs_file) as f:
-        pairs_data = json.load(f)
-    pairs = pairs_data["pairs"]
+    pairs, pairs_file = generate_contrastive_pairs(task, num_pairs)
     print(f"   Loaded {len(pairs)} contrastive pairs")
 
     # Step 2: Load model
     print(f"\nStep 2: Loading model {model_name}...")
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        device_map=device,
-        torch_dtype=torch.float32,
-        trust_remote_code=True,
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
-    model.eval()
+    model, tokenizer = load_model_and_tokenizer(model_name, device)
 
     # Step 3: Load effect approximator (shared across layers)
     print(f"\nStep 3: Loading effect approximator...")
@@ -450,6 +396,7 @@ def generate_steering_vector(
             v_diff,
             sparsity,
             model_name,
+            bos_features_source=bos_features_source,
             density_threshold=density_threshold,
             top_k_positive=top_k_positive,
             top_k_negative=top_k_negative,
@@ -505,6 +452,7 @@ def generate_steering_vector(
             "density_threshold": density_threshold,
             "top_k_positive": top_k_positive,
             "top_k_negative": top_k_negative,
+            "bos_features_source": bos_features_source,
         },
         "feature_info": feature_info,
     }

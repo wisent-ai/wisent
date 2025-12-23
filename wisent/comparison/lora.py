@@ -9,15 +9,22 @@ from __future__ import annotations
 
 import json
 import tempfile
-from argparse import Namespace
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
 from datasets import Dataset
 from peft import LoraConfig, TaskType, get_peft_model
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from trl import SFTTrainer, SFTConfig
+
+from wisent.comparison.utils import (
+    generate_contrastive_pairs,
+    create_test_only_task,
+    extract_accuracy,
+    run_lm_eval_evaluation,
+    run_ll_evaluation,
+    load_model_and_tokenizer,
+)
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -106,7 +113,7 @@ def train_lora_adapter(
     lora_dropout: float = 0.05,
     learning_rate: float = 2e-4,
     num_epochs: int = 3,
-    batch_size: int = 4,
+    batch_size: int = 2,
     max_length: int = 512,
 ) -> Path:
     """
@@ -137,36 +144,12 @@ def train_lora_adapter(
 
     # Step 1: Generate contrastive pairs
     print(f"Step 1: Generating training data from task: {task}")
-    from wisent.core.cli.generate_pairs_from_task import execute_generate_pairs_from_task
-
-    pairs_file = tempfile.NamedTemporaryFile(mode='w', suffix='_pairs.json', delete=False).name
-    pairs_args = Namespace(
-        task_name=task,
-        limit=num_pairs,
-        output=pairs_file,
-        seed=42,
-        verbose=False,
-    )
-    execute_generate_pairs_from_task(pairs_args)
-
-    with open(pairs_file) as f:
-        pairs_data = json.load(f)
-    pairs = pairs_data["pairs"]
+    pairs, pairs_file = generate_contrastive_pairs(task, num_pairs)
     print(f"   Loaded {len(pairs)} training examples")
 
     # Step 2: Load model and tokenizer
     print(f"\nStep 2: Loading model {model_name}...")
-
-    model = AutoModelForCausalLM.from_pretrained(
-        model_name,
-        torch_dtype=torch.float16,
-        device_map=device,
-        trust_remote_code=True,
-    )
-    tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
-
-    if tokenizer.pad_token is None:
-        tokenizer.pad_token = tokenizer.eos_token
+    model, tokenizer = load_model_and_tokenizer(model_name, device, eval_mode=False)
 
     # Step 3: Configure LoRA
     print(f"\nStep 3: Configuring LoRA (r={lora_r}, alpha={lora_alpha})...")
@@ -345,14 +328,8 @@ def evaluate_lora(
         Dict with evaluation results
     """
     import gc
-    from lm_eval import evaluator as lm_evaluator
-    from lm_eval.models.huggingface import HFLM
-    from lm_eval.tasks import get_task_dict
 
     from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.utils.dataset_splits import get_test_docs
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
-    from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
 
     lora_path = Path(lora_path)
 
@@ -361,15 +338,7 @@ def evaluate_lora(
     print(f"Creating test task for: {task}")
     print(f"{'='*60}")
 
-    task_dict = get_task_dict([task])
-    task_obj = task_dict[task]
-    test_docs = get_test_docs(task_obj, benchmark_name=task, train_ratio=train_ratio)
-    test_pct = round((1 - train_ratio) * 100)
-    print(f"Test split size: {len(test_docs)} docs ({test_pct}% of pooled data)")
-
-    task_obj.test_docs = lambda: test_docs
-    task_obj.has_test_docs = lambda: True
-    task_obj._eval_docs = test_docs
+    task_dict = create_test_only_task(task, train_ratio=train_ratio)
 
     # Load model
     print(f"\n{'='*60}")
@@ -377,56 +346,16 @@ def evaluate_lora(
     print(f"{'='*60}")
     wisent_model = WisentModel(model_name=model_name, device=device)
 
-    # Helper functions
-    def run_lm_eval():
-        lm = HFLM(
-            pretrained=wisent_model.hf_model,
-            tokenizer=wisent_model.tokenizer,
-            batch_size=batch_size,
-            max_batch_size=max_batch_size,
-        )
-        results = lm_evaluator.evaluate(lm=lm, task_dict=task_dict, limit=limit)
-        task_results = results.get("results", {}).get(task, {})
-        for key in ["acc", "acc,none", "accuracy", "acc_norm", "acc_norm,none"]:
-            if key in task_results:
-                return task_results[key]
-        return 0.0
-
-    def run_ll_eval():
-        ll_evaluator = LogLikelihoodsEvaluator()
-        extractor = get_extractor(task)
-        docs = list(task_obj.test_docs())
-        if limit:
-            docs = docs[:limit]
-
-        correct = 0
-        for i, doc in enumerate(docs):
-            question = task_obj.doc_to_text(doc)
-            choices, expected = extractor.extract_choices_and_answer(task_obj, doc)
-            result = ll_evaluator.evaluate(
-                response="",
-                expected=expected,
-                model=wisent_model,
-                question=question,
-                choices=choices,
-                task_name=task,
-            )
-            if result.ground_truth == "TRUTHFUL":
-                correct += 1
-            if (i + 1) % 50 == 0:
-                print(f"  Processed {i + 1}/{len(docs)}, acc: {correct/(i+1):.4f}")
-
-        return correct / len(docs) if docs else 0.0
-
     # BASE evaluation
     print(f"\n{'='*60}")
     print(f"Running BASE evaluation (no LoRA)")
     print(f"{'='*60}")
 
-    base_acc_lm_eval = run_lm_eval()
+    base_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
+    base_acc_lm_eval = extract_accuracy(base_results, task)
     print(f"Base accuracy (lm-eval): {base_acc_lm_eval:.4f}")
 
-    base_acc_ll = run_ll_eval()
+    base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
     print(f"Base accuracy (LL): {base_acc_ll:.4f}")
 
     # Apply LoRA
@@ -440,10 +369,11 @@ def evaluate_lora(
     print(f"Running LORA evaluation")
     print(f"{'='*60}")
 
-    lora_acc_lm_eval = run_lm_eval()
+    lora_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
+    lora_acc_lm_eval = extract_accuracy(lora_results, task)
     print(f"LoRA accuracy (lm-eval): {lora_acc_lm_eval:.4f}")
 
-    lora_acc_ll = run_ll_eval()
+    lora_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
     print(f"LoRA accuracy (LL): {lora_acc_ll:.4f}")
 
     # Cleanup
@@ -484,6 +414,9 @@ def evaluate_lora(
     # Save results
     if output_dir:
         output_dir = Path(output_dir)
+        # Add model name to path (sanitize "/" -> "_")
+        model_dir_name = model_name.replace("/", "_")
+        output_dir = output_dir / model_dir_name
         output_dir.mkdir(parents=True, exist_ok=True)
         results_file = output_dir / f"{task}_lora_eval_results.json"
         with open(results_file, "w") as f:
@@ -507,12 +440,13 @@ def main():
     parser.add_argument("--lora-dropout", type=float, default=0.05, help="LoRA dropout")
     parser.add_argument("--learning-rate", type=float, default=2e-4, help="Learning rate")
     parser.add_argument("--num-epochs", type=int, default=3, help="Number of epochs")
-    parser.add_argument("--batch-size", type=int, default=4, help="Training batch size")
+    parser.add_argument("--batch-size", type=int, default=2, help="Training batch size")
     parser.add_argument("--max-length", type=int, default=512, help="Max sequence length")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files")
     # Eval args
     parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio")
-    parser.add_argument("--eval-batch-size", type=int, default=1, help="Eval batch size")
+    parser.add_argument("--eval-batch-size", default="auto", help="Eval batch size (int or 'auto')")
+    parser.add_argument("--eval-max-batch-size", type=int, default=64, help="Max eval batch size for auto")
     parser.add_argument("--eval-limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--skip-eval", action="store_true", help="Skip evaluation after training")
 
@@ -539,13 +473,19 @@ def main():
 
     # Evaluate
     if not args.skip_eval:
+        # Parse eval batch size (can be "auto" or int)
+        eval_batch_size = args.eval_batch_size
+        if eval_batch_size != "auto":
+            eval_batch_size = int(eval_batch_size)
+
         evaluate_lora(
             model_name=args.model,
             lora_path=output_path,
             task=args.task,
             train_ratio=args.train_ratio,
             device=args.device,
-            batch_size=args.eval_batch_size,
+            batch_size=eval_batch_size,
+            max_batch_size=args.eval_max_batch_size,
             limit=args.eval_limit,
             output_dir=args.output_dir,
         )
