@@ -16,16 +16,6 @@ __all__ = [
 class ProgrammaticNonsenseGenerator:
     """Generate nonsense contrastive pairs programmatically without using LLM."""
 
-    # Word list for word salad mode
-    WORD_LIST = [
-        "purple", "elephant", "calculator", "yesterday", "moon", "basket", "thinking",
-        "telephone", "mountain", "running", "quickly", "tomorrow", "happiness", "keyboard",
-        "window", "dancing", "coffee", "planet", "singing", "computer", "orange", "flying",
-        "bicycle", "dream", "ocean", "pencil", "laughing", "cloud", "table", "walking",
-        "music", "river", "chair", "jumping", "sun", "book", "swimming", "star", "door",
-        "cooking", "tree", "writing", "sky", "flower", "playing", "rain", "paper", "sleeping"
-    ]
-
     def __init__(
         self,
         nonsense_mode: str,
@@ -46,6 +36,18 @@ class ProgrammaticNonsenseGenerator:
         self.contrastive_set_name = contrastive_set_name
         self.trait_label = trait_label
         self.trait_description = trait_description
+        self._valid_words = None
+    
+    def set_tokenizer(self, tokenizer) -> None:
+        """Extract valid words from tokenizer vocabulary."""
+        vocab = tokenizer.get_vocab()
+        valid_words = []
+        for token, token_id in vocab.items():
+            decoded = tokenizer.decode([token_id])
+            clean = decoded.strip()
+            if clean.isalpha() and len(clean) > 1 and len(clean) < 15:
+                valid_words.append(clean)
+        self._valid_words = list(set(valid_words))
 
     def generate(self, num_pairs: int = 10) -> ContrastivePairSet:
         """
@@ -108,11 +110,14 @@ class ProgrammaticNonsenseGenerator:
 
     def _generate_repetitive(self) -> str:
         """Generate pathologically repetitive text."""
+        if self._valid_words is None:
+            raise ValueError("Tokenizer must be set. Call set_tokenizer() first.")
+        
         # Pick a random word or phrase
         choices = [
             random.choice(string.ascii_lowercase),  # Single letter
-            random.choice(self.WORD_LIST),  # Single word
-            ' '.join(random.sample(self.WORD_LIST, 2)),  # Two-word phrase
+            random.choice(self._valid_words),  # Single word
+            ' '.join(random.sample(self._valid_words, 2)),  # Two-word phrase
         ]
         unit = random.choice(choices)
 
@@ -121,13 +126,20 @@ class ProgrammaticNonsenseGenerator:
         return ' '.join([unit] * repetitions)
 
     def _generate_word_salad(self) -> str:
-        """Generate word salad (real words, no meaning)."""
-        num_words = random.randint(8, 15)
-        words = random.choices(self.WORD_LIST, k=num_words)
-        return ' '.join(words)
+        """Generate word salad (random tokens from tokenizer vocabulary)."""
+        num_words = random.randint(3, 10)
+        
+        if self._valid_words is not None:
+            words = random.choices(self._valid_words, k=num_words)
+            return ' '.join(words)
+        
+        raise ValueError("Tokenizer must be set to generate word salad. Call set_tokenizer() first.")
 
     def _generate_mixed(self) -> str:
         """Generate mixed nonsense (combination of all types)."""
+        if self._valid_words is None:
+            raise ValueError("Tokenizer must be set. Call set_tokenizer() first.")
+        
         components = []
 
         # Add 2-4 different types of nonsense
@@ -140,11 +152,11 @@ class ProgrammaticNonsenseGenerator:
                 length = random.randint(5, 15)
                 components.append(''.join(random.choices(string.ascii_lowercase, k=length)))
             elif mode == 'repetitive':
-                word = random.choice(self.WORD_LIST)
+                word = random.choice(self._valid_words)
                 reps = random.randint(3, 6)
                 components.append(' '.join([word] * reps))
             else:  # word_salad
                 num_words = random.randint(3, 6)
-                components.append(' '.join(random.choices(self.WORD_LIST, k=num_words)))
+                components.append(' '.join(random.choices(self._valid_words, k=num_words)))
 
         return ' '.join(components)

@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 from wisent.core.cli_logger import setup_logger
 import json
+import requests
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
@@ -10,6 +11,10 @@ from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBen
 __all__ = ["FaithBenchExtractor"]
 
 log = setup_logger(__name__)
+
+# GitHub raw URLs for FaithBench data
+FAITHBENCH_GITHUB_BASE = "https://raw.githubusercontent.com/vectara/FaithBench/main/data_for_release"
+FAITHBENCH_BATCH_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16]  # batch 13 doesn't exist
 
 # FaithBench hallucination categories
 FAITHBENCH_CATEGORIES = [
@@ -73,6 +78,8 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
         """
         Build contrastive pairs from FaithBench examples.
 
+        Loads data from GitHub vectara/FaithBench repository.
+
         Creates pairs for hallucination detection:
         - Positive (correct) = Accurate detection of hallucination
         - Negative (incorrect) = Missed or false positive detection
@@ -84,21 +91,16 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
             A list of ContrastivePair objects.
         """
         max_items = self._normalize_limit(limit)
-
-        # Try to load from HuggingFace if available
-        try:
-            docs = self.load_dataset(
-                dataset_name="vectara/FaithBench",
-                split="test",
-                limit=max_items,
-            )
-            log.info(f"Loaded {len(docs)} examples from FaithBench HuggingFace")
-        except Exception as e:
-            log.warning(f"FaithBench not on HuggingFace, using synthetic examples: {e}")
-            # Create synthetic examples based on FaithBench structure
-            docs = self._create_synthetic_examples(max_items or 100)
-
         pairs: list[ContrastivePair] = []
+
+        # Load from GitHub JSON files
+        docs = self._load_from_github(max_items)
+        
+        if not docs:
+            log.error("Failed to load FaithBench data from GitHub")
+            return []
+
+        log.info(f"Loaded {len(docs)} examples from FaithBench GitHub")
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -112,56 +114,31 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
 
-    def _create_synthetic_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create synthetic examples based on FaithBench structure."""
-        examples = []
-
-        # Sample consistent (no hallucination) examples
-        consistent_examples = [
-            {
-                "source": "The company reported quarterly revenue of $5.2 billion, up 12% from the previous year. The CEO attributed the growth to strong demand in the cloud computing division.",
-                "summary": "The company's quarterly revenue reached $5.2 billion, representing a 12% year-over-year increase driven by cloud computing demand.",
-                "has_hallucination": False,
-                "category": "Consistent",
-            },
-            {
-                "source": "Researchers at the university discovered a new species of deep-sea fish at depths of 3,000 meters. The fish has bioluminescent properties and measures approximately 15 centimeters in length.",
-                "summary": "A new bioluminescent deep-sea fish species was discovered by university researchers at 3,000 meters depth, measuring about 15 cm.",
-                "has_hallucination": False,
-                "category": "Consistent",
-            },
-        ]
-
-        # Sample unwanted hallucination examples
-        unwanted_examples = [
-            {
-                "source": "The conference will take place in Boston from March 15-17. Registration opens January 1st and early bird pricing is available until February 1st.",
-                "summary": "The conference is scheduled for March 15-17 in New York City. Registration begins January 1st with early bird discounts until February 1st.",
-                "has_hallucination": True,
-                "category": "Unwanted.Intrinsic",
-                "hallucination_span": "New York City",
-                "note": "Location changed from Boston to New York City",
-            },
-            {
-                "source": "The study involved 500 participants across five countries over a two-year period. Results showed a 30% improvement in outcomes.",
-                "summary": "The study with 500 participants from five countries over two years showed a 30% improvement. The lead researcher, Dr. Smith, plans further studies.",
-                "has_hallucination": True,
-                "category": "Unwanted.Extrinsic",
-                "hallucination_span": "The lead researcher, Dr. Smith, plans further studies",
-                "note": "No mention of Dr. Smith or future plans in source",
-            },
-        ]
-
-        # Alternate between consistent and hallucinated examples
-        for i in range(count):
-            if i % 2 == 0:
-                example = consistent_examples[i % len(consistent_examples)].copy()
-            else:
-                example = unwanted_examples[i % len(unwanted_examples)].copy()
-            example["sample_id"] = i
-            examples.append(example)
-
-        return examples
+    def _load_from_github(self, limit: int | None = None) -> list[dict[str, Any]]:
+        """Load FaithBench data from GitHub repository."""
+        all_samples = []
+        
+        for batch_id in FAITHBENCH_BATCH_IDS:
+            if limit and len(all_samples) >= limit:
+                break
+                
+            url = f"{FAITHBENCH_GITHUB_BASE}/batch_{batch_id}.json"
+            try:
+                response = requests.get(url, timeout=30)
+                response.raise_for_status()
+                batch_data = response.json()
+                
+                # Extract samples from batch
+                samples = batch_data.get("samples", [])
+                all_samples.extend(samples)
+                
+                log.debug(f"Loaded {len(samples)} samples from batch_{batch_id}")
+                
+            except Exception as e:
+                log.warning(f"Failed to load batch_{batch_id}: {e}")
+                continue
+        
+        return all_samples[:limit] if limit else all_samples
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """

@@ -95,18 +95,8 @@ class CodeforcesExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} problems from Codeforces ({self.config})")
         except Exception as e:
-            log.warning(f"Failed to load open-r1/codeforces: {e}")
-            # Try alternative dataset
-            try:
-                docs = self.load_dataset(
-                    dataset_name="deepmind/code_contests",
-                    split="train",
-                    limit=max_items * 2 if max_items else None,
-                )
-                log.info(f"Loaded {len(docs)} problems from deepmind/code_contests")
-            except Exception as e2:
-                log.error(f"Failed to load any Codeforces dataset: {e2}")
-                return []
+            log.error(f"Failed to load open-r1/codeforces: {e}")
+            return []
 
         pairs: list[ContrastivePair] = []
 

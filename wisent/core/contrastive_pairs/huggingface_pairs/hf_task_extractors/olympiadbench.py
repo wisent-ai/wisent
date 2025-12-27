@@ -111,18 +111,8 @@ class OlympiadBenchExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from OlympiadBench ({self.config})")
         except Exception as e:
-            log.warning(f"Failed to load OlympiadBench with config {self.config}: {e}")
-            # Try alternative config
-            try:
-                docs = self.load_dataset(
-                    dataset_name="lmms-lab/OlympiadBench",
-                    split="test",
-                    limit=max_items,
-                )
-                log.info(f"Loaded {len(docs)} examples from lmms-lab/OlympiadBench")
-            except Exception as e2:
-                log.error(f"Failed to load any OlympiadBench: {e2}")
-                return []
+            log.error(f"Failed to load Hothan/OlympiadBench: {e}")
+            return []
 
         pairs: list[ContrastivePair] = []
 

@@ -991,6 +991,7 @@ wisent/examples/scripts/search_all_short_names.py
 wisent/examples/scripts/test_all_benchmarks.py
 wisent/examples/scripts/test_all_benchmarks_new.py
 wisent/examples/scripts/test_contrastive_pairs_all_supported.py
+wisent/examples/scripts/test_nonsense_baseline.py
 wisent/examples/scripts/test_one_benchmark.py
 wisent/examples/scripts/test_one_coding_benchmark.py
 wisent/examples/scripts/1/test_basqueglue_evaluation.json
