@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import Any
 from wisent.core.cli_logger import setup_logger
 
@@ -13,43 +14,45 @@ log = setup_logger(__name__)
 
 class MercuryExtractor(HuggingFaceBenchmarkExtractor):
     """
-    Extractor for mercury dataset (code-to-code translation).
+    Extractor for Mercury - code efficiency benchmark.
 
-    Schema (code_x_glue_cc_code_to_code_trans):
-        - java: str (java code/prompt)
-        - cs: str (c# code/answer)
+    Dataset: Elfsong/Mercury
+    Paper: "Mercury: A Code Efficiency Benchmark for LLM Code Synthesis"
     
-    Note: This is a translation task, not code execution. Uses generation evaluator.
+    Mercury evaluates code efficiency by comparing different solutions
+    to the same problem based on runtime performance.
+
+    Schema:
+        - prompt: str (problem description)
+        - solutions: list[dict] with runtime and solution code
+        - test_cases: str (JSON with test inputs/outputs)
+        - difficulty: str
+    
+    For code efficiency evaluation:
+    - Positive (correct) = Fastest solution
+    - Negative (incorrect) = Slowest solution
     """
 
-    evaluator_name = "generation"
+    evaluator_name = "code_efficiency"
 
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from mercury examples.
-
-        Args:
-            limit: Optional maximum number of pairs to produce.
-
-        Returns:
-            A list of ContrastivePair objects.
+        Build contrastive pairs from Mercury examples.
         """
         max_items = self._normalize_limit(limit)
 
-        # Load dataset - using code_x_glue as alternative since tau/code_translation doesn't exist
         docs = self.load_dataset(
-            dataset_name="code_x_glue_cc_code_to_code_trans",
-            dataset_config="default",
-            split="train",
+            dataset_name="Elfsong/Mercury",
+            split="eval",
             limit=max_items,
         )
 
         pairs: list[ContrastivePair] = []
 
-        log.info(f"Extracting contrastive pairs from {len(docs)} mercury examples")
+        log.info(f"Extracting contrastive pairs from {len(docs)} Mercury examples")
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -59,53 +62,73 @@ class MercuryExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            log.warning("No valid mercury pairs extracted")
+            log.warning("No valid Mercury pairs extracted")
 
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
         Convert a single doc into a ContrastivePair.
-
-        Returns None when required fields are missing or malformed.
+        
+        Uses fastest vs slowest solution as correct vs incorrect.
         """
         try:
-            question = doc.get("java", "").strip()
-            answer = doc.get("cs", "")
+            prompt = doc.get("prompt", "").strip()
+            solutions = doc.get("solutions", [])
+            difficulty = doc.get("difficulty", "")
+            slug_name = doc.get("slug_name", "")
+            pretty_content = doc.get("pretty_content", [])
 
-            if not question or not answer:
-                log.debug("Skipping: missing question or answer")
+            if not prompt or not solutions or len(solutions) < 2:
                 return None
 
-            # Convert answer to string
-            correct_answer = str(answer).strip()
+            # Sort solutions by runtime (fastest first)
+            # Runtime format is like "44ms", "36ms", etc.
+            def parse_runtime(sol):
+                runtime_str = sol.get("runtime", "999ms")
+                try:
+                    return int(runtime_str.replace("ms", ""))
+                except:
+                    return 999
+            
+            sorted_solutions = sorted(solutions, key=parse_runtime)
+            
+            fastest = sorted_solutions[0]
+            slowest = sorted_solutions[-1]
+            
+            fastest_code = fastest.get("solution", "")
+            slowest_code = slowest.get("solution", "")
+            
+            if not fastest_code or not slowest_code:
+                return None
 
-            # Create incorrect answer (modify or corrupt)
-            incorrect_answer = self._create_incorrect_answer(correct_answer)
+            # Use pretty_content if available for problem description
+            problem_desc = pretty_content[0] if pretty_content else prompt
 
-            # Format the question
-            formatted_question = f"Translate this Java code to C#:\n{question}"
+            formatted_question = f"""Code Efficiency Task:
+
+{problem_desc}
+
+Write an efficient Python solution."""
 
             metadata = {
                 "label": "mercury",
-                "source": "code_x_glue_cc_code_to_code_trans",
+                "source": "Elfsong/Mercury",
+                "slug_name": slug_name,
+                "difficulty": difficulty,
+                "fastest_runtime": fastest.get("runtime", ""),
+                "slowest_runtime": slowest.get("runtime", ""),
+                "is_code_efficiency_benchmark": True,
             }
 
             return self._build_pair(
                 question=formatted_question,
-                correct=correct_answer,
-                incorrect=incorrect_answer,
+                correct=f"```python\n{fastest_code}\n```",
+                incorrect=f"```python\n{slowest_code}\n```",
                 metadata=metadata,
             )
 
         except Exception as exc:
-            log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
+            log.error(f"Error extracting Mercury pair: {exc}", exc_info=True)
             return None
-
-    def _create_incorrect_answer(self, correct: str) -> str:
-        """Create an incorrect answer by modifying the correct one."""
-        # For code, corrupt it slightly
-        if len(correct) > 10:
-            return correct[:len(correct)//2] + "# CORRUPTED" + correct[len(correct)//2:]
-        return f"{correct} # INCORRECT"
 

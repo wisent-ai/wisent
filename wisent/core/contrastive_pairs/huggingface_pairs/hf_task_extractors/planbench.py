@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
+from datasets import load_dataset
 from wisent.core.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -10,73 +11,61 @@ __all__ = ["PlanBenchExtractor"]
 
 log = setup_logger(__name__)
 
-# PlanBench domains
-PLANBENCH_DOMAINS = [
-    "blocksworld",   # Classic blocks world planning
-    "logistics",     # Package delivery logistics
-]
-
-# PlanBench task types
-PLANBENCH_TASKS = [
-    "plan_generation",           # Generate a valid plan
-    "cost_optimal_planning",     # Generate cost-optimal plan
-    "plan_verification",         # Verify if a plan is valid
-    "goal_recognition",          # Recognize the goal from actions
-    "plan_execution_reasoning",  # Predict outcome of action execution
-    "action_reordering",         # Reorder actions for valid plan
+PLANBENCH_CONFIGS = [
+    "task_1_plan_generation",
+    "task_2_plan_optimality",
+    "task_3_plan_verification",
+    "task_5_plan_generalization",
+    "task_7_plan_execution",
+    "task_8_1_goal_shuffling",
+    "task_8_2_full_to_partial",
 ]
 
 
 class PlanBenchExtractor(HuggingFaceBenchmarkExtractor):
     """
-    Extractor for PlanBench - Planning and Reasoning Benchmark.
+    Extractor for PlanBench - Planning and Reasoning Benchmark (NeurIPS 2023).
 
     PlanBench evaluates LLMs on planning and reasoning about actions
     and change, using domains from the International Planning Competition.
 
-    Domains:
-    - Blocksworld: Classic blocks stacking problems
-    - Logistics: Package delivery with trucks and planes
+    Dataset: tasksource/planbench (HuggingFace)
 
-    Task Types:
-    - Plan generation and cost-optimal planning
-    - Plan verification
-    - Goal recognition
-    - Plan execution reasoning
-    - Action reordering
-
-    Dataset: GitHub karthikv792/LLMs-Planning
+    Available configs:
+    - task_1_plan_generation: Generate a valid plan
+    - task_2_plan_optimality: Generate cost-optimal plan
+    - task_3_plan_verification: Verify if a plan is valid
+    - task_5_plan_generalization: Generalize plan to new instances
+    - task_7_plan_execution: Predict execution outcome
+    - task_8_1_goal_shuffling: Handle shuffled goals
+    - task_8_2_full_to_partial: Full to partial observability
 
     For planning evaluation:
-    - Positive (correct) = Valid plan or correct reasoning
-    - Negative (incorrect) = Invalid plan or incorrect reasoning
+    - Positive (correct) = Valid plan matching ground truth
+    - Negative (incorrect) = Invalid or wrong plan
     """
 
-    # Evaluator that should be used for this benchmark
     evaluator_name = "planning_reasoning"
 
-    def __init__(self, domain: str = "blocksworld", task: str = "plan_generation"):
+    def __init__(self, config: str = "task_1_plan_generation"):
         """
         Initialize PlanBench extractor.
 
         Args:
-            domain: Planning domain ("blocksworld", "logistics")
-            task: Task type (e.g., "plan_generation", "plan_verification")
+            config: PlanBench task config (default: task_1_plan_generation)
         """
         super().__init__()
-        self.domain = domain
-        self.task = task
+        if config not in PLANBENCH_CONFIGS:
+            log.warning(f"Unknown config '{config}', using task_1_plan_generation")
+            config = "task_1_plan_generation"
+        self.config = config
 
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from PlanBench examples.
-
-        Creates pairs for planning evaluation:
-        - Positive (correct) = Valid planning solution
-        - Negative (incorrect) = Invalid planning solution
+        Build contrastive pairs from PlanBench.
 
         Args:
             limit: Optional maximum number of pairs to produce.
@@ -86,9 +75,8 @@ class PlanBenchExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        # PlanBench is on GitHub, create examples based on documented structure
-        docs = self._create_planbench_examples(max_items or 50)
-        log.info(f"Created {len(docs)} PlanBench examples ({self.domain}, {self.task})")
+        docs = self._load_planbench_data()
+        log.info(f"Loaded {len(docs)} PlanBench examples (config: {self.config})")
 
         pairs: list[ContrastivePair] = []
 
@@ -104,161 +92,60 @@ class PlanBenchExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
 
-    def _create_planbench_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create examples based on PlanBench structure."""
-        examples = []
-
-        if self.domain == "blocksworld":
-            examples = self._create_blocksworld_examples(count)
-        elif self.domain == "logistics":
-            examples = self._create_logistics_examples(count)
-        else:
-            examples = self._create_blocksworld_examples(count)
-
-        return examples
-
-    def _create_blocksworld_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create blocksworld planning examples."""
-        blocksworld_cases = [
-            {
-                "initial_state": "Block A is on the table. Block B is on Block A. Block C is on the table.",
-                "goal_state": "Block A is on Block B. Block B is on Block C.",
-                "valid_plan": [
-                    "1. Unstack B from A",
-                    "2. Put B on C",
-                    "3. Pick up A",
-                    "4. Stack A on B",
-                ],
-                "invalid_plan": [
-                    "1. Pick up A",  # Invalid - B is on A
-                    "2. Put A on B",
-                ],
-            },
-            {
-                "initial_state": "Block A is on Block B. Block B is on the table. Block C is on the table. The robot arm is empty.",
-                "goal_state": "Block B is on Block A. Block C is on Block B.",
-                "valid_plan": [
-                    "1. Unstack A from B",
-                    "2. Put A on the table",
-                    "3. Pick up B",
-                    "4. Stack B on A",
-                    "5. Pick up C",
-                    "6. Stack C on B",
-                ],
-                "invalid_plan": [
-                    "1. Stack B on A",  # Invalid - A is on B
-                ],
-            },
-            {
-                "initial_state": "Block A, B, and C are on the table. Block D is on Block A.",
-                "goal_state": "Block A is on Block B. Block B is on Block C. Block D is on Block A.",
-                "valid_plan": [
-                    "1. Unstack D from A",
-                    "2. Put D on table",
-                    "3. Pick up B",
-                    "4. Stack B on C",
-                    "5. Pick up A",
-                    "6. Stack A on B",
-                    "7. Pick up D",
-                    "8. Stack D on A",
-                ],
-                "invalid_plan": [
-                    "1. Pick up A",  # Invalid - D is on A
-                ],
-            },
-        ]
-
-        examples = []
-        for i in range(count):
-            case = blocksworld_cases[i % len(blocksworld_cases)].copy()
-            case["case_id"] = f"blocks_{i:03d}"
-            case["domain"] = "blocksworld"
-            examples.append(case)
-
-        return examples
-
-    def _create_logistics_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create logistics planning examples."""
-        logistics_cases = [
-            {
-                "initial_state": "Package P1 is in City A. Truck T1 is in City A. Package needs to go to City B.",
-                "goal_state": "Package P1 is in City B.",
-                "valid_plan": [
-                    "1. Load P1 onto T1 in City A",
-                    "2. Drive T1 from City A to City B",
-                    "3. Unload P1 from T1 in City B",
-                ],
-                "invalid_plan": [
-                    "1. Drive T1 from City A to City B",
-                    "2. Unload P1 from T1",  # Invalid - P1 was never loaded
-                ],
-            },
-            {
-                "initial_state": "Package P1 is in City A. Package P2 is in City B. Plane A1 is in City A. Goal: P1 in City C, P2 in City A.",
-                "goal_state": "Package P1 is in City C. Package P2 is in City A.",
-                "valid_plan": [
-                    "1. Load P1 onto Plane A1 in City A",
-                    "2. Fly A1 from City A to City B",
-                    "3. Load P2 onto A1 in City B",
-                    "4. Fly A1 from City B to City A",
-                    "5. Unload P2 in City A",
-                    "6. Fly A1 from City A to City C",
-                    "7. Unload P1 in City C",
-                ],
-                "invalid_plan": [
-                    "1. Fly A1 to City B",
-                    "2. Unload P1",  # P1 was never loaded
-                ],
-            },
-        ]
-
-        examples = []
-        for i in range(count):
-            case = logistics_cases[i % len(logistics_cases)].copy()
-            case["case_id"] = f"logistics_{i:03d}"
-            case["domain"] = "logistics"
-            examples.append(case)
-
-        return examples
+    def _load_planbench_data(self) -> list[dict[str, Any]]:
+        """Load PlanBench data from HuggingFace."""
+        try:
+            ds = load_dataset("tasksource/planbench", self.config, split="train")
+            examples = []
+            for i, item in enumerate(ds):
+                examples.append({
+                    "case_id": f"planbench_{self.config}_{i:04d}",
+                    "task": item.get("task", ""),
+                    "prompt_type": item.get("prompt_type", ""),
+                    "domain": item.get("domain", ""),
+                    "instance_id": item.get("instance_id", ""),
+                    "query": item.get("query", ""),
+                    "ground_truth_plan": item.get("ground_truth_plan", ""),
+                })
+            return examples
+        except Exception as e:
+            log.error(f"Failed to load PlanBench from HuggingFace: {e}")
+            raise RuntimeError(f"Cannot load PlanBench data: {e}")
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
         Convert a single doc into a ContrastivePair.
+        
+        PlanBench HuggingFace format:
+        {"task": "task_1_plan_generation", "prompt_type": "oneshot", "domain": "...",
+         "instance_id": 2, "query": "...", "ground_truth_plan": "..."}
         """
         try:
             case_id = doc.get("case_id", "")
-            initial_state = doc.get("initial_state", "").strip()
-            goal_state = doc.get("goal_state", "").strip()
-            valid_plan = doc.get("valid_plan", [])
-            invalid_plan = doc.get("invalid_plan", [])
-            domain = doc.get("domain", self.domain)
+            query = doc.get("query", "").strip()
+            ground_truth_plan = doc.get("ground_truth_plan", "").strip()
+            domain = doc.get("domain", "")
+            task = doc.get("task", "")
 
-            if not initial_state or not goal_state:
-                log.debug("Skipping: missing states")
+            if not query or not ground_truth_plan:
+                log.debug("Skipping: missing query or ground_truth_plan")
                 return None
 
-            # Build the planning task prompt
-            task_prompt = self._build_planning_prompt(
-                initial_state, goal_state, domain
-            )
-
-            # Positive = valid plan
-            correct_response = self._create_valid_plan_response(valid_plan)
-            # Negative = invalid plan
-            incorrect_response = self._create_invalid_plan_response(invalid_plan)
+            correct_response = self._create_correct_response(ground_truth_plan)
+            incorrect_response = self._create_incorrect_response(ground_truth_plan)
 
             metadata = {
                 "label": "planbench",
-                "source": "karthikv792/LLMs-Planning",
+                "source": "tasksource/planbench",
                 "case_id": case_id,
                 "domain": domain,
-                "task": self.task,
-                "plan_length": len(valid_plan),
+                "task": task,
+                "config": self.config,
                 "is_planning_benchmark": True,
             }
 
             return self._build_pair(
-                question=task_prompt,
+                question=query,
                 correct=correct_response,
                 incorrect=incorrect_response,
                 metadata=metadata,
@@ -268,50 +155,22 @@ class PlanBenchExtractor(HuggingFaceBenchmarkExtractor):
             log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
 
-    def _build_planning_prompt(
-        self, initial_state: str, goal_state: str, domain: str
-    ) -> str:
-        """Build the planning task prompt."""
-        domain_desc = ""
-        if domain == "blocksworld":
-            domain_desc = (
-                "In this blocks world domain, you can:\n"
-                "- Pick up a block (only if nothing is on it and arm is empty)\n"
-                "- Put down a block on the table\n"
-                "- Stack a block on another (only if target block is clear)\n"
-                "- Unstack a block from another\n\n"
-            )
-        elif domain == "logistics":
-            domain_desc = (
-                "In this logistics domain, you can:\n"
-                "- Load packages onto trucks/planes (at same location)\n"
-                "- Unload packages from trucks/planes\n"
-                "- Drive trucks between locations in same city\n"
-                "- Fly planes between cities\n\n"
-            )
-
+    def _create_correct_response(self, ground_truth_plan: str) -> str:
+        """Create a response with the correct plan."""
         return (
-            f"{domain_desc}"
-            f"Initial State:\n{initial_state}\n\n"
-            f"Goal State:\n{goal_state}\n\n"
-            "Generate a valid sequence of actions to achieve the goal state from "
-            "the initial state. Ensure each action's preconditions are satisfied."
+            f"Here is the plan to achieve the goal:\n\n{ground_truth_plan}\n\n"
+            "Each action in this sequence has its preconditions satisfied."
         )
 
-    def _create_valid_plan_response(self, plan: list[str]) -> str:
-        """Create a response with a valid plan."""
-        plan_str = "\n".join(plan)
+    def _create_incorrect_response(self, ground_truth_plan: str) -> str:
+        """Create an incorrect response (wrong/incomplete plan)."""
+        lines = ground_truth_plan.strip().split("\n")
+        if len(lines) > 1:
+            wrong_plan = "\n".join(reversed(lines[:2]))
+        else:
+            wrong_plan = "(noop)"
         return (
-            f"Here is a valid plan to achieve the goal:\n\n{plan_str}\n\n"
-            "Each action in this sequence has its preconditions satisfied by the "
-            "previous actions, and executing them in order will achieve the goal state."
-        )
-
-    def _create_invalid_plan_response(self, plan: list[str]) -> str:
-        """Create a response with an invalid plan."""
-        plan_str = "\n".join(plan) if plan else "1. [Incomplete plan]"
-        return (
-            f"Here's my plan:\n\n{plan_str}\n\n"
+            f"Here's my plan:\n\n{wrong_plan}\n\n"
             "This should work to reach the goal."
         )
 

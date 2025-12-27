@@ -14,9 +14,43 @@ Usage:
 
 import argparse
 import json
+import subprocess
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field, asdict
+
+S3_BUCKET = "wisent-bucket"
+S3_PREFIX = "direction_discovery"
+
+
+def s3_sync_download(model_name: str, output_dir: Path) -> None:
+    """Download existing results from S3."""
+    model_prefix = model_name.replace('/', '_')
+    s3_path = f"s3://{S3_BUCKET}/{S3_PREFIX}/{model_prefix}/"
+    try:
+        subprocess.run(
+            ["aws", "s3", "sync", s3_path, str(output_dir), "--quiet"],
+            check=False,
+            capture_output=True,
+        )
+        print(f"Synced existing results from S3: {s3_path}")
+    except Exception as e:
+        print(f"S3 download skipped: {e}")
+
+
+def s3_upload_file(local_path: Path, model_name: str) -> None:
+    """Upload a single file to S3."""
+    model_prefix = model_name.replace('/', '_')
+    s3_path = f"s3://{S3_BUCKET}/{S3_PREFIX}/{model_prefix}/{local_path.name}"
+    try:
+        subprocess.run(
+            ["aws", "s3", "cp", str(local_path), s3_path, "--quiet"],
+            check=True,
+            capture_output=True,
+        )
+        print(f"  Uploaded to S3: {s3_path}")
+    except Exception as e:
+        print(f"  S3 upload failed: {e}")
 
 from wisent.core.geometry_search_space import (
     GeometrySearchSpace,
@@ -55,13 +89,25 @@ class CategoryResult:
     description: str
     benchmarks_tested: List[str]
     total_tests: int
+    
+    # Step 1: Signal detection
+    avg_signal_strength: float  # MLP CV accuracy
+    signal_exists: bool  # avg_signal_strength > 0.6
+    
+    # Step 2: Linearity check  
+    avg_linear_probe_accuracy: float  # Linear probe CV accuracy
+    is_linear: bool  # signal is linear (CAA will work)
+    
+    # Step 3: Geometry details (only meaningful if signal_exists)
     structure_distribution: Dict[str, int]
     structure_percentages: Dict[str, float]
     dominant_structure: str
-    has_unified_direction: bool
-    recommendation: str
     avg_linear_score: float
     avg_cohens_d: float
+    
+    # Final recommendation
+    recommendation: str  # NO_SIGNAL, CAA, or NONLINEAR
+    has_unified_direction: bool
     best_config: Optional[Dict[str, Any]] = None
 
 
@@ -78,35 +124,36 @@ class DiscoveryResults:
             "",
         ]
         
-        unified = []
-        cone = []
-        mixed = []
+        # Group by recommendation
+        caa_ready = []  # Has signal AND linear
+        nonlinear = []  # Has signal but NOT linear
+        no_signal = []  # No signal
         
         for name, cat in self.categories.items():
-            if cat.has_unified_direction:
-                unified.append(name)
-            elif cat.dominant_structure == "cone":
-                cone.append(name)
+            if not cat.signal_exists:
+                no_signal.append(name)
+            elif cat.is_linear:
+                caa_ready.append(name)
             else:
-                mixed.append(name)
+                nonlinear.append(name)
         
-        if unified:
-            lines.append(f"Unified direction exists ({len(unified)}):")
-            for name in unified:
+        if caa_ready:
+            lines.append(f"CAA READY - Linear signal ({len(caa_ready)}):")
+            for name in sorted(caa_ready, key=lambda n: self.categories[n].avg_signal_strength, reverse=True):
                 cat = self.categories[name]
-                lines.append(f"  {name}: {cat.structure_percentages.get('linear', 0):.1f}% linear")
+                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}")
         
-        if cone:
-            lines.append(f"\nCone structure ({len(cone)}):")
-            for name in cone:
+        if nonlinear:
+            lines.append(f"\nNONLINEAR - Need different method ({len(nonlinear)}):")
+            for name in nonlinear:
                 cat = self.categories[name]
-                lines.append(f"  {name}: {cat.structure_percentages.get('cone', 0):.1f}% cone")
+                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}")
         
-        if mixed:
-            lines.append(f"\nMixed/other ({len(mixed)}):")
-            for name in mixed:
+        if no_signal:
+            lines.append(f"\nNO SIGNAL ({len(no_signal)}):")
+            for name in no_signal:
                 cat = self.categories[name]
-                lines.append(f"  {name}: {cat.dominant_structure}")
+                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}")
         
         return "\n".join(lines)
 
@@ -119,13 +166,17 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
             description=description,
             benchmarks_tested=benchmarks,
             total_tests=0,
+            avg_signal_strength=0.5,
+            signal_exists=False,
+            avg_linear_probe_accuracy=0.5,
+            is_linear=False,
             structure_distribution={},
             structure_percentages={},
             dominant_structure="error",
-            has_unified_direction=False,
-            recommendation="No results",
             avg_linear_score=0.0,
             avg_cohens_d=0.0,
+            recommendation="NO_RESULTS",
+            has_unified_direction=False,
         )
     
     dist = results.get_structure_distribution()
@@ -133,28 +184,35 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
     
     percentages = {k: 100 * v / total for k, v in dist.items()} if total > 0 else {}
     
-    linear_pct = percentages.get("linear", 0)
-    cone_pct = percentages.get("cone", 0)
-    orthogonal_pct = percentages.get("orthogonal", 0)
-    
     # Determine dominant structure
     dominant = max(dist.items(), key=lambda x: x[1])[0] if dist else "unknown"
     
-    # Determine if unified direction exists
-    has_unified = linear_pct > 50
+    # Step 1: Signal detection (MLP CV accuracy)
+    avg_signal_strength = sum(r.signal_strength for r in results.results) / len(results.results)
+    signal_exists = avg_signal_strength > 0.6
     
-    # Recommendation
-    if has_unified:
+    # Step 2: Linearity check (Linear probe CV accuracy)
+    avg_linear_probe_accuracy = sum(r.linear_probe_accuracy for r in results.results) / len(results.results)
+    # Signal is linear if linear probe is close to MLP accuracy
+    is_linear = signal_exists and avg_linear_probe_accuracy > 0.6 and (avg_signal_strength - avg_linear_probe_accuracy) < 0.15
+    
+    # Step 3: Geometry details
+    avg_linear_score = sum(r.linear_score for r in results.results) / len(results.results)
+    avg_cohens_d = sum(r.cohens_d for r in results.results) / len(results.results)
+    
+    # Final recommendation
+    if not signal_exists:
+        recommendation = "NO_SIGNAL"
+    elif is_linear:
         recommendation = "CAA"
-    elif cone_pct > 30:
-        recommendation = "PRISM"
-    elif orthogonal_pct > 50:
-        recommendation = "TITAN"
     else:
-        recommendation = "TITAN"
+        recommendation = "NONLINEAR"
     
-    # Best config
-    best = results.get_best_by_linear_score(1)
+    # Unified direction exists if we have linear signal
+    has_unified = is_linear
+    
+    # Best config - prefer high signal_strength
+    best = sorted(results.results, key=lambda r: r.signal_strength, reverse=True)[:1]
     best_config = None
     if best:
         b = best[0]
@@ -162,32 +220,33 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
             "benchmark": b.benchmark,
             "strategy": b.strategy,
             "layers": b.layers,
-            "linear_score": b.linear_score,
-            "cohens_d": b.cohens_d,
+            "signal_strength": b.signal_strength,
+            "linear_probe_accuracy": b.linear_probe_accuracy,
+            "is_linear": b.is_linear,
         }
-    
-    # Averages
-    avg_linear = sum(r.linear_score for r in results.results) / len(results.results)
-    avg_cohens_d = sum(r.cohens_d for r in results.results) / len(results.results)
     
     return CategoryResult(
         category=category,
         description=description,
         benchmarks_tested=benchmarks,
         total_tests=total,
+        avg_signal_strength=avg_signal_strength,
+        signal_exists=signal_exists,
+        avg_linear_probe_accuracy=avg_linear_probe_accuracy,
+        is_linear=is_linear,
         structure_distribution=dist,
         structure_percentages=percentages,
         dominant_structure=dominant,
-        has_unified_direction=has_unified,
-        recommendation=recommendation,
-        avg_linear_score=avg_linear,
+        avg_linear_score=avg_linear_score,
         avg_cohens_d=avg_cohens_d,
+        recommendation=recommendation,
+        has_unified_direction=has_unified,
         best_config=best_config,
     )
 
 
 def run_discovery_for_model(model_name: str, output_dir: Path):
-    """Run discovery for a single model."""
+    """Run discovery for a single model with resume support."""
     categories = load_categorized_benchmarks()
     category_info = load_category_directions()
     search_space = GeometrySearchSpace()
@@ -196,6 +255,26 @@ def run_discovery_for_model(model_name: str, output_dir: Path):
     print(f"MODEL: {model_name}")
     print("=" * 70)
     
+    # Download existing results from S3 for resume
+    s3_sync_download(model_name, output_dir)
+    
+    # Check which categories are already done
+    model_prefix = model_name.replace('/', '_')
+    completed_categories = set()
+    for cat_name in categories.keys():
+        cat_file = output_dir / f"{model_prefix}_{cat_name}.json"
+        if cat_file.exists() and cat_file.stat().st_size > 100:
+            completed_categories.add(cat_name)
+            print(f"  [SKIP] {cat_name} already completed")
+    
+    remaining = [c for c in categories.keys() if c not in completed_categories]
+    if not remaining:
+        print("All categories already completed!")
+        return None
+    
+    print(f"\nCompleted: {len(completed_categories)}/15, Remaining: {len(remaining)}")
+    print(f"Categories to run: {remaining}")
+    
     try:
         model = WisentModel(model_name, device="cuda")
         print(f"Loaded: {model.num_layers} layers, hidden={model.hidden_size}")
@@ -203,12 +282,13 @@ def run_discovery_for_model(model_name: str, output_dir: Path):
         print(f"Failed to load model: {e}")
         return None
     
-    cache_dir = f"/tmp/wisent_direction_cache_{model_name.replace('/', '_')}"
+    cache_dir = f"/tmp/wisent_direction_cache_{model_prefix}"
     
     model_results = DiscoveryResults(model=model_name)
     
-    # Run for each category
-    for cat_name, benchmarks in categories.items():
+    # Run for each remaining category
+    for cat_name in remaining:
+        benchmarks = categories[cat_name]
         print(f"\n{'-' * 50}")
         print(f"Category: {cat_name.upper()} ({len(benchmarks)} benchmarks)")
         print("-" * 50)
@@ -239,26 +319,43 @@ def run_discovery_for_model(model_name: str, output_dir: Path):
             cat_result = analyze_category_results(results, cat_name, description, benchmarks)
             model_results.categories[cat_name] = cat_result
             
-            print(f"\n  Structure: {cat_result.dominant_structure}")
-            print(f"  Unified direction: {cat_result.has_unified_direction}")
+            print(f"\n  Step 1 - Signal: {cat_result.avg_signal_strength:.3f} ({'EXISTS' if cat_result.signal_exists else 'NONE'})")
+            print(f"  Step 2 - Linear: {cat_result.avg_linear_probe_accuracy:.3f} ({'YES' if cat_result.is_linear else 'NO'})")
             print(f"  Recommendation: {cat_result.recommendation}")
-            print(f"  Avg linear score: {cat_result.avg_linear_score:.3f}")
             
-            # Save per-category results
-            cat_file = output_dir / f"{model_name.replace('/', '_')}_{cat_name}.json"
+            # Save per-category results immediately
+            cat_file = output_dir / f"{model_prefix}_{cat_name}.json"
             results.save(str(cat_file))
+            print(f"  Saved: {cat_file}")
+            
+            # Upload to S3 immediately for durability
+            s3_upload_file(cat_file, model_name)
             
         except Exception as e:
             print(f"  ERROR: {e}")
             continue
     
-    # Save model summary
-    summary_file = output_dir / f"{model_name.replace('/', '_')}_summary.json"
+    # Save/update model summary (merge with existing if any)
+    summary_file = output_dir / f"{model_prefix}_summary.json"
+    
+    # Load existing summary if present
+    existing_categories = {}
+    if summary_file.exists():
+        with open(summary_file) as f:
+            existing = json.load(f)
+            existing_categories = existing.get("categories", {})
+    
+    # Merge new results
+    all_categories = {**existing_categories, **{k: asdict(v) for k, v in model_results.categories.items()}}
+    
     with open(summary_file, "w") as f:
         json.dump({
             "model": model_name,
-            "categories": {k: asdict(v) for k, v in model_results.categories.items()}
+            "categories": all_categories
         }, f, indent=2)
+    
+    # Upload summary to S3
+    s3_upload_file(summary_file, model_name)
     
     print(f"\n{model_results.summary()}")
     
@@ -268,7 +365,7 @@ def run_discovery_for_model(model_name: str, output_dir: Path):
     return model_results
 
 
-def run_discovery(model_filter: Optional[str] = None):
+def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int = 50):
     """Run full category direction discovery."""
     print("=" * 70)
     print("CATEGORY DIRECTION DISCOVERY")
@@ -283,6 +380,7 @@ def run_discovery(model_filter: Optional[str] = None):
     
     # Get search space config
     search_space = GeometrySearchSpace()
+    search_space.config.pairs_per_benchmark = samples_per_benchmark
     
     # Filter models if specified
     if model_filter:
@@ -337,6 +435,7 @@ def run_discovery(model_filter: Optional[str] = None):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Discover unified directions for skill categories")
     parser.add_argument("--model", type=str, default=None, help="Specific model to test (for parallel execution)")
+    parser.add_argument("--samples-per-benchmark", type=int, default=50, help="Number of samples per benchmark (default: 50)")
     args = parser.parse_args()
     
-    run_discovery(model_filter=args.model)
+    run_discovery(model_filter=args.model, samples_per_benchmark=args.samples_per_benchmark)

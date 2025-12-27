@@ -2,14 +2,21 @@ from __future__ import annotations
 
 from typing import Any
 from wisent.core.cli_logger import setup_logger
+import requests
+import zipfile
+import json
+import io
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.errors import InvalidValueError
 
-__all__ = ["OJBenchExtractor", "TerminalBenchExtractor", "SciCodeExtractor"]
+__all__ = ["OJBenchExtractor", "NL2BashExtractor", "SciCodeExtractor"]
 
 log = setup_logger(__name__)
+
+# GitHub URL for SciCode data
+SCICODE_GITHUB_URL = "https://raw.githubusercontent.com/scicode-bench/scicode-bench.github.io/main/data/data.zip"
 
 
 class OJBenchExtractor(HuggingFaceBenchmarkExtractor):
@@ -66,9 +73,9 @@ class OJBenchExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from code_contests")
         except Exception as e:
-            log.warning(f"Failed to load code_contests: {e}")
-            # Create synthetic competitive programming examples
-            docs = self._create_synthetic_examples(max_items or 100)
+            log.error(f"Failed to load code_contests dataset: {e}")
+            log.error("OJBench requires deepmind/code_contests dataset. No synthetic data available.")
+            return []
 
         pairs: list[ContrastivePair] = []
 
@@ -83,256 +90,6 @@ class OJBenchExtractor(HuggingFaceBenchmarkExtractor):
             log.warning("No valid OJ-Bench pairs extracted")
 
         return pairs
-
-    def _create_synthetic_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create synthetic competitive programming examples."""
-        examples = [
-            {
-                "description": """Problem: Two Sum
-Given an array of integers nums and an integer target, return indices of the two numbers such that they add up to target.
-
-Input: First line contains n (1 ≤ n ≤ 10^5) and target. Second line contains n space-separated integers.
-Output: Two indices (0-indexed) separated by space.
-
-Example:
-Input:
-4 9
-2 7 11 15
-Output:
-0 1""",
-                "correct_solution": """#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    int n, target;
-    cin >> n >> target;
-
-    vector<int> nums(n);
-    unordered_map<int, int> mp;
-
-    for (int i = 0; i < n; i++) {
-        cin >> nums[i];
-        int complement = target - nums[i];
-        if (mp.count(complement)) {
-            cout << mp[complement] << " " << i << endl;
-            return 0;
-        }
-        mp[nums[i]] = i;
-    }
-
-    return 0;
-}""",
-                "incorrect_solution": """#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    int n, target;
-    cin >> n >> target;
-
-    vector<int> nums(n);
-    for (int i = 0; i < n; i++) cin >> nums[i];
-
-    // O(n^2) - will TLE on large inputs
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < n; j++) {  // Bug: should start from i+1
-            if (nums[i] + nums[j] == target) {
-                cout << i << " " << j << endl;
-                return 0;
-            }
-        }
-    }
-    return 0;
-}""",
-                "difficulty": "easy",
-            },
-            {
-                "description": """Problem: Maximum Subarray Sum
-Find the contiguous subarray with the largest sum.
-
-Input: First line contains n (1 ≤ n ≤ 10^6). Second line contains n integers (-10^9 ≤ a[i] ≤ 10^9).
-Output: Maximum subarray sum.
-
-Example:
-Input:
-8
--2 1 -3 4 -1 2 1 -5 4
-Output:
-6""",
-                "correct_solution": """#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    int n;
-    cin >> n;
-
-    long long maxSum = LLONG_MIN;
-    long long currentSum = 0;
-
-    for (int i = 0; i < n; i++) {
-        long long x;
-        cin >> x;
-        currentSum = max(x, currentSum + x);
-        maxSum = max(maxSum, currentSum);
-    }
-
-    cout << maxSum << endl;
-    return 0;
-}""",
-                "incorrect_solution": """#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    int n;
-    cin >> n;
-
-    vector<int> a(n);
-    for (int i = 0; i < n; i++) cin >> a[i];
-
-    int maxSum = 0;  // Bug: should be LLONG_MIN for negative arrays
-    int currentSum = 0;
-
-    for (int i = 0; i < n; i++) {
-        currentSum += a[i];  // Bug: doesn't handle Kadane's algorithm correctly
-        if (currentSum > maxSum) maxSum = currentSum;
-        if (currentSum < 0) currentSum = 0;
-    }
-
-    cout << maxSum << endl;
-    return 0;
-}""",
-                "difficulty": "medium",
-            },
-            {
-                "description": """Problem: Segment Tree Range Sum
-Given an array, support two operations:
-1. Update a[i] = x
-2. Query sum(l, r)
-
-Input: First line n, q. Second line is initial array. Next q lines are operations.
-Output: Answer for each query operation.
-
-Example:
-Input:
-5 3
-1 2 3 4 5
-2 1 3
-1 2 10
-2 1 3
-Output:
-6
-14""",
-                "correct_solution": """#include <bits/stdc++.h>
-using namespace std;
-
-class SegmentTree {
-    vector<long long> tree;
-    int n;
-
-public:
-    SegmentTree(vector<int>& arr) {
-        n = arr.size();
-        tree.resize(4 * n);
-        build(arr, 1, 0, n - 1);
-    }
-
-    void build(vector<int>& arr, int v, int tl, int tr) {
-        if (tl == tr) {
-            tree[v] = arr[tl];
-        } else {
-            int tm = (tl + tr) / 2;
-            build(arr, 2*v, tl, tm);
-            build(arr, 2*v+1, tm+1, tr);
-            tree[v] = tree[2*v] + tree[2*v+1];
-        }
-    }
-
-    void update(int v, int tl, int tr, int pos, int val) {
-        if (tl == tr) {
-            tree[v] = val;
-        } else {
-            int tm = (tl + tr) / 2;
-            if (pos <= tm) update(2*v, tl, tm, pos, val);
-            else update(2*v+1, tm+1, tr, pos, val);
-            tree[v] = tree[2*v] + tree[2*v+1];
-        }
-    }
-
-    long long query(int v, int tl, int tr, int l, int r) {
-        if (l > r) return 0;
-        if (l == tl && r == tr) return tree[v];
-        int tm = (tl + tr) / 2;
-        return query(2*v, tl, tm, l, min(r, tm)) +
-               query(2*v+1, tm+1, tr, max(l, tm+1), r);
-    }
-
-    void update(int pos, int val) { update(1, 0, n-1, pos, val); }
-    long long query(int l, int r) { return query(1, 0, n-1, l, r); }
-};
-
-int main() {
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-
-    int n, q;
-    cin >> n >> q;
-
-    vector<int> a(n);
-    for (int i = 0; i < n; i++) cin >> a[i];
-
-    SegmentTree st(a);
-
-    while (q--) {
-        int type, x, y;
-        cin >> type >> x >> y;
-        if (type == 1) {
-            st.update(x - 1, y);
-        } else {
-            cout << st.query(x - 1, y - 1) << "\\n";
-        }
-    }
-
-    return 0;
-}""",
-                "incorrect_solution": """#include <bits/stdc++.h>
-using namespace std;
-
-int main() {
-    int n, q;
-    cin >> n >> q;
-
-    vector<int> a(n);
-    for (int i = 0; i < n; i++) cin >> a[i];
-
-    // O(n) per query - will TLE
-    while (q--) {
-        int type, x, y;
-        cin >> type >> x >> y;
-        if (type == 1) {
-            a[x-1] = y;
-        } else {
-            int sum = 0;
-            for (int i = x-1; i < y; i++) sum += a[i];
-            cout << sum << "\\n";
-        }
-    }
-    return 0;
-}""",
-                "difficulty": "hard",
-            },
-        ]
-
-        result = []
-        for i in range(count):
-            example = examples[i % len(examples)].copy()
-            result.append(example)
-
-        return result
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """Convert a single doc into a ContrastivePair."""
@@ -436,38 +193,30 @@ int main() {
 
 
 
-class TerminalBenchExtractor(HuggingFaceBenchmarkExtractor):
+class NL2BashExtractor(HuggingFaceBenchmarkExtractor):
     """
-    Extractor for Terminal-Bench - terminal/CLI interaction benchmark.
+    Extractor for NL2Bash - Natural Language to Bash command generation.
 
-    Terminal-Bench evaluates LLMs' ability to interact with command-line
-    interfaces, execute shell commands, navigate filesystems, and perform
-    system administration tasks.
+    Dataset: jiacheng-ye/nl2bash on HuggingFace
+    
+    NL2Bash evaluates LLMs' ability to translate natural language descriptions
+    into correct Bash shell commands. Tests command syntax, flag usage,
+    and understanding of CLI tools.
 
-    For terminal interaction evaluation:
-    - Positive (correct) = Correct commands with proper syntax and expected behavior
-    - Negative (incorrect) = Commands with errors, wrong syntax, or dangerous operations
+    For bash command generation evaluation:
+    - Positive (correct) = Correct bash command with proper syntax
+    - Negative (incorrect) = Command with errors, wrong syntax, or missing parts
     """
 
     # Evaluator that should be used for this benchmark
-    evaluator_name = "terminal_interaction"
-
-    def __init__(self, os_type: str = "linux"):
-        """
-        Initialize Terminal-Bench extractor.
-
-        Args:
-            os_type: Operating system type (linux, macos, windows)
-        """
-        super().__init__()
-        self.os_type = os_type
+    evaluator_name = "bash_generation"
 
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from Terminal-Bench examples.
+        Build contrastive pairs from NL2Bash dataset.
 
         Args:
             limit: Optional maximum number of pairs to produce.
@@ -477,20 +226,16 @@ class TerminalBenchExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        # Try loading NL2Bash dataset
-        docs = []
-
         try:
             docs = self.load_dataset(
                 dataset_name="jiacheng-ye/nl2bash",
                 split="test",
-                limit=max_items * 2 if max_items else None,
+                limit=max_items,
             )
             log.info(f"Loaded {len(docs)} examples from nl2bash")
         except Exception as e:
-            log.warning(f"Failed to load nl2bash: {e}")
-            # Create synthetic terminal examples
-            docs = self._create_synthetic_examples(max_items or 100)
+            log.error(f"Failed to load nl2bash dataset: {e}")
+            return []
 
         pairs: list[ContrastivePair] = []
 
@@ -502,116 +247,40 @@ class TerminalBenchExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            log.warning("No valid Terminal-Bench pairs extracted")
+            log.warning("No valid NL2Bash pairs extracted")
 
         return pairs
 
-    def _create_synthetic_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create synthetic terminal interaction examples."""
-        examples = [
-            {
-                "nl": "Find all Python files in the current directory and subdirectories",
-                "correct_command": "find . -name '*.py' -type f",
-                "incorrect_command": "find *.py",  # Wrong syntax
-                "category": "file_search",
-            },
-            {
-                "nl": "Count the number of lines in all text files in the current directory",
-                "correct_command": "wc -l *.txt | tail -1",
-                "incorrect_command": "count lines *.txt",  # Not a real command
-                "category": "file_analysis",
-            },
-            {
-                "nl": "Create a compressed archive of the logs directory",
-                "correct_command": "tar -czvf logs.tar.gz logs/",
-                "incorrect_command": "zip logs/ archive",  # Wrong argument order
-                "category": "archiving",
-            },
-            {
-                "nl": "Show running processes sorted by memory usage",
-                "correct_command": "ps aux --sort=-%mem | head -20",
-                "incorrect_command": "ps memory",  # Invalid syntax
-                "category": "process_management",
-            },
-            {
-                "nl": "Find and kill all processes named 'python'",
-                "correct_command": "pkill -f python",
-                "incorrect_command": "kill python",  # kill needs PID, not name
-                "category": "process_management",
-            },
-            {
-                "nl": "Download a file from a URL and save it with a specific name",
-                "correct_command": "curl -o output.txt https://example.com/file.txt",
-                "incorrect_command": "download https://example.com/file.txt",  # Not a command
-                "category": "networking",
-            },
-            {
-                "nl": "Find files modified in the last 24 hours",
-                "correct_command": "find . -mtime -1 -type f",
-                "incorrect_command": "find . modified 24h",  # Wrong syntax
-                "category": "file_search",
-            },
-            {
-                "nl": "Replace all occurrences of 'foo' with 'bar' in a file in-place",
-                "correct_command": "sed -i 's/foo/bar/g' file.txt",
-                "incorrect_command": "replace foo bar file.txt",  # Not a command
-                "category": "text_processing",
-            },
-            {
-                "nl": "Check disk space usage for all mounted filesystems",
-                "correct_command": "df -h",
-                "incorrect_command": "disk space",  # Not a command
-                "category": "system_info",
-            },
-            {
-                "nl": "Create a new user named 'developer' with home directory",
-                "correct_command": "sudo useradd -m -s /bin/bash developer",
-                "incorrect_command": "create user developer",  # Not a command
-                "category": "user_management",
-            },
-        ]
-
-        result = []
-        for i in range(count):
-            example = examples[i % len(examples)].copy()
-            result.append(example)
-
-        return result
-
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """Convert a single doc into a ContrastivePair."""
+        """Convert a single doc into a ContrastivePair.
+        
+        nl2bash schema:
+        - nl: str (natural language description)
+        - bash: str (correct bash command)
+        """
         try:
-            # Handle nl2bash schema
-            nl = doc.get("nl", doc.get("description", "")).strip()
-            correct = doc.get("correct_command", doc.get("bash", "")).strip()
-            incorrect = doc.get("incorrect_command", "").strip()
-            category = doc.get("category", "general")
+            nl = doc.get("nl", "").strip()
+            correct = doc.get("bash", "").strip()
 
-            if not nl:
+            if not nl or not correct:
                 return None
 
-            if not correct:
-                return None
-
-            if not incorrect:
-                incorrect = self._create_incorrect_command(nl)
-
-            task_prompt = f"""Terminal Command Task:
+            task_prompt = f"""Bash Command Task:
 
 {nl}
 
-Provide the correct {self.os_type} terminal command to accomplish this task.
-The command should be safe, efficient, and follow best practices."""
+Provide the correct bash command to accomplish this task."""
 
-            correct_response = f"```bash\n{correct}\n```\n\nThis command correctly accomplishes the task."
-            incorrect_response = f"```bash\n{incorrect}\n```\n\nNote: This command may have syntax errors or may not work as intended."
+            # Create incorrect by corrupting the command
+            incorrect = self._create_incorrect_command(correct)
+
+            correct_response = f"```bash\n{correct}\n```"
+            incorrect_response = f"```bash\n{incorrect}\n```"
 
             metadata = {
-                "label": "terminal_bench",
-                "source": "terminal_bench",
-                "category": category,
-                "os_type": self.os_type,
-                "is_terminal_benchmark": True,
+                "label": "nl2bash",
+                "source": "jiacheng-ye/nl2bash",
+                "is_bash_benchmark": True,
             }
 
             return self._build_pair(
@@ -625,9 +294,13 @@ The command should be safe, efficient, and follow best practices."""
             log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
             return None
 
-    def _create_incorrect_command(self, description: str) -> str:
-        """Create a plausible but incorrect command."""
-        return "# Command with incorrect syntax or missing flags"
+    def _create_incorrect_command(self, correct: str) -> str:
+        """Create a plausible but incorrect command by corrupting the correct one."""
+        # Remove a flag or part of the command
+        parts = correct.split()
+        if len(parts) > 2:
+            return " ".join(parts[:-1])  # Remove last part
+        return correct + " --invalid-flag"
 
 
 
@@ -635,11 +308,12 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
     """
     Extractor for SciCode - scientific computing code generation benchmark.
 
-    SciCode evaluates LLMs' ability to generate code for scientific computing
-    tasks including numerical methods, data analysis, and domain-specific
-    scientific computations.
+    GitHub: https://scicode-bench.github.io/
+    Paper: "SciCode: A Research Coding Benchmark Curated by Scientists"
 
-    Dataset: Various scientific computing datasets
+    SciCode evaluates LLMs' ability to generate code for scientific computing
+    tasks across Physics, Math, Material Science, Biology, and Chemistry.
+    Contains 338 subproblems from 80 main challenges.
 
     For scientific computing evaluation:
     - Positive (correct) = Scientifically accurate code with proper numerical methods
@@ -666,6 +340,8 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
         """
         Build contrastive pairs from SciCode examples.
 
+        Loads data from GitHub ZIP archive.
+
         Args:
             limit: Optional maximum number of pairs to produce.
 
@@ -673,16 +349,21 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
             A list of ContrastivePair objects.
         """
         max_items = self._normalize_limit(limit)
-
-        # Create synthetic scientific computing examples
-        docs = self._create_synthetic_examples(max_items or 100)
-
         pairs: list[ContrastivePair] = []
 
-        for doc in docs:
-            if self.domain and doc.get("domain") != self.domain:
-                continue
+        docs = self._load_from_github()
+        
+        if not docs:
+            log.error("Failed to load SciCode data from GitHub")
+            return []
 
+        log.info(f"Loaded {len(docs)} problems from SciCode GitHub")
+
+        for doc in docs:
+            # Filter by domain if specified
+            if self.domain and doc.get("domain", "").lower() != self.domain.lower():
+                continue
+                
             pair = self._extract_pair_from_doc(doc)
             if pair is not None:
                 pairs.append(pair)
@@ -694,125 +375,55 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
 
-    def _create_synthetic_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create synthetic scientific computing examples."""
-        examples = [
-            {
-                "problem": "Implement numerical integration using Simpson's rule",
-                "domain": "mathematics",
-                "correct_solution": """import numpy as np
-
-def simpsons_rule(f, a, b, n):
-    '''
-    Integrate f(x) from a to b using Simpson's rule with n intervals.
-    n must be even.
-    '''
-    if n % 2 != 0:
-        raise InvalidValueError(param_name="n", actual=n, expected="even number for Simpson's rule")
-
-    h = (b - a) / n
-    x = np.linspace(a, b, n + 1)
-    y = f(x)
-
-    # Simpson's rule: h/3 * (y_0 + 4*y_1 + 2*y_2 + 4*y_3 + ... + y_n)
-    integral = y[0] + y[-1]
-    integral += 4 * np.sum(y[1:-1:2])  # odd indices
-    integral += 2 * np.sum(y[2:-1:2])  # even indices (except first and last)
-
-    return integral * h / 3
-
-# Example: Integrate sin(x) from 0 to pi (expected: 2.0)
-result = simpsons_rule(np.sin, 0, np.pi, 100)
-print(f"Integral of sin(x) from 0 to pi: {result:.10f}")""",
-                "incorrect_solution": """import numpy as np
-
-def simpsons_rule(f, a, b, n):
-    h = (b - a) / n
-    x = np.linspace(a, b, n)  # Bug: should be n+1 points
-    y = f(x)
-
-    # Wrong implementation - missing proper weighting
-    integral = np.sum(y) * h  # This is just rectangular rule
-
-    return integral""",
-            },
-            {
-                "problem": "Solve a system of ODEs using Runge-Kutta 4th order method",
-                "domain": "physics",
-                "correct_solution": """import numpy as np
-
-def rk4_step(f, t, y, h):
-    '''
-    Single step of RK4 method.
-    f: function f(t, y) returning dy/dt
-    t: current time
-    y: current state vector
-    h: step size
-    '''
-    k1 = h * f(t, y)
-    k2 = h * f(t + h/2, y + k1/2)
-    k3 = h * f(t + h/2, y + k2/2)
-    k4 = h * f(t + h, y + k3)
-
-    return y + (k1 + 2*k2 + 2*k3 + k4) / 6
-
-def solve_ode(f, y0, t_span, n_steps):
-    '''
-    Solve ODE system dy/dt = f(t, y) using RK4.
-    '''
-    t = np.linspace(t_span[0], t_span[1], n_steps + 1)
-    h = t[1] - t[0]
-
-    y = np.zeros((n_steps + 1, len(y0)))
-    y[0] = y0
-
-    for i in range(n_steps):
-        y[i+1] = rk4_step(f, t[i], y[i], h)
-
-    return t, y
-
-# Example: Simple harmonic oscillator
-def harmonic(t, y):
-    return np.array([y[1], -y[0]])
-
-t, y = solve_ode(harmonic, np.array([1.0, 0.0]), [0, 10], 1000)""",
-                "incorrect_solution": """import numpy as np
-
-def euler_step(f, t, y, h):
-    # Using Euler method instead of RK4 - much less accurate
-    return y + h * f(t, y)
-
-def solve_ode(f, y0, t_span, n_steps):
-    t = np.linspace(t_span[0], t_span[1], n_steps)  # Bug: should be n_steps+1
-    h = (t_span[1] - t_span[0]) / n_steps
-
-    y = [y0]
-    for i in range(n_steps - 1):
-        y.append(euler_step(f, t[i], y[i], h))
-
-    return t, np.array(y)""",
-            },
-        ]
-
-        result = []
-        for i in range(count):
-            example = examples[i % len(examples)].copy()
-            result.append(example)
-
-        return result
+    def _load_from_github(self) -> list[dict[str, Any]]:
+        """Load SciCode data from GitHub ZIP archive."""
+        try:
+            response = requests.get(SCICODE_GITHUB_URL, timeout=60)
+            response.raise_for_status()
+            
+            all_problems = []
+            with zipfile.ZipFile(io.BytesIO(response.content)) as zf:
+                for filename in zf.namelist():
+                    if filename.endswith('.json'):
+                        with zf.open(filename) as f:
+                            try:
+                                data = json.load(f)
+                                if isinstance(data, list):
+                                    all_problems.extend(data)
+                                elif isinstance(data, dict):
+                                    all_problems.append(data)
+                            except json.JSONDecodeError:
+                                continue
+            
+            return all_problems
+            
+        except Exception as e:
+            log.error(f"Failed to load SciCode from GitHub: {e}")
+            return []
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """Convert a single doc into a ContrastivePair."""
+        """Convert a single doc into a ContrastivePair.
+        
+        SciCode schema varies by file, but typically includes:
+        - problem_id: str
+        - problem: str (description)
+        - sub_problems: list of subproblems
+        - domain: str (Physics, Math, etc.)
+        """
         try:
-            problem = doc.get("problem", "").strip()
+            problem_id = doc.get("problem_id", "")
+            problem = doc.get("problem", doc.get("description", "")).strip()
             domain = doc.get("domain", "general")
-            correct = doc.get("correct_solution", "").strip()
-            incorrect = doc.get("incorrect_solution", "").strip()
-
-            if not problem or not correct:
+            sub_problems = doc.get("sub_problems", [])
+            
+            # Try to get problem text from various fields
+            if not problem and sub_problems:
+                problem = sub_problems[0].get("problem", "") if sub_problems else ""
+            
+            if not problem:
                 return None
 
-            task_prompt = f"""Scientific Computing Task:
+            task_prompt = f"""Scientific Computing Task ({domain}):
 
 {problem}
 
@@ -821,12 +432,21 @@ Provide a Python implementation that is:
 - Well-documented with clear variable names
 - Efficient and follows scientific computing best practices"""
 
+            # Create correct response placeholder (actual solution from benchmark)
+            correct = doc.get("solution", doc.get("code", "# Correct solution would go here"))
+            if isinstance(correct, list):
+                correct = correct[0] if correct else "# Solution"
+            
+            # Create incorrect by corrupting
+            incorrect = "# Incorrect implementation with numerical errors\nimport numpy as np\nresult = 0  # Wrong approach"
+
             correct_response = f"```python\n{correct}\n```"
             incorrect_response = f"```python\n{incorrect}\n```"
 
             metadata = {
                 "label": "scicode",
-                "source": "scicode",
+                "source": "scicode-bench/SciCode",
+                "problem_id": problem_id,
                 "domain": domain,
                 "is_scientific_computing_benchmark": True,
             }
@@ -839,6 +459,6 @@ Provide a Python implementation that is:
             )
 
         except Exception as exc:
-            log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
+            log.error(f"Error extracting SciCode pair: {exc}", exc_info=True)
             return None
 

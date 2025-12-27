@@ -5,21 +5,21 @@ from math import comb
 from typing import List
 
 
-def get_layer_combinations(num_layers: int, max_combo_size: int) -> List[List[int]]:
+def get_layer_combinations(num_layers: int, max_combo_size: int, single_and_all_only: bool = True) -> List[List[int]]:
     """
     Generate layer combinations up to a maximum combination size.
     
     Args:
         num_layers: Total number of layers in the model
         max_combo_size: Maximum number of layers in a combination (e.g., 3)
+        single_and_all_only: If True, only return single layers and all layers together
+                             (skip 2-layer, 3-layer combinations). Default: True
         
     Returns:
         List of layer combinations:
         - All layers together: [0, 1, 2, ..., num_layers-1]
         - All individual layers: [0], [1], ..., [num_layers-1]
-        - All combinations of 2 layers (if max_combo_size >= 2)
-        - All combinations of 3 layers (if max_combo_size >= 3)
-        - ... up to max_combo_size
+        - (if not single_and_all_only) All combinations of 2, 3, ..., max_combo_size layers
     """
     all_layers = list(range(num_layers))
     result = []
@@ -31,10 +31,11 @@ def get_layer_combinations(num_layers: int, max_combo_size: int) -> List[List[in
     for layer in all_layers:
         result.append([layer])
     
-    # All combinations of 2, 3, ..., max_combo_size layers
-    for r in range(2, max_combo_size + 1):
-        for combo in combinations(all_layers, r):
-            result.append(list(combo))
+    # All combinations of 2, 3, ..., max_combo_size layers (unless single_and_all_only)
+    if not single_and_all_only:
+        for r in range(2, max_combo_size + 1):
+            for combo in combinations(all_layers, r):
+                result.append(list(combo))
     
     return result
 

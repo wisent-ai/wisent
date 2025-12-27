@@ -91,9 +91,9 @@ class ToolBenchExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from ToolBench")
         except Exception as e:
-            log.warning(f"Failed to load ToolBench from HF: {e}")
-            # Create synthetic examples
-            docs = self._create_synthetic_examples(max_items or 100)
+            log.error(f"Failed to load ToolBench from HuggingFace: {e}")
+            log.error("ToolBench requires Maurus/ToolBench dataset. No synthetic data available.")
+            return []
 
         pairs: list[ContrastivePair] = []
 
@@ -114,100 +114,6 @@ class ToolBenchExtractor(HuggingFaceBenchmarkExtractor):
             log.warning("No valid ToolBench pairs extracted")
 
         return pairs
-
-    def _create_synthetic_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create synthetic examples based on ToolBench structure."""
-        examples = []
-
-        toolbench_cases = [
-            {
-                "query": "What's the weather like in New York today?",
-                "category": "Weather",
-                "api_list": [
-                    {"name": "get_current_weather", "parameters": {"city": "str", "units": "str"}},
-                    {"name": "get_forecast", "parameters": {"city": "str", "days": "int"}},
-                ],
-                "correct_call": "get_current_weather(city='New York', units='fahrenheit')",
-                "incorrect_call": "get_forecast(city='NY', days=7)",
-            },
-            {
-                "query": "Find me the top 10 trending songs on Spotify",
-                "category": "Music",
-                "api_list": [
-                    {"name": "get_trending_tracks", "parameters": {"limit": "int", "market": "str"}},
-                    {"name": "search_tracks", "parameters": {"query": "str", "limit": "int"}},
-                ],
-                "correct_call": "get_trending_tracks(limit=10, market='US')",
-                "incorrect_call": "search_tracks(query='trending', limit=10)",
-            },
-            {
-                "query": "Get the latest stock price for Apple",
-                "category": "Finance",
-                "api_list": [
-                    {"name": "get_stock_quote", "parameters": {"symbol": "str"}},
-                    {"name": "get_company_info", "parameters": {"symbol": "str"}},
-                ],
-                "correct_call": "get_stock_quote(symbol='AAPL')",
-                "incorrect_call": "get_company_info(symbol='Apple')",
-            },
-            {
-                "query": "Book a flight from LA to Chicago for next Monday",
-                "category": "Travel",
-                "api_list": [
-                    {"name": "search_flights", "parameters": {"origin": "str", "destination": "str", "date": "str"}},
-                    {"name": "book_flight", "parameters": {"flight_id": "str", "passengers": "int"}},
-                ],
-                "correct_call": "search_flights(origin='LAX', destination='ORD', date='2024-01-15')",
-                "incorrect_call": "book_flight(flight_id='unknown', passengers=1)",
-            },
-            {
-                "query": "Send a tweet saying 'Hello World'",
-                "category": "Social",
-                "api_list": [
-                    {"name": "post_tweet", "parameters": {"text": "str"}},
-                    {"name": "get_timeline", "parameters": {"count": "int"}},
-                ],
-                "correct_call": "post_tweet(text='Hello World')",
-                "incorrect_call": "get_timeline(count=1)",
-            },
-            {
-                "query": "Get today's top news headlines",
-                "category": "News",
-                "api_list": [
-                    {"name": "get_top_headlines", "parameters": {"country": "str", "category": "str"}},
-                    {"name": "search_news", "parameters": {"query": "str", "from_date": "str"}},
-                ],
-                "correct_call": "get_top_headlines(country='us', category='general')",
-                "incorrect_call": "search_news(query='news', from_date='yesterday')",
-            },
-            {
-                "query": "Find restaurants near Times Square",
-                "category": "Food",
-                "api_list": [
-                    {"name": "search_restaurants", "parameters": {"location": "str", "radius": "int"}},
-                    {"name": "get_restaurant_details", "parameters": {"restaurant_id": "str"}},
-                ],
-                "correct_call": "search_restaurants(location='Times Square, NYC', radius=1000)",
-                "incorrect_call": "get_restaurant_details(restaurant_id='unknown')",
-            },
-            {
-                "query": "Get the score of yesterday's Lakers game",
-                "category": "Sports",
-                "api_list": [
-                    {"name": "get_game_scores", "parameters": {"team": "str", "date": "str"}},
-                    {"name": "get_team_schedule", "parameters": {"team": "str"}},
-                ],
-                "correct_call": "get_game_scores(team='Lakers', date='yesterday')",
-                "incorrect_call": "get_team_schedule(team='LA')",
-            },
-        ]
-
-        for i in range(count):
-            case = toolbench_cases[i % len(toolbench_cases)].copy()
-            case["query_id"] = i
-            examples.append(case)
-
-        return examples
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """

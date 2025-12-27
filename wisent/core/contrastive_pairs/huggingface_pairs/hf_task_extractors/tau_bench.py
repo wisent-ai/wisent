@@ -85,9 +85,9 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from tau2-bench-data")
         except Exception as e:
-            log.warning(f"Failed to load tau2-bench from HF: {e}")
-            # Create examples based on TAU-bench structure
-            docs = self._create_synthetic_examples(max_items or 50)
+            log.error(f"Failed to load TAU-bench from HuggingFace: {e}")
+            log.error("TAU-bench requires HuggingFaceH4/tau2-bench-data dataset. No synthetic data available.")
+            return []
 
         pairs: list[ContrastivePair] = []
 
@@ -102,106 +102,6 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
             log.warning("No valid TAU-bench pairs extracted")
 
         return pairs
-
-    def _create_synthetic_examples(self, count: int) -> list[dict[str, Any]]:
-        """Create synthetic examples based on TAU-bench structure."""
-        examples = []
-
-        # Retail domain examples
-        retail_examples = [
-            {
-                "id": "retail_001",
-                "domain": "retail",
-                "user_scenario": "Customer wants to return an item purchased last week due to wrong size",
-                "description": "Process a return request for order #12345, item: Blue T-Shirt (Size M), verify return eligibility, initiate return process",
-                "evaluation_criteria": [
-                    "Verify order exists",
-                    "Check return window (30 days)",
-                    "Initiate return label",
-                    "Update order status",
-                ],
-                "available_tools": [
-                    "get_order_details",
-                    "check_return_eligibility",
-                    "create_return_label",
-                    "update_order_status",
-                ],
-            },
-            {
-                "id": "retail_002",
-                "domain": "retail",
-                "user_scenario": "Customer wants to track their package and update delivery address",
-                "description": "Look up tracking for order #67890, update delivery address to new location if package hasn't shipped",
-                "evaluation_criteria": [
-                    "Retrieve tracking information",
-                    "Check shipment status",
-                    "Update address if allowed",
-                    "Confirm changes with customer",
-                ],
-                "available_tools": [
-                    "get_tracking_info",
-                    "check_shipment_status",
-                    "update_delivery_address",
-                    "send_confirmation",
-                ],
-            },
-        ]
-
-        # Airline domain examples
-        airline_examples = [
-            {
-                "id": "airline_001",
-                "domain": "airline",
-                "user_scenario": "Passenger needs to change flight from tomorrow to next week due to emergency",
-                "description": "Modify booking ABC123, change departure date, check fare difference, process change fee if applicable",
-                "evaluation_criteria": [
-                    "Retrieve booking details",
-                    "Check availability on new date",
-                    "Calculate fare difference",
-                    "Process modification",
-                ],
-                "available_tools": [
-                    "get_booking",
-                    "search_flights",
-                    "calculate_fare_difference",
-                    "modify_booking",
-                ],
-            },
-            {
-                "id": "airline_002",
-                "domain": "airline",
-                "user_scenario": "Customer requesting seat change and meal preference update for upcoming flight",
-                "description": "Update seat assignment to window seat and add vegetarian meal for booking XYZ789",
-                "evaluation_criteria": [
-                    "Verify booking exists",
-                    "Check seat availability",
-                    "Update seat assignment",
-                    "Add meal preference",
-                ],
-                "available_tools": [
-                    "get_booking",
-                    "get_seat_map",
-                    "assign_seat",
-                    "update_meal_preference",
-                ],
-            },
-        ]
-
-        # Alternate between domains
-        all_examples = []
-        if self.domain == "retail":
-            all_examples = retail_examples
-        elif self.domain == "airline":
-            all_examples = airline_examples
-        else:
-            all_examples = retail_examples + airline_examples
-
-        for i in range(count):
-            example = all_examples[i % len(all_examples)].copy()
-            example["id"] = f"{example['domain']}_{i:03d}"
-            examples.append(example)
-
-        return examples
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """

@@ -14,6 +14,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 import torch
 
+import numpy as np
+
 from wisent.core.geometry_search_space import GeometrySearchSpace, GeometrySearchConfig
 from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.activations.activation_cache import (
@@ -24,6 +26,96 @@ from wisent.core.activations.activation_cache import (
 from wisent.core.utils.layer_combinations import get_layer_combinations
 
 
+def compute_signal_strength(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    n_folds: int = 5,
+) -> float:
+    """
+    Compute signal strength using MLP cross-validation accuracy.
+    
+    This measures whether there is ANY extractable signal (linear or nonlinear)
+    that generalizes to unseen data. Random/nonsense data gives ~0.5.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        n_folds: Number of CV folds
+        
+    Returns:
+        Cross-validation accuracy (0.5 = no signal, >0.7 = signal exists)
+    """
+    try:
+        from sklearn.neural_network import MLPClassifier
+        from sklearn.model_selection import cross_val_score
+        
+        n_pos = len(pos_activations)
+        n_neg = len(neg_activations)
+        
+        if n_pos < 5 or n_neg < 5:
+            return 0.5  # Not enough data
+        
+        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
+        y = np.array([1] * n_pos + [0] * n_neg)
+        
+        n_folds = min(n_folds, min(n_pos, n_neg))
+        if n_folds < 2:
+            return 0.5
+        
+        clf = MLPClassifier(
+            hidden_layer_sizes=(16,),
+            max_iter=500,
+            random_state=42,
+        )
+        scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
+        return float(scores.mean())
+    except Exception:
+        return 0.5
+
+
+def compute_linear_probe_accuracy(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    n_folds: int = 5,
+) -> float:
+    """
+    Compute linear probe cross-validation accuracy.
+    
+    If signal_strength is high but linear_probe is low, the signal is nonlinear.
+    If both are high, signal is linear and CAA should work.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        n_folds: Number of CV folds
+        
+    Returns:
+        Cross-validation accuracy (0.5 = no linear signal)
+    """
+    try:
+        from sklearn.linear_model import LogisticRegression
+        from sklearn.model_selection import cross_val_score
+        
+        n_pos = len(pos_activations)
+        n_neg = len(neg_activations)
+        
+        if n_pos < 5 or n_neg < 5:
+            return 0.5
+        
+        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
+        y = np.array([1] * n_pos + [0] * n_neg)
+        
+        n_folds = min(n_folds, min(n_pos, n_neg))
+        if n_folds < 2:
+            return 0.5
+        
+        clf = LogisticRegression(max_iter=1000, solver='lbfgs')
+        scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
+        return float(scores.mean())
+    except Exception:
+        return 0.5
+
+
 @dataclass
 class GeometryTestResult:
     """Result of a single geometry test."""
@@ -31,6 +123,15 @@ class GeometryTestResult:
     strategy: str
     layers: List[int]
     
+    # Step 1: Is there any signal? (MLP CV accuracy)
+    signal_strength: float  # MLP CV accuracy, ~0.5 = no signal, >0.6 = signal exists
+    has_signal: bool  # signal_strength > 0.6
+    
+    # Step 2: Is signal linear? (Linear probe CV accuracy)
+    linear_probe_accuracy: float  # Linear CV accuracy, high = linear, low = nonlinear
+    is_linear: bool  # linear_probe_accuracy > 0.6 AND close to signal_strength
+    
+    # Step 3: Geometry details (only meaningful if has_signal=True)
     # Best structure detected
     best_structure: str  # 'linear', 'cone', 'cluster', 'manifold', 'sparse', 'bimodal', 'orthogonal'
     best_score: float
@@ -78,6 +179,13 @@ class GeometryTestResult:
             "benchmark": self.benchmark,
             "strategy": self.strategy,
             "layers": self.layers,
+            # Step 1: Signal detection
+            "signal_strength": self.signal_strength,
+            "has_signal": self.has_signal,
+            # Step 2: Linearity check
+            "linear_probe_accuracy": self.linear_probe_accuracy,
+            "is_linear": self.is_linear,
+            # Step 3: Geometry (only meaningful if has_signal)
             "best_structure": self.best_structure,
             "best_score": self.best_score,
             "structure_scores": {
@@ -237,6 +345,10 @@ def compute_geometry_metrics(
             benchmark=cached.benchmark,
             strategy=cached.strategy.value,
             layers=layers,
+            signal_strength=0.5,
+            has_signal=False,
+            linear_probe_accuracy=0.5,
+            is_linear=False,
             best_structure="error",
             best_score=0.0,
             linear_score=0.0,
@@ -279,6 +391,23 @@ def compute_geometry_metrics(
     try:
         result = detect_geometry_structure(pos_activations, neg_activations, config)
         
+        # Step 1: Compute signal strength (MLP CV accuracy)
+        signal_strength = compute_signal_strength(pos_activations, neg_activations)
+        has_signal = signal_strength > 0.6
+        
+        # Step 2: Compute linear probe accuracy
+        linear_probe_accuracy = compute_linear_probe_accuracy(pos_activations, neg_activations)
+        # Signal is linear if: has signal AND linear probe is close to MLP (within 0.1)
+        is_linear = has_signal and linear_probe_accuracy > 0.6 and (signal_strength - linear_probe_accuracy) < 0.15
+        
+        # Determine recommendation based on signal analysis
+        if not has_signal:
+            recommendation = "NO_SIGNAL"
+        elif is_linear:
+            recommendation = "CAA"  # Linear signal -> use Contrastive Activation Addition
+        else:
+            recommendation = "NONLINEAR"  # Nonlinear signal -> need different method
+        
         # Helper to safely get detail
         def get_detail(struct_name: str, key: str, default=0.0):
             if struct_name in result.all_scores:
@@ -289,6 +418,10 @@ def compute_geometry_metrics(
             benchmark=cached.benchmark,
             strategy=cached.strategy.value,
             layers=layers,
+            signal_strength=signal_strength,
+            has_signal=has_signal,
+            linear_probe_accuracy=linear_probe_accuracy,
+            is_linear=is_linear,
             best_structure=result.best_structure.value,
             best_score=result.best_score,
             # Structure scores
@@ -318,14 +451,18 @@ def compute_geometry_metrics(
             # Cluster details
             best_silhouette=get_detail("cluster", "best_silhouette", 0.0),
             best_k=int(get_detail("cluster", "best_k", 2)),
-            # Recommendation
-            recommended_method=result.recommendation,
+            # Recommendation based on signal analysis
+            recommended_method=recommendation,
         )
     except Exception as e:
         return GeometryTestResult(
             benchmark=cached.benchmark,
             strategy=cached.strategy.value,
             layers=layers,
+            signal_strength=0.5,
+            has_signal=False,
+            linear_probe_accuracy=0.5,
+            is_linear=False,
             best_structure="error",
             best_score=0.0,
             linear_score=0.0,
