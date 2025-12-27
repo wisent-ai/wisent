@@ -194,9 +194,9 @@ class HallucinationsLeaderboardExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from HaluEval")
         except Exception as e:
-            log.warning(f"Failed to load HaluEval from HF: {e}")
-            # Create synthetic examples based on HaluEval structure
-            docs = self._create_halueval_synthetic(limit or 100)
+            log.error(f"Failed to load HaluEval from HuggingFace: {e}")
+            log.error("HallucinationsLeaderboard requires pminervini/HaluEval dataset. No synthetic data available.")
+            return []
 
         pairs: list[ContrastivePair] = []
 
@@ -208,48 +208,6 @@ class HallucinationsLeaderboardExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         return pairs
-
-    def _create_halueval_synthetic(self, count: int) -> list[dict[str, Any]]:
-        """Create synthetic HaluEval-style examples."""
-        examples = [
-            {
-                "knowledge": "The Eiffel Tower is a wrought-iron lattice tower located on the Champ de Mars in Paris, France. It was constructed from 1887 to 1889 as the entrance arch to the 1889 World's Fair.",
-                "question": "When was the Eiffel Tower built?",
-                "hallucinated_answer": "The Eiffel Tower was built in 1920 for the Paris Olympics.",
-                "right_answer": "The Eiffel Tower was constructed from 1887 to 1889 as the entrance arch to the 1889 World's Fair.",
-            },
-            {
-                "knowledge": "Python is a high-level, general-purpose programming language created by Guido van Rossum and first released in 1991.",
-                "question": "Who created Python and when?",
-                "hallucinated_answer": "Python was created by James Gosling at Sun Microsystems in 1995.",
-                "right_answer": "Python was created by Guido van Rossum and first released in 1991.",
-            },
-            {
-                "knowledge": "The Great Wall of China is a series of fortifications stretching across the historical northern borders of China. It was built over many centuries, with construction beginning as early as the 7th century BC.",
-                "question": "How old is the Great Wall of China?",
-                "hallucinated_answer": "The Great Wall of China was built entirely during the Ming Dynasty in the 15th century.",
-                "right_answer": "The Great Wall of China was built over many centuries, with construction beginning as early as the 7th century BC.",
-            },
-            {
-                "knowledge": "Mount Everest, located in the Himalayas on the border between Nepal and Tibet, is Earth's highest mountain above sea level at 8,848.86 meters.",
-                "question": "What is the height of Mount Everest?",
-                "hallucinated_answer": "Mount Everest is 9,500 meters tall, making it nearly 10 kilometers high.",
-                "right_answer": "Mount Everest is 8,848.86 meters above sea level, making it Earth's highest mountain.",
-            },
-            {
-                "knowledge": "DNA, or deoxyribonucleic acid, is a molecule composed of two polynucleotide chains that coil around each other to form a double helix. Its structure was discovered by Watson and Crick in 1953.",
-                "question": "Who discovered the structure of DNA?",
-                "hallucinated_answer": "The structure of DNA was discovered by Charles Darwin in his work on evolution.",
-                "right_answer": "The structure of DNA was discovered by Watson and Crick in 1953.",
-            },
-        ]
-
-        result = []
-        for i in range(count):
-            example = examples[i % len(examples)].copy()
-            result.append(example)
-
-        return result
 
     def _extract_halueval_pair(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """Extract a contrastive pair from HaluEval."""

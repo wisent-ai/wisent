@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import requests
 from typing import Any
 from wisent.core.cli_logger import setup_logger
 
@@ -10,46 +12,53 @@ __all__ = ["RecodeExtractor"]
 
 log = setup_logger(__name__)
 
+# GitHub URL for ReCode dataset
+RECODE_GITHUB_URL = "https://raw.githubusercontent.com/amazon-science/recode/main/dataset-release/nominal/HumanEval.jsonl"
+
 
 class RecodeExtractor(HuggingFaceBenchmarkExtractor):
     """
-    Extractor for recode dataset (code search/retrieval).
+    Extractor for ReCode - Robustness Evaluation of Code Generation Models.
 
-    Schema (ARR-ADAPT/recode):
-        - source: str (question/prompt)
-        - target: str (answer/solution)
+    GitHub: https://github.com/amazon-science/recode
+    Paper: "ReCode: Robustness Evaluation of Code Generation Models" (arXiv:2212.10264)
     
-    Note: This is a code search task, not code execution. Uses generation evaluator.
+    ReCode evaluates code generation robustness using perturbed HumanEval/MBPP.
+    The dataset includes:
+    - Nominal (original) problems
+    - Perturbed versions (docstring, function name, code syntax changes)
+
+    Schema (HumanEval.jsonl):
+        - task_id: str
+        - prompt: str (function signature with docstring)
+        - canonical_solution: str (reference solution)
+        - test: str (test cases)
+        - entry_point: str (function name)
+
+    For robustness evaluation:
+    - Positive (correct) = Canonical solution
+    - Negative (incorrect) = Buggy/incomplete solution
     """
 
-    evaluator_name = "generation"
+    evaluator_name = "code_generation"
 
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
     ) -> list[ContrastivePair]:
         """
-        Build contrastive pairs from recode examples.
-
-        Args:
-            limit: Optional maximum number of pairs to produce.
-
-        Returns:
-            A list of ContrastivePair objects.
+        Build contrastive pairs from ReCode GitHub repository.
         """
         max_items = self._normalize_limit(limit)
-
-        # Load dataset - using code_x_glue as alternative since ARR-ADAPT/recode doesn't exist
-        docs = self.load_dataset(
-            dataset_name="code_x_glue_tc_nl_code_search_adv",
-            dataset_config="default",
-            split="train",
-            limit=max_items,
-        )
-
         pairs: list[ContrastivePair] = []
 
-        log.info(f"Extracting contrastive pairs from {len(docs)} recode examples")
+        docs = self._load_from_github()
+        
+        if not docs:
+            log.error("Failed to load ReCode data from GitHub")
+            return []
+
+        log.info(f"Loaded {len(docs)} problems from ReCode GitHub")
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -59,73 +68,79 @@ class RecodeExtractor(HuggingFaceBenchmarkExtractor):
                     break
 
         if not pairs:
-            log.warning("No valid recode pairs extracted")
+            log.warning("No valid ReCode pairs extracted")
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """
-        Convert a single doc into a ContrastivePair.
-
-        Returns None when required fields are missing or malformed.
-        """
+    def _load_from_github(self) -> list[dict[str, Any]]:
+        """Load ReCode data from GitHub JSONL file."""
         try:
-            # code_x_glue_tc_nl_code_search_adv uses 'docstring' and 'code' fields
-            question = doc.get("docstring", doc.get("source", "")).strip()
-            answer = doc.get("code", doc.get("target", ""))
+            response = requests.get(RECODE_GITHUB_URL, timeout=60)
+            response.raise_for_status()
+            
+            problems = []
+            for line in response.text.strip().split('\n'):
+                if line.strip():
+                    problems.append(json.loads(line))
+            
+            return problems
+            
+        except Exception as e:
+            log.error(f"Failed to load ReCode from GitHub: {e}")
+            return []
 
-            if not question or not answer:
-                log.debug("Skipping: missing question or answer")
+    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """Convert a single doc into a ContrastivePair."""
+        try:
+            task_id = doc.get("task_id", "")
+            prompt = doc.get("prompt", "").strip()
+            canonical_solution = doc.get("canonical_solution", "").strip()
+            entry_point = doc.get("entry_point", "")
+
+            if not prompt or not canonical_solution:
                 return None
 
-            # Convert answer to string
-            correct_answer = str(answer).strip()
+            # Full correct code = prompt + solution
+            correct_code = prompt + canonical_solution
 
-            # Create incorrect answer (modify or corrupt)
-            incorrect_answer = self._create_incorrect_answer(correct_answer)
+            # Create incorrect by truncating/corrupting
+            incorrect_code = self._create_incorrect_solution(prompt, canonical_solution)
 
-            # Format the question
-            formatted_question = f"Question: {question}\n\nWhat is the answer?"
+            formatted_question = f"""Code Generation Task ({task_id}):
+
+{prompt}
+
+Complete the function implementation."""
 
             metadata = {
                 "label": "recode",
-                "source": "ARR-ADAPT/recode",
+                "source": "amazon-science/recode",
+                "task_id": task_id,
+                "entry_point": entry_point,
+                "is_code_robustness_benchmark": True,
             }
 
             return self._build_pair(
                 question=formatted_question,
-                correct=correct_answer,
-                incorrect=incorrect_answer,
+                correct=f"```python\n{correct_code}\n```",
+                incorrect=f"```python\n{incorrect_code}\n```",
                 metadata=metadata,
             )
 
         except Exception as exc:
-            log.error(f"Error extracting pair from doc: {exc}", exc_info=True)
+            log.error(f"Error extracting ReCode pair: {exc}", exc_info=True)
             return None
 
-    def _create_incorrect_answer(self, correct: str) -> str:
-        """Create an incorrect answer by modifying the correct one."""
-        # For code, corrupt the function name/signature (before first period)
-        # This ensures the first sentence extraction will be different
-        if len(correct) > 10:
-            # Find the function definition line
-            lines = correct.split('\n')
-            if lines and 'def ' in lines[0]:
-                # Corrupt the function name itself
-                incorrect_lines = lines.copy()
-                incorrect_lines[0] = incorrect_lines[0].replace('def ', 'def CORRUPTED_')
-                incorrect = '\n'.join(incorrect_lines)
-
-                # Verify correct is not still a substring of incorrect
-                if correct in incorrect:
-                    # Completely different function
-                    incorrect = "def invalid_function():\n    '''This is intentionally wrong code'''\n    raise SyntaxError('Corrupted')"
-
-                return incorrect
-            else:
-                # Not a function definition, use generic corruption
-                incorrect = "# CORRUPTED CODE\n" + correct + "\n# REST IS INVALID"
-                return incorrect
-
-        return f"INVALID_{correct}"
+    def _create_incorrect_solution(self, prompt: str, solution: str) -> str:
+        """Create an incorrect solution by truncating or corrupting."""
+        lines = solution.split('\n')
+        
+        if len(lines) > 2:
+            # Truncate to first half + pass
+            half = len(lines) // 2
+            buggy = '\n'.join(lines[:half]) + '\n    pass  # incomplete'
+        else:
+            buggy = '    pass  # not implemented'
+        
+        return prompt + buggy
 
