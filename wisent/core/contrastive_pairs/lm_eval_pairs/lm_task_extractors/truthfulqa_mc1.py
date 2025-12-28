@@ -116,3 +116,10 @@ class TruthfulQAMC1Extractor(LMEvalBenchmarkExtractor):
         positive_response = PositiveResponse(model_response=correct)
         negative_response = NegativeResponse(model_response=incorrect)
         return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))
+
+    @staticmethod
+    def extract_choices_and_answer(task, doc: dict[str, Any]) -> tuple[list[str], str]:
+        choices = task.doc_to_choice(doc)
+        target_idx = task.doc_to_target(doc)
+        expected = choices[target_idx]
+        return choices, expected
