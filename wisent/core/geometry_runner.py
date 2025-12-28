@@ -73,6 +73,274 @@ def compute_signal_strength(
         return 0.5
 
 
+def compute_knn_accuracy(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    k: int = 10,
+    n_folds: int = 5,
+) -> float:
+    """
+    Compute k-NN cross-validation accuracy.
+    
+    Measures local separability without assuming linearity.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        k: Number of neighbors
+        n_folds: Number of CV folds
+        
+    Returns:
+        Cross-validation accuracy
+    """
+    try:
+        from sklearn.neighbors import KNeighborsClassifier
+        from sklearn.model_selection import cross_val_score
+        
+        n_pos = len(pos_activations)
+        n_neg = len(neg_activations)
+        
+        if n_pos < k + 1 or n_neg < k + 1:
+            return 0.5
+        
+        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
+        y = np.array([1] * n_pos + [0] * n_neg)
+        
+        n_folds = min(n_folds, min(n_pos, n_neg))
+        if n_folds < 2:
+            return 0.5
+        
+        clf = KNeighborsClassifier(n_neighbors=k)
+        scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
+        return float(scores.mean())
+    except Exception:
+        return 0.5
+
+
+def compute_mmd_rbf(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+) -> float:
+    """
+    Compute Maximum Mean Discrepancy with RBF kernel.
+    
+    Measures distribution difference without assuming linearity.
+    Higher values indicate more separable distributions.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        
+    Returns:
+        MMD value (0 = identical distributions)
+    """
+    try:
+        from sklearn.metrics.pairwise import rbf_kernel
+        from scipy.spatial.distance import cdist
+        
+        pos = pos_activations.float().cpu().numpy()
+        neg = neg_activations.float().cpu().numpy()
+        
+        # Use median heuristic for gamma
+        all_data = np.vstack([pos, neg])
+        dists = cdist(all_data, all_data, 'euclidean')
+        gamma = 1.0 / (2 * np.median(dists[dists > 0]) ** 2 + 1e-10)
+        
+        K_pp = rbf_kernel(pos, pos, gamma=gamma)
+        K_nn = rbf_kernel(neg, neg, gamma=gamma)
+        K_pn = rbf_kernel(pos, neg, gamma=gamma)
+        
+        m = len(pos)
+        n = len(neg)
+        
+        mmd = (K_pp.sum() / (m * m) + 
+               K_nn.sum() / (n * n) - 
+               2 * K_pn.sum() / (m * n))
+        
+        return float(max(0, mmd))
+    except Exception:
+        return 0.0
+
+
+def estimate_local_intrinsic_dim(X: np.ndarray, k: int = 10) -> float:
+    """
+    Estimate local intrinsic dimensionality using MLE method.
+    Based on Levina & Bickel (2004).
+    
+    Args:
+        X: [N, D] data matrix
+        k: Number of neighbors for estimation
+        
+    Returns:
+        Estimated intrinsic dimension
+    """
+    from scipy.spatial.distance import cdist
+    
+    if len(X) < k + 1:
+        return float(X.shape[1])
+    
+    dists = cdist(X, X, 'euclidean')
+    np.fill_diagonal(dists, np.inf)
+    
+    sorted_dists = np.sort(dists, axis=1)[:, :k]
+    
+    dims = []
+    for i in range(len(X)):
+        T_k = sorted_dists[i, k-1]
+        if T_k < 1e-10:
+            continue
+        log_ratios = np.log(sorted_dists[i, :k-1] / T_k + 1e-10)
+        if len(log_ratios) > 0 and log_ratios.sum() < 0:
+            dim_est = -(k - 1) / log_ratios.sum()
+            dims.append(min(dim_est, X.shape[1]))
+    
+    return float(np.median(dims)) if dims else float(X.shape[1])
+
+
+def compute_local_intrinsic_dims(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    k: int = 10,
+) -> tuple:
+    """
+    Compute local intrinsic dimension for pos and neg separately.
+    
+    Different local dimensions suggest different geometric structures.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        k: Number of neighbors
+        
+    Returns:
+        (local_dim_pos, local_dim_neg, ratio)
+    """
+    try:
+        pos = pos_activations.float().cpu().numpy()
+        neg = neg_activations.float().cpu().numpy()
+        
+        dim_pos = estimate_local_intrinsic_dim(pos, k)
+        dim_neg = estimate_local_intrinsic_dim(neg, k)
+        ratio = dim_pos / (dim_neg + 1e-10)
+        
+        return dim_pos, dim_neg, ratio
+    except Exception:
+        return 0.0, 0.0, 1.0
+
+
+def compute_fisher_per_dimension(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+) -> dict:
+    """
+    Compute Fisher ratio for each dimension and summary stats.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        
+    Returns:
+        Dict with fisher_max, fisher_gini, fisher_top10_ratio, num_dims_above_1
+    """
+    try:
+        pos = pos_activations.float().cpu().numpy()
+        neg = neg_activations.float().cpu().numpy()
+        
+        n_dims = pos.shape[1]
+        fishers = np.zeros(n_dims)
+        
+        for d in range(n_dims):
+            pos_d = pos[:, d]
+            neg_d = neg[:, d]
+            
+            mean_pos = pos_d.mean()
+            mean_neg = neg_d.mean()
+            var_pos = pos_d.var()
+            var_neg = neg_d.var()
+            
+            between_var = (mean_pos - mean_neg) ** 2
+            within_var = (var_pos + var_neg) / 2
+            
+            if within_var > 1e-10:
+                fishers[d] = between_var / within_var
+        
+        # Summary stats
+        fisher_max = float(fishers.max())
+        
+        # Gini coefficient
+        values = np.abs(fishers)
+        if values.sum() > 1e-10:
+            values = np.sort(values)
+            n = len(values)
+            fisher_gini = (2 * np.sum((np.arange(1, n+1) * values)) / (n * values.sum())) - (n + 1) / n
+        else:
+            fisher_gini = 0.0
+        
+        # Top 10 ratio
+        sorted_fishers = np.sort(fishers)[::-1]
+        top10_sum = sorted_fishers[:10].sum()
+        total_sum = fishers.sum() + 1e-10
+        fisher_top10_ratio = float(top10_sum / total_sum)
+        
+        num_dims_above_1 = int((fishers > 1.0).sum())
+        
+        return {
+            "fisher_max": fisher_max,
+            "fisher_gini": float(fisher_gini),
+            "fisher_top10_ratio": fisher_top10_ratio,
+            "num_dims_fisher_above_1": num_dims_above_1,
+        }
+    except Exception:
+        return {
+            "fisher_max": 0.0,
+            "fisher_gini": 0.0,
+            "fisher_top10_ratio": 0.0,
+            "num_dims_fisher_above_1": 0,
+        }
+
+
+def compute_density_ratio(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+) -> float:
+    """
+    Compute ratio of average intra-class distances.
+    
+    Values far from 1 suggest different local geometries.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        
+    Returns:
+        Density ratio (pos avg dist / neg avg dist)
+    """
+    try:
+        from scipy.spatial.distance import cdist
+        
+        pos = pos_activations.float().cpu().numpy()
+        neg = neg_activations.float().cpu().numpy()
+        
+        if len(pos) < 2 or len(neg) < 2:
+            return 1.0
+        
+        pos_dists = cdist(pos, pos, 'euclidean')
+        neg_dists = cdist(neg, neg, 'euclidean')
+        
+        np.fill_diagonal(pos_dists, np.nan)
+        np.fill_diagonal(neg_dists, np.nan)
+        
+        avg_pos = np.nanmean(pos_dists)
+        avg_neg = np.nanmean(neg_dists)
+        
+        if avg_neg < 1e-10:
+            return 1.0
+        
+        return float(avg_pos / avg_neg)
+    except Exception:
+        return 1.0
+
+
 def compute_linear_probe_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
@@ -131,6 +399,20 @@ class GeometryTestResult:
     linear_probe_accuracy: float  # Linear CV accuracy, high = linear, low = nonlinear
     is_linear: bool  # linear_probe_accuracy > 0.6 AND close to signal_strength
     
+    # NEW: Nonlinear signal metrics
+    knn_accuracy_k5: float  # k-NN CV accuracy with k=5
+    knn_accuracy_k10: float  # k-NN CV accuracy with k=10
+    knn_accuracy_k20: float  # k-NN CV accuracy with k=20
+    mmd_rbf: float  # Maximum Mean Discrepancy with RBF kernel
+    local_dim_pos: float  # Local intrinsic dimension of positive class
+    local_dim_neg: float  # Local intrinsic dimension of negative class
+    local_dim_ratio: float  # Ratio of local dimensions
+    fisher_max: float  # Max Fisher ratio across all dimensions
+    fisher_gini: float  # Gini coefficient of Fisher ratios (concentration)
+    fisher_top10_ratio: float  # Fraction of total Fisher in top 10 dims
+    num_dims_fisher_above_1: int  # Number of dimensions with Fisher > 1
+    density_ratio: float  # Ratio of avg intra-class distances
+    
     # Step 3: Geometry details (only meaningful if has_signal=True)
     # Best structure detected
     best_structure: str  # 'linear', 'cone', 'cluster', 'manifold', 'sparse', 'bimodal', 'orthogonal'
@@ -185,6 +467,21 @@ class GeometryTestResult:
             # Step 2: Linearity check
             "linear_probe_accuracy": self.linear_probe_accuracy,
             "is_linear": self.is_linear,
+            # NEW: Nonlinear signal metrics
+            "nonlinear_metrics": {
+                "knn_accuracy_k5": self.knn_accuracy_k5,
+                "knn_accuracy_k10": self.knn_accuracy_k10,
+                "knn_accuracy_k20": self.knn_accuracy_k20,
+                "mmd_rbf": self.mmd_rbf,
+                "local_dim_pos": self.local_dim_pos,
+                "local_dim_neg": self.local_dim_neg,
+                "local_dim_ratio": self.local_dim_ratio,
+                "fisher_max": self.fisher_max,
+                "fisher_gini": self.fisher_gini,
+                "fisher_top10_ratio": self.fisher_top10_ratio,
+                "num_dims_fisher_above_1": self.num_dims_fisher_above_1,
+                "density_ratio": self.density_ratio,
+            },
             # Step 3: Geometry (only meaningful if has_signal)
             "best_structure": self.best_structure,
             "best_score": self.best_score,
@@ -349,6 +646,20 @@ def compute_geometry_metrics(
             has_signal=False,
             linear_probe_accuracy=0.5,
             is_linear=False,
+            # Nonlinear metrics
+            knn_accuracy_k5=0.5,
+            knn_accuracy_k10=0.5,
+            knn_accuracy_k20=0.5,
+            mmd_rbf=0.0,
+            local_dim_pos=0.0,
+            local_dim_neg=0.0,
+            local_dim_ratio=1.0,
+            fisher_max=0.0,
+            fisher_gini=0.0,
+            fisher_top10_ratio=0.0,
+            num_dims_fisher_above_1=0,
+            density_ratio=1.0,
+            # Structure scores
             best_structure="error",
             best_score=0.0,
             linear_score=0.0,
@@ -400,6 +711,15 @@ def compute_geometry_metrics(
         # Signal is linear if: has signal AND linear probe is close to MLP (within 0.1)
         is_linear = has_signal and linear_probe_accuracy > 0.6 and (signal_strength - linear_probe_accuracy) < 0.15
         
+        # Step 2b: Compute nonlinear signal metrics
+        knn_k5 = compute_knn_accuracy(pos_activations, neg_activations, k=5)
+        knn_k10 = compute_knn_accuracy(pos_activations, neg_activations, k=10)
+        knn_k20 = compute_knn_accuracy(pos_activations, neg_activations, k=20)
+        mmd = compute_mmd_rbf(pos_activations, neg_activations)
+        local_dim_pos, local_dim_neg, local_dim_ratio = compute_local_intrinsic_dims(pos_activations, neg_activations)
+        fisher_stats = compute_fisher_per_dimension(pos_activations, neg_activations)
+        density_rat = compute_density_ratio(pos_activations, neg_activations)
+        
         # Determine recommendation based on signal analysis
         if not has_signal:
             recommendation = "NO_SIGNAL"
@@ -422,9 +742,22 @@ def compute_geometry_metrics(
             has_signal=has_signal,
             linear_probe_accuracy=linear_probe_accuracy,
             is_linear=is_linear,
+            # Nonlinear metrics
+            knn_accuracy_k5=knn_k5,
+            knn_accuracy_k10=knn_k10,
+            knn_accuracy_k20=knn_k20,
+            mmd_rbf=mmd,
+            local_dim_pos=local_dim_pos,
+            local_dim_neg=local_dim_neg,
+            local_dim_ratio=local_dim_ratio,
+            fisher_max=fisher_stats["fisher_max"],
+            fisher_gini=fisher_stats["fisher_gini"],
+            fisher_top10_ratio=fisher_stats["fisher_top10_ratio"],
+            num_dims_fisher_above_1=fisher_stats["num_dims_fisher_above_1"],
+            density_ratio=density_rat,
+            # Structure scores
             best_structure=result.best_structure.value,
             best_score=result.best_score,
-            # Structure scores
             linear_score=result.all_scores.get("linear", type('', (), {'score': 0.0})()).score,
             cone_score=result.all_scores.get("cone", type('', (), {'score': 0.0})()).score,
             orthogonal_score=result.all_scores.get("orthogonal", type('', (), {'score': 0.0})()).score,
@@ -463,6 +796,20 @@ def compute_geometry_metrics(
             has_signal=False,
             linear_probe_accuracy=0.5,
             is_linear=False,
+            # Nonlinear metrics
+            knn_accuracy_k5=0.5,
+            knn_accuracy_k10=0.5,
+            knn_accuracy_k20=0.5,
+            mmd_rbf=0.0,
+            local_dim_pos=0.0,
+            local_dim_neg=0.0,
+            local_dim_ratio=1.0,
+            fisher_max=0.0,
+            fisher_gini=0.0,
+            fisher_top10_ratio=0.0,
+            num_dims_fisher_above_1=0,
+            density_ratio=1.0,
+            # Structure scores
             best_structure="error",
             best_score=0.0,
             linear_score=0.0,
