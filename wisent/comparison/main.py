@@ -129,13 +129,6 @@ def run_single_task(
             steering_vectors_data[extraction_strategy][method] = steering_data
             print(f"Loaded steering vector with layers: {steering_data['layers']}")
 
-    # Force cleanup of any leftover GPU memory from steering vector generation
-    gc.collect()
-    if torch.cuda.is_available():
-        torch.cuda.empty_cache()
-        torch.cuda.synchronize()
-    print(f"\nGPU memory cleared before evaluation")
-
     # Step 3: Load model once for ALL evaluations
     print(f"\n{'='*60}")
     print(f"Loading model: {model_name}")
