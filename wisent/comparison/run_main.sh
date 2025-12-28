@@ -11,13 +11,13 @@ INSTANCE_TYPE="g6e.2xlarge"
 MODEL="google/gemma-2-9b"
 
 # Tasks (comma-separated)
-TASKS="boolq"
+TASKS="boolq, cb"
 
 # Steering method: caa, sae, fgaa
-METHODS="fgaa"
+METHODS="fgaa, caa"
 
 # Steering scales (comma-separated)
-SCALES="7.0,8.0"
+SCALES="2.0,4.0,6.0,8.0"
 
 # Layer(s) for steering
 LAYERS="12"
