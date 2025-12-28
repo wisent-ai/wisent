@@ -18,7 +18,7 @@ from datasets import load_dataset
 import random
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
-DEVICE = "mps"
+DEVICE = "cuda"
 N_SAMPLES = 30
 TEST_LAYERS = [4, 6, 8, 10, 12]
 
