@@ -98,6 +98,14 @@ class CategoryResult:
     avg_linear_probe_accuracy: float  # Linear probe CV accuracy
     is_linear: bool  # signal is linear (CAA will work)
     
+    # NEW: Nonlinear signal metrics
+    avg_knn_accuracy_k10: float  # k-NN CV accuracy
+    avg_mmd_rbf: float  # Maximum Mean Discrepancy
+    avg_local_dim_pos: float  # Local intrinsic dim of positive class
+    avg_local_dim_neg: float  # Local intrinsic dim of negative class
+    avg_fisher_max: float  # Max Fisher ratio
+    avg_density_ratio: float  # Density ratio
+    
     # Step 3: Geometry details (only meaningful if signal_exists)
     structure_distribution: Dict[str, int]
     structure_percentages: Dict[str, float]
@@ -141,19 +149,19 @@ class DiscoveryResults:
             lines.append(f"CAA READY - Linear signal ({len(caa_ready)}):")
             for name in sorted(caa_ready, key=lambda n: self.categories[n].avg_signal_strength, reverse=True):
                 cat = self.categories[name]
-                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}")
+                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}, kNN={cat.avg_knn_accuracy_k10:.2f}")
         
         if nonlinear:
             lines.append(f"\nNONLINEAR - Need different method ({len(nonlinear)}):")
             for name in nonlinear:
                 cat = self.categories[name]
-                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}")
+                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}, kNN={cat.avg_knn_accuracy_k10:.2f}, MMD={cat.avg_mmd_rbf:.3f}")
         
         if no_signal:
             lines.append(f"\nNO SIGNAL ({len(no_signal)}):")
             for name in no_signal:
                 cat = self.categories[name]
-                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}")
+                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, kNN={cat.avg_knn_accuracy_k10:.2f}")
         
         return "\n".join(lines)
 
@@ -170,6 +178,12 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
             signal_exists=False,
             avg_linear_probe_accuracy=0.5,
             is_linear=False,
+            avg_knn_accuracy_k10=0.5,
+            avg_mmd_rbf=0.0,
+            avg_local_dim_pos=0.0,
+            avg_local_dim_neg=0.0,
+            avg_fisher_max=0.0,
+            avg_density_ratio=1.0,
             structure_distribution={},
             structure_percentages={},
             dominant_structure="error",
@@ -195,6 +209,14 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
     avg_linear_probe_accuracy = sum(r.linear_probe_accuracy for r in results.results) / len(results.results)
     # Signal is linear if linear probe is close to MLP accuracy
     is_linear = signal_exists and avg_linear_probe_accuracy > 0.6 and (avg_signal_strength - avg_linear_probe_accuracy) < 0.15
+    
+    # Step 2b: Nonlinear signal metrics
+    avg_knn_accuracy_k10 = sum(r.knn_accuracy_k10 for r in results.results) / len(results.results)
+    avg_mmd_rbf = sum(r.mmd_rbf for r in results.results) / len(results.results)
+    avg_local_dim_pos = sum(r.local_dim_pos for r in results.results) / len(results.results)
+    avg_local_dim_neg = sum(r.local_dim_neg for r in results.results) / len(results.results)
+    avg_fisher_max = sum(r.fisher_max for r in results.results) / len(results.results)
+    avg_density_ratio = sum(r.density_ratio for r in results.results) / len(results.results)
     
     # Step 3: Geometry details
     avg_linear_score = sum(r.linear_score for r in results.results) / len(results.results)
@@ -234,6 +256,12 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
         signal_exists=signal_exists,
         avg_linear_probe_accuracy=avg_linear_probe_accuracy,
         is_linear=is_linear,
+        avg_knn_accuracy_k10=avg_knn_accuracy_k10,
+        avg_mmd_rbf=avg_mmd_rbf,
+        avg_local_dim_pos=avg_local_dim_pos,
+        avg_local_dim_neg=avg_local_dim_neg,
+        avg_fisher_max=avg_fisher_max,
+        avg_density_ratio=avg_density_ratio,
         structure_distribution=dist,
         structure_percentages=percentages,
         dominant_structure=dominant,
@@ -393,7 +421,7 @@ def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int
     print(f"Pairs per benchmark: {search_space.config.pairs_per_benchmark}")
     
     # Output directory
-    output_dir = Path("/home/ubuntu/output/direction_discovery")
+    output_dir = Path("/tmp/direction_discovery")
     output_dir.mkdir(parents=True, exist_ok=True)
     
     all_model_results = {}
