@@ -85,8 +85,8 @@ class BoolQExtractor(LMEvalBenchmarkExtractor):
                 )
                 return None
 
-            correct = "Yes" if label == 1 else "No"
-            incorrect = "No" if label == 1 else "Yes"
+            correct = "yes" if label == 1 else "no"
+            incorrect = "no" if label == 1 else "yes"
 
             prompt = f"{passage}\nQuestion: {question}?\nAnswer:"
 
@@ -115,3 +115,20 @@ class BoolQExtractor(LMEvalBenchmarkExtractor):
         positive_response = PositiveResponse(model_response=correct)
         negative_response = NegativeResponse(model_response=incorrect)
         return ContrastivePair(prompt=question, positive_response=positive_response, negative_response=negative_response, label=metadata.get("label"))
+
+    @staticmethod
+    def extract_choices_and_answer(task, doc: dict[str, Any]) -> tuple[list[str], str]:
+        """
+        Extract choices and expected answer from a BoolQ document.
+
+        Args:
+            task: lm-eval task instance (has doc_to_choice, doc_to_target methods)
+            doc: BoolQ document
+
+        Returns:
+            Tuple of (choices, expected_answer)
+        """
+        choices = task.doc_to_choice(doc)
+        target_idx = task.doc_to_target(doc)
+        expected = choices[target_idx]
+        return choices, expected

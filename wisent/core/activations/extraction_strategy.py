@@ -101,8 +101,9 @@ class ExtractionStrategy(str, Enum):
         Returns:
             Appropriate strategy for the tokenizer type
         """
-        has_chat = hasattr(tokenizer, "apply_chat_template") and callable(getattr(tokenizer, "apply_chat_template"))
-        
+        has_chat = (hasattr(tokenizer, "apply_chat_template") and callable(getattr(tokenizer, "apply_chat_template"))
+                    and hasattr(tokenizer, "chat_template") and tokenizer.chat_template is not None)
+
         if has_chat:
             return cls.MC_BALANCED if prefer_mc else cls.CHAT_LAST
         else:
@@ -128,7 +129,8 @@ class ExtractionStrategy(str, Enum):
         Returns:
             The appropriate strategy for the tokenizer
         """
-        has_chat = hasattr(tokenizer, "apply_chat_template") and callable(getattr(tokenizer, "apply_chat_template"))
+        has_chat = (hasattr(tokenizer, "apply_chat_template") and callable(getattr(tokenizer, "apply_chat_template"))
+                    and hasattr(tokenizer, "chat_template") and tokenizer.chat_template is not None)
         is_base_strategy = cls.is_base_model_strategy(strategy)
         
         if has_chat and is_base_strategy:
@@ -158,7 +160,9 @@ class ExtractionStrategy(str, Enum):
 
 def tokenizer_has_chat_template(tokenizer) -> bool:
     """Check if tokenizer supports chat template."""
-    return hasattr(tokenizer, "apply_chat_template") and callable(getattr(tokenizer, "apply_chat_template"))
+    has_method = hasattr(tokenizer, "apply_chat_template") and callable(getattr(tokenizer, "apply_chat_template"))
+    has_template = hasattr(tokenizer, "chat_template") and tokenizer.chat_template is not None
+    return has_method and has_template
 
 
 # Random tokens for role_play strategy (deterministic based on prompt hash)
