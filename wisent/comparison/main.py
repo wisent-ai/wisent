@@ -16,97 +16,29 @@ from pathlib import Path
 
 import torch
 from lm_eval import evaluator
-from lm_eval.models.huggingface import HFLM
-from lm_eval.tasks import get_task_dict
 from lm_eval.models.hf_steered import SteeredModel
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.utils.dataset_splits import get_test_docs
 from wisent.comparison import ours
 from wisent.comparison import sae
-from wisent.comparison.utils import load_steering_vector, apply_steering_to_model, remove_steering, convert_to_lm_eval_format
+from wisent.comparison import fgaa
+from wisent.comparison.utils import (
+    load_steering_vector,
+    apply_steering_to_model,
+    remove_steering,
+    convert_to_lm_eval_format,
+    create_test_only_task,
+    extract_accuracy,
+    run_lm_eval_evaluation,
+    run_ll_evaluation,
+)
 
 # Map method names to modules
 METHOD_MODULES = {
     "caa": ours,
     "sae": sae,
+    "fgaa": fgaa,
 }
-
-
-def create_test_only_task(task_name: str, train_ratio: float = 0.8) -> dict:
-    """
-    Create a task that evaluates only on our test split.
-
-    This ensures no overlap with the data used for steering vector training.
-    """
-    task_dict = get_task_dict([task_name])
-    task = task_dict[task_name]
-
-    # Get our test split
-    test_docs = get_test_docs(task, benchmark_name=task_name, train_ratio=train_ratio)
-    test_pct = round((1 - train_ratio) * 100)
-
-    print(f"Test split size: {len(test_docs)} docs ({test_pct}% of pooled data)")
-
-    # Override task's doc methods to use our test split
-    # Return list (not iterator) so len() works
-    task.test_docs = lambda: test_docs
-    task.has_test_docs = lambda: True
-    # Also override eval_docs property to return our test docs directly
-    task._eval_docs = test_docs
-
-    return {task_name: task}
-
-
-def run_evaluation(
-    model_name: str = None,
-    wisent_model: WisentModel = None,
-    task_dict: dict = None,
-    task_name: str = None,
-    device: str = "cuda:0",
-    batch_size: int = 1,
-    max_batch_size: int = 8,
-    limit: int | None = None,
-) -> dict:
-    """
-    Run evaluation using lm-eval-harness on our test split.
-
-    Either provide model_name (loads fresh model) or wisent_model (uses existing).
-    """
-    if wisent_model is not None:
-        # Use pre-loaded model (with steering hooks if applied)
-        lm = HFLM(
-            pretrained=wisent_model.hf_model,
-            tokenizer=wisent_model.tokenizer,
-            batch_size=batch_size,
-            max_batch_size=max_batch_size,
-        )
-    else:
-        # Load fresh model
-        lm = HFLM(
-            pretrained=model_name,
-            device=device,
-            batch_size=batch_size,
-            max_batch_size=max_batch_size,
-        )
-
-    # Use lower-level evaluate() which accepts task_dict directly
-    results = evaluator.evaluate(
-        lm=lm,
-        task_dict=task_dict,
-        limit=limit,
-    )
-
-    return results
-
-
-def extract_accuracy(results: dict, task: str) -> float:
-    """Extract accuracy from lm-eval results."""
-    task_results = results.get("results", {}).get(task, {})
-    for key in ["acc", "acc,none", "accuracy", "acc_norm", "acc_norm,none"]:
-        if key in task_results:
-            return task_results[key]
-    return 0.0
 
 
 def run_single_task(
@@ -116,24 +48,26 @@ def run_single_task(
     num_pairs: int = 50,
     steering_scales: list[float] = None,
     device: str = "cuda:0",
-    batch_size: int = 1,
+    batch_size: int | str = 1,
     max_batch_size: int = 8,
     eval_limit: int | None = None,
     vectors_dir: Path = None,
     train_ratio: float = 0.8,
     layers: str | None = None,
-    token_aggregation: str = "average",
-    prompt_strategy: str = "direct_completion",
+    extraction_strategies: list[str] = None,
+    bos_features_source: str = "detected",
 ) -> list[dict]:
     """
-    Run comparison for a single task with multiple methods and scales.
+    Run comparison for a single task with multiple methods, scales, and extraction strategies.
 
-    Returns list of result dicts, one per method/scale combination.
+    Returns list of result dicts, one per method/scale/strategy combination.
     """
     if methods is None:
         methods = ["caa"]
     if steering_scales is None:
         steering_scales = [1.0]
+    if extraction_strategies is None:
+        extraction_strategies = ["mc_balanced"]
 
     results_list = []
 
@@ -146,7 +80,8 @@ def run_single_task(
 
     task_dict = create_test_only_task(task, train_ratio=train_ratio)
 
-    # Step 2: Generate ALL steering vectors FIRST (subprocess frees GPU memory after each)
+    # Step 2: Generate ALL steering vectors FIRST for ALL strategies (subprocess frees GPU memory after each)
+    # Structure: steering_vectors_data[strategy][method] = steering_data
     steering_vectors_data = {}
     train_pct = round(train_ratio * 100)
 
@@ -157,28 +92,42 @@ def run_single_task(
 
         method_module = METHOD_MODULES[method]
 
-        print(f"\n{'='*60}")
-        print(f"Generating steering vector for: {task} (method={method})")
-        print(f"(using {train_pct}% of pooled data - no overlap with test)")
-        if layers:
-            print(f"Layers: {layers}")
-        print(f"{'='*60}")
+        # CAA uses extraction strategy, FGAA/SAE don't
+        for extraction_strategy in (extraction_strategies if method == "caa" else [None]):
+            print(f"\n{'@'*60}")
+            print(f"@ METHOD: {method}, EXTRACTION STRATEGY: {extraction_strategy or 'N/A'}")
+            print(f"{'@'*60}")
 
-        vector_path = vectors_dir / f"{task}_{method}_steering_vector.json"
-        method_module.generate_steering_vector(
-            task=task,
-            model_name=model_name,
-            output_path=vector_path,
-            num_pairs=num_pairs,
-            device=device,
-            layers=layers,
-            token_aggregation=token_aggregation,
-            prompt_strategy=prompt_strategy,
-        )
+            print(f"\n{'='*60}")
+            print(f"Generating steering vector for: {task} (method={method})")
+            print(f"(using {train_pct}% of pooled data - no overlap with test)")
+            if layers:
+                print(f"Layers: {layers}")
+            print(f"{'='*60}")
 
-        steering_data = load_steering_vector(vector_path, default_method=method)
-        steering_vectors_data[method] = steering_data
-        print(f"Loaded steering vector with layers: {steering_data['layers']}")
+            suffix = f"_{extraction_strategy}" if extraction_strategy else ""
+            vector_path = vectors_dir / f"{task}_{method}{suffix}_steering_vector.json"
+
+            kwargs = {
+                "task": task,
+                "model_name": model_name,
+                "output_path": vector_path,
+                "num_pairs": num_pairs,
+                "device": device,
+                "layers": layers,
+            }
+            if extraction_strategy:
+                kwargs["extraction_strategy"] = extraction_strategy
+            if method == "fgaa":
+                kwargs["bos_features_source"] = bos_features_source
+
+            method_module.generate_steering_vector(**kwargs)
+
+            steering_data = load_steering_vector(vector_path, default_method=method)
+            if extraction_strategy not in steering_vectors_data:
+                steering_vectors_data[extraction_strategy] = {}
+            steering_vectors_data[extraction_strategy][method] = steering_data
+            print(f"Loaded steering vector with layers: {steering_data['layers']}")
 
     # Step 3: Load model once for ALL evaluations
     print(f"\n{'='*60}")
@@ -191,7 +140,7 @@ def run_single_task(
     print(f"Running BASE evaluation for: {task}")
     print(f"{'='*60}")
 
-    base_results = run_evaluation(
+    base_results = run_lm_eval_evaluation(
         wisent_model=wisent_model,
         task_dict=task_dict,
         task_name=task,
@@ -200,40 +149,70 @@ def run_single_task(
         limit=eval_limit,
     )
     base_acc = extract_accuracy(base_results, task)
-    print(f"Base accuracy: {base_acc:.4f}")
+    print(f"Base accuracy (lm-eval): {base_acc:.4f}")
+
+    # Step 4b: Run base LL evaluation (no steering)
+    print(f"\n{'='*60}")
+    print(f"Running BASE LL evaluation for: {task}")
+    print(f"{'='*60}")
+
+    base_ll_acc = run_ll_evaluation(
+        wisent_model=wisent_model,
+        task_dict=task_dict,
+        task_name=task,
+        limit=eval_limit,
+    )
+    print(f"Base accuracy (LL): {base_ll_acc:.4f}")
 
     # Step 5: Run ALL wisent steered evaluations first (model stays loaded)
-    wisent_results = {}  # (method, scale) -> steered_acc
+    # Structure: wisent_results[(strategy, method, scale)] = steered_acc
+    wisent_results = {}
     for method in methods:
-        if method not in steering_vectors_data:
-            continue
+        # CAA uses extraction strategy, FGAA/SAE don't
+        for extraction_strategy in (extraction_strategies if method == "caa" else [None]):
+            if extraction_strategy not in steering_vectors_data:
+                continue
+            if method not in steering_vectors_data[extraction_strategy]:
+                continue
 
-        steering_data = steering_vectors_data[method]
+            steering_data = steering_vectors_data[extraction_strategy][method]
 
-        for scale in steering_scales:
-            print(f"\n{'='*60}")
-            print(f"Running STEERED evaluation for: {task} (method={method}, scale={scale})")
-            print(f"{'='*60}")
+            for scale in steering_scales:
+                print(f"\n{'='*60}")
+                print(f"Running STEERED evaluation for: {task} (strategy={extraction_strategy}, method={method}, scale={scale})")
+                print(f"{'='*60}")
 
-            # Apply steering to existing model
-            apply_steering_to_model(wisent_model, steering_data, scale=scale)
+                # Apply steering to existing model
+                apply_steering_to_model(wisent_model, steering_data, scale=scale)
 
-            steered_results = run_evaluation(
-                wisent_model=wisent_model,
-                task_dict=task_dict,
-                task_name=task,
-                batch_size=batch_size,
-                max_batch_size=max_batch_size,
-                limit=eval_limit,
-            )
-            steered_acc = extract_accuracy(steered_results, task)
-            print(f"Steered accuracy (wisent): {steered_acc:.4f}")
+                steered_results = run_lm_eval_evaluation(
+                    wisent_model=wisent_model,
+                    task_dict=task_dict,
+                    task_name=task,
+                    batch_size=batch_size,
+                    max_batch_size=max_batch_size,
+                    limit=eval_limit,
+                )
+                steered_acc = extract_accuracy(steered_results, task)
+                print(f"Steered accuracy (lm-eval): {steered_acc:.4f}")
 
-            # Remove steering for next iteration
-            remove_steering(wisent_model)
+                # Run steered LL evaluation
+                steered_ll_acc = run_ll_evaluation(
+                    wisent_model=wisent_model,
+                    task_dict=task_dict,
+                    task_name=task,
+                    limit=eval_limit,
+                )
+                print(f"Steered accuracy (LL): {steered_ll_acc:.4f}")
 
-            # Store wisent result
-            wisent_results[(method, scale)] = steered_acc
+                # Remove steering for next iteration
+                remove_steering(wisent_model)
+
+                # Store wisent results
+                wisent_results[(extraction_strategy, method, scale)] = {
+                    "lm_eval": steered_acc,
+                    "ll": steered_ll_acc,
+                }
 
     # Step 6: Free wisent_model to make room for SteeredModel
     del wisent_model
@@ -244,58 +223,69 @@ def run_single_task(
 
     # Step 7: Run ALL lm-eval native steered evaluations (one at a time)
     for method in methods:
-        if method not in steering_vectors_data:
-            continue
+        # CAA uses extraction strategy, FGAA/SAE don't
+        for extraction_strategy in (extraction_strategies if method == "caa" else [None]):
+            if extraction_strategy not in steering_vectors_data:
+                continue
+            if method not in steering_vectors_data[extraction_strategy]:
+                continue
 
-        steering_data = steering_vectors_data[method]
+            steering_data = steering_vectors_data[extraction_strategy][method]
 
-        for scale in steering_scales:
-            print(f"\n{'='*60}")
-            print(f"Running lm-eval NATIVE steered for: {task} (method={method}, scale={scale})")
-            print(f"{'='*60}")
+            for scale in steering_scales:
+                print(f"\n{'='*60}")
+                print(f"Running lm-eval NATIVE steered for: {task} (strategy={extraction_strategy}, method={method}, scale={scale})")
+                print(f"{'='*60}")
 
-            # Convert steering vector to lm-eval format
-            lm_eval_steer_path = vectors_dir / f"{task}_{method}_lm_eval_steer_scale{scale}.pt"
-            convert_to_lm_eval_format(steering_data, lm_eval_steer_path, scale=scale)
+                # Convert steering vector to lm-eval format
+                suffix = f"_{extraction_strategy}" if extraction_strategy else ""
+                lm_eval_steer_path = vectors_dir / f"{task}_{method}{suffix}_lm_eval_steer_scale{scale}.pt"
+                convert_to_lm_eval_format(steering_data, lm_eval_steer_path, scale=scale)
 
-            lm_steered = SteeredModel(
-                pretrained=model_name,
-                steer_path=str(lm_eval_steer_path),
-                device=device,
-                batch_size=batch_size,
-                max_batch_size=max_batch_size,
-            )
+                lm_steered = SteeredModel(
+                    pretrained=model_name,
+                    steer_path=str(lm_eval_steer_path),
+                    device=device,
+                    batch_size=batch_size,
+                    max_batch_size=max_batch_size,
+                )
 
-            lm_eval_native_results = evaluator.evaluate(
-                lm=lm_steered,
-                task_dict=task_dict,
-                limit=eval_limit,
-            )
-            lm_eval_native_acc = extract_accuracy(lm_eval_native_results, task)
-            print(f"lm-eval native steered accuracy: {lm_eval_native_acc:.4f}")
+                lm_eval_native_results = evaluator.evaluate(
+                    lm=lm_steered,
+                    task_dict=task_dict,
+                    limit=eval_limit,
+                )
+                lm_eval_native_acc = extract_accuracy(lm_eval_native_results, task)
+                print(f"lm-eval native steered accuracy: {lm_eval_native_acc:.4f}")
 
-            # Clean up SteeredModel to free GPU for next iteration
-            del lm_steered
-            gc.collect()
-            if torch.cuda.is_available():
-                torch.cuda.empty_cache()
-                torch.cuda.synchronize()
+                # Clean up SteeredModel to free GPU for next iteration
+                del lm_steered
+                gc.collect()
+                if torch.cuda.is_available():
+                    torch.cuda.empty_cache()
+                    torch.cuda.synchronize()
 
-            # Store combined results
-            steered_acc = wisent_results[(method, scale)]
-            results_list.append({
-                "task": task,
-                "method": method,
-                "model": model_name,
-                "layers": steering_data['layers'],
-                "num_pairs": num_pairs,
-                "steering_scale": scale,
-                "base_accuracy": base_acc,
-                "steered_accuracy_wisent": steered_acc,
-                "steered_accuracy_lm_eval_native": lm_eval_native_acc,
-                "difference_wisent": steered_acc - base_acc,
-                "difference_lm_eval_native": lm_eval_native_acc - base_acc,
-            })
+                # Store combined results
+                wisent_result = wisent_results[(extraction_strategy, method, scale)]
+                steered_acc_lm_eval = wisent_result["lm_eval"]
+                steered_acc_ll = wisent_result["ll"]
+                results_list.append({
+                    "task": task,
+                    "extraction_strategy": extraction_strategy or "N/A",
+                    "method": method,
+                    "model": model_name,
+                    "layers": steering_data['layers'],
+                    "num_pairs": num_pairs,
+                    "steering_scale": scale,
+                    "base_accuracy_lm_eval": base_acc,
+                    "base_accuracy_ll": base_ll_acc,
+                    "steered_accuracy_lm_eval": steered_acc_lm_eval,
+                    "steered_accuracy_ll": steered_acc_ll,
+                    "steered_accuracy_lm_eval_native": lm_eval_native_acc,
+                    "difference_lm_eval": steered_acc_lm_eval - base_acc,
+                    "difference_ll": steered_acc_ll - base_ll_acc,
+                    "difference_lm_eval_native": lm_eval_native_acc - base_acc,
+                })
 
     return results_list
 
@@ -307,24 +297,29 @@ def run_comparison(
     num_pairs: int = 50,
     steering_scales: list[float] = None,
     device: str = "cuda:0",
-    batch_size: int = 1,
+    batch_size: int | str = 1,
     max_batch_size: int = 8,
     eval_limit: int | None = None,
     output_dir: str = "comparison_results",
     train_ratio: float = 0.8,
     layers: str | None = None,
-    token_aggregation: str = "average",
-    prompt_strategy: str = "direct_completion",
+    extraction_strategies: list[str] = None,
+    bos_features_source: str = "detected",
 ) -> list[dict]:
     """
-    Run full comparison for multiple tasks, methods, and scales.
+    Run full comparison for multiple tasks, methods, scales, and extraction strategies.
     """
     if methods is None:
         methods = ["caa"]
     if steering_scales is None:
         steering_scales = [1.0]
+    if extraction_strategies is None:
+        extraction_strategies = ["mc_balanced"]
 
     output_dir = Path(output_dir)
+    # Add model name to path (sanitize "/" -> "_")
+    model_dir_name = model_name.replace("/", "_")
+    output_dir = output_dir / model_dir_name
     vectors_dir = output_dir / "steering_vectors"
     results_dir = output_dir / "results"
 
@@ -352,34 +347,36 @@ def run_comparison(
             vectors_dir=vectors_dir,
             train_ratio=train_ratio,
             layers=layers,
-            token_aggregation=token_aggregation,
-            prompt_strategy=prompt_strategy,
+            extraction_strategies=extraction_strategies,
+            bos_features_source=bos_features_source,
         )
         all_results.extend(task_results)
 
-        # Save results for this task
+        # Save results for this task (includes all strategies)
         task_results_file = results_dir / f"{task}_results.json"
         with open(task_results_file, "w") as f:
             json.dump(task_results, f, indent=2)
         print(f"Results for {task} saved to: {task_results_file}")
 
     # Print final summary table
-    print(f"\n{'='*90}")
+    print(f"\n{'='*150}")
     print(f"FINAL COMPARISON RESULTS")
-    print(f"{'='*90}")
+    print(f"{'='*150}")
     print(f"Model: {model_name}")
     print(f"Num pairs: {num_pairs}")
     print(f"Layers: {layers or 'default (middle)'}")
-    print(f"{'='*90}")
-    print(f"{'Task':<10} {'Method':<8} {'Scale':<7} {'Base':<8} {'Wisent':<8} {'lm-eval':<8} {'Diff(W)':<9} {'Diff(L)':<9}")
-    print(f"{'-'*90}")
+    print(f"Strategies: {', '.join(extraction_strategies)}")
+    print(f"{'='*150}")
+    print(f"{'Strategy':<16} {'Task':<10} {'Method':<8} {'Scale':<6} {'Base(E)':<8} {'Base(L)':<8} {'Steer(E)':<9} {'Steer(L)':<9} {'Native':<8} {'Diff(E)':<8} {'Diff(L)':<8} {'Diff(N)':<8}")
+    print(f"{'-'*150}")
 
     for r in all_results:
-        print(f"{r['task']:<10} {r['method']:<8} {r['steering_scale']:<7.1f} {r['base_accuracy']:<8.4f} "
-              f"{r['steered_accuracy_wisent']:<8.4f} {r['steered_accuracy_lm_eval_native']:<8.4f} "
-              f"{r['difference_wisent']:+<9.4f} {r['difference_lm_eval_native']:+<9.4f}")
+        print(f"{r.get('extraction_strategy', 'N/A'):<16} {r['task']:<10} {r['method']:<8} {r['steering_scale']:<6.1f} "
+              f"{r['base_accuracy_lm_eval']:<8.4f} {r['base_accuracy_ll']:<8.4f} "
+              f"{r['steered_accuracy_lm_eval']:<9.4f} {r['steered_accuracy_ll']:<9.4f} {r['steered_accuracy_lm_eval_native']:<8.4f} "
+              f"{r['difference_lm_eval']:+<8.4f} {r['difference_ll']:+<8.4f} {r['difference_lm_eval_native']:+<8.4f}")
 
-    print(f"{'='*90}")
+    print(f"{'='*150}")
 
     print(f"\nSteering vectors saved to: {vectors_dir}")
     print(f"Results saved to: {results_dir}")
@@ -391,18 +388,20 @@ def main():
     parser = argparse.ArgumentParser(description="Compare steering methods")
     parser.add_argument("--model", default="EleutherAI/gpt-neo-125M", help="Model name")
     parser.add_argument("--tasks", default="boolq", help="Comma-separated lm-eval tasks (e.g., boolq,cb,copa)")
-    parser.add_argument("--methods", default="caa", help="Comma-separated methods (e.g., caa,sae)")
+    parser.add_argument("--methods", default="caa", help="Comma-separated methods (e.g., caa,sae,fgaa)")
     parser.add_argument("--num-pairs", type=int, default=50, help="Number of contrastive pairs")
     parser.add_argument("--scales", default="1.0", help="Comma-separated steering scales (e.g., 0.5,1.0,1.5)")
     parser.add_argument("--layers", default=None, help="Layer(s) for steering (e.g., '9' or '8,9,10' or 'all')")
     parser.add_argument("--device", default="cuda:0", help="Device")
-    parser.add_argument("--batch-size", type=int, default=1, help="Batch size")
+    parser.add_argument("--batch-size", default=1, help="Batch size (int or 'auto')")
     parser.add_argument("--max-batch-size", type=int, default=8, help="Max batch size for lm-eval internal batching (reduce if OOM)")
     parser.add_argument("--limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--output-dir", default="wisent/comparison/comparison_results", help="Output directory")
     parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio (default 0.8 = 80%% train, 20%% test)")
-    parser.add_argument("--token-aggregation", default="average", choices=["average", "final", "first", "max"], help="Token aggregation strategy")
-    parser.add_argument("--prompt-strategy", default="direct_completion", choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"], help="Prompt construction strategy")
+    parser.add_argument("--extraction-strategy", default="mc_balanced",
+                        help="Extraction strategy (comma-separated for multiple). Chat models: chat_mean, chat_first, chat_last, chat_max_norm, chat_weighted, role_play, mc_balanced. Base models: completion_last, completion_mean, mc_completion")
+    parser.add_argument("--bos-features-source", default="detected",
+                        help="BOS features source for FGAA: 'paper' (5 features), 'detected' (12 features), or 'none'")
 
     args = parser.parse_args()
 
@@ -410,6 +409,10 @@ def main():
     tasks = [t.strip() for t in args.tasks.split(",")]
     methods = [m.strip() for m in args.methods.split(",")]
     scales = [float(s.strip()) for s in args.scales.split(",")]
+    extraction_strategies = [s.strip() for s in args.extraction_strategy.split(",")]
+
+    # Parse batch_size (can be int or "auto")
+    batch_size = args.batch_size if args.batch_size == "auto" else int(args.batch_size)
 
     run_comparison(
         model_name=args.model,
@@ -418,14 +421,14 @@ def main():
         num_pairs=args.num_pairs,
         steering_scales=scales,
         device=args.device,
-        batch_size=args.batch_size,
+        batch_size=batch_size,
         max_batch_size=args.max_batch_size,
         eval_limit=args.limit,
         output_dir=args.output_dir,
         train_ratio=args.train_ratio,
         layers=args.layers,
-        token_aggregation=args.token_aggregation,
-        prompt_strategy=args.prompt_strategy,
+        extraction_strategies=extraction_strategies,
+        bos_features_source=args.bos_features_source,
     )
 
 
