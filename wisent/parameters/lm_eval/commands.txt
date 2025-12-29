@@ -71,3 +71,7 @@ python -m wisent.comparison.main \
 /home/bc/Desktop/python/wisent/wisent/comparison/comparison_results       
 
 aws ec2 describe-instances --filters "Name=tag:Name,Values=wisent-run-script" "Name=instance-state-name,Values=running" --query 'Reservations[*].Instances[*].[InstanceId,LaunchTime]' --output table
+
+./run_on_aws.sh --model google/gemma-2-2b "python -m wisent.comparison.main --model google/gemma-2-2b --tasks boolq --methods caa      
+--scales 0.5 --layers 12 --device cuda:0 --batch-size 1 --max-batch-size 1 --output-dir /home/ubuntu/output --train-ratio 0.4 --extraction-strategy mc_completion --limit 10 --num-pairs 10"  
+/home/bc/Desktop/python/wisent/wisent/comparison/comparison_results

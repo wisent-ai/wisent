@@ -53,7 +53,8 @@ def run_single_task(
     eval_limit: int | None = None,
     vectors_dir: Path = None,
     train_ratio: float = 0.8,
-    layers: str | None = None,
+    caa_layers: str = "12",
+    sae_layers: str = "12",
     extraction_strategies: list[str] = None,
     bos_features_source: str = "detected",
 ) -> list[dict]:
@@ -98,11 +99,13 @@ def run_single_task(
             print(f"@ METHOD: {method}, EXTRACTION STRATEGY: {extraction_strategy or 'N/A'}")
             print(f"{'@'*60}")
 
+            # Select layers based on method: CAA uses caa_layers (default=middle), SAE/FGAA use sae_layers (default=12)
+            method_layers = caa_layers if method == "caa" else sae_layers
+
             print(f"\n{'='*60}")
             print(f"Generating steering vector for: {task} (method={method})")
             print(f"(using {train_pct}% of pooled data - no overlap with test)")
-            if layers:
-                print(f"Layers: {layers}")
+            print(f"Layers: {method_layers}")
             print(f"{'='*60}")
 
             suffix = f"_{extraction_strategy}" if extraction_strategy else ""
@@ -114,7 +117,7 @@ def run_single_task(
                 "output_path": vector_path,
                 "num_pairs": num_pairs,
                 "device": device,
-                "layers": layers,
+                "layers": method_layers,
             }
             if extraction_strategy:
                 kwargs["extraction_strategy"] = extraction_strategy
@@ -302,7 +305,8 @@ def run_comparison(
     eval_limit: int | None = None,
     output_dir: str = "comparison_results",
     train_ratio: float = 0.8,
-    layers: str | None = None,
+    caa_layers: str = "12",
+    sae_layers: str = "12",
     extraction_strategies: list[str] = None,
     bos_features_source: str = "detected",
 ) -> list[dict]:
@@ -346,7 +350,8 @@ def run_comparison(
             eval_limit=eval_limit,
             vectors_dir=vectors_dir,
             train_ratio=train_ratio,
-            layers=layers,
+            caa_layers=caa_layers,
+            sae_layers=sae_layers,
             extraction_strategies=extraction_strategies,
             bos_features_source=bos_features_source,
         )
@@ -364,7 +369,8 @@ def run_comparison(
     print(f"{'='*150}")
     print(f"Model: {model_name}")
     print(f"Num pairs: {num_pairs}")
-    print(f"Layers: {layers or 'default (middle)'}")
+    print(f"CAA Layers: {caa_layers}")
+    print(f"SAE/FGAA Layers: {sae_layers}")
     print(f"Strategies: {', '.join(extraction_strategies)}")
     print(f"{'='*150}")
     print(f"{'Strategy':<16} {'Task':<10} {'Method':<8} {'Scale':<6} {'Base(E)':<8} {'Base(L)':<8} {'Steer(E)':<9} {'Steer(L)':<9} {'Native':<8} {'Diff(E)':<8} {'Diff(L)':<8} {'Diff(N)':<8}")
@@ -391,7 +397,8 @@ def main():
     parser.add_argument("--methods", default="caa", help="Comma-separated methods (e.g., caa,sae,fgaa)")
     parser.add_argument("--num-pairs", type=int, default=50, help="Number of contrastive pairs")
     parser.add_argument("--scales", default="1.0", help="Comma-separated steering scales (e.g., 0.5,1.0,1.5)")
-    parser.add_argument("--layers", default=None, help="Layer(s) for steering (e.g., '9' or '8,9,10' or 'all')")
+    parser.add_argument("--caa-layers", default="12", help="Layer(s) for CAA steering (default: 12)")
+    parser.add_argument("--sae-layers", default="12", help="Layer(s) for SAE/FGAA steering (default: 12)")
     parser.add_argument("--device", default="cuda:0", help="Device")
     parser.add_argument("--batch-size", default=1, help="Batch size (int or 'auto')")
     parser.add_argument("--max-batch-size", type=int, default=8, help="Max batch size for lm-eval internal batching (reduce if OOM)")
@@ -426,7 +433,8 @@ def main():
         eval_limit=args.limit,
         output_dir=args.output_dir,
         train_ratio=args.train_ratio,
-        layers=args.layers,
+        caa_layers=args.caa_layers,
+        sae_layers=args.sae_layers,
         extraction_strategies=extraction_strategies,
         bos_features_source=args.bos_features_source,
     )
