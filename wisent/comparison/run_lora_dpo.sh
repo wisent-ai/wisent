@@ -11,7 +11,7 @@ INSTANCE_TYPE="g6e.2xlarge"
 MODEL="google/gemma-2-9b"
 
 # Task
-TASK="cb"
+TASK="boolq"
 
 # Device
 DEVICE="cuda:0"
@@ -20,24 +20,28 @@ DEVICE="cuda:0"
 LORA_R="16"
 LORA_ALPHA="32"
 LORA_DROPOUT="0.05"
-LEARNING_RATE="5e-5"  # Lower to reduce catastrophic forgetting
+LEARNING_RATE="5e-5"
 NUM_EPOCHS="2"
 BATCH_SIZE="1"
 MAX_LENGTH="1024"
+MAX_PROMPT_LENGTH="512"
 
-# Number of training examples (use full 80% of pooled data)
+# DPO parameters
+BETA="0.1"  # Controls KL penalty (lower = closer to reference model)
+
+# Number of preference pairs
 NUM_PAIRS="10"
 
-# Train/test split ratio (0.8 = 80% train, 20% test)
+# Train/test split ratio
 TRAIN_RATIO="0.8"
 
 # Evaluation settings
 EVAL_BATCH_SIZE="1"
 EVAL_MAX_BATCH_SIZE="1"
-EVAL_LIMIT="10"  # No limit - evaluate on all test data
+EVAL_LIMIT="10"  # Empty = evaluate all
 
-# LoRA + Steering settings (set WITH_STEERING="true" to enable)
-WITH_STEERING="true"
+# DPO-LoRA + Steering settings (set WITH_STEERING="true" to enable)
+WITH_STEERING="false"
 STEERING_METHOD="caa"  # caa or fgaa
 STEERING_LAYERS="21"
 STEERING_NUM_PAIRS="50"
@@ -46,11 +50,11 @@ EXTRACTION_STRATEGY="mc_completion"
 
 # Output directories
 REMOTE_OUTPUT_DIR="/home/ubuntu/output"
-LOCAL_OUTPUT_DIR="/home/bc/Desktop/python/wisent/wisent/comparison/results/lora"
+LOCAL_OUTPUT_DIR="/home/bc/Desktop/python/wisent/wisent/comparison/results/lora_dpo"
 
 # Retry settings
 MAX_RETRIES=30
-RETRY_DELAY=5  # seconds between retries
+RETRY_DELAY=5
 
 # ===========================================
 # Run - Don't edit below unless necessary
@@ -66,7 +70,7 @@ for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
     echo ""
 
     # Build command
-    CMD="python -m wisent.comparison.lora \
+    CMD="python -m wisent.comparison.lora_dpo \
         --model $MODEL \
         --task $TASK \
         --device $DEVICE \
@@ -79,6 +83,8 @@ for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
         --num-epochs $NUM_EPOCHS \
         --batch-size $BATCH_SIZE \
         --max-length $MAX_LENGTH \
+        --max-prompt-length $MAX_PROMPT_LENGTH \
+        --beta $BETA \
         --train-ratio $TRAIN_RATIO \
         --eval-batch-size $EVAL_BATCH_SIZE \
         --eval-max-batch-size $EVAL_MAX_BATCH_SIZE"

@@ -1,15 +1,13 @@
 """
-LoRA fine-tuning method for comparison experiments.
+LoRA fine-tuning using DPO (Direct Preference Optimization).
 
-Trains a LoRA adapter on benchmark tasks using supervised fine-tuning (SFT)
-on positive responses from contrastive pairs.
-
-Optionally evaluates LoRA + steering by generating a steering vector on the
-LoRA model and combining both methods.
+Unlike SFT which trains on positive examples only, DPO trains on
+preference pairs (chosen vs rejected) to directly optimize for preferences.
 """
 
 from __future__ import annotations
 
+import argparse
 import gc
 import json
 import tempfile
@@ -19,7 +17,7 @@ from typing import TYPE_CHECKING
 import torch
 from datasets import Dataset
 from peft import LoraConfig, TaskType, get_peft_model
-from trl import SFTTrainer, SFTConfig
+from trl import DPOTrainer, DPOConfig
 
 from wisent.comparison.utils import (
     generate_contrastive_pairs,
@@ -36,161 +34,132 @@ from wisent.core.utils.device import preferred_dtype
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
 
-__all__ = ["train_lora_adapter", "evaluate_lora", "apply_lora_to_model", "remove_lora"]
 
-
-# Default LoRA configurations per model architecture
-LORA_TARGET_MODULES = {
-    "gemma": ["q_proj", "k_proj", "v_proj", "o_proj"],
-    "llama": ["q_proj", "k_proj", "v_proj", "o_proj"],
-    "mistral": ["q_proj", "k_proj", "v_proj", "o_proj"],
-    "phi": ["q_proj", "k_proj", "v_proj", "dense"],
-    "gpt_neo": ["q_proj", "v_proj"],
-    "gpt2": ["c_attn"],
-    "default": "all-linear",
-}
-
-
-def get_target_modules(model_name: str) -> str | list[str]:
-    """Get LoRA target modules based on model architecture."""
-    model_name_lower = model_name.lower()
-
-    for arch, modules in LORA_TARGET_MODULES.items():
-        if arch in model_name_lower:
-            return modules
-
-    return LORA_TARGET_MODULES["default"]
-
-
-def prepare_sft_dataset(
-    pairs: list[dict],
-    tokenizer,
-    max_length: int = 512,
-) -> Dataset:
+def create_dpo_dataset(pairs: list[dict]) -> Dataset:
     """
-    Prepare dataset for SFT from contrastive pairs.
+    Convert contrastive pairs to DPO dataset format.
 
-    Uses only positive responses for training.
-
-    Args:
-        pairs: List of contrastive pairs
-        tokenizer: Tokenizer for formatting
-        max_length: Maximum sequence length
-
-    Returns:
-        HuggingFace Dataset ready for SFTTrainer
+    DPO expects:
+    - prompt: the input prompt
+    - chosen: the preferred response
+    - rejected: the non-preferred response
     """
-    formatted_examples = []
+    data = {
+        "prompt": [],
+        "chosen": [],
+        "rejected": [],
+    }
 
     for pair in pairs:
         prompt = pair["prompt"]
-        positive_response = pair["positive_response"]["model_response"]
+        chosen = pair["positive_response"]["model_response"]
+        rejected = pair["negative_response"]["model_response"]
 
-        # Format as chat if tokenizer supports it, otherwise simple format
-        if hasattr(tokenizer, "apply_chat_template") and tokenizer.chat_template:
-            messages = [
-                {"role": "user", "content": prompt},
-                {"role": "assistant", "content": positive_response},
-            ]
-            text = tokenizer.apply_chat_template(
-                messages,
-                tokenize=False,
-                add_generation_prompt=False,
-            )
-        else:
-            # Simple format for base models
-            text = f"Q: {prompt}\nA: {positive_response}"
+        data["prompt"].append(prompt)
+        data["chosen"].append(chosen)
+        data["rejected"].append(rejected)
 
-        formatted_examples.append({"text": text})
-
-    return Dataset.from_list(formatted_examples)
+    return Dataset.from_dict(data)
 
 
-def train_lora_adapter(
+def train_lora_dpo(
     task: str,
     model_name: str,
     output_path: str | Path,
-    trait_label: str = "correctness",
     num_pairs: int = 50,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    # LoRA-specific parameters
     lora_r: int = 16,
     lora_alpha: int = 32,
     lora_dropout: float = 0.05,
-    learning_rate: float = 2e-4,
-    num_epochs: int = 3,
-    batch_size: int = 2,
+    learning_rate: float = 5e-5,
+    num_epochs: int = 1,
+    batch_size: int = 1,
     max_length: int = 512,
+    max_prompt_length: int = 256,
+    beta: float = 0.1,
 ) -> Path:
     """
-    Train a LoRA adapter using SFT on positive responses.
+    Train a LoRA adapter using DPO on contrastive pairs from an lm-eval task.
 
     Args:
         task: lm-eval task name (e.g., 'boolq', 'cb')
         model_name: HuggingFace model name
-        output_path: Where to save the LoRA adapter
-        trait_label: Label for the trait being trained
-        num_pairs: Number of training examples to use
-        device: Device to train on
+        output_path: Where to save the trained adapter
+        num_pairs: Number of preference pairs to use
+        device: Device to run on
         keep_intermediate: Whether to keep intermediate files
         lora_r: LoRA rank
-        lora_alpha: LoRA alpha scaling factor
+        lora_alpha: LoRA alpha
         lora_dropout: LoRA dropout
-        learning_rate: Training learning rate
+        learning_rate: Learning rate
         num_epochs: Number of training epochs
         batch_size: Training batch size
-        max_length: Maximum sequence length
+        max_length: Max total sequence length
+        max_prompt_length: Max prompt length
+        beta: DPO beta parameter (controls deviation from reference model)
 
     Returns:
-        Path to the saved LoRA adapter directory
+        Path to saved adapter
     """
-    import gc
-
     output_path = Path(output_path)
 
     # Step 1: Generate contrastive pairs
-    print(f"Step 1: Generating training data from task: {task}")
-    pairs, pairs_file = generate_contrastive_pairs(task, num_pairs)
-    print(f"   Loaded {len(pairs)} training examples")
+    print(f"\n{'='*60}")
+    print(f"Step 1: Generating {num_pairs} preference pairs from {task}")
+    print(f"{'='*60}")
 
-    # Step 2: Load model and tokenizer
-    print(f"\nStep 2: Loading model {model_name}...")
+    pairs, pairs_file = generate_contrastive_pairs(task, num_pairs)
+    print(f"Generated {len(pairs)} preference pairs")
+
+    # Step 2: Create DPO dataset
+    print(f"\n{'='*60}")
+    print(f"Step 2: Creating DPO dataset")
+    print(f"{'='*60}")
+
+    dataset = create_dpo_dataset(pairs)
+    print(f"Dataset size: {len(dataset)}")
+
+    # Step 3: Load model
+    print(f"\n{'='*60}")
+    print(f"Step 3: Loading model {model_name}")
+    print(f"{'='*60}")
+
     model, tokenizer = load_model_and_tokenizer(model_name, device, eval_mode=False)
 
-    # Step 3: Configure LoRA
-    print(f"\nStep 3: Configuring LoRA (r={lora_r}, alpha={lora_alpha})...")
+    # Ensure tokenizer has padding
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.padding_side = "left"  # DPO typically uses left padding
 
-    target_modules = get_target_modules(model_name)
-    print(f"   Target modules: {target_modules}")
+    # Step 4: Configure LoRA
+    print(f"\n{'='*60}")
+    print(f"Step 4: Configuring LoRA (r={lora_r}, alpha={lora_alpha})")
+    print(f"{'='*60}")
 
     lora_config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
         r=lora_r,
         lora_alpha=lora_alpha,
-        target_modules=target_modules,
         lora_dropout=lora_dropout,
+        target_modules=["q_proj", "v_proj", "k_proj", "o_proj"],
         bias="none",
-        task_type=TaskType.CAUSAL_LM,
     )
 
     model = get_peft_model(model, lora_config)
     model.print_trainable_parameters()
 
-    # Step 4: Prepare dataset
-    print(f"\nStep 4: Preparing SFT dataset...")
-    train_dataset = prepare_sft_dataset(pairs, tokenizer, max_length=max_length)
-    print(f"   Dataset size: {len(train_dataset)} examples")
+    # Step 5: Configure DPO training
+    print(f"\n{'='*60}")
+    print(f"Step 5: Configuring DPO training")
+    print(f"{'='*60}")
 
-    # Step 5: Training
-    print(f"\nStep 5: Training LoRA adapter...")
+    training_output_dir = tempfile.mkdtemp(prefix="lora_dpo_training_")
 
-    # Create temporary directory for training outputs
-    training_output_dir = tempfile.mkdtemp(prefix="lora_training_")
-
-    # Use device-optimized dtype (bfloat16 on CUDA, float16 on MPS, float32 on CPU)
+    # Determine dtype
     dtype = preferred_dtype(device)
 
-    training_args = SFTConfig(
+    training_args = DPOConfig(
         output_dir=training_output_dir,
         num_train_epochs=num_epochs,
         per_device_train_batch_size=batch_size,
@@ -199,49 +168,62 @@ def train_lora_adapter(
         weight_decay=0.01,
         warmup_ratio=0.1,
         logging_steps=10,
-        save_strategy="no",  # Don't save checkpoints
+        save_strategy="no",
         bf16=(dtype == torch.bfloat16),
         fp16=(dtype == torch.float16),
-        report_to="none",  # Disable wandb/tensorboard
-        dataset_text_field="text",  # Field containing the text to train on
+        report_to="none",
+        max_length=max_length,
+        max_prompt_length=max_prompt_length,
+        beta=beta,
+        loss_type="sigmoid",  # Standard DPO loss
     )
 
-    trainer = SFTTrainer(
+    print(f"Beta: {beta}")
+    print(f"Max length: {max_length}")
+    print(f"Max prompt length: {max_prompt_length}")
+    print(f"Learning rate: {learning_rate}")
+    print(f"Epochs: {num_epochs}")
+    print(f"Batch size: {batch_size}")
+
+    # Step 6: Train with DPO
+    print(f"\n{'='*60}")
+    print(f"Step 6: Training with DPO")
+    print(f"{'='*60}")
+
+    trainer = DPOTrainer(
         model=model,
         args=training_args,
-        train_dataset=train_dataset,
+        train_dataset=dataset,
         processing_class=tokenizer,
     )
 
     trainer.train()
 
-    # Step 6: Save LoRA adapter
-    print(f"\nStep 6: Saving LoRA adapter to {output_path}...")
+    # Step 7: Save adapter
+    print(f"\n{'='*60}")
+    print(f"Step 7: Saving LoRA adapter")
+    print(f"{'='*60}")
+
     output_path.mkdir(parents=True, exist_ok=True)
     model.save_pretrained(output_path)
     tokenizer.save_pretrained(output_path)
 
     # Save metadata
     metadata = {
-        "method": "lora",
-        "model": model_name,
         "task": task,
-        "trait_label": trait_label,
+        "model": model_name,
+        "training_method": "dpo",
         "num_pairs": len(pairs),
-        "lora_config": {
-            "r": lora_r,
-            "alpha": lora_alpha,
-            "dropout": lora_dropout,
-            "target_modules": target_modules if isinstance(target_modules, list) else [target_modules],
-        },
-        "training_config": {
-            "learning_rate": learning_rate,
-            "num_epochs": num_epochs,
-            "batch_size": batch_size,
-            "max_length": max_length,
-        },
+        "lora_r": lora_r,
+        "lora_alpha": lora_alpha,
+        "lora_dropout": lora_dropout,
+        "learning_rate": learning_rate,
+        "num_epochs": num_epochs,
+        "batch_size": batch_size,
+        "max_length": max_length,
+        "max_prompt_length": max_prompt_length,
+        "beta": beta,
     }
-
     with open(output_path / "metadata.json", "w") as f:
         json.dump(metadata, f, indent=2)
 
@@ -250,67 +232,18 @@ def train_lora_adapter(
     gc.collect()
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
-        torch.cuda.synchronize()
 
     if not keep_intermediate:
         import os
-        os.unlink(pairs_file)
         import shutil
+        os.unlink(pairs_file)
         shutil.rmtree(training_output_dir, ignore_errors=True)
 
-    print(f"\nLoRA adapter saved to {output_path}")
+    print(f"\nDPO LoRA adapter saved to {output_path}")
     return output_path
 
 
-def apply_lora_to_model(wisent_model: "WisentModel", lora_path: str | Path) -> None:
-    """
-    Apply a trained LoRA adapter to a WisentModel.
-
-    Args:
-        wisent_model: WisentModel instance
-        lora_path: Path to the saved LoRA adapter
-    """
-    from peft import PeftModel
-
-    lora_path = Path(lora_path)
-
-    # Check if model already has adapters
-    if hasattr(wisent_model.hf_model, 'peft_config'):
-        # Model already has PEFT, just load new adapter
-        wisent_model.hf_model.load_adapter(str(lora_path), adapter_name="steering")
-        wisent_model.hf_model.set_adapter("steering")
-    else:
-        # Wrap model with PEFT
-        wisent_model.hf_model = PeftModel.from_pretrained(
-            wisent_model.hf_model,
-            str(lora_path),
-            adapter_name="steering",
-        )
-
-    print(f"LoRA adapter loaded from {lora_path}")
-
-
-def remove_lora(wisent_model: "WisentModel") -> None:
-    """
-    Remove/disable LoRA adapter from a WisentModel.
-
-    Args:
-        wisent_model: WisentModel instance with LoRA applied
-    """
-    if hasattr(wisent_model.hf_model, 'disable_adapters'):
-        try:
-            wisent_model.hf_model.disable_adapters()
-            print("LoRA adapter disabled")
-        except ValueError:
-            # No adapter was loaded
-            pass
-    elif hasattr(wisent_model.hf_model, 'base_model'):
-        # Unwrap the model
-        wisent_model.hf_model = wisent_model.hf_model.base_model.model
-        print("LoRA adapter removed")
-
-
-def evaluate_lora(
+def evaluate_lora_dpo(
     model_name: str,
     lora_path: str | Path,
     task: str,
@@ -327,6 +260,9 @@ def evaluate_lora(
     lora_alpha: int | None = None,
     lora_dropout: float | None = None,
     learning_rate: float | None = None,
+    beta: float | None = None,
+    max_length: int | None = None,
+    max_prompt_length: int | None = None,
     # Steering parameters (optional)
     with_steering: bool = False,
     steering_method: str = "caa",
@@ -336,34 +272,13 @@ def evaluate_lora(
     extraction_strategy: str = "mc_completion",
 ) -> dict:
     """
-    Evaluate a trained LoRA adapter comparing base vs LoRA performance.
+    Evaluate a trained DPO LoRA adapter.
 
-    Optionally also evaluates LoRA + steering at multiple scales.
-    All results are saved to a single output file.
-
-    Args:
-        model_name: HuggingFace model name
-        lora_path: Path to trained LoRA adapter
-        task: lm-eval task name
-        train_ratio: Train/test split ratio
-        device: Device to run on
-        batch_size: Batch size for evaluation
-        max_batch_size: Max batch size
-        limit: Limit number of eval examples
-        output_dir: Where to save results
-        with_steering: Whether to also evaluate LoRA + steering
-        steering_method: Steering method (caa or fgaa)
-        steering_layers: Layers for steering vector
-        steering_num_pairs: Number of pairs for steering generation
-        steering_scales: List of steering scales to evaluate
-        extraction_strategy: Strategy for activation extraction
-
-    Returns:
-        Dict with evaluation results
+    Compares base model vs DPO-LoRA model accuracy.
+    Optionally also evaluates DPO-LoRA + steering at multiple scales.
     """
-    import gc
-
     from wisent.core.models.wisent_model import WisentModel
+    from wisent.comparison.lora import apply_lora_to_model, remove_lora
 
     lora_path = Path(lora_path)
 
@@ -383,9 +298,9 @@ def evaluate_lora(
     print(f"{'='*60}")
     wisent_model = WisentModel(model_name=model_name, device=device)
 
-    # BASE evaluation
+    # Base evaluation
     print(f"\n{'='*60}")
-    print(f"Running BASE evaluation (no LoRA)")
+    print(f"Running BASE evaluation")
     print(f"{'='*60}")
 
     base_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
@@ -395,28 +310,29 @@ def evaluate_lora(
     base_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
     print(f"Base accuracy (LL): {base_acc_ll:.4f}")
 
-    # Apply LoRA
+    # Apply DPO LoRA
     print(f"\n{'='*60}")
-    print(f"Applying LoRA adapter from: {lora_path}")
+    print(f"Applying DPO LoRA adapter from: {lora_path}")
     print(f"{'='*60}")
     apply_lora_to_model(wisent_model, lora_path)
 
-    # LORA evaluation
+    # LoRA evaluation
     print(f"\n{'='*60}")
-    print(f"Running LORA evaluation")
+    print(f"Running DPO-LORA evaluation")
     print(f"{'='*60}")
 
     lora_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
     lora_acc_lm_eval = extract_accuracy(lora_results, task)
-    print(f"LoRA accuracy (lm-eval): {lora_acc_lm_eval:.4f}")
+    print(f"DPO-LoRA accuracy (lm-eval): {lora_acc_lm_eval:.4f}")
 
     lora_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
-    print(f"LoRA accuracy (LL): {lora_acc_ll:.4f}")
+    print(f"DPO-LoRA accuracy (LL): {lora_acc_ll:.4f}")
 
     # Results dict
     results = {
         "task": task,
         "model": model_name,
+        "training_method": "dpo",
         "lora_path": str(lora_path),
         # Training config
         "num_train_pairs": num_train_pairs,
@@ -425,6 +341,9 @@ def evaluate_lora(
         "lora_alpha": lora_alpha,
         "lora_dropout": lora_dropout,
         "learning_rate": learning_rate,
+        "beta": beta,
+        "max_length": max_length,
+        "max_prompt_length": max_prompt_length,
         # Eval config
         "train_ratio": train_ratio,
         "eval_limit": limit,
@@ -437,7 +356,7 @@ def evaluate_lora(
         "lora_diff_ll": lora_acc_ll - base_acc_ll,
     }
 
-    # LoRA + Steering evaluation (if enabled)
+    # DPO-LoRA + Steering evaluation (if enabled)
     if with_steering:
         from wisent.core.trainers.steering_trainer import WisentSteeringTrainer
         from wisent.core.steering_methods import get_steering_method
@@ -461,12 +380,12 @@ def evaluate_lora(
                 negative_response=NegativeResponse(model_response=p["negative_response"]["model_response"]),
             )
             pairs.append(pair)
-        pair_set = ContrastivePairSet(pairs=pairs, name=f"{task}_lora_steering")
+        pair_set = ContrastivePairSet(pairs=pairs, name=f"{task}_dpo_lora_steering")
         print(f"Created {len(pair_set)} contrastive pairs")
 
-        # Generate steering vector on LoRA model
+        # Generate steering vector on DPO-LoRA model
         print(f"\n{'='*60}")
-        print(f"Generating {steering_method.upper()} steering vector on LoRA model")
+        print(f"Generating {steering_method.upper()} steering vector on DPO-LoRA model")
         print(f"Layers: {steering_layers}")
         print(f"{'='*60}")
 
@@ -512,17 +431,17 @@ def evaluate_lora(
         # Evaluate at each scale
         for scale in steering_scales:
             print(f"\n{'='*60}")
-            print(f"Evaluating LoRA+{steering_method.upper()} at scale={scale}")
+            print(f"Evaluating DPO-LoRA+{steering_method.upper()} at scale={scale}")
             print(f"{'='*60}")
 
             apply_steering_to_model(wisent_model, steering_data, scale=scale)
 
             steer_results = run_lm_eval_evaluation(wisent_model, task_dict, task, batch_size, max_batch_size, limit)
             steer_acc_lm_eval = extract_accuracy(steer_results, task)
-            print(f"LoRA+{steering_method.upper()} accuracy (lm-eval): {steer_acc_lm_eval:.4f}")
+            print(f"DPO-LoRA+{steering_method.upper()} accuracy (lm-eval): {steer_acc_lm_eval:.4f}")
 
             steer_acc_ll = run_ll_evaluation(wisent_model, task_dict, task, limit)
-            print(f"LoRA+{steering_method.upper()} accuracy (LL): {steer_acc_ll:.4f}")
+            print(f"DPO-LoRA+{steering_method.upper()} accuracy (LL): {steer_acc_ll:.4f}")
 
             remove_steering(wisent_model)
 
@@ -548,16 +467,16 @@ def evaluate_lora(
     print(f"{'='*70}")
     print(f"Task: {task}")
     print(f"Model: {model_name}")
-    print(f"LoRA: {lora_path}")
+    print(f"Training: DPO")
     print(f"{'-'*70}")
     print(f"{'Method':<25} {'lm-eval acc':<15} {'LL acc':<15} {'Diff (lm-eval)':<15}")
     print(f"{'-'*70}")
     print(f"{'Base':<25} {base_acc_lm_eval:<15.4f} {base_acc_ll:<15.4f} {'':<15}")
-    print(f"{'LoRA':<25} {lora_acc_lm_eval:<15.4f} {lora_acc_ll:<15.4f} {lora_acc_lm_eval - base_acc_lm_eval:+.4f}")
+    print(f"{'DPO-LoRA':<25} {lora_acc_lm_eval:<15.4f} {lora_acc_ll:<15.4f} {lora_acc_lm_eval - base_acc_lm_eval:+.4f}")
 
     if with_steering:
         for scale, res in results["steering"]["scales"].items():
-            label = f"LoRA+{steering_method.upper()}@{scale}"
+            label = f"DPO-LoRA+{steering_method.upper()}@{scale}"
             print(f"{label:<25} {res['accuracy_lm_eval']:<15.4f} {res['accuracy_ll']:<15.4f} {res['diff_from_base_lm_eval']:+.4f}")
 
     print(f"{'='*70}")
@@ -568,7 +487,7 @@ def evaluate_lora(
         model_dir_name = model_name.replace("/", "_")
         output_dir = output_dir / model_dir_name
         output_dir.mkdir(parents=True, exist_ok=True)
-        results_file = output_dir / f"{task}_lora_eval_results.json"
+        results_file = output_dir / f"{task}_lora_dpo_eval_results.json"
         with open(results_file, "w") as f:
             json.dump(results, f, indent=2)
         print(f"\nResults saved to: {results_file}")
@@ -577,30 +496,30 @@ def evaluate_lora(
 
 
 def main():
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Train and evaluate LoRA adapter on benchmark task")
+    parser = argparse.ArgumentParser(description="Train and evaluate LoRA adapter using DPO")
     parser.add_argument("--model", required=True, help="HuggingFace model name")
     parser.add_argument("--task", default="boolq", help="lm-eval task name")
     parser.add_argument("--output-dir", default="/home/ubuntu/output", help="Output directory")
-    parser.add_argument("--num-pairs", type=int, default=50, help="Number of training examples")
+    parser.add_argument("--num-pairs", type=int, default=50, help="Number of preference pairs")
     parser.add_argument("--device", default="cuda:0", help="Device")
     parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank")
     parser.add_argument("--lora-alpha", type=int, default=32, help="LoRA alpha")
     parser.add_argument("--lora-dropout", type=float, default=0.05, help="LoRA dropout")
-    parser.add_argument("--learning-rate", type=float, default=2e-4, help="Learning rate")
-    parser.add_argument("--num-epochs", type=int, default=3, help="Number of epochs")
-    parser.add_argument("--batch-size", type=int, default=2, help="Training batch size")
-    parser.add_argument("--max-length", type=int, default=512, help="Max sequence length")
+    parser.add_argument("--learning-rate", type=float, default=5e-5, help="Learning rate")
+    parser.add_argument("--num-epochs", type=int, default=1, help="Number of epochs")
+    parser.add_argument("--batch-size", type=int, default=1, help="Training batch size")
+    parser.add_argument("--max-length", type=int, default=512, help="Max total sequence length")
+    parser.add_argument("--max-prompt-length", type=int, default=256, help="Max prompt length")
+    parser.add_argument("--beta", type=float, default=0.1, help="DPO beta (controls KL penalty)")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files")
     # Eval args
     parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio")
-    parser.add_argument("--eval-batch-size", default="auto", help="Eval batch size (int or 'auto')")
-    parser.add_argument("--eval-max-batch-size", type=int, default=64, help="Max eval batch size for auto")
+    parser.add_argument("--eval-batch-size", default="auto", help="Eval batch size")
+    parser.add_argument("--eval-max-batch-size", type=int, default=64, help="Max eval batch size")
     parser.add_argument("--eval-limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--skip-eval", action="store_true", help="Skip evaluation after training")
-    # LoRA + Steering args
-    parser.add_argument("--with-steering", action="store_true", help="Also evaluate LoRA + steering")
+    # DPO-LoRA + Steering args
+    parser.add_argument("--with-steering", action="store_true", help="Also evaluate DPO-LoRA + steering")
     parser.add_argument("--steering-method", default="caa", choices=["caa", "fgaa"], help="Steering method")
     parser.add_argument("--steering-layers", default="12", help="Layers for steering vector")
     parser.add_argument("--steering-num-pairs", type=int, default=50, help="Number of pairs for steering")
@@ -609,10 +528,10 @@ def main():
 
     args = parser.parse_args()
 
-    output_path = Path(args.output_dir) / f"{args.task}_lora_adapter"
+    output_path = Path(args.output_dir) / f"{args.task}_lora_dpo_adapter"
 
     # Train
-    train_lora_adapter(
+    train_lora_dpo(
         task=args.task,
         model_name=args.model,
         output_path=output_path,
@@ -626,11 +545,12 @@ def main():
         num_epochs=args.num_epochs,
         batch_size=args.batch_size,
         max_length=args.max_length,
+        max_prompt_length=args.max_prompt_length,
+        beta=args.beta,
     )
 
-    # Evaluate base vs LoRA (and optionally LoRA + steering)
+    # Evaluate
     if not args.skip_eval:
-        # Parse eval batch size (can be "auto" or int)
         eval_batch_size = args.eval_batch_size
         if eval_batch_size != "auto":
             eval_batch_size = int(eval_batch_size)
@@ -638,7 +558,7 @@ def main():
         # Parse steering scales
         steering_scales = [float(s.strip()) for s in args.steering_scales.split(",")]
 
-        evaluate_lora(
+        evaluate_lora_dpo(
             model_name=args.model,
             lora_path=output_path,
             task=args.task,
@@ -655,6 +575,9 @@ def main():
             lora_alpha=args.lora_alpha,
             lora_dropout=args.lora_dropout,
             learning_rate=args.learning_rate,
+            beta=args.beta,
+            max_length=args.max_length,
+            max_prompt_length=args.max_prompt_length,
             # Steering parameters
             with_steering=args.with_steering,
             steering_method=args.steering_method,

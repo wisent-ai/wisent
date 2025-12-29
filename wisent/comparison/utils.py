@@ -88,7 +88,7 @@ def load_model_and_tokenizer(
 
     model = AutoModelForCausalLM.from_pretrained(
         model_name,
-        torch_dtype=torch.bfloat16,
+        torch_dtype=preferred_dtype(device),
         device_map=device,
         trust_remote_code=True,
     )
