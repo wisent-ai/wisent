@@ -1,6 +1,10 @@
 Metadata-Version: 2.4
 Name: wisent
+<<<<<<< HEAD
 Version: 0.7.949
+=======
+Version: 0.7.1144
+>>>>>>> 3efd2ea7 (updates with classification and visualization)
 Summary: Monitor and influence AI Brains
 Home-page: https://github.com/wisent-ai/wisent
 Author: Lukasz Bartoszcze and the Wisent Team

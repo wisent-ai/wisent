@@ -163,7 +163,7 @@ class ToolEmuExtractor(HuggingFaceBenchmarkExtractor):
             )
             # Negative = risky execution without safeguards
             incorrect_response = self._create_risky_response(
-                user_instruction, available_tools
+                user_instruction, toolkits
             )
 
             metadata = {

@@ -19,7 +19,7 @@ def _map_token_aggregation(aggregation_str: str):
 
 def _map_prompt_strategy(strategy_str: str):
     """Map string prompt strategy to ExtractionStrategy."""
-    
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
 
     mapping = {
         "chat_template": ExtractionStrategy.CHAT_LAST,
@@ -111,9 +111,8 @@ def apply_steering_and_evaluate(
 
         updated_pair = collector.collect(
             pair, strategy=aggregation_strategy,
-            return_full_sequence=return_full_sequence,
-            normalize_layers=normalize_layers,
-            prompt_strategy=prompt_construction_strategy
+            layers=target_layers,
+            normalize=normalize_layers
         )
         enriched_pairs.append(updated_pair)
 
@@ -174,9 +173,8 @@ def apply_steering_and_evaluate(
 
     steered_evaluated_pair = collector.collect(
         steered_dummy_pair, strategy=aggregation_strategy,
-        return_full_sequence=return_full_sequence,
-        normalize_layers=normalize_layers,
-        prompt_strategy=prompt_construction_strategy
+        layers=target_layers,
+        normalize=normalize_layers
     )
 
     steered_quality = 0.0

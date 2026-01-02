@@ -50,6 +50,11 @@ class ActivationCollector:
         strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
         layers: Sequence[LayerName] | None = None,
         normalize: bool = False,
+        # Additional parameters for API compatibility (may be ignored internally)
+        aggregation: ExtractionStrategy | None = None,
+        return_full_sequence: bool = False,
+        normalize_layers: bool = False,
+        prompt_strategy: str | None = None,
     ) -> ContrastivePair:
         """
         Collect activations for a contrastive pair.
@@ -59,10 +64,19 @@ class ActivationCollector:
             strategy: Extraction strategy (e.g., CHAT_LAST, CHAT_MEAN, ROLE_PLAY, MC_BALANCED)
             layers: Which layers to collect (e.g., ["8", "12"]), or None for all
             normalize: Whether to L2-normalize activations
+            aggregation: Alternative name for strategy (for API compatibility)
+            return_full_sequence: Whether to return full sequence (currently ignored, for API compatibility)
+            normalize_layers: Alternative name for normalize (for API compatibility)
+            prompt_strategy: Prompt construction strategy (currently ignored, for API compatibility)
 
         Returns:
             ContrastivePair with activations attached
         """
+        # Handle alternative parameter names for API compatibility
+        if aggregation is not None:
+            strategy = aggregation
+        if normalize_layers:
+            normalize = True
         pos_text = _resp_text(pair.positive_response)
         neg_text = _resp_text(pair.negative_response)
 

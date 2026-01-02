@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import requests
 from typing import Any
 from wisent.core.cli_logger import setup_logger
 
@@ -10,12 +11,14 @@ __all__ = ["TauBenchExtractor"]
 
 log = setup_logger(__name__)
 
-# TAU-bench domains
-TAU_BENCH_DOMAINS = [
-    "retail",      # E-commerce customer service
-    "airline",     # Airline booking and support
-    "telecom",     # Telecommunications support (tau2-bench)
-]
+# TAU-bench domains and their GitHub URLs
+TAU_BENCH_DOMAINS = ["retail", "airline"]
+
+# GitHub URLs for the Python task files
+TAU_BENCH_GITHUB_URLS = {
+    "retail": "https://raw.githubusercontent.com/sierra-research/tau-bench/main/tau_bench/envs/retail/tasks.py",
+    "airline": "https://raw.githubusercontent.com/sierra-research/tau-bench/main/tau_bench/envs/airline/tasks.py",
+}
 
 
 class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
@@ -76,18 +79,13 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        # Try to load from HuggingFace
-        try:
-            docs = self.load_dataset(
-                dataset_name="HuggingFaceH4/tau2-bench-data",
-                split="train",
-                limit=max_items,
-            )
-            log.info(f"Loaded {len(docs)} examples from tau2-bench-data")
-        except Exception as e:
-            log.error(f"Failed to load TAU-bench from HuggingFace: {e}")
-            log.error("TAU-bench requires HuggingFaceH4/tau2-bench-data dataset. No synthetic data available.")
+        # Load from GitHub (HuggingFace dataset is broken)
+        docs = self._load_from_github()
+        if not docs:
+            log.error("Failed to load TAU-bench from GitHub")
             return []
+
+        log.info(f"Loaded {len(docs)} examples from TAU-bench GitHub")
 
         pairs: list[ContrastivePair] = []
 
@@ -103,41 +101,80 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
 
+    def _load_from_github(self) -> list[dict[str, Any]]:
+        """Load TAU-bench tasks from GitHub Python files."""
+        all_docs = []
+
+        for domain in TAU_BENCH_DOMAINS:
+            url = TAU_BENCH_GITHUB_URLS.get(domain)
+            if not url:
+                continue
+
+            try:
+                response = requests.get(url, timeout=30)
+                response.raise_for_status()
+                content = response.text
+
+                # Parse the Python file to extract the 'tasks' list
+                # The file contains: tasks = [...]
+                # We use exec to safely load the list
+                local_vars: dict[str, Any] = {}
+                exec(content, {"__builtins__": {}}, local_vars)
+                tasks = local_vars.get("tasks", [])
+
+                # Add domain to each task
+                for task in tasks:
+                    task["domain"] = domain
+
+                all_docs.extend(tasks)
+                log.info(f"Loaded {len(tasks)} tasks from {domain} domain")
+
+            except Exception as e:
+                log.warning(f"Failed to load {domain} domain from GitHub: {e}")
+                continue
+
+        return all_docs
+
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
         """
         Convert a single doc into a ContrastivePair.
+
+        TAU-bench GitHub schema:
+            - user_id: str (user identifier)
+            - instruction: str (user's request/scenario)
+            - actions: list[dict] (expected tool call sequence)
+            - outputs: list[str] (optional expected outputs)
+            - annotator: int (annotator id)
         """
         try:
-            task_id = doc.get("id", "")
-            user_scenario = doc.get("user_scenario", "").strip()
-            description = doc.get("description", "").strip()
-            evaluation_criteria = doc.get("evaluation_criteria", [])
-            available_tools = doc.get("available_tools", [])
+            user_id = doc.get("user_id", "")
+            instruction = doc.get("instruction", "").strip()
+            actions = doc.get("actions", [])
+            outputs = doc.get("outputs", [])
             domain = doc.get("domain", self.domain)
 
-            if not user_scenario and not description:
-                log.debug("Skipping: missing scenario or description")
+            if not instruction:
+                log.debug("Skipping: missing instruction")
                 return None
 
-            # Build the agent task prompt
-            task_prompt = self._build_task_prompt(
-                user_scenario, description, available_tools
-            )
+            # Extract tool names from actions
+            tool_names = [a.get("name", "") for a in actions if a.get("name")]
 
-            # Positive = successful task completion
-            correct_response = self._create_successful_response(
-                description, evaluation_criteria, available_tools
-            )
+            # Build the agent task prompt
+            task_prompt = self._build_task_prompt(instruction, tool_names, domain)
+
+            # Positive = successful task completion with correct tool sequence
+            correct_response = self._create_successful_response(actions, outputs)
             # Negative = failed or incomplete task
-            incorrect_response = self._create_failed_response(description)
+            incorrect_response = self._create_failed_response()
 
             metadata = {
                 "label": "tau_bench",
                 "source": "sierra-research/tau-bench",
-                "task_id": task_id,
+                "user_id": user_id,
                 "domain": domain,
-                "num_criteria": len(evaluation_criteria) if evaluation_criteria else 0,
-                "num_tools": len(available_tools) if available_tools else 0,
+                "num_actions": len(actions),
+                "tool_names": tool_names,
                 "is_agent_benchmark": True,
             }
 
@@ -154,47 +191,56 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
 
     def _build_task_prompt(
         self,
-        user_scenario: str,
-        description: str,
-        available_tools: list[str],
+        instruction: str,
+        tool_names: list[str],
+        domain: str,
     ) -> str:
         """Build the agent task prompt."""
-        parts = [f"User Scenario: {user_scenario}"]
+        domain_context = {
+            "retail": "You are a customer service agent for an e-commerce platform.",
+            "airline": "You are a customer service agent for an airline booking system.",
+        }
 
-        if description:
-            parts.append(f"\nTask: {description}")
+        parts = [domain_context.get(domain, "You are a helpful customer service agent.")]
+        parts.append(f"\nUser Request: {instruction}")
 
-        if available_tools:
-            tools_str = ", ".join(available_tools)
+        if tool_names:
+            unique_tools = list(dict.fromkeys(tool_names))  # Preserve order, remove duplicates
+            tools_str = ", ".join(unique_tools)
             parts.append(f"\nAvailable Tools: {tools_str}")
 
-        parts.append("\nPlease help the user complete their request using the available tools.")
+        parts.append("\nPlease help the user complete their request by using the appropriate tools.")
 
         return "\n".join(parts)
 
     def _create_successful_response(
         self,
-        description: str,
-        criteria: list[str],
-        tools: list[str],
+        actions: list[dict[str, Any]],
+        outputs: list[str],
     ) -> str:
         """Create a successful task completion response."""
         steps = []
-        for i, tool in enumerate(tools):
-            criterion = criteria[i] if i < len(criteria) else f"Execute {tool}"
-            steps.append(f"{i+1}. {criterion} using {tool}")
+        for i, action in enumerate(actions[:5]):  # Limit to first 5 actions for brevity
+            name = action.get("name", "")
+            args = action.get("arguments", {})
+            args_str = ", ".join(f"{k}={v!r}" for k, v in list(args.items())[:2])
+            steps.append(f"{i+1}. Called {name}({args_str})")
 
-        steps_str = "\n".join(steps) if steps else "Complete the requested actions"
+        steps_str = "\n".join(steps) if steps else "Completed the requested actions"
+
+        output_str = ""
+        if outputs:
+            output_str = f"\n\nResult: {outputs[0]}"
 
         return (
             f"I'll help you with this request. Let me work through the necessary steps:\n\n"
-            f"{steps_str}\n\n"
-            "I have successfully completed all the required actions. The task has been "
-            "processed and the changes have been applied to your account. Is there "
+            f"{steps_str}\n"
+            f"{output_str}\n\n"
+            "I have successfully completed all the required actions. Is there "
             "anything else I can help you with?"
         )
 
-    def _create_failed_response(self, description: str) -> str:
+    def _create_failed_response(self) -> str:
         """Create a failed task response."""
         return (
             "I apologize, but I'm having trouble completing this request. "

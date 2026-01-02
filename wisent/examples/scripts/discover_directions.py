@@ -100,6 +100,11 @@ class CategoryResult:
     
     # NEW: Nonlinear signal metrics
     avg_knn_accuracy_k10: float  # k-NN CV accuracy
+    avg_knn_pca_accuracy: float  # k-NN on PCA features (addresses curse of dimensionality)
+    avg_knn_umap_accuracy: float  # k-NN on UMAP features (preserves nonlinear structure)
+    avg_knn_pacmap_accuracy: float  # k-NN on PaCMAP features (preserves local+global structure)
+    avg_mlp_probe_accuracy: float  # MLP probe (regularized nonlinear)
+    avg_best_nonlinear: float  # max(knn, knn_pca, knn_umap, knn_pacmap, mlp) - best nonlinear signal detector
     avg_mmd_rbf: float  # Maximum Mean Discrepancy
     avg_local_dim_pos: float  # Local intrinsic dim of positive class
     avg_local_dim_neg: float  # Local intrinsic dim of negative class
@@ -147,21 +152,21 @@ class DiscoveryResults:
         
         if caa_ready:
             lines.append(f"CAA READY - Linear signal ({len(caa_ready)}):")
-            for name in sorted(caa_ready, key=lambda n: self.categories[n].avg_signal_strength, reverse=True):
+            for name in sorted(caa_ready, key=lambda n: self.categories[n].avg_best_nonlinear, reverse=True):
                 cat = self.categories[name]
-                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}, kNN={cat.avg_knn_accuracy_k10:.2f}")
+                lines.append(f"  {name}: best_nonlinear={cat.avg_best_nonlinear:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}, gap={cat.avg_linear_probe_accuracy - cat.avg_best_nonlinear:.2f}")
         
         if nonlinear:
             lines.append(f"\nNONLINEAR - Need different method ({len(nonlinear)}):")
             for name in nonlinear:
                 cat = self.categories[name]
-                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}, kNN={cat.avg_knn_accuracy_k10:.2f}, MMD={cat.avg_mmd_rbf:.3f}")
+                lines.append(f"  {name}: best_nonlinear={cat.avg_best_nonlinear:.2f}, linear={cat.avg_linear_probe_accuracy:.2f}, gap={cat.avg_linear_probe_accuracy - cat.avg_best_nonlinear:.2f}")
         
         if no_signal:
             lines.append(f"\nNO SIGNAL ({len(no_signal)}):")
             for name in no_signal:
                 cat = self.categories[name]
-                lines.append(f"  {name}: signal={cat.avg_signal_strength:.2f}, kNN={cat.avg_knn_accuracy_k10:.2f}")
+                lines.append(f"  {name}: best_nonlinear={cat.avg_best_nonlinear:.2f} (kNN={cat.avg_knn_accuracy_k10:.2f}, kNN_pca={cat.avg_knn_pca_accuracy:.2f}, kNN_umap={cat.avg_knn_umap_accuracy:.2f}, kNN_pacmap={cat.avg_knn_pacmap_accuracy:.2f}, MLP={cat.avg_mlp_probe_accuracy:.2f})")
         
         return "\n".join(lines)
 
@@ -179,6 +184,11 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
             avg_linear_probe_accuracy=0.5,
             is_linear=False,
             avg_knn_accuracy_k10=0.5,
+            avg_knn_pca_accuracy=0.5,
+            avg_knn_umap_accuracy=0.5,
+            avg_knn_pacmap_accuracy=0.5,
+            avg_mlp_probe_accuracy=0.5,
+            avg_best_nonlinear=0.5,
             avg_mmd_rbf=0.0,
             avg_local_dim_pos=0.0,
             avg_local_dim_neg=0.0,
@@ -201,34 +211,53 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
     # Determine dominant structure
     dominant = max(dist.items(), key=lambda x: x[1])[0] if dist else "unknown"
     
-    # Step 1: Signal detection (MLP CV accuracy)
+    # Step 1: Compute ALL probe accuracies
     avg_signal_strength = sum(r.signal_strength for r in results.results) / len(results.results)
-    signal_exists = avg_signal_strength > 0.6
-    
-    # Step 2: Linearity check (Linear probe CV accuracy)
     avg_linear_probe_accuracy = sum(r.linear_probe_accuracy for r in results.results) / len(results.results)
-    # Signal is linear if linear probe is close to MLP accuracy
-    is_linear = signal_exists and avg_linear_probe_accuracy > 0.6 and (avg_signal_strength - avg_linear_probe_accuracy) < 0.15
-    
-    # Step 2b: Nonlinear signal metrics
     avg_knn_accuracy_k10 = sum(r.knn_accuracy_k10 for r in results.results) / len(results.results)
+    avg_knn_pca_accuracy = sum(r.knn_pca_accuracy for r in results.results) / len(results.results)
+    avg_knn_umap_accuracy = sum(r.knn_umap_accuracy for r in results.results) / len(results.results)
+    avg_knn_pacmap_accuracy = sum(r.knn_pacmap_accuracy for r in results.results) / len(results.results)
+    avg_mlp_probe_accuracy = sum(r.mlp_probe_accuracy for r in results.results) / len(results.results)
     avg_mmd_rbf = sum(r.mmd_rbf for r in results.results) / len(results.results)
     avg_local_dim_pos = sum(r.local_dim_pos for r in results.results) / len(results.results)
     avg_local_dim_neg = sum(r.local_dim_neg for r in results.results) / len(results.results)
     avg_fisher_max = sum(r.fisher_max for r in results.results) / len(results.results)
     avg_density_ratio = sum(r.density_ratio for r in results.results) / len(results.results)
     
-    # Step 3: Geometry details
-    avg_linear_score = sum(r.linear_score for r in results.results) / len(results.results)
-    avg_cohens_d = sum(r.cohens_d for r in results.results) / len(results.results)
+    # Compute best nonlinear for each result, then average
+    # best_nonlinear = max(knn_k10, knn_pca, knn_umap, mlp) for each result
+    avg_best_nonlinear = sum(
+        max(r.knn_accuracy_k10, r.knn_pca_accuracy, r.knn_umap_accuracy, r.mlp_probe_accuracy) 
+        for r in results.results
+    ) / len(results.results)
     
-    # Final recommendation
+    # Step 2: Signal detection and classification (matching paper methodology)
+    # Use MAXIMUM of nonlinear probes as signal detector (addresses curse of dimensionality)
+    # Thresholds from paper: tau_exist = 0.6, tau_gap = 0.15
+    tau_exist = 0.6
+    tau_gap = 0.15
+    
+    # Signal exists if ANY nonlinear method can separate classes above chance
+    signal_exists = avg_best_nonlinear >= tau_exist
+    
+    # Step 3: Determine if signal is linear or nonlinear
+    # NO_SIGNAL: best_nonlinear < 0.6 (no separable signal by any method)
+    # LINEAR: best_nonlinear >= 0.6 AND linear >= best_nonlinear - 0.15 (linear methods work)
+    # NONLINEAR: best_nonlinear >= 0.6 AND linear < best_nonlinear - 0.15 (linear methods fail but nonlinear works)
     if not signal_exists:
+        is_linear = False
         recommendation = "NO_SIGNAL"
-    elif is_linear:
+    elif avg_linear_probe_accuracy >= avg_best_nonlinear - tau_gap:
+        is_linear = True
         recommendation = "CAA"
     else:
+        is_linear = False
         recommendation = "NONLINEAR"
+    
+    # Step 4: Geometry details
+    avg_linear_score = sum(r.linear_score for r in results.results) / len(results.results)
+    avg_cohens_d = sum(r.cohens_d for r in results.results) / len(results.results)
     
     # Unified direction exists if we have linear signal
     has_unified = is_linear
@@ -257,6 +286,11 @@ def analyze_category_results(results: GeometrySearchResults, category: str, desc
         avg_linear_probe_accuracy=avg_linear_probe_accuracy,
         is_linear=is_linear,
         avg_knn_accuracy_k10=avg_knn_accuracy_k10,
+        avg_knn_pca_accuracy=avg_knn_pca_accuracy,
+        avg_knn_umap_accuracy=avg_knn_umap_accuracy,
+        avg_knn_pacmap_accuracy=avg_knn_pacmap_accuracy,
+        avg_mlp_probe_accuracy=avg_mlp_probe_accuracy,
+        avg_best_nonlinear=avg_best_nonlinear,
         avg_mmd_rbf=avg_mmd_rbf,
         avg_local_dim_pos=avg_local_dim_pos,
         avg_local_dim_neg=avg_local_dim_neg,
