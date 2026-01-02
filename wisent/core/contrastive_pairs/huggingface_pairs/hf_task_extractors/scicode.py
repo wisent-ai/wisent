@@ -52,10 +52,10 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
         """
         max_items = self._normalize_limit(limit)
 
-        # Load dataset from HuggingFace - use test split
+        # Load dataset from HuggingFace - use validation split (test split has no solutions)
         docs = self.load_dataset(
             dataset_name="SciCode1/SciCode",
-            split="test",
+            split="validation",
             limit=max_items,
         )
 

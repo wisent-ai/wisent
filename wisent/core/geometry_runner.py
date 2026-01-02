@@ -117,6 +117,246 @@ def compute_knn_accuracy(
         return 0.5
 
 
+def compute_knn_pca_accuracy(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    k: int = 10,
+    n_components: int = 50,
+    n_folds: int = 5,
+) -> float:
+    """
+    Compute k-NN accuracy on PCA-reduced features.
+    
+    This addresses the curse of dimensionality by projecting to lower dimensions
+    before k-NN. If k-NN on PCA features exceeds linear probe, it indicates
+    genuine nonlinear structure (not just high-d artifacts).
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        k: Number of neighbors
+        n_components: Number of PCA components to keep
+        n_folds: Number of CV folds
+        
+    Returns:
+        Cross-validation accuracy on PCA-reduced features
+    """
+    try:
+        from sklearn.neighbors import KNeighborsClassifier
+        from sklearn.decomposition import PCA
+        from sklearn.model_selection import cross_val_score
+        from sklearn.pipeline import Pipeline
+        
+        n_pos = len(pos_activations)
+        n_neg = len(neg_activations)
+        
+        if n_pos < k + 1 or n_neg < k + 1:
+            return 0.5
+        
+        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
+        y = np.array([1] * n_pos + [0] * n_neg)
+        
+        n_folds = min(n_folds, min(n_pos, n_neg))
+        if n_folds < 2:
+            return 0.5
+        
+        # Reduce to min(n_components, n_samples-1, n_features)
+        actual_components = min(n_components, len(X) - 1, X.shape[1])
+        
+        # Pipeline: PCA then k-NN
+        clf = Pipeline([
+            ('pca', PCA(n_components=actual_components)),
+            ('knn', KNeighborsClassifier(n_neighbors=k))
+        ])
+        scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
+        return float(scores.mean())
+    except Exception:
+        return 0.5
+
+
+def compute_knn_umap_accuracy(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    k: int = 10,
+    n_components: int = 10,
+    n_folds: int = 5,
+) -> float:
+    """
+    Compute k-NN accuracy on UMAP-reduced features.
+    
+    UMAP preserves nonlinear structure better than PCA. If k-NN on UMAP
+    features significantly exceeds linear probe, it indicates genuine
+    nonlinear structure in the representation.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        k: Number of neighbors for k-NN
+        n_components: Number of UMAP components
+        n_folds: Number of CV folds
+        
+    Returns:
+        Cross-validation accuracy on UMAP-reduced features
+    """
+    try:
+        import umap
+        from sklearn.neighbors import KNeighborsClassifier
+        from sklearn.model_selection import cross_val_score
+        
+        n_pos = len(pos_activations)
+        n_neg = len(neg_activations)
+        
+        if n_pos < k + 1 or n_neg < k + 1:
+            return 0.5
+        
+        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
+        y = np.array([1] * n_pos + [0] * n_neg)
+        
+        n_folds = min(n_folds, min(n_pos, n_neg))
+        if n_folds < 2:
+            return 0.5
+        
+        # UMAP reduction - use smaller n_neighbors for small datasets
+        umap_n_neighbors = min(15, len(X) // 4)
+        if umap_n_neighbors < 2:
+            return 0.5
+            
+        reducer = umap.UMAP(
+            n_components=n_components,
+            n_neighbors=umap_n_neighbors,
+            min_dist=0.1,
+            random_state=42,
+        )
+        X_umap = reducer.fit_transform(X)
+        
+        # k-NN on UMAP features
+        clf = KNeighborsClassifier(n_neighbors=k)
+        scores = cross_val_score(clf, X_umap, y, cv=n_folds, scoring='accuracy')
+        return float(scores.mean())
+    except ImportError:
+        # UMAP not installed - fall back to 0.5 (will use other methods)
+        return 0.5
+    except Exception:
+        return 0.5
+
+
+def compute_knn_pacmap_accuracy(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    k: int = 10,
+    n_components: int = 10,
+    n_folds: int = 5,
+) -> float:
+    """
+    Compute k-NN accuracy on PaCMAP-reduced features.
+    
+    PaCMAP (Pairwise Controlled Manifold Approximation) preserves both local
+    AND global structure better than UMAP. It's faster and more robust for
+    high-dimensional data. If k-NN on PaCMAP features significantly exceeds
+    linear probe, it indicates genuine nonlinear structure.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        k: Number of neighbors for k-NN
+        n_components: Number of PaCMAP components
+        n_folds: Number of CV folds
+        
+    Returns:
+        Cross-validation accuracy on PaCMAP-reduced features
+    """
+    try:
+        import pacmap
+        from sklearn.neighbors import KNeighborsClassifier
+        from sklearn.model_selection import cross_val_score
+        
+        n_pos = len(pos_activations)
+        n_neg = len(neg_activations)
+        
+        if n_pos < k + 1 or n_neg < k + 1:
+            return 0.5
+        
+        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
+        y = np.array([1] * n_pos + [0] * n_neg)
+        
+        n_folds = min(n_folds, min(n_pos, n_neg))
+        if n_folds < 2:
+            return 0.5
+        
+        # PaCMAP reduction
+        reducer = pacmap.PaCMAP(
+            n_components=n_components,
+            n_neighbors=min(10, len(X) // 4),
+            MN_ratio=0.5,
+            FP_ratio=2.0,
+            random_state=42,
+        )
+        X_pacmap = reducer.fit_transform(X)
+        
+        # k-NN on PaCMAP features
+        clf = KNeighborsClassifier(n_neighbors=k)
+        scores = cross_val_score(clf, X_pacmap, y, cv=n_folds, scoring='accuracy')
+        return float(scores.mean())
+    except ImportError:
+        # PaCMAP not installed - fall back to 0.5 (will use other methods)
+        return 0.5
+    except Exception:
+        return 0.5
+
+
+def compute_mlp_probe_accuracy(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+    hidden_size: int = 64,
+    n_folds: int = 5,
+) -> float:
+    """
+    Compute MLP probe cross-validation accuracy.
+    
+    This provides a nonlinear baseline that is more robust than k-NN in high
+    dimensions. If MLP substantially exceeds linear probe, it indicates
+    genuine nonlinear structure.
+    
+    Args:
+        pos_activations: [N, hidden_dim] positive class activations
+        neg_activations: [N, hidden_dim] negative class activations
+        hidden_size: Hidden layer size
+        n_folds: Number of CV folds
+        
+    Returns:
+        Cross-validation accuracy
+    """
+    try:
+        from sklearn.neural_network import MLPClassifier
+        from sklearn.model_selection import cross_val_score
+        
+        n_pos = len(pos_activations)
+        n_neg = len(neg_activations)
+        
+        if n_pos < 5 or n_neg < 5:
+            return 0.5
+        
+        X = torch.cat([pos_activations, neg_activations], dim=0).float().cpu().numpy()
+        y = np.array([1] * n_pos + [0] * n_neg)
+        
+        n_folds = min(n_folds, min(n_pos, n_neg))
+        if n_folds < 2:
+            return 0.5
+        
+        clf = MLPClassifier(
+            hidden_layer_sizes=(hidden_size,),
+            max_iter=500,
+            early_stopping=True,
+            validation_fraction=0.1,
+            random_state=42,
+            alpha=0.01,  # L2 regularization
+        )
+        scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
+        return float(scores.mean())
+    except Exception:
+        return 0.5
+
+
 def compute_mmd_rbf(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
@@ -403,6 +643,11 @@ class GeometryTestResult:
     knn_accuracy_k5: float  # k-NN CV accuracy with k=5
     knn_accuracy_k10: float  # k-NN CV accuracy with k=10
     knn_accuracy_k20: float  # k-NN CV accuracy with k=20
+    knn_pca_accuracy: float  # k-NN on PCA-50 features (addresses curse of dimensionality)
+    knn_umap_accuracy: float  # k-NN on UMAP-10 features (preserves nonlinear structure)
+    knn_pacmap_accuracy: float  # k-NN on PaCMAP-10 features (preserves local+global structure)
+    mlp_probe_accuracy: float  # MLP probe accuracy (nonlinear baseline)
+    best_nonlinear_accuracy: float  # max(knn_k10, knn_pca, knn_umap, knn_pacmap, mlp) - best nonlinear signal
     mmd_rbf: float  # Maximum Mean Discrepancy with RBF kernel
     local_dim_pos: float  # Local intrinsic dimension of positive class
     local_dim_neg: float  # Local intrinsic dimension of negative class
@@ -472,6 +717,11 @@ class GeometryTestResult:
                 "knn_accuracy_k5": self.knn_accuracy_k5,
                 "knn_accuracy_k10": self.knn_accuracy_k10,
                 "knn_accuracy_k20": self.knn_accuracy_k20,
+                "knn_pca_accuracy": self.knn_pca_accuracy,
+                "knn_umap_accuracy": self.knn_umap_accuracy,
+                "knn_pacmap_accuracy": self.knn_pacmap_accuracy,
+                "mlp_probe_accuracy": self.mlp_probe_accuracy,
+                "best_nonlinear_accuracy": self.best_nonlinear_accuracy,
                 "mmd_rbf": self.mmd_rbf,
                 "local_dim_pos": self.local_dim_pos,
                 "local_dim_neg": self.local_dim_neg,
@@ -650,6 +900,11 @@ def compute_geometry_metrics(
             knn_accuracy_k5=0.5,
             knn_accuracy_k10=0.5,
             knn_accuracy_k20=0.5,
+            knn_pca_accuracy=0.5,
+            knn_umap_accuracy=0.5,
+            knn_pacmap_accuracy=0.5,
+            mlp_probe_accuracy=0.5,
+            best_nonlinear_accuracy=0.5,
             mmd_rbf=0.0,
             local_dim_pos=0.0,
             local_dim_neg=0.0,
@@ -702,31 +957,49 @@ def compute_geometry_metrics(
     try:
         result = detect_geometry_structure(pos_activations, neg_activations, config)
         
-        # Step 1: Compute signal strength (MLP CV accuracy)
-        signal_strength = compute_signal_strength(pos_activations, neg_activations)
-        has_signal = signal_strength > 0.6
-        
-        # Step 2: Compute linear probe accuracy
+        # Step 1: Compute ALL probe accuracies first
+        signal_strength = compute_signal_strength(pos_activations, neg_activations)  # MLP CV
         linear_probe_accuracy = compute_linear_probe_accuracy(pos_activations, neg_activations)
-        # Signal is linear if: has signal AND linear probe is close to MLP (within 0.1)
-        is_linear = has_signal and linear_probe_accuracy > 0.6 and (signal_strength - linear_probe_accuracy) < 0.15
         
-        # Step 2b: Compute nonlinear signal metrics
+        # Compute nonlinear signal metrics
         knn_k5 = compute_knn_accuracy(pos_activations, neg_activations, k=5)
         knn_k10 = compute_knn_accuracy(pos_activations, neg_activations, k=10)
         knn_k20 = compute_knn_accuracy(pos_activations, neg_activations, k=20)
+        knn_pca = compute_knn_pca_accuracy(pos_activations, neg_activations, k=10, n_components=50)
+        knn_umap = compute_knn_umap_accuracy(pos_activations, neg_activations, k=10, n_components=10)
+        knn_pacmap = compute_knn_pacmap_accuracy(pos_activations, neg_activations, k=10, n_components=10)
+        mlp_probe = compute_mlp_probe_accuracy(pos_activations, neg_activations, hidden_size=64)
         mmd = compute_mmd_rbf(pos_activations, neg_activations)
         local_dim_pos, local_dim_neg, local_dim_ratio = compute_local_intrinsic_dims(pos_activations, neg_activations)
         fisher_stats = compute_fisher_per_dimension(pos_activations, neg_activations)
         density_rat = compute_density_ratio(pos_activations, neg_activations)
         
-        # Determine recommendation based on signal analysis
+        # Step 2: Signal detection and classification (matching paper methodology)
+        # Thresholds from paper: tau_exist = 0.6, tau_gap = 0.15
+        tau_exist = 0.6
+        tau_gap = 0.15
+        
+        # Use MAXIMUM of all nonlinear probes to detect signal
+        # This addresses curse of dimensionality: raw k-NN may fail in high-d,
+        # but k-NN on PCA/UMAP/PaCMAP features or MLP should still find nonlinear structure
+        best_nonlinear = max(knn_k10, knn_pca, knn_umap, knn_pacmap, mlp_probe)
+        
+        # Signal exists if ANY nonlinear method can separate classes above chance
+        has_signal = best_nonlinear >= tau_exist
+        
+        # Step 3: Determine if signal is linear or nonlinear
+        # NO_SIGNAL: best_nonlinear < 0.6 (no separable signal by any method)
+        # LINEAR: best_nonlinear >= 0.6 AND linear >= best_nonlinear - 0.15 (linear methods work)
+        # NONLINEAR: best_nonlinear >= 0.6 AND linear < best_nonlinear - 0.15 (linear methods fail but nonlinear works)
         if not has_signal:
+            is_linear = False
             recommendation = "NO_SIGNAL"
-        elif is_linear:
+        elif linear_probe_accuracy >= best_nonlinear - tau_gap:
+            is_linear = True
             recommendation = "CAA"  # Linear signal -> use Contrastive Activation Addition
         else:
-            recommendation = "NONLINEAR"  # Nonlinear signal -> need different method
+            is_linear = False
+            recommendation = "NONLINEAR"  # Nonlinear signal -> need different method (Truth Forest, NL-ITI, etc.)
         
         # Helper to safely get detail
         def get_detail(struct_name: str, key: str, default=0.0):
@@ -746,6 +1019,11 @@ def compute_geometry_metrics(
             knn_accuracy_k5=knn_k5,
             knn_accuracy_k10=knn_k10,
             knn_accuracy_k20=knn_k20,
+            knn_pca_accuracy=knn_pca,
+            knn_umap_accuracy=knn_umap,
+            knn_pacmap_accuracy=knn_pacmap,
+            mlp_probe_accuracy=mlp_probe,
+            best_nonlinear_accuracy=best_nonlinear,
             mmd_rbf=mmd,
             local_dim_pos=local_dim_pos,
             local_dim_neg=local_dim_neg,
@@ -800,6 +1078,11 @@ def compute_geometry_metrics(
             knn_accuracy_k5=0.5,
             knn_accuracy_k10=0.5,
             knn_accuracy_k20=0.5,
+            knn_pca_accuracy=0.5,
+            knn_umap_accuracy=0.5,
+            knn_pacmap_accuracy=0.5,
+            mlp_probe_accuracy=0.5,
+            best_nonlinear_accuracy=0.5,
             mmd_rbf=0.0,
             local_dim_pos=0.0,
             local_dim_neg=0.0,

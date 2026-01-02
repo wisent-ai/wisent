@@ -33,7 +33,7 @@ def _map_token_aggregation(aggregation_str: str):
 
 def _map_prompt_strategy(strategy_str: str):
     """Map string prompt strategy to ExtractionStrategy."""
-    
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
 
     mapping = {
         "chat_template": ExtractionStrategy.CHAT_LAST,
@@ -120,9 +120,8 @@ def train_classifier_on_pairs(
 
         updated_pair = collector.collect(
             pair, strategy=aggregation_strategy,
-            return_full_sequence=return_full_sequence,
-            normalize_layers=normalize_layers,
-            prompt_strategy=prompt_construction_strategy
+            layers=[str(target_layer)],
+            normalize=normalize_layers
         )
         enriched_training_pairs.append(updated_pair)
 
