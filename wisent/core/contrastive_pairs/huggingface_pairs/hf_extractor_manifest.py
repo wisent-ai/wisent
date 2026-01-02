@@ -225,9 +225,7 @@ EXTRACTORS: dict[str, str] = {
     "vaxx_stance": f"{base_import}vaxx_stance:VaxxStanceExtractor",
     "wikitext103": f"{base_import}wikitext103:Wikitext103Extractor",
 
-    # TruthfulQA generation (semantic similarity evaluation, NOT lm-eval)
-    "truthfulqa_generation": f"{base_import}truthfulqa_generation:TruthfulQAGenerationExtractor",
-    "truthfulqa_gen": f"{base_import}truthfulqa_generation:TruthfulQAGenerationExtractor",
+    # NOTE: truthfulqa_gen/truthfulqa_generation now use lm-eval extractor (see group_task_manifests/truthfulqa.py)
 
     # Factuality benchmarks (NOT lm-eval)
     "simpleqa": f"{base_import}simpleqa:SimpleQAExtractor",
@@ -431,8 +429,7 @@ EXTRACTORS: dict[str, str] = {
     "terminal_bench": f"{base_import}coding_benchmarks:TerminalBenchExtractor",
     "terminalbench": f"{base_import}coding_benchmarks:TerminalBenchExtractor",
     "terminal": f"{base_import}coding_benchmarks:TerminalBenchExtractor",
-    "scicode": f"{base_import}coding_benchmarks:SciCodeExtractor",
-    "sci_code": f"{base_import}coding_benchmarks:SciCodeExtractor",
+    # scicode and sci_code are already defined earlier - use scicode.py extractor
 
     # Medium priority benchmarks (NOT lm-eval)
     "cnmo_2024": f"{base_import}medium_priority_benchmarks:CNMOExtractor",
