@@ -8,10 +8,10 @@
 INSTANCE_TYPE="g6e.2xlarge"
 
 # Model
-MODEL="google/gemma-2-9b"
+MODEL="meta-llama/Llama-3.1-8B"
 
 # Task
-TASK="boolq"
+TASK="truthfulqa_mc1"
 
 # Device
 DEVICE="cuda:0"
@@ -21,7 +21,7 @@ LORA_R="16"
 LORA_ALPHA="32"
 LORA_DROPOUT="0.05"
 LEARNING_RATE="5e-5"
-NUM_EPOCHS="2"
+NUM_EPOCHS="6"
 BATCH_SIZE="1"
 MAX_LENGTH="1024"
 MAX_PROMPT_LENGTH="512"
@@ -30,7 +30,7 @@ MAX_PROMPT_LENGTH="512"
 BETA="0.1"  # Controls KL penalty (lower = closer to reference model)
 
 # Number of preference pairs
-NUM_PAIRS="10"
+NUM_PAIRS="300"
 
 # Train/test split ratio
 TRAIN_RATIO="0.8"
@@ -38,14 +38,14 @@ TRAIN_RATIO="0.8"
 # Evaluation settings
 EVAL_BATCH_SIZE="1"
 EVAL_MAX_BATCH_SIZE="1"
-EVAL_LIMIT="10"  # Empty = evaluate all
+EVAL_LIMIT="300"  # Empty = evaluate all
 
 # DPO-LoRA + Steering settings (set WITH_STEERING="true" to enable)
-WITH_STEERING="false"
-STEERING_METHOD="caa"  # caa or fgaa
-STEERING_LAYERS="21"
+WITH_STEERING="true"
+STEERING_METHOD="caa"  # caa
+STEERING_LAYERS="16"
 STEERING_NUM_PAIRS="50"
-STEERING_SCALES="8.0"
+STEERING_SCALES="1.0,2.0,4.0,6.0,8.0,10.0"
 EXTRACTION_STRATEGY="mc_completion"
 
 # Output directories
