@@ -35,14 +35,19 @@ if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
 
 
-def create_dpo_dataset(pairs: list[dict]) -> Dataset:
+def create_dpo_dataset(pairs: list[dict], tokenizer) -> Dataset:
     """
     Convert contrastive pairs to DPO dataset format.
 
-    DPO expects:
-    - prompt: the input prompt
-    - chosen: the preferred response
-    - rejected: the non-preferred response
+    - Chat models: returns conversational format, DPOTrainer auto-applies chat template
+    - Base models: returns text format with simple formatting
+
+    Args:
+        pairs: List of contrastive pairs
+        tokenizer: Tokenizer to check for chat template support
+
+    Returns:
+        HuggingFace Dataset ready for DPOTrainer
     """
     data = {
         "prompt": [],
@@ -55,9 +60,16 @@ def create_dpo_dataset(pairs: list[dict]) -> Dataset:
         chosen = pair["positive_response"]["model_response"]
         rejected = pair["negative_response"]["model_response"]
 
-        data["prompt"].append(prompt)
-        data["chosen"].append(chosen)
-        data["rejected"].append(rejected)
+        if hasattr(tokenizer, "chat_template") and tokenizer.chat_template:
+            # Chat model: use conversational format, trainer applies template
+            data["prompt"].append([{"role": "user", "content": prompt}])
+            data["chosen"].append([{"role": "assistant", "content": chosen}])
+            data["rejected"].append([{"role": "assistant", "content": rejected}])
+        else:
+            # Base model: use simple text format
+            data["prompt"].append(f"{prompt}\n")
+            data["chosen"].append(chosen)
+            data["rejected"].append(rejected)
 
     return Dataset.from_dict(data)
 
@@ -112,17 +124,9 @@ def train_lora_dpo(
     pairs, pairs_file = generate_contrastive_pairs(task, num_pairs)
     print(f"Generated {len(pairs)} preference pairs")
 
-    # Step 2: Create DPO dataset
+    # Step 2: Load model
     print(f"\n{'='*60}")
-    print(f"Step 2: Creating DPO dataset")
-    print(f"{'='*60}")
-
-    dataset = create_dpo_dataset(pairs)
-    print(f"Dataset size: {len(dataset)}")
-
-    # Step 3: Load model
-    print(f"\n{'='*60}")
-    print(f"Step 3: Loading model {model_name}")
+    print(f"Step 2: Loading model {model_name}")
     print(f"{'='*60}")
 
     model, tokenizer = load_model_and_tokenizer(model_name, device, eval_mode=False)
@@ -131,6 +135,14 @@ def train_lora_dpo(
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"  # DPO typically uses left padding
+
+    # Step 3: Create DPO dataset
+    print(f"\n{'='*60}")
+    print(f"Step 3: Creating DPO dataset")
+    print(f"{'='*60}")
+
+    dataset = create_dpo_dataset(pairs, tokenizer)
+    print(f"Dataset size: {len(dataset)}")
 
     # Step 4: Configure LoRA
     print(f"\n{'='*60}")

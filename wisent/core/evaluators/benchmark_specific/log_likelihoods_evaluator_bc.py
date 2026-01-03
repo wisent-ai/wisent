@@ -19,7 +19,7 @@ from wisent.core.errors.error_handler import (
 logger = logging.getLogger(__name__)
 
 
-class LogLikelihoodsEvaluator(BaseEvaluator):
+class LogLikelihoodsEvaluatorBC(BaseEvaluator):
     """Evaluator for multiple choice tasks using log likelihood comparison.
 
     Compatible with:
@@ -36,8 +36,8 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
     not in evaluators. This maintains proper separation of concerns.
     """
 
-    name = "log_likelihoods"
-    description = "Log likelihood evaluator for multiple choice tasks"
+    name = "log_likelihoods_bc"
+    description = "Log likelihood evaluator matching lm-eval-harness behavior"
 
     def __init__(self, model=None):
         """Initialize with optional model for log likelihood computation.
@@ -154,6 +154,10 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
     def _compute_choice_log_likelihood(self, model, question: str, choice: str) -> float:
         """Compute log likelihood of a choice given a question.
 
+        Matches lm-eval-harness behavior:
+        - Direct concatenation (no extra newline)
+        - No length normalization (raw sum of log probs)
+
         Args:
             model: WisentModel instance
             question: The question/context
@@ -162,49 +166,43 @@ class LogLikelihoodsEvaluator(BaseEvaluator):
         Returns:
             Log likelihood (higher = more likely)
         """
-        # Format as: question + choice
-        # OLD: full_text = f"{question}\n{choice}"
-        full_text = question + " " + choice  # lm-eval adds leading space to choices
+        # lm-eval-harness approach:
+        # 1. Tokenize full string (context + choice)
+        # 2. Tokenize context alone
+        # 3. Continuation tokens = full_tokens[context_len:]
+        # IMPORTANT: lm-eval adds a leading space to choices!
 
-        # OLD: Tokenize question and choice separately
-        # question_inputs = model.tokenizer(question, return_tensors="pt", add_special_tokens=True).to(model.device)
-        # choice_tokens = model.tokenizer(choice, return_tensors="pt", add_special_tokens=False).to(model.device)
-        # NEW: Tokenize context and full sequence to get correct token boundaries
-        context_ids = model.tokenizer(question, return_tensors="pt", add_special_tokens=True).input_ids.to(model.device)
+        context = question
+        choice_with_space = " " + choice  # lm-eval adds leading space
+        full_text = context + choice_with_space
+
+        # Tokenize both
+        context_ids = model.tokenizer(context, return_tensors="pt", add_special_tokens=True).input_ids.to(model.device)
         full_ids = model.tokenizer(full_text, return_tensors="pt", add_special_tokens=True).input_ids.to(model.device)
 
-        # Get model logits for the full sequence
+        context_len = context_ids.shape[1]
+        full_len = full_ids.shape[1]
+        choice_len = full_len - context_len
+
+        if choice_len <= 0:
+            return 0.0
+
         with torch.no_grad():
-            # OLD: Tokenize full sequence
-            # full_inputs = model.tokenizer(full_text, return_tensors="pt", add_special_tokens=True).to(model.device)
-            # outputs = model.hf_model(**full_inputs)
             outputs = model.hf_model(full_ids)
             logits = outputs.logits
 
-            # Compute log probability of the choice tokens
-            # logits shape: [batch, seq_len, vocab_size]
-            # We want log prob of choice tokens given question
+            # Compute log probabilities (float32 for numerical stability like lm-eval)
+            log_probs = torch.nn.functional.log_softmax(logits, dim=-1, dtype=torch.float32)
 
-            # OLD: question_len = question_inputs.input_ids.shape[1]
-            # OLD: choice_len = choice_tokens.input_ids.shape[1]
-            context_len = context_ids.shape[1]
-            choice_len = full_ids.shape[1] - context_len
+            # Sum log probs for choice tokens only
+            # No length normalization (matching lm-eval-harness)
+            total_log_prob = 0.0
 
-            # Get logits at positions where we're predicting choice tokens
-            log_prob = 0.0
             for i in range(choice_len):
-                # Position in full sequence where we predict token i of choice
-                # Subtract 1 because we predict the next token
+                # Position that predicts token at (context_len + i)
                 pos = context_len + i - 1
                 if pos >= 0 and pos < logits.shape[1]:
-                    token_logits = logits[0, pos, :]  # Logits at this position
-                    token_log_probs = torch.nn.functional.log_softmax(token_logits, dim=-1)
-                    # Get log prob of the actual choice token at this position
-                    # OLD: actual_token_id = choice_tokens.input_ids[0, i]
-                    actual_token_id = full_ids[0, context_len + i]  # Get from full sequence
-                    log_prob += token_log_probs[actual_token_id].item()
+                    target_token = full_ids[0, context_len + i]
+                    total_log_prob += log_probs[0, pos, target_token].item()
 
-            # Normalize by length to avoid bias toward shorter choices
-            normalized_log_prob = log_prob / max(choice_len, 1)
-
-            return normalized_log_prob
+            return total_log_prob

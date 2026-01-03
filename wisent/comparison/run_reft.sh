@@ -16,17 +16,16 @@ TASK="cb"
 # Device
 DEVICE="cuda:0"
 
-# LoRA parameters
-LORA_R="16"
-LORA_ALPHA="32"
-LORA_DROPOUT="0.05"
-LEARNING_RATE="5e-5"  # Lower to reduce catastrophic forgetting
+# ReFT parameters (LoReFT)
+LOW_RANK_DIMENSION="4"  # Very small! LoReFT is 10-50x more efficient than LoRA
+INTERVENTION_LAYERS="16"  # Middle layer for Llama 8B (32 layers)
+LEARNING_RATE="5e-4"
 NUM_EPOCHS="10"
-BATCH_SIZE="1"
+BATCH_SIZE="2"
 MAX_LENGTH="1024"
 
-# Number of training examples (use full 80% of pooled data)
-NUM_PAIRS="300"
+# Number of training examples
+NUM_PAIRS="100"
 
 # Train/test split ratio (0.8 = 80% train, 20% test)
 TRAIN_RATIO="0.8"
@@ -34,10 +33,10 @@ TRAIN_RATIO="0.8"
 # Evaluation settings
 EVAL_BATCH_SIZE="1"
 EVAL_MAX_BATCH_SIZE="1"
-EVAL_LIMIT="300"  # No limit - evaluate on all test data
+EVAL_LIMIT="100"
 
-# LoRA + Steering settings (set WITH_STEERING="true" to enable)
-WITH_STEERING="true"
+# ReFT + Steering settings (set WITH_STEERING="true" to enable)
+WITH_STEERING="false"
 STEERING_METHOD="caa"  # caa
 STEERING_LAYERS="16"
 STEERING_NUM_PAIRS="50"
@@ -46,7 +45,7 @@ EXTRACTION_STRATEGY="mc_completion"
 
 # Output directories
 REMOTE_OUTPUT_DIR="/home/ubuntu/output"
-LOCAL_OUTPUT_DIR="/home/bc/Desktop/python/wisent/wisent/comparison/results/lora"
+LOCAL_OUTPUT_DIR="/home/bc/Desktop/python/wisent/wisent/comparison/results/reft"
 
 # Retry settings
 MAX_RETRIES=30
@@ -66,15 +65,14 @@ for ((attempt=1; attempt<=MAX_RETRIES; attempt++)); do
     echo ""
 
     # Build command
-    CMD="python -m wisent.comparison.lora \
+    CMD="python -m wisent.comparison.reft \
         --model $MODEL \
         --task $TASK \
         --device $DEVICE \
         --output-dir $REMOTE_OUTPUT_DIR \
         --num-pairs $NUM_PAIRS \
-        --lora-r $LORA_R \
-        --lora-alpha $LORA_ALPHA \
-        --lora-dropout $LORA_DROPOUT \
+        --low-rank-dimension $LOW_RANK_DIMENSION \
+        --intervention-layers $INTERVENTION_LAYERS \
         --learning-rate $LEARNING_RATE \
         --num-epochs $NUM_EPOCHS \
         --batch-size $BATCH_SIZE \
