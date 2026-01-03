@@ -112,6 +112,8 @@ class TruthfulQAGenExtractor(LMEvalBenchmarkExtractor):
                 "category": category,
                 "num_correct": len(correct_answers),
                 "num_incorrect": len(incorrect_answers),
+                "correct_answers": correct_answers,
+                "incorrect_answers": incorrect_answers,
             }
 
             return self._build_pair(

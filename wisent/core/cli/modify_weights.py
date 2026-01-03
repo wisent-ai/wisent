@@ -540,7 +540,17 @@ def execute_modify_weights(args):
     if args.verbose:
         print(f"✓ Model loaded with {wisent_model.num_layers} layers\n")
 
-    # Step 3: Modify weights
+    # Step 2.5: GUIDED MODE - Use linearity diagnostics for data-driven modification
+    if getattr(args, 'guided', False):
+        stats = _execute_guided_modification(args, wisent_model, model, tokenizer)
+        return  # Guided mode handles export internally
+    
+    # Step 2.6: MULTI-CONCEPT MODE - Modify multiple concepts simultaneously
+    if getattr(args, 'concepts', None):
+        stats = _execute_multi_concept_modification(args, wisent_model, model, tokenizer, steering_vectors)
+        return  # Multi-concept mode handles export internally
+
+    # Step 3: Modify weights (standard mode)
     if args.verbose:
         print(f"Modifying weights using {args.method} method...")
         print()
@@ -659,3 +669,335 @@ def execute_modify_weights(args):
         "norm_preserve": norm_preserve if args.method == "directional" else None,
         "stats": stats,
     })
+
+
+def _execute_guided_modification(args, wisent_model, model, tokenizer):
+    """
+    Execute linearity-guided weight modification.
+    
+    This is a novel approach that uses diagnostic signals to perform
+    surgical, targeted weight modification without expensive optimization.
+    
+    Key innovations:
+    1. Layer selection based on measured linear separability
+    2. Fisher ratio-weighted ablation strength
+    3. Surgical modification of only high-signal layers
+    4. Optional collateral damage validation
+    """
+    from wisent.core.weight_modification.guided import (
+        GuidedModificationConfig,
+        AblationMode,
+        run_guided_modification,
+    )
+    from wisent.core.weight_modification import export_modified_model
+    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+    
+    log = bind(_LOG)
+    start_time = time.time()
+    
+    if args.verbose:
+        print("\n" + "=" * 80)
+        print("GUIDED WEIGHT MODIFICATION (Linearity-Driven)")
+        print("=" * 80)
+        print("This mode uses diagnostic signals for data-driven modification:")
+        print("  - Layer selection based on measured linear separability")
+        print("  - Fisher ratio-weighted ablation strength")
+        print("  - Surgical modification of only high-signal layers")
+        print("=" * 80 + "\n")
+    
+    # Step 1: Generate contrastive pairs for the task
+    pairs = _generate_pairs_for_guided_mode(args)
+    
+    if not pairs:
+        print("Error: No contrastive pairs generated for guided mode")
+        sys.exit(1)
+    
+    if args.verbose:
+        print(f"Generated {len(pairs)} contrastive pairs for diagnostics\n")
+    
+    # Step 2: Configure guided modification
+    mode_map = {
+        "full": AblationMode.FULL,
+        "surgical": AblationMode.SURGICAL,
+        "adaptive": AblationMode.ADAPTIVE,
+    }
+    
+    config = GuidedModificationConfig(
+        mode=mode_map.get(args.guided_mode, AblationMode.ADAPTIVE),
+        surgical_top_k=args.surgical_top_k,
+        min_linear_score=args.min_linear_score,
+        use_fisher_weights=not getattr(args, 'no_fisher_weights', False),
+        extraction_strategy=args.extraction_strategy,
+        validate_collateral=getattr(args, 'validate_collateral', False),
+        max_allowed_degradation=getattr(args, 'max_degradation', 0.1),
+        base_strength=args.strength,
+        normalize_vectors=getattr(args, 'normalize_vectors', True),
+        verbose=args.verbose,
+    )
+    
+    # Step 3: Run guided modification
+    result = run_guided_modification(
+        model=model,
+        pairs=pairs,
+        wisent_model=wisent_model,
+        config=config,
+        components=args.components,
+    )
+    
+    # Step 4: Save diagnostics if requested
+    if getattr(args, 'save_diagnostics', None):
+        diagnostics_data = {
+            "layers": {
+                str(layer): {
+                    "linear_score": diag.linear_score,
+                    "knn_score": diag.knn_score,
+                    "fisher_ratio": diag.fisher_ratio,
+                    "cohens_d": diag.cohens_d,
+                    "variance_explained": diag.variance_explained,
+                    "recommended_weight": diag.recommended_weight,
+                    "extraction_strategy": diag.extraction_strategy,
+                }
+                for layer, diag in result.layer_diagnostics.items()
+            },
+            "layer_weights": {str(k): v for k, v in result.layer_weights.items()},
+            "mode_used": result.mode_used.value,
+            "recommendation": result.recommendation,
+        }
+        
+        with open(args.save_diagnostics, 'w') as f:
+            json.dump(diagnostics_data, f, indent=2)
+        
+        if args.verbose:
+            print(f"\n✓ Saved diagnostics to {args.save_diagnostics}")
+    
+    # Step 5: Export model
+    if args.verbose:
+        print(f"\nExporting modified model to {args.output_dir}...")
+    
+    if args.push_to_hub and not args.repo_id:
+        print("✗ Error: --repo-id required when using --push-to-hub")
+        sys.exit(1)
+    
+    export_modified_model(
+        model,
+        args.output_dir,
+        tokenizer=tokenizer,
+        push_to_hub=args.push_to_hub,
+        repo_id=args.repo_id if args.push_to_hub else None,
+        commit_message=args.commit_message,
+    )
+    
+    # Step 6: Print summary
+    if args.timing:
+        elapsed = time.time() - start_time
+        print(f"\n⏱  Total time: {elapsed:.2f}s")
+    
+    if args.verbose:
+        print("\n" + "=" * 80)
+        print("GUIDED MODIFICATION COMPLETE")
+        print("=" * 80)
+        print(f"Mode: {result.mode_used.value}")
+        print(f"Layers modified: {result.layers_modified}")
+        print(f"Parameters modified: {result.total_parameters_modified:,}")
+        print(f"\nRecommendation: {result.recommendation}")
+        print("=" * 80 + "\n")
+    
+    log.info("Guided weight modification complete", extra={
+        "mode": result.mode_used.value,
+        "layers_modified": result.layers_modified,
+        "output_dir": args.output_dir,
+    })
+    
+    return {
+        "layers_modified": result.layers_modified,
+        "total_parameters_modified": result.total_parameters_modified,
+    }
+
+
+def _execute_multi_concept_modification(args, wisent_model, model, tokenizer, base_steering_vectors):
+    """
+    Execute multi-concept weight modification.
+    
+    This mode allows modifying multiple concepts simultaneously:
+    - Suppress some directions (e.g., refusal)
+    - Enhance others (e.g., truthfulness)
+    - Handle interference between concepts via orthogonalization
+    """
+    from wisent.core.weight_modification.multi_concept import (
+        MultiConceptConfig,
+        ConceptSpec,
+        ConceptAction,
+        run_multi_concept_modification,
+    )
+    from wisent.core.weight_modification import export_modified_model
+    
+    log = bind(_LOG)
+    start_time = time.time()
+    
+    if args.verbose:
+        print("\n" + "=" * 80)
+        print("MULTI-CONCEPT WEIGHT MODIFICATION")
+        print("=" * 80)
+        print("Modifying multiple concepts simultaneously with:")
+        print("  - Interference minimization via orthogonalization")
+        print("  - Bidirectional ablation (suppress + enhance)")
+        print("=" * 80 + "\n")
+    
+    # Parse concept specifications
+    concepts = []
+    
+    for concept_str in args.concepts:
+        parts = concept_str.split(":")
+        if len(parts) < 2:
+            print(f"Error: Invalid concept format '{concept_str}'. Use 'name:action' or 'name:action:strength'")
+            sys.exit(1)
+        
+        name = parts[0]
+        action_str = parts[1].lower()
+        strength = float(parts[2]) if len(parts) > 2 else 1.0
+        
+        action_map = {
+            "suppress": ConceptAction.SUPPRESS,
+            "enhance": ConceptAction.ENHANCE,
+            "neutral": ConceptAction.NEUTRAL,
+        }
+        
+        if action_str not in action_map:
+            print(f"Error: Unknown action '{action_str}'. Use: suppress, enhance, neutral")
+            sys.exit(1)
+        
+        # Generate steering vectors for this concept
+        # For now, use the base steering vectors if name matches task
+        # In full implementation, would generate per-concept vectors
+        if name == args.task or name == "base":
+            vectors = base_steering_vectors
+        else:
+            # Would need to generate vectors for this concept
+            print(f"Warning: Using base steering vectors for concept '{name}'")
+            vectors = base_steering_vectors
+        
+        concepts.append(ConceptSpec(
+            name=name,
+            steering_vectors=vectors,
+            action=action_map[action_str],
+            strength=strength,
+        ))
+    
+    if args.verbose:
+        print(f"Concepts to modify: {len(concepts)}")
+        for c in concepts:
+            print(f"  - {c.name}: {c.action.value} (strength={c.strength})")
+        print()
+    
+    # Configure multi-concept modification
+    config = MultiConceptConfig(
+        orthogonalize=not getattr(args, 'no_orthogonalize', False),
+        components=args.components,
+        norm_preserve=not getattr(args, 'no_norm_preserve', False),
+        verbose=args.verbose,
+    )
+    
+    # Run multi-concept modification
+    result = run_multi_concept_modification(
+        model=model,
+        concepts=concepts,
+        config=config,
+    )
+    
+    # Export model
+    if args.verbose:
+        print(f"\nExporting modified model to {args.output_dir}...")
+    
+    if args.push_to_hub and not args.repo_id:
+        print("✗ Error: --repo-id required when using --push-to-hub")
+        sys.exit(1)
+    
+    export_modified_model(
+        model,
+        args.output_dir,
+        tokenizer=tokenizer,
+        push_to_hub=args.push_to_hub,
+        repo_id=args.repo_id if args.push_to_hub else None,
+        commit_message=args.commit_message,
+    )
+    
+    # Print summary
+    if args.timing:
+        elapsed = time.time() - start_time
+        print(f"\n⏱  Total time: {elapsed:.2f}s")
+    
+    if args.verbose:
+        print("\n" + "=" * 80)
+        print("MULTI-CONCEPT MODIFICATION COMPLETE")
+        print("=" * 80)
+        print(f"Concepts modified: {result.concepts_modified}")
+        print(f"Layers modified: {result.layers_modified}")
+        print(f"Parameters modified: {result.total_parameters_modified:,}")
+        print(f"Orthogonalized: {result.orthogonalized}")
+        if result.warnings:
+            print(f"\nWarnings:")
+            for w in result.warnings:
+                print(f"  - {w}")
+        print("=" * 80 + "\n")
+    
+    log.info("Multi-concept modification complete", extra={
+        "concepts": result.concepts_modified,
+        "layers_modified": result.layers_modified,
+        "output_dir": args.output_dir,
+    })
+    
+    return {
+        "layers_modified": result.layers_modified,
+        "total_parameters_modified": result.total_parameters_modified,
+    }
+
+
+def _generate_pairs_for_guided_mode(args):
+    """Generate contrastive pairs for guided mode diagnostics."""
+    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+    
+    pairs = []
+    
+    # Try to load from task
+    if args.task:
+        try:
+            # Use the task-based pair generation
+            from wisent.core.data_loaders import load_contrastive_pairs
+            
+            task_pairs = load_contrastive_pairs(
+                task=args.task,
+                num_pairs=args.num_pairs,
+                model_name=args.model,
+            )
+            
+            for p in task_pairs:
+                if hasattr(p, 'prompt') and hasattr(p, 'positive_response') and hasattr(p, 'negative_response'):
+                    pairs.append(p)
+        except Exception as e:
+            print(f"Warning: Could not load pairs from task: {e}")
+            
+            # Fallback: try synthetic generation
+            try:
+                from wisent.core.synthetic.generators.pairs_generator import generate_synthetic_pairs
+                
+                synthetic_pairs = generate_synthetic_pairs(
+                    trait=args.task,
+                    num_pairs=args.num_pairs,
+                )
+                
+                for sp in synthetic_pairs:
+                    pairs.append(ContrastivePair(
+                        prompt=sp.get('prompt', ''),
+                        positive_response=PositiveResponse(
+                            model_response=sp.get('positive', '')
+                        ),
+                        negative_response=NegativeResponse(
+                            model_response=sp.get('negative', '')
+                        ),
+                    ))
+            except Exception as e2:
+                print(f"Warning: Synthetic generation also failed: {e2}")
+    
+    return pairs

@@ -94,6 +94,28 @@ from wisent.core.weight_modification.multi_direction import (
     bake_multi_directions,
     combine_directions,
 )
+from wisent.core.weight_modification.guided import (
+    GuidedModificationConfig,
+    GuidedModificationResult,
+    LayerDiagnostics,
+    CollateralDamageReport,
+    AblationMode,
+    run_guided_modification,
+    compute_layer_diagnostics,
+    compute_fisher_weights,
+    select_surgical_layers,
+    validate_collateral_damage,
+)
+from wisent.core.weight_modification.multi_concept import (
+    MultiConceptConfig,
+    ConceptSpec,
+    ConceptAction,
+    MultiConceptResult,
+    run_multi_concept_modification,
+    orthogonalize_concept_directions,
+    compute_interference_matrix,
+    bidirectional_projection,
+)
 
 __all__ = [
     # Norm-Preserving Biprojected Directional Modification (RECOMMENDED)
@@ -131,4 +153,24 @@ __all__ = [
     "train_and_bake",
     "bake_multi_directions",
     "combine_directions",
+    # Guided modification (linearity-driven)
+    "GuidedModificationConfig",
+    "GuidedModificationResult",
+    "LayerDiagnostics",
+    "CollateralDamageReport",
+    "AblationMode",
+    "run_guided_modification",
+    "compute_layer_diagnostics",
+    "compute_fisher_weights",
+    "select_surgical_layers",
+    "validate_collateral_damage",
+    # Multi-concept modification
+    "MultiConceptConfig",
+    "ConceptSpec",
+    "ConceptAction",
+    "MultiConceptResult",
+    "run_multi_concept_modification",
+    "orthogonalize_concept_directions",
+    "compute_interference_matrix",
+    "bidirectional_projection",
 ]

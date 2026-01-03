@@ -54,6 +54,238 @@ def execute_tasks(args):
             "evaluation_results": {}
         }
 
+    # Check if this is steering evaluation mode
+    if hasattr(args, 'steering_mode') and args.steering_mode:
+        import torch
+        from wisent.core.evaluators.rotator import EvaluatorRotator
+        from wisent.core.models.inference_config import get_generate_kwargs
+        
+        print(f"\n🎯 Starting steering evaluation on task: {args.task_names}")
+        print(f"   Model: {args.model}")
+        print(f"   Layer: {args.layer}")
+        print(f"   Steering method: {getattr(args, 'steering_method', 'CAA')}")
+        print(f"   Steering strength: {getattr(args, 'steering_strength', 1.0)}")
+        
+        # Load steering vector if provided, otherwise compute it
+        steering_vector = None
+        layer = int(args.layer) if isinstance(args.layer, str) else args.layer
+        layer_str = str(layer)
+        
+        if hasattr(args, 'load_steering_vector') and args.load_steering_vector:
+            print(f"\n📂 Loading steering vector from: {args.load_steering_vector}")
+            
+            # Handle both .pt (torch) and .json formats
+            if args.load_steering_vector.endswith('.json'):
+                import json as json_mod
+                with open(args.load_steering_vector, 'r') as f:
+                    vector_data = json_mod.load(f)
+                steering_vectors = vector_data.get('steering_vectors', {})
+                if layer_str in steering_vectors:
+                    steering_vector = torch.tensor(steering_vectors[layer_str])
+                else:
+                    print(f"   ❌ Layer {layer} not found in vector file")
+                    sys.exit(1)
+            else:
+                vector_data = torch.load(args.load_steering_vector)
+                steering_vector = vector_data.get('steering_vector', vector_data.get('vector'))
+            
+            print(f"   ✓ Loaded steering vector, dim={steering_vector.shape[0]}")
+        
+        # Load task data
+        task_name = args.task_names[0] if isinstance(args.task_names, list) else args.task_names
+        print(f"\n📊 Loading task '{task_name}'...")
+        loader = LMEvalDataLoader()
+        result = loader._load_one_task(
+            task_name=task_name,
+            split_ratio=args.split_ratio,
+            seed=args.seed,
+            limit=args.limit,
+            training_limit=args.training_limit,
+            testing_limit=args.testing_limit
+        )
+        train_pair_set = result['train_qa_pairs']
+        test_pair_set = result['test_qa_pairs']
+        print(f"   ✓ Loaded {len(train_pair_set.pairs)} training pairs, {len(test_pair_set.pairs)} test pairs")
+        
+        # Load model WITHOUT steering first (for baseline)
+        print(f"\n🤖 Loading model '{args.model}'...")
+        model = WisentModel(args.model, device=args.device)
+        print(f"   ✓ Model loaded")
+        
+        # Compute steering vector from training data if not provided
+        if steering_vector is None:
+            print(f"\n🧠 Collecting activations from layer {layer}...")
+            collector = ActivationCollector(model=model)
+            extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+            
+            positive_activations = []
+            negative_activations = []
+            
+            for i, pair in enumerate(train_pair_set.pairs):
+                if i % 10 == 0:
+                    print(f"   Processing pair {i+1}/{len(train_pair_set.pairs)}...", end='\r')
+                
+                updated_pair = collector.collect(
+                    pair, strategy=extraction_strategy,
+                    layers=[layer_str],
+                )
+                
+                if updated_pair.positive_response.layers_activations and layer_str in updated_pair.positive_response.layers_activations:
+                    act = updated_pair.positive_response.layers_activations[layer_str]
+                    if act is not None:
+                        positive_activations.append(act.cpu().float())
+                
+                if updated_pair.negative_response.layers_activations and layer_str in updated_pair.negative_response.layers_activations:
+                    act = updated_pair.negative_response.layers_activations[layer_str]
+                    if act is not None:
+                        negative_activations.append(act.cpu().float())
+            
+            print(f"\n   ✓ Collected {len(positive_activations)} positive and {len(negative_activations)} negative activations")
+            
+            # Compute steering vector using CAA (mean difference)
+            print(f"\n🎯 Computing steering vector using {getattr(args, 'steering_method', 'CAA')}...")
+            pos_mean = torch.stack(positive_activations).mean(dim=0)
+            neg_mean = torch.stack(negative_activations).mean(dim=0)
+            steering_vector = pos_mean - neg_mean
+            
+            # Normalize if requested
+            if getattr(args, 'caa_normalize', True):
+                steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+            
+            print(f"   ✓ Steering vector computed, norm={steering_vector.norm().item():.4f}")
+        
+        # Initialize evaluator for this task (uses docker for coding tasks)
+        print(f"\n🔧 Initializing evaluator for task '{task_name}'...")
+        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
+        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+        evaluator = EvaluatorRotator(evaluator=None, task_name=task_name, autoload=False)
+        print(f"   ✓ Evaluator ready")
+        
+        # Evaluate with and without steering
+        print(f"\n📊 Evaluating on {len(test_pair_set.pairs)} test pairs...")
+        print(f"   Will generate responses and evaluate using task-specific evaluator")
+        
+        baseline_correct = 0
+        steered_correct = 0
+        total = 0
+        results = []
+        
+        steering_strength = getattr(args, 'steering_strength', 1.0)
+        
+        for i, pair in enumerate(test_pair_set.pairs):
+            print(f"   Processing {i+1}/{len(test_pair_set.pairs)}...", end='\r')
+            
+            question = pair.prompt
+            expected = pair.positive_response.model_response
+            choices = [pair.negative_response.model_response, pair.positive_response.model_response]
+            
+            messages = [{"role": "user", "content": question}]
+            
+            # Generate BASELINE response (no steering)
+            resp_base = model.generate(
+                [messages],
+                **get_generate_kwargs(max_new_tokens=512),  # Limit for reasonable eval time
+            )[0]
+            
+            # Evaluate baseline response
+            eval_kwargs_base = {
+                'response': resp_base,
+                'expected': expected,
+                'model': model,
+                'question': question,
+                'choices': choices,
+                'task_name': task_name,
+            }
+            if hasattr(pair, 'metadata') and pair.metadata:
+                for key, value in pair.metadata.items():
+                    if value is not None and key not in eval_kwargs_base:
+                        eval_kwargs_base[key] = value
+            eval_result_base = evaluator.evaluate(**eval_kwargs_base)
+            base_correct = eval_result_base.ground_truth == "TRUTHFUL"
+            
+            # Apply steering vector for steered generation
+            model.set_steering_from_raw({layer_str: steering_vector}, scale=steering_strength, normalize=False)
+            
+            # Generate STEERED response
+            resp_steer = model.generate(
+                [messages],
+                **get_generate_kwargs(max_new_tokens=512),  # Limit for reasonable eval time
+            )[0]
+            
+            # Remove steering for next iteration
+            model.clear_steering()
+            
+            # Evaluate steered response
+            eval_kwargs_steer = {
+                'response': resp_steer,
+                'expected': expected,
+                'model': model,
+                'question': question,
+                'choices': choices,
+                'task_name': task_name,
+            }
+            if hasattr(pair, 'metadata') and pair.metadata:
+                for key, value in pair.metadata.items():
+                    if value is not None and key not in eval_kwargs_steer:
+                        eval_kwargs_steer[key] = value
+            eval_result_steer = evaluator.evaluate(**eval_kwargs_steer)
+            steer_correct = eval_result_steer.ground_truth == "TRUTHFUL"
+            
+            if base_correct:
+                baseline_correct += 1
+            if steer_correct:
+                steered_correct += 1
+            
+            results.append({
+                'question': question[:100],
+                'baseline_response': resp_base[:300],
+                'steered_response': resp_steer[:300],
+                'baseline_correct': base_correct,
+                'steered_correct': steer_correct,
+                'baseline_eval': eval_result_base.ground_truth,
+                'steered_eval': eval_result_steer.ground_truth,
+            })
+            
+            total += 1
+        
+        # Print results
+        print(f"\n\n{'='*60}")
+        print(f"📊 STEERING EVALUATION RESULTS")
+        print(f"{'='*60}")
+        print(f"   Task: {task_name}")
+        print(f"   Layer: {layer}")
+        print(f"   Steering strength: {steering_strength}")
+        print(f"   Total test samples: {total}")
+        print(f"\n   Baseline accuracy:  {baseline_correct}/{total} ({100*baseline_correct/total:.1f}%)")
+        print(f"   Steered accuracy:   {steered_correct}/{total} ({100*steered_correct/total:.1f}%)")
+        print(f"   Delta:              {steered_correct - baseline_correct:+d} ({100*(steered_correct-baseline_correct)/total:+.1f}%)")
+        print(f"{'='*60}\n")
+        
+        # Save results if output specified
+        if args.output:
+            os.makedirs(args.output, exist_ok=True)
+            results_path = os.path.join(args.output, 'steering_evaluation.json')
+            with open(results_path, 'w') as f:
+                json.dump({
+                    'task': task_name,
+                    'layer': layer,
+                    'steering_strength': steering_strength,
+                    'baseline_accuracy': baseline_correct / total,
+                    'steered_accuracy': steered_correct / total,
+                    'delta': (steered_correct - baseline_correct) / total,
+                    'total_samples': total,
+                    'results': results
+                }, f, indent=2)
+            print(f"💾 Results saved to: {results_path}")
+        
+        return {
+            'task': task_name,
+            'baseline_accuracy': baseline_correct / total,
+            'steered_accuracy': steered_correct / total,
+            'delta': (steered_correct - baseline_correct) / total,
+            'total_samples': total
+        }
+
     # Handle --list-tasks flag
     if hasattr(args, 'list_tasks') and args.list_tasks:
         from wisent.core.task_selector import TaskSelector
