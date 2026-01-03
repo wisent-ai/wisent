@@ -130,7 +130,7 @@ def compute_feature_diff(
 def compute_steering_vector_from_decoder(
     feature_diff: torch.Tensor,
     sae,
-    top_k: int = 50,
+    top_k: int = 4,
     normalize: bool = True,
 ) -> tuple[torch.Tensor, dict]:
     """
@@ -190,7 +190,7 @@ def generate_steering_vector(
     normalize: bool = True,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    top_k: int = 50,
+    top_k: int = 4,
     **kwargs,  # Accept additional kwargs for compatibility
 ) -> Path:
     """
