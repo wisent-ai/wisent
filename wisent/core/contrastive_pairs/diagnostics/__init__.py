@@ -29,6 +29,15 @@ from .linearity import (
     check_linearity,
     check_linearity_from_activations,
 )
+from .concept_analysis import (
+    ConceptAnalysisResult,
+    compute_icd,
+    compute_eigenvalue_spectrum,
+    decompose_concepts,
+    compute_concept_correlations,
+    analyze_concepts,
+    analyze_concept_interference,
+)
 
 __all__ = [
     "DiagnosticsConfig",
@@ -52,6 +61,14 @@ __all__ = [
     "LinearityVerdict",
     "check_linearity",
     "check_linearity_from_activations",
+    # Concept analysis
+    "ConceptAnalysisResult",
+    "compute_icd",
+    "compute_eigenvalue_spectrum",
+    "decompose_concepts",
+    "compute_concept_correlations",
+    "analyze_concepts",
+    "analyze_concept_interference",
 ]
 
 

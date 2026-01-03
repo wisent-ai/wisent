@@ -7,7 +7,7 @@ from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.steering_methods import CAAMethod
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 MODEL = "Qwen/Qwen3-8B"
@@ -17,7 +17,7 @@ model = WisentModel(MODEL)
 print(f"Model has {model.num_layers} layers, hidden_size={model.hidden_size}")
 
 loader = LMEvalDataLoader()
-result = loader._load_one_task("truthfulqa_generation", 0.8, 42, 500, None, None)
+result = loader._load_one_task("truthfulqa_gen", 0.8, 42, 500, None, None)
 test_pairs = result["test_qa_pairs"].pairs
 train_pairs = result["train_qa_pairs"]
 print(f"Train: {len(train_pairs.pairs)}, Test: {len(test_pairs)}")
@@ -28,7 +28,9 @@ layers = [str(mid-1), str(mid), str(mid+1)]
 print(f"Using layers: {layers}")
 
 print("Collecting activations...")
-collector = ActivationCollector(model=model, store_device="cuda")
+import torch
+store_dev = "mps" if torch.backends.mps.is_available() else "cpu"
+collector = ActivationCollector(model=model, store_device=store_dev)
 updated_pairs = []
 for i, pair in enumerate(train_pairs.pairs):
     if i % 100 == 0:
@@ -43,7 +45,7 @@ steering = caa.train(train_with_acts)
 plan = SteeringPlan.from_raw(raw=dict(steering), scale=0.5)
 
 EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
-evaluator = EvaluatorRotator(evaluator=None, task_name="truthfulqa_generation")
+evaluator = EvaluatorRotator(evaluator=None, task_name="truthfulqa_gen")
 
 print("Evaluating...")
 unsteered_correct = 0

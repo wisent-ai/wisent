@@ -17,6 +17,17 @@ from .universal_subspace import (
     UniversalBasis,
 )
 
+# Geometry analysis with ICD and nonsense baseline
+from .geometry_runner import (
+    compute_icd,
+    compute_nonsense_baseline,
+    generate_nonsense_activations,
+    analyze_with_nonsense_baseline,
+    GeometryTestResult,
+    GeometrySearchResults,
+    GeometryRunner,
+)
+
 __all__ = [
     # "SteeringMethod",
     # "SteeringType",
@@ -37,4 +48,12 @@ __all__ = [
     "SubspaceAnalysisConfig",
     "SubspaceAnalysisResult",
     "UniversalBasis",
+    # Geometry analysis
+    "compute_icd",
+    "compute_nonsense_baseline",
+    "generate_nonsense_activations",
+    "analyze_with_nonsense_baseline",
+    "GeometryTestResult",
+    "GeometrySearchResults",
+    "GeometryRunner",
 ]
