@@ -19,6 +19,7 @@ wisent/comparison/lora.py
 wisent/comparison/lora_dpo.py
 wisent/comparison/main.py
 wisent/comparison/ours.py
+wisent/comparison/reft.py
 wisent/comparison/sae.py
 wisent/comparison/utils.py
 wisent/core/__init__.py
