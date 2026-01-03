@@ -57,6 +57,8 @@ setup(
         "latex2sympy2_extended>=1.0.0",
         "sae_lens>=0.1.0",
         "trl>=0.7.0",
+        "peft>=0.7.0",
+        "pyreft==0.1.0",
     ],
     extras_require={
         "harness": [

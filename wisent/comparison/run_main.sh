@@ -11,13 +11,13 @@ INSTANCE_TYPE="g6e.2xlarge"
 MODEL="google/gemma-2-9b"
 
 # Tasks (comma-separated)
-TASKS="boolq,cb"
+TASKS="truthfulqa_mc1,caa,boolq"
 
 # Steering method: caa, sae, fgaa
-METHODS="fgaa,caa"
+METHODS="caa,fgaa,sae"
 
 # Steering scales (comma-separated)
-SCALES="2.0,4.0,6.0,8.0"
+SCALES="2.0,4.0,6.0,8.0,10.0"
 
 # Layer(s) for steering
 CAA_LAYERS="21"  # Middle layer for gemma-2-9b (42 layers)
@@ -34,10 +34,10 @@ MAX_BATCH_SIZE="16"
 TRAIN_RATIO="0.4"
 
 # Evaluation limit (number of examples, or empty for all)
-LIMIT="500"
+LIMIT="300"
 
 # Number of contrastive pairs for steering vector
-NUM_PAIRS="50"
+NUM_PAIRS="100"
 
 # Extraction strategy: mc_completion, completion_last, completion_mean (for base models)
 EXTRACTION_STRATEGY="mc_completion,completion_last,completion_mean"
