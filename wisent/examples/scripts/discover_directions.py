@@ -64,6 +64,9 @@ from wisent.core.geometry_runner import (
     compute_nonsense_baseline,
     generate_nonsense_activations,
     analyze_with_nonsense_baseline,
+    compute_recommendation,
+    should_increase_pairs,
+    compute_adaptive_recommendation,
 )
 from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (

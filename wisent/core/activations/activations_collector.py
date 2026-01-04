@@ -153,6 +153,111 @@ class ActivationCollector:
 
             return LayerActivations(collected)
 
+    def collect_raw(
+        self,
+        pair: ContrastivePair,
+        strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
+        layers: Sequence[LayerName] | None = None,
+    ) -> dict:
+        """
+        Collect RAW hidden states (full sequences) for a contrastive pair.
+        
+        Unlike collect(), this returns full hidden state sequences [seq_len, hidden_size]
+        instead of extracted single vectors. This allows applying different extraction
+        strategies later without re-running the model.
+        
+        Args:
+            pair: The contrastive pair to collect activations for
+            strategy: Extraction strategy (determines text construction)
+            layers: Which layers to collect, or None for all
+            
+        Returns:
+            Dict with:
+                - pos_hidden_states: {layer_name: [seq_len, hidden_size]}
+                - neg_hidden_states: {layer_name: [seq_len, hidden_size]}
+                - pos_answer_text: str
+                - neg_answer_text: str
+                - pos_prompt_len: int
+                - neg_prompt_len: int
+        """
+        pos_text = _resp_text(pair.positive_response)
+        neg_text = _resp_text(pair.negative_response)
+
+        needs_other = strategy in (ExtractionStrategy.MC_BALANCED, ExtractionStrategy.MC_COMPLETION)
+        other_for_pos = neg_text if needs_other else None
+        other_for_neg = pos_text if needs_other else None
+
+        pos_data = self._collect_single_raw(
+            pair.prompt, pos_text, strategy, layers,
+            other_response=other_for_pos, is_positive=True
+        )
+        neg_data = self._collect_single_raw(
+            pair.prompt, neg_text, strategy, layers,
+            other_response=other_for_neg, is_positive=False
+        )
+        
+        return {
+            "pos_hidden_states": pos_data["hidden_states"],
+            "neg_hidden_states": neg_data["hidden_states"],
+            "pos_answer_text": pos_data["answer_text"],
+            "neg_answer_text": neg_data["answer_text"],
+            "pos_prompt_len": pos_data["prompt_len"],
+            "neg_prompt_len": neg_data["prompt_len"],
+        }
+
+    def _collect_single_raw(
+        self,
+        prompt: str,
+        response: str,
+        strategy: ExtractionStrategy,
+        layers: Sequence[LayerName] | None,
+        other_response: str | None = None,
+        is_positive: bool = True,
+    ) -> dict:
+        """Collect raw hidden states for a single prompt-response pair."""
+        self._ensure_eval_mode()
+        with torch.inference_mode():
+            tok = self.model.tokenizer
+
+            full_text, answer_text, prompt_only = build_extraction_texts(
+                strategy, prompt, response, tok,
+                other_response=other_response, is_positive=is_positive
+            )
+
+            if prompt_only:
+                prompt_enc = tok(prompt_only, return_tensors="pt", add_special_tokens=False)
+                prompt_len = int(prompt_enc["input_ids"].shape[-1])
+            else:
+                prompt_len = 0
+
+            full_enc = tok(full_text, return_tensors="pt", add_special_tokens=False, truncation=True, max_length=2048)
+
+            compute_device = getattr(self.model, "compute_device", None) or next(self.model.hf_model.parameters()).device
+            full_enc = {k: v.to(compute_device) for k, v in full_enc.items()}
+
+            out = self.model.hf_model(**full_enc, output_hidden_states=True, use_cache=False)
+            hs = out.hidden_states
+
+            if not hs:
+                raise NoHiddenStatesError()
+
+            n_blocks = len(hs) - 1
+            names_by_idx = [str(i) for i in range(1, n_blocks + 1)]
+            keep = self._select_indices(layers, n_blocks)
+
+            # Store FULL sequences, not extracted vectors
+            collected: dict[str, torch.Tensor] = {}
+            for idx in keep:
+                name = names_by_idx[idx]
+                h = hs[idx + 1].squeeze(0)  # [seq_len, hidden_size]
+                collected[name] = h.to(self.store_device)
+
+            return {
+                "hidden_states": collected,
+                "answer_text": answer_text,
+                "prompt_len": prompt_len,
+            }
+
     def collect_batched(
         self,
         texts: list[str],
