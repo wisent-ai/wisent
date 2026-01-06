@@ -1,4 +1,5 @@
 LICENSE
+MANIFEST.in
 README.md
 pyproject.toml
 setup.py
@@ -152,6 +153,7 @@ wisent/core/contrastive_pairs/core/set.py
 wisent/core/contrastive_pairs/diagnostics/__init__.py
 wisent/core/contrastive_pairs/diagnostics/activations.py
 wisent/core/contrastive_pairs/diagnostics/base.py
+wisent/core/contrastive_pairs/diagnostics/concept_analysis.py
 wisent/core/contrastive_pairs/diagnostics/control_vectors.py
 wisent/core/contrastive_pairs/diagnostics/coverage.py
 wisent/core/contrastive_pairs/diagnostics/divergence.py
@@ -742,6 +744,7 @@ wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors/toxigen.py
 wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors/translation.py
 wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors/triviaqa.py
 wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors/truthfulqa.py
+wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors/truthfulqa_gen.py
 wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors/truthfulqa_mc1.py
 wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors/truthfulqa_mc2.py
 wisent/core/contrastive_pairs/lm_eval_pairs/lm_task_extractors/truthfulqa_multi.py
@@ -798,6 +801,8 @@ wisent/core/evaluators/benchmark_specific/f1_evaluator.py
 wisent/core/evaluators/benchmark_specific/generation_evaluator.py
 wisent/core/evaluators/benchmark_specific/livemathbench_evaluator.py
 wisent/core/evaluators/benchmark_specific/log_likelihoods_evaluator.py
+wisent/core/evaluators/benchmark_specific/log_likelihoods_evaluator_bc.py
+wisent/core/evaluators/benchmark_specific/log_likelihoods_evaluator_test.py
 wisent/core/evaluators/benchmark_specific/math_evaluator.py
 wisent/core/evaluators/benchmark_specific/perplexity_evaluator.py
 wisent/core/evaluators/benchmark_specific/polymath_evaluator.py
@@ -985,12 +990,17 @@ wisent/core/weight_modification/__init__.py
 wisent/core/weight_modification/additive.py
 wisent/core/weight_modification/directional.py
 wisent/core/weight_modification/export.py
+wisent/core/weight_modification/guided.py
+wisent/core/weight_modification/multi_concept.py
 wisent/core/weight_modification/multi_direction.py
 wisent/core/weight_modification/utils.py
 wisent/examples/__init__.py
+wisent/examples/contrastive_pairs/humanization_human_vs_ai.json
 wisent/examples/scripts/__init__.py
 wisent/examples/scripts/benchmark_tags.json
+wisent/examples/scripts/concept_evolution_analysis.py
 wisent/examples/scripts/count_all_benchmarks.py
+wisent/examples/scripts/detect_mixed_concepts.py
 wisent/examples/scripts/discover_directions.py
 wisent/examples/scripts/extract_benchmark_info.py
 wisent/examples/scripts/generate_paper_data.py
@@ -1004,8 +1014,6 @@ wisent/examples/scripts/test_contrastive_pairs_all_supported.py
 wisent/examples/scripts/test_nonsense_baseline.py
 wisent/examples/scripts/test_one_benchmark.py
 wisent/examples/scripts/test_one_coding_benchmark.py
-<<<<<<< HEAD
-=======
 wisent/examples/scripts/threshold_analysis.py
 wisent/examples/scripts/visualization_gallery.py
 wisent/examples/scripts/1/test_basqueglue_evaluation.json
@@ -1076,7 +1084,6 @@ wisent/examples/scripts/results/test_aexams_IslamicStudies_pairs.json
 wisent/examples/scripts/results/test_afrimgsm_pairs.json
 wisent/examples/scripts/results/test_afrimmlu_evaluation.json
 wisent/examples/scripts/results/test_afrimmlu_pairs.json
->>>>>>> 3efd2ea7 (updates with classification and visualization)
 wisent/parameters/__init__.py
 wisent/parameters/lm_eval/all_lm_eval_task_families.json
 wisent/parameters/lm_eval/broken_in_lm_eval.json

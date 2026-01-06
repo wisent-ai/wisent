@@ -16,9 +16,14 @@ def execute_get_activations(args):
     from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
-    print(f"\n🎨 Collecting activations from contrastive pairs")
+    raw_mode = getattr(args, 'raw', False)
+    mode_str = "raw hidden states" if raw_mode else "activations"
+    
+    print(f"\n🎨 Collecting {mode_str} from contrastive pairs")
     print(f"   Input file: {args.pairs_file}")
     print(f"   Model: {args.model}")
+    if raw_mode:
+        print(f"   Mode: RAW (full sequences, reusable for multiple strategies)")
 
     start_time = time.time() if args.timing else None
 
@@ -89,63 +94,134 @@ def execute_get_activations(args):
             pair_set.add(pair)
 
         # 6. Collect activations
-        print(f"\n⚡ Collecting activations...")
         collector = ActivationCollector(model=model)
 
-        enriched_pairs = []
-        for i, pair in enumerate(pair_set.pairs):
-            if args.verbose:
-                print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...")
+        if raw_mode:
+            # RAW MODE: Collect full hidden states [seq_len, hidden_size]
+            print(f"\n⚡ Collecting RAW hidden states...")
+            from wisent.core.activations.activation_cache import get_strategy_text_family
+            text_family = get_strategy_text_family(extraction_strategy)
+            
+            raw_pairs_data = []
+            for i, pair in enumerate(pair_set.pairs):
+                if args.verbose or (i + 1) % 10 == 0:
+                    print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...", end='\r', flush=True)
 
-            # Collect activations for all requested layers at once
-            updated_pair = collector.collect(
-                pair, strategy=extraction_strategy,
-                layers=layer_strs,
-            )
+                # Collect RAW hidden states (full sequences)
+                raw_data = collector.collect_raw(
+                    pair, strategy=extraction_strategy,
+                    layers=layer_strs,
+                )
+                raw_pairs_data.append({
+                    'pair': pair,
+                    'raw_data': raw_data,
+                })
 
-            enriched_pairs.append(updated_pair)
+            print(f"   ✓ Collected raw hidden states for {len(raw_pairs_data)} pairs")
 
-        print(f"   ✓ Collected activations for {len(enriched_pairs)} pairs")
-
-        # 7. Convert to JSON format
-        print(f"\n💾 Saving enriched pairs to '{args.output}'...")
-        output_data = {
-            'task_name': task_name,
-            'trait_label': trait_label,
-            'model': args.model,
-            'layers': layers,
-            'extraction_strategy': extraction_strategy.value,
-            'num_pairs': len(enriched_pairs),
-            'pairs': []
-        }
-
-        for pair in enriched_pairs:
-            pair_dict = {
-                'prompt': pair.prompt,
-                'positive_response': {
-                    'model_response': pair.positive_response.model_response,
-                    'layers_activations': {}
-                },
-                'negative_response': {
-                    'model_response': pair.negative_response.model_response,
-                    'layers_activations': {}
-                },
-                'label': pair.label,
-                'trait_description': pair.trait_description,
+            # Convert to JSON format (raw mode)
+            print(f"\n💾 Saving raw activations to '{args.output}'...")
+            output_data = {
+                'task_name': task_name,
+                'trait_label': trait_label,
+                'model': args.model,
+                'layers': layers,
+                'extraction_strategy': extraction_strategy.value,
+                'text_family': text_family,
+                'raw_mode': True,
+                'num_pairs': len(raw_pairs_data),
+                'pairs': []
             }
 
-            # Convert activations to lists for JSON serialization
-            if pair.positive_response.layers_activations:
-                for layer_str, act in pair.positive_response.layers_activations.items():
-                    if act is not None:
-                        pair_dict['positive_response']['layers_activations'][layer_str] = act.cpu().tolist()
+            for item in raw_pairs_data:
+                pair = item['pair']
+                raw_data = item['raw_data']
+                
+                pair_dict = {
+                    'prompt': pair.prompt,
+                    'positive_response': {
+                        'model_response': pair.positive_response.model_response,
+                        'answer_text': raw_data['pos_answer_text'],
+                        'prompt_len': raw_data['pos_prompt_len'],
+                        'layers_hidden_states': {}
+                    },
+                    'negative_response': {
+                        'model_response': pair.negative_response.model_response,
+                        'answer_text': raw_data['neg_answer_text'],
+                        'prompt_len': raw_data['neg_prompt_len'],
+                        'layers_hidden_states': {}
+                    },
+                    'label': pair.label,
+                    'trait_description': pair.trait_description,
+                }
 
-            if pair.negative_response.layers_activations:
-                for layer_str, act in pair.negative_response.layers_activations.items():
-                    if act is not None:
-                        pair_dict['negative_response']['layers_activations'][layer_str] = act.cpu().tolist()
+                # Convert raw hidden states to lists
+                for layer_str, hs in raw_data['pos_hidden_states'].items():
+                    pair_dict['positive_response']['layers_hidden_states'][layer_str] = hs.cpu().tolist()
+                for layer_str, hs in raw_data['neg_hidden_states'].items():
+                    pair_dict['negative_response']['layers_hidden_states'][layer_str] = hs.cpu().tolist()
 
-            output_data['pairs'].append(pair_dict)
+                output_data['pairs'].append(pair_dict)
+
+        else:
+            # STANDARD MODE: Collect extracted vectors [hidden_size]
+            print(f"\n⚡ Collecting activations...")
+            
+            enriched_pairs = []
+            for i, pair in enumerate(pair_set.pairs):
+                if args.verbose:
+                    print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...")
+
+                # Collect activations for all requested layers at once
+                updated_pair = collector.collect(
+                    pair, strategy=extraction_strategy,
+                    layers=layer_strs,
+                )
+
+                enriched_pairs.append(updated_pair)
+
+            print(f"   ✓ Collected activations for {len(enriched_pairs)} pairs")
+
+            # Convert to JSON format (standard mode)
+            print(f"\n💾 Saving enriched pairs to '{args.output}'...")
+            output_data = {
+                'task_name': task_name,
+                'trait_label': trait_label,
+                'model': args.model,
+                'layers': layers,
+                'extraction_strategy': extraction_strategy.value,
+                'raw_mode': False,
+                'num_pairs': len(enriched_pairs),
+                'pairs': []
+            }
+
+            for pair in enriched_pairs:
+                pair_dict = {
+                    'prompt': pair.prompt,
+                    'positive_response': {
+                        'model_response': pair.positive_response.model_response,
+                        'layers_activations': {}
+                    },
+                    'negative_response': {
+                        'model_response': pair.negative_response.model_response,
+                        'layers_activations': {}
+                    },
+                    'label': pair.label,
+                    'trait_description': pair.trait_description,
+                }
+
+                # Convert activations to lists for JSON serialization
+                if pair.positive_response.layers_activations:
+                    for layer_str, act in pair.positive_response.layers_activations.items():
+                        if act is not None:
+                            pair_dict['positive_response']['layers_activations'][layer_str] = act.cpu().tolist()
+
+                if pair.negative_response.layers_activations:
+                    for layer_str, act in pair.negative_response.layers_activations.items():
+                        if act is not None:
+                            pair_dict['negative_response']['layers_activations'][layer_str] = act.cpu().tolist()
+
+                output_data['pairs'].append(pair_dict)
 
         # 8. Save to file
         os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
