@@ -54,6 +54,14 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
         help="Extraction strategy. Chat models: chat_mean, chat_first, chat_last, chat_max_norm, chat_weighted, role_play, mc_balanced. Base models: completion_last, completion_mean, mc_completion"
     )
 
+    # Raw mode - output full hidden states instead of extracted vectors
+    parser.add_argument(
+        "--raw",
+        action="store_true",
+        help="Output raw hidden states [seq_len, hidden_size] instead of extracted vectors. "
+             "Allows applying different extraction strategies later without re-running the model."
+    )
+
     # Processing options
     parser.add_argument(
         "--batch-size",
