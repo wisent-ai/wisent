@@ -13,7 +13,6 @@ from wisent.core.parser_arguments.diagnose_pairs_parser import setup_diagnose_pa
 from wisent.core.parser_arguments.generate_pairs_from_task_parser import setup_generate_pairs_from_task_parser
 from wisent.core.parser_arguments.get_activations_parser import setup_get_activations_parser
 from wisent.core.parser_arguments.diagnose_vectors_parser import setup_diagnose_vectors_parser
-from wisent.core.parser_arguments.create_steering_vector_parser import setup_create_steering_vector_parser
 from wisent.core.parser_arguments.create_steering_object_parser import setup_create_steering_object_parser
 from wisent.core.parser_arguments.generate_vector_from_task_parser import setup_generate_vector_from_task_parser
 from wisent.core.parser_arguments.generate_vector_from_synthetic_parser import setup_generate_vector_from_synthetic_parser
@@ -78,13 +77,9 @@ def setup_parser() -> argparse.ArgumentParser:
     diagnose_vectors_parser = subparsers.add_parser("diagnose-vectors", help="Diagnose and analyze existing steering vectors")
     setup_diagnose_vectors_parser(diagnose_vectors_parser)
 
-    # Create steering vector command
+    # Create steering vector command (creates full steering objects with method-specific components)
     create_steering_parser = subparsers.add_parser("create-steering-vector", help="Create steering vectors from enriched pairs")
-    setup_create_steering_vector_parser(create_steering_parser)
-
-    # Create steering object command (full objects with gates, networks, etc.)
-    create_steering_object_parser = subparsers.add_parser("create-steering-object", help="Create full steering objects with method-specific components")
-    setup_create_steering_object_parser(create_steering_object_parser)
+    setup_create_steering_object_parser(create_steering_parser)
 
     # Generate vector from task command (full pipeline)
     generate_vector_from_task_parser = subparsers.add_parser("generate-vector-from-task", help="Generate steering vector from task (full pipeline)")

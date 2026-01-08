@@ -10,7 +10,7 @@ from argparse import Namespace
 
 from wisent.core.cli.generate_pairs import execute_generate_pairs
 from wisent.core.cli.get_activations import execute_get_activations
-from wisent.core.cli.create_steering_vector import execute_create_steering_vector
+from wisent.core.cli.create_steering_object import execute_create_steering_object
 
 
 def _get_pairs_cache_filename(trait: str, num_pairs: int) -> str:
@@ -154,7 +154,7 @@ def execute_generate_vector_from_synthetic(args):
             accept_low_quality_vector=getattr(args, 'accept_low_quality_vector', False),
         )
         
-        execute_create_steering_vector(vector_args)
+        execute_create_steering_object(vector_args)
         print(f"\n✓ Step 3 complete: Steering vector saved to {args.output}\n")
         
         # Clean up intermediate files if not keeping them

@@ -8,7 +8,7 @@ from argparse import Namespace
 
 from wisent.core.cli.generate_pairs_from_task import execute_generate_pairs_from_task
 from wisent.core.cli.get_activations import execute_get_activations
-from wisent.core.cli.create_steering_vector import execute_create_steering_vector
+from wisent.core.cli.create_steering_object import execute_create_steering_object
 
 
 def _load_optimal_defaults(model_name: str, task_name: str, args):
@@ -195,7 +195,7 @@ def execute_generate_vector_from_task(args):
             num_directions=getattr(args, 'num_directions', 3),
         )
         
-        execute_create_steering_vector(vector_args)
+        execute_create_steering_object(vector_args)
         print(f"\n✓ Step 3 complete: Steering vector saved to {args.output}\n")
         
         # Clean up intermediate files if not keeping them
