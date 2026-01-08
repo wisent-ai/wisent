@@ -1,4 +1,4 @@
-__version__ = "0.7.1151"
+__version__ = "0.7.1152"
 
 from wisent.core.diversity_processors import (
     OpenerPenaltyProcessor,
