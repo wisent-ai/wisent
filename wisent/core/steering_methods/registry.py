@@ -76,6 +76,7 @@ class SteeringMethodType(Enum):
     """Enumeration of all supported steering methods."""
     CAA = "caa"
     HYPERPLANE = "hyperplane"
+    MLP = "mlp"
     PRISM = "prism"
     PULSE = "pulse"
     TITAN = "titan"
@@ -533,6 +534,72 @@ TITAN_DEFINITION = SteeringMethodDefinition(
 )
 
 
+MLP_DEFINITION = SteeringMethodDefinition(
+    name="mlp",
+    method_type=SteeringMethodType.MLP,
+    description="MLP-based steering using adversarial gradient direction from trained classifier. Captures non-linear decision boundaries.",
+    method_class_path="wisent.core.steering_methods.methods.mlp.MLPMethod",
+    parameters=[
+        SteeringMethodParameter(
+            name="hidden_dim",
+            type=int,
+            default=256,
+            help="Hidden dimension for MLP layers",
+            cli_flag="--mlp-hidden-dim",
+        ),
+        SteeringMethodParameter(
+            name="num_layers",
+            type=int,
+            default=2,
+            help="Number of hidden layers in MLP",
+            cli_flag="--mlp-num-layers",
+        ),
+        SteeringMethodParameter(
+            name="dropout",
+            type=float,
+            default=0.1,
+            help="Dropout rate for regularization",
+            cli_flag="--mlp-dropout",
+        ),
+        SteeringMethodParameter(
+            name="epochs",
+            type=int,
+            default=100,
+            help="Training epochs for MLP classifier",
+            cli_flag="--mlp-epochs",
+        ),
+        SteeringMethodParameter(
+            name="learning_rate",
+            type=float,
+            default=0.001,
+            help="Learning rate for MLP training",
+            cli_flag="--mlp-learning-rate",
+        ),
+        SteeringMethodParameter(
+            name="weight_decay",
+            type=float,
+            default=0.01,
+            help="Weight decay for regularization",
+            cli_flag="--mlp-weight-decay",
+        ),
+        SteeringMethodParameter(
+            name="normalize",
+            type=bool,
+            default=True,
+            help="L2-normalize the steering vector",
+            action="store_true",
+            cli_flag="--mlp-normalize",
+        ),
+    ],
+    optimization_config={
+        "strength_search_range": (0.1, 5.0),
+        "default_strength": 1.0,
+    },
+    default_strength=1.0,
+    strength_range=(0.1, 5.0),
+)
+
+
 # =============================================================================
 # REGISTRY CLASS
 # =============================================================================
@@ -558,6 +625,7 @@ class SteeringMethodRegistry:
     _REGISTRY: Dict[str, SteeringMethodDefinition] = {
         "caa": CAA_DEFINITION,
         "hyperplane": HYPERPLANE_DEFINITION,
+        "mlp": MLP_DEFINITION,
         "prism": PRISM_DEFINITION,
         "pulse": PULSE_DEFINITION,
         "titan": TITAN_DEFINITION,

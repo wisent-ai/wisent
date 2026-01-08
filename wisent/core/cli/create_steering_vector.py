@@ -122,6 +122,28 @@ def execute_create_steering_vector(args):
                 print(f"   Using optimal TITAN params: num_directions={titan_params['num_directions']}, gate_hidden={titan_params['gate_hidden_dim']}")
             method = TITANMethod(**titan_params)
             print(f"   ✓ TITAN method initialized")
+        elif method_name == "hyperplane":
+            from wisent.core.steering_methods.methods.hyperplane import HyperplaneMethod
+            hyperplane_params = {
+                "normalize": getattr(args, 'normalize', True),
+                "max_iter": getattr(args, 'hyperplane_max_iter', 1000),
+                "C": getattr(args, 'hyperplane_C', 1.0),
+            }
+            method = HyperplaneMethod(**hyperplane_params)
+            print(f"   ✓ Hyperplane method initialized")
+        elif method_name == "mlp":
+            from wisent.core.steering_methods.methods.mlp import MLPMethod
+            mlp_params = {
+                "normalize": getattr(args, 'normalize', True),
+                "hidden_dim": getattr(args, 'mlp_hidden_dim', 256),
+                "num_layers": getattr(args, 'mlp_num_layers', 2),
+                "dropout": getattr(args, 'mlp_dropout', 0.1),
+                "epochs": getattr(args, 'mlp_epochs', 100),
+                "learning_rate": getattr(args, 'mlp_learning_rate', 0.001),
+                "weight_decay": getattr(args, 'mlp_weight_decay', 0.01),
+            }
+            method = MLPMethod(**mlp_params)
+            print(f"   ✓ MLP method initialized (hidden_dim={mlp_params['hidden_dim']}, layers={mlp_params['num_layers']})")
         else:
             raise SteeringMethodUnknownError(method=args.method)
 
