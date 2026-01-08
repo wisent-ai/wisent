@@ -117,6 +117,54 @@ class BaseSteeringObject(ABC):
         
         return hidden_state + delta
     
+    def to_steering_plan(self, scale: float = 1.0, normalize: bool = True) -> "SteeringPlan":
+        """
+        Convert this steering object to a SteeringPlan for use with WisentModel.
+        
+        This allows steering objects to be used with the existing model infrastructure.
+        Complex methods (PULSE, TITAN) are simplified to their primary vectors.
+        
+        Args:
+            scale: Base scale for all vectors
+            normalize: Whether to normalize vectors
+            
+        Returns:
+            SteeringPlan compatible with WisentModel.apply_steering()
+        """
+        from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
+        
+        layers_dict = {}
+        for layer in self.metadata.layers:
+            try:
+                vec = self.get_steering_vector(layer)
+                layers_dict[str(layer)] = SteeringVector(
+                    vector=vec,
+                    scale=scale,
+                    normalize=normalize,
+                    layer_description=f"{self.method_name}_{self.metadata.benchmark}",
+                )
+            except (KeyError, IndexError):
+                continue
+        
+        return SteeringPlan(
+            layers=layers_dict,
+            layers_description=[f"{self.method_name}_{self.metadata.benchmark}"],
+        )
+    
+    def to_raw_activation_map(self) -> Dict[str, torch.Tensor]:
+        """
+        Convert to RawActivationMap format (layer_name -> tensor).
+        
+        This is useful for integrating with existing code that expects this format.
+        """
+        raw = {}
+        for layer in self.metadata.layers:
+            try:
+                raw[str(layer)] = self.get_steering_vector(layer)
+            except (KeyError, IndexError):
+                continue
+        return raw
+    
     @abstractmethod
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary for saving."""

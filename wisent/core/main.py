@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 from wisent.core.parser_arguments import setup_parser
 from wisent.core.branding import print_banner
-from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors, execute_create_steering_vector, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering, execute_optimize_sample_size, execute_generate_responses, execute_evaluate_responses, execute_multi_steer, execute_agent, execute_modify_weights, execute_evaluate_refusal, execute_inference_config, execute_optimization_cache, execute_optimize_weights, execute_optimize
+from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering, execute_optimize_sample_size, execute_generate_responses, execute_evaluate_responses, execute_multi_steer, execute_agent, execute_modify_weights, execute_evaluate_refusal, execute_inference_config, execute_optimization_cache, execute_optimize_weights, execute_optimize
 from wisent.core.cli.create_steering_object import execute_create_steering_object
 from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
 from wisent.core.cli.check_linearity import execute_check_linearity
@@ -60,8 +60,6 @@ def main():
     elif args.command == 'diagnose-vectors':
         execute_diagnose_vectors(args)
     elif args.command == 'create-steering-vector':
-        execute_create_steering_vector(args)
-    elif args.command == 'create-steering-object':
         execute_create_steering_object(args)
     elif args.command == 'generate-vector-from-task':
         execute_generate_vector_from_task(args)
