@@ -242,6 +242,58 @@ class WisentModel:
             handle = layer.register_forward_hook(_hook_factory(vec))
             self._hook_group.add(handle)
 
+    def apply_steering_object(
+        self,
+        steering_obj: "BaseSteeringObject",
+        base_strength: float = 1.0,
+    ) -> None:
+        """
+        Register forward hooks using a SteeringObject with full method-specific logic.
+        
+        Unlike apply_steering() which uses simple vector addition, this method
+        uses the SteeringObject's compute_gate() and compute_intensity() methods
+        for conditional steering (PULSE, TITAN).
+        
+        Args:
+            steering_obj: A SteeringObject (CAA, Hyperplane, MLP, PRISM, PULSE, or TITAN)
+            base_strength: Base multiplier for steering intensity
+            
+        Example:
+            >>> from wisent.core.steering_methods.steering_object import BaseSteeringObject
+            >>> obj = BaseSteeringObject.load("steering.pt")
+            >>> wm.apply_steering_object(obj, base_strength=1.0)
+            >>> response = wm.generate([...])
+            >>> wm.detach()
+        """
+        from wisent.core.steering_methods.steering_object import BaseSteeringObject
+        
+        self.detach()
+        
+        name_to_index = {str(i + 1): i for i in range(len(self._layers))}
+        
+        for layer_idx in steering_obj.metadata.layers:
+            layer_name = str(layer_idx)
+            if layer_name not in name_to_index:
+                continue
+            
+            idx = name_to_index[layer_name]
+            layer_module = self._layers[idx]
+            
+            def _hook_factory(obj: BaseSteeringObject, layer: int, strength: float):
+                def _hook(_mod: nn.Module, _inp: tuple, out: torch.Tensor | tuple) -> torch.Tensor | tuple:
+                    if isinstance(out, tuple):
+                        hs = out[0]
+                        steered = obj.apply_steering(hs, layer=layer, base_strength=strength)
+                        return (steered,) + out[1:]
+                    else:
+                        return obj.apply_steering(out, layer=layer, base_strength=strength)
+                return _hook
+            
+            handle = layer_module.register_forward_hook(
+                _hook_factory(steering_obj, layer_idx, base_strength)
+            )
+            self._hook_group.add(handle)
+
     def detach(self) -> None:
         """
         Remove all registered steering hooks; model returns to unsteered behavior.
@@ -401,6 +453,8 @@ class WisentModel:
         num_return_sequences: int = 1,
         use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
+        steering_object: "BaseSteeringObject | None" = None,
+        steering_strength: float = 1.0,
         enable_thinking: bool = False,
         prompt_is_formatted: bool = False,
         ensure_varied_responses: bool = False,
@@ -428,6 +482,12 @@ class WisentModel:
             steering_plan:
                 optional SteeringPlan to use for this call only (overrides internal plan).
                 If None, uses the internal plan.
+            steering_object:
+                optional SteeringObject (CAA, PRISM, PULSE, TITAN, etc.) to use for steering.
+                If provided, takes precedence over steering_plan. Uses full method-specific
+                logic including conditional gating and intensity networks.
+            steering_strength:
+                Base strength multiplier when using steering_object (default: 1.0).
             enable_thinking:
                 If False, disable thinking/reasoning mode (prevents <think> tags for supported models like Qwen).
             prompt_is_formatted:
@@ -507,7 +567,9 @@ class WisentModel:
             ...     print(f"User {i+1}: {msg['content']}")
             ...     print(f"Assistant {i+1}: {out[i]}")
         """
-        if use_steering:
+        if steering_object is not None:
+            self.apply_steering_object(steering_object, base_strength=steering_strength)
+        elif use_steering:
             self.apply_steering(steering_plan)
 
         if prompt_is_formatted and isinstance(inputs, str):
@@ -553,7 +615,7 @@ class WisentModel:
 
         gen_out = self.hf_model.generate(**generation_kwargs)
 
-        if use_steering:
+        if use_steering or steering_object is not None:
             self.detach()
 
         seqs = gen_out.sequences  # [B * num_return_sequences, T_total]
@@ -580,6 +642,8 @@ class WisentModel:
         collect_topk: int = 5,
         use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
+        steering_object: "BaseSteeringObject | None" = None,
+        steering_strength: float = 1.0,
         enable_thinking: bool = False,
         ensure_varied_responses: bool = False,
         phrase_ledger: Any = None,
@@ -647,7 +711,9 @@ class WisentModel:
             ... )
             >>> stats[0].per_step[0].prob  # probability of the first generated token
         """
-        if use_steering:
+        if steering_object is not None:
+            self.apply_steering_object(steering_object, base_strength=steering_strength)
+        elif use_steering:
             self.apply_steering(steering_plan)
 
         batch = self._batch_encode(inputs, add_generation_prompt=True, enable_thinking=enable_thinking)
@@ -677,7 +743,7 @@ class WisentModel:
 
         out = self.hf_model.generate(**generation_kwargs)
 
-        if use_steering:
+        if use_steering or steering_object is not None:
             self.detach()
 
         texts = self.tokenizer.batch_decode(out.sequences, skip_special_tokens=True)
@@ -739,6 +805,8 @@ class WisentModel:
         do_sample: bool = True,
         use_steering: bool = False,
         steering_plan: SteeringPlan | None = None,
+        steering_object: "BaseSteeringObject | None" = None,
+        steering_strength: float = 1.0,
         skip_prompt: bool = True,
         skip_special_tokens: bool = True,
         enable_thinking: bool = False,
@@ -783,7 +851,9 @@ class WisentModel:
             generated text chunks (str), as they become available.
         """
 
-        if use_steering:
+        if steering_object is not None:
+            self.apply_steering_object(steering_object, base_strength=steering_strength)
+        elif use_steering:
             self.apply_steering(steering_plan)
 
         if prompt_is_formatted and isinstance(inputs, str):
@@ -848,7 +918,7 @@ class WisentModel:
                 if new_text:
                     yield new_text
         finally:
-            if use_steering:
+            if use_steering or steering_object is not None:
                 self.detach()
             worker.join(timeout=0.0)
     

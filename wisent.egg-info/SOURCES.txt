@@ -107,7 +107,6 @@ wisent/core/cli/__init__.py
 wisent/core/cli/check_linearity.py
 wisent/core/cli/cluster_benchmarks.py
 wisent/core/cli/create_steering_object.py
-wisent/core/cli/create_steering_vector.py
 wisent/core/cli/diagnose_pairs.py
 wisent/core/cli/diagnose_vectors.py
 wisent/core/cli/estimate_unified_goodness_time.py
@@ -886,7 +885,6 @@ wisent/core/parser_arguments/check_linearity_parser.py
 wisent/core/parser_arguments/cluster_benchmarks_parser.py
 wisent/core/parser_arguments/configure_model_parser.py
 wisent/core/parser_arguments/create_steering_object_parser.py
-wisent/core/parser_arguments/create_steering_vector_parser.py
 wisent/core/parser_arguments/diagnose_pairs_parser.py
 wisent/core/parser_arguments/diagnose_vectors_parser.py
 wisent/core/parser_arguments/evaluate_parser.py
