@@ -1,6 +1,6 @@
-Metadata-Version: 2.4
+Metadata-Version: 2.1
 Name: wisent
-Version: 0.7.1151
+Version: 0.7.1153
 Summary: Monitor and influence AI Brains
 Home-page: https://github.com/wisent-ai/wisent
 Author: Lukasz Bartoszcze and the Wisent Team
@@ -37,18 +37,6 @@ Provides-Extra: cuda
 Requires-Dist: flash-attn>=2.5.0; extra == "cuda"
 Provides-Extra: sparsify
 Requires-Dist: sparsify>=0.1.0; extra == "sparsify"
-Dynamic: author
-Dynamic: author-email
-Dynamic: classifier
-Dynamic: description
-Dynamic: description-content-type
-Dynamic: home-page
-Dynamic: keywords
-Dynamic: license-file
-Dynamic: provides-extra
-Dynamic: requires-dist
-Dynamic: requires-python
-Dynamic: summary
 
 <p align="center">
   <img src="banner.png" alt="Wisent Banner" width="100%">
