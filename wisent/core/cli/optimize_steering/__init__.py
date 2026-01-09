@@ -14,6 +14,14 @@ Search space per method:
 - PRISM: layer, extraction_strategy, num_directions, direction_weighting, retain_weight
 - PULSE: sensor_layer, steering_layers, condition_threshold, gate_temperature, max_alpha
 - TITAN: sensor_layer, steering_layers, num_directions, gate_hidden_dim, intensity_hidden_dim, behavior_weight
+
+WARNING: NEVER REDUCE THE SEARCH SPACE
+- Do NOT discretize continuous parameters into a few values
+- Do NOT limit integer ranges to small sets like [1,2,3]
+- If a parameter is continuous (0.0-1.0), keep it continuous
+- If a parameter can be any integer (e.g. layer 0-27), search ALL values
+- Let the sampling strategy (random, Bayesian, etc.) decide which points to evaluate
+- Any reduction in search space requires EXPLICIT user approval
 """
 
 import argparse
@@ -382,97 +390,192 @@ def run_pipeline(
     )
 
 
+def create_optuna_objective(
+    model: str,
+    task: str,
+    method: str,
+    num_layers: int,
+    limit: int,
+    device: Optional[str],
+    work_dir: str,
+):
+    """Create an Optuna objective function for a given method."""
+    
+    def objective(trial: "optuna.Trial") -> float:
+        # Common parameters for all methods
+        extraction_strategy = trial.suggest_categorical("extraction_strategy", ["chat_last", "chat_mean"])
+        steering_strategy = trial.suggest_categorical("steering_strategy", STEERING_STRATEGIES)
+        
+        if method.upper() == "CAA":
+            config = CAAConfig(
+                method="CAA",
+                layer=trial.suggest_int("layer", 0, num_layers - 1),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
+        
+        elif method.upper() == "HYPERPLANE":
+            config = HyperplaneConfig(
+                method="Hyperplane",
+                layer=trial.suggest_int("layer", 0, num_layers - 1),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
+        
+        elif method.upper() == "MLP":
+            config = MLPConfig(
+                method="MLP",
+                layer=trial.suggest_int("layer", 0, num_layers - 1),
+                hidden_dim=trial.suggest_int("hidden_dim", 32, 1024),
+                num_layers=trial.suggest_int("num_layers", 1, 5),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
+        
+        elif method.upper() == "PRISM":
+            config = PRISMConfig(
+                method="PRISM",
+                layer=trial.suggest_int("layer", 0, num_layers - 1),
+                num_directions=trial.suggest_int("num_directions", 1, 10),
+                direction_weighting=trial.suggest_categorical("direction_weighting", ["primary_only", "equal"]),
+                retain_weight=trial.suggest_float("retain_weight", 0.0, 1.0),
+                optimization_steps=trial.suggest_int("optimization_steps", 50, 500),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
+        
+        elif method.upper() == "PULSE":
+            sensor_layer = trial.suggest_int("sensor_layer", 0, num_layers - 1)
+            steering_start = trial.suggest_int("steering_start", 0, num_layers - 1)
+            steering_end = trial.suggest_int("steering_end", steering_start, num_layers - 1)
+            steering_layers = list(range(steering_start, steering_end + 1))
+            
+            config = PULSEConfig(
+                method="PULSE",
+                sensor_layer=sensor_layer,
+                steering_layers=steering_layers,
+                condition_threshold=trial.suggest_float("condition_threshold", 0.0, 1.0),
+                gate_temperature=trial.suggest_float("gate_temperature", 0.01, 2.0),
+                max_alpha=trial.suggest_float("max_alpha", 0.5, 5.0),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
+        
+        elif method.upper() == "TITAN":
+            sensor_layer = trial.suggest_int("sensor_layer", 0, num_layers - 1)
+            steering_start = trial.suggest_int("steering_start", 0, num_layers - 1)
+            steering_end = trial.suggest_int("steering_end", steering_start, num_layers - 1)
+            steering_layers = list(range(steering_start, steering_end + 1))
+            
+            config = TITANConfig(
+                method="TITAN",
+                sensor_layer=sensor_layer,
+                steering_layers=steering_layers,
+                num_directions=trial.suggest_int("num_directions", 1, 10),
+                gate_hidden_dim=trial.suggest_int("gate_hidden_dim", 16, 256),
+                intensity_hidden_dim=trial.suggest_int("intensity_hidden_dim", 8, 128),
+                behavior_weight=trial.suggest_float("behavior_weight", 0.0, 2.0),
+                retain_weight=trial.suggest_float("retain_weight", 0.0, 1.0),
+                sparse_weight=trial.suggest_float("sparse_weight", 0.0, 0.5),
+                max_alpha=trial.suggest_float("max_alpha", 0.5, 5.0),
+                optimization_steps=trial.suggest_int("optimization_steps", 50, 500),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
+        else:
+            raise ValueError(f"Unknown method: {method}")
+        
+        # Run pipeline and return score
+        result = run_pipeline(
+            model=model,
+            task=task,
+            config=config,
+            work_dir=work_dir,
+            limit=limit,
+            device=device,
+        )
+        
+        return result.score
+    
+    return objective
+
+
 def execute_optimize_steering(args):
     """
-    Execute steering optimization using the CLI pipeline.
+    Execute steering optimization using Optuna.
     """
+    import optuna
+    
     print(f"\n{'=' * 80}")
-    print(f"🎯 STEERING OPTIMIZATION")
+    print(f"🎯 STEERING OPTIMIZATION (Optuna)")
     print(f"{'=' * 80}")
     print(f"   Model: {args.model}")
     print(f"   Task: {args.task}")
-    print(f"   Methods: {args.methods}")
+    print(f"   Method: {args.method}")
+    print(f"   Trials: {args.n_trials}")
     print(f"{'=' * 80}\n")
     
     num_layers = getattr(args, 'num_layers', 32)
-    methods = args.methods if hasattr(args, 'methods') else ["CAA"]
-    
-    # Count total configs
-    total_configs = 0
-    for method in methods:
-        total_configs += sum(1 for _ in get_search_space(method, num_layers))
-    
-    print(f"📊 Search space: {total_configs} configurations\n")
-    
-    best_result = None
-    results = []
+    method = args.method if hasattr(args, 'method') else "CAA"
+    n_trials = getattr(args, 'n_trials', 100)
+    limit = getattr(args, 'limit', 100)
+    device = getattr(args, 'device', None)
     
     with tempfile.TemporaryDirectory() as work_dir:
-        config_idx = 0
-        for method in methods:
-            print(f"\n🔬 Testing {method}...")
-            for config in get_search_space(method, num_layers):
-                config_idx += 1
-                config_str = f"L{getattr(config, 'layer', getattr(config, 'sensor_layer', '?'))}"
-                print(f"[{config_idx}/{total_configs}] {method} {config_str}...", end=" ", flush=True)
-                
-                try:
-                    result = run_pipeline(
-                        model=args.model,
-                        task=args.task,
-                        config=config,
-                        work_dir=work_dir,
-                        limit=getattr(args, 'limit', 100),
-                        device=getattr(args, 'device', None),
-                    )
-                    results.append(result)
-                    print(f"score={result.score:.3f}")
-                    
-                    if best_result is None or result.score > best_result.score:
-                        best_result = result
-                except Exception as e:
-                    print(f"FAILED: {e}")
+        # Create Optuna study
+        study = optuna.create_study(
+            direction="maximize",
+            study_name=f"{method}_{args.task}",
+        )
+        
+        # Create objective function
+        objective = create_optuna_objective(
+            model=args.model,
+            task=args.task,
+            method=method,
+            num_layers=num_layers,
+            limit=limit,
+            device=device,
+            work_dir=work_dir,
+        )
+        
+        # Run optimization
+        study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
     
     # Print results
     print(f"\n{'=' * 80}")
     print(f"📊 OPTIMIZATION COMPLETE")
     print(f"{'=' * 80}")
     
-    if best_result:
-        print(f"\n✅ Best configuration:")
-        print(f"   Method: {best_result.config.method}")
-        print(f"   Extraction: {best_result.config.extraction_strategy}")
-        for k, v in best_result.config.to_args().items():
-            if k != "method":
-                print(f"   {k}: {v}")
-        print(f"   Score: {best_result.score:.4f}")
+    print(f"\n✅ Best configuration:")
+    print(f"   Method: {method}")
+    print(f"   Score: {study.best_value:.4f}")
+    for k, v in study.best_params.items():
+        print(f"   {k}: {v}")
     
     # Save results
     if hasattr(args, 'output') and args.output:
         output_data = {
             "model": args.model,
             "task": args.task,
-            "best": {
-                "method": best_result.config.method,
-                "extraction_strategy": best_result.config.extraction_strategy,
-                "score": best_result.score,
-                **best_result.config.to_args(),
-            } if best_result else None,
-            "all_results": [
+            "method": method,
+            "n_trials": n_trials,
+            "best_score": study.best_value,
+            "best_params": study.best_params,
+            "all_trials": [
                 {
-                    "method": r.config.method,
-                    "extraction_strategy": r.config.extraction_strategy,
-                    "score": r.score,
-                    **r.config.to_args(),
+                    "number": t.number,
+                    "value": t.value,
+                    "params": t.params,
                 }
-                for r in results
+                for t in study.trials
             ],
         }
         with open(args.output, 'w') as f:
             json.dump(output_data, f, indent=2)
         print(f"\n💾 Results saved to: {args.output}")
     
-    return best_result
+    return study
 
 
 __all__ = [
