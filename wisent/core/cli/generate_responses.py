@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import torch
 
 from wisent.core.models.inference_config import get_generate_kwargs
 
@@ -16,6 +17,7 @@ def execute_generate_responses(args):
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.data_loaders.loaders.task_interface_loader import TaskInterfaceDataLoader
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+    from wisent.core.steering_methods.steering_object import load_steering_object
 
     print(f"\n{'='*80}")
     print(f"🎯 GENERATING RESPONSES FROM TASK")
@@ -24,6 +26,11 @@ def execute_generate_responses(args):
     print(f"   Model: {args.model}")
     print(f"   Num questions: {args.num_questions}")
     print(f"   Device: {args.device or 'auto'}")
+    if args.steering_object:
+        print(f"   Steering object: {args.steering_object}")
+        print(f"   Steering strength: {args.steering_strength}")
+        steering_strategy = getattr(args, 'steering_strategy', 'constant')
+        print(f"   Steering strategy: {steering_strategy}")
     print(f"{'='*80}\n")
 
     # Load model
@@ -31,35 +38,51 @@ def execute_generate_responses(args):
     model = WisentModel(args.model, device=args.device)
     print(f"   ✓ Model loaded\n")
 
-    # Load task data - try TaskInterface first, then fall back to LMEval
+    # Load steering object if provided
+    steering_object = None
+    if args.steering_object:
+        print(f"📦 Loading steering object...")
+        steering_object = load_steering_object(args.steering_object)
+        print(f"   ✓ Loaded {steering_object.metadata.method} steering object\n")
+
+    # Load task data - from file or from task
     print(f"📊 Loading task data...")
     pairs = None
-
-    # First try TaskInterfaceDataLoader (for livecodebench, gsm8k, etc.)
-    try:
-        task_loader = TaskInterfaceDataLoader()
-        load_limit = max(args.num_questions * 2, 20)
-
-        result = task_loader.load(
-            task=args.task,
-            split_ratio=0.8,
-            seed=42,
-            limit=load_limit,
-            training_limit=None,
-            testing_limit=None
-        )
-
-        pairs = result.train_qa_pairs.pairs[:args.num_questions]
-        print(f"   ✓ Loaded {len(pairs)} question pairs via TaskInterface\n")
-
-    except Exception as task_err:
-        # Fall back to LMEvalDataLoader
+    
+    # If input file is provided, load from file
+    input_file = getattr(args, 'input_file', None)
+    if input_file and os.path.exists(input_file):
+        from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+        from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+        
+        with open(input_file, 'r') as f:
+            data = json.load(f)
+        
+        pairs_list = data.get('pairs', [])
+        pairs = []
+        for pair_data in pairs_list[:args.num_questions]:
+            pair = ContrastivePair(
+                prompt=pair_data['prompt'],
+                positive_response=PositiveResponse(
+                    model_response=pair_data['positive_response']['model_response']
+                ),
+                negative_response=NegativeResponse(
+                    model_response=pair_data['negative_response']['model_response']
+                ),
+                label=pair_data.get('label', ''),
+                trait_description=pair_data.get('trait_description', ''),
+                metadata=pair_data.get('metadata', {}),
+            )
+            pairs.append(pair)
+        print(f"   ✓ Loaded {len(pairs)} question pairs from file\n")
+    else:
+        # First try TaskInterfaceDataLoader (for livecodebench, gsm8k, etc.)
         try:
-            loader = LMEvalDataLoader()
+            task_loader = TaskInterfaceDataLoader()
             load_limit = max(args.num_questions * 2, 20)
 
-            result = loader._load_one_task(
-                task_name=args.task,
+            result = task_loader.load(
+                task=args.task,
                 split_ratio=0.8,
                 seed=42,
                 limit=load_limit,
@@ -67,14 +90,32 @@ def execute_generate_responses(args):
                 testing_limit=None
             )
 
-            pairs = result['train_qa_pairs'].pairs[:args.num_questions]
-            print(f"   ✓ Loaded {len(pairs)} question pairs via LMEval\n")
+            pairs = result.train_qa_pairs.pairs[:args.num_questions]
+            print(f"   ✓ Loaded {len(pairs)} question pairs via TaskInterface\n")
 
-        except Exception as lm_err:
-            print(f"   ❌ Failed to load task '{args.task}'")
-            print(f"      TaskInterface error: {task_err}")
-            print(f"      LMEval error: {lm_err}")
-            sys.exit(1)
+        except Exception as task_err:
+            # Fall back to LMEvalDataLoader
+            try:
+                loader = LMEvalDataLoader()
+                load_limit = max(args.num_questions * 2, 20)
+
+                result = loader._load_one_task(
+                    task_name=args.task,
+                    split_ratio=0.8,
+                    seed=42,
+                    limit=load_limit,
+                    training_limit=None,
+                    testing_limit=None
+                )
+
+                pairs = result['train_qa_pairs'].pairs[:args.num_questions]
+                print(f"   ✓ Loaded {len(pairs)} question pairs via LMEval\n")
+
+            except Exception as lm_err:
+                print(f"   ❌ Failed to load task '{args.task}'")
+                print(f"      TaskInterface error: {task_err}")
+                print(f"      LMEval error: {lm_err}")
+                sys.exit(1)
 
     # Generate responses
     print(f"🤖 Generating responses...\n")
@@ -98,11 +139,17 @@ def execute_generate_responses(args):
             if args.top_p is not None:
                 gen_kwargs["top_p"] = args.top_p
 
-            # Generate response
+            # Get steering strategy
+            steering_strategy = getattr(args, 'steering_strategy', 'constant')
+            
+            # Generate response with per-token steering strategy
             responses = model.generate(
                 inputs=[messages],
                 **gen_kwargs,
                 use_steering=args.use_steering,
+                steering_object=steering_object,
+                steering_strength=args.steering_strength,
+                steering_strategy=steering_strategy,
             )
 
             generated_text = responses[0] if responses else ""
@@ -111,13 +158,19 @@ def execute_generate_responses(args):
                 print(f"   Generated: {generated_text[:100]}...")
                 print()
 
-            results.append({
+            result_entry = {
                 "question_id": idx,
                 "prompt": pair.prompt,
                 "generated_response": generated_text,
                 "positive_reference": pair.positive_response.model_response,
                 "negative_reference": pair.negative_response.model_response
-            })
+            }
+            if pair.metadata:
+                if pair.metadata.get('correct_answers'):
+                    result_entry['correct_answers'] = pair.metadata['correct_answers']
+                if pair.metadata.get('incorrect_answers'):
+                    result_entry['incorrect_answers'] = pair.metadata['incorrect_answers']
+            results.append(result_entry)
 
         except Exception as e:
             print(f"   ❌ Error generating response for question {idx}: {e}")
@@ -140,7 +193,11 @@ def execute_generate_responses(args):
             "max_new_tokens": args.max_new_tokens,
             "temperature": args.temperature,
             "top_p": args.top_p,
-            "use_steering": args.use_steering
+            "use_steering": args.use_steering,
+            "steering_object": args.steering_object,
+            "steering_strength": args.steering_strength if args.steering_object else None,
+            "steering_strategy": getattr(args, 'steering_strategy', 'constant'),
+            "steering_method": steering_object.metadata.method if steering_object else None
         },
         "responses": results
     }

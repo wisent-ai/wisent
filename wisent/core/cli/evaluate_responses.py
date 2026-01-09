@@ -12,6 +12,7 @@ from wisent.core.evaluators.steering_evaluators import (
     RefusalEvaluator,
     PersonalizationEvaluator as SteeringPersonalizationEvaluator,
 )
+from wisent.core.evaluators.rotator import EvaluatorRotator
 
 
 def execute_evaluate_responses(args):
@@ -19,7 +20,7 @@ def execute_evaluate_responses(args):
     Execute the evaluate-responses command.
 
     Evaluates generated responses using benchmark-specific evaluators.
-    Routes to appropriate evaluator based on task type from task-evaluator.json.
+    Uses EvaluatorRotator to auto-select the appropriate evaluator based on task name.
 
     Uses unified split strategy: all available splits are combined and split 80/20.
     Evaluation uses the TEST portion (20%) to ensure no data leakage with training.
@@ -94,10 +95,17 @@ def execute_evaluate_responses(args):
         print(f"   ❌ Could not load task config: {e}")
         sys.exit(1)
 
-    # Load task to get ground truth (skip for docker_execution and personalization)
+    # Load task to get ground truth (skip for docker_execution, personalization, or if responses have references)
     task_docs = None
     task = None
-    if evaluation_type not in ["docker_execution", "personalization"]:
+    
+    # Check if all responses already have positive_reference (ground truth from generation)
+    has_references = all(
+        r.get('positive_reference') is not None 
+        for r in responses
+    )
+    
+    if evaluation_type not in ["docker_execution", "personalization"] and not has_references:
         print(f"📚 Loading task data using unified split strategy...")
         try:
             tm = TaskManager()
@@ -113,51 +121,59 @@ def execute_evaluate_responses(args):
         except Exception as e:
             print(f"   ❌ Could not load task: {e}")
             sys.exit(1)
+    elif has_references:
+        print(f"📚 Using references from responses file (task loading skipped)\n")
 
-    # Select evaluator based on evaluation type
-    print(f"🔧 Selecting evaluator for {evaluation_type} task...")
+    # Select evaluator using EvaluatorRotator (auto-selects based on task name)
+    print(f"🔧 Selecting evaluator for task '{task_name}'...")
+    evaluator = None
+    evaluator_rotator = None
+    
+    # Special handling for certain evaluation types
     if evaluation_type == "docker_execution":
-        # Handle coding tasks with Docker execution
         from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import (
             CodingEvaluator,
             EvaluatorConfig
         )
         from wisent.core.evaluators.benchmark_specific.coding.providers.livecodebench import LiveCodeBenchProvider
-
         print(f"   Using: CodingEvaluator (Docker sandbox execution)\n")
-
-        # Get Docker config from task config
         docker_config = task_config.get('docker_config', {})
         provider_name = task_config.get('provider', 'livecodebench')
-
-        # This will be handled separately - set evaluator to None for now
-        evaluator = None
-
-    elif evaluation_type == "multiple_choice":
-        evaluator = F1Evaluator()
-        print(f"   Using: F1Evaluator (compares response to choice texts)\n")
-    elif evaluation_type == "generate_until":
-        if primary_metric == "exact_match":
-            evaluator = ExactMatchEvaluator()
-            print(f"   Using: ExactMatchEvaluator (extracts and compares answers)\n")
-        elif primary_metric in ["em", "f1"]:
-            evaluator = F1Evaluator()
-            print(f"   Using: F1Evaluator (token-level comparison)\n")
-        else:
-            evaluator = GenerationEvaluator()
-            print(f"   Using: GenerationEvaluator (extracts and compares answers)\n")
-    elif evaluation_type == "loglikelihood_rolling":
-        evaluator = PerplexityEvaluator()
-        print(f"   Using: PerplexityEvaluator (perplexity computation)\n")
     elif evaluation_type == "personalization":
-        # Personalization is handled separately below using shared steering evaluators
-        evaluator = None
+        print(f"   Using: SteeringPersonalizationEvaluator\n")
     elif evaluation_type == "refusal":
-        # Refusal evaluation is handled separately below using shared steering evaluators
-        evaluator = None
+        print(f"   Using: RefusalEvaluator\n")
     else:
-        evaluator = F1Evaluator()
-        print(f"   Using: F1Evaluator (default fallback)\n")
+        # Use EvaluatorRotator to auto-select based on task name
+        try:
+            EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
+            EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+            evaluator_rotator = EvaluatorRotator(evaluator=None, task_name=task_name)
+            evaluator = evaluator_rotator.current
+            print(f"   Using: {evaluator.name} (auto-selected via EvaluatorRotator)\n")
+        except Exception as e:
+            # Fallback to manual selection if rotator fails
+            print(f"   ⚠️  EvaluatorRotator failed: {e}")
+            print(f"   Falling back to manual selection based on evaluation_type...")
+            if evaluation_type == "multiple_choice":
+                evaluator = F1Evaluator()
+                print(f"   Using: F1Evaluator (compares response to choice texts)\n")
+            elif evaluation_type == "generate_until":
+                if primary_metric == "exact_match":
+                    evaluator = ExactMatchEvaluator()
+                    print(f"   Using: ExactMatchEvaluator (extracts and compares answers)\n")
+                elif primary_metric in ["em", "f1"]:
+                    evaluator = F1Evaluator()
+                    print(f"   Using: F1Evaluator (token-level comparison)\n")
+                else:
+                    evaluator = GenerationEvaluator()
+                    print(f"   Using: GenerationEvaluator (extracts and compares answers)\n")
+            elif evaluation_type == "loglikelihood_rolling":
+                evaluator = PerplexityEvaluator()
+                print(f"   Using: PerplexityEvaluator (perplexity computation)\n")
+            else:
+                evaluator = F1Evaluator()
+                print(f"   Using: F1Evaluator (default fallback)\n")
 
     # Evaluate responses
     print(f"🎯 Evaluating responses...\n")
@@ -670,6 +686,8 @@ def execute_evaluate_responses(args):
             # First check if positive_reference is available in the response data
             # This is the expected answer that was already extracted during generation
             positive_reference = response_data.get('positive_reference')
+            correct_answers = response_data.get('correct_answers')
+            incorrect_answers = response_data.get('incorrect_answers')
 
             # If we have positive_reference, use it directly without needing to match task docs
             if positive_reference is not None:
@@ -678,7 +696,12 @@ def execute_evaluate_responses(args):
                     print(f"Question {idx}: Using positive_reference as expected answer")
 
                 # Evaluate using selected evaluator
-                result = evaluator.evaluate(generated_response, positive_reference)
+                result = evaluator.evaluate(
+                    generated_response,
+                    positive_reference,
+                    correct_answers=correct_answers,
+                    incorrect_answers=incorrect_answers
+                )
 
                 is_correct = (result.ground_truth == "TRUTHFUL")
 

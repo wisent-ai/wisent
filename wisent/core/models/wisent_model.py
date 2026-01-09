@@ -246,6 +246,9 @@ class WisentModel:
         self,
         steering_obj: "BaseSteeringObject",
         base_strength: float = 1.0,
+        steering_strategy: str = "constant",
+        steering_strategy_config: dict | None = None,
+        max_new_tokens: int = 128,
     ) -> None:
         """
         Register forward hooks using a SteeringObject with full method-specific logic.
@@ -257,17 +260,52 @@ class WisentModel:
         Args:
             steering_obj: A SteeringObject (CAA, Hyperplane, MLP, PRISM, PULSE, or TITAN)
             base_strength: Base multiplier for steering intensity
+            steering_strategy: How to apply steering over tokens:
+                - "constant": Same strength throughout generation
+                - "initial_only": Only apply at first N tokens
+                - "diminishing": Strength decreases over tokens
+                - "increasing": Strength increases over tokens
+                - "gaussian": Gaussian curve centered at specific token position
+            steering_strategy_config: Config for strategy (initial_tokens, rate, gaussian_center, gaussian_width)
+            max_new_tokens: Expected max tokens for strategy weight calculation
             
         Example:
             >>> from wisent.core.steering_methods.steering_object import BaseSteeringObject
             >>> obj = BaseSteeringObject.load("steering.pt")
-            >>> wm.apply_steering_object(obj, base_strength=1.0)
+            >>> wm.apply_steering_object(obj, base_strength=1.0, steering_strategy="diminishing")
             >>> response = wm.generate([...])
             >>> wm.detach()
         """
+        import math
         from wisent.core.steering_methods.steering_object import BaseSteeringObject
         
         self.detach()
+        config = steering_strategy_config or {}
+        
+        # Token counter shared across all hooks (mutable container)
+        token_counter = {"count": 0, "prompt_len": 0}
+        
+        def get_steering_weight(strategy: str, token_pos: int, total_tokens: int) -> float:
+            """Calculate steering weight based on strategy and token position."""
+            position_frac = token_pos / max(total_tokens, 1)
+            
+            if strategy == "constant":
+                return 1.0
+            elif strategy == "initial_only":
+                initial_tokens = config.get("initial_tokens", 10)
+                return 1.0 if token_pos < initial_tokens else 0.0
+            elif strategy == "diminishing":
+                rate = config.get("rate", 0.1)
+                return math.exp(-rate * token_pos)
+            elif strategy == "increasing":
+                rate = config.get("rate", 0.1)
+                return 1.0 - math.exp(-rate * token_pos)
+            elif strategy == "gaussian":
+                center = config.get("gaussian_center", 0.5)
+                width = config.get("gaussian_width", 0.2)
+                return math.exp(-((position_frac - center) ** 2) / (2 * width ** 2))
+            else:
+                return 1.0
         
         name_to_index = {str(i + 1): i for i in range(len(self._layers))}
         
@@ -279,18 +317,42 @@ class WisentModel:
             idx = name_to_index[layer_name]
             layer_module = self._layers[idx]
             
-            def _hook_factory(obj: BaseSteeringObject, layer: int, strength: float):
+            def _hook_factory(obj: BaseSteeringObject, layer: int, strength: float, counter: dict, strategy: str, max_tokens: int):
                 def _hook(_mod: nn.Module, _inp: tuple, out: torch.Tensor | tuple) -> torch.Tensor | tuple:
+                    # Get current sequence length to detect new tokens
                     if isinstance(out, tuple):
                         hs = out[0]
-                        steered = obj.apply_steering(hs, layer=layer, base_strength=strength)
+                    else:
+                        hs = out
+                    
+                    seq_len = hs.shape[1]
+                    
+                    # On first call, record prompt length
+                    if counter["prompt_len"] == 0:
+                        counter["prompt_len"] = seq_len
+                    
+                    # Calculate token position (0 = first generated token)
+                    token_pos = seq_len - counter["prompt_len"]
+                    if token_pos < 0:
+                        token_pos = 0
+                    
+                    # Get weight for this token position
+                    weight = get_steering_weight(strategy, token_pos, max_tokens)
+                    effective_strength = strength * weight
+                    
+                    # Skip steering if weight is 0
+                    if effective_strength == 0:
+                        return out
+                    
+                    if isinstance(out, tuple):
+                        steered = obj.apply_steering(hs, layer=layer, base_strength=effective_strength)
                         return (steered,) + out[1:]
                     else:
-                        return obj.apply_steering(out, layer=layer, base_strength=strength)
+                        return obj.apply_steering(out, layer=layer, base_strength=effective_strength)
                 return _hook
             
             handle = layer_module.register_forward_hook(
-                _hook_factory(steering_obj, layer_idx, base_strength)
+                _hook_factory(steering_obj, layer_idx, base_strength, token_counter, steering_strategy, max_new_tokens)
             )
             self._hook_group.add(handle)
 
@@ -455,6 +517,8 @@ class WisentModel:
         steering_plan: SteeringPlan | None = None,
         steering_object: "BaseSteeringObject | None" = None,
         steering_strength: float = 1.0,
+        steering_strategy: str = "constant",
+        steering_strategy_config: dict | None = None,
         enable_thinking: bool = False,
         prompt_is_formatted: bool = False,
         ensure_varied_responses: bool = False,
@@ -568,7 +632,13 @@ class WisentModel:
             ...     print(f"Assistant {i+1}: {out[i]}")
         """
         if steering_object is not None:
-            self.apply_steering_object(steering_object, base_strength=steering_strength)
+            self.apply_steering_object(
+                steering_object,
+                base_strength=steering_strength,
+                steering_strategy=steering_strategy,
+                steering_strategy_config=steering_strategy_config,
+                max_new_tokens=max_new_tokens,
+            )
         elif use_steering:
             self.apply_steering(steering_plan)
 

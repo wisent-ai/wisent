@@ -624,20 +624,25 @@ class TITANSteeringObject(BaseSteeringObject):
     def compute_gate(self, hidden_state: torch.Tensor) -> torch.Tensor:
         if self.gate_network is None:
             batch_size = hidden_state.shape[0] if hidden_state.dim() > 1 else 1
-            return torch.ones(batch_size, device=hidden_state.device)
+            return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
         
-        self.gate_network = self.gate_network.to(hidden_state.device)
-        return self.gate_network(hidden_state, self.gate_temperature)
+        # Always use float32 for network computation (MPS compatibility)
+        self.gate_network = self.gate_network.to(device=hidden_state.device, dtype=torch.float32)
+        h_float = hidden_state.float()
+        result = self.gate_network(h_float, self.gate_temperature)
+        return result.to(hidden_state.dtype)
     
     def compute_intensity(self, hidden_state: torch.Tensor, layer: int) -> torch.Tensor:
         if layer not in self._layer_to_idx:
             batch_size = hidden_state.shape[0] if hidden_state.dim() > 1 else 1
-            return torch.ones(batch_size, device=hidden_state.device)
+            return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
         
-        self.intensity_network = self.intensity_network.to(hidden_state.device)
-        intensities = self.intensity_network(hidden_state)
+        # Always use float32 for network computation (MPS compatibility)
+        self.intensity_network = self.intensity_network.to(device=hidden_state.device, dtype=torch.float32)
+        h_float = hidden_state.float()
+        intensities = self.intensity_network(h_float)
         layer_idx = self._layer_to_idx[layer]
-        return intensities[:, layer_idx]
+        return intensities[:, layer_idx].to(hidden_state.dtype)
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -745,3 +750,18 @@ def create_steering_object(
         return TITANSteeringObject(metadata, **kwargs)
     else:
         raise ValueError(f"Unknown steering method: {method}")
+
+
+def load_steering_object(path: str) -> BaseSteeringObject:
+    """
+    Load a steering object from file.
+    
+    Convenience function that calls BaseSteeringObject.load().
+    
+    Args:
+        path: Path to the steering object file (.pt or .json)
+        
+    Returns:
+        The loaded steering object
+    """
+    return BaseSteeringObject.load(path)

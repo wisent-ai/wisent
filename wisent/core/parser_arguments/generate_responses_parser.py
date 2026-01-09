@@ -12,5 +12,7 @@ def setup_generate_responses_parser(parser):
     parser.add_argument("--device", type=str, default=None, help="Device to use (cpu, cuda, mps)")
     parser.add_argument("--output", type=str, required=True, help="Output file path for results")
     parser.add_argument("--use-steering", action="store_true", help="Use steering during generation")
+    parser.add_argument("--steering-object", type=str, default=None, help="Path to steering object file (.pt)")
+    parser.add_argument("--steering-strength", type=float, default=1.0, help="Steering strength multiplier (default: 1.0)")
     parser.add_argument("--disable-thinking", action="store_true", help="Disable thinking/reasoning mode (prevents <think> tags for Qwen models)")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")
