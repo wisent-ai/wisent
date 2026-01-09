@@ -380,9 +380,15 @@ def _create_titan_steering_object(
         sensor_layer_idx = int(num_layers * 0.75)
     sensor_layer = int(available_layers[min(sensor_layer_idx, num_layers - 1)])
     
-    gate_hidden_dim = getattr(args, 'titan_gate_hidden_dim', max(32, min(512, hidden_dim // 16)))
-    intensity_hidden_dim = getattr(args, 'titan_intensity_hidden_dim', max(16, min(256, hidden_dim // 32)))
-    max_alpha = getattr(args, 'titan_max_alpha', 3.0)
+    gate_hidden_dim = getattr(args, 'titan_gate_hidden_dim', None)
+    if gate_hidden_dim is None:
+        gate_hidden_dim = max(32, min(512, hidden_dim // 16))
+    intensity_hidden_dim = getattr(args, 'titan_intensity_hidden_dim', None)
+    if intensity_hidden_dim is None:
+        intensity_hidden_dim = max(16, min(256, hidden_dim // 32))
+    max_alpha = getattr(args, 'titan_max_alpha', None)
+    if max_alpha is None:
+        max_alpha = 3.0
     
     # Initialize networks
     gate_network = TITANGateNetwork(hidden_dim, gate_hidden_dim)

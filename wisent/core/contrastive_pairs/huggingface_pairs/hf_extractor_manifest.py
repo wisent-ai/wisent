@@ -446,6 +446,8 @@ EXTRACTORS: dict[str, str] = {
     "polyglottoxicityprompts": f"{base_import}medium_priority_benchmarks:PolygloToxicityExtractor",
     "polyglot_toxicity": f"{base_import}medium_priority_benchmarks:PolygloToxicityExtractor",
     "multilingual_toxicity": f"{base_import}medium_priority_benchmarks:PolygloToxicityExtractor",
+    # Custom TruthfulQA (loads directly from HF)
+    "truthfulqa_custom": f"{base_import}truthfulqa_custom:TruthfulQACustomExtractor",
 }
 
 # Alias for backwards compatibility
