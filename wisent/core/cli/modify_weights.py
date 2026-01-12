@@ -28,6 +28,237 @@ from wisent.core.weight_modification import (
 _LOG = setup_logger(__name__)
 
 
+def _generate_pairs_for_titan(args, wisent_model):
+    """
+    Generate contrastive pairs for TITAN training.
+    
+    Uses existing contrastive pair generation infrastructure.
+    """
+    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+    
+    pairs = []
+    
+    if args.task:
+        task_lower = args.task.lower()
+        
+        if task_lower == "personalization" and args.trait:
+            # Synthetic pairs from trait
+            from wisent.core.contrastive_pairs.generators.llm_synthetic import LLMSyntheticGenerator
+            
+            generator = LLMSyntheticGenerator(model_id=args.model)
+            raw_pairs = generator.generate_pairs(
+                trait=args.trait,
+                num_pairs=args.num_pairs,
+            )
+            
+            for raw_pair in raw_pairs:
+                pair = ContrastivePair(
+                    prompt=raw_pair.get('prompt', ''),
+                    positive_response=PositiveResponse(model_response=raw_pair.get('positive_response', '')),
+                    negative_response=NegativeResponse(model_response=raw_pair.get('negative_response', '')),
+                    label=args.trait,
+                )
+                pairs.append(pair)
+                
+        else:
+            # Task-based generation using lm-eval pairs
+            from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
+            
+            raw_pairs = build_contrastive_pairs(
+                task_name=args.task,
+                limit=args.num_pairs,
+            )
+            
+            for raw_pair in raw_pairs:
+                # raw_pair is already a ContrastivePair
+                pairs.append(raw_pair)
+    
+    elif args.trait:
+        # Trait-based synthetic generation
+        from wisent.core.contrastive_pairs.generators.llm_synthetic import LLMSyntheticGenerator
+        
+        generator = LLMSyntheticGenerator(model_id=args.model)
+        raw_pairs = generator.generate_pairs(
+            trait=args.trait,
+            num_pairs=args.num_pairs,
+        )
+        
+        for raw_pair in raw_pairs:
+            pair = ContrastivePair(
+                prompt=raw_pair.get('prompt', ''),
+                positive_response=PositiveResponse(model_response=raw_pair.get('positive_response', '')),
+                negative_response=NegativeResponse(model_response=raw_pair.get('negative_response', '')),
+                label=args.trait,
+            )
+            pairs.append(pair)
+    
+    return pairs
+
+
+def _train_titan_for_task(args, model, pairs):
+    """
+    Train TITAN on contrastive pairs and return the TITANResult.
+    
+    Args:
+        args: Command arguments
+        model: WisentModel instance
+        pairs: List of contrastive pairs
+        
+    Returns:
+        TITANResult object
+    """
+    from wisent.core.steering_methods.methods.titan import TITANMethod
+    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    
+    if args.verbose:
+        print("\n🔥 Training TITAN steering method...")
+    
+    # Create pair set
+    pair_set = ContrastivePairSet(
+        name=getattr(args, 'trait_label', 'steering'),
+        pairs=pairs,
+        task_type=args.task if hasattr(args, 'task') else None,
+    )
+    
+    # Collect activations for pairs (required for TITAN)
+    if args.verbose:
+        print("  Collecting activations for TITAN training...")
+    
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    
+    layers = ["18"] if args.layers is None else [str(l) for l in str(args.layers).split(',')]
+    strategy = ExtractionStrategy.CHAT_LAST
+    
+    collector = ActivationCollector(model=model)
+    enriched_pairs = []
+    for i, pair in enumerate(pair_set.pairs):
+        enriched_pair = collector.collect(pair, strategy=strategy, layers=layers)
+        enriched_pairs.append(enriched_pair)
+        if args.verbose and (i + 1) % 10 == 0:
+            print(f"    Collected {i + 1}/{len(pair_set.pairs)} pairs")
+    
+    # Update pair set with enriched pairs
+    pair_set.pairs = enriched_pairs
+    if args.verbose:
+        print(f"  ✓ Collected activations for {len(enriched_pairs)} pairs")
+    
+    # Configure TITAN with explicit layer specification
+    layer_indices = [int(l) for l in layers]
+    titan_method = TITANMethod(
+        model=model,
+        num_directions=getattr(args, 'titan_num_directions', 8),
+        manifold_method="pca",
+        steering_layers=layer_indices,  # Use the same layers we collected activations for
+        sensor_layer=layer_indices[0],  # Use first layer as sensor
+    )
+    
+    # Train TITAN
+    titan_result = titan_method.train_titan(pair_set)
+    
+    if args.verbose:
+        print(f"✓ TITAN trained on {len(pairs)} pairs")
+        print(f"  Layers: {len(titan_result.layer_order)}")
+        print(f"  Directions per layer: {titan_result.directions[titan_result.layer_order[0]].shape[0]}")
+    
+    return titan_result
+
+
+def _train_pulse_for_task(args, wisent_model, pairs):
+    """Train PULSE steering for a task."""
+    from wisent.core.steering_methods.methods.pulse import PULSEMethod
+    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    
+    model = wisent_model.hf_model
+    layers = args.layers.split(',') if args.layers else ['18']
+    
+    # Collect activations for pairs
+    if args.verbose:
+        print(f"  Collecting activations for PULSE training...")
+    
+    collector = ActivationCollector(model=wisent_model)
+    enriched_pairs = []
+    
+    for i, pair in enumerate(pairs):
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
+        enriched_pairs.append(enriched)
+        if args.verbose and (i + 1) % 10 == 0:
+            print(f"    Collected {i + 1}/{len(pairs)} pairs")
+    
+    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="pulse_training")
+    
+    if args.verbose:
+        print(f"  ✓ Collected activations for {len(enriched_pairs)} pairs")
+    
+    # Configure PULSE with explicit layer specification
+    layer_indices = [int(l) for l in layers]
+    pulse_method = PULSEMethod(
+        model=model,
+        steering_layers=layer_indices,
+        sensor_layer=layer_indices[0],
+    )
+    
+    # Train PULSE
+    pulse_result = pulse_method.train_pulse(pair_set)
+    
+    if args.verbose:
+        print(f"✓ PULSE trained on {len(pairs)} pairs")
+        print(f"  Layers: {len(pulse_result.behavior_vectors)}")
+        print(f"  Optimal threshold: {pulse_result.optimal_threshold:.3f}")
+    
+    return pulse_result
+
+
+def _train_prism_for_task(args, wisent_model, pairs):
+    """Train PRISM steering for a task."""
+    from wisent.core.steering_methods.methods.prism import PRISMMethod
+    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    
+    model = wisent_model.hf_model
+    layers = args.layers.split(',') if args.layers else ['18']
+    
+    # Collect activations for pairs
+    if args.verbose:
+        print(f"  Collecting activations for PRISM training...")
+    
+    collector = ActivationCollector(model=wisent_model)
+    enriched_pairs = []
+    
+    for i, pair in enumerate(pairs):
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
+        enriched_pairs.append(enriched)
+        if args.verbose and (i + 1) % 10 == 0:
+            print(f"    Collected {i + 1}/{len(pairs)} pairs")
+    
+    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="prism_training")
+    
+    if args.verbose:
+        print(f"  ✓ Collected activations for {len(enriched_pairs)} pairs")
+    
+    # Configure PRISM
+    num_directions = getattr(args, 'prism_num_directions', 3)
+    prism_method = PRISMMethod(
+        model=model,
+        num_directions=num_directions,
+    )
+    
+    # Train PRISM
+    prism_result = prism_method.train(pair_set)
+    
+    if args.verbose:
+        num_dirs = next(iter(prism_result.directions.values())).shape[0]
+        print(f"✓ PRISM trained on {len(pairs)} pairs")
+        print(f"  Layers: {len(prism_result.directions)}")
+        print(f"  Directions per layer: {num_dirs}")
+    
+    return prism_result
+
+
 def execute_modify_weights(args):
     """
     Execute weight modification command.
@@ -165,7 +396,7 @@ def execute_modify_weights(args):
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
             vector_args.token_aggregation = args.token_aggregation
             vector_args.prompt_strategy = args.prompt_strategy
-            vector_args.method = "caa"
+            vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
             vector_args.timing = getattr(args, 'timing', False)
@@ -230,7 +461,7 @@ def execute_modify_weights(args):
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
             vector_args.token_aggregation = args.token_aggregation
             vector_args.prompt_strategy = args.prompt_strategy
-            vector_args.method = "caa"
+            vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
             vector_args.timing = getattr(args, 'timing', False)
@@ -292,7 +523,7 @@ def execute_modify_weights(args):
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
             vector_args.token_aggregation = args.token_aggregation
             vector_args.prompt_strategy = args.prompt_strategy
-            vector_args.method = "caa"
+            vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
             vector_args.timing = getattr(args, 'timing', False)
@@ -479,7 +710,7 @@ def execute_modify_weights(args):
                 vector_args.method = optimal_config['method'].lower()
             else:
                 vector_args.token_aggregation = args.token_aggregation
-                vector_args.method = "caa"
+                vector_args.method = getattr(args, 'steering_method', 'caa')
             
             vector_args.prompt_strategy = args.prompt_strategy
             vector_args.normalize = args.normalize_vectors
@@ -509,13 +740,39 @@ def execute_modify_weights(args):
             with open(vector_args.output, 'r') as f:
                 vector_data = json.load(f)
 
-            # Handle both "steering_vectors" (old format) and "vectors" (new steering object format)
-            vectors_dict = vector_data.get("steering_vectors") or vector_data.get("vectors", {})
+            # Handle different steering object formats
+            method_name = vector_data.get("method", "caa")
             
-            steering_vectors = {
-                int(layer) - 1: torch.tensor(vector)
-                for layer, vector in vectors_dict.items()
-            }
+            if method_name == "titan":
+                # TITAN stores directions as multi-dimensional manifold
+                # Extract effective direction (mean of weighted directions)
+                directions = vector_data.get("directions", {})
+                direction_weights = vector_data.get("direction_weights", {})
+                
+                steering_vectors = {}
+                for layer_str, dirs in directions.items():
+                    layer = int(layer_str)
+                    dirs_tensor = torch.tensor(dirs)  # Shape: [num_directions, hidden_dim]
+                    
+                    # Get weights for this layer (if available)
+                    weights = direction_weights.get(layer_str)
+                    if weights is not None:
+                        weights_tensor = torch.tensor(weights)
+                        # Weighted sum of directions
+                        effective_dir = (dirs_tensor * weights_tensor.unsqueeze(-1)).sum(0)
+                    else:
+                        # Simple mean if no weights
+                        effective_dir = dirs_tensor.mean(0)
+                    
+                    steering_vectors[layer] = effective_dir
+            else:
+                # Standard format: "steering_vectors" or "vectors"
+                vectors_dict = vector_data.get("steering_vectors") or vector_data.get("vectors", {})
+                
+                steering_vectors = {
+                    int(layer) - 1: torch.tensor(vector)
+                    for layer, vector in vectors_dict.items()
+                }
 
             # Optionally save steering vectors
             if getattr(args, 'save_steering_vectors', None):
@@ -608,6 +865,159 @@ def execute_modify_weights(args):
     if getattr(args, 'concepts', None):
         stats = _execute_multi_concept_modification(args, wisent_model, model, tokenizer, steering_vectors)
         return  # Multi-concept mode handles export internally
+
+    # Step 2.7: TITAN MODE - Full TITAN with dynamic gating
+    if args.method == "titan":
+        steering_method = getattr(args, 'steering_method', 'caa')
+        
+        if steering_method != "titan":
+            print(f"⚠ Warning: --method titan requires --steering-method titan")
+            print(f"  Falling back to directional projection with {steering_method} vectors\n")
+            args.method = "directional"
+        else:
+            # Full TITAN mode - train TITAN and export with hooks
+            if args.verbose:
+                print("Training TITAN for full dynamic steering...")
+            
+            # Generate pairs for TITAN training
+            pairs = _generate_pairs_for_titan(args, wisent_model)
+            
+            if not pairs:
+                print("✗ Error: Could not generate pairs for TITAN")
+                sys.exit(1)
+            
+            # Train TITAN
+            titan_result = _train_titan_for_task(args, wisent_model, pairs)
+            
+            # Export with TITAN-specific function
+            from wisent.core.weight_modification.export import export_titan_model
+            
+            titan_mode = getattr(args, 'titan_mode', 'hybrid')
+            
+            if args.verbose:
+                print(f"\nExporting TITAN model (mode={titan_mode})...")
+            
+            export_titan_model(
+                model=model,
+                titan_result=titan_result,
+                save_path=args.output_dir,
+                tokenizer=tokenizer,
+                mode=titan_mode,
+                push_to_hub=args.push_to_hub,
+                repo_id=args.repo_id if args.push_to_hub else None,
+                commit_message=args.commit_message,
+            )
+            
+            if args.verbose:
+                print(f"\n✓ TITAN model exported to {args.output_dir}")
+                print(f"  Mode: {titan_mode}")
+                print(f"  Layers: {len(titan_result.layer_order)}")
+                print(f"  Load with: load_titan_model('{args.output_dir}')")
+            
+            return  # TITAN mode handles export internally
+
+    # Step 2.8: PULSE MODE - Conditional steering with gating
+    if args.method == "pulse":
+        steering_method = getattr(args, 'steering_method', 'caa')
+        
+        if steering_method != "pulse":
+            print(f"⚠ Warning: --method pulse requires --steering-method pulse")
+            print(f"  Falling back to directional projection with {steering_method} vectors\n")
+            args.method = "directional"
+        else:
+            if args.verbose:
+                print("Training PULSE for conditional steering...")
+            
+            # Generate pairs for PULSE training
+            pairs = _generate_pairs_for_titan(args, wisent_model)  # Same pair generation
+            
+            if not pairs:
+                print("✗ Error: Could not generate pairs for PULSE")
+                sys.exit(1)
+            
+            # Train PULSE
+            pulse_result = _train_pulse_for_task(args, wisent_model, pairs)
+            
+            # Export with PULSE-specific function
+            from wisent.core.weight_modification.export import export_pulse_model
+            
+            pulse_mode = getattr(args, 'titan_mode', 'hybrid')  # Reuse titan_mode arg
+            
+            if args.verbose:
+                print(f"\nExporting PULSE model (mode={pulse_mode})...")
+            
+            export_pulse_model(
+                model=model,
+                pulse_result=pulse_result,
+                save_path=args.output_dir,
+                tokenizer=tokenizer,
+                mode=pulse_mode,
+                strength=args.strength,
+                push_to_hub=args.push_to_hub,
+                repo_id=args.repo_id if args.push_to_hub else None,
+                commit_message=args.commit_message,
+            )
+            
+            if args.verbose:
+                print(f"\n✓ PULSE model exported to {args.output_dir}")
+                print(f"  Mode: {pulse_mode}")
+                print(f"  Layers: {len(pulse_result.behavior_vectors)}")
+                print(f"  Threshold: {pulse_result.optimal_threshold:.3f}")
+                print(f"  Load with: load_pulse_model('{args.output_dir}')")
+            
+            return
+
+    # Step 2.9: PRISM MODE - Multi-directional steering
+    if args.method == "prism":
+        steering_method = getattr(args, 'steering_method', 'caa')
+        
+        if steering_method != "prism":
+            print(f"⚠ Warning: --method prism requires --steering-method prism")
+            print(f"  Falling back to directional projection with {steering_method} vectors\n")
+            args.method = "directional"
+        else:
+            if args.verbose:
+                print("Training PRISM for multi-directional steering...")
+            
+            # Generate pairs for PRISM training
+            pairs = _generate_pairs_for_titan(args, wisent_model)
+            
+            if not pairs:
+                print("✗ Error: Could not generate pairs for PRISM")
+                sys.exit(1)
+            
+            # Train PRISM
+            prism_result = _train_prism_for_task(args, wisent_model, pairs)
+            
+            # Export with PRISM-specific function
+            from wisent.core.weight_modification.export import export_prism_model
+            
+            prism_mode = getattr(args, 'prism_mode', 'weighted')
+            
+            if args.verbose:
+                print(f"\nExporting PRISM model (mode={prism_mode})...")
+            
+            export_prism_model(
+                model=model,
+                prism_result=prism_result,
+                save_path=args.output_dir,
+                tokenizer=tokenizer,
+                mode=prism_mode,
+                strength=args.strength,
+                push_to_hub=args.push_to_hub,
+                repo_id=args.repo_id if args.push_to_hub else None,
+                commit_message=args.commit_message,
+            )
+            
+            if args.verbose:
+                num_dirs = next(iter(prism_result.directions.values())).shape[0]
+                print(f"\n✓ PRISM model exported to {args.output_dir}")
+                print(f"  Mode: {prism_mode}")
+                print(f"  Layers: {len(prism_result.directions)}")
+                print(f"  Directions per layer: {num_dirs}")
+                print(f"  Load with: load_prism_model('{args.output_dir}')")
+            
+            return
 
     # Step 3: Modify weights (standard mode)
     if args.verbose:
