@@ -38,6 +38,25 @@ class SteeringObjectMetadata:
     hidden_dim: int
     created_at: str = ""
     extra: Dict[str, Any] = field(default_factory=dict)
+    # Calibration data: average hidden state norm per layer
+    calibration_norms: Dict[int, float] = field(default_factory=dict)
+    
+    def get_calibrated_strength(self, layer: int, target_percentage: float = 1.0) -> float:
+        """
+        Compute calibrated strength for a layer based on hidden state norms.
+        
+        Args:
+            layer: Layer index
+            target_percentage: Target steering magnitude as percentage of hidden state norm (default 100%)
+            
+        Returns:
+            Calibrated strength value
+        """
+        if layer not in self.calibration_norms or self.calibration_norms[layer] == 0:
+            # No calibration data, return a reasonable default
+            return target_percentage * 100  # Assume norm ~100 for typical models
+        
+        return target_percentage * self.calibration_norms[layer]
 
 
 class BaseSteeringObject(ABC):
@@ -70,6 +89,24 @@ class BaseSteeringObject(ABC):
         """Compute steering intensity for a layer."""
         pass
     
+    def get_calibrated_strength(self, target_percentage: float = 1.0) -> float:
+        """
+        Get auto-calibrated strength based on hidden state norms.
+        
+        Args:
+            target_percentage: Target steering magnitude as percentage of hidden state norm (default 100%)
+            
+        Returns:
+            Calibrated strength to use with apply_steering
+        """
+        if not self.metadata.calibration_norms:
+            # No calibration data - return reasonable default for normalized vectors
+            return target_percentage * 100
+        
+        # Use average calibration norm across layers
+        avg_norm = sum(self.metadata.calibration_norms.values()) / len(self.metadata.calibration_norms)
+        return target_percentage * avg_norm
+    
     def apply_steering(
         self,
         hidden_state: torch.Tensor,
@@ -82,7 +119,7 @@ class BaseSteeringObject(ABC):
         Args:
             hidden_state: [batch, seq, hidden] or [seq, hidden] or [hidden]
             layer: Layer index
-            base_strength: Base strength multiplier
+            base_strength: Base strength multiplier (use get_calibrated_strength() for auto-calibration)
             
         Returns:
             Steered hidden state
@@ -270,6 +307,7 @@ class SimpleSteeringObject(BaseSteeringObject):
                 'hidden_dim': self.metadata.hidden_dim,
                 'created_at': self.metadata.created_at,
                 'extra': self.metadata.extra,
+                'calibration_norms': {str(k): v for k, v in self.metadata.calibration_norms.items()},
             },
             'vectors': {str(k): v for k, v in self.vectors.items()},
             'default_intensity': self.default_intensity,
@@ -278,6 +316,8 @@ class SimpleSteeringObject(BaseSteeringObject):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "SimpleSteeringObject":
         meta_data = data['metadata']
+        calibration_norms_raw = meta_data.get('calibration_norms', {})
+        calibration_norms = {int(k): float(v) for k, v in calibration_norms_raw.items()}
         metadata = SteeringObjectMetadata(
             method=meta_data['method'],
             model_name=meta_data['model_name'],
@@ -289,6 +329,7 @@ class SimpleSteeringObject(BaseSteeringObject):
             hidden_dim=meta_data['hidden_dim'],
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
+            calibration_norms=calibration_norms,
         )
         
         vectors = {}
@@ -664,13 +705,13 @@ class TITANSteeringObject(BaseSteeringObject):
             'gate_network_state': self.gate_network.state_dict() if self.gate_network else None,
             'gate_network_config': {
                 'input_dim': self.metadata.hidden_dim,
-                'hidden_dim': 128,  # Default
+                'hidden_dim': self.gate_network.net[0].out_features,  # Infer from first layer
             } if self.gate_network else None,
             'intensity_network_state': self.intensity_network.state_dict(),
             'intensity_network_config': {
                 'input_dim': self.metadata.hidden_dim,
                 'num_layers': len(self.layer_order),
-                'hidden_dim': 64,  # Default
+                'hidden_dim': self.intensity_network.net[0].out_features,  # Infer from first layer
                 'max_alpha': self.max_alpha,
             },
             'layer_order': self.layer_order,
@@ -700,12 +741,16 @@ class TITANSteeringObject(BaseSteeringObject):
         directions = {int(k): to_tensor(v) for k, v in data['directions'].items()}
         direction_weights = {int(k): to_tensor(v) for k, v in data['direction_weights'].items()}
         
+        # Helper to convert state dict values from lists to tensors
+        def convert_state_dict(state_dict):
+            return {k: torch.tensor(v) if isinstance(v, list) else v for k, v in state_dict.items()}
+        
         # Reconstruct gate network
         gate_network = None
         if data.get('gate_network_state') and data.get('gate_network_config'):
             config = data['gate_network_config']
             gate_network = TITANGateNetwork(config['input_dim'], config.get('hidden_dim', 128))
-            gate_network.load_state_dict(data['gate_network_state'])
+            gate_network.load_state_dict(convert_state_dict(data['gate_network_state']))
         
         # Reconstruct intensity network
         int_config = data['intensity_network_config']
@@ -715,7 +760,7 @@ class TITANSteeringObject(BaseSteeringObject):
             int_config.get('hidden_dim', 64),
             int_config.get('max_alpha', 3.0),
         )
-        intensity_network.load_state_dict(data['intensity_network_state'])
+        intensity_network.load_state_dict(convert_state_dict(data['intensity_network_state']))
         
         return cls(
             metadata=metadata,

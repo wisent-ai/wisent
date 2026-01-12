@@ -83,6 +83,10 @@ def execute_create_steering_object(args):
         category = parts[0] if len(parts) > 1 else 'unknown'
         benchmark = parts[-1]
         
+        # Get calibration norms if available
+        calibration_norms_raw = data.get('calibration_norms', {})
+        calibration_norms = {int(k): float(v) for k, v in calibration_norms_raw.items()}
+        
         metadata = SteeringObjectMetadata(
             method=args.method.lower(),
             model_name=model,
@@ -93,6 +97,7 @@ def execute_create_steering_object(args):
             layers=[int(l) for l in available_layers],
             hidden_dim=hidden_dim,
             created_at=datetime.now().isoformat(),
+            calibration_norms=calibration_norms,
         )
         
         # 4. Create steering object based on method
@@ -156,7 +161,7 @@ def _create_simple_steering_object(
     # Get method class
     if method_name == 'caa':
         from wisent.core.steering_methods.methods.caa import CAAMethod
-        method = CAAMethod(kwargs={"normalize": getattr(args, 'normalize', True)})
+        method = CAAMethod(normalize=getattr(args, 'normalize', True))
         obj_class = CAASteeringObject
     elif method_name == 'hyperplane':
         from wisent.core.steering_methods.methods.hyperplane import HyperplaneMethod
