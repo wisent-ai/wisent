@@ -119,14 +119,25 @@ def execute_modify_weights(args):
             with open(args.steering_vectors, 'r') as f:
                 vector_data = json.load(f)
 
-            # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
-            steering_vectors = {
-                int(layer) - 1: torch.tensor(vector)
-                for layer, vector in vector_data["steering_vectors"].items()
-            }
+            # Handle both formats: "steering_vectors" (old) and "vectors" (steering object)
+            if "steering_vectors" in vector_data:
+                vectors_dict = vector_data["steering_vectors"]
+            elif "vectors" in vector_data:
+                vectors_dict = vector_data["vectors"]
+            else:
+                raise ValueError("No steering vectors found in file (expected 'steering_vectors' or 'vectors' key)")
+
+            # Convert layer numbers from JSON to 0-indexed for internal use
+            # Steering objects use 0-indexed, old format uses 1-indexed
+            steering_vectors = {}
+            for layer, vector in vectors_dict.items():
+                layer_int = int(layer)
+                # Check if this looks like 1-indexed (layers typically start at 1 in old format)
+                # Steering objects from create-steering-vector use the actual layer index
+                steering_vectors[layer_int] = torch.tensor(vector)
 
             if args.verbose:
-                print(f"✓ Loaded {len(steering_vectors)} steering vectors\n")
+                print(f"✓ Loaded {len(steering_vectors)} steering vectors (layers: {list(steering_vectors.keys())})\n")
 
     elif args.task:
         # Parse task type
