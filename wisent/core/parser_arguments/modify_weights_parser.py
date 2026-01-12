@@ -157,14 +157,55 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
         help="Prompt formatting strategy (default: chat_template)"
     )
 
+    # Steering vector generation method
+    parser.add_argument(
+        "--steering-method",
+        type=str,
+        default="caa",
+        choices=["caa", "hyperplane", "prism", "pulse", "titan", "mlp"],
+        help="Method for generating steering vectors: 'caa' (mean difference), 'hyperplane' (SVM), 'prism' (sparse decomposition), 'pulse' (optimized), 'titan' (manifold-based), 'mlp' (neural probe). Default: caa"
+    )
+
     # Weight modification method
     modification_group = parser.add_argument_group("weight modification")
     modification_group.add_argument(
         "--method",
         type=str,
         required=True,
-        choices=["directional", "additive"],
-        help="Weight modification method: 'directional' (project onto/away from direction) or 'additive' (enhance behavior)"
+        choices=["directional", "additive", "titan", "pulse", "prism"],
+        help="Weight modification method: 'directional' (project onto/away from direction), 'additive' (add bias), 'titan' (manifold with dynamic gating), 'pulse' (conditional gating), or 'prism' (multi-directional)"
+    )
+    
+    # TITAN-specific parameters
+    titan_group = parser.add_argument_group("titan parameters")
+    titan_group.add_argument(
+        "--titan-mode",
+        type=str,
+        default="hybrid",
+        choices=["static", "dynamic", "hybrid"],
+        help="TITAN mode: 'static' (bake directions only), 'dynamic' (hooks only), 'hybrid' (both, recommended). Default: hybrid"
+    )
+    titan_group.add_argument(
+        "--titan-num-directions",
+        type=int,
+        default=8,
+        help="Number of manifold directions for TITAN (default: 8)"
+    )
+
+    # PRISM-specific parameters
+    prism_group = parser.add_argument_group("prism parameters")
+    prism_group.add_argument(
+        "--prism-mode",
+        type=str,
+        default="weighted",
+        choices=["primary", "weighted", "full"],
+        help="PRISM mode: 'primary' (only first direction), 'weighted' (average all), 'full' (save all). Default: weighted"
+    )
+    prism_group.add_argument(
+        "--prism-num-directions",
+        type=int,
+        default=3,
+        help="Number of directions per layer for PRISM (default: 3)"
     )
 
     # Directional projection parameters
