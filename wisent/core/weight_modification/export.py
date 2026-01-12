@@ -68,9 +68,23 @@ def export_modified_model(
 
     log.info("Saving model to disk", extra={"path": str(save_path)})
 
-    # Save model
+    # Save model (config is automatically saved with updated bias settings)
     model.save_pretrained(save_path)
     log.info("Model saved successfully")
+    
+    # Verify config has bias enabled if biases exist in model
+    config_path = save_path / "config.json"
+    if config_path.exists():
+        import json
+        with open(config_path) as f:
+            config = json.load(f)
+        # Check if model has bias parameters
+        has_bias = any('bias' in name for name in model.state_dict().keys() if 'self_attn' in name or 'mlp' in name)
+        if has_bias:
+            config['attention_bias'] = True
+            with open(config_path, 'w') as f:
+                json.dump(config, f, indent=2)
+            log.info("Updated config with attention_bias=True")
 
     # Save tokenizer if provided
     if tokenizer is not None:

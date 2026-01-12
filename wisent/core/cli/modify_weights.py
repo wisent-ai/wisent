@@ -163,7 +163,7 @@ def execute_modify_weights(args):
             vector_args.device = None
             vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
             vector_args.pairs_cache_dir = getattr(args, 'pairs_cache_dir', None)
-            vector_args.force_regenerate = False
+            vector_args.force_regenerate = getattr(args, 'force_regenerate', False)
 
             # Use temp file for steering vectors
             import tempfile
@@ -178,10 +178,13 @@ def execute_modify_weights(args):
             with open(vector_args.output, 'r') as f:
                 vector_data = json.load(f)
 
-            # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
+            # Handle both "steering_vectors" (old format) and "vectors" (new steering object format)
+            vectors_dict = vector_data.get("steering_vectors") or vector_data.get("vectors", {})
+            
+            # Steering objects use 1-indexed layers, convert to 0-indexed for internal use
             steering_vectors = {
                 int(layer) - 1: torch.tensor(vector)
-                for layer, vector in vector_data["steering_vectors"].items()
+                for layer, vector in vectors_dict.items()
             }
 
             # Optionally save steering vectors
@@ -225,7 +228,7 @@ def execute_modify_weights(args):
             vector_args.device = None
             vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
             vector_args.pairs_cache_dir = getattr(args, 'pairs_cache_dir', None)
-            vector_args.force_regenerate = False
+            vector_args.force_regenerate = getattr(args, 'force_regenerate', False)
 
             import tempfile
             temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
@@ -237,9 +240,12 @@ def execute_modify_weights(args):
             with open(vector_args.output, 'r') as f:
                 vector_data = json.load(f)
 
+            # Handle both "steering_vectors" (old format) and "vectors" (new steering object format)
+            vectors_dict = vector_data.get("steering_vectors") or vector_data.get("vectors", {})
+            
             steering_vectors = {
                 int(layer) - 1: torch.tensor(vector)
-                for layer, vector in vector_data["steering_vectors"].items()
+                for layer, vector in vectors_dict.items()
             }
 
             if getattr(args, 'save_steering_vectors', None):
@@ -284,7 +290,7 @@ def execute_modify_weights(args):
             vector_args.device = None
             vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
             vector_args.pairs_cache_dir = getattr(args, 'pairs_cache_dir', None)
-            vector_args.force_regenerate = False
+            vector_args.force_regenerate = getattr(args, 'force_regenerate', False)
 
             import tempfile
             temp_vector_file = tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False)
@@ -296,9 +302,12 @@ def execute_modify_weights(args):
             with open(vector_args.output, 'r') as f:
                 vector_data = json.load(f)
 
+            # Handle both "steering_vectors" (old format) and "vectors" (new steering object format)
+            vectors_dict = vector_data.get("steering_vectors") or vector_data.get("vectors", {})
+            
             steering_vectors = {
                 int(layer) - 1: torch.tensor(vector)
-                for layer, vector in vector_data["steering_vectors"].items()
+                for layer, vector in vectors_dict.items()
             }
 
             if getattr(args, 'save_steering_vectors', None):
@@ -488,10 +497,12 @@ def execute_modify_weights(args):
             with open(vector_args.output, 'r') as f:
                 vector_data = json.load(f)
 
-            # Convert 1-indexed layer numbers from JSON to 0-indexed for internal use
+            # Handle both "steering_vectors" (old format) and "vectors" (new steering object format)
+            vectors_dict = vector_data.get("steering_vectors") or vector_data.get("vectors", {})
+            
             steering_vectors = {
                 int(layer) - 1: torch.tensor(vector)
-                for layer, vector in vector_data["steering_vectors"].items()
+                for layer, vector in vectors_dict.items()
             }
 
             # Optionally save steering vectors
@@ -521,9 +532,12 @@ def execute_modify_weights(args):
         with open(args.harmless_vectors, 'r') as f:
             harmless_data = json.load(f)
 
+        # Handle both "steering_vectors" (old format) and "vectors" (new steering object format)
+        harmless_dict = harmless_data.get("steering_vectors") or harmless_data.get("vectors", {})
+        
         harmless_vectors = {
             int(layer) - 1: torch.tensor(vector)
-            for layer, vector in harmless_data["steering_vectors"].items()
+            for layer, vector in harmless_dict.items()
         }
 
         if args.verbose:
@@ -533,9 +547,42 @@ def execute_modify_weights(args):
     if args.verbose:
         print(f"Loading model '{args.model}'...")
 
-    wisent_model = WisentModel(args.model, device=getattr(args, 'device', None))
-    model = wisent_model.hf_model  # Get underlying HF model for weight modification
-    tokenizer = wisent_model.tokenizer
+    # For additive bias method, we need to enable biases in model config
+    enable_bias = (args.method == "additive" and getattr(args, 'additive_method', 'bias') == 'bias')
+    
+    if enable_bias:
+        from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+        config = AutoConfig.from_pretrained(args.model, trust_remote_code=True)
+        # Enable biases in attention layers
+        if hasattr(config, 'attention_bias'):
+            config.attention_bias = True
+        if hasattr(config, 'mlp_bias'):
+            config.mlp_bias = True
+        # Load model with updated config
+        model = AutoModelForCausalLM.from_pretrained(
+            args.model,
+            config=config,
+            torch_dtype=torch.bfloat16,
+            device_map='auto',
+            trust_remote_code=True,
+        )
+        tokenizer = AutoTokenizer.from_pretrained(args.model, trust_remote_code=True)
+        # Create a simple wrapper to get num_layers
+        class ModelInfo:
+            def __init__(self, model):
+                if hasattr(model, 'model') and hasattr(model.model, 'layers'):
+                    self.num_layers = len(model.model.layers)
+                elif hasattr(model, 'transformer') and hasattr(model.transformer, 'h'):
+                    self.num_layers = len(model.transformer.h)
+                else:
+                    self.num_layers = 32  # fallback
+        wisent_model = ModelInfo(model)
+        if args.verbose:
+            print(f"  (Enabled attention biases for additive method)")
+    else:
+        wisent_model = WisentModel(args.model, device=getattr(args, 'device', None))
+        model = wisent_model.hf_model  # Get underlying HF model for weight modification
+        tokenizer = wisent_model.tokenizer
 
     if args.verbose:
         print(f"✓ Model loaded with {wisent_model.num_layers} layers\n")

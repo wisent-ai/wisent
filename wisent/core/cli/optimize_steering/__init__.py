@@ -409,7 +409,7 @@ def create_optuna_objective(
         if method.upper() == "CAA":
             config = CAAConfig(
                 method="CAA",
-                layer=trial.suggest_int("layer", 0, num_layers - 1),
+                layer=trial.suggest_int("layer", 1, num_layers),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
@@ -417,7 +417,7 @@ def create_optuna_objective(
         elif method.upper() == "HYPERPLANE":
             config = HyperplaneConfig(
                 method="Hyperplane",
-                layer=trial.suggest_int("layer", 0, num_layers - 1),
+                layer=trial.suggest_int("layer", 1, num_layers),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
@@ -425,7 +425,7 @@ def create_optuna_objective(
         elif method.upper() == "MLP":
             config = MLPConfig(
                 method="MLP",
-                layer=trial.suggest_int("layer", 0, num_layers - 1),
+                layer=trial.suggest_int("layer", 1, num_layers),
                 hidden_dim=trial.suggest_int("hidden_dim", 32, 1024),
                 num_layers=trial.suggest_int("num_layers", 1, 5),
                 extraction_strategy=extraction_strategy,
@@ -435,7 +435,7 @@ def create_optuna_objective(
         elif method.upper() == "PRISM":
             config = PRISMConfig(
                 method="PRISM",
-                layer=trial.suggest_int("layer", 0, num_layers - 1),
+                layer=trial.suggest_int("layer", 1, num_layers),
                 num_directions=trial.suggest_int("num_directions", 1, 10),
                 direction_weighting=trial.suggest_categorical("direction_weighting", ["primary_only", "equal"]),
                 retain_weight=trial.suggest_float("retain_weight", 0.0, 1.0),
@@ -445,9 +445,9 @@ def create_optuna_objective(
             )
         
         elif method.upper() == "PULSE":
-            sensor_layer = trial.suggest_int("sensor_layer", 0, num_layers - 1)
-            steering_start = trial.suggest_int("steering_start", 0, num_layers - 1)
-            steering_end = trial.suggest_int("steering_end", steering_start, num_layers - 1)
+            sensor_layer = trial.suggest_int("sensor_layer", 1, num_layers)
+            steering_start = trial.suggest_int("steering_start", 1, num_layers)
+            steering_end = trial.suggest_int("steering_end", steering_start, num_layers)
             steering_layers = list(range(steering_start, steering_end + 1))
             
             config = PULSEConfig(
@@ -462,9 +462,9 @@ def create_optuna_objective(
             )
         
         elif method.upper() == "TITAN":
-            sensor_layer = trial.suggest_int("sensor_layer", 0, num_layers - 1)
-            steering_start = trial.suggest_int("steering_start", 0, num_layers - 1)
-            steering_end = trial.suggest_int("steering_end", steering_start, num_layers - 1)
+            sensor_layer = trial.suggest_int("sensor_layer", 1, num_layers)
+            steering_start = trial.suggest_int("steering_start", 1, num_layers)
+            steering_end = trial.suggest_int("steering_end", steering_start, num_layers)
             steering_layers = list(range(steering_start, steering_end + 1))
             
             config = TITANConfig(
