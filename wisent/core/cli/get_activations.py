@@ -168,6 +168,9 @@ def execute_get_activations(args):
             print(f"\n⚡ Collecting activations...")
             
             enriched_pairs = []
+            # Track norms for calibration
+            layer_norms = {l: [] for l in layer_strs}
+            
             for i, pair in enumerate(pair_set.pairs):
                 if args.verbose:
                     print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...")
@@ -179,8 +182,28 @@ def execute_get_activations(args):
                 )
 
                 enriched_pairs.append(updated_pair)
+                
+                # Record norms for calibration
+                for layer_str in layer_strs:
+                    if updated_pair.positive_response.layers_activations:
+                        pos_act = updated_pair.positive_response.layers_activations.get(layer_str)
+                        if pos_act is not None:
+                            layer_norms[layer_str].append(pos_act.norm().item())
+                    if updated_pair.negative_response.layers_activations:
+                        neg_act = updated_pair.negative_response.layers_activations.get(layer_str)
+                        if neg_act is not None:
+                            layer_norms[layer_str].append(neg_act.norm().item())
 
             print(f"   ✓ Collected activations for {len(enriched_pairs)} pairs")
+            
+            # Compute calibration norms (average per layer)
+            calibration_norms = {}
+            for layer_str, norms in layer_norms.items():
+                if norms:
+                    calibration_norms[layer_str] = sum(norms) / len(norms)
+            
+            if calibration_norms:
+                print(f"   📊 Calibration norms: {', '.join(f'L{k}={v:.1f}' for k, v in calibration_norms.items())}")
 
             # Convert to JSON format (standard mode)
             print(f"\n💾 Saving enriched pairs to '{args.output}'...")
@@ -192,6 +215,7 @@ def execute_get_activations(args):
                 'extraction_strategy': extraction_strategy.value,
                 'raw_mode': False,
                 'num_pairs': len(enriched_pairs),
+                'calibration_norms': calibration_norms,  # For auto-calibrated steering strength
                 'pairs': []
             }
 

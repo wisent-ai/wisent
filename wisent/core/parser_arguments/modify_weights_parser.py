@@ -123,6 +123,17 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
         default=0.8,
         help="Similarity threshold for synthetic mode (default: 0.8)"
     )
+    parser.add_argument(
+        "--pairs-cache-dir",
+        type=str,
+        default=None,
+        help="Directory to cache/load pairs. Speeds up repeated runs with same trait."
+    )
+    parser.add_argument(
+        "--force-regenerate",
+        action="store_true",
+        help="Force regeneration of pairs even if cached pairs exist"
+    )
 
     # Activation collection
     parser.add_argument(
