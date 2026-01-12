@@ -179,9 +179,9 @@ def bake_steering_into_weights(
     log = bind(_LOG, num_layers=len(steering_vectors))
 
     if components is None:
-        # Default: only modify attention output projection
-        # (MLP is riskier to modify permanently)
-        components = ["self_attn.o_proj"]
+        # Default: modify both attention and MLP output projections
+        # This aligns with hidden state collection which includes both components
+        components = ["self_attn.o_proj", "mlp.down_proj"]
 
     # Get model layers
     if hasattr(model, "model"):

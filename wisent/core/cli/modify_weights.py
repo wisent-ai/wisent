@@ -490,6 +490,7 @@ def execute_modify_weights(args):
             vector_args.device = None
             vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
             vector_args.use_optimal = use_optimal
+            vector_args.extraction_strategy = getattr(args, 'extraction_strategy', 'chat_last')
             
             # Pass optimal config for method-specific params
             if optimal_config:
