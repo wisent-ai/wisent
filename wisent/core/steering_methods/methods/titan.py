@@ -704,34 +704,79 @@ class TITANMethod(BaseSteeringMethod):
         hidden_dim: int,
         num_directions: Optional[int] = None,
     ) -> Dict[LayerName, torch.Tensor]:
-        """Initialize direction manifold for each layer."""
+        """Initialize direction manifold for each layer using PCA for diversity."""
         directions = {}
         K = num_directions if num_directions is not None else self.config.num_directions
-        
+
         for layer in layer_names:
             pos_list, neg_list = buckets[layer]
-            
+
             pos_tensor = torch.stack([t.detach().float().reshape(-1) for t in pos_list], dim=0)
             neg_tensor = torch.stack([t.detach().float().reshape(-1) for t in neg_list], dim=0)
-            
-            # Initialize directions
-            dirs = torch.randn(K, hidden_dim)
-            
-            if self.config.use_caa_init:
-                # First direction: CAA
-                caa_dir = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
-                caa_dir = F.normalize(caa_dir, p=2, dim=0)
-                dirs[0] = caa_dir
-                
-                # Others: perturbations
+
+            # First direction: CAA (mean difference)
+            caa_dir = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
+            caa_dir = F.normalize(caa_dir, p=2, dim=0)
+
+            # Use PCA on difference vectors for diverse directions
+            diff_vectors = pos_tensor - neg_tensor  # [N, H]
+
+            # Center the difference vectors
+            diff_centered = diff_vectors - diff_vectors.mean(dim=0, keepdim=True)
+
+            # SVD for PCA
+            try:
+                # Use svd_lowrank for efficiency on large hidden_dim
+                U, S, V = torch.svd_lowrank(diff_centered, q=min(K + 2, diff_centered.shape[0], diff_centered.shape[1]))
+                # V contains principal components: [H, K+2]
+                pca_dirs = V.T  # [K+2, H]
+            except Exception:
+                # Fallback to random orthogonal initialization
+                pca_dirs = None
+
+            dirs = torch.zeros(K, hidden_dim)
+            dirs[0] = caa_dir  # First direction is always CAA
+
+            if pca_dirs is not None and K > 1:
+                # Use PCA directions for remaining directions
+                # Skip the first PCA component if it's too similar to CAA
+                pca_idx = 0
                 for i in range(1, K):
-                    noise = torch.randn(hidden_dim) * 0.3
-                    dirs[i] = F.normalize(caa_dir + noise, p=2, dim=0)
+                    if pca_idx < pca_dirs.shape[0]:
+                        candidate = F.normalize(pca_dirs[pca_idx], p=2, dim=0)
+                        cos_with_caa = (candidate * caa_dir).sum().abs()
+
+                        # If too similar to CAA, try next PCA component
+                        if cos_with_caa > 0.9 and pca_idx + 1 < pca_dirs.shape[0]:
+                            pca_idx += 1
+                            candidate = F.normalize(pca_dirs[pca_idx], p=2, dim=0)
+
+                        dirs[i] = candidate
+                        pca_idx += 1
+                    else:
+                        # Fallback: orthogonalize random vector
+                        random_dir = torch.randn(hidden_dim)
+                        # Gram-Schmidt orthogonalization against previous directions
+                        for j in range(i):
+                            proj = (random_dir * dirs[j]).sum() * dirs[j]
+                            random_dir = random_dir - proj
+                        dirs[i] = F.normalize(random_dir, p=2, dim=0)
             else:
-                dirs = F.normalize(dirs, p=2, dim=1)
-            
+                # No PCA available, use Gram-Schmidt orthogonalization
+                for i in range(1, K):
+                    random_dir = torch.randn(hidden_dim)
+                    for j in range(i):
+                        proj = (random_dir * dirs[j]).sum() * dirs[j]
+                        random_dir = random_dir - proj
+                    dirs[i] = F.normalize(random_dir, p=2, dim=0)
+
+            # Ensure all in same half-space as CAA
+            for i in range(1, K):
+                if (dirs[i] * caa_dir).sum() < 0:
+                    dirs[i] = -dirs[i]
+
             directions[layer] = dirs
-        
+
         return directions
     
     def _prepare_data_tensors(
@@ -833,6 +878,7 @@ class TITANMethod(BaseSteeringMethod):
                 data=data,
                 layer_names=layer_names,
                 step=step,
+                direction_weight_params=direction_weight_params,
             )
             
             loss.backward()
@@ -862,6 +908,14 @@ class TITANMethod(BaseSteeringMethod):
             
             # Log
             if step % 20 == 0 or step == self.config.optimization_steps - 1:
+                # Compute direction weight statistics
+                weight_stds = []
+                weight_maxes = []
+                for layer in layer_names:
+                    weights = F.softmax(direction_weight_params[layer], dim=0)
+                    weight_stds.append(weights.std().item())
+                    weight_maxes.append(weights.max().item())
+
                 self._training_logs.append({
                     "step": step,
                     "total_loss": loss.item(),
@@ -871,6 +925,8 @@ class TITANMethod(BaseSteeringMethod):
                     "neg_gate_mean": neg_gate.mean().item(),
                     "pos_intensity_mean": pos_intensity.mean().item(),
                     "neg_intensity_mean": neg_intensity.mean().item(),
+                    "direction_weight_std_mean": sum(weight_stds) / len(weight_stds),
+                    "direction_weight_max_mean": sum(weight_maxes) / len(weight_maxes),
                 })
         
         # Restore best state
@@ -901,108 +957,224 @@ class TITANMethod(BaseSteeringMethod):
         data: Dict[str, Dict[LayerName, torch.Tensor]],
         layer_names: List[LayerName],
         step: int,
+        direction_weight_params: Optional[Dict[LayerName, nn.Parameter]] = None,
     ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
         """
         Compute the full TITAN loss.
-        
+
         Components:
-        1. Behavior loss: Steering should be effective on positives
-        2. Retain loss: Minimal effect on negatives
-        3. Sparse loss: Encourage sparse layer activation
-        4. Smooth loss: Penalize intensity variance across layers
-        5. Independence loss: Directions should be independent
-        6. Gate loss: Gate should discriminate pos from neg
+        1. Contrastive loss: CRITICAL - maximize separation between pos and neg projections
+        2. Behavior loss: Steering should be effective on positives
+        3. Retain loss: Negatives should project LOWER than positives (not orthogonal!)
+        4. Sparse loss: Encourage sparse layer activation
+        5. Smooth loss: Penalize intensity variance across layers
+        6. Independence loss: Directions should be independent
+        7. Gate loss: Gate should discriminate pos from neg
+        8. Direction utility loss: Differentiate directions based on effectiveness
+        9. CAA alignment loss: Keep directions aligned with mean difference
         """
         loss_components = {}
-        
-        # 1. Behavior loss - steering effectiveness on positives
-        behavior_loss = torch.tensor(0.0)
-        for i, layer in enumerate(layer_names):
+
+        # 1. CONTRASTIVE SEPARATION LOSS - THE MOST IMPORTANT LOSS
+        # This directly maximizes the gap: pos_proj - neg_proj
+        contrastive_loss = torch.tensor(0.0)
+        for layer in layer_names:
             pos_data = data["pos"][layer]
-            eff_dir = effective_dirs[layer]
-            
-            # Projection of positive samples onto direction
-            pos_proj = (pos_data * eff_dir).sum(dim=1)
-            
-            # We want high projection (margin loss)
-            margin = 1.0
-            behavior_loss = behavior_loss + F.relu(margin - pos_proj).mean()
-        
-        behavior_loss = behavior_loss / len(layer_names)
-        loss_components["behavior"] = behavior_loss
-        
-        # 2. Retain loss - minimal effect on negatives
-        retain_loss = torch.tensor(0.0)
-        for i, layer in enumerate(layer_names):
             neg_data = data["neg"][layer]
             eff_dir = effective_dirs[layer]
-            
-            # We want LOW projection on negatives
-            neg_proj = (neg_data * eff_dir).sum(dim=1).abs()
-            retain_loss = retain_loss + neg_proj.mean()
-        
+
+            # Compute projections (dot product with direction)
+            pos_proj = (pos_data * eff_dir).sum(dim=1)  # [N_pos]
+            neg_proj = (neg_data * eff_dir).sum(dim=1)  # [N_neg]
+
+            # We want: pos_proj >> neg_proj (with margin)
+            # Use pairwise margin loss: max(0, margin - (pos_proj - neg_proj))
+            # Since we may have different numbers of pos/neg, use mean comparison
+            pos_mean = pos_proj.mean()
+            neg_mean = neg_proj.mean()
+
+            # Margin should be proportional to the scale of activations
+            # Typical projections are in range [-5, 5], so margin of 2.0 is reasonable
+            margin = 2.0
+            contrastive_loss = contrastive_loss + F.relu(margin - (pos_mean - neg_mean))
+
+        contrastive_loss = contrastive_loss / len(layer_names)
+        loss_components["contrastive"] = contrastive_loss
+
+        # 2. Behavior loss - positives should have HIGH projection
+        behavior_loss = torch.tensor(0.0)
+        for layer in layer_names:
+            pos_data = data["pos"][layer]
+            eff_dir = effective_dirs[layer]
+            pos_proj = (pos_data * eff_dir).sum(dim=1)
+            # We want pos_proj > 0 (positive side of direction)
+            behavior_loss = behavior_loss + F.relu(-pos_proj).mean()
+
+        behavior_loss = behavior_loss / len(layer_names)
+        loss_components["behavior"] = behavior_loss
+
+        # 3. Retain loss - negatives should have LOWER projection than positives
+        # Changed from abs() to direct negative projection encouragement
+        retain_loss = torch.tensor(0.0)
+        for layer in layer_names:
+            neg_data = data["neg"][layer]
+            eff_dir = effective_dirs[layer]
+            neg_proj = (neg_data * eff_dir).sum(dim=1)
+            # We want neg_proj < 0 (negative side of direction)
+            retain_loss = retain_loss + F.relu(neg_proj).mean()
+
         retain_loss = retain_loss / len(layer_names)
         loss_components["retain"] = retain_loss
-        
-        # 3. Sparse loss - encourage sparse layer activation
+
+        # 4. Sparse loss - encourage sparse layer activation
         # Penalize uniform intensity distribution
         pos_intensity_norm = pos_intensity / (pos_intensity.sum(dim=1, keepdim=True) + 1e-8)
         sparse_loss = -torch.mean(torch.sum(pos_intensity_norm * torch.log(pos_intensity_norm + 1e-8), dim=1))
         sparse_loss = -sparse_loss  # We want LOW entropy (sparse)
         loss_components["sparse"] = sparse_loss
-        
-        # 4. Smooth loss - penalize abrupt intensity changes
+
+        # 5. Smooth loss - penalize abrupt intensity changes
         if pos_intensity.shape[1] > 1:
             intensity_diff = (pos_intensity[:, 1:] - pos_intensity[:, :-1]).abs()
             smooth_loss = intensity_diff.mean()
         else:
             smooth_loss = torch.tensor(0.0)
         loss_components["smooth"] = smooth_loss
-        
-        # 5. Independence loss - directions within manifold
+
+        # 6. Independence loss - directions within manifold
         independence_loss = torch.tensor(0.0)
         for layer in layer_names:
             dirs = direction_params[layer]
             dirs_norm = F.normalize(dirs, p=2, dim=1)
             K = dirs_norm.shape[0]
-            
+
             if K > 1:
                 cos_sim = dirs_norm @ dirs_norm.T
                 mask = 1 - torch.eye(K, device=cos_sim.device)
-                
+
                 # Penalize too high or too low similarity
                 too_similar = F.relu(cos_sim - self.config.max_cosine_similarity)
                 too_different = F.relu(self.config.min_cosine_similarity - cos_sim)
                 independence_loss = independence_loss + ((too_similar + too_different) * mask).mean()
-        
+
         independence_loss = independence_loss / len(layer_names)
         loss_components["independence"] = independence_loss
-        
+
         # 6. Gate discrimination loss
         # Pos should have high gate, neg should have low gate
         gate_loss = F.relu(0.5 - pos_gate).mean() + F.relu(neg_gate - 0.5).mean()
         loss_components["gate"] = gate_loss
-        
+
+        # 7. Direction utility loss - reward directions that SEPARATE pos from neg
+        # FIXED: Use (pos - neg) not (pos - abs(neg))
+        direction_utility_loss = torch.tensor(0.0)
+        if direction_weight_params is not None:
+            for layer in layer_names:
+                dirs = direction_params[layer]  # [K, H]
+                dirs_norm = F.normalize(dirs, p=2, dim=1)
+                K = dirs_norm.shape[0]
+
+                if K > 1:
+                    pos_data = data["pos"][layer]  # [N, H]
+                    neg_data = data["neg"][layer]  # [N, H]
+
+                    # Compute per-direction projections
+                    pos_projs = pos_data @ dirs_norm.T  # [N, K]
+                    neg_projs = neg_data @ dirs_norm.T  # [N, K]
+
+                    # Per-direction utility: how well does this direction SEPARATE pos from neg?
+                    # FIXED: Use mean(pos) - mean(neg), NOT mean(pos) - mean(abs(neg))
+                    # Higher value = better separation (pos projects higher than neg)
+                    dir_utility = pos_projs.mean(dim=0) - neg_projs.mean(dim=0)  # [K]
+
+                    # Get current weights
+                    current_weights = F.softmax(direction_weight_params[layer], dim=0)
+
+                    # Weighted utility: reward putting weight on high-utility directions
+                    # Negate because we want to MAXIMIZE weighted utility (minimize negative)
+                    weighted_utility = -(current_weights * dir_utility).sum()
+                    direction_utility_loss = direction_utility_loss + weighted_utility
+
+            direction_utility_loss = direction_utility_loss / len(layer_names)
+
+        loss_components["direction_utility"] = direction_utility_loss
+
+        # 8. Direction weight concentration loss - encourage non-uniform weights
+        direction_concentration_loss = torch.tensor(0.0)
+        if direction_weight_params is not None:
+            for layer in layer_names:
+                weights = F.softmax(direction_weight_params[layer], dim=0)
+                K = weights.shape[0]
+                if K > 1:
+                    # Negative entropy - encourages sparsity/concentration
+                    entropy = -(weights * torch.log(weights + 1e-8)).sum()
+                    max_entropy = torch.log(torch.tensor(float(K)))
+                    normalized_entropy = entropy / max_entropy
+
+                    # Also add concentration reward: maximize squared weights
+                    concentration = -(weights ** 2).sum()
+
+                    direction_concentration_loss = direction_concentration_loss + normalized_entropy + 0.5 * concentration
+
+            direction_concentration_loss = direction_concentration_loss / len(layer_names)
+
+        loss_components["direction_concentration"] = direction_concentration_loss
+
+        # 9. CAA alignment loss - keep primary direction aligned with mean difference
+        # This ensures we don't drift away from the empirically-derived truthfulness direction
+        caa_alignment_loss = torch.tensor(0.0)
+        for layer in layer_names:
+            pos_data = data["pos"][layer]
+            neg_data = data["neg"][layer]
+            dirs = direction_params[layer]
+
+            # Compute CAA direction (mean difference)
+            caa_dir = pos_data.mean(dim=0) - neg_data.mean(dim=0)
+            caa_dir = F.normalize(caa_dir.unsqueeze(0), p=2, dim=1).squeeze(0)
+
+            # Primary direction (first direction, which was initialized with CAA)
+            primary_dir = F.normalize(dirs[0:1], p=2, dim=1).squeeze(0)
+
+            # Cosine similarity - we want it close to 1.0
+            cos_sim = (primary_dir * caa_dir).sum()
+
+            # Loss: penalize deviation from CAA direction
+            caa_alignment_loss = caa_alignment_loss + (1.0 - cos_sim)
+
+        caa_alignment_loss = caa_alignment_loss / len(layer_names)
+        loss_components["caa_alignment"] = caa_alignment_loss
+
         # Combine losses with warmup
+        # IMPORTANT: Contrastive loss is the PRIMARY loss - give it highest weight
+        contrastive_weight = 2.0  # HIGH weight for contrastive separation
+        utility_weight = 0.5
+        concentration_weight = 0.3
+        caa_alignment_weight = 0.5  # Keep aligned with empirical direction
+
         if step < self.config.warmup_steps:
-            # Warmup: focus on manifold + basic gate
+            # Warmup: focus on contrastive + CAA alignment
             total_loss = (
+                contrastive_weight * contrastive_loss +
                 self.config.behavior_weight * behavior_loss +
                 self.config.retain_weight * retain_loss +
-                self.config.independence_weight * independence_loss +
+                caa_alignment_weight * caa_alignment_loss +
                 0.5 * gate_loss
             )
         else:
-            # Full training
+            # Full training with all losses
             total_loss = (
+                contrastive_weight * contrastive_loss +
                 self.config.behavior_weight * behavior_loss +
                 self.config.retain_weight * retain_loss +
                 self.config.sparse_weight * sparse_loss +
                 self.config.smooth_weight * smooth_loss +
                 self.config.independence_weight * independence_loss +
-                gate_loss
+                gate_loss +
+                utility_weight * direction_utility_loss +
+                concentration_weight * direction_concentration_loss +
+                caa_alignment_weight * caa_alignment_loss
             )
-        
+
         return total_loss, loss_components
     
     def _apply_direction_constraints(self, directions: torch.Tensor) -> torch.Tensor:
