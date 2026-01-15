@@ -14,7 +14,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("truthfulqa_custom",)
 
-evaluator_name = "truthfulqa_custom"
+evaluator_name = "truthfulqa_gen"
 
 
 class TruthfulQACustomExtractor(HuggingFaceBenchmarkExtractor):
@@ -35,7 +35,7 @@ class TruthfulQACustomExtractor(HuggingFaceBenchmarkExtractor):
         - source: str
     """
 
-    evaluator_name: str = "truthfulqa_custom"
+    evaluator_name: str = "truthfulqa_gen"
 
     def extract_contrastive_pairs(
         self,

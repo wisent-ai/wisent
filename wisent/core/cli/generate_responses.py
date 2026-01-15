@@ -76,46 +76,51 @@ def execute_generate_responses(args):
             pairs.append(pair)
         print(f"   ✓ Loaded {len(pairs)} question pairs from file\n")
     else:
-        # First try TaskInterfaceDataLoader (for livecodebench, gsm8k, etc.)
+        from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
+        
+        load_limit = max(args.num_questions * 2, 20)
+        load_kwargs = dict(
+            split_ratio=0.8,
+            seed=42,
+            limit=load_limit,
+            training_limit=None,
+            testing_limit=None
+        )
+        
+        # Try loaders in order: HuggingFace (for custom extractors) -> TaskInterface -> LMEval
+        errors = {}
+        
+        # 1. Try HuggingFaceDataLoader (for truthfulqa_custom, etc.)
         try:
-            task_loader = TaskInterfaceDataLoader()
-            load_limit = max(args.num_questions * 2, 20)
-
-            result = task_loader.load(
-                task=args.task,
-                split_ratio=0.8,
-                seed=42,
-                limit=load_limit,
-                training_limit=None,
-                testing_limit=None
-            )
-
-            pairs = result.train_qa_pairs.pairs[:args.num_questions]
-            print(f"   ✓ Loaded {len(pairs)} question pairs via TaskInterface\n")
-
-        except Exception as task_err:
-            # Fall back to LMEvalDataLoader
+            hf_loader = HuggingFaceDataLoader()
+            result = hf_loader.load(task_name=args.task, **load_kwargs)
+            # Result is a TypedDict, access via key
+            pairs = result['train_qa_pairs'].pairs[:args.num_questions]
+            print(f"   ✓ Loaded {len(pairs)} question pairs via HuggingFace extractor\n")
+        except Exception as hf_err:
+            errors['HuggingFace'] = hf_err
+            
+            # 2. Try TaskInterfaceDataLoader (for livecodebench, gsm8k, etc.)
             try:
-                loader = LMEvalDataLoader()
-                load_limit = max(args.num_questions * 2, 20)
-
-                result = loader._load_one_task(
-                    task_name=args.task,
-                    split_ratio=0.8,
-                    seed=42,
-                    limit=load_limit,
-                    training_limit=None,
-                    testing_limit=None
-                )
-
-                pairs = result['train_qa_pairs'].pairs[:args.num_questions]
-                print(f"   ✓ Loaded {len(pairs)} question pairs via LMEval\n")
-
-            except Exception as lm_err:
-                print(f"   ❌ Failed to load task '{args.task}'")
-                print(f"      TaskInterface error: {task_err}")
-                print(f"      LMEval error: {lm_err}")
-                sys.exit(1)
+                task_loader = TaskInterfaceDataLoader()
+                result = task_loader.load(task=args.task, **load_kwargs)
+                pairs = result.train_qa_pairs.pairs[:args.num_questions]
+                print(f"   ✓ Loaded {len(pairs)} question pairs via TaskInterface\n")
+            except Exception as task_err:
+                errors['TaskInterface'] = task_err
+                
+                # 3. Try LMEvalDataLoader
+                try:
+                    loader = LMEvalDataLoader()
+                    result = loader._load_one_task(task_name=args.task, **load_kwargs)
+                    pairs = result['train_qa_pairs'].pairs[:args.num_questions]
+                    print(f"   ✓ Loaded {len(pairs)} question pairs via LMEval\n")
+                except Exception as lm_err:
+                    errors['LMEval'] = lm_err
+                    print(f"   ❌ Failed to load task '{args.task}'")
+                    for loader_name, err in errors.items():
+                        print(f"      {loader_name} error: {err}")
+                    sys.exit(1)
 
     # Generate responses
     print(f"🤖 Generating responses...\n")

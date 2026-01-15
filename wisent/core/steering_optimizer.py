@@ -281,8 +281,19 @@ class SteeringOptimizer:
             max_layer = min(32, self.base_classification_layer + 2)  # Assume max 32 layers
             layers_to_test = list(range(min_layer, max_layer + 1))
         else:
-            # Default range for common models
-            layers_to_test = [10, 12, 14, 16, 18, 20]
+            # Default: try to detect model layer count, otherwise use all common layers
+            try:
+                from transformers import AutoConfig
+                config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=True)
+                num_layers = getattr(config, 'num_hidden_layers', None) or \
+                             getattr(config, 'n_layer', None) or \
+                             getattr(config, 'num_layers', None) or 32
+                layers_to_test = list(range(num_layers))
+                logger.info(f"📊 Detected {num_layers} layers, testing all")
+            except Exception:
+                # Fallback: test common layer range for typical models
+                layers_to_test = list(range(32))
+                logger.warning("⚠️ Could not detect layer count, testing layers 0-31")
         
         configurations_tested = 0
         best_overall_score = 0.0
@@ -1321,168 +1332,527 @@ def run_auto_steering_optimization(
     layer_range: Optional[str] = None
 ) -> Dict[str, Any]:
     """
-    Automatically optimize steering configuration.
-    
-    This function can work either standalone or building on existing classification config.
-    
+    Automatically optimize steering configuration using repscan geometry analysis.
+
+    This function uses repscan metrics (linear probe accuracy, signal strength, ICD)
+    to automatically select the best steering method (CAA, PRISM, or TITAN).
+
     Args:
         model_name: Model to optimize
-        task_name: Specific task to optimize (required if no classification config)
+        task_name: Specific task to optimize (required)
         limit: Sample limit per evaluation
         device: Device to use
         verbose: Enable verbose logging
         use_classification_config: Use classification layer as starting point
-        max_time_minutes: Maximum time for optimization
-        methods_to_test: List of steering methods to test (defaults to ["CAA"])
-        strength_range: List of strengths to test (defaults to [0.5, 1.0, 1.5, 2.0])
+        max_time_minutes: Maximum time for optimization (unused - repscan is fast)
+        methods_to_test: Ignored - method is auto-selected via repscan
+        strength_range: Ignored - strength is determined by method
         layer_range: Explicit layer range to search (e.g. "0-5" or "0,2,4")
-        
+
     Returns:
-        Dictionary with optimization results and saved configuration paths
+        Dictionary with optimization results including recommended method and configuration
     """
-    optimizer = SteeringOptimizer(
-        model_name=model_name,
-        device=device,
-        verbose=verbose
+    import torch
+    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.geometry import (
+        compute_geometry_metrics,
+        compute_recommendation,
+        compute_concept_coherence,
     )
-    
-    # Load classification config if requested
-    config_manager = ModelConfigManager()
-    classification_config = None
-    if use_classification_config:
-        classification_config = config_manager.load_model_config(model_name)
-        if not classification_config:
-            logger.info("ℹ️  No classification config found, proceeding with standalone steering optimization")
-    
-    # Determine tasks to optimize
-    if task_name:
-        tasks_to_optimize = [task_name]
-    elif classification_config:
-        # First try task-specific overrides
-        if 'task_specific_overrides' in classification_config:
-            tasks_to_optimize = list(classification_config['task_specific_overrides'].keys())
-        
-        # If no task-specific overrides, check for tasks from optimization metrics
-        if not tasks_to_optimize and 'optimization_metrics' in classification_config:
-            # Try to get tasks from sample sizes
-            if 'optimal_sample_sizes' in classification_config:
-                tasks_to_optimize = list(classification_config['optimal_sample_sizes'].keys())
-        
-        if not tasks_to_optimize:
-            return {"error": "No task specified and no classification tasks found in config"}
-    else:
-        # Require explicit task name if no classification config
-        return {"error": "Task name required when not using classification config"}
-    
-    # Default methods and strengths
-    if methods_to_test is None:
-        # Use all default configurations
-        method_configs = get_default_steering_configs()
-    else:
-        # Convert string methods to configs
-        method_configs = []
-        for method in methods_to_test:
-            if method == "CAA":
-                # Add both CAA variations (only implemented steering method)
-                method_configs.append(SteeringMethodConfig("CAA", SteeringMethod.CAA, {}))
-                method_configs.append(SteeringMethodConfig("CAA_L2", SteeringMethod.CAA, {"normalization_method": "l2_unit"}))
-            else:
-                logger.warning(f"Unknown or unimplemented steering method: {method}")
-    
-    if strength_range is None:
-        strength_range = [0.5, 1.0, 1.5, 2.0]
-    
+
+    if not task_name:
+        return {"error": "Task name is required for auto steering optimization"}
+
     if verbose:
-        logger.info(f"🚀 Starting automatic steering optimization")
-        logger.info(f"   Model: {model_name}")
-        logger.info(f"   Tasks: {tasks_to_optimize}")
-        logger.info(f"   Method configurations: {[cfg.name for cfg in method_configs]}")
-        logger.info(f"   Time limit: {max_time_minutes} minutes")
-    
-    results = {
-        'model_name': model_name,
-        'optimization_date': datetime.now().isoformat(),
-        'tasks_optimized': [],
-        'overall_best': None,
-        'config_saved': False
-    }
-    
-    # Optimize each task
-    time_per_task = max_time_minutes / len(tasks_to_optimize)
-    
-    for task in tasks_to_optimize:
+        print("\n" + "=" * 70)
+        print("🔍 AUTO STEERING OPTIMIZATION (repscan)")
+        print("=" * 70)
+        print(f"   Model: {model_name}")
+        print(f"   Task: {task_name}")
+        print("   Method: Geometry-based selection (not grid search)")
+        print("=" * 70 + "\n")
+
+    # Step 1: Load model
+    if verbose:
+        print("Loading model...", flush=True)
+
+    wisent_model = WisentModel(model_name, device=device)
+
+    if verbose:
+        print(f"✓ Model loaded with {wisent_model.num_layers} layers\n")
+
+    # Step 2: Generate contrastive pairs
+    if verbose:
+        print(f"Generating contrastive pairs for {task_name}...", flush=True)
+
+    pairs = _generate_pairs_for_repscan(task_name, limit)
+
+    if not pairs or len(pairs) < 10:
+        return {"error": f"Could not generate enough pairs for {task_name} (got {len(pairs) if pairs else 0})"}
+
+    if verbose:
+        print(f"✓ Generated {len(pairs)} contrastive pairs\n")
+
+    # Step 3: Collect activations at analysis layer (75% depth)
+    if verbose:
+        print("Collecting activations for geometry analysis...", flush=True)
+
+    num_layers = wisent_model.num_layers
+    analysis_layer = str(int(num_layers * 0.75))
+
+    collector = ActivationCollector(model=wisent_model)
+    sample_pairs = pairs[:min(50, len(pairs))]
+
+    pos_activations = []
+    neg_activations = []
+
+    for pair in sample_pairs:
+        enriched = collector.collect(
+            pair,
+            strategy=ExtractionStrategy.CHAT_LAST,
+            layers=[analysis_layer]
+        )
+
+        if enriched.positive_response.layers_activations.get(analysis_layer) is not None:
+            pos_activations.append(enriched.positive_response.layers_activations[analysis_layer])
+        if enriched.negative_response.layers_activations.get(analysis_layer) is not None:
+            neg_activations.append(enriched.negative_response.layers_activations[analysis_layer])
+
+    if len(pos_activations) < 10 or len(neg_activations) < 10:
         if verbose:
-            logger.info(f"\n📊 Optimizing steering for task: {task}")
-        
-        # Determine layer range
-        task_layer_range = layer_range  # Use provided layer range
-        if not task_layer_range and classification_config and use_classification_config:
-            # Only use classification config if no explicit layer range provided
-            task_overrides = classification_config.get('task_specific_overrides', {}).get(task, {})
-            class_layer = task_overrides.get('classification_layer')
-            
-            if not class_layer:
-                # Use global classification layer
-                class_layer = classification_config.get('optimal_parameters', {}).get('classification_layer')
-            
-            if class_layer:
-                # Search around classification layer
-                task_layer_range = f"{max(0, class_layer-2)}-{class_layer+2}"
-                if verbose:
-                    logger.info(f"   Using layer range around classification layer {class_layer}: {task_layer_range}")
-        
-        # If still no layer range, use default based on model type
-        if not task_layer_range:
-            # Default to searching early to middle layers
-            task_layer_range = "0-5"
-            if verbose:
-                logger.info(f"   Using default layer range: {task_layer_range}")
-        
-        # Run optimization for this task
-        try:
-            summary = optimizer.optimize_steering_method_comparison(
-                task_name=task,
-                methods_to_test=method_configs,
-                layer_range=task_layer_range,
-                strength_range=strength_range,
-                limit=limit,
-                max_time_minutes=time_per_task
+            print("⚠️  Insufficient activations for analysis, defaulting to TITAN")
+        return {
+            'model_name': model_name,
+            'task_name': task_name,
+            'recommended_method': 'TITAN',
+            'confidence': 0.5,
+            'reasoning': 'Insufficient activations for geometry analysis',
+            'optimization_date': datetime.now().isoformat(),
+        }
+
+    if verbose:
+        print(f"✓ Collected {len(pos_activations)} positive and {len(neg_activations)} negative activations\n")
+
+    # Step 4: Run repscan geometry analysis
+    if verbose:
+        print("Running repscan geometry analysis...", flush=True)
+
+    pos_tensor = torch.stack(pos_activations)
+    neg_tensor = torch.stack(neg_activations)
+
+    metrics = compute_geometry_metrics(
+        pos_tensor, neg_tensor,
+        include_expensive=False,
+        n_folds=3,
+    )
+
+    # Get recommendation from repscan
+    recommendation = compute_recommendation(metrics)
+    recommended_method = recommendation.get("recommended_method", "TITAN").upper()
+    confidence = recommendation.get("confidence", 0.5)
+    reasoning = recommendation.get("reasoning", "")
+
+    # Also compute coherence for more detail
+    coherence = compute_concept_coherence(pos_tensor, neg_tensor)
+
+    if verbose:
+        print(f"\n   Repscan Analysis Results:")
+        print(f"   ├─ Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
+        print(f"   ├─ Signal strength:       {metrics.get('signal_strength', 0):.3f}")
+        print(f"   ├─ Concept coherence:     {coherence:.3f}")
+        print(f"   ├─ Steerability score:    {metrics.get('steer_steerability_score', 0):.3f}")
+        print(f"   ├─ ICD:                   {metrics.get('icd_icd', 0):.1f}")
+        print(f"   └─ Recommendation:        {recommended_method} (confidence={confidence:.2f})")
+        print(f"       Reasoning: {reasoning}")
+
+    # Step 5: Determine layer and strength search space
+    if layer_range:
+        # Parse provided layer range
+        if '-' in layer_range:
+            start, end = map(int, layer_range.split('-'))
+            layers_to_test = list(range(start, end + 1))
+        elif ',' in layer_range:
+            layers_to_test = [int(x.strip()) for x in layer_range.split(',')]
+        else:
+            layers_to_test = [int(layer_range)]
+    else:
+        # Default: test layers in upper half of model (where steering is most effective)
+        mid_layer = num_layers // 2
+        layers_to_test = list(range(mid_layer, num_layers))
+
+    # Strength search space
+    if strength_range is None:
+        strength_range = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+
+    if verbose:
+        print(f"\n🔍 GRID SEARCH for {recommended_method}")
+        print(f"   Layers to test: {layers_to_test}")
+        print(f"   Strengths to test: {strength_range}")
+        total_combos = len(layers_to_test) * len(strength_range)
+        print(f"   Total combinations: {total_combos}")
+
+    # Step 6: Train steering vectors for all layers
+    if verbose:
+        print(f"\n🎯 Training {recommended_method} steering vectors...")
+
+    steering_result = _train_recommended_method(
+        wisent_model=wisent_model,
+        pairs=pairs,
+        method=recommended_method,
+        layer=layers_to_test[0],  # Layer param not used for multi-layer training
+        verbose=verbose,
+    )
+
+    # Step 7: Grid search over layers and strengths
+    from wisent.core.evaluators.rotator import EvaluatorRotator
+    from wisent.core.models.inference_config import get_generate_kwargs
+
+    if verbose:
+        print(f"\n📊 Evaluating {len(layers_to_test) * len(strength_range)} configurations...")
+
+    # Split pairs into train/eval
+    train_pairs = pairs[:len(pairs)//2]
+    eval_pairs = pairs[len(pairs)//2:]
+
+    if len(eval_pairs) < 10:
+        eval_pairs = pairs  # Use all if not enough
+
+    # Initialize evaluator
+    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
+    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    evaluator = EvaluatorRotator(evaluator=None, task_name=task_name, autoload=False)
+
+    grid_results = []
+    best_score = -1
+    best_layer = layers_to_test[0]
+    best_strength = 1.0
+
+    combo_idx = 0
+    total_combos = len(layers_to_test) * len(strength_range)
+
+    for layer in layers_to_test:
+        # TITAN/PRISM use string layer numbers, CAA uses layer_N format
+        layer_key_simple = str(layer)
+        layer_key_prefixed = f"layer_{layer}"
+
+        # Get steering vector for this layer
+        if recommended_method == "CAA":
+            if hasattr(steering_result.get('result'), 'directions'):
+                directions = steering_result['result'].directions
+                # Try both key formats
+                if layer_key_prefixed in directions:
+                    steering_vector = directions[layer_key_prefixed]
+                elif layer_key_simple in directions:
+                    steering_vector = directions[layer_key_simple]
+                else:
+                    continue
+            else:
+                continue
+        elif recommended_method == "TITAN":
+            result = steering_result.get('result')
+            if hasattr(result, 'directions'):
+                # TITAN uses simple layer numbers as keys
+                if layer_key_simple in result.directions:
+                    dirs = result.directions[layer_key_simple]
+                    weights = result.direction_weights[layer_key_simple]
+                    weights_norm = weights / (weights.sum() + 1e-8)
+                    steering_vector = (dirs * weights_norm.unsqueeze(-1)).sum(dim=0)
+                elif layer_key_prefixed in result.directions:
+                    dirs = result.directions[layer_key_prefixed]
+                    weights = result.direction_weights[layer_key_prefixed]
+                    weights_norm = weights / (weights.sum() + 1e-8)
+                    steering_vector = (dirs * weights_norm.unsqueeze(-1)).sum(dim=0)
+                else:
+                    continue
+            else:
+                continue
+        elif recommended_method == "PRISM":
+            result = steering_result.get('result')
+            if hasattr(result, 'directions'):
+                if layer_key_simple in result.directions:
+                    steering_vector = result.directions[layer_key_simple][0]
+                elif layer_key_prefixed in result.directions:
+                    steering_vector = result.directions[layer_key_prefixed][0]
+                else:
+                    continue
+            else:
+                continue
+        else:
+            continue
+
+        steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+
+        for strength in strength_range:
+            combo_idx += 1
+
+            # Apply steering
+            wisent_model.set_steering_from_raw(
+                {str(layer): steering_vector},
+                scale=strength,
+                normalize=False
             )
-            
-            # Store results
-            task_result = {
-                'task': task,
-                'best_method': summary.best_overall_method,
-                'best_layer': summary.best_overall_layer,
-                'best_strength': summary.best_overall_strength,
-                'score': summary.task_results[0].steering_effectiveness_score if summary.task_results else 0.0
-            }
-            results['tasks_optimized'].append(task_result)
-            
-            # Update overall best
-            if not results['overall_best'] or task_result['score'] > results['overall_best']['score']:
-                results['overall_best'] = task_result
-                
-        except Exception as e:
-            logger.error(f"❌ Failed to optimize task {task}: {e}")
-            results['tasks_optimized'].append({
-                'task': task,
-                'error': str(e)
+
+            # Evaluate on subset
+            correct = 0
+            total = 0
+            eval_subset = eval_pairs[:min(30, len(eval_pairs))]  # Limit for speed
+
+            for pair in eval_subset:
+                messages = [{"role": "user", "content": pair.prompt}]
+                response = wisent_model.generate(
+                    [messages],
+                    **get_generate_kwargs(max_new_tokens=256),
+                )[0]
+
+                # Evaluate
+                eval_kwargs = {
+                    'response': response,
+                    'expected': pair.positive_response.model_response,
+                    'question': pair.prompt,
+                    'choices': [pair.negative_response.model_response, pair.positive_response.model_response],
+                    'task_name': task_name,
+                }
+                if hasattr(pair, 'metadata') and pair.metadata:
+                    for key, value in pair.metadata.items():
+                        if value is not None and key not in eval_kwargs:
+                            eval_kwargs[key] = value
+
+                result = evaluator.evaluate(**eval_kwargs)
+                if result.ground_truth == "TRUTHFUL":
+                    correct += 1
+                total += 1
+
+            # Clear steering
+            wisent_model.clear_steering()
+
+            score = correct / total if total > 0 else 0
+            grid_results.append({
+                'layer': layer,
+                'strength': strength,
+                'score': score,
+                'correct': correct,
+                'total': total,
             })
-    
-    # Save configuration
-    if results['tasks_optimized'] and not any('error' in r for r in results['tasks_optimized']):
-        results['config_saved'] = True
-        results['config_path'] = config_manager._get_config_path(model_name)
-        
+
+            if verbose:
+                bar = "█" * int(score * 20)
+                print(f"   [{combo_idx:3d}/{total_combos}] L{layer:2d} S{strength:.2f}: {score:.3f} {bar}")
+
+            if score > best_score:
+                best_score = score
+                best_layer = layer
+                best_strength = strength
+
+    if verbose:
+        print(f"\n   ✓ Best: Layer {best_layer}, Strength {best_strength:.2f}, Score {best_score:.3f}")
+
+    optimal_layer = best_layer
+    optimal_strength = best_strength
+
+    # Step 8: Save configuration
+    config_manager = ModelConfigManager()
+    config = config_manager.load_model_config(model_name) or {
+        'model_name': model_name,
+        'created_date': datetime.now().isoformat(),
+        'config_version': '2.0'
+    }
+
+    # Add steering optimization results
+    if 'steering_optimization' not in config:
+        config['steering_optimization'] = {}
+
+    config['steering_optimization']['best_method'] = recommended_method
+    config['steering_optimization']['best_layer'] = optimal_layer
+    config['steering_optimization']['best_strength'] = optimal_strength
+    config['steering_optimization']['best_score'] = best_score
+    config['steering_optimization']['optimization_date'] = datetime.now().isoformat()
+    config['steering_optimization']['repscan_metrics'] = {
+        'linear_probe_accuracy': metrics.get('linear_probe_accuracy', 0),
+        'signal_strength': metrics.get('signal_strength', 0),
+        'steerability_score': metrics.get('steer_steerability_score', 0),
+        'icd': metrics.get('icd_icd', 0),
+        'concept_coherence': coherence,
+    }
+    config['steering_optimization']['confidence'] = confidence
+    config['steering_optimization']['reasoning'] = reasoning
+    config['steering_optimization']['grid_search'] = {
+        'layers_tested': layers_to_test,
+        'strengths_tested': strength_range,
+        'total_combinations': len(grid_results),
+        'all_results': grid_results,
+    }
+
+    # Save task-specific results
+    if 'task_specific_steering' not in config:
+        config['task_specific_steering'] = {}
+
+    config['task_specific_steering'][task_name] = {
+        'method': recommended_method,
+        'layer': optimal_layer,
+        'strength': optimal_strength,
+        'score': best_score,
+        'confidence': confidence,
+        'repscan_metrics': config['steering_optimization']['repscan_metrics'],
+    }
+
+    config_manager.save_model_config(model_name, **config)
+
+    if verbose:
+        print(f"\n✅ Steering optimization complete!")
+        print(f"   Method: {recommended_method} (selected by repscan)")
+        print(f"   Best Layer: {optimal_layer}")
+        print(f"   Best Strength: {optimal_strength}")
+        print(f"   Best Score: {best_score:.3f}")
+        print(f"   Confidence: {confidence:.2f}")
+        print(f"   Config saved to: {config_manager._get_config_path(model_name)}")
+
+    return {
+        'model_name': model_name,
+        'task_name': task_name,
+        'recommended_method': recommended_method,
+        'optimal_layer': optimal_layer,
+        'optimal_strength': optimal_strength,
+        'best_score': best_score,
+        'confidence': confidence,
+        'reasoning': reasoning,
+        'repscan_metrics': {
+            'linear_probe_accuracy': metrics.get('linear_probe_accuracy', 0),
+            'signal_strength': metrics.get('signal_strength', 0),
+            'steerability_score': metrics.get('steer_steerability_score', 0),
+            'icd': metrics.get('icd_icd', 0),
+            'concept_coherence': coherence,
+        },
+        'grid_search_results': grid_results,
+        'steering_result': steering_result,
+        'optimization_date': datetime.now().isoformat(),
+        'config_saved': True,
+    }
+
+
+def _generate_pairs_for_repscan(task_name: str, limit: int):
+    """Generate contrastive pairs for repscan analysis."""
+    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
+
+    try:
+        pairs = build_contrastive_pairs(
+            task_name=task_name,
+            limit=limit,
+        )
+        return pairs
+    except Exception as e:
+        logger.error(f"Failed to generate pairs for {task_name}: {e}")
+        return []
+
+
+def _train_recommended_method(wisent_model, pairs, method: str, layer: int, verbose: bool = False):
+    """Train the recommended steering method."""
+    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+
+    # Get all layers for training
+    num_layers = wisent_model.num_layers
+    all_layers = [str(i) for i in range(1, num_layers + 1)]
+
+    # Collect activations for all pairs
+    if verbose:
+        print(f"   Collecting activations for {len(pairs)} pairs...")
+
+    collector = ActivationCollector(model=wisent_model)
+    enriched_pairs = []
+
+    for i, pair in enumerate(pairs):
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=all_layers)
+        enriched_pairs.append(enriched)
+        if verbose and (i + 1) % 25 == 0:
+            print(f"     {i + 1}/{len(pairs)} pairs processed")
+
+    pair_set = ContrastivePairSet(pairs=enriched_pairs, name=f"{method.lower()}_training")
+
+    if verbose:
+        print(f"   ✓ Collected activations for {len(enriched_pairs)} pairs")
+
+    # Train based on method
+    if method == "CAA":
+        from wisent.core.steering_methods.methods.caa import CAAMethod
+
+        caa_method = CAAMethod()
+        result = caa_method.train(pair_set)
+
         if verbose:
-            logger.info(f"\n✅ Steering optimization complete!")
-            logger.info(f"   Configuration saved to: {results['config_path']}")
-            logger.info(f"   Overall best: {results['overall_best']['best_method']} "
-                       f"L{results['overall_best']['best_layer']} "
-                       f"S{results['overall_best']['best_strength']}")
-    
-    return results
+            print(f"   ✓ CAA trained on {len(pairs)} pairs")
+            print(f"     Layers: {len(result.directions)}")
+
+        return {"method": "CAA", "layers": len(result.directions), "result": result}
+
+    elif method == "TITAN":
+        from wisent.core.steering_methods.methods.titan import TITANMethod
+
+        layer_indices = [int(l) for l in all_layers]
+        titan_method = TITANMethod(
+            model=wisent_model,
+            num_directions=8,
+            manifold_method="pca",
+            steering_layers=layer_indices,
+            sensor_layer=layer_indices[0],
+        )
+
+        result = titan_method.train_titan(pair_set)
+
+        if verbose:
+            print(f"   ✓ TITAN trained on {len(pairs)} pairs")
+            print(f"     Layers: {len(result.layer_order)}")
+            print(f"     Directions per layer: {result.directions[result.layer_order[0]].shape[0]}")
+
+        return {"method": "TITAN", "layers": len(result.layer_order), "result": result}
+
+    elif method == "PRISM":
+        from wisent.core.steering_methods.methods.prism import PRISMMethod
+
+        prism_method = PRISMMethod(
+            model=wisent_model.hf_model,
+            num_directions=3,
+        )
+
+        result = prism_method.train(pair_set)
+
+        if verbose:
+            num_dirs = next(iter(result.directions.values())).shape[0]
+            print(f"   ✓ PRISM trained on {len(pairs)} pairs")
+            print(f"     Layers: {len(result.directions)}")
+            print(f"     Directions per layer: {num_dirs}")
+
+        return {"method": "PRISM", "layers": len(result.directions), "result": result}
+
+    elif method == "PULSE":
+        from wisent.core.steering_methods.methods.pulse import PULSEMethod
+
+        layer_indices = [int(l) for l in all_layers]
+        pulse_method = PULSEMethod(
+            model=wisent_model.hf_model,
+            steering_layers=layer_indices,
+            sensor_layer=layer_indices[0],
+        )
+
+        result = pulse_method.train_pulse(pair_set)
+
+        if verbose:
+            print(f"   ✓ PULSE trained on {len(pairs)} pairs")
+            print(f"     Layers: {len(result.behavior_vectors)}")
+            print(f"     Optimal threshold: {result.optimal_threshold:.3f}")
+
+        return {"method": "PULSE", "layers": len(result.behavior_vectors), "result": result}
+
+    else:
+        logger.warning(f"Unknown method {method}, falling back to CAA")
+        from wisent.core.steering_methods.methods.caa import CAAMethod
+
+        caa_method = CAAMethod()
+        result = caa_method.train(pair_set)
+
+        return {"method": "CAA", "layers": len(result.directions), "result": result}
 
 
 def get_optimal_steering_params(

@@ -438,27 +438,27 @@ class MethodOptimizer:
     ) -> ContrastivePairSet:
         """
         Collect activations for a pair set using the given config.
-        
+
         Args:
             pairs: ContrastivePairSet to collect activations for
             config: Configuration specifying layers, aggregation, etc.
-            
+
         Returns:
             ContrastivePairSet with activations populated
         """
-        collector = ActivationCollector(model=self.model, store_device=self.device)
-        
+        # Store activations on CPU - TITAN and other methods expect CPU tensors for training
+        collector = ActivationCollector(model=self.model, store_device="cpu")
+
         updated_pairs = []
         for pair in pairs.pairs:
-            updated_pair = collector.collect_for_pair(
+            updated_pair = collector.collect(
                 pair,
+                strategy=config.token_aggregation,
                 layers=config.layers,
-                aggregation=config.token_aggregation,
-                return_full_sequence=False,
-                normalize_layers=False,
+                normalize=False,
             )
             updated_pairs.append(updated_pair)
-        
+
         return ContrastivePairSet(
             name=pairs.name if hasattr(pairs, 'name') else "collected",
             pairs=updated_pairs,
@@ -492,9 +492,12 @@ class MethodOptimizer:
         
         # Create method instance
         method = method_class(**params)
-        
+
         # Train using universal interface
-        steering_vectors = method.train(pair_set)
+        # Force CPU context to avoid MPS/CPU tensor mismatches on Mac
+        import torch
+        with torch.device("cpu"):
+            steering_vectors = method.train(pair_set)
         
         # Extract any metadata from training
         metadata = {}

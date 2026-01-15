@@ -161,9 +161,9 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--steering-method",
         type=str,
-        default="caa",
-        choices=["caa", "hyperplane", "prism", "pulse", "titan", "mlp"],
-        help="Method for generating steering vectors: 'caa' (mean difference), 'hyperplane' (SVM), 'prism' (sparse decomposition), 'pulse' (optimized), 'titan' (manifold-based), 'mlp' (neural probe). Default: caa"
+        default="auto",
+        choices=["auto", "caa", "hyperplane", "prism", "pulse", "titan", "mlp"],
+        help="Method for generating steering vectors: 'auto' (analyze geometry and pick best), 'caa' (mean difference), 'hyperplane' (SVM), 'prism' (sparse decomposition), 'pulse' (optimized), 'titan' (manifold-based), 'mlp' (neural probe). Default: auto"
     )
 
     # Weight modification method
@@ -171,9 +171,9 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
     modification_group.add_argument(
         "--method",
         type=str,
-        required=True,
-        choices=["directional", "additive", "titan", "pulse", "prism"],
-        help="Weight modification method: 'directional' (project onto/away from direction), 'additive' (add bias), 'titan' (manifold with dynamic gating), 'pulse' (conditional gating), or 'prism' (multi-directional)"
+        default="auto",
+        choices=["auto", "directional", "additive", "titan", "pulse", "prism"],
+        help="Weight modification method: 'auto' (analyze geometry and pick best), 'directional' (project onto/away from direction), 'additive' (add bias), 'titan' (manifold with dynamic gating), 'pulse' (conditional gating), or 'prism' (multi-directional). Default: auto"
     )
     
     # TITAN-specific parameters

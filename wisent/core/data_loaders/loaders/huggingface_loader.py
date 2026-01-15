@@ -99,12 +99,12 @@ class HuggingFaceDataLoader(BaseDataLoader):
     ) -> LoadDataResult:
         """Load a HuggingFace dataset."""
         split = self._effective_split(split_ratio)
-        seed = self._effective_seed(seed)
+        effective_seed = seed if seed is not None else 42
 
         return self._load_one_task(
             task_name=task_name,
             split_ratio=split,
-            seed=seed,
+            seed=effective_seed,
             limit=limit,
             training_limit=training_limit,
             testing_limit=testing_limit,

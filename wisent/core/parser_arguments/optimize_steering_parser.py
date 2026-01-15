@@ -415,6 +415,7 @@ def setup_steering_optimizer_parser(parser):
     auto_parser = steering_subparsers.add_parser(
         "auto", help="Automatically optimize steering based on classification config"
     )
+    auto_parser.set_defaults(subcommand='auto')
     auto_parser.add_argument("model", type=str, help="Model name or path")
     auto_parser.add_argument(
         "--task",

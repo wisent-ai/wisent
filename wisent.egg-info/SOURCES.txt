@@ -136,6 +136,7 @@ wisent/core/cli/steering_method_trainer.py
 wisent/core/cli/steering_search_space.py
 wisent/core/cli/tasks.py
 wisent/core/cli/train_unified_goodness.py
+wisent/core/cli/verify_steering.py
 wisent/core/cli/agent/__init__.py
 wisent/core/cli/agent/apply_steering.py
 wisent/core/cli/agent/evaluate_response.py
@@ -935,6 +936,7 @@ wisent/core/parser_arguments/synthetic_parser.py
 wisent/core/parser_arguments/tasks_parser.py
 wisent/core/parser_arguments/train_unified_goodness_parser.py
 wisent/core/parser_arguments/utils.py
+wisent/core/parser_arguments/verify_steering_parser.py
 wisent/core/prompts/__init__.py
 wisent/core/prompts/core/__init__.py
 wisent/core/prompts/core/atom.py
@@ -1014,6 +1016,7 @@ wisent/core/weight_modification/export.py
 wisent/core/weight_modification/guided.py
 wisent/core/weight_modification/multi_concept.py
 wisent/core/weight_modification/multi_direction.py
+wisent/core/weight_modification/standalone_loader.py
 wisent/core/weight_modification/utils.py
 wisent/examples/__init__.py
 wisent/examples/contrastive_pairs/humanization_human_vs_ai.json

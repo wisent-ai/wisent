@@ -502,17 +502,46 @@ def create_optuna_objective(
 
 def execute_optimize_steering(args):
     """
-    Execute steering optimization using Optuna.
+    Execute steering optimization.
+
+    Routes to the appropriate handler based on subcommand:
+    - auto: Uses repscan geometry analysis to select method, then grid search
+    - Other subcommands: Use Optuna-based optimization
     """
+    # Check for 'auto' subcommand - route to repscan-based optimizer
+    subcommand = getattr(args, 'subcommand', None)
+    if subcommand == 'auto':
+        from wisent.core.steering_optimizer import run_auto_steering_optimization
+
+        result = run_auto_steering_optimization(
+            model_name=args.model,
+            task_name=args.task,
+            limit=getattr(args, 'limit', 100),
+            device=getattr(args, 'device', None),
+            verbose=getattr(args, 'verbose', False),
+            layer_range=getattr(args, 'layer_range', None),
+            strength_range=getattr(args, 'strength_range', None),
+        )
+
+        if 'error' in result:
+            print(f"\n❌ Error: {result['error']}")
+            return None
+
+        return result
+
+    # Default: Optuna-based optimization
     import optuna
-    
+
+    method = getattr(args, 'method', 'CAA')
+    n_trials = getattr(args, 'n_trials', 100)
+
     print(f"\n{'=' * 80}")
     print(f"🎯 STEERING OPTIMIZATION (Optuna)")
     print(f"{'=' * 80}")
     print(f"   Model: {args.model}")
     print(f"   Task: {args.task}")
-    print(f"   Method: {args.method}")
-    print(f"   Trials: {args.n_trials}")
+    print(f"   Method: {method}")
+    print(f"   Trials: {n_trials}")
     print(f"{'=' * 80}\n")
     
     num_layers = getattr(args, 'num_layers', 32)

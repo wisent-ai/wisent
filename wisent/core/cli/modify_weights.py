@@ -4,8 +4,8 @@ CLI command for modifying model weights using steering vectors.
 This module implements the modify-weights command which permanently modifies
 model weights using either directional projection or additive methods.
 
-By default, uses Norm-Preserving Biprojected Directional Modification
-which maintains model quality by preserving weight norms.
+By default, uses automatic method selection based on geometry analysis
+which picks the optimal steering method for the data structure.
 """
 
 import json
@@ -26,6 +26,112 @@ from wisent.core.weight_modification import (
 )
 
 _LOG = setup_logger(__name__)
+
+
+def _auto_select_steering_method(pairs, model, args):
+    """
+    Automatically select the best steering method based on repscan geometry analysis.
+    
+    Uses compute_geometry_metrics and compute_recommendation from the geometry module.
+    
+    Returns:
+        tuple: (steering_method, modification_method, metrics)
+            - steering_method: 'caa', 'titan', 'pulse', or 'prism'
+            - modification_method: 'directional', 'titan', 'pulse', or 'prism'
+            - metrics: dict of geometry metrics
+    """
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.geometry import (
+        compute_geometry_metrics,
+        compute_recommendation,
+        compute_concept_coherence,
+    )
+    
+    if args.verbose:
+        print("\n" + "=" * 60)
+        print("🔍 AUTO-SELECTING STEERING METHOD (repscan)")
+        print("=" * 60)
+        print("   Analyzing activation geometry...")
+    
+    # Collect activations from a sample of pairs for analysis
+    collector = ActivationCollector(model=model)
+    sample_pairs = pairs[:min(50, len(pairs))]
+    
+    # Collect activations at 75% layer (where steering is most effective)
+    num_layers = model.num_layers if hasattr(model, 'num_layers') else 36
+    analysis_layer = str(int(num_layers * 0.75))
+    
+    pos_activations = []
+    neg_activations = []
+    
+    for pair in sample_pairs:
+        enriched = collector.collect(
+            pair, 
+            strategy=ExtractionStrategy.CHAT_LAST,
+            layers=[analysis_layer]
+        )
+        
+        if enriched.positive_response.layers_activations.get(analysis_layer) is not None:
+            pos_activations.append(enriched.positive_response.layers_activations[analysis_layer])
+        if enriched.negative_response.layers_activations.get(analysis_layer) is not None:
+            neg_activations.append(enriched.negative_response.layers_activations[analysis_layer])
+    
+    if len(pos_activations) < 10 or len(neg_activations) < 10:
+        if args.verbose:
+            print("   ⚠️  Insufficient activations for analysis, defaulting to TITAN")
+        return "titan", "titan", None
+    
+    # Stack activations
+    pos_tensor = torch.stack(pos_activations)
+    neg_tensor = torch.stack(neg_activations)
+    
+    # Run full repscan geometry analysis
+    metrics = compute_geometry_metrics(
+        pos_tensor, neg_tensor,
+        include_expensive=False,  # Skip expensive metrics for speed
+        n_folds=3,
+    )
+    
+    # Get recommendation from repscan
+    recommendation = compute_recommendation(metrics)
+    recommended_method = recommendation.get("recommended_method", "TITAN").upper()
+    confidence = recommendation.get("confidence", 0.5)
+    reasoning = recommendation.get("reasoning", "")
+    
+    # Also compute coherence for more detail
+    coherence = compute_concept_coherence(pos_tensor, neg_tensor)
+    
+    if args.verbose:
+        print(f"\n   Repscan Analysis Results:")
+        print(f"   ├─ Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
+        print(f"   ├─ Signal strength:       {metrics.get('signal_strength', 0):.3f}")
+        print(f"   ├─ Concept coherence:     {coherence:.3f}")
+        print(f"   ├─ Steerability score:    {metrics.get('steer_steerability_score', 0):.3f}")
+        print(f"   ├─ ICD:                   {metrics.get('icd_icd', 0):.1f}")
+        print(f"   └─ Recommendation:        {recommended_method} (confidence={confidence:.2f})")
+        print(f"       Reasoning: {reasoning}")
+    
+    # Map recommendation to steering/modification methods
+    if recommended_method == "CAA":
+        steering_method = "caa"
+        modification_method = "directional"
+        reason = f"Repscan recommends CAA (linear_probe={metrics.get('linear_probe_accuracy', 0):.2f})"
+    elif recommended_method == "PRISM":
+        steering_method = "prism"
+        modification_method = "prism"
+        reason = f"Repscan recommends PRISM (signal={metrics.get('signal_strength', 0):.2f})"
+    else:  # TITAN or unknown
+        steering_method = "titan"
+        modification_method = "titan"
+        reason = f"Repscan recommends TITAN (adaptive steering)"
+    
+    if args.verbose:
+        print(f"\n   ✓ Selected: {steering_method.upper()} / {modification_method}")
+        print(f"   └─ Reason: {reason}")
+        print("=" * 60 + "\n")
+    
+    return steering_method, modification_method, metrics
 
 
 def _generate_pairs_for_titan(args, wisent_model):
@@ -96,6 +202,22 @@ def _generate_pairs_for_titan(args, wisent_model):
     return pairs
 
 
+def _get_all_layers(model) -> list[str]:
+    """Get all layer indices as strings for a model (1-indexed for collector API)."""
+    if hasattr(model, 'hf_model'):
+        config = model.hf_model.config
+    elif hasattr(model, 'config'):
+        config = model.config
+    else:
+        return [str(i) for i in range(1, 37)]  # Default fallback (1-indexed)
+    
+    num_layers = getattr(config, 'num_hidden_layers', None) or \
+                 getattr(config, 'n_layer', None) or \
+                 getattr(config, 'num_layers', None) or 36
+    
+    return [str(i) for i in range(1, num_layers + 1)]  # 1-indexed
+
+
 def _train_titan_for_task(args, model, pairs):
     """
     Train TITAN on contrastive pairs and return the TITANResult.
@@ -128,7 +250,11 @@ def _train_titan_for_task(args, model, pairs):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
-    layers = ["18"] if args.layers is None else [str(l) for l in str(args.layers).split(',')]
+    # Default to all layers if not specified
+    if args.layers is None:
+        layers = _get_all_layers(model)
+    else:
+        layers = [str(l) for l in str(args.layers).split(',')]
     strategy = ExtractionStrategy.CHAT_LAST
     
     collector = ActivationCollector(model=model)
@@ -173,7 +299,11 @@ def _train_pulse_for_task(args, wisent_model, pairs):
     from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
     model = wisent_model.hf_model
-    layers = args.layers.split(',') if args.layers else ['18']
+    # Default to all layers if not specified
+    if args.layers:
+        layers = args.layers.split(',')
+    else:
+        layers = _get_all_layers(wisent_model)
     
     # Collect activations for pairs
     if args.verbose:
@@ -220,7 +350,11 @@ def _train_prism_for_task(args, wisent_model, pairs):
     from wisent.core.activations.extraction_strategy import ExtractionStrategy
     
     model = wisent_model.hf_model
-    layers = args.layers.split(',') if args.layers else ['18']
+    # Default to all layers if not specified
+    if args.layers:
+        layers = args.layers.split(',')
+    else:
+        layers = _get_all_layers(wisent_model)
     
     # Collect activations for pairs
     if args.verbose:
@@ -269,6 +403,8 @@ def execute_modify_weights(args):
     3. Load model
     4. Modify weights (norm-preserving directional projection or additive)
     5. Export modified model
+    
+    If method is 'auto', analyzes activation geometry and picks the best method.
     """
     # Expand task if it's a skill or risk name
     from wisent.core.task_selector import expand_task_if_skill_or_risk
@@ -281,21 +417,39 @@ def execute_modify_weights(args):
     # Determine norm_preserve and use_biprojection from args
     norm_preserve = not getattr(args, 'no_norm_preserve', False)
     use_biprojection = not getattr(args, 'no_biprojection', False)
+    
+    # Track if we need to run auto-selection (requires loading model and generating pairs first)
+    needs_auto_selection = (args.method == "auto" or getattr(args, 'steering_method', 'auto') == "auto")
+    
+    # Store original method for later reference
+    original_method = args.method
+    original_steering_method = getattr(args, 'steering_method', 'auto')
 
     if args.verbose:
         print("\n" + "=" * 80)
         print("WEIGHT MODIFICATION")
         print("=" * 80)
-        print(f"Method: {args.method}")
-        if args.method == "directional":
-            print(f"Norm-Preserving: {norm_preserve} {'(RECOMMENDED)' if norm_preserve else '(NOT recommended)'}")
-            print(f"Biprojection: {use_biprojection}")
+        if needs_auto_selection:
+            print(f"Method: AUTO (will analyze geometry to select best method)")
+        else:
+            print(f"Method: {args.method}")
+            if args.method == "directional":
+                print(f"Norm-Preserving: {norm_preserve} {'(RECOMMENDED)' if norm_preserve else '(NOT recommended)'}")
+                print(f"Biprojection: {use_biprojection}")
         print(f"Model: {args.model}")
         print(f"Output: {args.output_dir}")
         print("=" * 80 + "\n")
 
     # Step 1: Get steering vectors
-    if args.steering_vectors:
+    # For auto mode, we'll skip vector generation here and handle it after auto-selection
+    # since TITAN/PULSE/PRISM have their own vector generation flow
+    skip_vector_generation = needs_auto_selection and not args.steering_vectors
+    steering_vectors = None
+    
+    if skip_vector_generation:
+        if args.verbose:
+            print("Skipping initial vector generation (will generate after auto-selection)\n")
+    elif args.steering_vectors:
         # Load pre-computed steering vectors
         if args.verbose:
             print(f"Loading steering vectors from {args.steering_vectors}...")
@@ -710,7 +864,11 @@ def execute_modify_weights(args):
                 vector_args.method = optimal_config['method'].lower()
             else:
                 vector_args.token_aggregation = args.token_aggregation
-                vector_args.method = getattr(args, 'steering_method', 'caa')
+                # Don't pass 'auto' to vector generation - use 'caa' as default for directional mode
+                steering_method = getattr(args, 'steering_method', 'caa')
+                if steering_method == 'auto':
+                    steering_method = 'caa'  # Default to CAA for directional projection
+                vector_args.method = steering_method
             
             vector_args.prompt_strategy = args.prompt_strategy
             vector_args.normalize = args.normalize_vectors
@@ -855,6 +1013,67 @@ def execute_modify_weights(args):
 
     if args.verbose:
         print(f"✓ Model loaded with {wisent_model.num_layers} layers\n")
+
+    # Step 2.4: AUTO-SELECTION MODE - Analyze geometry and pick best method
+    if needs_auto_selection and args.task:
+        # Generate pairs for analysis
+        if args.verbose:
+            print("Generating pairs for auto-selection analysis...")
+        
+        pairs = _generate_pairs_for_titan(args, wisent_model)
+        
+        if pairs and len(pairs) >= 10:
+            # Run auto-selection
+            steering_method, modification_method, geo_result = _auto_select_steering_method(
+                pairs, wisent_model, args
+            )
+            
+            # Update args with selected methods
+            args.steering_method = steering_method
+            args.method = modification_method
+            
+            if args.verbose:
+                print(f"✓ Auto-selected: steering={steering_method}, modification={modification_method}\n")
+            
+            # If directional mode selected, generate CAA vectors now
+            if modification_method == "directional" and steering_vectors is None:
+                if args.verbose:
+                    print("Generating CAA steering vectors for directional projection...")
+                
+                from wisent.core.activations.activations_collector import ActivationCollector
+                from wisent.core.activations.extraction_strategy import ExtractionStrategy
+                from wisent.core.steering_methods.methods.caa import CAAMethod
+                from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+                
+                # Collect activations from all layers
+                collector = ActivationCollector(model=wisent_model)
+                all_layers = _get_all_layers(wisent_model)
+                
+                enriched_pairs = []
+                for pair in pairs:
+                    enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=all_layers)
+                    enriched_pairs.append(enriched)
+                
+                pair_set = ContrastivePairSet(pairs=enriched_pairs, name="auto_caa")
+                
+                # Train CAA
+                caa_method = CAAMethod()
+                caa_result = caa_method.train(pair_set)
+                
+                # Convert to steering_vectors format
+                steering_vectors = {}
+                for layer_name, vector in caa_result.directions.items():
+                    layer_idx = int(layer_name.replace("layer_", "")) if "layer_" in str(layer_name) else int(layer_name)
+                    steering_vectors[layer_idx] = vector
+                
+                if args.verbose:
+                    print(f"✓ Generated CAA vectors for {len(steering_vectors)} layers\n")
+        else:
+            # Not enough pairs - default to TITAN
+            if args.verbose:
+                print("⚠️  Not enough pairs for analysis, defaulting to TITAN\n")
+            args.steering_method = "titan"
+            args.method = "titan"
 
     # Step 2.5: GUIDED MODE - Use linearity diagnostics for data-driven modification
     if getattr(args, 'guided', False):
