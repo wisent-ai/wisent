@@ -1331,66 +1331,65 @@ def project_weights_titan(
     verbose: bool = True,
 ) -> dict[str, int]:
     """
-    Bake TITAN effective directions into model weights.
-    
+    Bake TITAN effective directions into model weights using ADDITIVE steering.
+
     This is the static part of TITAN steering - the effective directions
-    (weighted combination of manifold directions) are projected into the
-    model weights using norm-preserving projection.
-    
+    (weighted combination of manifold directions) are added as biases to
+    the model weights to shift activations toward the desired direction.
+
+    NOTE: This uses ADDITIVE steering (adds bias) rather than directional
+    projection (which subtracts/ablates). Additive steering is correct for
+    TITAN because we want to ADD behavior, not REMOVE it.
+
     For full dynamic behavior, also install TITANRuntimeHooks after this.
-    
+
     Args:
         model: Model to modify (in-place)
         titan_result: TITANResult from TITAN training
         components: Component names to modify
                    Default: ["self_attn.o_proj", "mlp.down_proj"]
-        base_strength: Base projection strength
+        base_strength: Base steering strength
         use_learned_intensities: Use TITAN's learned layer intensities as weights
         verbose: Whether to print progress
-        
+
     Returns:
         Dictionary with modification statistics
-        
+
     Example:
         >>> # Train TITAN
         >>> titan_result = method.train_titan(pair_set)
-        >>> 
+        >>>
         >>> # Bake directions into weights
         >>> stats = project_weights_titan(model, titan_result)
-        >>> 
+        >>>
         >>> # Optionally install runtime hooks for dynamic gating
         >>> hooks = TITANRuntimeHooks(model, titan_result)
         >>> hooks.install()
     """
+    from wisent.core.weight_modification.additive import bake_steering_into_weights
+    from wisent.core.activations.core.atoms import LayerActivations
+
     log = bind(_LOG, num_layers=len(titan_result.directions))
-    
+
     if components is None:
         components = ["self_attn.o_proj", "mlp.down_proj"]
-    
-    # Get model layers
-    if hasattr(model, "model"):
-        layers = model.model.layers
-    elif hasattr(model, "transformer"):
-        layers = model.transformer.h
-    else:
-        layers = model.layers
-    
+
     # Compute effective directions and layer weights
     effective_vectors = {}
     layer_weights = {}
-    
+
     for layer_name in titan_result.layer_order:
         # Get effective direction (weighted combination of manifold)
         eff_dir = titan_result.get_effective_direction(layer_name)
-        
+
         # Map layer name to index
         try:
             layer_idx = int(str(layer_name).split("_")[-1])
         except (ValueError, IndexError):
             continue
-        
+
         effective_vectors[layer_idx] = eff_dir
-        
+
         # Optionally use learned intensities as layer weights
         if use_learned_intensities:
             # Get average intensity for this layer from a neutral input
@@ -1402,32 +1401,39 @@ def project_weights_titan(
             else:
                 weight = 1.0
             layer_weights[layer_idx] = weight
-    
+
     if verbose:
         print(f"\n{'='*60}")
-        print("TITAN WEIGHT MODIFICATION")
+        print("TITAN WEIGHT MODIFICATION (ADDITIVE)")
         print(f"{'='*60}")
         print(f"Layers: {len(effective_vectors)}")
         print(f"Components: {components}")
         print(f"Base strength: {base_strength}")
         print(f"Using learned intensities: {use_learned_intensities}")
         print(f"{'='*60}\n")
-    
-    # Use standard norm-preserving projection
-    stats = project_weights_norm_preserved(
+
+    # Apply layer weights to vectors
+    weighted_vectors = {}
+    for layer_idx, vec in effective_vectors.items():
+        layer_weight = layer_weights.get(layer_idx, 1.0) if use_learned_intensities else 1.0
+        weighted_vectors[layer_idx] = vec * layer_weight
+
+    # Use ADDITIVE steering (adds bias) instead of directional projection (subtracts)
+    # This is correct for TITAN because we want to ADD behavior toward the direction
+    steering_vectors = LayerActivations(weighted_vectors)
+
+    stats = bake_steering_into_weights(
         model=model,
-        steering_vectors=effective_vectors,
-        harmless_vectors=None,
+        steering_vectors=steering_vectors,
+        alpha=base_strength,
         components=components,
-        layer_weights=layer_weights if use_learned_intensities else None,
-        strength=base_strength,
-        use_biprojection=False,
         verbose=verbose,
     )
-    
+
     stats["titan_layers"] = len(titan_result.layer_order)
     stats["titan_directions_per_layer"] = titan_result.directions[titan_result.layer_order[0]].shape[0]
-    
+    stats["method"] = "additive"
+
     return stats
 
 

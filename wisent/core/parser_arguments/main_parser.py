@@ -41,6 +41,7 @@ from wisent.core.parser_arguments.optimize_parser import setup_optimize_parser
 from wisent.core.parser_arguments.check_linearity_parser import setup_check_linearity_parser
 from wisent.core.parser_arguments.cluster_benchmarks_parser import setup_cluster_benchmarks_parser
 from wisent.core.parser_arguments.geometry_search_parser import setup_geometry_search_parser
+from wisent.core.parser_arguments.verify_steering_parser import setup_verify_steering_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -232,5 +233,12 @@ def setup_parser() -> argparse.ArgumentParser:
         help="Search for unified goodness direction across benchmarks (analyzes structure: linear/cone/orthogonal)"
     )
     setup_geometry_search_parser(geometry_search_parser)
+
+    # Verify steering command - verify activation alignment at inference time
+    verify_steering_parser = subparsers.add_parser(
+        "verify-steering",
+        help="Verify that steered model activations are correctly aligned with steering direction"
+    )
+    setup_verify_steering_parser(verify_steering_parser)
 
     return parser

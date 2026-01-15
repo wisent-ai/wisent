@@ -293,12 +293,46 @@ def export_titan_model(
     log.info("Saving model to disk")
     model.save_pretrained(save_path)
     log.info("Model saved successfully")
-    
+
+    # Step 2b: Update config to enable biases if they were added
+    config_path = save_path / "config.json"
+    if config_path.exists():
+        with open(config_path) as f:
+            config = json.load(f)
+        # Check if model has attention bias parameters
+        has_attn_bias = any('bias' in name for name in model.state_dict().keys() if 'self_attn' in name)
+        # Check if model has MLP bias parameters
+        has_mlp_bias = any('bias' in name for name in model.state_dict().keys() if 'mlp' in name)
+
+        config_updated = False
+        if has_attn_bias:
+            config['attention_bias'] = True
+            config_updated = True
+        if has_mlp_bias:
+            config['mlp_bias'] = True
+            config_updated = True
+
+        if config_updated:
+            with open(config_path, 'w') as f:
+                json.dump(config, f, indent=2)
+            log.info(f"Updated config: attention_bias={has_attn_bias}, mlp_bias={has_mlp_bias}")
+
+    # Step 2c: Save MLP biases to separate file for models that don't support mlp_bias config
+    # This allows load_steered_model to manually add them after loading
+    mlp_biases = {}
+    for name, param in model.named_parameters():
+        if 'mlp' in name and 'bias' in name:
+            mlp_biases[name] = param.cpu()
+    if mlp_biases:
+        mlp_bias_path = save_path / "mlp_biases.pt"
+        torch.save(mlp_biases, mlp_bias_path)
+        log.info(f"Saved {len(mlp_biases)} MLP biases to mlp_biases.pt")
+
     # Step 3: Save tokenizer
     if tokenizer is not None:
         tokenizer.save_pretrained(save_path)
         log.info("Tokenizer saved successfully")
-    
+
     # Step 4: Save TITAN components
     titan_save_path = save_path / "titan_steering.pt"
     

@@ -10,18 +10,67 @@ from wisent.core.errors import UnknownTypeError
 
 
 def execute_tasks(args):
-    """Execute the tasks command - train classifier on benchmark tasks."""
+    """Execute the tasks command - train classifier or steering on benchmark tasks."""
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations.extraction_strategy import ExtractionStrategy
-    
+
     from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
     from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
     from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
     from wisent.core.model_persistence import ModelPersistence, create_classifier_metadata
     from wisent.core.detection_handling import DetectionHandler, DetectionAction
     from wisent.core.evaluators.personalization.coherence import evaluate_quality
+
+    # Check if mode is specified - require explicit choice between steering and classification
+    steering_mode = hasattr(args, 'steering_mode') and args.steering_mode
+    classification_mode = hasattr(args, 'classification_mode') and args.classification_mode
+
+    # Skip mode check for special flags that don't need it
+    special_flags = [
+        hasattr(args, 'list_tasks') and args.list_tasks,
+        hasattr(args, 'task_info') and args.task_info,
+        hasattr(args, 'inference_only') and args.inference_only,
+        hasattr(args, 'optimize') and args.optimize,
+        hasattr(args, 'cross_benchmark') and args.cross_benchmark,
+        hasattr(args, 'train_only') and args.train_only,
+    ]
+
+    if not any(special_flags) and not steering_mode and not classification_mode:
+        print("\n" + "=" * 60)
+        print("⚠️  MODE SELECTION REQUIRED")
+        print("=" * 60)
+        print("\nThe 'tasks' command can run in two modes:\n")
+        print("  1. STEERING MODE (--steering-mode)")
+        print("     Train steering vectors to modify model behavior")
+        print("     Uses repscan to auto-select best method (CAA/TITAN/PRISM)")
+        print("     Evaluates baseline vs steered accuracy\n")
+        print("  2. CLASSIFICATION MODE (--classification-mode)")
+        print("     Train a classifier to detect good/bad responses")
+        print("     Uses activations to predict response quality")
+        print("     Outputs classifier accuracy and F1 score\n")
+        print("=" * 60)
+
+        # Prompt user for choice
+        while True:
+            try:
+                choice = input("\nSelect mode [s]teering or [c]lassification (s/c): ").strip().lower()
+                if choice in ['s', 'steering']:
+                    args.steering_mode = True
+                    steering_mode = True
+                    print("\n→ Running in STEERING mode\n")
+                    break
+                elif choice in ['c', 'classification']:
+                    args.classification_mode = True
+                    classification_mode = True
+                    print("\n→ Running in CLASSIFICATION mode\n")
+                    break
+                else:
+                    print("  Please enter 's' for steering or 'c' for classification")
+            except (EOFError, KeyboardInterrupt):
+                print("\n\nAborted. Please specify --steering-mode or --classification-mode")
+                sys.exit(1)
 
     # Check if this is inference-only mode with steering vector
     if args.inference_only and args.load_steering_vector:
@@ -58,7 +107,6 @@ def execute_tasks(args):
     if hasattr(args, 'steering_mode') and args.steering_mode:
         import torch
         from wisent.core.evaluators.rotator import EvaluatorRotator
-        from wisent.core.models.inference_config import get_generate_kwargs
         
         print(f"\n🎯 Starting steering evaluation on task: {args.task_names}")
         print(f"   Model: {args.model}")
@@ -141,18 +189,143 @@ def execute_tasks(args):
                         negative_activations.append(act.cpu().float())
             
             print(f"\n   ✓ Collected {len(positive_activations)} positive and {len(negative_activations)} negative activations")
-            
-            # Compute steering vector using CAA (mean difference)
-            print(f"\n🎯 Computing steering vector using {getattr(args, 'steering_method', 'CAA')}...")
-            pos_mean = torch.stack(positive_activations).mean(dim=0)
-            neg_mean = torch.stack(negative_activations).mean(dim=0)
-            steering_vector = pos_mean - neg_mean
-            
-            # Normalize if requested
-            if getattr(args, 'caa_normalize', True):
+
+            # Run repscan geometry analysis to select best steering method
+            from wisent.core.geometry import (
+                compute_geometry_metrics,
+                compute_recommendation,
+                compute_concept_coherence,
+            )
+
+            print(f"\n🔍 Running repscan geometry analysis...")
+            pos_tensor = torch.stack(positive_activations)
+            neg_tensor = torch.stack(negative_activations)
+
+            metrics = compute_geometry_metrics(
+                pos_tensor, neg_tensor,
+                include_expensive=False,
+                n_folds=3,
+            )
+
+            recommendation = compute_recommendation(metrics)
+            recommended_method = recommendation.get("recommended_method", "CAA").upper()
+            confidence = recommendation.get("confidence", 0.5)
+            reasoning = recommendation.get("reasoning", "")
+            coherence = compute_concept_coherence(pos_tensor, neg_tensor)
+
+            print(f"   ├─ Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
+            print(f"   ├─ Signal strength:       {metrics.get('signal_strength', 0):.3f}")
+            print(f"   ├─ Concept coherence:     {coherence:.3f}")
+            print(f"   ├─ Steerability score:    {metrics.get('steer_steerability_score', 0):.3f}")
+            print(f"   └─ Recommendation:        {recommended_method} (confidence={confidence:.2f})")
+
+            # Override method if user explicitly specified one
+            user_method = getattr(args, 'steering_method', 'auto')
+            if user_method and user_method.lower() != 'auto':
+                recommended_method = user_method.upper()
+                print(f"   → User override: using {recommended_method}")
+
+            # Train steering using recommended method
+            print(f"\n🎯 Training steering using {recommended_method}...")
+
+            if recommended_method == "CAA":
+                # Simple CAA: mean difference
+                pos_mean = pos_tensor.mean(dim=0)
+                neg_mean = neg_tensor.mean(dim=0)
+                steering_vector = pos_mean - neg_mean
+
+                if getattr(args, 'caa_normalize', True):
+                    steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+
+                print(f"   ✓ CAA steering vector computed, norm={steering_vector.norm().item():.4f}")
+
+            elif recommended_method == "TITAN":
+                # TITAN: multi-direction adaptive steering
+                from wisent.core.steering_methods.methods.titan import TITANMethod
+                from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+
+                # Need to collect activations for all layers for TITAN
+                print(f"   Collecting full activations for TITAN...")
+                all_layers = [str(i) for i in range(1, model.num_layers + 1)]
+
+                enriched_pairs = []
+                for pair in train_pair_set.pairs[:50]:  # Limit for speed
+                    enriched = collector.collect(pair, strategy=extraction_strategy, layers=all_layers)
+                    enriched_pairs.append(enriched)
+
+                pair_set = ContrastivePairSet(pairs=enriched_pairs, name="titan_training")
+
+                layer_indices = [int(l) for l in all_layers]
+                titan_method = TITANMethod(
+                    model=model,
+                    num_directions=8,
+                    manifold_method="pca",
+                    steering_layers=layer_indices,
+                    sensor_layer=layer_indices[0],
+                )
+
+                titan_result = titan_method.train_titan(pair_set)
+
+                # Extract effective steering vector for the target layer
+                layer_key = f"layer_{layer}"
+                if layer_key in titan_result.directions:
+                    dirs = titan_result.directions[layer_key]
+                    weights = titan_result.direction_weights[layer_key]
+                    weights_norm = weights / (weights.sum() + 1e-8)
+                    steering_vector = (dirs * weights_norm.unsqueeze(-1)).sum(dim=0)
+                    steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+                else:
+                    # Fallback to CAA
+                    print(f"   ⚠️  Layer {layer} not in TITAN result, falling back to CAA")
+                    steering_vector = (pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0))
+                    steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+
+                print(f"   ✓ TITAN steering vector computed, norm={steering_vector.norm().item():.4f}")
+
+            elif recommended_method == "PRISM":
+                # PRISM: multi-directional steering
+                from wisent.core.steering_methods.methods.prism import PRISMMethod
+                from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+
+                print(f"   Collecting full activations for PRISM...")
+                all_layers = [str(i) for i in range(1, model.num_layers + 1)]
+
+                enriched_pairs = []
+                for pair in train_pair_set.pairs[:50]:
+                    enriched = collector.collect(pair, strategy=extraction_strategy, layers=all_layers)
+                    enriched_pairs.append(enriched)
+
+                pair_set = ContrastivePairSet(pairs=enriched_pairs, name="prism_training")
+
+                prism_method = PRISMMethod(
+                    model=model.hf_model,
+                    num_directions=3,
+                )
+
+                prism_result = prism_method.train(pair_set)
+
+                # Extract effective steering vector for target layer
+                layer_key = f"layer_{layer}"
+                if layer_key in prism_result.directions:
+                    dirs = prism_result.directions[layer_key]
+                    # Use first direction as primary
+                    steering_vector = dirs[0]
+                    steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+                else:
+                    print(f"   ⚠️  Layer {layer} not in PRISM result, falling back to CAA")
+                    steering_vector = (pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0))
+                    steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+
+                print(f"   ✓ PRISM steering vector computed, norm={steering_vector.norm().item():.4f}")
+
+            else:
+                # Default to CAA
+                print(f"   ⚠️  Unknown method {recommended_method}, using CAA")
+                pos_mean = pos_tensor.mean(dim=0)
+                neg_mean = neg_tensor.mean(dim=0)
+                steering_vector = pos_mean - neg_mean
                 steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
-            
-            print(f"   ✓ Steering vector computed, norm={steering_vector.norm().item():.4f}")
+                print(f"   ✓ CAA steering vector computed, norm={steering_vector.norm().item():.4f}")
         
         # Initialize evaluator for this task (uses docker for coding tasks)
         print(f"\n🔧 Initializing evaluator for task '{task_name}'...")

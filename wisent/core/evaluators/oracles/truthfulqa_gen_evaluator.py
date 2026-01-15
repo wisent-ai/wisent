@@ -27,7 +27,7 @@ class TruthfulQAGenEvaluator(BaseEvaluator):
 
     name = "truthfulqa_gen"
     description = "Semantic similarity evaluator for TruthfulQA generation (compares to correct vs incorrect answers)"
-    task_names = ("truthfulqa_gen", "truthfulqa_generation")
+    task_names = ("truthfulqa_gen", "truthfulqa_generation", "truthfulqa_custom")
 
     EMB_MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 

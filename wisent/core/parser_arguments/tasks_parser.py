@@ -288,9 +288,16 @@ def setup_tasks_parser(parser):
         help="⚠️  UNSAFE: Allow code execution without Docker in trusted sandbox environments (e.g., RunPod containers). Use only in secure, isolated environments!",
     )
 
-    # Steering mode arguments
+    # Mode selection arguments (one is required for task execution)
     parser.add_argument(
-        "--steering-mode", action="store_true", help="Enable steering mode (uses CAA vectors instead of classification)"
+        "--steering-mode",
+        action="store_true",
+        help="STEERING MODE: Train steering vectors to modify model behavior. Uses repscan to auto-select best method (CAA/TITAN/PRISM). Evaluates baseline vs steered accuracy."
+    )
+    parser.add_argument(
+        "--classification-mode",
+        action="store_true",
+        help="CLASSIFICATION MODE: Train a classifier to detect good/bad responses. Uses activations to predict response quality. Outputs classifier accuracy and F1 score."
     )
     parser.add_argument(
         "--steering-strength", type=float, default=1.0, help="Strength of steering vector application (default: 1.0)"
