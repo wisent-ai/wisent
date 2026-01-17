@@ -162,8 +162,12 @@ def create_raw_activation(
     cur.close()
 
 
-def check_benchmark_done(conn, model_id: int, set_id: int, prompt_format: str) -> bool:
-    """Check if benchmark already has activations for a specific prompt format."""
+def check_benchmark_done(conn, model_id: int, set_id: int, prompt_format: str, num_layers: int, pair_count: int) -> bool:
+    """Check if benchmark already has ALL activations for a specific prompt format.
+
+    Expected count = pair_count * num_layers * 2 (positive + negative).
+    Requires at least 95% completeness to skip.
+    """
     cur = conn.cursor()
     cur.execute('''
         SELECT COUNT(*) FROM "RawActivation"
@@ -171,7 +175,10 @@ def check_benchmark_done(conn, model_id: int, set_id: int, prompt_format: str) -
     ''', (model_id, set_id, prompt_format))
     count = cur.fetchone()[0]
     cur.close()
-    return count > 0
+
+    expected = pair_count * num_layers * 2
+    threshold = int(expected * 0.95)  # Require 95% completeness
+    return count >= threshold
 
 
 def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", device: str = "cuda"):
@@ -216,6 +223,18 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
     set_id = get_or_create_pair_set(conn, benchmark)
     print(f"Benchmark set ID: {set_id}", flush=True)
 
+    # Generate pairs first to get pair count for completion check
+    print(f"Generating contrastive pairs for {benchmark}...", flush=True)
+    pairs = lm_build_contrastive_pairs(benchmark, None, limit=None)
+
+    if not pairs:
+        print("No pairs generated!", flush=True)
+        conn.close()
+        return
+
+    pair_count = len(pairs)
+    print(f"Generated {pair_count} pairs (batch size {batch_size})", flush=True)
+
     # All 3 prompt formats
     all_prompt_formats = [
         ("chat", ExtractionStrategy.CHAT_LAST),
@@ -223,10 +242,10 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
         ("role_play", ExtractionStrategy.ROLE_PLAY),
     ]
 
-    # Check which formats need extraction
+    # Check which formats need extraction (now with proper completeness check)
     formats_to_extract = []
     for fmt, strategy in all_prompt_formats:
-        if not check_benchmark_done(conn, model_id, set_id, fmt):
+        if not check_benchmark_done(conn, model_id, set_id, fmt, num_layers, pair_count):
             formats_to_extract.append((fmt, strategy))
 
     if not formats_to_extract:
@@ -236,17 +255,6 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
 
     print(f"Formats to extract: {[f[0] for f in formats_to_extract]}", flush=True)
     start = time.time()
-
-    # Generate pairs using lm_build_contrastive_pairs (handles both lm-eval and HuggingFace extractors)
-    print(f"Generating contrastive pairs for {benchmark}...", flush=True)
-    pairs = lm_build_contrastive_pairs(benchmark, None, limit=None)
-
-    if not pairs:
-        print("No pairs generated!", flush=True)
-        conn.close()
-        return
-
-    print(f"Generated {len(pairs)} pairs (batch size {batch_size})", flush=True)
 
     for batch_start in range(0, len(pairs), batch_size):
         batch_end = min(batch_start + batch_size, len(pairs))
