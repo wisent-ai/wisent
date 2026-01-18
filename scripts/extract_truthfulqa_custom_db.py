@@ -186,9 +186,12 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.activations.extraction_strategy import ExtractionStrategy, build_extraction_texts
 
-    # Supabase pooler has default_transaction_read_only=on
-    # Must enable autocommit FIRST, then SET to disable read-only mode
-    conn = psycopg2.connect(DATABASE_URL)
+    # Supabase transaction pooler (port 6543) may reassign backends after idle
+    # Use session pooler (port 5432) to maintain same backend connection
+    db_url = DATABASE_URL
+    if "pooler.supabase.com:6543" in db_url:
+        db_url = db_url.replace(":6543", ":5432")
+    conn = psycopg2.connect(db_url)
     conn.autocommit = True
     cur = conn.cursor()
     cur.execute("SET default_transaction_read_only = off")
