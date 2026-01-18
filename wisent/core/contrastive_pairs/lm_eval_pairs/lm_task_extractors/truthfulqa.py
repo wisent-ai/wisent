@@ -54,33 +54,10 @@ class TruthfulqaExtractor(LMEvalBenchmarkExtractor):
         try:
             # Try multiple format patterns for question
             question = doc.get("question", doc.get("query", doc.get("input", doc.get("instruction", doc.get("prompt", ""))))).strip()
-
-            if not question:
-                log.debug("Skipping doc due to missing question", extra={"doc": doc})
-                return None
-
-            # TruthfulQA generation format: correct_answers/incorrect_answers lists
-            correct_answers = doc.get("correct_answers", [])
-            incorrect_answers = doc.get("incorrect_answers", [])
-            best_answer = doc.get("best_answer", "")
-
-            if correct_answers and incorrect_answers:
-                # Use best_answer if available, otherwise first correct answer
-                correct = best_answer.strip() if best_answer else str(correct_answers[0]).strip()
-                incorrect = str(incorrect_answers[0]).strip()
-
-                if correct and incorrect:
-                    metadata = {"label": "truthfulqa"}
-                    return self._build_pair(
-                        question=question,
-                        correct=correct,
-                        incorrect=incorrect,
-                        metadata=metadata,
-                    )
-
-            # Fallback: Try MC format with choices
+            
+            # Try multiple format patterns for choices
             choices = doc.get("choices", doc.get("options", doc.get("answers", [])))
-
+            
             # Handle option_a/b/c/d format
             if not choices and "option_a" in doc:
                 choices = [
@@ -99,10 +76,9 @@ class TruthfulqaExtractor(LMEvalBenchmarkExtractor):
             elif isinstance(answer, int):
                 answer_idx = answer
             else:
-                log.debug("Skipping doc - no valid answer format found", extra={"doc": doc})
                 return None
 
-            if not choices or not (0 <= answer_idx < len(choices)):
+            if not question or not choices or not (0 <= answer_idx < len(choices)):
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
 
