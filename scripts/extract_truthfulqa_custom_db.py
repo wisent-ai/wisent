@@ -187,11 +187,12 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
     from wisent.core.activations.extraction_strategy import ExtractionStrategy, build_extraction_texts
 
     # Supabase pooler has default_transaction_read_only=on
-    # Use session pooler (port 5432) and set read-only off via options
-    db_url = DATABASE_URL
-    if "pooler.supabase.com:6543" in db_url:
-        db_url = db_url.replace(":6543", ":5432")  # Use session mode
-    conn = psycopg2.connect(db_url, options="-c default_transaction_read_only=off")
+    # Must enable autocommit FIRST, then SET to disable read-only mode
+    conn = psycopg2.connect(DATABASE_URL)
+    conn.autocommit = True
+    cur = conn.cursor()
+    cur.execute("SET default_transaction_read_only = off")
+    cur.close()
 
     print(f"Loading model {model_name}...")
     tokenizer = AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
