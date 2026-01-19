@@ -48,14 +48,13 @@ def analyze_per_benchmark_maximum(
         best_acc = 0.0
 
         for strategy, metrics in result.strategies.items():
-            if metrics["caa_accuracy"] > best_acc:
-                best_acc = metrics["caa_accuracy"]
-                best_strategy = strategy
-                best_method = "caa"
-            if metrics["hyperplane_accuracy"] > best_acc:
-                best_acc = metrics["hyperplane_accuracy"]
-                best_strategy = strategy
-                best_method = "hyperplane"
+            # Check all method accuracies
+            for key, value in metrics.items():
+                if key.endswith("_accuracy") and key != "best_accuracy":
+                    if value > best_acc:
+                        best_acc = value
+                        best_strategy = strategy
+                        best_method = key.replace("_accuracy", "")
 
         maximums[benchmark] = {
             "best_accuracy": best_acc,

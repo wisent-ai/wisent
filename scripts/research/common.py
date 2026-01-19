@@ -8,13 +8,17 @@ import os
 import struct
 from collections import defaultdict
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Optional
 
 import numpy as np
 import psycopg2
+import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
+
+# All available steering methods
+STEERING_METHODS = ["caa", "hyperplane", "mlp", "prism", "pulse", "titan"]
 
 
 # Database configuration - uses environment variables with fallback
@@ -236,23 +240,15 @@ def compute_steering_accuracy(
         train_neg: Training negative activations
         test_pos: Test positive activations
         test_neg: Test negative activations
-        method: "caa" (mean difference) or "hyperplane" (logistic regression)
+        method: One of "caa", "hyperplane", "mlp", "prism", "pulse", "titan"
 
     Returns:
         Pairwise accuracy (probability that pos > neg on steering direction)
     """
-    if method == "caa":
-        # CAA: mean difference
-        steering_vector = train_pos.mean(axis=0) - train_neg.mean(axis=0)
-    elif method == "hyperplane":
-        # Hyperplane: logistic regression weights
-        X = np.vstack([train_pos, train_neg])
-        y = np.array([1] * len(train_pos) + [0] * len(train_neg))
-        clf = LogisticRegression(max_iter=1000, C=1.0)
-        clf.fit(X, y)
-        steering_vector = clf.coef_[0]
-    else:
-        raise ValueError(f"Unknown method: {method}")
+    steering_vector = compute_steering_vector(train_pos, train_neg, method)
+
+    if steering_vector is None:
+        return 0.5
 
     # Normalize steering vector
     norm = np.linalg.norm(steering_vector)
@@ -274,3 +270,168 @@ def compute_steering_accuracy(
             total += 1
 
     return correct / total if total > 0 else 0.5
+
+
+def compute_steering_vector(
+    train_pos: np.ndarray,
+    train_neg: np.ndarray,
+    method: str = "caa"
+) -> Optional[np.ndarray]:
+    """
+    Compute steering vector using specified method.
+
+    Args:
+        train_pos: Training positive activations [N, D]
+        train_neg: Training negative activations [N, D]
+        method: One of "caa", "hyperplane", "mlp", "prism", "pulse", "titan"
+
+    Returns:
+        Steering vector [D] or None if failed
+    """
+    if method == "caa":
+        return _compute_caa(train_pos, train_neg)
+    elif method == "hyperplane":
+        return _compute_hyperplane(train_pos, train_neg)
+    elif method == "mlp":
+        return _compute_mlp(train_pos, train_neg)
+    elif method == "prism":
+        return _compute_prism(train_pos, train_neg)
+    elif method == "pulse":
+        return _compute_pulse(train_pos, train_neg)
+    elif method == "titan":
+        return _compute_titan(train_pos, train_neg)
+    else:
+        raise ValueError(f"Unknown method: {method}. Available: {STEERING_METHODS}")
+
+
+def _compute_caa(train_pos: np.ndarray, train_neg: np.ndarray) -> np.ndarray:
+    """CAA: mean difference."""
+    return train_pos.mean(axis=0) - train_neg.mean(axis=0)
+
+
+def _compute_hyperplane(train_pos: np.ndarray, train_neg: np.ndarray) -> np.ndarray:
+    """Hyperplane: logistic regression weights."""
+    X = np.vstack([train_pos, train_neg])
+    y = np.array([1] * len(train_pos) + [0] * len(train_neg))
+    clf = LogisticRegression(max_iter=1000, C=1.0)
+    clf.fit(X, y)
+    return clf.coef_[0]
+
+
+def _compute_mlp(train_pos: np.ndarray, train_neg: np.ndarray) -> Optional[np.ndarray]:
+    """MLP: adversarial gradient direction from trained classifier."""
+    try:
+        from wisent.core.steering_methods.registry import SteeringMethodRegistry
+
+        pos_tensor = torch.tensor(train_pos, dtype=torch.float32)
+        neg_tensor = torch.tensor(train_neg, dtype=torch.float32)
+
+        method = SteeringMethodRegistry.create_method_instance(
+            "mlp",
+            hidden_dim=min(256, train_pos.shape[1] // 4),
+            num_layers=2,
+            epochs=50,
+            learning_rate=0.001,
+        )
+
+        steering_vector = method.train_for_layer(
+            [pos_tensor[i] for i in range(len(pos_tensor))],
+            [neg_tensor[i] for i in range(len(neg_tensor))]
+        )
+
+        return steering_vector.cpu().numpy()
+    except Exception as e:
+        print(f"MLP failed: {e}")
+        return _compute_caa(train_pos, train_neg)
+
+
+def _compute_prism(train_pos: np.ndarray, train_neg: np.ndarray) -> Optional[np.ndarray]:
+    """PRISM: gradient-optimized multi-directional steering (returns first direction)."""
+    try:
+        from wisent.core.steering_methods.registry import SteeringMethodRegistry
+
+        pos_tensor = torch.tensor(train_pos, dtype=torch.float32)
+        neg_tensor = torch.tensor(train_neg, dtype=torch.float32)
+
+        method = SteeringMethodRegistry.create_method_instance(
+            "prism",
+            num_directions=3,
+            optimization_steps=50,
+            learning_rate=0.01,
+        )
+
+        steering_vectors = method.train_for_layer(
+            [pos_tensor[i] for i in range(len(pos_tensor))],
+            [neg_tensor[i] for i in range(len(neg_tensor))]
+        )
+
+        # Return first direction
+        if isinstance(steering_vectors, torch.Tensor):
+            if steering_vectors.dim() == 2:
+                return steering_vectors[0].cpu().numpy()
+            return steering_vectors.cpu().numpy()
+        return steering_vectors
+    except Exception as e:
+        print(f"PRISM failed: {e}")
+        return _compute_caa(train_pos, train_neg)
+
+
+def _compute_pulse(train_pos: np.ndarray, train_neg: np.ndarray) -> Optional[np.ndarray]:
+    """PULSE: condition-gated steering (returns steering vector)."""
+    try:
+        from wisent.core.steering_methods.registry import SteeringMethodRegistry
+
+        pos_tensor = torch.tensor(train_pos, dtype=torch.float32)
+        neg_tensor = torch.tensor(train_neg, dtype=torch.float32)
+
+        method = SteeringMethodRegistry.create_method_instance(
+            "pulse",
+            optimization_steps=50,
+            learning_rate=0.01,
+        )
+
+        result = method.train_for_layer(
+            [pos_tensor[i] for i in range(len(pos_tensor))],
+            [neg_tensor[i] for i in range(len(neg_tensor))]
+        )
+
+        if isinstance(result, torch.Tensor):
+            return result.cpu().numpy()
+        elif isinstance(result, dict) and "steering_vector" in result:
+            return result["steering_vector"].cpu().numpy()
+        return _compute_caa(train_pos, train_neg)
+    except Exception as e:
+        print(f"PULSE failed: {e}")
+        return _compute_caa(train_pos, train_neg)
+
+
+def _compute_titan(train_pos: np.ndarray, train_neg: np.ndarray) -> Optional[np.ndarray]:
+    """TITAN: joint optimized manifold (returns primary direction)."""
+    try:
+        from wisent.core.steering_methods.registry import SteeringMethodRegistry
+
+        pos_tensor = torch.tensor(train_pos, dtype=torch.float32)
+        neg_tensor = torch.tensor(train_neg, dtype=torch.float32)
+
+        method = SteeringMethodRegistry.create_method_instance(
+            "titan",
+            num_directions=3,
+            optimization_steps=50,
+            learning_rate=0.005,
+        )
+
+        result = method.train_for_layer(
+            [pos_tensor[i] for i in range(len(pos_tensor))],
+            [neg_tensor[i] for i in range(len(neg_tensor))]
+        )
+
+        if isinstance(result, torch.Tensor):
+            if result.dim() == 2:
+                return result[0].cpu().numpy()
+            return result.cpu().numpy()
+        elif isinstance(result, dict) and "directions" in result:
+            return result["directions"][0].cpu().numpy()
+        return _compute_caa(train_pos, train_neg)
+    except Exception as e:
+        print(f"TITAN failed: {e}")
+        return _compute_caa(train_pos, train_neg)
