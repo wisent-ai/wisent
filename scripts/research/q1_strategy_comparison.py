@@ -5,18 +5,28 @@ Research Question 1: Which extraction strategy outperforms all the others?
 This module evaluates each extraction strategy's steering effectiveness across
 all benchmarks and determines which strategy consistently performs best.
 
+Uses wisent's SteeringMethodRegistry for all steering methods.
+
 Extraction strategies compared:
 - CHAT_LAST: Last token of chat-formatted input
 - CHAT_MEAN: Mean of all tokens in chat-formatted input
 - MC_BALANCED: Multiple-choice with balanced position
 - And others depending on benchmark type
 
+Steering methods compared (from wisent registry):
+- CAA: Contrastive Activation Addition (mean difference)
+- Hyperplane: Logistic regression decision boundary
+- MLP: Neural network adversarial gradient
+- PRISM: Multi-directional gradient optimization
+- PULSE: Condition-gated steering
+- TITAN: Joint optimized manifold
+
 Methodology:
 1. For each benchmark, group activations by extraction strategy
 2. Train steering vectors using 80% of pairs
 3. Evaluate on 20% held-out pairs using pairwise accuracy
-4. Compare CAA (mean difference) and Hyperplane (logistic regression) methods
-5. Aggregate results to find overall best strategy
+4. Compare all steering methods from wisent registry
+5. Aggregate results to find overall best strategy and method
 """
 
 import argparse
