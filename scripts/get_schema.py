@@ -35,11 +35,11 @@ cur.execute('''
 row = cur.fetchone()
 print(f"Layers: min={row[0]}, max={row[1]}, distinct={row[2]} (expected 24)")
 
-# Check for NULL activations
+# Check for NULL hiddenStates
 cur.execute('''
     SELECT COUNT(*) FROM "RawActivation" ra
     JOIN "Model" m ON ra."modelId" = m."id"
-    WHERE m."huggingFaceId" = 'openai/gpt-oss-20b' AND ra."activation" IS NULL
+    WHERE m."huggingFaceId" = 'openai/gpt-oss-20b' AND ra."hiddenStates" IS NULL
 ''')
 nulls = cur.fetchone()[0]
 print(f"NULL activations: {nulls}")
@@ -73,7 +73,7 @@ for row in cur.fetchall():
 
 # Sample records
 cur.execute('''
-    SELECT ra."id", ra."layer", ra."isPositive", LENGTH(ra."activation") as size
+    SELECT ra."id", ra."layer", ra."isPositive", LENGTH(ra."hiddenStates") as size, ra."hiddenDim"
     FROM "RawActivation" ra
     JOIN "Model" m ON ra."modelId" = m."id"
     WHERE m."huggingFaceId" = 'openai/gpt-oss-20b'
@@ -82,7 +82,7 @@ cur.execute('''
 ''')
 print("\nSample records:")
 for row in cur.fetchall():
-    print(f"  id={row[0]}, layer={row[1]}, positive={row[2]}, size={row[3]}")
+    print(f"  id={row[0]}, layer={row[1]}, positive={row[2]}, size={row[3]} bytes, hiddenDim={row[4]}")
 
 conn.close()
 print("\n=== Verification Complete ===")
