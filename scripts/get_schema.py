@@ -56,13 +56,12 @@ print("By isPositive:")
 for row in cur.fetchall():
     print(f"  {row[0]}: {row[1]}")
 
-# Count by format (via ContrastivePairSet name)
+# Count by format (via ContrastivePairSet)
 cur.execute('''
     SELECT cps."name", COUNT(*)
     FROM "RawActivation" ra
     JOIN "Model" m ON ra."modelId" = m."id"
-    JOIN "ContrastivePair" cp ON ra."pairId" = cp."id"
-    JOIN "ContrastivePairSet" cps ON cp."setId" = cps."id"
+    JOIN "ContrastivePairSet" cps ON ra."contrastivePairSetId" = cps."id"
     WHERE m."huggingFaceId" = 'openai/gpt-oss-20b'
     GROUP BY cps."name"
     ORDER BY cps."name"
