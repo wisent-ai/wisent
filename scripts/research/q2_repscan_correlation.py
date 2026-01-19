@@ -2,18 +2,23 @@
 """
 Research Question 2: Is RepScan effective at predicting steering?
 
-This module investigates whether geometry-based metrics (inspired by RepScan)
-can predict steering effectiveness without actually training steering vectors.
+This module investigates whether geometry-based metrics can predict steering
+effectiveness without actually training steering vectors.
 
-Geometry Metrics Computed:
-- diff_mean_alignment: How consistently individual pair differences align with mean
-- pct_positive_alignment: Percentage of pairs with positive alignment
-- signal_to_noise: Ratio of mean difference magnitude to variance
-- cluster_separation: Cosine distance between positive/negative cluster centers
-- linear_probe_accuracy: How well a simple classifier separates the classes
+Uses wisent.core.geometry.compute_geometry_metrics for comprehensive analysis.
+
+Geometry Metrics Computed (from wisent.core.geometry):
+- signal_strength, linear_probe_accuracy, mlp_probe_accuracy
+- icd_* metrics (intrinsic concept dimensionality)
+- direction_* metrics (stability, consistency)
+- steer_* metrics (diff_mean_alignment, caa_probe_alignment, pct_positive_alignment,
+  steering_vector_norm_ratio, cluster_direction_angle, per_cluster_alignment_k2,
+  spherical_silhouette_k2, effective_steering_dims, steerability_score)
+- concept_coherence, n_concepts
+- recommended_method, recommendation_confidence
 
 Methodology:
-1. For each benchmark, compute geometry metrics from activations
+1. For each benchmark, compute geometry metrics using wisent's geometry module
 2. Compute actual steering accuracy (ground truth)
 3. Correlate geometry metrics with steering accuracy across benchmarks
 4. Report Pearson and Spearman correlations

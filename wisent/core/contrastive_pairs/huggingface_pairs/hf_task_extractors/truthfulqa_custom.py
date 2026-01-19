@@ -99,8 +99,11 @@ class TruthfulQACustomExtractor(HuggingFaceBenchmarkExtractor):
                 log.debug("Skipping doc: no correct answers")
                 return None
 
+            # Filter out empty strings from incorrect_answers
+            incorrect_answers = [a for a in incorrect_answers if a and a.strip()]
+
             if not incorrect_answers:
-                log.debug("Skipping doc: no incorrect answers")
+                log.debug("Skipping doc: no valid incorrect answers")
                 return None
 
             correct = best_answer if best_answer else correct_answers[0]

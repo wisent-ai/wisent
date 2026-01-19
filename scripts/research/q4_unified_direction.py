@@ -7,9 +7,13 @@ combined can achieve competitive performance across individual benchmarks.
 
 Key Question: Can we find a "universal goodness" direction that generalizes?
 
+Note: This analysis uses CAA (mean difference) for unified direction training.
+For comparing multiple steering methods, see q1_strategy_comparison.py which
+uses wisent's SteeringMethodRegistry.
+
 Methodology:
 1. Collect activations from all benchmarks into a single dataset
-2. Train a unified steering vector on the combined data
+2. Train a unified steering vector on the combined data (CAA method)
 3. Evaluate the unified vector on each individual benchmark
 4. Compare unified performance to per-benchmark optimal vectors
 5. Analyze when unified works vs when it doesn't

@@ -3,12 +3,22 @@
 Research Question 3: What is the maximum we can achieve per benchmark?
 
 This module finds the optimal combination of extraction strategy and steering
-method (CAA vs Hyperplane) for each benchmark, establishing upper bounds on
-per-benchmark steering performance.
+method for each benchmark, establishing upper bounds on per-benchmark steering
+performance.
+
+Uses wisent's SteeringMethodRegistry for all steering methods.
+
+Steering methods compared (from wisent registry):
+- CAA: Contrastive Activation Addition (mean difference)
+- Hyperplane: Logistic regression decision boundary
+- MLP: Neural network adversarial gradient
+- PRISM: Multi-directional gradient optimization
+- PULSE: Condition-gated steering
+- TITAN: Joint optimized manifold
 
 Methodology:
 1. For each benchmark, evaluate all available extraction strategies
-2. For each strategy, try both CAA and Hyperplane steering methods
+2. For each strategy, try all steering methods from wisent registry
 3. Select the best (strategy, method) combination
 4. Report per-benchmark maximums and aggregate statistics
 """
