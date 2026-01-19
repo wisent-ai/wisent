@@ -31,11 +31,13 @@ from .common import (
     BenchmarkResults,
     load_activations_from_db,
     compute_steering_accuracy,
+    STEERING_METHODS,
 )
 
 
 def analyze_strategy_performance(
-    activations_by_benchmark: Dict[str, List[ActivationData]]
+    activations_by_benchmark: Dict[str, List[ActivationData]],
+    methods: List[str] = None,
 ) -> Dict[str, BenchmarkResults]:
     """
     Evaluate each extraction strategy's steering effectiveness.
@@ -44,16 +46,19 @@ def analyze_strategy_performance(
     1. Group activations by extraction strategy
     2. For each strategy with >= 10 pairs:
        - Split into 80/20 train/test
-       - Compute CAA steering accuracy
-       - Compute Hyperplane steering accuracy
+       - Compute accuracy for all steering methods
     3. Track best strategy per benchmark
 
     Args:
         activations_by_benchmark: Dict mapping benchmark names to activation data
+        methods: List of methods to test (default: all STEERING_METHODS)
 
     Returns:
         Dict mapping benchmark names to BenchmarkResults with strategy metrics
     """
+    if methods is None:
+        methods = STEERING_METHODS
+
     results = {}
 
     for benchmark, activations in activations_by_benchmark.items():
@@ -84,19 +89,24 @@ def analyze_strategy_performance(
             if len(test_pos) < 2:
                 continue
 
-            # Evaluate CAA and Hyperplane methods
-            caa_acc = compute_steering_accuracy(train_pos, train_neg, test_pos, test_neg, "caa")
-            hp_acc = compute_steering_accuracy(train_pos, train_neg, test_pos, test_neg, "hyperplane")
+            # Evaluate all steering methods
+            method_accuracies = {}
+            for method in methods:
+                acc = compute_steering_accuracy(train_pos, train_neg, test_pos, test_neg, method)
+                method_accuracies[f"{method}_accuracy"] = acc
+
+            best_acc = max(method_accuracies.values())
+            best_method = max(method_accuracies, key=method_accuracies.get).replace("_accuracy", "")
 
             bench_result.strategies[strategy] = {
-                "caa_accuracy": caa_acc,
-                "hyperplane_accuracy": hp_acc,
-                "best_accuracy": max(caa_acc, hp_acc),
+                **method_accuracies,
+                "best_accuracy": best_acc,
+                "best_method": best_method,
                 "num_pairs": len(acts),
             }
 
-            if max(caa_acc, hp_acc) > bench_result.best_accuracy:
-                bench_result.best_accuracy = max(caa_acc, hp_acc)
+            if best_acc > bench_result.best_accuracy:
+                bench_result.best_accuracy = best_acc
                 bench_result.best_strategy = strategy
 
         results[benchmark] = bench_result
@@ -113,12 +123,13 @@ def summarize_strategy_results(results: Dict[str, BenchmarkResults]) -> Dict[str
         - strategy_win_counts: How many benchmarks each strategy wins
         - strategy_avg_accuracy: Average accuracy per strategy
         - overall_best_strategy: Strategy with most wins
-        - accuracy_by_method: CAA vs Hyperplane comparison
+        - accuracy_by_method: Comparison across all methods
+        - method_win_counts: How many times each method wins
     """
     strategy_wins = defaultdict(int)
     strategy_accuracies = defaultdict(list)
-    caa_accuracies = []
-    hp_accuracies = []
+    method_accuracies = defaultdict(list)
+    method_wins = defaultdict(int)
 
     for benchmark, result in results.items():
         if result.best_strategy:
@@ -126,11 +137,22 @@ def summarize_strategy_results(results: Dict[str, BenchmarkResults]) -> Dict[str
 
         for strategy, metrics in result.strategies.items():
             strategy_accuracies[strategy].append(metrics["best_accuracy"])
-            caa_accuracies.append(metrics["caa_accuracy"])
-            hp_accuracies.append(metrics["hyperplane_accuracy"])
+
+            # Track best method for this strategy
+            if "best_method" in metrics:
+                method_wins[metrics["best_method"]] += 1
+
+            # Collect all method accuracies
+            for key, value in metrics.items():
+                if key.endswith("_accuracy") and key != "best_accuracy":
+                    method_name = key.replace("_accuracy", "")
+                    method_accuracies[method_name].append(value)
 
     # Find overall best strategy
     overall_best = max(strategy_wins.keys(), key=lambda s: strategy_wins[s]) if strategy_wins else None
+
+    # Find overall best method
+    overall_best_method = max(method_wins.keys(), key=lambda m: method_wins[m]) if method_wins else None
 
     return {
         "strategy_win_counts": dict(strategy_wins),
@@ -138,12 +160,11 @@ def summarize_strategy_results(results: Dict[str, BenchmarkResults]) -> Dict[str
             s: float(np.mean(accs)) for s, accs in strategy_accuracies.items()
         },
         "overall_best_strategy": overall_best,
-        "accuracy_by_method": {
-            "caa_mean": float(np.mean(caa_accuracies)) if caa_accuracies else 0.0,
-            "hyperplane_mean": float(np.mean(hp_accuracies)) if hp_accuracies else 0.0,
-            "caa_wins": sum(1 for c, h in zip(caa_accuracies, hp_accuracies) if c > h),
-            "hyperplane_wins": sum(1 for c, h in zip(caa_accuracies, hp_accuracies) if h > c),
+        "method_win_counts": dict(method_wins),
+        "method_avg_accuracy": {
+            m: float(np.mean(accs)) for m, accs in method_accuracies.items()
         },
+        "overall_best_method": overall_best_method,
         "num_benchmarks_analyzed": len(results),
     }
 
@@ -151,7 +172,7 @@ def summarize_strategy_results(results: Dict[str, BenchmarkResults]) -> Dict[str
 def print_results(results: Dict[str, BenchmarkResults], summary: Dict[str, Any]):
     """Print formatted results to stdout."""
     print("\n" + "=" * 60)
-    print("Q1: EXTRACTION STRATEGY COMPARISON")
+    print("Q1: EXTRACTION STRATEGY & STEERING METHOD COMPARISON")
     print("=" * 60)
 
     print("\nStrategy Win Counts (best strategy per benchmark):")
@@ -166,12 +187,21 @@ def print_results(results: Dict[str, BenchmarkResults], summary: Dict[str, Any])
     for strategy, acc in sorted(summary["strategy_avg_accuracy"].items(), key=lambda x: -x[1]):
         print(f"  {strategy}: {acc:.3f}")
 
-    print("\nCAA vs Hyperplane Method:")
+    print("\n" + "=" * 60)
+    print("STEERING METHOD COMPARISON")
+    print("=" * 60)
+
+    print("\nMethod Win Counts (best method across all strategies):")
     print("-" * 40)
-    method = summary["accuracy_by_method"]
-    print(f"  CAA mean accuracy: {method['caa_mean']:.3f}")
-    print(f"  Hyperplane mean accuracy: {method['hyperplane_mean']:.3f}")
-    print(f"  CAA wins: {method['caa_wins']}, Hyperplane wins: {method['hyperplane_wins']}")
+    for method, count in sorted(summary.get("method_win_counts", {}).items(), key=lambda x: -x[1]):
+        print(f"  {method}: {count} wins")
+
+    print(f"\nOverall Best Method: {summary.get('overall_best_method', 'N/A')}")
+
+    print("\nAverage Accuracy by Steering Method:")
+    print("-" * 40)
+    for method, acc in sorted(summary.get("method_avg_accuracy", {}).items(), key=lambda x: -x[1]):
+        print(f"  {method}: {acc:.3f}")
 
 
 def run_q1_analysis(model_name: str, layer: int = None, output_path: str = None) -> Dict[str, Any]:
