@@ -35,14 +35,21 @@ def get_db_connection():
 
 
 def get_missing_benchmarks(conn, model_id: int) -> list:
-    """Get list of benchmark IDs missing for this model."""
+    """Get list of benchmark IDs missing for this model (only benchmarks with pairs)."""
     cur = conn.cursor()
 
-    # Get all benchmarks
-    cur.execute('SELECT id, name FROM "ContrastivePairSet" ORDER BY name')
-    all_benchmarks = {row[0]: row[1] for row in cur.fetchall()}
+    # Get benchmarks that have actual pairs (skip empty benchmarks)
+    cur.execute('''
+        SELECT cps.id, cps.name, COUNT(cp.id) as pair_count
+        FROM "ContrastivePairSet" cps
+        INNER JOIN "ContrastivePair" cp ON cp."setId" = cps.id
+        GROUP BY cps.id, cps.name
+        HAVING COUNT(cp.id) > 0
+        ORDER BY cps.name
+    ''')
+    benchmarks_with_pairs = {row[0]: (row[1], row[2]) for row in cur.fetchall()}
 
-    # Get benchmarks that have extractions for this model
+    # Get benchmarks that already have extractions for this model
     cur.execute('''
         SELECT DISTINCT "contrastivePairSetId"
         FROM "Activation"
@@ -50,9 +57,11 @@ def get_missing_benchmarks(conn, model_id: int) -> list:
     ''', (model_id,))
     covered_ids = {row[0] for row in cur.fetchall()}
 
-    # Return missing (id, name) pairs
-    missing = [(bid, all_benchmarks[bid]) for bid in all_benchmarks.keys() if bid not in covered_ids]
+    # Return missing (id, name, pair_count) - only benchmarks with pairs that aren't covered
+    missing = [(bid, info[0], info[1]) for bid, info in benchmarks_with_pairs.items() if bid not in covered_ids]
     cur.close()
+
+    print(f"Found {len(benchmarks_with_pairs)} benchmarks with pairs, {len(covered_ids)} already covered", flush=True)
     return missing
 
 
@@ -218,13 +227,18 @@ def main():
                                        conn, args.device, num_layers, args.limit)
         print(f"Done! Extracted {extracted} pairs", flush=True)
     else:
-        # Extract all missing benchmarks
+        # Extract all missing benchmarks (only ones with pairs)
         missing = get_missing_benchmarks(conn, model_id)
-        print(f"Found {len(missing)} missing benchmarks", flush=True)
+        print(f"Found {len(missing)} missing benchmarks with pairs to extract", flush=True)
+
+        if not missing:
+            print("All benchmarks with pairs are already extracted!", flush=True)
+            conn.close()
+            return
 
         total_extracted = 0
-        for i, (set_id, benchmark_name) in enumerate(missing):
-            print(f"\n[{i+1}/{len(missing)}] {benchmark_name}", flush=True)
+        for i, (set_id, benchmark_name, pair_count) in enumerate(missing):
+            print(f"\n[{i+1}/{len(missing)}] {benchmark_name} ({pair_count} pairs in DB)", flush=True)
             start = time.time()
 
             extracted = extract_benchmark(model, tokenizer, model_id, benchmark_name, set_id,
