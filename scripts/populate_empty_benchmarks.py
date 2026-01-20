@@ -213,6 +213,16 @@ def main():
     parser.add_argument("--benchmark", help="Single benchmark to populate (optional)")
     args = parser.parse_args()
 
+    # Login to HuggingFace if token is available (for higher rate limits)
+    hf_token = os.environ.get("HF_TOKEN")
+    if hf_token:
+        try:
+            from huggingface_hub import login
+            login(token=hf_token, add_to_git_credential=False)
+            print("Logged in to HuggingFace", flush=True)
+        except Exception as e:
+            print(f"Warning: Failed to login to HuggingFace: {e}", flush=True)
+
     if not args.db_url:
         print("ERROR: No database URL provided", flush=True)
         sys.exit(1)
