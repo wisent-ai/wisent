@@ -246,7 +246,8 @@ def save_contrastive_pair_set(
 
 def load_contrastive_pair_set(
     filepath: str | Path,
-    return_backend: str = "torch", 
+    return_backend: str = "torch",
+    validate: bool = True,
 ) -> ContrastivePairSet:
     """Load a ContrastivePairSet from a JSON file and decode activations.
 
@@ -254,7 +255,10 @@ def load_contrastive_pair_set(
         filepath: path to the JSON file.
         return_backend: 'torch' (default), 'numpy', or 'list'. If torch is not
             installed, will automatically fall back to 'numpy'.
-       
+        validate: If True (default), runs diagnostics validation on the loaded pairs.
+            Set to False to skip validation (useful for welfare pairs with intentionally
+            similar positive/negative responses).
+
     Returns:
         ContrastivePairSet
 
@@ -301,6 +305,7 @@ def load_contrastive_pair_set(
 
     cps = ContrastivePairSet(name=str(data["name"]), pairs=list_of_pairs, task_type=data.get("task_type"))
 
-    cps.validate()
+    if validate:
+        cps.validate()
 
     return cps
