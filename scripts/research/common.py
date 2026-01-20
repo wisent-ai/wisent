@@ -101,13 +101,14 @@ class BenchmarkResults:
     best_accuracy: float = 0.0
 
 
-def load_activations_from_db(model_name: str, layer: int = None) -> Dict[str, List[ActivationData]]:
+def load_activations_from_db(model_name: str, layer: int = None, benchmark: str = None) -> Dict[str, List[ActivationData]]:
     """
     Load activations from database grouped by benchmark.
 
     Args:
         model_name: Name of the model (e.g., 'Qwen/Qwen3-8B')
         layer: Layer to load (default: middle layer)
+        benchmark: Filter to specific benchmark (default: all benchmarks)
 
     Returns:
         Dict[benchmark_name -> List[ActivationData]]
@@ -126,24 +127,39 @@ def load_activations_from_db(model_name: str, layer: int = None) -> Dict[str, Li
     if layer is None:
         layer = num_layers // 2
 
-    print(f"Loading activations for model {model_name} (id={model_id}), layer {layer}")
+    print(f"Loading activations for model {model_name} (id={model_id}), layer {layer}" + (f", benchmark={benchmark}" if benchmark else ""))
 
     # Query activations with benchmark info
-    print(f"Querying activations for model_id={model_id}, layer={layer}...")
-    cur.execute('''
-        SELECT
-            a."contrastivePairId",
-            a."contrastivePairSetId",
-            cps.name as benchmark,
-            a.layer,
-            a."extractionStrategy",
-            a."activationData",
-            a."isPositive"
-        FROM "Activation" a
-        JOIN "ContrastivePairSet" cps ON a."contrastivePairSetId" = cps.id
-        WHERE a."modelId" = %s AND a.layer = %s
-        ORDER BY a."contrastivePairSetId", a."contrastivePairId", a."extractionStrategy"
-    ''', (model_id, layer))
+    if benchmark:
+        cur.execute('''
+            SELECT
+                a."contrastivePairId",
+                a."contrastivePairSetId",
+                cps.name as benchmark,
+                a.layer,
+                a."extractionStrategy",
+                a."activationData",
+                a."isPositive"
+            FROM "Activation" a
+            JOIN "ContrastivePairSet" cps ON a."contrastivePairSetId" = cps.id
+            WHERE a."modelId" = %s AND a.layer = %s AND cps.name = %s
+            ORDER BY a."contrastivePairSetId", a."contrastivePairId", a."extractionStrategy"
+        ''', (model_id, layer, benchmark))
+    else:
+        cur.execute('''
+            SELECT
+                a."contrastivePairId",
+                a."contrastivePairSetId",
+                cps.name as benchmark,
+                a.layer,
+                a."extractionStrategy",
+                a."activationData",
+                a."isPositive"
+            FROM "Activation" a
+            JOIN "ContrastivePairSet" cps ON a."contrastivePairSetId" = cps.id
+            WHERE a."modelId" = %s AND a.layer = %s
+            ORDER BY a."contrastivePairSetId", a."contrastivePairId", a."extractionStrategy"
+        ''', (model_id, layer))
 
     rows = cur.fetchall()
     print(f"Fetched {len(rows)} activation rows")

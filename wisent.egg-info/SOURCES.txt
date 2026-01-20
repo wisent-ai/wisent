@@ -3,6 +3,7 @@ MANIFEST.in
 README.md
 pyproject.toml
 setup.py
+tests/test_extraction_completeness.py
 tests/test_multimodal_adapters.py
 tests/test_multimodal_pipeline.py
 wisent/__init__.py
@@ -1018,6 +1019,9 @@ wisent/core/weight_modification/multi_concept.py
 wisent/core/weight_modification/multi_direction.py
 wisent/core/weight_modification/standalone_loader.py
 wisent/core/weight_modification/utils.py
+wisent/data/__init__.py
+wisent/data/contrastive_pairs/__init__.py
+wisent/data/contrastive_pairs/storage.py
 wisent/examples/__init__.py
 wisent/examples/contrastive_pairs/humanization_human_vs_ai.json
 wisent/examples/scripts/__init__.py
