@@ -9,25 +9,25 @@ import sys
 
 import psycopg2
 
-# Map DB benchmark names to lm-eval-harness task names
-DB_TO_LM_EVAL = {
+# Map DB benchmark names to extractor names (lm-eval or HuggingFace)
+DB_TO_EXTRACTOR = {
     # coding
     "coding/livecodebench_v5": "livecodebench",
     "coding/livecodebench_v6": "livecodebench",
     "coding/mercury": "mercury",
-    "coding/terminal_bench": None,  # No extractor
+    "coding/terminal_bench": "terminal_bench",  # HF extractor
     # commonsense
     "commonsense/siqa": "siqa",
     "commonsense/storycloze": "storycloze",
     # ethics_values
     "ethics_values/model_written_evals": "model_written_evals",
     # hallucination_factuality
-    "hallucination_factuality/browsecomp": None,  # No extractor
+    "hallucination_factuality/browsecomp": "browsecomp",  # HF extractor
     "hallucination_factuality/okapi/truthfulqa_multilingual": "okapi_truthfulqa_multilingual",
     "hallucination_factuality/truthfulqa": "truthfulqa",
     "hallucination_factuality/truthfulqa_generation": "truthfulqa_gen",
     # instruction_following
-    "instruction_following/mmmu": None,  # Multimodal - no extractor
+    "instruction_following/mmmu": None,  # Multimodal - requires special handling
     # knowledge_qa
     "knowledge_qa/aclue": "aclue",
     "knowledge_qa/metabench": "metabench",
@@ -62,9 +62,9 @@ DB_TO_LM_EVAL = {
     "multilingual/cmmlu": "cmmlu",
     "multilingual/copal_id": "copal_id",
     "multilingual/csatqa": "csatqa",
-    "multilingual/darija_bench": None,
+    "multilingual/darija_bench": None,  # No extractor available
     "multilingual/darijammlu": "darijammlu",
-    "multilingual/eus_exams": None,
+    "multilingual/eus_exams": None,  # No extractor available
     "multilingual/evalita_LLM": "evalita_llm",
     "multilingual/french_bench": "french_bench",
     "multilingual/galician_bench": "galician_bench",
@@ -72,7 +72,7 @@ DB_TO_LM_EVAL = {
     "multilingual/haerae": "haerae",
     "multilingual/kobest": "kobest",
     "multilingual/lambada_multilingual_stablelm": None,  # Not loadable
-    "multilingual/mlqa": None,
+    "multilingual/mlqa": None,  # No extractor available
     "multilingual/okapi/hellaswag_multilingual": "okapi_hellaswag_multilingual",
     "multilingual/okapi/mmlu_multilingual": "okapi_mmlu_multilingual",
     "multilingual/spanish_bench": "spanish_bench",
@@ -85,7 +85,7 @@ DB_TO_LM_EVAL = {
     # reasoning_logic
     "reasoning_logic/bbh": "bbh",
     "reasoning_logic/fld": "fld",
-    "reasoning_logic/inverse_scaling": None,
+    "reasoning_logic/inverse_scaling": None,  # No extractor available
     "reasoning_logic/lingoly": "lingoly",
     "reasoning_logic/logiqa": "logiqa",
     "reasoning_logic/logiqa2": "logiqa2",
@@ -93,12 +93,12 @@ DB_TO_LM_EVAL = {
     "reasoning_logic/score": "score",
     # safety_bias
     "safety_bias/bbq": "bbq",
-    "safety_bias/curate": None,
-    "safety_bias/flames": None,
-    "safety_bias/politicalbias_qa": None,
-    "safety_bias/polyglottoxicityprompts": None,
+    "safety_bias/curate": "curate",  # HF extractor
+    "safety_bias/flames": "flames",  # HF extractor
+    "safety_bias/politicalbias_qa": "politicalbias_qa",  # HF extractor
+    "safety_bias/polyglottoxicityprompts": "polyglottoxicityprompts",  # HF extractor
     "safety_bias/realtoxicityprompts": "realtoxicityprompts",
-    "safety_bias/refusalbench": None,
+    "safety_bias/refusalbench": "refusalbench",  # HF extractor
     "safety_bias/simple_cooccurrence_bias": "simple_cooccurrence_bias",
     "safety_bias/toxigen": "toxigen",
     "safety_bias/wmdp": "wmdp",
@@ -106,22 +106,22 @@ DB_TO_LM_EVAL = {
     "science_medical/careqa": "careqa",
     "science_medical/fda": "fda",
     "science_medical/headqa": "headqa",
-    "science_medical/healthbench": None,
+    "science_medical/healthbench": "healthbench",  # HF extractor
     "science_medical/kormedmcqa": "kormedmcqa",
-    "science_medical/med_concepts_qa": None,
+    "science_medical/med_concepts_qa": None,  # No extractor available
     "science_medical/meddialog": "meddialog",
     "science_medical/medmcqa": "medmcqa",
     "science_medical/medqa": "medqa",
     "science_medical/pubmedqa": "pubmedqa",
-    # tool_use_agents - mostly no extractors
-    "tool_use_agents/agentbench": None,
-    "tool_use_agents/finsearchcomp": None,
-    "tool_use_agents/seal": None,
-    "tool_use_agents/seal_0": None,
-    "tool_use_agents/tau_bench": None,
-    "tool_use_agents/toolbench": None,
-    "tool_use_agents/toolemu": None,
-    "tool_use_agents/toolllm": None,
+    # tool_use_agents - HF extractors available
+    "tool_use_agents/agentbench": "agentbench",  # HF extractor
+    "tool_use_agents/finsearchcomp": "finsearchcomp",  # HF extractor
+    "tool_use_agents/seal": "seal",  # HF extractor
+    "tool_use_agents/seal_0": "seal_0",  # HF extractor
+    "tool_use_agents/tau_bench": "tau_bench",  # HF extractor
+    "tool_use_agents/toolbench": "toolbench",  # HF extractor
+    "tool_use_agents/toolemu": "toolemu",  # HF extractor
+    "tool_use_agents/toolllm": "toolllm",  # HF extractor
     # translation
     "translation/translation": "translation",
     "translation/wmt14_en_fr": "translation",
@@ -130,6 +130,9 @@ DB_TO_LM_EVAL = {
     "translation/wmt16_en_de": "translation",
     "translation/wmt2016": "translation",
 }
+
+# Backwards compatibility alias
+DB_TO_LM_EVAL = DB_TO_EXTRACTOR
 
 
 def get_db_connection(db_url: str):
