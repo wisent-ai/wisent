@@ -65,21 +65,6 @@ def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser)
         default=None,
         help="Comma-separated layer indices (e.g., '8,12,16') or 'all' (default: all layers)"
     )
-    parser.add_argument(
-        "--token-aggregation",
-        type=str,
-        choices=["average", "final", "first", "max", "continuation"],
-        default="average",
-        help="How to aggregate token activations (default: average)"
-    )
-    parser.add_argument(
-        "--prompt-strategy",
-        type=str,
-        choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"],
-        default="chat_template",
-        help="Prompt construction strategy (default: chat_template)"
-    )
-    
     # Steering vector creation
     parser.add_argument(
         "--method",

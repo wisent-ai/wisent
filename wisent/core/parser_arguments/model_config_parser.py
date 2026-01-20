@@ -13,13 +13,6 @@ def setup_model_config_parser(parser):
     save_parser.add_argument(
         "--steering-layer", type=int, default=None, help="Optimal layer for steering (defaults to classification layer)"
     )
-    save_parser.add_argument(
-        "--token-aggregation",
-        type=str,
-        default="average",
-        choices=["average", "final", "first", "max", "min", "max_score"],
-        help="Token aggregation method. 'max_score' uses highest token hallucination score.",
-    )
     save_parser.add_argument("--detection-threshold", type=float, default=0.6, help="Detection threshold")
     save_parser.add_argument(
         "--optimization-method", type=str, default="manual", help="How these parameters were determined"

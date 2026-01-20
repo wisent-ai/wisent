@@ -6,14 +6,6 @@ def setup_sample_size_optimizer_parser(parser):
     parser.add_argument("model", type=str, help="Model name or path to optimize")
     parser.add_argument("--task", type=str, required=True, help="Task to optimize for (REQUIRED)")
     parser.add_argument("--layer", type=int, required=True, help="Layer index to use (REQUIRED)")
-    parser.add_argument(
-        "--token-aggregation",
-        type=str,
-        required=True,
-        choices=["average", "final", "first", "max", "min", "max_score"],
-        help="Token aggregation method. 'max_score' uses highest token hallucination score (REQUIRED)",
-    )
-
     # Classification-specific arguments
     parser.add_argument(
         "--threshold", type=float, default=0.5, help="Detection threshold for classification (default: 0.5)"

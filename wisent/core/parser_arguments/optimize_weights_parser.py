@@ -345,13 +345,6 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         help="Layers for activation collection: 'all' or comma-separated indices. Default: all"
     )
     vector_group.add_argument(
-        "--token-aggregation",
-        type=str,
-        default="average",
-        choices=["average", "last", "first", "max"],
-        help="Token aggregation strategy. Default: average"
-    )
-    vector_group.add_argument(
         "--similarity-threshold",
         type=float,
         default=0.8,
