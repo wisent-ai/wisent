@@ -94,7 +94,7 @@ def run_layer_analysis(activations: Dict, questions: List[int] = None) -> Dict[s
     return results
 
 
-def run_model_analysis(model_name: str, output_dir: Optional[str] = None, questions: List[int] = None) -> Dict[str, Any]:
+def run_model_analysis(model_name: str, output_dir: Optional[str] = None, questions: List[int] = None, benchmark: str = None) -> Dict[str, Any]:
     """
     Run analysis for all layers of a single model.
 
@@ -102,6 +102,7 @@ def run_model_analysis(model_name: str, output_dir: Optional[str] = None, questi
         model_name: Model to analyze
         output_dir: Directory to save results
         questions: List of question numbers to run
+        benchmark: Filter to specific benchmark
 
     Returns:
         Results dict for this model across all layers
@@ -111,7 +112,7 @@ def run_model_analysis(model_name: str, output_dir: Optional[str] = None, questi
 
     print(f"\n{'='*60}")
     print(f"Analyzing model: {model_name}")
-    print(f"Questions: {questions}")
+    print(f"Questions: {questions}" + (f", Benchmark: {benchmark}" if benchmark else ""))
     print(f"{'='*60}")
 
     # Get model info
@@ -125,7 +126,7 @@ def run_model_analysis(model_name: str, output_dir: Optional[str] = None, questi
         print(f"\n  Layer {layer}/{num_layers-1}...", end=" ", flush=True)
 
         try:
-            activations = load_activations_from_db(model_name, layer)
+            activations = load_activations_from_db(model_name, layer, benchmark)
             if not activations:
                 print("no data")
                 continue
@@ -181,7 +182,7 @@ def run_model_analysis(model_name: str, output_dir: Optional[str] = None, questi
     return model_results
 
 
-def run_all_models(models: List[str], output_dir: Optional[str] = None, questions: List[int] = None) -> Dict[str, Any]:
+def run_all_models(models: List[str], output_dir: Optional[str] = None, questions: List[int] = None, benchmark: str = None) -> Dict[str, Any]:
     """
     Run analysis for all models.
 
@@ -189,6 +190,7 @@ def run_all_models(models: List[str], output_dir: Optional[str] = None, question
         models: List of model names to analyze
         output_dir: Directory to save results
         questions: List of question numbers to run
+        benchmark: Filter to specific benchmark
 
     Returns:
         Combined results across all models
@@ -197,7 +199,7 @@ def run_all_models(models: List[str], output_dir: Optional[str] = None, question
         questions = [1, 2, 3, 4]
 
     print(f"\n{'='*60}")
-    print(f"RESEARCH ANALYSIS: {len(models)} models, Questions: {questions}")
+    print(f"RESEARCH ANALYSIS: {len(models)} models, Questions: {questions}" + (f", Benchmark: {benchmark}" if benchmark else ""))
     print(f"{'='*60}")
 
     if output_dir:
@@ -206,7 +208,7 @@ def run_all_models(models: List[str], output_dir: Optional[str] = None, question
     all_results = {}
     for model_name in models:
         try:
-            model_results = run_model_analysis(model_name, output_dir, questions)
+            model_results = run_model_analysis(model_name, output_dir, questions, benchmark)
             all_results[model_name] = model_results
         except Exception as e:
             print(f"\nFailed to analyze {model_name}: {e}")
@@ -255,10 +257,11 @@ def main():
     parser = argparse.ArgumentParser(description="Run all research analyses")
     parser.add_argument("--output", type=str, default="research_results", help="Output directory")
     parser.add_argument("--questions", type=str, default="1,2,3,4", help="Comma-separated question numbers to run (e.g., '1,2')")
+    parser.add_argument("--benchmark", type=str, default=None, help="Filter to specific benchmark")
     args = parser.parse_args()
 
     questions = [int(q.strip()) for q in args.questions.split(",")]
-    run_all_models(RESEARCH_MODELS, args.output, questions=questions)
+    run_all_models(RESEARCH_MODELS, args.output, questions=questions, benchmark=args.benchmark)
 
 
 if __name__ == "__main__":

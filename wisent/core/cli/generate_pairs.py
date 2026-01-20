@@ -5,6 +5,7 @@ import json
 import os
 
 from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.data.contrastive_pairs import save_personalization_pairs, save_synthetic_pairs
 
 
 def execute_generate_pairs(args):
@@ -165,6 +166,60 @@ def execute_generate_pairs(args):
             json.dump(save_data, f, indent=2)
 
         print(f"   ✓ Saved {len(pairs_data)} pairs to: {args.output}")
+
+        # Also save to centralized storage if requested or by default for personalization traits
+        store_centrally = getattr(args, 'store_centrally', True)
+        if store_centrally and len(pairs_data) > 0:
+            try:
+                # Determine if this is a personalization trait
+                trait_lower = args.trait.lower()
+                known_traits = ['british', 'evil', 'flirty', 'left_wing', 'left-wing', 'leftist']
+                is_personalization = any(t in trait_lower for t in known_traits)
+
+                metadata = {
+                    'source': 'generate_pairs_cli',
+                    'model': getattr(args, 'model', 'unknown'),
+                    'requested': report.requested,
+                    'kept_after_dedupe': report.kept_after_dedupe,
+                }
+                if report.diversity:
+                    metadata['diversity'] = {
+                        'unique_unigrams': report.diversity.unique_unigrams,
+                        'unique_bigrams': report.diversity.unique_bigrams,
+                        'avg_jaccard': report.diversity.avg_jaccard_prompt,
+                    }
+
+                if is_personalization:
+                    # Map to trait directory name
+                    if 'british' in trait_lower:
+                        trait_name = 'british'
+                    elif 'evil' in trait_lower:
+                        trait_name = 'evil'
+                    elif 'flirty' in trait_lower:
+                        trait_name = 'flirty'
+                    elif 'left' in trait_lower:
+                        trait_name = 'left_wing'
+                    else:
+                        trait_name = 'custom'
+
+                    stored_path = save_personalization_pairs(
+                        pairs=pair_set,
+                        trait=trait_name,
+                        model=getattr(args, 'model', None),
+                        metadata=metadata,
+                    )
+                    print(f"   ✓ Also stored in centralized location: {stored_path}")
+                else:
+                    stored_path = save_synthetic_pairs(
+                        pairs=pair_set,
+                        name=args.trait[:30].replace(' ', '_'),
+                        model=getattr(args, 'model', None),
+                        metadata=metadata,
+                    )
+                    print(f"   ✓ Also stored in centralized location: {stored_path}")
+            except Exception as e:
+                print(f"   ⚠ Warning: Could not save to centralized storage: {e}")
+
         print(f"\n✅ Synthetic pair generation completed successfully!\n")
 
     except Exception as e:
