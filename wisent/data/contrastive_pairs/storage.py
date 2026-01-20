@@ -24,8 +24,11 @@ from . import (
     PERSONALIZATION_DIR,
     SYNTHETIC_DIR,
     BENCHMARKS_DIR,
+    WELFARE_DIR,
     TRAIT_DIRS,
+    WELFARE_TRAIT_DIRS,
     get_trait_dir,
+    get_welfare_trait_path,
 )
 
 __all__ = [
@@ -35,6 +38,8 @@ __all__ = [
     "load_synthetic_pairs",
     "save_benchmark_pairs",
     "load_benchmark_pairs",
+    "save_welfare_pairs",
+    "load_welfare_pairs",
     "list_stored_pairs",
     "get_pair_count",
 ]
@@ -318,11 +323,104 @@ def load_benchmark_pairs(
     return load_contrastive_pair_set(filepath, return_backend=return_backend)
 
 
+def save_welfare_pairs(
+    pairs: ContrastivePairSet | list[ContrastivePair] | list[dict[str, Any]],
+    welfare_trait: str,
+    model: str | None = None,
+    filename: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> Path:
+    """Save welfare state contrastive pairs.
+
+    Args:
+        pairs: ContrastivePairSet, list of ContrastivePair objects, or list of dicts
+        welfare_trait: Welfare trait name (e.g., "comfort_distress", "agency_helplessness")
+        model: Optional model name used to generate pairs
+        filename: Optional custom filename
+        metadata: Optional metadata to include
+
+    Returns:
+        Path to the saved file
+    """
+    WELFARE_DIR.mkdir(parents=True, exist_ok=True)
+
+    if filename is None:
+        filename = _generate_filename(welfare_trait, model, include_timestamp=True)
+
+    filepath = WELFARE_DIR / filename
+
+    if isinstance(pairs, ContrastivePairSet):
+        pair_set = pairs
+    elif isinstance(pairs, list):
+        if len(pairs) > 0 and isinstance(pairs[0], dict):
+            pair_list = [ContrastivePair.from_dict(p) for p in pairs]
+        else:
+            pair_list = pairs
+        pair_set = ContrastivePairSet(
+            name=f"{welfare_trait}_welfare",
+            pairs=pair_list,
+            task_type="welfare",
+        )
+    else:
+        raise TypeError(f"Expected ContrastivePairSet or list, got {type(pairs)}")
+
+    save_contrastive_pair_set(pair_set, filepath)
+
+    if metadata:
+        meta_filepath = filepath.with_suffix(".meta.json")
+        with open(meta_filepath, "w") as f:
+            json.dump(metadata, f, indent=2)
+
+    return filepath
+
+
+def load_welfare_pairs(
+    welfare_trait: str,
+    filename: str | None = None,
+    return_backend: str = "torch",
+) -> ContrastivePairSet:
+    """Load welfare state contrastive pairs.
+
+    Args:
+        welfare_trait: Welfare trait name (e.g., "comfort_distress", "agency_helplessness")
+        filename: Specific filename to load (loads from WELFARE_TRAIT_DIRS if not provided)
+        return_backend: Backend for activations ('torch', 'numpy', or 'list')
+
+    Returns:
+        ContrastivePairSet with the loaded pairs
+    """
+    if filename:
+        filepath = WELFARE_DIR / filename
+    else:
+        # Use the predefined welfare trait path
+        trait_lower = welfare_trait.lower().replace("-", "_").replace(" ", "_")
+        if trait_lower in WELFARE_TRAIT_DIRS:
+            filepath = WELFARE_TRAIT_DIRS[trait_lower]
+        else:
+            # Try to find a matching file
+            pattern = f"{welfare_trait.lower().replace(' ', '_')}*.json"
+            json_files = sorted(WELFARE_DIR.glob(pattern), key=lambda p: p.stat().st_mtime)
+            json_files = [f for f in json_files if not f.name.endswith(".meta.json")]
+            if not json_files:
+                raise FileNotFoundError(
+                    f"No welfare pairs found for '{welfare_trait}'. "
+                    f"Available: {list(WELFARE_TRAIT_DIRS.keys())}"
+                )
+            filepath = json_files[-1]
+
+    if not filepath.exists():
+        raise FileNotFoundError(f"Welfare pairs file not found: {filepath}")
+
+    # Skip validation for welfare pairs - they have intentionally similar structure
+    # but differ in emotional valence, which can trigger false positives in divergence checks
+    return load_contrastive_pair_set(filepath, return_backend=return_backend, validate=False)
+
+
 def list_stored_pairs(category: str | None = None) -> dict[str, list[Path]]:
     """List all stored contrastive pair files.
 
     Args:
-        category: Filter by category ('personalization', 'synthetic', 'benchmarks')
+        category: Filter by category ('personalization', 'synthetic', 'benchmarks', 'welfare')
                   If None, returns all categories.
 
     Returns:
@@ -348,6 +446,12 @@ def list_stored_pairs(category: str | None = None) -> dict[str, list[Path]]:
             files = [f for f in BENCHMARKS_DIR.glob("*.json") if not f.name.endswith(".meta.json")]
             if files:
                 result["benchmarks"] = sorted(files)
+
+    if category is None or category == "welfare":
+        if WELFARE_DIR.exists():
+            files = [f for f in WELFARE_DIR.glob("*.json") if not f.name.endswith(".meta.json")]
+            if files:
+                result["welfare"] = sorted(files)
 
     return result
 
