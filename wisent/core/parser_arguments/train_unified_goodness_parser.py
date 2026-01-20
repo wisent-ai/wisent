@@ -96,21 +96,6 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
         default=None,
         help="Multiple layers as comma-separated indices (e.g., '12,16,20') or range ('10-20')"
     )
-    parser.add_argument(
-        "--token-aggregation",
-        type=str,
-        choices=["average", "final", "first", "max", "continuation"],
-        default="continuation",
-        help="How to aggregate token activations (default: continuation)"
-    )
-    parser.add_argument(
-        "--prompt-strategy",
-        type=str,
-        choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"],
-        default="chat_template",
-        help="Prompt construction strategy (default: chat_template)"
-    )
-
     # Steering vector creation
     parser.add_argument(
         "--method",

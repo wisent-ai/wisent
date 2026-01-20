@@ -142,21 +142,6 @@ def setup_modify_weights_parser(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Layers to collect activations from: 'all', single number (e.g. '8'), or comma-separated (e.g. '8,12,15'). Default: all layers"
     )
-    parser.add_argument(
-        "--token-aggregation",
-        type=str,
-        default="average",
-        choices=["average", "last", "first"],
-        help="How to aggregate token activations (default: average)"
-    )
-    parser.add_argument(
-        "--prompt-strategy",
-        type=str,
-        default="chat_template",
-        choices=["chat_template", "raw"],
-        help="Prompt formatting strategy (default: chat_template)"
-    )
-
     # Steering vector generation method
     parser.add_argument(
         "--steering-method",

@@ -50,9 +50,7 @@ def setup_synthetic_parser(parser):
     parser.add_argument("--intermediate-dir", type=str, default=None, help="Directory for intermediate files")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files after completion")
     parser.add_argument("--layers", type=str, default="15", help="Layers to extract activations from")
-    parser.add_argument("--token-aggregation", type=str, default="mean", help="Token aggregation method")
-    parser.add_argument("--prompt-strategy", type=str, default="full", help="Prompt strategy")
-    
+
     # Steering method configuration - uses centralized registry
     from wisent.core.steering_methods import SteeringMethodRegistry
     methods = SteeringMethodRegistry.list_methods()

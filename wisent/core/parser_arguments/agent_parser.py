@@ -44,20 +44,6 @@ def setup_agent_parser(parser):
 
     # Activation collection arguments
     parser.add_argument(
-        "--token-aggregation",
-        type=str,
-        default="average",
-        choices=["average", "final", "first", "max", "min", "max_score"],
-        help="How to aggregate token activations. 'max_score' uses highest token hallucination score (default: average)",
-    )
-    parser.add_argument(
-        "--prompt-strategy",
-        type=str,
-        default="chat_template",
-        choices=["chat_template", "direct_completion", "instruction_following", "multiple_choice", "role_playing"],
-        help="Prompt construction strategy (default: chat_template)",
-    )
-    parser.add_argument(
         "--normalize-layers", action="store_true", help="Normalize layer activations"
     )
     parser.add_argument(

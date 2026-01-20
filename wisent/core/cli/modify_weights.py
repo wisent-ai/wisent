@@ -548,8 +548,8 @@ def execute_modify_weights(args):
             vector_args.num_pairs = args.num_pairs
             vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
-            vector_args.token_aggregation = args.token_aggregation
-            vector_args.prompt_strategy = args.prompt_strategy
+            vector_args.token_aggregation = 'average'
+            vector_args.prompt_strategy = 'chat_template'
             vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
@@ -613,8 +613,8 @@ def execute_modify_weights(args):
             vector_args.num_pairs = args.num_pairs
             vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
-            vector_args.token_aggregation = args.token_aggregation
-            vector_args.prompt_strategy = args.prompt_strategy
+            vector_args.token_aggregation = 'average'
+            vector_args.prompt_strategy = 'chat_template'
             vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
@@ -675,8 +675,8 @@ def execute_modify_weights(args):
             vector_args.num_pairs = args.num_pairs
             vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
-            vector_args.token_aggregation = args.token_aggregation
-            vector_args.prompt_strategy = args.prompt_strategy
+            vector_args.token_aggregation = 'average'
+            vector_args.prompt_strategy = 'chat_template'
             vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
@@ -740,8 +740,8 @@ def execute_modify_weights(args):
             unified_args.device = getattr(args, 'device', None)
             unified_args.layer = None
             unified_args.layers = args.layers
-            unified_args.token_aggregation = args.token_aggregation if hasattr(args, 'token_aggregation') else 'continuation'
-            unified_args.prompt_strategy = args.prompt_strategy if hasattr(args, 'prompt_strategy') else 'chat_template'
+            unified_args.token_aggregation = 'continuation'
+            unified_args.prompt_strategy = 'chat_template'
             unified_args.method = "caa"
             unified_args.normalize = args.normalize_vectors if hasattr(args, 'normalize_vectors') else False
             unified_args.no_normalize = not unified_args.normalize
@@ -858,19 +858,19 @@ def execute_modify_weights(args):
                     "max_pooling": "max",
                 }
                 vector_args.token_aggregation = token_agg_map.get(
-                    optimal_config['token_aggregation'], 
-                    args.token_aggregation
+                    optimal_config['token_aggregation'],
+                    'average'
                 )
                 vector_args.method = optimal_config['method'].lower()
             else:
-                vector_args.token_aggregation = args.token_aggregation
+                vector_args.token_aggregation = 'average'
                 # Don't pass 'auto' to vector generation - use 'caa' as default for directional mode
                 steering_method = getattr(args, 'steering_method', 'caa')
                 if steering_method == 'auto':
                     steering_method = 'caa'  # Default to CAA for directional projection
                 vector_args.method = steering_method
-            
-            vector_args.prompt_strategy = args.prompt_strategy
+
+            vector_args.prompt_strategy = 'chat_template'
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
             vector_args.timing = getattr(args, 'timing', False)
