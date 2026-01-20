@@ -105,42 +105,29 @@ def create_activation(conn, model_id: int, pair_id: int, set_id: int, layer: int
 
 def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_id: int,
                       conn, device: str, num_layers: int, limit: int = 200):
-    """Extract activations for a single benchmark."""
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
+    """Extract activations for a single benchmark using EXISTING pairs from database."""
+    cur = conn.cursor()
 
-    print(f"  Generating pairs for {benchmark_name}...", flush=True)
-    try:
-        pairs = lm_build_contrastive_pairs(benchmark_name, None, limit=limit)
-    except Exception as e:
-        print(f"  ERROR generating pairs: {e}", flush=True)
+    # Get existing pairs from database for this benchmark set
+    cur.execute('''
+        SELECT id, "positiveExample", "negativeExample"
+        FROM "ContrastivePair"
+        WHERE "setId" = %s
+        ORDER BY id
+        LIMIT %s
+    ''', (set_id, limit))
+    db_pairs = cur.fetchall()
+    cur.close()
+
+    if not db_pairs:
+        print(f"  No existing pairs in database for {benchmark_name}", flush=True)
         return 0
 
-    if not pairs:
-        print(f"  No pairs generated for {benchmark_name}", flush=True)
-        return 0
-
-    print(f"  Processing {len(pairs)} pairs...", flush=True)
+    print(f"  Processing {len(db_pairs)} existing pairs from database...", flush=True)
     extracted = 0
 
-    for pair_idx, pair in enumerate(pairs):
-        prompt = pair.prompt
-        pos = pair.positive_response.model_response if hasattr(pair.positive_response, 'model_response') else str(pair.positive_response)
-        neg = pair.negative_response.model_response if hasattr(pair.negative_response, 'model_response') else str(pair.negative_response)
-
-        pair_id = get_or_create_pair(conn, set_id, prompt, pos, neg, pair_idx)
-
-        # Build chat texts
-        pos_messages = [{"role": "user", "content": prompt}, {"role": "assistant", "content": pos}]
-        neg_messages = [{"role": "user", "content": prompt}, {"role": "assistant", "content": neg}]
-
-        try:
-            pos_text = tokenizer.apply_chat_template(pos_messages, tokenize=False, add_generation_prompt=False)
-            neg_text = tokenizer.apply_chat_template(neg_messages, tokenize=False, add_generation_prompt=False)
-        except Exception:
-            # Fallback for models without chat template
-            pos_text = f"User: {prompt}\nAssistant: {pos}"
-            neg_text = f"User: {prompt}\nAssistant: {neg}"
-
+    for pair_idx, (pair_id, pos_text, neg_text) in enumerate(db_pairs):
+        # pos_text and neg_text already contain the full example from database
         # Extract activations
         def get_hidden_states(text):
             enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
@@ -165,7 +152,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         extracted += 1
 
         if (pair_idx + 1) % 50 == 0:
-            print(f"    Processed {pair_idx + 1}/{len(pairs)} pairs", flush=True)
+            print(f"    Processed {pair_idx + 1}/{len(db_pairs)} pairs", flush=True)
 
     if device == "cuda":
         torch.cuda.empty_cache()

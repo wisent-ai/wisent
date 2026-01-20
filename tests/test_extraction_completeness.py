@@ -6,18 +6,21 @@ This test checks against the actual ContrastivePair data in the database:
 2. Each extracted pair has ALL layers (no partial extractions)
 3. Each extracted pair has BOTH positive and negative activations
 4. No duplicate activations exist
+
+OPTIMIZED VERSION: All queries filter by both modelId AND contrastivePairSetId
+to avoid full table scans on the Activation table.
 """
 
 import psycopg2
 import pytest
 from collections import defaultdict
 
-# Database configuration
+# Database configuration - direct connection (bypasses pooler timeout limits)
 DB_CONFIG = {
-    "host": "aws-0-eu-west-2.pooler.supabase.com",
-    "port": 6543,
+    "host": "db.rbqjqnouluslojmmnuqi.supabase.co",
+    "port": 5432,
     "database": "postgres",
-    "user": "postgres.rbqjqnouluslojmmnuqi",
+    "user": "postgres",
     "password": "BsKuEnPFLCFurN4a",
     "sslmode": "require",
     "gssencmode": "disable",
@@ -28,12 +31,12 @@ MAX_PAIRS_PER_BENCHMARK = 500
 
 
 def get_db_connection():
-    """Create database connection with extended timeout."""
+    """Create database connection with no statement timeout."""
     conn = psycopg2.connect(**DB_CONFIG)
-    conn.set_session(autocommit=True)
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '300s'")
+    cur.execute("SET statement_timeout = 0")  # Disable server-side timeout
     cur.close()
+    conn.commit()
     return conn
 
 
@@ -54,6 +57,18 @@ class TestExtractionCompleteness:
         """)
         self.models = {row[1]: {"id": row[0], "layers": row[2]} for row in self.cur.fetchall()}
 
+        # Get all benchmarks with their pair counts (capped at 500)
+        self.cur.execute("""
+            SELECT
+                cps.id as set_id,
+                cps.name as benchmark_name,
+                LEAST(COUNT(cp.id), %s) as expected_pairs
+            FROM "ContrastivePairSet" cps
+            JOIN "ContrastivePair" cp ON cp."setId" = cps.id
+            GROUP BY cps.id, cps.name
+        """, (MAX_PAIRS_PER_BENCHMARK,))
+        self.benchmarks = {row[1]: {"id": row[0], "expected_pairs": row[2]} for row in self.cur.fetchall()}
+
         yield
         self.cur.close()
         self.conn.close()
@@ -62,208 +77,291 @@ class TestExtractionCompleteness:
         """
         For each model and benchmark, verify we have activations for all ContrastivePairs.
         This is the core completeness check - it compares against actual pair data.
+
+        OPTIMIZED: Queries per model AND per benchmark to avoid full table scans.
         """
         missing_extractions = []
+        missing_by_model = defaultdict(list)
 
         for model_name, model_info in self.models.items():
             model_id = model_info["id"]
+            print(f"\nChecking model: {model_name}")
 
-            # Get expected pair counts per benchmark from ContrastivePair table
-            # Capped at MAX_PAIRS_PER_BENCHMARK as that's what extract_all.py does
-            self.cur.execute("""
-                SELECT
-                    cps.id as set_id,
-                    cps.name as benchmark_name,
-                    LEAST(COUNT(cp.id), %s) as expected_pairs
-                FROM "ContrastivePairSet" cps
-                JOIN "ContrastivePair" cp ON cp."setId" = cps.id
-                GROUP BY cps.id, cps.name
-            """, (MAX_PAIRS_PER_BENCHMARK,))
+            for benchmark_name, benchmark_info in self.benchmarks.items():
+                benchmark_id = benchmark_info["id"]
+                expected_count = benchmark_info["expected_pairs"]
 
-            expected_by_benchmark = {row[1]: {"set_id": row[0], "expected": row[2]}
-                                      for row in self.cur.fetchall()}
+                # Query ONLY this model + benchmark combination
+                self.cur.execute("""
+                    SELECT COUNT(DISTINCT "contrastivePairId")
+                    FROM "Activation"
+                    WHERE "modelId" = %s
+                      AND "contrastivePairSetId" = %s
+                      AND "contrastivePairId" IS NOT NULL
+                """, (model_id, benchmark_id))
 
-            # Get actual extracted pair counts per benchmark for this model
-            # Count distinct pairs where we have at least one activation
-            self.cur.execute("""
-                SELECT
-                    cps.name as benchmark_name,
-                    COUNT(DISTINCT a."contrastivePairId") as actual_pairs
-                FROM "Activation" a
-                JOIN "ContrastivePairSet" cps ON a."contrastivePairSetId" = cps.id
-                WHERE a."modelId" = %s
-                  AND a."contrastivePairId" IS NOT NULL
-                GROUP BY cps.name
-            """, (model_id,))
-
-            actual_by_benchmark = {row[0]: row[1] for row in self.cur.fetchall()}
-
-            # Compare expected vs actual
-            for benchmark_name, expected_info in expected_by_benchmark.items():
-                expected_count = expected_info["expected"]
-                actual_count = actual_by_benchmark.get(benchmark_name, 0)
+                actual_count = self.cur.fetchone()[0]
 
                 if actual_count < expected_count:
-                    missing_extractions.append({
+                    issue = {
                         "model": model_name,
                         "benchmark": benchmark_name,
                         "expected": expected_count,
                         "actual": actual_count,
                         "missing": expected_count - actual_count
-                    })
+                    }
+                    missing_extractions.append(issue)
+                    missing_by_model[model_name].append(issue)
 
-        assert len(missing_extractions) == 0, \
-            f"Found {len(missing_extractions)} model/benchmark combinations with missing extractions:\n" + \
-            "\n".join(
-                f"  {m['model']} / {m['benchmark']}: {m['actual']}/{m['expected']} pairs ({m['missing']} missing)"
-                for m in sorted(missing_extractions, key=lambda x: -x['missing'])[:50]
-            )
+        if missing_extractions:
+            report_lines = [
+                f"TOTAL: {len(missing_extractions)} model/benchmark combinations with missing extractions",
+                f"Total missing pairs: {sum(m['missing'] for m in missing_extractions)}",
+                ""
+            ]
+
+            for model_name in sorted(missing_by_model.keys()):
+                issues = missing_by_model[model_name]
+                total_missing = sum(i['missing'] for i in issues)
+                report_lines.append(f"\n=== {model_name} ({len(issues)} benchmarks, {total_missing} total missing pairs) ===")
+                for i in sorted(issues, key=lambda x: -x['missing']):
+                    report_lines.append(f"  {i['benchmark']}: {i['actual']}/{i['expected']} pairs ({i['missing']} missing)")
+
+            assert False, "\n".join(report_lines)
 
     def test_each_pair_has_all_layers(self):
         """
         Verify no partial extractions - each extracted pair should have all layers.
+
+        OPTIMIZED: Queries per model AND per benchmark.
         """
-        incomplete_pairs = []
+        incomplete_by_model = defaultdict(list)
 
         for model_name, model_info in self.models.items():
             model_id = model_info["id"]
             expected_layers = model_info["layers"]
+            print(f"\nChecking layers for model: {model_name} (expects {expected_layers} layers)")
 
-            # Find pairs that don't have all layers
-            self.cur.execute("""
-                SELECT
-                    "contrastivePairId",
-                    COUNT(DISTINCT layer) as layer_count
-                FROM "Activation"
-                WHERE "modelId" = %s
-                  AND "contrastivePairId" IS NOT NULL
-                GROUP BY "contrastivePairId"
-                HAVING COUNT(DISTINCT layer) != %s
-            """, (model_id, expected_layers))
+            for benchmark_name, benchmark_info in self.benchmarks.items():
+                benchmark_id = benchmark_info["id"]
 
-            for row in self.cur.fetchall():
-                incomplete_pairs.append({
-                    "model": model_name,
-                    "pair_id": row[0],
-                    "actual_layers": row[1],
-                    "expected_layers": expected_layers
-                })
+                # Find pairs in this benchmark that don't have all layers
+                self.cur.execute("""
+                    SELECT
+                        "contrastivePairId",
+                        COUNT(DISTINCT layer) as layer_count
+                    FROM "Activation"
+                    WHERE "modelId" = %s
+                      AND "contrastivePairSetId" = %s
+                      AND "contrastivePairId" IS NOT NULL
+                    GROUP BY "contrastivePairId"
+                    HAVING COUNT(DISTINCT layer) != %s
+                """, (model_id, benchmark_id, expected_layers))
 
-        assert len(incomplete_pairs) == 0, \
-            f"Found {len(incomplete_pairs)} pairs with incomplete layer coverage:\n" + \
-            "\n".join(
-                f"  {p['model']}: pair {p['pair_id']} has {p['actual_layers']}/{p['expected_layers']} layers"
-                for p in incomplete_pairs[:20]
-            )
+                for row in self.cur.fetchall():
+                    incomplete_by_model[model_name].append({
+                        "benchmark": benchmark_name,
+                        "pair_id": row[0],
+                        "actual_layers": row[1],
+                        "expected_layers": expected_layers
+                    })
+
+        if any(incomplete_by_model.values()):
+            total_incomplete = sum(len(v) for v in incomplete_by_model.values())
+            report_lines = [
+                f"TOTAL: {total_incomplete} pairs with incomplete layer coverage",
+                ""
+            ]
+
+            for model_name in sorted(incomplete_by_model.keys()):
+                pairs = incomplete_by_model[model_name]
+                if pairs:
+                    expected = pairs[0]['expected_layers']
+                    report_lines.append(f"\n=== {model_name} (expected {expected} layers, {len(pairs)} incomplete pairs) ===")
+
+                    # Group by actual layer count
+                    by_layer_count = defaultdict(list)
+                    for p in pairs:
+                        by_layer_count[p['actual_layers']].append((p['benchmark'], p['pair_id']))
+
+                    for layer_count in sorted(by_layer_count.keys()):
+                        entries = by_layer_count[layer_count]
+                        report_lines.append(f"  {layer_count} layers: {len(entries)} pairs")
+                        for bench, pair_id in entries[:5]:
+                            report_lines.append(f"    - {bench}: pair {pair_id}")
+                        if len(entries) > 5:
+                            report_lines.append(f"    ... and {len(entries) - 5} more")
+
+            assert False, "\n".join(report_lines)
 
     def test_each_pair_has_positive_and_negative(self):
         """
         Verify each extracted pair has both positive and negative activations.
+
+        OPTIMIZED: Queries per model AND per benchmark.
         """
-        incomplete_pairs = []
+        incomplete_by_model = defaultdict(list)
 
         for model_name, model_info in self.models.items():
             model_id = model_info["id"]
+            print(f"\nChecking polarities for model: {model_name}")
 
-            # Find pairs missing positive or negative
-            self.cur.execute("""
-                SELECT
-                    "contrastivePairId",
-                    ARRAY_AGG(DISTINCT "isPositive") as polarities
-                FROM "Activation"
-                WHERE "modelId" = %s
-                  AND "contrastivePairId" IS NOT NULL
-                  AND "isPositive" IS NOT NULL
-                GROUP BY "contrastivePairId"
-                HAVING COUNT(DISTINCT "isPositive") != 2
-            """, (model_id,))
+            for benchmark_name, benchmark_info in self.benchmarks.items():
+                benchmark_id = benchmark_info["id"]
 
-            for row in self.cur.fetchall():
-                incomplete_pairs.append({
-                    "model": model_name,
-                    "pair_id": row[0],
-                    "polarities": row[1]
-                })
+                # Find pairs missing positive or negative in this benchmark
+                self.cur.execute("""
+                    SELECT
+                        "contrastivePairId",
+                        ARRAY_AGG(DISTINCT "isPositive") as polarities
+                    FROM "Activation"
+                    WHERE "modelId" = %s
+                      AND "contrastivePairSetId" = %s
+                      AND "contrastivePairId" IS NOT NULL
+                      AND "isPositive" IS NOT NULL
+                    GROUP BY "contrastivePairId"
+                    HAVING COUNT(DISTINCT "isPositive") != 2
+                """, (model_id, benchmark_id))
 
-        assert len(incomplete_pairs) == 0, \
-            f"Found {len(incomplete_pairs)} pairs missing positive or negative activations:\n" + \
-            "\n".join(
-                f"  {p['model']}: pair {p['pair_id']} only has polarities {p['polarities']}"
-                for p in incomplete_pairs[:20]
-            )
+                for row in self.cur.fetchall():
+                    incomplete_by_model[model_name].append({
+                        "benchmark": benchmark_name,
+                        "pair_id": row[0],
+                        "polarities": row[1]
+                    })
+
+        if any(incomplete_by_model.values()):
+            total_incomplete = sum(len(v) for v in incomplete_by_model.values())
+            report_lines = [
+                f"TOTAL: {total_incomplete} pairs missing positive or negative activations",
+                ""
+            ]
+
+            for model_name in sorted(incomplete_by_model.keys()):
+                pairs = incomplete_by_model[model_name]
+                if pairs:
+                    report_lines.append(f"\n=== {model_name} ({len(pairs)} incomplete pairs) ===")
+
+                    # Group by what's missing
+                    only_positive = [p for p in pairs if p['polarities'] == [True]]
+                    only_negative = [p for p in pairs if p['polarities'] == [False]]
+                    other = [p for p in pairs if p['polarities'] not in [[True], [False]]]
+
+                    if only_positive:
+                        report_lines.append(f"  Only positive (missing negative): {len(only_positive)} pairs")
+                        for p in only_positive[:5]:
+                            report_lines.append(f"    - {p['benchmark']}: pair {p['pair_id']}")
+                        if len(only_positive) > 5:
+                            report_lines.append(f"    ... and {len(only_positive) - 5} more")
+                    if only_negative:
+                        report_lines.append(f"  Only negative (missing positive): {len(only_negative)} pairs")
+                        for p in only_negative[:5]:
+                            report_lines.append(f"    - {p['benchmark']}: pair {p['pair_id']}")
+                        if len(only_negative) > 5:
+                            report_lines.append(f"    ... and {len(only_negative) - 5} more")
+                    if other:
+                        report_lines.append(f"  Other (unexpected polarities): {len(other)} pairs")
+                        for p in other[:5]:
+                            report_lines.append(f"    - {p['benchmark']}: pair {p['pair_id']}, polarities={p['polarities']}")
+
+            assert False, "\n".join(report_lines)
 
     def test_no_duplicate_activations(self):
         """
         Verify no duplicate activations exist for same model/pair/layer/polarity.
+
+        OPTIMIZED: Queries per model AND per benchmark.
         """
-        duplicates = []
+        duplicates_by_model = defaultdict(list)
 
         for model_name, model_info in self.models.items():
             model_id = model_info["id"]
+            print(f"\nChecking duplicates for model: {model_name}")
 
-            self.cur.execute("""
-                SELECT
-                    "contrastivePairId", layer, "isPositive", COUNT(*) as cnt
-                FROM "Activation"
-                WHERE "modelId" = %s
-                  AND "contrastivePairId" IS NOT NULL
-                GROUP BY "contrastivePairId", layer, "isPositive"
-                HAVING COUNT(*) > 1
-            """, (model_id,))
+            for benchmark_name, benchmark_info in self.benchmarks.items():
+                benchmark_id = benchmark_info["id"]
 
-            for row in self.cur.fetchall():
-                duplicates.append({
-                    "model": model_name,
-                    "pair_id": row[0],
-                    "layer": row[1],
-                    "is_positive": row[2],
-                    "count": row[3]
-                })
+                self.cur.execute("""
+                    SELECT
+                        "contrastivePairId", layer, "isPositive", COUNT(*) as cnt
+                    FROM "Activation"
+                    WHERE "modelId" = %s
+                      AND "contrastivePairSetId" = %s
+                      AND "contrastivePairId" IS NOT NULL
+                    GROUP BY "contrastivePairId", layer, "isPositive"
+                    HAVING COUNT(*) > 1
+                """, (model_id, benchmark_id))
 
-        assert len(duplicates) == 0, \
-            f"Found {len(duplicates)} duplicate activations:\n" + \
-            "\n".join(
-                f"  {d['model']}: pair {d['pair_id']}, layer {d['layer']}, positive={d['is_positive']} has {d['count']} copies"
-                for d in duplicates[:20]
-            )
+                for row in self.cur.fetchall():
+                    duplicates_by_model[model_name].append({
+                        "benchmark": benchmark_name,
+                        "pair_id": row[0],
+                        "layer": row[1],
+                        "is_positive": row[2],
+                        "count": row[3]
+                    })
+
+        if any(duplicates_by_model.values()):
+            total_duplicates = sum(len(v) for v in duplicates_by_model.values())
+            total_extra = sum(sum(d['count'] - 1 for d in v) for v in duplicates_by_model.values())
+            report_lines = [
+                f"TOTAL: {total_duplicates} duplicate activation entries ({total_extra} extra rows)",
+                ""
+            ]
+
+            for model_name in sorted(duplicates_by_model.keys()):
+                dups = duplicates_by_model[model_name]
+                if dups:
+                    model_extra = sum(d['count'] - 1 for d in dups)
+                    report_lines.append(f"\n=== {model_name} ({len(dups)} duplicated entries, {model_extra} extra rows) ===")
+
+                    # Group by benchmark
+                    by_benchmark = defaultdict(list)
+                    for d in dups:
+                        by_benchmark[d['benchmark']].append(d)
+
+                    for bench in sorted(by_benchmark.keys()):
+                        entries = by_benchmark[bench]
+                        report_lines.append(f"  {bench}: {len(entries)} duplicates")
+                        for e in entries[:3]:
+                            report_lines.append(f"    pair={e['pair_id']}, layer={e['layer']}, positive={e['is_positive']}: {e['count']} copies")
+                        if len(entries) > 3:
+                            report_lines.append(f"    ... and {len(entries) - 3} more")
+
+            assert False, "\n".join(report_lines)
 
     def test_extraction_coverage_per_model(self):
         """
         For each model, report total extraction coverage as percentage of all possible pairs.
+
+        OPTIMIZED: Queries per model AND per benchmark.
         """
-        # Get total possible pairs across all benchmarks
-        self.cur.execute("""
-            SELECT
-                cps.id,
-                LEAST(COUNT(cp.id), %s) as pair_count
-            FROM "ContrastivePairSet" cps
-            JOIN "ContrastivePair" cp ON cp."setId" = cps.id
-            GROUP BY cps.id
-        """, (MAX_PAIRS_PER_BENCHMARK,))
-
-        total_possible_pairs = sum(row[1] for row in self.cur.fetchall())
-
+        total_possible_pairs = sum(b["expected_pairs"] for b in self.benchmarks.values())
         coverage_results = {}
 
         for model_name, model_info in self.models.items():
             model_id = model_info["id"]
+            print(f"\nCalculating coverage for model: {model_name}")
 
-            # Count unique pairs with complete extraction (all layers, both polarities)
-            expected_layers = model_info["layers"]
-            expected_activations_per_pair = expected_layers * 2  # layers * (positive + negative)
+            total_extracted = 0
+            for benchmark_name, benchmark_info in self.benchmarks.items():
+                benchmark_id = benchmark_info["id"]
 
-            self.cur.execute("""
-                SELECT COUNT(DISTINCT "contrastivePairId")
-                FROM "Activation"
-                WHERE "modelId" = %s
-                  AND "contrastivePairId" IS NOT NULL
-            """, (model_id,))
+                # Count unique pairs extracted for this benchmark
+                self.cur.execute("""
+                    SELECT COUNT(DISTINCT "contrastivePairId")
+                    FROM "Activation"
+                    WHERE "modelId" = %s
+                      AND "contrastivePairSetId" = %s
+                      AND "contrastivePairId" IS NOT NULL
+                """, (model_id, benchmark_id))
 
-            extracted_pairs = self.cur.fetchone()[0]
-            coverage = (extracted_pairs / total_possible_pairs * 100) if total_possible_pairs > 0 else 0
+                total_extracted += self.cur.fetchone()[0]
+
+            coverage = (total_extracted / total_possible_pairs * 100) if total_possible_pairs > 0 else 0
 
             coverage_results[model_name] = {
-                "extracted": extracted_pairs,
+                "extracted": total_extracted,
                 "total": total_possible_pairs,
                 "coverage": coverage
             }
@@ -274,12 +372,22 @@ class TestExtractionCompleteness:
             if data["coverage"] < 90
         ]
 
-        assert len(low_coverage) == 0, \
-            f"Models with low extraction coverage (<90%):\n" + \
-            "\n".join(
-                f"  {name}: {data['extracted']}/{data['total']} pairs ({data['coverage']:.1f}%)"
-                for name, data in low_coverage
-            )
+        if low_coverage:
+            report_lines = [
+                f"EXTRACTION COVERAGE REPORT",
+                f"Total benchmarks: {len(self.benchmarks)}",
+                f"Total possible pairs (capped at {MAX_PAIRS_PER_BENCHMARK}/benchmark): {total_possible_pairs}",
+                ""
+            ]
+
+            for name, data in sorted(coverage_results.items(), key=lambda x: x[1]['coverage']):
+                status = "LOW" if data['coverage'] < 90 else "OK"
+                report_lines.append(f"  [{status}] {name}: {data['extracted']}/{data['total']} pairs ({data['coverage']:.1f}%)")
+
+            report_lines.append("")
+            report_lines.append(f"Models below 90% threshold: {len(low_coverage)}")
+
+            assert False, "\n".join(report_lines)
 
 
 class TestSpecificPairExtraction:
@@ -299,6 +407,12 @@ class TestSpecificPairExtraction:
         """)
         self.models = {row[1]: {"id": row[0], "layers": row[2]} for row in self.cur.fetchall()}
 
+        # Get all benchmarks
+        self.cur.execute("""
+            SELECT id, name FROM "ContrastivePairSet"
+        """)
+        self.benchmarks = [(row[0], row[1]) for row in self.cur.fetchall()]
+
         yield
         self.cur.close()
         self.conn.close()
@@ -307,24 +421,21 @@ class TestSpecificPairExtraction:
         """
         Verify that the first N pairs (up to 500) of each benchmark are extracted.
         This checks the extraction order logic.
+
+        OPTIMIZED: Queries per model AND per benchmark.
         """
-        issues = []
+        issues_by_model = defaultdict(list)
 
         for model_name, model_info in self.models.items():
             model_id = model_info["id"]
+            print(f"\nChecking specific pairs for model: {model_name}")
 
-            # Get all benchmarks
-            self.cur.execute("""
-                SELECT id, name FROM "ContrastivePairSet"
-            """)
-            benchmarks = self.cur.fetchall()
-
-            for benchmark_id, benchmark_name in benchmarks:
+            for benchmark_id, benchmark_name in self.benchmarks:
                 # Get the first MAX_PAIRS_PER_BENCHMARK pair IDs for this benchmark
                 self.cur.execute("""
                     SELECT id
                     FROM "ContrastivePair"
-                    WHERE "contrastivePairSetId" = %s
+                    WHERE "setId" = %s
                     ORDER BY id
                     LIMIT %s
                 """, (benchmark_id, MAX_PAIRS_PER_BENCHMARK))
@@ -348,21 +459,35 @@ class TestSpecificPairExtraction:
                 # Check for missing pairs
                 missing = expected_pair_ids - actual_pair_ids
                 if missing:
-                    issues.append({
-                        "model": model_name,
+                    issues_by_model[model_name].append({
                         "benchmark": benchmark_name,
                         "expected_count": len(expected_pair_ids),
                         "actual_count": len(actual_pair_ids),
                         "missing_count": len(missing),
-                        "sample_missing": list(missing)[:5]
+                        "missing_ids": sorted(missing)
                     })
 
-        assert len(issues) == 0, \
-            f"Found {len(issues)} model/benchmark combinations with missing specific pairs:\n" + \
-            "\n".join(
-                f"  {i['model']} / {i['benchmark']}: missing {i['missing_count']} pairs (sample IDs: {i['sample_missing']})"
-                for i in sorted(issues, key=lambda x: -x['missing_count'])[:30]
-            )
+        if any(issues_by_model.values()):
+            total_issues = sum(len(v) for v in issues_by_model.values())
+            total_missing = sum(sum(i['missing_count'] for i in v) for v in issues_by_model.values())
+
+            report_lines = [
+                f"TOTAL: {total_issues} model/benchmark combinations with missing pairs",
+                f"Total missing pairs: {total_missing}",
+                ""
+            ]
+
+            for model_name in sorted(issues_by_model.keys()):
+                issues = issues_by_model[model_name]
+                if issues:
+                    model_missing = sum(i['missing_count'] for i in issues)
+                    report_lines.append(f"\n=== {model_name} ({len(issues)} benchmarks, {model_missing} missing pairs) ===")
+
+                    for i in sorted(issues, key=lambda x: -x['missing_count']):
+                        report_lines.append(f"  {i['benchmark']}: {i['actual_count']}/{i['expected_count']} ({i['missing_count']} missing)")
+                        report_lines.append(f"    Missing IDs: {i['missing_ids'][:20]}{'...' if len(i['missing_ids']) > 20 else ''}")
+
+            assert False, "\n".join(report_lines)
 
 
 class TestBenchmarkCompleteness:
@@ -380,6 +505,14 @@ class TestBenchmarkCompleteness:
         """)
         self.models = {row[1]: row[0] for row in self.cur.fetchall()}
 
+        # Get all benchmarks that have ContrastivePairs
+        self.cur.execute("""
+            SELECT DISTINCT cps.id, cps.name
+            FROM "ContrastivePairSet" cps
+            JOIN "ContrastivePair" cp ON cp."setId" = cps.id
+        """)
+        self.all_benchmarks = {row[1]: row[0] for row in self.cur.fetchall()}
+
         yield
         self.cur.close()
         self.conn.close()
@@ -387,43 +520,45 @@ class TestBenchmarkCompleteness:
     def test_all_benchmarks_have_extractions_per_model(self):
         """
         Verify each model has at least one extraction for every benchmark.
-        """
-        # Get all benchmarks that have ContrastivePairs
-        self.cur.execute("""
-            SELECT DISTINCT cps.id, cps.name
-            FROM "ContrastivePairSet" cps
-            JOIN "ContrastivePair" cp ON cp."setId" = cps.id
-        """)
-        all_benchmarks = {row[1]: row[0] for row in self.cur.fetchall()}
 
-        missing_benchmarks = []
+        OPTIMIZED: Check one benchmark at a time per model.
+        """
+        missing_by_model = {}
 
         for model_name, model_id in self.models.items():
-            # Get benchmarks that have extractions for this model
-            self.cur.execute("""
-                SELECT DISTINCT cps.name
-                FROM "Activation" a
-                JOIN "ContrastivePairSet" cps ON a."contrastivePairSetId" = cps.id
-                WHERE a."modelId" = %s
-            """, (model_id,))
+            print(f"\nChecking benchmark coverage for model: {model_name}")
+            missing = []
 
-            extracted_benchmarks = {row[0] for row in self.cur.fetchall()}
-            missing = set(all_benchmarks.keys()) - extracted_benchmarks
+            for benchmark_name, benchmark_id in self.all_benchmarks.items():
+                # Check if this model has ANY extraction for this benchmark
+                self.cur.execute("""
+                    SELECT 1
+                    FROM "Activation"
+                    WHERE "modelId" = %s
+                      AND "contrastivePairSetId" = %s
+                    LIMIT 1
+                """, (model_id, benchmark_id))
+
+                if self.cur.fetchone() is None:
+                    missing.append(benchmark_name)
 
             if missing:
-                missing_benchmarks.append({
-                    "model": model_name,
-                    "missing_count": len(missing),
-                    "total_benchmarks": len(all_benchmarks),
-                    "missing_names": sorted(missing)
-                })
+                missing_by_model[model_name] = sorted(missing)
 
-        assert len(missing_benchmarks) == 0, \
-            f"Models with missing benchmark extractions:\n" + \
-            "\n".join(
-                f"  {m['model']}: missing {m['missing_count']}/{m['total_benchmarks']} benchmarks: {m['missing_names'][:10]}..."
-                for m in missing_benchmarks
-            )
+        if missing_by_model:
+            report_lines = [
+                f"BENCHMARK COMPLETENESS REPORT",
+                f"Total benchmarks with pairs: {len(self.all_benchmarks)}",
+                ""
+            ]
+
+            for model_name in sorted(missing_by_model.keys()):
+                missing = missing_by_model[model_name]
+                report_lines.append(f"\n=== {model_name}: missing {len(missing)}/{len(self.all_benchmarks)} benchmarks ===")
+                for bench in missing:
+                    report_lines.append(f"  - {bench}")
+
+            assert False, "\n".join(report_lines)
 
 
 if __name__ == "__main__":
