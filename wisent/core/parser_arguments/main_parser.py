@@ -16,6 +16,7 @@ from wisent.core.parser_arguments.diagnose_vectors_parser import setup_diagnose_
 from wisent.core.parser_arguments.create_steering_object_parser import setup_create_steering_object_parser
 from wisent.core.parser_arguments.generate_vector_from_task_parser import setup_generate_vector_from_task_parser
 from wisent.core.parser_arguments.generate_vector_from_synthetic_parser import setup_generate_vector_from_synthetic_parser
+from wisent.core.parser_arguments.generate_vector_from_welfare_parser import setup_generate_vector_from_welfare_parser
 from wisent.core.parser_arguments.synthetic_parser import setup_synthetic_parser
 from wisent.core.parser_arguments.nonsense_parser import setup_test_nonsense_parser
 from wisent.core.parser_arguments.monitor_parser import setup_monitor_parser
@@ -89,6 +90,10 @@ def setup_parser() -> argparse.ArgumentParser:
     # Generate vector from synthetic command (full pipeline)
     generate_vector_from_synthetic_parser = subparsers.add_parser("generate-vector-from-synthetic", help="Generate steering vector from synthetic pairs (full pipeline)")
     setup_generate_vector_from_synthetic_parser(generate_vector_from_synthetic_parser)
+
+    # Generate vector from welfare command (full pipeline using ANIMA framework)
+    generate_vector_from_welfare_parser = subparsers.add_parser("generate-vector-from-welfare", help="Generate steering vector from pre-loaded welfare pairs (ANIMA framework)")
+    setup_generate_vector_from_welfare_parser(generate_vector_from_welfare_parser)
 
     # Synthetic command (generate + train + test)
     synthetic_parser = subparsers.add_parser("synthetic", help="Run synthetic contrastive pair pipeline")
