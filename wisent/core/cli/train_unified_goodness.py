@@ -319,31 +319,8 @@ def execute_train_unified_goodness(args):
     # =========================================================================
     print(f"\n🧠 Step 4/5: Collecting activations and training vector...")
 
-    # Map aggregation strategy
-    aggregation_map = {
-        'average': ExtractionStrategy.CHAT_MEAN,
-        'final': ExtractionStrategy.CHAT_LAST,
-        'first': ExtractionStrategy.CHAT_FIRST,
-        'max': ExtractionStrategy.CHAT_MAX_NORM,
-        'continuation': ExtractionStrategy.CHAT_FIRST,  # First answer token
-    }
-    aggregation_strategy = aggregation_map.get(
-        args.token_aggregation,
-        ExtractionStrategy.CHAT_LAST
-    )
-
-    # Map prompt strategy
-    prompt_strategy_map = {
-        'chat_template': ExtractionStrategy.CHAT_LAST,
-        'direct_completion': ExtractionStrategy.CHAT_LAST,
-        'instruction_following': ExtractionStrategy.CHAT_LAST,
-        'multiple_choice': ExtractionStrategy.MC_BALANCED,
-        'role_playing': ExtractionStrategy.ROLE_PLAY,
-    }
-    prompt_strategy = prompt_strategy_map.get(
-        args.prompt_strategy,
-        ExtractionStrategy.CHAT_LAST
-    )
+    # Use sensible default extraction strategy
+    aggregation_strategy = ExtractionStrategy.CHAT_LAST
 
     # Try to load activations from checkpoint
     activations_checkpoint = load_checkpoint(checkpoint_dir, "activations_data")
@@ -469,7 +446,7 @@ def execute_train_unified_goodness(args):
         'num_eval_pairs': len(all_eval_pairs),
         'benchmark_pair_counts': benchmark_pair_counts,
         'normalize': args.normalize,
-        'aggregation': args.token_aggregation,
+        'aggregation': 'chat_last',
         # All layer vectors if multiple
         'all_layer_vectors': {k: v for k, v in steering_vectors.items()},
         # Eval pairs for optimize-weights to use

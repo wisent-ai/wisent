@@ -130,8 +130,8 @@ def execute_generate_vector_from_synthetic(args):
             model=args.model,
             device=args.device,
             layers=args.layers,
-            token_aggregation=args.token_aggregation,
-            prompt_strategy=args.prompt_strategy,
+            token_aggregation='average',
+            prompt_strategy='chat_template',
             verbose=args.verbose,
             timing=args.timing,
         )
