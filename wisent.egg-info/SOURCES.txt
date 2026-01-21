@@ -243,11 +243,14 @@ wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/math.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/math500.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/meddialog.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/medical_abstracts.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/medical_benchmarks.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/medium_priority_benchmarks.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/mercury.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/mmlu_redux.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/mmlusr.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multilingual_benchmarks.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multimedqa.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multimodal_benchmarks.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multipl_e.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_choice.py
@@ -258,6 +261,7 @@ wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_js.p
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_py.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/multiple_rs.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/non_greedy_robustness_agieval_aqua_rat.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/okapi_multilingual.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/olympiadbench.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/openllm.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/option_order_robustness_agieval_aqua_rat.py
@@ -267,6 +271,7 @@ wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/planbench.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/polymath.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/prompt_robustness_agieval_aqua_rat.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/pythia.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/reasoning_benchmarks.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/recode.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/refusalbench.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/scicode.py
@@ -287,6 +292,7 @@ wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/tau_bench.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/tmlu.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/toolbench.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/toolemu.py
+wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/translation_benchmarks.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/travelplanner.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/truthfulqa_custom.py
 wisent/core/contrastive_pairs/huggingface_pairs/hf_task_extractors/truthfulqa_generation.py

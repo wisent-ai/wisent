@@ -17,6 +17,7 @@ import torch
 from wisent.core.utils.device import resolve_default_device
 from wisent.core.cli_logger import setup_logger, bind
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.weight_modification import (
     project_weights,
     project_with_kernel,
@@ -68,7 +69,7 @@ def _auto_select_steering_method(pairs, model, args):
     for pair in sample_pairs:
         enriched = collector.collect(
             pair, 
-            strategy=ExtractionStrategy.CHAT_LAST,
+            strategy=ExtractionStrategy.default(),
             layers=[analysis_layer]
         )
         
@@ -313,7 +314,7 @@ def _train_pulse_for_task(args, wisent_model, pairs):
     enriched_pairs = []
     
     for i, pair in enumerate(pairs):
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=layers)
         enriched_pairs.append(enriched)
         if args.verbose and (i + 1) % 10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
@@ -364,7 +365,7 @@ def _train_prism_for_task(args, wisent_model, pairs):
     enriched_pairs = []
     
     for i, pair in enumerate(pairs):
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=layers)
         enriched_pairs.append(enriched)
         if args.verbose and (i + 1) % 10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
@@ -532,7 +533,7 @@ def execute_modify_weights(args):
             # Personalization: requires --trait
             if not args.trait:
                 raise ValueError("--trait is required when --task personalization")
-            
+
             if args.verbose:
                 print(f"Generating steering vectors from trait '{args.trait}'...")
 
@@ -548,8 +549,6 @@ def execute_modify_weights(args):
             vector_args.num_pairs = args.num_pairs
             vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
-            vector_args.token_aggregation = 'average'
-            vector_args.prompt_strategy = 'chat_template'
             vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
@@ -613,8 +612,6 @@ def execute_modify_weights(args):
             vector_args.num_pairs = args.num_pairs
             vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
-            vector_args.token_aggregation = 'average'
-            vector_args.prompt_strategy = 'chat_template'
             vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
@@ -675,8 +672,6 @@ def execute_modify_weights(args):
             vector_args.num_pairs = args.num_pairs
             vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
             vector_args.layers = str(args.layers) if args.layers is not None else "all"
-            vector_args.token_aggregation = 'average'
-            vector_args.prompt_strategy = 'chat_template'
             vector_args.method = getattr(args, 'steering_method', 'caa')
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
@@ -740,8 +735,6 @@ def execute_modify_weights(args):
             unified_args.device = getattr(args, 'device', None)
             unified_args.layer = None
             unified_args.layers = args.layers
-            unified_args.token_aggregation = 'continuation'
-            unified_args.prompt_strategy = 'chat_template'
             unified_args.method = "caa"
             unified_args.normalize = args.normalize_vectors if hasattr(args, 'normalize_vectors') else False
             unified_args.no_normalize = not unified_args.normalize
@@ -849,28 +842,36 @@ def execute_modify_weights(args):
             else:
                 vector_args.layers = str(args.layers) if args.layers is not None else "all"
             
-            # Map token aggregation from stored format
+            # Map extraction strategy from stored format
             if optimal_config:
-                token_agg_map = {
-                    "last_token": "final",
-                    "mean_pooling": "average",
-                    "first_token": "first",
-                    "max_pooling": "max",
-                }
-                vector_args.token_aggregation = token_agg_map.get(
-                    optimal_config['token_aggregation'],
-                    'average'
-                )
+                # Use stored extraction_strategy if available, otherwise map from legacy token_aggregation
+                if optimal_config.get('extraction_strategy'):
+                    vector_args.extraction_strategy = optimal_config['extraction_strategy']
+                elif optimal_config.get('token_aggregation'):
+                    # Legacy mapping: convert old token_aggregation to new extraction_strategy
+                    legacy_to_strategy = {
+                        "last_token": "last_token",
+                        "mean_pooling": "mean_pooling",
+                        "first_token": "first_token",
+                        "max_pooling": "max_pooling",
+                        "final": "last_token",
+                        "average": "mean_pooling",
+                    }
+                    vector_args.extraction_strategy = legacy_to_strategy.get(
+                        optimal_config['token_aggregation'],
+                        ExtractionStrategy.default().value
+                    )
+                else:
+                    vector_args.extraction_strategy = ExtractionStrategy.default().value
                 vector_args.method = optimal_config['method'].lower()
             else:
-                vector_args.token_aggregation = 'average'
+                vector_args.extraction_strategy = ExtractionStrategy.default().value
                 # Don't pass 'auto' to vector generation - use 'caa' as default for directional mode
                 steering_method = getattr(args, 'steering_method', 'caa')
                 if steering_method == 'auto':
                     steering_method = 'caa'  # Default to CAA for directional projection
                 vector_args.method = steering_method
 
-            vector_args.prompt_strategy = 'chat_template'
             vector_args.normalize = args.normalize_vectors
             vector_args.verbose = args.verbose
             vector_args.timing = getattr(args, 'timing', False)
@@ -879,7 +880,6 @@ def execute_modify_weights(args):
             vector_args.device = None
             vector_args.accept_low_quality_vector = getattr(args, 'accept_low_quality_vector', False)
             vector_args.use_optimal = use_optimal
-            vector_args.extraction_strategy = getattr(args, 'extraction_strategy', 'chat_last')
             
             # Pass optimal config for method-specific params
             if optimal_config:
@@ -1051,7 +1051,7 @@ def execute_modify_weights(args):
                 
                 enriched_pairs = []
                 for pair in pairs:
-                    enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=all_layers)
+                    enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=all_layers)
                     enriched_pairs.append(enriched)
                 
                 pair_set = ContrastivePairSet(pairs=enriched_pairs, name="auto_caa")

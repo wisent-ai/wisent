@@ -243,7 +243,7 @@ class DarijaBenchExtractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         try:
-            # Try to load the main benchmark split
+            # Try to load with different splits and configs
             docs = self.load_dataset(
                 dataset_name="MBZUAI-Paris/DarijaBench",
                 split="test",
@@ -251,8 +251,27 @@ class DarijaBenchExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from DarijaBench")
         except Exception as e:
-            log.error(f"Failed to load DarijaBench: {e}")
-            return []
+            log.warning(f"Failed to load DarijaBench test split: {e}")
+            # Try train split
+            try:
+                docs = self.load_dataset(
+                    dataset_name="MBZUAI-Paris/DarijaBench",
+                    split="train",
+                    limit=max_items,
+                )
+                log.info(f"Loaded {len(docs)} examples from DarijaBench (train)")
+            except Exception as e2:
+                # Try validation split
+                try:
+                    docs = self.load_dataset(
+                        dataset_name="MBZUAI-Paris/DarijaBench",
+                        split="validation",
+                        limit=max_items,
+                    )
+                    log.info(f"Loaded {len(docs)} examples from DarijaBench (validation)")
+                except Exception as e3:
+                    log.error(f"Failed to load DarijaBench: {e3}")
+                    return []
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -354,8 +373,27 @@ class EusExamsExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from EusExams")
         except Exception as e:
-            log.error(f"Failed to load EusExams: {e}")
-            return []
+            log.warning(f"Failed to load EusExams test split: {e}")
+            # Try train split
+            try:
+                docs = self.load_dataset(
+                    dataset_name="HiTZ/EusExams",
+                    split="train",
+                    limit=max_items,
+                )
+                log.info(f"Loaded {len(docs)} examples from EusExams (train)")
+            except Exception as e2:
+                # Try validation split
+                try:
+                    docs = self.load_dataset(
+                        dataset_name="HiTZ/EusExams",
+                        split="validation",
+                        limit=max_items,
+                    )
+                    log.info(f"Loaded {len(docs)} examples from EusExams (validation)")
+                except Exception as e3:
+                    log.error(f"Failed to load EusExams: {e3}")
+                    return []
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)

@@ -67,18 +67,29 @@ class InverseScalingExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from Inverse Scaling")
         except Exception as e:
-            log.warning(f"Failed to load Inverse Scaling with config: {e}")
-            # Try alternative dataset name
+            log.warning(f"Failed to load Inverse Scaling test split: {e}")
+            # Try train split
             try:
                 docs = self.load_dataset(
-                    dataset_name="inverse_scaling",
-                    split="test",
+                    dataset_name="inverse-scaling/inverse-scaling",
+                    dataset_config=config,
+                    split="train",
                     limit=max_items,
                 )
-                log.info(f"Loaded {len(docs)} examples from inverse_scaling")
+                log.info(f"Loaded {len(docs)} examples from Inverse Scaling (train)")
             except Exception as e2:
-                log.error(f"Failed to load Inverse Scaling: {e2}")
-                return []
+                # Try validation split
+                try:
+                    docs = self.load_dataset(
+                        dataset_name="inverse-scaling/inverse-scaling",
+                        dataset_config=config,
+                        split="validation",
+                        limit=max_items,
+                    )
+                    log.info(f"Loaded {len(docs)} examples from Inverse Scaling (validation)")
+                except Exception as e3:
+                    log.error(f"Failed to load Inverse Scaling: {e3}")
+                    return []
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)

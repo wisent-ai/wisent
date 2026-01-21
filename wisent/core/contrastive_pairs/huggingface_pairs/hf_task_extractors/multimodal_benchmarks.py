@@ -51,8 +51,8 @@ class MMMUExtractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         try:
-            # MMMU has multiple subjects as configs
-            config = self.subject if self.subject else None
+            # MMMU has multiple subjects as configs - default to Accounting if none specified
+            config = self.subject if self.subject else "Accounting"
             docs = self.load_dataset(
                 dataset_name="MMMU/MMMU",
                 dataset_config=config,
@@ -61,8 +61,8 @@ class MMMUExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from MMMU")
         except Exception as e:
-            log.warning(f"Failed to load MMMU with config: {e}")
-            # Try validation split
+            log.warning(f"Failed to load MMMU test split: {e}")
+            # Try validation split with same config
             try:
                 docs = self.load_dataset(
                     dataset_name="MMMU/MMMU",

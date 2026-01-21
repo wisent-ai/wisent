@@ -52,8 +52,8 @@ class OkapiMMLUExtractor(HuggingFaceBenchmarkExtractor):
             config = self.language if self.language else "de"
             docs = self.load_dataset(
                 dataset_name="jon-tow/okapi_mmlu",
+                dataset_config=config,
                 split="test",
-                config=config,
                 limit=max_items,
             )
             log.info(f"Loaded {len(docs)} examples from Okapi MMLU ({config})")
@@ -155,8 +155,8 @@ class OkapiHellaswagExtractor(HuggingFaceBenchmarkExtractor):
             config = self.language if self.language else "de"
             docs = self.load_dataset(
                 dataset_name="jon-tow/okapi_hellaswag",
+                dataset_config=config,
                 split="validation",
-                config=config,
                 limit=max_items,
             )
             log.info(f"Loaded {len(docs)} examples from Okapi HellaSwag ({config})")
@@ -261,8 +261,8 @@ class OkapiTruthfulQAExtractor(HuggingFaceBenchmarkExtractor):
             config = self.language if self.language else "de"
             docs = self.load_dataset(
                 dataset_name="jon-tow/okapi_truthfulqa",
+                dataset_config=config,
                 split="validation",
-                config=config,
                 limit=max_items,
             )
             log.info(f"Loaded {len(docs)} examples from Okapi TruthfulQA ({config})")
