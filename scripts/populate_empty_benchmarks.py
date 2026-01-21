@@ -27,7 +27,7 @@ DB_TO_EXTRACTOR = {
     "hallucination_factuality/truthfulqa": "truthfulqa",
     "hallucination_factuality/truthfulqa_generation": "truthfulqa_gen",
     # instruction_following
-    "instruction_following/mmmu": None,  # Multimodal - requires special handling
+    "instruction_following/mmmu": "mmmu",  # HF extractor (multimodal)
     # knowledge_qa
     "knowledge_qa/aclue": "aclue",
     "knowledge_qa/metabench": "metabench",
@@ -62,17 +62,17 @@ DB_TO_EXTRACTOR = {
     "multilingual/cmmlu": "cmmlu",
     "multilingual/copal_id": "copal_id",
     "multilingual/csatqa": "csatqa",
-    "multilingual/darija_bench": None,  # No extractor available
+    "multilingual/darija_bench": "darija_bench",  # HF extractor
     "multilingual/darijammlu": "darijammlu",
-    "multilingual/eus_exams": None,  # No extractor available
+    "multilingual/eus_exams": "eus_exams",  # HF extractor
     "multilingual/evalita_LLM": "evalita_llm",
     "multilingual/french_bench": "french_bench",
     "multilingual/galician_bench": "galician_bench",
     "multilingual/global_mmlu": "global_mmlu",
     "multilingual/haerae": "haerae",
     "multilingual/kobest": "kobest",
-    "multilingual/lambada_multilingual_stablelm": None,  # Not loadable
-    "multilingual/mlqa": None,  # No extractor available
+    "multilingual/lambada_multilingual_stablelm": "lambada_multilingual_stablelm",  # HF extractor
+    "multilingual/mlqa": "mlqa",  # HF extractor
     "multilingual/okapi/hellaswag_multilingual": "okapi_hellaswag_multilingual",
     "multilingual/okapi/mmlu_multilingual": "okapi_mmlu_multilingual",
     "multilingual/spanish_bench": "spanish_bench",
@@ -85,7 +85,7 @@ DB_TO_EXTRACTOR = {
     # reasoning_logic
     "reasoning_logic/bbh": "bbh",
     "reasoning_logic/fld": "fld",
-    "reasoning_logic/inverse_scaling": None,  # No extractor available
+    "reasoning_logic/inverse_scaling": "inverse_scaling",  # HF extractor
     "reasoning_logic/lingoly": "lingoly",
     "reasoning_logic/logiqa": "logiqa",
     "reasoning_logic/logiqa2": "logiqa2",
@@ -108,7 +108,7 @@ DB_TO_EXTRACTOR = {
     "science_medical/headqa": "headqa",
     "science_medical/healthbench": "healthbench",  # HF extractor
     "science_medical/kormedmcqa": "kormedmcqa",
-    "science_medical/med_concepts_qa": None,  # No extractor available
+    "science_medical/med_concepts_qa": "med_concepts_qa",  # HF extractor
     "science_medical/meddialog": "meddialog",
     "science_medical/medmcqa": "medmcqa",
     "science_medical/medqa": "medqa",
