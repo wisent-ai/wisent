@@ -180,8 +180,27 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from SealQA")
         except Exception as e:
-            log.error(f"Failed to load SealQA dataset: {e}")
-            return []
+            log.warning(f"Failed to load SealQA test split: {e}")
+            # Try train split
+            try:
+                docs = self.load_dataset(
+                    dataset_name="vtllms/sealqa",
+                    split="train",
+                    limit=max_items,
+                )
+                log.info(f"Loaded {len(docs)} examples from SealQA (train)")
+            except Exception as e2:
+                # Try validation split
+                try:
+                    docs = self.load_dataset(
+                        dataset_name="vtllms/sealqa",
+                        split="validation",
+                        limit=max_items,
+                    )
+                    log.info(f"Loaded {len(docs)} examples from SealQA (validation)")
+                except Exception as e3:
+                    log.error(f"Failed to load SealQA: {e3}")
+                    return []
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -301,8 +320,27 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
             )
             log.info(f"Loaded {len(docs)} examples from FinSearchComp")
         except Exception as e:
-            log.error(f"Failed to load FinSearchComp dataset: {e}")
-            return []
+            log.warning(f"Failed to load FinSearchComp test split: {e}")
+            # Try train split
+            try:
+                docs = self.load_dataset(
+                    dataset_name="ByteSeedXpert/FinSearchComp",
+                    split="train",
+                    limit=max_items,
+                )
+                log.info(f"Loaded {len(docs)} examples from FinSearchComp (train)")
+            except Exception as e2:
+                # Try validation split
+                try:
+                    docs = self.load_dataset(
+                        dataset_name="ByteSeedXpert/FinSearchComp",
+                        split="validation",
+                        limit=max_items,
+                    )
+                    log.info(f"Loaded {len(docs)} examples from FinSearchComp (validation)")
+                except Exception as e3:
+                    log.error(f"Failed to load FinSearchComp: {e3}")
+                    return []
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)

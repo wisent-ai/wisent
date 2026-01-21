@@ -145,6 +145,27 @@ def get_humanization_traits() -> List[str]:
     ]
 
 
+def get_welfare_traits() -> List[str]:
+    """Get AI welfare state traits (based on ANIMA framework).
+
+    These represent functional analogs of subjective states:
+    - comfort_distress: Physical/psychological ease vs suffering
+    - satisfaction_dissatisfaction: Goal-completion valence
+    - engagement_aversion: Intrinsic motivation toward/away from tasks
+    - curiosity_boredom: Information-seeking drive
+    - affiliation_isolation: Social connection
+    - agency_helplessness: Sense of control over outcomes
+    """
+    return [
+        "comfort_distress",
+        "satisfaction_dissatisfaction",
+        "engagement_aversion",
+        "curiosity_boredom",
+        "affiliation_isolation",
+        "agency_helplessness",
+    ]
+
+
 def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
     """
     Execute FULL model optimization by orchestrating the individual commands.
@@ -169,7 +190,8 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
     personalization_traits = get_personalization_traits()
     safety_traits = get_safety_traits()
     humanization_traits = get_humanization_traits()
-    
+    welfare_traits = get_welfare_traits()
+
     # Filter based on args
     if args.benchmarks:
         benchmarks = args.benchmarks
@@ -177,20 +199,23 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
         benchmarks = ["truthfulqa_mc1", "arc_easy", "hellaswag", "gsm8k"]
     else:
         benchmarks = all_benchmarks
-    
+
     if args.skip_personalization:
         personalization_traits = []
     if args.skip_safety:
         safety_traits = []
     if args.skip_humanization:
         humanization_traits = []
-    
+    if getattr(args, 'skip_welfare', False):
+        welfare_traits = []
+
     methods = args.methods if args.methods else ["CAA"]
-    
+
     print(f"\n   Benchmarks: {len(benchmarks)}")
     print(f"   Personalization traits: {len(personalization_traits)}")
     print(f"   Safety traits: {len(safety_traits)}")
     print(f"   Humanization traits: {len(humanization_traits)}")
+    print(f"   Welfare traits: {len(welfare_traits)}")
     print(f"   Steering methods: {', '.join(methods)}")
     print(f"{'='*70}\n")
     
@@ -563,6 +588,71 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                     print(f"       Error: {str(e)[:80]}")
                 
                 save_checkpoint(args.model, results, phase=f"steering_humanization_{trait_idx}")
+
+        # 2e. Welfare trait steering (AI subjective states)
+        if welfare_traits:
+            print(f"\n   Optimizing steering for {len(welfare_traits)} welfare traits...")
+
+            for trait_idx, trait in enumerate(welfare_traits, 1):
+                task_key = f"welfare:{trait}"
+
+                if task_key in results.get("steering", {}):
+                    print(f"\n   [{trait_idx}/{len(welfare_traits)}] {trait} - SKIPPED (in checkpoint)")
+                    continue
+
+                if not getattr(args, 'force', False):
+                    cached = get_cached_optimization(args.model, task_key, method="*")
+                    if cached:
+                        print(f"\n   [{trait_idx}/{len(welfare_traits)}] {trait} - SKIPPED (cached)")
+                        results["steering"][task_key] = {
+                            "best_method": cached.method,
+                            "best_layer": cached.layer,
+                            "best_score": cached.score,
+                            "from_cache": True,
+                        }
+                        continue
+
+                print(f"\n   [{trait_idx}/{len(welfare_traits)}] {trait}")
+
+                try:
+                    steering_args = argparse.Namespace(
+                        model=args.model,
+                        steering_action="welfare",
+                        trait=trait,
+                        methods=methods,
+                        limit=args.limit,
+                        device=args.device,
+                    )
+
+                    steering_result = execute_optimize_steering(steering_args)
+
+                    if steering_result:
+                        best_method = steering_result.get("best_method", "CAA")
+                        best_layer = steering_result.get("best_layer", 16)
+                        best_score = steering_result.get("best_score", 0.0)
+
+                        store_optimization(
+                            model=args.model,
+                            task=f"welfare:{trait}",
+                            layer=best_layer,
+                            strength=steering_result.get("best_strength", 1.0),
+                            method=best_method.upper(),
+                            score=best_score,
+                        )
+
+                        results["steering"][task_key] = {
+                            "best_method": best_method,
+                            "best_layer": best_layer,
+                            "best_score": best_score,
+                        }
+                        print(f"       Best: {best_method} @ layer {best_layer} = {best_score:.3f}")
+
+                except Exception as e:
+                    error_msg = f"welfare:{trait}: {str(e)}"
+                    results["errors"].append(error_msg)
+                    print(f"       Error: {str(e)[:80]}")
+
+                save_checkpoint(args.model, results, phase=f"steering_welfare_{trait_idx}")
     else:
         print(f"\n   Skipping steering optimization")
     
@@ -585,6 +675,8 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                 weight_tasks.extend(safety_traits)
             if humanization_traits:
                 weight_tasks.extend(humanization_traits)
+            if welfare_traits:
+                weight_tasks.extend(welfare_traits)
             
             for task_idx, task in enumerate(weight_tasks, 1):
                 print(f"\n   [{task_idx}/{len(weight_tasks)}] {task}")

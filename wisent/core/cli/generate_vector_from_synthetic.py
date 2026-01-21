@@ -8,6 +8,7 @@ import hashlib
 import re
 from argparse import Namespace
 
+from wisent.core.activations.extraction_strategy import ExtractionStrategy
 from wisent.core.cli.generate_pairs import execute_generate_pairs
 from wisent.core.cli.get_activations import execute_get_activations
 from wisent.core.cli.create_steering_object import execute_create_steering_object
@@ -130,8 +131,7 @@ def execute_generate_vector_from_synthetic(args):
             model=args.model,
             device=args.device,
             layers=args.layers,
-            token_aggregation='average',
-            prompt_strategy='chat_template',
+            extraction_strategy=ExtractionStrategy.default().value,
             verbose=args.verbose,
             timing=args.timing,
         )

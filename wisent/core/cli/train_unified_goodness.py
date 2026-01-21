@@ -319,8 +319,8 @@ def execute_train_unified_goodness(args):
     # =========================================================================
     print(f"\n🧠 Step 4/5: Collecting activations and training vector...")
 
-    # Use sensible default extraction strategy
-    aggregation_strategy = ExtractionStrategy.CHAT_LAST
+    # Use centralized default extraction strategy
+    aggregation_strategy = ExtractionStrategy.default()
 
     # Try to load activations from checkpoint
     activations_checkpoint = load_checkpoint(checkpoint_dir, "activations_data")
@@ -446,7 +446,7 @@ def execute_train_unified_goodness(args):
         'num_eval_pairs': len(all_eval_pairs),
         'benchmark_pair_counts': benchmark_pair_counts,
         'normalize': args.normalize,
-        'aggregation': 'chat_last',
+        'aggregation': ExtractionStrategy.default().name.lower(),
         # All layer vectors if multiple
         'all_layer_vectors': {k: v for k, v in steering_vectors.items()},
         # Eval pairs for optimize-weights to use
