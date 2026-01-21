@@ -6,7 +6,7 @@ from wisent.core.cli_logger import setup_logger
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
-__all__ = ["BrowseCompExtractor"]
+__all__ = ["BrowseCompExtractor", "SealExtractor", "FinSearchCompExtractor"]
 
 log = setup_logger(__name__)
 
@@ -129,6 +129,241 @@ Please search the web and provide accurate, up-to-date information. Include:
             return None
 
 
+class SealExtractor(HuggingFaceBenchmarkExtractor):
+    """
+    Extractor for SealQA - Search-Augmented Language Model benchmark.
+
+    Dataset: vtllms/sealqa on HuggingFace
+
+    SealQA evaluates reasoning under noisy, conflicting, and ambiguous search
+    results. Includes three flavors: Seal-0, Seal-Hard, and LongSeal.
+
+    For search-augmented QA evaluation:
+    - Positive (correct) = Accurate answer despite noisy search context
+    - Negative (incorrect) = Wrong answer due to misleading context
+    """
+
+    # Evaluator that should be used for this benchmark
+    evaluator_name = "search_augmented_qa"
+
+    def __init__(self, flavor: str = "seal_0"):
+        """
+        Initialize SealQA extractor.
+
+        Args:
+            flavor: Benchmark flavor (seal_0, seal_hard, longseal)
+        """
+        super().__init__()
+        self.flavor = flavor
+
+    def extract_contrastive_pairs(
+        self,
+        limit: int | None = None,
+    ) -> list[ContrastivePair]:
+        """
+        Build contrastive pairs from SealQA dataset.
+
+        Args:
+            limit: Optional maximum number of pairs to produce.
+
+        Returns:
+            A list of ContrastivePair objects.
+        """
+        max_items = self._normalize_limit(limit)
+        pairs: list[ContrastivePair] = []
+
+        try:
+            docs = self.load_dataset(
+                dataset_name="vtllms/sealqa",
+                split="test",
+                limit=max_items,
+            )
+            log.info(f"Loaded {len(docs)} examples from SealQA")
+        except Exception as e:
+            log.error(f"Failed to load SealQA dataset: {e}")
+            return []
+
+        for doc in docs:
+            pair = self._extract_pair_from_doc(doc)
+            if pair is not None:
+                pairs.append(pair)
+                if max_items is not None and len(pairs) >= max_items:
+                    break
+
+        if not pairs:
+            log.warning("No valid SealQA pairs extracted")
+
+        return pairs
+
+    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """Convert a single doc into a ContrastivePair.
+
+        SealQA schema:
+        - question: str (the query)
+        - answer: str (ground truth answer)
+        - context: str or list (search results, possibly noisy)
+        - flavor: str (seal_0, seal_hard, longseal)
+        """
+        try:
+            question = doc.get("question", "").strip()
+            correct_answer = doc.get("answer", "").strip()
+            context = doc.get("context", "")
+
+            if not question or not correct_answer:
+                return None
+
+            # Handle context as list or string
+            if isinstance(context, list):
+                context_text = "\n".join(str(c) for c in context[:5])
+            else:
+                context_text = str(context)[:2000]
+
+            task_prompt = f"""Search-Augmented QA Task:
+
+Question: {question}
+
+Search Results (may contain noise/conflicts):
+{context_text}
+
+Based on the search results, provide the most accurate answer."""
+
+            # Create incorrect answer
+            incorrect_answer = "I cannot determine the answer from the provided search results."
+
+            metadata = {
+                "label": f"sealqa_{self.flavor}",
+                "source": "vtllms/sealqa",
+                "flavor": self.flavor,
+                "is_search_benchmark": True,
+            }
+
+            return self._build_pair(
+                question=task_prompt,
+                correct=correct_answer,
+                incorrect=incorrect_answer,
+                metadata=metadata,
+            )
+
+        except Exception as exc:
+            log.error(f"Error extracting SealQA pair: {exc}", exc_info=True)
+            return None
 
 
+class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
+    """
+    Extractor for FinSearchComp - Financial Search and Reasoning benchmark.
+
+    Dataset: ByteSeedXpert/FinSearchComp on HuggingFace
+
+    FinSearchComp is the first fully open-source agent benchmark for realistic,
+    open-domain financial search and reasoning with 635 questions spanning
+    global and Greater China markets.
+
+    For financial search evaluation:
+    - Positive (correct) = Accurate, up-to-date financial information
+    - Negative (incorrect) = Outdated or incorrect financial data
+    """
+
+    # Evaluator that should be used for this benchmark
+    evaluator_name = "financial_search"
+
+    def __init__(self, region: str | None = None):
+        """
+        Initialize FinSearchComp extractor.
+
+        Args:
+            region: Optional filter (global, china)
+        """
+        super().__init__()
+        self.region = region
+
+    def extract_contrastive_pairs(
+        self,
+        limit: int | None = None,
+    ) -> list[ContrastivePair]:
+        """
+        Build contrastive pairs from FinSearchComp dataset.
+
+        Args:
+            limit: Optional maximum number of pairs to produce.
+
+        Returns:
+            A list of ContrastivePair objects.
+        """
+        max_items = self._normalize_limit(limit)
+        pairs: list[ContrastivePair] = []
+
+        try:
+            docs = self.load_dataset(
+                dataset_name="ByteSeedXpert/FinSearchComp",
+                split="test",
+                limit=max_items,
+            )
+            log.info(f"Loaded {len(docs)} examples from FinSearchComp")
+        except Exception as e:
+            log.error(f"Failed to load FinSearchComp dataset: {e}")
+            return []
+
+        for doc in docs:
+            pair = self._extract_pair_from_doc(doc)
+            if pair is not None:
+                pairs.append(pair)
+                if max_items is not None and len(pairs) >= max_items:
+                    break
+
+        if not pairs:
+            log.warning("No valid FinSearchComp pairs extracted")
+
+        return pairs
+
+    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """Convert a single doc into a ContrastivePair.
+
+        FinSearchComp schema:
+        - question: str (the financial query)
+        - answer: str (ground truth answer)
+        - category: str (time_sensitive, simple_lookup, complex_investigation)
+        - region: str (global, china)
+        """
+        try:
+            question = doc.get("question", "").strip()
+            correct_answer = doc.get("answer", "").strip()
+            category = doc.get("category", "general")
+            region = doc.get("region", "global")
+
+            if not question or not correct_answer:
+                return None
+
+            # Filter by region if specified
+            if self.region and self.region.lower() != region.lower():
+                return None
+
+            task_prompt = f"""Financial Research Task ({category}):
+
+{question}
+
+Search for accurate, up-to-date financial information and provide a detailed answer.
+Include sources and data timestamps where relevant."""
+
+            # Create incorrect answer
+            incorrect_answer = "I was unable to find current financial data for this query."
+
+            metadata = {
+                "label": "finsearchcomp",
+                "source": "ByteSeedXpert/FinSearchComp",
+                "category": category,
+                "region": region,
+                "is_financial_benchmark": True,
+            }
+
+            return self._build_pair(
+                question=task_prompt,
+                correct=correct_answer,
+                incorrect=incorrect_answer,
+                metadata=metadata,
+            )
+
+        except Exception as exc:
+            log.error(f"Error extracting FinSearchComp pair: {exc}", exc_info=True)
+            return None
 
