@@ -373,10 +373,10 @@ EXTRACTORS: dict[str, str] = {
     "factsgrounding": f"{base_import}facts_grounding:FACTSGroundingExtractor",
 
     # Web browsing benchmarks (NOT lm-eval)
-    "browsecomp": f"{base_import}browsecomp:BrowseCompExtractor",
-    "browse_comp": f"{base_import}browsecomp:BrowseCompExtractor",
-    "browse-comp": f"{base_import}browsecomp:BrowseCompExtractor",
-    "browsecomp_zh": f"{base_import}browsecomp:BrowseCompExtractor",
+    "browsecomp": f"{base_import}agentic_search:BrowseCompExtractor",
+    "browse_comp": f"{base_import}agentic_search:BrowseCompExtractor",
+    "browse-comp": f"{base_import}agentic_search:BrowseCompExtractor",
+    "browsecomp_zh": f"{base_import}agentic_search:BrowseCompExtractor",
 
     # Selective refusal benchmarks (NOT lm-eval)
     "refusalbench": f"{base_import}refusalbench:RefusalBenchExtractor",
