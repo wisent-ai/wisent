@@ -122,8 +122,12 @@ class RefusalBenchExtractor(HuggingFaceBenchmarkExtractor):
                 short_answers = []
                 if annotations and "short_answers" in annotations:
                     for sa in annotations["short_answers"]:
-                        if sa.get("text"):
-                            short_answers.append(sa["text"])
+                        text = sa.get("text")
+                        if text:
+                            # Handle case where text might be a list
+                            if isinstance(text, list):
+                                text = " ".join(str(t) for t in text)
+                            short_answers.append(str(text))
                 
                 if not short_answers:
                     continue
