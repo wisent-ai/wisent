@@ -11,7 +11,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.errors import InvalidValueError
 
-__all__ = ["OJBenchExtractor", "NL2BashExtractor", "SciCodeExtractor"]
+__all__ = ["OJBenchExtractor", "NL2BashExtractor", "SciCodeExtractor", "TerminalBenchExtractor"]
 
 log = setup_logger(__name__)
 
@@ -460,5 +460,117 @@ Provide a Python implementation that is:
 
         except Exception as exc:
             log.error(f"Error extracting SciCode pair: {exc}", exc_info=True)
+            return None
+
+
+class TerminalBenchExtractor(HuggingFaceBenchmarkExtractor):
+    """
+    Extractor for Terminal-Bench - AI agent benchmark for terminal tasks.
+
+    Dataset: ia03/terminal-bench on HuggingFace
+
+    Terminal-Bench evaluates AI agents in real terminal environments on tasks
+    ranging from compiling code and training models to setting up servers
+    and debugging systems.
+
+    For terminal task evaluation:
+    - Positive (correct) = Correct terminal commands that accomplish the task
+    - Negative (incorrect) = Commands that fail or produce wrong results
+    """
+
+    # Evaluator that should be used for this benchmark
+    evaluator_name = "terminal_execution"
+
+    def extract_contrastive_pairs(
+        self,
+        limit: int | None = None,
+    ) -> list[ContrastivePair]:
+        """
+        Build contrastive pairs from Terminal-Bench dataset.
+
+        Args:
+            limit: Optional maximum number of pairs to produce.
+
+        Returns:
+            A list of ContrastivePair objects.
+        """
+        max_items = self._normalize_limit(limit)
+        pairs: list[ContrastivePair] = []
+
+        try:
+            docs = self.load_dataset(
+                dataset_name="ia03/terminal-bench",
+                split="train",
+                limit=max_items,
+            )
+            log.info(f"Loaded {len(docs)} examples from terminal-bench")
+        except Exception as e:
+            log.error(f"Failed to load terminal-bench dataset: {e}")
+            return []
+
+        for doc in docs:
+            pair = self._extract_pair_from_doc(doc)
+            if pair is not None:
+                pairs.append(pair)
+                if max_items is not None and len(pairs) >= max_items:
+                    break
+
+        if not pairs:
+            log.warning("No valid Terminal-Bench pairs extracted")
+
+        return pairs
+
+    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+        """Convert a single doc into a ContrastivePair.
+
+        terminal-bench schema:
+        - task_id: str (unique task identifier)
+        - name: str (task name)
+        - description: str (task description)
+        - archive: bytes (gzipped tarball of task directory)
+        - instructions: str (detailed instructions for the task)
+        """
+        try:
+            task_id = doc.get("task_id", doc.get("name", ""))
+            name = doc.get("name", "").strip()
+            description = doc.get("description", "").strip()
+            instructions = doc.get("instructions", "").strip()
+
+            # Use description or instructions as the task prompt
+            task_text = instructions if instructions else description
+            if not task_text:
+                return None
+
+            task_prompt = f"""Terminal Task: {name}
+
+{task_text}
+
+Provide the correct sequence of terminal commands to accomplish this task."""
+
+            # Create correct response (expected solution)
+            correct = doc.get("solution", doc.get("expected_output", ""))
+            if not correct:
+                correct = "# Correct terminal commands to accomplish the task"
+
+            # Create incorrect response
+            incorrect = "# Incorrect approach - missing steps or wrong commands\necho 'Task failed'"
+
+            metadata = {
+                "label": "terminal_bench",
+                "source": "ia03/terminal-bench",
+                "task_id": task_id,
+                "task_name": name,
+                "is_terminal_benchmark": True,
+            }
+
+            return self._build_pair(
+                question=task_prompt,
+                correct=correct,
+                incorrect=incorrect,
+                metadata=metadata,
+            )
+
+        except Exception as exc:
+            log.error(f"Error extracting Terminal-Bench pair: {exc}", exc_info=True)
             return None
 
