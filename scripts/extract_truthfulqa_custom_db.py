@@ -33,7 +33,15 @@ def get_db_connection():
     db_url = DATABASE_URL
     if "pooler.supabase.com:6543" in db_url:
         db_url = db_url.replace(":6543", ":5432")
-    conn = psycopg2.connect(db_url, connect_timeout=30)
+    # Add TCP keepalive to prevent connection timeout during long forward passes
+    conn = psycopg2.connect(
+        db_url,
+        connect_timeout=30,
+        keepalives=1,
+        keepalives_idle=30,
+        keepalives_interval=10,
+        keepalives_count=5
+    )
     conn.autocommit = True
     return conn
 
