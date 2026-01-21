@@ -85,13 +85,17 @@ class SyntheticContrastivePairsGenerator:
         opposite_trait = opposite_raw[0].strip() if opposite_raw else "neutral and plain"
         logger.info(f"[GENERATE] Opposite trait: {opposite_trait}")
 
-        # Generate pairs one at a time, retry until we have num_pairs
-        max_attempts = num_pairs * 3  # Prevent infinite loops
+        # Generate pairs one at a time, retry until we have num_pairs AFTER cleaning
+        max_attempts = num_pairs * 5  # Increased to account for deduplication losses
         attempts = 0
+        total_retries_for_refusals = 0
 
-        while len(parsed) < num_pairs and attempts < max_attempts:
+        # We'll accumulate all pairs and clean periodically to check progress
+        cleaned_count = 0
+
+        while cleaned_count < num_pairs and attempts < max_attempts:
             attempts += 1
-            logger.info(f"[GENERATE] Generating pair {len(parsed)+1}/{num_pairs} (attempt {attempts})")
+            logger.info(f"[GENERATE] Generating pair (attempt {attempts}, cleaned so far: {cleaned_count}/{num_pairs})")
 
             # 1) Generate a prompt/scenario - simple question format
             prompt_instruction = (
@@ -155,11 +159,20 @@ class SyntheticContrastivePairsGenerator:
                 trait_description=self.trait_description,
             )
             parsed.add(cp)
-            logger.info(f"[GENERATE] Successfully added pair {len(parsed)}/{num_pairs}")
+            logger.info(f"[GENERATE] Successfully added pair {len(parsed)}")
 
-        logger.info(f"[GENERATE] Generated {len(parsed)} pairs after {attempts} attempts")
+            # Check cleaned count every 10 pairs or when we think we might be close
+            if len(parsed) % 10 == 0 or len(parsed) >= num_pairs:
+                temp_cleaned, temp_stats = self.cleaner.clean(parsed)
+                cleaned_count = len(temp_cleaned)
+                refusaler_stats = temp_stats.step_stats.get("refusaler_cleaner")
+                if refusaler_stats:
+                    total_retries_for_refusals = refusaler_stats.modified_items
+                logger.info(f"[GENERATE] Progress check: {cleaned_count}/{num_pairs} unique pairs after cleaning")
 
-        # Clean (dedupe, refusal check, etc.)
+        logger.info(f"[GENERATE] Generated {len(parsed)} raw pairs after {attempts} attempts")
+
+        # Final clean (dedupe, refusal check, etc.)
         cleaned, stats = self.cleaner.clean(parsed)
 
         refusaler_stats = stats.step_stats.get("refusaler_cleaner")
