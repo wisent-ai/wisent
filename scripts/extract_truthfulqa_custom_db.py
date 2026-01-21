@@ -187,6 +187,49 @@ def check_activation_exists(conn, model_id: int, pair_id: int, layer: int, is_po
     return exists
 
 
+def check_pair_fully_extracted(model_id: int, pair_id: int, num_layers: int, formats: list) -> bool:
+    """Check if a pair has all activations for all formats already extracted."""
+    expected_count = num_layers * 2 * len(formats)  # layers × polarities × formats
+    try:
+        conn = get_conn()
+        cur = conn.cursor()
+        cur.execute('''
+            SELECT COUNT(*) FROM "RawActivation"
+            WHERE "modelId" = %s AND "contrastivePairId" = %s
+        ''', (model_id, pair_id))
+        actual_count = cur.fetchone()[0]
+        cur.close()
+        return actual_count >= expected_count
+    except Exception:
+        return False
+
+
+def batch_create_raw_activations(activations_data: list):
+    """Batch insert multiple RawActivation records."""
+    if not activations_data:
+        return
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            conn = get_conn()
+            cur = conn.cursor()
+            from psycopg2.extras import execute_values
+            execute_values(cur, '''
+                INSERT INTO "RawActivation"
+                ("modelId", "contrastivePairId", "contrastivePairSetId", "layer", "seqLen", "hiddenDim", "promptLen", "hiddenStates", "answerText", "isPositive", "promptFormat", "createdAt")
+                VALUES %s
+                ON CONFLICT ("modelId", "contrastivePairId", layer, "isPositive", "promptFormat") DO NOTHING
+            ''', activations_data, template="(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())")
+            cur.close()
+            return
+        except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
+            print(f"  [DB batch error on attempt {attempt+1}/{max_retries}: {e}]", flush=True)
+            reset_conn()
+            if attempt == max_retries - 1:
+                raise
+
+
 def create_raw_activation(
     model_id: int,
     pair_id: int,
@@ -315,8 +358,19 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
         conn.close()
         return
 
-    print(f"Formats to extract: {[f[0] for f in formats_to_extract]}", flush=True)
+    format_names = [f[0] for f in formats_to_extract]
+    print(f"Formats to extract: {format_names}", flush=True)
     start = time.time()
+    skipped = 0
+    extracted = 0
+
+    # Forward pass helper (defined once, not per-pair)
+    def get_hidden_states(text):
+        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048, add_special_tokens=False)
+        enc = {k: v.to(device) for k, v in enc.items()}
+        with torch.inference_mode():
+            out = model(**enc, output_hidden_states=True, use_cache=False)
+        return [out.hidden_states[i].squeeze(0) for i in range(1, len(out.hidden_states))]
 
     for batch_start in range(0, len(pairs), batch_size):
         batch_end = min(batch_start + batch_size, len(pairs))
@@ -324,22 +378,25 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
 
         for pair_idx_in_batch, pair in enumerate(batch_pairs):
             pair_idx = batch_start + pair_idx_in_batch
-            print(f"    pair {pair_idx+1}/{len(pairs)}...", end="", flush=True)
 
             prompt = pair.prompt
             pos = pair.positive_response.model_response if hasattr(pair.positive_response, 'model_response') else str(pair.positive_response)
             neg = pair.negative_response.model_response if hasattr(pair.negative_response, 'model_response') else str(pair.negative_response)
 
-            # Create pair in DB
+            # Create pair in DB (fast - just lookup or insert)
             pair_id = get_or_create_pair(set_id, prompt, pos, neg, pair_idx)
 
-            # Forward pass helper
-            def get_hidden_states(text):
-                enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048, add_special_tokens=False)
-                enc = {k: v.to(device) for k, v in enc.items()}
-                with torch.inference_mode():
-                    out = model(**enc, output_hidden_states=True, use_cache=False)
-                return [out.hidden_states[i].squeeze(0) for i in range(1, len(out.hidden_states))]
+            # OPTIMIZATION: Skip if pair is fully extracted
+            if check_pair_fully_extracted(model_id, pair_id, num_layers, format_names):
+                skipped += 1
+                if skipped % 50 == 0:
+                    print(f"    [skipped {skipped} already-extracted pairs]", flush=True)
+                continue
+
+            print(f"    pair {pair_idx+1}/{len(pairs)}...", end="", flush=True)
+
+            # Collect all activations for batch insert
+            activations_batch = []
 
             # Extract for each prompt format that needs it
             for prompt_format, strategy in formats_to_extract:
@@ -365,42 +422,34 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
                 pos_hidden = get_hidden_states(pos_text)
                 neg_hidden = get_hidden_states(neg_text)
 
-                # Save all layers for this format
+                # Collect all layers for batch insert
                 for layer_idx in range(num_layers):
                     layer_num = layer_idx + 1
+                    pos_bytes = hidden_states_to_bytes(pos_hidden[layer_idx])
+                    neg_bytes = hidden_states_to_bytes(neg_hidden[layer_idx])
 
-                    create_raw_activation(
-                        model_id=model_id,
-                        pair_id=pair_id,
-                        set_id=set_id,
-                        layer=layer_num,
-                        hidden_states=pos_hidden[layer_idx],
-                        prompt_len=pos_prompt_len,
-                        answer_text=pos_answer,
-                        is_positive=True,
-                        prompt_format=prompt_format
-                    )
-
-                    create_raw_activation(
-                        model_id=model_id,
-                        pair_id=pair_id,
-                        set_id=set_id,
-                        layer=layer_num,
-                        hidden_states=neg_hidden[layer_idx],
-                        prompt_len=neg_prompt_len,
-                        answer_text=neg_answer,
-                        is_positive=False,
-                        prompt_format=prompt_format
-                    )
+                    activations_batch.append((
+                        model_id, pair_id, set_id, layer_num,
+                        pos_hidden[layer_idx].shape[0], pos_hidden[layer_idx].shape[1],
+                        pos_prompt_len, psycopg2.Binary(pos_bytes), pos_answer, True, prompt_format
+                    ))
+                    activations_batch.append((
+                        model_id, pair_id, set_id, layer_num,
+                        neg_hidden[layer_idx].shape[0], neg_hidden[layer_idx].shape[1],
+                        neg_prompt_len, psycopg2.Binary(neg_bytes), neg_answer, False, prompt_format
+                    ))
 
                 del pos_hidden, neg_hidden
+
+            # Batch insert all activations for this pair
+            batch_create_raw_activations(activations_batch)
+            extracted += 1
             print(" done", flush=True)
 
         if device == "cuda":
             torch.cuda.empty_cache()
-        print(f"  batch {batch_start//batch_size + 1}/{(len(pairs) + batch_size - 1)//batch_size} saved (pairs {batch_start+1}-{batch_end})", flush=True)
 
-    print(f"DONE in {time.time()-start:.1f}s", flush=True)
+    print(f"DONE in {time.time()-start:.1f}s (extracted {extracted}, skipped {skipped})", flush=True)
     reset_conn()
     print(f"\nExtraction complete for {benchmark} with {model_name}")
 
