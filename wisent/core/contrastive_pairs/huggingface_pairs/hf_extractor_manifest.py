@@ -448,6 +448,40 @@ EXTRACTORS: dict[str, str] = {
     "multilingual_toxicity": f"{base_import}medium_priority_benchmarks:PolygloToxicityExtractor",
     # Custom TruthfulQA (loads directly from HF)
     "truthfulqa_custom": f"{base_import}truthfulqa_custom:TruthfulQACustomExtractor",
+
+    # Okapi Multilingual benchmarks
+    "okapi_mmlu_multilingual": f"{base_import}okapi_multilingual:OkapiMMLUExtractor",
+    "okapi_mmlu": f"{base_import}okapi_multilingual:OkapiMMLUExtractor",
+    "okapi_hellaswag_multilingual": f"{base_import}okapi_multilingual:OkapiHellaswagExtractor",
+    "okapi_hellaswag": f"{base_import}okapi_multilingual:OkapiHellaswagExtractor",
+    "okapi_truthfulqa_multilingual": f"{base_import}okapi_multilingual:OkapiTruthfulQAExtractor",
+    "okapi_truthfulqa": f"{base_import}okapi_multilingual:OkapiTruthfulQAExtractor",
+
+    # Multilingual benchmarks
+    "paws_x": f"{base_import}multilingual_benchmarks:PawsXExtractor",
+    "paws-x": f"{base_import}multilingual_benchmarks:PawsXExtractor",
+    "mlqa": f"{base_import}multilingual_benchmarks:MLQAExtractor",
+    "darija_bench": f"{base_import}multilingual_benchmarks:DarijaBenchExtractor",
+    "eus_exams": f"{base_import}multilingual_benchmarks:EusExamsExtractor",
+    "lambada_multilingual_stablelm": f"{base_import}multilingual_benchmarks:LambadaMultilingualExtractor",
+    "lambada_multilingual": f"{base_import}multilingual_benchmarks:LambadaMultilingualExtractor",
+
+    # Reasoning benchmarks
+    "inverse_scaling": f"{base_import}reasoning_benchmarks:InverseScalingExtractor",
+
+    # Medical benchmarks
+    "med_concepts_qa": f"{base_import}medical_benchmarks:MedConceptsQAExtractor",
+
+    # Translation benchmarks
+    "translation": f"{base_import}translation_benchmarks:TranslationExtractor",
+    "wmt14_en_fr": f"{base_import}translation_benchmarks:WMT14Extractor",
+    "wmt14_fr_en": f"{base_import}translation_benchmarks:WMT14Extractor",
+    "wmt16_de_en": f"{base_import}translation_benchmarks:WMT16Extractor",
+    "wmt16_en_de": f"{base_import}translation_benchmarks:WMT16Extractor",
+    "wmt2016": f"{base_import}translation_benchmarks:WMT16Extractor",
+
+    # Multimodal benchmarks
+    "mmmu": f"{base_import}multimodal_benchmarks:MMMUExtractor",
 }
 
 # Alias for backwards compatibility
