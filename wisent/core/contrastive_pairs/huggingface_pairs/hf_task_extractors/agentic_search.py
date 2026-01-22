@@ -320,29 +320,34 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         try:
+            # Load more docs than needed since some have null response_reference
+            # Dataset has ~20% null values, so load 50% extra to be safe
+            load_limit = int(max_items * 1.5) if max_items else None
             docs = self.load_dataset(
                 dataset_name="ByteSeedXpert/FinSearchComp",
                 split="test",
-                limit=max_items,
+                limit=load_limit,
             )
             log.info(f"Loaded {len(docs)} examples from FinSearchComp")
         except Exception as e:
             log.warning(f"Failed to load FinSearchComp test split: {e}")
             # Try train split
             try:
+                load_limit = int(max_items * 1.5) if max_items else None
                 docs = self.load_dataset(
                     dataset_name="ByteSeedXpert/FinSearchComp",
                     split="train",
-                    limit=max_items,
+                    limit=load_limit,
                 )
                 log.info(f"Loaded {len(docs)} examples from FinSearchComp (train)")
             except Exception as e2:
                 # Try validation split
                 try:
+                    load_limit = int(max_items * 1.5) if max_items else None
                     docs = self.load_dataset(
                         dataset_name="ByteSeedXpert/FinSearchComp",
                         split="validation",
-                        limit=max_items,
+                        limit=load_limit,
                     )
                     log.info(f"Loaded {len(docs)} examples from FinSearchComp (validation)")
                 except Exception as e3:
@@ -370,8 +375,8 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
         - label: str (category like Simple_Historical_Lookup)
         """
         try:
-            question = doc.get("prompt", "").strip()
-            correct_answer = doc.get("response_reference", "").strip()
+            question = (doc.get("prompt") or "").strip()
+            correct_answer = (doc.get("response_reference") or "").strip()
             category = doc.get("label", "general")
             region = "global"
 
