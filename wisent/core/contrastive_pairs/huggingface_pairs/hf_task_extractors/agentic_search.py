@@ -175,6 +175,7 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
         try:
             docs = self.load_dataset(
                 dataset_name="vtllms/sealqa",
+                dataset_config=self.flavor,
                 split="test",
                 limit=max_items,
             )
@@ -185,6 +186,7 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
             try:
                 docs = self.load_dataset(
                     dataset_name="vtllms/sealqa",
+                    dataset_config=self.flavor,
                     split="train",
                     limit=max_items,
                 )
@@ -194,6 +196,7 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
                 try:
                     docs = self.load_dataset(
                         dataset_name="vtllms/sealqa",
+                        dataset_config=self.flavor,
                         split="validation",
                         limit=max_items,
                     )
@@ -220,31 +223,35 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
         SealQA schema:
         - question: str (the query)
         - answer: str (ground truth answer)
-        - context: str or list (search results, possibly noisy)
-        - flavor: str (seal_0, seal_hard, longseal)
+        - urls: list (source URLs)
+        - search_results: str (type like "conflicting")
+        - topic: str (topic category)
         """
         try:
             question = doc.get("question", "").strip()
             correct_answer = doc.get("answer", "").strip()
-            context = doc.get("context", "")
+            urls = doc.get("urls", [])
+            search_type = doc.get("search_results", "")
+            topic = doc.get("topic", "")
 
             if not question or not correct_answer:
                 return None
 
-            # Handle context as list or string
-            if isinstance(context, list):
-                context_text = "\n".join(str(c) for c in context[:5])
-            else:
-                context_text = str(context)[:2000]
+            # Build context from available info
+            context_parts = []
+            if urls:
+                context_parts.append(f"Sources: {', '.join(urls[:3])}")
+            if search_type:
+                context_parts.append(f"Search result type: {search_type}")
+            context_text = "\n".join(context_parts)
 
-            task_prompt = f"""Search-Augmented QA Task:
+            task_prompt = f"""Search-Augmented QA Task ({topic}):
 
 Question: {question}
 
-Search Results (may contain noise/conflicts):
 {context_text}
 
-Based on the search results, provide the most accurate answer."""
+Provide the most accurate answer."""
 
             # Create incorrect answer
             incorrect_answer = "I cannot determine the answer from the provided search results."
@@ -358,16 +365,15 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
         """Convert a single doc into a ContrastivePair.
 
         FinSearchComp schema:
-        - question: str (the financial query)
-        - answer: str (ground truth answer)
-        - category: str (time_sensitive, simple_lookup, complex_investigation)
-        - region: str (global, china)
+        - prompt: str (the financial query)
+        - response_reference: str (ground truth answer)
+        - label: str (category like Simple_Historical_Lookup)
         """
         try:
-            question = doc.get("question", "").strip()
-            correct_answer = doc.get("answer", "").strip()
-            category = doc.get("category", "general")
-            region = doc.get("region", "global")
+            question = doc.get("prompt", "").strip()
+            correct_answer = doc.get("response_reference", "").strip()
+            category = doc.get("label", "general")
+            region = "global"
 
             if not question or not correct_answer:
                 return None

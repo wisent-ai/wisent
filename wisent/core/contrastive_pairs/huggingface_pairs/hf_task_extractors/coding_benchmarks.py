@@ -500,7 +500,7 @@ class TerminalBenchExtractor(HuggingFaceBenchmarkExtractor):
         try:
             docs = self.load_dataset(
                 dataset_name="ia03/terminal-bench",
-                split="train",
+                split="test",
                 limit=max_items,
             )
             log.info(f"Loaded {len(docs)} examples from terminal-bench")
@@ -525,41 +525,52 @@ class TerminalBenchExtractor(HuggingFaceBenchmarkExtractor):
 
         terminal-bench schema:
         - task_id: str (unique task identifier)
-        - name: str (task name)
-        - description: str (task description)
-        - archive: bytes (gzipped tarball of task directory)
-        - instructions: str (detailed instructions for the task)
+        - base_description: str (task description)
+        - category: str (task category)
+        - difficulty: str (easy, medium, hard)
+        - task_yaml: str (YAML with task details)
         """
         try:
-            task_id = doc.get("task_id", doc.get("name", ""))
-            name = doc.get("name", "").strip()
-            description = doc.get("description", "").strip()
-            instructions = doc.get("instructions", "").strip()
+            import yaml
+            task_id = doc.get("task_id", "")
+            description = doc.get("base_description", "").strip()
+            category = doc.get("category", "")
+            difficulty = doc.get("difficulty", "")
+            task_yaml_str = doc.get("task_yaml", "")
 
-            # Use description or instructions as the task prompt
-            task_text = instructions if instructions else description
-            if not task_text:
+            # Parse task_yaml for additional details
+            task_details = ""
+            if task_yaml_str:
+                try:
+                    task_yaml = yaml.safe_load(task_yaml_str)
+                    if isinstance(task_yaml, dict):
+                        task_details = task_yaml.get("instructions", task_yaml.get("description", ""))
+                except Exception:
+                    pass
+
+            # Use description as the task prompt
+            if not description:
                 return None
 
-            task_prompt = f"""Terminal Task: {name}
+            task_text = task_details if task_details else description
+            task_prompt = f"""Terminal Task: {task_id}
+Category: {category}
+Difficulty: {difficulty}
 
 {task_text}
 
 Provide the correct sequence of terminal commands to accomplish this task."""
 
-            # Create correct response (expected solution)
-            correct = doc.get("solution", doc.get("expected_output", ""))
-            if not correct:
-                correct = "# Correct terminal commands to accomplish the task"
-
-            # Create incorrect response
-            incorrect = "# Incorrect approach - missing steps or wrong commands\necho 'Task failed'"
+            # For terminal tasks, create synthetic correct/incorrect responses
+            correct = f"# Correct solution for {task_id}\n# Following best practices for {category} tasks"
+            incorrect = f"# Incorrect approach for {task_id}\necho 'Task not completed correctly'"
 
             metadata = {
                 "label": "terminal_bench",
                 "source": "ia03/terminal-bench",
                 "task_id": task_id,
-                "task_name": name,
+                "category": category,
+                "difficulty": difficulty,
                 "is_terminal_benchmark": True,
             }
 

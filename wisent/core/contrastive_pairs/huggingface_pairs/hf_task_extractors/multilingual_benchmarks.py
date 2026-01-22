@@ -243,35 +243,28 @@ class DarijaBenchExtractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         try:
-            # Try to load with different splits and configs
+            # DarijaBench has specific splits: doda, madar, seed, flores_plus, etc.
             docs = self.load_dataset(
                 dataset_name="MBZUAI-Paris/DarijaBench",
-                split="test",
+                dataset_config="default",
+                split="doda",
                 limit=max_items,
             )
             log.info(f"Loaded {len(docs)} examples from DarijaBench")
         except Exception as e:
-            log.warning(f"Failed to load DarijaBench test split: {e}")
-            # Try train split
+            log.warning(f"Failed to load DarijaBench doda split: {e}")
+            # Try madar split
             try:
                 docs = self.load_dataset(
                     dataset_name="MBZUAI-Paris/DarijaBench",
-                    split="train",
+                    dataset_config="default",
+                    split="madar",
                     limit=max_items,
                 )
-                log.info(f"Loaded {len(docs)} examples from DarijaBench (train)")
+                log.info(f"Loaded {len(docs)} examples from DarijaBench (madar)")
             except Exception as e2:
-                # Try validation split
-                try:
-                    docs = self.load_dataset(
-                        dataset_name="MBZUAI-Paris/DarijaBench",
-                        split="validation",
-                        limit=max_items,
-                    )
-                    log.info(f"Loaded {len(docs)} examples from DarijaBench (validation)")
-                except Exception as e3:
-                    log.error(f"Failed to load DarijaBench: {e3}")
-                    return []
+                log.error(f"Failed to load DarijaBench: {e2}")
+                return []
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -283,48 +276,33 @@ class DarijaBenchExtractor(HuggingFaceBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """Convert a single doc into a ContrastivePair."""
-        try:
-            # Try different field names that DarijaBench might use
-            question = doc.get("question", doc.get("text", doc.get("input", ""))).strip()
-            choices = doc.get("choices", doc.get("options", []))
-            answer_idx = doc.get("answer", doc.get("label", 0))
+        """Convert a single doc into a ContrastivePair.
 
-            if not question:
+        DarijaBench format:
+        - dataset: str (e.g., 'doda')
+        - direction: str (e.g., 'fr_dr' for French to Darija)
+        - messages: list of dicts with 'role' and 'content'
+        """
+        try:
+            messages = doc.get("messages", [])
+            direction = doc.get("direction", "")
+
+            # Extract user prompt and assistant response from messages
+            user_content = ""
+            assistant_content = ""
+            for msg in messages:
+                if msg.get("role") == "user":
+                    user_content = msg.get("content", "").strip()
+                elif msg.get("role") == "assistant":
+                    assistant_content = msg.get("content", "").strip()
+
+            if not user_content or not assistant_content:
                 return None
 
-            # If it's a text classification task without explicit choices
-            if not choices:
-                # Handle as text completion/generation
-                correct = doc.get("target", doc.get("output", ""))
-                if not correct:
-                    return None
-                incorrect = "غير معروف"  # "Unknown" in Arabic
-
-                task_prompt = f"""السؤال: {question}
-
-الجواب:"""
-
-            else:
-                # Multiple choice format
-                choice_letters = ['A', 'B', 'C', 'D']
-                choices_text = "\n".join(
-                    f"{choice_letters[i]}. {c}" for i, c in enumerate(choices[:4])
-                )
-
-                task_prompt = f"""السؤال: {question}
-
-{choices_text}
-
-الجواب:"""
-
-                if isinstance(answer_idx, int) and answer_idx < len(choices):
-                    correct = choice_letters[answer_idx]
-                else:
-                    correct = "A"
-
-                wrong_indices = [i for i in range(len(choices)) if i != answer_idx]
-                incorrect = choice_letters[random.choice(wrong_indices)] if wrong_indices else "B"
+            task_prompt = user_content
+            correct = assistant_content
+            # Create incorrect translation by using a generic wrong response
+            incorrect = "لا أعرف" if "dr" in direction else "Je ne sais pas"  # "I don't know" in Darija/French
 
             metadata = {
                 "label": "darija_bench",
@@ -366,8 +344,10 @@ class EusExamsExtractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         try:
+            # EusExams requires a config (e.g., 'eu_opeosakiadmineu')
             docs = self.load_dataset(
                 dataset_name="HiTZ/EusExams",
+                dataset_config="eu_opeosakiadmineu",
                 split="test",
                 limit=max_items,
             )
@@ -378,6 +358,7 @@ class EusExamsExtractor(HuggingFaceBenchmarkExtractor):
             try:
                 docs = self.load_dataset(
                     dataset_name="HiTZ/EusExams",
+                    dataset_config="eu_opeosakiadmineu",
                     split="train",
                     limit=max_items,
                 )
@@ -387,6 +368,7 @@ class EusExamsExtractor(HuggingFaceBenchmarkExtractor):
                 try:
                     docs = self.load_dataset(
                         dataset_name="HiTZ/EusExams",
+                        dataset_config="eu_opeosakiadmineu",
                         split="validation",
                         limit=max_items,
                     )
@@ -408,7 +390,7 @@ class EusExamsExtractor(HuggingFaceBenchmarkExtractor):
         """Convert a single doc into a ContrastivePair."""
         try:
             question = doc.get("question", doc.get("text", "")).strip()
-            choices = doc.get("choices", doc.get("options", []))
+            choices = doc.get("candidates", doc.get("choices", doc.get("options", [])))
             answer_idx = doc.get("answer", doc.get("label", 0))
 
             if not question or not choices:
