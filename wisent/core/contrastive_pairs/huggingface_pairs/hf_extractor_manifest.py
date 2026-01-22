@@ -12,6 +12,7 @@ EXTRACTORS: dict[str, str] = {
     "aime2025": f"{base_import}aime2025:AIME2025Extractor",
     "asdiv_cot_llama": f"{base_import}math500:MATH500Extractor",
     "chain_of_thought": f"{base_import}math500:MATH500Extractor",
+    "gsm8k": f"{base_import}gsm8k_extractor:GSM8KExtractor",
     "gsm8k_cot": f"{base_import}math500:MATH500Extractor",
     "gsm8k_cot_llama": f"{base_import}math500:MATH500Extractor",
     "gsm8k_cot_self_consistency": f"{base_import}math500:MATH500Extractor",
@@ -212,7 +213,11 @@ EXTRACTORS: dict[str, str] = {
 
     # Newly created extractors
     # Note: unitxt tasks (xsum, cnn_dailymail, dbpedia_14, ethos_binary, etc.) use lm-eval unitxt extractor
+    "babi": f"{base_import}babi_extractor:BABIExtractor",
     "bhtc_v2": f"{base_import}bhtc_v2:BhtcV2Extractor",
+    "drop": f"{base_import}squad_extractor:DROPExtractor",
+    "sciq": f"{base_import}babi_extractor:SciQExtractor",
+    "squadv2": f"{base_import}squad_extractor:SQuADv2Extractor",
     "basque-glue": f"{base_import}basqueglue:BasqueglueExtractor",
     "evalita-sp_sum_task_fp-small_p1": f"{base_import}evalita_sp_sum_task_fp_small_p1:EvalitaSpSumTaskFpSmallP1Extractor",
     "flan_held_in": f"{base_import}flan_held_in:FlanHeldInExtractor",
