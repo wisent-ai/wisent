@@ -53,43 +53,29 @@ class InverseScalingExtractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         try:
-            # Try to load all tasks or specific task
-            if self.task:
-                config = self.task
-            else:
-                config = None
+            # Inverse Scaling is split into individual sub-datasets
+            # Use NeQA as the primary dataset
+            dataset_name = f"inverse-scaling/{self.task}" if self.task else "inverse-scaling/NeQA"
 
             docs = self.load_dataset(
-                dataset_name="inverse-scaling/inverse-scaling",
-                dataset_config=config,
-                split="test",
+                dataset_name=dataset_name,
+                split="train",
                 limit=max_items,
             )
-            log.info(f"Loaded {len(docs)} examples from Inverse Scaling")
+            log.info(f"Loaded {len(docs)} examples from Inverse Scaling ({dataset_name})")
         except Exception as e:
-            log.warning(f"Failed to load Inverse Scaling test split: {e}")
-            # Try train split
+            log.warning(f"Failed to load {dataset_name}: {e}")
+            # Try redefine-math as fallback
             try:
                 docs = self.load_dataset(
-                    dataset_name="inverse-scaling/inverse-scaling",
-                    dataset_config=config,
+                    dataset_name="inverse-scaling/redefine-math",
                     split="train",
                     limit=max_items,
                 )
-                log.info(f"Loaded {len(docs)} examples from Inverse Scaling (train)")
+                log.info(f"Loaded {len(docs)} examples from Inverse Scaling (redefine-math)")
             except Exception as e2:
-                # Try validation split
-                try:
-                    docs = self.load_dataset(
-                        dataset_name="inverse-scaling/inverse-scaling",
-                        dataset_config=config,
-                        split="validation",
-                        limit=max_items,
-                    )
-                    log.info(f"Loaded {len(docs)} examples from Inverse Scaling (validation)")
-                except Exception as e3:
-                    log.error(f"Failed to load Inverse Scaling: {e3}")
-                    return []
+                log.error(f"Failed to load Inverse Scaling: {e2}")
+                return []
 
         for doc in docs:
             pair = self._extract_pair_from_doc(doc)
@@ -101,16 +87,22 @@ class InverseScalingExtractor(HuggingFaceBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """Convert a single doc into a ContrastivePair."""
+        """Convert a single doc into a ContrastivePair.
+
+        Inverse Scaling format:
+        - prompt: str (the question with context)
+        - classes: list of answer options
+        - answer_index: int (index of correct answer)
+        """
         try:
-            # Inverse Scaling format varies by task
+            # Inverse Scaling format
             prompt = doc.get("prompt", doc.get("question", doc.get("text", ""))).strip()
 
-            # Get choices/options
-            choices = doc.get("choices", doc.get("options", []))
+            # Get choices/options - support both 'classes' and 'choices'
+            choices = doc.get("classes", doc.get("choices", doc.get("options", [])))
 
-            # Get the correct answer
-            answer = doc.get("answer", doc.get("label", doc.get("target", "")))
+            # Get the correct answer index
+            answer = doc.get("answer_index", doc.get("answer", doc.get("label", doc.get("target", ""))))
 
             if not prompt:
                 return None
