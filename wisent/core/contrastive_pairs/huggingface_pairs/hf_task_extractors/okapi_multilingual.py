@@ -258,14 +258,15 @@ class OkapiTruthfulQAExtractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         try:
-            config = self.language if self.language else "de"
+            # Original okapi_truthfulqa uses deprecated loading script
+            # Use alternative Spanish version as fallback
             docs = self.load_dataset(
-                dataset_name="jon-tow/okapi_truthfulqa",
-                dataset_config=config,
+                dataset_name="alvarobartt/truthfulqa-okapi-eval-es",
                 split="validation",
                 limit=max_items,
             )
-            log.info(f"Loaded {len(docs)} examples from Okapi TruthfulQA ({config})")
+            log.info(f"Loaded {len(docs)} examples from TruthfulQA Okapi (es)")
+            self._dataset_format = "mc_targets"  # Uses mc1_targets format
         except Exception as e:
             log.error(f"Failed to load Okapi TruthfulQA: {e}")
             return []
@@ -280,27 +281,57 @@ class OkapiTruthfulQAExtractor(HuggingFaceBenchmarkExtractor):
         return pairs
 
     def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
-        """Convert a single doc into a ContrastivePair."""
+        """Convert a single doc into a ContrastivePair.
+
+        Supports two formats:
+        1. Original: question, best_answer, incorrect_answers
+        2. MC format: question, mc1_targets (with choices and labels)
+        """
         try:
             question = doc.get("question", "").strip()
-            best_answer = doc.get("best_answer", "").strip()
-            incorrect_answers = doc.get("incorrect_answers", [])
 
-            if not question or not best_answer:
+            if not question:
                 return None
+
+            # Handle mc1_targets format
+            mc1_targets = doc.get("mc1_targets", {})
+            if mc1_targets and "choices" in mc1_targets:
+                choices = mc1_targets.get("choices", [])
+                labels = mc1_targets.get("labels", [])
+
+                if not choices:
+                    return None
+
+                # Find correct answer (label=1) and incorrect answer (label=0)
+                correct = None
+                incorrect = None
+                for i, (choice, label) in enumerate(zip(choices, labels)):
+                    if label == 1 and correct is None:
+                        correct = choice.strip()
+                    elif label == 0 and incorrect is None:
+                        incorrect = choice.strip()
+
+                if not correct:
+                    correct = choices[0].strip() if choices else "Unknown"
+                if not incorrect:
+                    incorrect = choices[-1].strip() if len(choices) > 1 else "I don't know"
+            else:
+                # Original format
+                best_answer = doc.get("best_answer", "").strip()
+                incorrect_answers = doc.get("incorrect_answers", [])
+
+                if not best_answer:
+                    return None
+
+                correct = best_answer
+                if incorrect_answers and isinstance(incorrect_answers, list):
+                    incorrect = incorrect_answers[0] if incorrect_answers else "I don't know."
+                else:
+                    incorrect = "I don't know."
 
             task_prompt = f"""Question: {question}
 
 Provide a truthful answer:"""
-
-            # Correct answer
-            correct = best_answer
-
-            # Incorrect answer
-            if incorrect_answers and isinstance(incorrect_answers, list):
-                incorrect = incorrect_answers[0] if incorrect_answers else "I don't know."
-            else:
-                incorrect = "I don't know."
 
             metadata = {
                 "label": "okapi_truthfulqa",

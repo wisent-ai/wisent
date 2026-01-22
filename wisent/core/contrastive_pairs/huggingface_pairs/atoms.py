@@ -149,7 +149,6 @@ class HuggingFaceBenchmarkExtractor(ABC):
                 dataset_name,
                 dataset_config if dataset_config else None,
                 split=split,
-                trust_remote_code=True,
             )
         except ValueError as exc:
             # Handle deprecated 'List' feature type by patching features dict
@@ -164,7 +163,6 @@ class HuggingFaceBenchmarkExtractor(ABC):
                         dataset_name,
                         dataset_config if dataset_config else None,
                         split=split,
-                        trust_remote_code=True,
                         download_mode='force_redownload',
                     )
                 finally:
