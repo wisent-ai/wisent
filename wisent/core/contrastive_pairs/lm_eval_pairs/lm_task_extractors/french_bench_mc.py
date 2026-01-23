@@ -61,20 +61,35 @@ class FrenchBenchMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:
-            question = str(doc.get("question", "")).strip()
-            choices = doc.get("choices", [])
-            answer_key = doc.get("answerKey", "")
+            # Format 1: Standard MC with question + choices + answerKey
+            if "question" in doc and "choices" in doc and "answerKey" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = doc.get("choices", [])
+                answer_key = doc.get("answerKey", "")
 
-            if not question or not choices or not answer_key:
-                log.debug("Skipping doc due to missing fields", extra={"doc": doc})
-                return None
+                if not question or not choices or not answer_key:
+                    return None
 
-            # Find correct answer index
-            answer_map = {"A": 0, "B": 1, "C": 2, "D": 3}
-            answer_idx = answer_map.get(answer_key.upper())
+                answer_map = {"A": 0, "B": 1, "C": 2, "D": 3}
+                answer_idx = answer_map.get(answer_key.upper())
 
-            if answer_idx is None or answer_idx >= len(choices):
-                log.debug("Invalid answer key", extra={"doc": doc, "answer": answer_key})
+                if answer_idx is None or answer_idx >= len(choices):
+                    return None
+
+            # Format 2: Hellaswag style with ctx + endings + label
+            elif "ctx" in doc and "endings" in doc and "label" in doc:
+                question = str(doc.get("ctx", "")).strip()
+                choices = doc.get("endings", [])
+                label = doc.get("label", "0")
+
+                if not question or not choices:
+                    return None
+
+                answer_idx = int(label) if isinstance(label, (int, str)) and str(label).isdigit() else 0
+                if answer_idx >= len(choices):
+                    return None
+
+            else:
                 return None
 
             correct = str(choices[answer_idx]).strip()
