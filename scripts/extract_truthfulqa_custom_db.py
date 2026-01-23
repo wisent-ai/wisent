@@ -217,25 +217,33 @@ def batch_create_raw_activations(activations_data: list):
     if not activations_data:
         return
 
+    # Split into smaller batches to avoid timeout (max 50 rows per batch)
+    batch_size = 50
     max_retries = 3
-    for attempt in range(max_retries):
-        try:
-            conn = get_conn()
-            cur = conn.cursor()
-            from psycopg2.extras import execute_values
-            execute_values(cur, '''
-                INSERT INTO "RawActivation"
-                ("modelId", "contrastivePairId", "contrastivePairSetId", "layer", "seqLen", "hiddenDim", "promptLen", "hiddenStates", "answerText", "isPositive", "promptFormat", "createdAt")
-                VALUES %s
-                ON CONFLICT ("modelId", "contrastivePairId", layer, "isPositive", "promptFormat") DO NOTHING
-            ''', activations_data, template="(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())")
-            cur.close()
-            return
-        except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
-            print(f"  [DB batch error on attempt {attempt+1}/{max_retries}: {e}]", flush=True)
-            reset_conn()
-            if attempt == max_retries - 1:
-                raise
+
+    for i in range(0, len(activations_data), batch_size):
+        batch = activations_data[i:i + batch_size]
+
+        for attempt in range(max_retries):
+            try:
+                conn = get_conn()
+                cur = conn.cursor()
+                # Set statement timeout to 60 seconds to prevent infinite hangs
+                cur.execute("SET statement_timeout = '60s'")
+                from psycopg2.extras import execute_values
+                execute_values(cur, '''
+                    INSERT INTO "RawActivation"
+                    ("modelId", "contrastivePairId", "contrastivePairSetId", "layer", "seqLen", "hiddenDim", "promptLen", "hiddenStates", "answerText", "isPositive", "promptFormat", "createdAt")
+                    VALUES %s
+                    ON CONFLICT ("modelId", "contrastivePairId", layer, "isPositive", "promptFormat") DO NOTHING
+                ''', batch, template="(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, NOW())")
+                cur.close()
+                break  # Success, move to next batch
+            except (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.errors.QueryCanceled) as e:
+                print(f"  [DB batch error on attempt {attempt+1}/{max_retries}: {e}]", flush=True)
+                reset_conn()
+                if attempt == max_retries - 1:
+                    raise
 
 
 def create_raw_activation(
