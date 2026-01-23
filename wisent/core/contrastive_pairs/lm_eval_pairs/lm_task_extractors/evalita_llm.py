@@ -111,7 +111,20 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: query/prompt + answer
+            # Format 3: question + A/B/C/D + correct_answer (Evalita style)
+            elif "question" in doc and "A" in doc and "correct_answer" in doc:
+                question = str(doc.get("question", "")).strip()
+                choices = [
+                    str(doc.get("A", "")).strip(),
+                    str(doc.get("B", "")).strip(),
+                    str(doc.get("C", "")).strip(),
+                    str(doc.get("D", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer = doc.get("correct_answer", "A")
+                answer_idx = ord(str(answer).upper()) - ord('A')
+
+            # Format 4: query/prompt + answer
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer

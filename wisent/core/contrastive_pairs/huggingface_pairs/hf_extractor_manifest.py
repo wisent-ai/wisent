@@ -213,7 +213,7 @@ EXTRACTORS: dict[str, str] = {
 
     # Newly created extractors
     # Note: unitxt tasks (xsum, cnn_dailymail, dbpedia_14, ethos_binary, etc.) use lm-eval unitxt extractor
-    "babi": f"{base_import}babi_extractor:BABIExtractor",
+    # Note: babi removed - use lm-eval version instead (HF version has loading issues)
     "bhtc_v2": f"{base_import}bhtc_v2:BhtcV2Extractor",
     "drop": f"{base_import}squad_extractor:DROPExtractor",
     "sciq": f"{base_import}babi_extractor:SciQExtractor",

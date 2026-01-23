@@ -83,6 +83,60 @@ class KobestExtractor(LMEvalBenchmarkExtractor):
                     # Combine paragraph and question
                     question = f"{paragraph}\n{question_text}"
 
+            # Format 0b: premise + question + alternative_1/2 + label (COPA style)
+            elif "premise" in doc and "alternative_1" in doc and "alternative_2" in doc:
+                premise = str(doc.get("premise", "")).strip()
+                question_text = str(doc.get("question", "")).strip()
+                alt1 = str(doc.get("alternative_1", "")).strip()
+                alt2 = str(doc.get("alternative_2", "")).strip()
+                label = doc.get("label")
+
+                if premise and alt1 and alt2 and isinstance(label, int) and label in [0, 1]:
+                    choices = [alt1, alt2]
+                    answer_idx = label
+                    question = f"{premise}\n{question_text}"
+
+            # Format 0c: context + ending_1/2/3/4 + label (HellaSwag style)
+            elif "context" in doc and "ending_1" in doc and "label" in doc:
+                context = str(doc.get("context", "")).strip()
+                endings = [
+                    str(doc.get("ending_1", "")).strip(),
+                    str(doc.get("ending_2", "")).strip(),
+                    str(doc.get("ending_3", "")).strip(),
+                    str(doc.get("ending_4", "")).strip(),
+                ]
+                endings = [e for e in endings if e]
+                label = doc.get("label")
+
+                if context and endings and isinstance(label, int) and 0 <= label < len(endings):
+                    choices = endings
+                    answer_idx = label
+                    question = context
+
+            # Format 0d: sentence + label (SentiNeg style - binary sentiment)
+            elif "sentence" in doc and "label" in doc and len(doc) == 2:
+                sentence = str(doc.get("sentence", "")).strip()
+                label = doc.get("label")
+
+                if sentence and isinstance(label, int) and label in [0, 1]:
+                    # label 0 = negative, label 1 = positive sentiment
+                    choices = ["부정적 (Negative)", "긍정적 (Positive)"]
+                    answer_idx = label
+                    question = f"다음 문장의 감정은 무엇입니까?\n{sentence}"
+
+            # Format 0e: word + context_1/2 + label (WiC style)
+            elif "word" in doc and "context_1" in doc and "context_2" in doc:
+                word = str(doc.get("word", "")).strip()
+                ctx1 = str(doc.get("context_1", "")).strip()
+                ctx2 = str(doc.get("context_2", "")).strip()
+                label = doc.get("label")
+
+                if word and ctx1 and ctx2 and isinstance(label, int) and label in [0, 1]:
+                    # label 0 = different meaning, label 1 = same meaning
+                    choices = ["다른 의미 (Different)", "같은 의미 (Same)"]
+                    answer_idx = label
+                    question = f"단어 '{word}'가 다음 두 문장에서 같은 의미로 사용되었습니까?\n1: {ctx1}\n2: {ctx2}"
+
             # Format 1: question + choices + answer
             elif "question" in doc and "choices" in doc:
                 question = str(doc.get("question", "")).strip()
