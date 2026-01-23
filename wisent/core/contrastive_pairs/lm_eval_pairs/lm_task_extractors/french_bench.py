@@ -133,6 +133,16 @@ class FrenchBenchExtractor(LMEvalBenchmarkExtractor):
                 else:
                     return None
 
+            # Format 3b: ctx + endings + label (French hellaswag style)
+            elif "ctx" in doc and "endings" in doc and "label" in doc:
+                question = str(doc.get("ctx", "")).strip()
+                choices = doc.get("endings", [])
+                if isinstance(choices, list) and choices:
+                    label = doc.get("label", "0")
+                    answer_idx = int(label) if isinstance(label, (int, str)) and str(label).isdigit() else 0
+                else:
+                    return None
+
             # Format 4: Question + Answer (trivia style, capital letters)
             elif "Question" in doc and "Answer" in doc:
                 question = str(doc.get("Question", "")).strip()
