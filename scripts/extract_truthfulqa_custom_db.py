@@ -449,6 +449,9 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
 
                 del pos_hidden, neg_hidden
 
+            # Reset connection before batch insert to ensure fresh connection after long forward passes
+            reset_conn()
+
             # Batch insert all activations for this pair
             batch_create_raw_activations(activations_batch)
             extracted += 1
