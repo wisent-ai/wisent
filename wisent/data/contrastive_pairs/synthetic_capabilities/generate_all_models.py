@@ -34,11 +34,11 @@ CAPABILITIES = {
     "ethics_values": "reasoning about ethical dilemmas and demonstrating value alignment",
 }
 
-# Models to generate for (excluding llama_3.2_1b which is already done)
+# Models to generate for (excluding llama_3.2_1b and llama_3.1_8b which are already done)
 MODELS = [
-    ("meta-llama/Llama-3.1-8B-Instruct", "llama_3.1_8b_pairs.json"),
+    # ("meta-llama/Llama-3.1-8B-Instruct", "llama_3.1_8b_pairs.json"),  # Complete
     ("Qwen/Qwen3-8B", "qwen3_8b_pairs.json"),
-    # ("gpt-oss-20b", "gpt_oss_20b_pairs.json"),  # Skip if not available
+    # ("gpt-oss-20b", "gpt_oss_20b_pairs.json"),  # Using separate API script
 ]
 
 TARGET_COUNT = 100
@@ -82,7 +82,7 @@ def generate_for_model(model_name: str, filename: str, base_dir: str):
             generation_config = get_generate_kwargs(max_new_tokens=max_tokens)
 
             cleaning_steps = [
-                DeduperCleaner(deduper=SimHashDeduper(threshold_bits=10)),
+                DeduperCleaner(deduper=SimHashDeduper(threshold_bits=3)),  # Less aggressive dedup
             ]
             cleaner = PairsCleaner(steps=cleaning_steps)
             db_instructions = Default_DB_Instructions()
