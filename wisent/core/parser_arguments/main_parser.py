@@ -43,6 +43,7 @@ from wisent.core.parser_arguments.cluster_benchmarks_parser import setup_cluster
 from wisent.core.parser_arguments.geometry_search_parser import setup_geometry_search_parser
 from wisent.core.parser_arguments.verify_steering_parser import setup_verify_steering_parser
 from wisent.core.parser_arguments.repscan_parser import setup_repscan_parser
+from wisent.core.parser_arguments.steering_viz_parser import setup_steering_viz_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -248,5 +249,12 @@ def setup_parser() -> argparse.ArgumentParser:
         help="Run RepScan geometry analysis with concept decomposition on database activations"
     )
     setup_repscan_parser(repscan_parser)
+
+    # Steering visualization command - show steering effect on activation space
+    steering_viz_parser = subparsers.add_parser(
+        "steering-viz",
+        help="Visualize steering effect on activation space (base vs steered relative to pos/neg)"
+    )
+    setup_steering_viz_parser(steering_viz_parser)
 
     return parser
