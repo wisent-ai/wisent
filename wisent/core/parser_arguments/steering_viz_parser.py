@@ -65,3 +65,20 @@ def setup_steering_viz_parser(parser):
         default="./steering_effect.png",
         help="Output PNG file path (default: ./steering_effect.png)"
     )
+    parser.add_argument(
+        "--compare-responses",
+        action="store_true",
+        help="Also generate and compare text responses (base vs steered)"
+    )
+    parser.add_argument(
+        "--n-response-samples",
+        type=int,
+        default=5,
+        help="Number of samples to show response comparison for (default: 5)"
+    )
+    parser.add_argument(
+        "--max-new-tokens",
+        type=int,
+        default=100,
+        help="Max tokens to generate per response (default: 100)"
+    )
