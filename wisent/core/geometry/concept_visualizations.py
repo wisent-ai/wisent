@@ -19,14 +19,7 @@ def create_concept_overview_figure(
     cluster_labels: np.ndarray,
     concept_names: Optional[List[str]] = None,
 ) -> str:
-    """
-    Create overview figure showing all concepts with different colors.
-
-    Uses PaCMAP for projection (same as main summary figure).
-
-    Returns:
-        Base64-encoded PNG string
-    """
+    """Create overview figure showing all concepts with different colors."""
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
@@ -42,7 +35,6 @@ def create_concept_overview_figure(
     if concept_names is None:
         concept_names = [f"Concept {i+1}" for i in range(n_concepts)]
 
-    # Use PaCMAP (falls back to PCA if unavailable)
     diff_tensor = torch.tensor(diff, dtype=torch.float32)
     zeros = torch.zeros_like(diff_tensor)
 
@@ -59,18 +51,13 @@ def create_concept_overview_figure(
         plt.close(fig)
         return base64.b64encode(buf.read()).decode('utf-8')
 
-    # Plot with concept colors
     diff_2d = proj_data["pos_projected"]
-
     fig, ax = plt.subplots(figsize=(10, 8))
     colors = plt.cm.tab10(np.linspace(0, 1, n_concepts))
 
     for i in range(n_concepts):
         mask = labels == i
-        ax.scatter(
-            diff_2d[mask, 0], diff_2d[mask, 1],
-            c=[colors[i]], label=concept_names[i], alpha=0.7, s=50
-        )
+        ax.scatter(diff_2d[mask, 0], diff_2d[mask, 1], c=[colors[i]], label=concept_names[i], alpha=0.7, s=50)
 
     ax.set_xlabel("Component 1")
     ax.set_ylabel("Component 2")
@@ -82,7 +69,6 @@ def create_concept_overview_figure(
     fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
-
     return base64.b64encode(buf.read()).decode('utf-8')
 
 
@@ -95,17 +81,7 @@ def create_per_concept_figure(
     silhouette: float = None,
     intra_similarity: Dict[str, float] = None,
 ) -> str:
-    """
-    Create full 3x3 summary figure for a single concept.
-
-    Uses the existing create_summary_figure which includes:
-    - PCA, t-SNE, UMAP projections
-    - PaCMAP, diff vectors, alignment distribution
-    - Eigenvalue spectrum, norm distribution, pairwise distances
-
-    Returns:
-        Base64-encoded PNG string
-    """
+    """Create full 3x3 summary figure for a single concept."""
     n_pairs = min(len(pos_activations), len(neg_activations))
 
     if n_pairs < 3:
@@ -120,32 +96,24 @@ def create_per_concept_figure(
         plt.close(fig)
         return base64.b64encode(buf.read()).decode('utf-8')
 
-    # Compute per-concept linear probe accuracy and ICD
     from .probe_metrics import compute_linear_probe_accuracy
     from .icd import compute_icd
 
     try:
-        lp_acc = compute_linear_probe_accuracy(
-            pos_activations[:n_pairs],
-            neg_activations[:n_pairs]
-        )
+        lp_acc = compute_linear_probe_accuracy(pos_activations[:n_pairs], neg_activations[:n_pairs])
     except Exception:
         lp_acc = 0.0
 
     try:
-        icd_result = compute_icd(
-            pos_activations[:n_pairs],
-            neg_activations[:n_pairs]
-        )
+        icd_result = compute_icd(pos_activations[:n_pairs], neg_activations[:n_pairs])
         icd_val = icd_result.get("icd", 0.0) if isinstance(icd_result, dict) else float(icd_result)
     except Exception:
         icd_val = 0.0
 
-    # Build metrics dict for the summary figure title
     metrics = {
         "linear_probe_accuracy": lp_acc,
         "icd_icd": icd_val,
-        "recommended_method": "N/A",  # Per-concept doesn't have a recommendation
+        "recommended_method": "N/A",
     }
 
     if coherence is not None:
@@ -155,20 +123,13 @@ def create_per_concept_figure(
     if intra_similarity is not None and "mean" in intra_similarity:
         metrics["intra_similarity"] = intra_similarity["mean"]
 
-    # Add concept info to metrics for title
     title_parts = [f"Concept {concept_id}"]
     if concept_name:
         title_parts.append(concept_name)
     metrics["concept_title"] = " - ".join(title_parts)
     metrics["n_pairs"] = n_pairs
 
-    # Use existing full summary figure (3x3 grid with all visualizations)
-    return create_summary_figure(
-        pos_activations[:n_pairs],
-        neg_activations[:n_pairs],
-        metrics=metrics,
-        include_pacmap=True,
-    )
+    return create_summary_figure(pos_activations[:n_pairs], neg_activations[:n_pairs], metrics=metrics, include_pacmap=True)
 
 
 def create_all_concept_figures(
@@ -178,34 +139,19 @@ def create_all_concept_figures(
     concepts: List[Dict[str, Any]],
     inter_concept_similarity: Dict[str, Any] = None,
 ) -> Dict[str, str]:
-    """
-    Create all concept visualizations.
-
-    Returns:
-        Dict with:
-            - overview: Base64 overview figure (concepts colored by cluster)
-            - concept_1, concept_2, ...: Full 3x3 summary figure per concept
-            - layer_heatmap: Layer accuracy heatmap (if layer data available)
-            - similarity_heatmap: Inter-concept similarity heatmap
-    """
+    """Create all concept visualizations."""
     from .concept_heatmaps import create_layer_accuracy_heatmap, create_inter_concept_similarity_heatmap
 
     n_pairs = min(len(pos_activations), len(neg_activations))
     labels = cluster_labels[:n_pairs]
-
     concept_names = [c.get("name", f"Concept {c['id']}") for c in concepts]
 
     result = {}
+    result["overview"] = create_concept_overview_figure(pos_activations, neg_activations, labels, concept_names)
 
-    # Overview - all concepts colored by cluster
-    result["overview"] = create_concept_overview_figure(
-        pos_activations, neg_activations, labels, concept_names
-    )
-
-    # Per-concept figures - full 3x3 summary for each
     for concept in concepts:
         concept_id = concept["id"]
-        idx = concept_id - 1  # 0-indexed
+        idx = concept_id - 1
         mask = labels == idx
 
         if mask.sum() < 3:
@@ -215,21 +161,15 @@ def create_all_concept_figures(
         neg_concept = neg_activations[:n_pairs][mask]
 
         result[f"concept_{concept_id}"] = create_per_concept_figure(
-            pos_concept,
-            neg_concept,
-            concept_id=concept_id,
-            concept_name=concept.get("name"),
-            coherence=concept.get("coherence"),
-            silhouette=concept.get("silhouette"),
+            pos_concept, neg_concept, concept_id=concept_id, concept_name=concept.get("name"),
+            coherence=concept.get("coherence"), silhouette=concept.get("silhouette"),
             intra_similarity=concept.get("intra_similarity"),
         )
 
-    # Layer accuracy heatmap (if concepts have layer_accuracies)
     layer_heatmap = create_layer_accuracy_heatmap(concepts)
     if layer_heatmap:
         result["layer_heatmap"] = layer_heatmap
 
-    # Inter-concept similarity heatmap
     if inter_concept_similarity:
         sim_heatmap = create_inter_concept_similarity_heatmap(inter_concept_similarity, concept_names)
         if sim_heatmap:
