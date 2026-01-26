@@ -7,12 +7,11 @@ from .database import (
     get_incomplete_benchmarks,
     get_pairs_needing_strategies,
     create_activation,
+    create_activations_batch,
 )
 
 from .extractor import (
-    ALL_STRATEGIES,
     parse_pair_text,
-    extract_with_strategy,
     extract_pair_all_strategies,
 )
 
@@ -22,8 +21,7 @@ __all__ = [
     "get_incomplete_benchmarks",
     "get_pairs_needing_strategies",
     "create_activation",
-    "ALL_STRATEGIES",
+    "create_activations_batch",
     "parse_pair_text",
-    "extract_with_strategy",
     "extract_pair_all_strategies",
 ]
