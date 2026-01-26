@@ -40,7 +40,7 @@ def get_db_connection():
 def get_incomplete_benchmarks(conn, model_id: int) -> list:
     """Get benchmarks that have only 1 strategy and need all 7."""
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '300s'")
+    cur.execute("SET statement_timeout = '1800s'")
 
     cur.execute('''
         WITH strategy_counts AS (
