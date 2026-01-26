@@ -8,12 +8,16 @@ Usage:
 """
 
 import argparse
+import os
 import sys
 import time
 
 import torch
 
-sys.path.insert(0, ".")
+# Add the repo root to path so we can import from scripts.strategy_extraction
+script_dir = os.path.dirname(os.path.abspath(__file__))
+repo_root = os.path.dirname(script_dir)
+sys.path.insert(0, repo_root)
 
 from scripts.strategy_extraction import (
     get_db_connection,
