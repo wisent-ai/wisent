@@ -40,7 +40,7 @@ def get_db_connection():
 def get_incomplete_benchmarks(conn, model_id: int) -> list:
     """Get benchmarks that have only 1 strategy and need all 7."""
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '1800s'")
+    cur.execute("SET statement_timeout = '0'")
 
     cur.execute('''
         WITH strategy_counts AS (
@@ -67,7 +67,7 @@ def get_incomplete_benchmarks(conn, model_id: int) -> list:
 def get_pairs_needing_strategies(conn, model_id: int, set_id: int, limit: int = 500) -> list:
     """Get pairs that have only 1 strategy and need the other 6."""
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '300s'")
+    cur.execute("SET statement_timeout = '0'")
 
     cur.execute('''
         SELECT cp.id, cp."positiveExample", cp."negativeExample"
@@ -93,7 +93,7 @@ def create_activation(conn, model_id: int, pair_id: int, set_id: int, layer: int
                       activation_vec: torch.Tensor, is_positive: bool, strategy: str):
     """Create Activation record in database."""
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '120s'")
+    cur.execute("SET statement_timeout = '0'")
 
     neuron_count = activation_vec.shape[0]
     activation_bytes = hidden_states_to_bytes(activation_vec)
