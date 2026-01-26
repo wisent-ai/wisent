@@ -4,6 +4,7 @@
 import os
 import numpy as np
 import psycopg2
+from psycopg2.extras import execute_values
 import torch
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -89,9 +90,51 @@ def get_pairs_needing_strategies(conn, model_id: int, set_id: int, limit: int = 
     return pairs
 
 
+def create_activations_batch(conn, records: list):
+    """Batch insert multiple activation records at once.
+
+    Args:
+        conn: Database connection
+        records: List of tuples (model_id, pair_id, set_id, layer, activation_vec, is_positive, strategy)
+    """
+    if not records:
+        return
+
+    cur = conn.cursor()
+    cur.execute("SET statement_timeout = '0'")
+
+    # Convert all activation tensors to bytes
+    values = []
+    for model_id, pair_id, set_id, layer, activation_vec, is_positive, strategy in records:
+        neuron_count = activation_vec.shape[0]
+        activation_bytes = hidden_states_to_bytes(activation_vec)
+        values.append((
+            model_id, pair_id, set_id, layer, neuron_count,
+            strategy, psycopg2.Binary(activation_bytes), is_positive,
+            'system'  # userId
+        ))
+
+    # Batch insert using execute_values (much faster than individual inserts)
+    execute_values(
+        cur,
+        '''
+        INSERT INTO "Activation"
+        ("modelId", "contrastivePairId", "contrastivePairSetId", "layer", "neuronCount",
+         "extractionStrategy", "activationData", "isPositive", "userId", "createdAt", "updatedAt")
+        VALUES %s
+        ON CONFLICT DO NOTHING
+        ''',
+        values,
+        template='(%s, %s, %s, %s, %s, %s, %s, %s, %s, NOW(), NOW())',
+        page_size=100
+    )
+    conn.commit()
+    cur.close()
+
+
 def create_activation(conn, model_id: int, pair_id: int, set_id: int, layer: int,
                       activation_vec: torch.Tensor, is_positive: bool, strategy: str):
-    """Create Activation record in database."""
+    """Create single Activation record (legacy, use create_activations_batch for better perf)."""
     cur = conn.cursor()
     cur.execute("SET statement_timeout = '0'")
 
