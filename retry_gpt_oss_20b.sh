@@ -29,9 +29,9 @@ while true; do
     echo "Attempt $attempt - $(date)"
     echo "========================================"
 
-    # Run the extraction script
+    # Run the extraction script - clone repo first to get the scripts
     if "$SCRIPT_DIR/run_on_aws.sh" --instance-type "$INSTANCE_TYPE" \
-        "python scripts/run_strategy_extraction.py --model $MODEL --device cuda"; then
+        "cd /home/ubuntu && git clone https://github.com/wisent-ai/wisent.git repo && cd repo && python scripts/run_strategy_extraction.py --model $MODEL --device cuda"; then
         echo ""
         echo "=========================================="
         echo "SUCCESS! GPT-OSS-20B extraction completed!"
