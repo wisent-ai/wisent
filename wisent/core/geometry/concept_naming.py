@@ -249,6 +249,7 @@ def decompose_and_name_concepts(
         "concepts": concepts,
         "pair_assignments": pair_assignments,
         "cluster_labels": cluster_labels.tolist(),
+        "pair_texts": pair_texts,  # Store pair_texts for later use
     }
 
     # Generate visualizations if requested
