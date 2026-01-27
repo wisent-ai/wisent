@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """
-Extract all 7 strategies for benchmarks that only have chat_last.
+Extract all 7 strategies for benchmarks that don't have complete extraction.
+
+Finds all benchmarks where some pairs are missing all 7 strategies and runs
+extraction for them. Uses ON CONFLICT DO NOTHING to safely skip existing data.
 
 Usage:
     python scripts/run_strategy_extraction.py --model meta-llama/Llama-3.2-1B-Instruct
@@ -76,7 +79,7 @@ def main():
             print(f"  No pairs need extraction", flush=True)
             continue
 
-        print(f"  Extracting {len(pairs)} pairs with 6 additional strategies...", flush=True)
+        print(f"  Extracting {len(pairs)} pairs with all 7 strategies...", flush=True)
 
         for pair_idx, (pair_id, pos_text, neg_text) in enumerate(pairs):
             extract_pair_all_strategies(
