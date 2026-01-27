@@ -23,7 +23,8 @@ from wisent.core.cli.cluster_benchmarks import execute_cluster_benchmarks
 from wisent.core.cli.geometry_search import execute_geometry_search
 from wisent.core.cli.verify_steering import execute_verify_steering
 from wisent.core.cli.repscan import execute_repscan
-from wisent.core.cli.steering_viz import execute_steering_viz, execute_per_concept_steering_viz
+from wisent.core.cli.steering_viz import execute_steering_viz
+from wisent.core.cli.per_concept_steering_viz import execute_per_concept_steering_viz
 
 
 def _should_show_banner() -> bool:
