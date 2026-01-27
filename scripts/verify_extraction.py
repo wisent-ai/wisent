@@ -4,7 +4,8 @@
 import argparse
 import psycopg2
 
-DATABASE_URL = "postgresql://postgres:J7wBv963kMq6@bobloo.com:5432/postgres"
+# Same database as extraction script
+DATABASE_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:BsKuEnPFLCFurN4a@aws-0-eu-west-2.pooler.supabase.com:5432/postgres'
 
 
 def main():
@@ -12,12 +13,12 @@ def main():
     parser.add_argument("--model", required=True, help="Model name pattern to check")
     args = parser.parse_args()
 
-    conn = psycopg2.connect(DATABASE_URL)
+    conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
     cur = conn.cursor()
 
-    # Get model ID
+    # Get model ID by huggingFaceId
     cur.execute(
-        """SELECT id, name FROM "Model" WHERE name LIKE %s""",
+        """SELECT id, "huggingFaceId" FROM "Model" WHERE "huggingFaceId" LIKE %s""",
         (f"%{args.model}%",)
     )
     models = cur.fetchall()
@@ -35,7 +36,7 @@ def main():
 
     # Count total activations
     cur.execute(
-        """SELECT COUNT(*) FROM "Activation" WHERE model_id = %s""",
+        """SELECT COUNT(*) FROM "Activation" WHERE "modelId" = %s""",
         (model_id,)
     )
     total = cur.fetchone()[0]
@@ -43,10 +44,10 @@ def main():
 
     # Count by strategy
     cur.execute(
-        """SELECT strategy, COUNT(*) FROM "Activation"
-           WHERE model_id = %s
-           GROUP BY strategy
-           ORDER BY strategy""",
+        """SELECT "extractionStrategy", COUNT(*) FROM "Activation"
+           WHERE "modelId" = %s
+           GROUP BY "extractionStrategy"
+           ORDER BY "extractionStrategy" """,
         (model_id,)
     )
     strategies = cur.fetchall()
@@ -68,7 +69,7 @@ def main():
 
     # Count unique pairs with activations
     cur.execute(
-        """SELECT COUNT(DISTINCT pair_id) FROM "Activation" WHERE model_id = %s""",
+        """SELECT COUNT(DISTINCT "contrastivePairId") FROM "Activation" WHERE "modelId" = %s""",
         (model_id,)
     )
     unique_pairs = cur.fetchone()[0]
@@ -76,13 +77,12 @@ def main():
 
     # Check strategy distribution per benchmark (sample)
     cur.execute(
-        """SELECT cs.name, COUNT(DISTINCT a.strategy) as strategy_count, COUNT(DISTINCT a.pair_id) as pair_count
+        """SELECT cps.name, COUNT(DISTINCT a."extractionStrategy") as strategy_count, COUNT(DISTINCT a."contrastivePairId") as pair_count
            FROM "Activation" a
-           JOIN "ContrastivePair" cp ON a.pair_id = cp.id
-           JOIN "ContrastiveSet" cs ON cp.set_id = cs.id
-           WHERE a.model_id = %s
-           GROUP BY cs.name
-           ORDER BY strategy_count, cs.name
+           JOIN "ContrastivePairSet" cps ON a."contrastivePairSetId" = cps.id
+           WHERE a."modelId" = %s
+           GROUP BY cps.name
+           ORDER BY strategy_count, cps.name
            LIMIT 20""",
         (model_id,)
     )
