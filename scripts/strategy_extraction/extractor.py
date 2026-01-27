@@ -26,10 +26,11 @@ extract_activation = extraction_strategy_module.extract_activation
 from .database import create_activations_batch
 
 # Strategies grouped by prompt format (same format = same forward pass)
+# All 5 chat strategies share the same prompt format
 CHAT_STRATEGIES = [
     ExtractionStrategy.CHAT_MEAN,
     ExtractionStrategy.CHAT_FIRST,
-    # ExtractionStrategy.CHAT_LAST,  # Already exists, skip
+    ExtractionStrategy.CHAT_LAST,  # Include all strategies - pairs might have 0
     ExtractionStrategy.CHAT_MAX_NORM,
     ExtractionStrategy.CHAT_WEIGHTED,
 ]
@@ -87,7 +88,10 @@ def extract_all_strategies_from_hidden_states(
 def extract_pair_all_strategies(model, tokenizer, device, model_id: int,
                                 pair_id: int, set_id: int, pos_text: str, neg_text: str,
                                 conn, num_layers: int):
-    """Extract all 6 missing strategies for a single pair (optimized)."""
+    """Extract all 7 strategies for a single pair (optimized).
+
+    Uses ON CONFLICT DO NOTHING, so existing strategies are safely skipped.
+    """
     prompt, pos_response = parse_pair_text(pos_text)
     _, neg_response = parse_pair_text(neg_text)
 
