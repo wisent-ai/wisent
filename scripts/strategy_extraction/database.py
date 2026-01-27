@@ -39,24 +39,51 @@ def get_db_connection():
 
 
 def get_incomplete_benchmarks(conn, model_id: int) -> list:
-    """Get benchmarks that have only 1 strategy and need all 7."""
+    """Get ALL benchmarks where some pairs don't have all 7 strategies.
+
+    This includes:
+    - Benchmarks with pairs that have 0 strategies (no activations at all)
+    - Benchmarks with pairs that have 1-6 strategies (partial extraction)
+
+    Returns list of (set_id, name, incomplete_pairs_count).
+    """
     cur = conn.cursor()
     cur.execute("SET statement_timeout = '0'")
 
     cur.execute('''
-        WITH strategy_counts AS (
-            SELECT "contrastivePairSetId", "contrastivePairId",
-                   COUNT(DISTINCT "extractionStrategy") as num_strategies
-            FROM "Activation"
-            WHERE "modelId" = %s
-            GROUP BY "contrastivePairSetId", "contrastivePairId"
+        WITH benchmark_totals AS (
+            -- All benchmarks with their total pair counts (capped at 500)
+            SELECT
+                cps.id as set_id,
+                cps.name,
+                LEAST(COUNT(cp.id), 500) as expected_pairs
+            FROM "ContrastivePairSet" cps
+            JOIN "ContrastivePair" cp ON cp."setId" = cps.id
+            GROUP BY cps.id, cps.name
+        ),
+        pairs_with_all_strategies AS (
+            -- Pairs that already have all 7 strategies for this model
+            SELECT
+                a."contrastivePairSetId" as set_id,
+                a."contrastivePairId"
+            FROM "Activation" a
+            WHERE a."modelId" = %s
+            GROUP BY a."contrastivePairSetId", a."contrastivePairId"
+            HAVING COUNT(DISTINCT a."extractionStrategy") = 7
+        ),
+        complete_counts AS (
+            -- Count of complete pairs per benchmark
+            SELECT set_id, COUNT(*) as complete_pairs
+            FROM pairs_with_all_strategies
+            GROUP BY set_id
         )
-        SELECT DISTINCT sc."contrastivePairSetId", cps.name,
-               COUNT(DISTINCT sc."contrastivePairId") as incomplete_pairs
-        FROM strategy_counts sc
-        JOIN "ContrastivePairSet" cps ON cps.id = sc."contrastivePairSetId"
-        WHERE sc.num_strategies = 1
-        GROUP BY sc."contrastivePairSetId", cps.name
+        SELECT
+            bt.set_id,
+            bt.name,
+            bt.expected_pairs - COALESCE(cc.complete_pairs, 0) as incomplete_pairs
+        FROM benchmark_totals bt
+        LEFT JOIN complete_counts cc ON bt.set_id = cc.set_id
+        WHERE bt.expected_pairs > COALESCE(cc.complete_pairs, 0)
         ORDER BY incomplete_pairs DESC
     ''', (model_id,))
 
@@ -66,24 +93,30 @@ def get_incomplete_benchmarks(conn, model_id: int) -> list:
 
 
 def get_pairs_needing_strategies(conn, model_id: int, set_id: int, limit: int = 500) -> list:
-    """Get pairs that have only 1 strategy and need the other 6."""
+    """Get pairs that have fewer than 7 strategies (including 0).
+
+    Returns pairs that need extraction - either they have no activations at all
+    or they have partial extraction (1-6 strategies).
+    """
     cur = conn.cursor()
     cur.execute("SET statement_timeout = '0'")
 
     cur.execute('''
-        SELECT cp.id, cp."positiveExample", cp."negativeExample"
-        FROM "ContrastivePair" cp
-        WHERE cp."setId" = %s
-        AND cp.id IN (
+        WITH pairs_with_complete_strategies AS (
+            -- Pairs that already have all 7 strategies
             SELECT "contrastivePairId"
             FROM "Activation"
             WHERE "modelId" = %s AND "contrastivePairSetId" = %s
             GROUP BY "contrastivePairId"
-            HAVING COUNT(DISTINCT "extractionStrategy") = 1
+            HAVING COUNT(DISTINCT "extractionStrategy") = 7
         )
+        SELECT cp.id, cp."positiveExample", cp."negativeExample"
+        FROM "ContrastivePair" cp
+        WHERE cp."setId" = %s
+        AND cp.id NOT IN (SELECT "contrastivePairId" FROM pairs_with_complete_strategies)
         ORDER BY cp.id
         LIMIT %s
-    ''', (set_id, model_id, set_id, limit))
+    ''', (model_id, set_id, set_id, limit))
 
     pairs = cur.fetchall()
     cur.close()
