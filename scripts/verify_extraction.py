@@ -8,14 +8,35 @@ import psycopg2
 DATABASE_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:BsKuEnPFLCFurN4a@aws-0-eu-west-2.pooler.supabase.com:5432/postgres'
 
 
+def create_indexes(cur):
+    """Create indexes to speed up queries if they don't exist."""
+    print("Creating indexes if needed...")
+    indexes = [
+        ('idx_activation_model_id', '"Activation"', '"modelId"'),
+        ('idx_activation_model_strategy', '"Activation"', '"modelId", "extractionStrategy"'),
+        ('idx_activation_model_pair', '"Activation"', '"modelId", "contrastivePairId"'),
+    ]
+    for idx_name, table, columns in indexes:
+        try:
+            cur.execute(f'CREATE INDEX IF NOT EXISTS {idx_name} ON {table} ({columns})')
+            print(f"  Index {idx_name} ready")
+        except Exception as e:
+            print(f"  Index {idx_name} skipped: {e}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="Model name pattern to check")
+    parser.add_argument("--create-indexes", action="store_true", help="Create indexes first")
     args = parser.parse_args()
 
     conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
+    conn.autocommit = True  # Required for CREATE INDEX
     cur = conn.cursor()
     cur.execute("SET statement_timeout = '0'")  # Disable timeout for large queries
+
+    if args.create_indexes:
+        create_indexes(cur)
 
     # Get model ID by huggingFaceId
     cur.execute(
