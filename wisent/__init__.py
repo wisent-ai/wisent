@@ -1,4 +1,7 @@
-__version__ = "0.7.1232"
+import os
+os.environ["NUMBA_NUM_THREADS"] = "1"
+
+__version__ = "0.7.1329"
 
 from wisent.core.diversity_processors import (
     OpenerPenaltyProcessor,
