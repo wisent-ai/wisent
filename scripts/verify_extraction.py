@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
-"""Verify extraction completion for a model."""
+"""Verify extraction completion for a model.
+
+Checks that each benchmark has all pairs (up to 500 or max available)
+with all 7 extraction strategies present.
+"""
 
 import argparse
 import psycopg2
@@ -15,6 +19,7 @@ def create_indexes(cur):
         ('idx_activation_model_id', '"Activation"', '"modelId"'),
         ('idx_activation_model_strategy', '"Activation"', '"modelId", "extractionStrategy"'),
         ('idx_activation_model_pair', '"Activation"', '"modelId", "contrastivePairId"'),
+        ('idx_activation_model_set_pair', '"Activation"', '"modelId", "contrastivePairSetId", "contrastivePairId"'),
     ]
     for idx_name, table, columns in indexes:
         try:
@@ -31,14 +36,14 @@ def main():
     args = parser.parse_args()
 
     conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
-    conn.autocommit = True  # Required for CREATE INDEX
+    conn.autocommit = True
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '0'")  # Disable timeout for large queries
+    cur.execute("SET statement_timeout = '0'")
 
     if args.create_indexes:
         create_indexes(cur)
 
-    # Get model ID by huggingFaceId
+    # Get model ID
     cur.execute(
         """SELECT id, "huggingFaceId" FROM "Model" WHERE "huggingFaceId" LIKE %s""",
         (f"%{args.model}%",)
@@ -56,64 +61,98 @@ def main():
     model_name = models[0][1]
     print(f"\nVerifying model: {model_name} (ID: {model_id})")
 
-    # Count total activations
-    cur.execute(
-        """SELECT COUNT(*) FROM "Activation" WHERE "modelId" = %s""",
-        (model_id,)
-    )
-    total = cur.fetchone()[0]
-    print(f"\n=== Total Activations: {total:,} ===")
+    # For each benchmark:
+    # 1. Get total pairs in benchmark (up to 500)
+    # 2. Get pairs with all 7 strategies
+    # 3. Compare
+    cur.execute("""
+        WITH benchmark_totals AS (
+            -- Total pairs per benchmark (capped at 500)
+            SELECT
+                cps.id as set_id,
+                cps.name,
+                LEAST(COUNT(cp.id), 500) as expected_pairs
+            FROM "ContrastivePairSet" cps
+            JOIN "ContrastivePair" cp ON cp."setId" = cps.id
+            GROUP BY cps.id, cps.name
+        ),
+        pairs_with_all_strategies AS (
+            -- Pairs that have all 7 strategies for this model
+            SELECT
+                a."contrastivePairSetId" as set_id,
+                a."contrastivePairId",
+                COUNT(DISTINCT a."extractionStrategy") as strategy_count
+            FROM "Activation" a
+            WHERE a."modelId" = %s
+            GROUP BY a."contrastivePairSetId", a."contrastivePairId"
+            HAVING COUNT(DISTINCT a."extractionStrategy") = 7
+        ),
+        complete_pairs_per_benchmark AS (
+            -- Count of pairs with all 7 strategies per benchmark
+            SELECT
+                set_id,
+                COUNT(*) as complete_pairs
+            FROM pairs_with_all_strategies
+            GROUP BY set_id
+        )
+        SELECT
+            bt.name,
+            bt.expected_pairs,
+            COALESCE(cpb.complete_pairs, 0) as complete_pairs,
+            CASE
+                WHEN COALESCE(cpb.complete_pairs, 0) >= bt.expected_pairs THEN 'OK'
+                WHEN COALESCE(cpb.complete_pairs, 0) > 0 THEN 'PARTIAL'
+                ELSE 'MISSING'
+            END as status
+        FROM benchmark_totals bt
+        LEFT JOIN complete_pairs_per_benchmark cpb ON bt.set_id = cpb.set_id
+        ORDER BY
+            CASE
+                WHEN COALESCE(cpb.complete_pairs, 0) >= bt.expected_pairs THEN 2
+                WHEN COALESCE(cpb.complete_pairs, 0) > 0 THEN 1
+                ELSE 0
+            END,
+            bt.name
+    """, (model_id,))
 
-    # Count by strategy
-    cur.execute(
-        """SELECT "extractionStrategy", COUNT(*) FROM "Activation"
-           WHERE "modelId" = %s
-           GROUP BY "extractionStrategy"
-           ORDER BY "extractionStrategy" """,
-        (model_id,)
-    )
-    strategies = cur.fetchall()
-    print("\n=== Activations by Strategy ===")
-    for row in strategies:
-        print(f"  {row[0]}: {row[1]:,}")
+    results = cur.fetchall()
 
-    # Check if all 7 strategies are present
-    expected_strategies = {
-        "chat_mean", "chat_first", "chat_last", "chat_max_norm",
-        "chat_weighted", "role_play", "mc_balanced"
-    }
-    found_strategies = {row[0] for row in strategies}
-    missing = expected_strategies - found_strategies
-    if missing:
-        print(f"\n WARNING: Missing strategies: {missing}")
-    else:
-        print(f"\n All 7 strategies present!")
+    # Summary counts
+    ok_count = sum(1 for r in results if r[3] == 'OK')
+    partial_count = sum(1 for r in results if r[3] == 'PARTIAL')
+    missing_count = sum(1 for r in results if r[3] == 'MISSING')
 
-    # Count unique pairs with activations
-    cur.execute(
-        """SELECT COUNT(DISTINCT "contrastivePairId") FROM "Activation" WHERE "modelId" = %s""",
-        (model_id,)
-    )
-    unique_pairs = cur.fetchone()[0]
-    print(f"\n=== Unique pairs with activations: {unique_pairs:,} ===")
+    print(f"\n=== SUMMARY ===")
+    print(f"  OK (all pairs have 7 strategies): {ok_count}")
+    print(f"  PARTIAL (some pairs have 7 strategies): {partial_count}")
+    print(f"  MISSING (no pairs have 7 strategies): {missing_count}")
+    print(f"  TOTAL BENCHMARKS: {len(results)}")
 
-    # Check strategy distribution per benchmark (sample)
-    cur.execute(
-        """SELECT cps.name, COUNT(DISTINCT a."extractionStrategy") as strategy_count, COUNT(DISTINCT a."contrastivePairId") as pair_count
-           FROM "Activation" a
-           JOIN "ContrastivePairSet" cps ON a."contrastivePairSetId" = cps.id
-           WHERE a."modelId" = %s
-           GROUP BY cps.name
-           ORDER BY strategy_count, cps.name
-           LIMIT 20""",
-        (model_id,)
-    )
-    print("\n=== Benchmarks (first 20, ordered by strategy count) ===")
-    for row in cur.fetchall():
-        status = "OK" if row[1] == 7 else "INCOMPLETE"
-        print(f"  [{status}] {row[0]}: {row[1]} strategies, {row[2]} pairs")
+    # Show incomplete benchmarks
+    incomplete = [r for r in results if r[3] != 'OK']
+    if incomplete:
+        print(f"\n=== INCOMPLETE BENCHMARKS ({len(incomplete)}) ===")
+        for name, expected, complete, status in incomplete[:50]:  # Show first 50
+            print(f"  [{status}] {name}: {complete}/{expected} pairs complete")
+        if len(incomplete) > 50:
+            print(f"  ... and {len(incomplete) - 50} more")
+
+    # Show some OK benchmarks as confirmation
+    ok_benchmarks = [r for r in results if r[3] == 'OK']
+    if ok_benchmarks:
+        print(f"\n=== COMPLETE BENCHMARKS (showing first 20 of {len(ok_benchmarks)}) ===")
+        for name, expected, complete, status in ok_benchmarks[:20]:
+            print(f"  [OK] {name}: {complete}/{expected} pairs complete")
 
     conn.close()
+
+    # Exit with error code if not all benchmarks are complete
+    if incomplete:
+        print(f"\n VERIFICATION FAILED: {len(incomplete)} benchmarks incomplete")
+        exit(1)
+    else:
+        print(f"\n VERIFICATION PASSED: All {len(results)} benchmarks complete")
+        exit(0)
 
 
 if __name__ == "__main__":
