@@ -82,3 +82,20 @@ def setup_steering_viz_parser(parser):
         default=100,
         help="Max tokens to generate per response (default: 100)"
     )
+    parser.add_argument(
+        "--per-concept",
+        action="store_true",
+        help="Generate per-concept steering visualizations with evaluation"
+    )
+    parser.add_argument(
+        "--repscan-results",
+        type=str,
+        default=None,
+        help="Path to repscan results JSON (required for --per-concept)"
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="./concept_steering_viz",
+        help="Output directory for per-concept visualizations (default: ./concept_steering_viz)"
+    )

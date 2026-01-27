@@ -5,6 +5,12 @@ This module connects the argparse parser (wisent/core/parser_arguments/) to exec
 and provides the main() function that serves as the CLI entry point.
 """
 
+import os
+os.environ["NUMBA_NUM_THREADS"] = "1"
+
+# Import pynndescent early before sklearn uses numba
+import pynndescent  # noqa: F401
+
 import sys
 from pathlib import Path
 from wisent.core.parser_arguments import setup_parser
@@ -17,7 +23,7 @@ from wisent.core.cli.cluster_benchmarks import execute_cluster_benchmarks
 from wisent.core.cli.geometry_search import execute_geometry_search
 from wisent.core.cli.verify_steering import execute_verify_steering
 from wisent.core.cli.repscan import execute_repscan
-from wisent.core.cli.steering_viz import execute_steering_viz
+from wisent.core.cli.steering_viz import execute_steering_viz, execute_per_concept_steering_viz
 
 
 def _should_show_banner() -> bool:
@@ -107,7 +113,10 @@ def main():
     elif args.command == 'repscan':
         execute_repscan(args)
     elif args.command == 'steering-viz':
-        execute_steering_viz(args)
+        if getattr(args, 'per_concept', False):
+            execute_per_concept_steering_viz(args)
+        else:
+            execute_steering_viz(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)
