@@ -15,6 +15,7 @@ def main():
 
     conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
     cur = conn.cursor()
+    cur.execute("SET statement_timeout = '0'")  # Disable timeout for large queries
 
     # Get model ID by huggingFaceId
     cur.execute(
