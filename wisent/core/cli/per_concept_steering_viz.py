@@ -33,6 +33,7 @@ def execute_per_concept_steering_viz(args):
         repscan = json.load(f)
 
     concepts = repscan["concept_decomposition"]["concepts"]
+    cluster_labels = repscan["concept_decomposition"].get("cluster_labels", [])
     pair_assignments = repscan["concept_decomposition"]["pair_assignments"]
     print(f"Loaded {len(concepts)} concepts from repscan results")
 
@@ -45,7 +46,18 @@ def execute_per_concept_steering_viz(args):
         all_pair_texts = load_pair_texts_from_database(
             task_name=args.task, limit=1000, database_url=args.database_url
         )
-        print(f"Loaded {len(all_pair_texts)} pair texts from database")
+        print(f"Loaded {len(all_pair_texts)} pair texts from database/cache")
+        # Rebuild pair_assignments from cluster_labels if IDs don't match
+        sorted_pair_ids = sorted(all_pair_texts.keys())
+        if len(cluster_labels) > 0:
+            # Check if we need to rebuild pair_assignments
+            first_assignment_id = list(pair_assignments.keys())[0] if pair_assignments else None
+            if first_assignment_id and int(first_assignment_id) not in all_pair_texts:
+                print(f"  Rebuilding pair_assignments from cluster_labels (ID mismatch)")
+                pair_assignments = {}
+                for idx, label in enumerate(cluster_labels):
+                    if idx < len(sorted_pair_ids):
+                        pair_assignments[sorted_pair_ids[idx]] = label + 1  # Concepts are 1-indexed
 
     # Load model
     print(f"\nLoading model: {args.model}")
