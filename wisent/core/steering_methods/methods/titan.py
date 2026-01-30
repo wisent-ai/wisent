@@ -79,7 +79,13 @@ class TITANConfig:
     
     intensity_hidden_dim: Optional[int] = None
     """Hidden dimension for intensity network. If None, auto-computed as hidden_dim // 32."""
-    
+
+    routing_hidden_dim: Optional[int] = None
+    """Hidden dimension for direction routing network. If None, auto-computed as hidden_dim // 32."""
+
+    input_dependent_routing: bool = True
+    """If True, use a network to predict direction weights per-input. If False, use fixed weights."""
+
     def resolve_network_dims(self, hidden_dim: int) -> None:
         """Resolve network dimensions based on model's hidden dimension."""
         if self.gate_hidden_dim is None:
@@ -943,7 +949,28 @@ class TITANMethod(BaseSteeringMethod):
         # Final normalization
         if self.config.normalize:
             final_directions = {l: F.normalize(d, p=2, dim=1) for l, d in final_directions.items()}
-        
+
+        # POLARITY CORRECTION: Ensure directions point from neg to pos
+        # After optimization, directions may have flipped. We check if pos samples
+        # have higher projection than neg samples. If not, flip the direction.
+        for layer in layer_names:
+            pos_data = data["pos"][layer]
+            neg_data = data["neg"][layer]
+
+            # Compute effective direction for this layer
+            weights = final_weights[layer]
+            dirs = final_directions[layer]
+            eff_dir = (weights.unsqueeze(-1) * dirs).sum(dim=0)
+            eff_dir = F.normalize(eff_dir, p=2, dim=0)
+
+            # Compute mean projections
+            pos_proj = (pos_data * eff_dir).sum(dim=1).mean()
+            neg_proj = (neg_data * eff_dir).sum(dim=1).mean()
+
+            # If neg > pos, flip all directions for this layer
+            if neg_proj > pos_proj:
+                final_directions[layer] = -final_directions[layer]
+
         return final_directions, gate_network, intensity_network, final_weights
     
     def _compute_titan_loss(
@@ -1061,8 +1088,13 @@ class TITANMethod(BaseSteeringMethod):
         loss_components["independence"] = independence_loss
 
         # 6. Gate discrimination loss
-        # Pos should have high gate, neg should have low gate
-        gate_loss = F.relu(0.5 - pos_gate).mean() + F.relu(neg_gate - 0.5).mean()
+        # Pos should have high gate (target=1), neg should have low gate (target=0)
+        # Use BCE loss which provides gradient even when predictions are at 0.5
+        # (The old relu-based loss had zero gradient at 0.5, causing the network to get stuck)
+        gate_loss = (
+            F.binary_cross_entropy(pos_gate, torch.ones_like(pos_gate)) +
+            F.binary_cross_entropy(neg_gate, torch.zeros_like(neg_gate))
+        )
         loss_components["gate"] = gate_loss
 
         # 7. Direction utility loss - reward directions that SEPARATE pos from neg

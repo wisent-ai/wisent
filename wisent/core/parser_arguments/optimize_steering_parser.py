@@ -24,6 +24,13 @@ def setup_steering_optimizer_parser(parser):
         help="Tasks to optimize (defaults to classification-optimized tasks)",
     )
     comprehensive_parser.add_argument(
+        "--enriched-pairs-file",
+        type=str,
+        dest="enriched_pairs_file",
+        default=None,
+        help="Path to JSON file with enriched pairs (activations). Alternative to --tasks for custom data.",
+    )
+    comprehensive_parser.add_argument(
         "--methods",
         type=str,
         nargs="+",
@@ -303,6 +310,48 @@ def setup_steering_optimizer_parser(parser):
         default=None,
         help="[TITAN] Sparse weight values to search (e.g., 0.0 0.05 0.1)"
     )
+
+    # Hierarchical optimization subcommand (RECOMMENDED for guarantees)
+    hierarchical_parser = steering_subparsers.add_parser(
+        "hierarchical",
+        help="Hierarchical optimization with full coverage guarantees (RECOMMENDED)"
+    )
+    hierarchical_parser.add_argument("model", type=str, help="Model name or path")
+    hierarchical_parser.add_argument(
+        "--task",
+        type=str,
+        default=None,
+        help="Task/benchmark to optimize for"
+    )
+    hierarchical_parser.add_argument(
+        "--enriched-pairs-file",
+        type=str,
+        dest="enriched_pairs_file",
+        default=None,
+        help="Path to JSON file with enriched pairs (alternative to --task)"
+    )
+    hierarchical_parser.add_argument(
+        "--methods",
+        type=str,
+        nargs="+",
+        choices=AVAILABLE_METHODS,
+        default=["CAA", "Hyperplane", "MLP", "PRISM", "PULSE", "TITAN"],
+        help=f"Methods to optimize (default: all)"
+    )
+    hierarchical_parser.add_argument(
+        "--limit",
+        type=int,
+        default=100,
+        help="Sample limit per evaluation (default: 100)"
+    )
+    hierarchical_parser.add_argument(
+        "--output-dir",
+        type=str,
+        default="./hierarchical_results",
+        help="Directory to save results"
+    )
+    hierarchical_parser.add_argument("--device", type=str, default=None, help="Device")
+    hierarchical_parser.add_argument("--verbose", action="store_true", help="Verbose output")
 
     # Method comparison subcommand
     method_parser = steering_subparsers.add_parser(
@@ -746,8 +795,15 @@ def setup_steering_optimizer_parser(parser):
     universal_parser.add_argument(
         "--task",
         type=str,
-        required=True,
+        default=None,
         help="Task/benchmark to optimize for (e.g., truthfulqa_generation, arc_easy)"
+    )
+    universal_parser.add_argument(
+        "--enriched-pairs-file",
+        type=str,
+        dest="enriched_pairs_file",
+        default=None,
+        help="Path to JSON file with enriched pairs (activations). Alternative to --task for custom data.",
     )
     universal_parser.add_argument(
         "--method",

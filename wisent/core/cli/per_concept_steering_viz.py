@@ -13,16 +13,38 @@ def execute_per_concept_steering_viz(args):
     """Execute per-concept steering visualization with evaluation."""
     import torch
     import random
+    import pickle
+    import numpy as np
     from wisent.core.geometry.repscan_with_concepts import (
         load_activations_from_database,
         load_pair_texts_from_database,
     )
     from wisent.core.geometry.steering_visualizations import create_per_concept_steering_figure
     from wisent.core.wisent import Wisent
+    from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
+    from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
+    from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
 
     print(f"\n{'='*60}")
     print("PER-CONCEPT STEERING VISUALIZATION WITH EVALUATION")
     print(f"{'='*60}")
+
+    # Load cache if provided
+    cache_data = None
+    if getattr(args, 'from_cache', None):
+        print(f"Loading activations from cache: {args.from_cache}")
+        with open(args.from_cache, 'rb') as f:
+            raw_cache = pickle.load(f)
+        # Handle different cache formats
+        if isinstance(raw_cache, dict) and 'layers' in raw_cache:
+            cache_data = {int(k): (torch.tensor(v[0]) if not isinstance(v[0], torch.Tensor) else v[0],
+                                   torch.tensor(v[1]) if not isinstance(v[1], torch.Tensor) else v[1])
+                         for k, v in raw_cache['layers'].items()}
+        elif isinstance(raw_cache, dict) and all(isinstance(k, int) for k in raw_cache.keys()):
+            cache_data = raw_cache
+        else:
+            cache_data = raw_cache
+        print(f"  Loaded {len(cache_data)} layers from cache")
 
     # Load repscan results
     if not args.repscan_results:
@@ -81,7 +103,7 @@ def execute_per_concept_steering_viz(args):
     for concept in concepts:
         concept_id = concept["id"]
         concept_name = concept.get("name", f"concept_{concept_id}")
-        optimal_layer = concept.get("optimal_layer", args.layer)
+        optimal_layer = concept.get("optimal_layer") or args.layer
         print(f"\n{'='*40}")
         print(f"Concept {concept_id}: {concept_name}")
         print(f"  Optimal layer: {optimal_layer}")
@@ -114,11 +136,23 @@ def execute_per_concept_steering_viz(args):
             continue
 
         # Load reference activations for this concept
-        pos_ref, neg_ref = load_activations_from_database(
-            model_name=args.model, task_name=args.task, layer=optimal_layer,
-            prompt_format=args.prompt_format, extraction_strategy=args.extraction_strategy,
-            limit=500, database_url=args.database_url, pair_ids=train_ids
-        )
+        if cache_data is not None and optimal_layer in cache_data:
+            # Load from cache
+            pos_all, neg_all = cache_data[optimal_layer]
+            # Filter to train_ids (use index-based mapping)
+            train_indices = [i for i in train_ids if isinstance(i, int) and i < len(pos_all)]
+            if train_indices:
+                pos_ref = pos_all[train_indices]
+                neg_ref = neg_all[train_indices]
+            else:
+                pos_ref = torch.tensor([])
+                neg_ref = torch.tensor([])
+        else:
+            pos_ref, neg_ref = load_activations_from_database(
+                model_name=args.model, task_name=args.task, layer=optimal_layer,
+                prompt_format=args.prompt_format, extraction_strategy=args.extraction_strategy,
+                limit=500, database_url=args.database_url, pair_ids=train_ids
+            )
         print(f"  Loaded {len(pos_ref)} training reference pairs")
 
         if len(pos_ref) == 0:
@@ -180,13 +214,41 @@ def execute_per_concept_steering_viz(args):
         print(f"  Base: {base_truthful}/{len(base_evals)} TRUTHFUL")
         print(f"  Steered: {steered_truthful}/{len(steered_evals)} TRUTHFUL")
 
+        # Train activation space classifier from training data
+        # pos_ref = truthful (label 1), neg_ref = untruthful (label 0)
+        classifier_type = getattr(args, 'space_classifier', 'mlp')
+        X_train = torch.cat([pos_ref, neg_ref], dim=0).cpu().numpy()
+        y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
+
+        if classifier_type == "mlp":
+            classifier = MLPClassifier(device="cpu", hidden_dim=256)
+        else:
+            classifier = LogisticClassifier(device="cpu")
+        train_config = ClassifierTrainConfig(test_size=0.2, num_epochs=100, batch_size=32)
+        classifier.fit(X_train, y_train, config=train_config)
+
+        # Classify base and steered activations
+        base_probs = classifier.predict_proba(base_activations.cpu().numpy())
+        steered_probs = classifier.predict_proba(steered_activations.cpu().numpy())
+        base_probs = base_probs if isinstance(base_probs, list) else [base_probs]
+        steered_probs = steered_probs if isinstance(steered_probs, list) else [steered_probs]
+
+        # activation_space_location: probability of being in truthful region
+        base_in_truthful_space = sum(1 for p in base_probs if p >= 0.5)
+        steered_in_truthful_space = sum(1 for p in steered_probs if p >= 0.5)
+
+        print(f"  Activation Space Location:")
+        print(f"    Base in truthful region: {base_in_truthful_space}/{len(base_probs)} ({100*base_in_truthful_space/len(base_probs):.1f}%)")
+        print(f"    Steered in truthful region: {steered_in_truthful_space}/{len(steered_probs)} ({100*steered_in_truthful_space/len(steered_probs):.1f}%)")
+
         # Create visualization
         viz_b64 = create_per_concept_steering_figure(
             concept_name=concept_name, concept_id=concept_id,
             pos_activations=pos_ref, neg_activations=neg_ref,
             base_activations=base_activations, steered_activations=steered_activations,
             base_evaluations=base_evals, steered_evaluations=steered_evals,
-            layer=optimal_layer, strength=args.strength
+            layer=optimal_layer, strength=args.strength,
+            base_space_probs=base_probs, steered_space_probs=steered_probs,
         )
 
         # Save
@@ -195,7 +257,24 @@ def execute_per_concept_steering_viz(args):
             f.write(base64.b64decode(viz_b64))
         print(f"  Saved: {png_path}")
 
-        all_results.append({"concept_id": concept_id, "name": concept_name, "layer": optimal_layer, "base_truthful": base_truthful, "steered_truthful": steered_truthful, "total": len(base_evals), "responses": responses})
+        all_results.append({
+            "concept_id": concept_id,
+            "name": concept_name,
+            "layer": optimal_layer,
+            "text_evaluation": {
+                "base_truthful": base_truthful,
+                "steered_truthful": steered_truthful,
+                "total": len(base_evals),
+            },
+            "activation_space_location": {
+                "base_in_truthful_region": base_in_truthful_space,
+                "steered_in_truthful_region": steered_in_truthful_space,
+                "total": len(base_probs),
+                "base_probs": [float(p) for p in base_probs],
+                "steered_probs": [float(p) for p in steered_probs],
+            },
+            "responses": responses,
+        })
 
     # Save summary
     summary_path = output_dir / "summary.json"

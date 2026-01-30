@@ -187,6 +187,8 @@ EXTRACTORS: dict[str, str] = {
     "atis": f"{base_import}atis:AtisExtractor",
     "babilong": f"{base_import}babilong:BabilongExtractor",
     "bangla_mmlu": f"{base_import}bangla_mmlu:BanglaMmluExtractor",
+    # Winogender - gender bias benchmark (HuggingFace oskarvanderwal/winogender)
+    "winogender": f"{base_import}winogender:WinogenderHfExtractor",
     "basqueglue": f"{base_import}basqueglue:BasqueglueExtractor",
     "bec2016eu": f"{base_import}bec2016eu:Bec2016euExtractor",
     "boolq_seq2seq": f"{base_import}boolq_seq2seq:BoolqSeq2seqExtractor",

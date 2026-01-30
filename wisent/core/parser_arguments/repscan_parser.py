@@ -43,7 +43,7 @@ def setup_repscan_parser(parser):
         "--layers",
         type=str,
         default=None,
-        help="Layers to analyze: range (8-16) or comma-separated (8,10,12). Default: 8-24"
+        help="Layers to analyze: range (8-16) or comma-separated (8,10,12). Default: all available layers in database"
     )
 
     # Database options
@@ -74,12 +74,15 @@ def setup_repscan_parser(parser):
         help="Database URL (default: DATABASE_URL env var)"
     )
 
-    # Analysis options
+    # Protocol steps
     parser.add_argument(
-        "--skip-expensive",
-        action="store_true",
-        help="Skip expensive metrics (faster but less detailed)"
+        "--steps",
+        type=str,
+        default="all",
+        help="Protocol steps to run: 'all', 'signal', 'geometry', 'decomposition', 'intervention', or comma-separated (e.g., 'signal,geometry')"
     )
+
+    # Analysis options
     parser.add_argument(
         "--visualizations",
         action="store_true",

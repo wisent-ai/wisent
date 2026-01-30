@@ -1,7 +1,6 @@
 """RepScan CLI command for geometry analysis with concept decomposition."""
 
 import os
-# Set numba threads BEFORE any numba-related imports to prevent threading conflicts
 os.environ["NUMBA_NUM_THREADS"] = "1"
 
 import json
@@ -22,7 +21,9 @@ def execute_repscan(args):
         run_repscan_with_concept_naming,
         load_activations_from_database,
         load_pair_texts_from_database,
+        load_available_layers_from_database,
     )
+    from wisent.core.geometry.cache import get_cached_layers
     import torch
 
     activations_by_layer = {}
@@ -135,8 +136,21 @@ def execute_repscan(args):
             else:
                 layers = [int(l.strip()) for l in args.layers.split(',')]
         else:
-            # Default to layers 8-24 which tend to be most informative
-            layers = list(range(8, 25))
+            # First check cache for available layers
+            cached_layers = get_cached_layers(args.task, args.model)
+            if cached_layers:
+                print(f"  Found {len(cached_layers)} layers in cache: {cached_layers[0]}-{cached_layers[-1]}")
+                layers = cached_layers
+            else:
+                # Fall back to database query
+                print(f"  Querying available layers from database...")
+                layers = load_available_layers_from_database(
+                    model_name=args.model,
+                    task_name=args.task,
+                    extraction_strategy=args.extraction_strategy,
+                    database_url=args.database_url,
+                )
+                print(f"  Found {len(layers)} layers: {layers[0]}-{layers[-1]}" if layers else "  No layers found")
 
         # Load activations for each layer
         print(f"\nLoading activations for {len(layers)} layers...")
@@ -178,27 +192,37 @@ def execute_repscan(args):
         print("\nERROR: No activations loaded.")
         sys.exit(1)
 
-    # Run repscan with concept naming
+    # Run repscan with specified steps
     print(f"\n{'='*60}")
-    print("Running RepScan analysis...")
+    print(f"Running RepScan protocol (steps: {args.steps})")
     print(f"{'='*60}")
 
     results = run_repscan_with_concept_naming(
         activations_by_layer=activations_by_layer,
         pair_texts=pair_texts,
-        include_expensive=not args.skip_expensive,
         generate_visualizations=args.visualizations,
         llm_model=args.llm_model,
+        steps=args.steps,
     )
 
     # Print results
     print(f"\n{'='*60}")
     print("RESULTS")
     print(f"{'='*60}")
-
-    print(f"\nBest layer: {results.get('best_layer')} (ICD: {results.get('best_layer_icd', 0):.3f})")
-    print(f"Recommended method: {results.get('recommended_method')}")
+    print(f"\nLayers concatenated: {results.get('n_layers')} (layers {results.get('layers_used', [])})")
+    print(f"Total dimensions: {results.get('total_dims')}")
+    print(f"Pairs analyzed: {results.get('n_pairs')}")
+    print(f"\nRecommended method: {results.get('recommended_method')}")
     print(f"Confidence: {results.get('recommendation_confidence', 0):.2f}")
+
+    # Print key metrics
+    metrics = results.get("metrics", {})
+    print(f"\n--- Key Metrics (all-layer concatenated) ---")
+    print(f"Signal strength: {metrics.get('signal_strength', 0):.3f}")
+    print(f"Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
+    print(f"MLP probe accuracy: {metrics.get('mlp_probe_accuracy', 0):.3f}")
+    print(f"KNN accuracy: {metrics.get('knn_accuracy', 0):.3f}")
+    print(f"KNN PCA accuracy: {metrics.get('knn_pca_accuracy', 0):.3f}")
 
     # Print concept decomposition
     decomposition = results.get("concept_decomposition")
@@ -224,17 +248,6 @@ def execute_repscan(args):
                         print(f"    - {prompt}...")
                     elif isinstance(pair, int):
                         print(f"    - pair index {pair}")
-
-        # Print validation if available
-        validation = decomposition.get("clustering_validation")
-        if validation:
-            print(f"\n--- Clustering Validation ---")
-            print(f"Stability score: {validation.get('stability_score', 0):.3f}")
-            print(f"Optimal k confidence: {validation.get('optimal_k_confidence', 0):.3f}")
-            print(f"Balance score: {validation.get('balance_score', 0):.3f}")
-            print(f"Overall quality: {validation.get('overall_quality', 0):.3f}")
-            for warning in validation.get("warnings", []):
-                print(f"  WARNING: {warning}")
 
     # Save visualizations as PNG files
     if args.visualizations and decomposition:
