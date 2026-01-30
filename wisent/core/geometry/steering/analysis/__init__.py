@@ -1,20 +1,25 @@
-"""Steering package - re-exports from subdirectories."""
-# Re-export from analysis subdirectory
-from .analysis import (
+"""Steering analysis functions."""
+from .steerability import (
     compute_steerability_metrics,
     compute_linearity_score,
     compute_recommendation,
     compute_adaptive_recommendation,
     compute_robust_recommendation,
     compute_final_steering_prescription,
+)
+from .steering_recommendation import (
     SteeringThresholds,
     compute_steering_recommendation,
     compute_per_layer_recommendation,
     get_method_description,
     get_method_requirements,
+)
+from .steering_validation import (
     compute_steering_effect_size,
     validate_steering_effectiveness,
     run_full_validation,
+)
+from .steering_discovery import (
     DiscoveryResult,
     discover_behavioral_direction,
     search_directions,
@@ -25,23 +30,7 @@ from .analysis import (
     compare_directions,
 )
 
-# Re-export from visualization subdirectory
-from .visualization import (
-    create_steering_effect_figure,
-    extract_base_and_steered_activations,
-    create_per_concept_steering_figure,
-    create_steering_object_from_pairs,
-    extract_activations_from_responses,
-    load_reference_activations,
-    train_classifier_and_predict,
-    save_viz_summary,
-    create_steering_multipanel_figure,
-    create_interactive_steering_figure,
-    create_steering_panels,
-)
-
 __all__ = [
-    # Analysis
     "compute_steerability_metrics",
     "compute_linearity_score",
     "compute_recommendation",
@@ -64,16 +53,4 @@ __all__ = [
     "extract_generation_activations",
     "compute_generation_direction",
     "compare_directions",
-    # Visualization
-    "create_steering_effect_figure",
-    "extract_base_and_steered_activations",
-    "create_per_concept_steering_figure",
-    "create_steering_object_from_pairs",
-    "extract_activations_from_responses",
-    "load_reference_activations",
-    "train_classifier_and_predict",
-    "save_viz_summary",
-    "create_steering_multipanel_figure",
-    "create_interactive_steering_figure",
-    "create_steering_panels",
 ]
