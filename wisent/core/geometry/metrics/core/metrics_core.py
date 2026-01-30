@@ -20,13 +20,14 @@ from ..distribution.distribution_metrics import (
 )
 from ...analysis.intrinsic_dim import compute_local_intrinsic_dims
 from ..direction.direction_metrics import (
-    compute_direction_stability, compute_multi_direction_accuracy,
+    compute_direction_stability,
     compute_pairwise_diff_consistency,
 )
-from ...steering.steerability import compute_steerability_metrics
-from ...steering.steering_recommendation import compute_steering_recommendation
+from ..direction.multi_direction import compute_multi_direction_accuracy
+from ...steering.analysis.steerability import compute_steerability_metrics
+from ...steering.analysis.steering_recommendation import compute_steering_recommendation
 from ...utils.icd import compute_icd
-from ...concepts.concept_analysis import detect_multiple_concepts, compute_concept_coherence
+from ...concepts import detect_multiple_concepts, compute_concept_coherence
 from ...analysis.signal_analysis import compute_signal_to_noise
 from ...analysis.activation_structure import (
     compute_two_cloud_relationship, compute_relative_position, compute_cluster_structure,

@@ -135,6 +135,35 @@ def geometry_per_concept(
     return results
 
 
+def compute_decomposition_metrics(
+    pos: torch.Tensor,
+    neg: torch.Tensor,
+    min_silhouette: float = 0.3,
+) -> Dict:
+    """
+    Compute decomposition metrics: clustering and per-concept geometry analysis.
+
+    Args:
+        pos: Positive activations
+        neg: Negative activations
+        min_silhouette: Minimum silhouette score for multiple clusters
+
+    Returns:
+        Dict with clustering results and per-concept geometry analysis
+    """
+    diff_vectors = pos - neg
+    n_concepts, cluster_labels, silhouette = find_optimal_clustering(diff_vectors, min_silhouette)
+    per_concept = geometry_per_concept(pos, neg, cluster_labels, n_concepts)
+    chow = chow_test_analog(pos, neg, cluster_labels, n_concepts)
+    return {
+        "n_concepts": n_concepts,
+        "silhouette_score": silhouette,
+        "cluster_labels": cluster_labels,
+        "per_concept_geometry": per_concept,
+        "chow_test": chow,
+    }
+
+
 def chow_test_analog(
     pos: torch.Tensor,
     neg: torch.Tensor,

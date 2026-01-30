@@ -9,9 +9,9 @@ import re
 from argparse import Namespace
 
 from wisent.core.activations.extraction_strategy import ExtractionStrategy
-from wisent.core.cli.generate_pairs import execute_generate_pairs
-from wisent.core.cli.get_activations import execute_get_activations
-from wisent.core.cli.create_steering_object import execute_create_steering_object
+from ..pairs.generate_pairs import execute_generate_pairs
+from ...analysis.geometry.get_activations import execute_get_activations
+from ...steering.core.create_steering_object import execute_create_steering_object
 
 
 def _get_pairs_cache_filename(trait: str, num_pairs: int) -> str:

@@ -15,7 +15,18 @@ from .steering_multipanel import (
     create_steering_multipanel_figure,
     create_interactive_steering_figure,
 )
-from .steering_panels import create_steering_panels
+from .steering_panels import (
+    plot_pca_panel,
+    plot_lda_panel,
+    plot_tsne_panel,
+    plot_umap_panel,
+    plot_pacmap_panel,
+    plot_pca_with_boundary,
+    plot_movement_vectors,
+    plot_norm_distribution,
+    plot_alignment_histogram,
+    plot_centroid_distances,
+)
 
 __all__ = [
     "create_steering_effect_figure",
@@ -28,5 +39,14 @@ __all__ = [
     "extract_base_and_steered_activations",
     "create_steering_multipanel_figure",
     "create_interactive_steering_figure",
-    "create_steering_panels",
+    "plot_pca_panel",
+    "plot_lda_panel",
+    "plot_tsne_panel",
+    "plot_umap_panel",
+    "plot_pacmap_panel",
+    "plot_pca_with_boundary",
+    "plot_movement_vectors",
+    "plot_norm_distribution",
+    "plot_alignment_histogram",
+    "plot_centroid_distances",
 ]

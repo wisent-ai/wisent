@@ -37,7 +37,6 @@ from .visualization import (
     save_viz_summary,
     create_steering_multipanel_figure,
     create_interactive_steering_figure,
-    create_steering_panels,
 )
 
 __all__ = [
@@ -75,5 +74,4 @@ __all__ = [
     "save_viz_summary",
     "create_steering_multipanel_figure",
     "create_interactive_steering_figure",
-    "create_steering_panels",
 ]

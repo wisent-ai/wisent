@@ -6,9 +6,9 @@ import time
 import tempfile
 from argparse import Namespace
 
-from wisent.core.cli.generate_pairs_from_task import execute_generate_pairs_from_task
-from wisent.core.cli.get_activations import execute_get_activations
-from wisent.core.cli.create_steering_object import execute_create_steering_object
+from ..pairs.generate_pairs_from_task import execute_generate_pairs_from_task
+from ...analysis.geometry.get_activations import execute_get_activations
+from ...steering.core.create_steering_object import execute_create_steering_object
 
 
 def _load_optimal_defaults(model_name: str, task_name: str, args):

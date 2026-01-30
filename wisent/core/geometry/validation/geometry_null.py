@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from typing import Dict
 
-from .activation_structure import (
+from ..analysis.activation_structure import (
     compute_cone_fit,
     compute_sphere_fit,
     compute_cluster_structure,
