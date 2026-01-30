@@ -32,6 +32,16 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
         help="Steering method to use (default: caa)"
     )
 
+    # Layer selection
+    parser.add_argument(
+        "--layer",
+        type=str,
+        default=None,
+        help="Layer(s) to create steering vectors for. Can be single (e.g., '16'), "
+             "comma-separated (e.g., '12,14,16'), or range (e.g., '12-18'). "
+             "If not specified, creates vectors for all layers."
+    )
+
     # Common parameters
     parser.add_argument(
         "--normalize",

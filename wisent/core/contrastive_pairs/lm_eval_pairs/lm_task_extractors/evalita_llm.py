@@ -111,7 +111,26 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 3: question + A/B/C/D + correct_answer (Evalita style)
+            # Format 3a: Question + A/B/C/D/E + Correct (Evalita AT style - uppercase keys, 5 choices)
+            elif "Question" in doc and "A" in doc and "Correct" in doc:
+                question = str(doc.get("Question", "")).strip()
+                choices = [
+                    str(doc.get("A", "")).strip(),
+                    str(doc.get("B", "")).strip(),
+                    str(doc.get("C", "")).strip(),
+                    str(doc.get("D", "")).strip(),
+                    str(doc.get("E", "")).strip(),
+                ]
+                choices = [c for c in choices if c]
+                answer = doc.get("Correct", "A")
+                answer_idx = ord(str(answer).upper()) - ord('A')
+                if 0 <= answer_idx < len(choices):
+                    # Valid format, will be processed below
+                    pass
+                else:
+                    return None
+
+            # Format 3b: question + A/B/C/D + correct_answer (Evalita FAQ style)
             elif "question" in doc and "A" in doc and "correct_answer" in doc:
                 question = str(doc.get("question", "")).strip()
                 choices = [
@@ -124,7 +143,64 @@ class EvalitaLlmExtractor(LMEvalBenchmarkExtractor):
                 answer = doc.get("correct_answer", "A")
                 answer_idx = ord(str(answer).upper()) - ord('A')
 
-            # Format 4: query/prompt + answer
+            # Format 4: Hate speech (hs) - full_text + hs (0/1 label)
+            elif "full_text" in doc and "hs" in doc:
+                full_text = str(doc.get("full_text", "")).strip()
+                hs_label = doc.get("hs")
+                if full_text and isinstance(hs_label, int) and hs_label in [0, 1]:
+                    question = f"Il seguente testo contiene discorsi d'odio?\n\n{full_text}"
+                    choices = ["No, non contiene discorsi d'odio", "Sì, contiene discorsi d'odio"]
+                    answer_idx = hs_label
+
+            # Format 5: Sentiment analysis (sa) - text + opos/oneg labels
+            elif "text" in doc and ("opos" in doc or "oneg" in doc):
+                text = str(doc.get("text", "")).strip()
+                # opos/oneg can be int or string "0"/"1"
+                try:
+                    opos = int(doc.get("opos", 0))  # Overall positive
+                    oneg = int(doc.get("oneg", 0))  # Overall negative
+                except (ValueError, TypeError):
+                    opos, oneg = 0, 0
+                if text:
+                    question = f"Qual è il sentiment complessivo del seguente testo?\n\n{text}"
+                    # Determine sentiment: pos=1 means positive, neg=1 means negative, both 0 = neutral
+                    if opos == 1 and oneg == 0:
+                        choices = ["Positivo", "Negativo", "Neutro"]
+                        answer_idx = 0  # Positive
+                    elif oneg == 1 and opos == 0:
+                        choices = ["Positivo", "Negativo", "Neutro"]
+                        answer_idx = 1  # Negative
+                    else:
+                        choices = ["Positivo", "Negativo", "Neutro"]
+                        answer_idx = 2  # Neutral or mixed
+
+            # Format 6: Text entailment (te) - text1 + text2 + entailment (YES/NO)
+            elif "text1" in doc and "text2" in doc and "entailment" in doc:
+                text1 = str(doc.get("text1", "")).strip()
+                text2 = str(doc.get("text2", "")).strip()
+                entailment = str(doc.get("entailment", "")).strip().upper()
+                if text1 and text2 and entailment in ["YES", "NO"]:
+                    question = f"Il testo 2 è una conseguenza logica del testo 1?\n\nTesto 1: {text1}\n\nTesto 2: {text2}"
+                    choices = ["No", "Sì"]
+                    answer_idx = 1 if entailment == "YES" else 0
+
+            # Format 7: Word in context (wic) - lemma + sentence1 + sentence2 + label
+            elif "lemma" in doc and "sentence1" in doc and "sentence2" in doc and "label" in doc:
+                lemma = str(doc.get("lemma", "")).strip()
+                sent1 = str(doc.get("sentence1", "")).strip()
+                sent2 = str(doc.get("sentence2", "")).strip()
+                label = doc.get("label")
+                if lemma and sent1 and sent2 and isinstance(label, (bool, int, str)):
+                    # label can be True/False, 1/0, or "True"/"False"
+                    if isinstance(label, str):
+                        is_same = label.lower() in ["true", "1", "yes"]
+                    else:
+                        is_same = bool(label)
+                    question = f"La parola '{lemma}' ha lo stesso significato nelle due frasi?\n\n1: {sent1}\n\n2: {sent2}"
+                    choices = ["Significato diverso", "Stesso significato"]
+                    answer_idx = 1 if is_same else 0
+
+            # Format 8: query/prompt + answer
             elif "query" in doc or "prompt" in doc:
                 question = str(doc.get("query", doc.get("prompt", ""))).strip()
                 # For open-ended questions, use target as correct answer

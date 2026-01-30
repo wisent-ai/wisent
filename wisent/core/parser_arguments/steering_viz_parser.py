@@ -99,3 +99,69 @@ def setup_steering_viz_parser(parser):
         default="./concept_steering_viz",
         help="Output directory for per-concept visualizations (default: ./concept_steering_viz)"
     )
+    parser.add_argument(
+        "--from-cache",
+        type=str,
+        default=None,
+        help="Path to consolidated cache pickle file (alternative to database)"
+    )
+    parser.add_argument(
+        "--space-classifier",
+        type=str,
+        default="mlp",
+        choices=["logistic", "mlp"],
+        help="Classifier for activation space location (default: mlp)"
+    )
+    parser.add_argument(
+        "--multipanel",
+        action="store_true",
+        help="Generate 9-panel visualization (PCA, LDA, t-SNE, UMAP, etc.) like repscan"
+    )
+    parser.add_argument(
+        "--direction-method",
+        type=str,
+        default="mean_diff",
+        choices=["mean_diff", "search", "behavioral", "pca_0"],
+        help="Direction discovery method: mean_diff (naive), search (best candidate), behavioral (from labels), pca_0 (first PCA component)"
+    )
+    parser.add_argument(
+        "--steering-method",
+        type=str,
+        default="linear",
+        choices=["linear", "clamping", "projection", "replacement", "contrast", "mlp", "adaptive"],
+        help="Steering method to use (default: linear)"
+    )
+    parser.add_argument(
+        "--multi-layer",
+        action="store_true",
+        help="Enable multi-layer steering - steers on ALL layers with per-layer methods"
+    )
+    parser.add_argument(
+        "--layers",
+        type=str,
+        default=None,
+        help="Optional: restrict multi-layer steering to specific layers (e.g., '8,10,12,14'). If not specified, steers on all layers."
+    )
+    parser.add_argument(
+        "--layer-strengths",
+        type=str,
+        default=None,
+        help="Per-layer strength overrides (e.g., '8:0.5,10:1.0,12:2.0'). Layers not specified use --strength."
+    )
+    parser.add_argument(
+        "--layer-methods",
+        type=str,
+        default=None,
+        help="Per-layer method types (e.g., '8:linear,10:adaptive,12:mlp'). Layers not specified use --steering-method."
+    )
+    parser.add_argument(
+        "--autotune",
+        action="store_true",
+        help="Automatically tune all parameters (threshold, strength, method) using validation set. Ignores --strength, --steering-method, --layer-strengths, --layer-methods."
+    )
+    parser.add_argument(
+        "--val-split",
+        type=float,
+        default=0.5,
+        help="Fraction of test set to use for validation during autotune (default: 0.5)"
+    )

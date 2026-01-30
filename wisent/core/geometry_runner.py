@@ -54,6 +54,7 @@ from wisent.core.geometry import (
     compute_recommendation,
     compute_adaptive_recommendation,
     compute_robust_recommendation,
+    compute_final_steering_prescription,
     generate_nonsense_activations,
     compute_nonsense_baseline,
     analyze_with_nonsense_baseline,

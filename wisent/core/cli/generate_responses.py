@@ -6,6 +6,7 @@ import sys
 import torch
 
 from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.activations.extraction_strategy import ExtractionStrategy, extract_activation
 
 
 def execute_generate_responses(args):
@@ -19,10 +20,17 @@ def execute_generate_responses(args):
     from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
     from wisent.core.steering_methods.steering_object import load_steering_object
 
+    # Validate arguments - need either task or input_file
+    input_file = getattr(args, 'input_file', None)
+    if not args.task and not input_file:
+        raise ValueError("Either --task or --input-file must be provided")
+
+    task_name = args.task or "custom"
+
     print(f"\n{'='*80}")
     print(f"🎯 GENERATING RESPONSES FROM TASK")
     print(f"{'='*80}")
-    print(f"   Task: {args.task}")
+    print(f"   Task: {task_name}")
     print(f"   Model: {args.model}")
     print(f"   Num questions: {args.num_questions}")
     print(f"   Device: {args.device or 'auto'}")
@@ -48,9 +56,8 @@ def execute_generate_responses(args):
     # Load task data - from file or from task
     print(f"📊 Loading task data...")
     pairs = None
-    
+
     # If input file is provided, load from file
-    input_file = getattr(args, 'input_file', None)
     if input_file and os.path.exists(input_file):
         from wisent.core.contrastive_pairs.core.pair import ContrastivePair
         from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
@@ -170,11 +177,44 @@ def execute_generate_responses(args):
                 "positive_reference": pair.positive_response.model_response,
                 "negative_reference": pair.negative_response.model_response
             }
-            if pair.metadata:
-                if pair.metadata.get('correct_answers'):
-                    result_entry['correct_answers'] = pair.metadata['correct_answers']
-                if pair.metadata.get('incorrect_answers'):
-                    result_entry['incorrect_answers'] = pair.metadata['incorrect_answers']
+
+            # Extract activations if requested
+            if getattr(args, 'extract_activations', False) and generated_text:
+                extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+                layers = getattr(args, 'layers', None)
+                if layers:
+                    layer_list = [f"layer.{l.strip()}" for l in layers.split(',')]
+                else:
+                    layer_list = [f"layer.{model.num_layers // 2}"]
+
+                # Get full response with prompt for activation extraction
+                formatted_prompt = model.tokenizer.apply_chat_template(messages, tokenize=False, add_generation_prompt=True)
+                full_response = formatted_prompt + generated_text
+
+                # Extract activations
+                layer_acts = model.adapter.extract_activations(full_response, layers=layer_list)
+                prompt_len = len(model.tokenizer(formatted_prompt, add_special_tokens=False)["input_ids"])
+
+                activations_dict = {}
+                for layer_name, act in layer_acts.items():
+                    if act is not None:
+                        extracted = extract_activation(extraction_strategy, act[0], generated_text, model.tokenizer, prompt_len)
+                        activations_dict[layer_name] = extracted.cpu().tolist()
+
+                result_entry["activations"] = activations_dict
+                result_entry["extraction_strategy"] = extraction_strategy.value
+            # Add correct_answers and incorrect_answers for evaluation
+            if pair.metadata and pair.metadata.get('correct_answers'):
+                result_entry['correct_answers'] = pair.metadata['correct_answers']
+            else:
+                # Use positive_reference as the only correct answer
+                result_entry['correct_answers'] = [pair.positive_response.model_response]
+
+            if pair.metadata and pair.metadata.get('incorrect_answers'):
+                result_entry['incorrect_answers'] = pair.metadata['incorrect_answers']
+            else:
+                # Use negative_reference as the only incorrect answer
+                result_entry['incorrect_answers'] = [pair.negative_response.model_response]
             results.append(result_entry)
 
         except Exception as e:
@@ -191,7 +231,7 @@ def execute_generate_responses(args):
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
 
     output_data = {
-        "task": args.task,
+        "task": task_name,
         "model": args.model,
         "num_questions": len(pairs),
         "generation_params": {
@@ -204,6 +244,11 @@ def execute_generate_responses(args):
             "steering_strategy": getattr(args, 'steering_strategy', 'constant'),
             "steering_method": steering_object.metadata.method if steering_object else None
         },
+        "activation_params": {
+            "extract_activations": getattr(args, 'extract_activations', False),
+            "extraction_strategy": getattr(args, 'extraction_strategy', None),
+            "layers": getattr(args, 'layers', None),
+        } if getattr(args, 'extract_activations', False) else None,
         "responses": results
     }
 

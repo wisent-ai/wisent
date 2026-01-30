@@ -90,7 +90,6 @@ def _auto_select_steering_method(pairs, model, args):
     # Run full repscan geometry analysis
     metrics = compute_geometry_metrics(
         pos_tensor, neg_tensor,
-        include_expensive=False,  # Skip expensive metrics for speed
         n_folds=3,
     )
     

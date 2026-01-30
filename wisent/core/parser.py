@@ -108,6 +108,12 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_train_unified_goodness_parser(unified_goodness_parser)
 
+    # RepScan command for geometry analysis with concept decomposition
+    repscan_parser = subparsers.add_parser(
+        "repscan", help="Run RepScan geometry analysis with concept decomposition on database activations"
+    )
+    setup_repscan_parser(repscan_parser)
+
     return parser
 
 
@@ -1659,4 +1665,10 @@ def setup_evaluate_parser(parser):
 def setup_train_unified_goodness_parser(parser):
     """Set up the train-unified-goodness subcommand parser."""
     from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser as _setup
+    _setup(parser)
+
+
+def setup_repscan_parser(parser):
+    """Set up the repscan subcommand parser."""
+    from wisent.core.parser_arguments.repscan_parser import setup_repscan_parser as _setup
     _setup(parser)

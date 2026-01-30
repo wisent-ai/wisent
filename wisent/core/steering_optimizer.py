@@ -1444,7 +1444,6 @@ def run_auto_steering_optimization(
 
     metrics = compute_geometry_metrics(
         pos_tensor, neg_tensor,
-        include_expensive=False,
         n_folds=3,
     )
 

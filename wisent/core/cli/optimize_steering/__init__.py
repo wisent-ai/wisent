@@ -302,37 +302,46 @@ def run_pipeline(
     work_dir: str,
     limit: int = 100,
     device: Optional[str] = None,
+    enriched_pairs_file: Optional[str] = None,
 ) -> OptimizationResult:
     """
     Run the full optimization pipeline for a single configuration.
+
+    If enriched_pairs_file is provided (JSON with pairs + activations),
+    skips pair generation and activation collection steps.
     """
     pairs_file = os.path.join(work_dir, "pairs.json")
     activations_file = os.path.join(work_dir, "activations.json")
     steering_file = os.path.join(work_dir, "steering.pt")
     responses_file = os.path.join(work_dir, "responses.json")
     scores_file = os.path.join(work_dir, "scores.json")
-    
-    # 1. Generate contrastive pairs
-    execute_generate_pairs_from_task(_make_args(
-        task_name=task,
-        output=pairs_file,
-        limit=limit,
-        verbose=False,
-    ))
-    
-    # 2. Collect activations
-    layer = getattr(config, 'layer', None) or getattr(config, 'sensor_layer', 16)
-    execute_get_activations(_make_args(
-        pairs_file=pairs_file,
-        model=model,
-        output=activations_file,
-        layers=str(layer),
-        extraction_strategy=config.extraction_strategy,
-        device=device,
-        verbose=False,
-        timing=False,
-        raw=False,
-    ))
+
+    if enriched_pairs_file:
+        # Skip pair generation and activation collection - use provided file
+        activations_file = enriched_pairs_file
+        pairs_file = enriched_pairs_file  # Contains pairs too
+    else:
+        # 1. Generate contrastive pairs
+        execute_generate_pairs_from_task(_make_args(
+            task_name=task,
+            output=pairs_file,
+            limit=limit,
+            verbose=False,
+        ))
+
+        # 2. Collect activations
+        layer = getattr(config, 'layer', None) or getattr(config, 'sensor_layer', 16)
+        execute_get_activations(_make_args(
+            pairs_file=pairs_file,
+            model=model,
+            output=activations_file,
+            layers=str(layer),
+            extraction_strategy=config.extraction_strategy,
+            device=device,
+            verbose=False,
+            timing=False,
+            raw=False,
+        ))
     
     # 3. Create steering object
     method_args = config.to_args()
@@ -398,9 +407,10 @@ def create_optuna_objective(
     limit: int,
     device: Optional[str],
     work_dir: str,
+    enriched_pairs_file: Optional[str] = None,
 ):
     """Create an Optuna objective function for a given method."""
-    
+
     def objective(trial: "optuna.Trial") -> float:
         # Common parameters for all methods
         extraction_strategy = trial.suggest_categorical("extraction_strategy", ["chat_last", "chat_mean"])
@@ -493,10 +503,11 @@ def create_optuna_objective(
             work_dir=work_dir,
             limit=limit,
             device=device,
+            enriched_pairs_file=enriched_pairs_file,
         )
-        
+
         return result.score
-    
+
     return objective
 
 
@@ -967,43 +978,61 @@ def execute_optimize_steering(args):
     if steering_action == 'personalization':
         return _execute_personalization_optimization(args)
 
+    # Check for 'hierarchical' steering_action
+    if steering_action == 'hierarchical':
+        from .hierarchical import execute_hierarchical_optimization
+        return execute_hierarchical_optimization(args)
+
     # Default: Optuna-based optimization
     import optuna
 
     method = getattr(args, 'method', 'CAA')
     n_trials = getattr(args, 'n_trials', 100)
+    enriched_pairs_file = getattr(args, 'enriched_pairs_file', None)
+    task = getattr(args, 'task', None) or "custom"
 
     print(f"\n{'=' * 80}")
     print(f"🎯 STEERING OPTIMIZATION (Optuna)")
     print(f"{'=' * 80}")
     print(f"   Model: {args.model}")
-    print(f"   Task: {args.task}")
+    if enriched_pairs_file:
+        print(f"   Data: {enriched_pairs_file}")
+    else:
+        print(f"   Task: {task}")
     print(f"   Method: {method}")
     print(f"   Trials: {n_trials}")
     print(f"{'=' * 80}\n")
-    
+
     num_layers = getattr(args, 'num_layers', 32)
     method = args.method if hasattr(args, 'method') else "CAA"
     n_trials = getattr(args, 'n_trials', 100)
     limit = getattr(args, 'limit', 100)
     device = getattr(args, 'device', None)
-    
+
+    # If enriched_pairs_file provided, get num_layers from it
+    if enriched_pairs_file:
+        with open(enriched_pairs_file) as f:
+            data = json.load(f)
+        num_layers = len(data.get("layers", [])) or 32
+        print(f"   Loaded {num_layers} layers from enriched pairs file")
+
     with tempfile.TemporaryDirectory() as work_dir:
         # Create Optuna study
         study = optuna.create_study(
             direction="maximize",
-            study_name=f"{method}_{args.task}",
+            study_name=f"{method}_{task}",
         )
-        
+
         # Create objective function
         objective = create_optuna_objective(
             model=args.model,
-            task=args.task,
+            task=task,
             method=method,
             num_layers=num_layers,
             limit=limit,
             device=device,
             work_dir=work_dir,
+            enriched_pairs_file=enriched_pairs_file,
         )
         
         # Run optimization

@@ -26,6 +26,29 @@ from wisent.core.steering_methods.steering_object import (
 from wisent.core.utils.device import preferred_dtype
 
 
+def _parse_layer_spec(spec: str, num_layers: int) -> set:
+    """
+    Parse layer specification string into a set of layer indices.
+
+    Supports:
+    - Single layer: "16"
+    - Comma-separated: "12,14,16"
+    - Range: "12-18"
+    - Mixed: "5,10-15,20"
+    """
+    layers = set()
+    for part in spec.split(','):
+        part = part.strip()
+        if '-' in part:
+            # Range
+            start, end = part.split('-')
+            layers.update(range(int(start), int(end) + 1))
+        else:
+            # Single layer
+            layers.add(int(part))
+    return layers
+
+
 def execute_create_steering_object(args):
     """Create a full steering object from enriched pairs."""
     
@@ -72,10 +95,20 @@ def execute_create_steering_object(args):
                     tensor = torch.tensor(activation_list, dtype=dtype)
                     layer_activations[layer_str]["negative"].append(tensor)
         
-        available_layers = sorted(layer_activations.keys(), key=lambda x: int(x))
-        hidden_dim = layer_activations[available_layers[0]]["positive"][0].shape[-1]
-        
-        print(f"   ✓ Found {len(available_layers)} layers, hidden_dim={hidden_dim}")
+        all_layers = sorted(layer_activations.keys(), key=lambda x: int(x))
+        hidden_dim = layer_activations[all_layers[0]]["positive"][0].shape[-1]
+
+        print(f"   ✓ Found {len(all_layers)} layers, hidden_dim={hidden_dim}")
+
+        # Filter layers if --layer is specified
+        if getattr(args, 'layer', None):
+            target_layers = _parse_layer_spec(args.layer, len(all_layers))
+            available_layers = [l for l in all_layers if int(l) in target_layers]
+            if not available_layers:
+                raise ValueError(f"No matching layers found. Specified: {args.layer}, Available: {all_layers}")
+            print(f"   ✓ Filtered to {len(available_layers)} layers: {available_layers}")
+        else:
+            available_layers = all_layers
         
         # 3. Create metadata
         # Parse category/benchmark from trait_label if possible

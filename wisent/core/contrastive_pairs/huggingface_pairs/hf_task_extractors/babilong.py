@@ -17,6 +17,10 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
 
 
     evaluator_name = "log_likelihoods"
+
+    # Load from multiple qa configs to get more samples (each config has 100 samples)
+    QA_CONFIGS = ["qa1", "qa2", "qa3", "qa4", "qa5"]
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -33,32 +37,41 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
         log = bind(_LOG, task="babilong")
 
         max_items = self._normalize_limit(limit)
-
-        # Load dataset using base class method
-        docs = self.load_dataset(
-            dataset_name="RMT-team/babilong",
-            dataset_config="qa1",
-            split="0k",
-            limit=max_items,
-        )
-
         pairs: list[ContrastivePair] = []
 
-        log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})
+        # Load from multiple qa configs to get more samples
+        for qa_config in self.QA_CONFIGS:
+            if max_items is not None and len(pairs) >= max_items:
+                break
 
-        for doc in docs:
-            pair = self._extract_pair_from_doc(doc)
-            if pair is not None:
-                pairs.append(pair)
-                if max_items is not None and len(pairs) >= max_items:
-                    break
+            # Calculate how many more we need
+            remaining = (max_items - len(pairs)) if max_items else None
+
+            try:
+                docs = self.load_dataset(
+                    dataset_name="RMT-team/babilong",
+                    dataset_config=qa_config,
+                    split="0k",
+                    limit=remaining,
+                )
+
+                log.info("Extracting contrastive pairs", extra={"doc_count": len(docs), "config": qa_config})
+
+                for doc in docs:
+                    pair = self._extract_pair_from_doc(doc, qa_config)
+                    if pair is not None:
+                        pairs.append(pair)
+                        if max_items is not None and len(pairs) >= max_items:
+                            break
+            except Exception as e:
+                log.warning(f"Failed to load config {qa_config}: {e}")
 
         if not pairs:
             log.warning("No valid Babilong pairs extracted", extra={"task": "babilong"})
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any]) -> ContrastivePair | None:
+    def _extract_pair_from_doc(self, doc: dict[str, Any], qa_config: str = "qa1") -> ContrastivePair | None:
         """
         Convert a single Babilong doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.
@@ -75,13 +88,20 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
             if not input or not question or not correct:
                 log.debug("Skipping doc due to missing/invalid fields", extra={"doc": doc})
                 return None
-            
-            incorrect = "garden" if correct == "bathroom" else "bathroom"
+
+            # Generate an incorrect answer based on the correct one
+            # Babilong answers are typically locations
+            possible_locations = ["bathroom", "garden", "kitchen", "bedroom", "hallway", "office"]
+            incorrect = "garden" if correct not in ["garden"] else "bathroom"
+            for loc in possible_locations:
+                if loc != correct:
+                    incorrect = loc
+                    break
 
             # Format prompt with context and question
             prompt = f"Context: {input}\n\nQuestion: {question}\nA. {incorrect}\nB. {correct}"
 
-            metadata = {"label": "babilong"}
+            metadata = {"label": f"babilong_{qa_config}"}
 
             return self._build_pair(
                 question=prompt,

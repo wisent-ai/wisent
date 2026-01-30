@@ -4,7 +4,8 @@
 def setup_generate_responses_parser(parser):
     """Set up the generate-responses command parser."""
     parser.add_argument("model", type=str, help="Model name or path")
-    parser.add_argument("--task", type=str, required=True, help="Task name (e.g., arc_easy, truthfulqa_mc1)")
+    parser.add_argument("--task", type=str, help="Task name (e.g., arc_easy, truthfulqa_mc1). Required unless --input-file is provided.")
+    parser.add_argument("--input-file", type=str, dest="input_file", help="Path to JSON file with contrastive pairs (alternative to --task)")
     parser.add_argument("--num-questions", type=int, default=10, help="Number of questions to generate responses for (default: 10)")
     parser.add_argument("--max-new-tokens", type=int, default=128, help="Maximum tokens to generate (default: 128)")
     parser.add_argument("--temperature", type=float, default=0.7, help="Temperature for generation (default: 0.7)")

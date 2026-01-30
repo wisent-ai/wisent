@@ -60,15 +60,18 @@ class SteeringConfig:
     Configuration for how steering vectors should be applied.
 
     Attributes:
-        scale: Multiplier for steering vector magnitude
+        scale: Multiplier for steering vector magnitude (or Dict[str, float] for per-layer)
         normalize: Whether to L2-normalize vectors before applying
         layers: Which layers to apply steering to (None = all available)
         temporal_mode: How to handle temporal sequences ("per_step", "aggregate", "first", "last")
+        method: SteeringMethod instance for non-linear steering, or Dict[str, SteeringMethod]
+                for per-layer methods (None = linear addition)
     """
-    scale: float = 1.0
+    scale: float | Dict[str, float] = 1.0
     normalize: bool = True
     layers: List[str] | None = None
     temporal_mode: str = "per_step"
+    method: Any = None  # SteeringMethod, Dict[str, SteeringMethod], or None for linear
 
 
 # Generic type for model output
@@ -233,7 +236,6 @@ class BaseAdapter(ABC, Generic[InputT, OutputT]):
             content: Input content
             steering_vectors: Per-layer steering vectors to add
             config: Configuration for how to apply steering
-
         Returns:
             Steered output
         """
@@ -309,8 +311,8 @@ class BaseAdapter(ABC, Generic[InputT, OutputT]):
                 if module is None:
                     continue
 
-                # Create and register hook
-                hook = self._create_steering_hook(vector, config)
+                # Create and register hook (pass layer_name for per-layer config)
+                hook = self._create_steering_hook(vector, config, layer_name)
                 handle = module.register_forward_hook(hook)
                 handles.append(handle)
 
@@ -334,52 +336,34 @@ class BaseAdapter(ABC, Generic[InputT, OutputT]):
         except (AttributeError, IndexError, KeyError):
             return None
 
-    def _create_steering_hook(
-        self,
-        vector: torch.Tensor,
-        config: SteeringConfig,
-    ):
-        """
-        Create a forward hook that adds the steering vector.
+    def _create_steering_hook(self, vector: torch.Tensor, config: SteeringConfig, layer_name: str = None):
+        """Create a forward hook that adds the steering vector."""
+        # Get per-layer method if config.method is a dict
+        method = config.method.get(layer_name) if isinstance(config.method, dict) else config.method
+        scale = config.scale.get(layer_name, 1.0) if isinstance(config.scale, dict) else config.scale
 
-        Args:
-            vector: Steering vector to add
-            config: Steering configuration
-
-        Returns:
-            Hook function
-        """
         def hook(module: nn.Module, input: tuple, output: torch.Tensor) -> torch.Tensor:
-            # Prepare steering vector
+            if method is not None:
+                if output.dim() >= 3:
+                    steered = output.clone()
+                    steered[:, -1] = method.transform(output[:, -1])
+                    return steered
+                return method.transform(output)
+            # Default: linear steering
             v = vector.to(output.device, output.dtype)
-
-            # Normalize if configured
             if config.normalize:
                 v = v / (v.norm(dim=-1, keepdim=True) + 1e-8)
-
-            # Scale
-            v = v * config.scale
-
-            # Broadcast to match output shape
+            v = v * scale
             while v.dim() < output.dim():
                 v = v.unsqueeze(0)
-
-            # Handle temporal modes for sequences
             if output.dim() >= 3 and config.temporal_mode != "per_step":
+                steered = output.clone()
                 if config.temporal_mode == "last":
-                    # Only steer last position
-                    steered = output.clone()
                     steered[:, -1] = steered[:, -1] + v.squeeze(1)
-                    return steered
                 elif config.temporal_mode == "first":
-                    # Only steer first position
-                    steered = output.clone()
                     steered[:, 0] = steered[:, 0] + v.squeeze(1)
-                    return steered
-                # "aggregate" or "per_step" - apply to all positions
-
+                return steered
             return output + v
-
         return hook
 
     @property
