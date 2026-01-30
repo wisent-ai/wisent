@@ -118,6 +118,9 @@ def main():
             execute_per_concept_steering_viz(args)
         else:
             execute_steering_viz(args)
+    elif args.command == 'discover-steering':
+        from wisent.core.cli.discover_steering import execute_discover_steering
+        execute_discover_steering(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)

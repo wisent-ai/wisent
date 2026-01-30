@@ -203,7 +203,6 @@ def execute_tasks(args):
 
             metrics = compute_geometry_metrics(
                 pos_tensor, neg_tensor,
-                include_expensive=False,
                 n_folds=3,
             )
 

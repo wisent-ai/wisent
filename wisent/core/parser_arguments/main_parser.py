@@ -257,4 +257,12 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_steering_viz_parser(steering_viz_parser)
 
+    # Discover steering command - find optimal steering directions
+    from wisent.core.parser_arguments.discover_steering_parser import setup_discover_steering_parser
+    discover_steering_parser = subparsers.add_parser(
+        "discover-steering",
+        help="Discover optimal steering directions using behavioral probing, direction search, and layer search"
+    )
+    setup_discover_steering_parser(discover_steering_parser)
+
     return parser

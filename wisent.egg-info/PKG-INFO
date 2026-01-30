@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: wisent
-Version: 0.7.1232
+Version: 0.7.1413
 Summary: Monitor and influence AI Brains
 Home-page: https://github.com/wisent-ai/wisent
 Author: Lukasz Bartoszcze and the Wisent Team
@@ -16,11 +16,12 @@ Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: torch>=1.9.0
-Requires-Dist: transformers>=4.20.0
+Requires-Dist: transformers>=4.46.0
 Requires-Dist: tqdm>=4.50.0
 Requires-Dist: scikit-learn>=0.24.0
 Requires-Dist: pandas>=1.2.0
 Requires-Dist: numpy>=1.21.0
+Requires-Dist: numba>=0.56.0
 Requires-Dist: datasets>=2.0.0
 Requires-Dist: sentence-transformers>=2.0.0
 Requires-Dist: faiss-cpu>=1.7.0
@@ -30,9 +31,12 @@ Requires-Dist: latex2sympy2_extended>=1.0.0
 Requires-Dist: sae_lens>=0.1.0
 Requires-Dist: trl>=0.7.0
 Requires-Dist: peft>=0.7.0
-Requires-Dist: pyreft==0.1.0
+Requires-Dist: psycopg2-binary>=2.9.0
+Requires-Dist: pynndescent>=0.5.0
 Provides-Extra: harness
 Requires-Dist: lm-eval==0.4.8; extra == "harness"
+Provides-Extra: reft
+Requires-Dist: pyreft>=0.1.0; extra == "reft"
 Provides-Extra: cuda
 Requires-Dist: flash-attn>=2.5.0; extra == "cuda"
 Provides-Extra: sparsify

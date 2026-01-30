@@ -194,14 +194,13 @@ def load_activations_from_db(model_name: str, layer: int = None, benchmark: str 
     return dict(result)
 
 
-def compute_geometry_metrics(pos_activations: np.ndarray, neg_activations: np.ndarray, include_expensive: bool = False) -> Dict[str, float]:
+def compute_geometry_metrics(pos_activations: np.ndarray, neg_activations: np.ndarray) -> Dict[str, float]:
     """
     Compute geometry metrics using wisent's comprehensive geometry analysis.
 
     Args:
         pos_activations: [N, D] array of positive activations
         neg_activations: [N, D] array of negative activations
-        include_expensive: Whether to include computationally expensive metrics
 
     Returns:
         Dict of geometry metrics from wisent.core.geometry including:
@@ -210,7 +209,6 @@ def compute_geometry_metrics(pos_activations: np.ndarray, neg_activations: np.nd
         - direction_* metrics (stability, consistency)
         - steer_* metrics (steerability analysis)
         - concept_coherence, n_concepts
-        - And if include_expensive: mmd_rbf, density_ratio, fisher_*, intrinsic_dim_*, knn_*, signal_to_noise
         - recommended_method, recommendation_confidence
     """
     N = min(len(pos_activations), len(neg_activations))
@@ -222,7 +220,7 @@ def compute_geometry_metrics(pos_activations: np.ndarray, neg_activations: np.nd
     neg_tensor = torch.tensor(neg, dtype=torch.float32)
 
     # Use wisent's comprehensive geometry metrics
-    metrics = wisent_compute_geometry_metrics(pos_tensor, neg_tensor, include_expensive=include_expensive)
+    metrics = wisent_compute_geometry_metrics(pos_tensor, neg_tensor)
 
     return metrics
 

@@ -86,7 +86,8 @@ class SyntheticContrastivePairsGenerator:
         logger.info(f"[GENERATE] Opposite trait: {opposite_trait}")
 
         # Generate pairs one at a time, retry until we have num_pairs AFTER cleaning
-        max_attempts = num_pairs * 5  # Increased to account for deduplication losses
+        # With aggressive deduplication (~3% retention), need many more attempts
+        max_attempts = num_pairs * 50
         attempts = 0
         total_retries_for_refusals = 0
 
