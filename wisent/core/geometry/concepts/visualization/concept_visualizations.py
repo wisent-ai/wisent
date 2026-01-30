@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Optional
 import io
 import base64
 
-from .visualizations import (
+from ...visualization.visualizations import (
     plot_pca_projection,
     plot_pacmap_projection,
     create_summary_figure,

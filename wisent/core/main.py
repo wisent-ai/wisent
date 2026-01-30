@@ -15,16 +15,19 @@ import sys
 from pathlib import Path
 from wisent.core.parser_arguments import setup_parser
 from wisent.core.branding import print_banner
-from wisent.core.cli import execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs, execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors, execute_generate_vector_from_task, execute_generate_vector_from_synthetic, execute_optimize_classification, execute_optimize_steering, execute_optimize_sample_size, execute_generate_responses, execute_evaluate_responses, execute_multi_steer, execute_agent, execute_modify_weights, execute_evaluate_refusal, execute_inference_config, execute_optimization_cache, execute_optimize_weights, execute_optimize
-from wisent.core.cli.create_steering_object import execute_create_steering_object
-from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
-from wisent.core.cli.check_linearity import execute_check_linearity
-from wisent.core.cli.cluster_benchmarks import execute_cluster_benchmarks
-from wisent.core.cli.geometry_search import execute_geometry_search
-from wisent.core.cli.verify_steering import execute_verify_steering
-from wisent.core.cli.repscan import execute_repscan
-from wisent.core.cli.steering_viz import execute_steering_viz
-from wisent.core.cli.per_concept_steering_viz import execute_per_concept_steering_viz
+from wisent.core.cli import (
+    execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs,
+    execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors,
+    execute_generate_vector_from_task, execute_generate_vector_from_synthetic,
+    execute_optimize_classification, execute_optimize_steering, execute_optimize_sample_size,
+    execute_generate_responses, execute_evaluate_responses, execute_multi_steer,
+    execute_agent, execute_modify_weights, execute_evaluate_refusal,
+    execute_inference_config, execute_optimization_cache, execute_optimize_weights,
+    execute_optimize, execute_create_steering_object, execute_train_unified_goodness,
+    execute_check_linearity, execute_cluster_benchmarks, execute_geometry_search,
+    execute_verify_steering, execute_repscan, execute_steering_viz,
+    execute_per_concept_steering_viz, execute_discover_steering,
+)
 
 
 def _should_show_banner() -> bool:
@@ -119,7 +122,6 @@ def main():
         else:
             execute_steering_viz(args)
     elif args.command == 'discover-steering':
-        from wisent.core.cli.discover_steering import execute_discover_steering
         execute_discover_steering(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")

@@ -8,7 +8,7 @@ orchestrates all visualization generation for compute_geometry_metrics.
 from typing import Dict, Any
 import torch
 
-from .visualizations import (
+from ...visualization.visualizations import (
     plot_pca_projection,
     plot_diff_vectors,
     plot_alignment_distribution,

@@ -165,3 +165,14 @@ def setup_steering_viz_parser(parser):
         default=0.5,
         help="Fraction of test set to use for validation during autotune (default: 0.5)"
     )
+    parser.add_argument(
+        "--interactive",
+        action="store_true",
+        help="Generate interactive HTML visualization with hover tooltips instead of static PNG"
+    )
+    parser.add_argument(
+        "--device",
+        type=str,
+        default="cuda",
+        help="Device to run model on (default: cuda, can be 'mps' for Mac)"
+    )

@@ -31,10 +31,10 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Any, Iterator
 
-from .contrastive_pairs import execute_generate_pairs_from_task
-from .activations import execute_get_activations
+from .data.contrastive_pairs import execute_generate_pairs_from_task
+from .data.activations import execute_get_activations
 from .steering_objects import execute_create_steering_object
-from .responses import execute_generate_responses
+from .data.responses import execute_generate_responses
 from .scores import execute_evaluate_responses
 
 

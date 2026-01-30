@@ -56,7 +56,7 @@ from .metrics.direction.direction_metrics import (
 )
 from .metrics.direction.multi_direction import compute_multi_direction_accuracy
 
-from .steering.steerability import (
+from .steering.analysis.steerability import (
     compute_steerability_metrics,
     compute_linearity_score,
     compute_recommendation,
@@ -71,7 +71,7 @@ from .data.nonsense_baseline import (
     analyze_with_nonsense_baseline,
 )
 
-from .concepts.concept_analysis import (
+from .concepts import (
     detect_multiple_concepts,
     split_by_concepts,
     analyze_concept_independence,
@@ -165,7 +165,7 @@ from .utils.pacmap_alt import (
     pacmap_embedding,
 )
 
-from .steering.steering_recommendation import (
+from .steering.analysis.steering_recommendation import (
     SteeringThresholds,
     compute_steering_recommendation,
     compute_per_layer_recommendation,
@@ -173,12 +173,9 @@ from .steering.steering_recommendation import (
     get_method_requirements,
 )
 
-from .concepts.concept_naming import (
+from .concepts import (
     decompose_and_name_concepts,
     name_concepts,
-)
-
-from .concepts.concept_visualizations import (
     create_concept_overview_figure,
     create_per_concept_figure,
     create_all_concept_figures,
@@ -197,7 +194,7 @@ from .intervention_selection import (
     rigorous_select_intervention,
 )
 
-from .steering.steering_validation import (
+from .steering.analysis.steering_validation import (
     compute_steering_effect_size,
     validate_steering_effectiveness,
     run_full_validation,
@@ -229,8 +226,8 @@ from .data.database_loaders import (
 from .data.cache import get_cache_path, get_cached_layers
 
 # Re-export steering utilities for backward compatibility
-from .steering.steering_visualizations import create_steering_effect_figure
-from .steering.steering_viz_utils import (
+from .steering.visualization.steering_visualizations import create_steering_effect_figure
+from .steering.visualization.steering_viz_utils import (
     create_steering_object_from_pairs,
     extract_activations_from_responses,
     load_reference_activations,

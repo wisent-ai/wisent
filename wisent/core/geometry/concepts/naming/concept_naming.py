@@ -170,7 +170,7 @@ def _build_result(diff_normalized, cluster_labels, n_concepts, pair_texts,
     }
 
     if generate_visualizations:
-        from .concept_visualizations import create_all_concept_figures
+        from ..visualization.concept_visualizations import create_all_concept_figures
         result["visualizations"] = create_all_concept_figures(
             pos_activations, neg_activations, cluster_labels, concepts,
             inter_concept_similarity=result["inter_concept_similarity"])
@@ -234,7 +234,7 @@ def decompose_and_name_concepts(
     llm_model: str = "Qwen/Qwen3-8B",
 ) -> Dict[str, Any]:
     """Full concept decomposition with single-layer clustering and LLM naming."""
-    from .concept_analysis import decompose_into_concepts
+    from ..analysis.concept_analysis import decompose_into_concepts
     from sklearn.cluster import SpectralClustering
 
     decomposition = decompose_into_concepts(pos_activations, neg_activations)

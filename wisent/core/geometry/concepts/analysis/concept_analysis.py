@@ -164,7 +164,7 @@ def compute_concept_stability(
 ) -> float:
     """Compute stability of concept direction across bootstrap samples."""
     try:
-        from .direction_metrics import compute_direction_stability
+        from ...metrics.direction.direction_metrics import compute_direction_stability
 
         result = compute_direction_stability(
             pos_activations, neg_activations, n_bootstrap=n_bootstrap
@@ -218,4 +218,4 @@ from .concept_pairs import (
 )
 
 # Clustering validation
-from .clustering_validation import validate_clustering_quality
+from ...validation.clustering_validation import validate_clustering_quality
