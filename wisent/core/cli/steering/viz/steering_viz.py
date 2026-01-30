@@ -16,9 +16,9 @@ from argparse import Namespace
 def execute_steering_viz(args):
     """Execute the steering-viz command."""
     import torch
-    from wisent.core.geometry.steering_visualizations import create_steering_effect_figure
-    from wisent.core.geometry.steering_viz_utils import (
-        extract_activations_from_responses, train_classifier_and_predict, save_viz_summary,
+    from wisent.core.geometry.steering import (
+        create_steering_effect_figure, create_interactive_steering_figure,
+        train_classifier_and_predict,
     )
 
     print(f"\n{'='*60}\nSTEERING EFFECT VISUALIZATION\n{'='*60}")
@@ -59,18 +59,35 @@ def execute_steering_viz(args):
     )
 
     multipanel = getattr(args, 'multipanel', False)
-    if multipanel:
-        from wisent.core.geometry.steering_multipanel import create_steering_multipanel_figure
+    interactive = getattr(args, 'interactive', False)
+
+    if interactive:
+        # Add response texts for hover information
+        viz_args['prompts'] = [r.get('prompt', '') for r in base_data]
+        viz_args['base_responses'] = [r.get('response', '') for r in base_data]
+        viz_args['steered_responses'] = [r.get('response', '') for r in steered_data]
+        viz_html = create_interactive_steering_figure(**viz_args)
+        output_path = Path(args.output).with_suffix('.html')
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, 'w') as f:
+            f.write(viz_html)
+        print(f"\nInteractive visualization saved to: {output_path}")
+    elif multipanel:
+        from wisent.core.geometry.steering import create_steering_multipanel_figure
         extraction_strategy = getattr(args, 'extraction_strategy', 'chat_last')
         viz_b64 = create_steering_multipanel_figure(**viz_args, extraction_strategy=extraction_strategy)
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, 'wb') as f:
+            f.write(base64.b64decode(viz_b64))
+        print(f"\nVisualization saved to: {output_path}")
     else:
         viz_b64 = create_steering_effect_figure(**viz_args)
-
-    output_path = Path(args.output)
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, 'wb') as f:
-        f.write(base64.b64decode(viz_b64))
-    print(f"\nVisualization saved to: {output_path}")
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_path, 'wb') as f:
+            f.write(base64.b64decode(viz_b64))
+        print(f"\nVisualization saved to: {output_path}")
 
     # Save summary
     _save_summary(output_path, args, base_evaluations, steered_evaluations,
@@ -104,7 +121,7 @@ def _generate_reference_activations(args):
     import torch
     import tempfile
     from pathlib import Path
-    from wisent.core.cli.get_activations import execute_get_activations
+    from wisent.core.cli.analysis.geometry.get_activations import execute_get_activations
     from wisent.core.geometry.repscan_with_concepts import load_pair_texts_from_database
 
     with tempfile.TemporaryDirectory() as tmpdir:

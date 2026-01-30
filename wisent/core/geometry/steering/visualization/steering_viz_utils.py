@@ -111,3 +111,81 @@ def save_viz_summary(output_path: Path, args, base_evaluations, steered_evaluati
                        "steered_mean_prob": float(np.mean(steered_space_probs))},
                    "responses": all_responses}, f, indent=2)
     print(f"Summary saved to: {json_path}")
+
+
+def extract_base_and_steered_activations(
+    wisent,
+    prompts,
+    steering_vectors,
+    layer: int,
+    steering_strength: float = 1.0,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """Extract activations before and after steering for a set of prompts."""
+    from wisent.core.adapters.base import SteeringConfig
+
+    adapter = wisent.adapter
+    layer_name = f"layer.{layer}"
+
+    base_acts = []
+    steered_acts = []
+
+    for prompt in prompts:
+        base_layer_acts = adapter.extract_activations(prompt, layers=[layer_name])
+        base_act = base_layer_acts.get(layer_name)
+        if base_act is not None:
+            base_acts.append(base_act[0, -1, :])
+
+        steered_act = _extract_with_steering(
+            adapter, prompt, layer_name, steering_vectors,
+            SteeringConfig(strength=steering_strength)
+        )
+        if steered_act is not None:
+            steered_acts.append(steered_act)
+
+    if not base_acts or not steered_acts:
+        raise ValueError("No activations extracted")
+
+    return torch.stack(base_acts), torch.stack(steered_acts)
+
+
+def _extract_with_steering(adapter, prompt, layer_name, steering_vectors, config):
+    """Extract activations from a single forward pass with steering applied."""
+    from wisent.core.modalities import TextContent
+
+    content = TextContent(text=prompt) if isinstance(prompt, str) else prompt
+
+    inputs = adapter.tokenizer(content.text, return_tensors="pt", padding=True, truncation=True)
+    inputs = {k: v.to(adapter.model.device) for k, v in inputs.items()}
+
+    activation_storage = {}
+
+    def capture_hook(module, input, output):
+        if isinstance(output, tuple):
+            output = output[0]
+        activation_storage['activation'] = output.detach().cpu()
+
+    all_points = {ip.name: ip for ip in adapter.get_intervention_points()}
+    if layer_name not in all_points:
+        return None
+
+    ip = all_points[layer_name]
+    module = adapter._get_module_by_path(ip.module_path)
+    if module is None:
+        return None
+
+    try:
+        capture_handle = module.register_forward_hook(capture_hook)
+
+        with adapter._steering_hooks(steering_vectors, config):
+            with torch.no_grad():
+                adapter.model(**inputs)
+
+        capture_handle.remove()
+
+        if 'activation' in activation_storage:
+            return activation_storage['activation'][0, -1, :]
+        return None
+
+    except Exception as e:
+        print(f"Error extracting steered activation: {e}")
+        return None
