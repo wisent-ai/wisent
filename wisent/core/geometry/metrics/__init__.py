@@ -17,9 +17,9 @@ from .distribution.distribution_metrics import (
 from .distribution.decomposition_metrics import compute_decomposition_metrics
 from .direction.direction_metrics import (
     compute_direction_stability,
-    compute_multi_direction_accuracy,
     compute_pairwise_diff_consistency,
 )
+from .direction.multi_direction import compute_multi_direction_accuracy
 from .representation import (
     compute_magnitude_metrics,
     compute_sparsity_metrics,

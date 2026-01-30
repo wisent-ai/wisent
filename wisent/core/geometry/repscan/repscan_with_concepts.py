@@ -4,7 +4,7 @@ import torch
 import numpy as np
 
 from ..metrics.core.metrics_core import compute_geometry_metrics
-from ..concepts.concept_naming import decompose_and_name_concepts_with_labels, find_optimal_layer_per_concept
+from ..concepts import decompose_and_name_concepts_with_labels, find_optimal_layer_per_concept
 from ..data.database_loaders import load_activations_from_database, load_pair_texts_from_database, load_available_layers_from_database
 
 __all__ = [

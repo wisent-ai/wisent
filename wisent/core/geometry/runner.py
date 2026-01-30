@@ -18,7 +18,7 @@ import numpy as np
 
 # Import compute_geometry_metrics from metrics_core (single source of truth)
 from .metrics.core.metrics_core import compute_geometry_metrics
-from .steering.steerability import compute_final_steering_prescription
+from .steering.analysis.steerability import compute_final_steering_prescription
 
 
 def run_full_repscan(

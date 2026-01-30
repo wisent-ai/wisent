@@ -60,3 +60,32 @@ def compute_linear_nonlinear_gap(
     nonlinear_acc = float(mlp_scores.mean())
 
     return linear_acc, nonlinear_acc
+
+
+def compute_geometry_summary(
+    pos_activations: torch.Tensor,
+    neg_activations: torch.Tensor,
+) -> dict:
+    """
+    Compute geometry summary including linear vs nonlinear gap analysis.
+
+    Args:
+        pos_activations: Positive class activations
+        neg_activations: Negative class activations
+
+    Returns:
+        Dict with linear_accuracy, nonlinear_accuracy, gap, and diagnosis
+    """
+    linear_acc, nonlinear_acc = compute_linear_nonlinear_gap(pos_activations, neg_activations)
+    gap = nonlinear_acc - linear_acc
+    n_samples = len(pos_activations) + len(neg_activations)
+    adaptive_threshold = 0.5 / np.sqrt(n_samples)
+    adaptive_threshold = max(0.02, min(adaptive_threshold, 0.1))
+    diagnosis = "NONLINEAR" if gap > adaptive_threshold else "LINEAR"
+    return {
+        "linear_accuracy": linear_acc,
+        "nonlinear_accuracy": nonlinear_acc,
+        "gap": gap,
+        "gap_threshold": adaptive_threshold,
+        "diagnosis": diagnosis,
+    }
