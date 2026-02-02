@@ -5,7 +5,7 @@ from typing import Any, TYPE_CHECKING
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli_logger import setup_logger, bind
+from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask

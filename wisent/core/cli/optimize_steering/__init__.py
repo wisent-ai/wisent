@@ -560,7 +560,7 @@ def _execute_welfare_optimization(args):
     os.makedirs(output_dir, exist_ok=True)
     pairs_file = os.path.join(output_dir, f"{trait}_{direction}_pairs.json")
 
-    from wisent.core.contrastive_pairs.core.serialization import save_contrastive_pair_set
+    from wisent.core.contrastive_pairs.core.io.serialization import save_contrastive_pair_set
     save_contrastive_pair_set(pair_set, pairs_file)
     print(f"   Saved pairs to: {pairs_file}")
 
@@ -848,7 +848,7 @@ def _execute_personalization_optimization(args):
     os.makedirs(output_dir, exist_ok=True)
     pairs_file = os.path.join(output_dir, f"{trait_name}_pairs.json")
 
-    from wisent.core.contrastive_pairs.core.serialization import save_contrastive_pair_set
+    from wisent.core.contrastive_pairs.core.io.serialization import save_contrastive_pair_set
     save_contrastive_pair_set(pair_set, pairs_file)
 
     # Get model's number of layers

@@ -372,7 +372,7 @@ def create_tsne_gallery(
         print("Skipping t-SNE gallery: required packages not installed")
         return
     
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.activations import ExtractionStrategy
     from wisent.core.activations.activation_cache import ActivationCache, collect_and_cache_activations
     from lm_eval.tasks import TaskManager
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs

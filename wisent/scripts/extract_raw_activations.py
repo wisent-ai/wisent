@@ -232,7 +232,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
                       num_layers: int, device: str, limit: int = 500):
     """Extract raw activations for a single benchmark using 3 formats."""
     print(f"  [EXTRACT] Importing extraction strategy...", flush=True)
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, build_extraction_texts
+    from wisent.core.activations import ExtractionStrategy, build_extraction_texts
     print(f"  [EXTRACT] Extraction strategy imported", flush=True)
 
     # Get actual device from model if available

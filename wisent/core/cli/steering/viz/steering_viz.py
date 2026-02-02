@@ -167,7 +167,7 @@ def _generate_and_extract(args, steering_vector):
     from wisent.core.wisent import Wisent
     from wisent.core.adapters.base import SteeringConfig
     from wisent.core.activations.core.atoms import LayerActivations
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, extract_activation
+    from wisent.core.activations import ExtractionStrategy, extract_activation
     from wisent.core.evaluators.rotator import EvaluatorRotator
     from wisent.core.geometry.data.database_loaders import load_pair_texts_from_database
 
@@ -200,14 +200,26 @@ def _generate_and_extract(args, steering_vector):
     for i, (pair_id, pair) in enumerate(pair_texts.items()):
         prompt = pair.get("prompt", "")
         pos_ref_text = pair.get("positive", "")
+        neg_ref_text = pair.get("negative", "")
         messages = [{"role": "user", "content": prompt}]
         formatted_prompt = adapter.apply_chat_template(messages, add_generation_prompt=True)
 
         base_full = adapter._generate_unsteered(formatted_prompt, max_new_tokens=max_new_tokens, temperature=0.1, do_sample=True)
         steered_full = adapter.forward_with_steering(formatted_prompt, steering_vectors=steering_vectors, config=config)
 
-        base_response = base_full[len(formatted_prompt):].strip() if base_full.startswith(formatted_prompt) else base_full
-        steered_response = steered_full[len(formatted_prompt):].strip() if steered_full.startswith(formatted_prompt) else steered_full
+        # Extract just the assistant response, handling various chat template formats
+        def extract_response(full_text):
+            # Try to find assistant marker and extract response after it
+            for marker in ['assistant\n\n', 'assistant\n', '<|assistant|>', '[/INST]', 'ASSISTANT:']:
+                if marker in full_text:
+                    return full_text.split(marker)[-1].strip()
+            # Fallback: try to strip the formatted prompt
+            if full_text.startswith(formatted_prompt):
+                return full_text[len(formatted_prompt):].strip()
+            return full_text
+
+        base_response = extract_response(base_full)
+        steered_response = extract_response(steered_full)
 
         base_layer_acts = adapter.extract_activations(base_full, layers=[layer_name])
         steered_layer_acts = adapter.extract_activations(steered_full, layers=[layer_name])
@@ -222,8 +234,10 @@ def _generate_and_extract(args, steering_vector):
             base_acts.append(base_extracted.cpu())
             steered_acts.append(steered_extracted.cpu())
 
-        base_eval = evaluator.evaluate(base_response, pos_ref_text).ground_truth
-        steered_eval = evaluator.evaluate(steered_response, pos_ref_text).ground_truth
+        # Pass both correct and incorrect answers to the evaluator for proper comparison
+        eval_kwargs = {"correct_answers": [pos_ref_text], "incorrect_answers": [neg_ref_text]}
+        base_eval = evaluator.evaluate(base_response, pos_ref_text, **eval_kwargs).ground_truth
+        steered_eval = evaluator.evaluate(steered_response, pos_ref_text, **eval_kwargs).ground_truth
 
         base_data.append({"prompt": prompt, "response": base_response, "evaluation": base_eval})
         steered_data.append({"prompt": prompt, "response": steered_response, "evaluation": steered_eval})

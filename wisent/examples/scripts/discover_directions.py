@@ -52,7 +52,7 @@ def s3_upload_file(local_path: Path, model_name: str) -> None:
     except Exception as e:
         print(f"  S3 upload failed: {e}")
 
-from wisent.core.geometry_search_space import (
+from wisent.core.geometry import (
     GeometrySearchSpace,
     GeometrySearchConfig,
 )
@@ -68,7 +68,7 @@ from wisent.core.geometry_runner import (
     should_increase_pairs,
     compute_adaptive_recommendation,
 )
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     GeometryAnalysisConfig,
     StructureType,

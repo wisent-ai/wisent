@@ -56,7 +56,7 @@ def load_all_benchmarks():
     Returns:
         Tuple of (filtered_benchmarks, broken_benchmarks)
     """
-    from wisent.core.benchmark_registry import load_all_benchmarks as _load_all_benchmarks
+    from wisent.core.benchmarks import load_all_benchmarks as _load_all_benchmarks
     return _load_all_benchmarks()
 
 
@@ -76,16 +76,16 @@ def execute_train_unified_goodness(args):
     if args.task:
         args.task = expand_task_if_skill_or_risk(args.task)
     
-    from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+    from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.activations import ExtractionStrategy
     
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.steering_methods.methods.caa import CAAMethod
     from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.models.inference_config import get_generate_kwargs
+    from wisent.core.models import get_generate_kwargs
 
     pipeline_start = time.time() if args.timing else None
 

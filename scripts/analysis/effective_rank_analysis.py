@@ -17,7 +17,7 @@ from dataclasses import dataclass, asdict
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.activation_cache import collect_and_cache_activations, ActivationCache
 from lm_eval.tasks import TaskManager
 

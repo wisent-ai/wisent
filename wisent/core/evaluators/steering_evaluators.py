@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.models import get_generate_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -192,7 +192,7 @@ class TaskEvaluator(BaseSteeringEvaluator):
     
     def _load_task_data(self):
         """Pre-load task data."""
-        from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+        from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
         from wisent.core.evaluators.rotator import EvaluatorRotator
         
         loader = LMEvalDataLoader()

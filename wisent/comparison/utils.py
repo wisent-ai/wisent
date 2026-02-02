@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -154,7 +154,7 @@ def create_test_only_task(task_name: str, train_ratio: float = 0.8) -> dict:
         Task dict with test split configured
     """
     from lm_eval.tasks import get_task_dict
-    from wisent.core.utils.dataset_splits import get_test_docs
+    from wisent.core.utils import get_test_docs
 
     task_dict = get_task_dict([task_name])
     task = task_dict[task_name]
@@ -300,7 +300,7 @@ def load_steering_vector(path: str | Path, default_method: str = "unknown") -> d
     path = Path(path)
 
     if path.suffix == ".pt":
-        from wisent.core.utils.device import resolve_default_device
+        from wisent.core.utils import resolve_default_device
         data = torch.load(path, map_location=resolve_default_device(), weights_only=False)
         layer_idx = str(data.get("layer_index", data.get("layer", 1)))
         return {

@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """Grid search for optimal Qwen3-8B steering parameters."""
 
-from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.steering_methods import CAAMethod
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.extraction_strategy import ExtractionStrategy, map_legacy_strategy
+from wisent.core.activations import ExtractionStrategy, map_legacy_strategy
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 print("Loading Qwen/Qwen3-8B...")

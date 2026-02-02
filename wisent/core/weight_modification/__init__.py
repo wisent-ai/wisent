@@ -69,7 +69,7 @@ from wisent.core.weight_modification.directional import (
     TITANRuntimeHooks,
     apply_titan_steering,
 )
-from wisent.core.weight_modification.additive import (
+from wisent.core.weight_modification.methods.additive import (
     bake_steering_into_weights,
     bake_steering_into_component,
     bake_steering_with_kernel,
@@ -84,7 +84,7 @@ from wisent.core.weight_modification.utils import (
     verify_modification,
     compute_modification_metrics,
 )
-from wisent.core.weight_modification.multi_direction import (
+from wisent.core.weight_modification.multi.multi_direction import (
     MultiDirectionConfig,
     MultiDirectionResult,
     train_and_bake_titan,
@@ -94,7 +94,7 @@ from wisent.core.weight_modification.multi_direction import (
     bake_multi_directions,
     combine_directions,
 )
-from wisent.core.weight_modification.guided import (
+from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig,
     GuidedModificationResult,
     LayerDiagnostics,
@@ -106,7 +106,7 @@ from wisent.core.weight_modification.guided import (
     select_surgical_layers,
     validate_collateral_damage,
 )
-from wisent.core.weight_modification.multi_concept import (
+from wisent.core.weight_modification.multi.multi_concept import (
     MultiConceptConfig,
     ConceptSpec,
     ConceptAction,

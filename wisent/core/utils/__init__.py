@@ -1,4 +1,4 @@
-from .device import (
+from .core.device import (
     DeviceKind,
     DtypeKind,
     empty_device_cache,
@@ -17,7 +17,7 @@ from .device import (
     load_steering_vector,
 )
 
-from .dataset_splits import (
+from .data.dataset_splits import (
     get_all_docs_from_task,
     create_deterministic_split,
     get_train_docs,
@@ -27,9 +27,21 @@ from .dataset_splits import (
     DEFAULT_SEED,
 )
 
-from .base_rotator import (
+from .core.base_rotator import (
     BaseRotator,
     RotatorError,
+)
+
+from .core.layer_combinations import (
+    get_layer_combinations,
+)
+
+from .display.branding import (
+    WISENT_ASCII_LOGO,
+    PROJECT_TAGLINE,
+    render_banner,
+    get_logo,
+    print_banner,
 )
 
 __all__ = [
@@ -61,4 +73,12 @@ __all__ = [
     # Base rotator
     "BaseRotator",
     "RotatorError",
+    # Layer combinations
+    "get_layer_combinations",
+    # Branding
+    "WISENT_ASCII_LOGO",
+    "PROJECT_TAGLINE",
+    "render_banner",
+    "get_logo",
+    "print_banner",
 ]

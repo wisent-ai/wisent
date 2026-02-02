@@ -14,7 +14,7 @@ import pynndescent  # noqa: F401
 import sys
 from pathlib import Path
 from wisent.core.parser_arguments import setup_parser
-from wisent.core.branding import print_banner
+from wisent.core.utils import print_banner
 from wisent.core.cli import (
     execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs,
     execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors,

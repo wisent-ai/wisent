@@ -6,7 +6,7 @@ This module provides a Python API for running tasks that would normally be invok
 
 import argparse
 from typing import Dict, Any, Optional
-from wisent.core.cli.tasks import execute_tasks
+from wisent.core.cli import execute_tasks
 
 
 def run_task_pipeline(

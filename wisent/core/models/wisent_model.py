@@ -20,7 +20,7 @@ from wisent.core.models.core.atoms import SteeringPlan, SteeringVector, HookHand
 from wisent.core.activations.core.atoms import RawActivationMap
 
 from wisent.core.prompts.core.atom import ChatMessage
-from wisent.core.utils.device import resolve_default_device, resolve_torch_device, preferred_dtype
+from wisent.core.utils import resolve_default_device, resolve_torch_device, preferred_dtype
 from wisent.core.contrastive_pairs.diagnostics import run_control_steering_diagnostics
 from wisent.core.errors import (
     ChatTemplateNotAvailableError,
@@ -678,7 +678,7 @@ class WisentModel:
 
         # Add diversity processors if requested
         if ensure_varied_responses and phrase_ledger:
-            from wisent.core.diversity_processors import build_diversity_processors
+            from wisent.core.tasks.base.diversity_processors import build_diversity_processors
             logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
             if logits_processors:
                 generation_kwargs['logits_processor'] = logits_processors
@@ -806,7 +806,7 @@ class WisentModel:
 
         # Add diversity processors if requested
         if ensure_varied_responses and phrase_ledger:
-            from wisent.core.diversity_processors import build_diversity_processors
+            from wisent.core.tasks.base.diversity_processors import build_diversity_processors
             logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
             if logits_processors:
                 generation_kwargs['logits_processor'] = logits_processors
@@ -971,7 +971,7 @@ class WisentModel:
 
         # Add diversity processors if requested
         if ensure_varied_responses and phrase_ledger:
-            from wisent.core.diversity_processors import build_diversity_processors
+            from wisent.core.tasks.base.diversity_processors import build_diversity_processors
             logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
             if logits_processors:
                 generation_kwargs['logits_processor'] = logits_processors

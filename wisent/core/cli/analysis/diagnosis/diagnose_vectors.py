@@ -6,7 +6,7 @@ import os
 import math
 
 import torch
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 
 def execute_diagnose_vectors(args):

@@ -5,10 +5,12 @@ from __future__ import annotations
 from typing import Iterable
 
 from .base import DiagnosticsConfig, DiagnosticsReport
-from .divergence import compute_divergence_metrics
-from .duplicates import compute_duplicate_metrics
-from .coverage import compute_coverage_metrics
-from .activations import compute_activation_metrics
+from .metrics import (
+    compute_divergence_metrics,
+    compute_duplicate_metrics,
+    compute_coverage_metrics,
+    compute_activation_metrics,
+)
 from .control_vectors import (
     ControlVectorDiagnosticsConfig,
     run_control_vector_diagnostics,
@@ -21,15 +23,15 @@ from .control_vectors import (
     StructureType,
     detect_geometry_structure,
 )
-from .vector_quality import VectorQualityConfig, VectorQualityReport, run_vector_quality_diagnostics
-from .linearity import (
+from .analysis import (
+    VectorQualityConfig,
+    VectorQualityReport,
+    run_vector_quality_diagnostics,
     LinearityConfig,
     LinearityResult,
     LinearityVerdict,
     check_linearity,
     check_linearity_from_activations,
-)
-from .concept_analysis import (
     ConceptAnalysisResult,
     compute_icd,
     compute_eigenvalue_spectrum,
