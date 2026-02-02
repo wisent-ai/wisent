@@ -29,15 +29,15 @@ from ...steering.analysis.steering_recommendation import compute_steering_recomm
 from ...utils.icd import compute_icd
 from ...concepts import detect_multiple_concepts, compute_concept_coherence
 from ...analysis.signal_analysis import compute_signal_to_noise
-from ...analysis.activation_structure import (
+from ...analysis.structure import (
     compute_two_cloud_relationship, compute_relative_position, compute_cluster_structure,
 )
 from ..representation import (
     compute_magnitude_metrics, compute_sparsity_metrics, compute_pair_quality_metrics,
     compute_manifold_metrics, compute_noise_baseline_comparison,
 )
-from ...data.nonsense_baseline import analyze_with_nonsense_baseline
-from ...analysis.transformer_analysis import compare_components_for_benchmark
+from ...data.nonsense import analyze_with_nonsense_baseline
+from ...analysis.structure import compare_components_for_benchmark
 from .metrics_viz import generate_metrics_visualizations
 
 

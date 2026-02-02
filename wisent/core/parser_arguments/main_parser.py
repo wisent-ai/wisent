@@ -7,43 +7,70 @@ argparse parser for the Wisent CLI.
 
 import argparse
 
-from wisent.core.parser_arguments.tasks_parser import setup_tasks_parser
-from wisent.core.parser_arguments.generate_pairs_parser import setup_generate_pairs_parser
-from wisent.core.parser_arguments.diagnose_pairs_parser import setup_diagnose_pairs_parser
-from wisent.core.parser_arguments.generate_pairs_from_task_parser import setup_generate_pairs_from_task_parser
-from wisent.core.parser_arguments.get_activations_parser import setup_get_activations_parser
-from wisent.core.parser_arguments.diagnose_vectors_parser import setup_diagnose_vectors_parser
-from wisent.core.parser_arguments.create_steering_object_parser import setup_create_steering_object_parser
-from wisent.core.parser_arguments.generate_vector_from_task_parser import setup_generate_vector_from_task_parser
-from wisent.core.parser_arguments.generate_vector_from_synthetic_parser import setup_generate_vector_from_synthetic_parser
-from wisent.core.parser_arguments.synthetic_parser import setup_synthetic_parser
-from wisent.core.parser_arguments.nonsense_parser import setup_test_nonsense_parser
-from wisent.core.parser_arguments.monitor_parser import setup_monitor_parser
-from wisent.core.parser_arguments.agent_parser import setup_agent_parser
-from wisent.core.parser_arguments.model_config_parser import setup_model_config_parser
-from wisent.core.parser_arguments.configure_model_parser import setup_configure_model_parser
-from wisent.core.parser_arguments.optimize_classification_parser import setup_classification_optimizer_parser
-from wisent.core.parser_arguments.optimize_steering_parser import setup_steering_optimizer_parser
-from wisent.core.parser_arguments.optimize_sample_size_parser import setup_sample_size_optimizer_parser
-from wisent.core.parser_arguments.full_optimize_parser import setup_optimize_all_parser
-from wisent.core.parser_arguments.generate_vector_parser import setup_generate_vector_parser
-from wisent.core.parser_arguments.multi_steer_parser import setup_multi_steer_parser
-from wisent.core.parser_arguments.evaluate_parser import setup_evaluate_parser
-from wisent.core.parser_arguments.generate_responses_parser import setup_generate_responses_parser
-from wisent.core.parser_arguments.evaluate_responses_parser import setup_evaluate_responses_parser
-from wisent.core.parser_arguments.modify_weights_parser import setup_modify_weights_parser
-from wisent.core.parser_arguments.evaluate_refusal_parser import setup_evaluate_refusal_parser
-from wisent.core.parser_arguments.inference_config_parser import setup_inference_config_parser
-from wisent.core.parser_arguments.optimization_cache_parser import setup_optimization_cache_parser
-from wisent.core.parser_arguments.optimize_weights_parser import setup_optimize_weights_parser
-from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser
-from wisent.core.parser_arguments.optimize_parser import setup_optimize_parser
-from wisent.core.parser_arguments.check_linearity_parser import setup_check_linearity_parser
-from wisent.core.parser_arguments.cluster_benchmarks_parser import setup_cluster_benchmarks_parser
-from wisent.core.parser_arguments.geometry_search_parser import setup_geometry_search_parser
-from wisent.core.parser_arguments.verify_steering_parser import setup_verify_steering_parser
-from wisent.core.parser_arguments.repscan_parser import setup_repscan_parser
-from wisent.core.parser_arguments.steering_viz_parser import setup_steering_viz_parser
+# Import from reorganized subdirectories
+from wisent.core.parser_arguments.other.utilities import setup_tasks_parser
+from wisent.core.parser_arguments.generation.pairs import (
+    setup_generate_pairs_parser,
+    setup_generate_pairs_from_task_parser,
+    setup_generate_responses_parser,
+)
+from wisent.core.parser_arguments.analysis.diagnostics import (
+    setup_diagnose_pairs_parser,
+    setup_diagnose_vectors_parser,
+)
+from wisent.core.parser_arguments.training import (
+    setup_get_activations_parser,
+    setup_synthetic_parser,
+    setup_train_unified_goodness_parser,
+)
+from wisent.core.parser_arguments.configuration import (
+    setup_create_steering_object_parser,
+    setup_model_config_parser,
+    setup_configure_model_parser,
+    setup_inference_config_parser,
+)
+from wisent.core.parser_arguments.generation.vectors import (
+    setup_generate_vector_from_task_parser,
+    setup_generate_vector_from_synthetic_parser,
+    setup_generate_vector_parser,
+)
+from wisent.core.parser_arguments.other.utilities import (
+    setup_test_nonsense_parser,
+    setup_monitor_parser,
+)
+from wisent.core.parser_arguments.other import (
+    setup_agent_parser,
+    setup_modify_weights_parser,
+)
+from wisent.core.parser_arguments.optimization.steering import (
+    setup_classification_optimizer_parser,
+    setup_steering_optimizer_parser,
+    setup_sample_size_optimizer_parser,
+)
+from wisent.core.parser_arguments.optimization import (
+    setup_optimize_all_parser,
+    setup_optimize_parser,
+)
+from wisent.core.parser_arguments.optimization.weights import (
+    setup_optimization_cache_parser,
+    setup_optimize_weights_parser,
+)
+from wisent.core.parser_arguments.other.steering import (
+    setup_multi_steer_parser,
+    setup_steering_viz_parser,
+)
+from wisent.core.parser_arguments.evaluation import (
+    setup_evaluate_parser,
+    setup_evaluate_responses_parser,
+    setup_evaluate_refusal_parser,
+    setup_verify_steering_parser,
+)
+from wisent.core.parser_arguments.analysis import (
+    setup_check_linearity_parser,
+    setup_cluster_benchmarks_parser,
+    setup_geometry_search_parser,
+    setup_repscan_parser,
+)
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -258,7 +285,7 @@ def setup_parser() -> argparse.ArgumentParser:
     setup_steering_viz_parser(steering_viz_parser)
 
     # Discover steering command - find optimal steering directions
-    from wisent.core.parser_arguments.discover_steering_parser import setup_discover_steering_parser
+    from wisent.core.parser_arguments.other.steering import setup_discover_steering_parser
     discover_steering_parser = subparsers.add_parser(
         "discover-steering",
         help="Discover optimal steering directions using behavioral probing, direction search, and layer search"

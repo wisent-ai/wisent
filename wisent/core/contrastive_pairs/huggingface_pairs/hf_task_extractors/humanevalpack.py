@@ -4,7 +4,7 @@ from typing import Any
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli_logger import setup_logger
+from wisent.core.cli.cli_logger import setup_logger
 
 __all__ = ["HumanevalpackExtractor"]
 log = setup_logger(__name__)

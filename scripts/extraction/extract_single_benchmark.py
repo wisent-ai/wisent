@@ -126,7 +126,7 @@ def extract_single_benchmark(model_name: str, benchmark: str, limit: int = 200, 
     """Extract activations for a single benchmark."""
     from transformers import AutoTokenizer, AutoModelForCausalLM
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.activations import ExtractionStrategy
 
     conn = psycopg2.connect(DATABASE_URL)
 

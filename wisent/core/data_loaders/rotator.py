@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Type, Union
 
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
-from wisent.core.utils.base_rotator import BaseRotator
+from wisent.core.utils import BaseRotator
 
 __all__ = [
     "DataLoaderRotator",

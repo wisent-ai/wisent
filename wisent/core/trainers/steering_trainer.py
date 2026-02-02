@@ -12,7 +12,7 @@ from wisent.core.activations.core.atoms import (
     LayerActivations,
     RawActivationMap,
 )
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.models.wisent_model import WisentModel
 
 from wisent.core.trainers.core.atoms import (

@@ -14,7 +14,7 @@ from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
 from wisent.core.synthetic.cleaners.deduper_cleaner import DeduperCleaner
 from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
 from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.models import get_generate_kwargs
 
 CAPABILITIES = {
     "coding": "writing correct, complete, and well-structured code that solves programming problems accurately",

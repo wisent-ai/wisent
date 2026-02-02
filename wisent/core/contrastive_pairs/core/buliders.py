@@ -4,7 +4,7 @@ import logging
 from typing import Iterable
 
 
-from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse  
+from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse  
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair              
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 

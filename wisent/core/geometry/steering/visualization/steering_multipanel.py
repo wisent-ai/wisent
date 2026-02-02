@@ -153,10 +153,10 @@ def create_interactive_steering_figure(
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=pos_2d[:, 0], y=pos_2d[:, 1], mode='markers',
-        marker=dict(color='blue', size=8, opacity=0.3), name='Positive (truthful)',
+        marker=dict(color='blue', size=10, opacity=0.6), name='Positive (truthful)',
         hovertext=[f"Positive reference #{i}" for i in range(len(pos_2d))], hoverinfo='text'))
     fig.add_trace(go.Scatter(x=neg_2d[:, 0], y=neg_2d[:, 1], mode='markers',
-        marker=dict(color='red', size=8, opacity=0.3), name='Negative (untruthful)',
+        marker=dict(color='red', size=10, opacity=0.6), name='Negative (untruthful)',
         hovertext=[f"Negative reference #{i}" for i in range(len(neg_2d))], hoverinfo='text'))
     fig.add_trace(go.Scatter(x=[pos_centroid[0]], y=[pos_centroid[1]], mode='markers',
         marker=dict(color='blue', size=20, symbol='star', line=dict(color='black', width=1)),

@@ -7,7 +7,7 @@ import torch
 from typing import Mapping
 
 from wisent.core.errors import InvalidValueError, InvalidRangeError
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 if TYPE_CHECKING:
     from wisent.core.activations.core.atoms import RawActivationMap 

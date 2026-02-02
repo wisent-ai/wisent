@@ -14,7 +14,7 @@ from typing import Any
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.contrastive_pairs.core.serialization import (
+from wisent.core.contrastive_pairs.core.io.serialization import (
     save_contrastive_pair_set,
     load_contrastive_pair_set,
 )

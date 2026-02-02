@@ -9,7 +9,7 @@ Usage:
 
 import argparse
 import json
-from wisent.core.models.inference_config import (
+from wisent.core.models import (
     get_config,
     update_config,
     reset_config,

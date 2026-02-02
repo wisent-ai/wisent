@@ -11,7 +11,7 @@ import sys
 import subprocess
 import random
 
-from wisent.core.utils.device import preferred_dtype, resolve_default_device, resolve_device
+from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
 from wisent.core.errors import InsufficientDataError, TaskNotFoundError
 
 def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: int = 3) -> Any:

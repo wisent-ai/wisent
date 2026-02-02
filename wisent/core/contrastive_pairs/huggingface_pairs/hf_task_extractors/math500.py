@@ -4,7 +4,7 @@ from typing import Any
 import logging
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
+from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
 from latex2sympy2_extended import latex2sympy

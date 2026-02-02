@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 
-from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.rotator import EvaluatorRotator
 

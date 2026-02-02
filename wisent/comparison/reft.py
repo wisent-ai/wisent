@@ -30,7 +30,7 @@ from wisent.comparison.utils import (
     apply_steering_to_model,
     remove_steering,
 )
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 import pyreft
 import transformers
@@ -470,10 +470,10 @@ def evaluate_reft(
     if with_steering:
         from wisent.core.trainers.steering_trainer import WisentSteeringTrainer
         from wisent.core.steering_methods import get_steering_method
-        from wisent.core.activations.extraction_strategy import ExtractionStrategy
+        from wisent.core.activations import ExtractionStrategy
         from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
         from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-        from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+        from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 
         # Generate contrastive pairs for steering
         print(f"\n{'='*60}")

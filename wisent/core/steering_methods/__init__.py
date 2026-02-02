@@ -1,8 +1,8 @@
 """Steering methods package."""
 
 from .methods.caa import CAAMethod
-from .methods.prism import PRISMMethod, PRISMConfig, MultiDirectionResult
-from .methods.pulse import PULSEMethod, PULSEConfig, PULSEResult
+from .methods.advanced import PRISMMethod, PRISMConfig, MultiDirectionResult
+from .methods.advanced import PULSEMethod, PULSEConfig, PULSEResult
 from .methods.titan import TITANMethod, TITANConfig, TITANResult, GatingNetwork, IntensityNetwork
 from .rotator import SteeringMethodRotator
 from .registry import (

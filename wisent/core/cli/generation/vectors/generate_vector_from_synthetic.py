@@ -8,7 +8,7 @@ import hashlib
 import re
 from argparse import Namespace
 
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from ..pairs.generate_pairs import execute_generate_pairs
 from ...analysis.geometry.get_activations import execute_get_activations
 from ...steering.core.create_steering_object import execute_create_steering_object

@@ -5,8 +5,8 @@ import os
 import sys
 import torch
 
-from wisent.core.models.inference_config import get_generate_kwargs
-from wisent.core.activations.extraction_strategy import ExtractionStrategy, extract_activation
+from wisent.core.models import get_generate_kwargs
+from wisent.core.activations import ExtractionStrategy, extract_activation
 
 
 def execute_generate_responses(args):
@@ -17,7 +17,7 @@ def execute_generate_responses(args):
     """
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.data_loaders.loaders.task_interface_loader import TaskInterfaceDataLoader
-    from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+    from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
     from wisent.core.steering_methods.steering_object import load_steering_object
 
     # Validate arguments - need either task or input_file
@@ -60,7 +60,7 @@ def execute_generate_responses(args):
     # If input file is provided, load from file
     if input_file and os.path.exists(input_file):
         from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-        from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+        from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
         
         with open(input_file, 'r') as f:
             data = json.load(f)

@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Type, Union
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult, EvaluatorError
-from wisent.core.utils.base_rotator import BaseRotator
+from wisent.core.utils import BaseRotator
 
 __all__ = [
     "EvaluatorRotator",

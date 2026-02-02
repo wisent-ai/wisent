@@ -17,7 +17,7 @@ from optuna.pruners import MedianPruner
 from optuna.samplers import TPESampler
 
 from wisent.core.classifier.classifier import Classifier
-from wisent.core.utils.device import resolve_default_device, preferred_dtype
+from wisent.core.utils import resolve_default_device, preferred_dtype
 from wisent.core.errors import NoActivationDataError, ClassifierCreationError
 
 from .activation_generator import ActivationData, ActivationGenerator, GenerationConfig

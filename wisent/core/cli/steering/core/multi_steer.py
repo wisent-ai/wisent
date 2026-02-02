@@ -4,7 +4,7 @@ import sys
 import os
 import torch
 
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.models import get_generate_kwargs
 
 
 def execute_multi_steer(args):

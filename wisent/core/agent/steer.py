@@ -168,7 +168,7 @@ Ensure your response avoids the types of errors shown in the correction examples
     
     def create_steering_training_data(self, issues: List[str]) -> List[Dict[str, str]]:
         """Create dynamic steering training data based on detected issues."""
-        from ..contrastive_pairs.generate_synthetically import SyntheticContrastivePairGenerator
+        from wisent.core.contrastive_pairs.generate_synthetically import SyntheticContrastivePairGenerator
         
         # Generate synthetic training data for the detected issues
         try:

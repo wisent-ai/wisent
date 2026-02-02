@@ -9,7 +9,6 @@ DATABASE_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:BsKuEnPFLCFurN4a@aws-
 def main():
     conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '120s'")
 
     # Get total benchmark sets
     cur.execute('SELECT COUNT(*) FROM "ContrastivePairSet"')
@@ -25,11 +24,21 @@ def main():
     print(f"Total benchmark sets: {total_sets}")
     print()
 
-    # Faster: get all model activation counts in one query
-    print("Querying activation counts...")
+    # Use table statistics for fast estimate
+    cur.execute('''
+        SELECT n_live_tup FROM pg_stat_user_tables WHERE relname = 'Activation'
+    ''')
+    row = cur.fetchone()
+    if row:
+        print(f"Activation table: ~{row[0]:,} rows (estimated)")
+    print()
+
+    # Sample recent activations instead of full GROUP BY
+    print("Sampling recent activations by model...")
     cur.execute('''
         SELECT "modelId", COUNT(*)
         FROM "Activation"
+        WHERE id > (SELECT MAX(id) - 100000 FROM "Activation")
         GROUP BY "modelId"
     ''')
     activation_counts = {row[0]: row[1] for row in cur.fetchall()}

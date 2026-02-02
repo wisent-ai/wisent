@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import Any
-from wisent.core.cli_logger import setup_logger
+from wisent.core.cli.cli_logger import setup_logger
 import requests
 import io
 import random

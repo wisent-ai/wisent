@@ -6,7 +6,7 @@ the geometric structure of activation spaces.
 """
 
 # Configure numba threading before any other imports (prevents hangs on macOS)
-from .utils import numba_config  # noqa: F401
+from .utils.config import numba_config  # noqa: F401
 
 from .metrics.probe.probe_metrics import (
     compute_signal_strength,
@@ -36,12 +36,9 @@ from .analysis.intrinsic_dim import (
     compute_effective_dimensions,
 )
 
-from .validation.effective_dim_null import (
+from .validation.null_tests import (
     compute_null_effective_dimensions,
     compute_effective_dimensions_vs_null,
-)
-
-from .validation.geometry_null import (
     compute_cone_null,
     compute_sphere_null,
     compute_cluster_null,
@@ -65,7 +62,7 @@ from .steering.analysis.steerability import (
     compute_final_steering_prescription,
 )
 
-from .data.nonsense_baseline import (
+from .data.nonsense import (
     generate_nonsense_activations,
     compute_nonsense_baseline,
     analyze_with_nonsense_baseline,
@@ -109,7 +106,7 @@ from .runner import (
     compute_geometry_metrics,
 )
 
-from .analysis.transformer_analysis import (
+from .analysis.structure import (
     TransformerComponent,
     analyze_transformer_components,
     get_component_hook_points,
@@ -132,7 +129,7 @@ from .metrics.direction.representation_metrics import (
     analyze_representation_geometry,
 )
 
-from .analysis.activation_structure import (
+from .analysis.structure import (
     compute_cloud_shape,
     compute_cone_fit,
     compute_sphere_fit,
@@ -160,7 +157,7 @@ from .visualization.visualizations import (
     render_matplotlib_figure,
 )
 
-from .utils.pacmap_alt import (
+from .utils.config.pacmap_alt import (
     plot_pacmap_alt,
     pacmap_embedding,
 )
@@ -214,6 +211,11 @@ from .validation.behavioral_validation import (
     compute_behavioral_change,
     validate_steering_behavioral,
     run_behavioral_validation,
+)
+
+from .geometry_search_space import (
+    GeometrySearchSpace,
+    GeometrySearchConfig,
 )
 
 # Re-export database loaders for backward compatibility

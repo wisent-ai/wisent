@@ -37,7 +37,7 @@ def format_pair_with_strategies(pair, tokenizer):
     
     Returns dict with raw data and formatted versions for each strategy.
     """
-    from wisent.core.activations.extraction_strategy import (
+    from wisent.core.activations import (
         ExtractionStrategy,
         build_extraction_texts,
     )
@@ -129,7 +129,7 @@ def test_all_benchmarks(timeout_per_task: int = 30, limit: int = 2):
         Dictionary with results including example pairs with all strategies
     """
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
-    from wisent.core.benchmark_registry import get_all_benchmarks, get_broken_tasks
+    from wisent.core.benchmarks import get_all_benchmarks, get_broken_tasks
     
     all_benchmarks = get_all_benchmarks()
     broken = set(get_broken_tasks())

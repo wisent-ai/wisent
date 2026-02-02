@@ -214,7 +214,7 @@ def print_results(results: Dict[str, BenchmarkResults], summary: Dict[str, Any])
         print(f"  {method}: {acc:.3f}")
 
 
-def run_q1_analysis(model_name: str, layer: int = None, output_path: str = None) -> Dict[str, Any]:
+def run_q1_analysis(model_name: str, layer: int = None, output_path: str = None, benchmark: str = None) -> Dict[str, Any]:
     """
     Run complete Q1 analysis.
 
@@ -222,12 +222,13 @@ def run_q1_analysis(model_name: str, layer: int = None, output_path: str = None)
         model_name: Model to analyze
         layer: Layer to use (default: middle)
         output_path: Optional path to save results JSON
+        benchmark: Optional benchmark filter (default: all)
 
     Returns:
         Complete results dict
     """
-    print(f"Loading activations for {model_name}...")
-    activations = load_activations_from_db(model_name, layer)
+    print(f"Loading activations for {model_name}..." + (f" (benchmark={benchmark})" if benchmark else ""))
+    activations = load_activations_from_db(model_name, layer, benchmark)
     print(f"Loaded {sum(len(v) for v in activations.values())} activations across {len(activations)} benchmarks")
 
     print("\nAnalyzing strategy performance...")
@@ -266,9 +267,10 @@ def main():
     parser.add_argument("--model", type=str, required=True, help="Model name")
     parser.add_argument("--layer", type=int, default=None, help="Layer (default: middle)")
     parser.add_argument("--output", type=str, default="q1_results.json", help="Output file")
+    parser.add_argument("--benchmark", type=str, default=None, help="Filter by benchmark (default: all)")
     args = parser.parse_args()
 
-    run_q1_analysis(args.model, args.layer, args.output)
+    run_q1_analysis(args.model, args.layer, args.output, args.benchmark)
 
 
 if __name__ == "__main__":

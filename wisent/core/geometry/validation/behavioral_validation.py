@@ -213,7 +213,7 @@ def run_behavioral_validation(
     """
     from wisent.core.activations.core.atoms import LayerActivations
     from wisent.core.adapters.base import SteeringConfig
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, extract_activation
+    from wisent.core.activations import ExtractionStrategy, extract_activation
 
     strategy = ExtractionStrategy(extraction_strategy)
 

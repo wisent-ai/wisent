@@ -304,7 +304,7 @@ def check_benchmark_done(conn, model_id: int, set_id: int, prompt_format: str, n
 def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", device: str = "cuda"):
     from transformers import AutoTokenizer, AutoModelForCausalLM
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, build_extraction_texts
+    from wisent.core.activations import ExtractionStrategy, build_extraction_texts
 
     # Initialize DB connection (uses auto-reconnect mechanism)
     conn = get_conn()

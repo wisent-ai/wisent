@@ -16,7 +16,7 @@ import numpy as np
 import torch
 
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.activations import Activations
 
 logger = logging.getLogger(__name__)

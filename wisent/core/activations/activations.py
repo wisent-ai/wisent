@@ -2,7 +2,7 @@
 
 from typing import Any
 import torch
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.errors import InvalidValueError
 
 

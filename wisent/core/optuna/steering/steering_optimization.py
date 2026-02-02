@@ -18,7 +18,7 @@ from wisent.core.activations import ExtractionStrategy
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
 from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.models import get_generate_kwargs
 from wisent.core.optuna.classifier import (
     CacheConfig,
     ClassifierCache,
@@ -29,7 +29,7 @@ from wisent.core.optuna.classifier import (
 from wisent.core.optuna.steering import data_utils, metrics
 from wisent.core.response import Response
 from wisent.core.steering_methods import SteeringMethodRegistry, get_steering_method
-from wisent.core.task_interface import get_task
+from wisent.core.tasks.base.task_interface import get_task
 from wisent.core.errors import (
     ModelArchitectureUnknownError,
     SteeringTrainerNotFoundError,

@@ -230,7 +230,7 @@ def batch_create_raw_activations(activations_data: list):
 def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_id: int,
                       num_layers: int, device: str, limit: int = 500):
     """Extract raw activations for a single benchmark using 3 formats."""
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy, build_extraction_texts
+    from wisent.core.activations import ExtractionStrategy, build_extraction_texts
 
     conn = get_conn()
 

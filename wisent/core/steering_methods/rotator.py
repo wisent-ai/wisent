@@ -13,7 +13,7 @@ from typing import Any, Dict, List, Type, Union
 from wisent.core.steering_methods.core.atoms import BaseSteeringError, BaseSteeringMethod
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.utils.base_rotator import BaseRotator
+from wisent.core.utils import BaseRotator
 
 __all__ = [
     "SteeringMethodRotator",

@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from contextlib import contextmanager
 import torch
 
-from wisent.core.utils.device import resolve_default_device
+from wisent.core.utils import resolve_default_device
 from wisent.core.errors import InvalidValueError, InsufficientDataError
 
 try:

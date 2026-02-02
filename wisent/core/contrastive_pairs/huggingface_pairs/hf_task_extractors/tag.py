@@ -8,9 +8,9 @@ import requests
 from pathlib import Path
 from typing import Any
 
-from wisent.core.cli_logger import setup_logger
+from wisent.core.cli.cli_logger import setup_logger
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
+from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["TagExtractor"]

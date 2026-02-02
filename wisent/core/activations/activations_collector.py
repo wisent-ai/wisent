@@ -5,7 +5,7 @@ import torch
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.activations.core.atoms import LayerActivations, LayerName, RawActivationMap
-from wisent.core.activations.extraction_strategy import (
+from wisent.core.activations import (
     ExtractionStrategy,
     build_extraction_texts,
     extract_activation,

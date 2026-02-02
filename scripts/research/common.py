@@ -116,8 +116,8 @@ def load_activations_from_db(model_name: str, layer: int = None, benchmark: str 
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
 
-    # Get model ID
-    cur.execute('SELECT id, "numLayers" FROM "Model" WHERE name = %s', (model_name,))
+    # Get model ID - use huggingFaceId field
+    cur.execute('SELECT id, "numLayers" FROM "Model" WHERE "huggingFaceId" = %s', (model_name,))
     result = cur.fetchone()
     if not result:
         raise ValueError(f"Model {model_name} not found in database")

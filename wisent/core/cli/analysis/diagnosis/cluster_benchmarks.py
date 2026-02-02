@@ -18,9 +18,9 @@ from dataclasses import dataclass, asdict
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from sklearn.cluster import AgglomerativeClustering
 
-from wisent.core.benchmark_registry import get_all_benchmarks
+from wisent.core.benchmarks import get_all_benchmarks
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
-from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS
 from wisent.core.contrastive_pairs.diagnostics import (
     detect_geometry_structure,
@@ -345,7 +345,7 @@ def execute_cluster_benchmarks(args):
     
     logger.info(f"Loading {model}...")
     tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
-    from wisent.core.utils.device import device_optimized_dtype
+    from wisent.core.utils import device_optimized_dtype
     dtype = device_optimized_dtype(device)
     llm = AutoModelForCausalLM.from_pretrained(model, torch_dtype=dtype, device_map=device, trust_remote_code=True)
     

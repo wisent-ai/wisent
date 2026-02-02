@@ -6,10 +6,12 @@ while keeping the core steering logic modality-agnostic.
 """
 from wisent.core.adapters.base import BaseAdapter, AdapterError
 from wisent.core.adapters.text import TextAdapter
-from wisent.core.adapters.audio import AudioAdapter
-from wisent.core.adapters.video import VideoAdapter
-from wisent.core.adapters.robotics import RoboticsAdapter
-from wisent.core.adapters.multimodal import MultimodalAdapter
+from wisent.core.adapters.modalities import (
+    AudioAdapter,
+    VideoAdapter,
+    RoboticsAdapter,
+    MultimodalAdapter,
+)
 
 __all__ = [
     "BaseAdapter",

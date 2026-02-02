@@ -12,7 +12,7 @@ import torch
 
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
@@ -69,7 +69,7 @@ def train_steering_vector_for_layer(
     
     elif method_name == "prism":
         # PRISM can work per-layer by training on stacked tensors
-        from wisent.core.steering_methods.methods.prism import PRISMMethod
+        from wisent.core.steering_methods.methods.advanced import PRISMMethod
         method = PRISMMethod(**params)
         
         # Stack activations and train

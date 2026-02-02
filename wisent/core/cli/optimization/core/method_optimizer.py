@@ -22,9 +22,9 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Type
 import torch
 
 from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.utils.device import resolve_default_device
+from wisent.core.utils import resolve_default_device
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet

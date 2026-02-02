@@ -1,5 +1,5 @@
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.inference_config import (
+from wisent.core.models.config import (
     InferenceConfig,
     get_config,
     set_config,

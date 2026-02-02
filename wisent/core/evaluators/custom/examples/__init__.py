@@ -8,21 +8,19 @@ These examples demonstrate how to create custom evaluators for:
 - Custom API integrations
 """
 
-from wisent.core.evaluators.custom.examples.gptzero import (
+from wisent.core.evaluators.custom.examples.detectors import (
     GPTZeroEvaluator,
     create_gptzero_evaluator,
+    RobertaDetectorEvaluator,
+    create_roberta_detector_evaluator,
+    DesklibDetectorEvaluator,
+    create_desklib_detector_evaluator,
 )
 from wisent.core.evaluators.custom.examples.humanization import (
     HumanizationEvaluator,
     create_humanization_evaluator,
-)
-from wisent.core.evaluators.custom.examples.roberta_detector import (
-    RobertaDetectorEvaluator,
-    create_roberta_detector_evaluator,
-)
-from wisent.core.evaluators.custom.examples.desklib_detector import (
-    DesklibDetectorEvaluator,
-    create_desklib_detector_evaluator,
+    HumanizationCoherentEvaluator,
+    create_humanization_coherent_evaluator,
 )
 
 __all__ = [
@@ -30,6 +28,8 @@ __all__ = [
     "create_gptzero_evaluator",
     "HumanizationEvaluator",
     "create_humanization_evaluator",
+    "HumanizationCoherentEvaluator",
+    "create_humanization_coherent_evaluator",
     "RobertaDetectorEvaluator",
     "create_roberta_detector_evaluator",
     "DesklibDetectorEvaluator",

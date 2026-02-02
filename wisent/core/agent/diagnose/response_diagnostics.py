@@ -11,7 +11,7 @@ This module handles:
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from wisent.core.activations.extraction_strategy import ExtractionStrategy
+from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.activations import Activations
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.layer import Layer

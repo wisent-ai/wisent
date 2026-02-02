@@ -4,7 +4,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any, Sequence, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
-from wisent.core.utils.dataset_splits import (
+from wisent.core.utils import (
     get_train_docs as _get_train_docs,
     get_all_docs_from_task,
     create_deterministic_split,

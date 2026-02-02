@@ -14,10 +14,10 @@ import torch
 
 from wisent.core.adapters.base import BaseAdapter, SteeringConfig, AdapterError
 from wisent.core.adapters.text import TextAdapter
-from wisent.core.adapters.audio import AudioAdapter
-from wisent.core.adapters.video import VideoAdapter
-from wisent.core.adapters.robotics import RoboticsAdapter
-from wisent.core.adapters.multimodal import MultimodalAdapter
+from wisent.core.adapters import AudioAdapter
+from wisent.core.adapters import VideoAdapter
+from wisent.core.adapters import RoboticsAdapter
+from wisent.core.adapters import MultimodalAdapter
 from wisent.core.errors import UnknownTypeError, NoTrainedVectorsError
 from wisent.core.modalities import (
     Modality,

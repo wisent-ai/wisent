@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainReport
 from wisent.core.errors import UnknownTypeError
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 
 def _torch_dtype_to_numpy(torch_dtype: torch.dtype):
@@ -19,7 +19,7 @@ def _torch_dtype_to_numpy(torch_dtype: torch.dtype):
 
 def _map_token_aggregation(aggregation_str: str):
     """Map string token aggregation to ExtractionStrategy."""
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.activations import ExtractionStrategy
 
     mapping = {
         "average": ExtractionStrategy.CHAT_MEAN,
@@ -33,7 +33,7 @@ def _map_token_aggregation(aggregation_str: str):
 
 def _map_prompt_strategy(strategy_str: str):
     """Map string prompt strategy to ExtractionStrategy."""
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.activations import ExtractionStrategy
 
     mapping = {
         "chat_template": ExtractionStrategy.CHAT_LAST,

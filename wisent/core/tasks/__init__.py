@@ -4,13 +4,11 @@ Task implementations for wisent.
 This package contains task-agnostic implementations for various benchmarks.
 """
 
-from ..task_interface import register_task
-from .aime_task import AIMETask
-from .hle_task import HLEExactMatchTask, HLEMultipleChoiceTask, HLETask
-from .hmmt_task import HMMTTask
-from .livecodebench_task import LiveCodeBenchTask
-from .livemathbench_task import LiveMathBenchTask
-from .lm_eval_task import (
+from .base.task_interface import register_task
+from .math import AIMETask, HMMTTask, LiveMathBenchTask, Math500Task, PolyMathTask
+from .code import LiveCodeBenchTask
+from .eval.hle_task import HLEExactMatchTask, HLEMultipleChoiceTask, HLETask
+from .eval.lm_eval_task import (
     AppsTask,
     ArcChallengeTask,
     ArcEasyTask,
@@ -60,9 +58,7 @@ from .lm_eval_task import (
     TruthfulQATask,
     WinograndeTask,
 )
-from .math500_task import Math500Task
-from .polymath_task import PolyMathTask
-from .supergpqa_task import SuperGPQABiologyTask, SuperGPQAChemistryTask, SuperGPQAPhysicsTask, SuperGPQATask
+from .eval.supergpqa_task import SuperGPQABiologyTask, SuperGPQAChemistryTask, SuperGPQAPhysicsTask, SuperGPQATask
 
 
 def register_all_tasks():

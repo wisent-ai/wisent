@@ -102,7 +102,7 @@ def save_checkpoint(model: str, results: Dict[str, Any], phase: str = "unknown")
 
 def get_all_benchmarks() -> List[str]:
     """Get ALL available benchmarks from the central registry."""
-    from wisent.core.benchmark_registry import get_all_benchmarks as _get_all_benchmarks
+    from wisent.core.benchmarks import get_all_benchmarks as _get_all_benchmarks
     return _get_all_benchmarks()
 
 
