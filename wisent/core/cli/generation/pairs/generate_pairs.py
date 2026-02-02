@@ -4,7 +4,7 @@ import sys
 import json
 import os
 
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.models import get_generate_kwargs
 from wisent.data.contrastive_pairs import save_personalization_pairs, save_synthetic_pairs
 
 

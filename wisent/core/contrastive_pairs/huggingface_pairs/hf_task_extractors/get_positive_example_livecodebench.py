@@ -7,7 +7,7 @@ and extracts examples that passed all test cases.
 from __future__ import annotations
 
 import json
-from wisent.core.cli_logger import setup_logger
+from wisent.core.cli.cli_logger import setup_logger
 import os
 from pathlib import Path
 from typing import Any

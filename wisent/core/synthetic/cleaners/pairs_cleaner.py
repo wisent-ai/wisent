@@ -38,7 +38,7 @@ class PairsCleaner(Cleaner):
         example:
             >>> from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
             >>> from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-            >>> from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+            >>> from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
             >>> from wisent.core.synthetic.cleaners.methods.base_refusalers import BasesRefusaler
             >>> from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
             >>> from wisent.core.synthetic.cleaners.cleaners import PairsCleaner

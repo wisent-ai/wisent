@@ -10,7 +10,7 @@ from uncensorbench import UncensorBench
 from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.models import get_generate_kwargs
 
 
 def execute_evaluate_refusal(args):

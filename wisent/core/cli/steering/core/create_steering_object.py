@@ -23,7 +23,7 @@ from wisent.core.steering_methods.steering_object import (
     TITANSteeringObject,
     BaseSteeringObject,
 )
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 
 def _parse_layer_spec(spec: str, num_layers: int) -> set:
@@ -242,7 +242,7 @@ def _create_prism_steering_object(
     args,
 ) -> PRISMSteeringObject:
     """Create PRISM steering object with multiple directions."""
-    from wisent.core.steering_methods.methods.prism import PRISMMethod
+    from wisent.core.steering_methods.methods.advanced import PRISMMethod
     
     num_directions = getattr(args, 'prism_num_directions', 3)
     
@@ -292,7 +292,7 @@ def _create_pulse_steering_object(
     args,
 ) -> PULSESteeringObject:
     """Create PULSE steering object with conditional gating."""
-    from wisent.core.steering_methods.methods.pulse import PULSEMethod
+    from wisent.core.steering_methods.methods.advanced import PULSEMethod
     
     # Determine sensor layer (default: 75% through network)
     num_layers = len(available_layers)

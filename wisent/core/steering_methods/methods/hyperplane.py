@@ -6,7 +6,7 @@ import numpy as np
 
 from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
 from wisent.core.errors import InsufficientDataError
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 __all__ = [
     "HyperplaneMethod",

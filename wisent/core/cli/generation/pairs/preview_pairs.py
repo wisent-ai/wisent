@@ -12,7 +12,7 @@ def execute_preview_pairs(args):
         lm_build_contrastive_pairs,
     )
     from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS
-    from wisent.core.activations.extraction_strategy import (
+    from wisent.core.activations import (
         ExtractionStrategy,
         build_extraction_texts,
         get_strategy_for_model,
@@ -40,7 +40,7 @@ def execute_preview_pairs(args):
                 limit=limit,
             )
         else:
-            from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+            from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
             loader = LMEvalDataLoader()
             task_obj = loader.load_lm_eval_task(task_name)
             

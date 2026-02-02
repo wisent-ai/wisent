@@ -13,13 +13,13 @@ os.environ['HF_ALLOW_CODE_EVAL'] = '1'
 # Add wisent to path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 
 
 def load_benchmarks():
     """Load benchmarks from central registry."""
-    from wisent.core.benchmark_registry import get_all_benchmarks
+    from wisent.core.benchmarks import get_all_benchmarks
     return get_all_benchmarks()
 
 

@@ -13,8 +13,8 @@ from tqdm import tqdm
 from wisent.core.lm_eval_harness_ground_truth import LMEvalHarnessGroundTruth
 
 # Import task interface for dynamic task loading
-from wisent.core.task_interface import get_task
-from wisent.core.utils.device import empty_device_cache, preferred_dtype, resolve_default_device
+from wisent.core.tasks.base.task_interface import get_task
+from wisent.core.utils import empty_device_cache, preferred_dtype, resolve_default_device
 from wisent.core.errors import ModelArchitectureUnknownError
 from wisent.core.models.wisent_model import WisentModel
 

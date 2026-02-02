@@ -6,7 +6,7 @@ and extracts examples that failed test cases.
 """
 from __future__ import annotations
 
-from wisent.core.cli_logger import setup_logger
+from wisent.core.cli.cli_logger import setup_logger
 import random
 import string
 from typing import Any

@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace 
 
 from wisent.core.contrastive_pairs.core.atoms import AtomContrastivePair
-from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
+from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.errors import PromptMustBeStringError
 
 from typing import TYPE_CHECKING
@@ -171,7 +171,7 @@ class ContrastivePair(AtomContrastivePair):
          )          
         '''
 
-        from wisent.core.contrastive_pairs.core.response import NegativeResponse, PositiveResponse
+        from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 
         return cls(
             prompt=str(data["prompt"]),

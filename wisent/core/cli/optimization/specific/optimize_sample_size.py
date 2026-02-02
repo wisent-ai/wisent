@@ -10,13 +10,13 @@ try:
 except ImportError:
     LineChart = None  # wisent_plots is optional
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.data_loaders.loaders.lm_loader import LMEvalDataLoader
+from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.activations import ExtractionStrategy, ActivationCollector
 from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
 from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
 from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.models import get_generate_kwargs
 
 
 def execute_optimize_sample_size(args):
@@ -157,7 +157,7 @@ def execute_optimize_sample_size(args):
             )
 
             # Collect activation for this generation
-            from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+            from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
             from wisent.core.contrastive_pairs.core.pair import ContrastivePair
             temp_pos = PositiveResponse(model_response=response, layers_activations={})
             temp_neg = NegativeResponse(model_response="placeholder", layers_activations={})

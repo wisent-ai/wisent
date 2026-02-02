@@ -12,7 +12,7 @@ from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mbpp import 
 
 # Import LMEvalHarnessGroundTruth for intelligent evaluation (newer approach used by CLI)
 from wisent.core.lm_eval_harness_ground_truth import LMEvalHarnessGroundTruth
-from wisent.core.task_interface import get_task
+from wisent.core.tasks.base.task_interface import get_task
 from wisent.core.tasks.file_task import FileTask
 from wisent.core.errors import (
     EvaluationError,

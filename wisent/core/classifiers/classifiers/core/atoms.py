@@ -14,7 +14,7 @@ import numpy as np
 
 from torch.nn.modules.loss import _Loss
 from wisent.core.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 __all__ = [
     "ClassifierTrainConfig",

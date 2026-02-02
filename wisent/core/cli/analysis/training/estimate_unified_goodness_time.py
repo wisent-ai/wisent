@@ -142,7 +142,7 @@ def estimate_runtime(
     
     # 1. Model loading (one-time)
     if device == 'cpu' or device == 'auto':
-        from wisent.core.utils.device import resolve_default_device
+        from wisent.core.utils import resolve_default_device
         actual_device = resolve_default_device() if device == 'auto' else device
         model_time = TIME_ESTIMATES['model_load_cpu'] if actual_device == 'cpu' else TIME_ESTIMATES['model_load_gpu']
     else:

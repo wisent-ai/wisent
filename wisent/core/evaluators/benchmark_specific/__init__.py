@@ -9,18 +9,18 @@ This module provides evaluation methods that match lm-eval's native approaches:
 - Coding evaluation for code generation tasks
 """
 
-from .log_likelihoods_evaluator import LogLikelihoodsEvaluator
+from .likelihood.log_likelihoods_evaluator import LogLikelihoodsEvaluator
 from .generation_evaluator import GenerationEvaluator
 from .exact_match_evaluator import ExactMatchEvaluator
 from .f1_evaluator import F1Evaluator
-from .perplexity_evaluator import PerplexityEvaluator
+from .likelihood.perplexity_evaluator import PerplexityEvaluator
 from .coding.metrics.evaluator import CodingEvaluator
-from .conala_evaluator import CoNaLaEvaluator
+from .code.conala_evaluator import CoNaLaEvaluator
 
 # MathEvaluator requires math_equivalence which is installed from GitHub
 # Make it lazy to avoid import errors when not installed
 try:
-    from .math_evaluator import MathEvaluator
+    from .math.math_evaluator import MathEvaluator
     _MATH_EVALUATOR_AVAILABLE = True
 except ImportError:
     MathEvaluator = None

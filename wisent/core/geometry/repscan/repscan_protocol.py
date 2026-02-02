@@ -205,6 +205,7 @@ def run_full_protocol(
     gap_threshold: Optional[float] = None,
     min_silhouette: Optional[float] = None,
     rigorous_geometry: bool = False,
+    include_dimensionality_diagnostics: bool = True,
 ) -> Dict[str, Any]:
     """Run complete 4-step RepScan protocol.
 
@@ -214,6 +215,8 @@ def run_full_protocol(
     Args:
         rigorous_geometry: If True, use econometric-style linearity validation with
             5 diagnostics instead of simple threshold comparison.
+        include_dimensionality_diagnostics: If True, run curse of dimensionality
+            diagnostics including power analysis, sample adequacy, and shrinkage.
     """
     if signal_keys is None:
         signal_keys = ["knn_accuracy", "knn_pca_accuracy", "mlp_probe_accuracy"]
@@ -223,6 +226,12 @@ def run_full_protocol(
         gap_threshold = adaptive_gap_threshold(n_samples)
     if min_silhouette is None:
         min_silhouette = adaptive_min_silhouette(n_samples)
+
+    # Run dimensionality diagnostics first (if enabled)
+    dim_diag = None
+    if include_dimensionality_diagnostics:
+        from ..validation.dimensionality import run_dimensionality_diagnostics
+        dim_diag = run_dimensionality_diagnostics(pos, neg)
 
     sig = test_signal(pos, neg, signal_keys, model, tokenizer, layer, device, p_threshold)
     geo = test_geometry(pos, neg, gap_threshold, rigorous=rigorous_geometry)
@@ -247,7 +256,7 @@ def run_full_protocol(
             "n_diagnostics_total": geo.n_diagnostics_total,
         })
 
-    return {
+    result = {
         "protocol_config": {
             "n_samples": n_samples,
             "p_threshold": p_threshold,
@@ -276,6 +285,11 @@ def run_full_protocol(
             "method_scores": inter.method_scores,
         },
     }
+
+    if dim_diag is not None:
+        from dataclasses import asdict
+        result["dimensionality_diagnostics"] = asdict(dim_diag)
+    return result
 
 
 # Aliases for backwards compatibility

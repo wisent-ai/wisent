@@ -30,7 +30,7 @@ from wisent.core.modalities import (
     wrap_content,
 )
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
-from wisent.core.utils.device import preferred_dtype
+from wisent.core.utils import preferred_dtype
 
 __all__ = ["TextAdapter"]
 

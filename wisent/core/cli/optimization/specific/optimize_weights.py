@@ -28,7 +28,7 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 import torch
-from wisent.core.utils.device import resolve_default_device
+from wisent.core.utils import resolve_default_device
 
 
 def upload_to_s3(local_path: str, s3_bucket: str, s3_key: str) -> bool:
@@ -77,7 +77,7 @@ from wisent.core.evaluators.steering_evaluators import (
 )
 from wisent.core.opti.core.atoms import HPOConfig
 from wisent.core.opti.methods.opti_weights import WeightsOptimizer, WeightsOptimizerConfig
-from wisent.core.utils.device import resolve_default_device, preferred_dtype
+from wisent.core.utils import resolve_default_device, preferred_dtype
 
 
 @dataclass
@@ -417,7 +417,7 @@ def _train_multi_direction_method(
     print(f"   Pairs file: {enriched_file}")
     
     try:
-        from wisent.core.contrastive_pairs.core.serialization import load_contrastive_pair_set
+        from wisent.core.contrastive_pairs.core.io.serialization import load_contrastive_pair_set
         from wisent.core.weight_modification.multi_direction import (
             MultiDirectionConfig,
             combine_directions,
@@ -445,7 +445,7 @@ def _train_multi_direction_method(
             weights = result.direction_weights
             
         elif method == 'prism':
-            from wisent.core.steering_methods.methods.prism import PRISMMethod, PRISMConfig
+            from wisent.core.steering_methods.methods.advanced import PRISMMethod, PRISMConfig
             config = PRISMConfig(
                 num_directions=num_directions,
                 optimization_steps=optimization_steps,
@@ -456,7 +456,7 @@ def _train_multi_direction_method(
             weights = None  # PRISM doesn't have learned weights
             
         elif method == 'pulse':
-            from wisent.core.steering_methods.methods.pulse import PULSEMethod, PULSEConfig
+            from wisent.core.steering_methods.methods.advanced import PULSEMethod, PULSEConfig
             config = PULSEConfig(
                 optimization_steps=optimization_steps,
             )
@@ -805,7 +805,7 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
         positive_examples: List of positive example responses from contrastive pairs
         negative_examples: List of negative example responses from contrastive pairs
     """
-    from wisent.core.models.inference_config import get_generate_kwargs
+    from wisent.core.models import get_generate_kwargs
 
     task = args.task.lower() if args.task else ""
     
@@ -896,7 +896,7 @@ def _create_custom_evaluator(args, model_name: str) -> Callable:
     """
     import json
     from wisent.core.evaluators.custom import create_custom_evaluator
-    from wisent.core.models.inference_config import get_generate_kwargs
+    from wisent.core.models import get_generate_kwargs
     
     # Parse custom evaluator kwargs
     custom_kwargs = {}
@@ -979,7 +979,7 @@ def _create_pooled_evaluator(args) -> Callable:
     native evaluator (routing by source_benchmark metadata).
     """
     from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.models.inference_config import get_generate_kwargs
+    from wisent.core.models import get_generate_kwargs
 
     # Get eval pairs stored during vector generation
     eval_pairs = getattr(args, '_pooled_eval_pairs', [])
@@ -1159,7 +1159,7 @@ def _show_response_comparisons(
     """
     from uncensorbench import UncensorBench
     from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
-    from wisent.core.models.inference_config import get_generate_kwargs
+    from wisent.core.models import get_generate_kwargs
 
     print(f"\n{'='*80}")
     print("RESPONSE COMPARISONS (Baseline vs Optimized)")

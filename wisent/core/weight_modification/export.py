@@ -9,7 +9,7 @@ from __future__ import annotations
 import torch
 from pathlib import Path
 from typing import TYPE_CHECKING
-from wisent.core.cli_logger import setup_logger, bind
+from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import MissingParameterError
 
 if TYPE_CHECKING:
@@ -634,7 +634,7 @@ def export_pulse_model(
         commit_message: Commit message for Hub
     """
     import json
-    from wisent.core.weight_modification.additive import bake_steering_into_weights
+    from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
     from wisent.core.activations.core.atoms import LayerActivations
     
     save_path = Path(save_path)
@@ -869,7 +869,7 @@ def export_prism_model(
         commit_message: Commit message for Hub
     """
     import json
-    from wisent.core.weight_modification.additive import bake_steering_into_weights
+    from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
     from wisent.core.activations.core.atoms import LayerActivations
     
     save_path = Path(save_path)

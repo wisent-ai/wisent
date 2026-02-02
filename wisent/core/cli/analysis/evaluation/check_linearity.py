@@ -30,8 +30,8 @@ def execute_check_linearity(args):
     )
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.activations import ExtractionStrategy
     
     # Build ContrastivePair objects
     pairs = []

@@ -5,10 +5,10 @@ import random
 
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.task_interface import get_task, list_tasks
-from wisent.core.task_interface import TaskInterface
+from wisent.core.tasks.base.task_interface import get_task, list_tasks
+from wisent.core.tasks.base.task_interface import TaskInterface
 
 __all__ = [
     "TaskInterfaceDataLoader",

@@ -32,7 +32,7 @@ def execute_evaluate_responses(args):
         F1Evaluator,
         PerplexityEvaluator
     )
-    from wisent.core.utils.dataset_splits import get_all_docs_from_task, create_deterministic_split
+    from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
 
     print(f"\n{'='*80}")
     print(f"📊 EVALUATING GENERATED RESPONSES")

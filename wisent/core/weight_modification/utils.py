@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-from wisent.core.cli_logger import setup_logger, bind
+from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from torch.nn import Module

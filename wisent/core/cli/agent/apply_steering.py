@@ -1,11 +1,11 @@
 """Apply steering vectors to improve response."""
 
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.models import get_generate_kwargs
 
 
 def _map_token_aggregation(aggregation_str: str):
     """Map string token aggregation to ExtractionStrategy."""
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.activations import ExtractionStrategy
 
     mapping = {
         "average": ExtractionStrategy.CHAT_MEAN,
@@ -19,7 +19,7 @@ def _map_token_aggregation(aggregation_str: str):
 
 def _map_prompt_strategy(strategy_str: str):
     """Map string prompt strategy to ExtractionStrategy."""
-    from wisent.core.activations.extraction_strategy import ExtractionStrategy
+    from wisent.core.activations import ExtractionStrategy
 
     mapping = {
         "chat_template": ExtractionStrategy.CHAT_LAST,
@@ -87,7 +87,7 @@ def apply_steering_and_evaluate(
     from wisent.core.models.core.atoms import SteeringPlan
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 
     print(f"\n🎯 Step 4: Response below threshold, using steering to improve")
     print(f"   Collecting activations from pairs...")
