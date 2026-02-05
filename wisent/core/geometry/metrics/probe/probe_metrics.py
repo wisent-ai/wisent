@@ -48,7 +48,7 @@ def compute_signal_strength(
         
         clf = MLPClassifier(
             hidden_layer_sizes=(16,),
-            max_iter=500,
+            
             random_state=42,
         )
         scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
@@ -93,7 +93,7 @@ def compute_linear_probe_accuracy(
         if n_folds < 2:
             return 0.5
         
-        clf = LogisticRegression(max_iter=1000, solver='lbfgs')
+        clf = LogisticRegression( solver='lbfgs')
         scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
         return float(scores.mean())
     except Exception:
@@ -141,7 +141,7 @@ def compute_mlp_probe_accuracy(
         
         clf = MLPClassifier(
             hidden_layer_sizes=(hidden_size,),
-            max_iter=500,
+            
             early_stopping=True,
             validation_fraction=0.1,
             random_state=42,

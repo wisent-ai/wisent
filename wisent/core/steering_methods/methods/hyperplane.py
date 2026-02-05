@@ -54,11 +54,10 @@ class HyperplaneMethod(PerLayerBaseSteeringMethod):
         
         # Train logistic regression classifier
         from sklearn.linear_model import LogisticRegression
-        
-        max_iter = int(self.kwargs.get("max_iter", 1000))
+
         C = float(self.kwargs.get("C", 1.0))
-        
-        clf = LogisticRegression(max_iter=max_iter, C=C, solver="lbfgs")
+
+        clf = LogisticRegression(C=C, solver="lbfgs")
         clf.fit(X, y)
         
         # Use classifier weights as steering vector

@@ -51,7 +51,7 @@ def compute_activation_movement(
     from sklearn.linear_model import LogisticRegression
     X_train = np.vstack([pos, neg])
     y_train = np.concatenate([np.ones(len(pos)), np.zeros(len(neg))])
-    clf = LogisticRegression(max_iter=1000, random_state=42)
+    clf = LogisticRegression( random_state=42)
     clf.fit(X_train, y_train)
 
     base_probs = clf.predict_proba(base)[:, 1]

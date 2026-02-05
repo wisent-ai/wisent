@@ -38,7 +38,7 @@ def train_probe(pos_tensor, neg_tensor):
     """Linear probe direction"""
     X = torch.cat([pos_tensor, neg_tensor], dim=0).numpy()
     y = np.array([1]*len(pos_tensor) + [0]*len(neg_tensor))
-    probe = LogisticRegression(max_iter=1000, random_state=42)
+    probe = LogisticRegression( random_state=42)
     probe.fit(X, y)
     direction = torch.tensor(probe.coef_[0], dtype=torch.float32)
     return F.normalize(direction, dim=0), probe.score(X, y)
@@ -224,7 +224,7 @@ def main():
         X_test = torch.cat([test_pos, test_neg], dim=0).numpy()
         y_test = np.array([1]*len(test_pos) + [0]*len(test_neg))
         
-        probe_full = LogisticRegression(max_iter=1000, random_state=42)
+        probe_full = LogisticRegression( random_state=42)
         probe_full.fit(torch.cat([train_pos, train_neg], dim=0).numpy(), 
                        np.array([1]*len(train_pos) + [0]*len(train_neg)))
         test_acc = probe_full.score(X_test, y_test)

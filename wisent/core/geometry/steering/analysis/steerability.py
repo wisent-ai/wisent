@@ -141,7 +141,7 @@ def compute_steerability_metrics(
             neg_np = neg_activations[:n_pairs].float().cpu().numpy()
             X = np.vstack([pos_np, neg_np])
             y = np.array([1] * n_pairs + [0] * n_pairs)
-            probe = LogisticRegression(max_iter=500, random_state=42)
+            probe = LogisticRegression( random_state=42)
             probe.fit(X, y)
             probe_dir = probe.coef_[0]
             probe_dir_norm = probe_dir / (np.linalg.norm(probe_dir) + 1e-8)

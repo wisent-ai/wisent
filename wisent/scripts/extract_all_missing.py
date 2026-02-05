@@ -89,7 +89,6 @@ def get_missing_benchmarks(conn, model_id: int, target_pairs: int = 500) -> list
     Returns list of (set_id, name, pairs_needed) for incomplete benchmarks.
     """
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '300s'")  # 5 minute timeout for complex queries
 
     # Step 1: Get all benchmarks with pair counts (fast query)
     print("  Fetching benchmark pair counts...", flush=True)
@@ -172,7 +171,6 @@ def batch_create_activations(activations_data: list):
         try:
             conn = get_conn()
             cur = conn.cursor()
-            cur.execute("SET statement_timeout = '600s'")  # 10 minute timeout for batch inserts
 
             execute_values(cur, '''
                 INSERT INTO "Activation"
@@ -198,7 +196,6 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
     """
     conn = get_conn()
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '300s'")  # 5 minute timeout for complex queries
 
     # Get pairs that DON'T already have activations for this model
     cur.execute('''

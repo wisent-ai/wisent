@@ -102,7 +102,7 @@ def _draw_decision_boundary(ax, pos_2d, neg_2d):
     from sklearn.linear_model import LogisticRegression
     X_2d = np.vstack([pos_2d, neg_2d])
     y_2d = np.concatenate([np.ones(len(pos_2d)), np.zeros(len(neg_2d))])
-    clf_2d = LogisticRegression(random_state=42, max_iter=1000)
+    clf_2d = LogisticRegression(random_state=42, )
     clf_2d.fit(X_2d, y_2d)
     x_min, x_max = X_2d[:, 0].min() - 1, X_2d[:, 0].max() + 1
     y_min, y_max = X_2d[:, 1].min() - 1, X_2d[:, 1].max() + 1

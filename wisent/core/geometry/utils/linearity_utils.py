@@ -40,9 +40,9 @@ def compute_probe_accuracies(
 
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
 
-    linear_model = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=random_state)
+    linear_model = LogisticRegression( solver="lbfgs", random_state=random_state)
     nonlinear_model = MLPClassifier(
-        hidden_layer_sizes=(64,), max_iter=500, random_state=random_state
+        hidden_layer_sizes=(64,),  random_state=random_state
     )
 
     linear_scores = cross_val_score(linear_model, X, y, cv=cv, scoring="accuracy")
@@ -72,7 +72,7 @@ def analyze_residuals(
     """
     X, y = _prepare_data(pos, neg)
 
-    model = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=random_state)
+    model = LogisticRegression( solver="lbfgs", random_state=random_state)
     model.fit(X, y)
 
     probs = model.predict_proba(X)[:, 1]
@@ -127,8 +127,8 @@ def bootstrap_gap_ci(
         if len(np.unique(y_boot)) < 2:
             continue
 
-        linear = LogisticRegression(max_iter=500, solver="lbfgs", random_state=42)
-        nonlinear = MLPClassifier(hidden_layer_sizes=(32,), max_iter=200, random_state=42)
+        linear = LogisticRegression( solver="lbfgs", random_state=42)
+        nonlinear = MLPClassifier(hidden_layer_sizes=(32,),  random_state=42)
 
         try:
             linear.fit(X_boot, y_boot)
@@ -175,7 +175,7 @@ def test_cross_context_linearity(
     for i, (pos_train, neg_train) in enumerate(contexts):
         X_train, y_train = _prepare_data(pos_train, neg_train)
 
-        model = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=random_state)
+        model = LogisticRegression( solver="lbfgs", random_state=random_state)
         model.fit(X_train, y_train)
 
         for j, (pos_test, neg_test) in enumerate(contexts):
@@ -219,14 +219,14 @@ def ramsey_polynomial_test(
 
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
 
-    linear = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=random_state)
+    linear = LogisticRegression( solver="lbfgs", random_state=random_state)
     linear_scores = cross_val_score(linear, X_reduced, y, cv=cv, scoring="accuracy")
     linear_acc = float(np.mean(linear_scores))
 
     poly = PolynomialFeatures(degree=degree, include_bias=False)
     X_poly = poly.fit_transform(X_reduced)
 
-    poly_model = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=random_state, C=0.1)
+    poly_model = LogisticRegression( solver="lbfgs", random_state=random_state, C=0.1)
     poly_scores = cross_val_score(poly_model, X_poly, y, cv=cv, scoring="accuracy")
     poly_acc = float(np.mean(poly_scores))
 

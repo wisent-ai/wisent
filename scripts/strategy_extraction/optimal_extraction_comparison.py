@@ -58,7 +58,6 @@ def count_available_data(model_name: str, benchmark: str) -> dict:
     conn = psycopg2.connect(DATABASE_URL)
     conn.autocommit = True
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = 0")
     cur.execute('''
         SELECT COUNT(DISTINCT ra."contrastivePairId"), COUNT(*), COUNT(DISTINCT ra."layer")
         FROM "RawActivation" ra
@@ -77,7 +76,6 @@ def load_raw_activations(model_name: str, benchmark: str, layer: int, limit: int
     conn = psycopg2.connect(DATABASE_URL)
     conn.autocommit = True
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = 0")
     cur.execute('SELECT id, "numLayers" FROM "Model" WHERE name = %s', (model_name,))
     result = cur.fetchone()
     if not result:

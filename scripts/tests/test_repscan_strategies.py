@@ -32,12 +32,12 @@ def compute_metrics(pos: torch.Tensor, neg: torch.Tensor):
     y = np.array([1] * len(pos) + [0] * len(neg))
 
     # Linear classifier (signal + geometry)
-    linear = LogisticRegression(max_iter=1000, solver="lbfgs")
+    linear = LogisticRegression( solver="lbfgs")
     linear_scores = cross_val_score(linear, X, y, cv=5, scoring="accuracy")
     linear_acc = linear_scores.mean()
 
     # Nonlinear classifier (geometry)
-    mlp = MLPClassifier(hidden_layer_sizes=(64,), max_iter=500, early_stopping=True)
+    mlp = MLPClassifier(hidden_layer_sizes=(64,),  early_stopping=True)
     mlp_scores = cross_val_score(mlp, X, y, cv=5, scoring="accuracy")
     nonlinear_acc = mlp_scores.mean()
 
