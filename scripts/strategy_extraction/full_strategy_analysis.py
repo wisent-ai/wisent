@@ -104,6 +104,30 @@ def compute_full_metrics(pos: np.ndarray, neg: np.ndarray) -> Dict:
         "effect_size": effect_size}
 
 
+def verify_benchmark_completion(results: Dict, benchmark: str, model_name: str) -> bool:
+    """Verify that a benchmark was actually processed and saved correctly."""
+    if benchmark not in results.get("benchmarks", {}):
+        print(f"    VERIFY FAIL: {benchmark} not in results")
+        return False
+    bench_data = results["benchmarks"][benchmark]
+    if "strategies" not in bench_data:
+        print(f"    VERIFY FAIL: {benchmark} has no strategies")
+        return False
+    if not bench_data["strategies"]:
+        print(f"    VERIFY FAIL: {benchmark} strategies dict is empty")
+        return False
+    # Check that at least one strategy has valid metrics
+    has_valid_metrics = False
+    for strategy, metrics in bench_data["strategies"].items():
+        if metrics and any(v is not None and v != 0 for v in metrics.values() if not isinstance(v, dict)):
+            has_valid_metrics = True
+            break
+    if not has_valid_metrics:
+        print(f"    VERIFY FAIL: {benchmark} has no valid metrics")
+        return False
+    return True
+
+
 def analyze_model(model_name: str, benchmarks: List[str], checkpoint_file: str, all_results: Dict, multi_layer: bool = False) -> Dict:
     conn = psycopg2.connect(**DB_CONFIG)
     model_id, num_layers = get_model_id(conn, model_name)
@@ -115,6 +139,11 @@ def analyze_model(model_name: str, benchmarks: List[str], checkpoint_file: str, 
         for strat, metrics in bdata.get("strategies", {}).items():
             for k, v in metrics.items():
                 if not k.startswith("per_layer"): results["strategies"][strat][k].append(float(v) if isinstance(v, str) else v)
+
+    processed_count = 0
+    verified_count = 0
+    failed_benchmarks = []
+
     for i, benchmark in enumerate(benchmarks):
         if benchmark in results["benchmarks"]: continue
         if (i + 1) % 20 == 0: print(f"    {i+1}/{len(benchmarks)} benchmarks...", flush=True)
@@ -144,18 +173,50 @@ def analyze_model(model_name: str, benchmarks: List[str], checkpoint_file: str, 
                         bench_results[strategy] = metrics
                         for k, v in metrics.items(): results["strategies"][strategy][k].append(v)
             results["benchmarks"][benchmark] = {"category": get_benchmark_category(benchmark), "strategies": bench_results}
+            processed_count += 1
+
+            # VERIFICATION: Check that benchmark was actually saved correctly
+            if verify_benchmark_completion(results, benchmark, model_name):
+                verified_count += 1
+                print(f"    VERIFIED: {benchmark} ({len(bench_results)} strategies)", flush=True)
+            else:
+                failed_benchmarks.append(benchmark)
+                # Remove failed benchmark from results to retry next time
+                del results["benchmarks"][benchmark]
+                print(f"    REMOVED: {benchmark} (verification failed)", flush=True)
+
             all_results[model_name] = results
             with open(checkpoint_file, "w") as f: json.dump(all_results, f, default=str)
-        except psycopg2.OperationalError:
+
+            # Double-check checkpoint file was written correctly
+            with open(checkpoint_file, "r") as f:
+                saved_data = json.load(f)
+            if model_name not in saved_data or benchmark not in saved_data.get(model_name, {}).get("benchmarks", {}):
+                if benchmark in results["benchmarks"]:
+                    print(f"    CHECKPOINT FAIL: {benchmark} not saved to file, retrying...", flush=True)
+                    with open(checkpoint_file, "w") as f: json.dump(all_results, f, default=str)
+
+        except psycopg2.OperationalError as e:
+            print(f"    DB ERROR: {benchmark} - {e}", flush=True)
+            failed_benchmarks.append(benchmark)
             try: conn.close()
             except: pass
             conn = psycopg2.connect(**DB_CONFIG); model_id, _ = get_model_id(conn, model_name); continue
         except Exception as e:
-            print(f"    ERROR: {e}")
+            print(f"    ERROR: {benchmark} - {e}", flush=True)
+            failed_benchmarks.append(benchmark)
             try: conn.rollback()
             except: pass
             continue
+
     conn.close()
+
+    # Final summary
+    print(f"\n  SUMMARY for {model_name}:")
+    print(f"    Processed: {processed_count}, Verified: {verified_count}, Failed: {len(failed_benchmarks)}")
+    if failed_benchmarks:
+        print(f"    Failed benchmarks: {failed_benchmarks[:10]}{'...' if len(failed_benchmarks) > 10 else ''}")
+
     return results
 
 
