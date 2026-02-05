@@ -634,7 +634,7 @@ def compute_linear_probe_accuracy(
         if n_folds < 2:
             return 0.5
         
-        clf = LogisticRegression(max_iter=1000, solver='lbfgs')
+        clf = LogisticRegression( solver='lbfgs')
         scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
         return float(scores.mean())
     except Exception as e:

@@ -229,7 +229,6 @@ def batch_create_raw_activations(activations_data: list):
                 conn = get_conn()
                 cur = conn.cursor()
                 # Set statement timeout to 60 seconds to prevent infinite hangs
-                cur.execute("SET statement_timeout = '60s'")
                 from psycopg2.extras import execute_values
                 execute_values(cur, '''
                     INSERT INTO "RawActivation"

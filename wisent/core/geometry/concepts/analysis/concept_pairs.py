@@ -38,7 +38,7 @@ def compute_concept_linear_separability(
                 if len(X) < 10 or len(np.unique(y)) < 2:
                     continue
 
-                clf = LogisticRegression(max_iter=1000, solver='lbfgs')
+                clf = LogisticRegression( solver='lbfgs')
                 try:
                     n_cv = min(5, min(np.sum(y == 0), np.sum(y == 1)))
                     if n_cv >= 2:

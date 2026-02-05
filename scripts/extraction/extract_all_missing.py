@@ -55,7 +55,6 @@ def get_missing_benchmarks(conn, model_id: int, target_pairs: int = 500) -> list
     Returns list of (set_id, name, pairs_needed) for incomplete benchmarks.
     """
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '300s'")  # 5 minute timeout for complex queries
 
     # Step 1: Get all benchmarks with pair counts (fast query)
     print("  Fetching benchmark pair counts...", flush=True)
@@ -128,7 +127,6 @@ def create_activation(conn, model_id: int, pair_id: int, set_id: int, layer: int
                       activation_vec: torch.Tensor, is_positive: bool, strategy: str):
     """Create Activation record."""
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '120s'")  # 2 minute timeout for inserts
 
     neuron_count = activation_vec.shape[0]
     activation_bytes = hidden_states_to_bytes(activation_vec)
@@ -152,7 +150,6 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
     Only extracts pairs that don't already have activations for this model.
     """
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '300s'")  # 5 minute timeout for complex queries
 
     # Get pairs that DON'T already have activations for this model
     cur.execute('''

@@ -226,7 +226,7 @@ class AdaptiveSteering(SteeringMethod):
         from sklearn.linear_model import LogisticRegression
         X = np.vstack([pos_acts, neg_acts])
         y = np.concatenate([np.ones(len(pos_acts)), np.zeros(len(neg_acts))])
-        self.classifier = LogisticRegression(max_iter=1000)
+        self.classifier = LogisticRegression()
         self.classifier.fit(X, y)
         direction = pos_acts.mean(axis=0) - neg_acts.mean(axis=0)
         self.direction = torch.from_numpy(direction / (np.linalg.norm(direction) + 1e-8)).float()

@@ -74,7 +74,7 @@ caa_vector = caa_vector / (np.linalg.norm(caa_vector) + 1e-10)
 # Classifier vector
 X = np.vstack([pos_acts, neg_acts])
 y = np.array([1] * len(pos_acts) + [0] * len(neg_acts))
-clf = LogisticRegression(max_iter=1000)
+clf = LogisticRegression()
 clf.fit(X, y)
 clf_vector = clf.coef_[0]
 clf_vector = clf_vector / (np.linalg.norm(clf_vector) + 1e-10)

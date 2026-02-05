@@ -108,7 +108,7 @@ def compute_multi_direction_accuracy(
             top_k_directions = Vh[:k]
             X_projected = X_full @ top_k_directions.T
 
-            clf = LogisticRegression(max_iter=1000, solver='lbfgs')
+            clf = LogisticRegression( solver='lbfgs')
             try:
                 scores = cross_val_score(clf, X_projected, y, cv=n_folds_actual, scoring='accuracy')
                 accuracy_by_k[k] = float(scores.mean())

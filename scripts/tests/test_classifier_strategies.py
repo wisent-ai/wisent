@@ -272,7 +272,7 @@ def test_combination(model, tokenizer, pairs, layer, train_strategy, inference_s
     X_train = np.array(X_train)
     y_train = np.array(y_train)
     
-    clf = LogisticRegression(max_iter=1000, random_state=42)
+    clf = LogisticRegression( random_state=42)
     clf.fit(X_train, y_train)
     
     # INFERENCE: test using inference_strategy

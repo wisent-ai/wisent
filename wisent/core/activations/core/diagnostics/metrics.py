@@ -14,6 +14,8 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import make_pipeline
 
 
 def compute_pairwise_consistency(directions: torch.Tensor) -> Tuple[float, float]:
@@ -52,10 +54,10 @@ def compute_linear_nonlinear_accuracy(
     X = torch.cat([pos, neg], dim=0).cpu().float().numpy()
     y = np.array([1] * len(pos) + [0] * len(neg))
 
-    linear = LogisticRegression(max_iter=1000, solver="lbfgs")
+    linear = make_pipeline(StandardScaler(), LogisticRegression(solver="lbfgs"))
     linear_scores = cross_val_score(linear, X, y, cv=cv_folds, scoring="accuracy")
 
-    mlp = MLPClassifier(hidden_layer_sizes=(64,), max_iter=500, early_stopping=True)
+    mlp = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(64,), early_stopping=True))
     mlp_scores = cross_val_score(mlp, X, y, cv=cv_folds, scoring="accuracy")
 
     return linear_scores.mean(), mlp_scores.mean()

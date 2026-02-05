@@ -425,13 +425,13 @@ def analyze_concept_interference(
     X_test = np.vstack([pos_b[:n_b], neg_b[:n_b]])
     y_test = np.array([1] * n_b + [0] * n_b)
     
-    probe = LogisticRegression(max_iter=1000)
+    probe = LogisticRegression()
     probe.fit(X_train, y_train)
     
     cross_accuracy_a_to_b = float(probe.score(X_test, y_test))
     
     # Train on B, test on A
-    probe_b = LogisticRegression(max_iter=1000)
+    probe_b = LogisticRegression()
     probe_b.fit(X_test, y_test)
     cross_accuracy_b_to_a = float(probe_b.score(X_train, y_train))
     

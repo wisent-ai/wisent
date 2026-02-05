@@ -142,7 +142,7 @@ def compute_token_position_metrics(
         y = np.array([1] * n + [0] * n)
 
         try:
-            clf = LogisticRegression(max_iter=500, random_state=42)
+            clf = LogisticRegression( random_state=42)
             clf.fit(X, y)
             accuracy = clf.score(X, y)
         except:

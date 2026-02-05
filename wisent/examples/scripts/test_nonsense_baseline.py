@@ -111,7 +111,7 @@ def compute_linear_separability(pos_acts: np.ndarray, neg_acts: np.ndarray) -> f
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    svm = LinearSVC(max_iter=1000, dual=False)
+    svm = LinearSVC( dual=False)
     svm.fit(X_scaled, y)
     
     return svm.score(X_scaled, y)

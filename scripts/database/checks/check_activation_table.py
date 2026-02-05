@@ -10,7 +10,6 @@ conn = psycopg2.connect(
     password='BsKuEnPFLCFurN4a'
 )
 cur = conn.cursor()
-cur.execute("SET statement_timeout = '600s'")
 
 # Get models
 cur.execute('SELECT id, "huggingFaceId" FROM "Model" ORDER BY id')

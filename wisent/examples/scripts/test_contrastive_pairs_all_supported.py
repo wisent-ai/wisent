@@ -152,13 +152,9 @@ def test_all_benchmarks(timeout_per_task: int = 30, limit: int = 2):
     }
     
     for i, benchmark in enumerate(benchmarks):
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(timeout_per_task)
-        
         try:
             pairs = build_contrastive_pairs(benchmark, limit=limit)
-            signal.alarm(0)
-            
+
             if pairs and len(pairs) > 0:
                 results["ok"] += 1
                 
@@ -179,13 +175,13 @@ def test_all_benchmarks(timeout_per_task: int = 30, limit: int = 2):
                 print(f"[{i+1}/{len(benchmarks)}] FAIL: {benchmark} - no pairs returned")
                 
         except TimeoutError:
-            signal.alarm(0)
+            
             results["timeout"] += 1
             results["benchmarks"][benchmark] = {"status": "timeout"}
             print(f"[{i+1}/{len(benchmarks)}] TIMEOUT: {benchmark}")
             
         except Exception as e:
-            signal.alarm(0)
+            
             results["failed"] += 1
             error_msg = str(e)[:200]
             results["benchmarks"][benchmark] = {"status": "error", "error": error_msg}

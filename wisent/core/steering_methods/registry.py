@@ -207,13 +207,6 @@ HYPERPLANE_DEFINITION = SteeringMethodDefinition(
             cli_flag="--hyperplane-normalize",
         ),
         SteeringMethodParameter(
-            name="max_iter",
-            type=int,
-            default=1000,
-            help="Maximum iterations for logistic regression",
-            cli_flag="--hyperplane-max-iter",
-        ),
-        SteeringMethodParameter(
             name="C",
             type=float,
             default=1.0,

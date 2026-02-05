@@ -14,7 +14,6 @@ conn = psycopg2.connect(**DB_CONFIG)
 conn.autocommit = True
 cur = conn.cursor()
 
-cur.execute("SET statement_timeout = 0")
 
 print("Deleting from Activation table (sets 250, 251)...", flush=True)
 cur.execute('DELETE FROM "Activation" WHERE "contrastivePairSetId" IN (250, 251)')

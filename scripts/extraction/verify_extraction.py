@@ -38,7 +38,6 @@ def main():
     conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
     conn.autocommit = True
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '0'")
 
     if args.create_indexes:
         create_indexes(cur)

@@ -38,20 +38,18 @@ def compute_linear_nonlinear_gap(
     n_samples, n_features = X.shape
     cv = _adaptive_cv(n_samples)
     mlp_hidden = _adaptive_mlp_hidden(n_features)
-    max_iter = max(200, min(1000, n_samples * 2))
 
     # Linear probe (logistic regression)
     # Adaptive regularization: stronger for high-d
     C = n_samples / n_features  # Lower C = more regularization when n_features >> n_samples
     C = max(0.01, min(C, 10.0))
-    linear_clf = LogisticRegression(max_iter=1000, C=C, random_state=42)
+    linear_clf = LogisticRegression(C=C, random_state=42)
     linear_scores = cross_val_score(linear_clf, X, y, cv=cv, scoring="accuracy")
     linear_acc = float(linear_scores.mean())
 
     # Nonlinear probe (MLP)
     mlp_clf = MLPClassifier(
         hidden_layer_sizes=(mlp_hidden,),
-        max_iter=max_iter,
         random_state=42,
         early_stopping=True,
         alpha=1.0 / n_samples,  # Adaptive L2 regularization

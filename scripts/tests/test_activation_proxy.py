@@ -117,7 +117,7 @@ def compute_repscan_metrics(pos: np.ndarray, neg: np.ndarray) -> dict:
     X = np.vstack([pos, neg])
     y = np.array([1] * len(pos) + [0] * len(neg))
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    clf = LogisticRegression(max_iter=1000)
+    clf = LogisticRegression()
     clf.fit(X_train, y_train)
     linear_probe = clf.score(X_test, y_test)
 
@@ -149,7 +149,7 @@ def train_hyperplane(train_pos: np.ndarray, train_neg: np.ndarray) -> np.ndarray
     """Train Hyperplane steering vector (logistic regression weights)."""
     X = np.vstack([train_pos, train_neg])
     y = np.array([1] * len(train_pos) + [0] * len(train_neg))
-    clf = LogisticRegression(max_iter=1000, C=1.0)
+    clf = LogisticRegression( C=1.0)
     clf.fit(X, y)
     vec = clf.coef_[0]
     norm = np.linalg.norm(vec)

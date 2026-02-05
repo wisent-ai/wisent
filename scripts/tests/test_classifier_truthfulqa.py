@@ -83,11 +83,11 @@ for layer in test_layers:
     X, y = X[idx], y[idx]
     
     # Linear probe (logistic regression)
-    lr = LogisticRegression(max_iter=1000, random_state=42)
+    lr = LogisticRegression( random_state=42)
     lr_scores = cross_val_score(lr, X, y, cv=5, scoring='accuracy')
     
     # Non-linear probe (MLP)
-    mlp = MLPClassifier(hidden_layer_sizes=(256, 128), max_iter=500, random_state=42)
+    mlp = MLPClassifier(hidden_layer_sizes=(256, 128),  random_state=42)
     mlp_scores = cross_val_score(mlp, X, y, cv=5, scoring='accuracy')
     
     print(f"\nLayer {layer}:")

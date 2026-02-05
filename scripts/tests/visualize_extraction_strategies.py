@@ -70,7 +70,7 @@ for strategy in STRATEGIES:
     # Linear accuracy
     X = torch.cat([pos_tensor, neg_tensor], dim=0).numpy()
     y = np.array([1] * len(pos_tensor) + [0] * len(neg_tensor))
-    clf = LogisticRegression(max_iter=1000, solver="lbfgs")
+    clf = LogisticRegression( solver="lbfgs")
     clf.fit(X, y)
     linear_acc = clf.score(X, y)
 

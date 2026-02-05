@@ -73,7 +73,7 @@ def select_steering_direction(
         if behavioral_activations is not None and behavioral_labels is not None:
             # Train logistic regression on actual behavioral labels
             from sklearn.linear_model import LogisticRegression
-            clf = LogisticRegression(max_iter=1000, solver='lbfgs')
+            clf = LogisticRegression( solver='lbfgs')
             clf.fit(behavioral_activations, behavioral_labels)
             direction = clf.coef_[0]
             direction = direction / (np.linalg.norm(direction) + 1e-8)

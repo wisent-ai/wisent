@@ -8,7 +8,7 @@ import os
 def execute_generate_pairs_from_task(args):
     """Execute the generate-pairs-from-task command - load and save contrastive pairs from a task."""
     # Expand task if it's a skill or risk name
-    from wisent.core.task_selector import expand_task_if_skill_or_risk
+    from wisent.core.tasks.base.task_selector import expand_task_if_skill_or_risk
     if hasattr(args, 'task_name') and args.task_name:
         args.task_name = expand_task_if_skill_or_risk(args.task_name)
     

@@ -126,7 +126,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
     kmeans_scores = {}
     for k in coarse_k_values:
         try:
-            kmeans = KMeans(n_clusters=k, random_state=42, n_init=3, max_iter=100)
+            kmeans = KMeans(n_clusters=k, random_state=42, n_init=3, )
             labels = kmeans.fit_predict(diff_normalized)
             score = silhouette_score(diff_normalized, labels)
             kmeans_scores[k] = float(score)
@@ -186,7 +186,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
     if not silhouette_scores:
         best_k = max(kmeans_scores, key=kmeans_scores.get)
         # Re-run K-means with best_k to get labels
-        kmeans = KMeans(n_clusters=best_k, random_state=42, n_init=3, max_iter=100)
+        kmeans = KMeans(n_clusters=best_k, random_state=42, n_init=3, )
         best_labels = kmeans.fit_predict(diff_normalized)
         return {
             "best_k": best_k,

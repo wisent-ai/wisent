@@ -444,7 +444,7 @@ def _compute_cv_classification(
         if n_folds < 2:
             return None
         
-        clf = LogisticRegression(max_iter=1000, solver='lbfgs')
+        clf = LogisticRegression( solver='lbfgs')
         scores = cross_val_score(clf, X, y, cv=n_folds, scoring='accuracy')
         return float(scores.mean())
     except ImportError:

@@ -96,8 +96,7 @@ def _knn_pca_accuracy(X: np.ndarray, y: np.ndarray, n_components: int, k: int, c
 
 def _mlp_accuracy(X: np.ndarray, y: np.ndarray, hidden: int, cv: int) -> float:
     """MLP probe cross-validated accuracy."""
-    max_iter = max(200, min(1000, len(y) * 2))
-    clf = MLPClassifier(hidden_layer_sizes=(hidden,), max_iter=max_iter, random_state=42, early_stopping=True)
+    clf = MLPClassifier(hidden_layer_sizes=(hidden,), random_state=42, early_stopping=True)
     scores = cross_val_score(clf, X, y, cv=cv, scoring="accuracy")
     return float(scores.mean())
 

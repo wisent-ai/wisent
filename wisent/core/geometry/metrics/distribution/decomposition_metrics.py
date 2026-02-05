@@ -195,7 +195,7 @@ def chow_test_analog(
         X = np.vstack([pos_np[mask], neg_np[mask]])
         y = np.array([1] * mask.sum() + [0] * mask.sum())
 
-        model = LogisticRegression(max_iter=1000, solver="lbfgs", random_state=42)
+        model = LogisticRegression( solver="lbfgs", random_state=42)
         model.fit(X, y)
 
         coef = model.coef_[0]

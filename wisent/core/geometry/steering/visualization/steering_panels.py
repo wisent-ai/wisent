@@ -162,7 +162,7 @@ def plot_pca_with_boundary(ax, pos, neg, base, steered, base_evals, steered_eval
 
     X_2d = np.vstack([pos_2d, neg_2d])
     y_2d = np.concatenate([np.ones(len(pos_2d)), np.zeros(len(neg_2d))])
-    clf = LogisticRegression(random_state=42, max_iter=1000)
+    clf = LogisticRegression(random_state=42, )
     clf.fit(X_2d, y_2d)
 
     x_min, x_max = X_2d[:, 0].min() - 1, X_2d[:, 0].max() + 1

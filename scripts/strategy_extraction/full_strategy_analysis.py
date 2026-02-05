@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Full extraction strategy analysis with comprehensive diagnostics."""
-import argparse, json, struct, os
+import argparse, json, struct, os, sys
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from collections import defaultdict
 from typing import Dict, List, Optional
 import numpy as np
@@ -11,10 +12,11 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from wisent.core.activations.core.diagnostics.metrics import (
     compute_pairwise_consistency, compute_linear_nonlinear_accuracy, compute_steering_quality)
+from database import get_available_layers, compute_layer_aggregates
 
 DB_CONFIG = {"host": "aws-0-eu-west-2.pooler.supabase.com", "port": 5432,
     "database": "postgres", "user": "postgres.rbqjqnouluslojmmnuqi",
-    "password": "BsKuEnPFLCFurN4a", "options": "-c statement_timeout=120000"}
+    "password": "BsKuEnPFLCFurN4a"}
 MODELS = ["meta-llama/Llama-3.2-1B-Instruct", "Qwen/Qwen3-8B",
     "meta-llama/Llama-2-7b-chat-hf", "openai/gpt-oss-20b"]
 CATEGORIES = {"truthfulness": ["truthfulqa", "toxigen"],
@@ -102,62 +104,56 @@ def compute_full_metrics(pos: np.ndarray, neg: np.ndarray) -> Dict:
         "effect_size": effect_size}
 
 
-def analyze_model(model_name: str, benchmarks: List[str], checkpoint_file: str, all_results: Dict) -> Dict:
+def analyze_model(model_name: str, benchmarks: List[str], checkpoint_file: str, all_results: Dict, multi_layer: bool = False) -> Dict:
     conn = psycopg2.connect(**DB_CONFIG)
     model_id, num_layers = get_model_id(conn, model_name)
     if model_id is None:
-        print(f"  Model {model_name} not found")
-        conn.close()
-        return {}
-
-    layer = num_layers // 2
-    # Load existing partial results for this model if any
+        print(f"  Model {model_name} not found"); conn.close(); return {}
     existing = all_results.get(model_name, {})
-    results = {"benchmarks": existing.get("benchmarks", {}),
-               "strategies": defaultdict(lambda: defaultdict(list))}
-    # Rebuild strategies from existing benchmarks
+    results = {"benchmarks": existing.get("benchmarks", {}), "strategies": defaultdict(lambda: defaultdict(list)), "num_layers": num_layers}
     for bench, bdata in results["benchmarks"].items():
         for strat, metrics in bdata.get("strategies", {}).items():
             for k, v in metrics.items():
-                results["strategies"][strat][k].append(float(v) if isinstance(v, str) else v)
-
+                if not k.startswith("per_layer"): results["strategies"][strat][k].append(float(v) if isinstance(v, str) else v)
     for i, benchmark in enumerate(benchmarks):
-        if benchmark in results["benchmarks"]:
-            continue  # Already done
-        if (i + 1) % 20 == 0:
-            print(f"    {i+1}/{len(benchmarks)} benchmarks...", flush=True)
+        if benchmark in results["benchmarks"]: continue
+        if (i + 1) % 20 == 0: print(f"    {i+1}/{len(benchmarks)} benchmarks...", flush=True)
         try:
-            acts = load_benchmark_activations(conn, model_id, layer, benchmark)
-            if not acts:
-                continue
-            bench_results = {}
-            for strategy, data in acts.items():
-                if len(data["pos"]) < 10:
-                    continue
-                metrics = compute_full_metrics(data["pos"], data["neg"])
-                bench_results[strategy] = metrics
-                for k, v in metrics.items():
-                    results["strategies"][strategy][k].append(v)
-            results["benchmarks"][benchmark] = {
-                "category": get_benchmark_category(benchmark), "strategies": bench_results}
-            # Checkpoint after each benchmark
+            if multi_layer:
+                layers = get_available_layers(conn, model_id, benchmark)
+                if not layers: continue
+                strat_per_layer = defaultdict(dict)
+                for layer in layers:
+                    acts = load_benchmark_activations(conn, model_id, layer, benchmark)
+                    for strategy, data in acts.items():
+                        if len(data["pos"]) >= 10: strat_per_layer[strategy][layer] = compute_full_metrics(data["pos"], data["neg"])
+                bench_results = {}
+                for strategy, per_layer in strat_per_layer.items():
+                    if per_layer:
+                        metrics = compute_layer_aggregates(per_layer)
+                        bench_results[strategy] = metrics
+                        for k, v in metrics.items():
+                            if k not in ["best_layer", "total_layers"]: results["strategies"][strategy][k].append(v)
+            else:
+                acts = load_benchmark_activations(conn, model_id, num_layers // 2, benchmark)
+                if not acts: continue
+                bench_results = {}
+                for strategy, data in acts.items():
+                    if len(data["pos"]) >= 10:
+                        metrics = compute_full_metrics(data["pos"], data["neg"])
+                        bench_results[strategy] = metrics
+                        for k, v in metrics.items(): results["strategies"][strategy][k].append(v)
+            results["benchmarks"][benchmark] = {"category": get_benchmark_category(benchmark), "strategies": bench_results}
             all_results[model_name] = results
-            with open(checkpoint_file, "w") as f:
-                json.dump(all_results, f, default=str)
+            with open(checkpoint_file, "w") as f: json.dump(all_results, f, default=str)
         except psycopg2.OperationalError:
-            # Reconnect on connection errors
-            try:
-                conn.close()
-            except:
-                pass
-            conn = psycopg2.connect(**DB_CONFIG)
-            model_id, _ = get_model_id(conn, model_name)
-            continue
+            try: conn.close()
+            except: pass
+            conn = psycopg2.connect(**DB_CONFIG); model_id, _ = get_model_id(conn, model_name); continue
         except Exception as e:
-            try:
-                conn.rollback()
-            except:
-                pass
+            print(f"    ERROR: {e}")
+            try: conn.rollback()
+            except: pass
             continue
     conn.close()
     return results
@@ -171,7 +167,7 @@ def aggregate_results(all_results: Dict) -> Dict:
     for model, data in all_results.items():
         model_metrics = {}
         for strategy, metrics in data.get("strategies", {}).items():
-            if metrics.get("consistency"):
+            if metrics:  # Just check if there are any metrics
                 model_metrics[strategy] = {k: np.mean(v) for k, v in metrics.items() if v}
                 for k, vals in metrics.items():
                     agg["by_strategy"][strategy][k].extend(vals)
@@ -185,7 +181,7 @@ def aggregate_results(all_results: Dict) -> Dict:
 
     summary = {"strategies": {}, "categories": {}, "models": agg["by_model"]}
     for strat, metrics in agg["by_strategy"].items():
-        if metrics.get("consistency"):
+        if metrics:  # Just check if there are any metrics
             summary["strategies"][strat] = {
                 k: {"mean": float(np.mean(v)), "std": float(np.std(v))}
                 for k, v in metrics.items() if v}
@@ -193,7 +189,7 @@ def aggregate_results(all_results: Dict) -> Dict:
     for cat, strats in agg["by_category"].items():
         summary["categories"][cat] = {}
         for strat, metrics in strats.items():
-            if metrics.get("consistency"):
+            if metrics:  # Just check if there are any metrics
                 summary["categories"][cat][strat] = {
                     k: float(np.mean(v)) for k, v in metrics.items() if v}
 
@@ -219,26 +215,42 @@ def plot_results(summary: Dict, output_dir: str):
 
 def print_summary(summary: Dict):
     print("\n" + "=" * 80 + "\nEXTRACTION STRATEGY ANALYSIS\n" + "=" * 80)
-    if not summary["strategies"]:
-        print("No data collected"); return
-    print(f"\n{'Strategy':<20} {'LinAcc':>8} {'Consist':>8} {'SteerAcc':>9}\n" + "-" * 50)
-    for strat, m in sorted(summary["strategies"].items(), key=lambda x: x[1].get("consistency", {}).get("mean", 0), reverse=True):
-        print(f"  {strat:<18} {m.get('linear_acc', {}).get('mean', 0):>8.3f} {m.get('consistency', {}).get('mean', 0):>8.3f} {m.get('steer_acc', {}).get('mean', 0):>9.3f}")
+    if not summary["strategies"]: print("No data collected"); return
+    sample = next(iter(summary["strategies"].values()), {})
+    if "best_linear_acc" in sample:  # Multi-layer mode
+        print("\nSingle-layer methods (best layer):")
+        print(f"{'Strategy':<15} {'LinAcc':>8} {'Consist':>8} {'EffSize':>8}")
+        for strat, m in sorted(summary["strategies"].items(), key=lambda x: x[1].get("best_linear_acc", {}).get("mean", 0), reverse=True):
+            print(f"  {strat:<13} {m.get('best_linear_acc', {}).get('mean', 0):>8.3f} {m.get('best_consistency', {}).get('mean', 0):>8.3f} {m.get('best_effect_size', {}).get('mean', 0):>8.3f}")
+        print("\nMulti-layer methods (mean across layers):")
+        print(f"{'Strategy':<15} {'LinAcc':>8} {'Consist':>8} {'Breadth':>8}")
+        for strat, m in sorted(summary["strategies"].items(), key=lambda x: x[1].get("mean_linear_acc", {}).get("mean", 0), reverse=True):
+            print(f"  {strat:<13} {m.get('mean_linear_acc', {}).get('mean', 0):>8.3f} {m.get('mean_consistency', {}).get('mean', 0):>8.3f} {m.get('signal_breadth', {}).get('mean', 0):>8.1f}")
+    else:
+        print(f"\n{'Strategy':<15} {'LinAcc':>8} {'Consist':>8} {'EffSize':>8}")
+        for strat, m in sorted(summary["strategies"].items(), key=lambda x: x[1].get("linear_acc", {}).get("mean", 0), reverse=True):
+            print(f"  {strat:<13} {m.get('linear_acc', {}).get('mean', 0):>8.3f} {m.get('consistency', {}).get('mean', 0):>8.3f} {m.get('effect_size', {}).get('mean', 0):>8.3f}")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Full extraction strategy analysis")
     parser.add_argument("--output-dir", default="strategy_analysis_results")
     parser.add_argument("--models", nargs="*", default=None, help="Models to analyze")
+    parser.add_argument("--multi-layer", action="store_true", help="Analyze ALL layers (not just middle)")
+    parser.add_argument("--benchmark", help="Analyze only this benchmark")
     args = parser.parse_args()
 
     models = args.models if args.models else MODELS
+    if args.multi_layer: print("Multi-layer mode: analyzing ALL layers")
 
     print("Connecting to database...")
     conn = psycopg2.connect(**DB_CONFIG)
-    print("Getting benchmark list...")
-    benchmarks = get_benchmarks(conn)
-    print(f"Found {len(benchmarks)} benchmarks")
+    if args.benchmark:
+        benchmarks = [args.benchmark]
+        print(f"Analyzing single benchmark: {args.benchmark}")
+    else:
+        benchmarks = get_benchmarks(conn)
+        print(f"Found {len(benchmarks)} benchmarks")
     conn.close()
 
     checkpoint_file = os.path.join(args.output_dir, "checkpoint.json")
@@ -254,7 +266,7 @@ def main():
             print(f"\nSkipping {model} (already done)")
             continue
         print(f"\nAnalyzing {model}... ({done_benchmarks}/{len(benchmarks)} done)")
-        all_results[model] = analyze_model(model, benchmarks, checkpoint_file, all_results)
+        all_results[model] = analyze_model(model, benchmarks, checkpoint_file, all_results, args.multi_layer)
 
     print("\nAggregating results...")
     summary = aggregate_results(all_results)
