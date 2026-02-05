@@ -77,7 +77,7 @@ def find_optimal_layer_per_concept(
             X = np.vstack([pos_concept, neg_concept])
             y = np.array([1] * len(pos_concept) + [0] * len(neg_concept))
 
-            clf = LogisticRegression(max_iter=500, solver='lbfgs', C=1.0)
+            clf = LogisticRegression( solver='lbfgs', C=1.0)
             try:
                 n_cv = min(5, min(np.sum(y == 0), np.sum(y == 1)))
                 if n_cv >= 2:

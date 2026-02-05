@@ -317,7 +317,7 @@ def compute_cv_variance(diff_vectors: np.ndarray, n_folds: int = 5) -> Dict:
     labels = (projections > np.median(projections)).astype(int)
     
     # Cross-validate a linear classifier
-    clf = LogisticRegression(random_state=42, max_iter=1000)
+    clf = LogisticRegression(random_state=42, )
     scores = cross_val_score(clf, diff_vectors, labels, cv=n_folds)
     
     return {

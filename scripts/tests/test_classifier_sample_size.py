@@ -134,7 +134,7 @@ def main():
             y_train = y_train_pool[sample_indices]
             
             # Train classifier
-            clf = LogisticRegression(max_iter=1000, random_state=42)
+            clf = LogisticRegression( random_state=42)
             clf.fit(X_train, y_train)
             
             # Test

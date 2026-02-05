@@ -22,13 +22,12 @@ def hidden_states_to_bytes(hidden_states: torch.Tensor) -> bytes:
 
 
 def get_db_connection():
-    """Get database connection with timeouts."""
+    """Get database connection."""
     db_url = DATABASE_URL
     if "pooler.supabase.com:6543" in db_url:
         db_url = db_url.replace(":6543", ":5432")
     conn = psycopg2.connect(
         db_url,
-        connect_timeout=30,
         keepalives=1,
         keepalives_idle=30,
         keepalives_interval=10,
@@ -48,7 +47,6 @@ def get_incomplete_benchmarks(conn, model_id: int) -> list:
     Returns list of (set_id, name, incomplete_pairs_count).
     """
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '0'")
 
     cur.execute('''
         WITH benchmark_totals AS (
@@ -99,7 +97,6 @@ def get_pairs_needing_strategies(conn, model_id: int, set_id: int, limit: int = 
     or they have partial extraction (1-6 strategies).
     """
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '0'")
 
     cur.execute('''
         WITH pairs_with_complete_strategies AS (
@@ -134,7 +131,6 @@ def create_activations_batch(conn, records: list):
         return
 
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '0'")
 
     # Convert all activation tensors to bytes
     values = []
@@ -169,7 +165,6 @@ def create_activation(conn, model_id: int, pair_id: int, set_id: int, layer: int
                       activation_vec: torch.Tensor, is_positive: bool, strategy: str):
     """Create single Activation record (legacy, use create_activations_batch for better perf)."""
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '0'")
 
     neuron_count = activation_vec.shape[0]
     activation_bytes = hidden_states_to_bytes(activation_vec)
@@ -206,3 +201,49 @@ def get_benchmark_id(conn, benchmark_name: str) -> int:
     if not result:
         raise ValueError(f"Benchmark {benchmark_name} not found in database")
     return result[0]
+
+
+def get_available_layers(conn, model_id: int, benchmark: str) -> list:
+    """Get list of layers that have activation data for a model/benchmark."""
+    cur = conn.cursor()
+    cur.execute('''
+        SELECT DISTINCT a.layer
+        FROM "Activation" a
+        JOIN "ContrastivePairSet" cps ON a."contrastivePairSetId" = cps.id
+        WHERE a."modelId" = %s AND cps.name = %s
+        ORDER BY a.layer
+    ''', (model_id, benchmark))
+    layers = [row[0] for row in cur.fetchall()]
+    cur.close()
+    return layers
+
+
+def compute_layer_aggregates(per_layer_metrics: dict) -> dict:
+    """Compute metrics for both single-layer and multi-layer steering methods.
+
+    Returns:
+        - best_layer, best_* metrics (for single-layer methods)
+        - mean_* metrics, signal_breadth (for multi-layer methods)
+    """
+    if not per_layer_metrics:
+        return {}
+
+    # Find best layer by linear_acc
+    best_layer = max(per_layer_metrics.keys(), key=lambda l: per_layer_metrics[l].get("linear_acc", 0))
+    result = {"best_layer": best_layer}
+
+    # Best layer metrics (for single-layer methods)
+    for k, v in per_layer_metrics[best_layer].items():
+        result[f"best_{k}"] = v
+
+    # Mean metrics across layers (for multi-layer methods)
+    metric_names = list(per_layer_metrics[best_layer].keys())
+    for name in metric_names:
+        values = [m.get(name, 0) for m in per_layer_metrics.values()]
+        result[f"mean_{name}"] = np.mean(values)
+
+    # Signal breadth: layers with linear_acc > 0.6
+    result["signal_breadth"] = sum(1 for m in per_layer_metrics.values() if m.get("linear_acc", 0) > 0.6)
+    result["total_layers"] = len(per_layer_metrics)
+
+    return result

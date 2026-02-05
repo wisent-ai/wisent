@@ -302,39 +302,8 @@ def task_wrapper(func: Callable[..., Any], kwargs: T_Dict[str, Any]) -> Any:
 def run_with_timeout(
     func: Callable[..., Any], kwargs: T_Dict[str, Any], timeout: int
 ) -> Any:
-    """This seems slow."""
-    if os.name == "posix":  # For Unix-based systems
-
-        def timeout_handler(signum: int, frame: Any) -> None:
-            raise TimeoutError()
-
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(timeout)
-        try:
-            result: Any = func(**kwargs)
-            signal.alarm(0)  # Cancel the alarm
-            return result
-        except TimeoutError:
-            raise
-        except Exception:
-            raise
-    else:  # For Windows and other systems
-        results: List[Any] = [None]
-
-        def target() -> None:
-            try:
-                results[0] = func(**kwargs)
-            except Exception as e:
-                results[0] = e
-
-        thread: threading.Thread = threading.Thread(target=target)
-        thread.start()
-        thread.join(timeout)
-        if thread.is_alive():
-            raise TimeoutError()
-        if isinstance(results[0], Exception):
-            raise results[0]
-        return results[0]
+    """Run function (timeout parameter ignored)."""
+    return func(**kwargs)
 
 
 def latex2sympy_fix(s: str) -> Expr:

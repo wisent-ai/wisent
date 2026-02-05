@@ -200,7 +200,6 @@ def _create_simple_steering_object(
         from wisent.core.steering_methods.methods.hyperplane import HyperplaneMethod
         method = HyperplaneMethod(
             normalize=getattr(args, 'normalize', True),
-            max_iter=getattr(args, 'hyperplane_max_iter', 1000),
             C=getattr(args, 'hyperplane_C', 1.0),
         )
         obj_class = HyperplaneSteeringObject

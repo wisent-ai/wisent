@@ -34,7 +34,6 @@ def get_db_connection():
     """Create database connection with no statement timeout."""
     conn = psycopg2.connect(**DB_CONFIG)
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = 0")  # Disable server-side timeout
     cur.close()
     conn.commit()
     return conn

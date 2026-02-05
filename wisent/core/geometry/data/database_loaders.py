@@ -24,7 +24,6 @@ def _get_db_connection(database_url: Optional[str] = None):
 
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
-    cur.execute("SET statement_timeout = '600s'")  # 10 minutes for large queries
     cur.close()
     return conn
 

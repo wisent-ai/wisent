@@ -242,7 +242,7 @@ def compute_signal_metrics(pos_acts, neg_acts, n_subsets=5):
     
     # 4. MLP classifier (nonlinear)
     if len(pos_np) >= 10:
-        mlp = MLPClassifier(hidden_layer_sizes=(64,), max_iter=500, random_state=42)
+        mlp = MLPClassifier(hidden_layer_sizes=(64,),  random_state=42)
         try:
             scores = cross_val_score(mlp, all_acts, labels, cv=min(5, len(pos_np) // 2))
             results["mlp_accuracy"] = np.mean(scores)

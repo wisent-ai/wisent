@@ -69,7 +69,7 @@ def compute_noise_baseline_comparison(
     X = np.vstack([pos, neg])
     y = np.array([1] * n + [0] * n)
     try:
-        clf = LogisticRegression(max_iter=500, random_state=42)
+        clf = LogisticRegression( random_state=42)
         clf.fit(X, y)
         actual_linear_probe = float(clf.score(X, y))
     except:
@@ -124,7 +124,7 @@ def compute_noise_baseline_comparison(
         # Noise linear probe
         noise_X = np.vstack([noise_pos, noise_neg])
         try:
-            noise_clf = LogisticRegression(max_iter=500, random_state=42+i)
+            noise_clf = LogisticRegression( random_state=42+i)
             noise_clf.fit(noise_X, y)
             noise_metrics['linear_probe'].append(float(noise_clf.score(noise_X, y)))
         except:

@@ -212,7 +212,6 @@ def batch_create_raw_activations(activations_data: list):
             try:
                 conn = get_conn()
                 cur = conn.cursor()
-                cur.execute("SET statement_timeout = '60s'")
                 execute_values(cur, '''
                     INSERT INTO "RawActivation"
                     ("modelId", "contrastivePairId", "contrastivePairSetId", "layer", "seqLen", "hiddenDim", "promptLen", "hiddenStates", "answerText", "isPositive", "promptFormat", "createdAt")
