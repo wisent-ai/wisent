@@ -12,6 +12,14 @@ from .multi_direction import project_component_multi_direction, project_weights_
 from .hooks import TITANRuntimeHooks, PULSERuntimeHooks
 from .hooks.titan import project_weights_titan
 from .hooks.pulse import apply_titan_steering
+from .null_space import (
+    PreservedKeyMatrix,
+    compute_null_space_projector,
+    project_delta_into_null_space,
+    project_component_null_space,
+    project_weights_null_space,
+    bidirectional_projection_null_space,
+)
 
 __all__ = [
     "orthogonalize_direction",
@@ -28,4 +36,10 @@ __all__ = [
     "PULSERuntimeHooks",
     "project_weights_titan",
     "apply_titan_steering",
+    "PreservedKeyMatrix",
+    "compute_null_space_projector",
+    "project_delta_into_null_space",
+    "project_component_null_space",
+    "project_weights_null_space",
+    "bidirectional_projection_null_space",
 ]

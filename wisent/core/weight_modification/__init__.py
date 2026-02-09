@@ -116,6 +116,14 @@ from wisent.core.weight_modification.multi.multi_concept import (
     compute_interference_matrix,
     bidirectional_projection,
 )
+from wisent.core.weight_modification.directional.null_space import (
+    PreservedKeyMatrix,
+    compute_null_space_projector,
+    project_delta_into_null_space,
+    project_component_null_space,
+    project_weights_null_space,
+    bidirectional_projection_null_space,
+)
 
 __all__ = [
     # Norm-Preserving Biprojected Directional Modification (RECOMMENDED)
@@ -173,4 +181,11 @@ __all__ = [
     "orthogonalize_concept_directions",
     "compute_interference_matrix",
     "bidirectional_projection",
+    # Null-space constrained modification (AlphaEdit-style)
+    "PreservedKeyMatrix",
+    "compute_null_space_projector",
+    "project_delta_into_null_space",
+    "project_component_null_space",
+    "project_weights_null_space",
+    "bidirectional_projection_null_space",
 ]
