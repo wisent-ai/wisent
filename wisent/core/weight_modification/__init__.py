@@ -5,7 +5,7 @@ This module provides methods to permanently modify model weights based on
 steering vectors computed from contrastive pairs. Unlike temporary activation
 steering (hooks), these modifications are baked into the model weights.
 
-Three approaches:
+Four approaches:
 
 1. **Norm-Preserving Biprojected Directional Modification** (RECOMMENDED):
    - Decomposes weights into magnitude and direction
@@ -24,6 +24,12 @@ Three approaches:
    - Adds bias toward steering direction in weights
    - More conservative, preserves capabilities better
    - Equivalent to "pre-computing" the steering
+
+4. **Null-Space Constrained Editing** (AlphaEdit-style):
+   - P_null = I - V diag(S²/(S²+ε)) Vᵀ via SVD
+   - Projects each weight delta into the null space of preserved keys
+   - Provably preserves activations on protected inputs
+   - Best for multi-concept editing with minimal interference
 
 All approaches allow exporting modified models that no longer need
 runtime hooks or steering vectors.
