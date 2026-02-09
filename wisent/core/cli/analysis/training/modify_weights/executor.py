@@ -1,14 +1,10 @@
 """Weight modification execution for different methods."""
-
 from __future__ import annotations
 
-import json
-import sys
-import time
+import json, sys, time
 from typing import Dict, Optional, List, Any
 
 import torch
-
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.weight_modification import (
     project_weights, project_with_kernel,
@@ -206,7 +202,7 @@ def execute_guided_modification(args, wisent_model, model, tokenizer):
 
 def execute_multi_concept_modification(args, wisent_model, model, tokenizer, base_steering_vectors):
     """Execute multi-concept weight modification."""
-    from wisent.core.weight_modification.multi_concept import (
+    from wisent.core.weight_modification.multi.multi_concept import (
         MultiConceptConfig, ConceptSpec, ConceptAction, run_multi_concept_modification,
     )
     log = bind(_LOG)
@@ -237,7 +233,11 @@ def execute_multi_concept_modification(args, wisent_model, model, tokenizer, bas
 
     config = MultiConceptConfig(
         orthogonalize=not getattr(args, 'no_orthogonalize', False),
-        components=args.components, norm_preserve=not getattr(args, 'no_norm_preserve', False), verbose=args.verbose,
+        components=args.components, norm_preserve=not getattr(args, 'no_norm_preserve', False),
+        use_null_space=getattr(args, 'use_null_space', False),
+        null_space_epsilon=getattr(args, 'null_space_epsilon', 1e-6),
+        null_space_max_rank=getattr(args, 'null_space_max_rank', None),
+        verbose=args.verbose,
     )
 
     result = run_multi_concept_modification(model=model, concepts=concepts, config=config)
