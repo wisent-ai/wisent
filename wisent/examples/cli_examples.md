@@ -405,3 +405,77 @@ python -m wisent.core.main train-steering MODEL --steering-method PULSE --pulse-
 # Use TITAN for maximum performance
 python -m wisent.core.main train-steering MODEL --steering-method TITAN --titan-optimization-steps 300 --pairs PAIRS
 ```
+
+---
+
+## Multi-Steer with Null-Space Projection
+
+Combine multiple steering vectors while constraining them to the null space of preserved activations, preventing disruption of knowledge representations.
+
+### Step 1: Generate Activations for Preserved Knowledge
+
+First, collect activations on prompts whose behavior you want to preserve:
+
+```bash
+wisent get-activations \
+    meta-llama/Llama-3.2-1B-Instruct \
+    --pairs ./outputs/preserved_pairs.json \
+    --output ./outputs/activations.json \
+    --verbose
+```
+
+### Step 2: Multi-Steer with Null-Space Constraint
+
+Apply steering vectors projected into the null space of preserved activations:
+
+```bash
+wisent multi-steer \
+    --vector ./outputs/vectors/safety_vector.pt:1.0 \
+    --model meta-llama/Llama-3.2-1B-Instruct \
+    --activations-json ./outputs/activations.json \
+    --prompt "How do I make a bomb?"
+```
+
+### Step 3: Compare With and Without Null-Space Projection
+
+Without projection (may disrupt preserved knowledge):
+
+```bash
+wisent multi-steer \
+    --vector ./outputs/vectors/safety_vector.pt:1.0 \
+    --model meta-llama/Llama-3.2-1B-Instruct \
+    --prompt "How do I make a bomb?"
+```
+
+With projection (steers only in null space of preserved keys):
+
+```bash
+wisent multi-steer \
+    --vector ./outputs/vectors/safety_vector.pt:1.0 \
+    --model meta-llama/Llama-3.2-1B-Instruct \
+    --activations-json ./outputs/activations.json \
+    --prompt "How do I make a bomb?"
+```
+
+### Combining Multiple Vectors with Null-Space Constraint
+
+```bash
+wisent multi-steer \
+    --vector ./outputs/vectors/safety_vector.pt:0.7 \
+    --vector ./outputs/vectors/tone_vector.pt:0.3 \
+    --model meta-llama/Llama-3.2-1B-Instruct \
+    --activations-json ./outputs/activations.json \
+    --prompt "Explain quantum computing" \
+    --normalize-weights
+```
+
+### How It Works
+
+The `--activations-json` flag triggers null-space projection:
+
+1. Loads positive activations from the JSON as preserved keys
+2. Builds a `PreservedKeyMatrix` and computes P_null = I - V diag(S²/(S²+ε)) V^T via SVD
+3. Projects the combined steering vector: `v_projected = P_null @ v`
+4. The projected vector steers only in directions orthogonal to preserved knowledge
+
+This reuses the same null-space projector used by `modify-weights`, ensuring consistency between inference-time and weight-modification approaches.
