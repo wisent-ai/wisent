@@ -2,6 +2,9 @@
 
 Computes how safely a concept can be edited via null-space constrained
 weight modification without disrupting other behaviors.
+
+Uses a composite editability_score for the verdict to avoid the n << d
+tautology where raw editing capacity (1 - n/d) is always trivially high.
 """
 
 from dataclasses import dataclass, field
@@ -20,30 +23,53 @@ class EditabilityResult:
     steering_survival_ratio: float    # ||P_null @ steering|| / ||steering||
     verdict: str                      # HIGH_CAPACITY / MODERATE_CAPACITY / LOW_CAPACITY
     concept_interference: Optional[Dict[str, float]] = field(default=None)
+    editability_score: float = 0.0    # composite score driving verdict
+    participation_ratio: float = 0.0  # effective rank via PR of singular values
+    warnings: List[str] = field(default_factory=list)
 
 
 def _compute_svd_metrics(
-    pos: torch.Tensor, epsilon: float,
+    pos: torch.Tensor, epsilon: Optional[float] = None,
 ) -> tuple:
-    """Compute SVD and Tikhonov-regularized scale factors.
+    """Compute SVD with adaptive epsilon based on singular value distribution.
+
+    When epsilon is None, uses median(S^2) as the Tikhonov threshold to
+    separate signal directions from noise based on the actual spectrum
+    rather than an arbitrary constant.
 
     Returns:
-        (U, S, V, scale_factors, editing_capacity, effective_preserved_rank)
-        where scale_factors = S^2 / (S^2 + epsilon).
+        (U, S, V, scale, editing_capacity, effective_preserved_rank,
+         participation_ratio, adaptive_epsilon, warnings)
     """
     pos_np = pos.detach().cpu().float().numpy()
+    n, d = pos_np.shape
     U, S, Vt = np.linalg.svd(pos_np, full_matrices=False)
-    V = Vt.T  # (d, k)
+    V = Vt.T
 
     S_sq = S ** 2
-    scale = S_sq / (S_sq + epsilon)
+    sum_s = float(np.sum(S))
+    sum_s_sq = float(np.sum(S_sq))
+    participation_ratio = (sum_s ** 2) / sum_s_sq if sum_s_sq > 0 else 0.0
 
+    if epsilon is None:
+        epsilon = float(np.median(S_sq))
+
+    scale = S_sq / (S_sq + epsilon)
     effective_preserved_rank = float(np.sum(scale))
-    hidden_dim = pos_np.shape[1]
-    editing_capacity = 1.0 - (effective_preserved_rank / hidden_dim)
+    editing_capacity = 1.0 - (effective_preserved_rank / d)
     editing_capacity = float(np.clip(editing_capacity, 0.0, 1.0))
 
-    return U, S, V, scale, editing_capacity, effective_preserved_rank
+    warnings = []
+    ratio = n / d
+    if ratio < 0.5:
+        warnings.append(
+            f"Underdetermined regime: n_samples ({n}) << hidden_dim ({d}), "
+            f"ratio={ratio:.3f}. Raw SVD rank bounded by n_samples. "
+            f"Editing capacity reflects dimensional headroom, not concept quality. "
+            f"Rely on editability_score and steering_survival_ratio instead."
+        )
+
+    return U, S, V, scale, editing_capacity, effective_preserved_rank, participation_ratio, epsilon, warnings
 
 
 def _compute_spectral_decay_rate(S: np.ndarray) -> float:
@@ -92,7 +118,7 @@ def _compute_steering_survival(
 
 def _compute_concept_interference(
     pos: torch.Tensor, neg: torch.Tensor,
-    cluster_labels: List[int], n_concepts: int, epsilon: float,
+    cluster_labels: List[int], n_concepts: int, epsilon: Optional[float] = None,
 ) -> Dict[str, float]:
     """Pairwise concept interference via cross-null-space projection.
 
@@ -101,6 +127,7 @@ def _compute_concept_interference(
     interference(i,j) = 1 - survival(i through j's null space).
 
     High interference means editing concept j would disrupt concept i.
+    Uses per-concept adaptive epsilon when epsilon is None.
     """
     labels = np.array(cluster_labels)
     pos_np = pos.detach().cpu().float().numpy()
@@ -119,7 +146,8 @@ def _compute_concept_interference(
         _, S_c, Vt_c = np.linalg.svd(c_pos, full_matrices=False)
         V_c = Vt_c.T
         S_sq_c = S_c ** 2
-        scale_c = S_sq_c / (S_sq_c + epsilon)
+        eps_c = float(np.median(S_sq_c)) if epsilon is None else epsilon
+        scale_c = S_sq_c / (S_sq_c + eps_c)
         concept_svd[c] = (V_c, scale_c)
 
     interference = {}
@@ -142,18 +170,40 @@ def _compute_concept_interference(
     return interference
 
 
-def _classify_capacity(editing_capacity: float) -> str:
-    """Classify editing capacity into verdict categories."""
-    if editing_capacity >= 0.7:
+def _compute_editability_score(
+    steering_survival: float, spectral_decay_rate: float,
+    participation_ratio: float, n_samples: int,
+) -> float:
+    """Composite editability score incorporating multiple signals.
+
+    Weights:
+    - 50% steering survival: most direct test of editability (does the
+      steering direction survive null-space projection?)
+    - 25% spectral concentration: PR/n closer to 0 means the concept
+      occupies few directions (structured, easier to isolate for editing)
+    - 25% spectral sharpness: steeper decay means representation is
+      more compressible (larger effective null space for safe editing)
+
+    Returns score in [0, 1] where higher = more editable.
+    """
+    ss = float(np.clip(steering_survival, 0.0, 1.0))
+    concentration = 1.0 - min(participation_ratio / max(n_samples, 1), 1.0)
+    sharpness = min(-spectral_decay_rate / 0.05, 1.0) if spectral_decay_rate < 0 else 0.0
+    return 0.5 * ss + 0.25 * concentration + 0.25 * sharpness
+
+
+def _classify_verdict(editability_score: float) -> str:
+    """Classify composite editability score into verdict categories."""
+    if editability_score >= 0.6:
         return "HIGH_CAPACITY"
-    elif editing_capacity >= 0.4:
+    elif editability_score >= 0.35:
         return "MODERATE_CAPACITY"
     return "LOW_CAPACITY"
 
 
 def test_editability(
     pos: torch.Tensor, neg: torch.Tensor,
-    epsilon: float = 1e-6,
+    epsilon: Optional[float] = None,
     cluster_labels: Optional[List[int]] = None,
     n_concepts: int = 1,
 ) -> EditabilityResult:
@@ -163,20 +213,30 @@ def test_editability(
     capacity), how fast singular values decay (spectral decay), and whether
     the mean steering direction survives null-space projection.
 
+    The verdict uses a composite editability_score rather than raw editing
+    capacity, avoiding the n << d tautology where EC = 1 - n/d is always
+    trivially high. When n_samples << hidden_dim, a warning is emitted.
+
     Args:
         pos: Positive activations (n_samples, hidden_dim)
         neg: Negative activations (n_samples, hidden_dim)
-        epsilon: Tikhonov regularization parameter
+        epsilon: Tikhonov regularization parameter. If None, uses adaptive
+                 threshold based on median(S^2).
         cluster_labels: Per-sample concept labels (from decomposition)
         n_concepts: Number of detected concepts
 
     Returns:
         EditabilityResult with all editability metrics.
     """
-    U, S, V, scale, editing_capacity, eff_rank = _compute_svd_metrics(pos, epsilon)
+    U, S, V, scale, editing_capacity, eff_rank, pr, adaptive_eps, warnings = (
+        _compute_svd_metrics(pos, epsilon)
+    )
     decay_rate = _compute_spectral_decay_rate(S)
     survival = _compute_steering_survival(pos, neg, scale, V)
-    verdict = _classify_capacity(editing_capacity)
+
+    n_samples = pos.shape[0]
+    score = _compute_editability_score(survival, decay_rate, pr, n_samples)
+    verdict = _classify_verdict(score)
 
     n_top = min(20, len(S))
     top_sv = [float(s) for s in S[:n_top]]
@@ -184,7 +244,7 @@ def test_editability(
     concept_interference = None
     if cluster_labels is not None and n_concepts > 1:
         concept_interference = _compute_concept_interference(
-            pos, neg, cluster_labels, n_concepts, epsilon,
+            pos, neg, cluster_labels, n_concepts, adaptive_eps,
         )
 
     return EditabilityResult(
@@ -195,4 +255,7 @@ def test_editability(
         steering_survival_ratio=survival,
         verdict=verdict,
         concept_interference=concept_interference,
+        editability_score=score,
+        participation_ratio=pr,
+        warnings=warnings,
     )
