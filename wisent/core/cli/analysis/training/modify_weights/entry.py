@@ -78,21 +78,27 @@ def execute_modify_weights(args):
 
 
 def _execute_null_space_from_activations(args, start_time: float):
-    """Execute null-space weight modification from get-activations JSON."""
-    from wisent.core.geometry.repscan.repscan_with_concepts import load_activations_from_json
+    """Execute null-space weight modification from task or pre-computed activations."""
     from wisent.core.weight_modification.directional.null_space.projector import PreservedKeyMatrix
-
     activations_json = getattr(args, 'activations_json', None)
-    if not activations_json:
-        print("Error: --activations-json is required for --method null-space")
-        sys.exit(1)
-    if args.verbose:
-        print(f"Loading activations from {activations_json}...")
-
-    activations_by_layer, _ = load_activations_from_json(activations_json)
-    steering_vectors = {layer: pos.mean(0) - neg.mean(0) for layer, (pos, neg) in activations_by_layer.items()}
-    preserved_keys = PreservedKeyMatrix()
-    preserved_keys.accumulate({layer: pos for layer, (pos, neg) in activations_by_layer.items()})
+    if activations_json:
+        from wisent.core.geometry.repscan.repscan_with_concepts import load_activations_from_json
+        if args.verbose:
+            print(f"Loading activations from {activations_json}...")
+        activations_by_layer, _ = load_activations_from_json(activations_json)
+        steering_vectors = {
+            layer: pos.mean(0) - neg.mean(0)
+            for layer, (pos, neg) in activations_by_layer.items()
+        }
+        preserved_keys = PreservedKeyMatrix()
+        preserved_keys.accumulate(
+            {layer: pos for layer, (pos, neg) in activations_by_layer.items()}
+        )
+    else:
+        if not getattr(args, 'task', None):
+            print("Error: --task or --activations-json required for --method null-space")
+            sys.exit(1)
+        steering_vectors, preserved_keys = _generate_null_space_data(args)
 
     if args.verbose:
         print(f"Computed {len(steering_vectors)} steering vectors and preserved keys")
@@ -101,6 +107,51 @@ def _execute_null_space_from_activations(args, start_time: float):
     stats = execute_null_space_modification(args, model, tokenizer, steering_vectors, preserved_keys)
     _print_timing(args, start_time)
     _print_summary(args, stats)
+
+
+def _generate_null_space_data(args):
+    """Generate steering vectors and preserved keys from a task."""
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.weight_modification.directional.null_space.projector import PreservedKeyMatrix
+
+    wisent_model = WisentModel(args.model, device=getattr(args, 'device', None))
+    pairs = _generate_pairs(args, wisent_model)
+    if not pairs or len(pairs) < 2:
+        print(f"Error: Could not generate enough pairs from task '{args.task}'")
+        sys.exit(1)
+    if args.verbose:
+        print(f"Generated {len(pairs)} contrastive pairs from task '{args.task}'")
+
+    collector = ActivationCollector(model=wisent_model)
+    all_layers = get_all_layers(wisent_model)
+    if args.verbose:
+        print(f"Collecting activations across {len(all_layers)} layers...")
+
+    pos_acts = {layer: [] for layer in all_layers}
+    neg_acts = {layer: [] for layer in all_layers}
+    for i, pair in enumerate(pairs):
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=all_layers)
+        for layer in all_layers:
+            if layer in enriched.positive_activations:
+                pos_acts[layer].append(enriched.positive_activations[layer])
+            if layer in enriched.negative_activations:
+                neg_acts[layer].append(enriched.negative_activations[layer])
+        if args.verbose and (i + 1) % 10 == 0:
+            print(f"    Collected {i + 1}/{len(pairs)} pairs")
+
+    steering_vectors = {}
+    preserved_keys = PreservedKeyMatrix()
+    for layer in all_layers:
+        if pos_acts[layer] and neg_acts[layer]:
+            pos_stack = torch.stack(pos_acts[layer])
+            neg_stack = torch.stack(neg_acts[layer])
+            steering_vectors[layer] = pos_stack.mean(0) - neg_stack.mean(0)
+            preserved_keys.accumulate({layer: pos_stack})
+
+    if args.verbose:
+        print(f"Built {len(steering_vectors)} steering vectors and preserved keys\n")
+    return steering_vectors, preserved_keys
 
 
 def _load_or_generate_vectors(args, needs_auto_selection: bool) -> Optional[Dict[int, torch.Tensor]]:
