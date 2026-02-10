@@ -166,6 +166,35 @@ class MultiSteering:
 
         return self.combined_vector
 
+    def project_null_space(self, preserved_keys) -> None:
+        """Project combined vector into null space of preserved keys.
+
+        Args:
+            preserved_keys: PreservedKeyMatrix with accumulated keys.
+
+        Raises:
+            MultiSteeringError: If no combined vector or layer is set,
+                or if no preserved keys exist for the target layer.
+        """
+        if self.combined_vector is None:
+            raise MultiSteeringError(
+                "No combined vector. Call combine_vectors() first."
+            )
+        if self.layer is None:
+            raise MultiSteeringError("No layer information available")
+        P_null = preserved_keys.get_projector(self.layer)
+        if P_null is None:
+            raise MultiSteeringError(
+                f"No preserved keys for layer {self.layer}"
+            )
+        original_dtype = self.combined_vector.dtype
+        P_null = P_null.to(self.combined_vector.device)
+        self.combined_vector = (
+            P_null @ self.combined_vector.float()
+        ).to(original_dtype)
+        projected_norm = torch.norm(self.combined_vector).item()
+        print(f"   ✓ Null-space projected vector norm: {projected_norm:.4f}")
+
     def apply_steering_stream(
         self,
         model: WisentModel,
