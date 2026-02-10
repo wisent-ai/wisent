@@ -34,7 +34,7 @@ class RepScanProtocolConfig:
     min_silhouette: Optional[float] = None
     rigorous_geometry: bool = False
     include_editability: bool = True
-    editability_epsilon: float = 1e-6
+    editability_epsilon: Optional[float] = None
 
     def __post_init__(self):
         if self.signal_keys is None:

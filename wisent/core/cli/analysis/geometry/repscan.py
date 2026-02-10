@@ -226,10 +226,12 @@ def execute_repscan(args):
     editability = results.get("editability_analysis")
     if editability:
         print(f"\n--- Editability Analysis ---")
+        print(f"Editability score: {editability.get('editability_score', 0):.3f}  |  Verdict: {editability['verdict']}")
         print(f"Editing capacity: {editability['editing_capacity']:.3f}")
         print(f"Steering survival: {editability['steering_survival_ratio']:.3f}")
-        print(f"Spectral decay: {editability['spectral_decay_rate']:.4f}")
-        print(f"Verdict: {editability['verdict']}")
+        print(f"Spectral decay: {editability['spectral_decay_rate']:.4f}  |  Participation ratio: {editability.get('participation_ratio', 0):.1f}")
+        for warning in editability.get("warnings", []):
+            print(f"  WARNING: {warning}")
 
     # Print concept decomposition
     decomposition = results.get("concept_decomposition")
