@@ -10,6 +10,7 @@ from ..data.database_loaders import load_activations_from_database, load_pair_te
 __all__ = [
     "run_repscan_with_concept_naming",
     "extract_pair_texts_from_enriched_pairs",
+    "load_activations_from_json",
     "load_activations_from_database",
     "load_pair_texts_from_database",
     "load_available_layers_from_database",
@@ -52,8 +53,12 @@ def run_repscan_with_concept_naming(
     neg_concat = torch.cat(neg_list, dim=1)
     n_pairs = len(pos_concat)
 
-    # Always compute full geometry metrics
-    metrics = compute_geometry_metrics(pos_concat, neg_concat, generate_visualizations=generate_visualizations)
+    # Compute full geometry metrics only when non-editability steps are requested
+    needs_full_metrics = steps_to_run - {"editability"}
+    if needs_full_metrics:
+        metrics = compute_geometry_metrics(pos_concat, neg_concat, generate_visualizations=generate_visualizations)
+    else:
+        metrics = {}
 
     results = {
         "n_pairs": n_pairs, "n_layers": n_layers, "layers_used": sorted_layers,
@@ -128,9 +133,24 @@ def run_repscan_with_concept_naming(
         results["recommended_method"] = intervention.recommended_method
         results["recommendation_confidence"] = intervention.confidence
 
-    # Step 5: Editability Analysis
+    # Step 5: Editability Analysis (per-layer, following AlphaEdit methodology)
     if "editability" in steps_to_run:
         from .repscan_editability import test_editability
+        # Per-layer editability profile
+        editability_by_layer = {}
+        for layer in sorted_layers:
+            pos_l, neg_l = activations_by_layer[layer]
+            res_l = test_editability(pos_l, neg_l)
+            editability_by_layer[layer] = {
+                "editability_score": res_l.editability_score,
+                "editing_capacity": res_l.editing_capacity,
+                "steering_survival_ratio": res_l.steering_survival_ratio,
+                "spectral_decay_rate": res_l.spectral_decay_rate,
+                "participation_ratio": res_l.participation_ratio,
+                "verdict": res_l.verdict, "warnings": res_l.warnings,
+            }
+        results["editability_by_layer"] = editability_by_layer
+        # Overall (concatenated) editability
         cluster_labels = decomposition_result.cluster_labels if decomposition_result else None
         n_concepts = decomposition_result.n_concepts if decomposition_result else 1
         editability_result = test_editability(
@@ -150,6 +170,37 @@ def run_repscan_with_concept_naming(
         }
 
     return results
+
+
+def load_activations_from_json(json_path: str) -> Tuple[Dict[int, Tuple[torch.Tensor, torch.Tensor]], Dict[int, Dict[str, str]]]:
+    """Load per-layer activations from get-activations JSON output.
+
+    Returns:
+        (activations_by_layer, pair_texts) where activations_by_layer maps
+        layer_int -> (pos_tensor, neg_tensor) and pair_texts maps pair_index -> texts.
+    """
+    import json
+    with open(json_path, 'r') as f:
+        data = json.load(f)
+    layer_pos: Dict[int, list] = {}
+    layer_neg: Dict[int, list] = {}
+    for pair in data.get("pairs", []):
+        pos_la = pair.get("positive_response", {}).get("layers_activations", {})
+        neg_la = pair.get("negative_response", {}).get("layers_activations", {})
+        for layer_str in pos_la:
+            if layer_str not in neg_la:
+                continue
+            layer = int(layer_str)
+            layer_pos.setdefault(layer, []).append(pos_la[layer_str])
+            layer_neg.setdefault(layer, []).append(neg_la[layer_str])
+    activations_by_layer = {}
+    for layer in layer_pos:
+        activations_by_layer[layer] = (
+            torch.tensor(layer_pos[layer], dtype=torch.float32),
+            torch.tensor(layer_neg[layer], dtype=torch.float32),
+        )
+    pair_texts = extract_pair_texts_from_enriched_pairs(data.get("pairs", []))
+    return activations_by_layer, pair_texts
 
 
 def extract_pair_texts_from_enriched_pairs(enriched_pairs: List[Dict]) -> Dict[int, Dict[str, str]]:
