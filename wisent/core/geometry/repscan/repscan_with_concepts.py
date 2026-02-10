@@ -25,22 +25,22 @@ def run_repscan_with_concept_naming(
     steps: str = "all",
 ) -> Dict[str, Any]:
     """
-    Run RepScan with geometry metrics, 4-step protocol, and concept naming.
+    Run RepScan with geometry metrics, 5-step protocol, and concept naming.
 
     Combines:
     - Full geometry metrics (signal_strength, linear_probe, ICD, etc.)
-    - 4-step protocol (signal test with null, geometry test, decomposition, intervention)
+    - 5-step protocol (signal, geometry, decomposition, intervention, editability)
     - Concept decomposition and LLM naming
 
     Args:
-        steps: 'all' runs everything, or comma-separated subset (e.g., 'signal')
+        steps: 'all' runs everything, or comma-separated subset (e.g., 'signal,editability')
     """
     from .repscan_protocol import test_signal, test_geometry, test_decomposition, select_intervention
     from .concept_detection import detect_concepts_multilayer
 
     # Parse steps
     if steps == "all":
-        steps_to_run = {"signal", "geometry", "decomposition", "intervention"}
+        steps_to_run = {"signal", "geometry", "decomposition", "intervention", "editability"}
     else:
         steps_to_run = {s.strip().lower() for s in steps.split(",")}
 
@@ -128,6 +128,24 @@ def run_repscan_with_concept_naming(
         }
         results["recommended_method"] = intervention.recommended_method
         results["recommendation_confidence"] = intervention.confidence
+
+    # Step 5: Editability Analysis
+    if "editability" in steps_to_run:
+        from .repscan_editability import test_editability
+        cluster_labels = decomposition_result.cluster_labels if decomposition_result else None
+        n_concepts = decomposition_result.n_concepts if decomposition_result else 1
+        editability_result = test_editability(
+            pos_concat, neg_concat, cluster_labels=cluster_labels, n_concepts=n_concepts,
+        )
+        results["editability_analysis"] = {
+            "editing_capacity": editability_result.editing_capacity,
+            "effective_preserved_rank": editability_result.effective_preserved_rank,
+            "singular_values": editability_result.singular_values,
+            "spectral_decay_rate": editability_result.spectral_decay_rate,
+            "steering_survival_ratio": editability_result.steering_survival_ratio,
+            "verdict": editability_result.verdict,
+            "concept_interference": editability_result.concept_interference,
+        }
 
     return results
 

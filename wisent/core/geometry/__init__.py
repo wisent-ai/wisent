@@ -185,6 +185,7 @@ from .repscan.repscan_with_concepts import (
 
 from .repscan.repscan_config import RepScanProtocolConfig
 from .repscan.repscan_protocol import run_repscan_protocol
+from .repscan.repscan_editability import EditabilityResult, test_editability
 
 from .intervention_selection import (
     RigorousInterventionResult,

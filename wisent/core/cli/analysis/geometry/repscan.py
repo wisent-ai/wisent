@@ -218,11 +218,18 @@ def execute_repscan(args):
     # Print key metrics
     metrics = results.get("metrics", {})
     print(f"\n--- Key Metrics (all-layer concatenated) ---")
-    print(f"Signal strength: {metrics.get('signal_strength', 0):.3f}")
-    print(f"Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
-    print(f"MLP probe accuracy: {metrics.get('mlp_probe_accuracy', 0):.3f}")
-    print(f"KNN accuracy: {metrics.get('knn_accuracy', 0):.3f}")
-    print(f"KNN PCA accuracy: {metrics.get('knn_pca_accuracy', 0):.3f}")
+    for name, key in [("Signal strength", "signal_strength"), ("Linear probe", "linear_probe_accuracy"),
+                       ("MLP probe", "mlp_probe_accuracy"), ("KNN", "knn_accuracy"), ("KNN PCA", "knn_pca_accuracy")]:
+        print(f"{name}: {metrics.get(key, 0):.3f}")
+
+    # Print editability analysis
+    editability = results.get("editability_analysis")
+    if editability:
+        print(f"\n--- Editability Analysis ---")
+        print(f"Editing capacity: {editability['editing_capacity']:.3f}")
+        print(f"Steering survival: {editability['steering_survival_ratio']:.3f}")
+        print(f"Spectral decay: {editability['spectral_decay_rate']:.4f}")
+        print(f"Verdict: {editability['verdict']}")
 
     # Print concept decomposition
     decomposition = results.get("concept_decomposition")
@@ -233,21 +240,12 @@ def execute_repscan(args):
 
         for concept in decomposition.get("concepts", []):
             print(f"\nConcept {concept['id']}: {concept.get('name', 'Unnamed')}")
-            print(f"  Pairs: {concept.get('n_pairs', 0)}")
-            print(f"  Silhouette: {concept.get('silhouette_score', 0):.3f}")
+            print(f"  Pairs: {concept.get('n_pairs', 0)}, Silhouette: {concept.get('silhouette_score', 0):.3f}")
             if 'optimal_layer' in concept:
                 print(f"  Optimal layer: {concept['optimal_layer']} (acc: {concept.get('optimal_layer_accuracy', 0):.3f})")
-
-            # Print representative pairs
-            rep_pairs = concept.get("representative_pairs", [])
-            if rep_pairs:
-                print(f"  Representative pairs:")
-                for pair in rep_pairs[:3]:
-                    if isinstance(pair, dict):
-                        prompt = pair.get("prompt", "")[:80]
-                        print(f"    - {prompt}...")
-                    elif isinstance(pair, int):
-                        print(f"    - pair index {pair}")
+            for pair in concept.get("representative_pairs", [])[:3]:
+                label = pair.get("prompt", "")[:80] if isinstance(pair, dict) else f"pair index {pair}"
+                print(f"    - {label}")
 
     # Save visualizations as PNG files
     if args.visualizations and decomposition:

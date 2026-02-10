@@ -79,7 +79,7 @@ def setup_repscan_parser(parser):
         "--steps",
         type=str,
         default="all",
-        help="Protocol steps to run: 'all', 'signal', 'geometry', 'decomposition', 'intervention', or comma-separated (e.g., 'signal,geometry')"
+        help="Protocol steps to run: 'all', 'signal', 'geometry', 'decomposition', 'intervention', 'editability', or comma-separated (e.g., 'signal,editability')"
     )
 
     # Analysis options
