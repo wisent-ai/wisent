@@ -46,3 +46,10 @@ def setup_multi_steer_parser(parser):
         "--save-combined", type=str, default=None, help="Save the combined steering vector to this path"
     )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output showing weight calculations")
+
+    # Null-space projection
+    parser.add_argument(
+        "--activations-json", type=str, default=None,
+        help="Path to get-activations JSON for null-space constrained steering. "
+             "Projects steering vectors into null space of preserved activations."
+    )

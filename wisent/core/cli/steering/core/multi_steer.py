@@ -63,6 +63,25 @@ def execute_multi_steer(args):
         normalize = getattr(args, 'normalize_weights', True)
         multi_steer.combine_vectors(normalize=normalize)
 
+        # Null-space projection if activations JSON provided
+        activations_json = getattr(args, 'activations_json', None)
+        if activations_json is not None:
+            from wisent.core.geometry.repscan.repscan_with_concepts import (
+                load_activations_from_json,
+            )
+            from wisent.core.weight_modification.directional.null_space.projector import (
+                PreservedKeyMatrix,
+            )
+
+            print(f"\n🔒 Applying null-space projection from {activations_json}")
+            activations_by_layer, _ = load_activations_from_json(activations_json)
+            preserved_keys = PreservedKeyMatrix()
+            for layer_idx, (pos_tensor, _neg_tensor) in activations_by_layer.items():
+                preserved_keys.accumulate({layer_idx: pos_tensor})
+            summary = preserved_keys.summary()
+            print(f"   Preserved keys: {summary}")
+            multi_steer.project_null_space(preserved_keys)
+
         # Save combined vector if requested
         if hasattr(args, 'save_combined') and args.save_combined:
             print(f"\n💾 Saving combined vector to '{args.save_combined}'...")
