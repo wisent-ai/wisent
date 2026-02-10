@@ -72,7 +72,7 @@ def execute_train_unified_goodness(args):
     5. Evaluate vector across ALL benchmarks (pooled evaluation)
     """
     # Expand task if it's a skill or risk name
-    from wisent.core.task_selector import expand_task_if_skill_or_risk
+    from wisent.core.tasks.base.task_selector import expand_task_if_skill_or_risk
     if args.task:
         args.task = expand_task_if_skill_or_risk(args.task)
     
