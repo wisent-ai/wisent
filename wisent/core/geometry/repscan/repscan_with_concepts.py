@@ -144,6 +144,9 @@ def run_repscan_with_concept_naming(
             "steering_survival_ratio": editability_result.steering_survival_ratio,
             "verdict": editability_result.verdict,
             "concept_interference": editability_result.concept_interference,
+            "editability_score": editability_result.editability_score,
+            "participation_ratio": editability_result.participation_ratio,
+            "warnings": editability_result.warnings,
         }
 
     return results

@@ -274,6 +274,8 @@ def run_full_protocol(
             "singular_values": edit.singular_values, "spectral_decay_rate": edit.spectral_decay_rate,
             "steering_survival_ratio": edit.steering_survival_ratio, "verdict": edit.verdict,
             "concept_interference": edit.concept_interference,
+            "editability_score": edit.editability_score, "participation_ratio": edit.participation_ratio,
+            "warnings": edit.warnings,
         }
     if dim_diag is not None:
         from dataclasses import asdict
