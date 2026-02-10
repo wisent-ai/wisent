@@ -17,13 +17,13 @@ def execute_repscan(args):
     print(f"{'='*60}")
 
     # Import dependencies
-    from wisent.core.geometry.repscan_with_concepts import (
+    from wisent.core.geometry.repscan.repscan_with_concepts import (
         run_repscan_with_concept_naming,
         load_activations_from_database,
         load_pair_texts_from_database,
         load_available_layers_from_database,
     )
-    from wisent.core.geometry.cache import get_cached_layers
+    from wisent.core.geometry.data.cache import get_cached_layers
     import torch
 
     activations_by_layer = {}
