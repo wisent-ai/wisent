@@ -27,6 +27,7 @@ setup(
         "wisent": [
             "core/evaluators/benchmark_specific/coding/safe_docker/Dockerfile",
             "core/evaluators/benchmark_specific/coding/safe_docker/entrypoint.py",
+            "core/lm_harness_integration/only_benchmarks/registry/*.json",
             "parameters/lm_eval/*.json",
             "parameters/tasks/*.json",
             "examples/scripts/*.json",
