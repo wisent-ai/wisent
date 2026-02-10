@@ -23,6 +23,12 @@ def setup_repscan_parser(parser):
         metavar="PATH",
         help="Load activations from local cache pickle file"
     )
+    data_source.add_argument(
+        "--from-json",
+        type=str,
+        metavar="PATH",
+        help="Load activations from get-activations JSON output file"
+    )
 
     # Model and task (required only for --from-database)
     parser.add_argument(
