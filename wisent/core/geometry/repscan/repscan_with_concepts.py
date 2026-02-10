@@ -36,7 +36,6 @@ def run_repscan_with_concept_naming(
         steps: 'all' runs everything, or comma-separated subset (e.g., 'signal,editability')
     """
     from .repscan_protocol import test_signal, test_geometry, test_decomposition, select_intervention
-    from .concept_detection import detect_concepts_multilayer
 
     # Parse steps
     if steps == "all":
