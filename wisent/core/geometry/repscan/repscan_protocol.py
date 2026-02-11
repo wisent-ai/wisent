@@ -1,11 +1,10 @@
 """
-RepScan protocol: 5-step representation discovery and characterization.
+RepScan protocol: 4-step representation discovery and characterization.
 
 1. Signal Test - does a learnable signal exist?
 2. Geometry Test - is the representation linear or nonlinear?
 3. Decomposition Test - is the concept fragmented into sub-concepts?
 4. Intervention Selection - which steering method to use?
-5. Editability Analysis - how safely can the concept be edited?
 """
 
 from dataclasses import dataclass
@@ -207,9 +206,8 @@ def run_full_protocol(
     min_silhouette: Optional[float] = None,
     rigorous_geometry: bool = False,
     include_dimensionality_diagnostics: bool = True,
-    include_editability: bool = True,
 ) -> Dict[str, Any]:
-    """Run complete 5-step RepScan protocol.
+    """Run complete 4-step RepScan protocol.
 
     Signal test runs both permutation null and nonsense baseline (if model/tokenizer provided).
     Geometry and decomposition thresholds are adaptive by default.
@@ -219,7 +217,6 @@ def run_full_protocol(
             5 diagnostics instead of simple threshold comparison.
         include_dimensionality_diagnostics: If True, run curse of dimensionality
             diagnostics including power analysis, sample adequacy, and shrinkage.
-        include_editability: If True, run SVD-based editability analysis (Step 5).
     """
     if signal_keys is None:
         signal_keys = ["knn_accuracy", "knn_pca_accuracy", "mlp_probe_accuracy"]
@@ -241,42 +238,54 @@ def run_full_protocol(
     dec = test_decomposition(pos, neg, min_silhouette)
     inter = select_intervention(sig, geo, dec)
 
-    geo_dict = {
-        "linear_accuracy": geo.linear_accuracy, "nonlinear_accuracy": geo.nonlinear_accuracy,
-        "gap": geo.gap, "gap_threshold": gap_threshold, "diagnosis": geo.diagnosis, "rigorous": geo.rigorous,
+    geometry_result = {
+        "linear_accuracy": geo.linear_accuracy,
+        "nonlinear_accuracy": geo.nonlinear_accuracy,
+        "gap": geo.gap,
+        "gap_threshold": gap_threshold,
+        "diagnosis": geo.diagnosis,
+        "rigorous": geo.rigorous,
     }
     if geo.rigorous:
-        geo_dict.update({"confidence": geo.confidence, "p_value": geo.p_value,
-            "gap_ci_lower": geo.gap_ci_lower, "gap_ci_upper": geo.gap_ci_upper,
-            "n_diagnostics_passed": geo.n_diagnostics_passed, "n_diagnostics_total": geo.n_diagnostics_total})
-
-    edit = None
-    if include_editability:
-        from .repscan_editability import test_editability
-        edit = test_editability(pos, neg, cluster_labels=dec.cluster_labels, n_concepts=dec.n_concepts)
+        geometry_result.update({
+            "confidence": geo.confidence,
+            "p_value": geo.p_value,
+            "gap_ci_lower": geo.gap_ci_lower,
+            "gap_ci_upper": geo.gap_ci_upper,
+            "n_diagnostics_passed": geo.n_diagnostics_passed,
+            "n_diagnostics_total": geo.n_diagnostics_total,
+        })
 
     result = {
-        "protocol_config": {"n_samples": n_samples, "p_threshold": p_threshold,
-            "gap_threshold": gap_threshold, "min_silhouette": min_silhouette, "rigorous_geometry": rigorous_geometry},
-        "signal_test": {"max_z_score": sig.max_z_score, "min_p_value": sig.min_p_value,
-            "passed": sig.passed, "permutation_metrics": sig.permutation_metrics, "nonsense_metrics": sig.nonsense_metrics},
-        "geometry_test": geo_dict,
-        "decomposition_test": {"n_concepts": dec.n_concepts, "silhouette_score": dec.silhouette_score,
+        "protocol_config": {
+            "n_samples": n_samples,
+            "p_threshold": p_threshold,
+            "gap_threshold": gap_threshold,
+            "min_silhouette": min_silhouette,
+            "rigorous_geometry": rigorous_geometry,
+        },
+        "signal_test": {
+            "max_z_score": sig.max_z_score,
+            "min_p_value": sig.min_p_value,
+            "passed": sig.passed,
+            "permutation_metrics": sig.permutation_metrics,
+            "nonsense_metrics": sig.nonsense_metrics,
+        },
+        "geometry_test": geometry_result,
+        "decomposition_test": {
+            "n_concepts": dec.n_concepts, "silhouette_score": dec.silhouette_score,
             "min_silhouette": min_silhouette, "is_fragmented": dec.is_fragmented,
-            "per_concept_sizes": dec.per_concept_sizes, "cluster_labels": dec.cluster_labels},
-        "intervention": {"recommended_method": inter.recommended_method, "confidence": inter.confidence,
-            "reasoning": inter.reasoning, "method_scores": inter.method_scores},
+            "per_concept_sizes": dec.per_concept_sizes,
+            "cluster_labels": dec.cluster_labels,
+        },
+        "intervention": {
+            "recommended_method": inter.recommended_method,
+            "confidence": inter.confidence,
+            "reasoning": inter.reasoning,
+            "method_scores": inter.method_scores,
+        },
     }
 
-    if edit is not None:
-        result["editability_analysis"] = {
-            "editing_capacity": edit.editing_capacity, "effective_preserved_rank": edit.effective_preserved_rank,
-            "singular_values": edit.singular_values, "spectral_decay_rate": edit.spectral_decay_rate,
-            "steering_survival_ratio": edit.steering_survival_ratio, "verdict": edit.verdict,
-            "concept_interference": edit.concept_interference,
-            "editability_score": edit.editability_score, "participation_ratio": edit.participation_ratio,
-            "warnings": edit.warnings,
-        }
     if dim_diag is not None:
         from dataclasses import asdict
         result["dimensionality_diagnostics"] = asdict(dim_diag)

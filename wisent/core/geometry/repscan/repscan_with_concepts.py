@@ -10,7 +10,6 @@ from ..data.database_loaders import load_activations_from_database, load_pair_te
 __all__ = [
     "run_repscan_with_concept_naming",
     "extract_pair_texts_from_enriched_pairs",
-    "load_activations_from_json",
     "load_activations_from_database",
     "load_pair_texts_from_database",
     "load_available_layers_from_database",
@@ -26,21 +25,22 @@ def run_repscan_with_concept_naming(
     steps: str = "all",
 ) -> Dict[str, Any]:
     """
-    Run RepScan with geometry metrics, 5-step protocol, and concept naming.
+    Run RepScan with geometry metrics, 4-step protocol, and concept naming.
 
     Combines:
     - Full geometry metrics (signal_strength, linear_probe, ICD, etc.)
-    - 5-step protocol (signal, geometry, decomposition, intervention, editability)
+    - 4-step protocol (signal test with null, geometry test, decomposition, intervention)
     - Concept decomposition and LLM naming
 
     Args:
-        steps: 'all' runs everything, or comma-separated subset (e.g., 'signal,editability')
+        steps: 'all' runs everything, or comma-separated subset (e.g., 'signal')
     """
     from .repscan_protocol import test_signal, test_geometry, test_decomposition, select_intervention
+    from .concept_detection import detect_concepts_multilayer
 
     # Parse steps
     if steps == "all":
-        steps_to_run = {"signal", "geometry", "decomposition", "intervention", "editability"}
+        steps_to_run = {"signal", "geometry", "decomposition", "intervention"}
     else:
         steps_to_run = {s.strip().lower() for s in steps.split(",")}
 
@@ -53,12 +53,8 @@ def run_repscan_with_concept_naming(
     neg_concat = torch.cat(neg_list, dim=1)
     n_pairs = len(pos_concat)
 
-    # Compute full geometry metrics only when non-editability steps are requested
-    needs_full_metrics = steps_to_run - {"editability"}
-    if needs_full_metrics:
-        metrics = compute_geometry_metrics(pos_concat, neg_concat, generate_visualizations=generate_visualizations)
-    else:
-        metrics = {}
+    # Always compute full geometry metrics
+    metrics = compute_geometry_metrics(pos_concat, neg_concat, generate_visualizations=generate_visualizations)
 
     results = {
         "n_pairs": n_pairs, "n_layers": n_layers, "layers_used": sorted_layers,
@@ -133,74 +129,7 @@ def run_repscan_with_concept_naming(
         results["recommended_method"] = intervention.recommended_method
         results["recommendation_confidence"] = intervention.confidence
 
-    # Step 5: Editability Analysis (per-layer, following AlphaEdit methodology)
-    if "editability" in steps_to_run:
-        from .repscan_editability import test_editability
-        # Per-layer editability profile
-        editability_by_layer = {}
-        for layer in sorted_layers:
-            pos_l, neg_l = activations_by_layer[layer]
-            res_l = test_editability(pos_l, neg_l)
-            editability_by_layer[layer] = {
-                "editability_score": res_l.editability_score,
-                "editing_capacity": res_l.editing_capacity,
-                "steering_survival_ratio": res_l.steering_survival_ratio,
-                "spectral_decay_rate": res_l.spectral_decay_rate,
-                "participation_ratio": res_l.participation_ratio,
-                "verdict": res_l.verdict, "warnings": res_l.warnings,
-            }
-        results["editability_by_layer"] = editability_by_layer
-        # Overall (concatenated) editability
-        cluster_labels = decomposition_result.cluster_labels if decomposition_result else None
-        n_concepts = decomposition_result.n_concepts if decomposition_result else 1
-        editability_result = test_editability(
-            pos_concat, neg_concat, cluster_labels=cluster_labels, n_concepts=n_concepts,
-        )
-        results["editability_analysis"] = {
-            "editing_capacity": editability_result.editing_capacity,
-            "effective_preserved_rank": editability_result.effective_preserved_rank,
-            "singular_values": editability_result.singular_values,
-            "spectral_decay_rate": editability_result.spectral_decay_rate,
-            "steering_survival_ratio": editability_result.steering_survival_ratio,
-            "verdict": editability_result.verdict,
-            "concept_interference": editability_result.concept_interference,
-            "editability_score": editability_result.editability_score,
-            "participation_ratio": editability_result.participation_ratio,
-            "warnings": editability_result.warnings,
-        }
-
     return results
-
-
-def load_activations_from_json(json_path: str) -> Tuple[Dict[int, Tuple[torch.Tensor, torch.Tensor]], Dict[int, Dict[str, str]]]:
-    """Load per-layer activations from get-activations JSON output.
-
-    Returns:
-        (activations_by_layer, pair_texts) where activations_by_layer maps
-        layer_int -> (pos_tensor, neg_tensor) and pair_texts maps pair_index -> texts.
-    """
-    import json
-    with open(json_path, 'r') as f:
-        data = json.load(f)
-    layer_pos: Dict[int, list] = {}
-    layer_neg: Dict[int, list] = {}
-    for pair in data.get("pairs", []):
-        pos_la = pair.get("positive_response", {}).get("layers_activations", {})
-        neg_la = pair.get("negative_response", {}).get("layers_activations", {})
-        for layer_str in pos_la:
-            if layer_str not in neg_la:
-                continue
-            layer = int(layer_str)
-            layer_pos.setdefault(layer, []).append(pos_la[layer_str])
-            layer_neg.setdefault(layer, []).append(neg_la[layer_str])
-    activations_by_layer = {}
-    for layer in layer_pos:
-        activations_by_layer[layer] = (
-            torch.tensor(layer_pos[layer], dtype=torch.float32),
-            torch.tensor(layer_neg[layer], dtype=torch.float32),
-        )
-    pair_texts = extract_pair_texts_from_enriched_pairs(data.get("pairs", []))
-    return activations_by_layer, pair_texts
 
 
 def extract_pair_texts_from_enriched_pairs(enriched_pairs: List[Dict]) -> Dict[int, Dict[str, str]]:
