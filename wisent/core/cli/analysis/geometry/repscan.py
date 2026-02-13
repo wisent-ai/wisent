@@ -17,13 +17,13 @@ def execute_repscan(args):
     print(f"{'='*60}")
 
     # Import dependencies
-    from wisent.core.geometry.repscan_with_concepts import (
+    from wisent.core.geometry.repscan.repscan_with_concepts import (
         run_repscan_with_concept_naming,
         load_activations_from_database,
         load_pair_texts_from_database,
         load_available_layers_from_database,
     )
-    from wisent.core.geometry.cache import get_cached_layers
+    from wisent.core.geometry.data.cache import get_cached_layers
     import torch
 
     activations_by_layer = {}
@@ -202,7 +202,7 @@ def execute_repscan(args):
         pair_texts=pair_texts,
         generate_visualizations=args.visualizations,
         llm_model=args.llm_model,
-        steps=args.steps,
+        steps=args.steps, output_path=args.output,
     )
 
     # Print results
@@ -213,16 +213,17 @@ def execute_repscan(args):
     print(f"Total dimensions: {results.get('total_dims')}")
     print(f"Pairs analyzed: {results.get('n_pairs')}")
     print(f"\nRecommended method: {results.get('recommended_method')}")
-    print(f"Confidence: {results.get('recommendation_confidence', 0):.2f}")
-
+    conf = results.get('recommendation_confidence')
+    print(f"Confidence: {conf:.2f}" if conf is not None else "Confidence: N/A")
     # Print key metrics
     metrics = results.get("metrics", {})
-    print(f"\n--- Key Metrics (all-layer concatenated) ---")
-    print(f"Signal strength: {metrics.get('signal_strength', 0):.3f}")
-    print(f"Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
-    print(f"MLP probe accuracy: {metrics.get('mlp_probe_accuracy', 0):.3f}")
-    print(f"KNN accuracy: {metrics.get('knn_accuracy', 0):.3f}")
-    print(f"KNN PCA accuracy: {metrics.get('knn_pca_accuracy', 0):.3f}")
+    if metrics:
+        print(f"\n--- Key Metrics (all-layer concatenated) ---")
+        print(f"Signal strength: {metrics.get('signal_strength', 0):.3f}")
+        print(f"Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
+        print(f"MLP probe accuracy: {metrics.get('mlp_probe_accuracy', 0):.3f}")
+        print(f"KNN accuracy: {metrics.get('knn_accuracy', 0):.3f}")
+        print(f"KNN PCA accuracy: {metrics.get('knn_pca_accuracy', 0):.3f}")
 
     # Print concept decomposition
     decomposition = results.get("concept_decomposition")
@@ -296,5 +297,4 @@ def execute_repscan(args):
     print(f"\n{'='*60}")
     print("REPSCAN COMPLETE")
     print(f"{'='*60}")
-
     return results

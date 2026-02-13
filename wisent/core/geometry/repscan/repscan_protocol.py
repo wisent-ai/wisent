@@ -78,7 +78,7 @@ def test_signal(
     Signal passes if permutation p_value < p_threshold AND (if nonsense available)
     nonsense z_score > 2.0 for any metric.
     """
-    from .signal_null_tests import compute_signal_vs_null, compute_signal_vs_nonsense, compute_aggregate_signal
+    from ..validation.null_tests.signal_null_tests import compute_signal_vs_null, compute_signal_vs_nonsense, compute_aggregate_signal
 
     # Always run permutation test
     perm_metrics = compute_signal_vs_null(pos, neg, metric_keys)
@@ -120,7 +120,7 @@ def test_geometry(
         GeometryTestResult with diagnosis and optional rigorous metrics.
     """
     if rigorous:
-        from .is_linear import test_linearity
+        from ..analysis.is_linear import test_linearity
         result = test_linearity(pos, neg)
         diagnosis = "LINEAR" if result.is_linear else "NONLINEAR"
         return GeometryTestResult(
@@ -137,7 +137,7 @@ def test_geometry(
             n_diagnostics_total=result.n_diagnostics_total,
         )
 
-    from .geometry_metrics import compute_linear_nonlinear_gap
+    from ..metrics.direction.geometry_metrics import compute_linear_nonlinear_gap
     linear, nonlinear = compute_linear_nonlinear_gap(pos, neg)
     gap = nonlinear - linear
     diagnosis = "NONLINEAR" if gap > gap_threshold else "LINEAR"
@@ -148,7 +148,7 @@ def test_decomposition(
     pos: torch.Tensor, neg: torch.Tensor, min_silhouette: float = 0.1,
 ) -> DecompositionTestResult:
     """Step 3: Test if concept is fragmented into sub-concepts."""
-    from .decomposition_metrics import find_optimal_clustering
+    from ..metrics.distribution.decomposition_metrics import find_optimal_clustering
     diff = pos - neg
     n_concepts, labels, sil = find_optimal_clustering(diff)
     labels_np = np.array(labels)
