@@ -58,7 +58,7 @@ def setup_repscan_parser(parser):
         "--extraction-strategy",
         type=str,
         default="last_token",
-        choices=["last_token", "first_token"],
+        choices=["last_token", "first_token", "chat_last"],
         help="Token extraction strategy (default: last_token)"
     )
     parser.add_argument(
