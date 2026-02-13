@@ -70,11 +70,12 @@ def run_repscan_with_concept_naming(
     else:
         steps_to_run = {s.strip().lower() for s in steps.split(",")}
 
-    # Concatenate all layers
+    # Concatenate all layers (truncate to min pair count across layers)
     sorted_layers = sorted(activations_by_layer.keys())
     n_layers = len(sorted_layers)
-    pos_list = [activations_by_layer[l][0] for l in sorted_layers]
-    neg_list = [activations_by_layer[l][1] for l in sorted_layers]
+    min_pairs = min(len(activations_by_layer[l][0]) for l in sorted_layers)
+    pos_list = [activations_by_layer[l][0][:min_pairs] for l in sorted_layers]
+    neg_list = [activations_by_layer[l][1][:min_pairs] for l in sorted_layers]
     pos_concat = torch.cat(pos_list, dim=1)
     neg_concat = torch.cat(neg_list, dim=1)
     n_pairs = len(pos_concat)
