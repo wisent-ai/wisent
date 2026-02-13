@@ -68,9 +68,9 @@ def find_optimal_clustering(
         kmeans = KMeans(n_clusters=k, random_state=42, n_init=n_init)
         labels = kmeans.fit_predict(diff_np)
 
-        # Check if any cluster is too small
+        # Check if any cluster is too small or all points in one cluster
         cluster_sizes = np.bincount(labels)
-        if cluster_sizes.min() < min_cluster_size:
+        if len(cluster_sizes) < 2 or cluster_sizes.min() < min_cluster_size:
             continue
 
         sil = silhouette_score(diff_np, labels)
