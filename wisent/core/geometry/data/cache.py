@@ -8,16 +8,17 @@ CACHE_DIR = Path.home() / ".wisent_cache"
 
 def get_cache_path(task_name: str, cache_type: str, **kwargs) -> Path:
     """Get cache file path for a given task and type."""
-    CACHE_DIR.mkdir(parents=True, exist_ok=True)
-
     if cache_type == "pair_texts":
-        return CACHE_DIR / f"{task_name}_pair_texts.json"
+        path = CACHE_DIR / f"{task_name}_pair_texts.json"
     elif cache_type == "activations":
         model_name = kwargs.get("model_name", "unknown").replace("/", "_")
         layer = kwargs.get("layer", 0)
-        return CACHE_DIR / f"{task_name}_{model_name}_layer{layer}_activations.pt"
+        path = CACHE_DIR / f"{task_name}_{model_name}_layer{layer}_activations.pt"
     else:
-        return CACHE_DIR / f"{task_name}_{cache_type}.json"
+        path = CACHE_DIR / f"{task_name}_{cache_type}.json"
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    return path
 
 
 def load_pair_texts_cache(task_name: str, limit: int = None):

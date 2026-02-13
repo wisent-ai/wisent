@@ -4,6 +4,7 @@ from typing import List, Tuple, Dict
 import torch
 import numpy as np
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 
 
@@ -38,6 +39,15 @@ def find_optimal_clustering(
     diff_np = diff_vectors.cpu().numpy() if isinstance(diff_vectors, torch.Tensor) else diff_vectors
 
     n_samples, n_features = diff_np.shape
+
+    # PCA: reduce to min(n_samples, n_features, 50) dims
+    # With N < 50, PCA captures 100% variance (zero loss).
+    # With N > 50, keeps the top-50 variance directions where clustering structure lives.
+    # Also fixes curse-of-dimensionality degradation of KMeans + silhouette in high dims.
+    pca_dims = min(n_samples - 1, n_features, 50)
+    if pca_dims < n_features and pca_dims >= 2:
+        diff_np = PCA(n_components=pca_dims, random_state=42).fit_transform(diff_np)
+
     max_k = _adaptive_max_k(n_samples)
     min_cluster_size = _adaptive_min_cluster_size(n_samples)
 

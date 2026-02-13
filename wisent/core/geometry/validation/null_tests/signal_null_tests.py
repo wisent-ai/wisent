@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import torch
 import numpy as np
 
-from .signal_metrics import (
+from ...metrics.probe.signal_metrics import (
     _adaptive_k, _adaptive_cv, _adaptive_pca_components,
     _adaptive_mlp_hidden, _adaptive_n_permutations,
     _knn_accuracy, _knn_pca_accuracy, _mlp_accuracy,
@@ -110,7 +110,7 @@ def compute_signal_vs_nonsense(
     This tests: "Is this signal different from random noise?"
     Generates activations from random tokens and compares metrics.
     """
-    from .nonsense_baseline import generate_nonsense_activations
+    from ...data.nonsense.nonsense_baseline import generate_nonsense_activations
 
     pos_np = pos_activations.cpu().numpy() if isinstance(pos_activations, torch.Tensor) else pos_activations
     neg_np = neg_activations.cpu().numpy() if isinstance(neg_activations, torch.Tensor) else neg_activations
