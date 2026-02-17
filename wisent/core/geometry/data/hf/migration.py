@@ -1,12 +1,15 @@
 """Migration logic: stream activations from Supabase to HuggingFace Hub."""
 import os
+import shutil
 import struct
+import tempfile
 from collections import defaultdict
 from typing import List, Optional
 
 import torch
 
 from .hf_writers import (
+    flush_staging_dir,
     update_index,
     upload_activation_shard,
     upload_pair_texts,
@@ -54,14 +57,10 @@ def migrate_activation_table(
     dry_run: bool = False,
 ) -> List[int]:
     """Migrate all layers for one (model, task, strategy) combo.
-
-    Streams from Supabase one layer at a time, converts BYTEA to
-    tensors, uploads as safetensors shards.
-
-    Returns list of migrated layer numbers.
-    """
+    Stages all layers locally, then uploads as a single commit."""
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
+    staging = tempfile.mkdtemp(prefix="wisent_act_")
 
     try:
         cur.execute(
@@ -79,7 +78,7 @@ def migrate_activation_table(
         )
         result = cur.fetchone()
         if not result:
-            raise ValueError(f"Benchmark {task_name} not found in database")
+            raise ValueError(f"Benchmark {task_name} not found")
         set_id = result[0]
 
         cur.execute(
@@ -95,10 +94,7 @@ def migrate_activation_table(
             print(f"  No layers found for {model_name}/{task_name}/{strategy}")
             return []
 
-        print(
-            f"  Found {len(layers)} layers for "
-            f"{model_name}/{task_name}/{strategy}: {layers}"
-        )
+        print(f"  Found {len(layers)} layers: {layers}")
 
         migrated_layers = []
         for layer in layers:
@@ -110,7 +106,6 @@ def migrate_activation_table(
                    ORDER BY "contrastivePairId", "isPositive" """,
                 (model_id, set_id, strategy, layer),
             )
-
             pair_acts = defaultdict(dict)
             for row in cur.fetchall():
                 pair_id, act_bytes, is_positive = row
@@ -130,33 +125,33 @@ def migrate_activation_table(
 
             pos_tensor = torch.tensor(pos_list, dtype=torch.float32)
             neg_tensor = torch.tensor(neg_list, dtype=torch.float32)
-
             upload_activation_shard(
                 model_name, task_name, strategy, layer,
                 pos_tensor, neg_tensor, pair_ids,
-                dry_run=dry_run,
+                dry_run=dry_run, staging_dir=staging,
             )
             migrated_layers.append(layer)
 
         if migrated_layers and not dry_run:
+            print(f"  Flushing {len(migrated_layers)} layers as single commit...")
+            flush_staging_dir(staging)
             update_index(model_name, task_name, strategy, migrated_layers)
 
         return migrated_layers
-
     finally:
         cur.close()
         conn.close()
+        shutil.rmtree(staging, ignore_errors=True)
 
 
 def migrate_pair_texts(
     task_name: str,
     database_url: Optional[str] = None,
     dry_run: bool = False,
+    staging_dir: Optional[str] = None,
 ) -> int:
     """Export pair texts from Supabase to HF.
-
-    Returns number of pairs migrated.
-    """
+    If staging_dir provided, saves locally for batch upload."""
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
 
@@ -167,7 +162,7 @@ def migrate_pair_texts(
         )
         result = cur.fetchone()
         if not result:
-            raise ValueError(f"Benchmark {task_name} not found in database")
+            raise ValueError(f"Benchmark {task_name} not found")
         set_id = result[0]
 
         cur.execute(
@@ -176,7 +171,6 @@ def migrate_pair_texts(
                WHERE "setId" = %s ORDER BY id""",
             (set_id,),
         )
-
         pairs = {}
         for row in cur.fetchall():
             pair_id, pos_example, neg_example = row
@@ -190,7 +184,6 @@ def migrate_pair_texts(
                 neg_response = neg_example.rsplit("\n\n", 1)[1]
             else:
                 neg_response = neg_example
-
             pairs[pair_id] = {
                 "prompt": prompt,
                 "positive": pos_response,
@@ -202,9 +195,11 @@ def migrate_pair_texts(
             return 0
 
         str_pairs = {str(k): v for k, v in pairs.items()}
-        upload_pair_texts(task_name, str_pairs, dry_run=dry_run)
+        upload_pair_texts(
+            task_name, str_pairs,
+            dry_run=dry_run, staging_dir=staging_dir,
+        )
         return len(pairs)
-
     finally:
         cur.close()
         conn.close()
@@ -218,12 +213,10 @@ def migrate_raw_activation_table(
     database_url: Optional[str] = None,
     dry_run: bool = False,
 ) -> int:
-    """Migrate raw activations in chunks (50 pairs per shard).
-
-    Returns total number of chunks uploaded.
-    """
+    """Migrate raw activations in chunks (50 pairs per shard)."""
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
+    staging = tempfile.mkdtemp(prefix="wisent_raw_")
 
     try:
         cur.execute(
@@ -263,7 +256,6 @@ def migrate_raw_activation_table(
                    ORDER BY "contrastivePairId", "isPositive" """,
                 (model_id, set_id, prompt_format, layer),
             )
-
             pair_acts = defaultdict(dict)
             for row in cur.fetchall():
                 pid, act_bytes, is_pos = row
@@ -274,25 +266,25 @@ def migrate_raw_activation_table(
                 [(pid, a) for pid, a in pair_acts.items()
                  if "pos" in a and "neg" in a]
             )
-
             for ci in range(0, len(sorted_pairs), chunk_size):
                 chunk = sorted_pairs[ci:ci + chunk_size]
                 pos_list = [a["pos"] for _, a in chunk]
                 neg_list = [a["neg"] for _, a in chunk]
                 pids = [pid for pid, _ in chunk]
-
                 pos_t = torch.tensor(pos_list, dtype=torch.float32)
                 neg_t = torch.tensor(neg_list, dtype=torch.float32)
-
                 upload_raw_activation_shard(
                     model_name, task_name, prompt_format, layer,
                     ci // chunk_size, pos_t, neg_t, pids,
-                    dry_run=dry_run,
+                    dry_run=dry_run, staging_dir=staging,
                 )
                 total_chunks += 1
 
-        return total_chunks
+        if total_chunks > 0 and not dry_run:
+            flush_staging_dir(staging)
 
+        return total_chunks
     finally:
         cur.close()
         conn.close()
+        shutil.rmtree(staging, ignore_errors=True)
