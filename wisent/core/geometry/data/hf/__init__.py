@@ -18,6 +18,7 @@ from .hf_writers import (
     upload_activation_shard,
     upload_pair_texts,
     upload_raw_activation_shard,
+    flush_staging_dir,
 )
 from .migration import (
     migrate_activation_table,
@@ -41,6 +42,7 @@ __all__ = [
     "upload_activation_shard",
     "upload_pair_texts",
     "upload_raw_activation_shard",
+    "flush_staging_dir",
     "migrate_activation_table",
     "migrate_all",
     "migrate_pair_texts",
