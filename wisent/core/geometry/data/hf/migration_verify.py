@@ -1,4 +1,6 @@
 """Migration orchestration and verification."""
+import shutil
+import tempfile
 from typing import Optional
 
 import torch
@@ -8,13 +10,15 @@ from .migration import (
     migrate_activation_table,
     migrate_pair_texts,
 )
+from .hf_writers import flush_staging_dir
 
 
 def migrate_all(
     database_url: Optional[str] = None,
     dry_run: bool = False,
 ) -> None:
-    """Discover all (model, benchmark, strategy) combos and migrate."""
+    """Discover all (model, benchmark, strategy) combos and migrate.
+    Uses staging dirs to batch uploads and avoid HF rate limits."""
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
 
@@ -35,17 +39,25 @@ def migrate_all(
 
     print(f"Found {len(combos)} (model, benchmark, strategy) combinations")
 
-    # Migrate pair texts first (deduplicated by task)
+    # Phase 1: Migrate all pair texts (batched into one commit)
+    pair_staging = tempfile.mkdtemp(prefix="wisent_pair_texts_")
     migrated_tasks = set()
-    for _, task, _ in combos:
-        if task not in migrated_tasks:
-            print(f"\nMigrating pair texts: {task}")
-            migrate_pair_texts(
-                task, database_url=database_url, dry_run=dry_run
-            )
-            migrated_tasks.add(task)
+    try:
+        for _, task, _ in combos:
+            if task not in migrated_tasks:
+                print(f"\nStaging pair texts: {task}")
+                migrate_pair_texts(
+                    task, database_url=database_url,
+                    dry_run=dry_run, staging_dir=pair_staging,
+                )
+                migrated_tasks.add(task)
+        if not dry_run and migrated_tasks:
+            print(f"\nFlushing {len(migrated_tasks)} pair text files...")
+            flush_staging_dir(pair_staging)
+    finally:
+        shutil.rmtree(pair_staging, ignore_errors=True)
 
-    # Migrate activations
+    # Phase 2: Migrate activations (one commit per model/task/strategy combo)
     for model, task, strategy in combos:
         print(f"\nMigrating activations: {model} / {task} / {strategy}")
         migrate_activation_table(
@@ -61,11 +73,7 @@ def verify_migration(
     layer: int,
     database_url: Optional[str] = None,
 ) -> bool:
-    """Verify HF data matches Supabase for a single layer.
-
-    Loads from both sources and compares with torch.allclose.
-    Returns True if data matches.
-    """
+    """Verify HF data matches Supabase for a single layer."""
     from ..database_loaders import load_activations_from_database
     from .hf_loaders import load_activations_from_hf
 
