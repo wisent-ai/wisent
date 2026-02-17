@@ -19,10 +19,7 @@ def _get_db_connection(database_url: Optional[str] = None):
     try:
         import psycopg2
     except ImportError:
-        raise ImportError(
-            "psycopg2 required for migration. "
-            "Install with: pip install psycopg2-binary"
-        )
+        raise ImportError("psycopg2 required. pip install psycopg2-binary")
 
     db_url = database_url or os.environ.get("DATABASE_URL")
     if not db_url:
@@ -35,7 +32,12 @@ def _get_db_connection(database_url: Optional[str] = None):
         separator = "&" if "?" in db_url else "?"
         db_url += f"{separator}sslmode=require"
 
-    return psycopg2.connect(db_url, connect_timeout=15)
+    conn = psycopg2.connect(db_url, connect_timeout=30)
+    cur = conn.cursor()
+    cur.execute("SET statement_timeout = 0")
+    cur.close()
+    conn.commit()
+    return conn
 
 
 def _bytes_to_vector(data: bytes) -> List[float]:
