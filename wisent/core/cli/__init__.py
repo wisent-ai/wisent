@@ -55,6 +55,9 @@ from .steering.viz.per_concept_steering_viz import execute_per_concept_steering_
 # Agent
 from .agent.main import execute_agent
 
+# Data management
+from .data.migrate_activations import execute_migrate_activations
+
 __all__ = [
     'execute_tasks',
     'execute_generate_pairs_from_task',
@@ -87,4 +90,5 @@ __all__ = [
     'execute_steering_viz',
     'execute_per_concept_steering_viz',
     'execute_discover_steering',
+    'execute_migrate_activations',
 ]
