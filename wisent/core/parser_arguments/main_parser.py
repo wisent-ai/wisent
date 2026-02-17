@@ -71,6 +71,7 @@ from wisent.core.parser_arguments.analysis import (
     setup_geometry_search_parser,
     setup_repscan_parser,
 )
+from wisent.core.parser_arguments.data import setup_migrate_activations_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -291,5 +292,8 @@ def setup_parser() -> argparse.ArgumentParser:
         help="Discover optimal steering directions using behavioral probing, direction search, and layer search"
     )
     setup_discover_steering_parser(discover_steering_parser)
+
+    migrate_activations_parser = subparsers.add_parser("migrate-activations", help="Migrate activation data from Supabase to HuggingFace Hub")
+    setup_migrate_activations_parser(migrate_activations_parser)
 
     return parser

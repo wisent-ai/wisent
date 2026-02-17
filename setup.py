@@ -60,8 +60,13 @@ setup(
         "sae_lens>=0.1.0",
         "trl>=0.7.0",
         "peft>=0.7.0",
+        "safetensors>=0.4.0",
+        "huggingface_hub>=0.20.0",
         "psycopg2-binary>=2.9.0",
         "pynndescent>=0.5.0",
+        "hdbscan>=0.8.0",
+        "umap-learn>=0.5.0",
+        "pacmap>=0.7.0",
     ],
     extras_require={
         "harness": [

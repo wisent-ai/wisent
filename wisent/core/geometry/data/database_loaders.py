@@ -22,7 +22,7 @@ def _get_db_connection(database_url: Optional[str] = None):
     if "sslmode=" not in db_url:
         db_url += "?sslmode=require" if "?" not in db_url else "&sslmode=require"
 
-    conn = psycopg2.connect(db_url)
+    conn = psycopg2.connect(db_url, connect_timeout=15)
     cur = conn.cursor()
     cur.close()
     return conn
@@ -45,6 +45,7 @@ def load_activations_from_database(
     pair_ids: Optional[set] = None,
     use_cache: bool = True,
     force_refresh: bool = False,
+    source: str = "auto",
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Load activations for a single layer from local cache or database.
@@ -55,10 +56,6 @@ def load_activations_from_database(
         layer: Layer number to load
         prompt_format: Prompt format used ("chat" or "completion")
         extraction_strategy: Extraction strategy - use ExtractionStrategy enum values:
-            - "completion_last": completion format (prompt\\n\\nresponse) + last token
-            - "completion_mean": completion format + mean of response tokens
-            - "chat_last": chat template + last token
-            - "chat_mean": chat template + mean of response tokens
         limit: Maximum number of pairs to load
         database_url: Optional database URL (defaults to DATABASE_URL env var)
         pair_ids: Optional set of pair IDs to filter (for train/test split)
@@ -87,6 +84,14 @@ def load_activations_from_database(
             if limit and len(pos_tensor) > limit:
                 pos_tensor, neg_tensor = pos_tensor[:limit], neg_tensor[:limit]
             return pos_tensor, neg_tensor
+    # Try HF before falling back to database
+    if source in ("auto", "hf"):
+        try:
+            from .hf.hf_loaders import load_activations_from_hf
+            return load_activations_from_hf(model_name, task_name, layer, extraction_strategy, limit, pair_ids, use_cache)
+        except (FileNotFoundError, ImportError):
+            if source == "hf":
+                raise
     from collections import defaultdict
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
@@ -157,9 +162,17 @@ def load_activations_from_database(
 
 
 def load_available_layers_from_database(
-    model_name: str, task_name: str, extraction_strategy: str = "completion_last", database_url: Optional[str] = None
+    model_name: str, task_name: str, extraction_strategy: str = "completion_last",
+    database_url: Optional[str] = None, source: str = "auto",
 ) -> List[int]:
     """Query database to find all available layers for a model/task combination."""
+    if source in ("auto", "hf"):
+        try:
+            from .hf.hf_loaders import load_available_layers_from_hf
+            return load_available_layers_from_hf(model_name, task_name, extraction_strategy)
+        except (FileNotFoundError, ImportError):
+            if source == "hf":
+                raise
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
     try:
@@ -193,6 +206,7 @@ def load_pair_texts_from_database(
     database_url: Optional[str] = None,
     use_cache: bool = True,
     force_refresh: bool = False,
+    source: str = "auto",
 ) -> Dict[int, Dict[str, str]]:
     """
     Load contrastive pair texts from local cache or Supabase database.
@@ -219,13 +233,18 @@ def load_pair_texts_from_database(
             pair_ids = sorted(pairs.keys())[:limit]
             pairs = {pid: pairs[pid] for pid in pair_ids}
         return pairs
-
-    # Load from database
+    # Try HF before falling back to database
+    if source in ("auto", "hf"):
+        try:
+            from .hf.hf_loaders import load_pair_texts_from_hf
+            return load_pair_texts_from_hf(task_name, limit, use_cache)
+        except (FileNotFoundError, ImportError):
+            if source == "hf":
+                raise
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
 
     try:
-        # Get set ID for task
         cur.execute('SELECT id FROM "ContrastivePairSet" WHERE name = %s', (task_name,))
         result = cur.fetchone()
         if not result:
