@@ -67,6 +67,7 @@ from wisent.core.weight_modification.directional import (
     project_with_kernel,
     orthogonalize_direction,
     TITANRuntimeHooks,
+    ConceptFlowRuntimeHooks,
     apply_titan_steering,
 )
 from wisent.core.weight_modification.methods.additive import (
@@ -129,8 +130,9 @@ __all__ = [
     "compute_projection_kernel",
     "project_with_kernel",
     "orthogonalize_direction",
-    # TITAN runtime hooks
+    # Runtime hooks
     "TITANRuntimeHooks",
+    "ConceptFlowRuntimeHooks",
     "apply_titan_steering",
     # Additive (bake steering into weights)
     "bake_steering_into_weights",

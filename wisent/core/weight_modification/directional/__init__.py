@@ -9,7 +9,7 @@ from .core import (
 from .projection import project_component_norm_preserved, project_component
 from .weights import project_weights_norm_preserved, project_weights
 from .multi_direction import project_component_multi_direction, project_weights_multi_direction
-from .hooks import TITANRuntimeHooks, PULSERuntimeHooks
+from .hooks import TITANRuntimeHooks, PULSERuntimeHooks, ConceptFlowRuntimeHooks
 from .hooks.titan import project_weights_titan
 from .hooks.pulse import apply_titan_steering
 
@@ -26,6 +26,7 @@ __all__ = [
     "project_weights_multi_direction",
     "TITANRuntimeHooks",
     "PULSERuntimeHooks",
+    "ConceptFlowRuntimeHooks",
     "project_weights_titan",
     "apply_titan_steering",
 ]
