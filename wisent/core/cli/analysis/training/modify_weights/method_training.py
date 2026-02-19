@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 
-
 def get_all_layers(model) -> List[str]:
     """Get all layer indices as strings for a model (1-indexed for collector API)."""
     if hasattr(model, 'hf_model'):
@@ -25,7 +24,6 @@ def get_all_layers(model) -> List[str]:
                  getattr(config, 'num_layers', None) or 36
 
     return [str(i) for i in range(1, num_layers + 1)]
-
 
 def auto_select_steering_method(
     pairs: List["ContrastivePair"],
@@ -115,7 +113,6 @@ def auto_select_steering_method(
 
     return steering_method, modification_method, metrics
 
-
 def train_titan_for_task(args, model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train TITAN on contrastive pairs and return the TITANResult."""
     from wisent.core.steering_methods.methods.titan import TITANMethod
@@ -171,7 +168,6 @@ def train_titan_for_task(args, model: "WisentModel", pairs: List["ContrastivePai
 
     return titan_result
 
-
 def train_pulse_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train PULSE steering for a task."""
     from wisent.core.steering_methods.methods.advanced import PULSEMethod
@@ -218,7 +214,6 @@ def train_pulse_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
 
     return pulse_result
 
-
 def train_prism_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train PRISM steering for a task."""
     from wisent.core.steering_methods.methods.advanced import PRISMMethod
@@ -261,3 +256,41 @@ def train_prism_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
         print(f"  Directions per layer: {num_dirs}")
 
     return prism_result
+
+def train_concept_flow_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
+    """Train Concept Flow on contrastive pairs and return a ConceptFlowSteeringObject."""
+    from wisent.core.steering_methods.methods.concept_flow import ConceptFlowMethod
+    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
+    from wisent.core.cli.steering.core.create_concept_flow import (
+        _create_concept_flow_steering_object,
+    )
+
+    layers = [str(l) for l in str(args.layers).split(',')] if args.layers else get_all_layers(wisent_model)
+    if args.verbose:
+        print(f"  Collecting activations for Concept Flow training...")
+
+    collector = ActivationCollector(model=wisent_model)
+    layer_acts = {l: {"positive": [], "negative": []} for l in layers}
+
+    for i, pair in enumerate(pairs):
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
+        for l in layers:
+            pa = enriched.positive_response.layers_activations.get(l)
+            na = enriched.negative_response.layers_activations.get(l)
+            if pa is not None:
+                layer_acts[l]["positive"].append(pa)
+            if na is not None:
+                layer_acts[l]["negative"].append(na)
+        if args.verbose and (i + 1) % 10 == 0:
+            print(f"    Collected {i + 1}/{len(pairs)} pairs")
+
+    meta = SteeringObjectMetadata(
+        method="concept_flow", model_name=args.model,
+        benchmark=getattr(args, 'task', 'unknown'), category="steering",
+        extraction_strategy="chat_last", num_pairs=len(pairs),
+        layers=[int(l) for l in layers], hidden_dim=0,
+    )
+    return _create_concept_flow_steering_object(meta, layer_acts, layers, args)
