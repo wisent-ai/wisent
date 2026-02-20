@@ -40,6 +40,7 @@ class SteeringObjectMetadata:
     extra: Dict[str, Any] = field(default_factory=dict)
     # Calibration data: average hidden state norm per layer
     calibration_norms: Dict[int, float] = field(default_factory=dict)
+    extraction_component: str = "residual_stream"
     
     def get_calibrated_strength(self, layer: int, target_percentage: float = 1.0) -> float:
         """
@@ -134,16 +135,17 @@ class BaseSteeringObject(ABC):
         else:
             h_flat = hidden_state.mean(dim=1)  # [batch, hidden]
         
+        original_dtype = hidden_state.dtype
         gate = self.compute_gate(h_flat)
         intensity = self.compute_intensity(h_flat, layer)
         direction = self.get_steering_vector(layer, h_flat)
-        
+
         # Ensure direction matches hidden state device/dtype
-        direction = direction.to(hidden_state.device, hidden_state.dtype)
-        
-        # Compute steering delta
-        scale = gate * intensity * base_strength
-        
+        direction = direction.to(hidden_state.device, original_dtype)
+
+        # Compute steering delta - cast scale to match hidden state dtype
+        scale = (gate * intensity * base_strength).to(original_dtype)
+
         # Broadcast direction to match hidden_state shape
         if hidden_state.dim() == 1:
             delta = scale.squeeze() * direction
@@ -151,8 +153,8 @@ class BaseSteeringObject(ABC):
             delta = scale.unsqueeze(-1) * direction.unsqueeze(0)
         else:
             delta = scale.unsqueeze(-1).unsqueeze(-1) * direction.unsqueeze(0).unsqueeze(0)
-        
-        return hidden_state + delta
+
+        return (hidden_state + delta).to(original_dtype)
     
     def to_steering_plan(self, scale: float = 1.0, normalize: bool = True) -> "SteeringPlan":
         """
@@ -257,6 +259,12 @@ class BaseSteeringObject(ABC):
             return PULSESteeringObject.from_dict(data)
         elif method == 'titan':
             return TITANSteeringObject.from_dict(data)
+        elif method == 'concept_flow':
+            from wisent.core.steering_methods.methods.concept_flow import ConceptFlowSteeringObject
+            return ConceptFlowSteeringObject.from_dict(data)
+        elif method == 'geodesic_ot':
+            from wisent.core.steering_methods.methods.geodesic_ot import GeodesicOTSteeringObject
+            return GeodesicOTSteeringObject.from_dict(data)
         else:
             raise ValueError(f"Unknown steering method: {method}")
 
@@ -287,11 +295,11 @@ class SimpleSteeringObject(BaseSteeringObject):
     def compute_gate(self, hidden_state: torch.Tensor) -> torch.Tensor:
         # Always steer
         batch_size = hidden_state.shape[0] if hidden_state.dim() > 1 else 1
-        return torch.ones(batch_size, device=hidden_state.device)
+        return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
     
     def compute_intensity(self, hidden_state: torch.Tensor, layer: int) -> torch.Tensor:
         batch_size = hidden_state.shape[0] if hidden_state.dim() > 1 else 1
-        return torch.full((batch_size,), self.default_intensity, device=hidden_state.device)
+        return torch.full((batch_size,), self.default_intensity, device=hidden_state.device, dtype=hidden_state.dtype)
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -308,6 +316,7 @@ class SimpleSteeringObject(BaseSteeringObject):
                 'created_at': self.metadata.created_at,
                 'extra': self.metadata.extra,
                 'calibration_norms': {str(k): v for k, v in self.metadata.calibration_norms.items()},
+                'extraction_component': self.metadata.extraction_component,
             },
             'vectors': {str(k): v for k, v in self.vectors.items()},
             'default_intensity': self.default_intensity,
@@ -330,6 +339,7 @@ class SimpleSteeringObject(BaseSteeringObject):
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
             calibration_norms=calibration_norms,
+            extraction_component=meta_data.get('extraction_component', 'residual_stream'),
         )
         
         vectors = {}
@@ -396,11 +406,11 @@ class PRISMSteeringObject(BaseSteeringObject):
     
     def compute_gate(self, hidden_state: torch.Tensor) -> torch.Tensor:
         batch_size = hidden_state.shape[0] if hidden_state.dim() > 1 else 1
-        return torch.ones(batch_size, device=hidden_state.device)
+        return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
     
     def compute_intensity(self, hidden_state: torch.Tensor, layer: int) -> torch.Tensor:
         batch_size = hidden_state.shape[0] if hidden_state.dim() > 1 else 1
-        return torch.ones(batch_size, device=hidden_state.device)
+        return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
     
     def get_all_directions(self, layer: int) -> torch.Tensor:
         """Get all directions for a layer."""
@@ -420,6 +430,7 @@ class PRISMSteeringObject(BaseSteeringObject):
                 'hidden_dim': self.metadata.hidden_dim,
                 'created_at': self.metadata.created_at,
                 'extra': self.metadata.extra,
+                'extraction_component': self.metadata.extraction_component,
             },
             'directions': {str(k): v for k, v in self.directions.items()},
             'direction_weights': {str(k): v for k, v in self.direction_weights.items()},
@@ -440,6 +451,7 @@ class PRISMSteeringObject(BaseSteeringObject):
             hidden_dim=meta_data['hidden_dim'],
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
+            extraction_component=meta_data.get('extraction_component', 'residual_stream'),
         )
         
         def to_tensor(v):
@@ -495,7 +507,7 @@ class PULSESteeringObject(BaseSteeringObject):
     def compute_gate(self, hidden_state: torch.Tensor) -> torch.Tensor:
         """Compute gate based on similarity to condition vector."""
         h_norm = F.normalize(hidden_state, dim=-1)
-        c_norm = F.normalize(self.condition_vector.to(hidden_state.device), dim=-1)
+        c_norm = F.normalize(self.condition_vector.to(device=hidden_state.device, dtype=hidden_state.dtype), dim=-1)
         
         similarity = (h_norm * c_norm).sum(dim=-1)
         gate = torch.sigmoid((similarity - self.threshold) / self.gate_temperature)
@@ -504,7 +516,7 @@ class PULSESteeringObject(BaseSteeringObject):
     def compute_intensity(self, hidden_state: torch.Tensor, layer: int) -> torch.Tensor:
         batch_size = hidden_state.shape[0] if hidden_state.dim() > 1 else 1
         scale = self.layer_scales.get(layer, 1.0)
-        return torch.full((batch_size,), scale, device=hidden_state.device)
+        return torch.full((batch_size,), scale, device=hidden_state.device, dtype=hidden_state.dtype)
     
     def should_steer(self, hidden_state: torch.Tensor) -> bool:
         """Hard decision on whether to steer."""
@@ -525,6 +537,7 @@ class PULSESteeringObject(BaseSteeringObject):
                 'hidden_dim': self.metadata.hidden_dim,
                 'created_at': self.metadata.created_at,
                 'extra': self.metadata.extra,
+                'extraction_component': self.metadata.extraction_component,
             },
             'behavior_vectors': {str(k): v for k, v in self.behavior_vectors.items()},
             'condition_vector': self.condition_vector,
@@ -548,6 +561,7 @@ class PULSESteeringObject(BaseSteeringObject):
             hidden_dim=meta_data['hidden_dim'],
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
+            extraction_component=meta_data.get('extraction_component', 'residual_stream'),
         )
         
         def to_tensor(v):
@@ -699,6 +713,7 @@ class TITANSteeringObject(BaseSteeringObject):
                 'hidden_dim': self.metadata.hidden_dim,
                 'created_at': self.metadata.created_at,
                 'extra': self.metadata.extra,
+                'extraction_component': self.metadata.extraction_component,
             },
             'directions': {str(k): v for k, v in self.directions.items()},
             'direction_weights': {str(k): v for k, v in self.direction_weights.items()},
@@ -733,6 +748,7 @@ class TITANSteeringObject(BaseSteeringObject):
             hidden_dim=meta_data['hidden_dim'],
             created_at=meta_data.get('created_at', ''),
             extra=meta_data.get('extra', {}),
+            extraction_component=meta_data.get('extraction_component', 'residual_stream'),
         )
         
         def to_tensor(v):
@@ -793,6 +809,12 @@ def create_steering_object(
         return PULSESteeringObject(metadata, **kwargs)
     elif method == 'titan':
         return TITANSteeringObject(metadata, **kwargs)
+    elif method == 'concept_flow':
+        from wisent.core.steering_methods.methods.concept_flow import ConceptFlowSteeringObject
+        return ConceptFlowSteeringObject(metadata, **kwargs)
+    elif method == 'geodesic_ot':
+        from wisent.core.steering_methods.methods.geodesic_ot import GeodesicOTSteeringObject
+        return GeodesicOTSteeringObject(metadata, **kwargs)
     else:
         raise ValueError(f"Unknown steering method: {method}")
 

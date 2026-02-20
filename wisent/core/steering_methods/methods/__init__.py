@@ -24,6 +24,21 @@ from .advanced import (
     PULSEResult,
 )
 
+from .concept_flow import (
+    ConceptFlowMethod,
+    ConceptFlowConfig,
+    ConceptFlowResult,
+    FlowVelocityNetwork,
+    ConceptFlowSteeringObject,
+)
+
+from .geodesic_ot import (
+    GeodesicOTMethod,
+    GeodesicOTConfig,
+    GeodesicOTResult,
+    GeodesicOTSteeringObject,
+)
+
 __all__ = [
     # Simple methods
     "CAAMethod",
@@ -45,4 +60,15 @@ __all__ = [
     "PULSEMethod",
     "PULSEConfig",
     "PULSEResult",
+    # Concept Flow method
+    "ConceptFlowMethod",
+    "ConceptFlowConfig",
+    "ConceptFlowResult",
+    "FlowVelocityNetwork",
+    "ConceptFlowSteeringObject",
+    # Geodesic OT method
+    "GeodesicOTMethod",
+    "GeodesicOTConfig",
+    "GeodesicOTResult",
+    "GeodesicOTSteeringObject",
 ]
