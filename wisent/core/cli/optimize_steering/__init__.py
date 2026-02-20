@@ -166,6 +166,39 @@ class TITANConfig(MethodConfig):
         }
 
 
+@dataclass
+class ConceptFlowConfig(MethodConfig):
+    """ConceptFlow-specific parameters."""
+    layer: int = 16
+    num_dims: int = 0
+    variance_threshold: float = 0.80
+    training_epochs: int = 300
+    lr: float = 0.001
+    num_integration_steps: int = 4
+    t_max: float = 1.0
+    
+    def to_args(self) -> Dict[str, Any]:
+        return {
+            "method": "concept_flow",
+            "layer": self.layer,
+            "steering_strategy": self.steering_strategy,
+        }
+
+class GeodesicOTConfig(MethodConfig):
+    """GeodesicOT-specific parameters."""
+    layer: int = 16
+    k_neighbors: int = 10
+    sinkhorn_reg: float = 0.1
+    sinkhorn_max_iter: int = 100
+    inference_k: int = 5
+    
+    def to_args(self) -> Dict[str, Any]:
+        return {
+            "method": "geodesic_ot",
+            "layer": self.layer,
+            "steering_strategy": self.steering_strategy,
+        }
+
 def get_search_space(method: str, num_layers: int) -> Iterator[MethodConfig]:
     """
     Generate search space for a method.
@@ -303,6 +336,7 @@ def run_pipeline(
     limit: int = 100,
     device: Optional[str] = None,
     enriched_pairs_file: Optional[str] = None,
+    cached_model=None,  # Pre-loaded WisentModel to avoid reloading
 ) -> OptimizationResult:
     """
     Run the full optimization pipeline for a single configuration.
@@ -341,6 +375,7 @@ def run_pipeline(
             verbose=False,
             timing=False,
             raw=False,
+            cached_model=cached_model,
         ))
     
     # 3. Create steering object
@@ -370,6 +405,7 @@ def run_pipeline(
         temperature=0.7,
         top_p=0.95,
         verbose=False,
+        cached_model=cached_model,
     ))
     
     # 5. Evaluate responses
@@ -408,6 +444,7 @@ def create_optuna_objective(
     device: Optional[str],
     work_dir: str,
     enriched_pairs_file: Optional[str] = None,
+    cached_model=None,
 ):
     """Create an Optuna objective function for a given method."""
 
@@ -492,6 +529,32 @@ def create_optuna_objective(
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
+
+        elif method.upper() == "CONCEPT_FLOW" or method.upper() == "CONCEPT FLOW":
+            config = ConceptFlowConfig(
+                method="concept_flow",
+                layer=trial.suggest_int("layer", 1, num_layers),
+                variance_threshold=trial.suggest_float("variance_threshold", 0.5, 0.99),
+                training_epochs=trial.suggest_int("training_epochs", 50, 500),
+                lr=trial.suggest_float("lr", 1e-4, 1e-2, log=True),
+                num_integration_steps=trial.suggest_int("num_integration_steps", 2, 8),
+                t_max=trial.suggest_float("t_max", 0.5, 2.0),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
+
+        elif method.upper() == "GEODESIC_OT" or method.upper() == "GEODESIC OT":
+            config = GeodesicOTConfig(
+                method="geodesic_ot",
+                layer=trial.suggest_int("layer", 1, num_layers),
+                k_neighbors=trial.suggest_int("k_neighbors", 3, 30),
+                sinkhorn_reg=trial.suggest_float("sinkhorn_reg", 0.01, 1.0, log=True),
+                sinkhorn_max_iter=trial.suggest_int("sinkhorn_max_iter", 50, 200),
+                inference_k=trial.suggest_int("inference_k", 1, 15),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
+
         else:
             raise ValueError(f"Unknown method: {method}")
         
@@ -504,6 +567,7 @@ def create_optuna_objective(
             limit=limit,
             device=device,
             enriched_pairs_file=enriched_pairs_file,
+            cached_model=cached_model,
         )
 
         return result.score
@@ -1085,5 +1149,8 @@ __all__ = [
     "PRISMConfig",
     "PULSEConfig",
     "TITANConfig",
+    "ConceptFlowConfig",
+    "GeodesicOTConfig",
+    "create_optuna_objective",
     "OptimizationResult",
 ]

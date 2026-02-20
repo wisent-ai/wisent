@@ -71,6 +71,7 @@ def execute_create_steering_object(args):
         model = data.get('model', 'unknown')
         layers = data.get('layers', [])
         token_aggregation = data.get('token_aggregation', 'unknown')
+        extraction_component = data.get('extraction_component', 'residual_stream')
         pairs_list = data.get('pairs', [])
         
         print(f"   ✓ Loaded {len(pairs_list)} pairs")
@@ -102,7 +103,7 @@ def execute_create_steering_object(args):
 
         # Filter layers if --layer is specified
         if getattr(args, 'layer', None):
-            target_layers = _parse_layer_spec(args.layer, len(all_layers))
+            target_layers = _parse_layer_spec(str(args.layer), len(all_layers))
             available_layers = [l for l in all_layers if int(l) in target_layers]
             if not available_layers:
                 raise ValueError(f"No matching layers found. Specified: {args.layer}, Available: {all_layers}")
@@ -131,6 +132,7 @@ def execute_create_steering_object(args):
             hidden_dim=hidden_dim,
             created_at=datetime.now().isoformat(),
             calibration_norms=calibration_norms,
+            extraction_component=extraction_component,
         )
         
         # 4. Create steering object based on method
@@ -151,6 +153,16 @@ def execute_create_steering_object(args):
             )
         elif method_name == 'titan':
             steering_obj = _create_titan_steering_object(
+                metadata, layer_activations, available_layers, args
+            )
+        elif method_name == 'concept_flow':
+            from wisent.core.cli.steering.core.create_concept_flow import _create_concept_flow_steering_object
+            steering_obj = _create_concept_flow_steering_object(
+                metadata, layer_activations, available_layers, args
+            )
+        elif method_name == 'geodesic_ot':
+            from wisent.core.steering_methods.methods.geodesic_ot.create import _create_geodesic_ot_steering_object
+            steering_obj = _create_geodesic_ot_steering_object(
                 metadata, layer_activations, available_layers, args
             )
         else:
