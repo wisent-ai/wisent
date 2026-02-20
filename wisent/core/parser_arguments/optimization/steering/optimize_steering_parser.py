@@ -34,7 +34,7 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=AVAILABLE_METHODS,
+        choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
         default=["CAA"],
         help=f"Steering methods to test. Available: {', '.join(AVAILABLE_METHODS)}",
     )
@@ -334,7 +334,7 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=AVAILABLE_METHODS,
+        choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
         default=["CAA", "Hyperplane", "MLP", "PRISM", "PULSE", "TITAN"],
         help=f"Methods to optimize (default: all)"
     )
@@ -365,7 +365,7 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=AVAILABLE_METHODS,
+        choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
         default=["CAA"],
         help=f"Steering methods to compare. Available: {', '.join(AVAILABLE_METHODS)}",
     )
@@ -397,7 +397,7 @@ def setup_steering_optimizer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=AVAILABLE_METHODS,
+        choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
         help=f"Steering method to use (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(layer_parser)
@@ -429,7 +429,7 @@ def setup_steering_optimizer_parser(parser):
         "--method",
         type=str,
         default="CAA",
-        choices=AVAILABLE_METHODS,
+        choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
         help=f"Steering method to use (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(strength_parser)
@@ -476,7 +476,7 @@ def setup_steering_optimizer_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        choices=AVAILABLE_METHODS,
+        choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
         default=["CAA"],
         help=f"Steering methods to test (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
     )
