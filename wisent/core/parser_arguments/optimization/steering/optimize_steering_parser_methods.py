@@ -1,5 +1,6 @@
 """Method-specific subparsers for optimize-steering."""
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
+AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
 
 def setup_method_parsers(steering_subparsers):
