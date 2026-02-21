@@ -8,6 +8,7 @@ from .acpbench import ACPBENCH_TASKS
 from .aexams import AEXAMS_TASKS
 from .afrimgsm import AFRIMGSM_TASKS
 from .afrimmlu import AFRIMMLU_TASKS
+from .inverse import INVERSE_TASKS
 from .afrixnli import AFRIXNLI_TASKS
 from .afrobench import AFROBENCH_TASKS
 from .afrobench_adr import AFROBENCH_ADR_TASKS

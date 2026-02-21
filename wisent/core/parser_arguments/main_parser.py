@@ -57,20 +57,15 @@ from wisent.core.parser_arguments.optimization.weights import (
     setup_optimize_weights_parser,
 )
 from wisent.core.parser_arguments.other.steering import (
-    setup_multi_steer_parser,
-    setup_steering_viz_parser,
+    setup_multi_steer_parser, setup_steering_viz_parser, setup_discover_steering_parser,
 )
 from wisent.core.parser_arguments.evaluation import (
-    setup_evaluate_parser,
-    setup_evaluate_responses_parser,
-    setup_evaluate_refusal_parser,
-    setup_verify_steering_parser,
+    setup_evaluate_parser, setup_evaluate_responses_parser,
+    setup_evaluate_refusal_parser, setup_verify_steering_parser,
 )
 from wisent.core.parser_arguments.analysis import (
-    setup_check_linearity_parser,
-    setup_cluster_benchmarks_parser,
-    setup_geometry_search_parser,
-    setup_zwiad_parser,
+    setup_check_linearity_parser, setup_cluster_benchmarks_parser,
+    setup_geometry_search_parser, setup_zwiad_parser, setup_compare_steering_parser,
 )
 from wisent.core.parser_arguments.data import setup_migrate_activations_parser
 
@@ -285,16 +280,13 @@ def setup_parser() -> argparse.ArgumentParser:
     )
     setup_steering_viz_parser(steering_viz_parser)
 
-    # Discover steering command - find optimal steering directions
-    from wisent.core.parser_arguments.other.steering import setup_discover_steering_parser
-    discover_steering_parser = subparsers.add_parser(
-        "discover-steering",
-        help="Discover optimal steering directions using behavioral probing, direction search, and layer search"
-    )
+    discover_steering_parser = subparsers.add_parser("discover-steering", help="Discover optimal steering directions")
     setup_discover_steering_parser(discover_steering_parser)
-    migrate_activations_parser = subparsers.add_parser("migrate-activations", help="Migrate activation data from Supabase to HuggingFace Hub")
+    migrate_activations_parser = subparsers.add_parser("migrate-activations", help="Migrate activation data to HuggingFace Hub")
     setup_migrate_activations_parser(migrate_activations_parser)
-
-    tune_rec_parser = subparsers.add_parser("tune-recommendation", help="Tune steering recommendation weights from empirical ground truth")
+    tune_rec_parser = subparsers.add_parser("tune-recommendation", help="Tune steering recommendation weights")
     setup_tune_recommendation_parser(tune_rec_parser)
+
+    compare_steering_parser = subparsers.add_parser("compare-steering", help="Compare steering objects across traits")
+    setup_compare_steering_parser(compare_steering_parser)
     return parser
