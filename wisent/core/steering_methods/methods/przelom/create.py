@@ -73,8 +73,27 @@ def _create_przelom_steering_object(
         log_target = torch.log(T_target.clamp(min=1e-12))
         log_current = torch.log(T_current.clamp(min=1e-12))
         delta_C = epsilon * (log_target - log_current)
-        k_pos_pinv = _regularized_pinv(k_pos, regularization)
-        delta_q = -math.sqrt(q_neg.shape[-1]) * (delta_C @ k_pos_pinv.T)
+        # GQA-aware inversion: map delta_C back to delta_q in full Q-dim
+        q_dim = q_neg.shape[-1]
+        k_dim = k_pos.shape[-1]
+        if q_dim == k_dim:
+            # Non-GQA: flat pseudoinverse (Q and K same dimensionality)
+            k_pos_pinv = _regularized_pinv(k_pos, regularization)
+            delta_q = -math.sqrt(q_dim) * (delta_C @ k_pos_pinv.T)
+        else:
+            # GQA: per-KV-head pseudoinverse, expand to full Q-dim
+            # Each KV head serves `groups` Q heads; invert per-head then repeat
+            head_dim = q_dim // num_heads
+            groups = num_heads // num_kv_heads
+            k_by_head = k_pos.reshape(-1, num_kv_heads, head_dim)
+            delta_q_parts = []
+            for g in range(num_kv_heads):
+                k_g = k_by_head[:, g, :]  # [N_pos, head_dim]
+                k_g_pinv = _regularized_pinv(k_g, regularization)
+                dq_g = -math.sqrt(head_dim) * (delta_C @ k_g_pinv.T)
+                for _ in range(groups):
+                    delta_q_parts.append(dq_g)
+            delta_q = torch.cat(delta_q_parts, dim=-1)  # [N_neg, q_dim]
         delta_h = delta_q
         layer_int = int(layer_str)
         source_points[layer_int] = neg.detach()
