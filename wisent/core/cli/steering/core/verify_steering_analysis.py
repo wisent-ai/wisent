@@ -1,6 +1,6 @@
 """Activation analysis helpers for verify-steering."""
 import torch
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 
 def _compare_activations(
