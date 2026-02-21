@@ -59,6 +59,9 @@ from .agent.main import execute_agent
 # Data management
 from .data.migrate_activations import execute_migrate_activations
 
+# Cross-trait comparison
+from wisent.core.geometry.comparison import execute_compare_steering
+
 __all__ = [
     'execute_tasks',
     'execute_generate_pairs_from_task',
@@ -93,4 +96,5 @@ __all__ = [
     'execute_discover_steering',
     'execute_migrate_activations',
     'execute_tune_recommendation',
+    'execute_compare_steering',
 ]

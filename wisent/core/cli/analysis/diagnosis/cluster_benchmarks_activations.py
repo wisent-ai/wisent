@@ -1,9 +1,9 @@
 """Activation extraction strategies for cluster benchmarks."""
 import torch
-from typing import List, Tuple
+from typing import Dict, List, Tuple
 import numpy as np
 
-from wisent.core.data.lm_eval_loader import LMEvalDataLoader
+from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 
 
 class ConfigResult:

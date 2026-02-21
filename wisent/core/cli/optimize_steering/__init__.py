@@ -35,12 +35,14 @@ from wisent.core.cli.optimize_steering.method_configs import (
     TECZAConfig, TETNOConfig, GROMConfig, NurtConfig,
     SzlakConfig, WicherConfig,
 )
+from wisent.core.cli.optimize_steering.transport import PrzelomConfig, execute_transport_rl
 from wisent.core.cli.optimize_steering.search_space import get_search_space
 from wisent.core.cli.optimize_steering.pipeline import (
     OptimizationResult, run_pipeline, create_optuna_objective, _make_args,
 )
 from wisent.core.cli.optimize_steering.welfare import _execute_welfare_optimization
 from wisent.core.cli.optimize_steering.personalization import _execute_personalization_optimization
+from wisent.core.cli.optimize_steering.continual import execute_continual_learning
 
 
 def execute_optimize_steering(args):
@@ -87,6 +89,14 @@ def execute_optimize_steering(args):
     if steering_action == 'hierarchical':
         from .hierarchical import execute_hierarchical_optimization
         return execute_hierarchical_optimization(args)
+
+    # Check for 'transport-rl' steering_action
+    if steering_action == 'transport-rl':
+        return execute_transport_rl(args)
+
+    # Check for 'continual' steering_action (subcommand)
+    if steering_action == 'continual' or subcommand == 'continual':
+        return execute_continual_learning(args)
 
     # Default: Optuna-based optimization
     import optuna
@@ -199,6 +209,9 @@ __all__ = [
     "NurtConfig",
     "SzlakConfig",
     "WicherConfig",
+    "PrzelomConfig",
     "create_optuna_objective",
     "OptimizationResult",
+    "execute_transport_rl",
+    "execute_continual_learning",
 ]
