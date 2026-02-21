@@ -204,11 +204,11 @@ def compute_recommendation(
 
     The 6 steering methods are:
     - CAA: Simple mean difference
-    - Hyperplane: SVM-based
+    - Ostrze: SVM-based
     - MLP: Neural probe
-    - PRISM: Multi-directional
-    - PULSE: Conditional gating
-    - TITAN: Full adaptive
+    - TECZA: Multi-directional
+    - TETNO: Conditional gating
+    - GROM: Full adaptive
     """
     try:
         # Extract metrics
@@ -278,7 +278,7 @@ def compute_final_steering_prescription(
     Just returns the raw metrics for each layer so the user can decide.
 
     Args:
-        per_layer_metrics: Dict mapping layer index to RepScan metrics for that layer
+        per_layer_metrics: Dict mapping layer index to Zwiad metrics for that layer
 
     Returns:
         Dict with per-layer raw metrics

@@ -163,7 +163,7 @@ def run_full_validation(
 
     # Step 2: Geometry test
     linearity = test_linearity(pos, neg)
-    geometry_diagnosis = "LINEAR" if linearity.is_linear else "NONLINEAR"
+    geometry_diagnosis = linearity.diagnosis
 
     # Step 3: Effective dimension
     eff_dim = compute_effective_dimensions_vs_null(pos, neg)

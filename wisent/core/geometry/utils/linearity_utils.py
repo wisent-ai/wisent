@@ -1,8 +1,4 @@
-"""Helper functions for rigorous linearity validation.
-
-These utilities implement econometric-style diagnostics for testing
-the Linear Representation Hypothesis (LRH).
-"""
+"""Linearity validation helpers for the Linear Representation Hypothesis."""
 from typing import Tuple, Optional, Dict, List
 import numpy as np
 import torch
@@ -12,17 +8,27 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
 
+MAX_PAIRS_FOR_LINEARITY = 1000
 
 def _prepare_data(
     pos: torch.Tensor, neg: torch.Tensor
 ) -> Tuple[np.ndarray, np.ndarray]:
-    """Convert tensors to numpy and create labels."""
+    """Convert tensors to numpy, subsample if large, apply PCA, create labels."""
+    from sklearn.decomposition import PCA
     pos_np = pos.cpu().numpy() if isinstance(pos, torch.Tensor) else pos
     neg_np = neg.cpu().numpy() if isinstance(neg, torch.Tensor) else neg
+    import sys; print(f"  [TRACE] _prepare_data: {len(pos_np)} pairs, {pos_np.shape[1]} dims", file=sys.stderr, flush=True)
+    if len(pos_np) > MAX_PAIRS_FOR_LINEARITY:
+        idx = np.random.RandomState(42).choice(len(pos_np), MAX_PAIRS_FOR_LINEARITY, replace=False)
+        idx.sort()
+        pos_np, neg_np = pos_np[idx], neg_np[idx]
     X = np.vstack([pos_np, neg_np])
     y = np.array([1] * len(pos_np) + [0] * len(neg_np))
+    n_samples, n_features = X.shape
+    pca_dims = min(n_samples - 1, n_features, 50)
+    if pca_dims < n_features and pca_dims >= 2:
+        X = PCA(n_components=pca_dims, random_state=42).fit_transform(X)
     return X, y
-
 
 def compute_probe_accuracies(
     pos: torch.Tensor,
@@ -37,9 +43,9 @@ def compute_probe_accuracies(
         where scores are per-fold accuracies for statistical testing.
     """
     X, y = _prepare_data(pos, neg)
-
+    n_per_class = min(len(pos), len(neg))
+    n_splits = max(2, min(n_splits, n_per_class))
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-
     linear_model = LogisticRegression( solver="lbfgs", random_state=random_state)
     nonlinear_model = MLPClassifier(
         hidden_layer_sizes=(64,),  random_state=random_state
@@ -54,7 +60,6 @@ def compute_probe_accuracies(
         linear_scores,
         nonlinear_scores,
     )
-
 
 def analyze_residuals(
     pos: torch.Tensor,
@@ -102,7 +107,6 @@ def analyze_residuals(
         "clusters_found": True,
     }
 
-
 def bootstrap_gap_ci(
     pos: torch.Tensor,
     neg: torch.Tensor,
@@ -128,7 +132,7 @@ def bootstrap_gap_ci(
             continue
 
         linear = LogisticRegression( solver="lbfgs", random_state=42)
-        nonlinear = MLPClassifier(hidden_layer_sizes=(32,),  random_state=42)
+        nonlinear = MLPClassifier(hidden_layer_sizes=(32,), max_iter=50, random_state=42)
 
         try:
             linear.fit(X_boot, y_boot)
@@ -149,7 +153,6 @@ def bootstrap_gap_ci(
     ci_upper = float(np.percentile(gaps, 100 * (1 - alpha / 2)))
 
     return float(np.mean(gaps)), ci_lower, ci_upper
-
 
 def test_cross_context_linearity(
     contexts: List[Tuple[torch.Tensor, torch.Tensor]],
@@ -192,7 +195,6 @@ def test_cross_context_linearity(
         "sufficient_contexts": True,
     }
 
-
 def ramsey_polynomial_test(
     pos: torch.Tensor,
     neg: torch.Tensor,
@@ -217,8 +219,8 @@ def ramsey_polynomial_test(
     pca = PCA(n_components=n_components, random_state=random_state)
     X_reduced = pca.fit_transform(X)
 
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=random_state)
-
+    n_per_class = min(len(pos), len(neg)); _ns = max(2, min(5, n_per_class))
+    cv = StratifiedKFold(n_splits=_ns, shuffle=True, random_state=random_state)
     linear = LogisticRegression( solver="lbfgs", random_state=random_state)
     linear_scores = cross_val_score(linear, X_reduced, y, cv=cv, scoring="accuracy")
     linear_acc = float(np.mean(linear_scores))
@@ -239,7 +241,6 @@ def ramsey_polynomial_test(
         "polynomial_degree": degree,
         "n_pca_components": n_components,
     }
-
 
 def regression_probe(
     pos: torch.Tensor,

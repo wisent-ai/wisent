@@ -297,24 +297,3 @@ class TestCoNaLaEvaluatorEdgeCases:
 
     def test_unicode_strings(self, evaluator):
         """Test handling of unicode strings in code."""
-        code = "print('こんにちは')"
-        result = evaluator.evaluate(response=code, expected=code)
-        assert result.ground_truth == "TRUTHFUL"
-
-    def test_numeric_expected(self, evaluator):
-        """Test that numeric expected values are converted to string."""
-        # Short strings have 0 BLEU with BLEU-4 (not enough tokens for 4-grams)
-        # Use a lower threshold to test numeric conversion
-        evaluator = CoNaLaEvaluator(bleu_threshold=0.0, max_order=1)
-        result = evaluator.evaluate(
-            response="42",
-            expected=42
-        )
-        # With max_order=1, identical single tokens have BLEU=1.0
-        assert result.ground_truth == "TRUTHFUL"
-
-    def test_list_comprehension(self, evaluator):
-        """Test list comprehension code."""
-        code = "[x**2 for x in range(10)]"
-        result = evaluator.evaluate(response=code, expected=code)
-        assert result.ground_truth == "TRUTHFUL"

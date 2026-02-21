@@ -1,4 +1,4 @@
-"""Steering multi-panel visualizations - 9-panel grid like repscan."""
+"""Steering multi-panel visualizations - 9-panel grid like zwiad."""
 
 import numpy as np
 import torch

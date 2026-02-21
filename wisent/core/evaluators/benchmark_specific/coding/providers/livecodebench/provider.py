@@ -297,9 +297,3 @@ def test_stdin():
         )
 
     print(f'All {len(test_cases)} test(s) passed!')
-
-if __name__ == '__main__':
-    test_stdin()
-"""
-
-        return test_code

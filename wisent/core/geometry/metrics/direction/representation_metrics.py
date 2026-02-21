@@ -34,7 +34,7 @@ def analyze_representation_geometry(
     describing its geometry. Does NOT make recommendations.
 
     Returns metrics describing:
-    - Linear separability (can a hyperplane separate pos/neg?)
+    - Linear separability (can a ostrze separate pos/neg?)
     - Cone structure (do diff vectors point same direction?)
     - Intrinsic dimensionality (how many dims does concept use?)
     - Curvature (is the manifold flat or curved?)
@@ -43,10 +43,10 @@ def analyze_representation_geometry(
 
     The geometry determines which steering method is appropriate:
     - TIGHT CONE + FLAT + LINEAR -> CAA
-    - LINEAR but LOW ALIGNMENT -> Hyperplane
-    - MULTI-DIRECTIONAL -> PRISM
+    - LINEAR but LOW ALIGNMENT -> Ostrze
+    - MULTI-DIRECTIONAL -> TECZA
     - CURVED/NONLINEAR -> MLP-based
-    - HIGH CURVATURE -> TITAN/PULSE
+    - HIGH CURVATURE -> GROM/TETNO
     """
     from ...probe.probe_metrics import (
         compute_linear_probe_accuracy,

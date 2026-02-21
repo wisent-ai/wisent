@@ -1,0 +1,300 @@
+"""Classification optimization execution helper."""
+import json
+import os
+import time
+
+def run_classification_optimization(args, evaluator, wisent_model, device):
+    """Run the classification optimization loop and save results."""
+                                        inference_only=False,
+                                        load_steering_vector=None,
+                                        save_steering_vector=None,
+                                        train_only=False,
+                                        steering_method='caa'
+                                    )
+
+                                    try:
+                                        # Call native Wisent execute_tasks
+                                        result = execute_tasks(task_args)
+
+                                        # Extract metrics based on evaluator type
+                                        if steering_evaluator is not None:
+                                            # Use steering evaluator for refusal/personalization metrics
+                                            # Get generated responses from result
+                                            generated_responses = result.get('generated_responses', [])
+                                            if generated_responses:
+                                                eval_results = steering_evaluator.evaluate_responses(generated_responses)
+                                                metric_value = eval_results.get('score', 0)
+                                                result['steering_score'] = metric_value
+                                                result['steering_metrics'] = eval_results
+                                            else:
+                                                metric_value = 0
+                                        else:
+                                            # Use task-based metrics
+                                            metric_map = {
+                                                'f1': 'f1_score',
+                                                'accuracy': 'accuracy',
+                                                'precision': 'precision',
+                                                'recall': 'recall'
+                                            }
+                                            metric_key = metric_map.get(args.optimization_metric, 'f1_score')
+                                            metric_value = result.get(metric_key, 0)
+
+                                        if metric_value > best_score:
+                                            best_score = metric_value
+                                            best_config = {
+                                                'layer': layer,
+                                                'classifier_type': classifier_type,
+                                                'aggregation': agg_method,
+                                                'threshold': threshold,
+                                                'prompt_construction_strategy': prompt_strategy,
+                                                'token_targeting_strategy': token_strategy,
+                                                'accuracy': result.get('accuracy', 0),
+                                                'f1_score': result.get('f1_score', 0),
+                                                'precision': result.get('precision', 0),
+                                                'recall': result.get('recall', 0),
+                                                'generation_count': result.get('generation_count', 0),
+                                                'steering_score': result.get('steering_score', None),
+                                                'steering_metrics': result.get('steering_metrics', None),
+                                            }
+
+                                        if combinations_tested % 20 == 0:
+                                            print(f"      Progress: {combinations_tested}/{total_combinations} tested, best {args.optimization_metric}: {best_score:.4f}", end='\r')
+
+                                    except Exception as e:
+                                        # NO FALLBACK - raise error
+                                        print(f"\n❌ Configuration failed:")
+                                        print(f"   Layer: {layer}")
+                                        print(f"   Aggregation: {agg_method}")
+                                        print(f"   Threshold: {threshold}")
+                                        print(f"   Prompt strategy: {prompt_strategy}")
+                                        print(f"   Token strategy: {token_strategy}")
+                                        print(f"   Error: {e}")
+                                        raise
+
+            print(f"\n\n  ✅ Best config for {task_name}:")
+            print(f"      Layer: {best_config['layer']}")
+            print(f"      Classifier: {best_config['classifier_type']}")
+            print(f"      Aggregation: {best_config['aggregation']}")
+            print(f"      Threshold: {best_config['threshold']:.2f}")
+            print(f"      Prompt Strategy: {best_config['prompt_construction_strategy']}")
+            print(f"      Token Strategy: {best_config['token_targeting_strategy']}")
+            print(f"      Performance metrics:")
+            print(f"        • Accuracy:  {best_config['accuracy']:.4f}")
+            print(f"        • F1 Score:  {best_config['f1_score']:.4f}")
+            print(f"        • Precision: {best_config['precision']:.4f}")
+            print(f"        • Recall:    {best_config['recall']:.4f}")
+            print(f"        • Generations evaluated: {best_config['generation_count']}")
+
+            # Train final classifier with best config and save
+            if hasattr(args, 'classifiers_dir') and args.classifiers_dir:
+                print(f"\n  💾 Training final classifier with best config...")
+
+                final_args = SimpleNamespace(
+                    task_names=[task_name],
+                    model=args.model,
+                    layer=best_config['layer'],
+                    classifier_type=best_config['classifier_type'],
+                    token_aggregation=best_config['aggregation'],
+                    detection_threshold=best_config['threshold'],
+                    prompt_construction_strategy=best_config['prompt_construction_strategy'],
+                    token_targeting_strategy=best_config['token_targeting_strategy'],
+                    split_ratio=0.8,
+                    seed=42,
+                    limit=args.limit,
+                    training_limit=None,
+                    testing_limit=None,
+                    device=args.device,
+                    save_classifier=os.path.join(args.classifiers_dir, f"{task_name}_classifier.pt"),
+                    output=os.path.join(args.classifiers_dir, task_name),
+                    inference_only=False,
+                    load_steering_vector=None,
+                    save_steering_vector=None,
+                    train_only=False,
+                    steering_method='caa'
+                )
+
+                execute_tasks(final_args)
+                print(f"      ✓ Classifier saved to: {final_args.save_classifier}")
+
+            # Store results
+            all_results[task_name] = {
+                'best_config': best_config,
+                'optimization_metric': args.optimization_metric,
+                'best_score': best_score,
+                'combinations_tested': combinations_tested
+            }
+
+            task_time = time.time() - task_start_time
+            print(f"\n  ⏱️  Task completed in {task_time:.1f}s")
+
+        except Exception as e:
+            # NO FALLBACK - raise error
+            print(f"\n❌ Task '{task_name}' optimization failed:")
+            print(f"   Error: {e}")
+            import traceback
+            traceback.print_exc()
+            raise
+
+    # 5. Save optimization results
+    results_dir = getattr(args, 'classifiers_dir', None) or './optimization_results'
+    os.makedirs(results_dir, exist_ok=True)
+
+    model_name_safe = args.model.replace('/', '_')
+    results_file = os.path.join(results_dir, f'classification_optimization_{model_name_safe}.json')
+
+    with open(results_file, 'w') as f:
+        json.dump({
+            'model': args.model,
+            'optimization_metric': args.optimization_metric,
+            'results': all_results
+        }, f, indent=2)
+
+    print(f"\n{'='*80}")
+    print(f"📊 OPTIMIZATION COMPLETE")
+    print(f"{'='*80}")
+    print(f"✅ Results saved to: {results_file}\n")
+
+    # 6. Save to unified WisentConfigManager for persistence
+    print(f"💾 Saving optimal parameters to ~/.wisent/configs/...")
+
+    # Save each task's config
+    for task_name, result in all_results.items():
+        config = result['best_config']
+        config_path = save_classification_config(
+            model_name=args.model,
+            task_name=task_name,
+            layer=config['layer'],
+            token_aggregation=config['aggregation'],
+            detection_threshold=config['threshold'],
+            classifier_type=config['classifier_type'],
+            prompt_construction_strategy=config['prompt_construction_strategy'],
+            token_targeting_strategy=config['token_targeting_strategy'],
+            accuracy=config['accuracy'],
+            f1_score=config['f1_score'],
+            precision=config['precision'],
+            recall=config['recall'],
+            optimization_method="grid_search",
+            set_as_default=(task_name == list(all_results.keys())[0]),  # First task becomes default
+        )
+
+    # Find best overall config and set as default
+    best_overall_score = -1
+    best_overall_config = None
+    best_task_name = None
+    for task_name, result in all_results.items():
+        if result['best_score'] > best_overall_score:
+            best_overall_score = result['best_score']
+            best_overall_config = result['best_config']
+            best_task_name = task_name
+
+    if best_overall_config:
+        # Save best as default
+        config_path = save_classification_config(
+            model_name=args.model,
+            task_name=None,  # Default config
+            layer=best_overall_config['layer'],
+            token_aggregation=best_overall_config['aggregation'],
+            detection_threshold=best_overall_config['threshold'],
+            classifier_type=best_overall_config['classifier_type'],
+            prompt_construction_strategy=best_overall_config['prompt_construction_strategy'],
+            token_targeting_strategy=best_overall_config['token_targeting_strategy'],
+            accuracy=best_overall_config['accuracy'],
+            f1_score=best_overall_config['f1_score'],
+            precision=best_overall_config['precision'],
+            recall=best_overall_config['recall'],
+            optimization_method="grid_search",
+        )
+        print(f"   ✓ Saved to: {config_path}")
+        print(f"   ✓ Default layer: {best_overall_config['layer']} (from {best_task_name})")
+        print(f"   ✓ Task-specific configs saved for: {', '.join(all_results.keys())}\n")
+
+    # Print summary
+    print(f"📋 SUMMARY BY TASK:")
+    print(f"-" * 180)
+    print(f"{'Task':<20} | {'Layer':>5} | {'Classifier':<10} | {'Agg':<12} | {'Prompt':<20} | {'Token':<15} | {'Thresh':>6} | {'F1':>6} | {'Acc':>6}")
+    print(f"-" * 180)
+    for task_name, result in all_results.items():
+        config = result['best_config']
+        print(f"{task_name:<20} | {config['layer']:>5} | {config['classifier_type']:<10} | "
+              f"{config['aggregation']:<12} | {config['prompt_construction_strategy']:<20} | "
+              f"{config['token_targeting_strategy']:<15} | {config['threshold']:>6.2f} | "
+              f"{config['f1_score']:>6.4f} | {config['accuracy']:>6.4f}")
+    print(f"-" * 180)
+    print()
+
+    # Handle --show-comparisons and --save-comparisons
+    show_comparisons = getattr(args, 'show_comparisons', 0)
+    save_comparisons = getattr(args, 'save_comparisons', None)
+
+    if show_comparisons > 0 or save_comparisons:
+        print("\n📊 Generating comparison data (optimized vs default config)...")
+
+        # Build comparison data showing best config vs a baseline config
+        all_comparisons = []
+        for task_name, result in all_results.items():
+            best_config = result['best_config']
+
+            # Default baseline config for comparison
+            default_config = {
+                'layer': total_layers // 2,  # Middle layer
+                'aggregation': 'average',
+                'threshold': 0.5,
+                'classifier_type': 'logistic',
+                'prompt_construction_strategy': 'multiple_choice',
+                'token_targeting_strategy': 'last_token',
+            }
+
+            all_comparisons.append({
+                'task': task_name,
+                'default_config': default_config,
+                'optimized_config': {
+                    'layer': best_config['layer'],
+                    'aggregation': best_config['aggregation'],
+                    'threshold': best_config['threshold'],
+                    'classifier_type': best_config['classifier_type'],
+                    'prompt_construction_strategy': best_config['prompt_construction_strategy'],
+                    'token_targeting_strategy': best_config['token_targeting_strategy'],
+                },
+                'optimized_metrics': {
+                    'f1': best_config['f1_score'],
+                    'accuracy': best_config['accuracy'],
+                    'precision': best_config['precision'],
+                    'recall': best_config['recall'],
+                },
+                'improvements': {
+                    'layer_change': best_config['layer'] - default_config['layer'],
+                    'aggregation_change': default_config['aggregation'] != best_config['aggregation'],
+                    'threshold_change': best_config['threshold'] - default_config['threshold'],
+                },
+            })
+
+        # Save to JSON if requested
+        if save_comparisons:
+            os.makedirs(os.path.dirname(save_comparisons) if os.path.dirname(save_comparisons) else ".", exist_ok=True)
+            with open(save_comparisons, 'w') as f:
+                json.dump({
+                    'model': args.model,
+                    'optimization_metric': args.optimization_metric,
+                    'comparisons': all_comparisons,
+                }, f, indent=2)
+            print(f"💾 Saved comparisons to: {save_comparisons}")
+
+        # Display in console if requested
+        if show_comparisons > 0:
+            print(f"\n📊 Configuration Comparisons (showing {min(show_comparisons, len(all_comparisons))} tasks):\n")
+            for i, comp in enumerate(all_comparisons[:show_comparisons]):
+                print(f"{'─'*80}")
+                print(f"Task: {comp['task']}")
+                print(f"{'─'*80}")
+                print(f"DEFAULT CONFIG:")
+                print(f"  Layer: {comp['default_config']['layer']}, Agg: {comp['default_config']['aggregation']}, "
+                      f"Threshold: {comp['default_config']['threshold']}")
+                print(f"OPTIMIZED CONFIG:")
+                print(f"  Layer: {comp['optimized_config']['layer']}, Agg: {comp['optimized_config']['aggregation']}, "
+                      f"Threshold: {comp['optimized_config']['threshold']:.2f}")
+                print(f"  Classifier: {comp['optimized_config']['classifier_type']}, "
+                      f"Prompt: {comp['optimized_config']['prompt_construction_strategy']}, "
+                      f"Token: {comp['optimized_config']['token_targeting_strategy']}")
+                print(f"METRICS:")
+                print(f"  F1: {comp['optimized_metrics']['f1']:.4f}, Accuracy: {comp['optimized_metrics']['accuracy']:.4f}")
+                print()

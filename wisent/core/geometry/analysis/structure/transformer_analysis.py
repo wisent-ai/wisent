@@ -12,12 +12,24 @@ from typing import Dict, Any, List, Optional
 
 
 class TransformerComponent(Enum):
-    """Transformer component types."""
+    """Transformer component types for activation extraction."""
     RESIDUAL = "residual"
     ATTENTION = "attention"
     MLP = "mlp"
     ATTENTION_OUTPUT = "attention_output"
     MLP_OUTPUT = "mlp_output"
+    PER_HEAD = "per_head"
+    MLP_INTERMEDIATE = "mlp_intermediate"
+    POST_ATTN_RESIDUAL = "post_attn_residual"
+    PRE_ATTN_LAYERNORM = "pre_attn_layernorm"
+    Q_PROJ = "q_proj"
+    K_PROJ = "k_proj"
+    V_PROJ = "v_proj"
+    MLP_GATE = "mlp_gate"
+    ATTENTION_SCORES = "attention_scores"
+    EMBEDDING = "embedding"
+    FINAL_LAYERNORM = "final_layernorm"
+    LOGITS = "logits"
 
 
 def get_component_hook_points(
@@ -31,35 +43,77 @@ def get_component_hook_points(
     Different model architectures use different naming conventions.
     """
     if "llama" in model_type.lower() or "mistral" in model_type.lower():
-        if component == TransformerComponent.RESIDUAL:
-            return [f"model.layers.{layer}"]
-        elif component == TransformerComponent.ATTENTION:
-            return [f"model.layers.{layer}.self_attn"]
-        elif component == TransformerComponent.MLP:
-            return [f"model.layers.{layer}.mlp"]
-        elif component == TransformerComponent.ATTENTION_OUTPUT:
-            return [f"model.layers.{layer}.self_attn.o_proj"]
-        elif component == TransformerComponent.MLP_OUTPUT:
-            return [f"model.layers.{layer}.mlp.down_proj"]
-    
+        base = f"model.layers.{layer}"
+        mapping = {
+            TransformerComponent.RESIDUAL: [base],
+            TransformerComponent.ATTENTION: [f"{base}.self_attn"],
+            TransformerComponent.MLP: [f"{base}.mlp"],
+            TransformerComponent.ATTENTION_OUTPUT: [f"{base}.self_attn.o_proj"],
+            TransformerComponent.MLP_OUTPUT: [f"{base}.mlp.down_proj"],
+            TransformerComponent.PER_HEAD: [f"{base}.self_attn.o_proj"],
+            TransformerComponent.MLP_INTERMEDIATE: [f"{base}.mlp.down_proj"],
+            TransformerComponent.POST_ATTN_RESIDUAL: [f"{base}.post_attention_layernorm"],
+            TransformerComponent.PRE_ATTN_LAYERNORM: [f"{base}.input_layernorm"],
+            TransformerComponent.Q_PROJ: [f"{base}.self_attn.q_proj"],
+            TransformerComponent.K_PROJ: [f"{base}.self_attn.k_proj"],
+            TransformerComponent.V_PROJ: [f"{base}.self_attn.v_proj"],
+            TransformerComponent.MLP_GATE: [f"{base}.mlp.gate_proj"],
+            TransformerComponent.ATTENTION_SCORES: [f"{base}.self_attn.q_proj"],
+            TransformerComponent.EMBEDDING: ["model.embed_tokens"],
+            TransformerComponent.FINAL_LAYERNORM: ["model.norm"],
+            TransformerComponent.LOGITS: ["lm_head"],
+        }
+        return mapping.get(component, [base])
+
     elif "qwen" in model_type.lower():
-        if component == TransformerComponent.RESIDUAL:
-            return [f"model.layers.{layer}"]
-        elif component == TransformerComponent.ATTENTION:
-            return [f"model.layers.{layer}.self_attn"]
-        elif component == TransformerComponent.MLP:
-            return [f"model.layers.{layer}.mlp"]
-    
+        base = f"model.layers.{layer}"
+        mapping = {
+            TransformerComponent.RESIDUAL: [base],
+            TransformerComponent.ATTENTION: [f"{base}.self_attn"],
+            TransformerComponent.MLP: [f"{base}.mlp"],
+            TransformerComponent.ATTENTION_OUTPUT: [f"{base}.self_attn.o_proj"],
+            TransformerComponent.MLP_OUTPUT: [f"{base}.mlp.down_proj"],
+            TransformerComponent.PER_HEAD: [f"{base}.self_attn.o_proj"],
+            TransformerComponent.MLP_INTERMEDIATE: [f"{base}.mlp.down_proj"],
+            TransformerComponent.POST_ATTN_RESIDUAL: [f"{base}.post_attention_layernorm"],
+            TransformerComponent.PRE_ATTN_LAYERNORM: [f"{base}.input_layernorm"],
+            TransformerComponent.Q_PROJ: [f"{base}.self_attn.q_proj"],
+            TransformerComponent.K_PROJ: [f"{base}.self_attn.k_proj"],
+            TransformerComponent.V_PROJ: [f"{base}.self_attn.v_proj"],
+            TransformerComponent.MLP_GATE: [f"{base}.mlp.gate_proj"],
+            TransformerComponent.ATTENTION_SCORES: [f"{base}.self_attn.q_proj"],
+            TransformerComponent.EMBEDDING: ["model.embed_tokens"],
+            TransformerComponent.FINAL_LAYERNORM: ["model.norm"],
+            TransformerComponent.LOGITS: ["lm_head"],
+        }
+        return mapping.get(component, [base])
+
     elif "gpt" in model_type.lower():
-        if component == TransformerComponent.RESIDUAL:
-            return [f"transformer.h.{layer}"]
-        elif component == TransformerComponent.ATTENTION:
-            return [f"transformer.h.{layer}.attn"]
-        elif component == TransformerComponent.MLP:
-            return [f"transformer.h.{layer}.mlp"]
-    
-    # Default pattern
-    return [f"layers.{layer}"]
+        base = f"transformer.h.{layer}"
+        mapping = {
+            TransformerComponent.RESIDUAL: [base],
+            TransformerComponent.ATTENTION: [f"{base}.attn"],
+            TransformerComponent.MLP: [f"{base}.mlp"],
+            TransformerComponent.ATTENTION_OUTPUT: [f"{base}.attn.c_proj"],
+            TransformerComponent.MLP_OUTPUT: [f"{base}.mlp.c_proj"],
+            TransformerComponent.PER_HEAD: [f"{base}.attn.c_proj"],
+            TransformerComponent.MLP_INTERMEDIATE: [f"{base}.mlp.c_proj"],
+            TransformerComponent.POST_ATTN_RESIDUAL: [f"{base}.ln_2"],
+            TransformerComponent.PRE_ATTN_LAYERNORM: [f"{base}.ln_1"],
+            TransformerComponent.Q_PROJ: [f"{base}.attn.c_attn"],
+            TransformerComponent.K_PROJ: [f"{base}.attn.c_attn"],
+            TransformerComponent.V_PROJ: [f"{base}.attn.c_attn"],
+            TransformerComponent.MLP_GATE: [f"{base}.mlp.c_fc"],
+            TransformerComponent.ATTENTION_SCORES: [f"{base}.attn.c_attn"],
+            TransformerComponent.EMBEDDING: ["transformer.wte"],
+            TransformerComponent.FINAL_LAYERNORM: ["transformer.ln_f"],
+            TransformerComponent.LOGITS: ["lm_head"],
+        }
+        return mapping.get(component, [base])
+
+    # Default pattern (Llama-like)
+    base = f"layers.{layer}"
+    return [base]
 
 
 def analyze_transformer_components(

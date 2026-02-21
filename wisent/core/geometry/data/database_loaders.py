@@ -40,12 +40,12 @@ def load_activations_from_database(
     layer: int,
     prompt_format: str = "chat",
     extraction_strategy: str = "completion_last",
+    component: str = "residual_stream",
     limit: Optional[int] = None,
     database_url: Optional[str] = None,
     pair_ids: Optional[set] = None,
     use_cache: bool = True,
     force_refresh: bool = False,
-    source: str = "auto",
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Load activations for a single layer from local cache or database.
@@ -65,7 +65,7 @@ def load_activations_from_database(
     Returns:
         Tuple of (pos_activations, neg_activations) tensors with pair_id mapping
     """
-    cache_path = get_cache_path(task_name, "activations", model_name=model_name, layer=layer)
+    cache_path = get_cache_path(task_name, "activations", model_name=model_name, layer=layer, component=component)
 
     # Try loading from cache first
     if use_cache and not force_refresh and cache_path.exists():
@@ -84,14 +84,7 @@ def load_activations_from_database(
             if limit and len(pos_tensor) > limit:
                 pos_tensor, neg_tensor = pos_tensor[:limit], neg_tensor[:limit]
             return pos_tensor, neg_tensor
-    # Try HF before falling back to database
-    if source in ("auto", "hf"):
-        try:
-            from .hf.hf_loaders import load_activations_from_hf
-            return load_activations_from_hf(model_name, task_name, layer, extraction_strategy, limit, pair_ids, use_cache)
-        except (FileNotFoundError, ImportError):
-            if source == "hf":
-                raise
+    # Try HF only if explicitly requested
     from collections import defaultdict
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
@@ -163,16 +156,10 @@ def load_activations_from_database(
 
 def load_available_layers_from_database(
     model_name: str, task_name: str, extraction_strategy: str = "completion_last",
-    database_url: Optional[str] = None, source: str = "auto",
+    component: str = "residual_stream",
+    database_url: Optional[str] = None,
 ) -> List[int]:
     """Query database to find all available layers for a model/task combination."""
-    if source in ("auto", "hf"):
-        try:
-            from .hf.hf_loaders import load_available_layers_from_hf
-            return load_available_layers_from_hf(model_name, task_name, extraction_strategy)
-        except (FileNotFoundError, ImportError):
-            if source == "hf":
-                raise
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
     try:
@@ -186,8 +173,6 @@ def load_available_layers_from_database(
         if not result:
             raise ValueError(f"Benchmark {task_name} not found in database")
         set_id = result[0]
-        # Use extraction_strategy directly - no mapping needed
-        # Valid values: completion_last, completion_mean, chat_last, chat_mean, etc.
         db_strategy = extraction_strategy
         cur.execute('''
             SELECT DISTINCT layer FROM "Activation"
@@ -206,7 +191,6 @@ def load_pair_texts_from_database(
     database_url: Optional[str] = None,
     use_cache: bool = True,
     force_refresh: bool = False,
-    source: str = "auto",
 ) -> Dict[int, Dict[str, str]]:
     """
     Load contrastive pair texts from local cache or Supabase database.
@@ -233,14 +217,6 @@ def load_pair_texts_from_database(
             pair_ids = sorted(pairs.keys())[:limit]
             pairs = {pid: pairs[pid] for pid in pair_ids}
         return pairs
-    # Try HF before falling back to database
-    if source in ("auto", "hf"):
-        try:
-            from .hf.hf_loaders import load_pair_texts_from_hf
-            return load_pair_texts_from_hf(task_name, limit, use_cache)
-        except (FileNotFoundError, ImportError):
-            if source == "hf":
-                raise
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
 

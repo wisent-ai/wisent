@@ -87,7 +87,7 @@ def run_strategy_diagnostics(
     geometry = "NONLINEAR" if gap > 0.05 else "LINEAR"
     consistency, consistency_std = compute_pairwise_consistency(directions)
     steering_acc, effect_size = compute_steering_quality(directions)
-    recommended = "CAA" if geometry == "LINEAR" else "Hyperplane"
+    recommended = "CAA" if geometry == "LINEAR" else "Ostrze"
 
     warnings = []
     if consistency < 0.1:

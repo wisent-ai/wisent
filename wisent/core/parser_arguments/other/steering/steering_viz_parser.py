@@ -88,10 +88,10 @@ def setup_steering_viz_parser(parser):
         help="Generate per-concept steering visualizations with evaluation"
     )
     parser.add_argument(
-        "--repscan-results",
+        "--zwiad-results",
         type=str,
         default=None,
-        help="Path to repscan results JSON (required for --per-concept)"
+        help="Path to zwiad results JSON (required for --per-concept)"
     )
     parser.add_argument(
         "--output-dir",
@@ -115,7 +115,7 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--multipanel",
         action="store_true",
-        help="Generate 9-panel visualization (PCA, LDA, t-SNE, UMAP, etc.) like repscan"
+        help="Generate 9-panel visualization (PCA, LDA, t-SNE, UMAP, etc.) like zwiad"
     )
     parser.add_argument(
         "--direction-method",

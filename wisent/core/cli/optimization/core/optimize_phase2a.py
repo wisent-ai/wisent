@@ -1,0 +1,161 @@
+"""Phase 2a-2b: Benchmark and personalization steering optimization."""
+import argparse
+import json
+import os
+
+from wisent.core.cli.optimization.core.optimize_helpers import save_checkpoint
+
+
+def run_benchmark_steering(args, benchmarks, results):
+    """Run Phase 2a: benchmark steering and 2b: personalization steering.
+    
+    Modifies results dict in-place.
+    """
+    from wisent.core.cli.optimize_steering import execute_optimize_steering
+
+    
+    for bench_idx, benchmark in enumerate(benchmarks, 1):
+        # Skip if already in checkpoint results
+        if benchmark in results.get("steering", {}):
+            print(f"\n   [{bench_idx}/{len(benchmarks)}] {benchmark} - SKIPPED (in checkpoint)")
+            continue
+        
+        # Skip if already optimized (unless --force)
+        if not getattr(args, 'force', False):
+            cached = get_cached_optimization(args.model, benchmark, method="*")
+            if cached:
+                print(f"\n   [{bench_idx}/{len(benchmarks)}] {benchmark} - SKIPPED (cached)")
+                results["steering"][benchmark] = {
+                    "best_method": cached.method,
+                    "best_layer": cached.layer,
+                    "best_score": cached.score,
+                    "from_cache": True,
+                }
+                continue
+        
+        print(f"\n   [{bench_idx}/{len(benchmarks)}] {benchmark}")
+        
+        try:
+            steering_args = argparse.Namespace(
+                model=args.model,
+                steering_action="comprehensive",
+                tasks=[benchmark],
+                methods=methods,
+                limit=args.limit,
+                device=args.device,
+                use_cached=False,
+                save_as_default=True,
+                compute_baseline=True,
+                quick_search=args.quick,
+                search_strategy=getattr(args, 'search_strategy', 'grid'),
+                n_trials=getattr(args, 'n_trials', 50),
+                n_startup_trials=getattr(args, 'n_startup_trials', 10),
+            )
+            
+            steering_result = execute_optimize_steering(steering_args)
+            
+            if steering_result and benchmark in steering_result:
+                best_result = steering_result[benchmark]
+                # Get best method result
+                best_method = None
+                best_score = -1
+                for method, method_result in best_result.items():
+                    if isinstance(method_result, dict) and method_result.get("best_score", 0) > best_score:
+                        best_score = method_result["best_score"]
+                        best_method = method
+                        best_layer = method_result.get("best_layer", 16)
+                        best_strength = method_result.get("best_strength", 1.0)
+                
+                if best_method:
+                    store_optimization(
+                        model=args.model,
+                        task=benchmark,
+                        layer=best_layer,
+                        strength=best_strength,
+                        method=best_method.upper(),
+                        strategy="constant",
+                        score=best_score,
+                        metric="accuracy",
+                    )
+                    
+                    results["steering"][benchmark] = {
+                        "best_method": best_method,
+                        "best_layer": best_layer,
+                        "best_strength": best_strength,
+                        "best_score": best_score,
+                    }
+                    print(f"       Best: {best_method} @ layer {best_layer} = {best_score:.3f}")
+            
+        except Exception as e:
+            error_msg = f"{benchmark}: {str(e)}"
+            results["errors"].append(error_msg)
+            print(f"       Error: {str(e)[:80]}")
+            logger.exception(f"Error optimizing {benchmark}")
+        
+        save_checkpoint(args.model, results, phase=f"steering_benchmark_{bench_idx}")
+    
+    # 2b. Personalization trait steering
+    if personalization_traits:
+        print(f"\n   Optimizing steering for {len(personalization_traits)} personalization traits...")
+        
+        for trait_idx, trait in enumerate(personalization_traits, 1):
+            task_key = f"trait:{trait}"
+            
+            if task_key in results.get("steering", {}):
+                print(f"\n   [{trait_idx}/{len(personalization_traits)}] {trait} - SKIPPED (in checkpoint)")
+                continue
+            
+            if not getattr(args, 'force', False):
+                cached = get_cached_optimization(args.model, f"personalization:{trait}", method="*")
+                if cached:
+                    print(f"\n   [{trait_idx}/{len(personalization_traits)}] {trait} - SKIPPED (cached)")
+                    results["steering"][task_key] = {
+                        "best_method": cached.method,
+                        "best_layer": cached.layer,
+                        "best_score": cached.score,
+                        "from_cache": True,
+                    }
+                    continue
+            
+            print(f"\n   [{trait_idx}/{len(personalization_traits)}] {trait}")
+            
+            try:
+                steering_args = argparse.Namespace(
+                    model=args.model,
+                    steering_action="personalization",
+                    trait=trait,
+                    methods=methods,
+                    limit=args.limit,
+                    device=args.device,
+                )
+                
+                steering_result = execute_optimize_steering(steering_args)
+                
+                if steering_result:
+                    best_method = steering_result.get("best_method", "CAA")
+                    best_layer = steering_result.get("best_layer", 16)
+                    best_score = steering_result.get("best_score", 0.0)
+                    
+                    store_optimization(
+                        model=args.model,
+                        task=f"personalization:{trait}",
+                        layer=best_layer,
+                        strength=steering_result.get("best_strength", 1.0),
+                        method=best_method.upper(),
+                        score=best_score,
+                    )
+                    
+                    results["steering"][task_key] = {
+                        "best_method": best_method,
+                        "best_layer": best_layer,
+                        "best_score": best_score,
+                    }
+                    print(f"       Best: {best_method} @ layer {best_layer} = {best_score:.3f}")
+                
+            except Exception as e:
+                error_msg = f"trait:{trait}: {str(e)}"
+                results["errors"].append(error_msg)
+                print(f"       Error: {str(e)[:80]}")
+            
+            save_checkpoint(args.model, results, phase=f"steering_personalization_{trait_idx}")
+    

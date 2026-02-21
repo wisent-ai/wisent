@@ -41,10 +41,15 @@ def execute_generate_responses(args):
         print(f"   Steering strategy: {steering_strategy}")
     print(f"{'='*80}\n")
 
-    # Load model
-    print(f"📦 Loading model...")
-    model = WisentModel(args.model, device=args.device)
-    print(f"   ✓ Model loaded\n")
+    # Load model (or use cached)
+    cached_model = getattr(args, 'cached_model', None)
+    if cached_model is not None:
+        model = cached_model
+        print(f"📦 Using cached model")
+    else:
+        print(f"📦 Loading model...")
+        model = WisentModel(args.model, device=args.device)
+        print(f"   ✓ Model loaded\n")
 
     # Load steering object if provided
     steering_object = None
@@ -219,12 +224,23 @@ def execute_generate_responses(args):
 
         except Exception as e:
             print(f"   ❌ Error generating response for question {idx}: {e}")
-            results.append({
+            error_entry = {
                 "question_id": idx,
                 "prompt": pair.prompt,
                 "generated_response": None,
-                "error": str(e)
-            })
+                "positive_reference": pair.positive_response.model_response,
+                "negative_reference": pair.negative_response.model_response,
+                "error": str(e),
+            }
+            if pair.metadata and pair.metadata.get('correct_answers'):
+                error_entry['correct_answers'] = pair.metadata['correct_answers']
+            else:
+                error_entry['correct_answers'] = [pair.positive_response.model_response]
+            if pair.metadata and pair.metadata.get('incorrect_answers'):
+                error_entry['incorrect_answers'] = pair.metadata['incorrect_answers']
+            else:
+                error_entry['incorrect_answers'] = [pair.negative_response.model_response]
+            results.append(error_entry)
 
     # Save results
     print(f"\n💾 Saving results...")

@@ -297,8 +297,3 @@ def generate_steering_vector(
     }
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(result, f, indent=2)
-
-    print(f"\nSaved SAE steering vector to {output_path}")
-    return output_path

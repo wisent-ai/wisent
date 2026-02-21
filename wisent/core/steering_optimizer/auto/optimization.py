@@ -1,4 +1,4 @@
-"""Auto steering optimization using repscan geometry analysis."""
+"""Auto steering optimization using zwiad geometry analysis."""
 
 from __future__ import annotations
 
@@ -27,14 +27,14 @@ def run_auto_steering_optimization(
     strength_range: Optional[List[float]] = None,
     layer_range: Optional[str] = None
 ) -> Dict[str, Any]:
-    """Automatically optimize steering using repscan geometry analysis."""
+    """Automatically optimize steering using zwiad geometry analysis."""
     from wisent.core.models.wisent_model import WisentModel
 
     if not task_name:
         return {"error": "Task name is required for auto steering optimization"}
 
     if verbose:
-        print(f"\n{'='*70}\nAUTO STEERING OPTIMIZATION (repscan)\n{'='*70}")
+        print(f"\n{'='*70}\nAUTO STEERING OPTIMIZATION (zwiad)\n{'='*70}")
         print(f"   Model: {model_name}\n   Task: {task_name}\n{'='*70}\n")
         print("Loading model...", flush=True)
 
@@ -50,8 +50,8 @@ def run_auto_steering_optimization(
     if verbose:
         print(f"Generated {len(pairs)} contrastive pairs\n")
 
-    # Run repscan analysis
-    recommended_method, confidence, reasoning, metrics, coherence = _run_repscan_analysis(
+    # Run zwiad analysis
+    recommended_method, confidence, reasoning, metrics, coherence = _run_zwiad_analysis(
         wisent_model, pairs, num_layers, verbose
     )
 
@@ -92,7 +92,7 @@ def run_auto_steering_optimization(
         'recommended_method': recommended_method,
         'optimal_layer': best_layer, 'optimal_strength': best_strength,
         'best_score': best_score, 'confidence': confidence, 'reasoning': reasoning,
-        'repscan_metrics': {
+        'zwiad_metrics': {
             'linear_probe_accuracy': metrics.get('linear_probe_accuracy', 0),
             'signal_strength': metrics.get('signal_strength', 0),
             'steerability_score': metrics.get('steer_steerability_score', 0),
@@ -116,8 +116,8 @@ def _generate_pairs(task_name: str, limit: int) -> List:
         return []
 
 
-def _run_repscan_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose: bool) -> tuple:
-    """Run repscan geometry analysis on collected activations."""
+def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose: bool) -> tuple:
+    """Run zwiad geometry analysis on collected activations."""
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
     from wisent.core.geometry import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
@@ -140,7 +140,7 @@ def _run_repscan_analysis(wisent_model: Any, pairs: List, num_layers: int, verbo
             neg_activations.append(neg_act)
 
     if len(pos_activations) < 10 or len(neg_activations) < 10:
-        return "TITAN", 0.5, "Insufficient activations", {}, 0.0
+        return "GROM", 0.5, "Insufficient activations", {}, 0.0
 
     if verbose:
         print(f"Collected {len(pos_activations)} pos and {len(neg_activations)} neg activations\n")
@@ -151,7 +151,7 @@ def _run_repscan_analysis(wisent_model: Any, pairs: List, num_layers: int, verbo
     recommendation = compute_recommendation(metrics)
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
 
-    recommended_method = recommendation.get("recommended_method", "TITAN").upper()
+    recommended_method = recommendation.get("recommended_method", "GROM").upper()
     confidence = recommendation.get("confidence", 0.5)
     reasoning = recommendation.get("reasoning", "")
 
@@ -195,7 +195,7 @@ def _save_config(
         'best_method': method, 'best_layer': layer,
         'best_strength': strength, 'best_score': score,
         'optimization_date': datetime.now().isoformat(),
-        'repscan_metrics': {
+        'zwiad_metrics': {
             'linear_probe_accuracy': metrics.get('linear_probe_accuracy', 0),
             'signal_strength': metrics.get('signal_strength', 0),
             'steerability_score': metrics.get('steer_steerability_score', 0),

@@ -98,9 +98,9 @@ from .utils.icd import (
 )
 
 from .runner import (
-    run_full_repscan,
-    run_full_repscan_with_layer_search,
-    run_full_repscan_with_steering_eval,
+    run_full_zwiad,
+    run_full_zwiad_with_layer_search,
+    run_full_zwiad_with_steering_eval,
     evaluate_steering_effectiveness,
     evaluate_activation_regions,
     compute_geometry_metrics,
@@ -178,13 +178,13 @@ from .concepts import (
     create_all_concept_figures,
 )
 
-from .repscan.repscan_with_concepts import (
-    run_repscan_with_concept_naming,
+from .zwiad.zwiad_with_concepts import (
+    run_zwiad_with_concept_naming,
     extract_pair_texts_from_enriched_pairs,
 )
 
-from .repscan.repscan_config import RepScanProtocolConfig
-from .repscan.repscan_protocol import run_repscan_protocol
+from .zwiad.zwiad_config import ZwiadProtocolConfig
+from .zwiad.zwiad_protocol import run_zwiad_protocol
 
 from .intervention_selection import (
     RigorousInterventionResult,

@@ -15,11 +15,11 @@ Extraction strategies compared:
 
 Steering methods compared (from wisent registry):
 - CAA: Contrastive Activation Addition (mean difference)
-- Hyperplane: Logistic regression decision boundary
+- Ostrze: Logistic regression decision boundary
 - MLP: Neural network adversarial gradient
-- PRISM: Multi-directional gradient optimization
-- PULSE: Condition-gated steering
-- TITAN: Joint optimized manifold
+- TECZA: Multi-directional gradient optimization
+- TETNO: Condition-gated steering
+- GROM: Joint optimized manifold
 
 Methodology:
 1. For each benchmark, group activations by extraction strategy

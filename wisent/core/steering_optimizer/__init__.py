@@ -2,7 +2,7 @@
 Steering optimization package.
 
 Provides comprehensive steering parameter optimization including:
-- Automatic method selection via repscan geometry analysis
+- Automatic method selection via zwiad geometry analysis
 - Method comparison optimization
 - Layer optimization
 - Strength optimization

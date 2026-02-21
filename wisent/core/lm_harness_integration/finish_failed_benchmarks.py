@@ -297,11 +297,3 @@ def main():
     print(f"   Total benchmarks: {total_benchmarks}")
     print(f"   Successful: {successful_loads} ({success_rate:.1%})")
     print(f"   Failed: {failed_loads}")
-    print(f"   Improvement: {successful_loads - original_results['summary']['successful_loads']} benchmarks fixed")
-    print(f"   Fixed benchmarks: math_qa, crows_pairs, hendrycks_ethics, paws_x, mmmlu, pubmedqa")
-    print(f"   Remaining issues: storycloze (manual download), narrativeqa (large dataset)")
-    
-    print(f"\n✅ Fix completed! Updated results saved to: {output_file}")
-
-if __name__ == "__main__":
-    main() 

@@ -33,7 +33,7 @@ def run_steering_optimization(
         model_name: Model to optimize steering for
         task_name: Task to optimize steering for
         optimization_type: Type of optimization to run:
-            - "auto": Use repscan to select method and optimize
+            - "auto": Use zwiad to select method and optimize
             - "method_comparison": Compare different steering methods
             - "layer": Optimize steering layer
             - "strength": Optimize steering strength
@@ -146,8 +146,8 @@ def get_optimal_steering_params(
     return optimizer.load_optimal_steering_config(task_name=task_name)
 
 
-def _generate_pairs_for_repscan(task_name: str, limit: int = 100) -> List:
-    """Generate contrastive pairs for repscan analysis."""
+def _generate_pairs_for_zwiad(task_name: str, limit: int = 100) -> List:
+    """Generate contrastive pairs for zwiad analysis."""
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
     return build_contrastive_pairs(task_name=task_name, limit=limit)
 

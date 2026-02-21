@@ -28,7 +28,7 @@ def run_grid_search(
     Args:
         wisent_model: WisentModel instance
         steering_result: Result from training
-        recommended_method: Method name (CAA, TITAN, PRISM)
+        recommended_method: Method name (CAA, GROM, TECZA)
         layers_to_test: List of layers to test
         strength_range: List of strength values to test
         eval_pairs: Evaluation pairs
@@ -128,7 +128,7 @@ def _get_steering_vector(
         elif layer_key_simple in directions:
             return directions[layer_key_simple]
 
-    elif method == "TITAN":
+    elif method == "GROM":
         if layer_key_simple in result.directions:
             dirs = result.directions[layer_key_simple]
             weights = result.direction_weights[layer_key_simple]
@@ -140,7 +140,7 @@ def _get_steering_vector(
             weights_norm = weights / (weights.sum() + 1e-8)
             return (dirs * weights_norm.unsqueeze(-1)).sum(dim=0)
 
-    elif method == "PRISM":
+    elif method == "TECZA":
         if layer_key_simple in result.directions:
             return result.directions[layer_key_simple][0]
         elif layer_key_prefixed in result.directions:

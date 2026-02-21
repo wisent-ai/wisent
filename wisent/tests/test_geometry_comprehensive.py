@@ -255,7 +255,7 @@ def run_comprehensive_geometry_analysis(
                     neg_tensor = torch.stack(neg_acts)
                     
                     print("\nSteering method compatibility:")
-                    for method in ["caa", "titan", "prism", "pulse"]:
+                    for method in ["caa", "grom", "tecza", "tetno"]:
                         try:
                             check = run_preflight_check(pos_tensor, neg_tensor, method)
                             print(f"  {method.upper()}: {check.compatibility_score:.0%} compatible")
@@ -297,31 +297,3 @@ def run_comprehensive_geometry_analysis(
                     "best_structure": r.best_structure,
                     "best_score": r.best_score,
                 }
-                for r in all_results
-            ],
-        }
-        
-        with open(results_file, 'w') as f:
-            json.dump(results_data, f, indent=2)
-        print(f"\nFull results saved to: {results_file}")
-        
-        print("\n" + "=" * 80)
-        print("ANALYSIS COMPLETE")
-        print("=" * 80)
-
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--task", default="truthfulqa_gen")
-    parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--num-pairs", type=int, default=50)
-    parser.add_argument("--output-dir", default="/home/ubuntu/output")
-    args = parser.parse_args()
-    
-    run_comprehensive_geometry_analysis(
-        task=args.task,
-        model=args.model,
-        num_pairs=args.num_pairs,
-        output_dir=args.output_dir,
-    )

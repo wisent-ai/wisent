@@ -15,7 +15,7 @@ def execute_per_concept_steering_viz(args):
     import random
     import pickle
     import numpy as np
-    from wisent.core.geometry.repscan_with_concepts import (
+    from wisent.core.geometry.zwiad_with_concepts import (
         load_activations_from_database,
         load_pair_texts_from_database,
     )
@@ -46,24 +46,24 @@ def execute_per_concept_steering_viz(args):
             cache_data = raw_cache
         print(f"  Loaded {len(cache_data)} layers from cache")
 
-    # Load repscan results
-    if not args.repscan_results:
-        print("ERROR: --repscan-results is required for --per-concept")
+    # Load zwiad results
+    if not args.zwiad_results:
+        print("ERROR: --zwiad-results is required for --per-concept")
         sys.exit(1)
 
-    with open(args.repscan_results) as f:
-        repscan = json.load(f)
+    with open(args.zwiad_results) as f:
+        zwiad = json.load(f)
 
-    concepts = repscan["concept_decomposition"]["concepts"]
-    cluster_labels = repscan["concept_decomposition"].get("cluster_labels", [])
-    pair_assignments = repscan["concept_decomposition"]["pair_assignments"]
-    print(f"Loaded {len(concepts)} concepts from repscan results")
+    concepts = zwiad["concept_decomposition"]["concepts"]
+    cluster_labels = zwiad["concept_decomposition"].get("cluster_labels", [])
+    pair_assignments = zwiad["concept_decomposition"]["pair_assignments"]
+    print(f"Loaded {len(concepts)} concepts from zwiad results")
 
-    # Load pair texts - prefer stored pair_texts from repscan results
-    stored_pair_texts = repscan["concept_decomposition"].get("pair_texts")
+    # Load pair texts - prefer stored pair_texts from zwiad results
+    stored_pair_texts = zwiad["concept_decomposition"].get("pair_texts")
     if stored_pair_texts:
         all_pair_texts = {int(k) if isinstance(k, str) else k: v for k, v in stored_pair_texts.items()}
-        print(f"Loaded {len(all_pair_texts)} pair texts from repscan results")
+        print(f"Loaded {len(all_pair_texts)} pair texts from zwiad results")
     else:
         all_pair_texts = load_pair_texts_from_database(
             task_name=args.task, limit=1000, database_url=args.database_url

@@ -1,10 +1,10 @@
 #!/bin/bash
-# Benchmark TruthfulQA performance: Base Qwen3-8B vs TITAN-steered
+# Benchmark TruthfulQA performance: Base Qwen3-8B vs GROM-steered
 
 set -e
 
 MODEL_BASE="Qwen/Qwen3-8B"
-MODEL_TITAN="wisent-ai/Qwen3-8B-TruthfulQA-TITAN"
+MODEL_GROM="wisent-ai/Qwen3-8B-TruthfulQA-GROM"
 TASK="truthfulqa_custom"
 NUM_QUESTIONS=100
 OUTPUT_DIR="./benchmark_results"
@@ -23,12 +23,12 @@ python3.11 -m wisent.core.main generate-responses "$MODEL_BASE" \
 
 echo ""
 echo "=========================================="
-echo "Step 2: Generate responses from TITAN model"
+echo "Step 2: Generate responses from GROM model"
 echo "=========================================="
-python3.11 -m wisent.core.main generate-responses "$MODEL_TITAN" \
+python3.11 -m wisent.core.main generate-responses "$MODEL_GROM" \
     --task "$TASK" \
     --num-questions "$NUM_QUESTIONS" \
-    --output "$OUTPUT_DIR/titan_responses.json" \
+    --output "$OUTPUT_DIR/grom_responses.json" \
     --disable-thinking \
     --verbose
 
@@ -43,11 +43,11 @@ python3.11 -m wisent.core.main evaluate-responses \
 
 echo ""
 echo "=========================================="
-echo "Step 4: Evaluate TITAN model responses"
+echo "Step 4: Evaluate GROM model responses"
 echo "=========================================="
 python3.11 -m wisent.core.main evaluate-responses \
-    --input "$OUTPUT_DIR/titan_responses.json" \
-    --output "$OUTPUT_DIR/titan_eval.json" \
+    --input "$OUTPUT_DIR/grom_responses.json" \
+    --output "$OUTPUT_DIR/grom_eval.json" \
     --verbose
 
 echo ""
@@ -57,5 +57,5 @@ echo "=========================================="
 echo "Base model:"
 cat "$OUTPUT_DIR/base_eval.json"
 echo ""
-echo "TITAN model:"
-cat "$OUTPUT_DIR/titan_eval.json"
+echo "GROM model:"
+cat "$OUTPUT_DIR/grom_eval.json"

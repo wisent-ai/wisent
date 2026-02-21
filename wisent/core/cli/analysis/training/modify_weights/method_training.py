@@ -31,7 +31,7 @@ def auto_select_steering_method(
     verbose: bool = False,
 ) -> Tuple[str, str, Optional[Dict[str, Any]]]:
     """
-    Automatically select the best steering method based on repscan geometry analysis.
+    Automatically select the best steering method based on zwiad geometry analysis.
 
     Returns:
         tuple: (steering_method, modification_method, metrics)
@@ -46,7 +46,7 @@ def auto_select_steering_method(
 
     if verbose:
         print("\n" + "=" * 60)
-        print("AUTO-SELECTING STEERING METHOD (repscan)")
+        print("AUTO-SELECTING STEERING METHOD (zwiad)")
         print("=" * 60)
         print("   Analyzing activation geometry...")
 
@@ -73,15 +73,15 @@ def auto_select_steering_method(
 
     if len(pos_activations) < 10 or len(neg_activations) < 10:
         if verbose:
-            print("   Warning: Insufficient activations for analysis, defaulting to TITAN")
-        return "titan", "titan", None
+            print("   Warning: Insufficient activations for analysis, defaulting to GROM")
+        return "grom", "grom", None
 
     pos_tensor = torch.stack(pos_activations)
     neg_tensor = torch.stack(neg_activations)
 
     metrics = compute_geometry_metrics(pos_tensor, neg_tensor, n_folds=3)
     recommendation = compute_recommendation(metrics)
-    recommended_method = recommendation.get("recommended_method", "TITAN").upper()
+    recommended_method = recommendation.get("recommended_method", "GROM").upper()
     confidence = recommendation.get("confidence", 0.5)
     reasoning = recommendation.get("reasoning", "")
 
@@ -100,12 +100,12 @@ def auto_select_steering_method(
     if recommended_method == "CAA":
         steering_method = "caa"
         modification_method = "directional"
-    elif recommended_method == "PRISM":
-        steering_method = "prism"
-        modification_method = "prism"
+    elif recommended_method == "TECZA":
+        steering_method = "tecza"
+        modification_method = "tecza"
     else:
-        steering_method = "titan"
-        modification_method = "titan"
+        steering_method = "grom"
+        modification_method = "grom"
 
     if verbose:
         print(f"\n   Selected: {steering_method.upper()} / {modification_method}")
@@ -113,15 +113,15 @@ def auto_select_steering_method(
 
     return steering_method, modification_method, metrics
 
-def train_titan_for_task(args, model: "WisentModel", pairs: List["ContrastivePair"]):
-    """Train TITAN on contrastive pairs and return the TITANResult."""
-    from wisent.core.steering_methods.methods.titan import TITANMethod
+def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair"]):
+    """Train GROM on contrastive pairs and return the GROMResult."""
+    from wisent.core.steering_methods.methods.grom import GROMMethod
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
 
     if args.verbose:
-        print("\nTraining TITAN steering method...")
+        print("\nTraining GROM steering method...")
 
     pair_set = ContrastivePairSet(
         name=getattr(args, 'trait_label', 'steering'),
@@ -130,7 +130,7 @@ def train_titan_for_task(args, model: "WisentModel", pairs: List["ContrastivePai
     )
 
     if args.verbose:
-        print("  Collecting activations for TITAN training...")
+        print("  Collecting activations for GROM training...")
 
     if args.layers is None:
         layers = get_all_layers(model)
@@ -151,26 +151,26 @@ def train_titan_for_task(args, model: "WisentModel", pairs: List["ContrastivePai
         print(f"  Collected activations for {len(enriched_pairs)} pairs")
 
     layer_indices = [int(l) for l in layers]
-    titan_method = TITANMethod(
+    grom_method = GROMMethod(
         model=model,
-        num_directions=getattr(args, 'titan_num_directions', 8),
+        num_directions=getattr(args, 'grom_num_directions', 8),
         manifold_method="pca",
         steering_layers=layer_indices,
         sensor_layer=layer_indices[0],
     )
 
-    titan_result = titan_method.train_titan(pair_set)
+    grom_result = grom_method.train_grom(pair_set)
 
     if args.verbose:
-        print(f"TITAN trained on {len(pairs)} pairs")
-        print(f"  Layers: {len(titan_result.layer_order)}")
-        print(f"  Directions per layer: {titan_result.directions[titan_result.layer_order[0]].shape[0]}")
+        print(f"GROM trained on {len(pairs)} pairs")
+        print(f"  Layers: {len(grom_result.layer_order)}")
+        print(f"  Directions per layer: {grom_result.directions[grom_result.layer_order[0]].shape[0]}")
 
-    return titan_result
+    return grom_result
 
-def train_pulse_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
-    """Train PULSE steering for a task."""
-    from wisent.core.steering_methods.methods.advanced import PULSEMethod
+def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
+    """Train TETNO steering for a task."""
+    from wisent.core.steering_methods.methods.advanced import TETNOMethod
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
@@ -182,7 +182,7 @@ def train_pulse_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
         layers = get_all_layers(wisent_model)
 
     if args.verbose:
-        print(f"  Collecting activations for PULSE training...")
+        print(f"  Collecting activations for TETNO training...")
 
     collector = ActivationCollector(model=wisent_model)
     enriched_pairs = []
@@ -193,30 +193,30 @@ def train_pulse_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
         if args.verbose and (i + 1) % 10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
 
-    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="pulse_training")
+    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="tetno_training")
 
     if args.verbose:
         print(f"  Collected activations for {len(enriched_pairs)} pairs")
 
     layer_indices = [int(l) for l in layers]
-    pulse_method = PULSEMethod(
+    tetno_method = TETNOMethod(
         model=model,
         steering_layers=layer_indices,
         sensor_layer=layer_indices[0],
     )
 
-    pulse_result = pulse_method.train_pulse(pair_set)
+    tetno_result = tetno_method.train_tetno(pair_set)
 
     if args.verbose:
-        print(f"PULSE trained on {len(pairs)} pairs")
-        print(f"  Layers: {len(pulse_result.behavior_vectors)}")
-        print(f"  Optimal threshold: {pulse_result.optimal_threshold:.3f}")
+        print(f"TETNO trained on {len(pairs)} pairs")
+        print(f"  Layers: {len(tetno_result.behavior_vectors)}")
+        print(f"  Optimal threshold: {tetno_result.optimal_threshold:.3f}")
 
-    return pulse_result
+    return tetno_result
 
-def train_prism_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
-    """Train PRISM steering for a task."""
-    from wisent.core.steering_methods.methods.advanced import PRISMMethod
+def train_tecza_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
+    """Train TECZA steering for a task."""
+    from wisent.core.steering_methods.methods.advanced import TECZAMethod
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
@@ -228,7 +228,7 @@ def train_prism_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
         layers = get_all_layers(wisent_model)
 
     if args.verbose:
-        print(f"  Collecting activations for PRISM training...")
+        print(f"  Collecting activations for TECZA training...")
 
     collector = ActivationCollector(model=wisent_model)
     enriched_pairs = []
@@ -239,58 +239,28 @@ def train_prism_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
         if args.verbose and (i + 1) % 10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
 
-    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="prism_training")
+    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="tecza_training")
 
     if args.verbose:
         print(f"  Collected activations for {len(enriched_pairs)} pairs")
 
-    num_directions = getattr(args, 'prism_num_directions', 3)
-    prism_method = PRISMMethod(model=model, num_directions=num_directions)
+    num_directions = getattr(args, 'tecza_num_directions', 3)
+    tecza_method = TECZAMethod(model=model, num_directions=num_directions)
 
-    prism_result = prism_method.train(pair_set)
+    tecza_result = tecza_method.train(pair_set)
 
     if args.verbose:
-        num_dirs = next(iter(prism_result.directions.values())).shape[0]
-        print(f"PRISM trained on {len(pairs)} pairs")
-        print(f"  Layers: {len(prism_result.directions)}")
+        num_dirs = next(iter(tecza_result.directions.values())).shape[0]
+        print(f"TECZA trained on {len(pairs)} pairs")
+        print(f"  Layers: {len(tecza_result.directions)}")
         print(f"  Directions per layer: {num_dirs}")
 
-    return prism_result
+    return tecza_result
 
-def train_concept_flow_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
-    """Train Concept Flow on contrastive pairs and return a ConceptFlowSteeringObject."""
-    from wisent.core.steering_methods.methods.concept_flow import ConceptFlowMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
-    from wisent.core.cli.steering.core.create_concept_flow import (
-        _create_concept_flow_steering_object,
-    )
 
-    layers = [str(l) for l in str(args.layers).split(',')] if args.layers else get_all_layers(wisent_model)
-    if args.verbose:
-        print(f"  Collecting activations for Concept Flow training...")
-
-    collector = ActivationCollector(model=wisent_model)
-    layer_acts = {l: {"positive": [], "negative": []} for l in layers}
-
-    for i, pair in enumerate(pairs):
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=layers)
-        for l in layers:
-            pa = enriched.positive_response.layers_activations.get(l)
-            na = enriched.negative_response.layers_activations.get(l)
-            if pa is not None:
-                layer_acts[l]["positive"].append(pa)
-            if na is not None:
-                layer_acts[l]["negative"].append(na)
-        if args.verbose and (i + 1) % 10 == 0:
-            print(f"    Collected {i + 1}/{len(pairs)} pairs")
-
-    meta = SteeringObjectMetadata(
-        method="concept_flow", model_name=args.model,
-        benchmark=getattr(args, 'task', 'unknown'), category="steering",
-        extraction_strategy="chat_last", num_pairs=len(pairs),
-        layers=[int(l) for l in layers], hidden_dim=0,
-    )
-    return _create_concept_flow_steering_object(meta, layer_acts, layers, args)
+# Import from helpers (split to meet 300-line limit)
+from wisent.core.cli.analysis.training.modify_weights._helpers.method_training_helpers import (  # noqa: E402
+    train_nurt_for_task,
+    train_szlak_for_task,
+    train_wicher_for_task,
+)

@@ -1,4 +1,4 @@
-"""Multi-directional weight projection for PRISM."""
+"""Multi-directional weight projection for TECZA."""
 
 from __future__ import annotations
 
@@ -62,7 +62,7 @@ def project_weights_multi_direction(
     use_biprojection: bool = True,
     verbose: bool = True,
 ) -> dict[str, int]:
-    """Norm-Preserving Multi-Directional Weight Modification for PRISM."""
+    """Norm-Preserving Multi-Directional Weight Modification for TECZA."""
     from .core import orthogonalize_direction
     log = bind(_LOG, num_layers=len(multi_steering_vectors))
     if components is None:
@@ -77,7 +77,7 @@ def project_weights_multi_direction(
     if verbose:
         first_layer_vecs = next(iter(multi_steering_vectors.values()))
         num_dirs = first_layer_vecs.shape[0] if first_layer_vecs.dim() > 1 else 1
-        print(f"\n{'='*60}\nPRISM MULTI-DIRECTIONAL WEIGHT MODIFICATION\n{'='*60}")
+        print(f"\n{'='*60}\nTECZA MULTI-DIRECTIONAL WEIGHT MODIFICATION\n{'='*60}")
         print(f"Layers: {len(multi_steering_vectors)}, Directions per layer: {num_dirs}")
         print(f"Components: {components}, Global strength: {global_strength}\n{'='*60}\n")
     for layer_idx, steering_vectors in multi_steering_vectors.items():
@@ -126,7 +126,7 @@ def project_weights_multi_direction(
         if layer_modified:
             layers_modified += 1
     if verbose:
-        print(f"\n{'='*60}\nPRISM MODIFICATION COMPLETE\n{'='*60}")
+        print(f"\n{'='*60}\nTECZA MODIFICATION COMPLETE\n{'='*60}")
         print(f"  Layers: {layers_modified}, Components: {components_modified}, Directions: {total_directions_applied}, Params: {total_params:,}\n{'='*60}\n")
     return {"layers_modified": layers_modified, "components_modified": components_modified,
             "total_parameters_modified": total_params, "total_directions_applied": total_directions_applied, "norm_preserved": True}

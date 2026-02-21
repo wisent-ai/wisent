@@ -30,25 +30,25 @@ __all__ = [
 # Mapping of structure types to recommended methods
 STRUCTURE_TO_METHODS: Dict[StructureType, List[str]] = {
     StructureType.LINEAR: ["caa", "mean_diff"],
-    StructureType.CONE: ["prism", "titan"],
-    StructureType.CLUSTER: ["cluster_steering", "titan"],
-    StructureType.MANIFOLD: ["titan"],
+    StructureType.CONE: ["tecza", "grom"],
+    StructureType.CLUSTER: ["cluster_steering", "grom"],
+    StructureType.MANIFOLD: ["grom"],
     StructureType.SPARSE: ["sae", "sparse_steering"],
-    StructureType.BIMODAL: ["pulse", "titan"],
+    StructureType.BIMODAL: ["tetno", "grom"],
     StructureType.ORTHOGONAL: ["ica_steering", "multi_caa"],
-    StructureType.UNKNOWN: ["caa", "titan"],
+    StructureType.UNKNOWN: ["caa", "grom"],
 }
 
 # Methods that work reasonably well for any structure
-UNIVERSAL_METHODS = ["titan", "caa"]
+UNIVERSAL_METHODS = ["grom", "caa"]
 
 # Method descriptions for warnings
 METHOD_DESCRIPTIONS: Dict[str, str] = {
     "caa": "Contrastive Activation Addition (single direction)",
     "mean_diff": "Mean Difference (simple single direction)",
-    "prism": "PRISM (multi-directional manifold)",
-    "titan": "TITAN (adaptive multi-component steering)",
-    "pulse": "PULSE (conditional gating)",
+    "tecza": "TECZA (multi-directional manifold)",
+    "grom": "GROM (adaptive multi-component steering)",
+    "tetno": "TETNO (conditional gating)",
     "sae": "Sparse Autoencoder based steering",
     "cluster_steering": "Cluster-based steering",
     "ica_steering": "ICA-based independent component steering",
@@ -218,7 +218,7 @@ def check_method_compatibility(
                 severity="warning",
                 message=f"CAA may miss important structure - data appears to be {best_structure.value}",
                 details=f"Linear: {linear_score:.2f}, Cone: {cone_score:.2f}, Manifold: {manifold_score:.2f}",
-                suggestion="Consider using PRISM or TITAN for better coverage",
+                suggestion="Consider using TECZA or GROM for better coverage",
             ))
         else:
             compat_score = 0.5
@@ -227,8 +227,8 @@ def check_method_compatibility(
                 message="CAA is a reasonable baseline choice",
             ))
     
-    elif method_lower == "prism":
-        # PRISM is optimal for cone structure
+    elif method_lower == "tecza":
+        # TECZA is optimal for cone structure
         if cone_score > 0.7:
             compat_score = 1.0
             warnings.append(PreflightWarning(
@@ -240,7 +240,7 @@ def check_method_compatibility(
             compat_score = 0.5
             warnings.append(PreflightWarning(
                 severity="warning",
-                message="PRISM may be overkill - data is mostly linear",
+                message="TECZA may be overkill - data is mostly linear",
                 details=f"Linear score: {linear_score:.2f}",
                 suggestion="CAA would be simpler and equally effective",
             ))
@@ -248,34 +248,34 @@ def check_method_compatibility(
             compat_score = 0.7
             warnings.append(PreflightWarning(
                 severity="info",
-                message="PRISM is a good choice for multi-directional steering",
+                message="TECZA is a good choice for multi-directional steering",
             ))
     
-    elif method_lower == "titan":
-        # TITAN adapts to structure, always reasonable
+    elif method_lower == "grom":
+        # GROM adapts to structure, always reasonable
         compat_score = 0.9  # High baseline
         
         if linear_score > 0.9:
             warnings.append(PreflightWarning(
                 severity="info",
-                message="TITAN will adapt to linear structure (may simplify to CAA-like behavior)",
+                message="GROM will adapt to linear structure (may simplify to CAA-like behavior)",
                 details=f"Linear score: {linear_score:.2f}",
             ))
         elif manifold_score > 0.8:
             compat_score = 1.0
             warnings.append(PreflightWarning(
                 severity="info",
-                message="Excellent choice - data has manifold structure that TITAN handles well",
+                message="Excellent choice - data has manifold structure that GROM handles well",
                 details=f"Manifold score: {manifold_score:.2f}",
             ))
         else:
             warnings.append(PreflightWarning(
                 severity="info",
-                message="TITAN is adaptive and should work well with detected structure",
+                message="GROM is adaptive and should work well with detected structure",
             ))
     
-    elif method_lower == "pulse":
-        # PULSE is good for bimodal/conditional steering
+    elif method_lower == "tetno":
+        # TETNO is good for bimodal/conditional steering
         bimodal_score = structure_scores.get("bimodal", 0)
         if bimodal_score > 0.6:
             compat_score = 0.9
@@ -288,7 +288,7 @@ def check_method_compatibility(
             compat_score = 0.5
             warnings.append(PreflightWarning(
                 severity="warning",
-                message="PULSE gating may not be necessary for linear structure",
+                message="TETNO gating may not be necessary for linear structure",
                 suggestion="Consider simpler CAA if gating is not needed",
             ))
         else:
@@ -297,26 +297,3 @@ def check_method_compatibility(
     else:
         # Unknown method - give generic advice
         warnings.append(PreflightWarning(
-            severity="info",
-            message=f"Unknown method '{method}' - cannot provide specific compatibility check",
-            suggestion=f"Recommended methods for {best_structure.value}: {', '.join(STRUCTURE_TO_METHODS.get(best_structure, ['caa']))}",
-        ))
-    
-    # Add structure-specific warnings
-    if best_structure == StructureType.MANIFOLD and method_lower not in ["titan"]:
-        warnings.append(PreflightWarning(
-            severity="warning",
-            message="Data has non-linear manifold structure",
-            details=f"Intrinsic dimensionality much lower than ambient dimension",
-            suggestion="TITAN with learned gating may capture this structure better",
-        ))
-    
-    if structure_scores.get("sparse", 0) > 0.8 and method_lower not in ["sae", "sparse_steering"]:
-        warnings.append(PreflightWarning(
-            severity="info",
-            message="Data shows sparse structure - few neurons are active",
-            details=f"Sparse score: {structure_scores.get('sparse', 0):.2f}",
-            suggestion="Consider SAE-based steering for more targeted intervention",
-        ))
-    
-    return is_compatible, compat_score, warnings

@@ -54,6 +54,17 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
         help="Extraction strategy. Chat models: chat_mean, chat_first, chat_last, chat_max_norm, chat_weighted, role_play, mc_balanced. Base models: completion_last, completion_mean, mc_completion"
     )
 
+    parser.add_argument(
+        "--extraction-component",
+        type=str,
+        default="residual_stream",
+        choices=["residual_stream", "attn_output", "mlp_output", "per_head",
+                 "mlp_intermediate", "post_attn_residual", "pre_attn_layernorm",
+                 "embedding_output", "final_layernorm", "q_proj", "k_proj",
+                 "v_proj", "mlp_gate_activation", "attention_scores", "logits"],
+        help="Transformer component to extract from (default: residual_stream)"
+    )
+
     # Raw mode - output full hidden states instead of extracted vectors
     parser.add_argument(
         "--raw",

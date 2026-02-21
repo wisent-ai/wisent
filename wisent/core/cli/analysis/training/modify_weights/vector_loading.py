@@ -178,7 +178,7 @@ def generate_multi_benchmark_vectors(args, verbose: bool = False) -> Dict[int, t
 
 def generate_task_vectors(args, verbose: bool = False) -> Dict[int, torch.Tensor]:
     """Generate steering vectors from a single benchmark task."""
-    from wisent.core.cli.generate_vector_from_task import execute_generate_vector_from_task
+    from wisent.core.cli.generation.vectors.generate_vector_from_task import execute_generate_vector_from_task
     from wisent.core.activations import ExtractionStrategy
 
     optimal_config = _get_optimal_config(args)
@@ -233,7 +233,7 @@ def generate_task_vectors(args, verbose: bool = False) -> Dict[int, torch.Tensor
 
     method_name = vector_data.get("method", "caa")
 
-    if method_name == "titan":
+    if method_name == "grom":
         directions = vector_data.get("directions", {})
         direction_weights = vector_data.get("direction_weights", {})
 

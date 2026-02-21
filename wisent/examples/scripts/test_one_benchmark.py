@@ -7,40 +7,13 @@ from pathlib import Path
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.rotator import EvaluatorRotator
+from wisent.examples.scripts.test_one_benchmark_helpers import (
+    MockModel,
+    detect_loader_type,
+)
 
-# Set environment variables
-os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'
-os.environ['HF_ALLOW_CODE_EVAL'] = '1'
-
-
-class MockModel:
-    """Mock model that returns predictable outputs without actual inference.
-
-    This mock ensures that:
-    - For log_likelihoods: first choice always has higher log prob
-    - For perplexity: returns low perplexity for first choice
-    - For generation: returns empty (not used in contrastive evaluation)
-    """
-
-    def __init__(self, model_name: str = "mock"):
-        self.model_name = model_name
-
-    def get_log_probs(self, prompt: str, choices: list[str]) -> list[float]:
-        """Return mock log probabilities - first choice always has higher probability.
-
-        Used by log_likelihoods evaluator.
-        """
-        # First choice gets -0.5 (high), rest get -2.0 (low)
-        return [-0.5] + [-2.0] * (len(choices) - 1) if len(choices) >= 1 else []
-
-    def loglikelihood(self, context: str, continuation: str) -> float:
-        """Return mock log likelihood for perplexity evaluator."""
-        # Return higher likelihood for shorter continuations (mock)
-        return -len(continuation) * 0.1
-
-    def generate(self, prompt: str, **kwargs) -> str:
-        """Mock generation - returns empty as we use choices for evaluation."""
-        return "mock generation"
+os.environ["HF_DATASETS_TRUST_REMOTE_CODE"] = "1"
+os.environ["HF_ALLOW_CODE_EVAL"] = "1"
 
 
 def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: str = ".", loader_type: str = "auto"):
@@ -71,51 +44,11 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         # Step 1: Load data and create contrastive pairs
         print("  [1/3] Creating contrastive pairs...")
 
+
         # Auto-detect loader type if needed
         if loader_type == "auto":
-            # Try HuggingFace first for known non-lm-eval tasks
-            hf_tasks = [
-                # Math benchmarks
-                "math", "math_500", "aime", "hmmt", "polymath", "livemathbench",
-                # Coding benchmarks
-                "humaneval", "humaneval_plus",
-                "instruct_humaneval", "apps", "conala", "concode",
-                "ds", "ds1000", "ds_1000", "mercury", "recode",
-                "multipl", "multiple_", "multipl_e",
-                "codexglue", "livecodebench",
-                # Reasoning benchmarks
-                "super_gpqa", "supergpqa", "hle",
-                # Database/Table benchmarks
-                "tag",
-                # Medical benchmarks
-                "meddialog",
-                # MMLU-SR benchmarks
-                "mmlusr",
-                # Translation benchmarks
-                "iwslt2017",
-                # Sentence similarity benchmarks
-                "stsb",
-                # Newly created HuggingFace extractors
-                "babilong", "bangla_mmlu",
-                "bhtc_v2", "basque-glue", "basqueglue",
-                "flan_held_in",
-                "gpt3_translation_benchmarks",
-                "penn_treebank", "ptb",
-                "self_consistency", "t0_eval",
-                "wikitext103"
-            ]
-            # Tasks that should explicitly use LMEval (not HuggingFace)
-            lm_eval_only_tasks = [
-                "minerva_math", "code_x_glue", "humaneval_infilling", "mathqa",
-                "multiple_choice",  # multiple_choice is an lm-eval task, not HuggingFace
-                "vaxx_stance", "wiceu"  # These are also lm-eval tasks
-            ]
-            if any(task_name.lower() == t or task_name.lower().startswith(t + "_") for t in lm_eval_only_tasks):
-                loader_type = "lm_eval"
-            elif any(task_name.lower().startswith(t) for t in hf_tasks):
-                loader_type = "huggingface"
-            else:
-                loader_type = "lm_eval"
+            loader_type = detect_loader_type(task_name)
+
 
         # Select appropriate loader
         if loader_type == "huggingface":
@@ -311,7 +244,6 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         import traceback
         traceback.print_exc()
         return False
-
 
 if __name__ == "__main__":
     import sys

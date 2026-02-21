@@ -14,6 +14,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "get_modifiable_components",
+    "get_default_components_for_extraction",
     "verify_modification",
     "compute_modification_metrics",
 ]
@@ -68,6 +69,48 @@ def get_modifiable_components(model: Module) -> list[tuple[str, list[str]]]:
     log.info("Found modifiable components", extra={"components": components})
 
     return components
+
+
+# Extraction component -> default weight-modification targets
+_COMPONENT_TO_TARGETS: dict[str, list[str]] = {
+    "residual_stream": ["self_attn.o_proj", "mlp.down_proj"],
+    "attn_output": ["self_attn.o_proj"],
+    "mlp_output": ["mlp.down_proj"],
+    "per_head": ["self_attn.o_proj"],
+    "mlp_intermediate": ["mlp.down_proj", "mlp.gate_proj", "mlp.up_proj"],
+    "post_attn_residual": ["self_attn.o_proj", "mlp.down_proj"],
+    "pre_attn_layernorm": ["self_attn.q_proj", "self_attn.k_proj", "self_attn.v_proj"],
+    "embedding_output": ["self_attn.o_proj", "mlp.down_proj"],
+    "final_layernorm": ["self_attn.o_proj", "mlp.down_proj"],
+    "q_proj": ["self_attn.q_proj"],
+    "k_proj": ["self_attn.k_proj"],
+    "v_proj": ["self_attn.v_proj"],
+    "mlp_gate_activation": ["mlp.gate_proj"],
+    "attention_scores": ["self_attn.q_proj"],
+    "logits": ["self_attn.o_proj", "mlp.down_proj"],
+}
+
+
+def get_default_components_for_extraction(component: str) -> list[str]:
+    """
+    Return the default weight-modification targets for a given extraction component.
+
+    When a steering vector was extracted from a specific transformer component,
+    weight modification should target the corresponding weight matrices.
+
+    Args:
+        component: One of the ExtractionComponent values.
+
+    Returns:
+        List of dotted component paths (e.g. ``["self_attn.o_proj"]``).
+    """
+    targets = _COMPONENT_TO_TARGETS.get(component)
+    if targets is None:
+        raise ValueError(
+            f"Unknown extraction component: {component}. "
+            f"Valid: {list(_COMPONENT_TO_TARGETS)}"
+        )
+    return list(targets)
 
 
 def verify_modification(

@@ -12,7 +12,7 @@ def setup_verify_steering_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "model_path",
         type=str,
-        help="Path to the steered model (TITAN, PULSE, or CAA)"
+        help="Path to the steered model (GROM, TETNO, or CAA)"
     )
 
     parser.add_argument(
@@ -76,12 +76,12 @@ def setup_verify_steering_parser(parser: argparse.ArgumentParser) -> None:
         "--check-gate",
         action="store_true",
         default=True,
-        help="Check gate network discrimination (for TITAN/PULSE models)"
+        help="Check gate network discrimination (for GROM/TETNO models)"
     )
 
     parser.add_argument(
         "--check-intensity",
         action="store_true",
         default=True,
-        help="Check intensity network predictions (for TITAN models)"
+        help="Check intensity network predictions (for GROM models)"
     )
