@@ -297,6 +297,3 @@ def create_steering_vector_metadata(
     }
     
     # Add any additional metadata
-    metadata.update(kwargs)
-    
-    return metadata 

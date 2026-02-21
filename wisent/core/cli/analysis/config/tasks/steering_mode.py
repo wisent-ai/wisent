@@ -58,7 +58,7 @@ def _load_steering_vector(args, layer, layer_str):
 
 
 def _compute_steering_vector(args, model, train_pair_set, collector, extraction_strategy, layer, layer_str):
-    """Compute steering vector from training data using repscan."""
+    """Compute steering vector from training data using zwiad."""
     from wisent.core.geometry import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
 
     print(f"\n🧠 Collecting activations from layer {layer}...")
@@ -85,7 +85,7 @@ def _compute_steering_vector(args, model, train_pair_set, collector, extraction_
     pos_tensor = torch.stack(positive_activations)
     neg_tensor = torch.stack(negative_activations)
 
-    print(f"\n🔍 Running repscan geometry analysis...")
+    print(f"\n🔍 Running zwiad geometry analysis...")
     metrics = compute_geometry_metrics(pos_tensor, neg_tensor, n_folds=3)
     recommendation = compute_recommendation(metrics)
     recommended_method = recommendation.get("recommended_method", "CAA").upper()
@@ -116,11 +116,11 @@ def _train_steering_method(args, model, method, pos_tensor, neg_tensor, layer, c
         print(f"   ✓ CAA steering vector computed, norm={steering_vector.norm().item():.4f}")
         return steering_vector
 
-    elif method == "TITAN":
-        return _train_titan(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor)
+    elif method == "GROM":
+        return _train_grom(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor)
 
-    elif method == "PRISM":
-        return _train_prism(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor)
+    elif method == "TECZA":
+        return _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor)
 
     else:
         print(f"   ⚠️  Unknown method {method}, using CAA")
@@ -129,51 +129,51 @@ def _train_steering_method(args, model, method, pos_tensor, neg_tensor, layer, c
         return steering_vector
 
 
-def _train_titan(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
-    """Train TITAN steering vector."""
-    from wisent.core.steering_methods.methods.titan import TITANMethod
+def _train_grom(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
+    """Train GROM steering vector."""
+    from wisent.core.steering_methods.methods.grom import GROMMethod
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
     enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:50]]
-    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="titan_training")
+    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="grom_training")
 
-    titan_method = TITANMethod(model=model, num_directions=8, manifold_method="pca",
+    grom_method = GROMMethod(model=model, num_directions=8, manifold_method="pca",
                                steering_layers=[int(l) for l in all_layers], sensor_layer=1)
-    titan_result = titan_method.train_titan(pair_set)
+    grom_result = grom_method.train_grom(pair_set)
     layer_key = f"layer_{layer}"
 
-    if layer_key in titan_result.directions:
-        dirs, weights = titan_result.directions[layer_key], titan_result.direction_weights[layer_key]
+    if layer_key in grom_result.directions:
+        dirs, weights = grom_result.directions[layer_key], grom_result.direction_weights[layer_key]
         steering_vector = (dirs * (weights / (weights.sum() + 1e-8)).unsqueeze(-1)).sum(dim=0)
     else:
         steering_vector = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
 
     steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
-    print(f"   ✓ TITAN steering vector computed, norm={steering_vector.norm().item():.4f}")
+    print(f"   ✓ GROM steering vector computed, norm={steering_vector.norm().item():.4f}")
     return steering_vector
 
 
-def _train_prism(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
-    """Train PRISM steering vector."""
-    from wisent.core.steering_methods.methods.advanced import PRISMMethod
+def _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
+    """Train TECZA steering vector."""
+    from wisent.core.steering_methods.methods.advanced import TECZAMethod
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
     enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:50]]
-    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="prism_training")
+    pair_set = ContrastivePairSet(pairs=enriched_pairs, name="tecza_training")
 
-    prism_method = PRISMMethod(model=model.hf_model, num_directions=3)
-    prism_result = prism_method.train(pair_set)
+    tecza_method = TECZAMethod(model=model.hf_model, num_directions=3)
+    tecza_result = tecza_method.train(pair_set)
     layer_key = f"layer_{layer}"
 
-    if layer_key in prism_result.directions:
-        steering_vector = prism_result.directions[layer_key][0]
+    if layer_key in tecza_result.directions:
+        steering_vector = tecza_result.directions[layer_key][0]
     else:
         steering_vector = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
 
     steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
-    print(f"   ✓ PRISM steering vector computed, norm={steering_vector.norm().item():.4f}")
+    print(f"   ✓ TECZA steering vector computed, norm={steering_vector.norm().item():.4f}")
     return steering_vector
 
 

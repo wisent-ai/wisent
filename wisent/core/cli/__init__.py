@@ -17,7 +17,7 @@ from .analysis.evaluation.check_linearity import execute_check_linearity
 # Analysis geometry
 from .analysis.geometry.get_activations import execute_get_activations
 from .analysis.geometry.geometry_search import execute_geometry_search
-from .analysis.geometry.repscan import execute_repscan
+from .analysis.geometry.zwiad import execute_zwiad
 
 # Analysis training
 from .analysis.training.modify_weights import execute_modify_weights
@@ -41,6 +41,7 @@ from .optimization.core.optimize import execute_optimize
 from .optimization.specific.optimize_classification import execute_optimize_classification
 from .optimization.specific.optimize_sample_size import execute_optimize_sample_size
 from .optimization.specific.optimize_weights import execute_optimize_weights
+from .optimization.specific.tune_recommendation import execute_tune_recommendation
 
 # Steering core
 from .steering.core.create_steering_object import execute_create_steering_object
@@ -83,7 +84,7 @@ __all__ = [
     'execute_optimize',
     'execute_geometry_search',
     'execute_verify_steering',
-    'execute_repscan',
+    'execute_zwiad',
     'execute_train_unified_goodness',
     'execute_check_linearity',
     'execute_cluster_benchmarks',
@@ -91,4 +92,5 @@ __all__ = [
     'execute_per_concept_steering_viz',
     'execute_discover_steering',
     'execute_migrate_activations',
+    'execute_tune_recommendation',
 ]

@@ -5,6 +5,7 @@ This module contains the generate_metrics_visualizations function that
 orchestrates all visualization generation for compute_geometry_metrics.
 """
 
+import logging
 from typing import Dict, Any
 import torch
 
@@ -21,6 +22,8 @@ from ...visualization.visualizations import (
     create_summary_figure,
     render_matplotlib_figure,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def generate_metrics_visualizations(
@@ -41,76 +44,25 @@ def generate_metrics_visualizations(
     """
     visualizations = {}
 
-    # PCA projection
-    try:
-        pca_data = plot_pca_projection(pos_activations, neg_activations)
-        visualizations["pca_projection"] = render_matplotlib_figure(pca_data)
-    except Exception:
-        pass
+    viz_funcs = [
+        ("pca_projection", lambda: render_matplotlib_figure(plot_pca_projection(pos_activations, neg_activations))),
+        ("tsne_projection", lambda: render_matplotlib_figure(plot_tsne_projection(pos_activations, neg_activations))),
+        ("umap_projection", lambda: render_matplotlib_figure(plot_umap_projection(pos_activations, neg_activations))),
+        ("pacmap_projection", lambda: render_matplotlib_figure(plot_pacmap_projection(pos_activations, neg_activations))),
+        ("diff_vectors", lambda: render_matplotlib_figure(plot_diff_vectors(pos_activations, neg_activations))),
+        ("alignment_distribution", lambda: render_matplotlib_figure(plot_alignment_distribution(pos_activations, neg_activations))),
+        ("eigenvalue_spectrum", lambda: render_matplotlib_figure(plot_eigenvalue_spectrum(pos_activations, neg_activations))),
+        ("norm_distribution", lambda: render_matplotlib_figure(plot_norm_distribution(pos_activations, neg_activations))),
+        ("pairwise_distances", lambda: render_matplotlib_figure(plot_pairwise_distances(pos_activations, neg_activations))),
+        ("summary", lambda: create_summary_figure(pos_activations, neg_activations, metrics)),
+    ]
 
-    # t-SNE projection
-    try:
-        tsne_data = plot_tsne_projection(pos_activations, neg_activations)
-        if "error" not in tsne_data:
-            visualizations["tsne_projection"] = render_matplotlib_figure(tsne_data)
-    except Exception:
-        pass
-
-    # UMAP projection
-    try:
-        umap_data = plot_umap_projection(pos_activations, neg_activations)
-        if "error" not in umap_data:
-            visualizations["umap_projection"] = render_matplotlib_figure(umap_data)
-    except Exception:
-        pass
-
-    # PaCMAP projection
-    try:
-        pacmap_data = plot_pacmap_projection(pos_activations, neg_activations)
-        if "error" not in pacmap_data:
-            visualizations["pacmap_projection"] = render_matplotlib_figure(pacmap_data)
-    except Exception:
-        pass
-
-    # Diff vectors
-    try:
-        diff_data = plot_diff_vectors(pos_activations, neg_activations)
-        visualizations["diff_vectors"] = render_matplotlib_figure(diff_data)
-    except Exception:
-        pass
-
-    # Alignment distribution
-    try:
-        align_data = plot_alignment_distribution(pos_activations, neg_activations)
-        visualizations["alignment_distribution"] = render_matplotlib_figure(align_data)
-    except Exception:
-        pass
-
-    # Eigenvalue spectrum
-    try:
-        eigen_data = plot_eigenvalue_spectrum(pos_activations, neg_activations)
-        visualizations["eigenvalue_spectrum"] = render_matplotlib_figure(eigen_data)
-    except Exception:
-        pass
-
-    # Norm distribution
-    try:
-        norm_data = plot_norm_distribution(pos_activations, neg_activations)
-        visualizations["norm_distribution"] = render_matplotlib_figure(norm_data)
-    except Exception:
-        pass
-
-    # Pairwise distances
-    try:
-        dist_data = plot_pairwise_distances(pos_activations, neg_activations)
-        visualizations["pairwise_distances"] = render_matplotlib_figure(dist_data)
-    except Exception:
-        pass
-
-    # Summary figure (returns base64 directly)
-    try:
-        visualizations["summary"] = create_summary_figure(pos_activations, neg_activations, metrics)
-    except Exception:
-        pass
+    for name, func in viz_funcs:
+        try:
+            result = func()
+            if result and "error" not in (result if isinstance(result, dict) else {}):
+                visualizations[name] = result
+        except Exception as e:
+            logger.warning("Visualization '%s' failed: %s", name, e)
 
     return visualizations

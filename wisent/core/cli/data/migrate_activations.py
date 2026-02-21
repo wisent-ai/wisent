@@ -27,7 +27,7 @@ def execute_migrate_activations(args):
     """Dispatch migrate-activations subcommands."""
     action = getattr(args, "action", None)
     if not action:
-        print("Error: specify an action (create-repo, all, single, pair-texts, raw, verify)")
+        print("Error: specify an action (create-repo, all, single, pair-texts, raw, verify, consolidate)")
         sys.exit(1)
 
     if action == "create-repo":
@@ -38,7 +38,14 @@ def execute_migrate_activations(args):
         migrate_all(
             database_url=args.database_url,
             dry_run=args.dry_run,
+            combo_start=args.combo_start,
+            combo_end=args.combo_end,
+            skip_pair_texts=args.skip_pair_texts,
         )
+
+    elif action == "consolidate":
+        from wisent.core.geometry.data.hf.hf_writers import consolidate_index
+        consolidate_index(dry_run=args.dry_run)
 
     elif action == "single":
         from wisent.core.geometry.data.hf.migration import migrate_activation_table

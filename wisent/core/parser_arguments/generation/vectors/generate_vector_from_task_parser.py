@@ -73,11 +73,22 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
         help="Extraction strategy. Chat models: chat_mean, chat_first, chat_last, chat_max_norm, chat_weighted, role_play, mc_balanced. Base models: completion_last, completion_mean, mc_completion"
     )
     
+    parser.add_argument(
+        "--extraction-component",
+        type=str,
+        default="residual_stream",
+        choices=["residual_stream", "attn_output", "mlp_output", "per_head",
+                 "mlp_intermediate", "post_attn_residual", "pre_attn_layernorm",
+                 "embedding_output", "final_layernorm", "q_proj", "k_proj",
+                 "v_proj", "mlp_gate_activation", "attention_scores", "logits"],
+        help="Transformer component to extract from (default: residual_stream)"
+    )
+
     # Steering vector creation
     parser.add_argument(
         "--method",
         type=str,
-        choices=["caa", "prism", "pulse", "titan"],
+        choices=["caa", "tecza", "tetno", "grom", "nurt"],
         default="caa",
         help="Steering method to use (default: caa). If optimal config exists, method is auto-selected."
     )
@@ -94,24 +105,24 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
         help="Do not L2-normalize steering vectors"
     )
     
-    # Universal Subspace options (PRISM/TITAN)
+    # Universal Subspace options (TECZA/GROM)
     parser.add_argument(
         "--auto-num-directions",
         action="store_true",
         default=False,
-        help="Automatically determine num_directions based on explained variance (PRISM/TITAN)"
+        help="Automatically determine num_directions based on explained variance (TECZA/GROM)"
     )
     parser.add_argument(
         "--use-universal-basis-init",
         action="store_true",
         default=False,
-        help="Initialize directions from universal basis (PRISM/TITAN)"
+        help="Initialize directions from universal basis (TECZA/GROM)"
     )
     parser.add_argument(
         "--num-directions",
         type=int,
         default=3,
-        help="Number of steering directions for PRISM/TITAN (default: 3)"
+        help="Number of steering directions for TECZA/GROM (default: 3)"
     )
     
     # Intermediate file handling

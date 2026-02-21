@@ -257,7 +257,7 @@ def compute_effective_dimensions(
 
     Interpretation:
     - All estimates ≈ 1-5: Few dominant directions (CAA likely works)
-    - All estimates ≈ 10-50: Moderate structure (PRISM might help)
+    - All estimates ≈ 10-50: Moderate structure (TECZA might help)
     - All estimates > 100: High-dimensional (steering may not work)
     """
     pos_np = pos.cpu().numpy() if isinstance(pos, torch.Tensor) else pos

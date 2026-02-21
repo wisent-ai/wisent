@@ -1,7 +1,7 @@
 """
 Auto steering optimization package.
 
-Provides repscan-based automatic steering method selection and optimization.
+Provides zwiad-based automatic steering method selection and optimization.
 """
 
 from __future__ import annotations

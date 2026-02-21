@@ -1,21 +1,21 @@
-"""Advanced steering method implementations (PRISM, PULSE)."""
+"""Advanced steering method implementations (TECZA, TETNO)."""
 
-from .prism import (
-    PRISMMethod,
-    PRISMConfig,
+from .tecza import (
+    TECZAMethod,
+    TECZAConfig,
     MultiDirectionResult,
 )
-from .pulse import (
-    PULSEMethod,
-    PULSEConfig,
-    PULSEResult,
+from .tetno import (
+    TETNOMethod,
+    TETNOConfig,
+    TETNOResult,
 )
 
 __all__ = [
-    "PRISMMethod",
-    "PRISMConfig",
+    "TECZAMethod",
+    "TECZAConfig",
     "MultiDirectionResult",
-    "PULSEMethod",
-    "PULSEConfig",
-    "PULSEResult",
+    "TETNOMethod",
+    "TETNOConfig",
+    "TETNOResult",
 ]

@@ -23,6 +23,28 @@ def setup_migrate_activations_parser(parser):
         "--dry-run", action="store_true",
         help="Print what would be uploaded without uploading",
     )
+    all_parser.add_argument(
+        "--combo-start", type=int, default=0,
+        help="First combo index (inclusive, default: 0)",
+    )
+    all_parser.add_argument(
+        "--combo-end", type=int, default=None,
+        help="Last combo index (exclusive, default: all)",
+    )
+    all_parser.add_argument(
+        "--skip-pair-texts", action="store_true",
+        help="Skip pair texts migration (phase 1)",
+    )
+
+    # consolidate - build index.json from markers
+    consolidate_parser = subparsers.add_parser(
+        "consolidate",
+        help="Build unified index.json from marker files",
+    )
+    consolidate_parser.add_argument(
+        "--dry-run", action="store_true",
+        help="Print consolidated index without uploading",
+    )
 
     # single - migrate one (model, benchmark, strategy)
     single_parser = subparsers.add_parser(

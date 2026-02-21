@@ -21,7 +21,7 @@ from .common import (
     RESEARCH_MODELS,
 )
 from .q1_strategy_comparison import analyze_strategy_performance, summarize_strategy_results
-from .q2_repscan_correlation import analyze_repscan_correlation, interpret_correlations
+from .q2_zwiad_correlation import analyze_zwiad_correlation, interpret_correlations
 from .q3_benchmark_maximum import analyze_per_benchmark_maximum
 from .q4_unified_direction import analyze_unified_direction
 
@@ -71,10 +71,10 @@ def run_layer_analysis(activations: Dict, questions: List[int] = None) -> Dict[s
             },
         }
 
-    # Q2: RepScan correlation
+    # Q2: Zwiad correlation
     if 2 in questions:
-        q2_results = analyze_repscan_correlation(activations)
-        results["q2_repscan_correlation"] = {
+        q2_results = analyze_zwiad_correlation(activations)
+        results["q2_zwiad_correlation"] = {
             "results": q2_results,
             "interpretations": interpret_correlations(q2_results.get("correlations", {})) if "correlations" in q2_results else {},
         }

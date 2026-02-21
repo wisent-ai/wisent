@@ -1,5 +1,5 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Sequence, TYPE_CHECKING
 import torch
 
@@ -7,6 +7,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.activations.core.atoms import LayerActivations, LayerName, RawActivationMap
 from wisent.core.activations import (
     ExtractionStrategy,
+    ExtractionComponent,
     build_extraction_texts,
     extract_activation,
 )
@@ -27,22 +28,12 @@ class ActivationCollector:
         model: WisentModel instance
         store_device: Device to store collected activations on (default: "cpu" to avoid GPU OOM)
         dtype: Optional torch.dtype to cast activations to
-
-    Example:
-        >>> collector = ActivationCollector(model=my_model)
-        >>> updated_pair = collector.collect(
-        ...     pair,
-        ...     strategy=ExtractionStrategy.CHAT_LAST,
-        ...     layers=["8", "12"],
-        ... )
-        >>> pos_acts = updated_pair.positive_response.layers_activations
-        >>> pos_acts.summary()
-        {'8': {'shape': (2048,), ...}, '12': {...}}
     """
 
     model: "WisentModel"
     store_device: str | torch.device = "cpu"
     dtype: torch.dtype | None = None
+    _last_qk: dict = field(default_factory=dict, init=False, repr=False)
 
     def collect(
         self,
@@ -50,213 +41,131 @@ class ActivationCollector:
         strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
         layers: Sequence[LayerName] | None = None,
         normalize: bool = False,
-        # Additional parameters for API compatibility (may be ignored internally)
+        component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
         aggregation: ExtractionStrategy | None = None,
         return_full_sequence: bool = False,
         normalize_layers: bool = False,
         prompt_strategy: str | None = None,
+        capture_qk: bool = False,
     ) -> ContrastivePair:
-        """
-        Collect activations for a contrastive pair.
-
-        Args:
-            pair: The contrastive pair to collect activations for
-            strategy: Extraction strategy (e.g., CHAT_LAST, CHAT_MEAN, ROLE_PLAY, MC_BALANCED)
-            layers: Which layers to collect (e.g., ["8", "12"]), or None for all
-            normalize: Whether to L2-normalize activations
-            aggregation: Alternative name for strategy (for API compatibility)
-            return_full_sequence: Whether to return full sequence (currently ignored, for API compatibility)
-            normalize_layers: Alternative name for normalize (for API compatibility)
-            prompt_strategy: Prompt construction strategy (currently ignored, for API compatibility)
-
-        Returns:
-            ContrastivePair with activations attached
-        """
-        # Handle alternative parameter names for API compatibility
+        """Collect activations for a contrastive pair."""
         if aggregation is not None:
             strategy = aggregation
         if normalize_layers:
             normalize = True
         pos_text = _resp_text(pair.positive_response)
         neg_text = _resp_text(pair.negative_response)
-
         needs_other = strategy in (ExtractionStrategy.MC_BALANCED, ExtractionStrategy.MC_COMPLETION)
         other_for_pos = neg_text if needs_other else None
         other_for_neg = pos_text if needs_other else None
-
         pos = self._collect_single(
             pair.prompt, pos_text, strategy, layers, normalize,
-            other_response=other_for_pos, is_positive=True
-        )
+            other_response=other_for_pos, is_positive=True, component=component,
+            capture_qk=capture_qk)
+        pos_qk = dict(self._last_qk) if capture_qk else {}
         neg = self._collect_single(
             pair.prompt, neg_text, strategy, layers, normalize,
-            other_response=other_for_neg, is_positive=False
-        )
+            other_response=other_for_neg, is_positive=False, component=component,
+            capture_qk=capture_qk)
+        neg_qk = dict(self._last_qk) if capture_qk else {}
+        if capture_qk:
+            self._last_qk = {"pos": pos_qk, "neg": neg_qk}
         return pair.with_activations(positive=pos, negative=neg)
 
     def _collect_single(
-        self,
-        prompt: str,
-        response: str,
-        strategy: ExtractionStrategy,
-        layers: Sequence[LayerName] | None,
-        normalize: bool = False,
-        other_response: str | None = None,
+        self, prompt: str, response: str,
+        strategy: ExtractionStrategy, layers: Sequence[LayerName] | None,
+        normalize: bool = False, other_response: str | None = None,
         is_positive: bool = True,
+        component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
+        capture_qk: bool = False,
     ) -> LayerActivations:
         """Collect activations for a single prompt-response pair."""
         self._ensure_eval_mode()
         with torch.inference_mode():
             tok = self.model.tokenizer
-
             full_text, answer_text, prompt_only = build_extraction_texts(
                 strategy, prompt, response, tok,
-                other_response=other_response, is_positive=is_positive
-            )
-
+                other_response=other_response, is_positive=is_positive)
             if prompt_only:
                 prompt_enc = tok(prompt_only, return_tensors="pt", add_special_tokens=False)
                 prompt_len = int(prompt_enc["input_ids"].shape[-1])
             else:
                 prompt_len = 0
-
             full_enc = tok(full_text, return_tensors="pt", add_special_tokens=False, truncation=True, max_length=2048)
-
             compute_device = getattr(self.model, "compute_device", None) or next(self.model.hf_model.parameters()).device
             full_enc = {k: v.to(compute_device) for k, v in full_enc.items()}
-
-            out = self.model.hf_model(**full_enc, output_hidden_states=True, use_cache=False)
-            hs = out.hidden_states
-
-            if not hs:
-                raise NoHiddenStatesError()
-
-            n_blocks = len(hs) - 1
+            n_blocks = self.model.num_layers
             names_by_idx = [str(i) for i in range(1, n_blocks + 1)]
             keep = self._select_indices(layers, n_blocks)
-
+            qk_mgrs = []
+            if capture_qk:
+                from wisent.core.activations.component_hooks import ComponentHookManager
+                for comp in (ExtractionComponent.Q_PROJ, ExtractionComponent.K_PROJ):
+                    mgr = ComponentHookManager(self.model.hf_model, comp, keep)
+                    mgr._register_hooks()
+                    qk_mgrs.append(mgr)
+            out = self.model.hf_model(**full_enc, output_hidden_states=True, use_cache=False)
+            hs = out.hidden_states
+            if not hs:
+                raise NoHiddenStatesError()
+            if qk_mgrs:
+                q_cap, k_cap = qk_mgrs[0].get_captured(), qk_mgrs[1].get_captured()
+                for m in qk_mgrs:
+                    m._remove_hooks()
+                qk_out = {}
+                for idx in keep:
+                    nm = names_by_idx[idx]
+                    if idx in q_cap:
+                        qk_out[f"q_{nm}"] = extract_activation(
+                            strategy, q_cap[idx].squeeze(0), answer_text, tok, prompt_len).to(self.store_device)
+                    if idx in k_cap:
+                        qk_out[f"k_{nm}"] = extract_activation(
+                            strategy, k_cap[idx].squeeze(0), answer_text, tok, prompt_len).to(self.store_device)
+                self._last_qk = qk_out
+            if component.needs_hooks:
+                hooked = self._collect_with_hooks(
+                    full_enc, keep, component, strategy, answer_text, tok, prompt_len)
+            else:
+                hooked = None
             collected: RawActivationMap = {}
             for idx in keep:
                 name = names_by_idx[idx]
-                h = hs[idx + 1].squeeze(0)
-
+                if hooked is not None and idx in hooked:
+                    h = hooked[idx].squeeze(0)
+                else:
+                    h = hs[idx + 1].squeeze(0)
                 value = extract_activation(strategy, h, answer_text, tok, prompt_len)
                 value = value.to(self.store_device)
-
                 if self.dtype is not None:
                     value = value.to(self.dtype)
-
                 if normalize:
                     value = self._normalize(value)
-
                 collected[name] = value
-
             return LayerActivations(collected)
+
+    def _collect_with_hooks(self, full_enc, keep, component, strategy, answer_text, tok, prompt_len):
+        """Run a second forward pass with hooks to capture component activations."""
+        from wisent.core.activations.component_hooks import ComponentHookManager
+        manager = ComponentHookManager(self.model.hf_model, component, keep)
+        with manager.hooks_active():
+            self.model.hf_model(**full_enc, output_hidden_states=False, use_cache=False)
+        return manager.get_captured()
 
     def collect_raw(
         self,
         pair: ContrastivePair,
         strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
         layers: Sequence[LayerName] | None = None,
+        component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
     ) -> dict:
-        """
-        Collect RAW hidden states (full sequences) for a contrastive pair.
-        
-        Unlike collect(), this returns full hidden state sequences [seq_len, hidden_size]
-        instead of extracted single vectors. This allows applying different extraction
-        strategies later without re-running the model.
-        
-        Args:
-            pair: The contrastive pair to collect activations for
-            strategy: Extraction strategy (determines text construction)
-            layers: Which layers to collect, or None for all
-            
-        Returns:
-            Dict with:
-                - pos_hidden_states: {layer_name: [seq_len, hidden_size]}
-                - neg_hidden_states: {layer_name: [seq_len, hidden_size]}
-                - pos_answer_text: str
-                - neg_answer_text: str
-                - pos_prompt_len: int
-                - neg_prompt_len: int
-        """
-        pos_text = _resp_text(pair.positive_response)
-        neg_text = _resp_text(pair.negative_response)
+        """Collect RAW hidden states (full sequences) for a contrastive pair."""
+        from wisent.core.activations.raw_collector import collect_raw
+        return collect_raw(self, pair, strategy, layers, component=component)
 
-        needs_other = strategy in (ExtractionStrategy.MC_BALANCED, ExtractionStrategy.MC_COMPLETION)
-        other_for_pos = neg_text if needs_other else None
-        other_for_neg = pos_text if needs_other else None
-
-        pos_data = self._collect_single_raw(
-            pair.prompt, pos_text, strategy, layers,
-            other_response=other_for_pos, is_positive=True
-        )
-        neg_data = self._collect_single_raw(
-            pair.prompt, neg_text, strategy, layers,
-            other_response=other_for_neg, is_positive=False
-        )
-        
-        return {
-            "pos_hidden_states": pos_data["hidden_states"],
-            "neg_hidden_states": neg_data["hidden_states"],
-            "pos_answer_text": pos_data["answer_text"],
-            "neg_answer_text": neg_data["answer_text"],
-            "pos_prompt_len": pos_data["prompt_len"],
-            "neg_prompt_len": neg_data["prompt_len"],
-        }
-
-    def _collect_single_raw(
-        self,
-        prompt: str,
-        response: str,
-        strategy: ExtractionStrategy,
-        layers: Sequence[LayerName] | None,
-        other_response: str | None = None,
-        is_positive: bool = True,
-    ) -> dict:
-        """Collect raw hidden states for a single prompt-response pair."""
-        self._ensure_eval_mode()
-        with torch.inference_mode():
-            tok = self.model.tokenizer
-
-            full_text, answer_text, prompt_only = build_extraction_texts(
-                strategy, prompt, response, tok,
-                other_response=other_response, is_positive=is_positive
-            )
-
-            if prompt_only:
-                prompt_enc = tok(prompt_only, return_tensors="pt", add_special_tokens=False)
-                prompt_len = int(prompt_enc["input_ids"].shape[-1])
-            else:
-                prompt_len = 0
-
-            full_enc = tok(full_text, return_tensors="pt", add_special_tokens=False, truncation=True, max_length=2048)
-
-            compute_device = getattr(self.model, "compute_device", None) or next(self.model.hf_model.parameters()).device
-            full_enc = {k: v.to(compute_device) for k, v in full_enc.items()}
-
-            out = self.model.hf_model(**full_enc, output_hidden_states=True, use_cache=False)
-            hs = out.hidden_states
-
-            if not hs:
-                raise NoHiddenStatesError()
-
-            n_blocks = len(hs) - 1
-            names_by_idx = [str(i) for i in range(1, n_blocks + 1)]
-            keep = self._select_indices(layers, n_blocks)
-
-            # Store FULL sequences, not extracted vectors
-            collected: dict[str, torch.Tensor] = {}
-            for idx in keep:
-                name = names_by_idx[idx]
-                h = hs[idx + 1].squeeze(0)  # [seq_len, hidden_size]
-                collected[name] = h.to(self.store_device)
-
-            return {
-                "hidden_states": collected,
-                "answer_text": answer_text,
-                "prompt_len": prompt_len,
-            }
+    def _collect_single_raw(self, prompt, response, strategy, layers, other_response=None, is_positive=True):
+        from wisent.core.activations.raw_collector import collect_single_raw
+        return collect_single_raw(self, prompt, response, strategy, layers, other_response=other_response, is_positive=is_positive)
 
     def collect_batched(
         self,
@@ -266,19 +175,7 @@ class ActivationCollector:
         batch_size: int = 8,
         show_progress: bool = True,
     ) -> list[dict[str, torch.Tensor]]:
-        """
-        Collect activations for multiple texts in batches.
-
-        Args:
-            texts: List of text strings to collect activations for
-            strategy: Extraction strategy (only CHAT_LAST supported for raw texts)
-            layers: Which layers to collect, or None for all
-            batch_size: Number of texts to process at once
-            show_progress: Whether to print progress
-
-        Returns:
-            List of dicts mapping layer name -> activation tensor [H]
-        """
+        """Collect activations for multiple texts in batches."""
         self._ensure_eval_mode()
         results: list[dict[str, torch.Tensor]] = []
 
@@ -297,12 +194,8 @@ class ActivationCollector:
                     print(f"Processing batch {batch_idx + 1}/{num_batches}...", end='\r', flush=True)
 
                 encoded = tok(
-                    batch_texts,
-                    return_tensors="pt",
-                    padding=True,
-                    truncation=True,
-                    max_length=2048,
-                    add_special_tokens=True,
+                    batch_texts, return_tensors="pt", padding=True,
+                    truncation=True, max_length=2048, add_special_tokens=True,
                 )
                 encoded = {k: v.to(compute_device) for k, v in encoded.items()}
 
@@ -321,12 +214,10 @@ class ActivationCollector:
                 n_blocks = len(hs) - 1
                 names_by_idx = [str(i) for i in range(1, n_blocks + 1)]
                 keep = self._select_indices(layers, n_blocks)
-
                 attention_mask = encoded.get("attention_mask")
 
                 for i in range(len(batch_texts)):
                     collected: dict[str, torch.Tensor] = {}
-
                     if attention_mask is not None:
                         seq_len = int(attention_mask[i].sum().item())
                     else:
@@ -340,7 +231,7 @@ class ActivationCollector:
                             value = h.mean(dim=0)
                         elif strategy == ExtractionStrategy.CHAT_FIRST:
                             value = h[0]
-                        elif strategy in (ExtractionStrategy.CHAT_LAST, ExtractionStrategy.ROLE_PLAY, 
+                        elif strategy in (ExtractionStrategy.CHAT_LAST, ExtractionStrategy.ROLE_PLAY,
                                           ExtractionStrategy.MC_BALANCED,
                                           ExtractionStrategy.CHAT_MAX_NORM, ExtractionStrategy.CHAT_WEIGHTED):
                             value = h[-1]

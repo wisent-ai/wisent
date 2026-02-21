@@ -59,16 +59,20 @@ from wisent.core.weight_modification.directional import (
     project_weights,
     project_weights_norm_preserved,
     project_weights_multi_direction,
-    project_weights_titan,
+    project_weights_grom,
+    project_weights_szlak,
+    project_weights_wicher,
     project_component,
     project_component_norm_preserved,
     project_component_multi_direction,
     compute_projection_kernel,
     project_with_kernel,
     orthogonalize_direction,
-    TITANRuntimeHooks,
-    ConceptFlowRuntimeHooks,
-    apply_titan_steering,
+    GROMRuntimeHooks,
+    NurtRuntimeHooks,
+    SzlakRuntimeHooks,
+    WicherRuntimeHooks,
+    apply_grom_steering,
 )
 from wisent.core.weight_modification.methods.additive import (
     bake_steering_into_weights,
@@ -88,9 +92,9 @@ from wisent.core.weight_modification.utils import (
 from wisent.core.weight_modification.multi.multi_direction import (
     MultiDirectionConfig,
     MultiDirectionResult,
-    train_and_bake_titan,
-    train_and_bake_prism,
-    train_and_bake_pulse,
+    train_and_bake_grom,
+    train_and_bake_tecza,
+    train_and_bake_tetno,
     train_and_bake,
     bake_multi_directions,
     combine_directions,
@@ -122,18 +126,22 @@ __all__ = [
     # Norm-Preserving Biprojected Directional Modification (RECOMMENDED)
     "project_weights",  # Default uses norm_preserve=True
     "project_weights_norm_preserved",
-    "project_weights_multi_direction",  # PRISM multi-directional
-    "project_weights_titan",  # TITAN weight modification
+    "project_weights_multi_direction",  # TECZA multi-directional
+    "project_weights_grom",  # GROM weight modification
     "project_component_norm_preserved",
-    "project_component_multi_direction",  # PRISM multi-directional
+    "project_component_multi_direction",  # TECZA multi-directional
     "project_component",
     "compute_projection_kernel",
     "project_with_kernel",
     "orthogonalize_direction",
     # Runtime hooks
-    "TITANRuntimeHooks",
-    "ConceptFlowRuntimeHooks",
-    "apply_titan_steering",
+    "GROMRuntimeHooks",
+    "NurtRuntimeHooks",
+    "SzlakRuntimeHooks",
+    "WicherRuntimeHooks",
+    "apply_grom_steering",
+    "project_weights_szlak",
+    "project_weights_wicher",
     # Additive (bake steering into weights)
     "bake_steering_into_weights",
     "bake_steering_into_component",
@@ -146,12 +154,12 @@ __all__ = [
     "get_modifiable_components",
     "verify_modification",
     "compute_modification_metrics",
-    # Multi-direction (TITAN/PRISM/PULSE baked into weights)
+    # Multi-direction (GROM/TECZA/TETNO baked into weights)
     "MultiDirectionConfig",
     "MultiDirectionResult",
-    "train_and_bake_titan",
-    "train_and_bake_prism",
-    "train_and_bake_pulse",
+    "train_and_bake_grom",
+    "train_and_bake_tecza",
+    "train_and_bake_tetno",
     "train_and_bake",
     "bake_multi_directions",
     "combine_directions",

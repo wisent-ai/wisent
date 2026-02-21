@@ -12,7 +12,7 @@ def create_steering_object_from_pairs(args, tmpdir: Path) -> str:
     """Create a steering object from contrastive pairs in database."""
     from wisent.core.cli.get_activations import execute_get_activations
     from wisent.core.cli.create_steering_object import execute_create_steering_object
-    from wisent.core.geometry.repscan_with_concepts import load_pair_texts_from_database
+    from wisent.core.geometry.zwiad_with_concepts import load_pair_texts_from_database
 
     print("  Creating steering object from contrastive pairs...")
     pairs_path = tmpdir / "pairs.json"
@@ -64,7 +64,7 @@ def extract_activations_from_responses(base_data: dict, steered_data: dict) -> T
 
 def load_reference_activations(args) -> Tuple[torch.Tensor, torch.Tensor]:
     """Load reference activations from database for classifier training."""
-    from wisent.core.geometry.repscan_with_concepts import load_activations_from_database
+    from wisent.core.geometry.zwiad_with_concepts import load_activations_from_database
     return load_activations_from_database(
         model_name=args.model, task_name=args.task, layer=args.layer,
         prompt_format=getattr(args, 'prompt_format', 'chat'),

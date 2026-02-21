@@ -1,4 +1,4 @@
-"""Signal metrics for RepScan Step 1: Signal Test."""
+"""Signal metrics for Zwiad Step 1: Signal Test."""
 
 from typing import Dict, List
 import torch
@@ -96,7 +96,12 @@ def _knn_pca_accuracy(X: np.ndarray, y: np.ndarray, n_components: int, k: int, c
 
 def _mlp_accuracy(X: np.ndarray, y: np.ndarray, hidden: int, cv: int) -> float:
     """MLP probe cross-validated accuracy."""
-    clf = MLPClassifier(hidden_layer_sizes=(hidden,), random_state=42, early_stopping=True)
+    # early_stopping requires internal validation split; needs >=2 samples per class
+    # per fold. With n samples and cv folds, each fold has n*(cv-1)/cv training samples.
+    # Internal split takes 10%, so need >=20 training samples per fold for safety.
+    n_per_fold = len(X) * (cv - 1) // cv
+    use_early_stopping = n_per_fold >= 20
+    clf = MLPClassifier(hidden_layer_sizes=(hidden,), random_state=42, early_stopping=use_early_stopping, max_iter=500)
     scores = cross_val_score(clf, X, y, cv=cv, scoring="accuracy")
     return float(scores.mean())
 

@@ -76,17 +76,17 @@ class SteeringConfig(SerializableConfig):
     strategy: str = "constant"
     score: float = 0.0
     metric: str = "accuracy"
-    # PRISM parameters
+    # TECZA parameters
     num_directions: int = 1
     direction_weighting: str = "primary_only"
     retain_weight: float = 0.0
     independence_weight: float = 0.05
-    prism_optimization_steps: int = 100
+    tecza_optimization_steps: int = 100
     use_caa_init: bool = True
     cone_constraint: bool = True
     min_cosine_similarity: float = 0.3
     max_cosine_similarity: float = 0.95
-    # PULSE parameters
+    # TETNO parameters
     sensor_layer: int = -1
     steering_layers: str = ""
     condition_threshold: float = 0.5
@@ -95,14 +95,14 @@ class SteeringConfig(SerializableConfig):
     use_entropy_scaling: bool = False
     max_alpha: float = 2.0
     learn_threshold: bool = True
-    pulse_optimization_steps: int = 100
-    # TITAN parameters
+    tetno_optimization_steps: int = 100
+    # GROM parameters
     gate_hidden_dim: int = 64
     intensity_hidden_dim: int = 32
     behavior_weight: float = 1.0
     sparse_weight: float = 0.05
-    titan_optimization_steps: int = 200
-    titan_learning_rate: float = 0.005
+    grom_optimization_steps: int = 200
+    grom_learning_rate: float = 0.005
     method_params: Dict[str, Any] = field(default_factory=dict)
 
 

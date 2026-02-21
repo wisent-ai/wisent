@@ -49,7 +49,7 @@ def rigorous_select_intervention(
     Returns:
         RigorousInterventionResult with recommendation and confidence bounds.
     """
-    scores = {"CAA": 0.0, "Hyperplane": 0.0, "MLP": 0.0, "PRISM": 0.0, "TITAN": 0.0}
+    scores = {"CAA": 0.0, "Ostrze": 0.0, "MLP": 0.0, "TECZA": 0.0, "GROM": 0.0}
     reasoning = []
     warnings = []
     z_scores_used = {"signal_z": signal_z, "effective_dim_z": effective_dim_z}
@@ -71,30 +71,30 @@ def rigorous_select_intervention(
     if low_dim_structure:
         reasoning.append(f"Low-dimensional structure detected (z={effective_dim_z:.2f})")
         scores["CAA"] += 1.0
-        scores["Hyperplane"] += 0.5
+        scores["Ostrze"] += 0.5
     else:
         reasoning.append(f"No significant low-dim structure (z={effective_dim_z:.2f})")
         scores["MLP"] += 0.5
-        scores["TITAN"] += 0.5
+        scores["GROM"] += 0.5
 
     # Use geometry diagnosis
-    is_linear = geometry_diagnosis == "LINEAR"
+    is_linear = geometry_diagnosis.startswith("LINEAR")
     if is_linear:
         reasoning.append(f"Linear geometry (conf={geometry_confidence:.2f})")
         scores["CAA"] += 2.0
-        scores["Hyperplane"] += 1.5
+        scores["Ostrze"] += 1.5
     else:
         reasoning.append(f"Nonlinear geometry (conf={geometry_confidence:.2f})")
         scores["MLP"] += 1.5
-        scores["Hyperplane"] += 1.0
-        scores["TITAN"] += 0.5
+        scores["Ostrze"] += 1.0
+        scores["GROM"] += 0.5
 
     # Use concept decomposition
     is_fragmented = n_concepts > 1 and silhouette > 0.1
     if is_fragmented:
         reasoning.append(f"Fragmented into {n_concepts} concepts (sil={silhouette:.2f})")
-        scores["PRISM"] += 2.0
-        scores["TITAN"] += 1.0
+        scores["TECZA"] += 2.0
+        scores["GROM"] += 1.0
         scores["CAA"] -= 1.0
     else:
         reasoning.append("Single concept detected")
@@ -141,8 +141,8 @@ def get_method_requirements(method: str) -> Dict[str, any]:
     """Get requirements for a steering method."""
     return {
         "CAA": {"min_pairs": 10, "assumes_linear": True, "assumes_single_concept": True},
-        "Hyperplane": {"min_pairs": 20, "assumes_linear": True, "assumes_single_concept": True},
+        "Ostrze": {"min_pairs": 20, "assumes_linear": True, "assumes_single_concept": True},
         "MLP": {"min_pairs": 50, "assumes_linear": False, "assumes_single_concept": True},
-        "PRISM": {"min_pairs": 30, "assumes_linear": True, "assumes_single_concept": False},
-        "TITAN": {"min_pairs": 100, "assumes_linear": False, "assumes_single_concept": False},
+        "TECZA": {"min_pairs": 30, "assumes_linear": True, "assumes_single_concept": False},
+        "GROM": {"min_pairs": 100, "assumes_linear": False, "assumes_single_concept": False},
     }.get(method, {})

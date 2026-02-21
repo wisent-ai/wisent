@@ -12,7 +12,7 @@ from typing import Dict, Any, Tuple
 
 def detect_concepts_multilayer(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
-    use_hdbscan: bool = False,
+    use_hdbscan: bool = True,
 ) -> Dict[str, Any]:
     """
     Detect concepts using concatenated diff vectors from ALL layers.
