@@ -1,4 +1,6 @@
 """Base WisentError and data loading error classes."""
+from __future__ import annotations
+
 from typing import Optional, Any, Dict, List
 from wisent.core.errors._error_codes_enum import ErrorCode, ERROR_MESSAGES
 
