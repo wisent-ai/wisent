@@ -274,26 +274,22 @@ def bake_steering_with_kernel(
     method: str = "bias",
     verbose: bool = True,
 ) -> dict[str, int]:
-    """
-    Bake steering with kernel-based alpha distribution across layers.
-
-    Args:
-        model: Model to modify
-        steering_vectors: Per-layer steering vectors
-        max_alpha: Peak steering strength
-        max_alpha_position: Layer of peak (None = middle)
-        min_alpha: Minimum steering strength
-        min_alpha_distance: Decay distance (None = 60% of layers)
-        components: Components to modify
-        method: "bias" or "weight"
-        verbose: Whether to print progress
-
-    Returns:
-        Modification statistics
-
-    Example:
-        >>> # Bake steering with maximum at layer 15, tapering to edges
-        >>> stats = bake_steering_with_kernel(
-        ...     model,
-        ...     steering_vectors,
-        ...     max_alpha=2.0,
+    """Bake steering with kernel-based alpha distribution across layers."""
+    import math
+    layer_indices = sorted(steering_vectors.keys())
+    if not layer_indices:
+        return {"layers_modified": 0, "components_modified": 0, "total_parameters_modified": 0}
+    n_layers = max(layer_indices) + 1
+    center = max_alpha_position if max_alpha_position is not None else n_layers / 2.0
+    dist = min_alpha_distance if min_alpha_distance is not None else n_layers * 0.6
+    if dist < 1e-8:
+        dist = 1.0
+    sigma = dist / 2.0
+    layer_weights = {}
+    for idx in layer_indices:
+        w = math.exp(-0.5 * ((idx - center) / sigma) ** 2)
+        layer_weights[idx] = min_alpha + (max_alpha - min_alpha) * w
+    return bake_steering_into_weights(
+        model, steering_vectors, alpha=1.0, layer_weights=layer_weights,
+        components=components, method=method, verbose=verbose,
+    )
