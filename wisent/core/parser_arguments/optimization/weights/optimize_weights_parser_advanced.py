@@ -4,12 +4,6 @@ import argparse
 
 def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> None:
     """Set up advanced optimize-weights arguments."""
-        "--direction",
-        type=str,
-        default="auto",
-        choices=["auto", "maximize", "minimize"],
-        help="Optimization direction. 'auto' infers from metric. Default: auto"
-    )
 
     # ==========================================================================
     # OPTIMIZATION PARAMETERS

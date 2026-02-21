@@ -4,7 +4,6 @@ import argparse
 
 def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     """Set up advanced modification arguments."""
-    )
 
     # Additive-specific parameters
     additive_group = parser.add_argument_group("additive parameters")

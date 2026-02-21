@@ -4,6 +4,7 @@ from typing import Dict, List, Optional, Tuple, Any
 import torch
 from wisent.core.cli.cli_logger import setup_logger
 from wisent.core.activations.core.atoms import LayerName
+from wisent.core.steering._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
 
 UNIVERSAL_SUBSPACE_THRESHOLDS = {
     "linear_variance_threshold": 0.85,
