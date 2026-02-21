@@ -239,3 +239,6 @@ class ClassifierTrainingMixin:
         return (total / max(steps, 1), probs_all, labels_all)
 
     def _forward_probs(self, model: nn.Module, xb: torch.Tensor) -> torch.Tensor:
+        """Run model forward and return sigmoid probabilities."""
+        logits = model(xb)
+        return torch.sigmoid(logits)
