@@ -1,8 +1,13 @@
 """Evaluation and IO mixin for SteeringMethod."""
+from __future__ import annotations
+
 import torch
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, TYPE_CHECKING
 from wisent.core.contrastive_pairs import ContrastivePairSet
 from wisent.core.errors import NoTrainedVectorsError, InsufficientDataError
+
+if TYPE_CHECKING:
+    from wisent.core.steering.steering import SteeringType
 
 
 class SteeringEvalIOMixin:

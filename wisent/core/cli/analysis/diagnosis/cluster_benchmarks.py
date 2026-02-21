@@ -42,11 +42,9 @@ STRATEGIES = [
 RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", "To"]
 
 
-@dataclass
-
 from wisent.core.cli.analysis.diagnosis.cluster_benchmarks_activations import (
     ConfigResult, get_layers_to_test, get_activation, get_mc_balanced_activations,
-    load_benchmark_pairs, compute_directions_for_strategy, find_optimal_clusters,
+    load_benchmark_pairs, compute_directions_for_strategy,
 )
 
 

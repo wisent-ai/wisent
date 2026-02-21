@@ -7,6 +7,7 @@ from .zwiad_parser import setup_zwiad_parser
 from .diagnostics import (
     setup_diagnose_pairs_parser,
     setup_diagnose_vectors_parser,
+    setup_compare_steering_parser,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     'setup_zwiad_parser',
     'setup_diagnose_pairs_parser',
     'setup_diagnose_vectors_parser',
+    'setup_compare_steering_parser',
 ]

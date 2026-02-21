@@ -249,6 +249,3 @@ class GeometryAdaptation:
     
     recommendation: str
     """Steering method recommendation based on geometry."""
-
-
-@dataclass
