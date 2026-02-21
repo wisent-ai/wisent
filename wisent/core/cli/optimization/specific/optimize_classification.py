@@ -1,59 +1,30 @@
 """Classification optimization command - uses native Wisent methods.
 
-This optimizer tests different configurations (layer, aggregation, threshold)
-by calling the native execute_tasks() function for each configuration,
-then evaluates using Wisent's native evaluators.
-
-Supports multiple evaluation modes:
-- Task accuracy (default): Uses benchmark-specific evaluators
-- Refusal: Uses shared RefusalEvaluator for compliance rate
-- Personalization: Uses shared PersonalizationEvaluator for trait alignment
-
-Results are persisted to ~/.wisent/configs/ via WisentConfigManager
-so they can be automatically loaded on subsequent runs.
+Tests different configurations (layer, aggregation, threshold) by calling
+execute_tasks() for each configuration, then evaluates using Wisent evaluators.
+Results are persisted to ~/.wisent/configs/ via WisentConfigManager.
 """
-
-import sys
+from __future__ import annotations
 import json
-import time
-from typing import List, Dict, Any
 import os
+from typing import Dict, Any
 
-from wisent.core.config_manager import get_config_manager, save_classification_config
-from wisent.core.evaluators.steering_evaluators import (
-    SteeringEvaluatorFactory,
-    EvaluatorConfig,
-)
-
-
-
+from wisent.core.config_manager import save_classification_config
+from wisent.core.evaluators.steering_evaluators import SteeringEvaluatorFactory, EvaluatorConfig
 from wisent.core.cli.optimization.specific.optimize_classification_runner import (
     run_classification_optimization,
 )
 
 
 def execute_optimize_classification(args):
-    """
-    Execute classification optimization using native Wisent methods.
-
-    Tests different configurations by calling execute_tasks() for each combination:
-    - Different layers
-    - Different aggregation methods
-    - Different detection thresholds
-
-    Uses native Wisent evaluation (not sklearn metrics).
-    """
+    """Execute classification optimization using native Wisent methods."""
     from wisent.core.cli.tasks import execute_tasks
-    from types import SimpleNamespace
-
     print(f"\n{'='*80}")
-    print(f"🔍 CLASSIFICATION PARAMETER OPTIMIZATION")
+    print(f"CLASSIFICATION PARAMETER OPTIMIZATION")
     print(f"{'='*80}")
     print(f"   Model: {args.model}")
     print(f"   Limit per task: {args.limit}")
     print(f"   Device: {args.device or 'auto'}")
-    
-    # Check for steering evaluation mode (refusal, personalization)
     evaluator_type = getattr(args, 'evaluator', 'task')
     trait = getattr(args, 'trait', None)
     if evaluator_type != 'task':
@@ -61,127 +32,171 @@ def execute_optimize_classification(args):
         if trait:
             print(f"   Trait: {trait}")
     print(f"{'='*80}\n")
-    
-    # Setup steering evaluator if needed
     steering_evaluator = None
     if evaluator_type in ['refusal', 'personalization', 'custom']:
-        from wisent.core.models.wisent_model import WisentModel as WM
         eval_config = EvaluatorConfig(
-            evaluator_type=evaluator_type,
-            trait=trait,
+            evaluator_type=evaluator_type, trait=trait,
             eval_prompts_path=getattr(args, 'eval_prompts', None),
             num_eval_prompts=getattr(args, 'num_eval_prompts', 30),
             custom_evaluator_path=getattr(args, 'custom_evaluator', None),
         )
-        steering_evaluator = SteeringEvaluatorFactory.create(
-            eval_config, args.model
-        )
-        print(f"📊 Using {evaluator_type} evaluator for optimization\n")
-
-    # 1. Determine layer range
-    # First need to load model to get num_layers
+        steering_evaluator = SteeringEvaluatorFactory.create(eval_config, args.model)
+        print(f"Using {evaluator_type} evaluator for optimization\n")
     from wisent.core.models.wisent_model import WisentModel
-    print(f"📦 Loading model to determine layer range...")
+    print(f"Loading model to determine layer range...")
     model = WisentModel(args.model, device=args.device)
     total_layers = model.num_layers
-    print(f"   ✓ Model has {total_layers} layers\n")
-
+    print(f"   Model has {total_layers} layers\n")
     if args.layer_range:
         start, end = map(int, args.layer_range.split('-'))
         layers_to_test = list(range(start, end + 1))
     else:
-        # Test ALL layers by default (0-indexed)
         layers_to_test = list(range(total_layers))
-
-    # Classifier types to test
     classifier_types = ['logistic', 'mlp']
-
-    # Prompt construction strategies to test (5 strategies)
-    prompt_construction_strategies = [
-        'chat_template',
-        'direct_completion',
-        'multiple_choice',
-        'role_playing',
-        'instruction_following'
+    prompt_strategies = [
+        'chat_template', 'direct_completion', 'multiple_choice',
+        'role_playing', 'instruction_following',
     ]
-
-    # Token targeting strategies to test
-    token_targeting_strategies = [
-        'choice_token',
-        'continuation_token',
-        'last_token',
-        'first_token',
-        'mean_pooling'
+    token_strategies = [
+        'choice_token', 'continuation_token', 'last_token',
+        'first_token', 'mean_pooling',
     ]
-
-    print(f"🎯 Testing layers: {layers_to_test[0]} to {layers_to_test[-1]} ({len(layers_to_test)} layers)")
-    print(f"🤖 Classifier types: {', '.join(classifier_types)}")
-    print(f"🔄 Aggregation methods: {', '.join(args.aggregation_methods)}")
-    print(f"📝 Prompt strategies: {', '.join(prompt_construction_strategies)}")
-    print(f"🎯 Token targeting: {', '.join(token_targeting_strategies)}")
-    print(f"📊 Thresholds: {args.threshold_range}\n")
-
-    # 2. Get list of tasks
     if hasattr(args, 'tasks') and args.tasks:
         task_list = args.tasks if isinstance(args.tasks, list) else [args.tasks]
     else:
-        task_list = [
-            "arc_easy", "arc_challenge", "hellaswag",
-            "winogrande", "gsm8k"
-        ]
+        task_list = ["arc_easy", "arc_challenge", "hellaswag", "winogrande", "gsm8k"]
+    print(f"Testing {len(layers_to_test)} layers x {len(classifier_types)} classifiers x "
+          f"{len(args.aggregation_methods)} agg x {len(prompt_strategies)} prompts x "
+          f"{len(token_strategies)} tokens x {len(args.threshold_range)} thresholds")
+    print(f"Optimizing {len(task_list)} tasks\n")
+    all_results = run_classification_optimization(
+        args=args, execute_tasks_fn=execute_tasks,
+        steering_evaluator=steering_evaluator, total_layers=total_layers,
+        layers_to_test=layers_to_test, classifier_types=classifier_types,
+        prompt_strategies=prompt_strategies, token_strategies=token_strategies,
+        task_list=task_list,
+    )
+    _save_results(args, all_results, total_layers)
 
-    print(f"📋 Optimizing {len(task_list)} tasks\n")
 
-    # 3. Results storage
-    all_results = {}
+def _save_results(args, all_results, total_layers):
+    """Save optimization results to disk and display summary."""
+    results_dir = getattr(args, 'classifiers_dir', None) or './optimization_results'
+    os.makedirs(results_dir, exist_ok=True)
+    model_safe = args.model.replace('/', '_')
+    results_file = os.path.join(results_dir, f'classification_optimization_{model_safe}.json')
+    with open(results_file, 'w') as f:
+        json.dump({'model': args.model, 'optimization_metric': args.optimization_metric,
+                   'results': all_results}, f, indent=2)
+    print(f"\n{'='*80}")
+    print(f"OPTIMIZATION COMPLETE - Results saved to: {results_file}")
+    print(f"{'='*80}\n")
+    _persist_configs(args, all_results)
+    _print_summary(args, all_results)
+    _handle_comparisons(args, all_results, total_layers)
 
-    # 4. Process each task
-    for task_idx, task_name in enumerate(task_list, 1):
-        print(f"\n{'='*80}")
-        print(f"Task {task_idx}/{len(task_list)}: {task_name}")
-        print(f"{'='*80}")
 
-        task_start_time = time.time()
+def _persist_configs(args, all_results):
+    """Save configs to WisentConfigManager for persistence."""
+    print(f"Saving optimal parameters to ~/.wisent/configs/...")
+    for task_name, result in all_results.items():
+        c = result['best_config']
+        save_classification_config(
+            model_name=args.model, task_name=task_name, layer=c['layer'],
+            token_aggregation=c['aggregation'], detection_threshold=c['threshold'],
+            classifier_type=c['classifier_type'],
+            prompt_construction_strategy=c['prompt_construction_strategy'],
+            token_targeting_strategy=c['token_targeting_strategy'],
+            accuracy=c['accuracy'], f1_score=c['f1_score'],
+            precision=c['precision'], recall=c['recall'],
+            optimization_method="grid_search",
+            set_as_default=(task_name == list(all_results.keys())[0]),
+        )
+    best_score, best_cfg, best_task = -1, None, None
+    for task_name, result in all_results.items():
+        if result['best_score'] > best_score:
+            best_score = result['best_score']
+            best_cfg = result['best_config']
+            best_task = task_name
+    if best_cfg:
+        save_classification_config(
+            model_name=args.model, task_name=None, layer=best_cfg['layer'],
+            token_aggregation=best_cfg['aggregation'],
+            detection_threshold=best_cfg['threshold'],
+            classifier_type=best_cfg['classifier_type'],
+            prompt_construction_strategy=best_cfg['prompt_construction_strategy'],
+            token_targeting_strategy=best_cfg['token_targeting_strategy'],
+            accuracy=best_cfg['accuracy'], f1_score=best_cfg['f1_score'],
+            precision=best_cfg['precision'], recall=best_cfg['recall'],
+            optimization_method="grid_search",
+        )
+        print(f"   Default layer: {best_cfg['layer']} (from {best_task})")
+        print(f"   Task configs saved for: {', '.join(all_results.keys())}\n")
 
-        try:
-            best_score = -1
-            best_config = None
 
-            combinations_tested = 0
-            total_combinations = (len(layers_to_test) * len(classifier_types) *
-                                  len(args.aggregation_methods) * len(args.threshold_range) *
-                                  len(prompt_construction_strategies) * len(token_targeting_strategies))
+def _print_summary(args, all_results):
+    """Print summary table of results."""
+    sep = "-" * 150
+    print(f"SUMMARY BY TASK:")
+    print(sep)
+    hdr = (f"{'Task':<20} | {'Layer':>5} | {'Classifier':<10} | {'Agg':<12} | "
+           f"{'Prompt':<20} | {'Token':<15} | {'Thresh':>6} | {'F1':>6} | {'Acc':>6}")
+    print(hdr)
+    print(sep)
+    for task_name, result in all_results.items():
+        c = result['best_config']
+        print(f"{task_name:<20} | {c['layer']:>5} | {c['classifier_type']:<10} | "
+              f"{c['aggregation']:<12} | {c['prompt_construction_strategy']:<20} | "
+              f"{c['token_targeting_strategy']:<15} | {c['threshold']:>6.2f} | "
+              f"{c['f1_score']:>6.4f} | {c['accuracy']:>6.4f}")
+    print(sep + "\n")
 
-            print(f"  🔍 Testing {total_combinations} configurations...")
-            print(f"      ({len(layers_to_test)} layers × {len(classifier_types)} classifiers × "
-                  f"{len(args.aggregation_methods)} aggregations × {len(args.threshold_range)} thresholds × "
-                  f"{len(prompt_construction_strategies)} prompt strategies × {len(token_targeting_strategies)} token strategies)")
 
-            for layer in layers_to_test:
-                for classifier_type in classifier_types:
-                    for agg_method in args.aggregation_methods:
-                        for threshold in args.threshold_range:
-                            for prompt_strategy in prompt_construction_strategies:
-                                for token_strategy in token_targeting_strategies:
-                                    combinations_tested += 1
-
-                                    # Create args namespace for execute_tasks
-                                    task_args = SimpleNamespace(
-                                        task_names=[task_name],
-                                        model=args.model,
-                                        layer=layer,
-                                        classifier_type=classifier_type,
-                                        token_aggregation=agg_method,
-                                        detection_threshold=threshold,
-                                        prompt_construction_strategy=prompt_strategy,
-                                        token_targeting_strategy=token_strategy,
-                                        split_ratio=0.8,
-                                        seed=42,
-                                        limit=args.limit,
-                                        training_limit=None,
-                                        testing_limit=None,
-                                        device=args.device,
-                                        save_classifier=None,  # Don't save intermediate classifiers
-                                        output=None,
-
-    run_classification_optimization(args, evaluator, wisent_model, device)
+def _handle_comparisons(args, all_results, total_layers):
+    """Handle --show-comparisons and --save-comparisons flags."""
+    show = getattr(args, 'show_comparisons', 0)
+    save_path = getattr(args, 'save_comparisons', None)
+    if show <= 0 and not save_path:
+        return
+    print("\nGenerating comparison data (optimized vs default config)...")
+    comparisons = []
+    for task_name, result in all_results.items():
+        bc = result['best_config']
+        dc = {
+            'layer': total_layers // 2, 'aggregation': 'average', 'threshold': 0.5,
+            'classifier_type': 'logistic', 'prompt_construction_strategy': 'multiple_choice',
+            'token_targeting_strategy': 'last_token',
+        }
+        comparisons.append({
+            'task': task_name, 'default_config': dc,
+            'optimized_config': {k: bc[k] for k in dc},
+            'optimized_metrics': {
+                'f1': bc['f1_score'], 'accuracy': bc['accuracy'],
+                'precision': bc['precision'], 'recall': bc['recall'],
+            },
+            'improvements': {
+                'layer_change': bc['layer'] - dc['layer'],
+                'aggregation_change': dc['aggregation'] != bc['aggregation'],
+                'threshold_change': bc['threshold'] - dc['threshold'],
+            },
+        })
+    if save_path:
+        parent = os.path.dirname(save_path)
+        if parent:
+            os.makedirs(parent, exist_ok=True)
+        with open(save_path, 'w') as f:
+            json.dump({'model': args.model, 'optimization_metric': args.optimization_metric,
+                       'comparisons': comparisons}, f, indent=2)
+        print(f"Saved comparisons to: {save_path}")
+    if show > 0:
+        print(f"\nComparisons (showing {min(show, len(comparisons))} tasks):\n")
+        for comp in comparisons[:show]:
+            dc, oc = comp['default_config'], comp['optimized_config']
+            print(f"{'_'*80}")
+            print(f"Task: {comp['task']}")
+            print(f"DEFAULT:   Layer={dc['layer']}, Agg={dc['aggregation']}, Thresh={dc['threshold']}")
+            print(f"OPTIMIZED: Layer={oc['layer']}, Agg={oc['aggregation']}, Thresh={oc['threshold']:.2f}")
+            print(f"           Cls={oc['classifier_type']}, Prompt={oc['prompt_construction_strategy']}")
+            m = comp['optimized_metrics']
+            print(f"METRICS:   F1={m['f1']:.4f}, Accuracy={m['accuracy']:.4f}")
+            print()
