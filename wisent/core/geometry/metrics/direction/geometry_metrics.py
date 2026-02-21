@@ -1,4 +1,4 @@
-"""Geometry metrics for RepScan Step 2: Geometry Test."""
+"""Geometry metrics for Zwiad Step 2: Geometry Test."""
 
 from typing import Tuple
 import torch

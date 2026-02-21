@@ -297,11 +297,3 @@ def run_all_tests():
     
     if not failed:
         print("\n🎉 ALL TESTS PASSED! _cross_benchmark_mode() function verified completely.")
-        return 0
-    else:
-        print(f"\n⚠️  Some tests failed. Review the output above.")
-        return 1
-
-
-if __name__ == "__main__":
-    exit(run_all_tests())

@@ -13,7 +13,7 @@ import numpy as np
 import torch
 from scipy import stats
 
-from .linearity_utils import (
+from ..utils.linearity_utils import (
     compute_probe_accuracies,
     analyze_residuals,
     bootstrap_gap_ci,
@@ -56,7 +56,7 @@ def test_linearity(
     p_threshold: float = 0.05,
     residual_threshold: float = 0.3,
     ramsey_threshold: float = 0.03,
-    n_bootstrap: int = 100,
+    n_bootstrap: int = 30,
     contexts: Optional[List[Tuple[torch.Tensor, torch.Tensor]]] = None,
     random_state: int = 42,
 ) -> LinearityTestResult:

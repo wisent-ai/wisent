@@ -27,7 +27,7 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--method",
         type=str,
-        choices=["caa", "hyperplane", "mlp", "prism", "pulse", "titan"],
+        choices=["caa", "ostrze", "mlp", "tecza", "tetno", "grom", "nurt"],
         default="caa",
         help="Steering method to use (default: caa)"
     )
@@ -94,102 +94,146 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
         help="Weight decay for MLP (default: 0.01)"
     )
 
-    # Hyperplane parameters
+    # Ostrze parameters
     parser.add_argument(
-        "--hyperplane-max-iter",
+        "--ostrze-max-iter",
         type=int,
         default=1000,
         help="Max iterations for logistic regression (default: 1000)"
     )
     parser.add_argument(
-        "--hyperplane-C",
+        "--ostrze-C",
         type=float,
         default=1.0,
         help="Regularization strength for logistic regression (default: 1.0)"
     )
 
-    # PRISM parameters
+    # TECZA parameters
     parser.add_argument(
-        "--prism-num-directions",
+        "--tecza-num-directions",
         type=int,
         default=3,
         help="Number of directions to discover per layer (default: 3)"
     )
     parser.add_argument(
-        "--prism-optimization-steps",
+        "--tecza-optimization-steps",
         type=int,
         default=100,
-        help="Optimization steps for PRISM (default: 100)"
+        help="Optimization steps for TECZA (default: 100)"
     )
     parser.add_argument(
-        "--prism-learning-rate",
+        "--tecza-learning-rate",
         type=float,
         default=0.01,
-        help="Learning rate for PRISM (default: 0.01)"
+        help="Learning rate for TECZA (default: 0.01)"
     )
 
-    # PULSE parameters
+    # TETNO parameters
     parser.add_argument(
-        "--pulse-sensor-layer",
+        "--tetno-sensor-layer",
         type=int,
         default=None,
         help="Sensor layer index for gating (default: auto)"
     )
     parser.add_argument(
-        "--pulse-condition-threshold",
+        "--tetno-condition-threshold",
         type=float,
         default=0.5,
         help="Condition threshold for gating (default: 0.5)"
     )
     parser.add_argument(
-        "--pulse-gate-temperature",
+        "--tetno-gate-temperature",
         type=float,
         default=0.1,
         help="Gate temperature (default: 0.1)"
     )
     parser.add_argument(
-        "--pulse-learn-threshold",
+        "--tetno-learn-threshold",
         action="store_true",
         default=True,
         help="Learn optimal threshold (default: True)"
     )
 
-    # TITAN parameters
+    # GROM parameters
     parser.add_argument(
-        "--titan-num-directions",
+        "--grom-num-directions",
         type=int,
         default=5,
         help="Number of directions per layer (default: 5)"
     )
     parser.add_argument(
-        "--titan-sensor-layer",
+        "--grom-sensor-layer",
         type=int,
         default=None,
         help="Sensor layer for gating (default: auto)"
     )
     parser.add_argument(
-        "--titan-gate-hidden-dim",
+        "--grom-gate-hidden-dim",
         type=int,
         default=None,
         help="Gate network hidden dimension (default: auto)"
     )
     parser.add_argument(
-        "--titan-intensity-hidden-dim",
+        "--grom-intensity-hidden-dim",
         type=int,
         default=None,
         help="Intensity network hidden dimension (default: auto)"
     )
     parser.add_argument(
-        "--titan-max-alpha",
+        "--grom-max-alpha",
         type=float,
         default=3.0,
         help="Maximum steering intensity (default: 3.0)"
     )
     parser.add_argument(
-        "--titan-gate-temperature",
+        "--grom-gate-temperature",
         type=float,
         default=0.5,
         help="Gate temperature (default: 0.5)"
+    )
+
+    # Concept Flow parameters
+    parser.add_argument(
+        "--nurt-num-dims",
+        type=int,
+        default=0,
+        help="Concept subspace dimensions (0 = auto from variance, default: 0)"
+    )
+    parser.add_argument(
+        "--nurt-variance-threshold",
+        type=float,
+        default=0.80,
+        help="Cumulative variance threshold for auto dim selection (default: 0.80)"
+    )
+    parser.add_argument(
+        "--nurt-training-epochs",
+        type=int,
+        default=300,
+        help="Training epochs for flow matching (default: 300)"
+    )
+    parser.add_argument(
+        "--nurt-lr",
+        type=float,
+        default=0.001,
+        help="Learning rate for flow network (default: 0.001)"
+    )
+    parser.add_argument(
+        "--nurt-num-integration-steps",
+        type=int,
+        default=4,
+        help="Euler integration steps at inference (default: 4)"
+    )
+    parser.add_argument(
+        "--nurt-t-max",
+        type=float,
+        default=1.0,
+        help="Integration endpoint / max steering strength (default: 1.0)"
+    )
+    parser.add_argument(
+        "--nurt-hidden-dim",
+        type=int,
+        default=0,
+        help="Velocity network hidden dim (0 = auto, default: 0)"
     )
 
     # Display options

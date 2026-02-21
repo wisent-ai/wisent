@@ -12,7 +12,7 @@ from pathlib import Path
 def execute_discover_steering(args):
     """Execute the discover-steering command - find optimal steering directions."""
     import torch
-    from wisent.core.geometry.repscan_with_concepts import (
+    from wisent.core.geometry.zwiad_with_concepts import (
         load_activations_from_database, load_pair_texts_from_database,
     )
     from wisent.core.geometry.steering_discovery import (

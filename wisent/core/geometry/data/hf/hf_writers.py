@@ -38,16 +38,18 @@ def _get_api():
 
 
 def _retry_upload(fn, max_retries=8, base_wait=120):
-    """Call fn(); on 429 rate-limit, back off and retry."""
+    """Call fn(); on 429/412/timeout, back off and retry."""
+    import random
     for attempt in range(max_retries):
         try:
             return fn()
         except Exception as exc:
-            is_429 = "429" in str(exc) or "Too Many Requests" in str(exc)
-            if not is_429 or attempt == max_retries - 1:
+            msg = str(exc)
+            retryable = any(k in msg for k in ("429", "412", "Precondition", "ReadTimeout", "timed out"))
+            if not retryable or attempt == max_retries - 1:
                 raise
-            wait = base_wait * (2 ** attempt)
-            print(f"  Rate limited (429). Waiting {wait}s (attempt {attempt + 1}/{max_retries})...")
+            wait = int(base_wait * (2 ** min(attempt, 3)) * random.uniform(0.5, 1.5))
+            print(f"  Retryable error. Waiting {wait}s (attempt {attempt + 1}/{max_retries})...")
             time.sleep(wait)
 
 
@@ -199,36 +201,86 @@ def flush_staging_dir(staging_dir: str, path_in_repo: str = "."):
     print(f"  Flushed staging dir to HF ({path_in_repo})")
 
 
-def update_index(
+def write_marker(
     model_name: str,
     benchmark: str,
     strategy: str,
     layers: List[int],
     dry_run: bool = False,
 ) -> None:
-    """Update the repo-level index.json with newly uploaded layers."""
+    """Write a per-combo marker file instead of updating shared index.json.
+
+    Markers are independent files under markers/{safe_model}/{benchmark}/{strategy}.json
+    so parallel instances never race on a shared mutable file.
+    """
     safe_model = model_to_safe_name(model_name)
-    key = f"{safe_model}/{benchmark}/{strategy}"
+    marker_path = f"markers/{safe_model}/{benchmark}/{strategy}.json"
+    payload = {"layers": sorted(layers)}
+
     if dry_run:
-        print(f"  [DRY RUN] Would update index.json: {key} -> {layers}")
+        print(f"  [DRY RUN] Would write marker: {marker_path} -> {payload}")
         return
 
-    api = _get_api()
-    index = {}
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
+        json.dump(payload, tmp, indent=2)
+        tmp_path = tmp.name
     try:
-        from huggingface_hub import hf_hub_download
-        local_path = hf_hub_download(
-            repo_id=HF_REPO_ID, filename="index.json",
+        api = _get_api()
+        _retry_upload(lambda: api.upload_file(
+            path_or_fileobj=tmp_path, path_in_repo=marker_path,
+            repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
+        ))
+        print(f"  Wrote marker: {marker_path} -> {payload}")
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)
+
+
+def consolidate_index(dry_run: bool = False) -> Dict[str, List[int]]:
+    """Build unified index.json from all marker files.
+
+    Lists all files under markers/ in the HF repo, parses each
+    marker to extract the key and layers, builds the index, and
+    uploads it. Run once after all parallel instances finish.
+    """
+    from huggingface_hub import HfApi
+
+    api = HfApi(token=_get_hf_token())
+    all_files = api.list_repo_tree(
+        repo_id=HF_REPO_ID,
+        repo_type=HF_REPO_TYPE,
+        path_in_repo="markers",
+        recursive=True,
+    )
+    marker_paths = [
+        f.rpath for f in all_files
+        if hasattr(f, "rpath") and f.rpath.endswith(".json")
+    ]
+
+    print(f"Found {len(marker_paths)} marker files")
+    index: Dict[str, List[int]] = {}
+
+    from huggingface_hub import hf_hub_download
+    for mp in marker_paths:
+        parts = mp.split("/")  # markers/{safe_model}/{benchmark}/{strategy}.json
+        if len(parts) != 4:
+            continue
+        key = f"{parts[1]}/{parts[2]}/{parts[3].replace('.json', '')}"
+        local = hf_hub_download(
+            repo_id=HF_REPO_ID, filename=mp,
             repo_type=HF_REPO_TYPE, token=_get_hf_token(),
         )
-        with open(local_path, "r") as f:
-            index = json.load(f)
-    except Exception:
-        pass
+        with open(local, "r") as f:
+            data = json.load(f)
+        existing = set(index.get(key, []))
+        existing.update(data.get("layers", []))
+        index[key] = sorted(existing)
 
-    existing_layers = set(index.get(key, []))
-    existing_layers.update(layers)
-    index[key] = sorted(existing_layers)
+    print(f"Consolidated index: {len(index)} entries")
+
+    if dry_run:
+        for k, v in sorted(index.items()):
+            print(f"  {k}: {v}")
+        return index
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
         json.dump(index, tmp, indent=2)
@@ -238,6 +290,8 @@ def update_index(
             path_or_fileobj=tmp_path, path_in_repo="index.json",
             repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
         ))
-        print(f"  Updated index.json: {key} -> {sorted(existing_layers)}")
+        print(f"  Uploaded consolidated index.json")
     finally:
         Path(tmp_path).unlink(missing_ok=True)
+
+    return index

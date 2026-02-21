@@ -1,4 +1,4 @@
-"""Validation tests and diagnostics for RepScan.
+"""Validation tests and diagnostics for Zwiad.
 
 Includes signal/null tests, effective dimension validation, and curse of dimensionality diagnostics.
 """

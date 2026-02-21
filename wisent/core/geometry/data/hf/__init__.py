@@ -14,7 +14,8 @@ from .hf_loaders import (
     load_pair_texts_from_hf,
 )
 from .hf_writers import (
-    update_index,
+    write_marker,
+    consolidate_index,
     upload_activation_shard,
     upload_pair_texts,
     upload_raw_activation_shard,
@@ -38,7 +39,8 @@ __all__ = [
     "pair_texts_hf_path",
     "raw_activation_hf_path",
     "safe_name_to_model",
-    "update_index",
+    "write_marker",
+    "consolidate_index",
     "upload_activation_shard",
     "upload_pair_texts",
     "upload_raw_activation_shard",

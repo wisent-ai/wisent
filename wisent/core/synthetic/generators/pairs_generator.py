@@ -297,31 +297,3 @@ class SyntheticContrastivePairsGenerator:
                         continue
 
                     logger.info(f"[PARSE DEBUG] Extracted - Prompt: {prompt[:50]}, Positive: {positive[:50]}, Negative: {negative[:50]}")
-
-                    cp = ContrastivePair(
-                        prompt=prompt,
-                        positive_response=PositiveResponse(model_response=positive),
-                        negative_response=NegativeResponse(model_response=negative),
-                        label=self.trait_label,
-                        trait_description=self.trait_description,
-                    )
-                    out.add(cp)
-                    logger.info(f"[PARSE DEBUG] Successfully added pair")
-
-        logger.info(f"[PARSE DEBUG] Finished parsing. Total pairs collected: {len(out)}")
-        return out
-
-    @staticmethod
-    def _build_user_prompt(label: str, desc: str, k: int) -> str:
-        return (
-            f"Create {k} contrastive pairs.\n"
-            f"- Trait label: {label}\n"
-            f"- Trait description: {desc}\n"
-            f"\n"
-            f"Tips:\n"
-            f"- Make prompts specific to the topic but varied in wording and intent.\n"
-            f"- Keep negative examples safe (fictional, non-actionable).\n"
-            f"- Avoid meta-text like 'I cannot' or 'As an AI model'.\n"
-            f"\n"
-            f"Generate {k} pairs now."
-        )

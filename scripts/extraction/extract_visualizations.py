@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Extract visualizations from RepScan JSON output to viewable image files."""
+"""Extract visualizations from Zwiad JSON output to viewable image files."""
 import json
 import base64
 import argparse
@@ -58,7 +58,7 @@ def create_combined_figure(visualizations: dict, layer_num: int, metrics: dict =
 
 
 def extract_visualizations(json_path: str, output_dir: str, layers: list = None, combined: bool = True):
-    """Extract all visualizations from RepScan output."""
+    """Extract all visualizations from Zwiad output."""
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
 
@@ -95,8 +95,8 @@ def extract_visualizations(json_path: str, output_dir: str, layers: list = None,
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Extract visualizations from RepScan output")
-    parser.add_argument("json_path", help="Path to RepScan JSON output")
+    parser = argparse.ArgumentParser(description="Extract visualizations from Zwiad output")
+    parser.add_argument("json_path", help="Path to Zwiad JSON output")
     parser.add_argument("-o", "--output", default="output/visualizations", help="Output directory")
     parser.add_argument("-l", "--layers", type=int, nargs="+", help="Specific layers to extract")
     parser.add_argument("--separate", action="store_true", help="Save as separate images instead of combined")

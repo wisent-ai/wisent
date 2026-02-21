@@ -1,356 +1,28 @@
-"""
-Intervention Validation for RepScan.
+"""Intervention Validation for Zwiad.
 
-Tests whether RepScan diagnosis predicts CAA steering success:
-- LINEAR diagnosis -> CAA should work
-- NONLINEAR diagnosis -> CAA should fail (but detection still works)
-- NO_SIGNAL diagnosis -> neither should work
-
-This is the CRITICAL missing piece identified by reviewers.
-
-Usage:
-    python -m wisent.examples.scripts.intervention_validation --model Qwen/Qwen3-8B
+Tests whether Zwiad diagnosis predicts CAA steering success.
 """
 
 import argparse
 import json
-import subprocess
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Tuple
-from dataclasses import dataclass, field, asdict
+from typing import Dict, List, Any, Optional
+from dataclasses import asdict
 import random
 
-import torch
-import numpy as np
-
-S3_BUCKET = "wisent-bucket"
-S3_PREFIX = "intervention_validation"
-
-
-def s3_upload_file(local_path: Path, model_name: str) -> None:
-    """Upload a single file to S3."""
-    model_prefix = model_name.replace('/', '_')
-    s3_path = f"s3://{S3_BUCKET}/{S3_PREFIX}/{model_prefix}/{local_path.name}"
-    try:
-        subprocess.run(
-            ["aws", "s3", "cp", str(local_path), s3_path, "--quiet"],
-            check=True,
-            capture_output=True,
-        )
-        print(f"  Uploaded to S3: {s3_path}")
-    except Exception as e:
-        print(f"  S3 upload failed: {e}")
-
-
-@dataclass
-class SteeringResult:
-    """Result of a single steering experiment."""
-    benchmark: str
-    strategy: str
-    layer: int
-    diagnosis: str  # LINEAR, NONLINEAR, NO_SIGNAL
-    
-    # Before steering
-    baseline_accuracy: float  # Model's baseline accuracy on task
-    baseline_correct_logprob: float  # Avg logprob of correct answer
-    baseline_incorrect_logprob: float  # Avg logprob of incorrect answer
-    
-    # After steering (with CAA)
-    steered_accuracy: float
-    steered_correct_logprob: float
-    steered_incorrect_logprob: float
-    
-    # Steering effect
-    accuracy_change: float  # steered - baseline (positive = improvement)
-    logprob_shift: float  # Change in correct - incorrect gap
-    steering_success: bool  # Did steering improve in expected direction?
-    
-    # Steering parameters
-    steering_coefficient: float
-    num_test_samples: int
-
-
-@dataclass
-class ValidationResults:
-    """Results from full intervention validation."""
-    model: str
-    results: List[SteeringResult] = field(default_factory=list)
-    
-    # Summary statistics by diagnosis
-    linear_success_rate: float = 0.0
-    nonlinear_success_rate: float = 0.0
-    no_signal_success_rate: float = 0.0
-    
-    def compute_summary(self):
-        """Compute summary statistics."""
-        linear = [r for r in self.results if r.diagnosis == "LINEAR"]
-        nonlinear = [r for r in self.results if r.diagnosis == "NONLINEAR"]
-        no_signal = [r for r in self.results if r.diagnosis == "NO_SIGNAL"]
-        
-        if linear:
-            self.linear_success_rate = sum(r.steering_success for r in linear) / len(linear)
-        if nonlinear:
-            self.nonlinear_success_rate = sum(r.steering_success for r in nonlinear) / len(nonlinear)
-        if no_signal:
-            self.no_signal_success_rate = sum(r.steering_success for r in no_signal) / len(no_signal)
-
-
-def compute_caa_direction(
-    pos_activations: torch.Tensor,
-    neg_activations: torch.Tensor,
-) -> torch.Tensor:
-    """
-    Compute CAA (Contrastive Activation Addition) direction.
-    
-    This is the difference-in-means direction used for steering.
-    
-    Args:
-        pos_activations: [N, hidden_dim] positive class activations
-        neg_activations: [N, hidden_dim] negative class activations
-        
-    Returns:
-        [hidden_dim] steering direction (normalized)
-    """
-    pos_mean = pos_activations.float().mean(dim=0)
-    neg_mean = neg_activations.float().mean(dim=0)
-    direction = pos_mean - neg_mean
-    return direction / (direction.norm() + 1e-10)
-
-
-def apply_steering_to_model(
-    model: "WisentModel",
-    layer: int,
-    direction: torch.Tensor,
-    coefficient: float,
-) -> None:
-    """
-    Apply steering to model using WisentModel's built-in steering.
-    
-    Args:
-        model: WisentModel instance
-        layer: Layer index to apply steering (0-based)
-        direction: [hidden_dim] steering direction
-        coefficient: Steering strength
-    """
-    from wisent.core.models.core.atoms import SteeringPlan
-    
-    # Create steering vector dict: layer_name -> tensor
-    # WisentModel uses 1-based layer names
-    layer_name = str(layer + 1)
-    steering_dict = {layer_name: direction * coefficient}
-    
-    # Create and apply steering plan
-    plan = SteeringPlan.from_raw(steering_dict, scale=1.0)
-    model.apply_steering(plan)
-
-
-def get_model_logprobs(
-    model: "WisentModel",
-    prompt: str,
-    completion: str,
-) -> float:
-    """
-    Get log probability of completion given prompt.
-    
-    Args:
-        model: WisentModel instance
-        prompt: Input prompt
-        completion: Completion to score
-        
-    Returns:
-        Average log probability of completion tokens
-    """
-    full_text = prompt + completion
-    
-    inputs = model.tokenizer(
-        full_text,
-        return_tensors="pt",
-        truncation=True,
-        max_length=2048,
-    ).to(model.device)
-    
-    prompt_tokens = model.tokenizer(
-        prompt,
-        return_tensors="pt",
-        truncation=True,
-        max_length=2048,
-    ).input_ids.shape[1]
-    
-    with torch.no_grad():
-        outputs = model.hf_model(**inputs)
-        logits = outputs.logits
-    
-    # Get logprobs for completion tokens only
-    shift_logits = logits[:, prompt_tokens-1:-1, :].contiguous()
-    shift_labels = inputs.input_ids[:, prompt_tokens:].contiguous()
-    
-    log_probs = torch.nn.functional.log_softmax(shift_logits, dim=-1)
-    token_log_probs = log_probs.gather(-1, shift_labels.unsqueeze(-1)).squeeze(-1)
-    
-    return token_log_probs.mean().item()
-
-
-def evaluate_steering(
-    model: "WisentModel",
-    test_pairs: List,
-    layer: int,
-    direction: torch.Tensor,
-    coefficient: float,
-) -> Tuple[float, float, float]:
-    """
-    Evaluate steering effect on test pairs using WisentModel's built-in steering.
-    
-    Args:
-        model: WisentModel instance
-        test_pairs: List of ContrastivePair objects
-        layer: Layer to apply steering
-        direction: Steering direction
-        coefficient: Steering strength
-        
-    Returns:
-        (accuracy, avg_correct_logprob, avg_incorrect_logprob)
-    """
-    # Apply steering using WisentModel's built-in method
-    apply_steering_to_model(model, layer, direction, coefficient)
-    
-    try:
-        correct = 0
-        correct_logprobs = []
-        incorrect_logprobs = []
-        
-        for pair in test_pairs:
-            prompt = pair.prompt
-            correct_completion = pair.positive_response.model_response
-            incorrect_completion = pair.negative_response.model_response
-            
-            correct_lp = get_model_logprobs(model, prompt, correct_completion)
-            incorrect_lp = get_model_logprobs(model, prompt, incorrect_completion)
-            
-            correct_logprobs.append(correct_lp)
-            incorrect_logprobs.append(incorrect_lp)
-            
-            if correct_lp > incorrect_lp:
-                correct += 1
-        
-        accuracy = correct / len(test_pairs) if test_pairs else 0.0
-        avg_correct = np.mean(correct_logprobs) if correct_logprobs else 0.0
-        avg_incorrect = np.mean(incorrect_logprobs) if incorrect_logprobs else 0.0
-        
-        return accuracy, avg_correct, avg_incorrect
-    
-    finally:
-        # Remove steering
-        model.detach()
-
-
-def evaluate_baseline(
-    model: "WisentModel",
-    test_pairs: List,
-) -> Tuple[float, float, float]:
-    """
-    Evaluate baseline (no steering) on test pairs.
-    
-    Args:
-        model: WisentModel instance
-        test_pairs: List of ContrastivePair objects
-        
-    Returns:
-        (accuracy, avg_correct_logprob, avg_incorrect_logprob)
-    """
-    correct = 0
-    correct_logprobs = []
-    incorrect_logprobs = []
-    
-    for pair in test_pairs:
-        prompt = pair.prompt
-        correct_completion = pair.positive_response.model_response
-        incorrect_completion = pair.negative_response.model_response
-        
-        correct_lp = get_model_logprobs(model, prompt, correct_completion)
-        incorrect_lp = get_model_logprobs(model, prompt, incorrect_completion)
-        
-        correct_logprobs.append(correct_lp)
-        incorrect_logprobs.append(incorrect_lp)
-        
-        if correct_lp > incorrect_lp:
-            correct += 1
-    
-    accuracy = correct / len(test_pairs) if test_pairs else 0.0
-    avg_correct = np.mean(correct_logprobs) if correct_logprobs else 0.0
-    avg_incorrect = np.mean(incorrect_logprobs) if incorrect_logprobs else 0.0
-    
-    return accuracy, avg_correct, avg_incorrect
-
-
-def load_diagnosis_results(model_name: str, output_dir: Path) -> Dict[str, Any]:
-    """Load RepScan diagnosis results from S3/local."""
-    model_prefix = model_name.replace('/', '_')
-    
-    # Try to download from S3 first
-    try:
-        subprocess.run(
-            ["aws", "s3", "sync", 
-             f"s3://{S3_BUCKET}/direction_discovery/{model_prefix}/",
-             str(output_dir / "diagnosis"),
-             "--quiet"],
-            check=False,
-            capture_output=True,
-        )
-    except Exception:
-        pass
-    
-    # Load results
-    results = {}
-    diagnosis_dir = output_dir / "diagnosis"
-    if diagnosis_dir.exists():
-        for f in diagnosis_dir.glob(f"{model_prefix}_*.json"):
-            if "summary" not in f.name:
-                category = f.stem.replace(f"{model_prefix}_", "")
-                with open(f) as fp:
-                    results[category] = json.load(fp)
-    
-    return results
-
-
-def get_diagnosis_for_benchmark(
-    diagnosis_results: Dict[str, Any],
-    benchmark: str,
-    strategy: str = "chat_last",
-) -> Tuple[str, int, float, float]:
-    """
-    Get RepScan diagnosis for a specific benchmark.
-    
-    Args:
-        diagnosis_results: Loaded diagnosis results
-        benchmark: Benchmark name
-        strategy: Extraction strategy
-        
-    Returns:
-        (diagnosis, best_layer, signal_strength, linear_probe_accuracy)
-    """
-    for category, data in diagnosis_results.items():
-        results = data.get("results", [])
-        for r in results:
-            if r["benchmark"] == benchmark and r["strategy"] == strategy:
-                signal = r["signal_strength"]
-                linear = r["linear_probe_accuracy"]
-                layers = r["layers"]
-                # Use ~60% through the network (layer 20-22 for 36 layers)
-                # This is typically where semantic representations are strongest
-                num_layers = len(layers) if layers else 36
-                best_layer = int(num_layers * 0.6)
-                
-                # Determine diagnosis
-                if signal < 0.6:
-                    diagnosis = "NO_SIGNAL"
-                elif linear > 0.6 and (signal - linear) < 0.15:
-                    diagnosis = "LINEAR"
-                else:
-                    diagnosis = "NONLINEAR"
-                
-                return diagnosis, best_layer, signal, linear
-    
-    return "UNKNOWN", 20, 0.5, 0.5
+from wisent.examples.scripts.intervention_validation_helpers import (
+    s3_upload_file,
+    SteeringResult,
+    ValidationResults,
+    compute_caa_direction,
+    load_diagnosis_results,
+    get_diagnosis_for_benchmark,
+    convert_to_serializable,
+)
+from wisent.examples.scripts.intervention_validation_eval import (
+    evaluate_steering,
+    evaluate_baseline,
+)
 
 
 def run_intervention_validation(
@@ -586,21 +258,6 @@ def run_intervention_validation(
     # Save results
     results_file = output_dir / f"{model_prefix}_validation.json"
     
-    # Convert results to JSON-serializable format
-    def convert_to_serializable(obj):
-        """Convert numpy types to Python native types."""
-        if isinstance(obj, dict):
-            return {k: convert_to_serializable(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
-            return [convert_to_serializable(v) for v in obj]
-        elif isinstance(obj, (np.bool_, bool)):
-            return bool(obj)
-        elif isinstance(obj, (np.integer,)):
-            return int(obj)
-        elif isinstance(obj, (np.floating,)):
-            return float(obj)
-        return obj
-    
     results_dicts = [convert_to_serializable(asdict(r)) for r in validation_results.results]
     
     with open(results_file, "w") as f:
@@ -624,7 +281,7 @@ def run_intervention_validation(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Intervention validation for RepScan")
+    parser = argparse.ArgumentParser(description="Intervention validation for Zwiad")
     parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model to test")
     parser.add_argument("--benchmarks", type=str, nargs="+", default=None, help="Specific benchmarks to test")
     parser.add_argument("--samples", type=int, default=20, help="Samples for direction computation")

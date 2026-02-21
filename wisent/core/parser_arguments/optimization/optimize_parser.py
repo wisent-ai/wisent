@@ -8,7 +8,7 @@ def setup_optimize_parser(parser):
     Usage:
         wisent optimize meta-llama/Llama-3.1-8B-Instruct
         wisent optimize Qwen/Qwen2-7B --quick
-        wisent optimize mistralai/Mistral-7B --methods CAA PRISM PULSE TITAN
+        wisent optimize mistralai/Mistral-7B --methods CAA TECZA TETNO GROM
     
     This runs FULL optimization:
     - Classification optimization
@@ -84,8 +84,8 @@ def setup_optimize_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        default=["CAA", "PRISM", "PULSE", "TITAN"],
-        choices=["CAA", "PRISM", "PULSE", "TITAN"],
+        default=["CAA", "TECZA", "TETNO", "GROM"],
+        choices=["CAA", "TECZA", "TETNO", "GROM"],
         help="Steering methods to test (default: ALL methods)"
     )
     

@@ -10,7 +10,7 @@ def execute_get_activations(args):
     """Execute the get-activations command - load pairs and collect activations."""
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.activations import ExtractionStrategy, ExtractionComponent
     
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
     from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
@@ -52,10 +52,17 @@ def execute_get_activations(args):
 
         print(f"   ✓ Loaded {len(pairs_list)} pairs")
 
-        # 2. Load model
-        print(f"\n🤖 Loading model '{args.model}'...")
-        model = WisentModel(args.model, device=args.device)
-        print(f"   ✓ Model loaded with {model.num_layers} layers")
+        # 2. Load model (or use cached)
+        cached_model = getattr(args, 'cached_model', None)
+        if cached_model is not None:
+            model = cached_model
+            print(f"\n🤖 Using cached model ({model.num_layers} layers)")
+        else:
+            print(f"\n🤖 Loading model '{args.model}'...")
+            model = WisentModel(args.model, device=args.device)
+            print(f"   ✓ Model loaded with {model.num_layers} layers")
+        num_attention_heads = getattr(model.hf_model.config, 'num_attention_heads', None)
+        num_kv_heads = getattr(model.hf_model.config, 'num_key_value_heads', num_attention_heads)
 
         # 3. Determine layers to collect (1-indexed for API)
         if args.layers is None:
@@ -74,7 +81,9 @@ def execute_get_activations(args):
 
         # 4. Get extraction strategy from args
         extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
+        extraction_component = ExtractionComponent(getattr(args, 'extraction_component', 'residual_stream'))
         print(f"   Extraction strategy: {extraction_strategy.value}")
+        print(f"   Extraction component: {extraction_component.value}")
 
         # 5. Create pair set and reconstruct pairs
         pair_set = ContrastivePairSet(name=task_name, task_type=trait_label)
@@ -110,7 +119,7 @@ def execute_get_activations(args):
                 # Collect RAW hidden states (full sequences)
                 raw_data = collector.collect_raw(
                     pair, strategy=extraction_strategy,
-                    layers=layer_strs,
+                    layers=layer_strs, component=extraction_component,
                 )
                 raw_pairs_data.append({
                     'pair': pair,
@@ -127,6 +136,7 @@ def execute_get_activations(args):
                 'model': args.model,
                 'layers': layers,
                 'extraction_strategy': extraction_strategy.value,
+                'extraction_component': extraction_component.value,
                 'text_family': text_family,
                 'raw_mode': True,
                 'num_pairs': len(raw_pairs_data),
@@ -168,20 +178,18 @@ def execute_get_activations(args):
             print(f"\n⚡ Collecting activations...")
             
             enriched_pairs = []
-            # Track norms for calibration
+            qk_data_per_pair = []
             layer_norms = {l: [] for l in layer_strs}
-            
             for i, pair in enumerate(pair_set.pairs):
                 if args.verbose:
                     print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...")
-
-                # Collect activations for all requested layers at once
                 updated_pair = collector.collect(
                     pair, strategy=extraction_strategy,
-                    layers=layer_strs,
+                    layers=layer_strs, component=extraction_component,
+                    capture_qk=True,
                 )
-
                 enriched_pairs.append(updated_pair)
+                qk_data_per_pair.append(dict(collector._last_qk))
                 
                 # Record norms for calibration
                 for layer_str in layer_strs:
@@ -213,13 +221,16 @@ def execute_get_activations(args):
                 'model': args.model,
                 'layers': layers,
                 'extraction_strategy': extraction_strategy.value,
+                'extraction_component': extraction_component.value,
                 'raw_mode': False,
                 'num_pairs': len(enriched_pairs),
-                'calibration_norms': calibration_norms,  # For auto-calibrated steering strength
+                'calibration_norms': calibration_norms,
+                'num_attention_heads': num_attention_heads,
+                'num_key_value_heads': num_kv_heads,
                 'pairs': []
             }
 
-            for pair in enriched_pairs:
+            for i, pair in enumerate(enriched_pairs):
                 pair_dict = {
                     'prompt': pair.prompt,
                     'positive_response': {
@@ -233,18 +244,24 @@ def execute_get_activations(args):
                     'label': pair.label,
                     'trait_description': pair.trait_description,
                 }
-
-                # Convert activations to lists for JSON serialization
                 if pair.positive_response.layers_activations:
                     for layer_str, act in pair.positive_response.layers_activations.items():
                         if act is not None:
                             pair_dict['positive_response']['layers_activations'][layer_str] = act.cpu().tolist()
-
                 if pair.negative_response.layers_activations:
                     for layer_str, act in pair.negative_response.layers_activations.items():
                         if act is not None:
                             pair_dict['negative_response']['layers_activations'][layer_str] = act.cpu().tolist()
-
+                # Serialize Q/K projections
+                qk = qk_data_per_pair[i]
+                for side, side_key in [("positive_response", "pos"), ("negative_response", "neg")]:
+                    side_qk = qk.get(side_key, {})
+                    q_acts, k_acts = {}, {}
+                    for key, val in side_qk.items():
+                        layer = key[2:]
+                        (q_acts if key.startswith("q_") else k_acts)[layer] = val.cpu().tolist()
+                    pair_dict[side]['q_proj_activations'] = q_acts
+                    pair_dict[side]['k_proj_activations'] = k_acts
                 output_data['pairs'].append(pair_dict)
 
         # 8. Save to file

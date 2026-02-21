@@ -74,85 +74,86 @@ def execute_standard_modification(
     return stats
 
 
-def execute_titan_mode(args, model, tokenizer, wisent_model, pairs):
-    """Execute TITAN weight modification mode."""
-    from .method_training import train_titan_for_task
-    from wisent.core.weight_modification.export import export_titan_model
+def execute_grom_mode(args, model, tokenizer, wisent_model, pairs):
+    """Execute GROM weight modification mode."""
+    from .method_training import train_grom_for_task
+    from wisent.core.weight_modification.export import export_grom_model
 
     if args.verbose:
-        print("Training TITAN for full dynamic steering...")
+        print("Training GROM for full dynamic steering...")
 
-    titan_result = train_titan_for_task(args, wisent_model, pairs)
-    titan_mode = getattr(args, 'titan_mode', 'hybrid')
+    grom_result = train_grom_for_task(args, wisent_model, pairs)
+    grom_mode = getattr(args, 'grom_mode', 'hybrid')
 
     if args.verbose:
-        print(f"\nExporting TITAN model (mode={titan_mode})...")
+        print(f"\nExporting GROM model (mode={grom_mode})...")
 
-    export_titan_model(
-        model=model, titan_result=titan_result, save_path=args.output_dir,
-        tokenizer=tokenizer, mode=titan_mode, push_to_hub=args.push_to_hub,
+    export_grom_model(
+        model=model, grom_result=grom_result, save_path=args.output_dir,
+        tokenizer=tokenizer, mode=grom_mode, push_to_hub=args.push_to_hub,
         repo_id=args.repo_id if args.push_to_hub else None, commit_message=args.commit_message,
     )
 
     if args.verbose:
-        print(f"\nTITAN model exported to {args.output_dir}")
-        print(f"  Mode: {titan_mode}")
-        print(f"  Layers: {len(titan_result.layer_order)}")
+        print(f"\nGROM model exported to {args.output_dir}")
+        print(f"  Mode: {grom_mode}")
+        print(f"  Layers: {len(grom_result.layer_order)}")
 
 
-def execute_pulse_mode(args, model, tokenizer, wisent_model, pairs):
-    """Execute PULSE weight modification mode."""
-    from .method_training import train_pulse_for_task
-    from wisent.core.weight_modification.export import export_pulse_model
-
-    if args.verbose:
-        print("Training PULSE for conditional steering...")
-
-    pulse_result = train_pulse_for_task(args, wisent_model, pairs)
-    pulse_mode = getattr(args, 'titan_mode', 'hybrid')
+def execute_tetno_mode(args, model, tokenizer, wisent_model, pairs):
+    """Execute TETNO weight modification mode."""
+    from .method_training import train_tetno_for_task
+    from wisent.core.weight_modification.export import export_tetno_model
 
     if args.verbose:
-        print(f"\nExporting PULSE model (mode={pulse_mode})...")
+        print("Training TETNO for conditional steering...")
 
-    export_pulse_model(
-        model=model, pulse_result=pulse_result, save_path=args.output_dir,
-        tokenizer=tokenizer, mode=pulse_mode, strength=args.strength,
+    tetno_result = train_tetno_for_task(args, wisent_model, pairs)
+    tetno_mode = getattr(args, 'grom_mode', 'hybrid')
+
+    if args.verbose:
+        print(f"\nExporting TETNO model (mode={tetno_mode})...")
+
+    export_tetno_model(
+        model=model, tetno_result=tetno_result, save_path=args.output_dir,
+        tokenizer=tokenizer, mode=tetno_mode, strength=args.strength,
         push_to_hub=args.push_to_hub, repo_id=args.repo_id if args.push_to_hub else None,
         commit_message=args.commit_message,
     )
 
     if args.verbose:
-        print(f"\nPULSE model exported to {args.output_dir}")
-        print(f"  Layers: {len(pulse_result.behavior_vectors)}")
-        print(f"  Threshold: {pulse_result.optimal_threshold:.3f}")
+        print(f"\nTETNO model exported to {args.output_dir}")
+        print(f"  Layers: {len(tetno_result.behavior_vectors)}")
+        print(f"  Threshold: {tetno_result.optimal_threshold:.3f}")
 
 
-def execute_prism_mode(args, model, tokenizer, wisent_model, pairs):
-    """Execute PRISM weight modification mode."""
-    from .method_training import train_prism_for_task
-    from wisent.core.weight_modification.export import export_prism_model
-
-    if args.verbose:
-        print("Training PRISM for multi-directional steering...")
-
-    prism_result = train_prism_for_task(args, wisent_model, pairs)
-    prism_mode = getattr(args, 'prism_mode', 'weighted')
+def execute_tecza_mode(args, model, tokenizer, wisent_model, pairs):
+    """Execute TECZA weight modification mode."""
+    from .method_training import train_tecza_for_task
+    from wisent.core.weight_modification.export import export_tecza_model
 
     if args.verbose:
-        print(f"\nExporting PRISM model (mode={prism_mode})...")
+        print("Training TECZA for multi-directional steering...")
 
-    export_prism_model(
-        model=model, prism_result=prism_result, save_path=args.output_dir,
-        tokenizer=tokenizer, mode=prism_mode, strength=args.strength,
+    tecza_result = train_tecza_for_task(args, wisent_model, pairs)
+    tecza_mode = getattr(args, 'tecza_mode', 'weighted')
+
+    if args.verbose:
+        print(f"\nExporting TECZA model (mode={tecza_mode})...")
+
+    export_tecza_model(
+        model=model, tecza_result=tecza_result, save_path=args.output_dir,
+        tokenizer=tokenizer, mode=tecza_mode, strength=args.strength,
         push_to_hub=args.push_to_hub, repo_id=args.repo_id if args.push_to_hub else None,
         commit_message=args.commit_message,
     )
 
     if args.verbose:
-        num_dirs = next(iter(prism_result.directions.values())).shape[0]
-        print(f"\nPRISM model exported to {args.output_dir}")
-        print(f"  Layers: {len(prism_result.directions)}")
+        num_dirs = next(iter(tecza_result.directions.values())).shape[0]
+        print(f"\nTECZA model exported to {args.output_dir}")
+        print(f"  Layers: {len(tecza_result.directions)}")
         print(f"  Directions per layer: {num_dirs}")
+
 
 
 def execute_guided_modification(args, wisent_model, model, tokenizer):
@@ -193,7 +194,8 @@ def execute_guided_modification(args, wisent_model, model, tokenizer):
     )
 
     if getattr(args, 'save_diagnostics', None):
-        _save_diagnostics(args.save_diagnostics, result)
+        from ._helpers.executor_helpers import save_diagnostics
+        save_diagnostics(args.save_diagnostics, result)
 
     _export_model(args, model, tokenizer)
 
@@ -286,13 +288,7 @@ def _export_model(args, model, tokenizer):
     )
 
 
-def _save_diagnostics(path: str, result):
-    """Save diagnostics to file."""
-    diagnostics_data = {
-        "layers": {str(layer): {"linear_score": diag.linear_score, "fisher_ratio": diag.fisher_ratio}
-                   for layer, diag in result.layer_diagnostics.items()},
-        "layer_weights": {str(k): v for k, v in result.layer_weights.items()},
-        "mode_used": result.mode_used.value,
-    }
-    with open(path, 'w') as f:
-        json.dump(diagnostics_data, f, indent=2)
+# Re-export szlak/wicher mode executors from helpers
+from ._helpers.executor_helpers import (  # noqa: E402
+    execute_szlak_mode, execute_wicher_mode,
+)

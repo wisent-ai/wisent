@@ -1,4 +1,4 @@
-"""Behavioral validation for steering - Step 5 of RepScan protocol.
+"""Behavioral validation for steering - Step 5 of Zwiad protocol.
 
 Actually tests if steering changes behavior, not just geometry.
 Diagnoses whether activation movement translates to behavioral change.

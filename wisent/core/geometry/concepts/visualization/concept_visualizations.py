@@ -1,4 +1,4 @@
-"""Per-concept visualizations for RepScan - reuses existing visualization infrastructure."""
+"""Per-concept visualizations for Zwiad - reuses existing visualization infrastructure."""
 
 import numpy as np
 import torch

@@ -128,10 +128,10 @@ def execute_geometry_search(args):
         print("Recommendation: Use CAA with the best layer/strategy combination")
     elif cone_pct > 30:
         print(f"CONE STRUCTURE DETECTED ({cone_pct:.1f}% cone)")
-        print("Recommendation: Use PRISM with multi-directional steering")
+        print("Recommendation: Use TECZA with multi-directional steering")
     elif orthogonal_pct > 50:
         print(f"ORTHOGONAL STRUCTURE ({orthogonal_pct:.1f}% orthogonal)")
-        print("Recommendation: No unified direction - use per-benchmark directions or TITAN")
+        print("Recommendation: No unified direction - use per-benchmark directions or GROM")
     else:
         print("MIXED STRUCTURE - no clear unified direction")
-        print("Recommendation: Use TITAN for adaptive multi-component steering")
+        print("Recommendation: Use GROM for adaptive multi-component steering")

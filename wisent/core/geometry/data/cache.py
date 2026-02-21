@@ -8,12 +8,16 @@ CACHE_DIR = Path.home() / ".wisent_cache"
 
 def get_cache_path(task_name: str, cache_type: str, **kwargs) -> Path:
     """Get cache file path for a given task and type."""
+    component = kwargs.get("component", "residual_stream")
+    # Default component uses old path format for backward compatibility
+    comp_suffix = "" if component == "residual_stream" else f"_{component}"
+
     if cache_type == "pair_texts":
         path = CACHE_DIR / f"{task_name}_pair_texts.json"
     elif cache_type == "activations":
         model_name = kwargs.get("model_name", "unknown").replace("/", "_")
         layer = kwargs.get("layer", 0)
-        path = CACHE_DIR / f"{task_name}_{model_name}_layer{layer}_activations.pt"
+        path = CACHE_DIR / f"{task_name}_{model_name}_layer{layer}{comp_suffix}_activations.pt"
     else:
         path = CACHE_DIR / f"{task_name}_{cache_type}.json"
 

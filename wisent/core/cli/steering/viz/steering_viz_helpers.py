@@ -144,7 +144,7 @@ def load_all_layer_activations(
     Returns:
         (pos_by_layer, neg_by_layer) dicts mapping layer number -> numpy activations
     """
-    from wisent.core.geometry.repscan_with_concepts import load_activations_from_database
+    from wisent.core.geometry.zwiad_with_concepts import load_activations_from_database
 
     if layers is None:
         layers = list(range(num_layers))

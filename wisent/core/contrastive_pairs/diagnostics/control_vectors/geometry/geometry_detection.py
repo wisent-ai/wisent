@@ -91,11 +91,11 @@ def _generate_recommendation(best_structure: StructureType, all_scores: Dict[str
     """Generate steering method recommendation based on detected geometry."""
     recommendations = {
         StructureType.LINEAR: "Use CAA - single direction steering.",
-        StructureType.CONE: "Use PRISM - multi-directional steering.",
+        StructureType.CONE: "Use TECZA - multi-directional steering.",
         StructureType.CLUSTER: "Use cluster-based steering.",
-        StructureType.MANIFOLD: "Use TITAN with learned gating.",
+        StructureType.MANIFOLD: "Use GROM with learned gating.",
         StructureType.SPARSE: "Use SAE-based steering.",
-        StructureType.BIMODAL: "Use PULSE with conditional gating.",
+        StructureType.BIMODAL: "Use TETNO with conditional gating.",
         StructureType.ORTHOGONAL: "Use multiple independent CAA vectors.",
         StructureType.UNKNOWN: "Start with CAA and evaluate.",
     }

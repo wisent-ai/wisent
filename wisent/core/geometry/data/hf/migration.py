@@ -1,16 +1,16 @@
 """Migration logic: stream activations from Supabase to HuggingFace Hub."""
 import os
 import shutil
-import struct
 import tempfile
 from collections import defaultdict
 from typing import List, Optional
 
+import numpy as np
 import torch
 
 from .hf_writers import (
     flush_staging_dir,
-    update_index,
+    write_marker,
     upload_activation_shard,
     upload_pair_texts,
     upload_raw_activation_shard,
@@ -43,10 +43,9 @@ def _get_db_connection(database_url: Optional[str] = None):
     return conn
 
 
-def _bytes_to_vector(data: bytes) -> List[float]:
-    """Convert BYTEA to float vector."""
-    num_floats = len(data) // 4
-    return list(struct.unpack(f"{num_floats}f", data))
+def _bytes_to_array(data: bytes) -> np.ndarray:
+    """Convert BYTEA to numpy float32 array (memory-efficient)."""
+    return np.frombuffer(data, dtype=np.float32).copy()
 
 
 def migrate_activation_table(
@@ -98,7 +97,10 @@ def migrate_activation_table(
 
         migrated_layers = []
         for layer in layers:
-            cur.execute(
+            pair_acts = defaultdict(dict)
+            scur = conn.cursor(name=f"layer_{layer}")
+            scur.itersize = 500
+            scur.execute(
                 """SELECT "contrastivePairId", "activationData", "isPositive"
                    FROM "Activation"
                    WHERE "modelId" = %s AND "contrastivePairSetId" = %s
@@ -106,36 +108,42 @@ def migrate_activation_table(
                    ORDER BY "contrastivePairId", "isPositive" """,
                 (model_id, set_id, strategy, layer),
             )
-            pair_acts = defaultdict(dict)
-            for row in cur.fetchall():
+            for row in scur:
                 pair_id, act_bytes, is_positive = row
                 key = "pos" if is_positive else "neg"
-                pair_acts[pair_id][key] = _bytes_to_vector(act_bytes)
+                pair_acts[pair_id][key] = _bytes_to_array(act_bytes)
+            scur.close()
 
-            pos_list, neg_list, pair_ids = [], [], []
-            for pid, acts in sorted(pair_acts.items()):
-                if "pos" in acts and "neg" in acts:
-                    pos_list.append(acts["pos"])
-                    neg_list.append(acts["neg"])
-                    pair_ids.append(pid)
+            complete = sorted(
+                [(pid, a) for pid, a in pair_acts.items()
+                 if "pos" in a and "neg" in a]
+            )
+            del pair_acts
 
-            if not pos_list:
+            if not complete:
                 print(f"    Layer {layer}: no complete pairs, skipping")
                 continue
 
-            pos_tensor = torch.tensor(pos_list, dtype=torch.float32)
-            neg_tensor = torch.tensor(neg_list, dtype=torch.float32)
+            pair_ids = [pid for pid, _ in complete]
+            pos_tensor = torch.from_numpy(
+                np.stack([a["pos"] for _, a in complete])
+            )
+            neg_tensor = torch.from_numpy(
+                np.stack([a["neg"] for _, a in complete])
+            )
+            del complete
             upload_activation_shard(
                 model_name, task_name, strategy, layer,
                 pos_tensor, neg_tensor, pair_ids,
                 dry_run=dry_run, staging_dir=staging,
             )
+            del pos_tensor, neg_tensor
             migrated_layers.append(layer)
 
         if migrated_layers and not dry_run:
             print(f"  Flushing {len(migrated_layers)} layers as single commit...")
             flush_staging_dir(staging)
-            update_index(model_name, task_name, strategy, migrated_layers)
+            write_marker(model_name, task_name, strategy, migrated_layers)
 
         return migrated_layers
     finally:
@@ -260,7 +268,7 @@ def migrate_raw_activation_table(
             for row in cur.fetchall():
                 pid, act_bytes, is_pos = row
                 key = "pos" if is_pos else "neg"
-                pair_acts[pid][key] = _bytes_to_vector(act_bytes)
+                pair_acts[pid][key] = _bytes_to_array(act_bytes)
 
             sorted_pairs = sorted(
                 [(pid, a) for pid, a in pair_acts.items()

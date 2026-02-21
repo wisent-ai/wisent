@@ -21,7 +21,7 @@ from .metrics.core.metrics_core import compute_geometry_metrics
 from .steering.analysis.steerability import compute_final_steering_prescription
 
 
-def run_full_repscan(
+def run_full_zwiad(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     layer: int,
@@ -55,7 +55,7 @@ def run_full_repscan(
     }
 
     if output_dir:
-        output_path = Path(output_dir) / f"{benchmark_name}_layer{layer}_repscan.json"
+        output_path = Path(output_dir) / f"{benchmark_name}_layer{layer}_zwiad.json"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'w') as f:
             json.dump(result, f, indent=2, default=str)
@@ -63,13 +63,13 @@ def run_full_repscan(
     return result
 
 
-def run_full_repscan_with_layer_search(
+def run_full_zwiad_with_layer_search(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
     benchmark_name: str = "unknown",
     output_dir: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Run repscan across multiple layers.
+    Run zwiad across multiple layers.
 
     Args:
         activations_by_layer: Dict mapping layer -> (pos, neg) activations
@@ -83,7 +83,7 @@ def run_full_repscan_with_layer_search(
     per_layer_metrics = {}
 
     for layer, (pos, neg) in activations_by_layer.items():
-        result = run_full_repscan(pos, neg, layer, benchmark_name)
+        result = run_full_zwiad(pos, neg, layer, benchmark_name)
         results_by_layer[layer] = result
         per_layer_metrics[layer] = result["metrics"]
 
@@ -104,7 +104,7 @@ def run_full_repscan_with_layer_search(
     return summary
 
 
-def run_full_repscan_with_steering_eval(
+def run_full_zwiad_with_steering_eval(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     model,
@@ -114,7 +114,7 @@ def run_full_repscan_with_steering_eval(
     benchmark_name: str = "unknown",
 ) -> Dict[str, Any]:
     """
-    Run repscan and evaluate actual steering effectiveness.
+    Run zwiad and evaluate actual steering effectiveness.
 
     This combines geometry analysis with actual steering tests.
     """

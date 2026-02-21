@@ -1,13 +1,13 @@
 """Steering method implementations."""
 
 from .caa import CAAMethod
-from .hyperplane import HyperplaneMethod
+from .ostrze import OstrzeMethod
 from .mlp import MLPMethod
 
-from .titan import (
-    TITANMethod,
-    TITANConfig,
-    TITANResult,
+from .grom import (
+    GROMMethod,
+    GROMConfig,
+    GROMResult,
     GeometryAdaptation,
     GatingNetwork,
     IntensityNetwork,
@@ -16,59 +16,71 @@ from .titan import (
 )
 
 from .advanced import (
-    PRISMMethod,
-    PRISMConfig,
+    TECZAMethod,
+    TECZAConfig,
     MultiDirectionResult,
-    PULSEMethod,
-    PULSEConfig,
-    PULSEResult,
+    TETNOMethod,
+    TETNOConfig,
+    TETNOResult,
 )
 
-from .concept_flow import (
-    ConceptFlowMethod,
-    ConceptFlowConfig,
-    ConceptFlowResult,
+from .nurt import (
+    NurtMethod,
+    NurtConfig,
+    NurtResult,
     FlowVelocityNetwork,
-    ConceptFlowSteeringObject,
+    NurtSteeringObject,
 )
 
-from .geodesic_ot import (
-    GeodesicOTMethod,
-    GeodesicOTConfig,
-    GeodesicOTResult,
-    GeodesicOTSteeringObject,
+from .szlak import (
+    SzlakMethod,
+    SzlakConfig,
+    SzlakResult,
+    SzlakSteeringObject,
+)
+
+from .wicher import (
+    WicherMethod,
+    WicherConfig,
+    WicherResult,
+    WicherSteeringObject,
 )
 
 __all__ = [
     # Simple methods
     "CAAMethod",
-    "HyperplaneMethod",
+    "OstrzeMethod",
     "MLPMethod",
-    # TITAN method
-    "TITANMethod",
-    "TITANConfig",
-    "TITANResult",
+    # GROM method
+    "GROMMethod",
+    "GROMConfig",
+    "GROMResult",
     "GeometryAdaptation",
     "GatingNetwork",
     "IntensityNetwork",
     "DirectionRoutingNetwork",
     "RoutingAnalysis",
     # Advanced methods
-    "PRISMMethod",
-    "PRISMConfig",
+    "TECZAMethod",
+    "TECZAConfig",
     "MultiDirectionResult",
-    "PULSEMethod",
-    "PULSEConfig",
-    "PULSEResult",
-    # Concept Flow method
-    "ConceptFlowMethod",
-    "ConceptFlowConfig",
-    "ConceptFlowResult",
+    "TETNOMethod",
+    "TETNOConfig",
+    "TETNOResult",
+    # Nurt method
+    "NurtMethod",
+    "NurtConfig",
+    "NurtResult",
     "FlowVelocityNetwork",
-    "ConceptFlowSteeringObject",
-    # Geodesic OT method
-    "GeodesicOTMethod",
-    "GeodesicOTConfig",
-    "GeodesicOTResult",
-    "GeodesicOTSteeringObject",
+    "NurtSteeringObject",
+    # Szlak method
+    "SzlakMethod",
+    "SzlakConfig",
+    "SzlakResult",
+    "SzlakSteeringObject",
+    # Wicher method
+    "WicherMethod",
+    "WicherConfig",
+    "WicherResult",
+    "WicherSteeringObject",
 ]

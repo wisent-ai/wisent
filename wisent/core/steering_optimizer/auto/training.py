@@ -23,7 +23,7 @@ def train_recommended_method(
     Args:
         wisent_model: WisentModel instance
         pairs: List of contrastive pairs
-        method: Recommended method name (CAA, TITAN, PRISM, PULSE)
+        method: Recommended method name (CAA, GROM, TECZA, TETNO)
         layer: Layer parameter (not used for multi-layer training)
         verbose: Enable verbose output
 
@@ -56,12 +56,12 @@ def train_recommended_method(
 
     if method == "CAA":
         return _train_caa(pair_set, verbose)
-    elif method == "TITAN":
-        return _train_titan(wisent_model, pair_set, all_layers, verbose)
-    elif method == "PRISM":
-        return _train_prism(wisent_model, pair_set, verbose)
-    elif method == "PULSE":
-        return _train_pulse(wisent_model, pair_set, all_layers, verbose)
+    elif method == "GROM":
+        return _train_grom(wisent_model, pair_set, all_layers, verbose)
+    elif method == "TECZA":
+        return _train_tecza(wisent_model, pair_set, verbose)
+    elif method == "TETNO":
+        return _train_tetno(wisent_model, pair_set, all_layers, verbose)
     else:
         logger.warning(f"Unknown method {method}, falling back to CAA")
         return _train_caa(pair_set, verbose)
@@ -81,12 +81,12 @@ def _train_caa(pair_set: Any, verbose: bool) -> Dict[str, Any]:
     return {"method": "CAA", "layers": len(result.directions), "result": result}
 
 
-def _train_titan(wisent_model: Any, pair_set: Any, all_layers: List[str], verbose: bool) -> Dict[str, Any]:
-    """Train TITAN method."""
-    from wisent.core.steering_methods.methods.titan import TITANMethod
+def _train_grom(wisent_model: Any, pair_set: Any, all_layers: List[str], verbose: bool) -> Dict[str, Any]:
+    """Train GROM method."""
+    from wisent.core.steering_methods.methods.grom import GROMMethod
 
     layer_indices = [int(l) for l in all_layers]
-    titan_method = TITANMethod(
+    grom_method = GROMMethod(
         model=wisent_model,
         num_directions=8,
         manifold_method="pca",
@@ -94,52 +94,52 @@ def _train_titan(wisent_model: Any, pair_set: Any, all_layers: List[str], verbos
         sensor_layer=layer_indices[0],
     )
 
-    result = titan_method.train_titan(pair_set)
+    result = grom_method.train_grom(pair_set)
 
     if verbose:
-        print(f"   TITAN trained on {len(pair_set.pairs)} pairs")
+        print(f"   GROM trained on {len(pair_set.pairs)} pairs")
         print(f"     Layers: {len(result.layer_order)}")
         print(f"     Directions per layer: {result.directions[result.layer_order[0]].shape[0]}")
 
-    return {"method": "TITAN", "layers": len(result.layer_order), "result": result}
+    return {"method": "GROM", "layers": len(result.layer_order), "result": result}
 
 
-def _train_prism(wisent_model: Any, pair_set: Any, verbose: bool) -> Dict[str, Any]:
-    """Train PRISM method."""
-    from wisent.core.steering_methods.methods.advanced import PRISMMethod
+def _train_tecza(wisent_model: Any, pair_set: Any, verbose: bool) -> Dict[str, Any]:
+    """Train TECZA method."""
+    from wisent.core.steering_methods.methods.advanced import TECZAMethod
 
-    prism_method = PRISMMethod(
+    tecza_method = TECZAMethod(
         model=wisent_model.hf_model,
         num_directions=3,
     )
 
-    result = prism_method.train(pair_set)
+    result = tecza_method.train(pair_set)
 
     if verbose:
         num_dirs = next(iter(result.directions.values())).shape[0]
-        print(f"   PRISM trained on {len(pair_set.pairs)} pairs")
+        print(f"   TECZA trained on {len(pair_set.pairs)} pairs")
         print(f"     Layers: {len(result.directions)}")
         print(f"     Directions per layer: {num_dirs}")
 
-    return {"method": "PRISM", "layers": len(result.directions), "result": result}
+    return {"method": "TECZA", "layers": len(result.directions), "result": result}
 
 
-def _train_pulse(wisent_model: Any, pair_set: Any, all_layers: List[str], verbose: bool) -> Dict[str, Any]:
-    """Train PULSE method."""
-    from wisent.core.steering_methods.methods.advanced import PULSEMethod
+def _train_tetno(wisent_model: Any, pair_set: Any, all_layers: List[str], verbose: bool) -> Dict[str, Any]:
+    """Train TETNO method."""
+    from wisent.core.steering_methods.methods.advanced import TETNOMethod
 
     layer_indices = [int(l) for l in all_layers]
-    pulse_method = PULSEMethod(
+    tetno_method = TETNOMethod(
         model=wisent_model.hf_model,
         steering_layers=layer_indices,
         sensor_layer=layer_indices[0],
     )
 
-    result = pulse_method.train_pulse(pair_set)
+    result = tetno_method.train_tetno(pair_set)
 
     if verbose:
-        print(f"   PULSE trained on {len(pair_set.pairs)} pairs")
+        print(f"   TETNO trained on {len(pair_set.pairs)} pairs")
         print(f"     Layers: {len(result.behavior_vectors)}")
         print(f"     Optimal threshold: {result.optimal_threshold:.3f}")
 
-    return {"method": "PULSE", "layers": len(result.behavior_vectors), "result": result}
+    return {"method": "TETNO", "layers": len(result.behavior_vectors), "result": result}

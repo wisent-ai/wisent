@@ -35,19 +35,19 @@ def _load_optimal_defaults(model_name: str, task_name: str, args):
         }
         
         # Add method-specific params
-        if result.method.upper() == "PRISM":
+        if result.method.upper() == "TECZA":
             optimal_config.update({
                 "num_directions": result.num_directions,
                 "direction_weighting": result.direction_weighting,
                 "retain_weight": result.retain_weight,
             })
-        elif result.method.upper() == "PULSE":
+        elif result.method.upper() == "TETNO":
             optimal_config.update({
                 "sensor_layer": result.sensor_layer,
                 "condition_threshold": result.condition_threshold,
                 "gate_temperature": result.gate_temperature,
             })
-        elif result.method.upper() == "TITAN":
+        elif result.method.upper() == "GROM":
             optimal_config.update({
                 "num_directions": result.num_directions,
                 "gate_hidden_dim": result.gate_hidden_dim,
@@ -169,6 +169,7 @@ def execute_generate_vector_from_task(args):
             device=args.device,
             layers=args.layers,
             extraction_strategy=args.extraction_strategy,
+            extraction_component=getattr(args, 'extraction_component', 'residual_stream'),
             verbose=args.verbose,
             timing=args.timing,
         )
@@ -189,7 +190,7 @@ def execute_generate_vector_from_task(args):
             verbose=args.verbose,
             timing=args.timing,
             accept_low_quality_vector=getattr(args, 'accept_low_quality_vector', False),
-            # Universal Subspace options for PRISM/TITAN
+            # Universal Subspace options for TECZA/GROM
             auto_num_directions=getattr(args, 'auto_num_directions', False),
             use_universal_basis_init=getattr(args, 'use_universal_basis_init', False),
             num_directions=getattr(args, 'num_directions', 3),

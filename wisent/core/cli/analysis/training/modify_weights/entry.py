@@ -14,8 +14,9 @@ from .vector_loading import (
     generate_multi_benchmark_vectors, generate_task_vectors,
 )
 from .executor import (
-    execute_standard_modification, execute_titan_mode, execute_pulse_mode,
-    execute_prism_mode, execute_guided_modification, execute_multi_concept_modification,
+    execute_standard_modification, execute_grom_mode, execute_tetno_mode,
+    execute_tecza_mode, execute_guided_modification, execute_multi_concept_modification,
+    execute_szlak_mode, execute_wicher_mode,
 )
 from wisent.core.weight_modification.utils import get_default_components_for_extraction
 _LOG = setup_logger(__name__)
@@ -53,47 +54,47 @@ def execute_modify_weights(args):
         execute_multi_concept_modification(args, wisent_model, model, tokenizer, steering_vectors)
         return
     pairs = None
-    if args.method in ("titan", "pulse", "prism", "concept_flow"):
+    if args.method in ("grom", "tetno", "tecza", "nurt", "szlak", "wicher"):
         pairs = _generate_pairs(args, wisent_model)
         if not pairs:
             print(f"Error: Could not generate pairs for {args.method.upper()}")
             sys.exit(1)
 
-    if args.method == "titan":
+    if args.method == "grom":
         steering_method = getattr(args, 'steering_method', 'caa')
-        if steering_method != "titan":
+        if steering_method != "grom":
             args.method = "directional"
         else:
-            execute_titan_mode(args, model, tokenizer, wisent_model, pairs)
+            execute_grom_mode(args, model, tokenizer, wisent_model, pairs)
             _print_timing(args, start_time)
             return
 
-    if args.method == "pulse":
+    if args.method == "tetno":
         steering_method = getattr(args, 'steering_method', 'caa')
-        if steering_method != "pulse":
+        if steering_method != "tetno":
             args.method = "directional"
         else:
-            execute_pulse_mode(args, model, tokenizer, wisent_model, pairs)
+            execute_tetno_mode(args, model, tokenizer, wisent_model, pairs)
             _print_timing(args, start_time)
             return
 
-    if args.method == "prism":
+    if args.method == "tecza":
         steering_method = getattr(args, 'steering_method', 'caa')
-        if steering_method != "prism":
+        if steering_method != "tecza":
             args.method = "directional"
         else:
-            execute_prism_mode(args, model, tokenizer, wisent_model, pairs)
+            execute_tecza_mode(args, model, tokenizer, wisent_model, pairs)
             _print_timing(args, start_time)
             return
 
-    if args.method == "concept_flow":
+    if args.method == "nurt":
         steering_method = getattr(args, 'steering_method', 'caa')
-        if steering_method == "concept_flow":
-            from .method_training import train_concept_flow_for_task
-            from wisent.core.weight_modification.export import export_concept_flow_model
-            cf_steering = train_concept_flow_for_task(args, wisent_model, pairs)
-            export_concept_flow_model(
-                model=model, concept_flow_steering=cf_steering,
+        if steering_method == "nurt":
+            from .method_training import train_nurt_for_task
+            from wisent.core.weight_modification.export import export_nurt_model
+            cf_steering = train_nurt_for_task(args, wisent_model, pairs)
+            export_nurt_model(
+                model=model, nurt_steering=cf_steering,
                 save_path=args.output_dir, tokenizer=tokenizer,
                 base_strength=args.strength, push_to_hub=args.push_to_hub,
                 repo_id=args.repo_id if args.push_to_hub else None,
@@ -103,6 +104,25 @@ def execute_modify_weights(args):
             return
         else:
             args.method = "directional"
+
+    if args.method == "szlak":
+        steering_method = getattr(args, 'steering_method', 'caa')
+        if steering_method == "szlak":
+            execute_szlak_mode(args, model, tokenizer, wisent_model, pairs)
+            _print_timing(args, start_time)
+            return
+        else:
+            args.method = "directional"
+
+    if args.method == "wicher":
+        steering_method = getattr(args, 'steering_method', 'caa')
+        if steering_method == "wicher":
+            execute_wicher_mode(args, model, tokenizer, wisent_model, pairs)
+            _print_timing(args, start_time)
+            return
+        else:
+            args.method = "directional"
+
     stats = execute_standard_modification(args, model, tokenizer, steering_vectors, harmless_vectors)
     _print_timing(args, start_time)
     _print_summary(args, stats)
@@ -208,8 +228,8 @@ def _run_auto_selection(args, wisent_model, steering_vectors):
                 layer_idx = int(layer_name.replace("layer_", "")) if "layer_" in str(layer_name) else int(layer_name)
                 steering_vectors[layer_idx] = vector
     else:
-        args.steering_method = "titan"
-        args.method = "titan"
+        args.steering_method = "grom"
+        args.method = "grom"
     return steering_vectors
 
 def _generate_pairs(args, wisent_model):

@@ -184,7 +184,7 @@ def decompose_and_name_concepts_with_labels(
     pair_texts: Optional[Dict[int, Dict[str, str]]] = None,
     cluster_labels: Optional[List[int]] = None,
     n_concepts: Optional[int] = None,
-    generate_visualizations: bool = False,
+    generate_visualizations: bool = True,
     llm_model: str = "Qwen/Qwen3-8B",
 ) -> Dict[str, Any]:
     """
@@ -230,7 +230,7 @@ def decompose_and_name_concepts(
     pos_activations,
     neg_activations,
     pair_texts: Optional[Dict[int, Dict[str, str]]] = None,
-    generate_visualizations: bool = False,
+    generate_visualizations: bool = True,
     llm_model: str = "Qwen/Qwen3-8B",
 ) -> Dict[str, Any]:
     """Full concept decomposition with single-layer clustering and LLM naming."""

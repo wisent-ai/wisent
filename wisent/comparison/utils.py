@@ -16,6 +16,14 @@ from wisent.core.utils import preferred_dtype
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
 
+# Re-export from helpers
+from wisent.comparison._helpers.utils_helpers import (
+    load_steering_vector,
+    apply_steering_to_model,
+    remove_steering,
+    convert_to_lm_eval_format,
+)
+
 
 # SAE configurations for supported Gemma models
 SAE_CONFIGS = {
@@ -144,8 +152,6 @@ def create_test_only_task(task_name: str, train_ratio: float = 0.8) -> dict:
     """
     Create a task that evaluates only on our test split.
 
-    This ensures no overlap with the data used for steering vector training.
-
     Args:
         task_name: lm-eval task name (e.g., 'boolq', 'cb')
         train_ratio: Fraction of data used for training (default 0.8)
@@ -164,7 +170,6 @@ def create_test_only_task(task_name: str, train_ratio: float = 0.8) -> dict:
 
     print(f"Test split size: {len(test_docs)} docs ({test_pct}% of pooled data)")
 
-    # Override task's doc methods to use our test split
     task.test_docs = lambda: test_docs
     task.has_test_docs = lambda: True
     task._eval_docs = test_docs
@@ -173,16 +178,7 @@ def create_test_only_task(task_name: str, train_ratio: float = 0.8) -> dict:
 
 
 def extract_accuracy(results: dict, task: str) -> float:
-    """
-    Extract accuracy from lm-eval results.
-
-    Args:
-        results: Results dict from lm-eval evaluator
-        task: Task name to extract accuracy for
-
-    Returns:
-        Accuracy value (0.0 if not found)
-    """
+    """Extract accuracy from lm-eval results."""
     task_results = results.get("results", {}).get(task, {})
     for key in ["acc", "acc,none", "accuracy", "acc_norm", "acc_norm,none"]:
         if key in task_results:
@@ -198,20 +194,7 @@ def run_lm_eval_evaluation(
     max_batch_size: int = 8,
     limit: int | None = None,
 ) -> dict:
-    """
-    Run evaluation using lm-eval-harness.
-
-    Args:
-        wisent_model: WisentModel instance
-        task_dict: Task dict from create_test_only_task
-        task_name: lm-eval task name
-        batch_size: Batch size for evaluation
-        max_batch_size: Max batch size for lm-eval internal batching
-        limit: Max number of examples to evaluate
-
-    Returns:
-        Full results dict from lm-eval
-    """
+    """Run evaluation using lm-eval-harness."""
     from lm_eval import evaluator
     from lm_eval.models.huggingface import HFLM
 
@@ -237,18 +220,7 @@ def run_ll_evaluation(
     task_name: str,
     limit: int | None = None,
 ) -> float:
-    """
-    Run evaluation using wisent's LogLikelihoodsEvaluator.
-
-    Args:
-        wisent_model: WisentModel instance
-        task_dict: Task dict from create_test_only_task
-        task_name: lm-eval task name
-        limit: Max number of examples to evaluate
-
-    Returns:
-        Accuracy as float
-    """
+    """Run evaluation using wisent's LogLikelihoodsEvaluator."""
     from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
 
@@ -284,98 +256,3 @@ def run_ll_evaluation(
             print(f"  Processed {i + 1}/{len(docs)}, acc: {correct/(i+1):.4f}")
 
     return correct / len(docs) if docs else 0.0
-
-
-def load_steering_vector(path: str | Path, default_method: str = "unknown") -> dict:
-    """
-    Load a steering vector from file.
-
-    Args:
-        path: Path to steering vector file (.json or .pt)
-        default_method: Default method name if not found in file
-
-    Returns:
-        Dictionary with steering vectors and metadata
-    """
-    path = Path(path)
-
-    if path.suffix == ".pt":
-        from wisent.core.utils import resolve_default_device
-        data = torch.load(path, map_location=resolve_default_device(), weights_only=False)
-        layer_idx = str(data.get("layer_index", data.get("layer", 1)))
-        return {
-            "steering_vectors": {layer_idx: data["steering_vector"].tolist()},
-            "layers": [layer_idx],
-            "model": data.get("model", "unknown"),
-            "method": data.get("method", default_method),
-            "trait_label": data.get("trait_label", "unknown"),
-        }
-    else:
-        with open(path) as f:
-            return json.load(f)
-
-
-def apply_steering_to_model(
-    model: "WisentModel",
-    steering_data: dict,
-    scale: float = 1.0,
-) -> None:
-    """
-    Apply loaded steering vectors to a WisentModel.
-
-    Args:
-        model: WisentModel instance
-        steering_data: Dictionary from load_steering_vector()
-        scale: Scaling factor for steering strength
-    """
-    raw_map = {}
-    dtype = preferred_dtype()
-    for layer_str, vec_list in steering_data["steering_vectors"].items():
-        raw_map[layer_str] = torch.tensor(vec_list, dtype=dtype)
-
-    model.set_steering_from_raw(raw_map, scale=scale, normalize=False)
-    model.apply_steering()
-
-
-def remove_steering(model: "WisentModel") -> None:
-    """Remove steering from a WisentModel."""
-    model.detach()
-    model.clear_steering()
-
-
-def convert_to_lm_eval_format(
-    steering_data: dict,
-    output_path: str | Path,
-    scale: float = 1.0,
-) -> Path:
-    """
-    Convert our steering vector format to lm-eval's steered model format.
-
-    lm-eval expects:
-    {
-        "layers.N": {
-            "steering_vector": tensor of shape (1, hidden_dim),
-            "steering_coefficient": float,
-            "action": "add"
-        }
-    }
-    """
-    output_path = Path(output_path)
-
-    dtype = preferred_dtype()
-    lm_eval_config = {}
-    for layer_str, vec_list in steering_data["steering_vectors"].items():
-        vec = torch.tensor(vec_list, dtype=dtype)
-        # lm-eval expects shape (1, hidden_dim)
-        if vec.dim() == 1:
-            vec = vec.unsqueeze(0)
-
-        layer_key = f"layers.{layer_str}"
-        lm_eval_config[layer_key] = {
-            "steering_vector": vec,
-            "steering_coefficient": scale,
-            "action": "add",
-        }
-
-    torch.save(lm_eval_config, output_path)
-    return output_path

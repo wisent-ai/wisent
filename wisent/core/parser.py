@@ -28,7 +28,7 @@ from wisent.core.parser_arguments.generate_vector_parser import setup_generate_v
 from wisent.core.parser_arguments.multi_steer_parser import setup_multi_steer_parser
 from wisent.core.parser_arguments.evaluate_parser import setup_evaluate_parser
 from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser
-from wisent.core.parser_arguments.repscan_parser import setup_repscan_parser
+from wisent.core.parser_arguments.zwiad_parser import setup_zwiad_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:
@@ -115,10 +115,10 @@ def setup_parser() -> argparse.ArgumentParser:
     setup_train_unified_goodness_parser(unified_goodness_parser)
 
     # Analysis commands
-    repscan_parser = subparsers.add_parser(
-        "repscan", help="Run RepScan geometry analysis with concept decomposition on database activations"
+    zwiad_parser = subparsers.add_parser(
+        "zwiad", help="Run Zwiad geometry analysis with concept decomposition on database activations"
     )
-    setup_repscan_parser(repscan_parser)
+    setup_zwiad_parser(zwiad_parser)
 
     return parser
 
