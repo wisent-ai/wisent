@@ -4,6 +4,8 @@ This module defines all error codes, messages, and custom exceptions used throug
 the codebase. NO FALLBACKS - errors should be raised immediately with clear codes.
 """
 
+from __future__ import annotations
+
 from enum import Enum
 from typing import Optional, Any, Dict, List
 

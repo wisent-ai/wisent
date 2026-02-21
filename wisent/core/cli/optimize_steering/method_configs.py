@@ -152,19 +152,15 @@ class NurtConfig(MethodConfig):
 class SzlakConfig(MethodConfig):
     """Szlak-specific parameters."""
     layer: int = 16
-    k_neighbors: int = 10
     sinkhorn_reg: float = 0.1
-    sinkhorn_max_iter: int = 100
     inference_k: int = 5
-    
+
     def to_args(self) -> Dict[str, Any]:
         return {
             "method": "szlak",
             "layer": self.layer,
             "steering_strategy": self.steering_strategy,
-            "szlak_k_neighbors": self.k_neighbors,
             "szlak_sinkhorn_reg": self.sinkhorn_reg,
-            "szlak_sinkhorn_max_iter": self.sinkhorn_max_iter,
             "szlak_inference_k": self.inference_k,
         }
 

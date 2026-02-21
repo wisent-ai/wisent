@@ -11,6 +11,7 @@ from wisent.core.cli.optimize_steering.method_configs import (
     TETNOConfig, GROMConfig, NurtConfig, SzlakConfig, WicherConfig,
     STEERING_STRATEGIES,
 )
+from wisent.core.cli.optimize_steering.transport.method_configs_transport import PrzelomConfig
 from wisent.core.cli.optimize_steering.data.contrastive_pairs import execute_generate_pairs_from_task
 from wisent.core.cli.optimize_steering.data.activations import execute_get_activations
 from wisent.core.cli.optimize_steering.steering_objects import execute_create_steering_object
@@ -166,7 +167,6 @@ def create_optuna_objective(
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
-        
         elif method.upper() == "OSTRZE":
             config = OstrzeConfig(
                 method="Ostrze",
@@ -174,7 +174,6 @@ def create_optuna_objective(
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
-        
         elif method.upper() == "MLP":
             config = MLPConfig(
                 method="MLP",
@@ -184,7 +183,6 @@ def create_optuna_objective(
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
-        
         elif method.upper() == "TECZA":
             config = TECZAConfig(
                 method="TECZA",
@@ -196,7 +194,6 @@ def create_optuna_objective(
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
-        
         elif method.upper() == "TETNO":
             sensor_layer = trial.suggest_int("sensor_layer", 1, num_layers)
             steering_start = trial.suggest_int("steering_start", 1, num_layers)
@@ -213,7 +210,6 @@ def create_optuna_objective(
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
-        
         elif method.upper() == "GROM":
             sensor_layer = trial.suggest_int("sensor_layer", 1, num_layers)
             steering_start = trial.suggest_int("steering_start", 1, num_layers)
@@ -253,15 +249,11 @@ def create_optuna_objective(
             config = SzlakConfig(
                 method="szlak",
                 layer=trial.suggest_int("layer", 1, num_layers),
-                k_neighbors=trial.suggest_int("k_neighbors", 3, 30),
                 sinkhorn_reg=trial.suggest_float("sinkhorn_reg", 0.01, 1.0, log=True),
-                sinkhorn_max_iter=trial.suggest_int("sinkhorn_max_iter", 50, 200),
                 inference_k=trial.suggest_int("inference_k", 1, 15),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
-
-
         elif method.upper() == "WICHER":
             config = WicherConfig(
                 method="wicher",
@@ -276,7 +268,17 @@ def create_optuna_objective(
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
-
+        elif method.upper() == "PRZELOM":
+            config = PrzelomConfig(
+                method="przelom",
+                layer=trial.suggest_int("layer", 1, num_layers),
+                epsilon=trial.suggest_float("epsilon", 0.1, 5.0, log=True),
+                target_mode=trial.suggest_categorical("target_mode", ["uniform", "nearest"]),
+                regularization=trial.suggest_float("regularization", 1e-6, 1e-2, log=True),
+                inference_k=trial.suggest_int("inference_k", 1, 15),
+                extraction_strategy=extraction_strategy,
+                steering_strategy=steering_strategy,
+            )
         else:
             raise ValueError(f"Unknown method: {method}")
         
@@ -291,7 +293,6 @@ def create_optuna_objective(
             enriched_pairs_file=enriched_pairs_file,
             cached_model=cached_model,
         )
-
         return result.score
 
     return objective

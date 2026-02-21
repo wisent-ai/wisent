@@ -1,5 +1,7 @@
 """Steering, runtime, calibration, serialization, and multimodal errors."""
-from typing import Optional, Any, Dict
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional
 from wisent.core.errors._error_codes_enum import ErrorCode
 from wisent.core.errors._error_codes_base import WisentError
 

@@ -5,6 +5,8 @@ throughout the codebase. NO FALLBACKS - errors should be raised immediately with
 detailed information about what went wrong and how to fix it.
 """
 
+from __future__ import annotations
+
 import logging
 from typing import Optional, Any, Dict
 

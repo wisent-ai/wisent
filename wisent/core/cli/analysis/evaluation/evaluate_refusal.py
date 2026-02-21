@@ -1,4 +1,6 @@
 """Refusal evaluation for evaluate-responses command."""
+from __future__ import annotations
+
 import json
 import os
 
@@ -6,6 +8,23 @@ from wisent.core.evaluators.steering_evaluators import (
     EvaluatorConfig,
     RefusalEvaluator,
 )
+
+
+def execute_evaluate_refusal(args):
+    """Execute the evaluate-refusal standalone command."""
+    with open(args.input, 'r') as f:
+        input_data = json.load(f)
+
+    if isinstance(input_data, list):
+        responses = input_data
+        task_name = getattr(args, 'task', 'unknown')
+    else:
+        responses = input_data.get('responses', input_data.get('evaluations', []))
+        task_name = input_data.get('task', getattr(args, 'task', 'unknown'))
+
+    evaluation_results = []
+    task_results = []
+    evaluate_refusal(args, input_data, responses, task_name, evaluation_results, task_results)
 
 
 def evaluate_refusal(args, input_data, responses, task_name, evaluation_results, task_results):
