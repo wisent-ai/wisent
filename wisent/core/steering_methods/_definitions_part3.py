@@ -143,29 +143,15 @@ NURT_DEFINITION = SteeringMethodDefinition(
 SZLAK_DEFINITION = SteeringMethodDefinition(
     name="szlak",
     method_type=SteeringMethodType.SZLAK,
-    description="Geodesic Optimal Transport - manifold-aware transport via k-NN geodesic distances and Sinkhorn OT.",
+    description="Attention-Transport steering via EOT cost inversion with one-sided Sinkhorn.",
     method_class_path="wisent.core.steering_methods.methods.szlak.SzlakMethod",
     parameters=[
-        SteeringMethodParameter(
-            name="k_neighbors",
-            type=int,
-            default=10,
-            help="Number of nearest neighbors for k-NN graph construction",
-            cli_flag="--szlak-k-neighbors",
-        ),
         SteeringMethodParameter(
             name="sinkhorn_reg",
             type=float,
             default=0.1,
-            help="Entropic regularization for Sinkhorn solver",
+            help="Entropic regularization for one-sided EOT solver",
             cli_flag="--szlak-sinkhorn-reg",
-        ),
-        SteeringMethodParameter(
-            name="sinkhorn_max_iter",
-            type=int,
-            default=100,
-            help="Maximum iterations for Sinkhorn convergence",
-            cli_flag="--szlak-sinkhorn-max-iter",
         ),
         SteeringMethodParameter(
             name="inference_k",
@@ -173,14 +159,6 @@ SZLAK_DEFINITION = SteeringMethodDefinition(
             default=5,
             help="Number of nearest source points for inference interpolation",
             cli_flag="--szlak-inference-k",
-        ),
-        SteeringMethodParameter(
-            name="cost_mode",
-            type=str,
-            default="geodesic",
-            help="Cost computation mode: geodesic (k-NN shortest path) or attention_affinity (EOT dot-product)",
-            cli_flag="--szlak-cost-mode",
-            choices=["geodesic", "attention_affinity"],
         ),
     ],
     optimization_config={
