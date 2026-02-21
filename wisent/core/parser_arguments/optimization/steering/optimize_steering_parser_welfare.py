@@ -1,4 +1,6 @@
 """Welfare and universal subparsers for optimize-steering."""
+from wisent.core.steering_methods.registry import SteeringMethodRegistry
+AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
 
 def setup_welfare_universal_parsers(steering_subparsers):

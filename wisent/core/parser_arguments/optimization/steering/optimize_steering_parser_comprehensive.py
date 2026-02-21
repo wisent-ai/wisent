@@ -1,5 +1,6 @@
 """Comprehensive subparser for optimize-steering."""
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
+AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
 def setup_comprehensive_parser(steering_subparsers):
     """Set up the comprehensive optimization subparser."""
@@ -296,3 +297,4 @@ def setup_comprehensive_parser(steering_subparsers):
         nargs="+",
         default=None,
         help="[GROM] Sparse weight values to search (e.g., 0.0 0.05 0.1)"
+    )

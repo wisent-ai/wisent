@@ -9,6 +9,7 @@ import torch
 import torch.nn.functional as F
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.activations.core.atoms import LayerName
+from wisent.core.steering._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
 
 _LOG = setup_logger(__name__)
 

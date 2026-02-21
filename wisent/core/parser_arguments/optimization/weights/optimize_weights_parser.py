@@ -203,5 +203,11 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
         help="Target value for the metric. Default: 0.95"
     )
     target_group.add_argument(
+        "--direction",
+        type=str,
+        default="auto",
+        choices=["auto", "maximize", "minimize"],
+        help="Optimization direction. 'auto' infers from metric. Default: auto"
+    )
 
     setup_advanced_optimize_weights_args(parser)
