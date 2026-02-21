@@ -106,7 +106,7 @@ def evaluate_refusal(args, input_data, responses, task_name, evaluation_results,
         "input_file": args.input,
         "task": task_name if isinstance(input_data, list) else input_data.get('task'),
         "model": model_name,
-        "evaluation_type": evaluation_type,
+        "evaluation_type": "refusal",
         "evaluator_used": "RefusalEvaluator",
         "aggregated_metrics": aggregated_metrics,
         "num_evaluated": total,
@@ -127,6 +127,4 @@ def evaluate_refusal(args, input_data, responses, task_name, evaluation_results,
     print(f"   Compliance rate: {compliance_rate:.2%}")
     print(f"   Refusal rate: {refusal_rate:.2%}")
     print(f"{'='*80}\n")
-    return
-
     return aggregated_metrics

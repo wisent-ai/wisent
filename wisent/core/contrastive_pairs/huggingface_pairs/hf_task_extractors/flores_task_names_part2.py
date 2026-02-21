@@ -232,4 +232,3 @@ FLORES_TASK_NAMES_PART2 = (
         "trasnlation_fr_dr_flores",
         "trasnlation_msa_dr_flores",
     )
-)

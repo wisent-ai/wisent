@@ -16,6 +16,27 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.contrastive_pairs.core.io.serialization import (
     save_contrastive_pair_set,
+    load_contrastive_pair_set,
+)
+
+# Directory constants
+_DATA_ROOT = Path(__file__).parent
+BENCHMARKS_DIR = _DATA_ROOT / "benchmarks"
+SYNTHETIC_DIR = _DATA_ROOT / "synthetic"
+WELFARE_DIR = _DATA_ROOT / "welfare"
+TRAIT_DIRS: dict[str, Path] = {}
+WELFARE_TRAIT_DIRS: dict[str, Path] = {}
+
+
+def _generate_filename(name: str, model: str | None = None, include_timestamp: bool = True) -> str:
+    """Generate a filename for a contrastive pair set."""
+    parts = [name.lower().replace(" ", "_").replace("/", "_")]
+    if model:
+        parts.append(model.replace("/", "_"))
+    if include_timestamp:
+        parts.append(datetime.now().strftime("%Y%m%d_%H%M%S"))
+    return "_".join(parts) + ".json"
+
 
 def save_benchmark_pairs(
     pairs: ContrastivePairSet | list[ContrastivePair] | list[dict[str, Any]],
