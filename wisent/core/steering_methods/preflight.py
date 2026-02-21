@@ -18,14 +18,12 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     StructureType,
 )
 
-
 __all__ = [
     "PreflightCheckResult",
     "PreflightWarning",
     "run_preflight_check",
     "check_method_compatibility",
 ]
-
 
 # Mapping of structure types to recommended methods
 STRUCTURE_TO_METHODS: Dict[StructureType, List[str]] = {
@@ -60,7 +58,6 @@ METHOD_DESCRIPTIONS: Dict[str, str] = {
 @dataclass
 class PreflightWarning:
     """A single warning from pre-flight check."""
-    
     severity: str  # "info", "warning", "error"
     message: str
     details: Optional[str] = None
@@ -70,47 +67,38 @@ class PreflightWarning:
 @dataclass
 class PreflightCheckResult:
     """Results from pre-flight steering method check."""
-    
     chosen_method: str
     """The method user chose to use."""
-    
     geometry_result: GeometryAnalysisResult
     """Full geometry analysis results."""
-    
     is_compatible: bool
     """Whether chosen method is compatible with detected structure."""
-    
     compatibility_score: float
     """0-1 score of how well method matches structure (1 = perfect match)."""
-    
     warnings: List[PreflightWarning] = field(default_factory=list)
     """List of warnings/suggestions."""
-    
     recommended_methods: List[str] = field(default_factory=list)
     """Methods recommended for this structure."""
-    
+
     def has_warnings(self) -> bool:
         """Check if there are any warnings."""
         return len(self.warnings) > 0
-    
+
     def has_errors(self) -> bool:
         """Check if there are any error-level warnings."""
         return any(w.severity == "error" for w in self.warnings)
-    
+
     def print_report(self) -> None:
         """Print a human-readable report."""
         print("\n" + "=" * 60)
         print("STEERING METHOD PRE-FLIGHT CHECK")
         print("=" * 60)
-        
         print(f"\nChosen Method: {self.chosen_method}")
         print(f"Detected Structure: {self.geometry_result.best_structure.value}")
         print(f"Structure Score: {self.geometry_result.best_score:.3f}")
         print(f"Compatibility: {'OK' if self.is_compatible else 'WARNING'} ({self.compatibility_score:.0%})")
-        
         if self.recommended_methods:
             print(f"\nRecommended Methods: {', '.join(self.recommended_methods)}")
-        
         if self.warnings:
             print(f"\n{'='*60}")
             print("WARNINGS")
@@ -122,7 +110,6 @@ class PreflightCheckResult:
                     print(f"   Details: {w.details}")
                 if w.suggestion:
                     print(f"   Suggestion: {w.suggestion}")
-        
         print(f"\n{'='*60}")
         print(f"Recommendation: {self.geometry_result.recommendation}")
         print("=" * 60 + "\n")
@@ -134,32 +121,12 @@ def run_preflight_check(
     chosen_method: str,
     config: Optional[GeometryAnalysisConfig] = None,
 ) -> PreflightCheckResult:
-    """
-    Run pre-flight check for a steering method.
-    
-    Analyzes the geometry of activation data and checks if the chosen
-    steering method is appropriate.
-    
-    Arguments:
-        pos_activations: Positive example activations [N_pos, hidden_dim]
-        neg_activations: Negative example activations [N_neg, hidden_dim]
-        chosen_method: Name of the steering method to use
-        config: Optional geometry analysis config
-        
-    Returns:
-        PreflightCheckResult with compatibility info and warnings
-    """
-    # Run geometry analysis
+    """Run pre-flight check for a steering method."""
     geo_result = detect_geometry_structure(pos_activations, neg_activations, config)
-    
-    # Check compatibility
     is_compatible, compat_score, warnings = check_method_compatibility(
         chosen_method, geo_result
     )
-    
-    # Get recommended methods
     recommended = STRUCTURE_TO_METHODS.get(geo_result.best_structure, UNIVERSAL_METHODS)
-    
     return PreflightCheckResult(
         chosen_method=chosen_method,
         geometry_result=geo_result,
@@ -174,29 +141,17 @@ def check_method_compatibility(
     method: str,
     geo_result: GeometryAnalysisResult,
 ) -> Tuple[bool, float, List[PreflightWarning]]:
-    """
-    Check if a steering method is compatible with detected geometry.
-    
-    Returns:
-        Tuple of (is_compatible, compatibility_score, warnings)
-    """
+    """Check if a steering method is compatible with detected geometry."""
     warnings: List[PreflightWarning] = []
     method_lower = method.lower()
-    
     best_structure = geo_result.best_structure
     structure_scores = {name: s.score for name, s in geo_result.all_scores.items()}
-    
     linear_score = structure_scores.get("linear", 0)
     cone_score = structure_scores.get("cone", 0)
     manifold_score = structure_scores.get("manifold", 0)
-    
-    # Default compatibility
     is_compatible = True
     compat_score = 0.5
-    
-    # Check specific methods
     if method_lower in ["caa", "mean_diff"]:
-        # CAA/mean_diff is optimal for linear, suboptimal for complex structures
         if linear_score > 0.8:
             compat_score = 1.0
             warnings.append(PreflightWarning(
@@ -222,78 +177,57 @@ def check_method_compatibility(
             ))
         else:
             compat_score = 0.5
-            warnings.append(PreflightWarning(
-                severity="info",
-                message="CAA is a reasonable baseline choice",
-            ))
-    
+            warnings.append(PreflightWarning(severity="info", message="CAA is a reasonable baseline choice"))
     elif method_lower == "tecza":
-        # TECZA is optimal for cone structure
         if cone_score > 0.7:
             compat_score = 1.0
             warnings.append(PreflightWarning(
-                severity="info",
-                message="Excellent choice - data has cone structure",
+                severity="info", message="Excellent choice - data has cone structure",
                 details=f"Cone score: {cone_score:.2f}",
             ))
         elif linear_score > 0.8:
             compat_score = 0.5
             warnings.append(PreflightWarning(
-                severity="warning",
-                message="TECZA may be overkill - data is mostly linear",
+                severity="warning", message="TECZA may be overkill - data is mostly linear",
                 details=f"Linear score: {linear_score:.2f}",
                 suggestion="CAA would be simpler and equally effective",
             ))
         else:
             compat_score = 0.7
-            warnings.append(PreflightWarning(
-                severity="info",
-                message="TECZA is a good choice for multi-directional steering",
-            ))
-    
+            warnings.append(PreflightWarning(severity="info", message="TECZA is a good choice for multi-directional steering"))
     elif method_lower == "grom":
-        # GROM adapts to structure, always reasonable
-        compat_score = 0.9  # High baseline
-        
+        compat_score = 0.9
         if linear_score > 0.9:
             warnings.append(PreflightWarning(
-                severity="info",
-                message="GROM will adapt to linear structure (may simplify to CAA-like behavior)",
+                severity="info", message="GROM will adapt to linear structure (may simplify to CAA-like behavior)",
                 details=f"Linear score: {linear_score:.2f}",
             ))
         elif manifold_score > 0.8:
             compat_score = 1.0
             warnings.append(PreflightWarning(
-                severity="info",
-                message="Excellent choice - data has manifold structure that GROM handles well",
+                severity="info", message="Excellent choice - data has manifold structure that GROM handles well",
                 details=f"Manifold score: {manifold_score:.2f}",
             ))
         else:
-            warnings.append(PreflightWarning(
-                severity="info",
-                message="GROM is adaptive and should work well with detected structure",
-            ))
-    
+            warnings.append(PreflightWarning(severity="info", message="GROM is adaptive and should work well with detected structure"))
     elif method_lower == "tetno":
-        # TETNO is good for bimodal/conditional steering
         bimodal_score = structure_scores.get("bimodal", 0)
         if bimodal_score > 0.6:
             compat_score = 0.9
             warnings.append(PreflightWarning(
-                severity="info",
-                message="Good choice - data shows bimodal characteristics",
+                severity="info", message="Good choice - data shows bimodal characteristics",
                 details=f"Bimodal score: {bimodal_score:.2f}",
             ))
         elif linear_score > 0.8:
             compat_score = 0.5
             warnings.append(PreflightWarning(
-                severity="warning",
-                message="TETNO gating may not be necessary for linear structure",
+                severity="warning", message="TETNO gating may not be necessary for linear structure",
                 suggestion="Consider simpler CAA if gating is not needed",
             ))
         else:
             compat_score = 0.7
-    
     else:
-        # Unknown method - give generic advice
-        warnings.append(PreflightWarning(
+        from wisent.core.steering_methods._helpers.preflight_helpers import complete_method_compatibility_check
+        return complete_method_compatibility_check(method, best_structure, structure_scores, warnings, STRUCTURE_TO_METHODS)
+    is_compatible = compat_score >= 0.5
+    return is_compatible, compat_score, warnings

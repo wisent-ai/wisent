@@ -45,8 +45,6 @@ from . import (
 )
 
 
-@dataclass
-
 from wisent.core.cli.optimize_steering.hierarchical_config import (
     HierarchicalResult, HierarchicalConfig,
     count_hierarchical_configs,

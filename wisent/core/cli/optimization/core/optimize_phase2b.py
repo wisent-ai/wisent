@@ -234,5 +234,5 @@ def run_safety_welfare_steering(args, results):
 
             save_checkpoint(args.model, results, phase=f"steering_welfare_{trait_idx}")
     else:
-    print(f"\n   Skipping steering optimization")
+        print(f"\n   Skipping steering optimization")
     
