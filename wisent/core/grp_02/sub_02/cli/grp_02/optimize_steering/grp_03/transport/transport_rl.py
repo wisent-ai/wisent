@@ -119,6 +119,8 @@ def _create_przelom_from_shaping(
     inference_k: int,
 ) -> PrzelomSteeringObject:
     """Create steering object from current shaped cost matrices."""
+    num_heads = metadata.extra.get('num_attention_heads')
+    num_kv_heads = metadata.extra.get('num_key_value_heads')
     source_points, disps = {}, {}
     for layer_int, data in layer_data.items():
         C_eff = data["C_original"] + C_shaping[layer_int]
@@ -126,8 +128,23 @@ def _create_przelom_from_shaping(
         T_current = data["T_current"]
         delta_C = epsilon * (torch.log(T_target.clamp(min=1e-12))
                              - torch.log(T_current.clamp(min=1e-12)))
-        k_pos_pinv = _regularized_pinv(data["k_pos"], regularization)
-        delta_q = -math.sqrt(data["q_neg"].shape[-1]) * (delta_C @ k_pos_pinv.T)
+        q_dim = data["q_neg"].shape[-1]
+        k_dim = data["k_pos"].shape[-1]
+        if q_dim == k_dim:
+            k_pos_pinv = _regularized_pinv(data["k_pos"], regularization)
+            delta_q = -math.sqrt(q_dim) * (delta_C @ k_pos_pinv.T)
+        else:
+            head_dim = q_dim // num_heads
+            groups = num_heads // num_kv_heads
+            k_by_head = data["k_pos"].reshape(-1, num_kv_heads, head_dim)
+            delta_q_parts = []
+            for g in range(num_kv_heads):
+                k_g = k_by_head[:, g, :]
+                k_g_pinv = _regularized_pinv(k_g, regularization)
+                dq_g = -math.sqrt(head_dim) * (delta_C @ k_g_pinv.T)
+                for _ in range(groups):
+                    delta_q_parts.append(dq_g)
+            delta_q = torch.cat(delta_q_parts, dim=-1)
         source_points[layer_int] = data["neg"].detach()
         disps[layer_int] = delta_q.detach()
     return PrzelomSteeringObject(
