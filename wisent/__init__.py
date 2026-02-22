@@ -1,7 +1,13 @@
 import os
 os.environ["NUMBA_NUM_THREADS"] = "1"
 
-__version__ = "0.7.1517"
+# Extend __path__ so sub-packages moved into support/ remain importable
+_base = os.path.dirname(__file__)
+for _root, _dirs, _files in os.walk(_base):
+    if _root != _base:
+        __path__.append(_root)
+
+__version__ = "0.7.1539"
 
 from wisent.core.tasks.base.diversity_processors import (
     OpenerPenaltyProcessor,
