@@ -1,3 +1,9 @@
+import os as _os
+_base = _os.path.dirname(__file__)
+for _root, _dirs, _files in _os.walk(_base):
+    if _root != _base:
+        __path__.append(_root)
+
 from .utils import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device, resolve_torch_device
 # Note: SteeringMethod and SteeringType import temporarily disabled due to missing dependencies
 # from .steering import SteeringMethod, SteeringType
