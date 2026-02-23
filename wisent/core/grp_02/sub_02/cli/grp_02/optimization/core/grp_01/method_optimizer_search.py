@@ -19,40 +19,62 @@ def _log(self, msg: str):
 def generate_search_space(
     self,
     num_layers: int,
-    quick: bool = False,
     custom_layers: Optional[List[int]] = None,
     custom_strengths: Optional[List[float]] = None,
     custom_token_aggregations: Optional[List[str]] = None,
     custom_prompt_strategies: Optional[List[str]] = None,
     custom_method_params: Optional[Dict[str, List[Any]]] = None,
+    evidence_reductions: Optional[Dict] = None,
 ) -> List[OptimizationConfig]:
     """
     Generate search space for optimization.
 
     Args:
         num_layers: Number of layers in the model
-        quick: Use reduced search space for faster testing
         custom_*: Override default search values
+        evidence_reductions: Dict[str, AxisReduction] from EvidenceLedger
 
     Returns:
         List of OptimizationConfig to test
     """
-    # Default extraction parameter ranges
-    if quick:
-        layers = custom_layers or self._get_quick_layers(num_layers)
-        strengths = custom_strengths or [0.5, 1.0, 1.5]
-        token_aggs = custom_token_aggregations or ["last_token"]
-        prompt_strats = custom_prompt_strategies or ["chat_template"]
-        steering_strategies = ["constant"]
-    else:
-        layers = custom_layers or self._get_full_layers(num_layers)
-        strengths = custom_strengths or [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
-        token_aggs = custom_token_aggregations or ["last_token", "mean_pooling", "first_token", "max_pooling", "continuation_token"]
-        prompt_strats = custom_prompt_strategies or ["chat_template", "direct_completion", "multiple_choice", "role_playing", "instruction_following"]
-        steering_strategies = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
+    layers = custom_layers or self._get_full_layers(num_layers)
+    strengths = custom_strengths or [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+    token_aggs = custom_token_aggregations or ["last_token", "mean_pooling", "first_token", "max_pooling", "continuation_token"]
+    prompt_strats = custom_prompt_strategies or ["chat_template", "direct_completion", "multiple_choice", "role_playing", "instruction_following"]
+    steering_strategies = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
+
+    # Apply evidence-based reductions (only when no custom override)
+    if evidence_reductions:
+        if not custom_token_aggregations and "extraction_strategy" in evidence_reductions:
+            keep = evidence_reductions["extraction_strategy"].keep_values
+            token_aggs = [v for v in token_aggs if v in keep] or token_aggs
+            logger.info("Evidence: extraction_strategy -> %s", token_aggs)
+        if not custom_prompt_strategies and "prompt_strategy" in evidence_reductions:
+            keep = evidence_reductions["prompt_strategy"].keep_values
+            prompt_strats = [v for v in prompt_strats if v in keep] or prompt_strats
+            logger.info("Evidence: prompt_strategy -> %s", prompt_strats)
+        if "steering_strategy" in evidence_reductions:
+            keep = evidence_reductions["steering_strategy"].keep_values
+            steering_strategies = [v for v in steering_strategies if v in keep] or steering_strategies
+            logger.info("Evidence: steering_strategy -> %s", steering_strategies)
+        if not custom_strengths and "strength" in evidence_reductions:
+            keep = evidence_reductions["strength"].keep_values
+            strengths = [s for s in strengths if str(s) in keep] or strengths
+            logger.info("Evidence: strength -> %s", strengths)
 
     # Get method-specific parameter ranges
-    method_param_ranges = self._get_method_param_ranges(quick, custom_method_params)
+    method_param_ranges = self._get_method_param_ranges(custom_method_params)
+
+    # Apply evidence reductions to method-specific params
+    if evidence_reductions and method_param_ranges:
+        for param_name in list(method_param_ranges.keys()):
+            if param_name in evidence_reductions:
+                keep = evidence_reductions[param_name].keep_values
+                orig = method_param_ranges[param_name]
+                filtered = [v for v in orig if str(v) in keep]
+                if filtered:
+                    method_param_ranges[param_name] = filtered
+                    logger.info("Evidence: %s -> %s", param_name, filtered)
 
     # Generate all configurations
     configs = []
@@ -107,16 +129,6 @@ def generate_search_space(
     return configs
 
 
-def _get_quick_layers(self, num_layers: int) -> List[int]:
-    """Get reduced layer set for quick search."""
-    if num_layers <= 12:
-        return [num_layers // 3, num_layers // 2, 2 * num_layers // 3]
-    elif num_layers <= 24:
-        return [num_layers // 4, num_layers // 2, 3 * num_layers // 4]
-    else:
-        return [num_layers // 4, num_layers // 3, num_layers // 2, 2 * num_layers // 3]
-
-
 def _get_full_layers(self, num_layers: int) -> List[int]:
     """Get full layer set for comprehensive search."""
     # Test ALL layers from 0 to num_layers-1
@@ -125,7 +137,6 @@ def _get_full_layers(self, num_layers: int) -> List[int]:
 
 def _get_method_param_ranges(
     self,
-    quick: bool,
     custom: Optional[Dict[str, List[Any]]] = None,
 ) -> Dict[str, List[Any]]:
     """Get method-specific parameter ranges."""
@@ -137,14 +148,6 @@ def _get_method_param_ranges(
         }
 
     elif self.method_name == "tecza":
-        if quick:
-            return {
-                "num_directions": custom.get("num_directions", [2, 3]),
-                "optimization_steps": custom.get("optimization_steps", [50]),
-                "retain_weight": custom.get("retain_weight", [0.1]),
-                "learning_rate": custom.get("learning_rate", [0.01]),
-                "use_caa_init": custom.get("use_caa_init", [True]),
-            }
         return {
             "num_directions": custom.get("num_directions", [1, 2, 3, 5]),
             "optimization_steps": custom.get("optimization_steps", [50, 100]),
@@ -155,17 +158,12 @@ def _get_method_param_ranges(
         }
 
     elif self.method_name == "tetno":
-        if quick:
-            return {
-                "sensor_layer": custom.get("sensor_layer", ["auto"]),  # Will be resolved
-                "steering_layers": custom.get("steering_layers", ["range_3"]),
-                "condition_threshold": custom.get("condition_threshold", [0.5]),
-                "gate_temperature": custom.get("gate_temperature", [0.5]),
-                "use_entropy_scaling": custom.get("use_entropy_scaling", [False]),
-                "max_alpha": custom.get("max_alpha", [2.0]),
-            }
+        nl = self.model.num_layers
+        sensor_defaults = sorted(set(
+                list(range(0, nl, max(1, nl // 4))) + [nl - 1]
+            ))
         return {
-            "sensor_layer": custom.get("sensor_layer", ["auto"]),
+            "sensor_layer": custom.get("sensor_layer", sensor_defaults),
             "steering_layers": custom.get("steering_layers", ["single", "range_3", "range_5"]),
             "condition_threshold": custom.get("condition_threshold", [0.3, 0.5, 0.7]),
             "gate_temperature": custom.get("gate_temperature", [0.1, 0.5, 1.0]),
@@ -175,22 +173,14 @@ def _get_method_param_ranges(
         }
 
     elif self.method_name == "grom":
-        if quick:
-            return {
-                "num_directions": custom.get("num_directions", [3]),
-                "sensor_layer": custom.get("sensor_layer", ["auto"]),
-                "steering_layers": custom.get("steering_layers", ["range_3"]),
-                "gate_hidden_dim": custom.get("gate_hidden_dim", [64]),
-                "intensity_hidden_dim": custom.get("intensity_hidden_dim", [32]),
-                "optimization_steps": custom.get("optimization_steps", [100]),
-                "behavior_weight": custom.get("behavior_weight", [1.0]),
-                "retain_weight": custom.get("retain_weight", [0.2]),
-                "max_alpha": custom.get("max_alpha", [2.0]),
-            }
+        nl = self.model.num_layers
+        sensor_defaults = sorted(set(
+                list(range(0, nl, max(1, nl // 4))) + [nl - 1]
+            ))
         return {
             "num_directions": custom.get("num_directions", [2, 3, 5]),
-            "sensor_layer": custom.get("sensor_layer", ["auto"]),
-            "steering_layers": custom.get("steering_layers", ["range_3", "range_5", "all_late"]),
+            "sensor_layer": custom.get("sensor_layer", sensor_defaults),
+            "steering_layers": custom.get("steering_layers", ["range_3", "range_5"]),
             "gate_hidden_dim": custom.get("gate_hidden_dim", [32, 64, 128]),
             "intensity_hidden_dim": custom.get("intensity_hidden_dim", [16, 32, 64]),
             "optimization_steps": custom.get("optimization_steps", [100, 200]),
@@ -240,9 +230,6 @@ def _determine_activation_layers(
         return list(range(max(0, base_layer - 1), min(num_layers, base_layer + 2)))
     elif steering_layers_config == "range_5":
         return list(range(max(0, base_layer - 2), min(num_layers, base_layer + 3)))
-    elif steering_layers_config == "all_late":
-        start = int(num_layers * 0.75)
-        return list(range(start, num_layers - 1))
     elif isinstance(steering_layers_config, list):
         return steering_layers_config
     else:
@@ -282,3 +269,25 @@ def collect_activations(
         pairs=updated_pairs,
         task_type=pairs.task_type if hasattr(pairs, 'task_type') else None,
     )
+
+
+def _load_evidence_reductions(self, task_name: str):
+    """Load evidence-based search-space reductions (returns empty on error)."""
+    try:
+        from wisent.core.steering_optimizer.constants_registry.evidence import (
+            EvidenceLedger,
+        )
+        ledger = EvidenceLedger()
+        reductions = ledger.get_reductions(
+            model_name=self.model.model_name,
+            task_name=task_name,
+            method_name=self.method_name,
+        )
+        if reductions:
+            self._log(
+                f"Evidence ledger: {len(reductions)} axis reduction(s) loaded"
+            )
+        return reductions
+    except Exception as exc:
+        logger.debug("Evidence ledger unavailable: %s", exc)
+        return {}
