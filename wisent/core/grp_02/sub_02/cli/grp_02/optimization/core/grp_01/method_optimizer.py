@@ -34,9 +34,9 @@ from wisent.core.cli.optimization.core.method_optimizer_config import (
     OptimizationConfig, OptimizationResult, OptimizationSummary,
 )
 from wisent.core.cli.optimization.core.method_optimizer_search import (
-    generate_search_space, _get_quick_layers, _get_full_layers,
+    generate_search_space, _get_full_layers,
     _get_method_param_ranges, _generate_param_combinations,
-    _determine_activation_layers, _log,
+    _determine_activation_layers, _log, _load_evidence_reductions,
 )
 from wisent.core.cli.optimization.core.method_optimizer_eval import (
     collect_activations, train_method, _resolve_params,
@@ -63,7 +63,7 @@ class MethodOptimizer:
         optimizer = MethodOptimizer(model, method_name="grom")
         
         # Generate search space
-        configs = optimizer.generate_search_space(num_layers=16, quick=True)
+        configs = optimizer.generate_search_space(num_layers=16)
         
         # Run optimization
         summary = optimizer.optimize(
@@ -113,11 +113,11 @@ class MethodOptimizer:
     # Delegate methods to extracted modules
     _log = _log
     generate_search_space = generate_search_space
-    _get_quick_layers = _get_quick_layers
     _get_full_layers = _get_full_layers
     _get_method_param_ranges = _get_method_param_ranges
     _generate_param_combinations = _generate_param_combinations
     _determine_activation_layers = _determine_activation_layers
+    _load_evidence_reductions = _load_evidence_reductions
     collect_activations = collect_activations
     train_method = train_method
     _resolve_params = _resolve_params
@@ -132,36 +132,35 @@ class MethodOptimizer:
         evaluator,
         task_name: str,
         configs: Optional[List[OptimizationConfig]] = None,
-        quick: bool = False,
         progress_callback: Optional[Callable[[int, int, OptimizationResult], None]] = None,
     ) -> OptimizationSummary:
         """
         Run optimization over configurations.
-        
+
         Args:
             train_pairs: Training pairs for steering vector extraction
             test_pairs: Test pairs for evaluation
             evaluator: Evaluator instance
             task_name: Name of task/benchmark
             configs: Configurations to test (or generate automatically)
-            quick: Use quick search space if configs not provided
             progress_callback: Called after each config with (idx, total, result)
-            
+
         Returns:
             OptimizationSummary with best result and all results
         """
         start_time = time.time()
-        
+
         # Evaluate baseline (unsteered) first
         baseline_score, baseline_metrics = self.evaluate_baseline(
             test_pairs, evaluator, task_name
         )
-        
+
         # Generate configs if not provided
         if configs is None:
+            evidence_reductions = self._load_evidence_reductions(task_name)
             configs = self.generate_search_space(
                 num_layers=self.model.num_layers,
-                quick=quick,
+                evidence_reductions=evidence_reductions,
             )
         
         self._log(f"\n{'='*60}")
@@ -254,19 +253,18 @@ def optimize_steering_method(
     test_pairs: ContrastivePairSet,
     evaluator,
     task_name: str,
-    quick: bool = False,
     verbose: bool = True,
 ) -> OptimizationSummary:
     """
     Convenience function to optimize a steering method.
-    
+
     This is the main entry point for optimizing any steering method.
     It handles all the complexity of:
     - Generating appropriate search spaces
     - Collecting activations
     - Training methods
     - Evaluating results
-    
+
     Args:
         model: WisentModel instance
         method_name: Name of method to optimize (caa, tecza, tetno, grom)
@@ -274,9 +272,8 @@ def optimize_steering_method(
         test_pairs: Test pairs
         evaluator: Evaluator instance
         task_name: Name of task/benchmark
-        quick: Use reduced search space
         verbose: Print progress
-        
+
     Returns:
         OptimizationSummary with results
     """
@@ -285,11 +282,10 @@ def optimize_steering_method(
         method_name=method_name,
         verbose=verbose,
     )
-    
+
     return optimizer.optimize(
         train_pairs=train_pairs,
         test_pairs=test_pairs,
         evaluator=evaluator,
         task_name=task_name,
-        quick=quick,
     )
