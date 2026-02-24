@@ -10,6 +10,7 @@ from typing import Any, Dict, List, Tuple
 
 from wisent.core.bigcode_extractors import get_bigcode_extractor
 from wisent.core.bigcode_integration import BigCodeEvaluator, is_bigcode_task
+from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT
 from wisent.core.errors import BigCodeTaskRequiresFlagError, InsufficientDataError
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ class OptunaBigCodeEvaluator:
                 extracted_code = code_extractor.extract_code_from_answer(prediction)
 
                 if not extracted_code.strip():
-                    logger.warning(f"No code extracted from prediction {i}: {prediction[:100]}...")
+                    logger.warning(f"No code extracted from prediction {i}: {prediction[:DISPLAY_TRUNCATION_COMPACT]}...")
                     result = {
                         "passed": False,
                         "error": "No code extracted from prediction",

@@ -20,6 +20,7 @@ from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+from wisent.core.constants import ZERO_THRESHOLD, PARSER_DEFAULT_NUM_PAIRS, PAIR_GENERATORS_DEFAULT_N
 
 
 WORD_LIST = [
@@ -41,7 +42,7 @@ def generate_nonsense_text(length: int = None) -> str:
     return ' '.join(words)
 
 
-def generate_nonsense_pairs(n: int = 50) -> List[ContrastivePair]:
+def generate_nonsense_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[ContrastivePair]:
     """Generate pairs with random nonsense text."""
     pairs = []
     for i in range(n):
@@ -56,7 +57,7 @@ def generate_nonsense_pairs(n: int = 50) -> List[ContrastivePair]:
     return pairs
 
 
-def generate_real_pairs(n: int = 50) -> List[ContrastivePair]:
+def generate_real_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[ContrastivePair]:
     """Generate real contrastive pairs with semantic meaning."""
     templates = [
         ("Is the Earth flat?", "No, the Earth is approximately spherical.", "Yes, the Earth is flat."),
@@ -96,7 +97,7 @@ def compute_cohens_d(pos_acts: np.ndarray, neg_acts: np.ndarray) -> float:
     pooled_std = np.sqrt(((n1 - 1) * pos_var + (n2 - 1) * neg_var) / (n1 + n2 - 2))
     pooled_std = np.mean(pooled_std)  # average across dimensions
     
-    if pooled_std < 1e-10:
+    if pooled_std < ZERO_THRESHOLD:
         return 0.0
     
     diff = np.linalg.norm(pos_mean - neg_mean)
@@ -154,7 +155,7 @@ def collect_activations(
 def main():
     parser = argparse.ArgumentParser(description="Test nonsense baseline vs real pairs")
     parser.add_argument("--model", type=str, default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--n-pairs", type=int, default=50)
+    parser.add_argument("--n-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
     parser.add_argument("--strategies", type=str, nargs="+", 
                         default=["chat_mean", "chat_max_norm", "chat_last"])
     parser.add_argument("--layers", type=int, nargs="+", default=None,

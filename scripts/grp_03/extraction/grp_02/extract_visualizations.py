@@ -5,6 +5,8 @@ import base64
 import argparse
 from pathlib import Path
 
+from wisent.core.constants import VIZ_DPI_DRAFT
+
 
 def create_combined_figure(visualizations: dict, layer_num: int, metrics: dict = None) -> bytes:
     """Create a combined 3x3 figure from individual visualization images."""
@@ -50,7 +52,7 @@ def create_combined_figure(visualizations: dict, layer_num: int, metrics: dict =
     plt.tight_layout()
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=VIZ_DPI_DRAFT, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
 

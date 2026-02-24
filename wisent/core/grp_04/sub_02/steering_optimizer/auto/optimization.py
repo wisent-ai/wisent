@@ -9,6 +9,12 @@ from typing import Dict, List, Optional, Any
 import torch
 
 from wisent.core.config_manager import ModelConfigManager
+from wisent.core.constants import (
+    DEFAULT_LIMIT, DEFAULT_SCORE, BLEND_DEFAULT,
+    AUTO_MAX_TIME_MINUTES, AUTO_MIN_PAIRS, AUTO_SAMPLE_SIZE,
+    AUTO_N_FOLDS, AUTO_DEFAULT_STRENGTHS, AUTO_MIN_PAIRS_SPLIT,
+    AUTO_LAYER_DIVISOR,
+)
 from .training import train_recommended_method
 from .grid_search import run_grid_search
 
@@ -18,11 +24,11 @@ logger = logging.getLogger(__name__)
 def run_auto_steering_optimization(
     model_name: str,
     task_name: Optional[str] = None,
-    limit: int = 100,
+    limit: int = DEFAULT_LIMIT,
     device: str = None,
     verbose: bool = False,
     use_classification_config: bool = True,
-    max_time_minutes: float = 60.0,
+    max_time_minutes: float = AUTO_MAX_TIME_MINUTES,
     methods_to_test: Optional[List[str]] = None,
     strength_range: Optional[List[float]] = None,
     layer_range: Optional[str] = None
@@ -40,12 +46,15 @@ def run_auto_steering_optimization(
 
     wisent_model = WisentModel(model_name, device=device)
     num_layers = wisent_model.num_layers
+
+    profile_mgr = _try_load_constant_profile(model_name, task_name, verbose)
+
     if verbose:
         print(f"Model loaded with {num_layers} layers\n")
         print(f"Generating contrastive pairs for {task_name}...", flush=True)
 
     pairs = _generate_pairs(task_name, limit)
-    if not pairs or len(pairs) < 10:
+    if not pairs or len(pairs) < AUTO_MIN_PAIRS:
         return {"error": f"Could not generate enough pairs for {task_name}"}
     if verbose:
         print(f"Generated {len(pairs)} contrastive pairs\n")
@@ -58,7 +67,7 @@ def run_auto_steering_optimization(
     # Determine search space
     layers_to_test = _get_layers_to_test(layer_range, num_layers)
     if strength_range is None:
-        strength_range = [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+        strength_range = list(AUTO_DEFAULT_STRENGTHS)
 
     if verbose:
         print(f"\nGRID SEARCH for {recommended_method}")
@@ -70,7 +79,7 @@ def run_auto_steering_optimization(
         method=recommended_method, layer=layers_to_test[0], verbose=verbose,
     )
 
-    eval_pairs = pairs[len(pairs)//2:] if len(pairs) > 20 else pairs
+    eval_pairs = pairs[len(pairs)//2:] if len(pairs) > AUTO_MIN_PAIRS_SPLIT else pairs
     grid_results, best_layer, best_strength, best_config = run_grid_search(
         wisent_model=wisent_model, steering_result=steering_result,
         recommended_method=recommended_method, layers_to_test=layers_to_test,
@@ -78,7 +87,7 @@ def run_auto_steering_optimization(
         task_name=task_name, verbose=verbose,
     )
 
-    best_score = best_config.get('score', 0.0) if best_config else 0.0
+    best_score = best_config.get('score', DEFAULT_SCORE) if best_config else DEFAULT_SCORE
     _save_config(model_name, task_name, recommended_method, best_layer,
                  best_strength, best_score, confidence, reasoning,
                  metrics, coherence, layers_to_test, strength_range, grid_results)
@@ -93,10 +102,10 @@ def run_auto_steering_optimization(
         'optimal_layer': best_layer, 'optimal_strength': best_strength,
         'best_score': best_score, 'confidence': confidence, 'reasoning': reasoning,
         'zwiad_metrics': {
-            'linear_probe_accuracy': metrics.get('linear_probe_accuracy', 0),
-            'signal_strength': metrics.get('signal_strength', 0),
-            'steerability_score': metrics.get('steer_steerability_score', 0),
-            'icd': metrics.get('icd_icd', 0),
+            'linear_probe_accuracy': metrics.get('linear_probe_accuracy', DEFAULT_SCORE),
+            'signal_strength': metrics.get('signal_strength', DEFAULT_SCORE),
+            'steerability_score': metrics.get('steer_steerability_score', DEFAULT_SCORE),
+            'icd': metrics.get('icd_icd', DEFAULT_SCORE),
             'concept_coherence': coherence,
         },
         'grid_search_results': grid_results,
@@ -104,6 +113,27 @@ def run_auto_steering_optimization(
         'optimization_date': datetime.now().isoformat(),
         'config_saved': True,
     }
+
+
+def _try_load_constant_profile(model_name: str, task_name: str, verbose: bool):
+    """Attempt to load and activate a saved constant profile."""
+    try:
+        from wisent.core.steering_optimizer.constants_registry.profiles import (
+            ConstantProfileManager,
+        )
+        manager = ConstantProfileManager()
+        profile = manager.load(model_name, task_name)
+        if profile is not None:
+            manager.activate(profile)
+            if verbose:
+                print(f"Loaded constant profile: {len(profile.constants)} "
+                      f"constants (source: {profile.source})")
+            return manager
+        if verbose:
+            print("No saved constant profile found, using defaults")
+    except Exception as e:
+        logger.debug("Could not load constant profile: %s", e)
+    return None
 
 
 def _generate_pairs(task_name: str, limit: int) -> List:
@@ -125,38 +155,57 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose
     if verbose:
         print("Collecting activations for geometry analysis...", flush=True)
 
-    analysis_layer = str(int(num_layers * 0.75))
+    candidate_layers = list(range(0, num_layers, max(1, num_layers // AUTO_LAYER_DIVISOR)))
+    if (num_layers - 1) not in candidate_layers:
+        candidate_layers.append(num_layers - 1)
+    candidate_layer_strs = [str(l) for l in candidate_layers]
+
     collector = ActivationCollector(model=wisent_model)
-    sample_pairs = pairs[:min(50, len(pairs))]
-    pos_activations, neg_activations = [], []
+    sample_pairs = pairs[:min(AUTO_SAMPLE_SIZE, len(pairs))]
+    layer_pos = {l: [] for l in candidate_layer_strs}
+    layer_neg = {l: [] for l in candidate_layer_strs}
 
     for pair in sample_pairs:
-        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=[analysis_layer])
-        pos_act = enriched.positive_response.layers_activations.get(analysis_layer)
-        neg_act = enriched.negative_response.layers_activations.get(analysis_layer)
-        if pos_act is not None:
-            pos_activations.append(pos_act)
-        if neg_act is not None:
-            neg_activations.append(neg_act)
+        enriched = collector.collect(pair, strategy=ExtractionStrategy.CHAT_LAST, layers=candidate_layer_strs)
+        for l in candidate_layer_strs:
+            pos_act = enriched.positive_response.layers_activations.get(l)
+            neg_act = enriched.negative_response.layers_activations.get(l)
+            if pos_act is not None:
+                layer_pos[l].append(pos_act)
+            if neg_act is not None:
+                layer_neg[l].append(neg_act)
 
-    if len(pos_activations) < 10 or len(neg_activations) < 10:
-        return "GROM", 0.5, "Insufficient activations", {}, 0.0
+    # Pick the layer with the strongest linear probe signal
+    best_lpa, best_layer = -1.0, candidate_layer_strs[0]
+    best_metrics = None
+    for l in candidate_layer_strs:
+        if len(layer_pos[l]) < AUTO_MIN_PAIRS or len(layer_neg[l]) < AUTO_MIN_PAIRS:
+            continue
+        pt = torch.stack(layer_pos[l])
+        nt = torch.stack(layer_neg[l])
+        m = compute_geometry_metrics(pt, nt, n_folds=AUTO_N_FOLDS)
+        lpa = m.get('linear_probe_accuracy', 0.0)
+        if lpa > best_lpa:
+            best_lpa, best_metrics, best_layer = lpa, m, l
+
+    if best_metrics is None:
+        return "GROM", BLEND_DEFAULT, "Insufficient activations", {}, DEFAULT_SCORE
 
     if verbose:
-        print(f"Collected {len(pos_activations)} pos and {len(neg_activations)} neg activations\n")
+        print(f"Analyzed {len(candidate_layers)} layers, best: layer {best_layer} (lpa={best_lpa:.3f})\n")
 
-    pos_tensor = torch.stack(pos_activations)
-    neg_tensor = torch.stack(neg_activations)
-    metrics = compute_geometry_metrics(pos_tensor, neg_tensor, n_folds=3)
+    pos_tensor = torch.stack(layer_pos[best_layer])
+    neg_tensor = torch.stack(layer_neg[best_layer])
+    metrics = best_metrics
     recommendation = compute_recommendation(metrics)
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
 
     recommended_method = recommendation.get("recommended_method", "GROM").upper()
-    confidence = recommendation.get("confidence", 0.5)
+    confidence = recommendation.get("confidence", BLEND_DEFAULT)
     reasoning = recommendation.get("reasoning", "")
 
     if verbose:
-        print(f"   Repscan: Linear accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
+        print(f"   Repscan: Linear accuracy: {metrics.get('linear_probe_accuracy', DEFAULT_SCORE):.3f}")
         print(f"   Recommendation: {recommended_method} (confidence={confidence:.2f})")
 
     return recommended_method, confidence, reasoning, metrics, coherence
@@ -171,7 +220,7 @@ def _get_layers_to_test(layer_range: Optional[str], num_layers: int) -> List[int
         elif ',' in layer_range:
             return [int(x.strip()) for x in layer_range.split(',')]
         return [int(layer_range)]
-    return list(range(num_layers // 2, num_layers))
+    return list(range(num_layers))
 
 
 def _save_config(
@@ -196,10 +245,10 @@ def _save_config(
         'best_strength': strength, 'best_score': score,
         'optimization_date': datetime.now().isoformat(),
         'zwiad_metrics': {
-            'linear_probe_accuracy': metrics.get('linear_probe_accuracy', 0),
-            'signal_strength': metrics.get('signal_strength', 0),
-            'steerability_score': metrics.get('steer_steerability_score', 0),
-            'icd': metrics.get('icd_icd', 0),
+            'linear_probe_accuracy': metrics.get('linear_probe_accuracy', DEFAULT_SCORE),
+            'signal_strength': metrics.get('signal_strength', DEFAULT_SCORE),
+            'steerability_score': metrics.get('steer_steerability_score', DEFAULT_SCORE),
+            'icd': metrics.get('icd_icd', DEFAULT_SCORE),
             'concept_coherence': coherence,
         },
         'confidence': confidence, 'reasoning': reasoning,

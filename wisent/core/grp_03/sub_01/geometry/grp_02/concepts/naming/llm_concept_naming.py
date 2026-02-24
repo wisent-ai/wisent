@@ -2,6 +2,7 @@
 
 import json
 from typing import Dict, List, Any, Optional
+from wisent.core.constants import CONCEPT_NAMING_N_SAMPLES, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
 
 # Global cache for Wisent instance
 _wisent_cache = {}
@@ -11,7 +12,7 @@ def format_naming_prompt(
     prompts: List[str],
     positives: List[str],
     negatives: List[str],
-    n_samples: int = 5,
+    n_samples: int = CONCEPT_NAMING_N_SAMPLES,
 ) -> str:
     """Format a prompt for the LLM to name this concept cluster."""
 
@@ -97,12 +98,12 @@ def parse_llm_response(response: str) -> Dict[str, str]:
     if name_match:
         name = name_match.group(1).replace(" ", "_").replace("-", "_").lower()
         desc_match = re.search(r'"description"\s*:\s*"([^"]+)"', response)
-        desc = desc_match.group(1) if desc_match else response[:200]
+        desc = desc_match.group(1) if desc_match else response[:DISPLAY_TRUNCATION_MEDIUM]
         return {"name": name, "description": desc}
 
     return {
         "name": "unknown_concept",
-        "description": response[:200] if response else "No description available",
+        "description": response[:DISPLAY_TRUNCATION_MEDIUM] if response else "No description available",
     }
 
 
@@ -123,7 +124,7 @@ def name_concept_with_llm(
     try:
         response = call_local_llm(prompt, model)
         if debug:
-            print(f"    LLM response: {response[:500]}...")
+            print(f"    LLM response: {response[:DISPLAY_TRUNCATION_LARGE]}...")
         return parse_llm_response(response)
     except Exception as e:
         return {

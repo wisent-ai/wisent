@@ -23,6 +23,7 @@ from typing import Any, Dict, List, Optional
 from wisent.core.benchmarks import get_extractor
 from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
 from wisent.core.errors import ExtractorReturnedNoneError, BigCodeTaskRequiresFlagError, TaskNotFoundError
+from wisent.core.constants import CACHE_CHUNK_SIZE, CACHE_MAX_AGE_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -84,8 +85,8 @@ class ManagedCachedBenchmarks(CachedBenchDownloadMixin, CachedBenchIOMixin):
     """
 
     CACHE_VERSION = "1.0"
-    CHUNK_SIZE = 25  # Samples per chunk
-    MAX_CACHE_AGE_DAYS = 30
+    CHUNK_SIZE = CACHE_CHUNK_SIZE
+    MAX_CACHE_AGE_DAYS = CACHE_MAX_AGE_DAYS
     SUPPORTED_BENCHMARKS = None  # Will be initialized in __init__
 
     def __init__(self, cache_dir: str = "./benchmark_cache"):

@@ -2,6 +2,12 @@
 
 from dataclasses import dataclass
 
+from wisent.core.constants import (
+    DEFAULT_SPLIT_RATIO,
+    SPLIT_RATIO_HALF,
+    SPLIT_RATIO_70,
+)
+
 
 @dataclass
 class Caps:
@@ -23,17 +29,17 @@ def test_split_and_cap_deterministic():
 
     # First split
     train1, test1 = _split_and_cap(
-        items=items, split_ratio=0.7, caps=Caps(train=1000, test=1000),
+        items=items, split_ratio=SPLIT_RATIO_70, caps=Caps(train=1000, test=1000),
         seed=123, verbose=False,
     )
     # Second split with same seed
     train2, test2 = _split_and_cap(
-        items=items, split_ratio=0.7, caps=Caps(train=1000, test=1000),
+        items=items, split_ratio=SPLIT_RATIO_70, caps=Caps(train=1000, test=1000),
         seed=123, verbose=False,
     )
     # Third split with different seed
     train3, test3 = _split_and_cap(
-        items=items, split_ratio=0.7, caps=Caps(train=1000, test=1000),
+        items=items, split_ratio=SPLIT_RATIO_70, caps=Caps(train=1000, test=1000),
         seed=456, verbose=False,
     )
 
@@ -48,14 +54,14 @@ def test_split_and_cap_edge_cases():
 
     # Test 1: Empty list
     train, test = _split_and_cap(
-        items=[], split_ratio=0.8, caps=Caps(train=100, test=100),
+        items=[], split_ratio=DEFAULT_SPLIT_RATIO, caps=Caps(train=100, test=100),
         seed=42, verbose=False,
     )
     assert len(train) == 0 and len(test) == 0, "Empty input should produce empty outputs"
 
     # Test 2: Single item with 0.5 split
     train, test = _split_and_cap(
-        items=[{"id": 1}], split_ratio=0.5, caps=Caps(train=100, test=100),
+        items=[{"id": 1}], split_ratio=SPLIT_RATIO_HALF, caps=Caps(train=100, test=100),
         seed=42, verbose=False,
     )
     assert len(train) + len(test) == 1, "Single item should be in either train or test"
@@ -103,7 +109,7 @@ def test_split_and_cap_preserves_data():
     items = [{"id": i, "value": f"val_{i}"} for i in range(73)]  # Odd number
 
     train, test = _split_and_cap(
-        items=items, split_ratio=0.7, caps=Caps(train=1000, test=1000),
+        items=items, split_ratio=SPLIT_RATIO_70, caps=Caps(train=1000, test=1000),
         seed=999, verbose=False,
     )
 

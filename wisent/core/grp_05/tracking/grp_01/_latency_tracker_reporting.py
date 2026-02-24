@@ -1,11 +1,20 @@
 """Reporting and summary mixin for LatencyTracker."""
-from typing import Any, Dict, List, Optional
+import statistics
+from typing import Any, Dict, List, Optional, Union
+from collections import defaultdict
+import time
 from wisent.core.tracking._latency_types import (
-    LatencyStats, GenerationMetrics, TrainingMetrics)
+    LatencyStats, GenerationMetrics, TrainingMetrics, TimingEvent)
 
 class LatencyReportingMixin:
     """Mixin providing reporting and summary methods."""
 
+    def _calculate_stats(self, operation, durations, events=None):
+        """Calculate latency statistics for an operation."""
+        if events is None:
+            events = []
+        durations = sorted(durations)
+        return LatencyStats(
             operation=operation,
             count=len(durations),
             total_time=sum(durations),

@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
+from wisent.core.constants import DEFAULT_BASE_STRENGTH
 from wisent.core.utils import preferred_dtype
 
 if TYPE_CHECKING:
@@ -48,7 +49,7 @@ def load_steering_vector(path: str | Path, default_method: str = "unknown") -> d
 def apply_steering_to_model(
     model: "WisentModel",
     steering_data: dict,
-    scale: float = 1.0,
+    scale: float = DEFAULT_BASE_STRENGTH,
 ) -> None:
     """
     Apply loaded steering vectors to a WisentModel.
@@ -76,7 +77,7 @@ def remove_steering(model: "WisentModel") -> None:
 def convert_to_lm_eval_format(
     steering_data: dict,
     output_path: str | Path,
-    scale: float = 1.0,
+    scale: float = DEFAULT_BASE_STRENGTH,
 ) -> Path:
     """
     Convert our steering vector format to lm-eval's steered model format.

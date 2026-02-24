@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Type
 
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import DEFAULT_SCORE, DEFAULT_STRENGTH
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 
 
@@ -26,7 +27,7 @@ class OptimizationConfig:
     """How to construct prompts for the model."""
     
     # Application parameters
-    strength: float = 1.0
+    strength: float = DEFAULT_STRENGTH
     """Steering strength multiplier."""
     
     strategy: str = "constant"
@@ -75,10 +76,10 @@ class OptimizationResult:
     steering_vectors: Optional[LayerActivations] = None
     """Trained steering vectors (optional, for caching)."""
     
-    training_time: float = 0.0
+    training_time: float = DEFAULT_SCORE
     """Time taken to train the method."""
     
-    evaluation_time: float = 0.0
+    evaluation_time: float = DEFAULT_SCORE
     """Time taken to evaluate."""
     
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -101,13 +102,13 @@ class OptimizationSummary:
     task_name: str
     """Task/benchmark used for evaluation."""
     
-    total_time: float = 0.0
+    total_time: float = DEFAULT_SCORE
     """Total optimization time."""
     
     configs_tested: int = 0
     """Number of configurations tested."""
     
-    baseline_score: float = 0.0
+    baseline_score: float = DEFAULT_SCORE
     """Baseline (unsteered) accuracy for comparison."""
     
     baseline_metrics: Dict[str, float] = field(default_factory=dict)

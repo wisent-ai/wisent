@@ -2,6 +2,7 @@
 
 import json
 import sys
+from wisent.core.constants import MIN_PAIRS_FOR_LINEARITY, DISPLAY_TOP_N_MEDIUM
 
 
 def execute_check_linearity(args):
@@ -51,7 +52,7 @@ def execute_check_linearity(args):
                 print(f"Skipping malformed pair: {e}")
             continue
     
-    if len(pairs) < 10:
+    if len(pairs) < MIN_PAIRS_FOR_LINEARITY:
         print(f"Error: Need at least 10 valid pairs, got {len(pairs)}")
         sys.exit(1)
     
@@ -118,7 +119,7 @@ def execute_check_linearity(args):
         print(f"{'Linear':<8} {'d':<8} {'Layer':<6} {'Strategy':<20} {'Structure':<12} {'Norm'}")
         print("-" * 70)
         
-        for r in sorted_results[:20]:
+        for r in sorted_results[:DISPLAY_TOP_N_MEDIUM]:
             print(f"{r['linear_score']:<8.3f} {r['cohens_d']:<8.2f} {r['layer']:<6} "
                   f"{r['extraction_strategy']:<20} {r['best_structure']:<12} {r['normalize']}")
         

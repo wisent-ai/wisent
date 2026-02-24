@@ -2,6 +2,8 @@
 
 import argparse
 
+from wisent.core import constants as _C
+
 
 def setup_verify_steering_parser(parser: argparse.ArgumentParser) -> None:
     """Set up arguments for the verify-steering command.
@@ -62,7 +64,7 @@ def setup_verify_steering_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--alignment-threshold",
         type=float,
-        default=0.3,
+        default=_C.VERIFY_STEERING_THRESHOLD,
         help="Minimum alignment score to consider steering successful (default: 0.3)"
     )
 

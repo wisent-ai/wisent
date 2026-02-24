@@ -5,6 +5,7 @@ import torch
 
 from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import LOG_EPS
 
 __all__ = [
     "CAAMethod",
@@ -39,7 +40,7 @@ class CAAMethod(PerLayerBaseSteeringMethod):
             v = self._safe_l2_normalize(v)
         return v
 
-    def _safe_l2_normalize(self, v: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
+    def _safe_l2_normalize(self, v: torch.Tensor, eps: float = LOG_EPS) -> torch.Tensor:
         if v.ndim != 1:
             v = v.reshape(-1)
         return v / (torch.linalg.norm(v) + eps)

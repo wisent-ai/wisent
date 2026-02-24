@@ -10,6 +10,7 @@ from wisent.core.errors import InvalidValueError, InvalidRangeError
 from wisent.core.utils import preferred_dtype
 
 # Re-export from helpers
+from wisent.core.constants import LOG_EPS, DEFAULT_BASE_STRENGTH
 from wisent.core.models.core._atoms_helpers import (
     HookHandleGroup,
     TopLogits,
@@ -41,7 +42,7 @@ class SteeringVector:
         layer_description: human-readable description.
     """
     vector: torch.Tensor
-    scale: float = 1.0
+    scale: float = DEFAULT_BASE_STRENGTH
     normalize: bool = False
     layer_description: str = ""
 
@@ -49,7 +50,7 @@ class SteeringVector:
         """Broadcast + cast the vector so it's addable to 'like' ([B, T, H])."""
         v = self.vector
         if self.normalize and torch.is_floating_point(v):
-            denom = torch.linalg.vector_norm(v.float(), dim=-1, keepdim=True).clamp_min(1e-12)
+            denom = torch.linalg.vector_norm(v.float(), dim=-1, keepdim=True).clamp_min(LOG_EPS)
             v = v / denom
 
         if v.dim() == 1:
@@ -78,7 +79,7 @@ class SteeringPlan:
         cls,
         raw: Sequence[RawActivationMap] | RawActivationMap | None,
         layers_description: list[str] | None = None,
-        scale: float = 1.0,
+        scale: float = DEFAULT_BASE_STRENGTH,
         normalize: bool = False,
         weights: Sequence[float] | None = None,
         expected_hidden_size: int | None = None,
@@ -134,7 +135,7 @@ class SteeringPlan:
         if w.numel() != n:
             raise InvalidValueError(param_name="weights length", actual=w.numel(), expected=f"{n} (number of activation maps)")
         s = float(w.sum())
-        if abs(s) < 1e-12:
+        if abs(s) < LOG_EPS:
             raise InvalidValueError(param_name="weights sum", actual=s, expected="non-zero value for normalization")
         return w / s
 

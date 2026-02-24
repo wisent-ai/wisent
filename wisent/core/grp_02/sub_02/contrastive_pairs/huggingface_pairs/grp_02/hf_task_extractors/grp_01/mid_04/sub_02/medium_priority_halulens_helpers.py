@@ -4,6 +4,12 @@ from __future__ import annotations
 import random
 import re
 
+from wisent.core.constants import (
+    YEAR_SHIFT_MIN, YEAR_SHIFT_MAX, YEAR_SHIFT_DEFAULT,
+    SMALL_NUM_INCREMENT_MIN, SMALL_NUM_INCREMENT_MAX,
+    NUM_PERTURB_SCALE_MIN, NUM_PERTURB_SCALE_MAX,
+)
+
 
 def entity_swap_hallucination(rng: random.Random, answer: str, title: str) -> str:
     """Swap entities with plausible but incorrect alternatives."""
@@ -31,9 +37,9 @@ def date_shift_hallucination(rng: random.Random, answer: str) -> str:
     # Find years
     def shift_year(match):
         year = int(match.group())
-        shift = rng.randint(-50, 50)
+        shift = rng.randint(YEAR_SHIFT_MIN, YEAR_SHIFT_MAX)
         if shift == 0:
-            shift = 10
+            shift = YEAR_SHIFT_DEFAULT
         return str(year + shift)
     
     modified = re.sub(r'\b(1[0-9]{3}|20[0-2][0-9])\b', shift_year, answer)
@@ -42,8 +48,8 @@ def date_shift_hallucination(rng: random.Random, answer: str) -> str:
     def shift_number(match):
         num = int(match.group())
         if num < 10:
-            return str(num + rng.randint(1, 5))
-        return str(int(num * rng.uniform(0.5, 1.5)))
+            return str(num + rng.randint(SMALL_NUM_INCREMENT_MIN, SMALL_NUM_INCREMENT_MAX))
+        return str(int(num * rng.uniform(NUM_PERTURB_SCALE_MIN, NUM_PERTURB_SCALE_MAX)))
     
     if modified == answer:
         modified = re.sub(r'\b(\d+)\b', shift_number, answer)

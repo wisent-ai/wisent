@@ -5,6 +5,7 @@ import os
 import sys
 from datetime import datetime
 
+from wisent.core.constants import GEO_MAX_LAYER_COMBO_SIZE, PARSER_DEFAULT_NUM_PAIRS, TEST_MAX_COMBO_SIZE, DISPLAY_TOP_N_SMALL
 from wisent.tests.test_geometry_exhaustive import (
     run_exhaustive_layer_analysis,
     run_limited_layer_analysis,
@@ -18,8 +19,8 @@ from wisent.tests.test_geometry_exhaustive import (
 def run_comprehensive_sweep(
     task: str = "truthfulqa_gen",
     model: str = "meta-llama/Llama-3.2-1B-Instruct",
-    num_pairs: int = 50,
-    max_combo_size: int = 3,
+    num_pairs: int = PARSER_DEFAULT_NUM_PAIRS,
+    max_combo_size: int = TEST_MAX_COMBO_SIZE,
     output_dir: str = "/home/ubuntu/output",
 ):
     """Run sweep across all token agg and prompt strategies."""
@@ -84,7 +85,7 @@ def run_comprehensive_sweep(
         "total_configurations": total_configs,
         "successful_configurations": len(successful),
         "all_results": all_results,
-        "top_10": successful[:10],
+        "top_10": successful[:DISPLAY_TOP_N_SMALL],
     }
     with open(summary_file, "w") as f:
         json.dump(summary, f, indent=2)
@@ -100,7 +101,7 @@ def main():
     parser.add_argument(
         "--model", default="meta-llama/Llama-3.2-1B-Instruct"
     )
-    parser.add_argument("--num-pairs", type=int, default=50)
+    parser.add_argument("--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
     parser.add_argument(
         "--max-layers", type=int, default=None,
         help="DEBUG ONLY - DO NOT USE IN PRODUCTION.",
@@ -111,7 +112,7 @@ def main():
     parser.add_argument("--limited", action="store_true")
     parser.add_argument("--contiguous", action="store_true")
     parser.add_argument("--exhaustive", action="store_true")
-    parser.add_argument("--max-combo-size", type=int, default=3)
+    parser.add_argument("--max-combo-size", type=int, default=GEO_MAX_LAYER_COMBO_SIZE)
     parser.add_argument(
         "--token-aggregation", default="final",
         choices=TOKEN_AGGREGATIONS,

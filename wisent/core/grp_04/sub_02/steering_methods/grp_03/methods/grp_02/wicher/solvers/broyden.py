@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
+from wisent.core.constants import NORM_EPS, SHERMAN_MORRISON_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY
 
 
 def _compute_residual(
@@ -45,8 +46,8 @@ def _compute_residual(
     F(z*) = 0 when z* is displaced by alpha*w from z_0 AND ||z*|| = ||z_0||.
     """
     displacement_gap = (z - z_0) - alpha * w
-    z_norm = z.norm().clamp(min=1e-8)
-    z0_norm = z_0.norm().clamp(min=1e-8)
+    z_norm = z.norm().clamp(min=NORM_EPS)
+    z0_norm = z_0.norm().clamp(min=NORM_EPS)
     norm_ratio = z_norm / z0_norm
     norm_penalty = lam * (norm_ratio - 1.0) * (z / z_norm)
     return displacement_gap + norm_penalty
@@ -65,7 +66,7 @@ def _sherman_morrison_update(
     """
     H_dr = H @ delta_r
     denom = delta_z @ H_dr
-    if denom.abs() < 1e-12:
+    if denom.abs() < SHERMAN_MORRISON_EPS:
         return H
     numerator = (delta_z - H_dr).unsqueeze(1) @ (delta_z @ H).unsqueeze(0)
     return H + numerator / denom
@@ -76,11 +77,11 @@ def wicher_broyden_step(
     concept_dir: torch.Tensor,
     concept_basis: torch.Tensor,
     component_variances: torch.Tensor,
-    num_steps: int = 3,
-    alpha: float = 5e-3,
-    eta: float = 0.5,
-    beta: float = 0.0,
-    alpha_decay: float = 1.0,
+    num_steps: int = BROYDEN_DEFAULT_NUM_STEPS,
+    alpha: float = BROYDEN_DEFAULT_ALPHA,
+    eta: float = BROYDEN_DEFAULT_ETA,
+    beta: float = BROYDEN_DEFAULT_BETA,
+    alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY,
 ) -> torch.Tensor:
     """
     Iterative subspace-projected Broyden steering.
@@ -114,9 +115,7 @@ def wicher_broyden_step(
 
     w = concept_basis @ concept_dir
 
-    eps = component_variances.sum().clamp(min=1e-8)
-    H_diag = component_variances / eps
-    H_init = torch.diag(H_diag)
+    H_init = torch.eye(k, device=device, dtype=torch.float32)
 
     lam = float(k)
 
@@ -142,7 +141,7 @@ def wicher_broyden_step(
 
             delta_z = z_new - z
             delta_r = r_new - r
-            if delta_r.norm() > 1e-12:
+            if delta_r.norm() > SHERMAN_MORRISON_EPS:
                 H = _sherman_morrison_update(H, delta_z, delta_r)
 
             v_prev = direction

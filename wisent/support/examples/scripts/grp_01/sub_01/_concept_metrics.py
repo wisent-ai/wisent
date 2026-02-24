@@ -13,6 +13,10 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     GeometryAnalysisConfig,
 )
 
+from wisent.core.constants import (
+    NORM_EPS, GEOMETRY_OPTIMIZATION_STEPS_SMALL,
+    CV_DEFAULT_N_FOLDS, KMEANS_N_INIT_SMALL, PAIR_GENERATORS_DEFAULT_N,
+)
 from wisent.examples.scripts._pair_generators_neutral import (
     ConceptMetrics,
     create_pairs_for_concept,
@@ -40,7 +44,7 @@ def compute_cosine_similarity(v1: torch.Tensor, v2: torch.Tensor) -> float:
 def compute_linear_probe_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_folds: int = 5,
+    n_folds: int = CV_DEFAULT_N_FOLDS,
 ) -> float:
     """Compute linear probe cross-validation accuracy."""
     try:
@@ -71,8 +75,8 @@ def compute_linear_probe_accuracy(
 def compute_knn_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    k: int = 3,
-    n_folds: int = 5,
+    k: int = KMEANS_N_INIT_SMALL,
+    n_folds: int = CV_DEFAULT_N_FOLDS,
 ) -> float:
     """Compute k-NN cross-validation accuracy."""
     try:
@@ -115,7 +119,7 @@ def compute_cohens_d(
     neg_mean, neg_std = neg_proj.mean(), neg_proj.std()
     
     pooled_std = ((pos_std**2 + neg_std**2) / 2).sqrt()
-    cohens_d = abs(pos_mean - neg_mean) / (pooled_std + 1e-8)
+    cohens_d = abs(pos_mean - neg_mean) / (pooled_std + NORM_EPS)
     
     return float(cohens_d)
 
@@ -126,7 +130,7 @@ def analyze_concept(
     concept_name: str,
     concept_data: Dict,
     layers_to_analyze: List[int],
-    n_pairs: int = 50,
+    n_pairs: int = PAIR_GENERATORS_DEFAULT_N,
     strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
 ) -> Tuple[Dict[int, ConceptMetrics], Dict[int, Tuple[torch.Tensor, torch.Tensor]]]:
     """Analyze a single concept across multiple layers."""
@@ -192,7 +196,7 @@ def analyze_concept(
         
         # Geometry analysis
         try:
-            config = GeometryAnalysisConfig(optimization_steps=30)
+            config = GeometryAnalysisConfig(optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_SMALL)
             geometry_result = detect_geometry_structure(pos_tensor, neg_tensor, config)
             best_structure = geometry_result.best_structure.value
             linear_score = geometry_result.all_scores.get("linear", type('', (), {'score': 0.0})()).score

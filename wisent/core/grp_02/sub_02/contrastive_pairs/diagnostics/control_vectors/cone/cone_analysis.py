@@ -7,6 +7,16 @@ from typing import Dict, Any, List
 
 import torch
 
+from wisent.core.constants import (
+    CONE_DIRECTIONS,
+    TECZA_OPTIMIZATION_STEPS,
+    TECZA_LEARNING_RATE,
+    GROM_MIN_COSINE_SIM,
+    TECZA_MAX_COSINE_SIM,
+    DIAG_NUM_COMPONENTS,
+    CONE_THRESHOLD,
+)
+
 from .cone_helpers import (
     compute_pca_directions,
     discover_cone_directions,
@@ -30,25 +40,25 @@ __all__ = [
 class ConeAnalysisConfig:
     """Configuration for cone structure analysis."""
 
-    num_directions: int = 5
+    num_directions: int = CONE_DIRECTIONS
     """Number of directions to discover in the cone."""
 
-    optimization_steps: int = 100
+    optimization_steps: int = TECZA_OPTIMIZATION_STEPS
     """Gradient steps for cone direction optimization."""
 
-    learning_rate: float = 0.01
+    learning_rate: float = TECZA_LEARNING_RATE
     """Learning rate for optimization."""
 
-    min_cosine_similarity: float = 0.2
+    min_cosine_similarity: float = GROM_MIN_COSINE_SIM
     """Minimum cosine similarity between cone directions."""
 
-    max_cosine_similarity: float = 0.95
+    max_cosine_similarity: float = TECZA_MAX_COSINE_SIM
     """Maximum cosine similarity (avoid redundant directions)."""
 
-    pca_components: int = 5
+    pca_components: int = DIAG_NUM_COMPONENTS
     """Number of PCA components to compare against."""
 
-    cone_threshold: float = 0.7
+    cone_threshold: float = CONE_THRESHOLD
     """Threshold for cone_score to declare cone structure exists."""
 
 

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from wisent.examples.scripts.generate_paper_data_helpers import (
-    S3_BUCKET,
+    GCS_BUCKET,
     download_all_results,
     load_model_results,
     compute_diagnosis,
@@ -162,7 +162,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     
     # Download results
-    print("\n1. Downloading results from S3...")
+    print("\n1. Downloading results from GCS...")
     results_dir = output_dir / "results"
     models = download_all_results(results_dir)
     print(f"   Found {len(models)} models: {list(models.keys())}")
@@ -203,12 +203,12 @@ def main():
     print(f"   Saved: {output_dir / 'summary_statistics.md'}")
     print(summary)
     
-    # Upload to S3
-    print("\n7. Uploading to S3...")
+    # Upload to GCS
+    print("\n7. Uploading to GCS...")
     for f in output_dir.glob("*"):
         if f.is_file():
             subprocess.run(
-                ["aws", "s3", "cp", str(f), f"s3://{S3_BUCKET}/paper_data/{f.name}", "--quiet"],
+                ["gcloud", "storage", "cp", str(f), f"gs://{GCS_BUCKET}/paper_data/{f.name}", "--quiet"],
                 check=False,
             )
     

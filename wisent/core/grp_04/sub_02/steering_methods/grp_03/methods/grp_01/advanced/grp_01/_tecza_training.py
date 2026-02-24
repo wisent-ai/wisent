@@ -5,6 +5,7 @@ import torch
 import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.steering_methods.methods.advanced._tecza_types import TECZAConfig
+from wisent.core.constants import NORM_EPS, TECZA_SEPARATION_MARGIN, TECZA_PERTURBATION_SCALE, TECZA_UNIVERSAL_BASIS_NOISE, TECZA_LOGGING_INTERVAL
 
 class TECZATrainingMixin:
     """Mixin: direction training, initialization, and loss."""
@@ -77,7 +78,7 @@ class TECZATrainingMixin:
                 best_directions = directions.detach().clone()
             
             # Log
-            if step % 10 == 0 or step == self.config.optimization_steps - 1:
+            if step % TECZA_LOGGING_INTERVAL == 0 or step == self.config.optimization_steps - 1:
                 self._training_logs.append({
                     "layer": layer_name,
                     "step": step,
@@ -118,7 +119,7 @@ class TECZATrainingMixin:
                 directions = initialize_from_universal_basis(
                     hidden_dim=hidden_dim,
                     num_directions=num_dirs,
-                    noise_scale=0.1,
+                    noise_scale=TECZA_UNIVERSAL_BASIS_NOISE,
                 )
                 return directions
             except Exception:
@@ -135,7 +136,7 @@ class TECZATrainingMixin:
             
             # Initialize others as perturbations of CAA direction
             for i in range(1, num_dirs):
-                noise = torch.randn(hidden_dim, device=device) * 0.3
+                noise = torch.randn(hidden_dim, device=device) * TECZA_PERTURBATION_SCALE
                 perturbed = caa_dir + noise
                 directions[i] = F.normalize(perturbed, p=2, dim=0)
         else:
@@ -171,7 +172,7 @@ class TECZATrainingMixin:
         
         # We want: pos_proj > neg_proj (positive examples project higher)
         # Loss: max(0, margin - (pos_mean - neg_mean))
-        margin = 1.0
+        margin = TECZA_SEPARATION_MARGIN
         pos_mean = pos_proj.mean(dim=0)  # [K]
         neg_mean = neg_proj.mean(dim=0)  # [K]
         separation = pos_mean - neg_mean
@@ -192,7 +193,7 @@ class TECZATrainingMixin:
             
             # Correlation matrix of effects
             effects_centered = effects - effects.mean(dim=0, keepdim=True)
-            effects_std = effects_centered.std(dim=0, keepdim=True) + 1e-8
+            effects_std = effects_centered.std(dim=0, keepdim=True) + NORM_EPS
             effects_norm = effects_centered / effects_std
             corr_matrix = (effects_norm.T @ effects_norm) / effects_norm.shape[0]
             
@@ -214,7 +215,7 @@ class TECZATrainingMixin:
             # Penalize if too dissimilar (< min) or too similar (> max)
             too_dissimilar = F.relu(self.config.min_cosine_similarity - off_diag)
             too_similar = F.relu(off_diag - self.config.max_cosine_similarity)
-            similarity_loss = (too_dissimilar + too_similar).sum() / (K * (K - 1) + 1e-8)
+            similarity_loss = (too_dissimilar + too_similar).sum() / (K * (K - 1) + NORM_EPS)
             loss_components["similarity"] = similarity_loss
         else:
             similarity_loss = torch.tensor(0.0)
@@ -232,7 +233,7 @@ class TECZATrainingMixin:
             ablation_effect += proj_scalar * dirs_normalized[i:i+1]
         
         # Retain loss: how much the negative examples change
-        retain_loss = (ablation_effect.norm(dim=1) / (neg_norms.squeeze() + 1e-8)).mean()
+        retain_loss = (ablation_effect.norm(dim=1) / (neg_norms.squeeze() + NORM_EPS)).mean()
         loss_components["retain"] = retain_loss
         
         # Combine losses

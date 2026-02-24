@@ -14,6 +14,7 @@ from wisent.core.evaluators.benchmark_specific.livemathbench_evaluator import (
 )
 
 # Re-export tests from consistency module
+from wisent.core.constants import ZERO_THRESHOLD
 from wisent.tests.test_evaluator._livemathbench_consistency import (
     TestGPassAtKConsistencyWithPaper,
     TestLiveMathBenchEvaluatorMetadata,
@@ -26,7 +27,7 @@ class TestGPassAtKInternal:
     def test_compute_g_pass_at_k_basic(self):
         result = _compute_g_pass_at_k(n=10, c=5, k=4, m=2)
         expected = hypergeom.sf(1, 10, 5, 4)
-        assert abs(result - expected) < 1e-10
+        assert abs(result - expected) < ZERO_THRESHOLD
 
     def test_compute_g_pass_at_k_edge_m_greater_than_c(self):
         result = _compute_g_pass_at_k(n=10, c=3, k=5, m=4)
@@ -42,7 +43,7 @@ class TestGPassAtKInternal:
 
     def test_compute_g_pass_at_k_all_correct(self):
         result = _compute_g_pass_at_k(n=10, c=10, k=5, m=3)
-        assert abs(result - 1.0) < 1e-10
+        assert abs(result - 1.0) < ZERO_THRESHOLD
 
 
 class TestGPassAtKWithTau:
@@ -51,22 +52,22 @@ class TestGPassAtKWithTau:
     def test_g_pass_at_k_tau_zero(self):
         result = compute_g_pass_at_k(n=10, c=5, k=5, tau=0.0)
         expected = _compute_g_pass_at_k(n=10, c=5, k=5, m=1)
-        assert abs(result - expected) < 1e-10
+        assert abs(result - expected) < ZERO_THRESHOLD
 
     def test_g_pass_at_k_tau_one(self):
         result = compute_g_pass_at_k(n=10, c=5, k=5, tau=1.0)
         expected = _compute_g_pass_at_k(n=10, c=5, k=5, m=5)
-        assert abs(result - expected) < 1e-10
+        assert abs(result - expected) < ZERO_THRESHOLD
 
     def test_g_pass_at_k_tau_half(self):
         result = compute_g_pass_at_k(n=10, c=5, k=4, tau=0.5)
         expected = _compute_g_pass_at_k(n=10, c=5, k=4, m=2)
-        assert abs(result - expected) < 1e-10
+        assert abs(result - expected) < ZERO_THRESHOLD
 
     def test_g_pass_at_k_minimum_one(self):
         result = compute_g_pass_at_k(n=10, c=5, k=4, tau=0.1)
         expected = _compute_g_pass_at_k(n=10, c=5, k=4, m=1)
-        assert abs(result - expected) < 1e-10
+        assert abs(result - expected) < ZERO_THRESHOLD
 
 
 class TestMGPassAtK:
@@ -81,7 +82,7 @@ class TestMGPassAtK:
         for i in range(low + 1, high + 1):
             expected += _compute_g_pass_at_k(n, c, k, i)
         expected = 2 * expected / k
-        assert abs(result - expected) < 1e-10
+        assert abs(result - expected) < ZERO_THRESHOLD
 
     def test_mg_pass_at_k_all_correct(self):
         result = compute_mg_pass_at_k(n=10, c=10, k=4)
@@ -127,13 +128,13 @@ class TestComputeAllMetrics:
         correct_counts = [5, 5]
         metrics = compute_all_metrics(correct_counts, total_samples=10, k_values=[4], tau_values=[0.5])
         single_metric = compute_metrics_for_problem(n=10, c=5, k_values=[4], tau_values=[0.5])
-        assert abs(metrics["G-Pass@4_0.5"] - single_metric["G-Pass@4_0.5"]) < 1e-10
+        assert abs(metrics["G-Pass@4_0.5"] - single_metric["G-Pass@4_0.5"]) < ZERO_THRESHOLD
 
     def test_compute_all_metrics_all_perfect(self):
         correct_counts = [10, 10, 10]
         metrics = compute_all_metrics(correct_counts, total_samples=10, k_values=[4])
-        assert abs(metrics["G-Pass@4_0.0"] - 1.0) < 1e-10
-        assert abs(metrics["mG-Pass@4"] - 1.0) < 1e-10
+        assert abs(metrics["G-Pass@4_0.0"] - 1.0) < ZERO_THRESHOLD
+        assert abs(metrics["mG-Pass@4"] - 1.0) < ZERO_THRESHOLD
 
 
 class TestLiveMathBenchEvaluator:

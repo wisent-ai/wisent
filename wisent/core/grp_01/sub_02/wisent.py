@@ -13,6 +13,7 @@ import logging
 import torch
 
 from wisent.core.adapters.base import BaseAdapter, SteeringConfig, AdapterError
+from wisent.core.constants import DEFAULT_SCALE
 from wisent.core.adapters.text import TextAdapter
 from wisent.core.adapters import AudioAdapter
 from wisent.core.adapters import VideoAdapter
@@ -64,7 +65,7 @@ class TraitConfig:
     name: str
     description: str = ""
     steering_vectors: LayerActivations | None = None
-    default_scale: float = 1.0
+    default_scale: float = DEFAULT_SCALE
     layers: List[str] | None = None
 
 

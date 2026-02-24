@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from typing import Dict
 
+from wisent.core.constants import ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED
+
 from ...analysis.intrinsic_dim import (
     participation_ratio,
     effective_rank,
@@ -18,8 +20,8 @@ from ...analysis.intrinsic_dim import (
 def compute_null_effective_dimensions(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = 10,
-    random_state: int = 42,
+    n_bootstrap: int = N_BOOTSTRAP,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """
     Compute effective dimensions for random (null) difference vectors.
@@ -51,8 +53,8 @@ def compute_null_effective_dimensions(
 def compute_effective_dimensions_vs_null(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_bootstrap: int = 10,
-    random_state: int = 42,
+    n_bootstrap: int = N_BOOTSTRAP,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, any]:
     """
     Compute effective dimensions with comparison to null baseline.
@@ -73,7 +75,7 @@ def compute_effective_dimensions_vs_null(
     null = compute_null_effective_dimensions(n_samples, n_dims, n_bootstrap, random_state)
 
     def z_score(real_val, null_mean, null_std):
-        if null_std < 1e-10:
+        if null_std < ZERO_THRESHOLD:
             return 0.0
         return (real_val - null_mean) / null_std
 

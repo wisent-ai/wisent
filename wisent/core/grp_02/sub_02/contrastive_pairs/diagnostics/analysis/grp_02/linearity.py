@@ -9,6 +9,15 @@ from enum import Enum
 import torch
 
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import (
+    CHECK_LINEARITY_LINEAR_THRESHOLD,
+    CHECK_LINEARITY_WEAK_THRESHOLD,
+    CHECK_LINEARITY_MIN_COHENS_D,
+    CHECK_LINEARITY_DEFAULT_MAX_PAIRS,
+    CHECK_LINEARITY_OPT_STEPS,
+    LINEARITY_LAYER_SAMPLING_DIVISOR,
+    GEOMETRY_DEFAULT_NUM_COMPONENTS,
+)
 
 
 class LinearityVerdict(Enum):
@@ -22,13 +31,13 @@ class LinearityVerdict(Enum):
 class LinearityConfig:
     """Configuration for linearity check."""
     
-    linear_threshold: float = 0.7
+    linear_threshold: float = CHECK_LINEARITY_LINEAR_THRESHOLD
     """Linear score threshold to declare LINEAR."""
-    
-    weak_threshold: float = 0.5
+
+    weak_threshold: float = CHECK_LINEARITY_WEAK_THRESHOLD
     """Linear score threshold to declare WEAKLY_LINEAR."""
-    
-    min_cohens_d: float = 1.0
+
+    min_cohens_d: float = CHECK_LINEARITY_MIN_COHENS_D
     """Minimum Cohen's d for meaningful separation."""
     
     layers_to_test: Optional[List[int]] = None
@@ -40,10 +49,10 @@ class LinearityConfig:
     normalize_options: List[bool] = field(default_factory=lambda: [False, True])
     """Normalization options to test."""
     
-    max_pairs: int = 50
+    max_pairs: int = CHECK_LINEARITY_DEFAULT_MAX_PAIRS
     """Maximum number of pairs to use for analysis."""
-    
-    geometry_optimization_steps: int = 50
+
+    geometry_optimization_steps: int = CHECK_LINEARITY_OPT_STEPS
     """Steps for geometry detection optimization."""
 
 
@@ -114,13 +123,9 @@ def check_linearity(
     
     # Determine layers to test
     if cfg.layers_to_test is None:
-        layers_to_test = [
-            int(num_layers * 0.25),
-            int(num_layers * 0.5),
-            int(num_layers * 0.75),
-            num_layers - 1,
-        ]
-        layers_to_test = sorted(set(layers_to_test))
+        layers_to_test = sorted(set(
+            list(range(0, num_layers, max(1, num_layers // LINEARITY_LAYER_SAMPLING_DIVISOR))) + [num_layers - 1]
+        ))
     else:
         layers_to_test = cfg.layers_to_test
     
@@ -138,7 +143,7 @@ def check_linearity(
     test_pairs = pairs[:cfg.max_pairs]
     
     geo_config = GeometryAnalysisConfig(
-        num_components=5,
+        num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS,
         optimization_steps=cfg.geometry_optimization_steps,
     )
     

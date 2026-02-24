@@ -15,6 +15,7 @@ import torch.nn.functional as F
 
 from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import EARLY_STOP_TOL, MLP_HIDDEN_DIM, MLP_NUM_LAYERS, MLP_DROPOUT, MLP_OPTIMIZATION_STEPS, MLP_LEARNING_RATE, MLP_WEIGHT_DECAY, MLP_EARLY_STOPPING_PATIENCE, MLP_INPUT_DIVISOR, GATING_HIDDEN_DIM_DIVISOR
 
 __all__ = ["MLPMethod"]
 
@@ -22,14 +23,14 @@ __all__ = ["MLPMethod"]
 class MLPClassifier(nn.Module):
     """Simple MLP for classifying activations."""
     
-    def __init__(self, input_dim: int, hidden_dim: int = 256, num_layers: int = 2, dropout: float = 0.1):
+    def __init__(self, input_dim: int, hidden_dim: int = MLP_HIDDEN_DIM, num_layers: int = MLP_NUM_LAYERS, dropout: float = MLP_DROPOUT):
         super().__init__()
         
         layers = []
         current_dim = input_dim
         
         for i in range(num_layers):
-            next_dim = hidden_dim if i < num_layers - 1 else hidden_dim // 2
+            next_dim = hidden_dim if i < num_layers - 1 else hidden_dim // GATING_HIDDEN_DIM_DIVISOR
             layers.extend([
                 nn.Linear(current_dim, next_dim),
                 nn.LayerNorm(next_dim),
@@ -91,12 +92,12 @@ class MLPMethod(PerLayerBaseSteeringMethod):
         X, y = X[perm], y[perm]
         
         # Get hyperparameters
-        mlp_hidden = int(self.kwargs.get("hidden_dim", min(256, hidden_dim // 4)))
-        mlp_layers = int(self.kwargs.get("num_layers", 2))
-        dropout = float(self.kwargs.get("dropout", 0.1))
-        epochs = int(self.kwargs.get("epochs", 100))
-        lr = float(self.kwargs.get("learning_rate", 0.001))
-        weight_decay = float(self.kwargs.get("weight_decay", 0.01))
+        mlp_hidden = int(self.kwargs.get("hidden_dim", min(MLP_HIDDEN_DIM, hidden_dim // MLP_INPUT_DIVISOR)))
+        mlp_layers = int(self.kwargs.get("num_layers", MLP_NUM_LAYERS))
+        dropout = float(self.kwargs.get("dropout", MLP_DROPOUT))
+        epochs = int(self.kwargs.get("epochs", MLP_OPTIMIZATION_STEPS))
+        lr = float(self.kwargs.get("learning_rate", MLP_LEARNING_RATE))
+        weight_decay = float(self.kwargs.get("weight_decay", MLP_WEIGHT_DECAY))
         
         # Initialize MLP
         mlp = MLPClassifier(
@@ -113,7 +114,7 @@ class MLPMethod(PerLayerBaseSteeringMethod):
         mlp.train()
         best_loss = float('inf')
         patience_counter = 0
-        patience = 20
+        patience = MLP_EARLY_STOPPING_PATIENCE
         
         for epoch in range(epochs):
             optimizer.zero_grad()
@@ -124,7 +125,7 @@ class MLPMethod(PerLayerBaseSteeringMethod):
             scheduler.step()
             
             # Early stopping
-            if loss.item() < best_loss - 1e-4:
+            if loss.item() < best_loss - EARLY_STOP_TOL:
                 best_loss = loss.item()
                 patience_counter = 0
             else:

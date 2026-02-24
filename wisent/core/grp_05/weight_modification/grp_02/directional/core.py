@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import InvalidValueError
+from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, WM_TOLERANCE, DEFAULT_LAYER_WEIGHT
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -45,7 +46,7 @@ def compute_projection_kernel(
             v = F.normalize(steering_vector.float(), p=2, dim=0)
         else:
             v = steering_vector.float()
-        weight = 1.0 if layer_weights is None else layer_weights.get(layer_idx, 1.0)
+        weight = DEFAULT_LAYER_WEIGHT if layer_weights is None else layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT)
         kernel[layer_idx] = (v, weight)
         log.debug("Computed projection kernel", extra={"layer": layer_idx, "weight": weight, "vector_norm": v.norm().item(), "biprojected": harmless_vector is not None})
     return kernel
@@ -55,7 +56,7 @@ def project_with_kernel(
     model,
     kernel: dict[int, tuple[Tensor, float]],
     components: list[str] | None = None,
-    strength: float = 1.0,
+    strength: float = DEFAULT_STRENGTH,
     preserve_norms: bool = True,
     verbose: bool = True,
 ) -> dict[str, int]:
@@ -67,7 +68,7 @@ def project_with_kernel(
     stats = {"total_projections": 0, "layers_modified": 0}
     for layer_idx, (steering_direction, layer_weight) in kernel.items():
         combined_strength = strength * layer_weight
-        if abs(combined_strength) < 1e-8:
+        if abs(combined_strength) < NORM_EPS:
             continue
         layer_modified = False
         for component_name in components:
@@ -93,13 +94,13 @@ def project_with_kernel(
     return stats
 
 
-def verify_weight_modification_preservation(original_norms: dict, modified_norms: dict, tolerance: float = 0.01) -> tuple[bool, dict]:
+def verify_weight_modification_preservation(original_norms: dict, modified_norms: dict, tolerance: float = WM_TOLERANCE) -> tuple[bool, dict]:
     """Verify weight modification preserved norms within tolerance."""
     results = {"preserved": True, "max_deviation": 0.0, "violations": []}
     for key in original_norms:
         if key not in modified_norms:
             continue
-        deviation = abs(modified_norms[key] - original_norms[key]) / (original_norms[key] + 1e-8)
+        deviation = abs(modified_norms[key] - original_norms[key]) / (original_norms[key] + NORM_EPS)
         results["max_deviation"] = max(results["max_deviation"], deviation)
         if deviation > tolerance:
             results["preserved"] = False

@@ -16,6 +16,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
+from wisent.core.constants import NORM_EPS, CV_FOLDS, DIAGNOSTIC_MLP_HIDDEN_SIZES
 
 
 def compute_pairwise_consistency(directions: torch.Tensor) -> Tuple[float, float]:
@@ -28,7 +29,7 @@ def compute_pairwise_consistency(directions: torch.Tensor) -> Tuple[float, float
     Returns:
         Tuple of (mean_consistency, std_consistency)
     """
-    dirs_norm = directions / (torch.norm(directions, dim=1, keepdim=True) + 1e-8)
+    dirs_norm = directions / (torch.norm(directions, dim=1, keepdim=True) + NORM_EPS)
     pairwise = (dirs_norm @ dirs_norm.T)
     mask = torch.triu(torch.ones_like(pairwise), diagonal=1).bool()
     vals = pairwise[mask]
@@ -38,7 +39,7 @@ def compute_pairwise_consistency(directions: torch.Tensor) -> Tuple[float, float
 def compute_linear_nonlinear_accuracy(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    cv_folds: int = 5
+    cv_folds: int = CV_FOLDS
 ) -> Tuple[float, float]:
     """
     Compute linear and nonlinear classification accuracy.
@@ -57,7 +58,7 @@ def compute_linear_nonlinear_accuracy(
     linear = make_pipeline(StandardScaler(), LogisticRegression(solver="lbfgs"))
     linear_scores = cross_val_score(linear, X, y, cv=cv_folds, scoring="accuracy")
 
-    mlp = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=(64,), early_stopping=True))
+    mlp = make_pipeline(StandardScaler(), MLPClassifier(hidden_layer_sizes=DIAGNOSTIC_MLP_HIDDEN_SIZES, early_stopping=True))
     mlp_scores = cross_val_score(mlp, X, y, cv=cv_folds, scoring="accuracy")
 
     return linear_scores.mean(), mlp_scores.mean()
@@ -85,7 +86,7 @@ def analyze_mc_confound(
 
     # Compute mean (B-A) direction
     ab_direction = corrected.mean(dim=0)
-    ab_direction = ab_direction / (torch.norm(ab_direction) + 1e-8)
+    ab_direction = ab_direction / (torch.norm(ab_direction) + NORM_EPS)
 
     # Project out A/B component to get semantic-only directions
     semantic_directions = []
@@ -93,7 +94,7 @@ def analyze_mc_confound(
     for d in directions:
         ab_component = (d @ ab_direction).item() ** 2
         total_var = (d @ d).item()
-        ab_variances.append(ab_component / (total_var + 1e-8))
+        ab_variances.append(ab_component / (total_var + NORM_EPS))
         d_semantic = d - (d @ ab_direction) * ab_direction
         semantic_directions.append(d_semantic)
 
@@ -118,7 +119,7 @@ def compute_steering_quality(directions: torch.Tensor) -> Tuple[float, float]:
         Tuple of (steering_accuracy, mean_effect_size)
     """
     mean_dir = directions.mean(dim=0)
-    mean_dir_norm = mean_dir / (torch.norm(mean_dir) + 1e-8)
+    mean_dir_norm = mean_dir / (torch.norm(mean_dir) + NORM_EPS)
 
     projections = (directions @ mean_dir_norm).numpy()
     accuracy = (projections > 0).mean()

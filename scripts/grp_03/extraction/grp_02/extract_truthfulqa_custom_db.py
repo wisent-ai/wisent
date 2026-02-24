@@ -20,6 +20,8 @@ import time
 import torch
 import psycopg2
 
+from wisent.core.constants import MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL
+
 from extract_truthfulqa_custom_db_helpers import (
     get_conn,
     reset_conn,
@@ -116,7 +118,7 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
 
     # Forward pass helper (defined once, not per-pair)
     def get_hidden_states(text):
-        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048, add_special_tokens=False)
+        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH, add_special_tokens=False)
         enc = {k: v.to(device) for k, v in enc.items()}
         with torch.inference_mode():
             out = model(**enc, output_hidden_states=True, use_cache=False)
@@ -139,7 +141,7 @@ def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", dev
             # OPTIMIZATION: Skip if pair is fully extracted
             if check_pair_fully_extracted(model_id, pair_id, num_layers, format_names):
                 skipped += 1
-                if skipped % 50 == 0:
+                if skipped % PROGRESS_LOG_INTERVAL == 0:
                     print(f"    [skipped {skipped} already-extracted pairs]", flush=True)
                 continue
 

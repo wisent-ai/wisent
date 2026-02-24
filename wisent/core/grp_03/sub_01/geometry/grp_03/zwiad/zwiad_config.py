@@ -2,6 +2,17 @@
 from dataclasses import dataclass
 from typing import List, Optional
 import numpy as np
+from wisent.core.constants import (
+    ZWIAD_GAP_K,
+    ZWIAD_GAP_MIN,
+    ZWIAD_GAP_MAX,
+    ZWIAD_SIL_BASE,
+    ZWIAD_SIL_SLOPE,
+    ZWIAD_SIL_SCALE_SAMPLES,
+    ZWIAD_SIL_MAX,
+    DEFAULT_SCALE,
+    STAT_ALPHA,
+)
 
 
 def adaptive_gap_threshold(n_samples: int) -> float:
@@ -11,8 +22,8 @@ def adaptive_gap_threshold(n_samples: int) -> float:
     require a smaller gap to declare nonlinearity meaningful.
     Based on: threshold = k / sqrt(n_samples) where k controls sensitivity.
     """
-    threshold = 0.5 / np.sqrt(n_samples)
-    return max(0.02, min(threshold, 0.1))
+    threshold = ZWIAD_GAP_K / np.sqrt(n_samples)
+    return max(ZWIAD_GAP_MIN, min(threshold, ZWIAD_GAP_MAX))
 
 
 def adaptive_min_silhouette(n_samples: int) -> float:
@@ -21,15 +32,15 @@ def adaptive_min_silhouette(n_samples: int) -> float:
     With more samples, silhouette scores are more reliable, so we can
     require higher scores to declare fragmentation.
     """
-    base = 0.05 + 0.1 * min(1.0, n_samples / 500)
-    return max(0.05, min(base, 0.2))
+    base = ZWIAD_SIL_BASE + ZWIAD_SIL_SLOPE * min(DEFAULT_SCALE, n_samples / ZWIAD_SIL_SCALE_SAMPLES)
+    return max(ZWIAD_SIL_BASE, min(base, ZWIAD_SIL_MAX))
 
 
 @dataclass
 class ZwiadProtocolConfig:
     """Configuration for Zwiad protocol."""
     signal_keys: List[str] = None
-    p_threshold: float = 0.05
+    p_threshold: float = STAT_ALPHA
     gap_threshold: Optional[float] = None
     min_silhouette: Optional[float] = None
 

@@ -4,6 +4,10 @@ from __future__ import annotations
 from typing import Any
 
 from wisent.core.evaluators.core.atoms import EvalResult
+from wisent.core.constants import (
+    EVAL_WEIGHT_EMBEDDING, EVAL_WEIGHT_NLI, EVAL_MIN_MARGIN,
+    EVAL_CONFIDENCE_CEILING, EVAL_CONFIDENCE_BASELINE,
+)
 
 __all__ = ["GenerationEvaluatorHelpersMixin"]
 
@@ -56,8 +60,8 @@ class GenerationEvaluatorHelpersMixin:
                 nli_incorrect = nli
 
         # Combine scores (weighted average)
-        score_correct = 0.4 * max_correct_sim + 0.6 * nli_correct
-        score_incorrect = 0.4 * max_incorrect_sim + 0.6 * nli_incorrect
+        score_correct = EVAL_WEIGHT_EMBEDDING * max_correct_sim + EVAL_WEIGHT_NLI * nli_correct
+        score_incorrect = EVAL_WEIGHT_EMBEDDING * max_incorrect_sim + EVAL_WEIGHT_NLI * nli_incorrect
 
         margin = score_correct - score_incorrect
 
@@ -73,11 +77,8 @@ class GenerationEvaluatorHelpersMixin:
             "best_incorrect_match": best_incorrect,
         }
 
-        # Require minimum margin for confident decision
-        MIN_MARGIN = 0.05
-
-        if margin > MIN_MARGIN:
-            confidence = min(0.95, 0.6 + margin)
+        if margin > EVAL_MIN_MARGIN:
+            confidence = min(EVAL_CONFIDENCE_CEILING, EVAL_CONFIDENCE_BASELINE + margin)
             return EvalResult(
                 ground_truth="TRUTHFUL",
                 method_used=self.name,
@@ -85,8 +86,8 @@ class GenerationEvaluatorHelpersMixin:
                 details=f"Response closer to truthful (margin={margin:.3f})",
                 meta=meta,
             )
-        elif margin < -MIN_MARGIN:
-            confidence = min(0.95, 0.6 + abs(margin))
+        elif margin < -EVAL_MIN_MARGIN:
+            confidence = min(EVAL_CONFIDENCE_CEILING, EVAL_CONFIDENCE_BASELINE + abs(margin))
             return EvalResult(
                 ground_truth="UNTRUTHFUL",
                 method_used=self.name,

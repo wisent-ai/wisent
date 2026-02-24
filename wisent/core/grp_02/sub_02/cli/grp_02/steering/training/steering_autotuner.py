@@ -6,6 +6,8 @@ import torch
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
 from datetime import datetime
+from wisent.core import constants as _C
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL, AUTOTUNER_STRENGTHS, AUTOTUNER_PROGRESS_INTERVAL
 
 from wisent.core.cli.steering_checkpoint import (
     SteeringConfig, AutotuneCheckpoint, log_config_result, setup_checkpoint_paths
@@ -22,7 +24,7 @@ def evaluate_steering_config(
     steering_method_name: str,
     pos_by_layer: Dict,
     neg_by_layer: Dict,
-    max_new_tokens: int = 100,
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL,
 ) -> int:
     """Evaluate a steering config on test set, return number of truthful responses."""
     from wisent.core.cli.steering_behavioral import extract_response
@@ -74,15 +76,15 @@ def evaluate_steering_config(
 def search_optimal_steering_config(
     adapter, train_ids: List, val_ids: List, pair_texts: Dict, evaluator,
     pos_by_layer: Dict, neg_by_layer: Dict, layer_accuracies: Dict[int, float],
-    steering_vectors: Dict[str, torch.Tensor], max_new_tokens: int = 100,
+    steering_vectors: Dict[str, torch.Tensor], max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL,
     checkpoint_dir: str = "./autotune_checkpoints", log_file: str = None,
 ) -> SteeringConfig:
     """Search for optimal steering parameters with checkpointing and resume capability."""
     checkpoint_file, log_file_path = setup_checkpoint_paths(checkpoint_dir, log_file)
 
     acc_values = sorted(layer_accuracies.values())
-    acc_thresholds = [0.0] + [acc - 0.01 for acc in acc_values if acc > 0.5]
-    strength_candidates = [0.5, 1.0, 1.5, 2.0, 3.0, 5.0]
+    acc_thresholds = [0.0] + [acc - _C.AUTOTUNER_ACCURACY_DECREMENT for acc in acc_values if acc > _C.AUTOTUNER_ACCURACY_FILTER]
+    strength_candidates = list(AUTOTUNER_STRENGTHS)
     method_candidates = ["linear", "clamping", "contrast"]
     total_combos = len(acc_thresholds) * len(strength_candidates) * len(method_candidates)
 
@@ -145,7 +147,7 @@ def search_optimal_steering_config(
             active_layers = sum(1 for s in layer_strengths.values() if s > 0)
             print(f"    [{combo_idx+1}/{total_combos}] New best: {score}/{len(val_ids)} "
                   f"(thresh={acc_threshold:.2f}, str={base_strength}, method={method}, layers={active_layers})")
-        elif (combo_idx + 1) % 10 == 0:
+        elif (combo_idx + 1) % AUTOTUNER_PROGRESS_INTERVAL == 0:
             print(f"    [{combo_idx+1}/{total_combos}] Progress... best so far: {best_score}/{len(val_ids)}")
 
         ckpt = AutotuneCheckpoint(

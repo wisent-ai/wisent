@@ -11,6 +11,7 @@ from transformers import AutoModelForCausalLM, AutoTokenizer
 from wisent.core.evaluators.custom.examples.humanization_coherent import HumanizationCoherentEvaluator
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.constants import MAX_NEW_TOKENS_GENERATION
 
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "/home/ubuntu/output")
 
@@ -86,7 +87,7 @@ def objective(trial):
     for prompt in eval_prompts:
         messages = [{"role": "user", "content": prompt}]
         result = wisent_model.generate(
-            [messages], **get_generate_kwargs(max_new_tokens=150)
+            [messages], **get_generate_kwargs(max_new_tokens=MAX_NEW_TOKENS_GENERATION)
         )
         response = result[0] if result else ""
 

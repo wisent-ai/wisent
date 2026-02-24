@@ -18,6 +18,8 @@ import numpy as np
 from typing import List
 from scipy.stats import hypergeom
 
+from wisent.core.constants import LIVEMATHBENCH_K_VALUES
+
 # Re-export evaluator class and constants from helpers
 from wisent.core.evaluators.benchmark_specific.math._helpers.livemathbench_helpers import (
     LiveMathBenchEvaluator,
@@ -95,7 +97,7 @@ def compute_mg_pass_at_k(n: int, c: int, k: int) -> float:
 def compute_metrics_for_problem(
     n: int,
     c: int,
-    k_values: List[int] = [4, 8, 16],
+    k_values: List[int] = list(LIVEMATHBENCH_K_VALUES),
     tau_values: List[float] = [0.0, 0.25, 0.5, 0.75, 1.0],
 ) -> dict[str, float]:
     """Compute G-Pass@k metrics for a single problem.
@@ -126,7 +128,7 @@ def compute_metrics_for_problem(
 def compute_all_metrics(
     correct_counts: List[int],
     total_samples: int,
-    k_values: List[int] = [4, 8, 16],
+    k_values: List[int] = list(LIVEMATHBENCH_K_VALUES),
     tau_values: List[float] = [0.0, 0.25, 0.5, 0.75, 1.0],
 ) -> dict[str, float]:
     """Compute all G-Pass@k metrics aggregated over a set of problems.

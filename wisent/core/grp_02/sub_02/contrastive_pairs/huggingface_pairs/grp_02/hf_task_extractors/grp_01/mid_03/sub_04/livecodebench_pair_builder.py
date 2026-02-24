@@ -1,6 +1,7 @@
 """LiveCodeBench pair creation and test code builders."""
 from __future__ import annotations
 
+from wisent.core import constants as _C
 from wisent.core.cli.cli_logger import setup_logger
 from typing import Any
 
@@ -175,7 +176,7 @@ def test_stdin():
             input=input_data,
             capture_output=True,
             text=True,
-            timeout=5
+            timeout=TIMEOUT_VAL
         )
 
         actual_output = proc.stdout.strip()
@@ -192,7 +193,7 @@ def test_stdin():
 
 if __name__ == '__main__':
     test_stdin()
-"""
+""".replace("TIMEOUT_VAL", str(_C.DEFAULT_TIMEOUT_QUICK))
 
     return test_code
 

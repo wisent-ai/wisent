@@ -4,6 +4,8 @@ import sys
 import json
 import os
 
+from wisent.core.constants import PAIR_MIN_TEXT_LENGTH, DISPLAY_TRUNCATION_MEDIUM
+
 
 def execute_diagnose_pairs(args):
     """Execute the diagnose-pairs command - analyze existing contrastive pairs."""
@@ -89,9 +91,9 @@ def execute_diagnose_pairs(args):
             print(f"     Avg: {sum(negative_lengths)/len(negative_lengths):.1f} chars")
 
             # Quality warnings
-            short_prompts = sum(1 for l in prompt_lengths if l < 10)
-            short_positives = sum(1 for l in positive_lengths if l < 10)
-            short_negatives = sum(1 for l in negative_lengths if l < 10)
+            short_prompts = sum(1 for l in prompt_lengths if l < PAIR_MIN_TEXT_LENGTH)
+            short_positives = sum(1 for l in positive_lengths if l < PAIR_MIN_TEXT_LENGTH)
+            short_negatives = sum(1 for l in negative_lengths if l < PAIR_MIN_TEXT_LENGTH)
 
             if short_prompts > 0 or short_positives > 0 or short_negatives > 0:
                 print(f"\n⚠️  Quality Warnings:")
@@ -135,13 +137,13 @@ def execute_diagnose_pairs(args):
             print(f"\n📄 Sample Pair (first one):")
             sample = pairs_list[0]
             print(f"\n   Prompt:")
-            print(f"   {sample.get('prompt', 'N/A')[:200]}{'...' if len(sample.get('prompt', '')) > 200 else ''}")
+            print(f"   {sample.get('prompt', 'N/A')[:DISPLAY_TRUNCATION_MEDIUM]}{'...' if len(sample.get('prompt', '')) > DISPLAY_TRUNCATION_MEDIUM else ''}")
             print(f"\n   Positive Response:")
             pos_resp = sample.get('positive_response', {}).get('model_response', 'N/A')
-            print(f"   {pos_resp[:200]}{'...' if len(pos_resp) > 200 else ''}")
+            print(f"   {pos_resp[:DISPLAY_TRUNCATION_MEDIUM]}{'...' if len(pos_resp) > DISPLAY_TRUNCATION_MEDIUM else ''}")
             print(f"\n   Negative Response:")
             neg_resp = sample.get('negative_response', {}).get('model_response', 'N/A')
-            print(f"   {neg_resp[:200]}{'...' if len(neg_resp) > 200 else ''}")
+            print(f"   {neg_resp[:DISPLAY_TRUNCATION_MEDIUM]}{'...' if len(neg_resp) > DISPLAY_TRUNCATION_MEDIUM else ''}")
 
         print(f"\n✅ Diagnosis complete!\n")
 

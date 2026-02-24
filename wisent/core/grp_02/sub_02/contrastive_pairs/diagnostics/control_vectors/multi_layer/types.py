@@ -6,14 +6,15 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 
 from ..geometry import StructureType, GeometryAnalysisResult
+from wisent.core.constants import DIAG_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, DIAG_MAX_PAIR_COMBINATIONS
 
 
 @dataclass
 class MultiLayerGeometryConfig:
     """Configuration for multi-layer geometry analysis."""
 
-    num_components: int = 5
-    optimization_steps: int = 50
+    num_components: int = DIAG_NUM_COMPONENTS
+    optimization_steps: int = DIAG_OPTIMIZATION_STEPS
     combination_method: str = "concat"  # "concat", "mean", "weighted"
     analyze_per_layer: bool = True
     analyze_combined: bool = True
@@ -22,7 +23,7 @@ class MultiLayerGeometryConfig:
     analyze_adjacent: bool = True  # adjacent layer pairs
     analyze_skip: bool = True  # every other layer, every third, etc.
     analyze_custom: Optional[List[List[int]]] = None  # custom layer combinations
-    max_pair_combinations: int = 50  # limit number of pair combinations to analyze
+    max_pair_combinations: int = DIAG_MAX_PAIR_COMBINATIONS  # limit number of pair combinations to analyze
 
 
 @dataclass

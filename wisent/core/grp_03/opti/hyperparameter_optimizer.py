@@ -11,7 +11,7 @@ from .activations.activations_collector import ActivationCollector
 from .activations.extraction_strategy import ExtractionStrategy
 
 from wisent.core.errors import OptimizationError, NoActivationDataError, InsufficientDataError
-
+from wisent.core.constants import VAL_SPLIT, MAX_COMBINATIONS, DEFAULT_RANDOM_SEED, THRESHOLD_RANGE_DEFAULT, OPTIMIZER_AGGREGATION_METHODS, OPTIMIZER_TOKEN_TARGETING
 from wisent.core.opti._hyperparameter_evaluate import (
     HyperparameterEvaluateMixin,
     detect_model_layers,
@@ -29,7 +29,7 @@ class OptimizationConfig:
     layer_range: List[int] = None
 
     # Token aggregation methods to try
-    aggregation_methods: List[str] = field(default_factory=lambda: ["average", "final", "first", "max", "min"])
+    aggregation_methods: List[str] = field(default_factory=lambda: list(OPTIMIZER_AGGREGATION_METHODS))
 
     # Prompt construction strategies to try
     prompt_construction_strategies: List[str] = field(default_factory=lambda: [
@@ -37,12 +37,10 @@ class OptimizationConfig:
     ])
 
     # Token targeting strategies to try
-    token_targeting_strategies: List[str] = field(default_factory=lambda: [
-        "choice_token", "continuation_token", "last_token", "first_token", "mean_pooling"
-    ])
+    token_targeting_strategies: List[str] = field(default_factory=lambda: list(OPTIMIZER_TOKEN_TARGETING))
 
     # Threshold range to search (for classification)
-    threshold_range: List[float] = field(default_factory=lambda: [0.3, 0.4, 0.5, 0.6, 0.7, 0.8])
+    threshold_range: List[float] = field(default_factory=lambda: list(THRESHOLD_RANGE_DEFAULT))
 
     # Classifier types to try
     classifier_types: List[str] = field(default_factory=lambda: ["logistic"])
@@ -54,13 +52,13 @@ class OptimizationConfig:
     cv_folds: int = 0
 
     # Validation split ratio (used when cv_folds=0)
-    val_split: float = 0.2
+    val_split: float = VAL_SPLIT
 
     # Maximum number of combinations to try (for performance)
-    max_combinations: int = 1000
+    max_combinations: int = MAX_COMBINATIONS
 
     # Random seed for reproducibility
-    seed: int = 42
+    seed: int = DEFAULT_RANDOM_SEED
 
 
 @dataclass

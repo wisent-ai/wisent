@@ -3,6 +3,19 @@
 import subprocess
 from dataclasses import dataclass
 
+from wisent.core.constants import (
+    EXTRACTION_DEFAULT_PAIR_LIMIT,
+    EXTRACTION_SINGLE_PAIR_LIMIT,
+    ABLITERATION_NUM_PAIRS,
+    ABLITERATION_DEFAULT_POSITION,
+    ABLITERATION_DEFAULT_DISTANCE,
+    ABLITERATION_BINARY_SEARCH_LOW,
+    ABLITERATION_BINARY_SEARCH_HIGH,
+    ABLITERATION_BINARY_SEARCH_ITERS,
+    SUBPROCESS_TIMEOUT_LONG,
+    DISPLAY_TRUNCATION_LARGE,
+)
+
 
 @dataclass
 class AbliterationConfig:
@@ -29,7 +42,7 @@ class AbliterationConfig:
         return args
 
 
-def evaluate_model(model_path: str, task: str = "hellaswag", limit: int = 500) -> tuple[float, float]:
+def evaluate_model(model_path: str, task: str = "hellaswag", limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT) -> tuple[float, float]:
     """
     Evaluate model and return (acc, acc_norm).
     """
@@ -43,10 +56,10 @@ def evaluate_model(model_path: str, task: str = "hellaswag", limit: int = 500) -
         "--batch_size", "8",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT_LONG)
 
     if result.returncode != 0:
-        print(f"Evaluation failed: {result.stderr[:500]}")
+        print(f"Evaluation failed: {result.stderr[:DISPLAY_TRUNCATION_LARGE]}")
         return -1.0, -1.0
 
     # Parse results from table format:
@@ -98,10 +111,10 @@ def run_abliteration(config: AbliterationConfig, task: str, model: str, output_d
     print(f"  max_weight={config.max_weight}, strength={config.strength}")
     print(f"  num_pairs={config.num_pairs}, components={config.components}")
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT_LONG)
 
     if result.returncode != 0:
-        print(f"Abliteration failed: {result.stderr[:500]}")
+        print(f"Abliteration failed: {result.stderr[:DISPLAY_TRUNCATION_LARGE]}")
         return ""
 
     return output_dir
@@ -112,10 +125,10 @@ def binary_search_strength(
     model: str,
     base_dir: str,
     baseline_acc: float,
-    low: float = 0.5,
-    high: float = 3.0,
-    iterations: int = 5,
-    num_pairs: int = 300,
+    low: float = ABLITERATION_BINARY_SEARCH_LOW,
+    high: float = ABLITERATION_BINARY_SEARCH_HIGH,
+    iterations: int = ABLITERATION_BINARY_SEARCH_ITERS,
+    num_pairs: int = ABLITERATION_NUM_PAIRS,
 ) -> tuple[float, float, float]:
     """
     Binary search to find optimal strength.
@@ -138,8 +151,8 @@ def binary_search_strength(
             min_weight=0.4,
             strength=mid,
             num_pairs=num_pairs,
-            max_weight_position=8.0,
-            min_weight_distance=6.0,
+            max_weight_position=ABLITERATION_DEFAULT_POSITION,
+            min_weight_distance=ABLITERATION_DEFAULT_DISTANCE,
             components=["self_attn.o_proj", "mlp.down_proj"],
         )
 
@@ -147,7 +160,7 @@ def binary_search_strength(
         model_path = run_abliteration(config, task, model, output_dir)
 
         if model_path:
-            acc, acc_norm = evaluate_model(model_path, task, limit=200)
+            acc, acc_norm = evaluate_model(model_path, task, limit=EXTRACTION_SINGLE_PAIR_LIMIT)
             print(f"  Iteration {i+1}: strength={mid:.3f} -> acc={acc:.4f}, acc_norm={acc_norm:.4f}")
 
             if acc > best_acc:
@@ -167,7 +180,7 @@ def grid_search_components(
     model: str,
     base_dir: str,
     baseline_acc: float,
-    num_pairs: int = 300,
+    num_pairs: int = ABLITERATION_NUM_PAIRS,
 ) -> tuple[list[str], float]:
     """
     Test different component combinations.
@@ -197,8 +210,8 @@ def grid_search_components(
             min_weight=0.4,
             strength=1.0,
             num_pairs=num_pairs,
-            max_weight_position=8.0,
-            min_weight_distance=6.0,
+            max_weight_position=ABLITERATION_DEFAULT_POSITION,
+            min_weight_distance=ABLITERATION_DEFAULT_DISTANCE,
             components=components,
         )
 
@@ -206,7 +219,7 @@ def grid_search_components(
         model_path = run_abliteration(config, task, model, output_dir)
 
         if model_path:
-            acc, acc_norm = evaluate_model(model_path, task, limit=200)
+            acc, acc_norm = evaluate_model(model_path, task, limit=EXTRACTION_SINGLE_PAIR_LIMIT)
             print(f"  Components {components}: acc={acc:.4f}")
 
             if acc > best_acc:
@@ -222,7 +235,7 @@ def grid_search_kernel_shape(
     model: str,
     base_dir: str,
     baseline_acc: float,
-    num_pairs: int = 300,
+    num_pairs: int = ABLITERATION_NUM_PAIRS,
     best_components: list[str] = None,
 ) -> tuple[float, float, float, float]:
     """
@@ -241,8 +254,8 @@ def grid_search_kernel_shape(
     positions = [6.0, 7.0, 8.0, 9.0, 10.0]  # Middle-ish layers
     distances = [4.0, 5.0, 6.0, 7.0, 8.0]   # How wide the kernel is
 
-    best_position = 8.0
-    best_distance = 6.0
+    best_position = ABLITERATION_DEFAULT_POSITION
+    best_distance = ABLITERATION_DEFAULT_DISTANCE
     best_acc = baseline_acc
     best_acc_norm = 0.0
 
@@ -262,7 +275,7 @@ def grid_search_kernel_shape(
             model_path = run_abliteration(config, task, model, output_dir)
 
             if model_path:
-                acc, acc_norm = evaluate_model(model_path, task, limit=200)
+                acc, acc_norm = evaluate_model(model_path, task, limit=EXTRACTION_SINGLE_PAIR_LIMIT)
 
                 if acc > best_acc:
                     best_position = pos

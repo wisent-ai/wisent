@@ -11,6 +11,7 @@ from wisent.core.contrastive_pairs.diagnostics.analysis.linearity import (
     LinearityResult,
     check_linearity,
 )
+from wisent.core.constants import GEOMETRY_DEFAULT_NUM_COMPONENTS
 
 def check_linearity_from_activations(
     pos_activations: torch.Tensor,
@@ -33,7 +34,7 @@ def check_linearity_from_activations(
     cfg = config or LinearityConfig()
     
     geo_config = GeometryAnalysisConfig(
-        num_components=5,
+        num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS,
         optimization_steps=cfg.geometry_optimization_steps,
     )
     

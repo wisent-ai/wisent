@@ -1,6 +1,7 @@
 """Behavioral label collection for steering direction discovery."""
 
 import numpy as np
+from wisent.core.constants import AGENT_DIAG_TEMPERATURE, STEERING_GEN_MAX_TOKENS, STEERING_GEN_MAX_TOKENS_SHORT
 
 
 def extract_response(raw_response: str) -> str:
@@ -12,7 +13,7 @@ def extract_response(raw_response: str) -> str:
     return raw_response
 
 
-def collect_behavioral_labels(adapter, test_ids, pair_texts, evaluator, layer_name, max_new_tokens=100):
+def collect_behavioral_labels(adapter, test_ids, pair_texts, evaluator, layer_name, max_new_tokens=STEERING_GEN_MAX_TOKENS):
     """
     Phase 1: Generate base responses, evaluate, collect activations and behavioral labels.
     Returns (activations, labels) where labels are 1=truthful, 0=untruthful.
@@ -39,7 +40,7 @@ def collect_behavioral_labels(adapter, test_ids, pair_texts, evaluator, layer_na
 
         # Generate and evaluate
         base_response = extract_response(adapter._generate_unsteered(
-            formatted_prompt, max_new_tokens=max_new_tokens, temperature=0.1, do_sample=True
+            formatted_prompt, max_new_tokens=max_new_tokens, temperature=AGENT_DIAG_TEMPERATURE, do_sample=True
         ))
         result = evaluator.evaluate(base_response, pos_ref_text,
             correct_answers=correct_answers, incorrect_answers=incorrect_answers)
@@ -51,7 +52,7 @@ def collect_behavioral_labels(adapter, test_ids, pair_texts, evaluator, layer_na
     return np.array(activations), np.array(labels)
 
 
-def collect_behavioral_labels_all_layers(adapter, test_ids, pair_texts, evaluator, layers, max_new_tokens=50):
+def collect_behavioral_labels_all_layers(adapter, test_ids, pair_texts, evaluator, layers, max_new_tokens=STEERING_GEN_MAX_TOKENS_SHORT):
     """
     Collect behavioral labels and activations for all layers at once.
     Returns (activations_by_layer, labels) where activations_by_layer maps layer_num -> numpy array.
@@ -80,7 +81,7 @@ def collect_behavioral_labels_all_layers(adapter, test_ids, pair_texts, evaluato
 
         # Generate and evaluate
         base_response = extract_response(adapter._generate_unsteered(
-            formatted_prompt, max_new_tokens=max_new_tokens, temperature=0.1, do_sample=True
+            formatted_prompt, max_new_tokens=max_new_tokens, temperature=AGENT_DIAG_TEMPERATURE, do_sample=True
         ))
         result = evaluator.evaluate(base_response, pos_ref_text,
             correct_answers=correct_answers, incorrect_answers=incorrect_answers)

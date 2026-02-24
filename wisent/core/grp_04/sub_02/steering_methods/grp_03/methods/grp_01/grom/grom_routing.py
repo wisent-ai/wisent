@@ -10,6 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Dict, List, Optional
 from dataclasses import dataclass
+from wisent.core.constants import NORM_EPS, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTING_TEMP_EPS
 
 
 class DirectionRoutingNetwork(nn.Module):
@@ -25,7 +26,7 @@ class DirectionRoutingNetwork(nn.Module):
         input_dim: int,
         num_directions: int,
         num_layers: int,
-        hidden_dim: int = 64,
+        hidden_dim: int = GROM_ROUTER_HIDDEN_DIM,
     ):
         super().__init__()
         self.input_dim = input_dim
@@ -71,7 +72,7 @@ class DirectionRoutingNetwork(nn.Module):
         for head in self.routing_heads:
             logits = head(encoded)
             # Temperature-scaled softmax for sharper/softer routing
-            w = F.softmax(logits / (self.temperature.abs() + 0.1), dim=-1)
+            w = F.softmax(logits / (self.temperature.abs() + GROM_ROUTING_TEMP_EPS), dim=-1)
             weights.append(w)
 
         return weights
@@ -149,7 +150,7 @@ def analyze_routing(
                 dominant[layer_name] = avg_w.argmax().item()
 
                 # Compute entropy
-                entropy = -(avg_w * (avg_w + 1e-8).log()).sum().item()
+                entropy = -(avg_w * (avg_w + NORM_EPS).log()).sum().item()
                 all_entropies.append(entropy)
 
             concept_routing[concept_id] = avg_weights
@@ -177,7 +178,7 @@ def compute_routing_diversity_loss(
         total_loss = torch.tensor(0.0)
         for weights in routing_weights:
             # Negative entropy = encourage concentration
-            entropy = -(weights * (weights + 1e-8).log()).sum(dim=-1).mean()
+            entropy = -(weights * (weights + NORM_EPS).log()).sum(dim=-1).mean()
             total_loss = total_loss - entropy  # Minimize entropy
         return total_loss / len(routing_weights)
 

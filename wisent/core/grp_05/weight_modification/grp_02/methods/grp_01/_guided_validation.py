@@ -5,6 +5,7 @@ if TYPE_CHECKING:
     from torch.nn import Module
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.constants import BLEND_DEFAULT
 from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig, CollateralDamageReport)
 from wisent.core.weight_modification.methods._guided_diagnostics import compute_layer_diagnostics
@@ -63,12 +64,12 @@ def validate_collateral_damage(
         if diag_before:
             before_best = max(d.linear_score for d in diag_before.values())
         else:
-            before_best = 0.5
-        
+            before_best = BLEND_DEFAULT
+
         if diag_after:
             after_best = max(d.linear_score for d in diag_after.values())
         else:
-            after_best = 0.5
+            after_best = BLEND_DEFAULT
         
         before_scores[benchmark] = before_best
         after_scores[benchmark] = after_best

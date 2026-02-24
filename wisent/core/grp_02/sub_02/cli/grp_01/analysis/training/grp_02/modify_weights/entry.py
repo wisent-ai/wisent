@@ -19,6 +19,7 @@ from .executor import (
     execute_szlak_mode, execute_wicher_mode,
 )
 from wisent.core.weight_modification.utils import get_default_components_for_extraction
+from wisent.core import constants as _C
 _LOG = setup_logger(__name__)
 
 def execute_modify_weights(args):
@@ -195,7 +196,7 @@ def _load_model(args):
                 elif hasattr(m, 'transformer') and hasattr(m.transformer, 'h'):
                     self.num_layers = len(m.transformer.h)
                 else:
-                    self.num_layers = 32
+                    self.num_layers = _C.DEFAULT_NUM_LAYERS
         wisent_model = ModelInfo(model)
     else:
         wisent_model = WisentModel(args.model, device=getattr(args, 'device', None))
@@ -212,7 +213,7 @@ def _run_auto_selection(args, wisent_model, steering_vectors):
     from wisent.core.steering_methods.methods.caa import CAAMethod
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
     pairs = _generate_pairs(args, wisent_model)
-    if pairs and len(pairs) >= 10:
+    if pairs and len(pairs) >= _C.MIN_PAIRS_FOR_LINEARITY:
         steering_method, modification_method, _ = auto_select_steering_method(pairs, wisent_model, args.verbose)
         args.steering_method = steering_method
         args.method = modification_method

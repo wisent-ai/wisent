@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from wisent.core.errors import TaskNotFoundError, InsufficientDataError
+from wisent.core.constants import BIGCODE_K_VALUES
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ class BigCodeEvaluator(BigCodeDockerMixin, BigCodeScriptsMixin, BigCodeTextEvalM
     def __init__(self, docker_executor=None):
         self.docker_executor = docker_executor
 
-    def evaluate(self, task: BigCodeTask, generations: List[str], k_values: List[int] = [1, 10, 100]) -> Dict[str, Any]:
+    def evaluate(self, task: BigCodeTask, generations: List[str], k_values: List[int] = list(BIGCODE_K_VALUES)) -> Dict[str, Any]:
         """Evaluate generations on a BigCode task."""
         results = {
             "task": task.task_name,

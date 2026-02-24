@@ -17,6 +17,7 @@ from wisent.core.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
+from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, PRZELOM_INFERENCE_K
 
 __all__ = ["PrzelomSteeringObject"]
 
@@ -30,7 +31,7 @@ class PrzelomSteeringObject(BaseSteeringObject):
         self, metadata: SteeringObjectMetadata,
         source_points: Dict[int, torch.Tensor],
         displacements: Dict[int, torch.Tensor],
-        inference_k: int = 5,
+        inference_k: int = PRZELOM_INFERENCE_K,
     ):
         super().__init__(metadata)
         self.source_points = source_points
@@ -54,7 +55,7 @@ class PrzelomSteeringObject(BaseSteeringObject):
         return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
 
     def apply_steering(
-        self, hidden_state: torch.Tensor, layer: int, base_strength: float = 1.0,
+        self, hidden_state: torch.Tensor, layer: int, base_strength: float = DEFAULT_STRENGTH,
     ) -> torch.Tensor:
         """Apply via k-NN lookup + IDW interpolation of precomputed displacements."""
         if layer not in self.source_points:
@@ -76,7 +77,7 @@ class PrzelomSteeringObject(BaseSteeringObject):
         dists = torch.cdist(h_float, src_dev)
         K = min(self.inference_k, src_dev.shape[0])
         topk_dists, topk_idx = torch.topk(dists, K, dim=1, largest=False)
-        eps = 1e-8
+        eps = NORM_EPS
         inv_dists = 1.0 / (topk_dists + eps)
         weights = inv_dists / inv_dists.sum(dim=1, keepdim=True)
         batch_size = h_float.shape[0]
@@ -131,5 +132,5 @@ class PrzelomSteeringObject(BaseSteeringObject):
         disps = {int(k): to_tensor(v) for k, v in data["displacements"].items()}
         return cls(
             metadata=metadata, source_points=source_points,
-            displacements=disps, inference_k=data.get("inference_k", 5),
+            displacements=disps, inference_k=data.get("inference_k", PRZELOM_INFERENCE_K),
         )

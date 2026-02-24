@@ -13,6 +13,7 @@ from datasets import load_dataset
 from wisent.core.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.constants import DISPLAY_TRUNCATION_ERROR, GENERATION_TEMPERATURE
 
 
 def extract_boxed_answer(text: str) -> str | None:
@@ -115,7 +116,7 @@ def main():
         responses = model.generate(
             inputs=prompt,
             max_new_tokens=1000,
-            temperature=0.7,
+            temperature=GENERATION_TEMPERATURE,
             do_sample=True,
             prompt_is_formatted=True
         )
@@ -144,7 +145,7 @@ def main():
             status = "✗ INCORRECT"
 
         print(f"\n{i+1}. {status}")
-        print(f"  Problem: {problem[:80]}...")
+        print(f"  Problem: {problem[:DISPLAY_TRUNCATION_ERROR]}...")
         print(f"  Ground truth (boxed): {ground_truth}")
         print(f"  LLM answer (boxed): {llm_answer}")
         print(f"  LLM full response: {response}...")

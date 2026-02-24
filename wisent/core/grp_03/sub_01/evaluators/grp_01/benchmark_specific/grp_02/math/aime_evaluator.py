@@ -7,6 +7,7 @@ benchmarks where answers are integers from 0-999 and may be in \\boxed{} format.
 import logging
 from typing import Any
 
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
 from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
 
@@ -63,7 +64,7 @@ Solution:"""
                 confidence=0.0,
                 details="Could not extract answer from model response",
                 meta={
-                    "response_preview": response[:200] if response else None,
+                    "response_preview": response[:DISPLAY_TRUNCATION_MEDIUM] if response else None,
                     "expected": expected,
                 }
             )

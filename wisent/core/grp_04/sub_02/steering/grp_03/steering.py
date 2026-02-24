@@ -12,6 +12,7 @@ import torch.nn.functional as F
 # from wisent.core.classifier.classifier import Classifier
 
 from wisent.core.contrastive_pairs import ContrastivePairSet
+from wisent.core.constants import DEFAULT_STRENGTH, BLEND_DEFAULT, DISPLAY_TRUNCATION_COMPACT
 from .steering_method import CAA
 from wisent.core.errors import (
     MissingParameterError,
@@ -38,7 +39,7 @@ class SteeringMethod(SteeringLoggingMixin, SteeringOptimizationMixin, SteeringEv
     For new vector-based steering, use steering_method.CAA directly.
     """
 
-    def __init__(self, method_type: SteeringType, device=None, threshold=0.5):
+    def __init__(self, method_type: SteeringType, device=None, threshold=BLEND_DEFAULT):
         self.method_type = method_type
         self.device = device
         self.threshold = threshold
@@ -92,7 +93,7 @@ class SteeringMethod(SteeringLoggingMixin, SteeringOptimizationMixin, SteeringEv
 
         return results
 
-    def apply_steering(self, activations: torch.Tensor, strength: float = 1.0) -> torch.Tensor:
+    def apply_steering(self, activations: torch.Tensor, strength: float = DEFAULT_STRENGTH) -> torch.Tensor:
         """
         Apply steering to activations (vector-based methods only).
 
@@ -205,7 +206,7 @@ class SteeringMethod(SteeringLoggingMixin, SteeringOptimizationMixin, SteeringEv
             # Add text information
             result.update(
                 {
-                    "text": text[:100] + "..." if len(text) > 100 else text,
+                    "text": text[:DISPLAY_TRUNCATION_COMPACT] + "..." if len(text) > DISPLAY_TRUNCATION_COMPACT else text,
                     "text_length": len(text),
                     "layer_index": layer.index,
                 }
@@ -218,6 +219,6 @@ class SteeringMethod(SteeringLoggingMixin, SteeringOptimizationMixin, SteeringEv
                 "is_harmful": False,
                 "probability": 0.0,
                 "error": str(e),
-                "text": text[:100] + "..." if len(text) > 100 else text,
+                "text": text[:DISPLAY_TRUNCATION_COMPACT] + "..." if len(text) > DISPLAY_TRUNCATION_COMPACT else text,
             }
 

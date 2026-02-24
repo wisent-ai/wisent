@@ -2,6 +2,14 @@
 
 import numpy as np
 from typing import Dict, Any
+from wisent.core.constants import (
+    ZERO_THRESHOLD, STAT_ALPHA, TARGET_POWER,
+    SAMPLE_RATIO_ADEQUATE, SAMPLE_RATIO_GOOD, SAMPLE_RATIO_ACCEPTABLE,
+    SAMPLE_RATIO_MARGINAL,
+    EFFECT_SIZE_SMALL, EFFECT_SIZE_MEDIUM, EFFECT_SIZE_LARGE,
+    POWER_ANALYSIS_MIN_N, POWER_ANALYSIS_STEP, SAMPLE_ADEQUACY_MAX_N,
+    CLASSIFIER_DECISION_THRESHOLD,
+)
 
 
 def compute_sample_dimension_ratio(
@@ -21,15 +29,15 @@ def compute_sample_dimension_ratio(
     ratio = n_samples / ambient_dim if ambient_dim > 0 else float('inf')
     eff_ratio = n_samples / effective_dim if effective_dim > 0 else float('inf')
 
-    if eff_ratio >= 20:
+    if eff_ratio >= SAMPLE_RATIO_ADEQUATE:
         adequate, warning, severity = True, None, "none"
-    elif eff_ratio >= 10:
+    elif eff_ratio >= SAMPLE_RATIO_GOOD:
         adequate, warning, severity = True, None, "none"
-    elif eff_ratio >= 5:
+    elif eff_ratio >= SAMPLE_RATIO_ACCEPTABLE:
         adequate = True
         warning = f"Marginal sample size: n/d_eff={eff_ratio:.1f}. Consider regularization."
         severity = "mild"
-    elif eff_ratio >= 2:
+    elif eff_ratio >= SAMPLE_RATIO_MARGINAL:
         adequate = False
         warning = f"Low sample size: n/d_eff={eff_ratio:.1f}. High variance expected."
         severity = "moderate"
@@ -55,7 +63,7 @@ def compute_effective_sample_size(X: np.ndarray, method: str = "eigenvalue") -> 
     n, d = X.shape
     X_centered = X - X.mean(axis=0)
     stds = X_centered.std(axis=0)
-    stds[stds < 1e-10] = 1.0
+    stds[stds < ZERO_THRESHOLD] = 1.0
     X_standardized = X_centered / stds
 
     corr_matrix = np.corrcoef(X_standardized.T)
@@ -69,15 +77,15 @@ def compute_effective_sample_size(X: np.ndarray, method: str = "eigenvalue") -> 
         eigenvalues = np.maximum(eigenvalues, 0)
         eigenvalues = np.sort(eigenvalues)[::-1]
 
-        eff_dim = (eigenvalues.sum() ** 2) / (eigenvalues ** 2).sum() if eigenvalues.sum() > 1e-10 else 1.0
+        eff_dim = (eigenvalues.sum() ** 2) / (eigenvalues ** 2).sum() if eigenvalues.sum() > ZERO_THRESHOLD else 1.0
 
-        if len(eigenvalues) > 1 and eigenvalues[0] > 1e-10:
-            log_eigs = np.log(eigenvalues[eigenvalues > 1e-10] + 1e-10)
+        if len(eigenvalues) > 1 and eigenvalues[0] > ZERO_THRESHOLD:
+            log_eigs = np.log(eigenvalues[eigenvalues > ZERO_THRESHOLD] + ZERO_THRESHOLD)
             decay_rate = -np.polyfit(np.arange(len(log_eigs)), log_eigs, 1)[0] if len(log_eigs) > 1 else 0.0
         else:
             decay_rate = 0.0
 
-        cond = eigenvalues[0] / eigenvalues[-1] if eigenvalues[-1] > 1e-10 else float('inf')
+        cond = eigenvalues[0] / eigenvalues[-1] if eigenvalues[-1] > ZERO_THRESHOLD else float('inf')
     except Exception:
         eff_dim, decay_rate, cond, eigenvalues = d, 0.0, float('inf'), np.ones(d)
 
@@ -97,9 +105,9 @@ def compute_effective_sample_size(X: np.ndarray, method: str = "eigenvalue") -> 
 
 def recommend_sample_size(
     effective_dim: float,
-    target_power: float = 0.80,
+    target_power: float = TARGET_POWER,
     target_effect_size: str = "medium",
-    alpha: float = 0.05,
+    alpha: float = STAT_ALPHA,
 ) -> Dict[str, Any]:
     """
     Recommend number of contrastive pairs given effective dimensionality.
@@ -122,19 +130,19 @@ def recommend_sample_size(
     """
     from scipy import stats
 
-    effect_sizes = {"small": 0.2, "medium": 0.5, "large": 0.8}
-    d = effect_sizes.get(target_effect_size, 0.5)
+    effect_sizes = {"small": EFFECT_SIZE_SMALL, "medium": EFFECT_SIZE_MEDIUM, "large": EFFECT_SIZE_LARGE}
+    d = effect_sizes.get(target_effect_size, CLASSIFIER_DECISION_THRESHOLD)
 
     def required_n(eff_d: float, effect: float, power: float, a: float) -> int:
         """Compute required n for target power at given effect size."""
-        for test_n in range(8, 20000, 2):
+        for test_n in range(POWER_ANALYSIS_MIN_N, SAMPLE_ADEQUACY_MAX_N, POWER_ANALYSIS_STEP):
             df = max(1, min(test_n - 2, test_n - eff_d - 1))
             t_crit = stats.t.ppf(1 - a / 2, df)
             n_per_group = test_n / 2
             test_power = 1 - stats.t.cdf(t_crit, df, loc=effect * np.sqrt(n_per_group / 2))
             if test_power >= power:
                 return test_n
-        return 20000
+        return SAMPLE_ADEQUACY_MAX_N
 
     recommended = required_n(effective_dim, d, target_power, alpha)
     n_for_small = required_n(effective_dim, effect_sizes["small"], target_power, alpha)
@@ -159,9 +167,9 @@ def recommend_sample_size(
 def recommend_sample_size_from_data(
     pos: np.ndarray,
     neg: np.ndarray,
-    target_power: float = 0.80,
+    target_power: float = TARGET_POWER,
     target_effect_size: str = "medium",
-    alpha: float = 0.05,
+    alpha: float = STAT_ALPHA,
 ) -> Dict[str, Any]:
     """
     Recommend sample size using empirically measured effective dimension.
@@ -196,7 +204,7 @@ def recommend_sample_size_from_data(
 
     sum_eig = eigenvalues.sum()
     sum_eig_sq = (eigenvalues ** 2).sum()
-    measured_effective_dim = (sum_eig ** 2) / sum_eig_sq if sum_eig_sq > 1e-10 else 1.0
+    measured_effective_dim = (sum_eig ** 2) / sum_eig_sq if sum_eig_sq > ZERO_THRESHOLD else 1.0
 
     # Get recommendation using measured effective dim
     rec = recommend_sample_size(
@@ -215,7 +223,7 @@ def recommend_sample_size_from_data(
 
 def compare_extraction_strategies(
     activations_by_strategy: Dict[str, tuple],
-    target_power: float = 0.80,
+    target_power: float = TARGET_POWER,
 ) -> Dict[str, Dict[str, Any]]:
     """
     Compare extraction strategies by their effective dimension and sample requirements.

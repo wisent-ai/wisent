@@ -15,6 +15,13 @@ from datasets import Dataset
 from peft import LoraConfig, TaskType, get_peft_model
 from trl import DPOTrainer, DPOConfig
 
+from wisent.core.constants import (
+    LORA_DEFAULT_R, LORA_DEFAULT_ALPHA, LORA_DEFAULT_DROPOUT,
+    DPO_DEFAULT_BETA, DPO_MAX_LENGTH, DPO_MAX_PROMPT_LENGTH,
+    COMPARISON_DEFAULT_BATCH_SIZE,
+    COMPARISON_NUM_PAIRS, TRAINING_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
+    COMPARISON_LOGGING_STEPS, LORA_DPO_LEARNING_RATE, LORA_DPO_NUM_EPOCHS,
+)
 from wisent.comparison.utils import (
     generate_contrastive_pairs,
     load_model_and_tokenizer,
@@ -49,18 +56,18 @@ def train_lora_dpo(
     task: str,
     model_name: str,
     output_path: str | Path,
-    num_pairs: int = 50,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    lora_r: int = 16,
-    lora_alpha: int = 32,
-    lora_dropout: float = 0.05,
-    learning_rate: float = 5e-5,
-    num_epochs: int = 1,
-    batch_size: int = 1,
-    max_length: int = 512,
-    max_prompt_length: int = 256,
-    beta: float = 0.1,
+    lora_r: int = LORA_DEFAULT_R,
+    lora_alpha: int = LORA_DEFAULT_ALPHA,
+    lora_dropout: float = LORA_DEFAULT_DROPOUT,
+    learning_rate: float = LORA_DPO_LEARNING_RATE,
+    num_epochs: int = LORA_DPO_NUM_EPOCHS,
+    batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE,
+    max_length: int = DPO_MAX_LENGTH,
+    max_prompt_length: int = DPO_MAX_PROMPT_LENGTH,
+    beta: float = DPO_DEFAULT_BETA,
 ) -> Path:
     """Train a LoRA adapter using DPO on contrastive pairs."""
     output_path = Path(output_path)
@@ -108,8 +115,8 @@ def train_lora_dpo(
         per_device_train_batch_size=batch_size,
         gradient_accumulation_steps=1,
         learning_rate=learning_rate,
-        weight_decay=0.01, warmup_ratio=0.1,
-        logging_steps=10, save_strategy="no",
+        weight_decay=TRAINING_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
+        logging_steps=COMPARISON_LOGGING_STEPS, save_strategy="no",
         bf16=(dtype == torch.bfloat16),
         fp16=(dtype == torch.float16),
         report_to="none",

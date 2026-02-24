@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import os
+from wisent.core.constants import DEFAULT_SCORE
 
 from wisent.core.evaluators.steering_evaluators import (
     EvaluatorConfig,
@@ -86,8 +87,8 @@ def evaluate_refusal(args, input_data, responses, task_name, evaluation_results,
 
     # Aggregate results
     total = len(task_results)
-    compliance_rate = eval_results.get('compliance_rate', 0.0)
-    refusal_rate = eval_results.get('refusal_rate', 0.0)
+    compliance_rate = eval_results.get('compliance_rate', DEFAULT_SCORE)
+    refusal_rate = eval_results.get('refusal_rate', DEFAULT_SCORE)
 
     aggregated_metrics = {
         'compliance_rate': compliance_rate,

@@ -16,6 +16,7 @@ from sklearn.metrics import accuracy_score
 import random
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
+from wisent.core.constants import TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED
 
 # Config
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
@@ -36,7 +37,7 @@ print(f"Using device: {DEVICE}")
 
 def load_truthfulqa_pairs():
     """Load TruthfulQA as contrastive pairs."""
-    random.seed(42)
+    random.seed(DEFAULT_RANDOM_SEED)
     ds = load_dataset("truthfulqa/truthful_qa", "generation", split="validation")
     pairs = []
     for s in ds:
@@ -51,7 +52,7 @@ def load_truthfulqa_pairs():
 
 def get_activation(model, tokenizer, text, layer):
     """Get last token activation."""
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1].cpu().float().numpy()
@@ -88,7 +89,7 @@ def main():
     print(f"Total pairs: {len(all_pairs)}")
     
     # Shuffle and split
-    random.seed(42)
+    random.seed(DEFAULT_RANDOM_SEED)
     random.shuffle(all_pairs)
     
     test_pairs = all_pairs[:TEST_SIZE]
@@ -134,7 +135,7 @@ def main():
             y_train = y_train_pool[sample_indices]
             
             # Train classifier
-            clf = LogisticRegression( random_state=42)
+            clf = LogisticRegression( random_state=DEFAULT_RANDOM_SEED)
             clf.fit(X_train, y_train)
             
             # Test

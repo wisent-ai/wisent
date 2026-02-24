@@ -8,6 +8,7 @@ and linear subset detection.
 import numpy as np
 from typing import List, Optional
 from dataclasses import dataclass
+from wisent.core.constants import NORM_EPS, ZERO_THRESHOLD
 
 
 @dataclass
@@ -78,7 +79,7 @@ def compute_fisher_ratio(projections: np.ndarray, labels: np.ndarray) -> float:
     var_neg = neg_proj.var()
     within_var = (var_pos + var_neg) / 2
 
-    if within_var < 1e-10:
+    if within_var < ZERO_THRESHOLD:
         return 0.0
 
     return float(between_var / within_var)
@@ -123,7 +124,7 @@ def compute_effective_rank(
 
     # Mean cosine similarity on difference vectors
     norms = np.linalg.norm(diff_np, axis=1, keepdims=True)
-    diff_norm = diff_np / (norms + 1e-8)
+    diff_norm = diff_np / (norms + NORM_EPS)
     cos_sim_matrix = diff_norm @ diff_norm.T
     n = cos_sim_matrix.shape[0]
     mask = ~np.eye(n, dtype=bool)
@@ -172,7 +173,7 @@ def find_linear_subsets(
 ) -> List[LinearSubset]:
     """Find subsets of pairs with higher similarity (potential linear signal)."""
     norms = np.linalg.norm(diff_np, axis=1, keepdims=True)
-    diff_norm = diff_np / (norms + 1e-8)
+    diff_norm = diff_np / (norms + NORM_EPS)
 
     cos_sim_full = diff_norm @ diff_norm.T
     np.fill_diagonal(cos_sim_full, 0)

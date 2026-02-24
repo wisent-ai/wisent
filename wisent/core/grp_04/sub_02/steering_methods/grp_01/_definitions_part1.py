@@ -1,5 +1,17 @@
 """Steering method definitions: CAA, OSTRZE, TECZA."""
 
+from wisent.core.constants import (
+    DEFAULT_BASE_STRENGTH,
+    TECZA_NUM_DIRECTIONS,
+    TECZA_OPTIMIZATION_STEPS,
+    TECZA_LEARNING_RATE,
+    TECZA_RETAIN_WEIGHT,
+    TECZA_INDEPENDENCE_WEIGHT,
+    TECZA_MIN_COSINE_SIM,
+    TECZA_MAX_COSINE_SIM,
+    STEERING_STRENGTH_RANGE_WIDE,
+    STEERING_STRENGTH_RANGE_NARROW,
+)
 from wisent.core.steering_methods.registry import (
     SteeringMethodDefinition,
     SteeringMethodParameter,
@@ -23,11 +35,11 @@ CAA_DEFINITION = SteeringMethodDefinition(
         ),
     ],
     optimization_config={
-        "strength_search_range": (0.1, 5.0),
-        "default_strength": 1.0,
+        "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
+        "default_strength": DEFAULT_BASE_STRENGTH,
     },
-    default_strength=1.0,
-    strength_range=(0.1, 5.0),
+    default_strength=DEFAULT_BASE_STRENGTH,
+    strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
 
@@ -48,17 +60,17 @@ OSTRZE_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="C",
             type=float,
-            default=1.0,
+            default=DEFAULT_BASE_STRENGTH,
             help="Regularization strength (inverse). Smaller values = stronger regularization.",
             cli_flag="--ostrze-C",
         ),
     ],
     optimization_config={
-        "strength_search_range": (0.1, 5.0),
-        "default_strength": 1.0,
+        "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
+        "default_strength": DEFAULT_BASE_STRENGTH,
     },
-    default_strength=1.0,
-    strength_range=(0.1, 5.0),
+    default_strength=DEFAULT_BASE_STRENGTH,
+    strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
 
@@ -71,35 +83,35 @@ TECZA_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="num_directions",
             type=int,
-            default=3,
+            default=TECZA_NUM_DIRECTIONS,
             help="Number of directions to discover per layer",
             cli_flag="--tecza-num-directions",
         ),
         SteeringMethodParameter(
             name="optimization_steps",
             type=int,
-            default=100,
+            default=TECZA_OPTIMIZATION_STEPS,
             help="Number of gradient descent steps for direction optimization",
             cli_flag="--tecza-optimization-steps",
         ),
         SteeringMethodParameter(
             name="learning_rate",
             type=float,
-            default=0.01,
+            default=TECZA_LEARNING_RATE,
             help="Learning rate for direction optimization",
             cli_flag="--tecza-learning-rate",
         ),
         SteeringMethodParameter(
             name="retain_weight",
             type=float,
-            default=0.1,
+            default=TECZA_RETAIN_WEIGHT,
             help="Weight for retain loss (preserving behavior on harmless examples)",
             cli_flag="--tecza-retain-weight",
         ),
         SteeringMethodParameter(
             name="independence_weight",
             type=float,
-            default=0.05,
+            default=TECZA_INDEPENDENCE_WEIGHT,
             help="Weight for representational independence loss between directions",
             cli_flag="--tecza-independence-weight",
         ),
@@ -130,23 +142,23 @@ TECZA_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="min_cosine_similarity",
             type=float,
-            default=0.3,
+            default=TECZA_MIN_COSINE_SIM,
             help="Minimum cosine similarity between directions",
             cli_flag="--tecza-min-cosine-similarity",
         ),
         SteeringMethodParameter(
             name="max_cosine_similarity",
             type=float,
-            default=0.95,
+            default=TECZA_MAX_COSINE_SIM,
             help="Maximum cosine similarity between directions (avoid redundancy)",
             cli_flag="--tecza-max-cosine-similarity",
         ),
     ],
     optimization_config={
-        "strength_search_range": (0.1, 3.0),
-        "default_strength": 1.0,
+        "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
+        "default_strength": DEFAULT_BASE_STRENGTH,
         "num_directions_range": (1, 7),
     },
-    default_strength=1.0,
-    strength_range=(0.1, 3.0),
+    default_strength=DEFAULT_BASE_STRENGTH,
+    strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )

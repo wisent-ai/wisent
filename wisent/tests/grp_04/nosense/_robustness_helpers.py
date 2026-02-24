@@ -2,6 +2,8 @@
 
 import argparse
 
+from wisent.core.constants import TEST_DEFAULT_LIMIT
+
 
 def main():
     """Main function for robustness testing."""
@@ -13,7 +15,7 @@ def main():
         help="Model to test (default: EleutherAI/gpt-neo-1.3B)"
     )
     parser.add_argument(
-        "--limit", type=int, default=10,
+        "--limit", type=int, default=TEST_DEFAULT_LIMIT,
         help="Number of samples to test (default: 10)"
     )
     parser.add_argument(

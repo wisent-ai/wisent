@@ -7,6 +7,7 @@ import torch
 
 from wisent.core.models import get_generate_kwargs
 from wisent.core.errors import UnknownTypeError
+from wisent.core.constants import DEFAULT_CLASSIFIER_LR, QUALITY_THRESHOLD, MAX_REGENERATION_ATTEMPTS, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE
 
 
 def collect_activations(args, model, pair_set, ActivationCollector, ExtractionStrategy):
@@ -105,8 +106,8 @@ def train_classifier(args, activations, LogisticClassifier, MLPClassifier, Class
         raise UnknownTypeError(entity_type="classifier_type", value=args.classifier_type, valid_values=["logistic", "mlp"])
 
     train_config = ClassifierTrainConfig(
-        test_size=1.0 - args.split_ratio, num_epochs=50, batch_size=32,
-        learning_rate=1e-3, monitor='f1', random_state=args.seed
+        test_size=1.0 - args.split_ratio, num_epochs=CLASSIFIER_NUM_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE,
+        learning_rate=DEFAULT_CLASSIFIER_LR, monitor='f1', random_state=args.seed
     )
 
     report = classifier.fit(X, y, config=train_config)
@@ -132,7 +133,7 @@ def evaluate_classifier(args, model, classifier, test_pairs, activations, task_n
     detection_handler = _setup_detection_handler(args, DetectionHandler, DetectionAction)
     detection_stats = {'total_outputs': 0, 'issues_detected': 0, 'low_quality_outputs': 0, 'handled_outputs': 0, 'detection_types': {}}
     enable_quality_check = hasattr(args, 'enable_quality_check') and args.enable_quality_check
-    quality_threshold = getattr(args, 'quality_threshold', 50.0)
+    quality_threshold = getattr(args, 'quality_threshold', QUALITY_THRESHOLD)
 
     gen_collector = ActivationCollector(model=model)
     generation_results = []
@@ -167,7 +168,7 @@ def _setup_detection_handler(args, DetectionHandler, DetectionAction):
     return DetectionHandler(
         action=action_map.get(args.detection_action, DetectionAction.REPLACE_WITH_PLACEHOLDER),
         placeholder_message=getattr(args, 'placeholder_message', None),
-        max_regeneration_attempts=getattr(args, 'max_regeneration_attempts', 3),
+        max_regeneration_attempts=getattr(args, 'max_regeneration_attempts', MAX_REGENERATION_ATTEMPTS),
         log_detections=True
     )
 

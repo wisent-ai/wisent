@@ -10,6 +10,13 @@ import re
 from collections import Counter
 from typing import TYPE_CHECKING
 
+from wisent.core.constants import (
+    COHERENCE_FUNCTION_WORD_THRESHOLD, COHERENCE_SPACE_RATIO_MIN,
+    COHERENCE_LONG_TOKEN_LEN, COHERENCE_LONG_TOKEN_RATIO,
+    COHERENCE_VALIDITY_RATIO_MIN, COHERENCE_QUALITY_MIN_TOKENS,
+    COHERENCE_RATIO_THRESHOLD,
+)
+
 if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
     import torch
@@ -36,7 +43,7 @@ FUNCTION_WORDS = {
 }
 
 
-def _has_low_function_word_ratio(text: str, threshold: float = 0.15) -> bool:
+def _has_low_function_word_ratio(text: str, threshold: float = COHERENCE_FUNCTION_WORD_THRESHOLD) -> bool:
     """Check if text has suspiciously low ratio of function words.
 
     Natural English text typically has 30-50% function words.
@@ -101,7 +108,7 @@ def _is_nonsense_word(word: str, tokenizer) -> bool:
     ratio = len(tokens) / len(word)
 
     # If more than 1 token per 2 characters AND at least 4 tokens, likely nonsense
-    if ratio > 0.5 and len(tokens) >= 4:
+    if ratio > COHERENCE_RATIO_THRESHOLD and len(tokens) >= COHERENCE_QUALITY_MIN_TOKENS:
         return True
 
     return False
@@ -123,7 +130,7 @@ def _is_gibberish(text: str) -> bool:
 
     # Check 1: Spacing ratio - normal English has ~15-20% spaces
     space_ratio = text.count(' ') / len(text)
-    if len(text) > 50 and space_ratio < 0.08:
+    if len(text) > 50 and space_ratio < COHERENCE_SPACE_RATIO_MIN:
         return True
 
     tokens = text.split()
@@ -131,8 +138,8 @@ def _is_gibberish(text: str) -> bool:
         return False
 
     # Check 2: Long tokens (concatenated words)
-    long_tokens = sum(1 for t in tokens if len(t) > 25)
-    if long_tokens / len(tokens) > 0.1:
+    long_tokens = sum(1 for t in tokens if len(t) > COHERENCE_LONG_TOKEN_LEN)
+    if long_tokens / len(tokens) > COHERENCE_LONG_TOKEN_RATIO:
         return True
 
     # Check 3: CamelCase patterns (e.g., "hisHandsThatDelight", "HewalksAway")
@@ -174,12 +181,12 @@ def _is_gibberish(text: str) -> bool:
                 valid_count += 1
 
         validity_ratio = valid_count / len(tokens)
-        if validity_ratio < 0.3:
+        if validity_ratio < COHERENCE_VALIDITY_RATIO_MIN:
             return True
 
     # Check 6: Function word ratio - real English has ~30-50% function words
     # Gibberish made of strung-together nouns/jargon has very few
-    if _has_low_function_word_ratio(text, threshold=0.15):
+    if _has_low_function_word_ratio(text, threshold=COHERENCE_FUNCTION_WORD_THRESHOLD):
         return True
 
     return False

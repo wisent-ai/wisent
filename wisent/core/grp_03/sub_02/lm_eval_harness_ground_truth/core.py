@@ -6,6 +6,7 @@ import json
 from typing import Any, Dict
 
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import COMPARE_TOL, DEFAULT_LAYER, EVAL_HARNESS_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +21,8 @@ class LMEvalHarnessGroundTruth:
         if not self.evaluation_method:
             self.evaluation_method = self._get_evaluation_method_for_task(task_name)
 
-    def evaluate_classifier_on_task(self, classifier, task_name: str, num_samples: int = 100,
-                                     model=None, layer: int = 15, token_aggregation: str = "average") -> Dict[str, Any]:
+    def evaluate_classifier_on_task(self, classifier, task_name: str, num_samples: int = EVAL_HARNESS_NUM_SAMPLES,
+                                     model=None, layer: int = DEFAULT_LAYER, token_aggregation: str = "average") -> Dict[str, Any]:
         """Evaluate a classifier on the specified lm-eval task."""
         evaluation_model = model or self.model
         if self.evaluation_method == "log-likelihoods":
@@ -129,7 +130,7 @@ class LMEvalHarnessGroundTruth:
                     is_correct = self._evaluate_default_response(generated, ground_truth)
                 if is_correct:
                     correct += 1
-                evaluation_details.append({"question": response["question"][:100], "generated": generated[-50:],
+                evaluation_details.append({"question": response["question"][:DISPLAY_TRUNCATION_COMPACT], "generated": generated[-50:],
                                           "ground_truth": ground_truth, "correct": is_correct})
             accuracy = correct / total if total > 0 else 0.0
             return {"accuracy": accuracy, "correct_predictions": correct, "total_samples": total,
@@ -144,7 +145,7 @@ class LMEvalHarnessGroundTruth:
             generated_answer = self._extract_numerical_answer(generated)
             ground_truth_answer = self._extract_numerical_answer(str(ground_truth))
             if generated_answer is not None and ground_truth_answer is not None:
-                return abs(generated_answer - ground_truth_answer) < 1e-6
+                return abs(generated_answer - ground_truth_answer) < COMPARE_TOL
             return generated.strip().lower() == str(ground_truth).strip().lower()
         except Exception as e:
             logger.error(f"Error evaluating GSM8K response: {e}")

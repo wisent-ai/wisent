@@ -23,6 +23,8 @@ Usage:
 
 import argparse
 
+from wisent.core.constants import DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, MAX_K_DEFAULT
+
 from ._data_loading import (
     load_truthfulqa_pairs,
     load_hellaswag_pairs,
@@ -109,17 +111,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Detect multiple concepts in mixed samples")
     parser.add_argument("--model", type=str, default="meta-llama/Llama-3.2-1B-Instruct",
                         help="Model to use")
-    parser.add_argument("--n-pairs", type=int, default=100,
+    parser.add_argument("--n-pairs", type=int, default=N_BOOTSTRAP_DEFAULT,
                         help="Number of pairs per concept")
     parser.add_argument("--layer", type=int, default=None,
                         help="Layer to extract activations from (default: middle)")
-    parser.add_argument("--seed", type=int, default=42,
+    parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED,
                         help="Random seed")
     parser.add_argument("--output-dir", type=str, default="/tmp/concept_detection",
                         help="Output directory")
     parser.add_argument("--single-sample-test", action="store_true",
                         help="Run single-sample detection test (tests if we can detect mixed vs pure)")
-    parser.add_argument("--n-bootstrap", type=int, default=100,
+    parser.add_argument("--n-bootstrap", type=int, default=N_BOOTSTRAP_DEFAULT,
                         help="Number of bootstrap samples for null distribution")
     parser.add_argument("--visualize", action="store_true",
                         help="Generate visualizations")
@@ -127,7 +129,7 @@ if __name__ == "__main__":
                         help="Directory for visualization outputs")
     parser.add_argument("--detect-k", action="store_true",
                         help="Run k-concept detection (find how many concepts exist)")
-    parser.add_argument("--max-k", type=int, default=6,
+    parser.add_argument("--max-k", type=int, default=MAX_K_DEFAULT,
                         help="Maximum k to try for concept detection")
     parser.add_argument("--attribute", action="store_true",
                         help="Run attribution to trace pairs back to detected concepts")

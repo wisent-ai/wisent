@@ -7,6 +7,11 @@ for training classifiers for specific issue types using model-driven decisions.
 
 from typing import List, Dict, Any, Set, Tuple
 from .task_manager import get_available_tasks
+from wisent.core.constants import (
+    DEFAULT_LAYER, AGENT_DIAG_MAX_TOKENS_SHORT, AGENT_DIAG_TEMPERATURE,
+    TASK_SELECTOR_MAX_TASKS, TASK_SELECTOR_QUALITY_THRESHOLD,
+    TASK_QUALITY_SCORE_MAX, TASK_SELECTOR_LIMIT,
+)
 
 
 class TaskSelector:
@@ -15,7 +20,7 @@ class TaskSelector:
     def __init__(self, model):
         self.model = model
     
-    def find_relevant_tasks_for_issue_type(self, issue_type: str, max_tasks: int = 10) -> List[str]:
+    def find_relevant_tasks_for_issue_type(self, issue_type: str, max_tasks: int = TASK_SELECTOR_MAX_TASKS) -> List[str]:
         """
         Find the most relevant tasks for a specific issue type using model decisions.
         
@@ -30,7 +35,7 @@ class TaskSelector:
         
         # Use model to score task relevance for the issue type
         task_scores = []
-        for task_name in available_tasks[:50]:  # Limit for efficiency
+        for task_name in available_tasks[:TASK_SELECTOR_LIMIT]:  # Limit for efficiency
             score = self._get_model_task_relevance(issue_type, task_name)
             if score > 0.0:
                 task_scores.append((task_name, score))
@@ -40,11 +45,11 @@ class TaskSelector:
         return [task_name for task_name, _ in task_scores[:max_tasks]]
     
     def select_best_tasks_for_training(
-        self, 
-        issue_type: str, 
+        self,
+        issue_type: str,
         min_tasks: int = 1,
-        max_tasks: int = 10,
-        quality_threshold: float = 1.5
+        max_tasks: int = TASK_SELECTOR_MAX_TASKS,
+        quality_threshold: float = TASK_SELECTOR_QUALITY_THRESHOLD
     ) -> List[str]:
         """
         Select the best tasks for training a classifier for the given issue type.
@@ -83,7 +88,7 @@ Rate relevance from 0.0 to 1.0 (1.0 = highly relevant, 0.0 = not relevant).
 Respond with only the number:"""
         
         try:
-            response = self.model.generate(prompt, layer_index=15, max_new_tokens=10, temperature=0.1)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
             score_str = response.strip()
             
             import re
@@ -110,20 +115,20 @@ Rate quality from 0.0 to 5.0 (5.0 = excellent quality, 0.0 = poor quality).
 Respond with only the number:"""
         
         try:
-            response = self.model.generate(prompt, layer_index=15, max_new_tokens=10, temperature=0.1)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
             score_str = response.strip()
             
             import re
             match = re.search(r'(\d+\.?\d*)', score_str)
             if match:
                 score = float(match.group(1))
-                return min(5.0, max(0.0, score))
+                return min(TASK_QUALITY_SCORE_MAX, max(0.0, score))
             return 1.0
         except:
             return 1.0
 
 
-def find_relevant_tasks_for_issue_type(issue_type: str, max_tasks: int = 10, model=None) -> List[str]:
+def find_relevant_tasks_for_issue_type(issue_type: str, max_tasks: int = TASK_SELECTOR_MAX_TASKS, model=None) -> List[str]:
     """Standalone function for finding relevant tasks."""
     if model is None:
         from ....model import Model
@@ -134,10 +139,10 @@ def find_relevant_tasks_for_issue_type(issue_type: str, max_tasks: int = 10, mod
 
 
 def select_best_tasks_for_training(
-    issue_type: str, 
+    issue_type: str,
     min_tasks: int = 1,
-    max_tasks: int = 10,
-    quality_threshold: float = 1.5,
+    max_tasks: int = TASK_SELECTOR_MAX_TASKS,
+    quality_threshold: float = TASK_SELECTOR_QUALITY_THRESHOLD,
     model=None
 ) -> List[str]:
     """Standalone function for selecting best training tasks."""

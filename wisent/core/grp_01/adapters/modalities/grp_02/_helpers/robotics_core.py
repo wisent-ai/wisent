@@ -25,6 +25,7 @@ from wisent.core.modalities import (
     RobotAction,
     RobotTrajectory,
 )
+from wisent.core.constants import POLICY_LAYER_COUNT
 from wisent.core.errors import UnknownTypeError
 from wisent.core.activations.core.atoms import LayerActivations
 
@@ -179,8 +180,8 @@ class RoboticsAdapterCore(BaseAdapter[InputType, RobotAction]):
         for name, module in m.named_modules():
             if list(module.parameters(recurse=False)):
                 layers.append((name, module))
-        self._policy_layers = [l[1] for l in layers[-5:]]
-        self._layer_names = [l[0] for l in layers[-5:]]
+        self._policy_layers = [l[1] for l in layers[-POLICY_LAYER_COUNT:]]
+        self._layer_names = [l[0] for l in layers[-POLICY_LAYER_COUNT:]]
         return self._policy_layers
 
     @property

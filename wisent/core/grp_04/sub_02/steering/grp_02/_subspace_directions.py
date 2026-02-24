@@ -8,16 +8,16 @@ import torch
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.activations.core.atoms import LayerName
 from wisent.core.steering._subspace_compression import UniversalBasis, compute_universal_basis
+from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_VARIANCE_THRESHOLD, TECZA_MAX_DIRECTIONS, MARGINAL_VARIANCE_THRESHOLD, SUBSPACE_ROBUSTNESS_NOISE_SCALE, MAX_PCA_COMPONENTS_ANALYSIS
 
-VARIANCE_EXPLAINED_THRESHOLD = 0.80
-MARGINAL_VARIANCE_THRESHOLD = 0.05
+VARIANCE_EXPLAINED_THRESHOLD = DEFAULT_VARIANCE_THRESHOLD
 
 _LOG = setup_logger(__name__)
 
 def explained_variance_analysis(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    max_components: int = 20,
+    max_components: int = MAX_PCA_COMPONENTS_ANALYSIS,
 ) -> Tuple[List[float], List[float]]:
     """
     Analyze how many directions are needed to explain the behavioral difference.
@@ -45,7 +45,7 @@ def explained_variance_analysis(
     
     # Variance ratios
     total_var = (S ** 2).sum()
-    if total_var < 1e-10:
+    if total_var < ZERO_THRESHOLD:
         return [1.0], [1.0]
     
     k = min(max_components, len(S))
@@ -60,7 +60,7 @@ def compute_optimal_num_directions(
     neg_activations: torch.Tensor,
     variance_threshold: float = VARIANCE_EXPLAINED_THRESHOLD,
     marginal_threshold: float = MARGINAL_VARIANCE_THRESHOLD,
-    max_directions: int = 10,
+    max_directions: int = TECZA_MAX_DIRECTIONS,
     min_directions: int = 1,
 ) -> Tuple[int, Dict[str, Any]]:
     """
@@ -178,7 +178,7 @@ def initialize_from_universal_basis(
     num_directions: int,
     basis: Optional[UniversalBasis] = None,
     model_name: Optional[str] = None,
-    noise_scale: float = 0.1,
+    noise_scale: float = SUBSPACE_ROBUSTNESS_NOISE_SCALE,
 ) -> torch.Tensor:
     """
     Initialize steering directions from universal basis.

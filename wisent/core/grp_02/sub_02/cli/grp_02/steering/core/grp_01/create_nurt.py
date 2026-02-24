@@ -14,6 +14,14 @@ from wisent.core.steering_methods.methods.nurt import (
     NurtMethod,
     NurtSteeringObject,
 )
+from wisent.core.constants import (
+    DEFAULT_VARIANCE_THRESHOLD,
+    NURT_LR,
+    NURT_NUM_DIMS,
+    NURT_NUM_INTEGRATION_STEPS,
+    NURT_T_MAX,
+    NURT_TRAINING_EPOCHS,
+)
 
 
 def _create_nurt_steering_object(
@@ -24,13 +32,13 @@ def _create_nurt_steering_object(
 ) -> NurtSteeringObject:
     """Create Concept Flow steering object with per-layer flow networks."""
 
-    num_dims = getattr(args, "nurt_num_dims", 0)
-    variance_threshold = getattr(args, "nurt_variance_threshold", 0.80)
-    training_epochs = getattr(args, "nurt_training_epochs", 300)
-    lr = getattr(args, "nurt_lr", 0.001)
-    num_integration_steps = getattr(args, "nurt_num_integration_steps", 4)
-    t_max = getattr(args, "nurt_t_max", 1.0)
-    flow_hidden_dim_raw = getattr(args, "nurt_hidden_dim", 0)
+    num_dims = getattr(args, "nurt_num_dims", NURT_NUM_DIMS)
+    variance_threshold = getattr(args, "nurt_variance_threshold", DEFAULT_VARIANCE_THRESHOLD)
+    training_epochs = getattr(args, "nurt_training_epochs", NURT_TRAINING_EPOCHS)
+    lr = getattr(args, "nurt_lr", NURT_LR)
+    num_integration_steps = getattr(args, "nurt_num_integration_steps", NURT_NUM_INTEGRATION_STEPS)
+    t_max = getattr(args, "nurt_t_max", NURT_T_MAX)
+    flow_hidden_dim_raw = getattr(args, "nurt_hidden_dim", NURT_NUM_DIMS)
     flow_hidden_dim = flow_hidden_dim_raw if flow_hidden_dim_raw > 0 else None
 
     method = NurtMethod(

@@ -8,6 +8,8 @@ from typing import Dict, List, Optional
 
 import torch
 
+from wisent.core.constants import (HF_UPLOAD_MAX_RETRIES, HF_UPLOAD_BASE_WAIT,
+    HF_UPLOAD_BACKOFF_MAX_EXPONENT, HF_UPLOAD_JITTER_MIN, HF_UPLOAD_JITTER_MAX)
 from .hf_config import (
     HF_REPO_ID,
     HF_REPO_TYPE,
@@ -37,7 +39,7 @@ def _get_api():
     return HfApi(token=_get_hf_token())
 
 
-def _retry_upload(fn, max_retries=8, base_wait=120):
+def _retry_upload(fn, max_retries=HF_UPLOAD_MAX_RETRIES, base_wait=HF_UPLOAD_BASE_WAIT):
     """Call fn(); on 429/412/timeout, back off and retry."""
     import random
     for attempt in range(max_retries):
@@ -45,10 +47,10 @@ def _retry_upload(fn, max_retries=8, base_wait=120):
             return fn()
         except Exception as exc:
             msg = str(exc)
-            retryable = any(k in msg for k in ("429", "412", "Precondition", "ReadTimeout", "timed out"))
+            retryable = any(k in msg for k in ("429", "412", "500", "Precondition", "ReadTimeout", "timed out", "Internal"))
             if not retryable or attempt == max_retries - 1:
                 raise
-            wait = int(base_wait * (2 ** min(attempt, 3)) * random.uniform(0.5, 1.5))
+            wait = int(base_wait * (2 ** min(attempt, HF_UPLOAD_BACKOFF_MAX_EXPONENT)) * random.uniform(HF_UPLOAD_JITTER_MIN, HF_UPLOAD_JITTER_MAX))
             print(f"  Retryable error. Waiting {wait}s (attempt {attempt + 1}/{max_retries})...")
             time.sleep(wait)
 

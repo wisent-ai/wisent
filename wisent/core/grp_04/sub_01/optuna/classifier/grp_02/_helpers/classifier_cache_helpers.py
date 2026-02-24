@@ -10,6 +10,17 @@ from typing import Any, Optional
 
 import torch
 
+from wisent.core.constants import (
+    CACHE_WEIGHT_LAYER_PROXIMITY,
+    CACHE_WEIGHT_MODEL_NAME,
+    CACHE_WEIGHT_MODEL_TYPE,
+    CACHE_WEIGHT_TASK_NAME,
+    CLASSIFIER_CACHE_TOP_K,
+    HASH_SAMPLE_SIZE,
+    LAYER_CACHE_DECAY_DENOMINATOR,
+    LAYER_CACHE_MIN_SCORE,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -22,7 +33,7 @@ class ClassifierCacheHelpersMixin:
         task_name: str,
         model_type: Optional[str] = None,
         layer: Optional[int] = None,
-        top_k: int = 5,
+        top_k: int = CLASSIFIER_CACHE_TOP_K,
     ) -> list[tuple[str, CacheMetadata, float]]:
         """
         Find similar cached models based on configuration.
@@ -45,24 +56,24 @@ class ClassifierCacheHelpersMixin:
 
             # Model name match (highest weight)
             if metadata.model_name == model_name:
-                score += 0.4
+                score += CACHE_WEIGHT_MODEL_NAME
 
             # Task name match
             if metadata.task_name == task_name:
-                score += 0.3
+                score += CACHE_WEIGHT_TASK_NAME
 
             # Model type match
             if model_type and metadata.model_type == model_type:
-                score += 0.2
+                score += CACHE_WEIGHT_MODEL_TYPE
 
             # Layer proximity
             if layer is not None:
                 layer_diff = abs(metadata.layer - layer)
-                layer_score = max(0, 1.0 - layer_diff / 10.0)  # Decay with distance
-                score += 0.1 * layer_score
+                layer_score = max(0, 1.0 - layer_diff / LAYER_CACHE_DECAY_DENOMINATOR)  # Decay with distance
+                score += CACHE_WEIGHT_LAYER_PROXIMITY * layer_score
 
             # Only include models with some similarity
-            if score > 0.1:
+            if score > LAYER_CACHE_MIN_SCORE:
                 candidates.append((cache_key, metadata, score))
 
         # Sort by similarity score and return top_k
@@ -214,10 +225,10 @@ class ClassifierCacheHelpersMixin:
         if X.size(0) > 10:
             # Use tensor indexing instead of numpy.linspace
             sample_indices = torch.linspace(0, X.size(0) - 1, 10, dtype=torch.long)
-            x_sample = X[sample_indices].flatten()[:100]  # First 100 values
+            x_sample = X[sample_indices].flatten()[:HASH_SAMPLE_SIZE]
             y_sample = y[sample_indices]
         else:
-            x_sample = X.flatten()[:100]
+            x_sample = X.flatten()[:HASH_SAMPLE_SIZE]
             y_sample = y
 
         # Convert tensor data to bytes for hashing (float32 required, bfloat16 not supported)

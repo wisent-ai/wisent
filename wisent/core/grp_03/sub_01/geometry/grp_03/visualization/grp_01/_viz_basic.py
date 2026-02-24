@@ -8,12 +8,13 @@ import torch
 import numpy as np
 from typing import Dict, Any, List, Tuple, Optional
 import warnings
+from wisent.core.constants import NORM_EPS, VIZ_N_COMPONENTS_2D, VIZ_PCA_COMPONENTS, VIZ_MAX_SAMPLES
 
 
 def plot_pca_projection(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_components: int = 2,
+    n_components: int = VIZ_N_COMPONENTS_2D,
     title: str = "PCA Projection",
 ) -> Dict[str, Any]:
     """
@@ -119,14 +120,14 @@ def plot_alignment_distribution(
     mean_diff = diffs.mean(axis=0)
     mean_diff_norm = np.linalg.norm(mean_diff)
 
-    if mean_diff_norm < 1e-8:
+    if mean_diff_norm < NORM_EPS:
         return {"error": "mean diff too small"}
 
     mean_diff_normalized = mean_diff / mean_diff_norm
 
     # Per-diff alignment
     diff_norms = np.linalg.norm(diffs, axis=1)
-    valid = diff_norms > 1e-8
+    valid = diff_norms > NORM_EPS
     alignments = np.zeros(n)
     alignments[valid] = (diffs[valid] / diff_norms[valid, np.newaxis]) @ mean_diff_normalized
 
@@ -143,7 +144,7 @@ def plot_alignment_distribution(
 def plot_eigenvalue_spectrum(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_components: int = 50,
+    n_components: int = VIZ_PCA_COMPONENTS,
     title: str = "Eigenvalue Spectrum",
 ) -> Dict[str, Any]:
     """
@@ -172,7 +173,7 @@ def plot_eigenvalue_spectrum(
 def plot_pairwise_distances(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    max_samples: int = 200,
+    max_samples: int = VIZ_MAX_SAMPLES,
     title: str = "Pairwise Distances",
 ) -> Dict[str, Any]:
     """

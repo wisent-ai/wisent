@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Any
 from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.constants import MERCURY_RUNTIME_SENTINEL, MERCURY_RUNTIME_SENTINEL_STR
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
@@ -85,11 +86,11 @@ class MercuryExtractor(HuggingFaceBenchmarkExtractor):
             # Sort solutions by runtime (fastest first)
             # Runtime format is like "44ms", "36ms", etc.
             def parse_runtime(sol):
-                runtime_str = sol.get("runtime", "999ms")
+                runtime_str = sol.get("runtime", MERCURY_RUNTIME_SENTINEL_STR)
                 try:
                     return int(runtime_str.replace("ms", ""))
                 except:
-                    return 999
+                    return MERCURY_RUNTIME_SENTINEL
             
             sorted_solutions = sorted(solutions, key=parse_runtime)
             

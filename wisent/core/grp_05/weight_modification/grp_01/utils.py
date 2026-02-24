@@ -7,6 +7,7 @@ from __future__ import annotations
 import torch
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import COMPARE_TOL
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -159,7 +160,7 @@ def verify_modification(
                 continue
 
             diff = (curr - orig).abs()
-            changed = (diff > 1e-6).sum().item()
+            changed = (diff > COMPARE_TOL).sum().item()
 
             if changed > 0:
                 params_changed += changed

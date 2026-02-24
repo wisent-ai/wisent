@@ -13,6 +13,7 @@ from wisent.core.opti.core.atoms import BaseOptimizer, HPOConfig, HPORun
 from .config import RecommendationConfig, Thresholds, ScoreWeights
 from .configurable import compute_configurable_recommendation
 from .collector import GroundTruthDataset
+from wisent.core.constants import RECOMMEND_TOP_K, RECOMMEND_N_TRIALS, DEFAULT_RANDOM_SEED
 
 ObjectiveType = Literal["top1", "topk", "regret"]
 
@@ -51,7 +52,7 @@ class RecommendationOptimizer(BaseOptimizer):
 
     def __init__(
         self, dataset: GroundTruthDataset,
-        objective_type: ObjectiveType = "top1", top_k: int = 2,
+        objective_type: ObjectiveType = "top1", top_k: int = RECOMMEND_TOP_K,
     ):
         self.dataset = dataset
         self.objective_type = objective_type
@@ -101,8 +102,8 @@ class RecommendationOptimizer(BaseOptimizer):
         return -(total / max(len(self.dataset.records), 1))
 
     def tune(
-        self, n_trials: int = 500,
-        output_path: str | None = None, seed: int = 42,
+        self, n_trials: int = RECOMMEND_N_TRIALS,
+        output_path: str | None = None, seed: int = DEFAULT_RANDOM_SEED,
     ) -> RecommendationConfig:
         """Run optimization and return best config."""
         hpo = HPOConfig(

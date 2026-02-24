@@ -6,6 +6,10 @@ import json
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import (
+    SIMPLEQA_YEAR_DIGIT_LENGTH, SIMPLEQA_MIN_CHAR_LENGTH,
+    SIMPLEQA_MAX_ANSWER_LENGTH,
+)
 
 __all__ = ["SimpleQAExtractor"]
 
@@ -132,7 +136,7 @@ class SimpleQAExtractor(HuggingFaceBenchmarkExtractor):
             return str(random.choice([v for v in wrong_vals if v != num]))
 
         # For years (4 digit numbers)
-        if len(correct) == 4 and correct.isdigit():
+        if len(correct) == SIMPLEQA_YEAR_DIGIT_LENGTH and correct.isdigit():
             year = int(correct)
             return str(random.choice([year - 10, year + 10, year - 5, year + 5]))
 
@@ -149,14 +153,14 @@ class SimpleQAExtractor(HuggingFaceBenchmarkExtractor):
 
             # Character-level scrambling for single words
             chars = list(correct)
-            if len(chars) > 3:
+            if len(chars) > SIMPLEQA_MIN_CHAR_LENGTH:
                 # Keep first and last, shuffle middle
                 middle = chars[1:-1]
                 random.shuffle(middle)
                 return chars[0] + ''.join(middle) + chars[-1]
 
         # For longer answers, truncate and modify
-        if len(correct) > 50:
+        if len(correct) > SIMPLEQA_MAX_ANSWER_LENGTH:
             return correct[:len(correct)//2] + " [incomplete/incorrect]"
 
         # Fallback: return "Unknown" which is clearly wrong for factual questions

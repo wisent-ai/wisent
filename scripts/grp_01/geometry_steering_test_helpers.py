@@ -9,6 +9,10 @@ import torch
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 import torch.nn.functional as F
+from wisent.core.constants import (
+    DEFAULT_RANDOM_SEED, GEOMETRY_OPTIMIZATION_LR, MAX_NEW_TOKENS_TEST_SHORT,
+    TECZA_NUM_DIRECTIONS, DIAGNOSIS_OPTIMIZATION_STEPS,
+)
 
 
 def train_caa(pos_tensor, neg_tensor):
@@ -21,13 +25,13 @@ def train_probe(pos_tensor, neg_tensor):
     """Linear probe direction"""
     X = torch.cat([pos_tensor, neg_tensor], dim=0).numpy()
     y = np.array([1]*len(pos_tensor) + [0]*len(neg_tensor))
-    probe = LogisticRegression(random_state=42)
+    probe = LogisticRegression(random_state=DEFAULT_RANDOM_SEED)
     probe.fit(X, y)
     direction = torch.tensor(probe.coef_[0], dtype=torch.float32)
     return F.normalize(direction, dim=0), probe.score(X, y)
 
 
-def train_tecza(pos_tensor, neg_tensor, num_directions=3):
+def train_tecza(pos_tensor, neg_tensor, num_directions=TECZA_NUM_DIRECTIONS):
     """TECZA: multiple directions via gradient optimization"""
     caa_dir = F.normalize(pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0), dim=0)
     directions = torch.randn(num_directions, pos_tensor.shape[1])
@@ -38,9 +42,9 @@ def train_tecza(pos_tensor, neg_tensor, num_directions=3):
 
     directions = F.normalize(directions, dim=1)
     directions.requires_grad_(True)
-    optimizer = torch.optim.Adam([directions], lr=0.01)
+    optimizer = torch.optim.Adam([directions], lr=GEOMETRY_OPTIMIZATION_LR)
 
-    for step in range(100):
+    for step in range(DIAGNOSIS_OPTIMIZATION_STEPS):
         optimizer.zero_grad()
         dirs_norm = F.normalize(directions, dim=1)
 
@@ -63,7 +67,7 @@ def train_tecza(pos_tensor, neg_tensor, num_directions=3):
     return final_dirs.mean(dim=0)
 
 
-def generate_with_steering(model, tokenizer, prompt, direction, strength, layer, max_tokens=50):
+def generate_with_steering(model, tokenizer, prompt, direction, strength, layer, max_tokens=MAX_NEW_TOKENS_TEST_SHORT):
     """Generate text with a steering hook applied at the given layer."""
     direction_tensor = direction.to(model.device).half()
 

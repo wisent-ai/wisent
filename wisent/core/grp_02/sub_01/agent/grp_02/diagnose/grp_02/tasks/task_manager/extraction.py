@@ -5,6 +5,7 @@ import random
 from typing import Optional, Tuple, List, Any
 
 from wisent.core.errors import TaskLoadError
+from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, SAE_TOP_FEATURES_DISPLAY
 
 
 def extract_individual_tasks_from_yaml(yaml_file: str, group_name: str, _visited_files=None) -> List[str]:
@@ -74,7 +75,7 @@ def extract_individual_tasks_from_yaml(yaml_file: str, group_name: str, _visited
                     resolved_tasks.append(task_name)
             else:
                 resolved_tasks.append(task_name)
-        final_tasks = list(set(resolved_tasks))[:10]
+        final_tasks = list(set(resolved_tasks))[:DISPLAY_TOP_N_SMALL]
         print(f"   Extracted individual tasks from YAML: {final_tasks}")
         return final_tasks
     except Exception as e:
@@ -119,7 +120,7 @@ def try_find_related_working_task(task_name: str):
         prefix = parts[0] if parts else task_name
         print(f"   Searching for ANY task starting with '{prefix}_'...")
         matching_tasks = [t for t in all_available_tasks if t.startswith(prefix + '_') and t != task_name]
-        for candidate in matching_tasks[:10]:
+        for candidate in matching_tasks[:DISPLAY_TOP_N_SMALL]:
             print(f"   Trying candidate: {candidate}")
             try:
                 from .group_handling import handle_configurable_group_task
@@ -184,7 +185,7 @@ def try_extract_working_tasks_from_group(group_name: str, task_manager):
                                             initial_tasks.append(item)
                     if initial_tasks:
                         print(f"   Found {len(initial_tasks)} initial tasks from main YAML: {initial_tasks[:5]}...")
-                        for task_name in initial_tasks[:15]:
+                        for task_name in initial_tasks[:SAE_TOP_FEATURES_DISPLAY]:
                             try:
                                 print(f"   Trying initial task: {task_name}")
                                 result = get_task_dict([task_name], task_manager=task_manager)
@@ -193,10 +194,10 @@ def try_extract_working_tasks_from_group(group_name: str, task_manager):
                                     print(f"   SUCCESS: Found working initial task {task_name}")
                                     return task, task_name
                             except Exception as e:
-                                print(f"      Initial task {task_name} failed: {str(e)[:50]}")
+                                print(f"      Initial task {task_name} failed: {str(e)[:DISPLAY_TRUNCATION_SHORT]}")
                                 continue
                 except Exception as yaml_parse_error:
-                    print(f"   Main YAML parsing failed: {str(yaml_parse_error)[:100]}")
+                    print(f"   Main YAML parsing failed: {str(yaml_parse_error)[:DISPLAY_TRUNCATION_COMPACT]}")
                 try:
                     individual_tasks = extract_individual_tasks_from_yaml(yaml_path, group_name)
                     if individual_tasks:
@@ -216,7 +217,7 @@ def try_extract_working_tasks_from_group(group_name: str, task_manager):
                                     print(f"   SUCCESS: Found working base task {base_task}")
                                     return task, base_task
                             except Exception as e:
-                                print(f"      Base task {base_task} failed: {str(e)[:50]}")
+                                print(f"      Base task {base_task} failed: {str(e)[:DISPLAY_TRUNCATION_SHORT]}")
                                 continue
                         valid_tasks = [t for t in individual_tasks if not any(x in t for x in ['{{', '}}', '_common_yaml', 'sentence:'])]
                         for individual_task in valid_tasks[:5]:
@@ -228,10 +229,10 @@ def try_extract_working_tasks_from_group(group_name: str, task_manager):
                                     print(f"   SUCCESS: Found working individual task {individual_task}")
                                     return task, individual_task
                             except Exception as e:
-                                print(f"      Individual task {individual_task} failed: {str(e)[:50]}")
+                                print(f"      Individual task {individual_task} failed: {str(e)[:DISPLAY_TRUNCATION_SHORT]}")
                                 continue
                 except Exception as yaml_error:
-                    print(f"   YAML extraction failed: {str(yaml_error)[:100]}")
+                    print(f"   YAML extraction failed: {str(yaml_error)[:DISPLAY_TRUNCATION_COMPACT]}")
         print(f"   FINAL CATCH-ALL: Searching registry for tasks matching group pattern...")
         all_tasks = getattr(task_manager, 'all_tasks', set())
         if isinstance(all_tasks, list):
@@ -240,7 +241,7 @@ def try_extract_working_tasks_from_group(group_name: str, task_manager):
         if group_name in all_tasks:
             candidates.append(group_name)
         group_prefix_tasks = [t for t in all_tasks if t.startswith(group_name + '_')]
-        candidates.extend(group_prefix_tasks[:10])
+        candidates.extend(group_prefix_tasks[:DISPLAY_TOP_N_SMALL])
         group_parts = [part for part in group_name.split('_') if len(part) > 2]
         for part in group_parts:
             matching_tasks = [t for t in all_tasks if part in t and t not in candidates]
@@ -253,7 +254,7 @@ def try_extract_working_tasks_from_group(group_name: str, task_manager):
                 unique_candidates.append(candidate)
                 seen.add(candidate)
         print(f"   Found {len(unique_candidates)} candidate tasks to try...")
-        for candidate in unique_candidates[:20]:
+        for candidate in unique_candidates[:DISPLAY_TOP_N_MEDIUM]:
             try:
                 print(f"   Trying candidate: {candidate}")
                 result = get_task_dict([candidate], task_manager=task_manager)
@@ -262,7 +263,7 @@ def try_extract_working_tasks_from_group(group_name: str, task_manager):
                     print(f"   SUCCESS: Found working candidate {candidate}")
                     return task, candidate
             except Exception as e:
-                print(f"      Candidate {candidate} failed: {str(e)[:50]}")
+                print(f"      Candidate {candidate} failed: {str(e)[:DISPLAY_TRUNCATION_SHORT]}")
                 continue
         print(f"   FAILED: Group {group_name} has no working tasks")
         return None

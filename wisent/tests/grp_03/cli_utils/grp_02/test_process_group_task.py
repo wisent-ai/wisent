@@ -17,6 +17,7 @@ from wisent.cli_utils.cli_prepare_dataset import (
     Caps,
 )
 from wisent.core.model import Model
+from wisent.core.constants import DEFAULT_SPLIT_RATIO
 
 
 def test_process_group_task_model_methods():
@@ -58,7 +59,7 @@ def test_process_group_task_model_methods():
             model=model,
             shots=0,
             limit=50,  # Increased limit to get more documents
-            split_ratio=0.8,
+            split_ratio=DEFAULT_SPLIT_RATIO,
             seed=42,
             caps=Caps(train=10, test=5),
             verbose=True  # Enable verbose to see what's happening

@@ -3,6 +3,7 @@
 from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
+from wisent.core.constants import DEFAULT_TIMEOUT_SHORT, TAG_GEN_MAX_NEW_TOKENS, TAG_GEN_TEMPERATURE, TAG_ANALYSIS_MAX_NEW_TOKENS, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH
 
 
 APPROVED_SKILLS = [
@@ -51,15 +52,15 @@ def get_benchmark_tags_with_llama(task_name: str, readme_content: str = "") -> L
             torch_dtype=torch_dtype,
             device_map=device_map,
             device=pipeline_device,
-            max_new_tokens=1000,
-            temperature=0.3,
+            max_new_tokens=TAG_GEN_MAX_NEW_TOKENS,
+            temperature=TAG_GEN_TEMPERATURE,
             do_sample=True,
-            pad_token_id=50256
+            pad_token_id=LLAMA_PAD_TOKEN_ID
         )
 
         print(f"   Successfully loaded Llama-3.1-8B-Instruct pipeline")
 
-        description = readme_content[:1500] if readme_content else f"A benchmark called '{task_name}' for evaluating language models."
+        description = readme_content[:CONTEXT_MAX_LENGTH] if readme_content else f"A benchmark called '{task_name}' for evaluating language models."
 
         user_prompt = f"""Analyze the benchmark and determine exactly 3 tags.
 
@@ -87,7 +88,7 @@ You are an expert in AI evaluation benchmarks analyzing benchmark tasks to deter
 """
 
         print("   Analyzing with Llama...")
-        response = generator(formatted_prompt, max_new_tokens=800, temperature=0.3)
+        response = generator(formatted_prompt, max_new_tokens=TAG_ANALYSIS_MAX_NEW_TOKENS, temperature=TAG_GEN_TEMPERATURE)
 
         full_response = response[0]['generated_text']
         generated_text = full_response.split("<|start_header_id|>assistant<|end_header_id|>")[-1].strip()
@@ -172,7 +173,7 @@ def get_benchmark_groups_from_readme(task_name: str) -> Dict[str, Any]:
 
     try:
         print(f"   Fetching README from: {readme_url}")
-        response = requests.get(readme_url, timeout=10)
+        response = requests.get(readme_url, timeout=DEFAULT_TIMEOUT_SHORT)
         response.raise_for_status()
         readme_content = response.text
 

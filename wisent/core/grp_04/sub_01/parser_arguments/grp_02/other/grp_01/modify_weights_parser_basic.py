@@ -1,6 +1,16 @@
 """Basic arguments for modify-weights parser."""
 import argparse
 
+from wisent.core.constants import (
+    DATA_SPLIT_RATIO,
+    DATA_SPLIT_SEED,
+    MODIFY_WEIGHTS_BATCH_SIZE,
+    MODIFY_WEIGHTS_DEFAULT_ALPHA,
+    MODIFY_WEIGHTS_LR_SCHEDULES,
+    MODIFY_WEIGHTS_MAX_ITERATIONS,
+    PAIRS_SIMILARITY_THRESHOLD,
+)
+
 
 def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     """Set up basic modification arguments."""
@@ -74,13 +84,13 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--train-ratio",
         type=float,
-        default=0.8,
+        default=DATA_SPLIT_RATIO,
         help="Fraction of pairs for training vs evaluation (default: 0.8)"
     )
     parser.add_argument(
         "--seed",
         type=int,
-        default=42,
+        default=DATA_SPLIT_SEED,
         help="Random seed for reproducibility (default: 42)"
     )
 
@@ -104,7 +114,7 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=100,
+        default=MODIFY_WEIGHTS_MAX_ITERATIONS,
         help="Number of contrastive pairs to generate (default: 100)"
     )
     parser.add_argument(
@@ -116,7 +126,7 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--similarity-threshold",
         type=float,
-        default=0.8,
+        default=PAIRS_SIMILARITY_THRESHOLD,
         help="Similarity threshold for synthetic mode (default: 0.8)"
     )
     parser.add_argument(
@@ -169,7 +179,7 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     grom_group.add_argument(
         "--grom-num-directions",
         type=int,
-        default=8,
+        default=MODIFY_WEIGHTS_BATCH_SIZE,
         help="Number of manifold directions for GROM (default: 8)"
     )
 
@@ -185,7 +195,7 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     tecza_group.add_argument(
         "--tecza-num-directions",
         type=int,
-        default=3,
+        default=MODIFY_WEIGHTS_LR_SCHEDULES,
         help="Number of directions per layer for TECZA (default: 3)"
     )
 
@@ -194,7 +204,7 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     directional_group.add_argument(
         "--strength",
         type=float,
-        default=1.0,
+        default=MODIFY_WEIGHTS_DEFAULT_ALPHA,
         help="Projection strength (0=no change, 1=full projection) (default: 1.0)"
     )
     directional_group.add_argument(

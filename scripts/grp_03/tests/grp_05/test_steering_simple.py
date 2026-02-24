@@ -8,6 +8,7 @@ import numpy as np
 from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
 import random
+from wisent.core.constants import ZERO_THRESHOLD, TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"
@@ -19,7 +20,7 @@ model = AutoModelForCausalLM.from_pretrained(MODEL, torch_dtype=torch.float16, d
 
 # Load TruthfulQA
 ds = load_dataset("truthfulqa/truthful_qa", "generation", split="validation")
-random.seed(42)
+random.seed(DEFAULT_RANDOM_SEED)
 all_pairs = [(s["question"], s["best_answer"], random.choice(s["incorrect_answers"])) 
              for s in ds if s["incorrect_answers"]]
 
@@ -28,7 +29,7 @@ test_pairs = all_pairs[100:120]
 print(f"Train: {len(train_pairs)}, Test: {len(test_pairs)}")
 
 def get_activation(text):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
     with torch.no_grad():
         out = model(inputs.input_ids, output_hidden_states=True)
     return out.hidden_states[LAYER][0, -1, :].cpu().float().numpy()
@@ -59,7 +60,7 @@ clf_vector = clf_vector / np.linalg.norm(clf_vector)
 
 # CAA vector
 caa_vector = (pos_acts - neg_acts).mean(axis=0)
-caa_vector = caa_vector / (np.linalg.norm(caa_vector) + 1e-10)
+caa_vector = caa_vector / (np.linalg.norm(caa_vector) + ZERO_THRESHOLD)
 
 print(f"\nCAA magnitude (pre-norm): {np.linalg.norm((pos_acts - neg_acts).mean(axis=0)):.4f}")
 print(f"Cosine(CAA, CLF): {np.dot(caa_vector, clf_vector):.4f}")

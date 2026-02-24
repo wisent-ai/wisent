@@ -9,6 +9,7 @@ import io
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import HTTP_TIMEOUT_LONG
 from wisent.core.errors import InvalidValueError
 
 log = setup_logger(__name__)
@@ -201,7 +202,7 @@ class SciCodeExtractor(HuggingFaceBenchmarkExtractor):
     def _load_from_github(self) -> list[dict[str, Any]]:
         """Load SciCode data from GitHub ZIP archive."""
         try:
-            response = requests.get(SCICODE_GITHUB_URL, timeout=60)
+            response = requests.get(SCICODE_GITHUB_URL, timeout=HTTP_TIMEOUT_LONG)
             response.raise_for_status()
             
             all_problems = []

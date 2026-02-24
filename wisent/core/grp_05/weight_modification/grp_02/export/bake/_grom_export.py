@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import MissingParameterError
+from wisent.core.constants import GROM_GATE_TEMPERATURE, GROM_MAX_ALPHA
 from wisent.core.weight_modification.export._generic import (
     _save_standalone_loader,
 )
@@ -124,8 +125,8 @@ def export_grom_model(
         "layer_order": grom_result.layer_order,
         "directions": {k: v.cpu() for k, v in grom_result.directions.items()},
         "direction_weights": {k: v.cpu() for k, v in grom_result.direction_weights.items()},
-        "gate_temperature": getattr(grom_result, 'gate_temperature', 0.5),
-        "max_alpha": getattr(grom_result, 'max_alpha', 3.0),
+        "gate_temperature": getattr(grom_result, 'gate_temperature', GROM_GATE_TEMPERATURE),
+        "max_alpha": getattr(grom_result, 'max_alpha', GROM_MAX_ALPHA),
     }
     
     # Save networks if present

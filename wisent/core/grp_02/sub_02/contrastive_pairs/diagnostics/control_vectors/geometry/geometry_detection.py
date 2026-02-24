@@ -6,6 +6,13 @@ from typing import Dict, Tuple
 
 import torch
 
+from wisent.core.constants import (
+    GEOMETRY_THRESHOLD_DEFAULT,
+    GEOMETRY_THRESHOLD_CLUSTER,
+    GEOMETRY_THRESHOLD_SPARSE,
+    GEOMETRY_THRESHOLD_MANIFOLD,
+)
+
 from .geometry_types import (
     StructureType,
     StructureScore,
@@ -73,14 +80,19 @@ def detect_geometry_structure(
 def _find_most_specific_structure(scores: Dict[str, StructureScore]) -> Tuple[StructureType, float]:
     """Find the most specific structure that fits the data well."""
     THRESHOLDS = {
-        "linear": 0.5, "cone": 0.5, "orthogonal": 0.5, "cluster": 0.6,
-        "sparse": 0.7, "bimodal": 0.5, "manifold": 0.3,
+        "linear": GEOMETRY_THRESHOLD_DEFAULT,
+        "cone": GEOMETRY_THRESHOLD_DEFAULT,
+        "orthogonal": GEOMETRY_THRESHOLD_DEFAULT,
+        "cluster": GEOMETRY_THRESHOLD_CLUSTER,
+        "sparse": GEOMETRY_THRESHOLD_SPARSE,
+        "bimodal": GEOMETRY_THRESHOLD_DEFAULT,
+        "manifold": GEOMETRY_THRESHOLD_MANIFOLD,
     }
     specificity_order = ["linear", "cone", "orthogonal", "cluster", "sparse", "bimodal", "manifold"]
 
     for struct_name in specificity_order:
         if struct_name in scores:
-            if scores[struct_name].score >= THRESHOLDS.get(struct_name, 0.5):
+            if scores[struct_name].score >= THRESHOLDS.get(struct_name, GEOMETRY_THRESHOLD_DEFAULT):
                 return scores[struct_name].structure_type, scores[struct_name].score
 
     best_key = max(scores.keys(), key=lambda k: scores[k].score)

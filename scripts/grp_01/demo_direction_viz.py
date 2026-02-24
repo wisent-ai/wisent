@@ -8,6 +8,7 @@ import numpy as np
 import torch
 import os
 
+from wisent.core.constants import VIZ_DPI, VIZ_MARKER_SIZE_TINY
 from wisent.core.geometry.database_loaders import load_activations_from_database
 from wisent.core.geometry.decomposition_metrics import find_optimal_clustering
 from wisent.core.geometry.direction_visualization import (
@@ -82,8 +83,8 @@ def main():
     if pca_data["pos_projected"] is not None:
         pos_proj = np.array(pca_data["pos_projected"])
         neg_proj = np.array(pca_data["neg_projected"])
-        ax2.scatter(pos_proj[:, 0], pos_proj[:, 1], c='blue', alpha=0.1, s=10, label='pos')
-        ax2.scatter(neg_proj[:, 0], neg_proj[:, 1], c='red', alpha=0.1, s=10, label='neg')
+        ax2.scatter(pos_proj[:, 0], pos_proj[:, 1], c='blue', alpha=0.1, s=VIZ_MARKER_SIZE_TINY, label='pos')
+        ax2.scatter(neg_proj[:, 0], neg_proj[:, 1], c='red', alpha=0.1, s=VIZ_MARKER_SIZE_TINY, label='neg')
 
     # Plot direction arrows from origin
     colors = plt.cm.tab10(np.linspace(0, 1, len(directions)))
@@ -110,7 +111,7 @@ def main():
 
     # Save figure to current directory
     output_path = os.path.join(os.path.dirname(__file__), "direction_visualization.png")
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
+    plt.savefig(output_path, dpi=VIZ_DPI, bbox_inches='tight')
     print(f"\nVisualization saved to: {output_path}")
 
     # Print angle summary

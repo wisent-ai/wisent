@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import MissingParameterError
+from wisent.core.constants import DEFAULT_STRENGTH
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -18,7 +19,7 @@ def export_tecza_model(
     save_path: str | Path,
     tokenizer=None,
     mode: str = "weighted",
-    strength: float = 1.0,
+    strength: float = DEFAULT_STRENGTH,
     push_to_hub: bool = False,
     repo_id: str | None = None,
     commit_message: str | None = None,

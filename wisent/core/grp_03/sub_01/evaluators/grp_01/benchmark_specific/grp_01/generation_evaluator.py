@@ -12,6 +12,12 @@ import logging
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
 from wisent.core.errors import NumericalExtractionError, TextExtractionError
+from wisent.core.constants import (
+    COMPARE_TOL, EVAL_NLI_THRESHOLD, EVAL_NLI_CONF_CEILING,
+    EVAL_NLI_CONF_BASE, EVAL_NLI_CONF_SCALE, EVAL_EMB_THRESHOLD,
+    EVAL_EMB_CONF_CEILING, EVAL_EMB_CONF_BASE, EVAL_EMB_CONF_SCALE,
+    GEN_EVAL_HIGH_CONFIDENCE,
+)
 from wisent.core.evaluators.benchmark_specific._generation_evaluator_helpers import (
     GenerationEvaluatorHelpersMixin,
 )
@@ -153,9 +159,9 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
 
         if answer_type == "numerical":
             correct_matches = (extracted_correct is not None and extracted_expected is not None
-                             and abs(extracted_correct - extracted_expected) < 1e-6)
+                             and abs(extracted_correct - extracted_expected) < COMPARE_TOL)
             incorrect_matches = (extracted_incorrect is not None and extracted_expected is not None
-                               and abs(extracted_incorrect - extracted_expected) < 1e-6)
+                               and abs(extracted_incorrect - extracted_expected) < COMPARE_TOL)
             conf_correct = 1.0 if correct_matches else 0.0
             conf_incorrect = 1.0 if incorrect_matches else 0.0
         else:
@@ -246,7 +252,7 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
         for expected in expected_list:
             try:
                 expected_num = float(expected)
-                if abs(extracted - expected_num) < 1e-6:
+                if abs(extracted - expected_num) < COMPARE_TOL:
                     return True, expected, 1.0
             except (ValueError, TypeError):
                 continue
@@ -263,16 +269,16 @@ class GenerationEvaluator(GenerationEvaluatorHelpersMixin, BaseEvaluator):
             if extracted_norm == expected_norm:
                 return True, expected, 1.0
             if extracted_norm in expected_norm or expected_norm in extracted_norm:
-                return True, expected, 0.9
+                return True, expected, GEN_EVAL_HIGH_CONFIDENCE
 
         for expected in expected_list:
             expected_str = str(expected)
             nli_score = self._nli_entailment(extracted, expected_str)
-            if nli_score is not None and nli_score >= 0.5:
-                confidence = min(0.85, 0.6 + nli_score * 0.3)
+            if nli_score is not None and nli_score >= EVAL_NLI_THRESHOLD:
+                confidence = min(EVAL_NLI_CONF_CEILING, EVAL_NLI_CONF_BASE + nli_score * EVAL_NLI_CONF_SCALE)
                 return True, expected, confidence
             emb_score = self._embedding_similarity(extracted, expected_str)
-            if emb_score is not None and emb_score >= 0.6:
-                confidence = min(0.8, 0.5 + emb_score * 0.3)
+            if emb_score is not None and emb_score >= EVAL_EMB_THRESHOLD:
+                confidence = min(EVAL_EMB_CONF_CEILING, EVAL_EMB_CONF_BASE + emb_score * EVAL_EMB_CONF_SCALE)
                 return True, expected, confidence
         return False, None, 0.0

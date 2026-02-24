@@ -7,9 +7,8 @@ import math
 
 import torch
 from wisent.core.utils import preferred_dtype
-
-
-
+from wisent.core import constants as _C
+from wisent.core.constants import NEAR_ZERO_TOL, CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS
 from wisent.core.cli.analysis.diagnosis.diagnose_vectors_analysis import (
     _run_cone_analysis, _run_geometry_analysis,
 )
@@ -67,7 +66,7 @@ def execute_diagnose_vectors(args):
             mean_val = sum(vector_list) / len(vector_list)
 
             # Count zeros
-            zero_count = sum(1 for x in vector_list if abs(x) < 1e-9)
+            zero_count = sum(1 for x in vector_list if abs(x) < NEAR_ZERO_TOL)
             zero_pct = (zero_count / len(vector_list)) * 100
 
             layer_stats.append({
@@ -97,7 +96,7 @@ def execute_diagnose_vectors(args):
         # Normalization check
         if normalized == True or normalized == 'true':
             print(f"\n✅ Normalization Check:")
-            non_unit = [s for s in layer_stats if abs(s['l2_norm'] - 1.0) > 0.01]
+            non_unit = [s for s in layer_stats if abs(s['l2_norm'] - 1.0) > _C.DIAG_NORM_TOLERANCE]
             if len(non_unit) == 0:
                 print(f"   All vectors have unit L2 norm (≈1.0)")
             else:
@@ -110,13 +109,13 @@ def execute_diagnose_vectors(args):
         warnings = []
 
         for stats in layer_stats:
-            if stats['zero_pct'] > 50:
+            if stats['zero_pct'] > _C.DIAG_ZERO_PCT_THRESHOLD:
                 warnings.append(f"Layer {stats['layer']}: {stats['zero_pct']:.1f}% zeros (may be too sparse)")
-            if abs(stats['mean']) > 0.5:
+            if abs(stats['mean']) > _C.DIAG_MEAN_MAGNITUDE_THRESHOLD:
                 warnings.append(f"Layer {stats['layer']}: mean = {stats['mean']:.4f} (unusually large)")
-            if stats['l2_norm'] < 0.01:
+            if stats['l2_norm'] < _C.DIAG_NORM_MIN:
                 warnings.append(f"Layer {stats['layer']}: very small L2 norm ({stats['l2_norm']:.6f})")
-            if stats['l2_norm'] > 100:
+            if stats['l2_norm'] > _C.DIAG_NORM_MAX:
                 warnings.append(f"Layer {stats['layer']}: very large L2 norm ({stats['l2_norm']:.2f})")
 
         if len(warnings) == 0:
@@ -138,8 +137,8 @@ def execute_diagnose_vectors(args):
         if args.show_sample and len(layer_stats) > 0:
             sample_layer = str(layer_stats[0]['layer'])
             sample_vector = vectors[sample_layer]
-            print(f"\n📄 Sample Vector (Layer {sample_layer}, first 10 values):")
-            print(f"   {sample_vector[:10]}")
+            print(f"\n📄 Sample Vector (Layer {sample_layer}, first {_C.DISPLAY_TOP_N_SMALL} values):")
+            print(f"   {sample_vector[:_C.DISPLAY_TOP_N_SMALL]}")
 
         # Cone structure analysis (if requested)
         if hasattr(args, 'check_cone') and args.check_cone:
@@ -147,8 +146,8 @@ def execute_diagnose_vectors(args):
                 _run_cone_analysis(
                     args.activations_file, 
                     args.verbose,
-                    getattr(args, 'cone_threshold', 0.7),
-                    getattr(args, 'cone_directions', 5)
+                    getattr(args, 'cone_threshold', CONE_THRESHOLD),
+                    getattr(args, 'cone_directions', CONE_DIRECTIONS)
                 )
             else:
                 print(f"\n⚠️  Cone Analysis: Requires --activations-file with positive/negative activations")
@@ -160,9 +159,9 @@ def execute_diagnose_vectors(args):
                 _run_geometry_analysis(
                     args.activations_file,
                     args.verbose,
-                    getattr(args, 'cone_directions', 5),
-                    getattr(args, 'max_clusters', 5),
-                    getattr(args, 'manifold_neighbors', 10),
+                    getattr(args, 'cone_directions', CONE_DIRECTIONS),
+                    getattr(args, 'max_clusters', MAX_CLUSTERS),
+                    getattr(args, 'manifold_neighbors', MANIFOLD_NEIGHBORS),
                 )
             else:
                 print(f"\n⚠️  Geometry Analysis: Requires --activations-file with positive/negative activations")

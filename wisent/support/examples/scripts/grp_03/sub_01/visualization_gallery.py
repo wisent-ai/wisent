@@ -19,8 +19,9 @@ try:
 except ImportError:
     HAS_SKLEARN = False
 
+from wisent.core.constants import VIZ_PLOT_DPI, TRAIT_NAME_MAX_LENGTH
 from wisent.examples.scripts.visualization_gallery_helpers import (
-    s3_upload_file,
+    gcs_upload_file,
     load_diagnosis_results,
     select_representative_benchmarks,
     create_tsne_plot,
@@ -107,7 +108,7 @@ def create_tsne_gallery(
                 create_tsne_plot(pos_acts, neg_acts, benchmark, ax, diagnosis)
                 
             except Exception as e:
-                ax.text(0.5, 0.5, f'{benchmark}\n(error: {str(e)[:30]})', 
+                ax.text(0.5, 0.5, f'{benchmark}\n(error: {str(e)[:TRAIT_NAME_MAX_LENGTH]})', 
                        ha='center', va='center', transform=ax.transAxes)
                 ax.axis('off')
     
@@ -116,7 +117,7 @@ def create_tsne_gallery(
         axes[0, idx].set_xlabel(diagnosis, fontsize=12, fontweight='bold')
     
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=VIZ_PLOT_DPI, bbox_inches='tight')
     plt.close()
     
     print(f"  Saved t-SNE gallery: {output_path}")
@@ -183,7 +184,7 @@ def create_layer_accuracy_curves(
         ax.set_xlim(1, 32)
     
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=VIZ_PLOT_DPI, bbox_inches='tight')
     plt.close()
     
     print(f"  Saved layer curves: {output_path}")
@@ -219,13 +220,13 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
     print("\n1. Creating hero figure...")
     hero_path = output_dir / f"{model_prefix}_hero_figure.png"
     create_hero_figure(diagnosis_results, hero_path, model_name)
-    s3_upload_file(hero_path, model_name)
+    gcs_upload_file(hero_path, model_name)
     
     # 2. Layer accuracy curves
     print("\n2. Creating layer accuracy curves...")
     curves_path = output_dir / f"{model_prefix}_layer_curves.png"
     create_layer_accuracy_curves(diagnosis_results, curves_path, model_name)
-    s3_upload_file(curves_path, model_name)
+    gcs_upload_file(curves_path, model_name)
     
     # 3. t-SNE gallery (requires model)
     if not skip_tsne:
@@ -241,7 +242,7 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
         
         tsne_path = output_dir / f"{model_prefix}_tsne_gallery.png"
         create_tsne_gallery(model, selected, tsne_path, model_name)
-        s3_upload_file(tsne_path, model_name)
+        gcs_upload_file(tsne_path, model_name)
         
         del model
     else:

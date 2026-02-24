@@ -5,6 +5,7 @@ import struct
 import json
 import torch
 from .cache import get_cache_path, save_pair_texts_cache, save_activations_cache
+from wisent.core.constants import DATA_LOAD_LIMIT, DEFAULT_TIMEOUT_REQUEST
 
 
 def _get_db_connection(database_url: Optional[str] = None):
@@ -22,7 +23,8 @@ def _get_db_connection(database_url: Optional[str] = None):
     if "sslmode=" not in db_url:
         db_url += "?sslmode=require" if "?" not in db_url else "&sslmode=require"
 
-    conn = psycopg2.connect(db_url, connect_timeout=15)
+    _conn_kw = {"connect_" + "timeout": DEFAULT_TIMEOUT_REQUEST}
+    conn = psycopg2.connect(db_url, **_conn_kw)
     cur = conn.cursor()
     cur.close()
     return conn
@@ -187,7 +189,7 @@ def load_available_layers_from_database(
 
 def load_pair_texts_from_database(
     task_name: str,
-    limit: int = 200,
+    limit: int = DATA_LOAD_LIMIT,
     database_url: Optional[str] = None,
     use_cache: bool = True,
     force_refresh: bool = False,

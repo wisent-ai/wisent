@@ -24,6 +24,7 @@ from tqdm import tqdm
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.apps_evaluator import APPSEvaluator
+from wisent.core.constants import DISPLAY_TRUNCATION_LARGE
 
 
 # Generation config
@@ -126,7 +127,7 @@ def evaluate_apps(
                 "total": len(input_output.get("inputs", [])),
                 "all_passed": False,
                 "error": "Failed to extract code from response",
-                "raw_response": raw_response[:500],
+                "raw_response": raw_response[:DISPLAY_TRUNCATION_LARGE],
             })
             total_tests += len(input_output.get("inputs", []))
             continue

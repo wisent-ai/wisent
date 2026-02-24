@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import Any
 from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.constants import EXTRACTOR_DEFAULT_LIMIT, CONTEXT_MAX_LENGTH
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
@@ -19,7 +20,7 @@ class SQuADv2Extractor(HuggingFaceBenchmarkExtractor):
         super().__init__()
         self.name = "squadv2"
 
-    def extract_contrastive_pairs(self, limit: int | None = 500) -> list[ContrastivePair]:
+    def extract_contrastive_pairs(self, limit: int | None = EXTRACTOR_DEFAULT_LIMIT) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []
 
         try:
@@ -61,7 +62,7 @@ class SQuADv2Extractor(HuggingFaceBenchmarkExtractor):
 
             task_prompt = f"""Read the following context and answer the question.
 
-Context: {context[:1500]}
+Context: {context[:CONTEXT_MAX_LENGTH]}
 
 Question: {question}
 
@@ -90,7 +91,7 @@ class DROPExtractor(HuggingFaceBenchmarkExtractor):
         super().__init__()
         self.name = "drop"
 
-    def extract_contrastive_pairs(self, limit: int | None = 500) -> list[ContrastivePair]:
+    def extract_contrastive_pairs(self, limit: int | None = EXTRACTOR_DEFAULT_LIMIT) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []
 
         try:
@@ -129,7 +130,7 @@ class DROPExtractor(HuggingFaceBenchmarkExtractor):
 
             task_prompt = f"""Read the passage and answer the question (may require reasoning or calculation).
 
-Passage: {passage[:1500]}
+Passage: {passage[:CONTEXT_MAX_LENGTH]}
 
 Question: {question}
 

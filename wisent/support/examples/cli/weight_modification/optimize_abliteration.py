@@ -15,6 +15,13 @@ from pathlib import Path
 from dataclasses import dataclass
 import sys
 
+from wisent.core.constants import (
+    EXTRACTION_DEFAULT_PAIR_LIMIT,
+    ABLITERATION_DEFAULT_POSITION,
+    ABLITERATION_DEFAULT_DISTANCE,
+    EXTRACTOR_DEFAULT_LIMIT,
+)
+
 
 @dataclass
 class AbliterationConfig:
@@ -23,8 +30,8 @@ class AbliterationConfig:
     min_weight: float
     strength: float
     num_pairs: int
-    max_weight_position: float = 8.0
-    min_weight_distance: float = 6.0
+    max_weight_position: float = ABLITERATION_DEFAULT_POSITION
+    min_weight_distance: float = ABLITERATION_DEFAULT_DISTANCE
 
     def __str__(self):
         return f"max_weight={self.max_weight}_min_weight={self.min_weight}_strength={self.strength}_pairs={self.num_pairs}"
@@ -86,7 +93,7 @@ def run_modification(config: AbliterationConfig, task: str, output_dir: str, mod
     return model_path
 
 
-def evaluate_model(model_path: str, task: str, limit: int = 500) -> tuple[float, float]:
+def evaluate_model(model_path: str, task: str, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT) -> tuple[float, float]:
     """
     Evaluate model on benchmark.
 
@@ -151,7 +158,7 @@ def optimize_abliteration(
     model: str,
     baseline_accuracy: float,
     output_dir: str = "./data/modified_models",
-    eval_limit: int = 500
+    eval_limit: int = EXTRACTOR_DEFAULT_LIMIT
 ) -> EvaluationResult:
     """
     Optimize abliteration parameters through grid search.

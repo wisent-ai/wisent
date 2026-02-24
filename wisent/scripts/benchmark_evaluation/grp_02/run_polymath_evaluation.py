@@ -16,6 +16,7 @@ from tqdm import tqdm
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.polymath_evaluator import PolyMathEvaluator
+from wisent.core.constants import POLYMATH_DEFAULT_TOTAL, POLYMATH_DEFAULT_K
 
 
 # Generation configs following PolyMath benchmark methodology
@@ -64,7 +65,7 @@ def compute_dw_acc(accuracies: dict[str, float]) -> float:
     return weighted_sum / TOTAL_WEIGHT
 
 
-def compute_average_at_k(correct_counts: list[int], total: int = 125, k: int = 16) -> float:
+def compute_average_at_k(correct_counts: list[int], total: int = POLYMATH_DEFAULT_TOTAL, k: int = POLYMATH_DEFAULT_K) -> float:
     """
     Compute average@k accuracy for reasoning models.
 

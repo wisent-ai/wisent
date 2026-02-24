@@ -12,8 +12,15 @@ from typing import Optional, Dict, List, Tuple, Any
 import numpy as np
 import torch
 from scipy import stats
+from wisent.core.constants import (
+    DEFAULT_RANDOM_SEED, LINEARITY_TEST_GAP_THRESHOLD,
+    LINEARITY_TEST_P_THRESHOLD, LINEARITY_TEST_RESIDUAL_THRESHOLD,
+    LINEARITY_TEST_RAMSEY_THRESHOLD, LINEARITY_TEST_N_BOOTSTRAP,
+    LINEARITY_TEST_N_CV_SPLITS, LINEARITY_CONFIDENCE_HIGH,
+    LINEARITY_CONFIDENCE_LOW, LINEARITY_CROSS_CONTEXT_THRESHOLD,
+)
 
-from ..utils.linearity_utils import (
+from ..geo_utils.linearity_utils import (
     compute_probe_accuracies,
     analyze_residuals,
     bootstrap_gap_ci,
@@ -52,13 +59,13 @@ class LinearityTestResult:
 def test_linearity(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    gap_threshold: float = 0.05,
-    p_threshold: float = 0.05,
-    residual_threshold: float = 0.3,
-    ramsey_threshold: float = 0.03,
-    n_bootstrap: int = 30,
+    gap_threshold: float = LINEARITY_TEST_GAP_THRESHOLD,
+    p_threshold: float = LINEARITY_TEST_P_THRESHOLD,
+    residual_threshold: float = LINEARITY_TEST_RESIDUAL_THRESHOLD,
+    ramsey_threshold: float = LINEARITY_TEST_RAMSEY_THRESHOLD,
+    n_bootstrap: int = LINEARITY_TEST_N_BOOTSTRAP,
     contexts: Optional[List[Tuple[torch.Tensor, torch.Tensor]]] = None,
-    random_state: int = 42,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> LinearityTestResult:
     """Run complete linearity validation suite.
 
@@ -88,7 +95,7 @@ def test_linearity(
     diagnostics = {}
 
     linear_acc, nonlinear_acc, linear_scores, nonlinear_scores = compute_probe_accuracies(
-        pos, neg, n_splits=5, random_state=random_state
+        pos, neg, n_splits=LINEARITY_TEST_N_CV_SPLITS, random_state=random_state
     )
     gap = nonlinear_acc - linear_acc
 
@@ -152,19 +159,19 @@ def test_linearity(
         cross_context_result = test_cross_context_linearity(contexts, random_state=random_state)
         diagnostics["cross_context"] = cross_context_result
         diagnostics_total += 1
-        if cross_context_result["transfer_accuracy"] > 0.7:
+        if cross_context_result["transfer_accuracy"] > LINEARITY_CROSS_CONTEXT_THRESHOLD:
             diagnostics_passed += 1
 
     is_linear = diagnostics_passed >= (diagnostics_total / 2)
     confidence = diagnostics_passed / diagnostics_total
 
     if is_linear:
-        if confidence >= 0.8:
+        if confidence >= LINEARITY_CONFIDENCE_HIGH:
             diagnosis = "LINEAR_HIGH_CONFIDENCE"
         else:
             diagnosis = "LINEAR_MODERATE_CONFIDENCE"
     else:
-        if confidence <= 0.2:
+        if confidence <= LINEARITY_CONFIDENCE_LOW:
             diagnosis = "NONLINEAR_HIGH_CONFIDENCE"
         else:
             diagnosis = "NONLINEAR_MODERATE_CONFIDENCE"

@@ -12,6 +12,12 @@ from enum import Enum
 from typing import Dict, List, Optional, Any
 
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import (
+    STEERING_APP_INITIAL_TOKENS, STEERING_APP_INITIAL_TOKENS_SHORT,
+    STEERING_APP_INITIAL_TOKENS_LONG, STEERING_APP_DECAY_RATE,
+    STEERING_APP_DECAY_RATE_SLOW, STEERING_APP_GAUSSIAN_CENTER,
+    STEERING_APP_GAUSSIAN_WIDTH,
+)
 
 
 class SteeringApplicationStrategy(Enum):
@@ -28,12 +34,12 @@ class SteeringApplicationConfig:
     """Configuration for how steering is applied during generation."""
     strategy: SteeringApplicationStrategy = SteeringApplicationStrategy.CONSTANT
     # For INITIAL_ONLY: number of tokens to apply steering
-    initial_tokens: int = 10
+    initial_tokens: int = STEERING_APP_INITIAL_TOKENS
     # For DIMINISHING/INCREASING: decay/growth rate
-    rate: float = 0.1
+    rate: float = STEERING_APP_DECAY_RATE
     # For GAUSSIAN: center position (as fraction of sequence)
-    gaussian_center: float = 0.5
-    gaussian_width: float = 0.2
+    gaussian_center: float = STEERING_APP_GAUSSIAN_CENTER
+    gaussian_width: float = STEERING_APP_GAUSSIAN_WIDTH
 
 
 @dataclass
@@ -116,10 +122,10 @@ def get_default_steering_application_configs() -> List[SteeringApplicationConfig
     """Get steering application configurations to test."""
     return [
         SteeringApplicationConfig(strategy=SteeringApplicationStrategy.CONSTANT),
-        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=5),
-        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=20),
-        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=0.05),
-        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=0.1),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=STEERING_APP_INITIAL_TOKENS_SHORT),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.INITIAL_ONLY, initial_tokens=STEERING_APP_INITIAL_TOKENS_LONG),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=STEERING_APP_DECAY_RATE_SLOW),
+        SteeringApplicationConfig(strategy=SteeringApplicationStrategy.DIMINISHING, rate=STEERING_APP_DECAY_RATE),
     ]
 
 

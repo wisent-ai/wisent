@@ -12,6 +12,7 @@ from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifi
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.models import get_generate_kwargs
+from wisent.core.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, OPTIMIZE_ACCURACY_THRESHOLD_MULT, AUTOTUNE_VAL_SPLIT
 
 
 def execute_optimize_sample_size(args):
@@ -42,7 +43,7 @@ def execute_optimize_sample_size(args):
 
         loader = LMEvalDataLoader()
         result = loader._load_one_task(
-            task_name=args.task, split_ratio=0.5, seed=args.seed,
+            task_name=args.task, split_ratio=AUTOTUNE_VAL_SPLIT, seed=args.seed,
             limit=total_limit, training_limit=None, testing_limit=None
         )
 
@@ -143,7 +144,7 @@ def execute_optimize_sample_size(args):
 
             X_train = np.array(X_train_list); y_train = np.array(y_train_list)
             classifier = LogisticClassifier(threshold=args.threshold, device=args.device)
-            train_config = ClassifierTrainConfig(test_size=0.2, num_epochs=50, batch_size=32, learning_rate=1e-3, monitor='f1', random_state=args.seed)
+            train_config = ClassifierTrainConfig(test_size=CLASSIFIER_TEST_SIZE, num_epochs=CLASSIFIER_NUM_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE, learning_rate=DEFAULT_CLASSIFIER_LR, monitor='f1', random_state=args.seed)
             classifier.fit(X_train, y_train, config=train_config)
 
             correct, total = 0, 0
@@ -162,7 +163,7 @@ def execute_optimize_sample_size(args):
         accuracies = np.array([r['accuracy'] for r in results])
         sample_sizes = np.array([r['sample_size'] for r in results])
         max_accuracy = np.max(accuracies)
-        threshold = max_accuracy * 0.95
+        threshold = max_accuracy * OPTIMIZE_ACCURACY_THRESHOLD_MULT
         good_indices = np.where(accuracies >= threshold)[0]
         optimal_idx = good_indices[0] if len(good_indices) > 0 else np.argmax(accuracies)
         optimal_size = sample_sizes[optimal_idx]

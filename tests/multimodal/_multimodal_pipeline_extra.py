@@ -10,6 +10,7 @@ from wisent import (
 )
 from wisent.core.adapters import VideoAdapter, RoboticsAdapter
 from _multimodal_helpers import PipelineTestResult
+from wisent.core.constants import DEFAULT_CLASSIFIER_LR
 
 logger = logging.getLogger(__name__)
 
@@ -256,7 +257,7 @@ class RoboticsPipelineTest:
         logger.info(f"  Action norms - Base: {base_norm:.4f}, Gentle: {gentle_norm:.4f}, Forceful: {forceful_norm:.4f}")
 
         # For gentleness, we expect gentle actions to have smaller magnitude
-        steering_has_effect = not np.allclose(action_base.raw_action, action_gentle.raw_action, atol=1e-3)
+        steering_has_effect = not np.allclose(action_base.raw_action, action_gentle.raw_action, atol=DEFAULT_CLASSIFIER_LR)
 
         if steering_has_effect:
             logger.info("  Steering produces different actions")

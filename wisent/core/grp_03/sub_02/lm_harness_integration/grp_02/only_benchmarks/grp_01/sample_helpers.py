@@ -5,6 +5,8 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Optional
 
+from wisent.core.constants import EVAL_HARNESS_NUM_SAMPLES_SMALL
+
 
 __all__ = [
     "try_alternative_task_names",
@@ -16,7 +18,7 @@ __all__ = [
 def try_alternative_task_names(
     benchmark_name: str,
     original_task_name: str,
-    num_samples: int = 5,
+    num_samples: int = EVAL_HARNESS_NUM_SAMPLES_SMALL,
     trust_remote_code: bool = False,
 ) -> Optional[dict]:
     """Try alternative task names for benchmarks with different naming conventions."""
@@ -68,7 +70,7 @@ def try_alternative_task_names(
     return None
 
 
-def get_task_samples_direct(task, num_samples: int = 5) -> dict:
+def get_task_samples_direct(task, num_samples: int = EVAL_HARNESS_NUM_SAMPLES_SMALL) -> dict:
     """Get samples directly from a task object."""
     try:
         if hasattr(task, "eval_docs") and callable(task.eval_docs):
@@ -133,7 +135,7 @@ def get_task_samples_direct(task, num_samples: int = 5) -> dict:
 
 
 def try_datasets_direct_load(
-    task_name: str, num_samples: int = 5, trust_remote_code: bool = False
+    task_name: str, num_samples: int = EVAL_HARNESS_NUM_SAMPLES_SMALL, trust_remote_code: bool = False
 ) -> dict:
     """Try loading dataset directly with datasets library."""
     try:

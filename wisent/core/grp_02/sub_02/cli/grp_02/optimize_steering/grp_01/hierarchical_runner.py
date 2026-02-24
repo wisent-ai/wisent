@@ -12,6 +12,7 @@ from wisent.core.cli.optimize_steering.hierarchical_config import (
 )
 from wisent.core.cli.optimize_steering.pipeline import run_pipeline, OptimizationResult
 from wisent.core.cli.optimize_steering.method_configs import MethodConfig
+from wisent.core.constants import DEFAULT_LIMIT
 
 
 def run_hierarchical_optimization(
@@ -19,7 +20,7 @@ def run_hierarchical_optimization(
     task: str,
     methods: List[str],
     num_layers: int,
-    limit: int = 100,
+    limit: int = DEFAULT_LIMIT,
     device: Optional[str] = None,
     enriched_pairs_file: Optional[str] = None,
     output_dir: Optional[str] = None,

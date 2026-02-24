@@ -8,6 +8,7 @@ import sys
 import pickle
 from pathlib import Path
 from typing import Optional
+from wisent.core import constants as _C
 
 
 def execute_zwiad(args):
@@ -56,7 +57,7 @@ def execute_zwiad(args):
                 activations = cache_data['activations']
                 labels = cache_data['labels']
                 metadata = cache_data.get('metadata', {})
-                layer = metadata.get('layer_id', 0)
+                layer = metadata.get('layer_id', _C.DEFAULT_SCORE)
 
                 # Split by labels (0=neg, 1=pos)
                 if isinstance(activations, np.ndarray):
@@ -107,7 +108,7 @@ def execute_zwiad(args):
             try:
                 pair_texts = load_pair_texts_from_database(
                     task_name=args.task,
-                    limit=args.limit or 500,
+                    limit=args.limit or _C.ZWIAD_ANALYSIS_LIMIT,
                     database_url=args.database_url,
                 )
                 print(f"  Loaded {len(pair_texts)} pair texts")
@@ -177,7 +178,7 @@ def execute_zwiad(args):
         try:
             pair_texts = load_pair_texts_from_database(
                 task_name=args.task,
-                limit=args.limit or 200,
+                limit=args.limit or _C.ZWIAD_ANALYSIS_LIMIT_SMALL,
                 database_url=args.database_url,
             )
             print(f"  Loaded {len(pair_texts)} pair texts")
@@ -220,11 +221,11 @@ def execute_zwiad(args):
     metrics = results.get("metrics", {})
     if metrics:
         print(f"\n--- Key Metrics (all-layer concatenated) ---")
-        print(f"Signal strength: {metrics.get('signal_strength', 0):.3f}")
-        print(f"Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
-        print(f"MLP probe accuracy: {metrics.get('mlp_probe_accuracy', 0):.3f}")
-        print(f"KNN accuracy: {metrics.get('knn_accuracy', 0):.3f}")
-        print(f"KNN PCA accuracy: {metrics.get('knn_pca_accuracy', 0):.3f}")
+        print(f"Signal strength: {metrics.get('signal_strength', _C.DEFAULT_SCORE):.3f}")
+        print(f"Linear probe accuracy: {metrics.get('linear_probe_accuracy', _C.DEFAULT_SCORE):.3f}")
+        print(f"MLP probe accuracy: {metrics.get('mlp_probe_accuracy', _C.DEFAULT_SCORE):.3f}")
+        print(f"KNN accuracy: {metrics.get('knn_accuracy', _C.DEFAULT_SCORE):.3f}")
+        print(f"KNN PCA accuracy: {metrics.get('knn_pca_accuracy', _C.DEFAULT_SCORE):.3f}")
 
     # Print concept decomposition
     decomposition = results.get("concept_decomposition")
@@ -235,10 +236,10 @@ def execute_zwiad(args):
 
         for concept in decomposition.get("concepts", []):
             print(f"\nConcept {concept['id']}: {concept.get('name', 'Unnamed')}")
-            print(f"  Pairs: {concept.get('n_pairs', 0)}")
-            print(f"  Silhouette: {concept.get('silhouette_score', 0):.3f}")
+            print(f"  Pairs: {concept.get('n_pairs', _C.DEFAULT_SCORE)}")
+            print(f"  Silhouette: {concept.get('silhouette_score', _C.DEFAULT_SCORE):.3f}")
             if 'optimal_layer' in concept:
-                print(f"  Optimal layer: {concept['optimal_layer']} (acc: {concept.get('optimal_layer_accuracy', 0):.3f})")
+                print(f"  Optimal layer: {concept['optimal_layer']} (acc: {concept.get('optimal_layer_accuracy', _C.DEFAULT_SCORE):.3f})")
 
             # Print representative pairs
             rep_pairs = concept.get("representative_pairs", [])
@@ -246,7 +247,7 @@ def execute_zwiad(args):
                 print(f"  Representative pairs:")
                 for pair in rep_pairs[:3]:
                     if isinstance(pair, dict):
-                        prompt = pair.get("prompt", "")[:80]
+                        prompt = pair.get("prompt", "")[:_C.DISPLAY_TRUNCATION_ERROR]
                         print(f"    - {prompt}...")
                     elif isinstance(pair, int):
                         print(f"    - pair index {pair}")
@@ -295,6 +296,5 @@ def execute_zwiad(args):
         with open(output_path, 'w') as f:
             json.dump(serialized, f, indent=2)
         print(f"\nResults saved to: {output_path}")
-
     print("\n" + "="*60 + "\nZWIAD COMPLETE\n" + "="*60)
     return results

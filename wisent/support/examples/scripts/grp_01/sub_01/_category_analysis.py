@@ -4,6 +4,10 @@ Category result analysis for direction discovery.
 
 from typing import Dict, List, Optional
 
+from wisent.core.constants import (
+    BLEND_DEFAULT, DEFAULT_SCORE, DENSITY_RATIO_DEFAULT,
+    MULTI_DIR_MIN_K_NOT_FOUND, SIGNAL_EXIST_THRESHOLD, SIGNAL_LINEAR_GAP,
+)
 from wisent.core.geometry_runner import GeometrySearchResults
 from wisent.examples.scripts._discovery_utils import CategoryResult
 from wisent.examples.scripts._pairs_ablation import find_optimal_config
@@ -24,37 +28,37 @@ def analyze_category_results(
             description=description,
             benchmarks_tested=benchmarks,
             total_tests=0,
-            avg_signal_strength=0.5,
+            avg_signal_strength=BLEND_DEFAULT,
             signal_exists=False,
-            avg_linear_probe_accuracy=0.5,
+            avg_linear_probe_accuracy=BLEND_DEFAULT,
             is_linear=False,
-            avg_knn_accuracy_k10=0.5,
-            avg_knn_pca_accuracy=0.5,
-            avg_knn_umap_accuracy=0.5,
-            avg_knn_pacmap_accuracy=0.5,
-            avg_mlp_probe_accuracy=0.5,
-            avg_best_nonlinear=0.5,
-            avg_mmd_rbf=0.0,
-            avg_local_dim_pos=0.0,
-            avg_local_dim_neg=0.0,
-            avg_fisher_max=0.0,
-            avg_density_ratio=1.0,
+            avg_knn_accuracy_k10=BLEND_DEFAULT,
+            avg_knn_pca_accuracy=BLEND_DEFAULT,
+            avg_knn_umap_accuracy=BLEND_DEFAULT,
+            avg_knn_pacmap_accuracy=BLEND_DEFAULT,
+            avg_mlp_probe_accuracy=BLEND_DEFAULT,
+            avg_best_nonlinear=BLEND_DEFAULT,
+            avg_mmd_rbf=DEFAULT_SCORE,
+            avg_local_dim_pos=DEFAULT_SCORE,
+            avg_local_dim_neg=DEFAULT_SCORE,
+            avg_fisher_max=DEFAULT_SCORE,
+            avg_density_ratio=DENSITY_RATIO_DEFAULT,
             structure_distribution={},
             structure_percentages={},
             dominant_structure="error",
-            avg_linear_score=0.0,
-            avg_cohens_d=0.0,
-            avg_multi_dir_accuracy_k1=0.5,
-            avg_multi_dir_accuracy_k3=0.5,
-            avg_multi_dir_accuracy_k5=0.5,
-            avg_multi_dir_min_k=-1.0,
-            avg_multi_dir_gain=0.0,
-            avg_icd=0.0,
-            avg_icd_top1_variance=0.0,
-            avg_nonsense_icd=0.0,
-            avg_icd_ratio=1.0,
-            avg_nonsense_accuracy=0.5,
-            avg_signal_above_baseline=0.0,
+            avg_linear_score=DEFAULT_SCORE,
+            avg_cohens_d=DEFAULT_SCORE,
+            avg_multi_dir_accuracy_k1=BLEND_DEFAULT,
+            avg_multi_dir_accuracy_k3=BLEND_DEFAULT,
+            avg_multi_dir_accuracy_k5=BLEND_DEFAULT,
+            avg_multi_dir_min_k=float(MULTI_DIR_MIN_K_NOT_FOUND),
+            avg_multi_dir_gain=DEFAULT_SCORE,
+            avg_icd=DEFAULT_SCORE,
+            avg_icd_top1_variance=DEFAULT_SCORE,
+            avg_nonsense_icd=DEFAULT_SCORE,
+            avg_icd_ratio=DENSITY_RATIO_DEFAULT,
+            avg_nonsense_accuracy=BLEND_DEFAULT,
+            avg_signal_above_baseline=DEFAULT_SCORE,
             signal_verdict="NO_RESULTS",
             recommendation="NO_RESULTS",
             has_unified_direction=False,
@@ -92,8 +96,8 @@ def analyze_category_results(
     # Step 2: Signal detection and classification (matching paper methodology)
     # Use MAXIMUM of nonlinear probes as signal detector (addresses curse of dimensionality)
     # Thresholds from paper: tau_exist = 0.6, tau_gap = 0.15
-    tau_exist = 0.6
-    tau_gap = 0.15
+    tau_exist = SIGNAL_EXIST_THRESHOLD
+    tau_gap = SIGNAL_LINEAR_GAP
     
     # Signal exists if ANY nonlinear method can separate classes above chance
     signal_exists = avg_best_nonlinear >= tau_exist
@@ -122,7 +126,7 @@ def analyze_category_results(
     avg_multi_dir_accuracy_k5 = sum(r.multi_dir_accuracy_k5 for r in results.results) / len(results.results)
     # For min_k, only average valid values (> 0)
     valid_min_k = [r.multi_dir_min_k_for_good for r in results.results if r.multi_dir_min_k_for_good > 0]
-    avg_multi_dir_min_k = sum(valid_min_k) / len(valid_min_k) if valid_min_k else -1.0
+    avg_multi_dir_min_k = sum(valid_min_k) / len(valid_min_k) if valid_min_k else float(MULTI_DIR_MIN_K_NOT_FOUND)
     avg_multi_dir_gain = sum(r.multi_dir_gain for r in results.results) / len(results.results)
     
     # Unified direction exists if we have linear signal
@@ -161,21 +165,21 @@ def analyze_category_results(
             verdict_counts = Counter(verdicts)
             signal_verdict = verdict_counts.most_common(1)[0][0]
         else:
-            avg_icd = 0.0
-            avg_icd_top1_variance = 0.0
-            avg_nonsense_icd = 0.0
-            avg_icd_ratio = 1.0
-            avg_nonsense_accuracy = 0.5
-            avg_signal_above_baseline = 0.0
+            avg_icd = DEFAULT_SCORE
+            avg_icd_top1_variance = DEFAULT_SCORE
+            avg_nonsense_icd = DEFAULT_SCORE
+            avg_icd_ratio = DENSITY_RATIO_DEFAULT
+            avg_nonsense_accuracy = BLEND_DEFAULT
+            avg_signal_above_baseline = DEFAULT_SCORE
             signal_verdict = "NO_DATA"
     else:
         # No nonsense analysis provided
-        avg_icd = 0.0
-        avg_icd_top1_variance = 0.0
-        avg_nonsense_icd = 0.0
-        avg_icd_ratio = 1.0
-        avg_nonsense_accuracy = 0.5
-        avg_signal_above_baseline = 0.0
+        avg_icd = DEFAULT_SCORE
+        avg_icd_top1_variance = DEFAULT_SCORE
+        avg_nonsense_icd = DEFAULT_SCORE
+        avg_icd_ratio = DENSITY_RATIO_DEFAULT
+        avg_nonsense_accuracy = BLEND_DEFAULT
+        avg_signal_above_baseline = DEFAULT_SCORE
         signal_verdict = "NOT_COMPUTED"
     
     # Best config - prefer high signal_strength

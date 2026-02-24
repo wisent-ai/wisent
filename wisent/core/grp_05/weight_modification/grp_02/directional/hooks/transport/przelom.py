@@ -5,6 +5,7 @@ from __future__ import annotations
 import torch
 from typing import Dict, TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import NORM_EPS, PRZELOM_INFERENCE_K, DEFAULT_STRENGTH
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -25,8 +26,8 @@ class PrzelomRuntimeHooks:
         self, model: Module,
         source_points: Dict[int, torch.Tensor],
         displacements: Dict[int, torch.Tensor],
-        inference_k: int = 5,
-        base_strength: float = 1.0,
+        inference_k: int = PRZELOM_INFERENCE_K,
+        base_strength: float = DEFAULT_STRENGTH,
     ):
         self.model = model
         self.source_points = source_points
@@ -80,7 +81,7 @@ class PrzelomRuntimeHooks:
         dists = torch.cdist(h_float, src_dev)
         K = min(self.inference_k, src_dev.shape[0])
         topk_dists, topk_idx = torch.topk(dists, K, dim=1, largest=False)
-        eps = 1e-8
+        eps = NORM_EPS
         inv_dists = 1.0 / (topk_dists + eps)
         weights = inv_dists / inv_dists.sum(dim=1, keepdim=True)
         batch_size = h_float.shape[0]
@@ -95,7 +96,7 @@ class PrzelomRuntimeHooks:
 
 
 def project_weights_przelom(
-    model: Module, steering_obj, base_strength: float = 1.0,
+    model: Module, steering_obj, base_strength: float = DEFAULT_STRENGTH,
     components: list[str] | None = None, verbose: bool = True,
 ) -> dict[str, int]:
     """Static projection: bake mean displacement into model weights."""

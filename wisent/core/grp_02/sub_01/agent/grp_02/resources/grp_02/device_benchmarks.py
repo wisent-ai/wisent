@@ -19,6 +19,7 @@ import hashlib
 
 import torch
 
+from wisent.core.constants import DEVICE_HASH_PREFIX
 from wisent.core.utils import resolve_default_device
 from wisent.core.errors import (
     DeviceBenchmarkError,
@@ -50,9 +51,6 @@ class DeviceBenchmark:
     def from_dict(cls, data: Dict[str, Any]) -> 'DeviceBenchmark':
         """Create from dictionary loaded from JSON."""
         return cls(**data)
-
-
-class DeviceBenchmarker:
 from wisent.core.agent.resources._device_bench_tests import DeviceBenchTestsMixin1
 from wisent.core.agent.resources._device_bench_tests2 import DeviceBenchTestsMixin2
 from wisent.core.agent.resources._device_bench_runner import DeviceBenchmarkRunnerMixin
@@ -87,7 +85,7 @@ class DeviceBenchmarker(DeviceBenchTestsMixin1, DeviceBenchTestsMixin2, DeviceBe
         
         # Create hash of the combined info
         combined = "|".join(str(part) for part in info_parts)
-        device_hash = hashlib.md5(combined.encode()).hexdigest()[:12]
+        device_hash = hashlib.md5(combined.encode()).hexdigest()[:DEVICE_HASH_PREFIX]
         return device_hash
     
     def get_device_type(self) -> str:
@@ -175,3 +173,4 @@ def get_current_device_info() -> Dict[str, str]:
     return {
         "device_id": benchmarker.get_device_id(),
         "device_type": benchmarker.get_device_type()
+    }

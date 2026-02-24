@@ -22,7 +22,13 @@ Task types:
 
 import argparse
 
-
+from wisent.core.constants import (
+    DATA_SPLIT_RATIO,
+    DATA_SPLIT_SEED,
+    OPTIMIZE_WEIGHTS_CHECKPOINT_INTERVAL,
+    OPTIMIZE_WEIGHTS_NUM_EVAL_PROMPTS,
+    OPTIMIZE_WEIGHTS_TARGET_VALUE,
+)
 
 from wisent.core.parser_arguments.optimization.weights.optimize_weights_parser_advanced import (
     setup_advanced_optimize_weights_args,
@@ -103,13 +109,13 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--train-ratio",
         type=float,
-        default=0.8,
+        default=DATA_SPLIT_RATIO,
         help="Fraction of pairs for training vs evaluation (default: 0.8)"
     )
     parser.add_argument(
         "--seed",
         type=int,
-        default=42,
+        default=DATA_SPLIT_SEED,
         help="Random seed for reproducibility (default: 42)"
     )
 
@@ -153,14 +159,14 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--checkpoint-interval",
         type=int,
-        default=5,
+        default=OPTIMIZE_WEIGHTS_CHECKPOINT_INTERVAL,
         help="Save checkpoint and best model every N trials. Default: 5"
     )
     parser.add_argument(
-        "--s3-bucket",
+        "--gcs-bucket",
         type=str,
         default=None,
-        help="S3 bucket to upload results to (e.g., 'wisent-optimization-results'). Results will be uploaded on completion."
+        help="GCS bucket to upload results to (e.g., 'wisent-optimization-results'). Results will be uploaded on completion."
     )
 
     # ==========================================================================
@@ -182,7 +188,7 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     eval_group.add_argument(
         "--num-eval-prompts",
         type=int,
-        default=30,
+        default=OPTIMIZE_WEIGHTS_NUM_EVAL_PROMPTS,
         help="Number of evaluation prompts per trial. Default: 30"
     )
 
@@ -199,7 +205,7 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     target_group.add_argument(
         "--target-value",
         type=float,
-        default=0.95,
+        default=OPTIMIZE_WEIGHTS_TARGET_VALUE,
         help="Target value for the metric. Default: 0.95"
     )
     target_group.add_argument(

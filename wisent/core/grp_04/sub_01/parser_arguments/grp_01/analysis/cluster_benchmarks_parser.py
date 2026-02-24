@@ -2,6 +2,8 @@
 
 import argparse
 
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS
+
 
 def setup_cluster_benchmarks_parser(parser: argparse.ArgumentParser) -> None:
     """Set up arguments for the cluster-benchmarks command."""
@@ -20,7 +22,7 @@ def setup_cluster_benchmarks_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--pairs-per-benchmark",
         type=int,
-        default=50,
+        default=PARSER_DEFAULT_NUM_PAIRS,
         help="Number of contrastive pairs per benchmark (default: 50)"
     )
     parser.add_argument(

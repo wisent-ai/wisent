@@ -6,6 +6,7 @@ from wisent.core.errors import BudgetCalculationError, NoBenchmarkDataError, Res
 from wisent.core.agent.resources._budget_types import (
     ResourceType, ResourceBudget, TaskEstimate,
 )
+from wisent.core.constants import BUDGET_EMA_ALPHA, BUDGET_DEFAULT_QUANTITY, AGENT_RESOURCE_BUDGET_MINUTES
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ class BudgetManager:
     
     def calculate_max_tasks_for_budget(self, 
                                      task_type: str = "default",
-                                     time_budget_minutes: float = 5.0) -> int:
+                                     time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES) -> int:
         """
         Calculate maximum number of tasks that can fit within a time budget.
         
@@ -134,7 +135,7 @@ class BudgetManager:
         if task_name in self.task_estimates:
             # Use exponential moving average to update estimates
             current_estimate = self.task_estimates[task_name].time_seconds
-            alpha = 0.3  # Learning rate
+            alpha = BUDGET_EMA_ALPHA  # Learning rate
             new_estimate = alpha * actual_time + (1 - alpha) * current_estimate
             self.task_estimates[task_name].time_seconds = new_estimate
         else:
@@ -203,14 +204,14 @@ class BudgetManager:
                 if benchmark_type:
                     # Get quantity based on task type
                     if benchmark_type in ["benchmark_eval", "classifier_training"]:
-                        quantity = 100  # Base unit for these tasks
+                        quantity = BUDGET_DEFAULT_QUANTITY  # Base unit for these tasks
                     else:
                         quantity = 1
                     
                     return estimate_task_time(benchmark_type, quantity)
                 else:
                     # Use benchmark_eval as default
-                    return estimate_task_time("benchmark_eval", 100)
+                    return estimate_task_time("benchmark_eval", BUDGET_DEFAULT_QUANTITY)
                     
             except Exception as e:
                 raise ResourceEstimationError(resource_type="time", task_name=task_name, cause=e)

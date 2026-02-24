@@ -8,6 +8,8 @@ from collections import defaultdict
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 
+from wisent.core.constants import REPLAY_BUFFER_MAX_SIZE
+
 
 @dataclass
 class ReplayEntry:
@@ -27,7 +29,7 @@ class ReplayBuffer:
     re-evaluating tasks and comparing against recorded scores.
     """
 
-    def __init__(self, max_size: int = 200):
+    def __init__(self, max_size: int = REPLAY_BUFFER_MAX_SIZE):
         self.max_size = max_size
         self.entries: List[ReplayEntry] = []
         self._task_index: Dict[str, List[int]] = defaultdict(list)
@@ -95,7 +97,7 @@ class ReplayBuffer:
         """Deserialize from JSON."""
         with open(path) as f:
             data = json.load(f)
-        buf = cls(max_size=data.get("max_size", 200))
+        buf = cls(max_size=data.get("max_size", REPLAY_BUFFER_MAX_SIZE))
         for ed in data.get("entries", []):
             buf.add(
                 task=ed["task"],

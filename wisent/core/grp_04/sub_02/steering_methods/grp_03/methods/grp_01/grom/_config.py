@@ -6,13 +6,24 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerName
+from wisent.core.constants import (
+    GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS, GROM_LEARNING_RATE,
+    GROM_WARMUP_STEPS, GROM_BEHAVIOR_WEIGHT, GROM_RETAIN_WEIGHT,
+    GROM_SPARSE_WEIGHT, GROM_SMOOTH_WEIGHT, GROM_INDEPENDENCE_WEIGHT,
+    GROM_MAX_ALPHA, GROM_GATE_TEMPERATURE, GROM_MIN_COSINE_SIM,
+    GROM_MAX_COSINE_SIM, GROM_LINEAR_THRESHOLD, GROM_HIDDEN_DIM,
+    GROM_ROUTER_HIDDEN_DIM, GROM_INTENSITY_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE,
+    GROM_GATE_DIM_MIN, GROM_GATE_DIM_MAX, GROM_GATE_DIM_DIVISOR,
+    GROM_INTENSITY_DIM_MIN, GROM_INTENSITY_DIM_MAX, GROM_INTENSITY_DIM_DIVISOR,
+    GATING_HIDDEN_DIM_DIVISOR,
+)
 
 @dataclass
 class GROMConfig:
     """Configuration for GROM steering method."""
     
     # Manifold configuration
-    num_directions: int = 5
+    num_directions: int = GROM_NUM_DIRECTIONS
     """Number of directions per layer in the steering manifold."""
     
     # Layer configuration  
@@ -29,13 +40,15 @@ class GROMConfig:
         """Resolve steering_layers and sensor_layer based on model's num_layers."""
         self.num_layers = num_layers
         if self.sensor_layer is None:
-            # 75% through the network
-            self.sensor_layer = int(num_layers * 0.75)
+            raise ValueError(
+                "sensor_layer must be specified explicitly. "
+                "Pass an integer layer index."
+            )
         if self.steering_layers is None:
-            # Middle to late layers (50% to 90% of network)
-            start = int(num_layers * 0.5)
-            end = int(num_layers * 0.9)
-            self.steering_layers = list(range(start, end))
+            raise ValueError(
+                "steering_layers must be specified explicitly. "
+                "Pass a list of integer layer indices."
+            )
     
     # Network architecture
     gate_hidden_dim: Optional[int] = None
@@ -53,49 +66,49 @@ class GROMConfig:
     def resolve_network_dims(self, hidden_dim: int) -> None:
         """Resolve network dimensions based on model's hidden dimension."""
         if self.gate_hidden_dim is None:
-            # Scale with model size, but clamp to reasonable range [32, 512]
-            self.gate_hidden_dim = max(32, min(512, hidden_dim // 16))
+            # Scale with model size, but clamp to reasonable range
+            self.gate_hidden_dim = max(GROM_GATE_DIM_MIN, min(GROM_GATE_DIM_MAX, hidden_dim // GROM_GATE_DIM_DIVISOR))
         if self.intensity_hidden_dim is None:
-            # Scale with model size, but clamp to reasonable range [16, 256]
-            self.intensity_hidden_dim = max(16, min(256, hidden_dim // 32))
+            # Scale with model size, but clamp to reasonable range
+            self.intensity_hidden_dim = max(GROM_INTENSITY_DIM_MIN, min(GROM_INTENSITY_DIM_MAX, hidden_dim // GROM_INTENSITY_DIM_DIVISOR))
     
     # Training
-    optimization_steps: int = 200
+    optimization_steps: int = GROM_OPTIMIZATION_STEPS
     """Total optimization steps."""
     
-    learning_rate: float = 0.005
+    learning_rate: float = GROM_LEARNING_RATE
     """Learning rate for all components."""
     
-    warmup_steps: int = 20
+    warmup_steps: int = GROM_WARMUP_STEPS
     """Steps to warmup (train manifold only before adding networks)."""
     
     # Loss weights
-    behavior_weight: float = 1.0
+    behavior_weight: float = GROM_BEHAVIOR_WEIGHT
     """Weight for behavior effectiveness loss."""
     
-    retain_weight: float = 0.2
+    retain_weight: float = GROM_RETAIN_WEIGHT
     """Weight for retain loss (minimize side effects)."""
     
-    sparse_weight: float = 0.05
+    sparse_weight: float = GROM_SPARSE_WEIGHT
     """Weight for sparsity loss (encourage sparse layer activation)."""
     
-    smooth_weight: float = 0.02
+    smooth_weight: float = GROM_SMOOTH_WEIGHT
     """Weight for smoothness loss (penalize abrupt intensity changes)."""
     
-    independence_weight: float = 0.03
+    independence_weight: float = GROM_INDEPENDENCE_WEIGHT
     """Weight for direction independence loss."""
     
     # Constraints
-    max_alpha: float = 3.0
+    max_alpha: float = GROM_MAX_ALPHA
     """Maximum steering intensity."""
     
-    gate_temperature: float = 0.5
+    gate_temperature: float = GROM_GATE_TEMPERATURE
     """Temperature for gate sigmoid."""
     
-    min_cosine_similarity: float = 0.2
+    min_cosine_similarity: float = GROM_MIN_COSINE_SIM
     """Minimum cosine similarity between directions."""
     
-    max_cosine_similarity: float = 0.9
+    max_cosine_similarity: float = GROM_MAX_COSINE_SIM
     """Maximum cosine similarity (avoid redundancy)."""
     
     # Initialization
@@ -112,7 +125,7 @@ class GROMConfig:
     geometry_analysis_layer: Optional[int] = None
     """Layer to use for geometry analysis. If None, uses sensor_layer."""
     
-    linear_threshold: float = 0.8
+    linear_threshold: float = GROM_LINEAR_THRESHOLD
     """If linear score > threshold, simplify to single direction."""
     
     skip_gating_if_linear: bool = True
@@ -129,18 +142,18 @@ class GatingNetwork(nn.Module):
     Takes hidden states from sensor layer, outputs gate value in [0, 1].
     """
     
-    def __init__(self, input_dim: int, hidden_dim: int = 128):
+    def __init__(self, input_dim: int, hidden_dim: int = GROM_HIDDEN_DIM):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
             nn.LayerNorm(hidden_dim),
             nn.GELU(),
-            nn.Linear(hidden_dim, hidden_dim // 2),
+            nn.Linear(hidden_dim, hidden_dim // GATING_HIDDEN_DIM_DIVISOR),
             nn.GELU(),
-            nn.Linear(hidden_dim // 2, 1),
+            nn.Linear(hidden_dim // GATING_HIDDEN_DIM_DIVISOR, 1),
         )
     
-    def forward(self, h: torch.Tensor, temperature: float = 0.5) -> torch.Tensor:
+    def forward(self, h: torch.Tensor, temperature: float = GROM_ROUTER_TEMPERATURE) -> torch.Tensor:
         """
         Predict gate value.
         
@@ -164,7 +177,7 @@ class IntensityNetwork(nn.Module):
     Takes hidden states, outputs intensity values for each steering layer.
     """
     
-    def __init__(self, input_dim: int, num_layers: int, hidden_dim: int = 64, max_alpha: float = 3.0):
+    def __init__(self, input_dim: int, num_layers: int, hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM, max_alpha: float = GROM_MAX_ALPHA):
         super().__init__()
         self.max_alpha = max_alpha
         self.num_layers = num_layers
@@ -199,7 +212,7 @@ class DirectionWeightNetwork(nn.Module):
     Learned network that predicts weights for combining directions in manifold.
     """
     
-    def __init__(self, input_dim: int, num_directions: int, hidden_dim: int = 32):
+    def __init__(self, input_dim: int, num_directions: int, hidden_dim: int = GROM_ROUTER_HIDDEN_DIM):
         super().__init__()
         self.num_directions = num_directions
         

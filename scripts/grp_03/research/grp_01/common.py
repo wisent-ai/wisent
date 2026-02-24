@@ -18,6 +18,7 @@ from wisent.core.geometry import compute_geometry_metrics as wisent_compute_geom
 
 # Re-export everything from submodules
 from common_data import ActivationData, BenchmarkResults
+from wisent.core.constants import ZERO_THRESHOLD
 from common_db import (
     DB_CONFIG,
     RESEARCH_MODELS,
@@ -82,7 +83,7 @@ def compute_steering_accuracy(
 
     # Normalize steering vector
     norm = np.linalg.norm(steering_vector)
-    if norm < 1e-10:
+    if norm < ZERO_THRESHOLD:
         return 0.5
     steering_vector = steering_vector / norm
 

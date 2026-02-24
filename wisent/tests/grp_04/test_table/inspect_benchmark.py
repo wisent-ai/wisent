@@ -15,6 +15,8 @@ import argparse
 import os
 import sys
 
+from wisent.core.constants import NUM_EXAMPLES_DEFAULT, MAX_DOCS_INSPECT
+
 os.environ["HF_ALLOW_CODE_EVAL"] = "1"
 
 from lm_eval.api.task import TaskConfig
@@ -28,7 +30,7 @@ def _patched_taskconfig_init(self, **kwargs):
 TaskConfig.__init__ = _patched_taskconfig_init
 
 
-def inspect_benchmark(benchmark_name: str, num_examples: int = 5) -> None:
+def inspect_benchmark(benchmark_name: str, num_examples: int = NUM_EXAMPLES_DEFAULT) -> None:
     """Load a benchmark from lm-eval and display its structure and examples."""
 
     print(f"\n{'='*80}")
@@ -54,7 +56,7 @@ def inspect_benchmark(benchmark_name: str, num_examples: int = 5) -> None:
     print("AVAILABLE SPLITS:")
     print("-" * 40)
 
-    max_docs_to_load = 100  # Limit to avoid loading millions of rows into memory
+    max_docs_to_load = MAX_DOCS_INSPECT  # Limit to avoid loading millions of rows into memory
     available_splits = {}
     for method_name, split_name in split_methods:
         if hasattr(task, method_name):
@@ -152,7 +154,7 @@ Examples:
     parser.add_argument(
         "--examples", "-n",
         type=int,
-        default=1,
+        default=NUM_EXAMPLES_DEFAULT,
         help="Number of examples to display per split (default: 5)"
     )
 

@@ -158,7 +158,7 @@ def compare_models(
         diff = (mod_param - orig_param).abs()
 
         total_params += orig_param.numel()
-        params_changed += (diff > 1e-6).sum().item()
+        params_changed += (diff > COMPARE_TOL).sum().item()
         sum_abs_diff += diff.sum().item()
         max_diff = max(max_diff, diff.max().item())
 
@@ -252,6 +252,7 @@ The steering vectors were computed from {contrastive_pairs_info.get('num_pairs',
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from wisent.core.constants import COMPARE_TOL
 
 model = AutoModelForCausalLM.from_pretrained("{repo_id}")
 tokenizer = AutoTokenizer.from_pretrained("{repo_id}")

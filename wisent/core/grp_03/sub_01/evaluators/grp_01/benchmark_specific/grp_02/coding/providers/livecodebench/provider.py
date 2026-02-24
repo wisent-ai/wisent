@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 from typing import Iterable, Optional
 from ..core.atoms import CodingTask, Language
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
 
 _SUBPROCESS_TIMEOUT = 5
 
@@ -145,7 +146,9 @@ def test_stdin():
             expected_output = test.get("output", "")
             test_code += f"        # Test case {i + 1}\n"
             test_code += f"        ({repr(input_data)}, {repr(expected_output)}),\n"
-        test_code += """    ]
+        _trunc = DISPLAY_TRUNCATION_MEDIUM
+        _trunc_c = DISPLAY_TRUNCATION_COMPACT
+        test_code += f"""    ]
 
     for i, (input_data, expected_output) in enumerate(test_cases):
         proc = subprocess.run(
@@ -157,12 +160,12 @@ def test_stdin():
         actual_output = proc.stdout.strip()
         expected_output = expected_output.strip()
         assert actual_output == expected_output, (
-            f"Test case {i + 1} failed:\\n"
-            f"  Input: {input_data[:100]}\\n"
-            f"  Expected: {expected_output[:200]}\\n"
-            f"  Got: {actual_output[:200]}"
+            f"Test case {{i + 1}} failed:\\n"
+            f"  Input: {{input_data[:{_trunc_c}]}}\\n"
+            f"  Expected: {{expected_output[:{_trunc}]}}\\n"
+            f"  Got: {{actual_output[:{_trunc}]}}"
         )
-    print(f'All {len(test_cases)} test(s) passed!')
+    print(f'All {{len(test_cases)}} test(s) passed!')
 
 if __name__ == '__main__':
     test_stdin()

@@ -31,6 +31,7 @@ from typing import TYPE_CHECKING
 
 from wisent.core.errors import UnknownTypeError
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, KERNEL_DISTANCE_FRACTION, KERNEL_MIN_ALPHA, ADDITIVE_METHOD_MAX_ALPHA, ADDITIVE_KERNEL_CENTER_DIVISOR, ADDITIVE_KERNEL_SIGMA_DIVISOR, DEFAULT_LAYER_WEIGHT
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -49,7 +50,7 @@ _LOG = setup_logger(__name__)
 def add_output_bias(
     module: Module,
     bias_vector: Tensor,
-    alpha: float = 1.0,
+    alpha: float = DEFAULT_STRENGTH,
 ) -> None:
     """
     Add bias vector to a module's output.
@@ -143,7 +144,7 @@ def bake_steering_into_weights(
     model: Module,
     steering_vectors: dict[int, Tensor],
     components: list[str] | None = None,
-    alpha: float = 1.0,
+    alpha: float = DEFAULT_STRENGTH,
     layer_weights: dict[int, float] | None = None,
     method: str = "bias",
     verbose: bool = True,
@@ -212,7 +213,7 @@ def bake_steering_into_weights(
         # Get effective alpha for this layer
         layer_alpha = alpha
         if layer_weights is not None:
-            layer_alpha *= layer_weights.get(layer_idx, 1.0)
+            layer_alpha *= layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT)
 
         for component_name in components:
             try:
@@ -266,9 +267,9 @@ def bake_steering_into_weights(
 def bake_steering_with_kernel(
     model: Module,
     steering_vectors: dict[int, Tensor],
-    max_alpha: float = 2.0,
+    max_alpha: float = ADDITIVE_METHOD_MAX_ALPHA,
     max_alpha_position: float | None = None,
-    min_alpha: float = 0.5,
+    min_alpha: float = KERNEL_MIN_ALPHA,
     min_alpha_distance: float | None = None,
     components: list[str] | None = None,
     method: str = "bias",
@@ -280,11 +281,11 @@ def bake_steering_with_kernel(
     if not layer_indices:
         return {"layers_modified": 0, "components_modified": 0, "total_parameters_modified": 0}
     n_layers = max(layer_indices) + 1
-    center = max_alpha_position if max_alpha_position is not None else n_layers / 2.0
-    dist = min_alpha_distance if min_alpha_distance is not None else n_layers * 0.6
-    if dist < 1e-8:
+    center = max_alpha_position if max_alpha_position is not None else n_layers / ADDITIVE_KERNEL_CENTER_DIVISOR
+    dist = min_alpha_distance if min_alpha_distance is not None else n_layers * KERNEL_DISTANCE_FRACTION
+    if dist < NORM_EPS:
         dist = 1.0
-    sigma = dist / 2.0
+    sigma = dist / ADDITIVE_KERNEL_SIGMA_DIVISOR
     layer_weights = {}
     for idx in layer_indices:
         w = math.exp(-0.5 * ((idx - center) / sigma) ** 2)

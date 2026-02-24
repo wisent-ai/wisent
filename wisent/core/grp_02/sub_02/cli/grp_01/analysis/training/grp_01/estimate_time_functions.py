@@ -1,8 +1,7 @@
-"""Benchmark data and runtime estimation for unified goodness training."""
-
-
 #!/usr/bin/env python3
 """
+Benchmark data and runtime estimation for unified goodness training.
+
 Estimate runtime for train-unified-goodness command.
 
 This script provides accurate time estimates based on:

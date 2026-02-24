@@ -17,6 +17,8 @@ import time
 
 import torch
 
+from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
+
 # Add the repo root to path so we can import from scripts.strategy_extraction
 script_dir = os.path.dirname(os.path.abspath(__file__))
 repo_root = os.path.dirname(script_dir)
@@ -35,7 +37,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="Model name")
     parser.add_argument("--device", default="cuda", help="Device (cuda/mps/cpu)")
-    parser.add_argument("--limit", type=int, default=500, help="Max pairs per benchmark")
+    parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark")
     parser.add_argument("--benchmark", default=None, help="Single benchmark (optional)")
     args = parser.parse_args()
 

@@ -6,7 +6,8 @@ import tempfile
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-
+from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, RECOMMEND_COLLECTOR_PER_TYPE, DATA_SPLIT_SEED
+from wisent.core.geometry.data.enriched_builder import build_enriched_from_db, generate_and_collect_enriched
 
 # ── Data types ─────────────────────────────────────────────────
 
@@ -87,63 +88,26 @@ _METHOD_KEY_MAP = {
 }
 
 
-def _load_zwiad_metrics(
-    model: str, benchmark: str, zwiad_dir: str,
-) -> Optional[Dict]:
-    model_slug = model.replace("/", "_")
-    path = Path(zwiad_dir) / f"{model_slug}__{benchmark}.json"
+def _load_zwiad_metrics(model: str, benchmark: str, zwiad_dir: str) -> Optional[Dict]:
+    slug, zd = model.replace("/", "_"), Path(zwiad_dir)
+    path = zd / f"{slug}__{benchmark}.json"
     if not path.exists():
-        print(f"  No zwiad file: {path}")
+        hits = sorted(zd.glob(f"{slug}__*_{benchmark}.json"))
+        path = hits[0] if hits else path
+    if not path.exists():
         return None
     data = json.loads(path.read_text())
     return data.get("metrics", data)
 
 
-def _generate_pairs(model_name, benchmark, pairs_file, limit):
-    """Generate contrastive pairs for a benchmark."""
-    from wisent.core.cli.optimize_steering.data.contrastive_pairs import (
-        execute_generate_pairs_from_task,
-    )
-    import argparse
-    args = argparse.Namespace(
-        task_name=benchmark,
-        output=pairs_file,
-        limit=limit,
-        verbose=False,
-    )
-    execute_generate_pairs_from_task(args)
-
-
-def _collect_all_layer_activations(
-    model_name, pairs_file, enriched_file, device,
-    cached_model=None,
-):
-    """Collect activations for all layers."""
-    from wisent.core.cli.optimize_steering.data.activations import (
-        execute_get_activations,
-    )
-    import argparse
-    args = argparse.Namespace(
-        pairs_file=pairs_file,
-        model=model_name,
-        output=enriched_file,
-        layers=None,  # None = all layers
-        extraction_strategy="chat_last",
-        device=device,
-        verbose=False,
-        timing=False,
-        raw=False,
-        cached_model=cached_model,
-    )
-    execute_get_activations(args)
 
 
 def collect_benchmark_ground_truth(
     model_name: str, benchmark: str,
     zwiad_dir: str = "zwiad_results",
-    limit: int = 100, device: Optional[str] = None,
+    limit: int = DEFAULT_LIMIT, device: Optional[str] = None,
     methods: Optional[List[str]] = None,
-    n_trials: int = 100,
+    n_trials: int = DEFAULT_N_TRIALS,
 ) -> Optional[BenchmarkGroundTruth]:
     """Run Optuna optimization for each method on one benchmark."""
     import optuna
@@ -157,25 +121,21 @@ def collect_benchmark_ground_truth(
     if methods is None:
         methods = list(PIPELINE_METHODS)
 
-    # 1. Load model ONCE
-    print(f"  Loading model {model_name}...")
+    # 1. Load model ONCE (needed for Optuna response generation)
     cached_model = WisentModel(model_name, device=device)
     num_layers = cached_model.num_layers
-    print(f"  Model loaded: {num_layers} layers")
+    print(f"  Loaded {model_name} ({num_layers} layers)")
 
-    # 2. Generate pairs ONCE
+    # 2. Build enriched pairs (try DB first, then generate from scratch)
     work_dir = tempfile.mkdtemp(prefix=f"gt_{benchmark}_")
-    pairs_file = os.path.join(work_dir, "pairs.json")
-    print(f"  Generating contrastive pairs for {benchmark}...")
-    _generate_pairs(model_name, benchmark, pairs_file, limit)
-
-    # 3. Collect activations ONCE (all layers)
-    enriched_file = os.path.join(work_dir, "enriched_all_layers.json")
-    print(f"  Collecting activations (all {num_layers} layers)...")
-    _collect_all_layer_activations(
-        model_name, pairs_file, enriched_file, device,
-        cached_model=cached_model,
-    )
+    cfg = cached_model.hf_model.config
+    enriched_file = build_enriched_from_db(
+        model_name, benchmark, work_dir, limit=limit,
+        num_attention_heads=getattr(cfg, 'num_attention_heads', None),
+        num_key_value_heads=getattr(cfg, 'num_key_value_heads', None))
+    if enriched_file is None:
+        enriched_file = generate_and_collect_enriched(
+            model_name, benchmark, work_dir, limit, device, cached_model)
 
     # 4. For each method: Optuna optimization
     method_results: Dict[str, MethodResult] = {}
@@ -194,7 +154,7 @@ def collect_benchmark_ground_truth(
         study = optuna.create_study(
             direction="maximize",
             study_name=f"{benchmark}_{method}",
-            sampler=optuna.samplers.TPESampler(seed=42),
+            sampler=optuna.samplers.TPESampler(seed=DATA_SPLIT_SEED),
         )
 
         objective = create_optuna_objective(
@@ -244,13 +204,13 @@ def collect_ground_truth(
     model: str, benchmarks: Optional[List[str]] = None,
     output_path: Optional[str] = None,
     zwiad_dir: str = "zwiad_results",
-    limit: int = 100, device: Optional[str] = None,
+    limit: int = DEFAULT_LIMIT, device: Optional[str] = None,
     methods: Optional[List[str]] = None,
-    n_trials: int = 100,
+    n_trials: int = DEFAULT_N_TRIALS,
     benchmark_start: Optional[int] = None,
     benchmark_end: Optional[int] = None,
     use_geometry_selection: bool = False,
-    per_type: int = 2, fine_geometry: bool = False,
+    per_type: int = RECOMMEND_COLLECTOR_PER_TYPE, fine_geometry: bool = False,
 ) -> GroundTruthDataset:
     """Collect ground truth. use_geometry_selection picks per_type per type."""
     if benchmarks is None:
@@ -283,9 +243,13 @@ def collect_ground_truth(
     records = []
     for i, bench in enumerate(benchmarks):
         print(f"\n[{i+1}/{total}] {bench}")
-        rec = collect_benchmark_ground_truth(
-            model, bench, zwiad_dir, limit, device,
-            methods, n_trials)
+        try:
+            rec = collect_benchmark_ground_truth(
+                model, bench, zwiad_dir, limit, device,
+                methods, n_trials)
+        except Exception as e:
+            print(f"  Benchmark {bench} failed entirely: {e}")
+            rec = None
         if rec is not None:
             records.append(rec)
             # Save incrementally after each benchmark

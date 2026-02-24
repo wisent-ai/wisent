@@ -18,6 +18,13 @@ from lm_eval import evaluator
 from lm_eval.models.hf_steered import SteeredModel
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.constants import (
+    COMPARISON_NUM_PAIRS,
+    COMPARISON_MAX_BATCH_SIZE,
+    COMPARISON_STEERING_LAYER,
+    DATA_SPLIT_RATIO,
+    DEFAULT_BASE_STRENGTH,
+)
 from wisent.comparison import ours
 from wisent.comparison import sae
 from wisent.comparison import fgaa
@@ -48,16 +55,16 @@ def run_single_task(
     model_name: str,
     task: str,
     methods: list[str] = None,
-    num_pairs: int = 50,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
     steering_scales: list[float] = None,
     device: str = "cuda:0",
     batch_size: int | str = 1,
-    max_batch_size: int = 8,
+    max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     eval_limit: int | None = None,
     vectors_dir: Path = None,
-    train_ratio: float = 0.8,
-    caa_layers: str = "12",
-    sae_layers: str = "12",
+    train_ratio: float = DATA_SPLIT_RATIO,
+    caa_layers: str = str(COMPARISON_STEERING_LAYER),
+    sae_layers: str = str(COMPARISON_STEERING_LAYER),
     extraction_strategies: list[str] = None,
     bos_features_source: str = "detected",
 ) -> list[dict]:
@@ -70,7 +77,7 @@ def run_single_task(
     if methods is None:
         methods = ["caa"]
     if steering_scales is None:
-        steering_scales = [1.0]
+        steering_scales = [DEFAULT_BASE_STRENGTH]
     if extraction_strategies is None:
         extraction_strategies = ["mc_balanced"]
 

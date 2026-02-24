@@ -18,6 +18,23 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import numpy as np
 
+from wisent.core.constants import (
+    CV_FOLDS,
+    NORM_EPS,
+    VQ_ALIGNMENT_MIN_CRITICAL,
+    VQ_ALIGNMENT_STD_WARNING,
+    VQ_CONVERGENCE_CRITICAL,
+    VQ_CONVERGENCE_WARNING,
+    VQ_CV_SCORE_CRITICAL,
+    VQ_CV_SCORE_WARNING,
+    VQ_MIN_PAIRS,
+    VQ_PCA_VARIANCE_CRITICAL,
+    VQ_PCA_VARIANCE_WARNING,
+    VQ_SILHOUETTE_CRITICAL,
+    VQ_SILHOUETTE_WARNING,
+    VQ_SNR_CRITICAL,
+    VQ_SNR_WARNING,
+)
 from ..base import DiagnosticsIssue, DiagnosticsReport, MetricReport
 
 __all__ = [
@@ -37,34 +54,34 @@ class VectorQualityConfig:
     """
     
     # Convergence thresholds (similarity between 50% and 100% of pairs)
-    convergence_critical: float = 0.5
-    convergence_warning: float = 0.75
-    
+    convergence_critical: float = VQ_CONVERGENCE_CRITICAL
+    convergence_warning: float = VQ_CONVERGENCE_WARNING
+
     # Cross-validation score thresholds
-    cv_score_critical: float = 0.3
-    cv_score_warning: float = 0.6
-    
+    cv_score_critical: float = VQ_CV_SCORE_CRITICAL
+    cv_score_warning: float = VQ_CV_SCORE_WARNING
+
     # Signal-to-noise ratio thresholds
-    snr_critical: float = 10.0
-    snr_warning: float = 30.0
-    
+    snr_critical: float = VQ_SNR_CRITICAL
+    snr_warning: float = VQ_SNR_WARNING
+
     # PCA PC1 variance explained thresholds (in high-dim space, 10-20% can be good)
-    pca_variance_critical: float = 0.05
-    pca_variance_warning: float = 0.15
-    
+    pca_variance_critical: float = VQ_PCA_VARIANCE_CRITICAL
+    pca_variance_warning: float = VQ_PCA_VARIANCE_WARNING
+
     # Pair alignment thresholds (std of alignments)
-    alignment_std_warning: float = 0.30
-    alignment_min_critical: float = 0.2
-    
+    alignment_std_warning: float = VQ_ALIGNMENT_STD_WARNING
+    alignment_min_critical: float = VQ_ALIGNMENT_MIN_CRITICAL
+
     # Clustering silhouette thresholds (can be low in high-dim space)
-    silhouette_critical: float = -0.1
-    silhouette_warning: float = 0.05
-    
+    silhouette_critical: float = VQ_SILHOUETTE_CRITICAL
+    silhouette_warning: float = VQ_SILHOUETTE_WARNING
+
     # Minimum pairs required for quality analysis
-    min_pairs_for_analysis: int = 5
-    
+    min_pairs_for_analysis: int = VQ_MIN_PAIRS
+
     # Number of CV folds
-    cv_folds: int = 5
+    cv_folds: int = CV_FOLDS
 
 
 @dataclass
@@ -126,7 +143,7 @@ def _cosine_similarity(a: torch.Tensor, b: torch.Tensor) -> float:
 def _create_vector_from_diffs(diffs: torch.Tensor, normalize: bool = True) -> torch.Tensor:
     """Create steering vector by averaging difference vectors."""
     vec = diffs.mean(dim=0)
-    if normalize and torch.norm(vec) > 1e-8:
+    if normalize and torch.norm(vec) > NORM_EPS:
         vec = vec / torch.norm(vec)
     return vec
 
@@ -144,7 +161,7 @@ def _compute_convergence(
     
     # Create vectors from 50%, 75%, and 100% of pairs
     n_50 = max(1, n // 2)
-    n_75 = max(1, int(n * 0.75))
+    n_75 = max(1, int(n * VQ_CONVERGENCE_WARNING))
     
     vec_50 = _create_vector_from_diffs(difference_vectors[:n_50])
     vec_75 = _create_vector_from_diffs(difference_vectors[:n_75])

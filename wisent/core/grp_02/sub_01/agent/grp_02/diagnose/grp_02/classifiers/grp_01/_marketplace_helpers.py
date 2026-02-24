@@ -8,6 +8,11 @@ import time
 from datetime import datetime
 
 from wisent.core.utils import resolve_default_device
+from wisent.core import constants as _C
+from wisent.core.constants import (
+    DEFAULT_LAYER, AGENT_DIAG_MAX_TOKENS_SHORT, AGENT_DIAG_TEMPERATURE,
+    MARKETPLACE_MIN_QUALITY_DEFAULT,
+)
 
 
 @dataclass
@@ -39,18 +44,18 @@ class MarketplaceEstimationMixin:
         if available_benchmarks:
             benchmark_count = len(available_benchmarks)
             base = {
-                "training_time_minutes": 8.0 + (benchmark_count * 2.0),
-                "quality_score": min(0.80, 0.60 + (benchmark_count * 0.05)),
+                "training_time_minutes": _C.MARKETPLACE_BASE_TRAINING_TIME + (benchmark_count * _C.MARKETPLACE_PER_BENCHMARK_TIME),
+                "quality_score": min(_C.MARKETPLACE_QUALITY_MAX, _C.MARKETPLACE_QUALITY_BASE + (benchmark_count * _C.MARKETPLACE_QUALITY_INCREMENT)),
                 "samples_needed": min(500, 100 + (benchmark_count * 30)),
                 "optimal_layer": self._estimate_optimal_layer_for_issue(issue_type)
             }
             print(f"   Using {benchmark_count} benchmarks for {issue_type}")
         else:
             base = {
-                "training_time_minutes": 6.0,
-                "quality_score": 0.55,
-                "samples_needed": 50,
-                "optimal_layer": 14
+                "training_time_minutes": _C.MARKETPLACE_SYNTHETIC_TRAINING_TIME,
+                "quality_score": _C.MARKETPLACE_QUALITY_DEFAULT,
+                "samples_needed": _C.MARKETPLACE_SYNTHETIC_SAMPLES,
+                "optimal_layer": _C.MARKETPLACE_DEFAULT_OPTIMAL_LAYER
             }
             print(f"   Using synthetic generation for {issue_type}")
 
@@ -63,17 +68,17 @@ class MarketplaceEstimationMixin:
         relevant = []
         issue_lower = issue_type.lower()
 
-        for task in available_tasks[:1000]:
+        for task in available_tasks[:_C.MARKETPLACE_MAX_TASKS_TO_SEARCH]:
             task_lower = task.lower()
             similarity_score = self._calculate_task_similarity(issue_lower, task_lower)
 
             if similarity_score > 0:
                 relevant.append((task, similarity_score))
-                if len(relevant) >= 30:
+                if len(relevant) >= _C.MARKETPLACE_MAX_RELEVANT_BENCHMARKS:
                     break
 
         relevant.sort(key=lambda x: x[1], reverse=True)
-        return [task for task, score in relevant[:15]]
+        return [task for task, score in relevant[:_C.MARKETPLACE_MAX_RELEVANT_TO_RETURN]]
 
     def _calculate_task_similarity(self, issue_type: str, task_name: str) -> float:
         """Calculate similarity between issue type and task name using model decisions."""
@@ -82,17 +87,17 @@ class MarketplaceEstimationMixin:
 Issue Type: {issue_type}
 Task: {task_name}
 
-Rate similarity from 0.0 to 10.0 (10.0 = highly similar, 0.0 = not similar).
+Rate similarity from 0.0 to {_C.MARKETPLACE_MAX_SIMILARITY_SCORE} ({_C.MARKETPLACE_MAX_SIMILARITY_SCORE} = highly similar, 0.0 = not similar).
 Respond with only the number:"""
 
         try:
-            response = self.model.generate(prompt, layer_index=15, max_new_tokens=10, temperature=0.1)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
             score_str = response.strip()
 
             match = re.search(r'(\d+\.?\d*)', score_str)
             if match:
                 score = float(match.group(1))
-                return min(10.0, max(0.0, score))
+                return min(_C.MARKETPLACE_MAX_SIMILARITY_SCORE, max(0.0, score))
             return 0.0
         except:
             return 0.0
@@ -104,30 +109,30 @@ Respond with only the number:"""
 Issue Type: {issue_type}
 
 Consider:
-- Simple issues (formatting, basic patterns) -> early layers (8-12)
+- Simple issues (formatting, basic patterns) -> early layers ({_C.MARKETPLACE_LAYER_MIN}-12)
 - Complex semantic issues (truthfulness, bias) -> middle layers (12-16)
-- Abstract conceptual issues (coherence, quality) -> deeper layers (16-20)
+- Abstract conceptual issues (coherence, quality) -> deeper layers (16-{_C.MARKETPLACE_LAYER_MAX})
 
-Respond with just the layer number (8-20):"""
+Respond with just the layer number ({_C.MARKETPLACE_LAYER_MIN}-{_C.MARKETPLACE_LAYER_MAX}):"""
 
         try:
-            response = self.model.generate(prompt, layer_index=15, max_new_tokens=10, temperature=0.1)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
             layer_str = response.strip()
 
             match = re.search(r'(\d+)', layer_str)
             if match:
                 layer = int(match.group(1))
-                return max(8, min(20, layer))
-            return 14
+                return max(_C.MARKETPLACE_LAYER_MIN, min(_C.MARKETPLACE_LAYER_MAX, layer))
+            return _C.MARKETPLACE_DEFAULT_OPTIMAL_LAYER
         except:
-            return 14
+            return _C.MARKETPLACE_DEFAULT_OPTIMAL_LAYER
 
     def _complete_creation_estimate(self, base: Dict[str, Any], available_benchmarks: List[str], issue_type: str) -> ClassifierCreationEstimate:
         """Complete the creation estimate with hardware adjustments."""
         hardware_multiplier = self._estimate_hardware_speed()
         training_time = base["training_time_minutes"] * hardware_multiplier
 
-        confidence = 0.8 if available_benchmarks else 0.6
+        confidence = _C.MARKETPLACE_CONFIDENCE_WITH_BENCHMARKS if available_benchmarks else _C.MARKETPLACE_CONFIDENCE_WITHOUT_BENCHMARKS
 
         return ClassifierCreationEstimate(
             issue_type=issue_type,
@@ -142,9 +147,9 @@ Respond with just the layer number (8-20):"""
         """Estimate hardware speed multiplier for training time."""
         device_kind = resolve_default_device()
         if device_kind == "cuda":
-            return 0.3
+            return _C.MARKETPLACE_CUDA_SPEED_MULTIPLIER
         if device_kind == "mps":
-            return 0.5
+            return _C.MARKETPLACE_MPS_SPEED_MULTIPLIER
         return 1.0
 
     def get_marketplace_summary(self) -> str:
@@ -178,7 +183,7 @@ Respond with just the layer number (8-20):"""
 
     def filter_classifiers(self,
                           issue_types: List[str] = None,
-                          min_quality: float = 0.0,
+                          min_quality: float = MARKETPLACE_MIN_QUALITY_DEFAULT,
                           model_family: str = None,
                           layers: List[int] = None) -> 'List':
         """

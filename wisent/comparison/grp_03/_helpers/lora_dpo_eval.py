@@ -12,6 +12,14 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from wisent.core.constants import (
+    COMPARISON_DEFAULT_BATCH_SIZE,
+    COMPARISON_MAX_BATCH_SIZE,
+    COMPARISON_NUM_PAIRS,
+    COMPARISON_STEERING_LAYER,
+    COMPARISON_STEERING_SCALES,
+    DATA_SPLIT_RATIO,
+)
 from wisent.comparison.utils import (
     generate_contrastive_pairs,
     create_test_only_task,
@@ -30,10 +38,10 @@ def evaluate_lora_dpo(
     model_name: str,
     lora_path: str | Path,
     task: str,
-    train_ratio: float = 0.8,
+    train_ratio: float = DATA_SPLIT_RATIO,
     device: str = "cuda:0",
-    batch_size: int = 1,
-    max_batch_size: int = 8,
+    batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE,
+    max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None,
@@ -47,8 +55,8 @@ def evaluate_lora_dpo(
     max_prompt_length: int | None = None,
     with_steering: bool = False,
     steering_method: str = "caa",
-    steering_layers: str = "12",
-    steering_num_pairs: int = 50,
+    steering_layers: str = str(COMPARISON_STEERING_LAYER),
+    steering_num_pairs: int = COMPARISON_NUM_PAIRS,
     steering_scales: list[float] | None = None,
     extraction_strategy: str = "mc_completion",
 ) -> dict:
@@ -58,7 +66,7 @@ def evaluate_lora_dpo(
 
     lora_path = Path(lora_path)
     if steering_scales is None:
-        steering_scales = [1.0, 2.0, 4.0]
+        steering_scales = list(COMPARISON_STEERING_SCALES)
 
     task_dict = create_test_only_task(task, train_ratio=train_ratio)
     wisent_model = WisentModel(model_name=model_name, device=device)

@@ -17,6 +17,7 @@ from typing import Any, Optional
 import torch
 
 from wisent.core.classifier.classifier import Classifier
+from wisent.core.constants import CACHE_MAX_SIZE_GB_DEFAULT, CACHE_MAX_AGE_DAYS_DEFAULT, CACHE_MEMORY_SIZE_DEFAULT, HASH_DIGEST_PREFIX
 
 logger = logging.getLogger(__name__)
 
@@ -56,9 +57,9 @@ class CacheConfig:
     """Configuration for classifier cache."""
 
     cache_dir: str = "./classifier_cache"
-    max_cache_size_gb: float = 5.0
-    max_age_days: float = 30.0
-    memory_cache_size: int = 10  # Number of models to keep in memory
+    max_cache_size_gb: float = CACHE_MAX_SIZE_GB_DEFAULT
+    max_age_days: float = CACHE_MAX_AGE_DAYS_DEFAULT
+    memory_cache_size: int = CACHE_MEMORY_SIZE_DEFAULT  # Number of models to keep in memory
 
     def __post_init__(self):
         Path(self.cache_dir).mkdir(parents=True, exist_ok=True)
@@ -140,7 +141,7 @@ class ClassifierCache(ClassifierCacheHelpersMixin):
 
         # Generate hash
         key_string = "_".join(key_components)
-        cache_key = hashlib.sha256(key_string.encode()).hexdigest()[:16]  # First 16 chars
+        cache_key = hashlib.sha256(key_string.encode()).hexdigest()[:HASH_DIGEST_PREFIX]
 
         return cache_key
 

@@ -6,6 +6,7 @@ from typing import Any, Dict, Iterator, List, Optional, Tuple
 
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.cli.optimization.core.method_optimizer_config import OptimizationConfig
+from wisent.core.constants import (AUTO_DEFAULT_STRENGTHS, TECZA_SEARCH_NUM_DIRECTIONS, TECZA_SEARCH_OPT_STEPS, TECZA_SEARCH_RETAIN_WEIGHTS, TECZA_LEARNING_RATE, TECZA_INDEPENDENCE_WEIGHT, TETNO_SEARCH_STEERING_LAYERS, TETNO_SEARCH_CONDITION_THRESHOLDS, TETNO_SEARCH_GATE_TEMPERATURES, TETNO_SEARCH_MAX_ALPHAS, GROM_SEARCH_NUM_DIRECTIONS, GROM_SEARCH_STEERING_LAYERS, GROM_SEARCH_GATE_HIDDEN_DIMS, GROM_SEARCH_INTENSITY_HIDDEN_DIMS, GROM_SEARCH_OPT_STEPS, GROM_SEARCH_BEHAVIOR_WEIGHTS, GROM_SEARCH_RETAIN_WEIGHTS, GROM_SEARCH_SPARSE_WEIGHTS, GROM_SEARCH_MAX_ALPHAS)
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ def generate_search_space(
         List of OptimizationConfig to test
     """
     layers = custom_layers or self._get_full_layers(num_layers)
-    strengths = custom_strengths or [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0]
+    strengths = custom_strengths or list(AUTO_DEFAULT_STRENGTHS)
     token_aggs = custom_token_aggregations or ["last_token", "mean_pooling", "first_token", "max_pooling", "continuation_token"]
     prompt_strats = custom_prompt_strategies or ["chat_template", "direct_completion", "multiple_choice", "role_playing", "instruction_following"]
     steering_strategies = ["constant", "initial_only", "diminishing", "increasing", "gaussian"]
@@ -149,11 +150,11 @@ def _get_method_param_ranges(
 
     elif self.method_name == "tecza":
         return {
-            "num_directions": custom.get("num_directions", [1, 2, 3, 5]),
-            "optimization_steps": custom.get("optimization_steps", [50, 100]),
-            "retain_weight": custom.get("retain_weight", [0.0, 0.1, 0.3]),
-            "learning_rate": custom.get("learning_rate", [0.01]),
-            "independence_weight": custom.get("independence_weight", [0.05]),
+            "num_directions": custom.get("num_directions", list(TECZA_SEARCH_NUM_DIRECTIONS)),
+            "optimization_steps": custom.get("optimization_steps", list(TECZA_SEARCH_OPT_STEPS)),
+            "retain_weight": custom.get("retain_weight", list(TECZA_SEARCH_RETAIN_WEIGHTS)),
+            "learning_rate": custom.get("learning_rate", [TECZA_LEARNING_RATE]),
+            "independence_weight": custom.get("independence_weight", [TECZA_INDEPENDENCE_WEIGHT]),
             "use_caa_init": custom.get("use_caa_init", [True]),
         }
 
@@ -164,12 +165,12 @@ def _get_method_param_ranges(
             ))
         return {
             "sensor_layer": custom.get("sensor_layer", sensor_defaults),
-            "steering_layers": custom.get("steering_layers", ["single", "range_3", "range_5"]),
-            "condition_threshold": custom.get("condition_threshold", [0.3, 0.5, 0.7]),
-            "gate_temperature": custom.get("gate_temperature", [0.1, 0.5, 1.0]),
+            "steering_layers": custom.get("steering_layers", list(TETNO_SEARCH_STEERING_LAYERS)),
+            "condition_threshold": custom.get("condition_threshold", list(TETNO_SEARCH_CONDITION_THRESHOLDS)),
+            "gate_temperature": custom.get("gate_temperature", list(TETNO_SEARCH_GATE_TEMPERATURES)),
             "per_layer_scaling": custom.get("per_layer_scaling", [True, False]),
             "use_entropy_scaling": custom.get("use_entropy_scaling", [True, False]),
-            "max_alpha": custom.get("max_alpha", [1.5, 2.0, 3.0]),
+            "max_alpha": custom.get("max_alpha", list(TETNO_SEARCH_MAX_ALPHAS)),
         }
 
     elif self.method_name == "grom":
@@ -178,16 +179,16 @@ def _get_method_param_ranges(
                 list(range(0, nl, max(1, nl // 4))) + [nl - 1]
             ))
         return {
-            "num_directions": custom.get("num_directions", [2, 3, 5]),
+            "num_directions": custom.get("num_directions", list(GROM_SEARCH_NUM_DIRECTIONS)),
             "sensor_layer": custom.get("sensor_layer", sensor_defaults),
-            "steering_layers": custom.get("steering_layers", ["range_3", "range_5"]),
-            "gate_hidden_dim": custom.get("gate_hidden_dim", [32, 64, 128]),
-            "intensity_hidden_dim": custom.get("intensity_hidden_dim", [16, 32, 64]),
-            "optimization_steps": custom.get("optimization_steps", [100, 200]),
-            "behavior_weight": custom.get("behavior_weight", [0.5, 1.0]),
-            "retain_weight": custom.get("retain_weight", [0.1, 0.2, 0.5]),
-            "sparse_weight": custom.get("sparse_weight", [0.0, 0.05]),
-            "max_alpha": custom.get("max_alpha", [2.0, 3.0]),
+            "steering_layers": custom.get("steering_layers", list(GROM_SEARCH_STEERING_LAYERS)),
+            "gate_hidden_dim": custom.get("gate_hidden_dim", list(GROM_SEARCH_GATE_HIDDEN_DIMS)),
+            "intensity_hidden_dim": custom.get("intensity_hidden_dim", list(GROM_SEARCH_INTENSITY_HIDDEN_DIMS)),
+            "optimization_steps": custom.get("optimization_steps", list(GROM_SEARCH_OPT_STEPS)),
+            "behavior_weight": custom.get("behavior_weight", list(GROM_SEARCH_BEHAVIOR_WEIGHTS)),
+            "retain_weight": custom.get("retain_weight", list(GROM_SEARCH_RETAIN_WEIGHTS)),
+            "sparse_weight": custom.get("sparse_weight", list(GROM_SEARCH_SPARSE_WEIGHTS)),
+            "max_alpha": custom.get("max_alpha", list(GROM_SEARCH_MAX_ALPHAS)),
         }
 
     # Default for unknown methods - empty params

@@ -5,6 +5,7 @@ from wisent.core.cli.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import STSB_SCORE_NEUTRAL
 
 
 __all__ = ["StsbExtractor"]
@@ -55,7 +56,7 @@ class StsbExtractor(HuggingFaceBenchmarkExtractor):
                 return None
 
             correct = str(score)
-            incorrect = str(1 - score) if score != 0.5 else str(0.1)
+            incorrect = str(1 - score) if score != 0.5 else str(STSB_SCORE_NEUTRAL)
 
             formatted_question = (
                 f"Rate the semantic similarity between the following two sentences "

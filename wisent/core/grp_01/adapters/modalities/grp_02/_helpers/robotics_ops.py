@@ -23,6 +23,7 @@ from wisent.core.modalities import (
 )
 from wisent.core.errors import UnknownTypeError
 from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.constants import TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
 from wisent.core.adapters.modalities._helpers.robotics_core import (
     RoboticsSteeringConfig,
     InputType,
@@ -253,10 +254,10 @@ class RoboticsOpsMixin:
             pos_agg = pos_tensor[-1]
             neg_agg = neg_tensor[-1]
         elif aggregation == "weighted":
-            weights = torch.linspace(0.1, 1.0, len(pos_activations))
+            weights = torch.linspace(TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX, len(pos_activations))
             weights = weights / weights.sum()
             pos_agg = (pos_tensor * weights.view(-1, 1, 1)).sum(dim=0)
-            weights = torch.linspace(0.1, 1.0, len(neg_activations))
+            weights = torch.linspace(TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX, len(neg_activations))
             weights = weights / weights.sum()
             neg_agg = (neg_tensor * weights.view(-1, 1, 1)).sum(dim=0)
         else:

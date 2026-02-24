@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 
+from wisent.core.constants import BENCHMARK_LOADING_TIME_DEFAULT
+
 
 __all__ = [
     "apply_priority_filtering",
@@ -32,7 +34,7 @@ def apply_priority_filtering(
             continue
 
         if time_budget_minutes is not None:
-            loading_time = config.get("loading_time", 60.0)
+            loading_time = config.get("loading_time", BENCHMARK_LOADING_TIME_DEFAULT)
             max_time_per_benchmark = time_budget_minutes * 60 / 2
             if loading_time > max_time_per_benchmark:
                 continue

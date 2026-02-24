@@ -4,6 +4,7 @@ from typing import Any, Callable, Iterable, Optional, TYPE_CHECKING
 import logging
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.constants import FEEDBACK_MAX_CHARS, EVAL_TIME_LIMIT_S, EVAL_CPU_LIMIT_S, EVAL_MEM_LIMIT_MB, SAFE_DOCKER_NPROC_DEFAULT, DS1000_CPU_LIMIT_S, DS1000_WALL_TIMEOUT_S, DS1000_NPROC, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE, DISPLAY_TRUNCATION_LARGE
 from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
 from wisent.core.evaluators.benchmark_specific.coding.metrics.core.atoms import SampleOutcome
 
@@ -46,11 +47,11 @@ class EvaluatorConfig:
     """
     image: str = "coding/sandbox:polyglot-1.0"
     runtime: Optional[str] = None
-    feedback_max_chars: int = 2000
+    feedback_max_chars: int = FEEDBACK_MAX_CHARS
     self_repair: bool = True
-    time_limit_s: int = 8
-    cpu_limit_s: int = 3
-    mem_limit_mb: int = 768
+    time_limit_s: int = EVAL_TIME_LIMIT_S
+    cpu_limit_s: int = EVAL_CPU_LIMIT_S
+    mem_limit_mb: int = EVAL_MEM_LIMIT_MB
     pre_sanitize: bool = True
 
 _SANITIZERS = {
@@ -168,20 +169,20 @@ if __name__ == "__main__":
 
             timeout_override = kwargs.get('timeout')
             if 'ds1000' in task_name.lower() or 'ds_1000' in task_name.lower():
-                cpu_limit_s, wall_timeout_s, nproc = 60, 120, 512
+                cpu_limit_s, wall_timeout_s, nproc = DS1000_CPU_LIMIT_S, DS1000_WALL_TIMEOUT_S, DS1000_NPROC
             elif timeout_override:
-                cpu_limit_s, wall_timeout_s, nproc = timeout_override, timeout_override, 64
+                cpu_limit_s, wall_timeout_s, nproc = timeout_override, timeout_override, SAFE_DOCKER_NPROC_DEFAULT
             else:
                 cpu_limit_s = self.cfg.cpu_limit_s
                 wall_timeout_s = self.cfg.time_limit_s
-                nproc = 64
+                nproc = SAFE_DOCKER_NPROC_DEFAULT
 
             job = Job(
                 language=language, compile_argv=None,
                 run_argv=["python3", "tests.py"],
                 cpu_limit_s=cpu_limit_s, wall_timeout_s=wall_timeout_s,
                 mem_limit_mb=self.cfg.mem_limit_mb,
-                fsize_mb=10, nproc=nproc, nofile=128,
+                fsize_mb=SAFE_DOCKER_FSIZE_MB, nproc=nproc, nofile=SAFE_DOCKER_NOFILE,
             )
 
             result = self.exec.run(files, job)
@@ -191,17 +192,17 @@ if __name__ == "__main__":
                     ground_truth="TRUTHFUL", method_used=self.name, confidence=1.0,
                     details=f"Code executed successfully. Status: {result.status}",
                     meta={"exit_code": result.exit_code, "elapsed": result.elapsed,
-                          "stdout": result.stdout[:500] if result.stdout else "",
-                          "stderr": result.stderr[:500] if result.stderr else ""},
+                          "stdout": result.stdout[:DISPLAY_TRUNCATION_LARGE] if result.stdout else "",
+                          "stderr": result.stderr[:DISPLAY_TRUNCATION_LARGE] if result.stderr else ""},
                 )
             else:
-                error_info = f"stdout: {result.stdout[:500] if result.stdout else ''}\nstderr: {result.stderr[:500] if result.stderr else ''}"
+                error_info = f"stdout: {result.stdout[:DISPLAY_TRUNCATION_LARGE] if result.stdout else ''}\nstderr: {result.stderr[:DISPLAY_TRUNCATION_LARGE] if result.stderr else ''}"
                 return EvalResult(
                     ground_truth="UNTRUTHFUL", method_used=self.name, confidence=1.0,
                     details=f"Code execution failed. Status: {result.status}\n{error_info}",
                     meta={"exit_code": result.exit_code, "elapsed": result.elapsed,
-                          "stdout": result.stdout[:500] if result.stdout else "",
-                          "stderr": result.stderr[:500] if result.stderr else ""},
+                          "stdout": result.stdout[:DISPLAY_TRUNCATION_LARGE] if result.stdout else "",
+                          "stderr": result.stderr[:DISPLAY_TRUNCATION_LARGE] if result.stderr else ""},
                 )
 
         except Exception as e:

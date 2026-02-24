@@ -297,3 +297,4 @@ CORE_BENCHMARKS = {
         "task": "prost",
         "tags": ["long context", "history", "reasoning"]
     },
+}

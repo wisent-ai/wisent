@@ -7,6 +7,8 @@ import psycopg2
 from psycopg2.extras import execute_values
 import torch
 
+from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE, EXTRACTION_DEFAULT_PAIR_LIMIT, MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL
+
 
 def hidden_states_to_bytes(hidden_states: torch.Tensor) -> bytes:
     """Convert hidden_states tensor to bytes (float32)."""
@@ -55,7 +57,7 @@ def batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_data: l
     if not activations_data:
         return
 
-    batch_size = 50
+    batch_size = EXTRACTION_DB_BATCH_SIZE
     max_retries = 3
 
     for i in range(0, len(activations_data), batch_size):
@@ -81,7 +83,7 @@ def batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_data: l
 
 
 def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_id: int,
-                      num_layers: int, device: str, get_conn_fn, reset_conn_fn, limit: int = 500):
+                      num_layers: int, device: str, get_conn_fn, reset_conn_fn, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT):
     """Extract raw activations for a single benchmark using 3 formats."""
     print(f"  [EXTRACT] Importing extraction strategy...", flush=True)
     from wisent.core.activations import ExtractionStrategy, build_extraction_texts
@@ -119,7 +121,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
     format_names = [f[0] for f in all_prompt_formats]
 
     def get_hidden_states(text):
-        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048, add_special_tokens=False)
+        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH, add_special_tokens=False)
         enc = {k: v.to(actual_device) for k, v in enc.items()}
         with torch.inference_mode():
             out = model(**enc, output_hidden_states=True, use_cache=False)
@@ -146,7 +148,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
 
         if check_pair_fully_extracted(get_conn_fn, model_id, pair_id, num_layers, format_names):
             skipped += 1
-            if skipped % 50 == 0:
+            if skipped % PROGRESS_LOG_INTERVAL == 0:
                 print(f"    [skipped {skipped} already-extracted pairs]", flush=True)
             continue
 

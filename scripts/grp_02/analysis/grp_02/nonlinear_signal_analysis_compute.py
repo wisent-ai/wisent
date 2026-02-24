@@ -11,6 +11,7 @@ from scipy.spatial.distance import cdist
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics.pairwise import rbf_kernel
+from wisent.core.constants import ZERO_THRESHOLD
 
 
 @dataclass
@@ -57,7 +58,7 @@ def compute_fisher_per_dimension(pos: np.ndarray, neg: np.ndarray) -> np.ndarray
         neg_d = neg[:, d]
         between_var = (pos_d.mean() - neg_d.mean()) ** 2
         within_var = (pos_d.var() + neg_d.var()) / 2
-        if within_var > 1e-10:
+        if within_var > ZERO_THRESHOLD:
             fishers[d] = between_var / within_var
     return fishers
 
@@ -65,7 +66,7 @@ def compute_fisher_per_dimension(pos: np.ndarray, neg: np.ndarray) -> np.ndarray
 def compute_gini(values: np.ndarray) -> float:
     """Compute Gini coefficient - measures concentration."""
     values = np.abs(values)
-    if values.sum() < 1e-10:
+    if values.sum() < ZERO_THRESHOLD:
         return 0.0
     values = np.sort(values)
     n = len(values)
@@ -91,7 +92,7 @@ def compute_mmd_rbf(pos: np.ndarray, neg: np.ndarray, gamma: float = None) -> fl
     if gamma is None:
         all_data = np.vstack([pos, neg])
         dists = cdist(all_data, all_data, 'euclidean')
-        gamma = 1.0 / (2 * np.median(dists[dists > 0]) ** 2 + 1e-10)
+        gamma = 1.0 / (2 * np.median(dists[dists > 0]) ** 2 + ZERO_THRESHOLD)
     K_pp = rbf_kernel(pos, pos, gamma=gamma)
     K_nn = rbf_kernel(neg, neg, gamma=gamma)
     K_pn = rbf_kernel(pos, neg, gamma=gamma)
@@ -116,9 +117,9 @@ def estimate_local_intrinsic_dim(X: np.ndarray, k: int = 10) -> float:
     dims = []
     for i in range(len(X)):
         T_k = sorted_dists[i, k-1]
-        if T_k < 1e-10:
+        if T_k < ZERO_THRESHOLD:
             continue
-        log_ratios = np.log(sorted_dists[i, :k-1] / T_k + 1e-10)
+        log_ratios = np.log(sorted_dists[i, :k-1] / T_k + ZERO_THRESHOLD)
         if len(log_ratios) > 0:
             dim_est = -(k - 1) / log_ratios.sum() if log_ratios.sum() < 0 else X.shape[1]
             dims.append(min(dim_est, X.shape[1]))
@@ -148,7 +149,7 @@ def compute_density_ratio(pos: np.ndarray, neg: np.ndarray) -> float:
     np.fill_diagonal(neg_dists, np.nan)
     avg_pos = np.nanmean(pos_dists)
     avg_neg = np.nanmean(neg_dists)
-    if avg_neg < 1e-10:
+    if avg_neg < ZERO_THRESHOLD:
         return 1.0
     return float(avg_pos / avg_neg)
 
@@ -158,7 +159,7 @@ def analyze_layer(pos: np.ndarray, neg: np.ndarray, layer: int) -> NonlinearSign
     fishers = compute_fisher_per_dimension(pos, neg)
     sorted_fishers = np.sort(fishers)[::-1]
     top10_sum = sorted_fishers[:10].sum()
-    total_sum = fishers.sum() + 1e-10
+    total_sum = fishers.sum() + ZERO_THRESHOLD
 
     return NonlinearSignalResult(
         layer=layer,
@@ -174,7 +175,7 @@ def analyze_layer(pos: np.ndarray, neg: np.ndarray, layer: int) -> NonlinearSign
         mmd_linear=compute_mmd_linear(pos, neg),
         local_dim_pos=estimate_local_intrinsic_dim(pos),
         local_dim_neg=estimate_local_intrinsic_dim(neg),
-        local_dim_ratio=estimate_local_intrinsic_dim(pos) / (estimate_local_intrinsic_dim(neg) + 1e-10),
+        local_dim_ratio=estimate_local_intrinsic_dim(pos) / (estimate_local_intrinsic_dim(neg) + ZERO_THRESHOLD),
         silhouette_score=compute_silhouette(pos, neg),
         density_ratio=compute_density_ratio(pos, neg),
     )

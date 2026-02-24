@@ -5,6 +5,7 @@ RecommendationConfig instance.
 """
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
+from wisent.core.constants import RECOMMEND_CONFIDENCE_MARGIN_WEIGHT, RECOMMEND_BASELINE_CONFIDENCE
 from .config import RecommendationConfig, METHODS
 
 
@@ -186,7 +187,7 @@ def compute_configurable_recommendation(
     if len(sorted_scores) > 1 and sorted_scores[0] > 0:
         margin = ((sorted_scores[0] - sorted_scores[1])
                   / sorted_scores[0])
-        confidence = min(w.confidence_base + margin * 0.5, 1.0)
+        confidence = min(w.confidence_base + margin * RECOMMEND_CONFIDENCE_MARGIN_WEIGHT, 1.0)
     else:
         confidence = w.confidence_base
     if not steering_viable:
@@ -196,7 +197,7 @@ def compute_configurable_recommendation(
     if not reasoning:
         reasoning.append("Insufficient metrics")
         best_method = "CAA"
-        confidence = 0.3
+        confidence = RECOMMEND_BASELINE_CONFIDENCE
     return {
         "recommended_method": best_method,
         "confidence": float(confidence),

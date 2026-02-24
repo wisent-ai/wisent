@@ -8,6 +8,7 @@ Separated from extraction_strategy.py to keep files under 300 lines.
 from typing import Tuple, Optional
 import warnings
 
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM
 from .extraction_strategy import ExtractionStrategy, ROLE_PLAY_TOKENS
 
 
@@ -140,21 +141,21 @@ def _build_mc_balanced_texts(
 
     if is_positive:
         if pos_goes_in_b:
-            option_a = other_response[:200]
-            option_b = response[:200]
+            option_a = other_response[:DISPLAY_TRUNCATION_MEDIUM]
+            option_b = response[:DISPLAY_TRUNCATION_MEDIUM]
             answer = "B"
         else:
-            option_a = response[:200]
-            option_b = other_response[:200]
+            option_a = response[:DISPLAY_TRUNCATION_MEDIUM]
+            option_b = other_response[:DISPLAY_TRUNCATION_MEDIUM]
             answer = "A"
     else:
         if pos_goes_in_b:
-            option_a = response[:200]
-            option_b = other_response[:200]
+            option_a = response[:DISPLAY_TRUNCATION_MEDIUM]
+            option_b = other_response[:DISPLAY_TRUNCATION_MEDIUM]
             answer = "A"
         else:
-            option_a = other_response[:200]
-            option_b = response[:200]
+            option_a = other_response[:DISPLAY_TRUNCATION_MEDIUM]
+            option_b = response[:DISPLAY_TRUNCATION_MEDIUM]
             answer = "B"
 
     mc_prompt = (
@@ -193,21 +194,21 @@ def _build_mc_completion_texts(
 
     if is_positive:
         if pos_goes_in_b:
-            option_a = other_response[:200]
-            option_b = response[:200]
+            option_a = other_response[:DISPLAY_TRUNCATION_MEDIUM]
+            option_b = response[:DISPLAY_TRUNCATION_MEDIUM]
             answer = "B"
         else:
-            option_a = response[:200]
-            option_b = other_response[:200]
+            option_a = response[:DISPLAY_TRUNCATION_MEDIUM]
+            option_b = other_response[:DISPLAY_TRUNCATION_MEDIUM]
             answer = "A"
     else:
         if pos_goes_in_b:
-            option_a = response[:200]
-            option_b = other_response[:200]
+            option_a = response[:DISPLAY_TRUNCATION_MEDIUM]
+            option_b = other_response[:DISPLAY_TRUNCATION_MEDIUM]
             answer = "A"
         else:
-            option_a = other_response[:200]
-            option_b = response[:200]
+            option_a = other_response[:DISPLAY_TRUNCATION_MEDIUM]
+            option_b = response[:DISPLAY_TRUNCATION_MEDIUM]
             answer = "B"
 
     mc_prompt = (

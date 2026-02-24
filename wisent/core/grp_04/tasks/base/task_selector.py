@@ -9,6 +9,8 @@ import logging
 from typing import List, Dict, Any, Optional, Set
 from pathlib import Path
 
+from wisent.core.constants import PARSER_DEFAULT_MIN_QUALITY
+
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +47,7 @@ class TaskSelector:
         self, 
         skills: Optional[List[str]] = None, 
         risks: Optional[List[str]] = None,
-        min_quality_score: int = 2
+        min_quality_score: int = PARSER_DEFAULT_MIN_QUALITY
     ) -> List[str]:
         """
         Find tasks that match the given skills and/or risks.
@@ -90,7 +92,7 @@ class TaskSelector:
         skills: Optional[List[str]] = None,
         risks: Optional[List[str]] = None,
         num_tasks: Optional[int] = None,
-        min_quality_score: int = 2,
+        min_quality_score: int = PARSER_DEFAULT_MIN_QUALITY,
         seed: Optional[int] = None
     ) -> List[str]:
         """
@@ -154,7 +156,7 @@ def get_tasks_for_skills_and_risks(
     skills: Optional[List[str]] = None,
     risks: Optional[List[str]] = None,
     num_tasks: Optional[int] = None,
-    min_quality_score: int = 2,
+    min_quality_score: int = PARSER_DEFAULT_MIN_QUALITY,
     seed: Optional[int] = None
 ) -> List[str]:
     """

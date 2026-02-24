@@ -28,6 +28,12 @@ from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import (
+    LOG_EPS,
+    TIKHONOV_REG,
+    PRZELOM_EPSILON,
+    PRZELOM_INFERENCE_K,
+)
 
 __all__ = ["PrzelomMethod", "PrzelomConfig", "PrzelomResult"]
 
@@ -35,13 +41,13 @@ __all__ = ["PrzelomMethod", "PrzelomConfig", "PrzelomResult"]
 @dataclass
 class PrzelomConfig:
     """Configuration for PRZELOM attention-transport steering."""
-    epsilon: float = 1.0
+    epsilon: float = PRZELOM_EPSILON
     """Entropic regularization (temperature for softmax)."""
     target_mode: str = "uniform"
     """Target transport plan mode: 'uniform' or 'nearest'."""
-    regularization: float = 1e-4
+    regularization: float = TIKHONOV_REG
     """Tikhonov regularization for pseudoinverse."""
-    inference_k: int = 5
+    inference_k: int = PRZELOM_INFERENCE_K
     """Number of nearest source points for inference interpolation."""
 
 
@@ -69,7 +75,7 @@ def _compute_target_transport(neg: torch.Tensor, pos: torch.Tensor, mode: str) -
     return T
 
 
-def _regularized_pinv(M: torch.Tensor, reg: float = 1e-4) -> torch.Tensor:
+def _regularized_pinv(M: torch.Tensor, reg: float = TIKHONOV_REG) -> torch.Tensor:
     """Compute Tikhonov-regularized pseudoinverse: (M^T M + reg I)^-1 M^T."""
     MtM = M.T @ M
     I = torch.eye(MtM.shape[0], device=M.device, dtype=M.dtype)
@@ -85,10 +91,10 @@ class PrzelomMethod(BaseSteeringMethod):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.config = PrzelomConfig(
-            epsilon=kwargs.get("epsilon", 1.0),
+            epsilon=kwargs.get("epsilon", PRZELOM_EPSILON),
             target_mode=kwargs.get("target_mode", "uniform"),
-            regularization=kwargs.get("regularization", 1e-4),
-            inference_k=kwargs.get("inference_k", 5),
+            regularization=kwargs.get("regularization", TIKHONOV_REG),
+            inference_k=kwargs.get("inference_k", PRZELOM_INFERENCE_K),
         )
 
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:
@@ -140,8 +146,8 @@ class PrzelomMethod(BaseSteeringMethod):
                 C = -(q_neg @ k_pos.T) / scale
                 T_current = torch.softmax(-C / eps, dim=1)
                 T_target = _compute_target_transport(neg, pos, self.config.target_mode)
-                log_T_target = torch.log(T_target.clamp(min=1e-12))
-                log_T_current = torch.log(T_current.clamp(min=1e-12))
+                log_T_target = torch.log(T_target.clamp(min=LOG_EPS))
+                log_T_current = torch.log(T_current.clamp(min=LOG_EPS))
                 delta_C = eps * (log_T_target - log_T_current)
                 k_pos_pinv = _regularized_pinv(k_pos, reg)
                 delta_q = -scale * (delta_C @ k_pos_pinv.T)
@@ -153,7 +159,7 @@ class PrzelomMethod(BaseSteeringMethod):
                     delta_h = delta_q
             else:
                 T_target = _compute_target_transport(neg, pos, self.config.target_mode)
-                row_sums = T_target.sum(dim=1, keepdim=True).clamp(min=1e-12)
+                row_sums = T_target.sum(dim=1, keepdim=True).clamp(min=LOG_EPS)
                 T_norm = T_target / row_sums
                 targets = T_norm @ pos
                 delta_h = targets - neg

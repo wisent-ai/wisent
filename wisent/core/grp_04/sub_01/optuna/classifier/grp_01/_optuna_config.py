@@ -22,6 +22,14 @@ from wisent.core.errors import NoActivationDataError, ClassifierCreationError
 
 from .activation_generator import ActivationData, ActivationGenerator, GenerationConfig
 from .classifier_cache import CacheConfig, ClassifierCache
+from wisent.core.constants import (
+    LR_LOWER_BOUND, LR_UPPER_BOUND, DEFAULT_N_TRIALS,
+    DEFAULT_RANDOM_SEED, CLASSIFIER_TEST_SIZE,
+    OPTUNA_CLASSIFIER_BATCH_SIZES,
+    OPTUNA_HIDDEN_DIM_RANGE, OPTUNA_THRESHOLD_RANGE,
+    OPTUNA_EPOCH_RANGE, OPTUNA_CLASSIFIER_CV_FOLDS,
+    PARSER_OPTUNA_EARLY_STOP_PATIENCE,
+)
 
 
 def get_model_dtype(model) -> torch.dtype:
@@ -60,40 +68,40 @@ class ClassifierOptimizationConfig:
     model_dtype: Optional[torch.dtype] = None  # Auto-detect if None
 
     # Optuna settings
-    n_trials: int = 100
+    n_trials: int = DEFAULT_N_TRIALS
     timeout: Optional[float] = None
     n_jobs: int = 1
-    sampler_seed: int = 42
+    sampler_seed: int = DEFAULT_RANDOM_SEED
 
     # Model type search space
     model_types: list[str] = None
 
     # Hyperparameter ranges
-    hidden_dim_range: tuple[int, int] = (32, 512)
-    threshold_range: tuple[float, float] = (0.3, 0.9)
+    hidden_dim_range: tuple[int, int] = OPTUNA_HIDDEN_DIM_RANGE
+    threshold_range: tuple[float, float] = OPTUNA_THRESHOLD_RANGE
 
     # Training settings
-    num_epochs_range: tuple[int, int] = (20, 100)
-    learning_rate_range: tuple[float, float] = (1e-4, 1e-2)
+    num_epochs_range: tuple[int, int] = OPTUNA_EPOCH_RANGE
+    learning_rate_range: tuple[float, float] = (LR_LOWER_BOUND, LR_UPPER_BOUND)
     batch_size_options: list[int] = None
 
     # Evaluation settings
-    cv_folds: int = 3
-    test_size: float = 0.2
-    random_state: int = 42
+    cv_folds: int = OPTUNA_CLASSIFIER_CV_FOLDS
+    test_size: float = CLASSIFIER_TEST_SIZE
+    random_state: int = DEFAULT_RANDOM_SEED
 
     # Optimization objective
     primary_metric: str = "f1"  # "accuracy", "f1", "auc", "precision", "recall"
 
     # Pruning settings
     enable_pruning: bool = True
-    pruning_patience: int = 10
+    pruning_patience: int = PARSER_OPTUNA_EARLY_STOP_PATIENCE
 
     def __post_init__(self):
         if self.model_types is None:
             self.model_types = ["logistic", "mlp"]
         if self.batch_size_options is None:
-            self.batch_size_options = [16, 32, 64]
+            self.batch_size_options = list(OPTUNA_CLASSIFIER_BATCH_SIZES)
 
         # Auto-detect device if needed
         if self.device == "auto":

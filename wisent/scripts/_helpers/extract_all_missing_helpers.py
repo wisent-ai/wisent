@@ -11,6 +11,8 @@ import time
 import psycopg2
 import torch
 
+from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, MAX_TOKENIZATION_LENGTH, EXTRACTION_SMALL_BATCH_SIZE, PROGRESS_LOG_INTERVAL
+
 from wisent.scripts.extract_all_missing import (
     hidden_states_to_bytes,
     get_conn,
@@ -21,7 +23,7 @@ from wisent.scripts.extract_all_missing import (
 
 
 def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_id: int,
-                      device: str, num_layers: int, limit: int = 500):
+                      device: str, num_layers: int, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT):
     """Extract activations for a single benchmark using EXISTING pairs from database.
 
     Only extracts pairs that don't already have activations for this model.
@@ -52,7 +54,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
     extracted = 0
 
     def get_hidden_states(text):
-        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
+        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
         enc = {k: v.to(device) for k, v in enc.items()}
         with torch.inference_mode():
             out = model(**enc, output_hidden_states=True, use_cache=False)
@@ -60,7 +62,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         return [out.hidden_states[i][0, -1, :] for i in range(1, len(out.hidden_states))]
 
     # Process in batches of 10 pairs to reduce DB round trips
-    batch_size = 10
+    batch_size = EXTRACTION_SMALL_BATCH_SIZE
     for batch_start in range(0, len(db_pairs), batch_size):
         batch_end = min(batch_start + batch_size, len(db_pairs))
         batch_pairs = db_pairs[batch_start:batch_end]
@@ -92,7 +94,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         # Batch insert all activations for this batch of pairs
         batch_create_activations(activations_batch)
 
-        if batch_end % 50 == 0 or batch_end == len(db_pairs):
+        if batch_end % PROGRESS_LOG_INTERVAL == 0 or batch_end == len(db_pairs):
             print(f"    Processed {batch_end}/{len(db_pairs)} pairs", flush=True)
 
     if device == "cuda":
@@ -105,7 +107,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="Model name (e.g., meta-llama/Llama-3.2-1B-Instruct)")
     parser.add_argument("--device", default="cuda", help="Device (cuda/mps/cpu)")
-    parser.add_argument("--limit", type=int, default=500, help="Max pairs per benchmark")
+    parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark")
     parser.add_argument("--benchmark", default=None, help="Single benchmark to extract (optional)")
     args = parser.parse_args()
 

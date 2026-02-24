@@ -8,6 +8,7 @@ independent directions are needed to represent the concept.
 import torch
 import numpy as np
 from typing import Dict
+from wisent.core.constants import ZERO_THRESHOLD
 
 
 def compute_icd(
@@ -40,7 +41,7 @@ def compute_icd(
     
     try:
         U, S, Vh = np.linalg.svd(diff_vectors, full_matrices=False)
-        S = S[S > 1e-10]
+        S = S[S > ZERO_THRESHOLD]
         
         if len(S) == 0:
             return {"icd": 0.0, "top1_variance": 0.0, "top5_variance": 0.0, "n_samples": n}

@@ -17,7 +17,7 @@ from wisent.core.tasks.base.task_interface import get_task
 from wisent.core.utils import empty_device_cache, preferred_dtype, resolve_default_device
 from wisent.core.errors import ModelArchitectureUnknownError
 from wisent.core.models.wisent_model import WisentModel
-
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER
 logger = logging.getLogger(__name__)
 
 
@@ -184,7 +184,7 @@ def create_probe_training_data(
     max_length: int,
     device: torch.device,
     task_name: str,
-    max_new_tokens: int = 200,
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Create training data for probes: activations -> correctness labels using task extractor with batched generation."""
     texts = []

@@ -5,6 +5,7 @@ from __future__ import annotations
 import torch
 from typing import Dict, Optional, TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -27,12 +28,12 @@ class WicherRuntimeHooks:
         concept_bases: Dict[int, torch.Tensor],
         component_variances: Dict[int, torch.Tensor],
         layer_variance: Dict[int, float],
-        num_steps: int = 3,
-        alpha: float = 5e-3,
-        eta: float = 0.5,
-        beta: float = 0.0,
-        alpha_decay: float = 1.0,
-        base_strength: float = 1.0,
+        num_steps: int = BROYDEN_DEFAULT_NUM_STEPS,
+        alpha: float = BROYDEN_DEFAULT_ALPHA,
+        eta: float = BROYDEN_DEFAULT_ETA,
+        beta: float = BROYDEN_DEFAULT_BETA,
+        alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY,
+        base_strength: float = DEFAULT_STRENGTH,
     ):
         self.model = model
         self.concept_directions = concept_directions
@@ -100,6 +101,7 @@ class WicherRuntimeHooks:
         )
 
         concept_dir = self.concept_directions[layer_idx].float()
+        concept_dir = concept_dir / concept_dir.norm().clamp(min=NORM_EPS)
         basis = self.concept_bases[layer_idx].float()
         comp_var = self.component_variances[layer_idx].float()
 
@@ -107,8 +109,6 @@ class WicherRuntimeHooks:
         original_dtype = hidden_states.dtype
 
         effective_strength = self.base_strength
-        if layer_idx in self._variance_weights:
-            effective_strength *= self._variance_weights[layer_idx]
 
         if hidden_states.dim() == 1:
             h = hidden_states.unsqueeze(0).float()
@@ -145,7 +145,7 @@ class WicherRuntimeHooks:
 def project_weights_wicher(
     model: Module,
     steering_obj,
-    base_strength: float = 1.0,
+    base_strength: float = DEFAULT_STRENGTH,
     components: list[str] | None = None,
     verbose: bool = True,
 ) -> dict[str, int]:

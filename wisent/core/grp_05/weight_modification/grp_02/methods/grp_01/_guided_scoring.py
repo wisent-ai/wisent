@@ -10,6 +10,12 @@ from wisent.core.cli.cli_logger import setup_logger
 if TYPE_CHECKING:
     from torch import Tensor
 
+from wisent.core.constants import (
+    NORM_EPS, PROBE_KNN_K, BLEND_DEFAULT,
+    GUIDED_FISHER_MAX_BOOST, GUIDED_FISHER_BOOST_SCALE, GUIDED_FISHER_LOG_DIVISOR,
+    GUIDED_EFFECT_MAX_BOOST, GUIDED_EFFECT_BOOST_SCALE, GUIDED_COHENS_D_NORMALIZER,
+    GUIDED_NONLINEAR_PENALTY, GUIDED_WEIGHT_MAX,
+)
 from wisent.core.weight_modification.methods.guided import (
     LayerDiagnostics,
     GuidedModificationConfig,
@@ -21,7 +27,7 @@ _LOG = setup_logger(__name__)
 def _compute_knn_accuracy(
     pos_tensor: Tensor,
     neg_tensor: Tensor,
-    k: int = 10,
+    k: int = PROBE_KNN_K,
 ) -> float:
     """Compute k-NN leave-one-out accuracy."""
     
@@ -35,7 +41,7 @@ def _compute_knn_accuracy(
     k = min(k, n - 1)
     
     if k < 1:
-        return 0.5
+        return BLEND_DEFAULT
     
     # Compute pairwise distances
     distances = torch.cdist(X, X)
@@ -78,7 +84,7 @@ def _compute_fisher_ratio(
     within_scatter = within_scatter / (pos_tensor.shape[0] + neg_tensor.shape[0])
     
     # Fisher ratio
-    fisher_ratio = between_scatter / (within_scatter + 1e-8)
+    fisher_ratio = between_scatter / (within_scatter + NORM_EPS)
     
     return float(fisher_ratio)
 
@@ -105,20 +111,20 @@ def _compute_recommended_weight(
     base_weight = linear_score
     
     # Boost for high Fisher ratio (log scale since Fisher can be very large)
-    fisher_boost = min(0.3, 0.1 * (1 + torch.log(torch.tensor(fisher_ratio + 1)).item() / 5))
-    
+    fisher_boost = min(GUIDED_FISHER_MAX_BOOST, GUIDED_FISHER_BOOST_SCALE * (1 + torch.log(torch.tensor(fisher_ratio + 1)).item() / GUIDED_FISHER_LOG_DIVISOR))
+
     # Boost for high effect size
-    effect_boost = min(0.2, 0.1 * min(cohens_d / 2, 1.0))
-    
+    effect_boost = min(GUIDED_EFFECT_MAX_BOOST, GUIDED_EFFECT_BOOST_SCALE * min(cohens_d / GUIDED_COHENS_D_NORMALIZER, 1.0))
+
     # Penalty if k-NN is much better than linear (nonlinear structure)
     gap = knn_score - linear_score
-    nonlinear_penalty = max(0, gap * 0.5)
-    
+    nonlinear_penalty = max(0, gap * GUIDED_NONLINEAR_PENALTY)
+
     # Combine
     weight = base_weight + fisher_boost + effect_boost - nonlinear_penalty
-    
+
     # Clamp to reasonable range
-    weight = max(0.0, min(1.5, weight))
+    weight = max(0.0, min(GUIDED_WEIGHT_MAX, weight))
     
     return weight
 
@@ -152,7 +158,7 @@ def compute_fisher_weights(
             # Normalize to [0, 1]
             normalized = (fisher - min_fisher) / (max_fisher - min_fisher)
         else:
-            normalized = 0.5
+            normalized = BLEND_DEFAULT
         
         # Scale to weight range
         weight = (

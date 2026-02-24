@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Any
 
 from wisent.core.config_manager import ModelConfigManager
 from wisent.core.errors import MissingParameterError
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, OPTIMIZER_CONSISTENCY_THRESHOLD
 
 from ..types import SteeringOptimizationResult, SteeringOptimizationSummary
 
@@ -208,12 +209,12 @@ class SteeringOptimizerBase:
             layer=layer,
             strength=strength,
             limit=len(test_samples),
-            split_ratio=0.8
+            split_ratio=DEFAULT_SPLIT_RATIO
         )
 
         return {
             'effectiveness_score': score,
             'accuracy': score,
-            'consistency': 1.0 if score > 0.5 else 0.5,
+            'consistency': 1.0 if score > OPTIMIZER_CONSISTENCY_THRESHOLD else OPTIMIZER_CONSISTENCY_THRESHOLD,
             'direction_accuracy': score
         }

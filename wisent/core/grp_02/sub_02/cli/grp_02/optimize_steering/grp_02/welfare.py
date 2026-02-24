@@ -8,10 +8,14 @@ from wisent.core.cli.optimize_steering.method_configs import (
     MethodConfig, CAAConfig, STEERING_STRATEGIES,
 )
 from wisent.core.cli.optimize_steering.pipeline import OptimizationResult, _make_args
-from wisent.core.cli.optimize_steering.data.activations import execute_get_activations
+from wisent.core.cli.optimize_steering.data.activations_data import execute_get_activations
 from wisent.core.cli.optimize_steering.steering_objects import execute_create_steering_object
 from wisent.core.cli.optimize_steering.data.responses import execute_generate_responses
 from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
+from wisent.core.constants import (DEFAULT_N_TRIALS, WELFARE_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS,
+    DEFAULT_NUM_STRENGTH_STEPS, DEFAULT_LAYER,
+    PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P,
+    PARSER_STRENGTH_RANGE_WELFARE)
 
 
 def _execute_welfare_optimization(args):
@@ -27,8 +31,8 @@ def _execute_welfare_optimization(args):
     trait = args.trait
     direction = getattr(args, 'direction', 'positive')
     model = args.model
-    n_trials = getattr(args, 'n_trials', 100)
-    limit = getattr(args, 'limit', 50)
+    n_trials = getattr(args, 'n_trials', DEFAULT_N_TRIALS)
+    limit = getattr(args, 'limit', WELFARE_LIMIT)
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './welfare_optimization')
 
@@ -71,21 +75,18 @@ def _execute_welfare_optimization(args):
     from transformers import AutoConfig
     try:
         config = AutoConfig.from_pretrained(model, trust_remote_code=True)
-        num_layers = getattr(config, 'num_hidden_layers', 32)
+        num_layers = getattr(config, 'num_hidden_layers', DEFAULT_NUM_HIDDEN_LAYERS)
     except Exception:
-        num_layers = 32
+        num_layers = DEFAULT_NUM_HIDDEN_LAYERS
 
     # Determine layers to search
     layers = getattr(args, 'layers', None)
     if layers is None:
-        # Default: search middle to late layers
-        start_layer = max(1, num_layers // 3)
-        end_layer = num_layers - 1
-        layers = list(range(start_layer, end_layer + 1, 2))  # Every other layer
+        layers = list(range(0, num_layers, 2))
 
     # Strength range
-    strength_range = getattr(args, 'strength_range', [0.5, 3.0])
-    num_strength_steps = getattr(args, 'num_strength_steps', 5)
+    strength_range = getattr(args, 'strength_range', list(PARSER_STRENGTH_RANGE_WELFARE))
+    num_strength_steps = getattr(args, 'num_strength_steps', DEFAULT_NUM_STRENGTH_STEPS)
     strengths = [
         strength_range[0] + i * (strength_range[1] - strength_range[0]) / (num_strength_steps - 1)
         for i in range(num_strength_steps)
@@ -219,7 +220,7 @@ def _run_welfare_pipeline(
     scores_file = os.path.join(work_dir, "scores.json")
 
     # 1. Get activations from pairs
-    layer = getattr(config, 'layer', 16)
+    layer = getattr(config, 'layer', DEFAULT_LAYER)
     execute_get_activations(_make_args(
         pairs_file=pairs_file,
         model=model,
@@ -256,9 +257,9 @@ def _run_welfare_pipeline(
         steering_strategy=steering_strategy,
         use_steering=True,
         device=device,
-        max_new_tokens=128,
-        temperature=0.7,
-        top_p=0.95,
+        max_new_tokens=PIPELINE_MAX_NEW_TOKENS,
+        temperature=PIPELINE_TEMPERATURE,
+        top_p=PIPELINE_TOP_P,
         verbose=False,
     ))
 

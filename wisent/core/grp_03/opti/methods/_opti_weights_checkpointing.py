@@ -10,7 +10,7 @@ import optuna
 import torch
 
 from wisent.core.opti.core.atoms import Direction, HPOConfig, HPORun
-
+from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, WEIGHT_MIN_DISTANCE_FRACTION
 
 class WeightsCheckpointingMixin:
     """Mixin providing checkpointing support for WeightsOptimizer."""
@@ -25,7 +25,7 @@ class WeightsCheckpointingMixin:
         strength = params["strength"] * params["max_weight"]
         max_weight_position = params["max_weight_position"] * (self.num_layers - 1)
         min_weight = params["min_weight"]
-        min_weight_distance = 0.6 * (self.num_layers - 1)
+        min_weight_distance = WEIGHT_MIN_DISTANCE_FRACTION * (self.num_layers - 1)
 
         if hasattr(self.model, "model"):
             layers = self.model.model.layers
@@ -105,11 +105,11 @@ class WeightsCheckpointingMixin:
         self,
         cfg: HPOConfig,
         checkpoint_path: str | None = None,
-        checkpoint_interval: int = 5,
+        checkpoint_interval: int = DEFAULT_CHECKPOINT_INTERVAL,
         output_dir: str | None = None,
         tokenizer: Any = None,
-        s3_bucket: str | None = None,
-        s3_key_prefix: str | None = None,
+        gcs_bucket: str | None = None,
+        gcs_key_prefix: str | None = None,
     ) -> HPORun:
         """
         Run optimization with checkpointing support.
@@ -164,16 +164,16 @@ class WeightsCheckpointingMixin:
                 self._save_checkpoint(study, checkpoint_path)
                 print(f"   [Checkpoint saved at trial {trial_num}]")
 
-                if s3_bucket and s3_key_prefix:
-                    self._upload_to_s3(checkpoint_path, s3_bucket, f"{s3_key_prefix}/checkpoint.json")
+                if gcs_bucket and gcs_key_prefix:
+                    self._upload_to_gcs(checkpoint_path, gcs_bucket, f"{gcs_key_prefix}/checkpoint.json")
 
             if output_dir and trial_num % checkpoint_interval == 0:
                 if study.best_trial is not None:
                     self._save_best_model_checkpoint(study, output_dir, tokenizer)
 
-                    if s3_bucket and s3_key_prefix:
+                    if gcs_bucket and gcs_key_prefix:
                         checkpoint_dir = os.path.join(output_dir, "checkpoint_best")
-                        self._upload_to_s3(checkpoint_dir, s3_bucket, f"{s3_key_prefix}/checkpoint_best/")
+                        self._upload_to_gcs(checkpoint_dir, gcs_bucket, f"{gcs_key_prefix}/checkpoint_best/")
 
         study.optimize(
             self._objective,
@@ -248,14 +248,14 @@ class WeightsCheckpointingMixin:
         with open(os.path.join(checkpoint_dir, "checkpoint_metadata.json"), "w") as f:
             json.dump(metadata, f, indent=2)
 
-    def _upload_to_s3(self, local_path: str, s3_bucket: str, s3_key: str) -> bool:
-        """Upload a file or directory to S3."""
+    def _upload_to_gcs(self, local_path: str, gcs_bucket: str, gcs_key: str) -> bool:
+        """Upload a file or directory to GCS."""
         import subprocess
         try:
             if os.path.isdir(local_path):
-                cmd = ["aws", "s3", "sync", local_path, f"s3://{s3_bucket}/{s3_key}", "--quiet"]
+                cmd = ["gcloud", "storage", "rsync", local_path, f"gs://{gcs_bucket}/{gcs_key}"]
             else:
-                cmd = ["aws", "s3", "cp", local_path, f"s3://{s3_bucket}/{s3_key}", "--quiet"]
+                cmd = ["gcloud", "storage", "cp", local_path, f"gs://{gcs_bucket}/{gcs_key}"]
             subprocess.run(cmd, check=True, capture_output=True)
             return True
         except Exception:

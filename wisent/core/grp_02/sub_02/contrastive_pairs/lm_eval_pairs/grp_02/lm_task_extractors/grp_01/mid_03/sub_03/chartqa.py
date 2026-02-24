@@ -6,6 +6,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import CHARTQA_PCT_DELTAS, CHARTQA_INT_DELTAS, CHARTQA_DECIMAL_DELTAS
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -198,7 +199,7 @@ class ChartqaExtractor(LMEvalBenchmarkExtractor):
             # For percentages, modify the number
             if correct_answer.endswith('%'):
                 # Add/subtract a random amount between 10-30%
-                change = random.choice([-30, -20, -10, 10, 20, 30])
+                change = random.choice(CHARTQA_PCT_DELTAS)
                 new_num = max(0, min(100, num + change))  # Keep within 0-100 range
                 return f"{new_num:.1f}%"
 
@@ -206,13 +207,13 @@ class ChartqaExtractor(LMEvalBenchmarkExtractor):
             if '.' not in numeric_part:
                 num_int = int(num)
                 # Modify by +/- 1 to 5
-                change = random.choice([-5, -3, -2, -1, 1, 2, 3, 5])
+                change = random.choice(CHARTQA_INT_DELTAS)
                 new_num = max(0, num_int + change)
                 return str(new_num)
 
             # For decimals/ratios
             # Modify by +/- 0.05 to 0.2
-            change = random.choice([-0.2, -0.15, -0.1, -0.05, 0.05, 0.1, 0.15, 0.2])
+            change = random.choice(CHARTQA_DECIMAL_DELTAS)
             new_num = max(0, num + change)
             return f"{new_num:.2f}"
 

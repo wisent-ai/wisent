@@ -9,6 +9,10 @@ Uses model-driven decisions instead of hardcoded patterns.
 
 from typing import List, Dict, Set, Tuple
 from .task_manager import get_available_tasks
+from wisent.core.constants import (
+    DEFAULT_LAYER, AGENT_DIAG_MAX_TOKENS_SHORT, AGENT_DIAG_TEMPERATURE,
+    TASK_RELEVANCE_MAX_RESULTS, TASK_MIN_RELEVANCE_SCORE, TASK_SEARCH_LIMIT,
+)
 
 
 class TaskRelevanceSelector:
@@ -18,10 +22,10 @@ class TaskRelevanceSelector:
         self.model = model
         
     def find_relevant_tasks(
-        self, 
-        query: str, 
-        max_results: int = 20,
-        min_relevance_score: float = 0.1
+        self,
+        query: str,
+        max_results: int = TASK_RELEVANCE_MAX_RESULTS,
+        min_relevance_score: float = TASK_MIN_RELEVANCE_SCORE
     ) -> List[Tuple[str, float]]:
         """
         Find tasks most relevant to the given query using model decisions.
@@ -38,7 +42,7 @@ class TaskRelevanceSelector:
         
         # Use model to score task relevance
         task_scores = []
-        for task_name in available_tasks[:100]:  # Limit for efficiency
+        for task_name in available_tasks[:TASK_SEARCH_LIMIT]:
             score = self._get_model_relevance_score(query, task_name)
             if score >= min_relevance_score:
                 task_scores.append((task_name, score))
@@ -59,7 +63,7 @@ Rate relevance from 0.0 to 1.0 (1.0 = highly relevant, 0.0 = not relevant).
 Respond with only the number:"""
         
         try:
-            response = self.model.generate(prompt, layer_index=15, max_new_tokens=10, temperature=0.1)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
             score_str = response.strip()
             
             # Extract number from response
@@ -74,9 +78,9 @@ Respond with only the number:"""
 
 
 def find_relevant_tasks(
-    query: str, 
-    max_results: int = 20,
-    min_relevance_score: float = 0.1,
+    query: str,
+    max_results: int = TASK_RELEVANCE_MAX_RESULTS,
+    min_relevance_score: float = TASK_MIN_RELEVANCE_SCORE,
     model=None
 ) -> List[Tuple[str, float]]:
     """Standalone function for task relevance selection."""

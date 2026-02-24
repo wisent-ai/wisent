@@ -2,6 +2,7 @@
 import numpy as np
 import torch
 from typing import Dict, Any
+from wisent.core import constants as _C
 
 from .visualizations import (
     plot_pca_projection,
@@ -39,7 +40,7 @@ def create_full_summary_figure(
     import io
     import base64
 
-    fig, axes = plt.subplots(3, 3, figsize=(18, 18))
+    fig, axes = plt.subplots(_C.VIZ_GRID_SUMMARY_ROWS, _C.VIZ_GRID_SUMMARY_COLS, figsize=_C.VIZ_FIGSIZE_SUMMARY)
 
     def plot_projection(ax, data, title):
         """Helper to plot a 2D projection."""
@@ -76,14 +77,14 @@ def create_full_summary_figure(
         diffs = diff_data["diffs_projected"]
         mean = diff_data["mean_diff_projected"]
         ax.scatter(diffs[:, 0], diffs[:, 1], c='green', alpha=0.6, s=20)
-        scale = max(abs(mean[0]), abs(mean[1]), 0.1) * 0.8
+        scale = max(abs(mean[0]), abs(mean[1]), _C.VIZ_MIN_SCALE) * _C.VIZ_SCALE_PADDING
         ax.arrow(0, 0, mean[0]*0.8, mean[1]*0.8, head_width=scale*0.1, head_length=scale*0.05, fc='black', ec='black')
     ax.set_title("Diff Vectors (Mean Direction)", fontsize=11)
 
     align_data = plot_alignment_distribution(pos_activations, neg_activations)
     ax = axes[1, 2]
     if "error" not in align_data:
-        ax.hist(align_data["alignments"], bins=20, color='green', alpha=0.7)
+        ax.hist(align_data["alignments"], bins=_C.VIZ_HISTOGRAM_BINS_20, color='green', alpha=0.7)
         ax.axvline(align_data["mean"], color='black', linestyle='--', linewidth=2)
         ax.set_title(f"Alignment (mean={align_data['mean']:.2f})", fontsize=11)
     else:
@@ -103,8 +104,8 @@ def create_full_summary_figure(
 
     norm_data = plot_norm_distribution(pos_activations, neg_activations)
     ax = axes[2, 1]
-    ax.hist(norm_data["pos_norms"], bins=20, alpha=0.5, label='Pos', color='blue')
-    ax.hist(norm_data["neg_norms"], bins=20, alpha=0.5, label='Neg', color='red')
+    ax.hist(norm_data["pos_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=0.5, label='Pos', color='blue')
+    ax.hist(norm_data["neg_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=0.5, label='Neg', color='red')
     ax.legend(fontsize=8)
     ax.set_title("Norm Distribution", fontsize=11)
     ax.set_xlabel("L2 Norm")
@@ -136,7 +137,7 @@ def create_full_summary_figure(
     plt.tight_layout()
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=120, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=_C.VIZ_DPI_STANDARD, bbox_inches='tight')
     buf.seek(0)
     img_base64 = base64.b64encode(buf.read()).decode('utf-8')
     plt.close(fig)

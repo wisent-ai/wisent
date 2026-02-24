@@ -42,6 +42,11 @@ STRATEGIES = [
 RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", "To"]
 
 
+from wisent.core.constants import (
+    NORM_EPS, CLUSTER_PROGRESS_INTERVAL, CLUSTER_MIN_PAIRS,
+    GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT,
+    DEFAULT_RANDOM_SEED,
+)
 from wisent.core.cli.analysis.diagnosis.cluster_benchmarks_activations import (
     ConfigResult, get_layers_to_test, get_activation, get_mc_balanced_activations,
     load_benchmark_pairs, compute_directions_for_strategy,
@@ -53,7 +58,7 @@ def evaluate_directions(directions, activations, clusters):
     all_neg = torch.cat([activations[b]['neg'] for b in activations])
     global_dir = all_pos.mean(dim=0) - all_neg.mean(dim=0)
     norm = torch.norm(global_dir)
-    if norm > 1e-8:
+    if norm > NORM_EPS:
         global_dir = global_dir / norm
     
     cluster_dirs = {}
@@ -65,7 +70,7 @@ def evaluate_directions(directions, activations, clusters):
             n = torch.cat([activations[m]['neg'] for m in valid])
             d = p.mean(dim=0) - n.mean(dim=0)
             norm = torch.norm(d)
-            if norm > 1e-8:
+            if norm > NORM_EPS:
                 cluster_dirs[cid] = d / norm
             for m in members:
                 bench_to_cluster[m] = cid
@@ -103,9 +108,9 @@ def execute_cluster_benchmarks(args):
     output_dir = Path(output)
     output_dir.mkdir(parents=True, exist_ok=True)
     
-    random.seed(42)
-    np.random.seed(42)
-    torch.manual_seed(42)
+    random.seed(DEFAULT_RANDOM_SEED)
+    np.random.seed(DEFAULT_RANDOM_SEED)
+    torch.manual_seed(DEFAULT_RANDOM_SEED)
     
     logger.info(f"Loading {model}...")
     tokenizer = AutoTokenizer.from_pretrained(model, trust_remote_code=True)
@@ -128,11 +133,11 @@ def execute_cluster_benchmarks(args):
     all_pairs = {}
     
     for i, bench in enumerate(all_benchmarks):
-        if (i + 1) % 20 == 0:
+        if (i + 1) % CLUSTER_PROGRESS_INTERVAL == 0:
             logger.info(f"  [{i+1}/{len(all_benchmarks)}] Loaded {len(all_pairs)} benchmarks...")
         try:
             pairs = load_benchmark_pairs(bench, loader, limit=pairs_per_benchmark)
-            if pairs and len(pairs) >= 10:
+            if pairs and len(pairs) >= CLUSTER_MIN_PAIRS:
                 all_pairs[bench] = pairs
         except:
             pass
@@ -140,7 +145,7 @@ def execute_cluster_benchmarks(args):
     logger.info(f"Loaded {len(all_pairs)} benchmarks")
     
     # Test configurations
-    geo_config = GeometryAnalysisConfig(num_components=5, optimization_steps=50)
+    geo_config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_DEFAULT)
     all_results = []
     best_config = None
     best_acc = 0
@@ -166,7 +171,7 @@ def execute_cluster_benchmarks(args):
                 except:
                     pass
             
-            if len(directions) < 10:
+            if len(directions) < CLUSTER_MIN_PAIRS:
                 continue
             
             bench_names = list(directions.keys())

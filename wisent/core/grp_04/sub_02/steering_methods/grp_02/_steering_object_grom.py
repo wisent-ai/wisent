@@ -7,11 +7,12 @@ import torch.nn.functional as F
 from wisent.core.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
+from wisent.core.constants import GROM_HIDDEN_DIM, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE, GROM_MAX_ALPHA, GROM_GATE_TEMPERATURE
 
 class GROMGateNetwork(nn.Module):
     """Serializable gate network for GROM."""
     
-    def __init__(self, input_dim: int, hidden_dim: int = 128):
+    def __init__(self, input_dim: int, hidden_dim: int = GROM_HIDDEN_DIM):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -22,7 +23,7 @@ class GROMGateNetwork(nn.Module):
             nn.Linear(hidden_dim // 2, 1),
         )
     
-    def forward(self, h: torch.Tensor, temperature: float = 0.5) -> torch.Tensor:
+    def forward(self, h: torch.Tensor, temperature: float = GROM_ROUTER_TEMPERATURE) -> torch.Tensor:
         if h.dim() == 1:
             h = h.unsqueeze(0)
         logit = self.net(h).squeeze(-1)
@@ -32,7 +33,7 @@ class GROMGateNetwork(nn.Module):
 class GROMIntensityNetwork(nn.Module):
     """Serializable intensity network for GROM."""
     
-    def __init__(self, input_dim: int, num_layers: int, hidden_dim: int = 64, max_alpha: float = 3.0):
+    def __init__(self, input_dim: int, num_layers: int, hidden_dim: int = GROM_ROUTER_HIDDEN_DIM, max_alpha: float = GROM_MAX_ALPHA):
         super().__init__()
         self.max_alpha = max_alpha
         self.num_layers = num_layers
@@ -73,8 +74,8 @@ class GROMSteeringObject(BaseSteeringObject):
         gate_network: Optional[GROMGateNetwork],
         intensity_network: GROMIntensityNetwork,
         layer_order: List[int],
-        gate_temperature: float = 0.5,
-        max_alpha: float = 3.0,
+        gate_temperature: float = GROM_GATE_TEMPERATURE,
+        max_alpha: float = GROM_MAX_ALPHA,
     ):
         super().__init__(metadata)
         self.directions = directions
@@ -191,7 +192,7 @@ class GROMSteeringObject(BaseSteeringObject):
         gate_network = None
         if data.get('gate_network_state') and data.get('gate_network_config'):
             config = data['gate_network_config']
-            gate_network = GROMGateNetwork(config['input_dim'], config.get('hidden_dim', 128))
+            gate_network = GROMGateNetwork(config['input_dim'], config.get('hidden_dim', GROM_HIDDEN_DIM))
             gate_network.load_state_dict(convert_state_dict(data['gate_network_state']))
         
         # Reconstruct intensity network
@@ -199,8 +200,8 @@ class GROMSteeringObject(BaseSteeringObject):
         intensity_network = GROMIntensityNetwork(
             int_config['input_dim'],
             int_config['num_layers'],
-            int_config.get('hidden_dim', 64),
-            int_config.get('max_alpha', 3.0),
+            int_config.get('hidden_dim', GROM_ROUTER_HIDDEN_DIM),
+            int_config.get('max_alpha', GROM_MAX_ALPHA),
         )
         intensity_network.load_state_dict(convert_state_dict(data['intensity_network_state']))
         
@@ -211,8 +212,8 @@ class GROMSteeringObject(BaseSteeringObject):
             gate_network=gate_network,
             intensity_network=intensity_network,
             layer_order=data['layer_order'],
-            gate_temperature=data.get('gate_temperature', 0.5),
-            max_alpha=data.get('max_alpha', 3.0),
+            gate_temperature=data.get('gate_temperature', GROM_GATE_TEMPERATURE),
+            max_alpha=data.get('max_alpha', GROM_MAX_ALPHA),
         )
 
 

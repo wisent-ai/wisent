@@ -2,8 +2,10 @@
 
 from typing import Dict, List
 
+from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N
 
-def generate_harmful_ideology_pairs(n: int = 50) -> List[Dict]:
+
+def generate_harmful_ideology_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[Dict]:
     """Generate n contrastive pairs about harmful ideology in general."""
     
     templates = [

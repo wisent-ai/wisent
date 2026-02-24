@@ -5,6 +5,8 @@ from typing import Dict, Any, List, Optional
 import io
 import base64
 
+from wisent.core.constants import VIZ_DPI, HEATMAP_TEXT_CONTRAST_THRESHOLD, VIZ_HEATMAP_ASTERISK_SIZE, CLASSIFIER_DECISION_THRESHOLD
+
 
 def create_layer_accuracy_heatmap(
     concepts: List[Dict[str, Any]],
@@ -38,7 +40,7 @@ def create_layer_accuracy_heatmap(
     for i, concept in enumerate(concepts):
         layer_accs = concept.get("layer_accuracies", {})
         for j, layer in enumerate(layers):
-            matrix[i, j] = layer_accs.get(layer, 0.5)
+            matrix[i, j] = layer_accs.get(layer, CLASSIFIER_DECISION_THRESHOLD)
 
     # Create heatmap
     fig, ax = plt.subplots(figsize=(max(8, len(layers) * 0.5), max(4, n_concepts * 0.8)))
@@ -59,13 +61,13 @@ def create_layer_accuracy_heatmap(
         opt_layer = concept.get("optimal_layer")
         if opt_layer in layers:
             j = layers.index(opt_layer)
-            ax.scatter(j, i, marker='*', s=200, c='black', zorder=10)
+            ax.scatter(j, i, marker='*', s=VIZ_HEATMAP_ASTERISK_SIZE, c='black', zorder=10)
 
     plt.colorbar(im, ax=ax, label="Linear Accuracy")
     ax.set_title("Linear Separability by Concept and Layer\n(* = optimal layer)")
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=VIZ_DPI, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
 
@@ -105,14 +107,14 @@ def create_inter_concept_similarity_heatmap(
     # Add text annotations
     for i in range(n_concepts):
         for j in range(n_concepts):
-            color = 'white' if abs(matrix[i, j]) > 0.5 else 'black'
+            color = 'white' if abs(matrix[i, j]) > HEATMAP_TEXT_CONTRAST_THRESHOLD else 'black'
             ax.text(j, i, f"{matrix[i, j]:.2f}", ha='center', va='center', color=color, fontsize=9)
 
     plt.colorbar(im, ax=ax, label="Cosine Similarity")
     ax.set_title("Inter-Concept Similarity\n(centroid cosine similarity)")
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=VIZ_DPI, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
 

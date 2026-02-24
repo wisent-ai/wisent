@@ -10,6 +10,7 @@ from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_parsing imp
 from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_extraction import (
     symbolic_equal, call_with_timeout, symbolic_equal_process,
 )
+from wisent.core.constants import MATH_SHORT_VAR_MAX_LEN
 
 def math_equal(
     prediction: Union[bool, float, str],
@@ -180,7 +181,7 @@ def math_equal(
 
     elif (
         prediction.count("=") == 1
-        and len(prediction.split("=")[0].strip()) <= 2
+        and len(prediction.split("=")[0].strip()) <= MATH_SHORT_VAR_MAX_LEN
         and "=" not in reference
     ):
         if math_equal(
@@ -189,7 +190,7 @@ def math_equal(
             return True
     elif (
         reference.count("=") == 1
-        and len(reference.split("=")[0].strip()) <= 2
+        and len(reference.split("=")[0].strip()) <= MATH_SHORT_VAR_MAX_LEN
         and "=" not in prediction
     ):
         if math_equal(

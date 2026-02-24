@@ -11,6 +11,7 @@ import torch
 import numpy as np
 from typing import Dict, Any
 
+from wisent.core.constants import NORM_EPS
 from wisent.core.geometry.analysis.structure._cloud_metrics import (
     compute_cloud_shape,
     compute_cone_fit,
@@ -37,12 +38,12 @@ def compute_two_cloud_relationship(
     centroid_distance = float(np.linalg.norm(pos_centroid - neg_centroid))
     centroid_direction = pos_centroid - neg_centroid
     centroid_dir_norm = np.linalg.norm(centroid_direction)
-    if centroid_dir_norm > 1e-8:
+    if centroid_dir_norm > NORM_EPS:
         centroid_direction = centroid_direction / centroid_dir_norm
     pos_spread = float(np.linalg.norm(pos - pos_centroid, axis=1).mean())
     neg_spread = float(np.linalg.norm(neg - neg_centroid, axis=1).mean())
     avg_spread = (pos_spread + neg_spread) / 2
-    separation_ratio = centroid_distance / (avg_spread + 1e-8)
+    separation_ratio = centroid_distance / (avg_spread + NORM_EPS)
     pos_to_pos_centroid = np.linalg.norm(pos - pos_centroid, axis=1)
     pos_to_neg_centroid = np.linalg.norm(pos - neg_centroid, axis=1)
     pos_overlap = float((pos_to_neg_centroid < pos_to_pos_centroid).mean())
@@ -88,10 +89,10 @@ def compute_relative_position(
     residual_norms = np.linalg.norm(residuals, axis=1)
     orig_diffs = pos - neg
     orig_diff_norms = np.linalg.norm(orig_diffs, axis=1)
-    shift_explains = 1 - (residual_norms.mean() / (orig_diff_norms.mean() + 1e-8))
-    diff_normalized = orig_diffs / (orig_diff_norms[:, np.newaxis] + 1e-8)
+    shift_explains = 1 - (residual_norms.mean() / (orig_diff_norms.mean() + NORM_EPS))
+    diff_normalized = orig_diffs / (orig_diff_norms[:, np.newaxis] + NORM_EPS)
     mean_diff_dir = diff_normalized.mean(axis=0)
-    mean_diff_dir = mean_diff_dir / (np.linalg.norm(mean_diff_dir) + 1e-8)
+    mean_diff_dir = mean_diff_dir / (np.linalg.norm(mean_diff_dir) + NORM_EPS)
     translation_consistency = float((diff_normalized @ mean_diff_dir).mean())
     return {
         "shift_vector_norm": float(shift_norm),

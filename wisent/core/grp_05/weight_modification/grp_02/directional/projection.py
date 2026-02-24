@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import InvalidValueError
+from wisent.core.constants import DEFAULT_STRENGTH
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -15,7 +16,7 @@ _LOG = setup_logger(__name__)
 
 
 def project_component_norm_preserved(
-    weight_matrix: Tensor, steering_vector: Tensor, strength: float = 1.0, in_place: bool = True
+    weight_matrix: Tensor, steering_vector: Tensor, strength: float = DEFAULT_STRENGTH, in_place: bool = True
 ) -> Tensor:
     """Project a weight matrix while PRESERVING ROW NORMS.
 

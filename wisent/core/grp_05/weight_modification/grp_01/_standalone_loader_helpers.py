@@ -7,13 +7,14 @@ import torch.nn.functional as F
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
+from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, TETNO_GATE_SCALE_FACTOR, DEFAULT_LAYER_WEIGHT
 
 
 class TETNOHooks:
     """Runtime hooks for TETNO conditional steering."""
 
     def __init__(self, model, tetno_data: Dict[str, Any],
-                 base_strength: float = 1.0):
+                 base_strength: float = DEFAULT_STRENGTH):
         self.model = model
         self.tetno_data = tetno_data
         self.base_strength = base_strength
@@ -48,7 +49,7 @@ class TETNOHooks:
         # Sensor layer
         layer_indices = list(self._layer_name_to_idx.values())
         self._sensor_layer_idx = (
-            layer_indices[len(layer_indices) // 2] if layer_indices else 15
+            layer_indices[len(layer_indices) // 2] if layer_indices else DEFAULT_LAYER
         )
 
     def install(self) -> None:
@@ -85,7 +86,7 @@ class TETNOHooks:
         c_norm = F.normalize(self.condition_vector, p=2, dim=-1)
         similarity = (h_norm * c_norm).sum(dim=-1)
         self._current_gate = torch.sigmoid(
-            (similarity - self.optimal_threshold) / 0.1)
+            (similarity - self.optimal_threshold) / TETNO_GATE_SCALE_FACTOR)
 
         return output
 
@@ -103,7 +104,7 @@ class TETNOHooks:
 
         behavior = behavior.to(hidden.device)
         gate = self._current_gate.to(hidden.device)
-        scale = self.layer_scales.get(layer_name, 1.0)
+        scale = self.layer_scales.get(layer_name, DEFAULT_LAYER_WEIGHT)
 
         if hidden.dim() == 3:
             gate = gate.view(-1, 1, 1)

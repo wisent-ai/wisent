@@ -9,6 +9,16 @@ from typing import Any, Dict, List, Optional
 
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.classifier.classifier import Classifier
+from wisent.core.constants import (
+    BLEND_DEFAULT,
+    CLASSIFIER_BATCH_SIZE,
+    CLASSIFIER_LAYER_RANGE_END,
+    COMPARISON_MAX_LENGTH,
+    DEFAULT_LIMIT,
+    DEFAULT_SCORE,
+    KEEP_RECENT_HOURS_DEFAULT,
+    OPTUNA_N_TRIALS_SMALL,
+)
 from wisent.core.optuna.classifier import (
     ClassifierOptimizationConfig,
     GenerationConfig,
@@ -31,7 +41,7 @@ class _SteeringOptimizerClassifier:
         model,
         tokenizer,
         device: str,
-        max_length: int = 512,
+        max_length: int = COMPARISON_MAX_LENGTH,
         task_name: str = "gsm8k",
     ) -> Dict[str, Any]:
         """
@@ -55,32 +65,32 @@ class _SteeringOptimizerClassifier:
 
         # Extract classifier scores from integrated metrics
         baseline_scores = [
-            detail.get("classifier_confidence", 0.5) for detail in baseline_metrics.get("evaluation_details", [])
+            detail.get("classifier_confidence", BLEND_DEFAULT) for detail in baseline_metrics.get("evaluation_details", [])
         ]
         steered_scores = [
-            detail.get("classifier_confidence", 0.5) for detail in steered_metrics.get("evaluation_details", [])
+            detail.get("classifier_confidence", BLEND_DEFAULT) for detail in steered_metrics.get("evaluation_details", [])
         ]
 
         # Calculate improvement metrics
-        accuracy_delta = steered_metrics.get("accuracy", 0) - baseline_metrics.get("accuracy", 0)
-        f1_delta = steered_metrics.get("f1", 0) - baseline_metrics.get("f1", 0)
+        accuracy_delta = steered_metrics.get("accuracy", DEFAULT_SCORE) - baseline_metrics.get("accuracy", DEFAULT_SCORE)
+        f1_delta = steered_metrics.get("f1", DEFAULT_SCORE) - baseline_metrics.get("f1", DEFAULT_SCORE)
 
         # Calculate classifier score improvements
-        avg_baseline_score = sum(baseline_scores) / len(baseline_scores) if baseline_scores else 0.0
-        avg_steered_score = sum(steered_scores) / len(steered_scores) if steered_scores else 0.0
+        avg_baseline_score = sum(baseline_scores) / len(baseline_scores) if baseline_scores else DEFAULT_SCORE
+        avg_steered_score = sum(steered_scores) / len(steered_scores) if steered_scores else DEFAULT_SCORE
         classifier_score_delta = avg_steered_score - avg_baseline_score
 
         return {
             "baseline": {
-                "accuracy": baseline_metrics.get("accuracy", 0.0),
-                "f1": baseline_metrics.get("f1", 0.0),
+                "accuracy": baseline_metrics.get("accuracy", DEFAULT_SCORE),
+                "f1": baseline_metrics.get("f1", DEFAULT_SCORE),
                 "classifier_scores": baseline_scores,
                 "avg_classifier_score": avg_baseline_score,
                 "predictions": baseline_predictions,
             },
             "steered": {
-                "accuracy": steered_metrics.get("accuracy", 0.0),
-                "f1": steered_metrics.get("f1", 0.0),
+                "accuracy": steered_metrics.get("accuracy", DEFAULT_SCORE),
+                "f1": steered_metrics.get("f1", DEFAULT_SCORE),
                 "classifier_scores": steered_scores,
                 "avg_classifier_score": avg_steered_score,
                 "predictions": steered_predictions,
@@ -114,9 +124,9 @@ class _SteeringOptimizerClassifier:
         if optimization_config is not None:
             model_name = optimization_config.model_name
             task_name = getattr(optimization_config, "task_name", task_name)
-            limit = getattr(optimization_config, "data_limit", 100)
+            limit = getattr(optimization_config, "data_limit", DEFAULT_LIMIT)
         else:
-            limit = 100  # Default data limit
+            limit = DEFAULT_LIMIT
 
         if not model_name or not task_name:
             raise MissingParameterError(params=["model_name", "task_name"])
@@ -146,14 +156,14 @@ class _SteeringOptimizerClassifier:
                 optimization_config = ClassifierOptimizationConfig(
                     model_name=model_name,
                     device="auto",
-                    n_trials=20,  # Reasonable number for steering optimization
+                    n_trials=OPTUNA_N_TRIALS_SMALL,
                     model_types=["logistic", "mlp"],
                     primary_metric="f1",
                 )
 
             # Create generation config for activation pre-generation
             generation_config = GenerationConfig(
-                layer_search_range=(0, 23),  # Will be auto-detected from model
+                layer_search_range=(0, CLASSIFIER_LAYER_RANGE_END),
                 aggregation_methods=[
                     ExtractionStrategy.CHAT_MEAN,
                     ExtractionStrategy.CHAT_LAST,
@@ -162,7 +172,7 @@ class _SteeringOptimizerClassifier:
                 ],
                 cache_dir="./cache/steering_activations",
                 device=optimization_config.device,
-                batch_size=32,
+                batch_size=CLASSIFIER_BATCH_SIZE,
             )
 
             # Create classifier optimizer
@@ -217,6 +227,6 @@ class _SteeringOptimizerClassifier:
         """Get information about cached classifiers."""
         return self.classifier_cache.get_cache_info()
 
-    def clear_classifier_cache(self, keep_recent_hours: float = 24.0) -> int:
+    def clear_classifier_cache(self, keep_recent_hours: float = KEEP_RECENT_HOURS_DEFAULT) -> int:
         """Clear old cached classifiers."""
         return self.classifier_cache.clear_cache(keep_recent_hours=keep_recent_hours)

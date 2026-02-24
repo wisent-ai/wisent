@@ -4,9 +4,10 @@ import random
 from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import get_all_docs_from_task
+from wisent.core.constants import MAX_DEPTH, DEFAULT_NUM_SAMPLES
 
 
-def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: int = 3) -> Any:
+def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: int = MAX_DEPTH) -> Any:
     """Recursively search through a ConfigurableGroup to find a task with usable documents."""
     if depth > max_depth:
         print(f"   Warning: Maximum recursion depth ({max_depth}) reached, stopping search")
@@ -68,7 +69,7 @@ def expand_group_task(task_name: str, get_task_dict) -> List[str]:
         return [task_name]
 
 
-def get_samples_from_group_task(group_name: str, subtasks: List[str], num_samples: int = 5) -> Dict[str, Any]:
+def get_samples_from_group_task(group_name: str, subtasks: List[str], num_samples: int = DEFAULT_NUM_SAMPLES) -> Dict[str, Any]:
     """Get samples from a group task by sampling from its subtasks."""
     from lm_eval import evaluator
 

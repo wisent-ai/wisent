@@ -18,6 +18,7 @@ import argparse
 import subprocess
 import os
 from pathlib import Path
+from wisent.core.constants import EVAL_BATCH_SIZE, DEFAULT_CODE_EVAL_LIMIT, CODE_EVAL_BATCH_SIZE
 
 
 IMAGE_NAME = "lm-eval:code-eval"
@@ -42,8 +43,8 @@ def run_code_eval(
     model: str = "EleutherAI/gpt-neo-125M",
     tasks: str = "humaneval",
     device: str = "cuda:0",
-    batch_size: int = 4,
-    limit: int | None = 20,
+    batch_size: int = EVAL_BATCH_SIZE,
+    limit: int | None = DEFAULT_CODE_EVAL_LIMIT,
     output_dir: Path | None = None,
 ) -> None:
     """Run lm_eval code evaluation tasks in sandboxed Docker container."""
@@ -104,8 +105,8 @@ def main():
     parser.add_argument("--model", default="EleutherAI/gpt-neo-125M", help="HuggingFace model name")
     parser.add_argument("--tasks", default="humaneval", help="lm_eval task(s), comma-separated")
     parser.add_argument("--device", default="cuda:0", help="Device to use")
-    parser.add_argument("--batch_size", type=int, default=4, help="Batch size")
-    parser.add_argument("--limit", type=int, default=20, help="Number of samples (None for all)")
+    parser.add_argument("--batch_size", type=int, default=CODE_EVAL_BATCH_SIZE, help="Batch size")
+    parser.add_argument("--limit", type=int, default=DEFAULT_CODE_EVAL_LIMIT, help="Number of samples (None for all)")
     parser.add_argument("--output_dir", type=Path, default=None, help="Output directory")
 
     args = parser.parse_args()

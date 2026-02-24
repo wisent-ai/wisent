@@ -17,6 +17,7 @@ from sklearn.model_selection import cross_val_score
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import load_dataset
 from huggingface_hub import hf_hub_download
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, DIAGNOSTIC_MLP_HIDDEN_SIZES, MAX_TOKENIZATION_LENGTH, KMEANS_N_INIT_LARGE
 
 
 def load_model(model_name, device="auto"):
@@ -32,7 +33,7 @@ def load_model(model_name, device="auto"):
 
 def get_truthfulqa_pairs(limit=50):
     ds = load_dataset("truthfulqa/truthful_qa", "generation", split="validation")
-    random.seed(42)
+    random.seed(DEFAULT_RANDOM_SEED)
     samples = random.sample(list(ds), min(limit, len(ds)))
     return [{
         "question": s["question"],
@@ -123,7 +124,7 @@ def get_sentiment_pairs(limit=50):
 
 
 def get_activations(model, tokenizer, text, device):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
     inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
         outputs = model(**inputs, output_hidden_states=True)
@@ -207,7 +208,7 @@ def compute_signal_metrics(pos_acts, neg_acts, n_subsets=5):
     for i in range(len(diff_vecs)):
         for j in range(i + 1, len(diff_vecs)):
             cos = np.dot(diff_vecs[i], diff_vecs[j]) / (
-                np.linalg.norm(diff_vecs[i]) * np.linalg.norm(diff_vecs[j]) + 1e-8
+                np.linalg.norm(diff_vecs[i]) * np.linalg.norm(diff_vecs[j]) + NORM_EPS
             )
             cosines.append(cos)
     results["diff_cosine_mean"] = np.mean(cosines) if cosines else 0
@@ -225,7 +226,7 @@ def compute_signal_metrics(pos_acts, neg_acts, n_subsets=5):
     # 3. K-means cluster separation
     all_acts = np.vstack([pos_np, neg_np])
     labels = np.array([1] * len(pos_np) + [0] * len(neg_np))
-    kmeans = KMeans(n_clusters=2, random_state=42, n_init=10).fit(all_acts)
+    kmeans = KMeans(n_clusters=2, random_state=DEFAULT_RANDOM_SEED, n_init=KMEANS_N_INIT_LARGE).fit(all_acts)
     cluster_align = max(
         np.mean(kmeans.labels_ == labels),
         np.mean(kmeans.labels_ == (1 - labels))
@@ -234,28 +235,26 @@ def compute_signal_metrics(pos_acts, neg_acts, n_subsets=5):
 
     # 4. MLP classifier (nonlinear)
     if len(pos_np) >= 10:
-        mlp = MLPClassifier(hidden_layer_sizes=(64,), random_state=42)
+        mlp = MLPClassifier(hidden_layer_sizes=DIAGNOSTIC_MLP_HIDDEN_SIZES, random_state=DEFAULT_RANDOM_SEED)
         try:
             scores = cross_val_score(mlp, all_acts, labels, cv=min(5, len(pos_np) // 2))
             results["mlp_accuracy"] = np.mean(scores)
             results["mlp_std"] = np.std(scores)
         except Exception:
-            results["mlp_accuracy"] = 0.5
-            results["mlp_std"] = 0
+            results["mlp_accuracy"], results["mlp_std"] = 0.5, 0
     else:
         results["mlp_accuracy"] = 0.5
         results["mlp_std"] = 0
 
     # 5. SVM RBF (kernel-based)
     if len(pos_np) >= 10:
-        svm = SVC(kernel="rbf", random_state=42)
+        svm = SVC(kernel="rbf", random_state=DEFAULT_RANDOM_SEED)
         try:
             scores = cross_val_score(svm, all_acts, labels, cv=min(5, len(pos_np) // 2))
             results["svm_accuracy"] = np.mean(scores)
             results["svm_std"] = np.std(scores)
         except Exception:
-            results["svm_accuracy"] = 0.5
-            results["svm_std"] = 0
+            results["svm_accuracy"], results["svm_std"] = 0.5, 0
     else:
         results["svm_accuracy"] = 0.5
         results["svm_std"] = 0
@@ -271,7 +270,7 @@ def compute_signal_metrics(pos_acts, neg_acts, n_subsets=5):
             for i in range(len(subset)):
                 for j in range(i + 1, len(subset)):
                     cos = np.dot(subset[i], subset[j]) / (
-                        np.linalg.norm(subset[i]) * np.linalg.norm(subset[j]) + 1e-8
+                        np.linalg.norm(subset[i]) * np.linalg.norm(subset[j]) + NORM_EPS
                     )
                     cos_list.append(cos)
             subset_cosines.append(np.mean(cos_list))

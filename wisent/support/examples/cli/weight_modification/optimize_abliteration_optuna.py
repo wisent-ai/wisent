@@ -48,6 +48,12 @@ import argparse
 import subprocess
 import sys
 
+from wisent.core.constants import (
+    PARSER_DEFAULT_NUM_PAIRS,
+    PARSER_DEFAULT_NUM_PAIRS_GENERATE,
+    OPTUNA_DEFAULT_N_TRIALS,
+)
+
 
 def main():
     parser = argparse.ArgumentParser(
@@ -81,19 +87,19 @@ def main():
     parser.add_argument(
         "--trials",
         type=int,
-        default=30,
+        default=PARSER_DEFAULT_NUM_PAIRS_GENERATE,
         help="Number of optimization trials",
     )
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=100,
+        default=OPTUNA_DEFAULT_N_TRIALS,
         help="Number of contrastive pairs for training",
     )
     parser.add_argument(
         "--num-eval-prompts",
         type=int,
-        default=50,
+        default=PARSER_DEFAULT_NUM_PAIRS,
         help="Number of prompts for evaluation",
     )
 

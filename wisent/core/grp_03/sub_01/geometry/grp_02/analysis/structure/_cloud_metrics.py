@@ -11,6 +11,7 @@ import torch
 import numpy as np
 from typing import Dict, Any
 from scipy.spatial.distance import pdist, squareform
+from wisent.core import constants as _C
 
 
 def compute_cloud_shape(activations: torch.Tensor) -> Dict[str, Any]:
@@ -30,10 +31,10 @@ def compute_cloud_shape(activations: torch.Tensor) -> Dict[str, Any]:
     total_var = eigenvalues.sum()
     if total_var > 0:
         cumsum = np.cumsum(eigenvalues) / total_var
-        dim_50 = int(np.searchsorted(cumsum, 0.5) + 1)
-        dim_90 = int(np.searchsorted(cumsum, 0.9) + 1)
-        dim_99 = int(np.searchsorted(cumsum, 0.99) + 1)
-        participation_ratio = (total_var ** 2) / (np.sum(eigenvalues ** 2) + 1e-8)
+        dim_50 = int(np.searchsorted(cumsum, _C.CLOUD_VAR_PERCENTILE_50) + 1)
+        dim_90 = int(np.searchsorted(cumsum, _C.CLOUD_VAR_PERCENTILE_90) + 1)
+        dim_99 = int(np.searchsorted(cumsum, _C.CLOUD_VAR_PERCENTILE_99) + 1)
+        participation_ratio = (total_var ** 2) / (np.sum(eigenvalues ** 2) + _C.NORM_EPS)
     else:
         dim_50, dim_90, dim_99 = 1, 1, 1
         participation_ratio = 1
@@ -43,7 +44,7 @@ def compute_cloud_shape(activations: torch.Tensor) -> Dict[str, Any]:
         sphericity = 0
     norm_mean = float(norms.mean())
     norm_std = float(norms.std())
-    norm_cv = norm_std / (norm_mean + 1e-8)
+    norm_cv = norm_std / (norm_mean + _C.NORM_EPS)
     return {
         "centroid_norm": float(centroid_norm),
         "mean_norm": norm_mean, "norm_std": norm_std, "norm_cv": norm_cv,
@@ -51,7 +52,7 @@ def compute_cloud_shape(activations: torch.Tensor) -> Dict[str, Any]:
         "participation_ratio": float(participation_ratio),
         "sphericity": float(sphericity),
         "top_eigenvalue_ratio": float(eigenvalues[0] / total_var) if total_var > 0 else 0,
-        "top_eigenvalues": eigenvalues[:10].tolist(),
+        "top_eigenvalues": eigenvalues[:_C.INTRINSIC_DIM_TOP_N].tolist(),
     }
 
 
@@ -62,19 +63,19 @@ def compute_cone_fit(activations: torch.Tensor) -> Dict[str, Any]:
     if n < 3:
         return {"error": "need at least 3 points"}
     norms = np.linalg.norm(X, axis=1, keepdims=True)
-    valid = norms.squeeze() > 1e-8
+    valid = norms.squeeze() > _C.NORM_EPS
     X_normalized = X[valid] / norms[valid]
     if len(X_normalized) < 3:
         return {"error": "too few valid points"}
     mean_dir = X_normalized.mean(axis=0)
     mean_dir_norm = np.linalg.norm(mean_dir)
-    if mean_dir_norm < 1e-8:
+    if mean_dir_norm < _C.NORM_EPS:
         return {"is_cone": False, "cone_concentration": 0}
     cone_axis = mean_dir / mean_dir_norm
     cos_angles = X_normalized @ cone_axis
     angles = np.arccos(np.clip(cos_angles, -1, 1))
     angles_deg = np.degrees(angles)
-    cone_half_angle = float(np.percentile(angles_deg, 90))
+    cone_half_angle = float(np.percentile(angles_deg, _C.CLOUD_CONE_PERCENTILE))
     concentration = float(cos_angles.mean())
     return {
         "cone_axis_strength": float(mean_dir_norm),
@@ -96,11 +97,11 @@ def compute_sphere_fit(activations: torch.Tensor) -> Dict[str, Any]:
     distances = np.linalg.norm(X - centroid, axis=1)
     mean_radius = float(distances.mean())
     radius_std = float(distances.std())
-    radius_cv = radius_std / (mean_radius + 1e-8)
+    radius_cv = radius_std / (mean_radius + _C.NORM_EPS)
     origin_distances = np.linalg.norm(X, axis=1)
     origin_radius_mean = float(origin_distances.mean())
     origin_radius_std = float(origin_distances.std())
-    origin_radius_cv = origin_radius_std / (origin_radius_mean + 1e-8)
+    origin_radius_cv = origin_radius_std / (origin_radius_mean + _C.NORM_EPS)
     return {
         "centroid_radius_mean": mean_radius,
         "centroid_radius_std": radius_std, "centroid_radius_cv": radius_cv,
@@ -109,14 +110,14 @@ def compute_sphere_fit(activations: torch.Tensor) -> Dict[str, Any]:
     }
 
 
-def compute_manifold_dimension(activations: torch.Tensor, k_neighbors: int = 10) -> Dict[str, Any]:
+def compute_manifold_dimension(activations: torch.Tensor, k_neighbors: int = _C.CLOUD_K_NEIGHBORS_DEFAULT) -> Dict[str, Any]:
     """Estimate intrinsic dimension using local methods."""
     X = activations.float().cpu().numpy()
     n, d = X.shape
     if n < k_neighbors + 1:
         return {"error": "not enough points for local estimation"}
-    if n > 500:
-        idx = np.random.choice(n, 500, replace=False)
+    if n > _C.CLOUD_MAX_SAMPLES_MANIFOLD:
+        idx = np.random.choice(n, _C.CLOUD_MAX_SAMPLES_MANIFOLD, replace=False)
         X_sub = X[idx]
     else:
         X_sub = X
@@ -141,7 +142,7 @@ def compute_manifold_dimension(activations: torch.Tensor, k_neighbors: int = 10)
     }
 
 
-def compute_cluster_structure(activations: torch.Tensor, max_clusters: int = 5) -> Dict[str, Any]:
+def compute_cluster_structure(activations: torch.Tensor, max_clusters: int = _C.MAX_CLUSTERS) -> Dict[str, Any]:
     """Analyze cluster structure of the point cloud."""
     from sklearn.cluster import KMeans
     from sklearn.metrics import silhouette_score
@@ -152,7 +153,7 @@ def compute_cluster_structure(activations: torch.Tensor, max_clusters: int = 5) 
     silhouettes = {}
     inertias = {}
     for k in range(2, min(max_clusters + 1, n // 2)):
-        km = KMeans(n_clusters=k, random_state=42, n_init=10)
+        km = KMeans(n_clusters=k, random_state=_C.DEFAULT_RANDOM_SEED, n_init=_C.LINEARITY_N_INIT)
         labels = km.fit_predict(X)
         try:
             sil = silhouette_score(X, labels)
@@ -175,7 +176,7 @@ def compute_cluster_structure(activations: torch.Tensor, max_clusters: int = 5) 
     }
 
 
-def compute_density_structure(activations: torch.Tensor, k_neighbors: int = 10) -> Dict[str, Any]:
+def compute_density_structure(activations: torch.Tensor, k_neighbors: int = _C.CLOUD_K_NEIGHBORS_DEFAULT) -> Dict[str, Any]:
     """Analyze density variations in the point cloud."""
     X = activations.float().cpu().numpy()
     n, d = X.shape
@@ -193,7 +194,7 @@ def compute_density_structure(activations: torch.Tensor, k_neighbors: int = 10) 
     finite_densities = local_densities[np.isfinite(local_densities)]
     if len(finite_densities) == 0:
         return {"error": "all densities infinite"}
-    density_cv = float(finite_densities.std() / (finite_densities.mean() + 1e-8))
+    density_cv = float(finite_densities.std() / (finite_densities.mean() + _C.NORM_EPS))
     return {
         "density_mean": float(finite_densities.mean()),
         "density_std": float(finite_densities.std()),
@@ -209,10 +210,10 @@ def compute_topology_indicators(activations: torch.Tensor) -> Dict[str, Any]:
     n, d = X.shape
     if n < 10:
         return {"error": "need at least 10 points"}
-    if n > 300:
-        idx = np.random.choice(n, 300, replace=False)
+    if n > _C.CLOUD_MAX_SAMPLES_TOPOLOGY:
+        idx = np.random.choice(n, _C.CLOUD_MAX_SAMPLES_TOPOLOGY, replace=False)
         X = X[idx]
-        n = 300
+        n = _C.CLOUD_MAX_SAMPLES_TOPOLOGY
     dists = squareform(pdist(X))
     sorted_edges = np.sort(dists[np.triu_indices(n, k=1)])
     from scipy.sparse.csgraph import minimum_spanning_tree
@@ -221,7 +222,7 @@ def compute_topology_indicators(activations: torch.Tensor) -> Dict[str, Any]:
     mst_edges = mst.data
     connectivity_radius = float(mst_edges.max()) if len(mst_edges) > 0 else 0
     mean_pairwise = float(sorted_edges.mean())
-    connectivity_ratio = connectivity_radius / (mean_pairwise + 1e-8)
+    connectivity_ratio = connectivity_radius / (mean_pairwise + _C.NORM_EPS)
     return {
         "connectivity_radius": connectivity_radius,
         "mean_pairwise_distance": mean_pairwise,

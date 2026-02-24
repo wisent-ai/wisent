@@ -17,6 +17,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
+from wisent.core.constants import PARSER_DEFAULT_FEW_SHOT, PAIR_GENERATORS_DEFAULT_N
 from wisent.core.geometry import GeometrySearchSpace
 from wisent.examples.scripts._discovery_utils import (
     load_categorized_benchmarks,
@@ -29,10 +30,10 @@ from wisent.examples.scripts._model_discovery import (
 
 # Re-export all public names for backward compatibility
 from wisent.examples.scripts._discovery_utils import (
-    S3_BUCKET,
-    S3_PREFIX,
-    s3_sync_download,
-    s3_upload_file,
+    GCS_BUCKET,
+    GCS_PREFIX,
+    gcs_sync_download,
+    gcs_upload_file,
     OptimalConfig,
     CategoryResult,
 )
@@ -119,7 +120,7 @@ def generate_cross_model_comparison(all_model_results: Dict[str, "DiscoveryResul
     return comparison
 
 
-def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int = 50, with_nonsense_baseline: bool = False, with_pairs_ablation: bool = False):
+def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int = PAIR_GENERATORS_DEFAULT_N, with_nonsense_baseline: bool = False, with_pairs_ablation: bool = False):
     """Run full category direction discovery."""
     print("=" * 70)
     print("CATEGORY DIRECTION DISCOVERY")
@@ -201,7 +202,7 @@ def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Discover unified directions for skill categories")
     parser.add_argument("--model", type=str, default=None, help="Specific model to test (for parallel execution)")
-    parser.add_argument("--samples-per-benchmark", type=int, default=0, help="Number of samples per benchmark (default: 0 = use all available)")
+    parser.add_argument("--samples-per-benchmark", type=int, default=PARSER_DEFAULT_FEW_SHOT, help="Number of samples per benchmark (default: 0 = use all available)")
     parser.add_argument("--with-nonsense-baseline", action="store_true", 
                         help="Compare against random token baseline (requires generating activations through the model)")
     parser.add_argument("--with-pairs-ablation", action="store_true",

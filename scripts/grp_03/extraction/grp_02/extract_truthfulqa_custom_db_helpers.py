@@ -10,6 +10,7 @@ import os
 
 import torch
 import psycopg2
+from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
@@ -206,7 +207,7 @@ def batch_create_raw_activations(activations_data: list):
         return
 
     # Split into smaller batches to avoid timeout (max 50 rows per batch)
-    batch_size = 50
+    batch_size = EXTRACTION_DB_BATCH_SIZE
     max_retries = 3
 
     for i in range(0, len(activations_data), batch_size):

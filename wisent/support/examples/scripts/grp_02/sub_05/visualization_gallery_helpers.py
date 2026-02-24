@@ -7,6 +7,7 @@ from typing import Dict, List, Any
 
 import torch
 import numpy as np
+from wisent.core.constants import DEFAULT_RANDOM_SEED, VIZ_MARKER_SIZE_SMALL, PCA_GALLERY_COMPONENTS, VIZ_GALLERY_N_PER_TYPE, TSNE_PERPLEXITY_MAX, SIGNAL_EXISTENCE_THRESHOLD, LINEAR_GAP_THRESHOLD
 
 try:
     import matplotlib.pyplot as plt
@@ -21,33 +22,33 @@ try:
 except ImportError:
     HAS_SKLEARN = False
 
-S3_BUCKET = "wisent-bucket"
-S3_PREFIX = "visualizations"
+GCS_BUCKET = "wisent-images-bucket"
+GCS_PREFIX = "visualizations"
 
 
-def s3_upload_file(local_path: Path, model_name: str) -> None:
-    """Upload a single file to S3."""
+def gcs_upload_file(local_path: Path, model_name: str) -> None:
+    """Upload a single file to GCS."""
     model_prefix = model_name.replace('/', '_')
-    s3_path = f"s3://{S3_BUCKET}/{S3_PREFIX}/{model_prefix}/{local_path.name}"
+    gcs_path = f"gs://{GCS_BUCKET}/{GCS_PREFIX}/{model_prefix}/{local_path.name}"
     try:
         subprocess.run(
-            ["aws", "s3", "cp", str(local_path), s3_path, "--quiet"],
+            ["gcloud", "storage", "cp", str(local_path), gcs_path, "--quiet"],
             check=True,
             capture_output=True,
         )
-        print(f"  Uploaded to S3: {s3_path}")
+        print(f"  Uploaded to GCS: {gcs_path}")
     except Exception as e:
-        print(f"  S3 upload failed: {e}")
+        print(f"  GCS upload failed: {e}")
 
 
 def load_diagnosis_results(model_name: str, output_dir: Path) -> Dict[str, Any]:
-    """Load diagnosis results from S3/local."""
+    """Load diagnosis results from GCS/local."""
     model_prefix = model_name.replace('/', '_')
-    
+
     try:
         subprocess.run(
-            ["aws", "s3", "sync", 
-             f"s3://{S3_BUCKET}/direction_discovery/{model_prefix}/",
+            ["gcloud", "storage", "rsync",
+             f"gs://{GCS_BUCKET}/direction_discovery/{model_prefix}/",
              str(output_dir / "diagnosis"),
              "--quiet"],
             check=False,
@@ -70,7 +71,7 @@ def load_diagnosis_results(model_name: str, output_dir: Path) -> Dict[str, Any]:
 
 def select_representative_benchmarks(
     diagnosis_results: Dict[str, Any],
-    n_per_type: int = 2,
+    n_per_type: int = VIZ_GALLERY_N_PER_TYPE,
 ) -> Dict[str, List[str]]:
     """
     Select representative benchmarks for each diagnosis type.
@@ -98,9 +99,9 @@ def select_representative_benchmarks(
             linear = r["linear_probe_accuracy"]
             knn = r["nonlinear_metrics"]["knn_accuracy_k10"]
             
-            if signal < 0.6:
+            if signal < SIGNAL_EXISTENCE_THRESHOLD:
                 by_diagnosis["NO_SIGNAL"].append((bench, signal, linear, knn))
-            elif linear > 0.6 and (signal - linear) < 0.15:
+            elif linear > SIGNAL_EXISTENCE_THRESHOLD and (signal - linear) < LINEAR_GAP_THRESHOLD:
                 by_diagnosis["LINEAR"].append((bench, signal, linear, knn))
             else:
                 by_diagnosis["NONLINEAR"].append((bench, signal, linear, knn))
@@ -150,12 +151,12 @@ def create_tsne_plot(
     labels = np.array([1] * len(pos) + [0] * len(neg))
     
     # Reduce dimensionality with PCA first for speed
-    if X.shape[1] > 50:
-        pca = PCA(n_components=50)
+    if X.shape[1] > PCA_GALLERY_COMPONENTS:
+        pca = PCA(n_components=PCA_GALLERY_COMPONENTS)
         X = pca.fit_transform(X)
     
     # t-SNE
-    tsne = TSNE(n_components=2, perplexity=min(30, len(X) // 4), random_state=42)
+    tsne = TSNE(n_components=2, perplexity=min(TSNE_PERPLEXITY_MAX, len(X) // 4), random_state=DEFAULT_RANDOM_SEED)
     X_2d = tsne.fit_transform(X)
     
     # Color scheme based on diagnosis
@@ -167,10 +168,10 @@ def create_tsne_plot(
     pos_color, neg_color = colors.get(diagnosis, ("#2ecc71", "#e74c3c"))
     
     # Plot
-    ax.scatter(X_2d[labels == 1, 0], X_2d[labels == 1, 1], 
-               c=pos_color, label='Positive', alpha=0.7, s=30)
-    ax.scatter(X_2d[labels == 0, 0], X_2d[labels == 0, 1], 
-               c=neg_color, label='Negative', alpha=0.7, s=30)
+    ax.scatter(X_2d[labels == 1, 0], X_2d[labels == 1, 1],
+               c=pos_color, label='Positive', alpha=0.7, s=VIZ_MARKER_SIZE_SMALL)
+    ax.scatter(X_2d[labels == 0, 0], X_2d[labels == 0, 1],
+               c=neg_color, label='Negative', alpha=0.7, s=VIZ_MARKER_SIZE_SMALL)
     
     ax.set_title(title, fontsize=12, fontweight='bold')
     ax.set_xticks([])

@@ -3,6 +3,8 @@ import os
 
 import torch
 
+from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, DEFAULT_LAYER_WEIGHT, DEFAULT_LIMIT
+
 
 def _train_multi_direction_method(
     args,
@@ -46,9 +48,9 @@ def _train_multi_direction_method(
         print(f"   Loaded {len(pair_set.pairs)} pairs with activations")
         
         # Get config from args
-        num_directions = getattr(args, 'num_directions', 5)
+        num_directions = getattr(args, 'num_directions', DEFAULT_CHECKPOINT_INTERVAL)
         combination_strategy = getattr(args, 'combination_strategy', 'learned')
-        optimization_steps = getattr(args, 'multi_optimization_steps', 100)
+        optimization_steps = getattr(args, 'multi_optimization_steps', DEFAULT_LIMIT)
         
         # Train the method
         if method == 'grom':
@@ -82,7 +84,7 @@ def _train_multi_direction_method(
             result = trainer.train_tetno(pair_set)
             # TETNO has single direction per layer
             directions = {k: v.unsqueeze(0) for k, v in result.behavior_vectors.items()}
-            weights = {k: torch.tensor([result.layer_scales.get(k, 1.0)]) 
+            weights = {k: torch.tensor([result.layer_scales.get(k, DEFAULT_LAYER_WEIGHT)])
                       for k in directions} if result.layer_scales else None
         
         print(f"   Trained {len(directions)} layers with {method.upper()}")

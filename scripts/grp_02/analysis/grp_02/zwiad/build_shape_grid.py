@@ -6,6 +6,8 @@ import matplotlib.image as mpimg
 from pathlib import Path
 import math
 
+from wisent.core.constants import VIZ_DPI
+
 SHAPES_DIR = Path("zwiad_results/figures/shapes")
 OUTPUT_DIR = Path("zwiad_results/figures")
 CATEGORIES = [
@@ -89,7 +91,7 @@ def build_overview_grid(by_cat):
         axes[r][c].axis("off")
     fig.suptitle(f"All PCA Projections ({n} benchmarks)", fontsize=16, fontweight="bold")
     fig.tight_layout(rect=[0, 0, 1, 0.97])
-    fig.savefig(OUTPUT_DIR / "all_shapes_grid.png", dpi=150)
+    fig.savefig(OUTPUT_DIR / "all_shapes_grid.png", dpi=VIZ_DPI)
     print(f"Saved all_shapes_grid.png ({n} benchmarks)")
     plt.close(fig)
 

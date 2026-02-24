@@ -12,6 +12,7 @@ from wisent.core.modalities import (
 )
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_ADAPTER, DEFAULT_INFERENCE_TEMPERATURE
 
 __all__ = ["MultimodalAdapter", "MultimodalSteeringConfig"]
 logger = logging.getLogger(__name__)
@@ -251,8 +252,8 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
         from wisent.core.adapters.modalities.multimodal_steering import forward_with_steering_multimodal
         return forward_with_steering_multimodal(self, content, steering_vectors, config)
 
-    def _generate_unsteered(self, content: MultimodalContent, max_new_tokens: int = 256,
-                            temperature: float = 0.7, **kwargs: Any) -> str:
+    def _generate_unsteered(self, content: MultimodalContent, max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_ADAPTER,
+                            temperature: float = DEFAULT_INFERENCE_TEMPERATURE, **kwargs: Any) -> str:
         from wisent.core.adapters.modalities.multimodal_steering import generate_unsteered_multimodal
         return generate_unsteered_multimodal(self, content, max_new_tokens, temperature, **kwargs)
 

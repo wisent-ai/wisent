@@ -3,6 +3,7 @@ from typing import Iterable
 import re
 import numpy as np
 from wisent.core.synthetic.generators.diversities.core.core import Diversity, DiversityScores
+from wisent.core.constants import SIMHASH_BIT_WIDTH, DIVERSITY_MAX_SAMPLE_SIZE, FAST_DIVERSITY_SEED
 
 __all__ = [
     "FastDiversity",
@@ -18,7 +19,7 @@ class FastDiversity(Diversity):
     """
     _TOKEN_RE = re.compile(r"[A-Za-z0-9']+|[^\w\s]")
 
-    def __init__(self, seed: int | None = 13) -> None:
+    def __init__(self, seed: int | None = FAST_DIVERSITY_SEED) -> None:
         self._rng = np.random.default_rng(seed)
 
     def compute(self, texts: list[str]) -> DiversityScores:
@@ -44,7 +45,7 @@ class FastDiversity(Diversity):
         """
         d1 = self._distinct_n(texts, 1)
         d2 = self._distinct_n(texts, 2)
-        sample = texts if len(texts) <= 20 else self._rng.choice(texts, size=20, replace=False).tolist()
+        sample = texts if len(texts) <= DIVERSITY_MAX_SAMPLE_SIZE else self._rng.choice(texts, size=DIVERSITY_MAX_SAMPLE_SIZE, replace=False).tolist()
         if len(sample) >= 2:
             jaccs: list[float] = []
             fps: list[int] = []
@@ -58,9 +59,9 @@ class FastDiversity(Diversity):
                 for j in range(i + 1, len(sample)):
                     dists.append(self._hamming(fps[i], fps[j]))
             mean_h = (sum(dists) / len(dists)) if dists else 0.0
-            min_h = min(dists) if dists else 64
+            min_h = min(dists) if dists else SIMHASH_BIT_WIDTH
         else:
-            avg_j, mean_h, min_h = 0.0, 0.0, 64
+            avg_j, mean_h, min_h = 0.0, 0.0, SIMHASH_BIT_WIDTH
         return DiversityScores(d1, d2, avg_j, float(mean_h), int(min_h))
 
     def _distinct_n(self, texts: Iterable[str], n: int) -> float:
@@ -237,10 +238,10 @@ class FastDiversity(Diversity):
         feats = self._tok(text)
         if not feats:
             return 0
-        vec = [0] * 64
+        vec = [0] * SIMHASH_BIT_WIDTH
         for f in feats:
             hv = self._hash64(f)
-            for i in range(64):
+            for i in range(SIMHASH_BIT_WIDTH):
                 vec[i] += 1 if (hv >> i) & 1 else -1
         out = 0
         for i, v in enumerate(vec):

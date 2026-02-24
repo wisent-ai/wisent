@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     import torch
 
 from wisent.core.errors import MissingParameterError
+from wisent.core.constants import SCORE_SCALE_100
 
 __all__ = ["evaluate_alignment", "estimate_alignment"]
 
@@ -71,7 +72,7 @@ def evaluate_alignment(
     score = _compute_contrastive_alignment(response, positive_examples, negative_examples)
 
     # Scale from 0-1 to 1-100
-    return score * 99.0 + 1.0
+    return score * SCORE_SCALE_100 + 1.0
 
 
 def estimate_alignment(

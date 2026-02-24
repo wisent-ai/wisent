@@ -7,22 +7,24 @@ from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.decomposition import PCA
+from wisent.core.constants import DEFAULT_RANDOM_SEED
+from wisent.core import constants as _C
 
 
 def _adaptive_n_permutations(n_samples: int) -> int:
     """Adaptive number of permutations: fewer for large datasets."""
-    return max(50, min(200, 5000 // n_samples))
+    return max(_C.ADAPTIVE_PERMUTATIONS_MIN, min(_C.ADAPTIVE_PERMUTATIONS_MAX, _C.ADAPTIVE_PERMUTATIONS_DIVISOR // n_samples))
 
 
 def _adaptive_k(n_samples: int) -> int:
     """Adaptive k for KNN: sqrt(n) clamped to [3, n//4]."""
     k = int(np.sqrt(n_samples))
-    return max(3, min(k, n_samples // 4))
+    return max(_C.KNN_ADAPTIVE_K_MIN, min(k, n_samples // _C.KNN_ADAPTIVE_K_DIVISOR))
 
 
 def _adaptive_cv(n_samples: int) -> int:
     """Adaptive CV folds: ensure at least 10 samples per fold."""
-    return max(2, min(5, n_samples // 10))
+    return max(_C.ADAPTIVE_CV_MIN_FOLDS, min(_C.ADAPTIVE_CV_MAX_FOLDS, n_samples // _C.ADAPTIVE_CV_SAMPLES_PER_FOLD))
 
 
 def _adaptive_pca_components(n_samples: int, n_features: int) -> int:
@@ -34,13 +36,13 @@ def _adaptive_pca_components(n_samples: int, n_features: int) -> int:
 
 def _adaptive_manifold_components(n_samples: int) -> int:
     """Adaptive UMAP/PaCMAP components: log2(n_samples) clamped."""
-    return max(2, min(int(np.log2(n_samples)), 15))
+    return max(2, min(int(np.log2(n_samples)), _C.ADAPTIVE_MANIFOLD_MAX_COMPONENTS))
 
 
 def _adaptive_mlp_hidden(n_features: int) -> int:
     """Adaptive MLP hidden size: sqrt(n_features) clamped."""
     hidden = int(np.sqrt(n_features))
-    return max(16, min(hidden, 256))
+    return max(_C.ADAPTIVE_MLP_HIDDEN_MIN, min(hidden, _C.ADAPTIVE_MLP_HIDDEN_MAX))
 
 
 def compute_signal_metrics(
@@ -100,8 +102,8 @@ def _mlp_accuracy(X: np.ndarray, y: np.ndarray, hidden: int, cv: int) -> float:
     # per fold. With n samples and cv folds, each fold has n*(cv-1)/cv training samples.
     # Internal split takes 10%, so need >=20 training samples per fold for safety.
     n_per_fold = len(X) * (cv - 1) // cv
-    use_early_stopping = n_per_fold >= 20
-    clf = MLPClassifier(hidden_layer_sizes=(hidden,), random_state=42, early_stopping=use_early_stopping, max_iter=500)
+    use_early_stopping = n_per_fold >= _C.MLP_EARLY_STOPPING_MIN_SAMPLES
+    clf = MLPClassifier(hidden_layer_sizes=(hidden,), random_state=DEFAULT_RANDOM_SEED, early_stopping=use_early_stopping, max_iter=_C.MLP_PROBE_MAX_ITER)
     scores = cross_val_score(clf, X, y, cv=cv, scoring="accuracy")
     return float(scores.mean())
 
@@ -110,8 +112,8 @@ def _knn_umap_accuracy(X: np.ndarray, y: np.ndarray, n_components: int, k: int, 
     """KNN accuracy after UMAP dimensionality reduction."""
     try:
         import umap
-        umap_neighbors = max(5, min(15, len(y) // 20))
-        reducer = umap.UMAP(n_components=n_components, n_neighbors=umap_neighbors, random_state=42, n_jobs=1)
+        umap_neighbors = max(_C.UMAP_NEIGHBORS_MIN, min(_C.UMAP_NEIGHBORS_MAX, len(y) // _C.UMAP_NEIGHBORS_DIVISOR))
+        reducer = umap.UMAP(n_components=n_components, n_neighbors=umap_neighbors, random_state=DEFAULT_RANDOM_SEED, n_jobs=1)
         X_umap = reducer.fit_transform(X)
         clf = KNeighborsClassifier(n_neighbors=k)
         scores = cross_val_score(clf, X_umap, y, cv=cv, scoring="accuracy")
@@ -124,8 +126,8 @@ def _knn_pacmap_accuracy(X: np.ndarray, y: np.ndarray, n_components: int, k: int
     """KNN accuracy after PaCMAP dimensionality reduction."""
     try:
         import pacmap
-        pacmap_neighbors = max(5, min(15, len(y) // 20))
-        reducer = pacmap.PaCMAP(n_components=n_components, n_neighbors=pacmap_neighbors, random_state=42)
+        pacmap_neighbors = max(_C.PACMAP_NEIGHBORS_MIN, min(_C.PACMAP_NEIGHBORS_MAX, len(y) // _C.PACMAP_NEIGHBORS_DIVISOR))
+        reducer = pacmap.PaCMAP(n_components=n_components, n_neighbors=pacmap_neighbors, random_state=DEFAULT_RANDOM_SEED)
         X_pacmap = reducer.fit_transform(X)
         clf = KNeighborsClassifier(n_neighbors=k)
         scores = cross_val_score(clf, X_pacmap, y, cv=cv, scoring="accuracy")
