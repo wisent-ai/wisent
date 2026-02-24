@@ -6,21 +6,30 @@ import argparse
 import json
 from pathlib import Path
 
+from wisent.core.constants import (
+    COMPARISON_NUM_PAIRS,
+    COMPARISON_MAX_BATCH_SIZE,
+    COMPARISON_DEFAULT_BATCH_SIZE,
+    COMPARISON_STEERING_LAYER,
+    DATA_SPLIT_RATIO,
+    DEFAULT_BASE_STRENGTH,
+)
+
 
 def run_comparison(
     model_name: str,
     tasks: list[str],
     methods: list[str] = None,
-    num_pairs: int = 50,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
     steering_scales: list[float] = None,
     device: str = "cuda:0",
     batch_size: int | str = 1,
-    max_batch_size: int = 8,
+    max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     eval_limit: int | None = None,
     output_dir: str = "comparison_results",
-    train_ratio: float = 0.8,
-    caa_layers: str = "12",
-    sae_layers: str = "12",
+    train_ratio: float = DATA_SPLIT_RATIO,
+    caa_layers: str = str(COMPARISON_STEERING_LAYER),
+    sae_layers: str = str(COMPARISON_STEERING_LAYER),
     extraction_strategies: list[str] = None,
     bos_features_source: str = "detected",
     run_single_task_fn=None,
@@ -31,7 +40,7 @@ def run_comparison(
     if methods is None:
         methods = ["caa"]
     if steering_scales is None:
-        steering_scales = [1.0]
+        steering_scales = [DEFAULT_BASE_STRENGTH]
     if extraction_strategies is None:
         extraction_strategies = ["mc_balanced"]
 
@@ -132,25 +141,25 @@ def main(run_single_task_fn, run_comparison_fn):
                         help="Comma-separated lm-eval tasks")
     parser.add_argument("--methods", default="caa",
                         help="Comma-separated methods (caa,sae,fgaa)")
-    parser.add_argument("--num-pairs", type=int, default=50,
+    parser.add_argument("--num-pairs", type=int, default=COMPARISON_NUM_PAIRS,
                         help="Number of contrastive pairs")
     parser.add_argument("--scales", default="1.0",
                         help="Comma-separated steering scales")
-    parser.add_argument("--caa-layers", default="12",
+    parser.add_argument("--caa-layers", default=str(COMPARISON_STEERING_LAYER),
                         help="Layer(s) for CAA steering")
-    parser.add_argument("--sae-layers", default="12",
+    parser.add_argument("--sae-layers", default=str(COMPARISON_STEERING_LAYER),
                         help="Layer(s) for SAE/FGAA steering")
     parser.add_argument("--device", default="cuda:0", help="Device")
-    parser.add_argument("--batch-size", default=1,
+    parser.add_argument("--batch-size", default=COMPARISON_DEFAULT_BATCH_SIZE,
                         help="Batch size (int or 'auto')")
-    parser.add_argument("--max-batch-size", type=int, default=8,
+    parser.add_argument("--max-batch-size", type=int, default=COMPARISON_MAX_BATCH_SIZE,
                         help="Max batch size for lm-eval internal batching")
     parser.add_argument("--limit", type=int, default=None,
                         help="Limit eval examples")
     parser.add_argument("--output-dir",
                         default="wisent/comparison/comparison_results",
                         help="Output directory")
-    parser.add_argument("--train-ratio", type=float, default=0.8,
+    parser.add_argument("--train-ratio", type=float, default=DATA_SPLIT_RATIO,
                         help="Train/test split ratio")
     parser.add_argument("--extraction-strategy", default="mc_balanced",
                         help="Extraction strategy (comma-separated)")

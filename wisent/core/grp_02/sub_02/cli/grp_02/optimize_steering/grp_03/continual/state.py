@@ -11,6 +11,7 @@ from typing import Dict, Optional, Tuple
 import torch
 
 from wisent.core.cli.optimize_steering.continual.replay_buffer import ReplayBuffer
+from wisent.core.constants import DEFAULT_VARIANCE_THRESHOLD, REPLAY_BUFFER_MAX_SIZE, EWC_PERTURBATION_SCALE, EWC_LEARNING_RATE
 
 
 @dataclass
@@ -26,7 +27,7 @@ class ContinualState:
     task_vectors: Dict[str, Dict[int, torch.Tensor]] = field(default_factory=dict)
     fisher_info: Dict[str, Dict[int, torch.Tensor]] = field(default_factory=dict)
     old_vectors: Dict[str, Dict[int, torch.Tensor]] = field(default_factory=dict)
-    replay_buffer: ReplayBuffer = field(default_factory=lambda: ReplayBuffer(max_size=200))
+    replay_buffer: ReplayBuffer = field(default_factory=lambda: ReplayBuffer(max_size=REPLAY_BUFFER_MAX_SIZE))
     metrics: Dict[str, list] = field(default_factory=dict)
     current_cycle: int = 0
     task_priorities: Dict[str, float] = field(default_factory=dict)
@@ -35,7 +36,7 @@ class ContinualState:
 def decompose_into_shared_and_task(
     new_vectors: Dict[int, torch.Tensor],
     all_task_vectors: Dict[str, Dict[int, torch.Tensor]],
-    variance_threshold: float = 0.8,
+    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
 ) -> Tuple[Dict[int, torch.Tensor], Dict[int, torch.Tensor]]:
     """Decompose vectors into shared subspace component + task-specific residual.
 
@@ -190,14 +191,14 @@ def load_state(path: str) -> Optional[ContinualState]:
     return state
 
 
-def upload_to_s3(local_path: str, bucket: str, prefix: str) -> None:
-    """Upload checkpoint directory to S3."""
-    s3_uri = f"s3://{bucket}/{prefix}/"
+def upload_to_gcs(local_path: str, bucket: str, prefix: str) -> None:
+    """Upload checkpoint directory to GCS."""
+    gcs_uri = f"gs://{bucket}/{prefix}/"
     subprocess.run(
-        ["aws", "s3", "sync", local_path, s3_uri, "--quiet"],
+        ["gcloud", "storage", "rsync", local_path, gcs_uri, "--quiet"],
         check=True,
     )
-    print(f"   Checkpoint uploaded to {s3_uri}")
+    print(f"   Checkpoint uploaded to {gcs_uri}")
 
 
 # --- EWC (Elastic Weight Consolidation) ---
@@ -206,7 +207,7 @@ def upload_to_s3(local_path: str, bucket: str, prefix: str) -> None:
 def compute_fisher_information(
     vectors: Dict[int, torch.Tensor],
     perturbed_scores: Dict[int, Tuple[float, float]],
-    perturbation_scale: float = 0.01,
+    perturbation_scale: float = EWC_PERTURBATION_SCALE,
 ) -> Dict[int, torch.Tensor]:
     """Diagonal Fisher approximation via score sensitivity to perturbations."""
     fisher: Dict[int, torch.Tensor] = {}
@@ -242,7 +243,7 @@ def ewc_constrained_update(
     fisher_all_tasks: Dict[str, Dict[int, torch.Tensor]],
     old_vectors_all_tasks: Dict[str, Dict[int, torch.Tensor]],
     ewc_lambda: float,
-    learning_rate: float = 1.0,
+    learning_rate: float = EWC_LEARNING_RATE,
 ) -> Dict[int, torch.Tensor]:
     """Apply update with EWC constraint: shrink updates along Fisher-important directions."""
     result: Dict[int, torch.Tensor] = {}

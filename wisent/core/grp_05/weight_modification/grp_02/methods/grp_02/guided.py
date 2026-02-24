@@ -24,6 +24,12 @@ from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
 from enum import Enum
 
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import (
+    DEFAULT_STRENGTH,
+    GUIDED_MIN_LINEAR_SCORE, GUIDED_SURGICAL_TOP_K,
+    GUIDED_FISHER_WEIGHT_MIN, GUIDED_FISHER_WEIGHT_MAX,
+    GUIDED_MAX_DEGRADATION,
+)
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -58,23 +64,23 @@ class GuidedModificationConfig:
     """Configuration for guided weight modification."""
     
     # Layer selection
-    min_linear_score: float = 0.5
+    min_linear_score: float = GUIDED_MIN_LINEAR_SCORE
     """Minimum linear score to include a layer in ablation."""
-    
-    surgical_top_k: int = 3
+
+    surgical_top_k: int = GUIDED_SURGICAL_TOP_K
     """Number of top layers for surgical mode."""
     
     # Fisher ratio weighting
     use_fisher_weights: bool = True
     """Weight ablation strength by Fisher ratio."""
     
-    fisher_weight_scale: float = 1.0
+    fisher_weight_scale: float = DEFAULT_STRENGTH
     """Scale factor for Fisher-based weights."""
     
-    fisher_weight_min: float = 0.1
+    fisher_weight_min: float = GUIDED_FISHER_WEIGHT_MIN
     """Minimum weight (prevents zero ablation)."""
-    
-    fisher_weight_max: float = 2.0
+
+    fisher_weight_max: float = GUIDED_FISHER_WEIGHT_MAX
     """Maximum weight (prevents over-ablation)."""
     
     # Ablation mode
@@ -85,7 +91,7 @@ class GuidedModificationConfig:
     validate_collateral: bool = True
     """Run collateral damage validation."""
     
-    max_allowed_degradation: float = 0.1
+    max_allowed_degradation: float = GUIDED_MAX_DEGRADATION
     """Maximum allowed degradation on unrelated benchmarks."""
     
     validation_benchmarks: Optional[List[str]] = None
@@ -96,7 +102,7 @@ class GuidedModificationConfig:
     """Extraction strategy for computing directions."""
     
     # General
-    base_strength: float = 1.0
+    base_strength: float = DEFAULT_STRENGTH
     """Base ablation strength before layer weighting."""
     
     normalize_vectors: bool = True

@@ -2,6 +2,8 @@
 
 from typing import List, Dict, Any, Optional
 
+from wisent.core.constants import CLASSIFIER_MIN_PERFORMANCE_SCORE, DEFAULT_MAX_CLASSIFIERS_SELECT
+
 
 class ClassifierSelectorHelpersMixin:
     """Mixin providing selection methods for ClassifierSelector."""
@@ -197,8 +199,8 @@ def auto_select_classifiers_for_agent(
     model_name: str,
     required_issue_types: List[str] = None,
     search_paths: List[str] = None,
-    max_classifiers: int = 5,
-    min_performance: float = 0.1
+    max_classifiers: int = DEFAULT_MAX_CLASSIFIERS_SELECT,
+    min_performance: float = CLASSIFIER_MIN_PERFORMANCE_SCORE
 ) -> List[Dict[str, Any]]:
     """
     Auto-select the best classifiers for an autonomous agent.

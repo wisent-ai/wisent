@@ -26,6 +26,7 @@ from wisent.core.modalities import (
 )
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import AUDIO_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +55,7 @@ class AudioAdapterCore(BaseAdapter[AudioContent, Union[str, torch.Tensor]]):
         processor: Any | None = None,
         device: str | None = None,
         model_type: str | None = None,
-        sample_rate: int = 16000,
+        sample_rate: int = AUDIO_SAMPLE_RATE,
         **kwargs: Any,
     ):
         super().__init__(model=model, model_name=model_name, device=device, **kwargs)

@@ -21,6 +21,11 @@ from pathlib import Path
 os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'
 os.environ['HF_ALLOW_CODE_EVAL'] = '1'
 
+from wisent.core.constants import (
+    CODING_BENCHMARK_DEFAULT_LIMIT, SPLIT_RATIO_HALF, TEST_DEFAULT_LIMIT,
+    DEFAULT_RANDOM_SEED, DOCKER_SANDBOX_TIME_LIMIT, DOCKER_SANDBOX_CPU_LIMIT,
+    DOCKER_SANDBOX_MEM_LIMIT_MB, DEFAULT_TIMEOUT_DOCKER,
+)
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
 
@@ -28,7 +33,7 @@ from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import C
 def test_coding_benchmark(
     task_name: str,
     output_dir: str = ".",
-    limit: int = 10,
+    limit: int = TEST_DEFAULT_LIMIT,
 ):
     """
     Test a coding benchmark using Docker sandbox execution.
@@ -55,8 +60,8 @@ def test_coding_benchmark(
 
         result = loader._load_one_task(
             task_name=task_name,
-            split_ratio=0.5,
-            seed=42,
+            split_ratio=SPLIT_RATIO_HALF,
+            seed=DEFAULT_RANDOM_SEED,
             limit=limit * 3,  # Load more to account for filtering
             training_limit=limit,
             testing_limit=limit,
@@ -74,9 +79,9 @@ def test_coding_benchmark(
 
         cfg = EvaluatorConfig(
             image="coding/sandbox:polyglot-1.0",
-            time_limit_s=10,
-            cpu_limit_s=5,
-            mem_limit_mb=512,
+            time_limit_s=DOCKER_SANDBOX_TIME_LIMIT,
+            cpu_limit_s=DOCKER_SANDBOX_CPU_LIMIT,
+            mem_limit_mb=DOCKER_SANDBOX_MEM_LIMIT_MB,
             pre_sanitize=True,
         )
         evaluator = CodingEvaluator(cfg=cfg)
@@ -246,7 +251,7 @@ def check_docker_available():
             ["docker", "info"],
             capture_output=True,
             text=True,
-            timeout=30
+            timeout=DEFAULT_TIMEOUT_DOCKER
         )
         if result.returncode != 0:
             print("ERROR: Docker daemon is not running")
@@ -267,7 +272,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description="Test coding benchmarks with Docker execution")
     parser.add_argument("task", nargs="?", default="humaneval", help="Benchmark name (default: humaneval)")
-    parser.add_argument("--limit", type=int, default=5, help="Number of pairs to test (default: 5)")
+    parser.add_argument("--limit", type=int, default=CODING_BENCHMARK_DEFAULT_LIMIT, help="Number of pairs to test (default: 5)")
     parser.add_argument("--output", type=str, default=None, help="Output directory")
 
     args = parser.parse_args()

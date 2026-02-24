@@ -10,6 +10,7 @@ Uses the is_equiv function from math_equivalence package (hendrycks/math).
 import logging
 from typing import Any
 
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM
 from wisent.core.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
@@ -77,7 +78,7 @@ Solution:"""
                 confidence=0.0,
                 details="Could not extract \\boxed{} answer from model response",
                 meta={
-                    "response_preview": response[:200] if response else None,
+                    "response_preview": response[:DISPLAY_TRUNCATION_MEDIUM] if response else None,
                     "expected": expected,
                 }
             )

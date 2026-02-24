@@ -13,6 +13,7 @@ import torch
 import numpy as np
 
 from wisent.core.modalities.text_content import Modality, ModalityContent
+from wisent.core.constants import DEFAULT_AUDIO_SAMPLE_RATE, DEFAULT_VIDEO_FPS
 from wisent.core.errors import (
     NoWaveformDataError,
     NoPixelDataError,
@@ -32,7 +33,7 @@ class AudioContent(ModalityContent):
         file_path: Optional path to audio file
     """
     waveform: torch.Tensor | np.ndarray | None = None
-    sample_rate: int = 16000
+    sample_rate: int = DEFAULT_AUDIO_SAMPLE_RATE
     file_path: Path | str | None = None
     modality: Modality = field(default=Modality.AUDIO, init=False)
 
@@ -56,12 +57,12 @@ class AudioContent(ModalityContent):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "AudioContent":
         return cls(
-            sample_rate=data.get("sample_rate", 16000),
+            sample_rate=data.get("sample_rate", DEFAULT_AUDIO_SAMPLE_RATE),
             file_path=data.get("file_path"),
         )
 
     @classmethod
-    def from_file(cls, file_path: str | Path, sample_rate: int = 16000) -> "AudioContent":
+    def from_file(cls, file_path: str | Path, sample_rate: int = DEFAULT_AUDIO_SAMPLE_RATE) -> "AudioContent":
         """Load audio from file (requires torchaudio or librosa)."""
         try:
             import torchaudio
@@ -136,7 +137,7 @@ class VideoContent(ModalityContent):
         file_path: Optional path to video file
     """
     frames: torch.Tensor | List[torch.Tensor] | np.ndarray | None = None
-    fps: float = 30.0
+    fps: float = DEFAULT_VIDEO_FPS
     file_path: Path | str | None = None
     modality: Modality = field(default=Modality.VIDEO, init=False)
 
@@ -170,7 +171,7 @@ class VideoContent(ModalityContent):
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "VideoContent":
         return cls(
-            fps=data.get("fps", 30.0),
+            fps=data.get("fps", DEFAULT_VIDEO_FPS),
             file_path=data.get("file_path"),
         )
 

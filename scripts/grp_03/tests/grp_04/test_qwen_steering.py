@@ -15,6 +15,7 @@ from wisent.core.activations.core.optimal_extraction import (
     find_direction_from_all_tokens,
     extract_at_optimal_position,
 )
+from wisent.core.constants import MAX_NEW_TOKENS_TEST_DEFAULT, TEST_STEERING_SCALE
 
 MODEL = "Qwen/Qwen3-8B"
 
@@ -94,11 +95,11 @@ print(f"  Mean optimal position: {sum(positions)/len(positions):.1f}")
 print("Training CAA for chat_last...")
 caa = CAAMethod()
 chat_last_steering = caa.train(chat_last_set)
-chat_last_plan = SteeringPlan.from_raw(raw=dict(chat_last_steering), scale=0.5)
+chat_last_plan = SteeringPlan.from_raw(raw=dict(chat_last_steering), scale=TEST_STEERING_SCALE)
 
 print("Training CAA for optimal...")
 optimal_steering = caa.train(optimal_set)
-optimal_plan = SteeringPlan.from_raw(raw=dict(optimal_steering), scale=0.5)
+optimal_plan = SteeringPlan.from_raw(raw=dict(optimal_steering), scale=TEST_STEERING_SCALE)
 
 # === EVALUATE ===
 EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
@@ -115,7 +116,7 @@ for i, pair in enumerate(test_pairs[:100]):
     prompt_msg = [[{"role": "user", "content": pair.prompt}]]
 
     # Baseline (unsteered)
-    resp_base = model.generate(prompt_msg, max_new_tokens=100)[0]
+    resp_base = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
     eval_base = evaluator.evaluate(
         response=resp_base, expected=pair.positive_response.model_response,
         correct_answers=metadata.get("correct_answers", []),
@@ -125,7 +126,7 @@ for i, pair in enumerate(test_pairs[:100]):
         baseline_correct += 1
 
     # Chat_last steered
-    resp_cl = model.generate(prompt_msg, max_new_tokens=100, use_steering=True, steering_plan=chat_last_plan)[0]
+    resp_cl = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT, use_steering=True, steering_plan=chat_last_plan)[0]
     eval_cl = evaluator.evaluate(
         response=resp_cl, expected=pair.positive_response.model_response,
         correct_answers=metadata.get("correct_answers", []),
@@ -135,7 +136,7 @@ for i, pair in enumerate(test_pairs[:100]):
         chat_last_correct += 1
 
     # Optimal steered
-    resp_opt = model.generate(prompt_msg, max_new_tokens=100, use_steering=True, steering_plan=optimal_plan)[0]
+    resp_opt = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT, use_steering=True, steering_plan=optimal_plan)[0]
     eval_opt = evaluator.evaluate(
         response=resp_opt, expected=pair.positive_response.model_response,
         correct_answers=metadata.get("correct_answers", []),

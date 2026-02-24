@@ -2,6 +2,7 @@
 from typing import Dict, List, Any, Optional, Tuple
 import numpy as np
 import torch
+from wisent.core import constants as _C
 
 
 def name_concepts(
@@ -68,7 +69,7 @@ def find_optimal_layer_per_concept(
 
         for layer, (pos_all, neg_all) in sorted(activations_by_layer.items()):
             # Get activations for this concept's pairs
-            if n_pairs < 10:
+            if n_pairs < _C.MIN_CONCEPT_PAIRS:
                 continue
 
             pos_concept = pos_all[pair_indices].float().cpu().numpy()
@@ -217,7 +218,7 @@ def decompose_and_name_concepts_with_labels(
 
     diff_vectors = pos_np - neg_np
     norms = np.linalg.norm(diff_vectors, axis=1, keepdims=True)
-    norms = np.where(norms < 1e-8, 1.0, norms)
+    norms = np.where(norms < _C.NORM_EPS, 1.0, norms)
     diff_normalized = diff_vectors / norms
 
     return _build_result(
@@ -250,12 +251,12 @@ def decompose_and_name_concepts(
 
     diff_vectors = pos_np - neg_np
     norms = np.linalg.norm(diff_vectors, axis=1, keepdims=True)
-    norms = np.where(norms < 1e-8, 1.0, norms)
+    norms = np.where(norms < _C.NORM_EPS, 1.0, norms)
     diff_normalized = diff_vectors / norms
 
     spectral = SpectralClustering(
-        n_clusters=n_concepts, random_state=42,
-        affinity='nearest_neighbors', n_neighbors=min(10, n_pairs - 1)
+        n_clusters=n_concepts, random_state=_C.DEFAULT_RANDOM_SEED,
+        affinity='nearest_neighbors', n_neighbors=min(_C.SPECTRAL_N_NEIGHBORS_DEFAULT, n_pairs - 1)
     )
     cluster_labels = spectral.fit_predict(diff_normalized)
 

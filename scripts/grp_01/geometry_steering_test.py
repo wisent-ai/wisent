@@ -25,6 +25,12 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
+from wisent.core.constants import (
+    TOKENIZER_MAX_LENGTH_GEOMETRY,
+    DEFAULT_RANDOM_SEED,
+    GEOMETRY_OPTIMIZATION_STEPS_DEFAULT,
+    TECZA_NUM_DIRECTIONS,
+)
 
 from geometry_steering_test_helpers import (
     train_caa,
@@ -60,7 +66,7 @@ def main():
     print(f"Train: {len(train_samples)}, Test: {len(test_samples)}")
 
     def get_activation(text, layer):
-        inp = tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+        inp = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY)
         inp = {k: v.to(model.device) for k, v in inp.items()}
         with torch.no_grad():
             out = model(**inp, output_hidden_states=True)
@@ -112,7 +118,7 @@ def main():
         print(f"  Train: {len(train_pos)} pairs, Test: {len(test_pos)} pairs")
 
         print("Detecting geometry...")
-        geo_config = GeometryAnalysisConfig(num_components=5, optimization_steps=50)
+        geo_config = GeometryAnalysisConfig(num_components=5, optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_DEFAULT)
         geo_result = detect_geometry_structure(train_pos, train_neg, geo_config)
 
         best_struct = geo_result.best_structure.value
@@ -133,7 +139,7 @@ def main():
         print("Training methods...")
         caa_dir = train_caa(train_pos, train_neg)
         probe_dir, probe_acc = train_probe(train_pos, train_neg)
-        tecza_dir = train_tecza(train_pos, train_neg, num_directions=3)
+        tecza_dir = train_tecza(train_pos, train_neg, num_directions=TECZA_NUM_DIRECTIONS)
 
         caa_probe_align = float(torch.nn.functional.cosine_similarity(caa_dir.unsqueeze(0), probe_dir.unsqueeze(0)))
         print(f"  CAA-Probe alignment: {caa_probe_align:.3f}")
@@ -143,7 +149,7 @@ def main():
         X_test = torch.cat([test_pos, test_neg], dim=0).numpy()
         y_test = np.array([1]*len(test_pos) + [0]*len(test_neg))
 
-        probe_full = LogisticRegression(random_state=42)
+        probe_full = LogisticRegression(random_state=DEFAULT_RANDOM_SEED)
         probe_full.fit(torch.cat([train_pos, train_neg], dim=0).numpy(),
                        np.array([1]*len(train_pos) + [0]*len(train_neg)))
         test_acc = probe_full.score(X_test, y_test)

@@ -1,5 +1,6 @@
 """Generate and evaluate response with classifier."""
 
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM
 from wisent.core.models import get_generate_kwargs
 
 
@@ -87,7 +88,7 @@ def evaluate_response_with_classifier(
 
     unsteered_response = responses[0] if responses else ""
     print(f"\n   Unsteered response:")
-    print(f"   {unsteered_response[:200]}{'...' if len(unsteered_response) > 200 else ''}")
+    print(f"   {unsteered_response[:DISPLAY_TRUNCATION_MEDIUM]}{'...' if len(unsteered_response) > DISPLAY_TRUNCATION_MEDIUM else ''}")
 
     # Evaluate with classifier
     print(f"\n✅ Step 3b: Evaluating response with classifier")

@@ -6,17 +6,22 @@ import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
+from wisent.core.constants import (
+    DEFAULT_RANDOM_SEED, GEOMETRY_ADAPT_THRESHOLD_NUMERATOR,
+    GEOMETRY_ADAPT_THRESHOLD_MIN, GEOMETRY_ADAPT_THRESHOLD_MAX,
+)
+from wisent.core import constants as _C
 
 
 def _adaptive_cv(n_samples: int) -> int:
     """Adaptive CV folds: ensure at least 10 samples per fold."""
-    return max(2, min(5, n_samples // 10))
+    return max(_C.ADAPTIVE_CV_MIN_FOLDS, min(_C.ADAPTIVE_CV_MAX_FOLDS, n_samples // _C.ADAPTIVE_CV_SAMPLES_PER_FOLD))
 
 
 def _adaptive_mlp_hidden(n_features: int) -> int:
     """Adaptive MLP hidden size: sqrt(n_features) clamped."""
     hidden = int(np.sqrt(n_features))
-    return max(16, min(hidden, 256))
+    return max(_C.ADAPTIVE_MLP_HIDDEN_MIN, min(hidden, _C.ADAPTIVE_MLP_HIDDEN_MAX))
 
 
 def compute_linear_nonlinear_gap(
@@ -42,15 +47,15 @@ def compute_linear_nonlinear_gap(
     # Linear probe (logistic regression)
     # Adaptive regularization: stronger for high-d
     C = n_samples / n_features  # Lower C = more regularization when n_features >> n_samples
-    C = max(0.01, min(C, 10.0))
-    linear_clf = LogisticRegression(C=C, random_state=42)
+    C = max(_C.GEOMETRY_LOGISTIC_C_MIN, min(C, _C.GEOMETRY_LOGISTIC_C_MAX))
+    linear_clf = LogisticRegression(C=C, random_state=DEFAULT_RANDOM_SEED)
     linear_scores = cross_val_score(linear_clf, X, y, cv=cv, scoring="accuracy")
     linear_acc = float(linear_scores.mean())
 
     # Nonlinear probe (MLP)
     mlp_clf = MLPClassifier(
         hidden_layer_sizes=(mlp_hidden,),
-        random_state=42,
+        random_state=DEFAULT_RANDOM_SEED,
         early_stopping=True,
         alpha=1.0 / n_samples,  # Adaptive L2 regularization
     )
@@ -77,8 +82,8 @@ def compute_geometry_summary(
     linear_acc, nonlinear_acc = compute_linear_nonlinear_gap(pos_activations, neg_activations)
     gap = nonlinear_acc - linear_acc
     n_samples = len(pos_activations) + len(neg_activations)
-    adaptive_threshold = 0.5 / np.sqrt(n_samples)
-    adaptive_threshold = max(0.02, min(adaptive_threshold, 0.1))
+    adaptive_threshold = GEOMETRY_ADAPT_THRESHOLD_NUMERATOR / np.sqrt(n_samples)
+    adaptive_threshold = max(GEOMETRY_ADAPT_THRESHOLD_MIN, min(adaptive_threshold, GEOMETRY_ADAPT_THRESHOLD_MAX))
     diagnosis = "NONLINEAR" if gap > adaptive_threshold else "LINEAR"
     return {
         "linear_accuracy": linear_acc,

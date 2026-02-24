@@ -9,6 +9,10 @@ from typing import Dict, List
 import numpy as np
 from sklearn.cluster import KMeans
 
+from wisent.core.constants import (
+    DEFAULT_RANDOM_SEED, LINEARITY_N_INIT, STABILITY_N_CLUSTERS,
+    N_PAIRS_PER_CONCEPT_DEFAULT,
+)
 from wisent.core.models.wisent_model import WisentModel
 
 from ._data_loading import (
@@ -21,9 +25,9 @@ from ._orchestration import detect_concepts
 
 def run_experiment(
     model_name: str,
-    n_pairs_per_concept: int = 100,
+    n_pairs_per_concept: int = N_PAIRS_PER_CONCEPT_DEFAULT,
     layer: int = None,
-    seed: int = 42,
+    seed: int = DEFAULT_RANDOM_SEED,
     output_dir: str = "/tmp/concept_detection"
 ):
     """
@@ -85,7 +89,7 @@ def run_experiment(
     print(mixed_result.evidence_summary)
     
     # Validation: check if clusters align with true sources
-    km = KMeans(n_clusters=2, random_state=42, n_init=10)
+    km = KMeans(n_clusters=STABILITY_N_CLUSTERS, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
     cluster_labels = km.fit_predict(mixed_diffs)
     
     # Compute alignment with true sources

@@ -2,6 +2,13 @@
 Trains a LoRA adapter on benchmark tasks using supervised fine-tuning (SFT)
 on positive responses from contrastive pairs.
 Re-exports from lora_train and lora_eval submodules."""
+from wisent.core.constants import (
+    LORA_DEFAULT_R, LORA_DEFAULT_ALPHA, LORA_DEFAULT_DROPOUT,
+    COMPARISON_NUM_PAIRS, DATA_SPLIT_RATIO, COMPARISON_EVAL_BATCH_SIZE,
+    COMPARISON_STEERING_LAYER, COMPARISON_LORA_LEARNING_RATE,
+    COMPARISON_NUM_EPOCHS_DEFAULT, COMPARISON_TRAINING_BATCH_SIZE,
+    LORA_ARGPARSE_MAX_LENGTH,
+)
 from wisent.comparison.lora_train import prepare_sft_dataset, get_target_modules, train_lora_adapter
 from wisent.comparison.lora_eval import apply_lora_to_model, remove_lora, evaluate_lora
 
@@ -15,25 +22,25 @@ def main():
     parser.add_argument("--model", required=True, help="HuggingFace model name")
     parser.add_argument("--task", default="boolq", help="lm-eval task name")
     parser.add_argument("--output-dir", default="/home/ubuntu/output", help="Output directory")
-    parser.add_argument("--num-pairs", type=int, default=50, help="Number of training examples")
+    parser.add_argument("--num-pairs", type=int, default=COMPARISON_NUM_PAIRS, help="Number of training examples")
     parser.add_argument("--device", default="cuda:0", help="Device")
-    parser.add_argument("--lora-r", type=int, default=16, help="LoRA rank")
-    parser.add_argument("--lora-alpha", type=int, default=32, help="LoRA alpha")
-    parser.add_argument("--lora-dropout", type=float, default=0.05, help="LoRA dropout")
-    parser.add_argument("--learning-rate", type=float, default=2e-4, help="Learning rate")
-    parser.add_argument("--num-epochs", type=int, default=3, help="Number of epochs")
-    parser.add_argument("--batch-size", type=int, default=2, help="Training batch size")
-    parser.add_argument("--max-length", type=int, default=512, help="Max sequence length")
+    parser.add_argument("--lora-r", type=int, default=LORA_DEFAULT_R, help="LoRA rank")
+    parser.add_argument("--lora-alpha", type=int, default=LORA_DEFAULT_ALPHA, help="LoRA alpha")
+    parser.add_argument("--lora-dropout", type=float, default=LORA_DEFAULT_DROPOUT, help="LoRA dropout")
+    parser.add_argument("--learning-rate", type=float, default=COMPARISON_LORA_LEARNING_RATE, help="Learning rate")
+    parser.add_argument("--num-epochs", type=int, default=COMPARISON_NUM_EPOCHS_DEFAULT, help="Number of epochs")
+    parser.add_argument("--batch-size", type=int, default=COMPARISON_TRAINING_BATCH_SIZE, help="Training batch size")
+    parser.add_argument("--max-length", type=int, default=LORA_ARGPARSE_MAX_LENGTH, help="Max sequence length")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files")
-    parser.add_argument("--train-ratio", type=float, default=0.8, help="Train/test split ratio")
+    parser.add_argument("--train-ratio", type=float, default=DATA_SPLIT_RATIO, help="Train/test split ratio")
     parser.add_argument("--eval-batch-size", default="auto", help="Eval batch size (int or 'auto')")
-    parser.add_argument("--eval-max-batch-size", type=int, default=64, help="Max eval batch size for auto")
+    parser.add_argument("--eval-max-batch-size", type=int, default=COMPARISON_EVAL_BATCH_SIZE, help="Max eval batch size for auto")
     parser.add_argument("--eval-limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--skip-eval", action="store_true", help="Skip evaluation after training")
     parser.add_argument("--with-steering", action="store_true", help="Also evaluate LoRA + steering")
     parser.add_argument("--steering-method", default="caa", choices=["caa", "fgaa"], help="Steering method")
-    parser.add_argument("--steering-layers", default="12", help="Layers for steering vector")
-    parser.add_argument("--steering-num-pairs", type=int, default=50, help="Number of pairs for steering")
+    parser.add_argument("--steering-layers", default=str(COMPARISON_STEERING_LAYER), help="Layers for steering vector")
+    parser.add_argument("--steering-num-pairs", type=int, default=COMPARISON_NUM_PAIRS, help="Number of pairs for steering")
     parser.add_argument("--steering-scales", default="1.0,2.0,4.0", help="Comma-separated steering scales")
     parser.add_argument("--extraction-strategy", default="mc_balanced", help="Extraction strategy for steering")
     args = parser.parse_args()

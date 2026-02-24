@@ -1,4 +1,5 @@
 """Method-specific subparsers for optimize-steering."""
+from wisent.core import constants as _C
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
@@ -35,7 +36,7 @@ def setup_method_parsers(steering_subparsers):
     hierarchical_parser.add_argument(
         "--limit",
         type=int,
-        default=100,
+        default=_C.PARSER_DEFAULT_SAMPLE_LIMIT,
         help="Sample limit per evaluation (default: 100)"
     )
     hierarchical_parser.add_argument(
@@ -64,9 +65,9 @@ def setup_method_parsers(steering_subparsers):
         help=f"Steering methods to compare. Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(method_parser)
-    method_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
+    method_parser.add_argument("--limit", type=int, default=_C.PARSER_DEFAULT_SAMPLE_LIMIT, help="Maximum samples for testing (default: 100)")
     method_parser.add_argument(
-        "--max-time", type=float, default=30.0, help="Maximum optimization time in minutes (default: 30.0)"
+        "--max-time", type=float, default=_C.OPTIMIZE_MAX_TIME_MINUTES, help="Maximum optimization time in minutes (default: 30.0)"
     )
     method_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     method_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -97,9 +98,9 @@ def setup_method_parsers(steering_subparsers):
     SteeringMethodRegistry.add_all_cli_arguments(layer_parser)
     layer_parser.add_argument("--layer-range", type=str, default=None, help="Layer range to search (e.g., '10-20')")
     layer_parser.add_argument(
-        "--strength", type=float, default=1.0, help="Fixed steering strength during layer search (default: 1.0)"
+        "--strength", type=float, default=_C.DEFAULT_BASE_STRENGTH, help="Fixed steering strength during layer search (default: 1.0)"
     )
-    layer_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
+    layer_parser.add_argument("--limit", type=int, default=_C.PARSER_DEFAULT_SAMPLE_LIMIT, help="Maximum samples for testing (default: 100)")
     layer_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     layer_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     layer_parser.add_argument(
@@ -134,13 +135,13 @@ def setup_method_parsers(steering_subparsers):
         "--strength-range",
         type=float,
         nargs=2,
-        default=[0.1, 2.0],
+        default=list(_C.PARSER_STRENGTH_RANGE_METHODS),
         help="Min and max strength to test (default: 0.1 2.0)",
     )
     strength_parser.add_argument(
-        "--strength-steps", type=int, default=10, help="Number of strength values to test (default: 10)"
+        "--strength-steps", type=int, default=_C.PARSER_DEFAULT_NUM_STRENGTHS, help="Number of strength values to test (default: 10)"
     )
-    strength_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
+    strength_parser.add_argument("--limit", type=int, default=_C.PARSER_DEFAULT_SAMPLE_LIMIT, help="Maximum samples for testing (default: 100)")
     strength_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     strength_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     strength_parser.add_argument(
@@ -175,13 +176,13 @@ def setup_method_parsers(steering_subparsers):
         help=f"Steering methods to test (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(auto_parser)
-    auto_parser.add_argument("--limit", type=int, default=100, help="Maximum samples for testing (default: 100)")
-    auto_parser.add_argument("--max-time", type=float, default=60.0, help="Maximum time in minutes (default: 60)")
+    auto_parser.add_argument("--limit", type=int, default=_C.PARSER_DEFAULT_SAMPLE_LIMIT, help="Maximum samples for testing (default: 100)")
+    auto_parser.add_argument("--max-time", type=float, default=_C.PARSER_DEFAULT_MAX_TIME_MINUTES, help="Maximum time in minutes (default: 60)")
     auto_parser.add_argument(
         "--strength-range",
         type=float,
         nargs="+",
-        default=[0.5, 1.0, 1.5, 2.0],
+        default=list(_C.PARSER_FULL_OPTIMIZE_STRENGTHS),
         help="Steering strengths to test (default: 0.5 1.0 1.5 2.0)",
     )
     auto_parser.add_argument(

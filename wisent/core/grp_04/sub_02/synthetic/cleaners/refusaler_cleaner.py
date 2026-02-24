@@ -7,6 +7,7 @@ from wisent.core.synthetic.cleaners.methods.core.atoms import Refusaler
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+from wisent.core.constants import REFUSAL_CLEANER_MAX_RETRIES
 
 __all__ = [
     "RefusalerCleaner",
@@ -25,7 +26,7 @@ class RefusalerCleaner(CleanStep):
         system_prompt: str,
         trait_label: str,
         trait_description: str,
-        max_retries: int = 2,
+        max_retries: int = REFUSAL_CLEANER_MAX_RETRIES,
     ) -> None:
         self._refusal = refusal
         self._model = model

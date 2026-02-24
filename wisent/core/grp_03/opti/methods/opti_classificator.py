@@ -7,6 +7,10 @@ import optuna
 
 from wisent.core.opti.core.atoms import BaseOptimizer
 from wisent.core.classifiers.classifiers.core.atoms import BaseClassifier, ClassifierTrainConfig 
+from wisent.core.constants import (
+    LR_LOWER_BOUND, DEFAULT_CLASSIFIER_LR,
+    CLASSIFIER_TEST_SIZE, CLASSIFIER_BATCH_SIZE, CLASSIFIER_THRESHOLD,
+)
 
 __all__ = ["ClassificationOptimizer"]
 
@@ -65,10 +69,10 @@ class ClassificationOptimizer(BaseOptimizer):
         >>> Y = (logits > 0).astype(np.float32).squeeze()
         >>> # Define base training configuration
         >>> train_config = ClassifierTrainConfig(
-        ...     test_size=0.2,
+        ...     test_size=CLASSIFIER_TEST_SIZE,
         ...     num_epochs=20,
-        ...     batch_size=32,
-        ...     learning_rate=1e-3,
+        ...     batch_size=CLASSIFIER_BATCH_SIZE,
+        ...     learning_rate=DEFAULT_CLASSIFIER_LR,
         ...     monitor='accuracy',
         ...     random_state=42
         ... )
@@ -83,12 +87,12 @@ class ClassificationOptimizer(BaseOptimizer):
         ...     return {
         ...         "num_epochs": trial.suggest_int("num_epochs", 10, 50),
         ...         "batch_size": trial.suggest_categorical("batch_size", [16, 32, 64]),
-        ...         "learning_rate": trial.suggest_loguniform("learning_rate", 1e-4, 1e-2),
+        ...         "learning_rate": trial.suggest_loguniform("learning_rate", LR_LOWER_BOUND, LR_UPPER_BOUND),
         ...         "monitor": "accuracy"
         ...     }
         >>> # Create the optimizer
         >>> optimizer = ClassificationOptimizer(
-        ...     make_classifier=lambda: LogisticClassifier(threshold=0.5, device='cpu'),
+        ...     make_classifier=lambda: LogisticClassifier(threshold=CLASSIFIER_THRESHOLD, device='cpu'),
         ...     X=X,
         ...     Y=Y,
         ...     base_config=train_config,

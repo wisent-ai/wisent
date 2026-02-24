@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import torch
 from typing import Dict, Optional, TYPE_CHECKING
+from wisent.core.constants import NURT_T_MAX, NURT_NUM_INTEGRATION_STEPS, DEFAULT_STRENGTH
+from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -27,9 +29,9 @@ class NurtRuntimeHooks:
         flow_networks: Dict[int, torch.nn.Module],
         concept_bases: Dict[int, torch.Tensor],
         layer_weights: Dict[int, float],
-        t_max: float = 1.0,
-        num_integration_steps: int = 4,
-        base_strength: float = 1.0,
+        t_max: float = NURT_T_MAX,
+        num_integration_steps: int = NURT_NUM_INTEGRATION_STEPS,
+        base_strength: float = DEFAULT_STRENGTH,
     ):
         self.model = model
         self.flow_networks = flow_networks

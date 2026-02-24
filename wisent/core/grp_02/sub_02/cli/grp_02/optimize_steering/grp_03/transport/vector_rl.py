@@ -20,6 +20,8 @@ from wisent.core.cli.optimize_steering.steering_objects import execute_create_st
 from wisent.core.cli.optimize_steering.data.responses import execute_generate_responses
 from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.cli.optimize_steering.pipeline import _make_args
+from wisent.core.constants import (COMPARE_TOL, DEFAULT_LIMIT, RL_NUM_EPISODES, RL_EPSILON,
+    PIPELINE_STEERING_STRENGTH, PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P)
 
 
 def _extract_vectors(obj) -> Dict[int, torch.Tensor]:
@@ -46,10 +48,10 @@ def _evaluate_with_vectors(vectors, metadata, args, work_dir) -> float:
     obj.save(sf)
     execute_generate_responses(_make_args(
         task=args.task, input_file=args.enriched_pairs_file, model=args.model,
-        output=rf, num_questions=getattr(args, 'limit', 100),
-        steering_object=sf, steering_strength=1.0, steering_strategy="constant",
+        output=rf, num_questions=getattr(args, 'limit', DEFAULT_LIMIT),
+        steering_object=sf, steering_strength=PIPELINE_STEERING_STRENGTH, steering_strategy="constant",
         use_steering=True, device=getattr(args, 'device', None),
-        max_new_tokens=128, temperature=0.7, top_p=0.95,
+        max_new_tokens=PIPELINE_MAX_NEW_TOKENS, temperature=PIPELINE_TEMPERATURE, top_p=PIPELINE_TOP_P,
         verbose=False, cached_model=None,
     ))
     execute_evaluate_responses(_make_args(
@@ -76,10 +78,10 @@ def run_vector_rl_loop(args) -> dict:
       4. Save best-scoring vectors as CAASteeringObject
     """
     method = getattr(args, 'method', 'CAA')
-    max_iter = getattr(args, 'max_iterations', 10)
-    lr = getattr(args, 'learning_rate', 0.1)
-    noise_scale = getattr(args, 'noise_scale', 0.1)
-    limit = getattr(args, 'limit', 100)
+    max_iter = getattr(args, 'max_iterations', RL_NUM_EPISODES)
+    lr = getattr(args, 'learning_rate', RL_EPSILON)
+    noise_scale = getattr(args, 'noise_scale', RL_EPSILON)
+    limit = getattr(args, 'limit', DEFAULT_LIMIT)
     output_path = getattr(args, 'output', 'best_transport_rl.pt')
 
     print(f"\n{'=' * 70}")
@@ -121,7 +123,7 @@ def run_vector_rl_loop(args) -> dict:
             # Sample noise scaled relative to vector norms
             noise = {}
             for l, v in vectors.items():
-                scale = noise_scale * max(v.norm().item(), 1e-6)
+                scale = noise_scale * max(v.norm().item(), COMPARE_TOL)
                 noise[l] = torch.randn_like(v) * scale
 
             # Forward perturbation: v + noise
@@ -135,7 +137,7 @@ def run_vector_rl_loop(args) -> dict:
             # ES gradient estimate and update
             grad_est = (score_plus - score_minus) / 2.0
             for l in vectors:
-                v_norm = max(vectors[l].norm().item(), 1e-6)
+                v_norm = max(vectors[l].norm().item(), COMPARE_TOL)
                 vectors[l] += lr * grad_est * noise[l] / (noise_scale * v_norm)
 
             print(f"   +noise: {score_plus:.4f}  -noise: {score_minus:.4f}  "

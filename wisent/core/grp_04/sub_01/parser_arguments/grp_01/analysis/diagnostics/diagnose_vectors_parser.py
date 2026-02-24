@@ -1,5 +1,7 @@
 """Parser for diagnose-vectors command."""
 
+from wisent.core import constants as _C
+
 
 def setup_diagnose_vectors_parser(parser):
     """Set up the diagnose-vectors command parser."""
@@ -37,14 +39,14 @@ def setup_diagnose_vectors_parser(parser):
     parser.add_argument(
         '--cone-threshold',
         type=float,
-        default=0.7,
+        default=_C.DIAG_PARSER_THRESHOLD,
         help='Threshold for cone detection score (default: 0.7)'
     )
 
     parser.add_argument(
         '--cone-directions',
         type=int,
-        default=5,
+        default=_C.DIAG_PARSER_COUNT_SMALL,
         help='Number of cone directions to search for (default: 5)'
     )
 
@@ -57,14 +59,14 @@ def setup_diagnose_vectors_parser(parser):
     parser.add_argument(
         '--max-clusters',
         type=int,
-        default=5,
+        default=_C.PARSER_DEFAULT_MAX_CLUSTERS,
         help='Maximum clusters to try for cluster detection (default: 5)'
     )
 
     parser.add_argument(
         '--manifold-neighbors',
         type=int,
-        default=10,
+        default=_C.DIAG_PARSER_COUNT_LARGE,
         help='Number of neighbors for manifold analysis (default: 10)'
     )
 

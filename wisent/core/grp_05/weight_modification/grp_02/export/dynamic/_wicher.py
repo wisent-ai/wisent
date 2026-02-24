@@ -9,6 +9,7 @@ from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
 )
+from wisent.core.constants import BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_BASE_STRENGTH, DEFAULT_STRENGTH
 
 _LOG = setup_logger(__name__)
 
@@ -17,7 +18,7 @@ def export_wicher_model(
     wicher_steering,
     save_path,
     tokenizer=None,
-    base_strength: float = 1.0,
+    base_strength: float = DEFAULT_STRENGTH,
     push_to_hub: bool = False,
     repo_id=None,
     commit_message=None,
@@ -223,12 +224,12 @@ def load_wicher_model(
             concept_bases=concept_bases,
             component_variances=component_variances,
             layer_variance=layer_variance,
-            num_steps=wicher_data.get("num_steps", 3),
-            alpha=wicher_data.get("alpha", 5e-3),
-            eta=wicher_data.get("eta", 0.5),
-            beta=wicher_data.get("beta", 0.0),
-            alpha_decay=wicher_data.get("alpha_decay", 1.0),
-            base_strength=wicher_data.get("base_strength", 1.0),
+            num_steps=wicher_data.get("num_steps", BROYDEN_DEFAULT_NUM_STEPS),
+            alpha=wicher_data.get("alpha", BROYDEN_DEFAULT_ALPHA),
+            eta=wicher_data.get("eta", BROYDEN_DEFAULT_ETA),
+            beta=wicher_data.get("beta", BROYDEN_DEFAULT_BETA),
+            alpha_decay=wicher_data.get("alpha_decay", BROYDEN_DEFAULT_ALPHA_DECAY),
+            base_strength=wicher_data.get("base_strength", DEFAULT_BASE_STRENGTH),
         )
         hooks.install()
         log.info(

@@ -6,14 +6,15 @@ from wisent.core.agent.diagnose._agent_decision_types import (
     QualityResult, QualityControlledResponse, SteeringParams)
 from wisent.core.agent.diagnose.classifier_marketplace import (
     ClassifierMarketplace, ClassifierListing, ClassifierCreationEstimate)
+from wisent.core.constants import AGENT_DECISION_NUM_SAMPLES, AGENT_PENALTY_MULTIPLIER, AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET
 
 class ClassifierPipelineMixin:
     """Mixin providing decision pipeline methods."""
 
     async def make_classifier_decisions(self, 
                                       task_analysis: TaskAnalysis,
-                                      quality_threshold: float = 0.3,
-                                      time_budget_minutes: float = 10.0,
+                                      quality_threshold: float = AGENT_DECISION_QUALITY_THRESHOLD,
+                                      time_budget_minutes: float = AGENT_DECISION_TIME_BUDGET,
                                       max_classifiers: int = None) -> List[ClassifierDecision]:
         """
         Make decisions about which benchmark-specific classifiers to create or use.
@@ -128,7 +129,7 @@ class ClassifierPipelineMixin:
                 action="use_existing",
                 selected_classifier=best_existing,
                 reasoning=f"Using existing despite low quality - time/budget constraints",
-                confidence=existing_quality * 0.7  # Penalty for low quality
+                confidence=existing_quality * AGENT_PENALTY_MULTIPLIER  # Penalty for low quality
             )
         
         return ClassifierDecision(
@@ -208,7 +209,7 @@ class ClassifierPipelineMixin:
             classifier = await creator.create_classifier_for_issue_with_benchmarks(
                 issue_type=benchmark_name,  # Use benchmark name as issue type
                 relevant_benchmarks=[benchmark_name],
-                num_samples=50
+                num_samples=AGENT_DECISION_NUM_SAMPLES
             )
             
             return classifier
@@ -243,8 +244,8 @@ class ClassifierPipelineMixin:
     async def smart_classifier_selection(self, 
                                        prompt: str,
                                        context: str = "",
-                                       quality_threshold: float = 0.3,
-                                       time_budget_minutes: float = 10.0,
+                                       quality_threshold: float = AGENT_DECISION_QUALITY_THRESHOLD,
+                                       time_budget_minutes: float = AGENT_DECISION_TIME_BUDGET,
                                        max_classifiers: int = None) -> List[Dict[str, Any]]:
         """
         One-stop method for intelligent classifier selection.

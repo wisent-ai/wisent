@@ -6,6 +6,11 @@ import torch.nn as nn
 import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.constants import (
+    NORM_EPS, GROM_LOSS_CONTRASTIVE_MARGIN, GROM_LOSS_CONTRASTIVE_WEIGHT,
+    GROM_LOSS_UTILITY_WEIGHT, GROM_LOSS_CONCENTRATION_WEIGHT,
+    GROM_LOSS_GATE_WARMUP_WEIGHT, GROM_LOSS_CAA_ALIGNMENT_WEIGHT,
+)
 
 def _compute_grom_loss_impl(
     self,
@@ -56,7 +61,7 @@ def _compute_grom_loss_impl(
 
         # Margin should be proportional to the scale of activations
         # Typical projections are in range [-5, 5], so margin of 2.0 is reasonable
-        margin = 2.0
+        margin = GROM_LOSS_CONTRASTIVE_MARGIN
         contrastive_loss = contrastive_loss + F.relu(margin - (pos_mean - neg_mean))
 
     contrastive_loss = contrastive_loss / len(layer_names)
@@ -89,8 +94,8 @@ def _compute_grom_loss_impl(
 
     # 4. Sparse loss - encourage sparse layer activation
     # Penalize uniform intensity distribution
-    pos_intensity_norm = pos_intensity / (pos_intensity.sum(dim=1, keepdim=True) + 1e-8)
-    sparse_loss = -torch.mean(torch.sum(pos_intensity_norm * torch.log(pos_intensity_norm + 1e-8), dim=1))
+    pos_intensity_norm = pos_intensity / (pos_intensity.sum(dim=1, keepdim=True) + NORM_EPS)
+    sparse_loss = -torch.mean(torch.sum(pos_intensity_norm * torch.log(pos_intensity_norm + NORM_EPS), dim=1))
     sparse_loss = -sparse_loss  # We want LOW entropy (sparse)
     loss_components["sparse"] = sparse_loss
 
@@ -173,14 +178,14 @@ def _compute_grom_loss_impl(
             K = weights.shape[0]
             if K > 1:
                 # Negative entropy - encourages sparsity/concentration
-                entropy = -(weights * torch.log(weights + 1e-8)).sum()
+                entropy = -(weights * torch.log(weights + NORM_EPS)).sum()
                 max_entropy = torch.log(torch.tensor(float(K)))
                 normalized_entropy = entropy / max_entropy
 
                 # Also add concentration reward: maximize squared weights
                 concentration = -(weights ** 2).sum()
 
-                direction_concentration_loss = direction_concentration_loss + normalized_entropy + 0.5 * concentration
+                direction_concentration_loss = direction_concentration_loss + normalized_entropy + GROM_LOSS_CONCENTRATION_WEIGHT * concentration
 
         direction_concentration_loss = direction_concentration_loss / len(layer_names)
 
@@ -212,10 +217,10 @@ def _compute_grom_loss_impl(
 
     # Combine losses with warmup
     # IMPORTANT: Contrastive loss is the PRIMARY loss - give it highest weight
-    contrastive_weight = 2.0  # HIGH weight for contrastive separation
-    utility_weight = 0.5
-    concentration_weight = 0.3
-    caa_alignment_weight = 0.5  # Keep aligned with empirical direction
+    contrastive_weight = GROM_LOSS_CONTRASTIVE_WEIGHT
+    utility_weight = GROM_LOSS_UTILITY_WEIGHT
+    concentration_weight = GROM_LOSS_CONCENTRATION_WEIGHT
+    caa_alignment_weight = GROM_LOSS_CAA_ALIGNMENT_WEIGHT
 
     if step < self.config.warmup_steps:
         # Warmup: focus on contrastive + CAA alignment
@@ -224,7 +229,7 @@ def _compute_grom_loss_impl(
             self.config.behavior_weight * behavior_loss +
             self.config.retain_weight * retain_loss +
             caa_alignment_weight * caa_alignment_loss +
-            0.5 * gate_loss
+            GROM_LOSS_GATE_WARMUP_WEIGHT * gate_loss
         )
     else:
         # Full training with all losses

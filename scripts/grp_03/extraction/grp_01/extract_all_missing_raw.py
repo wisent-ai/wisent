@@ -21,6 +21,8 @@ import time
 import psycopg2
 import torch
 
+from wisent.core.constants import MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT
+
 from extract_all_missing_raw_helpers import (
     get_conn,
     reset_conn,
@@ -64,7 +66,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
     format_names = [f[0] for f in all_prompt_formats]
 
     def get_hidden_states(text):
-        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048, add_special_tokens=False)
+        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH, add_special_tokens=False)
         enc = {k: v.to(device) for k, v in enc.items()}
         with torch.inference_mode():
             out = model(**enc, output_hidden_states=True, use_cache=False)
@@ -88,7 +90,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
 
         if check_pair_fully_extracted(model_id, pair_id, num_layers, format_names):
             skipped += 1
-            if skipped % 50 == 0:
+            if skipped % PROGRESS_LOG_INTERVAL == 0:
                 print(f"    [skipped {skipped} already-extracted pairs]", flush=True)
             continue
 
@@ -152,7 +154,7 @@ def main():
     parser = argparse.ArgumentParser(description="Extract raw activations for all missing benchmarks with 3 formats")
     parser.add_argument("--model", required=True, help="Model name (e.g., meta-llama/Llama-3.2-1B-Instruct)")
     parser.add_argument("--device", default="cuda", help="Device (cuda/mps/cpu)")
-    parser.add_argument("--limit", type=int, default=500, help="Max pairs per benchmark (default: 500)")
+    parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark (default: 500)")
     parser.add_argument("--benchmark", default=None, help="Single benchmark to extract (optional)")
     args = parser.parse_args()
 

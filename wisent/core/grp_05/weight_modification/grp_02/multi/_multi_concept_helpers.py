@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
 
+from wisent.core import constants as _C
 from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -213,13 +214,13 @@ def run_multi_concept_modification(
         for c in suppress_concepts:
             if layer_idx in c.steering_vectors:
                 suppress_dirs.append(c.steering_vectors[layer_idx])
-                weight = c.layer_weights.get(layer_idx, 1.0) if c.layer_weights else 1.0
+                weight = c.layer_weights.get(layer_idx, _C.DEFAULT_LAYER_WEIGHT) if c.layer_weights else _C.DEFAULT_LAYER_WEIGHT
                 suppress_strengths.append(c.strength * weight)
         
         for c in enhance_concepts:
             if layer_idx in c.steering_vectors:
                 enhance_dirs.append(c.steering_vectors[layer_idx])
-                weight = c.layer_weights.get(layer_idx, 1.0) if c.layer_weights else 1.0
+                weight = c.layer_weights.get(layer_idx, _C.DEFAULT_LAYER_WEIGHT) if c.layer_weights else _C.DEFAULT_LAYER_WEIGHT
                 enhance_strengths.append(c.strength * weight)
         
         if not suppress_dirs and not enhance_dirs:

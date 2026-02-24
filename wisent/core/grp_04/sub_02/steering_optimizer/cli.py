@@ -10,6 +10,7 @@ from typing import Dict, List, Optional, Any
 from .optimizer import SteeringOptimizer
 from .auto import run_auto_steering_optimization
 from .types import SteeringOptimizationSummary
+from wisent.core.constants import DEFAULT_LIMIT, MAX_OPTIMIZATION_TIME_MINUTES, PARSER_STRENGTH_RANGE_METHODS
 
 logger = logging.getLogger(__name__)
 
@@ -21,10 +22,10 @@ def run_steering_optimization(
     methods_to_test: Optional[List[str]] = None,
     layer_range: Optional[str] = None,
     strength_range: Optional[List[float]] = None,
-    limit: int = 100,
+    limit: int = DEFAULT_LIMIT,
     device: str = None,
     verbose: bool = False,
-    max_time_minutes: float = 60.0
+    max_time_minutes: float = MAX_OPTIMIZATION_TIME_MINUTES
 ) -> Dict[str, Any]:
     """
     Run steering optimization with the specified type.
@@ -146,7 +147,7 @@ def get_optimal_steering_params(
     return optimizer.load_optimal_steering_config(task_name=task_name)
 
 
-def _generate_pairs_for_zwiad(task_name: str, limit: int = 100) -> List:
+def _generate_pairs_for_zwiad(task_name: str, limit: int = DEFAULT_LIMIT) -> List:
     """Generate contrastive pairs for zwiad analysis."""
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
     return build_contrastive_pairs(task_name=task_name, limit=limit)
@@ -188,4 +189,4 @@ def _parse_strength_tuple(strength_range: List[float]) -> tuple:
     """Parse strength range to tuple."""
     if strength_range:
         return (min(strength_range), max(strength_range))
-    return (0.1, 2.0)
+    return PARSER_STRENGTH_RANGE_METHODS

@@ -8,6 +8,14 @@ from datetime import datetime
 import numpy as np
 
 from wisent.core.utils import resolve_default_device
+from wisent.core.constants import (
+    DEFAULT_LAYER, AGENT_DIAG_MAX_TOKENS_SHORT,
+    AGENT_DIAG_MAX_TOKENS_MEDIUM, AGENT_DIAG_TEMPERATURE,
+    MARKETPLACE_F1_WEIGHT, MARKETPLACE_ACCURACY_WEIGHT,
+    MARKETPLACE_DATA_QUALITY_WEIGHT, MARKETPLACE_DATA_QUALITY_DENOM,
+    MARKETPLACE_RECENCY_WEIGHT, BUDGET_RECENCY_WINDOW_DAYS,
+    CLASSIFIER_DECISION_THRESHOLD,
+)
 from ._marketplace_helpers import (
     ClassifierCreationEstimate,
     MarketplaceEstimationMixin,
@@ -98,7 +106,7 @@ class ClassifierMarketplace(MarketplaceEstimationMixin):
             layer, issue_type = self._parse_filename(filepath)
             quality_score = self._calculate_quality_score(metadata)
 
-            threshold = metadata.get('threshold', 0.5)
+            threshold = metadata.get('threshold', CLASSIFIER_DECISION_THRESHOLD)
             training_samples = metadata.get('training_samples', 0)
             model_family = self._extract_model_family(metadata.get('model_name', ''))
             created_at = metadata.get('created_at', datetime.now().isoformat())
@@ -153,13 +161,13 @@ class ClassifierMarketplace(MarketplaceEstimationMixin):
             if len(path_parts) >= 2:
                 benchmark_name = path_parts[-2]
                 layer_match = re.search(r'layer_(\d+)\.pkl', filename)
-                layer = int(layer_match.group(1)) if layer_match else 15
+                layer = int(layer_match.group(1)) if layer_match else DEFAULT_LAYER
                 issue_type = f"quality_{benchmark_name}"
                 return layer, issue_type
 
         filename = os.path.basename(filepath).lower()
 
-        layer = 15
+        layer = DEFAULT_LAYER
         for part in filename.replace('_', ' ').replace('-', ' ').split():
             if part.startswith('l') and part[1:].isdigit():
                 layer = int(part[1:])
@@ -196,7 +204,7 @@ Common issue types include:
 Respond with just the issue type (one word):"""
 
         try:
-            response = self.model.generate(prompt, layer_index=15, max_new_tokens=15, temperature=0.1)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_MEDIUM, temperature=AGENT_DIAG_TEMPERATURE)
             issue_type = response.strip().lower()
 
             match = re.search(r'(hallucination|quality|harmful|bias|coherence|unknown)', issue_type)
@@ -214,19 +222,19 @@ Respond with just the issue type (one word):"""
         accuracy = metadata.get('accuracy', metadata.get('training_accuracy', 0.0))
 
         if f1_score > 0:
-            score += f1_score * 0.5
+            score += f1_score * MARKETPLACE_F1_WEIGHT
         if accuracy > 0:
-            score += accuracy * 0.2
+            score += accuracy * MARKETPLACE_ACCURACY_WEIGHT
 
         training_samples = metadata.get('training_samples', 0)
         if training_samples > 0:
-            data_quality = min(training_samples / 1000, 1.0) * 0.2
+            data_quality = min(training_samples / MARKETPLACE_DATA_QUALITY_DENOM, 1.0) * MARKETPLACE_DATA_QUALITY_WEIGHT
             score += data_quality
 
         try:
             created_at = datetime.fromisoformat(metadata.get('created_at', ''))
             days_old = (datetime.now() - created_at).days
-            recency_score = max(0, (90 - days_old) / 90) * 0.1
+            recency_score = max(0, (BUDGET_RECENCY_WINDOW_DAYS - days_old) / BUDGET_RECENCY_WINDOW_DAYS) * MARKETPLACE_RECENCY_WEIGHT
             score += recency_score
         except:
             pass
@@ -247,7 +255,7 @@ Common families include: llama, mistral, gemma, qwen, gpt, claude, other
 Respond with just the family name (one word):"""
 
         try:
-            response = self.model.generate(prompt, layer_index=15, max_new_tokens=10, temperature=0.1)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
             family = response.strip().lower()
 
             match = re.search(r'(llama|mistral|gemma|qwen|gpt|claude|other|unknown)', family)

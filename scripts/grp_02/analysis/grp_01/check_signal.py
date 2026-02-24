@@ -13,6 +13,8 @@ Usage:
 
 import argparse
 
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS
+
 from check_signal_helpers import (
     load_model,
     get_truthfulqa_pairs,
@@ -29,7 +31,7 @@ def main():
     parser.add_argument("--task", type=str, required=True,
                         choices=["truthfulqa", "livecodebench", "sentiment"])
     parser.add_argument("--model", type=str, default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--n-samples", type=int, default=50)
+    parser.add_argument("--n-samples", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
     parser.add_argument("--strategies", type=str, nargs="+",
                         default=["chat_mean", "role_play", "mc_balanced"])
     parser.add_argument("--device", type=str, default="auto")

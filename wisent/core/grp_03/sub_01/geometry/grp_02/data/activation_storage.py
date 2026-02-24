@@ -6,6 +6,7 @@ so they don't need to be regenerated every time.
 from pathlib import Path
 from typing import List, Dict, Any, Union
 import torch
+from wisent.core.constants import BLEND_DEFAULT
 
 
 def save_steering_activations(
@@ -118,8 +119,8 @@ def get_activation_summary(data: Dict[str, Any]) -> Dict[str, Any]:
     steered_truthful = sum(1 for e in steered_evals if e == "TRUTHFUL")
     total = len(base_evals)
 
-    base_in_region = sum(1 for p in base_probs if p >= 0.5)
-    steered_in_region = sum(1 for p in steered_probs if p >= 0.5)
+    base_in_region = sum(1 for p in base_probs if p >= BLEND_DEFAULT)
+    steered_in_region = sum(1 for p in steered_probs if p >= BLEND_DEFAULT)
 
     return {
         "text_evaluation": {

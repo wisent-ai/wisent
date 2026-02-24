@@ -20,6 +20,15 @@ from wisent.core.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
 )
+from wisent.core.constants import (
+    CLASSIFIER_DECISION_THRESHOLD,
+    DEFAULT_API_RETRIES,
+    DEFAULT_TIMEOUT_DOCKER,
+    DETECTOR_MAX_TEXT_LENGTH,
+    MIN_RESPONSE_TEXT_LENGTH,
+    ROBERTA_API_DEFAULT_WAIT_TIME,
+    ROBERTA_API_MAX_WAIT_TIME,
+)
 
 __all__ = ["RobertaDetectorEvaluator", "create_roberta_detector_evaluator"]
 
@@ -66,7 +75,7 @@ class RobertaDetectorEvaluator(CustomEvaluator):
             logger.warning(f"Failed to load local model, falling back to API: {e}")
             self.use_local = False
     
-    def _query_api(self, text: str, retries: int = 3) -> Dict[str, Any]:
+    def _query_api(self, text: str, retries: int = DEFAULT_API_RETRIES) -> Dict[str, Any]:
         """Query Hugging Face inference API."""
         import requests
         
@@ -80,14 +89,14 @@ class RobertaDetectorEvaluator(CustomEvaluator):
                     self._api_url,
                     headers=headers,
                     json={"inputs": text},
-                    timeout=30,
+                    timeout=DEFAULT_TIMEOUT_DOCKER,
                 )
                 
                 if response.status_code == 503:
                     # Model loading, wait and retry
-                    wait_time = response.json().get("estimated_time", 20)
+                    wait_time = response.json().get("estimated_time", ROBERTA_API_DEFAULT_WAIT_TIME)
                     logger.info(f"Model loading, waiting {wait_time}s...")
-                    time.sleep(min(wait_time, 30))
+                    time.sleep(min(wait_time, ROBERTA_API_MAX_WAIT_TIME))
                     continue
                 
                 response.raise_for_status()
@@ -113,8 +122,8 @@ class RobertaDetectorEvaluator(CustomEvaluator):
             scores = {item["label"]: item["score"] for item in result}
             
             # Real = human, Fake = AI
-            human_prob = scores.get("Real", scores.get("LABEL_1", 0.5))
-            ai_prob = scores.get("Fake", scores.get("LABEL_0", 0.5))
+            human_prob = scores.get("Real", scores.get("LABEL_1", CLASSIFIER_DECISION_THRESHOLD))
+            ai_prob = scores.get("Fake", scores.get("LABEL_0", CLASSIFIER_DECISION_THRESHOLD))
             
             return {
                 "human_prob": human_prob,
@@ -125,7 +134,7 @@ class RobertaDetectorEvaluator(CustomEvaluator):
     
     def evaluate_response(self, response: str, **kwargs) -> Dict[str, Any]:
         """Evaluate response for AI detection."""
-        if len(response.strip()) < 50:
+        if len(response.strip()) < MIN_RESPONSE_TEXT_LENGTH:
             logger.warning("Text too short for reliable detection")
             return {
                 "score": 0.5,
@@ -135,7 +144,7 @@ class RobertaDetectorEvaluator(CustomEvaluator):
             }
         
         # Truncate to model's max length (512 tokens ~ 2000 chars)
-        text = response[:2000]
+        text = response[:DETECTOR_MAX_TEXT_LENGTH]
         
         if self.use_local and self._pipeline:
             result = self._pipeline(text)

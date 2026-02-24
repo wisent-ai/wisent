@@ -13,6 +13,7 @@ from wisent.core.errors import NumericalExtractionError, TextExtractionError, Ex
 
 # Re-export from helpers
 from wisent.core.benchmarks._helpers.benchmark_extractors_helpers import SuperGPQAExtractor
+from wisent.core.constants import COMPARE_TOL
 
 
 class BenchmarkExtractor(ABC):
@@ -122,7 +123,7 @@ class GSM8KExtractor(BenchmarkExtractor):
         if predicted is None:
             return False
         try:
-            return abs(float(predicted) - float(expected)) < 1e-6
+            return abs(float(predicted) - float(expected)) < COMPARE_TOL
         except (ValueError, TypeError):
             return self.normalize_answer(predicted) == self.normalize_answer(expected)
 

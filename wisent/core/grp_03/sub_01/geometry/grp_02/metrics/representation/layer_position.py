@@ -7,6 +7,7 @@ Metrics for cross-layer consistency and token position dependence.
 import torch
 import numpy as np
 from typing import Dict, Any, Tuple
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED
 
 
 def compute_cross_layer_consistency(
@@ -36,7 +37,7 @@ def compute_cross_layer_consistency(
         mean_diff = (pos[:n] - neg[:n]).mean(axis=0)
         norm = np.linalg.norm(mean_diff)
 
-        if norm > 1e-8:
+        if norm > NORM_EPS:
             directions[layer] = mean_diff / norm
         else:
             directions[layer] = None
@@ -142,7 +143,7 @@ def compute_token_position_metrics(
         y = np.array([1] * n + [0] * n)
 
         try:
-            clf = LogisticRegression( random_state=42)
+            clf = LogisticRegression( random_state=DEFAULT_RANDOM_SEED)
             clf.fit(X, y)
             accuracy = clf.score(X, y)
         except:
@@ -157,7 +158,7 @@ def compute_token_position_metrics(
             "steering_norm": float(norm),
         }
 
-        if norm > 1e-8:
+        if norm > NORM_EPS:
             directions[pos_idx] = mean_diff / norm
 
     # Cross-position consistency

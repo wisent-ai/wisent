@@ -6,6 +6,10 @@ import torch
 from pathlib import Path
 from argparse import Namespace
 from typing import Tuple
+from wisent.core.constants import (
+    BLEND_DEFAULT, CLASSIFIER_TEST_SIZE, DEFAULT_BASE_STRENGTH, VIZ_MLP_EPOCHS,
+    CLASSIFIER_BATCH_SIZE, VIZ_MLP_HIDDEN_DIM,
+)
 
 
 def create_steering_object_from_pairs(args, tmpdir: Path) -> str:
@@ -82,8 +86,8 @@ def train_classifier_and_predict(pos_ref, neg_ref, base_activations, steered_act
 
     X_train = torch.cat([pos_ref, neg_ref], dim=0).cpu().numpy()
     y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
-    classifier = MLPClassifier(device="cpu", hidden_dim=256) if classifier_type == "mlp" else LogisticClassifier(device="cpu")
-    train_report = classifier.fit(X_train, y_train, config=ClassifierTrainConfig(test_size=0.2, num_epochs=100, batch_size=32))
+    classifier = MLPClassifier(device="cpu", hidden_dim=VIZ_MLP_HIDDEN_DIM) if classifier_type == "mlp" else LogisticClassifier(device="cpu")
+    train_report = classifier.fit(X_train, y_train, config=ClassifierTrainConfig(test_size=CLASSIFIER_TEST_SIZE, num_epochs=VIZ_MLP_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE))
     base_probs = classifier.predict_proba(base_activations.cpu().numpy())
     steered_probs = classifier.predict_proba(steered_activations.cpu().numpy())
     base_probs = base_probs if isinstance(base_probs, list) else [base_probs]
@@ -105,8 +109,8 @@ def save_viz_summary(output_path: Path, args, base_evaluations, steered_evaluati
         json.dump({"model": args.model, "task": args.task, "layer": args.layer, "strength": args.strength,
                    "text_evaluation": {"base_truthful": base_truthful, "steered_truthful": steered_truthful, "total": len(base_evaluations)},
                    "activation_space_location": {"classifier_accuracy": train_report.final.accuracy, "classifier_auc": train_report.final.auc,
-                       "base_in_truthful_region": sum(1 for p in base_space_probs if p >= 0.5),
-                       "steered_in_truthful_region": sum(1 for p in steered_space_probs if p >= 0.5),
+                       "base_in_truthful_region": sum(1 for p in base_space_probs if p >= BLEND_DEFAULT),
+                       "steered_in_truthful_region": sum(1 for p in steered_space_probs if p >= BLEND_DEFAULT),
                        "total": len(base_space_probs), "base_mean_prob": float(np.mean(base_space_probs)),
                        "steered_mean_prob": float(np.mean(steered_space_probs))},
                    "responses": all_responses}, f, indent=2)
@@ -118,7 +122,7 @@ def extract_base_and_steered_activations(
     prompts,
     steering_vectors,
     layer: int,
-    steering_strength: float = 1.0,
+    steering_strength: float = DEFAULT_BASE_STRENGTH,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Extract activations before and after steering for a set of prompts."""
     from wisent.core.adapters.base import SteeringConfig

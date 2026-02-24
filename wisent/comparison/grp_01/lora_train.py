@@ -10,6 +10,13 @@ from peft import LoraConfig, TaskType, get_peft_model
 from trl import SFTTrainer, SFTConfig
 from wisent.comparison.utils import generate_contrastive_pairs, load_model_and_tokenizer
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import (
+    LORA_DEFAULT_R, LORA_DEFAULT_ALPHA, LORA_DEFAULT_DROPOUT,
+    COMPARISON_NUM_PAIRS, TRAINING_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
+    COMPARISON_LORA_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,
+    COMPARISON_TRAINING_BATCH_SIZE, COMPARISON_MAX_LENGTH,
+    COMPARISON_LOGGING_STEPS,
+)
 
 __all__ = ["prepare_sft_dataset", "get_target_modules", "train_lora_adapter"]
 
@@ -50,11 +57,11 @@ def prepare_sft_dataset(pairs: list[dict], tokenizer) -> Dataset:
 
 def train_lora_adapter(
     task: str, model_name: str, output_path: str | Path,
-    trait_label: str = "correctness", num_pairs: int = 50,
+    trait_label: str = "correctness", num_pairs: int = COMPARISON_NUM_PAIRS,
     device: str = "cuda:0", keep_intermediate: bool = False,
-    lora_r: int = 16, lora_alpha: int = 32, lora_dropout: float = 0.05,
-    learning_rate: float = 2e-4, num_epochs: int = 3,
-    batch_size: int = 2, max_length: int = 512,
+    lora_r: int = LORA_DEFAULT_R, lora_alpha: int = LORA_DEFAULT_ALPHA, lora_dropout: float = LORA_DEFAULT_DROPOUT,
+    learning_rate: float = COMPARISON_LORA_LEARNING_RATE, num_epochs: int = COMPARISON_NUM_EPOCHS_DEFAULT,
+    batch_size: int = COMPARISON_TRAINING_BATCH_SIZE, max_length: int = COMPARISON_MAX_LENGTH,
 ) -> Path:
     """Train a LoRA adapter using SFT on positive responses."""
     output_path = Path(output_path)
@@ -79,8 +86,8 @@ def train_lora_adapter(
     training_args = SFTConfig(
         output_dir=training_output_dir, num_train_epochs=num_epochs,
         per_device_train_batch_size=batch_size, gradient_accumulation_steps=1,
-        learning_rate=learning_rate, weight_decay=0.01, warmup_ratio=0.1,
-        logging_steps=10, save_strategy="no",
+        learning_rate=learning_rate, weight_decay=TRAINING_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
+        logging_steps=COMPARISON_LOGGING_STEPS, save_strategy="no",
         bf16=(dtype == torch.bfloat16), fp16=(dtype == torch.float16),
         report_to="none", max_seq_length=max_length,
     )

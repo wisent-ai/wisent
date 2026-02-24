@@ -25,15 +25,28 @@ import torch
 from datasets import load_dataset
 from tqdm import tqdm
 
+from wisent.core.constants import (
+    GEMMA_2B_BOS_FEATURES_PAPER,
+    BOS_NUM_SAMPLES_DEFAULT,
+    BOS_MIN_LENGTH_DEFAULT,
+    COMPARISON_TOKENIZER_MAX_LENGTH,
+    COMPARISON_STEERING_LAYER,
+    BOS_ARGPARSE_NUM_SAMPLES,
+    BOS_TOP_K_DEFAULT,
+    COMPARISON_DEFAULT_BATCH_SIZE,
+    COMPARISON_MAX_BATCH_SIZE,
+    TEST_DEFAULT_LIMIT,
+)
+
 
 # Known BOS feature indices from paper (Appendix G)
 KNOWN_BOS_FEATURES = {
-    "google/gemma-2-2b": [11087, 3220, 11752, 12160, 11498],
+    "google/gemma-2-2b": list(GEMMA_2B_BOS_FEATURES_PAPER),
     "google/gemma-2-9b": [],  # Not listed in paper
 }
 
 
-def load_sample_texts(num_samples: int = 2000, min_length: int = 50) -> list[str]:
+def load_sample_texts(num_samples: int = BOS_NUM_SAMPLES_DEFAULT, min_length: int = BOS_MIN_LENGTH_DEFAULT) -> list[str]:
     """Load sample texts from WikiText dataset."""
     print(f"Loading up to {num_samples} sample texts from WikiText...")
 
@@ -58,8 +71,8 @@ def detect_bos_features(
     layer_idx: int,
     device: str,
     texts: list[str],
-    top_k: int = 10,
-    batch_size: int = 8,
+    top_k: int = TEST_DEFAULT_LIMIT,
+    batch_size: int = COMPARISON_MAX_BATCH_SIZE,
 ) -> tuple[list[int], dict[str, torch.Tensor]]:
     """
     Detect BOS features by finding features that activate most strongly at position 0.
@@ -110,7 +123,7 @@ def detect_bos_features(
                 batch_texts,
                 return_tensors="pt",
                 truncation=True,
-                max_length=128,
+                max_length=COMPARISON_TOKENIZER_MAX_LENGTH,
                 padding=True,
             )
             inputs = {k: v.to(device) for k, v in inputs.items()}
@@ -195,10 +208,10 @@ def compare_with_known(model_name: str, detected: list[int], stats: dict[str, to
 def main():
     parser = argparse.ArgumentParser(description="Detect BOS features in Gemma Scope SAEs")
     parser.add_argument("--model", default="google/gemma-2-2b", help="Model name")
-    parser.add_argument("--layer", type=int, default=12, help="Layer index")
-    parser.add_argument("--num-samples", type=int, default=1000, help="Number of text samples")
-    parser.add_argument("--top-k", type=int, default=20, help="Number of top BOS features to detect")
-    parser.add_argument("--batch-size", type=int, default=1, help="Batch size")
+    parser.add_argument("--layer", type=int, default=COMPARISON_STEERING_LAYER, help="Layer index")
+    parser.add_argument("--num-samples", type=int, default=BOS_ARGPARSE_NUM_SAMPLES, help="Number of text samples")
+    parser.add_argument("--top-k", type=int, default=BOS_TOP_K_DEFAULT, help="Number of top BOS features to detect")
+    parser.add_argument("--batch-size", type=int, default=COMPARISON_DEFAULT_BATCH_SIZE, help="Batch size")
     parser.add_argument("--device", default="cuda:0", help="Device")
     parser.add_argument("--output-dir", default="wisent/comparison/results", help="Output directory")
     args = parser.parse_args()

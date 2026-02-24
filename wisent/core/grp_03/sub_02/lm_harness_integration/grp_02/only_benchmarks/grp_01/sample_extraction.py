@@ -9,6 +9,7 @@ from wisent.core.errors import TaskLoadError, FallbackNotPermittedError
 
 from ..populate_tasks import get_task_samples_for_analysis as _get_task_samples_for_analysis
 from .sample_helpers import get_task_samples_direct
+from wisent.core.constants import DEFAULT_NUM_SAMPLES
 
 
 __all__ = [
@@ -18,7 +19,7 @@ __all__ = [
 
 
 def get_task_samples_for_analysis(
-    task_name: str, num_samples: int = 5, trust_remote_code: bool = False
+    task_name: str, num_samples: int = DEFAULT_NUM_SAMPLES, trust_remote_code: bool = False
 ) -> dict:
     """Enhanced wrapper for get_task_samples_for_analysis with trust_remote_code."""
     try:
@@ -72,7 +73,7 @@ def get_task_samples_for_analysis(
 
 def get_task_samples_with_subtasks(
     task_name: str,
-    num_samples: int = 5,
+    num_samples: int = DEFAULT_NUM_SAMPLES,
     trust_remote_code: bool = False,
     limit_subtasks: Optional[int] = None,
 ) -> dict:
@@ -155,7 +156,7 @@ def get_task_samples_with_subtasks(
 
 
 def get_task_samples_fallback(
-    task_name: str, num_samples: int = 5, trust_remote_code: bool = False
+    task_name: str, num_samples: int = DEFAULT_NUM_SAMPLES, trust_remote_code: bool = False
 ) -> dict:
     """DEPRECATED: Fallback loading is not permitted."""
     raise FallbackNotPermittedError(task_name=task_name)

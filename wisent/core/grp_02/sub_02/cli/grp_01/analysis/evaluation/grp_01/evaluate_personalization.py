@@ -1,7 +1,7 @@
 """Personalization evaluation for evaluate-responses command."""
 import json
 import os
-import sys
+from wisent.core.constants import QUALITY_THRESHOLD, DEFAULT_SCORE, PERSONALIZATION_GOOD_THRESHOLD, PERSONALIZATION_FAIR_THRESHOLD
 
 from wisent.core.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
@@ -20,8 +20,7 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
     # Check if baseline is provided
     if not hasattr(args, 'baseline') or not args.baseline:
         print(f"   ❌ Error: --baseline argument is required for personalization evaluation")
-        print(f"   Usage: --input <steered_responses.json> --baseline <baseline_responses.json>")
-        sys.exit(1)
+        raise ValueError("--baseline argument is required for personalization evaluation")
 
     # Load baseline responses
     print(f"📂 Loading baseline responses...")
@@ -37,12 +36,11 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
         print(f"   ✓ Loaded {len(baseline_responses)} baseline responses\n")
     except Exception as e:
         print(f"   ❌ Failed to load baseline file: {e}")
-        sys.exit(1)
+        raise
 
     # Check lengths match
     if len(baseline_responses) != len(responses):
-        print(f"   ❌ Error: Baseline ({len(baseline_responses)}) and steered ({len(responses)}) response counts don't match")
-        sys.exit(1)
+        raise ValueError(f"Baseline ({len(baseline_responses)}) and steered ({len(responses)}) response counts don't match")
 
     # Get trait information
     trait = args.trait if hasattr(args, 'trait') and args.trait else "unknown"
@@ -117,10 +115,10 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
             evaluated_count += 1
 
             # Use aggregate scores from batch evaluation
-            diff_score = eval_results.get('difference_score', 50.0)
-            qual_score = eval_results.get('quality_score', 50.0)
-            align_score = eval_results.get('alignment_score', 50.0)
-            overall = eval_results.get('overall_score', 0.0)
+            diff_score = eval_results.get('difference_score', QUALITY_THRESHOLD)
+            qual_score = eval_results.get('quality_score', QUALITY_THRESHOLD)
+            align_score = eval_results.get('alignment_score', QUALITY_THRESHOLD)
+            overall = eval_results.get('overall_score', DEFAULT_SCORE)
 
             # Collect scores
             difference_scores.append(diff_score)
@@ -150,7 +148,7 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
             })
 
             if args.verbose:
-                score_icon = '✅' if overall >= 70 else ('⚠️' if overall >= 50 else '❌')
+                score_icon = '✅' if overall >= PERSONALIZATION_GOOD_THRESHOLD else ('⚠️' if overall >= PERSONALIZATION_FAIR_THRESHOLD else '❌')
                 print(f"{score_icon} Pair {idx}: Overall={overall:.1f} (diff={diff_score:.1f}, qual={qual_score:.1f}, align={align_score:.1f})")
 
         except Exception as e:
@@ -191,7 +189,7 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
         "baseline_file": args.baseline,
         "task": task_name if isinstance(input_data, list) else input_data.get('task'),
         "model": None if isinstance(input_data, list) else input_data.get('model'),
-        "evaluation_type": evaluation_type,
+        "evaluation_type": "personalization",
         "evaluator_used": "SteeringPersonalizationEvaluator",
         "trait": trait,
         "trait_description": trait_description,
@@ -215,6 +213,4 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
     print(f"   Average alignment score: {aggregated_metrics.get('avg_alignment_score', 0):.3f}")
     print(f"   Average overall score: {aggregated_metrics.get('avg_overall_score', 0):.3f}")
     print(f"{'='*80}\n")
-    return
-
     return aggregated_metrics

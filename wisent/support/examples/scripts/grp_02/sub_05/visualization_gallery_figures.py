@@ -5,6 +5,8 @@ from typing import Dict, Any
 
 import numpy as np
 
+from wisent.core.constants import VIZ_PLOT_DPI, SIGNAL_EXISTENCE_THRESHOLD, LINEAR_GAP_THRESHOLD
+
 try:
     import matplotlib.pyplot as plt
     import matplotlib.patches as mpatches
@@ -92,9 +94,9 @@ def create_hero_figure(
             signal = r["signal_strength"]
             linear = r["linear_probe_accuracy"]
             
-            if signal < 0.6:
+            if signal < SIGNAL_EXISTENCE_THRESHOLD:
                 counts["NO_SIGNAL"] += 1
-            elif linear > 0.6 and (signal - linear) < 0.15:
+            elif linear > SIGNAL_EXISTENCE_THRESHOLD and (signal - linear) < LINEAR_GAP_THRESHOLD:
                 counts["LINEAR"] += 1
             else:
                 counts["NONLINEAR"] += 1
@@ -126,9 +128,9 @@ def create_hero_figure(
             linear = r["linear_probe_accuracy"]
             knn = r["nonlinear_metrics"]["knn_accuracy_k10"]
             
-            if signal < 0.6:
+            if signal < SIGNAL_EXISTENCE_THRESHOLD:
                 diag = "NO_SIGNAL"
-            elif linear > 0.6 and (signal - linear) < 0.15:
+            elif linear > SIGNAL_EXISTENCE_THRESHOLD and (signal - linear) < LINEAR_GAP_THRESHOLD:
                 diag = "LINEAR"
             else:
                 diag = "NONLINEAR"
@@ -161,7 +163,7 @@ def create_hero_figure(
     ax3.axhline(y=0.6, color='gray', linestyle='--', alpha=0.5)
     
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=VIZ_PLOT_DPI, bbox_inches='tight')
     plt.close()
     
     print(f"  Saved hero figure: {output_path}")
@@ -228,7 +230,7 @@ def create_layer_accuracy_curves(
         ax.set_xlim(1, 32)
     
     plt.tight_layout()
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.savefig(output_path, dpi=VIZ_PLOT_DPI, bbox_inches='tight')
     plt.close()
     
     print(f"  Saved layer curves: {output_path}")

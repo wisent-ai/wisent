@@ -2,6 +2,7 @@
 
 Extracted from optimize_sample_size.py to keep file under 300 lines.
 """
+from wisent.core.constants import VIZ_DPI
 
 
 def save_optimization_plots(args, results, optimal_size):
@@ -57,7 +58,7 @@ def save_optimization_plots(args, results, optimal_size):
     fig1.savefig(plot_path_svg.replace('.svg', '_performance.svg'),
                 format='svg', bbox_inches='tight')
     fig1.savefig(plot_path_png.replace('.png', '_performance.png'),
-                dpi=150, bbox_inches='tight')
+                dpi=VIZ_DPI, bbox_inches='tight')
     plt.close(fig1)
 
     # Create training time plot
@@ -81,7 +82,7 @@ def save_optimization_plots(args, results, optimal_size):
     fig2.savefig(plot_path_svg.replace('.svg', '_time.svg'),
                 format='svg', bbox_inches='tight')
     fig2.savefig(plot_path_png.replace('.png', '_time.png'),
-                dpi=150, bbox_inches='tight')
+                dpi=VIZ_DPI, bbox_inches='tight')
     plt.close(fig2)
 
     print(f"   Performance plot saved to:")

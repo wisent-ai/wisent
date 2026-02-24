@@ -1,4 +1,14 @@
 """Parser setup for the 'agent' command."""
+from wisent.core.constants import (
+    AGENT_CLASSIFIER_EPOCHS,
+    AGENT_DECISION_QUALITY_THRESHOLD,
+    AGENT_DECISION_TIME_BUDGET,
+    AGENT_DEFAULT_STEERING_STRENGTH,
+    AGENT_MAX_PARALLEL_WORKERS,
+    AGENT_MAX_RESPONSE_ATTEMPTS,
+    DEFAULT_CLASSIFIER_LR,
+    QUALITY_CONTROL_MAX_ATTEMPTS,
+)
 
 
 def setup_agent_parser(parser):
@@ -14,15 +24,15 @@ def setup_agent_parser(parser):
         help="Agent strategy to use (default: synthetic_pairs_classifier_steering)"
     )
     parser.add_argument(
-        "--quality-threshold", type=float, default=0.3, help="Quality threshold for classifiers (default: 0.3)"
+        "--quality-threshold", type=float, default=AGENT_DECISION_QUALITY_THRESHOLD, help="Quality threshold for classifiers (default: 0.3)"
     )
     parser.add_argument(
         "--time-budget",
         type=float,
-        default=10.0,
+        default=AGENT_DECISION_TIME_BUDGET,
         help="Time budget in minutes for creating classifiers (default: 10.0)",
     )
-    parser.add_argument("--max-attempts", type=int, default=3, help="Maximum improvement attempts (default: 3)")
+    parser.add_argument("--max-attempts", type=int, default=AGENT_MAX_RESPONSE_ATTEMPTS, help="Maximum improvement attempts (default: 3)")
     parser.add_argument(
         "--max-classifiers", type=int, default=None, help="Maximum classifiers to use (default: no limit)"
     )
@@ -39,7 +49,7 @@ def setup_agent_parser(parser):
         help="Similarity threshold for deduplication (0-1, higher = more strict)",
     )
     parser.add_argument(
-        "--max-workers", type=int, default=4, help="Number of parallel workers for generation (default: 4)"
+        "--max-workers", type=int, default=AGENT_MAX_PARALLEL_WORKERS, help="Number of parallel workers for generation (default: 4)"
     )
 
     # Activation collection arguments
@@ -52,10 +62,10 @@ def setup_agent_parser(parser):
 
     # Classifier training arguments
     parser.add_argument(
-        "--classifier-epochs", type=int, default=50, help="Number of epochs for classifier training (default: 50)"
+        "--classifier-epochs", type=int, default=AGENT_CLASSIFIER_EPOCHS, help="Number of epochs for classifier training (default: 50)"
     )
     parser.add_argument(
-        "--classifier-lr", type=float, default=1e-3, help="Learning rate for classifier training (default: 1e-3)"
+        "--classifier-lr", type=float, default=DEFAULT_CLASSIFIER_LR, help="Learning rate for classifier training (default: 1e-3)"
     )
     parser.add_argument(
         "--classifier-batch-size",
@@ -75,7 +85,7 @@ def setup_agent_parser(parser):
     from wisent.core.steering_methods import SteeringMethodRegistry
     SteeringMethodRegistry.add_all_cli_arguments(parser)
     parser.add_argument(
-        "--steering-strength", type=float, default=1.0, help="Strength of steering vector application (default: 1.0)"
+        "--steering-strength", type=float, default=AGENT_DEFAULT_STEERING_STRENGTH, help="Strength of steering vector application (default: 1.0)"
     )
     parser.add_argument("--steering-mode", action="store_true", help="Enable steering mode")
 
@@ -100,7 +110,7 @@ def setup_agent_parser(parser):
     parser.add_argument(
         "--max-quality-attempts",
         type=int,
-        default=5,
+        default=QUALITY_CONTROL_MAX_ATTEMPTS,
         help="Maximum attempts to achieve acceptable quality (default: 5)",
     )
     parser.add_argument(

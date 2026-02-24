@@ -20,6 +20,8 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass
 
 from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
+from wisent.core.constants import DEFAULT_STRENGTH, GROM_NUM_DIRECTIONS, MLP_OPTIMIZATION_STEPS
+from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -49,16 +51,16 @@ class MultiDirectionConfig:
     combination_strategy: str = "learned"
     """How to combine directions: 'learned', 'uniform', 'pca_weighted'"""
 
-    alpha: float = 1.0
+    alpha: float = DEFAULT_STRENGTH
     """Global steering strength multiplier"""
 
     components: List[str] = None
     """Components to modify. Default: ['self_attn.o_proj', 'mlp.down_proj']"""
 
-    num_directions: int = 5
+    num_directions: int = GROM_NUM_DIRECTIONS
     """Number of directions per layer"""
 
-    optimization_steps: int = 100
+    optimization_steps: int = MLP_OPTIMIZATION_STEPS
     """Training steps for direction optimization"""
 
     bake_method: str = "bias"

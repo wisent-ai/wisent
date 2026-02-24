@@ -3,16 +3,17 @@ from dataclasses import dataclass
 from typing import Dict, Any
 
 from wisent.core.cli.optimize_steering.method_configs import MethodConfig
+from wisent.core.constants import DEFAULT_LAYER, PRZELOM_EPSILON, PRZELOM_INFERENCE_K, TIKHONOV_REG
 
 
 @dataclass
 class PrzelomConfig(MethodConfig):
     """PRZELOM attention-transport parameters for Optuna optimization."""
-    layer: int = 16
-    epsilon: float = 1.0
+    layer: int = DEFAULT_LAYER
+    epsilon: float = PRZELOM_EPSILON
     target_mode: str = "uniform"
-    regularization: float = 1e-4
-    inference_k: int = 5
+    regularization: float = TIKHONOV_REG
+    inference_k: int = PRZELOM_INFERENCE_K
 
     def to_args(self) -> Dict[str, Any]:
         return {

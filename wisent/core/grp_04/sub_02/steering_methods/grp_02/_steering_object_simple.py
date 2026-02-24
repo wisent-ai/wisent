@@ -5,6 +5,7 @@ import torch
 from wisent.core.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
+from wisent.core.constants import DEFAULT_STRENGTH
 
 class SimpleSteeringObject(BaseSteeringObject):
     """
@@ -18,7 +19,7 @@ class SimpleSteeringObject(BaseSteeringObject):
         self,
         metadata: SteeringObjectMetadata,
         vectors: Dict[int, torch.Tensor],
-        default_intensity: float = 1.0,
+        default_intensity: float = DEFAULT_STRENGTH,
     ):
         super().__init__(metadata)
         self.vectors = vectors
@@ -89,7 +90,7 @@ class SimpleSteeringObject(BaseSteeringObject):
         return cls(
             metadata=metadata,
             vectors=vectors,
-            default_intensity=data.get('default_intensity', 1.0),
+            default_intensity=data.get('default_intensity', DEFAULT_STRENGTH),
         )
 
 

@@ -12,16 +12,17 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Dict, List, Optional, Tuple
 
+from wisent.core.constants import (
+    EVIDENCE_DOMINANCE_MARGIN, EVIDENCE_MAX_AGE_DAYS,
+    EVIDENCE_CROSS_MODEL_DECAY, HASH_DIGEST_PREFIX,
+)
+
 logger = logging.getLogger(__name__)
 
-# Values within this margin of the best score count as dominant
-DOMINANCE_MARGIN: float = 0.02
-
-# Evidence older than this is considered stale
-MAX_AGE_DAYS: int = 90
-
-# Confidence multiplier when applying evidence from a sibling model
-CROSS_MODEL_CONFIDENCE_DECAY: float = 0.5
+# Backward-compatible aliases
+DOMINANCE_MARGIN: float = EVIDENCE_DOMINANCE_MARGIN
+MAX_AGE_DAYS: int = EVIDENCE_MAX_AGE_DAYS
+CROSS_MODEL_CONFIDENCE_DECAY: float = EVIDENCE_CROSS_MODEL_DECAY
 
 
 def _model_family(model_name: str) -> str:
@@ -91,7 +92,7 @@ class AxisEvidence:
             f"{self.task_name}:{self.method_name}:"
             f"{self.created_at}"
         )
-        return hashlib.sha256(blob.encode()).hexdigest()[:16]
+        return hashlib.sha256(blob.encode()).hexdigest()[:HASH_DIGEST_PREFIX]
 
     def to_dict(self) -> Dict[str, Any]:
         return {

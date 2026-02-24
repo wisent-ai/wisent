@@ -26,6 +26,20 @@ from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import (
+    DEFAULT_VARIANCE_THRESHOLD,
+    TECZA_NUM_DIRECTIONS,
+    TECZA_MARGINAL_THRESHOLD,
+    TECZA_MAX_DIRECTIONS,
+    TECZA_OPTIMIZATION_STEPS,
+    TECZA_LEARNING_RATE,
+    TECZA_RETAIN_WEIGHT,
+    TECZA_INDEPENDENCE_WEIGHT,
+    TECZA_ABLATION_WEIGHT,
+    TECZA_ADDITION_WEIGHT,
+    TECZA_MIN_COSINE_SIM,
+    TECZA_MAX_COSINE_SIM,
+)
 
 __all__ = [
     "TECZAMethod",
@@ -65,29 +79,29 @@ class TECZAMethod(TECZATrainingMixin, TECZAUtilsMixin, BaseSteeringMethod):
 
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
-        num_dirs = kwargs.get("num_directions", 3)
+        num_dirs = kwargs.get("num_directions", TECZA_NUM_DIRECTIONS)
         auto_num = kwargs.get("auto_num_directions", False)
         if num_dirs == "auto" or num_dirs == -1:
             auto_num = True
-            num_dirs = 3
+            num_dirs = TECZA_NUM_DIRECTIONS
         self.config = TECZAConfig(
             num_directions=num_dirs,
             auto_num_directions=auto_num,
-            variance_threshold=kwargs.get("variance_threshold", 0.80),
-            marginal_threshold=kwargs.get("marginal_threshold", 0.05),
-            max_directions=kwargs.get("max_directions", 10),
-            optimization_steps=kwargs.get("optimization_steps", 100),
-            learning_rate=kwargs.get("learning_rate", 0.01),
-            retain_weight=kwargs.get("retain_weight", 0.1),
-            independence_weight=kwargs.get("independence_weight", 0.05),
-            ablation_weight=kwargs.get("ablation_weight", 1.0),
-            addition_weight=kwargs.get("addition_weight", 1.0),
+            variance_threshold=kwargs.get("variance_threshold", DEFAULT_VARIANCE_THRESHOLD),
+            marginal_threshold=kwargs.get("marginal_threshold", TECZA_MARGINAL_THRESHOLD),
+            max_directions=kwargs.get("max_directions", TECZA_MAX_DIRECTIONS),
+            optimization_steps=kwargs.get("optimization_steps", TECZA_OPTIMIZATION_STEPS),
+            learning_rate=kwargs.get("learning_rate", TECZA_LEARNING_RATE),
+            retain_weight=kwargs.get("retain_weight", TECZA_RETAIN_WEIGHT),
+            independence_weight=kwargs.get("independence_weight", TECZA_INDEPENDENCE_WEIGHT),
+            ablation_weight=kwargs.get("ablation_weight", TECZA_ABLATION_WEIGHT),
+            addition_weight=kwargs.get("addition_weight", TECZA_ADDITION_WEIGHT),
             normalize=kwargs.get("normalize", True),
             use_caa_init=kwargs.get("use_caa_init", True),
             use_universal_basis_init=kwargs.get("use_universal_basis_init", False),
             cone_constraint=kwargs.get("cone_constraint", True),
-            min_cosine_similarity=kwargs.get("min_cosine_similarity", 0.3),
-            max_cosine_similarity=kwargs.get("max_cosine_similarity", 0.95),
+            min_cosine_similarity=kwargs.get("min_cosine_similarity", TECZA_MIN_COSINE_SIM),
+            max_cosine_similarity=kwargs.get("max_cosine_similarity", TECZA_MAX_COSINE_SIM),
         )
         self._training_logs: List[Dict[str, float]] = []
 

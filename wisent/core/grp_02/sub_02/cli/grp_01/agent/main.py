@@ -4,6 +4,7 @@ import sys
 import time
 
 from wisent.core.errors import UnknownTypeError
+from wisent.core.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, DEFAULT_STRENGTH
 
 
 def execute_agent(args):
@@ -73,8 +74,8 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         pair_set=pair_set,
         target_layer=target_layer,
         verbose=args.verbose,
-        classifier_epochs=getattr(args, 'classifier_epochs', 50),
-        classifier_lr=getattr(args, 'classifier_lr', 1e-3),
+        classifier_epochs=getattr(args, 'classifier_epochs', AGENT_CLASSIFIER_EPOCHS),
+        classifier_lr=getattr(args, 'classifier_lr', DEFAULT_CLASSIFIER_LR),
         classifier_batch_size=getattr(args, 'classifier_batch_size', None),
         token_aggregation=getattr(args, 'token_aggregation', 'average'),
         prompt_strategy=getattr(args, 'prompt_strategy', 'chat_template'),
@@ -115,7 +116,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         collector=collector,
         layer_key=layer_key,
         quality_threshold=args.quality_threshold,
-        steering_strength=getattr(args, 'steering_strength', 1.0),
+        steering_strength=getattr(args, 'steering_strength', DEFAULT_STRENGTH),
         steering_normalize=getattr(args, 'normalize_mode', True),
         verbose=args.verbose,
         token_aggregation=getattr(args, 'token_aggregation', 'average'),

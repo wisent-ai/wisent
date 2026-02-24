@@ -3,6 +3,8 @@
 import json
 import argparse
 
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS
+
 
 def save_results_and_finish(all_results, results_file):
     """Save analysis results to JSON and print completion message.
@@ -47,7 +49,7 @@ def main():
     parser.add_argument("--task", default="truthfulqa_gen")
     parser.add_argument("--model",
                         default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--num-pairs", type=int, default=50)
+    parser.add_argument("--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
     parser.add_argument("--output-dir", default="/home/ubuntu/output")
     args = parser.parse_args()
 

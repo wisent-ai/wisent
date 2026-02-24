@@ -1,6 +1,9 @@
 """Cluster 211 benchmarks by their zwiad geometry metrics."""
 import json
 from pathlib import Path
+from wisent.core.constants import (NEAR_ZERO_TOL, DEFAULT_RANDOM_SEED, KMEANS_N_INIT_DEFAULT,
+    ZWIAD_PCA_COMPONENTS, ZWIAD_KMEANS_PRIMARY_CLUSTERS, ZWIAD_KMEANS_SECONDARY_CLUSTERS,
+    VIZ_DPI)
 
 ZWIAD_DIR = Path("/tmp/zwiad_all")
 PREFIX = "meta-llama_Llama-3.2-1B-Instruct__"
@@ -75,7 +78,7 @@ def main():
     Z = (X - mu) / std
 
     from sklearn.decomposition import PCA
-    pca = PCA(n_components=3)
+    pca = PCA(n_components=ZWIAD_PCA_COMPONENTS)
     P = pca.fit_transform(Z)
     print(f"\nPCA variance: "
           f"{pca.explained_variance_ratio_[:3].round(3)}")
@@ -89,7 +92,7 @@ def main():
     from sklearn.metrics import silhouette_score
     print("\n--- K-means silhouette by k ---")
     for k in range(4, 12):
-        km = KMeans(n_clusters=k, n_init=20, random_state=42)
+        km = KMeans(n_clusters=k, n_init=KMEANS_N_INIT_DEFAULT, random_state=DEFAULT_RANDOM_SEED)
         labels = km.fit_predict(Z)
         sil = silhouette_score(Z, labels)
         sizes = sorted(
@@ -97,11 +100,11 @@ def main():
             reverse=True)
         print(f"k={k:2d}  sil={sil:.3f}  sizes={sizes}")
 
-    km8 = KMeans(n_clusters=8, n_init=20, random_state=42)
+    km8 = KMeans(n_clusters=ZWIAD_KMEANS_PRIMARY_CLUSTERS, n_init=KMEANS_N_INIT_DEFAULT, random_state=DEFAULT_RANDOM_SEED)
     labels8 = km8.fit_predict(Z)
 
     print("\n--- Cluster profiles (k=8) ---")
-    for c in range(8):
+    for c in range(ZWIAD_KMEANS_PRIMARY_CLUSTERS):
         mask = labels8 == c
         n = mask.sum()
         centroid = X[mask].mean(axis=0)
@@ -148,10 +151,10 @@ def main():
     plot_clusters(Z, labels8, benchmarks, pca)
 
     # Also run k=5 to see which k=8 clusters merge
-    km5 = KMeans(n_clusters=5, n_init=20, random_state=42)
+    km5 = KMeans(n_clusters=ZWIAD_KMEANS_SECONDARY_CLUSTERS, n_init=KMEANS_N_INIT_DEFAULT, random_state=DEFAULT_RANDOM_SEED)
     labels5 = km5.fit_predict(Z)
     print("\n--- Which k=8 clusters merge at k=5 ---")
-    for c5 in range(5):
+    for c5 in range(ZWIAD_KMEANS_SECONDARY_CLUSTERS):
         mask5 = labels5 == c5
         # Which k=8 labels fall in this k=5 cluster
         sub_labels = labels8[mask5]
@@ -237,7 +240,7 @@ def plot_clusters(Z, labels, benchmarks, pca):
     out = ("/Users/lukaszbartoszcze/Documents/CodingProjects/"
            "Wisent/backends/wisent-open-source/"
            "zwiad_clusters.png")
-    plt.savefig(out, dpi=150)
+    plt.savefig(out, dpi=VIZ_DPI)
     print(f"\nSaved plot to {out}")
 
 
@@ -280,11 +283,11 @@ def centroids_k8():
     import numpy as np
     _, X = load_all()
     from sklearn.cluster import KMeans
-    km = KMeans(n_clusters=8, n_init=20, random_state=42)
-    labels = km.fit_predict((X - X.mean(0)) / X.std(0).clip(1e-9))
+    km = KMeans(n_clusters=ZWIAD_KMEANS_PRIMARY_CLUSTERS, n_init=KMEANS_N_INIT_DEFAULT, random_state=DEFAULT_RANDOM_SEED)
+    labels = km.fit_predict((X - X.mean(0)) / X.std(0).clip(NEAR_ZERO_TOL))
     keys = ["linear", "stability", "n_concepts", "var_pc1", "curvature", "coherence"]
     idx = [0, 3, 4, 7, 13, 5]
-    for c in range(8):
+    for c in range(ZWIAD_KMEANS_PRIMARY_CLUSTERS):
         mask = labels == c
         cent = X[mask].mean(axis=0)
         vals = {k: round(float(cent[i]), 3) for k, i in zip(keys, idx)}

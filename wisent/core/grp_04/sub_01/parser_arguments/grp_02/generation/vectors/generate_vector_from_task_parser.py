@@ -2,6 +2,8 @@
 
 import argparse
 
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, TECZA_NUM_DIRECTIONS
+
 
 def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> None:
     """
@@ -54,7 +56,7 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=50,
+        default=PARSER_DEFAULT_NUM_PAIRS,
         help="Number of contrastive pairs to generate (default: 50)"
     )
     
@@ -121,7 +123,7 @@ def setup_generate_vector_from_task_parser(parser: argparse.ArgumentParser) -> N
     parser.add_argument(
         "--num-directions",
         type=int,
-        default=3,
+        default=TECZA_NUM_DIRECTIONS,
         help="Number of steering directions for TECZA/GROM (default: 3)"
     )
     

@@ -3,6 +3,7 @@
 from typing import Dict, Any, List, Optional, Tuple
 
 from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
+from wisent.core.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
 
 
 def get_evaluation_method(task) -> str:
@@ -62,21 +63,21 @@ def extract_examples_from_task(task_name: str, task) -> Dict[str, str]:
         doc = all_docs[0]
 
         if hasattr(task, 'doc_to_text'):
-            examples["example_prompt"] = str(task.doc_to_text(doc))[:500]
+            examples["example_prompt"] = str(task.doc_to_text(doc))[:DISPLAY_TRUNCATION_LARGE]
         elif 'question' in doc:
-            examples["example_prompt"] = str(doc['question'])[:500]
+            examples["example_prompt"] = str(doc['question'])[:DISPLAY_TRUNCATION_LARGE]
         elif 'text' in doc:
-            examples["example_prompt"] = str(doc['text'])[:500]
+            examples["example_prompt"] = str(doc['text'])[:DISPLAY_TRUNCATION_LARGE]
 
         if hasattr(task, 'doc_to_target'):
-            examples["example_target"] = str(task.doc_to_target(doc))[:200]
+            examples["example_target"] = str(task.doc_to_target(doc))[:DISPLAY_TRUNCATION_MEDIUM]
         elif 'answer' in doc:
-            examples["example_target"] = str(doc['answer'])[:200]
+            examples["example_target"] = str(doc['answer'])[:DISPLAY_TRUNCATION_MEDIUM]
         elif 'target' in doc:
-            examples["example_target"] = str(doc['target'])[:200]
+            examples["example_target"] = str(doc['target'])[:DISPLAY_TRUNCATION_MEDIUM]
 
         if 'choices' in doc and isinstance(doc['choices'], list):
-            examples["example_choices"] = [str(c)[:100] for c in doc['choices'][:6]]
+            examples["example_choices"] = [str(c)[:DISPLAY_TRUNCATION_COMPACT] for c in doc['choices'][:6]]
             examples["format"] = "multiple_choice"
         else:
             examples["format"] = "open_ended"
@@ -87,7 +88,7 @@ def extract_examples_from_task(task_name: str, task) -> Dict[str, str]:
     return examples
 
 
-def get_task_samples_for_analysis(task_name: str, num_samples: int = 5) -> Dict[str, Any]:
+def get_task_samples_for_analysis(task_name: str, num_samples: int = DEFAULT_NUM_SAMPLES) -> Dict[str, Any]:
     """Retrieve sample questions and answers from a benchmark task for AI analysis."""
     from lm_eval import evaluator
     from .group_handling import find_working_task_from_group

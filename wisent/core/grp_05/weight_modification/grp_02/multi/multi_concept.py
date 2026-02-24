@@ -22,6 +22,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
 from enum import Enum
 
+from wisent.core.constants import DEFAULT_STRENGTH, WM_MAX_INTERFERENCE
+from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -61,7 +63,7 @@ class ConceptSpec:
     action: ConceptAction = ConceptAction.SUPPRESS
     """Action to take: suppress, enhance, or neutral."""
     
-    strength: float = 1.0
+    strength: float = DEFAULT_STRENGTH
     """Modification strength for this concept."""
     
     layer_weights: Optional[Dict[int, float]] = None
@@ -83,7 +85,7 @@ class MultiConceptConfig:
     """Order for Gram-Schmidt: 'priority', 'variance', or 'sequential'."""
     
     # Interference handling
-    max_interference: float = 0.3
+    max_interference: float = WM_MAX_INTERFERENCE
     """Maximum allowed cosine similarity between concept directions."""
     
     warn_on_interference: bool = True

@@ -26,6 +26,7 @@ from dataclasses import dataclass
 
 import torch
 
+from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, DATA_SPLIT_SEED, DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT
 from wisent.core.errors import UnknownTypeError, InsufficientDataError
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.steering_evaluators import (
@@ -41,7 +42,7 @@ from wisent.core.utils import resolve_default_device, preferred_dtype
 from wisent.core.cli.optimization.specific.optimize_weights_vectors import _generate_steering_vectors
 from wisent.core.cli.optimization.specific.optimize_weights_evaluators import _create_evaluator
 from wisent.core.cli.optimization.specific.optimize_weights_finalize import (
-    upload_to_s3, _finalize_optimization,
+    upload_to_gcs, _finalize_optimization,
 )
 
 
@@ -75,7 +76,7 @@ def execute_optimize_weights(args):
     print(f"   Model: {args.model}")
     if args.trait:
         print(f"   Mode: Trait-based (synthetic pairs)")
-        print(f"   Trait: {args.trait[:60]}...")
+        print(f"   Trait: {args.trait[:DISPLAY_TRUNCATION_EVAL]}...")
     elif args.task:
         print(f"   Mode: Task-based (lm-eval)")
         print(f"   Task: {args.task}")
@@ -197,7 +198,7 @@ def execute_optimize_weights(args):
         direction=direction,
         sampler="tpe",
         pruner=None,
-        seed=42,
+        seed=DATA_SPLIT_SEED,
     )
 
     # Run optimization
@@ -205,18 +206,18 @@ def execute_optimize_weights(args):
     
     # Use checkpointing if checkpoint path is provided
     checkpoint_path = getattr(args, 'checkpoint', None)
-    checkpoint_interval = getattr(args, 'checkpoint_interval', 5)
-    s3_bucket = getattr(args, 's3_bucket', None)
-    
-    # Generate S3 key prefix for this optimization run
-    s3_key_prefix = None
-    if s3_bucket:
-        task_name = args.task.replace(',', '_')[:50] if args.task else (args.trait or 'unknown')[:50]
-        s3_key_prefix = f"optimization-checkpoints/{task_name}/{time.strftime('%Y%m%d-%H%M%S')}"
-        print(f"   S3 bucket: {s3_bucket}")
-        print(f"   S3 key prefix: {s3_key_prefix}")
-    
-    if checkpoint_path or s3_bucket:
+    checkpoint_interval = getattr(args, 'checkpoint_interval', DEFAULT_CHECKPOINT_INTERVAL)
+    gcs_bucket = getattr(args, 'gcs_bucket', None)
+
+    # Generate GCS key prefix for this optimization run
+    gcs_key_prefix = None
+    if gcs_bucket:
+        task_name = args.task.replace(',', '_')[:DISPLAY_TRUNCATION_SHORT] if args.task else (args.trait or 'unknown')[:DISPLAY_TRUNCATION_SHORT]
+        gcs_key_prefix = f"optimization-checkpoints/{task_name}/{time.strftime('%Y%m%d-%H%M%S')}"
+        print(f"   GCS bucket: {gcs_bucket}")
+        print(f"   GCS key prefix: {gcs_key_prefix}")
+
+    if checkpoint_path or gcs_bucket:
         if checkpoint_path:
             print(f"   Checkpointing enabled: {checkpoint_path}")
         print(f"   Checkpoint interval: every {checkpoint_interval} trials\n")
@@ -226,8 +227,8 @@ def execute_optimize_weights(args):
             checkpoint_interval=checkpoint_interval,
             output_dir=args.output_dir,
             tokenizer=tokenizer,
-            s3_bucket=s3_bucket,
-            s3_key_prefix=s3_key_prefix,
+            gcs_bucket=gcs_bucket,
+            gcs_key_prefix=gcs_key_prefix,
         )
     else:
         result = optimizer.optimize(hpo_config)

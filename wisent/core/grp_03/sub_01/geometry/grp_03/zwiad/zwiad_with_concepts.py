@@ -5,6 +5,10 @@ from dataclasses import asdict as _asdict
 import json
 import torch
 import numpy as np
+from wisent.core.constants import (
+    DEFAULT_SCORE, DEFAULT_RANDOM_SEED, VIZ_PCA_COMPONENTS,
+    LINEARITY_MAX_PAIRS, MIN_CONCEPT_DIM,
+)
 from ..metrics.core.metrics_core import compute_geometry_metrics
 from ..concepts import decompose_and_name_concepts_with_labels, find_optimal_layer_per_concept
 from ..data.database_loaders import load_activations_from_database, load_pair_texts_from_database, load_available_layers_from_database
@@ -78,10 +82,10 @@ def run_zwiad_with_concept_naming(
     neg_concat = torch.cat(neg_list, dim=1)
     n_pairs = len(pos_concat)
     from sklearn.decomposition import PCA as _PCA
-    _pca_dims = min(n_pairs - 1, pos_concat.shape[1], 50)
+    _pca_dims = min(n_pairs - 1, pos_concat.shape[1], VIZ_PCA_COMPONENTS)
     if _pca_dims < pos_concat.shape[1] and _pca_dims >= 2:
         _comb = torch.cat([pos_concat, neg_concat], dim=0).cpu().numpy()
-        _comb_pca = _PCA(n_components=_pca_dims, random_state=42).fit_transform(_comb)
+        _comb_pca = _PCA(n_components=_pca_dims, random_state=DEFAULT_RANDOM_SEED).fit_transform(_comb)
         pos_pca = torch.tensor(_comb_pca[:n_pairs], dtype=pos_concat.dtype)
         neg_pca = torch.tensor(_comb_pca[n_pairs:], dtype=pos_concat.dtype)
     else:
@@ -98,7 +102,7 @@ def run_zwiad_with_concept_naming(
     }
     _save_checkpoint(results, output_path)
     signal_result, geometry_result, decomposition_result, editability_result = None, None, None, None
-    min_pairs_for_probes = 2
+    min_pairs_for_probes = MIN_CONCEPT_DIM
     # Step 1: Signal
     if "signal" in steps_to_run:
         if "signal_test" in existing:
@@ -124,13 +128,13 @@ def run_zwiad_with_concept_naming(
             results["geometry_test"] = existing["geometry_test"]
             gt = existing["geometry_test"]
             if "linear_accuracy" in gt:
-                geometry_result = GeometryTestResult(**{k: gt.get(k, 0) for k in _GEO_KEYS})
+                geometry_result = GeometryTestResult(**{k: gt.get(k, DEFAULT_SCORE) for k in _GEO_KEYS})
         elif n_pairs < min_pairs_for_probes:
             results["geometry_test"] = {"status": "insufficient_data", "n_pairs": n_pairs}
         else:
-            _n_geo = min(n_pairs, 1000)
-            if n_pairs > 1000:
-                _idx = np.random.RandomState(42).choice(n_pairs, 1000, replace=False)
+            _n_geo = min(n_pairs, LINEARITY_MAX_PAIRS)
+            if n_pairs > LINEARITY_MAX_PAIRS:
+                _idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(n_pairs, LINEARITY_MAX_PAIRS, replace=False)
                 _idx.sort()
                 _pg, _ng = pos_pca[_idx], neg_pca[_idx]
             else:
@@ -146,7 +150,7 @@ def run_zwiad_with_concept_naming(
             if "n_concepts" in dt and "status" not in dt:
                 decomposition_result = DecompositionTestResult(
                     n_concepts=dt["n_concepts"], cluster_labels=dt.get("cluster_labels", [0]*n_pairs),
-                    silhouette_score=dt.get("silhouette_score", 0),
+                    silhouette_score=dt.get("silhouette_score", DEFAULT_SCORE),
                     is_fragmented=dt.get("is_fragmented", False),
                     per_concept_sizes=dt.get("per_concept_sizes", {}))
             if "concept_decomposition" in existing:
@@ -181,11 +185,11 @@ def run_zwiad_with_concept_naming(
             if "composite_editability" in et:
                 editability_result = EditabilityTestResult(
                     composite_editability=et["composite_editability"],
-                    steering_survival=et.get("steering_survival", 0),
-                    spectral_concentration=et.get("spectral_concentration", 0),
-                    spectral_sharpness=et.get("spectral_sharpness", 0),
-                    attention_entropy=et.get("attention_entropy", 0),
-                    jacobian_sensitivity=et.get("jacobian_sensitivity", 0))
+                    steering_survival=et.get("steering_survival", DEFAULT_SCORE),
+                    spectral_concentration=et.get("spectral_concentration", DEFAULT_SCORE),
+                    spectral_sharpness=et.get("spectral_sharpness", DEFAULT_SCORE),
+                    attention_entropy=et.get("attention_entropy", DEFAULT_SCORE),
+                    jacobian_sensitivity=et.get("jacobian_sensitivity", DEFAULT_SCORE))
         elif n_pairs >= 2:
             editability_result = test_editability(pos_pca, neg_pca)
             results["editability_test"] = {

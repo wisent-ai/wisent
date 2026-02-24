@@ -6,6 +6,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import numpy as np
 
+from wisent.core.constants import NORM_EPS, DATA_SPLIT_RATIO
 from wisent.core.contrastive_pairs.diagnostics.analysis.vector_quality import (
     _cosine_similarity,
     _create_vector_from_diffs,
@@ -27,7 +28,7 @@ def _compute_snr(
     noise_neg = negative_activations.std(dim=0).mean().item()
     noise = (noise_pos + noise_neg) / 2
     
-    snr = signal / (noise + 1e-8)
+    snr = signal / (noise + NORM_EPS)
     
     if snr < config.snr_critical:
         issues.append(DiagnosticsIssue(
@@ -191,7 +192,7 @@ def _compute_held_out_transfer(
         return None
     
     # 80/20 split
-    n_train = int(n * 0.8)
+    n_train = int(n * DATA_SPLIT_RATIO)
     if n_train < 2 or n - n_train < 1:
         return None
     
@@ -250,7 +251,7 @@ def _compute_cohens_d(
     direction = mean_pos - mean_neg
     direction_norm = torch.norm(direction)
     
-    if direction_norm < 1e-8:
+    if direction_norm < NORM_EPS:
         return None
     
     direction = direction / direction_norm
@@ -262,7 +263,7 @@ def _compute_cohens_d(
     # Cohen's d = (mean1 - mean2) / pooled_std
     mean_diff = pos_proj.mean() - neg_proj.mean()
     pooled_var = ((n_pos - 1) * pos_proj.var() + (n_neg - 1) * neg_proj.var()) / (n_pos + n_neg - 2)
-    pooled_std = np.sqrt(pooled_var) if pooled_var > 0 else 1e-8
+    pooled_std = np.sqrt(pooled_var) if pooled_var > 0 else NORM_EPS
     
     return float(mean_diff / pooled_std)
 

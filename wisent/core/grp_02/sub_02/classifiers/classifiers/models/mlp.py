@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from wisent.core.constants import CLASSIFIER_HIDDEN_DIM, CLASSIFIER_DROPOUT
+
 import torch
 from torch import nn
 
@@ -9,7 +11,7 @@ __all__ = ["MLPClassifier"]
 
 class MLPModel(nn.Module):
     """Multi-layer perceptron for activation classification."""
-    def __init__(self, input_dim: int, hidden_dim: int = 128, dropout: float = 0.2):
+    def __init__(self, input_dim: int, hidden_dim: int = CLASSIFIER_HIDDEN_DIM, dropout: float = CLASSIFIER_DROPOUT):
         super().__init__()
         self.net = nn.Sequential(
             nn.Linear(input_dim, hidden_dim),
@@ -33,15 +35,15 @@ class MLPClassifier(BaseClassifier):
     name = "mlp"
     description = "Two-layer MLP with dropout and ReLU"
 
-    def __init__(self, *, hidden_dim: int = 128, **base_kwargs):
+    def __init__(self, *, hidden_dim: int = CLASSIFIER_HIDDEN_DIM, **base_kwargs):
         super().__init__(**base_kwargs)
         self._hidden_dim = int(hidden_dim)
 
     def build_model(self, input_dim: int, **model_params: object) -> nn.Module:
         hd = int(model_params.get("hidden_dim", self._hidden_dim))  
-        dp = float(model_params.get("dropout", 0.2))
+        dp = float(model_params.get("dropout", CLASSIFIER_DROPOUT))
         self._hidden_dim = hd
         return MLPModel(input_dim, hidden_dim=hd, dropout=dp)
 
     def model_hyperparams(self) -> dict[str, int]:
-        return {"hidden_dim": self._hidden_dim, "dropout": 0.2}
+        return {"hidden_dim": self._hidden_dim, "dropout": CLASSIFIER_DROPOUT}

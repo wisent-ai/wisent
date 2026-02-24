@@ -17,6 +17,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 from only_benchmarks import CORE_BENCHMARKS, get_task_samples_for_analysis
+from wisent.core.constants import LM_HARNESS_NUM_SAMPLES_DEFAULT
 
 def test_failed_benchmark(benchmark_name: str, benchmark_config: Dict) -> Dict:
     """Test a single failed benchmark with the fixes."""
@@ -34,7 +35,7 @@ def test_failed_benchmark(benchmark_name: str, benchmark_config: Dict) -> Dict:
         # Test the benchmark with enhanced loading
         result = get_task_samples_for_analysis(
             task_name=task_name,
-            num_samples=5,
+            num_samples=LM_HARNESS_NUM_SAMPLES_DEFAULT,
             trust_remote_code=trust_remote_code
         )
         

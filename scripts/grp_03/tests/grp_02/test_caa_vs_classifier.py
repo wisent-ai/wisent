@@ -8,6 +8,7 @@ import numpy as np
 from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
 import random
+from wisent.core.constants import ZERO_THRESHOLD, TOKENIZER_MAX_LENGTH_GEOMETRY
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"
@@ -30,7 +31,7 @@ for s in ds:
 print(f"Loaded {len(pairs)} pairs")
 
 def get_activation(text, layer):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float().numpy()
@@ -61,7 +62,7 @@ neg_acts = np.array(neg_acts)
 # CAA vector: mean of differences
 diffs = pos_acts - neg_acts
 caa_vector = diffs.mean(axis=0)
-caa_vector_norm = caa_vector / (np.linalg.norm(caa_vector) + 1e-10)
+caa_vector_norm = caa_vector / (np.linalg.norm(caa_vector) + ZERO_THRESHOLD)
 
 # Classifier weights
 X = np.vstack([pos_acts, neg_acts])
@@ -69,7 +70,7 @@ y = np.array([1] * len(pos_acts) + [0] * len(neg_acts))
 clf = LogisticRegression()
 clf.fit(X, y)
 clf_weights = clf.coef_[0]
-clf_weights_norm = clf_weights / (np.linalg.norm(clf_weights) + 1e-10)
+clf_weights_norm = clf_weights / (np.linalg.norm(clf_weights) + ZERO_THRESHOLD)
 
 # Compare
 cosine_sim = np.dot(caa_vector_norm, clf_weights_norm)
@@ -94,7 +95,7 @@ print(f"Random baseline:             0.500")
 mean_pos = pos_acts.mean(axis=0)
 mean_neg = neg_acts.mean(axis=0)
 centroid_diff = mean_pos - mean_neg
-centroid_diff_norm = centroid_diff / (np.linalg.norm(centroid_diff) + 1e-10)
+centroid_diff_norm = centroid_diff / (np.linalg.norm(centroid_diff) + ZERO_THRESHOLD)
 
 cosine_centroid_clf = np.dot(centroid_diff_norm, clf_weights_norm)
 print(f"\nCosine similarity (centroid diff vs Classifier): {cosine_centroid_clf:.4f}")

@@ -2,6 +2,8 @@
 
 import argparse
 
+from wisent.core.constants import COMPARISON_DEFAULT_BATCH_SIZE
+
 
 def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
     """
@@ -77,7 +79,7 @@ def setup_get_activations_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--batch-size",
         type=int,
-        default=1,
+        default=COMPARISON_DEFAULT_BATCH_SIZE,
         help="Batch size for processing (default: 1)"
     )
     parser.add_argument(

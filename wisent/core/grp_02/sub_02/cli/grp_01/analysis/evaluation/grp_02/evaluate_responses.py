@@ -2,7 +2,6 @@
 
 import json
 import os
-import sys
 from pathlib import Path
 
 from wisent.core.errors import TaskNotFoundError
@@ -61,13 +60,12 @@ def execute_evaluate_responses(args):
             task_name = args.task if args.task else input_data.get('task', "generic")
 
         if not task_name:
-            print(f"   ❌ Task name not found in input file and not provided via --task")
-            sys.exit(1)
+            raise ValueError("Task name not found in input file and not provided via --task")
         print(f"   ✓ Loaded {len(responses)} responses")
         print(f"   Task: {task_name}\n")
     except Exception as e:
         print(f"   ❌ Failed to load input file: {e}")
-        sys.exit(1)
+        raise
 
     # Load task-evaluator mapping
     print(f"📋 Loading task evaluation config...")
@@ -105,7 +103,7 @@ def execute_evaluate_responses(args):
         print(f"   ✓ Primary metric: {primary_metric}\n")
     except Exception as e:
         print(f"   ❌ Could not load task config: {e}")
-        sys.exit(1)
+        raise
 
     # Load task to get ground truth (skip for docker_execution, personalization, or if responses have references)
     task_docs = None
@@ -132,7 +130,7 @@ def execute_evaluate_responses(args):
             print(f"   ✓ Using TEST portion: {len(task_docs)} task documents for evaluation\n")
         except Exception as e:
             print(f"   ❌ Could not load task: {e}")
-            sys.exit(1)
+            raise
     elif has_references:
         print(f"📚 Using references from responses file (task loading skipped)\n")
 
@@ -196,7 +194,8 @@ def execute_evaluate_responses(args):
     # Handle docker_execution separately
     if evaluation_type == "docker_execution":
         aggregated_metrics = evaluate_docker_execution(
-            args, input_data, responses, task_name, evaluation_results, task_results)
+            args, input_data, responses, task_name, evaluation_results, task_results,
+            task_config=task_config)
         if aggregated_metrics is not None:
             return
 
@@ -218,6 +217,7 @@ def execute_evaluate_responses(args):
     evaluate_standard(
         args, input_data, responses, task_name,
         evaluation_results, task_results, evaluator, task_docs,
+        evaluation_type=evaluation_type,
     )
 
     # Aggregate results

@@ -18,6 +18,17 @@ from datetime import datetime
 from typing import Optional, Dict, Any, List, TypeVar, Type
 import numpy as np
 
+from wisent.core.constants import (
+    DEFAULT_LAYER_CONFIG, DEFAULT_SCORE, DEFAULT_STRENGTH,
+    MOVEMENT_THRESHOLD, BROYDEN_DEFAULT_ALPHA, PAIRS_NUM_PAIRS,
+    TECZA_INDEPENDENCE_WEIGHT, TECZA_OPTIMIZATION_STEPS,
+    TECZA_MIN_COSINE_SIM, TECZA_MAX_COSINE_SIM,
+    TETNO_CONDITION_THRESHOLD, TETNO_MAX_ALPHA, TETNO_OPTIMIZATION_STEPS,
+    GROM_GATE_TEMPERATURE, GROM_ROUTER_HIDDEN_DIM, GROM_INTENSITY_HIDDEN_DIM,
+    GROM_BEHAVIOR_WEIGHT, GROM_SPARSE_WEIGHT, GROM_OPTIMIZATION_STEPS,
+    GROM_LEARNING_RATE, BLEND_DEFAULT,
+)
+
 
 # Default config location
 DEFAULT_CONFIG_DIR = "~/.wisent/configs"
@@ -52,57 +63,57 @@ class NumpyEncoder(json.JSONEncoder):
 @dataclass
 class ClassificationConfig(SerializableConfig):
     """Classification optimization parameters."""
-    layer: int = 12
+    layer: int = DEFAULT_LAYER_CONFIG
     token_aggregation: str = "average"
-    detection_threshold: float = 0.6
+    detection_threshold: float = MOVEMENT_THRESHOLD
     classifier_type: str = "logistic"
     prompt_construction_strategy: str = "multiple_choice"
     token_targeting_strategy: str = "last_token"
-    accuracy: float = 0.0
-    f1_score: float = 0.0
-    precision: float = 0.0
-    recall: float = 0.0
+    accuracy: float = DEFAULT_SCORE
+    f1_score: float = DEFAULT_SCORE
+    precision: float = DEFAULT_SCORE
+    recall: float = DEFAULT_SCORE
 
 
 @dataclass
 class SteeringConfig(SerializableConfig):
     """Steering optimization parameters with method-specific settings."""
-    layer: int = 12
-    strength: float = 1.0
+    layer: int = DEFAULT_LAYER_CONFIG
+    strength: float = DEFAULT_STRENGTH
     method: str = "CAA"
     token_aggregation: str = "average"
     prompt_strategy: str = "question_only"
     normalize_mode: str = "none"
     strategy: str = "constant"
-    score: float = 0.0
+    score: float = DEFAULT_SCORE
     metric: str = "accuracy"
     # TECZA parameters
     num_directions: int = 1
     direction_weighting: str = "primary_only"
-    retain_weight: float = 0.0
-    independence_weight: float = 0.05
-    tecza_optimization_steps: int = 100
+    retain_weight: float = DEFAULT_SCORE
+    independence_weight: float = TECZA_INDEPENDENCE_WEIGHT
+    tecza_optimization_steps: int = TECZA_OPTIMIZATION_STEPS
     use_caa_init: bool = True
     cone_constraint: bool = True
-    min_cosine_similarity: float = 0.3
-    max_cosine_similarity: float = 0.95
+    min_cosine_similarity: float = TECZA_MIN_COSINE_SIM
+    max_cosine_similarity: float = TECZA_MAX_COSINE_SIM
     # TETNO parameters
     sensor_layer: int = -1
     steering_layers: str = ""
-    condition_threshold: float = 0.5
-    gate_temperature: float = 0.5
+    condition_threshold: float = TETNO_CONDITION_THRESHOLD
+    gate_temperature: float = GROM_GATE_TEMPERATURE
     per_layer_scaling: bool = True
     use_entropy_scaling: bool = False
-    max_alpha: float = 2.0
+    max_alpha: float = TETNO_MAX_ALPHA
     learn_threshold: bool = True
-    tetno_optimization_steps: int = 100
+    tetno_optimization_steps: int = TETNO_OPTIMIZATION_STEPS
     # GROM parameters
-    gate_hidden_dim: int = 64
-    intensity_hidden_dim: int = 32
-    behavior_weight: float = 1.0
-    sparse_weight: float = 0.05
-    grom_optimization_steps: int = 200
-    grom_learning_rate: float = 0.005
+    gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM
+    intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM
+    behavior_weight: float = GROM_BEHAVIOR_WEIGHT
+    sparse_weight: float = GROM_SPARSE_WEIGHT
+    grom_optimization_steps: int = GROM_OPTIMIZATION_STEPS
+    grom_learning_rate: float = GROM_LEARNING_RATE
     method_params: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -110,21 +121,21 @@ class SteeringConfig(SerializableConfig):
 class WeightModificationConfig(SerializableConfig):
     """Weight modification (directional projection/additive) parameters."""
     method: str = "directional"
-    max_weight: float = 1.0
-    min_weight: float = 0.0
-    max_weight_position: float = 0.5
-    min_weight_distance: float = 0.5
-    strength: float = 1.0
-    num_pairs: int = 100
-    alpha: float = 1.0
+    max_weight: float = DEFAULT_STRENGTH
+    min_weight: float = DEFAULT_SCORE
+    max_weight_position: float = BLEND_DEFAULT
+    min_weight_distance: float = BLEND_DEFAULT
+    strength: float = DEFAULT_STRENGTH
+    num_pairs: int = PAIRS_NUM_PAIRS
+    alpha: float = BROYDEN_DEFAULT_ALPHA
     additive_method: str = "bias"
     components: List[str] = field(default_factory=lambda: ["self_attn.o_proj", "mlp.down_proj"])
     normalize_vectors: bool = True
     norm_preserve: bool = True
     use_biprojection: bool = True
     use_kernel: bool = True
-    score: float = 0.0
-    baseline_score: float = 0.0
+    score: float = DEFAULT_SCORE
+    baseline_score: float = DEFAULT_SCORE
     output_dir: str = ""
 
     @classmethod

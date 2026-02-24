@@ -8,8 +8,14 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Dict, Any
 
-S3_BUCKET = "wisent-bucket"
-S3_PREFIX = "intervention_validation"
+from wisent.core.constants import (
+    DEFAULT_BASE_STRENGTH, PARSER_DEFAULT_NUM_PAIRS_GENERATE,
+    PAIR_GENERATORS_DEFAULT_N, SUBPROCESS_TIMEOUT_LONG,
+    DISPLAY_TRUNCATION_LARGE,
+)
+
+GCS_BUCKET = "wisent-images-bucket"
+GCS_PREFIX = "intervention_validation"
 
 
 class BenchmarkResult:
@@ -34,9 +40,9 @@ def run_wisent_task(
     model: str,
     layer: int,
     steering_mode: bool = False,
-    steering_strength: float = 1.0,
-    training_limit: int = 30,
-    testing_limit: int = 50,
+    steering_strength: float = DEFAULT_BASE_STRENGTH,
+    training_limit: int = PARSER_DEFAULT_NUM_PAIRS_GENERATE,
+    testing_limit: int = PAIR_GENERATORS_DEFAULT_N,
 ) -> float:
     """
     Run wisent tasks command and return accuracy.
@@ -65,7 +71,7 @@ def run_wisent_task(
             cmd,
             capture_output=True,
             text=True,
-            timeout=600,
+            timeout=SUBPROCESS_TIMEOUT_LONG,
         )
         
         output = result.stdout + result.stderr
@@ -93,7 +99,7 @@ def run_wisent_task(
                         pass
         
         print(f"  Warning: Could not parse accuracy from output")
-        print(f"  Output: {output[:500]}")
+        print(f"  Output: {output[:DISPLAY_TRUNCATION_LARGE]}")
         return 0.5
         
     except subprocess.TimeoutExpired:
@@ -104,16 +110,16 @@ def run_wisent_task(
         return 0.5
 
 
-def load_diagnosis_from_s3(model_name: str) -> Dict[str, Any]:
-    """Load Zwiad diagnosis results from S3."""
+def load_diagnosis_from_gcs(model_name: str) -> Dict[str, Any]:
+    """Load Zwiad diagnosis results from GCS."""
     model_prefix = model_name.replace('/', '_')
     local_dir = Path(f"/tmp/diagnosis_{model_prefix}")
     local_dir.mkdir(parents=True, exist_ok=True)
-    
+
     try:
         subprocess.run(
-            ["aws", "s3", "sync",
-             f"s3://{S3_BUCKET}/direction_discovery/{model_prefix}/",
+            ["gcloud", "storage", "rsync",
+             f"gs://{GCS_BUCKET}/direction_discovery/{model_prefix}/",
              str(local_dir),
              "--quiet"],
             check=False,
@@ -149,7 +155,7 @@ def get_benchmarks_by_diagnosis(diagnosis_results: Dict) -> Dict[str, List[tuple
             signal = r["signal_strength"]
             linear = r["linear_probe_accuracy"]
             num_layers = len(r["layers"]) if r["layers"] else 36
-            best_layer = int(num_layers * 0.6)  # 60% through network
+            best_layer = num_layers // 2
             
             if signal < 0.6:
                 by_diagnosis["NO_SIGNAL"].append((bench, best_layer, signal, linear))

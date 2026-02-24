@@ -10,6 +10,7 @@ import torch
 from wisent.core.adapters.base import SteeringConfig
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.modalities import TextContent
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_ADAPTER, DEFAULT_INFERENCE_TEMPERATURE
 
 
 class TextAdapterGenerationMixin:
@@ -50,9 +51,9 @@ class TextAdapterGenerationMixin:
         with self._steering_hooks(steering_vectors, config):
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=256,
+                max_new_tokens=DEFAULT_MAX_NEW_TOKENS_ADAPTER,
                 do_sample=True,
-                temperature=0.7,
+                temperature=DEFAULT_INFERENCE_TEMPERATURE,
                 pad_token_id=self.tokenizer.pad_token_id,
             )
 
@@ -68,8 +69,8 @@ class TextAdapterGenerationMixin:
     def _generate_unsteered(
         self,
         content: TextContent | str,
-        max_new_tokens: int = 256,
-        temperature: float = 0.7,
+        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_ADAPTER,
+        temperature: float = DEFAULT_INFERENCE_TEMPERATURE,
         do_sample: bool = True,
         **kwargs: Any,
     ) -> str:

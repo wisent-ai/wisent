@@ -12,6 +12,7 @@ The ASCII art represents a Wisent (European bison), the project's namesake.
 
 from __future__ import annotations
 
+from wisent.core.constants import WM_BRANDING_WIDTH
 __all__ = ["WISENT_ASCII_LOGO", "PROJECT_TAGLINE", "render_banner", "get_logo"]
 
 
@@ -51,7 +52,7 @@ WISENT_ASCII_LOGO = """
 PROJECT_TAGLINE = "Steering vectors & activation tooling"
 
 
-def get_logo(width: int = 48) -> str:
+def get_logo(width: int = WM_BRANDING_WIDTH) -> str:
     """
     Get the Wisent ASCII logo, optionally centered to a specific width.
 
@@ -64,7 +65,7 @@ def get_logo(width: int = 48) -> str:
     return "\n".join(line.center(width) for line in WISENT_ASCII_LOGO.splitlines())
 
 
-def render_banner(title: str, width: int = 48, use_color: bool = True) -> str:
+def render_banner(title: str, width: int = WM_BRANDING_WIDTH, use_color: bool = True) -> str:
     """
     Render a banner with the Wisent logo, title, and tagline.
 
@@ -91,7 +92,7 @@ def render_banner(title: str, width: int = 48, use_color: bool = True) -> str:
     return banner
 
 
-def print_banner(title: str, width: int = 48, use_color: bool = True) -> None:
+def print_banner(title: str, width: int = WM_BRANDING_WIDTH, use_color: bool = True) -> None:
     """
     Print a banner with the Wisent logo, title, and tagline.
 

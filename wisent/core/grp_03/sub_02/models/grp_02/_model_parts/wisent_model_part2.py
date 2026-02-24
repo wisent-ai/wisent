@@ -12,15 +12,23 @@ from wisent.core.models.layer import extract_token_ids
 from wisent.core.models.core.atoms import SteeringVector
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.errors import ChatTemplateNotAvailableError
+from wisent.core.constants import (
+    DEFAULT_MAX_NEW_TOKENS,
+    DEFAULT_STRENGTH,
+    STEERING_WEIGHT_DECAY_RATE,
+    STEERING_WEIGHT_GAUSSIAN_CENTER,
+    STEERING_WEIGHT_GAUSSIAN_WIDTH,
+    STEERING_WEIGHT_INITIAL_TOKENS,
+)
 
 
 def _apply_steering_object(
     self,
     steering_obj: "BaseSteeringObject",
-    base_strength: float = 1.0,
+    base_strength: float = DEFAULT_STRENGTH,
     steering_strategy: str = "constant",
     steering_strategy_config: dict | None = None,
-    max_new_tokens: int = 128,
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
 ) -> None:
     """
     Register forward hooks using a SteeringObject with full method-specific logic.
@@ -65,17 +73,17 @@ def _apply_steering_object(
         if strategy == "constant":
             return 1.0
         elif strategy == "initial_only":
-            initial_tokens = config.get("initial_tokens", 10)
+            initial_tokens = config.get("initial_tokens", STEERING_WEIGHT_INITIAL_TOKENS)
             return 1.0 if token_pos < initial_tokens else 0.0
         elif strategy == "diminishing":
-            rate = config.get("rate", 0.1)
+            rate = config.get("rate", STEERING_WEIGHT_DECAY_RATE)
             return math.exp(-rate * token_pos)
         elif strategy == "increasing":
-            rate = config.get("rate", 0.1)
+            rate = config.get("rate", STEERING_WEIGHT_DECAY_RATE)
             return 1.0 - math.exp(-rate * token_pos)
         elif strategy == "gaussian":
-            center = config.get("gaussian_center", 0.5)
-            width = config.get("gaussian_width", 0.2)
+            center = config.get("gaussian_center", STEERING_WEIGHT_GAUSSIAN_CENTER)
+            width = config.get("gaussian_width", STEERING_WEIGHT_GAUSSIAN_WIDTH)
             return math.exp(-((position_frac - center) ** 2) / (2 * width ** 2))
         else:
             return 1.0

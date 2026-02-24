@@ -5,6 +5,15 @@ import os
 from typing import Any, Dict, List, Optional
 
 import torch
+from wisent.core.constants import (
+    GROM_BEHAVIOR_WEIGHT, GROM_INTENSITY_HIDDEN_DIM, GROM_LEARNING_RATE,
+    GROM_MAX_ALPHA, GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS,
+    GROM_RETAIN_WEIGHT, GROM_ROUTER_HIDDEN_DIM, GROM_SPARSE_WEIGHT,
+    TECZA_INDEPENDENCE_WEIGHT, TECZA_MAX_COSINE_SIM, TECZA_MIN_COSINE_SIM,
+    TECZA_NUM_DIRECTIONS, TECZA_OPTIMIZATION_STEPS, TECZA_RETAIN_WEIGHT,
+    TETNO_CONDITION_THRESHOLD, TETNO_GATE_TEMPERATURE,
+    TETNO_MAX_ALPHA, TETNO_OPTIMIZATION_STEPS,
+)
 
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
 
@@ -124,43 +133,43 @@ def create_steering_method_from_config(config: Dict[str, Any]) -> Any:
         
     elif method_name == "tecza":
         params = {
-            "num_directions": config.get("num_directions", 1),
+            "num_directions": config.get("num_directions", TECZA_NUM_DIRECTIONS),
             "direction_weighting": config.get("direction_weighting", "primary_only"),
-            "retain_weight": config.get("retain_weight", 0.0),
-            "independence_weight": config.get("independence_weight", 0.05),
-            "optimization_steps": config.get("optimization_steps", 100),
+            "retain_weight": config.get("retain_weight", TECZA_RETAIN_WEIGHT),
+            "independence_weight": config.get("independence_weight", TECZA_INDEPENDENCE_WEIGHT),
+            "optimization_steps": config.get("optimization_steps", TECZA_OPTIMIZATION_STEPS),
             "use_caa_init": config.get("use_caa_init", True),
             "cone_constraint": config.get("cone_constraint", True),
-            "min_cosine_similarity": config.get("min_cosine_similarity", 0.3),
-            "max_cosine_similarity": config.get("max_cosine_similarity", 0.95),
+            "min_cosine_similarity": config.get("min_cosine_similarity", TECZA_MIN_COSINE_SIM),
+            "max_cosine_similarity": config.get("max_cosine_similarity", TECZA_MAX_COSINE_SIM),
         }
         
     elif method_name == "tetno":
         params = {
             "sensor_layer": config.get("sensor_layer", -1),
             "steering_layers": config.get("steering_layers", ""),
-            "condition_threshold": config.get("condition_threshold", 0.5),
-            "gate_temperature": config.get("gate_temperature", 0.5),
+            "condition_threshold": config.get("condition_threshold", TETNO_CONDITION_THRESHOLD),
+            "gate_temperature": config.get("gate_temperature", TETNO_GATE_TEMPERATURE),
             "per_layer_scaling": config.get("per_layer_scaling", True),
             "use_entropy_scaling": config.get("use_entropy_scaling", False),
-            "max_alpha": config.get("max_alpha", 2.0),
+            "max_alpha": config.get("max_alpha", TETNO_MAX_ALPHA),
             "learn_threshold": config.get("learn_threshold", True),
-            "optimization_steps": config.get("optimization_steps", 100),
+            "optimization_steps": config.get("optimization_steps", TETNO_OPTIMIZATION_STEPS),
         }
         
     elif method_name == "grom":
         params = {
-            "num_directions": config.get("num_directions", 3),
+            "num_directions": config.get("num_directions", GROM_NUM_DIRECTIONS),
             "sensor_layer": config.get("sensor_layer", -1),
             "steering_layers": config.get("steering_layers", ""),
-            "gate_hidden_dim": config.get("gate_hidden_dim", 64),
-            "intensity_hidden_dim": config.get("intensity_hidden_dim", 32),
-            "behavior_weight": config.get("behavior_weight", 1.0),
-            "retain_weight": config.get("retain_weight", 0.2),
-            "sparse_weight": config.get("sparse_weight", 0.05),
-            "max_alpha": config.get("max_alpha", 2.0),
-            "optimization_steps": config.get("optimization_steps", 200),
-            "learning_rate": config.get("learning_rate", 0.005),
+            "gate_hidden_dim": config.get("gate_hidden_dim", GROM_ROUTER_HIDDEN_DIM),
+            "intensity_hidden_dim": config.get("intensity_hidden_dim", GROM_INTENSITY_HIDDEN_DIM),
+            "behavior_weight": config.get("behavior_weight", GROM_BEHAVIOR_WEIGHT),
+            "retain_weight": config.get("retain_weight", GROM_RETAIN_WEIGHT),
+            "sparse_weight": config.get("sparse_weight", GROM_SPARSE_WEIGHT),
+            "max_alpha": config.get("max_alpha", GROM_MAX_ALPHA),
+            "optimization_steps": config.get("optimization_steps", GROM_OPTIMIZATION_STEPS),
+            "learning_rate": config.get("learning_rate", GROM_LEARNING_RATE),
         }
     
     # Create the method

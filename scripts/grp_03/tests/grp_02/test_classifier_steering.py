@@ -8,6 +8,7 @@ import numpy as np
 from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
 import random
+from wisent.core.constants import MAX_NEW_TOKENS_TEST_SHORT, ZERO_THRESHOLD, TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "cuda" if torch.cuda.is_available() else "mps"
@@ -31,7 +32,7 @@ for s in ds:
         })
 
 # Split: use smaller set for CPU
-random.seed(42)
+random.seed(DEFAULT_RANDOM_SEED)
 random.shuffle(all_pairs)
 train_pairs = all_pairs[:200]  # Smaller for CPU
 test_pairs = all_pairs[200:230]  # 30 test samples
@@ -40,7 +41,7 @@ print(f"Train: {len(train_pairs)}, Test: {len(test_pairs)}")
 LAYER = 8  # Best layer from earlier results
 
 def get_activation(text, layer):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float().numpy()
@@ -69,7 +70,7 @@ neg_acts = np.array(neg_acts)
 
 # CAA vector
 caa_vector = (pos_acts - neg_acts).mean(axis=0)
-caa_vector = caa_vector / (np.linalg.norm(caa_vector) + 1e-10)
+caa_vector = caa_vector / (np.linalg.norm(caa_vector) + ZERO_THRESHOLD)
 
 # Classifier vector
 X = np.vstack([pos_acts, neg_acts])
@@ -77,7 +78,7 @@ y = np.array([1] * len(pos_acts) + [0] * len(neg_acts))
 clf = LogisticRegression()
 clf.fit(X, y)
 clf_vector = clf.coef_[0]
-clf_vector = clf_vector / (np.linalg.norm(clf_vector) + 1e-10)
+clf_vector = clf_vector / (np.linalg.norm(clf_vector) + ZERO_THRESHOLD)
 
 print(f"\nCAA magnitude (before norm): {np.linalg.norm((pos_acts - neg_acts).mean(axis=0)):.4f}")
 print(f"Cosine(CAA, Classifier): {np.dot(caa_vector, clf_vector):.4f}")
@@ -121,7 +122,7 @@ def generate_answer(question, alpha=0.0, vector=None):
     with torch.no_grad():
         outputs = model.generate(
             inputs.input_ids,
-            max_new_tokens=50,
+            max_new_tokens=MAX_NEW_TOKENS_TEST_SHORT,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
         )

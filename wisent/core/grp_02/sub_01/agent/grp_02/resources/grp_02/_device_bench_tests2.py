@@ -2,6 +2,7 @@
 import time
 import torch
 from typing import Dict, Any, Optional
+from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, SUBPROCESS_TIMEOUT_SECS
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin2:
@@ -28,8 +29,8 @@ try:
         limit=2,  # Minimum examples for timing
         steering_mode=True,
         steering_method="CAA",
-        steering_strength=1.0,
-        layer="15",
+        steering_strength=__STRENGTH__,
+        layer="__LAYER__",
         verbose=False,
         allow_small_dataset=True,
         output_mode="likelihoods"
@@ -40,12 +41,13 @@ try:
     # Time per example
     time_per_example = total_time / 2
     print(f"BENCHMARK_RESULT:{time_per_example}")
-    
+
 except Exception as e:
     print(f"BENCHMARK_ERROR:{e}")
     raise
 '''
-        
+        test_script = test_script.replace("__LAYER__", str(DEFAULT_LAYER))
+        test_script = test_script.replace("__STRENGTH__", str(DEFAULT_STRENGTH))
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
                 f.write(test_script)
@@ -54,7 +56,7 @@ except Exception as e:
             result = subprocess.run([
                 sys.executable,
                 temp_script,
-            ], capture_output=True, text=True, timeout=300)
+            ], capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT_SECS)
 
             os.unlink(temp_script)
 
@@ -123,7 +125,7 @@ except Exception as e:
             
             result = subprocess.run([
                 sys.executable, temp_script
-            ], capture_output=True, text=True, timeout=300)  # 5-minute timeout
+            ], capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT_SECS)  # 5-minute timeout
             
             os.unlink(temp_script)
             

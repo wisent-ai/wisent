@@ -3,6 +3,7 @@ import torch
 import numpy as np
 from typing import Dict, Any, List, Tuple, Optional
 import warnings
+from wisent.core import constants as _C
 from wisent.core.geometry.visualization._viz_basic import (
     plot_pca_projection, plot_diff_vectors, plot_norm_distribution,
     plot_alignment_distribution, plot_eigenvalue_spectrum, plot_pairwise_distances,
@@ -35,7 +36,7 @@ def create_summary_figure(
     import io
     import base64
 
-    fig, axes = plt.subplots(3, 3, figsize=(18, 18))
+    fig, axes = plt.subplots(_C.VIZ_GRID_SUMMARY_ROWS, _C.VIZ_GRID_SUMMARY_COLS, figsize=_C.VIZ_FIGSIZE_SUMMARY)
 
     def plot_projection(ax, data, title):
         """Helper to plot a 2D projection."""
@@ -44,8 +45,8 @@ def create_summary_figure(
         else:
             pos = data["pos_projected"]
             neg = data["neg_projected"]
-            ax.scatter(pos[:, 0], pos[:, 1], c='blue', alpha=0.6, label='Pos', s=20)
-            ax.scatter(neg[:, 0], neg[:, 1], c='red', alpha=0.6, label='Neg', s=20)
+            ax.scatter(pos[:, 0], pos[:, 1], c='blue', alpha=_C.VIZ_ALPHA_MEDIUM, label='Pos', s=_C.VIZ_MARKER_SIZE_XS)
+            ax.scatter(neg[:, 0], neg[:, 1], c='red', alpha=_C.VIZ_ALPHA_MEDIUM, label='Neg', s=_C.VIZ_MARKER_SIZE_XS)
             ax.legend(loc='upper right', fontsize=8)
         ax.set_title(title, fontsize=11)
 
@@ -80,8 +81,8 @@ def create_summary_figure(
     if "error" not in diff_data:
         diffs = diff_data["diffs_projected"]
         mean = diff_data["mean_diff_projected"]
-        ax.scatter(diffs[:, 0], diffs[:, 1], c='green', alpha=0.6, s=20)
-        scale = max(abs(mean[0]), abs(mean[1]), 0.1) * 0.8
+        ax.scatter(diffs[:, 0], diffs[:, 1], c='green', alpha=_C.VIZ_ALPHA_MEDIUM, s=_C.VIZ_MARKER_SIZE_XS)
+        scale = max(abs(mean[0]), abs(mean[1]), _C.VIZ_MIN_SCALE) * _C.VIZ_SCALE_PADDING
         ax.arrow(0, 0, mean[0]*0.8, mean[1]*0.8, head_width=scale*0.1, head_length=scale*0.05, fc='black', ec='black')
     ax.set_title("Diff Vectors (Mean Direction)", fontsize=11)
 
@@ -89,7 +90,7 @@ def create_summary_figure(
     align_data = plot_alignment_distribution(pos_activations, neg_activations)
     ax = axes[1, 2]
     if "error" not in align_data:
-        ax.hist(align_data["alignments"], bins=20, color='green', alpha=0.7)
+        ax.hist(align_data["alignments"], bins=_C.VIZ_HISTOGRAM_BINS_20, color='green', alpha=0.7)
         ax.axvline(align_data["mean"], color='black', linestyle='--', linewidth=2)
         ax.set_title(f"Alignment (mean={align_data['mean']:.2f})", fontsize=11)
     else:
@@ -111,8 +112,8 @@ def create_summary_figure(
     # 8. Norm distribution
     norm_data = plot_norm_distribution(pos_activations, neg_activations)
     ax = axes[2, 1]
-    ax.hist(norm_data["pos_norms"], bins=20, alpha=0.5, label='Pos', color='blue')
-    ax.hist(norm_data["neg_norms"], bins=20, alpha=0.5, label='Neg', color='red')
+    ax.hist(norm_data["pos_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=0.5, label='Pos', color='blue')
+    ax.hist(norm_data["neg_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=0.5, label='Neg', color='red')
     ax.legend(fontsize=8)
     ax.set_title("Norm Distribution", fontsize=11)
     ax.set_xlabel("L2 Norm")
@@ -142,7 +143,7 @@ def create_summary_figure(
 
     # Convert to base64
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=120, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=_C.VIZ_DPI_STANDARD, bbox_inches='tight')
     buf.seek(0)
     img_base64 = base64.b64encode(buf.read()).decode('utf-8')
     plt.close(fig)
@@ -205,8 +206,8 @@ def render_matplotlib_figure(
         if plot_type in ['pca', 'tsne', 'umap']:
             pos = plot_data["pos_projected"]
             neg = plot_data["neg_projected"]
-            ax.scatter(pos[:, 0], pos[:, 1], c='blue', alpha=0.6, label='Positive')
-            ax.scatter(neg[:, 0], neg[:, 1], c='red', alpha=0.6, label='Negative')
+            ax.scatter(pos[:, 0], pos[:, 1], c='blue', alpha=_C.VIZ_ALPHA_MEDIUM, label='Positive')
+            ax.scatter(neg[:, 0], neg[:, 1], c='red', alpha=_C.VIZ_ALPHA_MEDIUM, label='Negative')
             ax.legend()
             ax.set_xlabel("Component 1")
             ax.set_ylabel("Component 2")
@@ -214,20 +215,20 @@ def render_matplotlib_figure(
         elif plot_type == 'diff_vectors':
             diffs = plot_data["diffs_projected"]
             mean = plot_data["mean_diff_projected"]
-            ax.scatter(diffs[:, 0], diffs[:, 1], c='green', alpha=0.6)
+            ax.scatter(diffs[:, 0], diffs[:, 1], c='green', alpha=_C.VIZ_ALPHA_MEDIUM)
             ax.arrow(0, 0, mean[0], mean[1], head_width=0.1, head_length=0.05, fc='black', ec='black')
             ax.set_xlabel("PC1")
             ax.set_ylabel("PC2")
 
         elif plot_type == 'norms':
-            ax.hist(plot_data["pos_norms"], bins=20, alpha=0.5, label='Positive', color='blue')
-            ax.hist(plot_data["neg_norms"], bins=20, alpha=0.5, label='Negative', color='red')
+            ax.hist(plot_data["pos_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=0.5, label='Positive', color='blue')
+            ax.hist(plot_data["neg_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=0.5, label='Negative', color='red')
             ax.legend()
             ax.set_xlabel("Norm")
             ax.set_ylabel("Count")
 
         elif plot_type == 'alignments':
-            ax.hist(plot_data["alignments"], bins=20, color='green', alpha=0.7)
+            ax.hist(plot_data["alignments"], bins=_C.VIZ_HISTOGRAM_BINS_20, color='green', alpha=0.7)
             ax.axvline(plot_data["mean"], color='black', linestyle='--', label=f'Mean: {plot_data["mean"]:.2f}')
             ax.legend()
             ax.set_xlabel("Alignment with mean direction")
@@ -239,15 +240,15 @@ def render_matplotlib_figure(
             ax.set_ylabel("Explained Variance Ratio")
 
         elif plot_type == 'distances':
-            ax.hist(plot_data["pos_within"], bins=30, alpha=0.5, label='Within Pos', color='blue')
-            ax.hist(plot_data["neg_within"], bins=30, alpha=0.5, label='Within Neg', color='red')
-            ax.hist(plot_data["between"], bins=30, alpha=0.5, label='Between', color='green')
+            ax.hist(plot_data["pos_within"], bins=_C.VIZ_HISTOGRAM_BINS, alpha=0.5, label='Within Pos', color='blue')
+            ax.hist(plot_data["neg_within"], bins=_C.VIZ_HISTOGRAM_BINS, alpha=0.5, label='Within Neg', color='red')
+            ax.hist(plot_data["between"], bins=_C.VIZ_HISTOGRAM_BINS, alpha=0.5, label='Between', color='green')
             ax.legend()
             ax.set_xlabel("Distance")
             ax.set_ylabel("Count")
 
         elif plot_type == 'cone':
-            ax.hist(plot_data["angles_from_mean"], bins=20, color='purple', alpha=0.7)
+            ax.hist(plot_data["angles_from_mean"], bins=_C.VIZ_HISTOGRAM_BINS_20, color='purple', alpha=0.7)
             ax.axvline(plot_data["mean_angle"], color='black', linestyle='--',
                        label=f'Mean: {plot_data["mean_angle"]:.1f}°')
             ax.legend()
@@ -263,7 +264,7 @@ def render_matplotlib_figure(
 
     # Convert to base64
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=100, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=_C.VIZ_DPI_LOW, bbox_inches='tight')
     buf.seek(0)
     img_base64 = base64.b64encode(buf.read()).decode('utf-8')
     plt.close(fig)

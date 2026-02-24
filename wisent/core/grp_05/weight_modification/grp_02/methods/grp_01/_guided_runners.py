@@ -9,6 +9,7 @@ if TYPE_CHECKING:
     from torch.nn import Module
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.constants import GUIDED_VARIANCE_THRESHOLD, GUIDED_STRONG_SIGNAL, GUIDED_MODERATE_SIGNAL
 from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig, GuidedModificationResult, CollateralDamageReport)
 from wisent.core.weight_modification.methods._guided_diagnostics import compute_layer_diagnostics
@@ -121,7 +122,7 @@ def run_guided_modification(
         scores = [d.linear_score for d in diagnostics.values()]
         variance = torch.tensor(scores).var().item()
         
-        if variance > 0.05:  # High variance = some layers much better
+        if variance > GUIDED_VARIANCE_THRESHOLD:  # High variance = some layers much better
             selected_layers = select_surgical_layers(diagnostics, cfg)
             mode_used = AblationMode.SURGICAL
         else:
@@ -209,12 +210,12 @@ def run_guided_modification(
     best_layer = max(selected_layers, key=lambda l: diagnostics[l].linear_score)
     best_score = diagnostics[best_layer].linear_score
     
-    if best_score >= 0.8:
+    if best_score >= GUIDED_STRONG_SIGNAL:
         recommendation = (
             f"Strong linear signal detected. Modified {len(selected_layers)} layers "
             f"with {mode_used.value} mode. Best layer: {best_layer} (score={best_score:.3f})"
         )
-    elif best_score >= 0.6:
+    elif best_score >= GUIDED_MODERATE_SIGNAL:
         recommendation = (
             f"Moderate linear signal. Modified {len(selected_layers)} layers. "
             f"Consider verifying results with benchmark evaluation."

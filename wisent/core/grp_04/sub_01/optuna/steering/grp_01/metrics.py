@@ -24,7 +24,7 @@ from wisent.core.errors import (
 
 # Use the standard evaluator system
 from wisent.core.evaluators.rotator import EvaluatorRotator
-
+from wisent.core.constants import BENCHMARK_WEIGHT, PROBE_WEIGHT, CLASSIFIER_DECISION_THRESHOLD
 logger = logging.getLogger(__name__)
 
 
@@ -230,8 +230,8 @@ def evaluate_probe_performance(y_true: np.ndarray, y_pred: np.ndarray, y_pred_pr
 def calculate_combined_score(
     benchmark_metrics: Dict[str, float],
     probe_metrics: Dict[str, float],
-    benchmark_weight: float = 0.7,
-    probe_weight: float = 0.3,
+    benchmark_weight: float = BENCHMARK_WEIGHT,
+    probe_weight: float = PROBE_WEIGHT,
 ) -> float:
     """
     Calculate combined score from benchmark and probe performance.
@@ -246,7 +246,7 @@ def calculate_combined_score(
         Combined score (0-1)
     """
     benchmark_score = benchmark_metrics.get("accuracy", 0.0)
-    probe_score = probe_metrics.get("auc", 0.5)  # Use AUC as primary probe metric
+    probe_score = probe_metrics.get("auc", CLASSIFIER_DECISION_THRESHOLD)  # Use AUC as primary probe metric
 
     combined_score = benchmark_weight * benchmark_score + probe_weight * probe_score
     return combined_score

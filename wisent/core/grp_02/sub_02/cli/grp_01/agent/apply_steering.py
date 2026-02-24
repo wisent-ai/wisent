@@ -1,6 +1,7 @@
 """Apply steering vectors to improve response."""
 
 from wisent.core.models import get_generate_kwargs
+from wisent.core.constants import DEFAULT_STRENGTH, DISPLAY_TRUNCATION_MEDIUM
 
 
 def _map_token_aggregation(aggregation_str: str):
@@ -39,7 +40,7 @@ def apply_steering_and_evaluate(
     collector,
     layer_key: str,
     quality_threshold: float,
-    steering_strength: float = 1.0,
+    steering_strength: float = DEFAULT_STRENGTH,
     steering_normalize: bool = True,
     verbose: bool = False,
     token_aggregation: str = "average",
@@ -159,7 +160,7 @@ def apply_steering_and_evaluate(
 
     steered_text = steered_responses[0] if steered_responses else ""
     print(f"\n   Steered response:")
-    print(f"   {steered_text[:200]}{'...' if len(steered_text) > 200 else ''}")
+    print(f"   {steered_text[:DISPLAY_TRUNCATION_MEDIUM]}{'...' if len(steered_text) > DISPLAY_TRUNCATION_MEDIUM else ''}")
 
     # Evaluate steered response with classifier
     print(f"\n   Evaluating steered response with classifier...")

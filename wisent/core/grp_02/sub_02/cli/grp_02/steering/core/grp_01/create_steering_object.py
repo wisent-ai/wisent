@@ -13,17 +13,20 @@ import torch
 from collections import defaultdict
 from datetime import datetime
 
-from wisent.core.steering_methods.steering_object import (
+from wisent.core.steering_methods._steering_object_base import (
     SteeringObjectMetadata,
-    CAASteeringObject,
-    OstrzeSteeringObject,
-    MLPSteeringObject,
-    TECZASteeringObject,
-    TETNOSteeringObject,
-    GROMSteeringObject,
     BaseSteeringObject,
 )
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import (
+    MLP_DROPOUT,
+    MLP_HIDDEN_DIM,
+    MLP_LEARNING_RATE,
+    MLP_NUM_LAYERS,
+    MLP_OPTIMIZATION_STEPS,
+    MLP_WEIGHT_DECAY,
+    OSTRZE_C,
+)
 
 
 
@@ -222,7 +225,7 @@ def execute_create_steering_object(args):
         if getattr(args, 'verbose', False):
             import traceback
             traceback.print_exc()
-        sys.exit(1)
+        raise
 
 
 def _create_simple_steering_object(
@@ -237,25 +240,28 @@ def _create_simple_steering_object(
     # Get method class
     if method_name == 'caa':
         from wisent.core.steering_methods.methods.caa import CAAMethod
+        from wisent.core.steering_methods._steering_object_simple import CAASteeringObject
         method = CAAMethod(normalize=getattr(args, 'normalize', True))
         obj_class = CAASteeringObject
     elif method_name == 'ostrze':
         from wisent.core.steering_methods.methods.ostrze import OstrzeMethod
+        from wisent.core.steering_methods._steering_object_simple import OstrzeSteeringObject
         method = OstrzeMethod(
             normalize=getattr(args, 'normalize', True),
-            C=getattr(args, 'ostrze_C', 1.0),
+            C=getattr(args, 'ostrze_C', OSTRZE_C),
         )
         obj_class = OstrzeSteeringObject
     elif method_name == 'mlp':
         from wisent.core.steering_methods.methods.mlp import MLPMethod
+        from wisent.core.steering_methods._steering_object_simple import MLPSteeringObject
         method = MLPMethod(
             normalize=getattr(args, 'normalize', True),
-            hidden_dim=getattr(args, 'mlp_hidden_dim', 256),
-            num_layers=getattr(args, 'mlp_num_layers', 2),
-            dropout=getattr(args, 'mlp_dropout', 0.1),
-            epochs=getattr(args, 'mlp_epochs', 100),
-            learning_rate=getattr(args, 'mlp_learning_rate', 0.001),
-            weight_decay=getattr(args, 'mlp_weight_decay', 0.01),
+            hidden_dim=getattr(args, 'mlp_hidden_dim', MLP_HIDDEN_DIM),
+            num_layers=getattr(args, 'mlp_num_layers', MLP_NUM_LAYERS),
+            dropout=getattr(args, 'mlp_dropout', MLP_DROPOUT),
+            epochs=getattr(args, 'mlp_epochs', MLP_OPTIMIZATION_STEPS),
+            learning_rate=getattr(args, 'mlp_learning_rate', MLP_LEARNING_RATE),
+            weight_decay=getattr(args, 'mlp_weight_decay', MLP_WEIGHT_DECAY),
         )
         obj_class = MLPSteeringObject
     else:

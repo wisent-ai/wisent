@@ -6,6 +6,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -105,7 +106,7 @@ class Polemo2Extractor(LMEvalBenchmarkExtractor):
                 else:  # neutral
                     incorrect_sentiment = "negative"
 
-                question = f"What is the sentiment of this Polish review?\n{sentence[:200]}..." if len(sentence) > 200 else f"What is the sentiment of this Polish review?\n{sentence}"
+                question = f"What is the sentiment of this Polish review?\n{sentence[:DISPLAY_TRUNCATION_MEDIUM]}..." if len(sentence) > DISPLAY_TRUNCATION_MEDIUM else f"What is the sentiment of this Polish review?\n{sentence}"
 
                 metadata = {"label": "polemo2"}
 

@@ -6,6 +6,14 @@ from wisent.core.cli.optimize_steering.method_configs import (
     TECZAConfig, TETNOConfig, GROMConfig,
     STEERING_STRATEGIES,
 )
+from wisent.core.constants import (
+    SEARCH_MLP_HIDDEN_DIMS, SEARCH_MLP_NUM_LAYERS, SEARCH_TECZA_NUM_DIRECTIONS,
+    SEARCH_TECZA_RETAIN_WEIGHTS, SEARCH_STEERING_RANGES,
+    SEARCH_TETNO_CONDITION_THRESHOLDS, SEARCH_TETNO_GATE_TEMPERATURES,
+    SEARCH_TETNO_MAX_ALPHAS, SEARCH_GROM_NUM_DIRECTIONS,
+    SEARCH_GROM_GATE_HIDDEN_DIMS, SEARCH_GROM_INTENSITY_HIDDEN_DIMS,
+    SEARCH_GROM_BEHAVIOR_WEIGHTS, SENSOR_LAYER_SAMPLING_DIVISOR,
+)
 
 
 def get_search_space(method: str, num_layers: int) -> Iterator[MethodConfig]:
@@ -44,8 +52,8 @@ def get_search_space(method: str, num_layers: int) -> Iterator[MethodConfig]:
     
     elif method.upper() == "MLP":
         for layer in range(num_layers):
-            for hidden_dim in [128, 256, 512]:
-                for num_layers_mlp in [1, 2, 3]:
+            for hidden_dim in SEARCH_MLP_HIDDEN_DIMS:
+                for num_layers_mlp in SEARCH_MLP_NUM_LAYERS:
                     for ext_strategy in extraction_strategies:
                         for steer_strategy in steering_strategies:
                             yield MLPConfig(
@@ -59,9 +67,9 @@ def get_search_space(method: str, num_layers: int) -> Iterator[MethodConfig]:
     
     elif method.upper() == "TECZA":
         for layer in range(num_layers):
-            for num_directions in [1, 2, 3, 5]:
+            for num_directions in SEARCH_TECZA_NUM_DIRECTIONS:
                 for direction_weighting in ["primary_only", "equal"]:
-                    for retain_weight in [0.0, 0.1, 0.3]:
+                    for retain_weight in SEARCH_TECZA_RETAIN_WEIGHTS:
                         for ext_strategy in extraction_strategies:
                             for steer_strategy in steering_strategies:
                                 yield TECZAConfig(
@@ -75,14 +83,15 @@ def get_search_space(method: str, num_layers: int) -> Iterator[MethodConfig]:
                                 )
     
     elif method.upper() == "TETNO":
-        for sensor_pos in [0.5, 0.75]:  # middle, late
-            sensor_layer = int(num_layers * sensor_pos)
-            for steering_range in [3, 5]:
-                steering_start = int(num_layers * 0.75)
-                steering_layers = list(range(steering_start, min(steering_start + steering_range, num_layers)))
-                for threshold in [0.3, 0.5, 0.7]:
-                    for gate_temp in [0.1, 0.5, 1.0]:
-                        for max_alpha in [1.5, 2.0, 3.0]:
+        sensor_layers = list(range(0, num_layers, max(1, num_layers // SENSOR_LAYER_SAMPLING_DIVISOR)))
+        for sensor_layer in sensor_layers:
+            for steering_range in SEARCH_STEERING_RANGES:
+                start = max(0, sensor_layer - steering_range // 2)
+                end = min(num_layers, start + steering_range)
+                steering_layers = list(range(start, end))
+                for threshold in SEARCH_TETNO_CONDITION_THRESHOLDS:
+                    for gate_temp in SEARCH_TETNO_GATE_TEMPERATURES:
+                        for max_alpha in SEARCH_TETNO_MAX_ALPHAS:
                             for ext_strategy in extraction_strategies:
                                 for steer_strategy in steering_strategies:
                                     yield TETNOConfig(
@@ -97,15 +106,16 @@ def get_search_space(method: str, num_layers: int) -> Iterator[MethodConfig]:
                                     )
     
     elif method.upper() == "GROM":
-        for sensor_pos in [0.5, 0.75]:
-            sensor_layer = int(num_layers * sensor_pos)
-            for steering_range in [3, 5]:
-                steering_start = int(num_layers * 0.75)
-                steering_layers = list(range(steering_start, min(steering_start + steering_range, num_layers)))
-                for num_directions in [2, 3, 5]:
-                    for gate_hidden in [32, 64]:
-                        for intensity_hidden in [16, 32]:
-                            for behavior_weight in [0.5, 1.0]:
+        sensor_layers = list(range(0, num_layers, max(1, num_layers // SENSOR_LAYER_SAMPLING_DIVISOR)))
+        for sensor_layer in sensor_layers:
+            for steering_range in SEARCH_STEERING_RANGES:
+                start = max(0, sensor_layer - steering_range // 2)
+                end = min(num_layers, start + steering_range)
+                steering_layers = list(range(start, end))
+                for num_directions in SEARCH_GROM_NUM_DIRECTIONS:
+                    for gate_hidden in SEARCH_GROM_GATE_HIDDEN_DIMS:
+                        for intensity_hidden in SEARCH_GROM_INTENSITY_HIDDEN_DIMS:
+                            for behavior_weight in SEARCH_GROM_BEHAVIOR_WEIGHTS:
                                 for ext_strategy in extraction_strategies:
                                     for steer_strategy in steering_strategies:
                                         yield GROMConfig(

@@ -16,6 +16,14 @@ from tqdm import tqdm
 # Import Wisent functions
 from wisent.core.data_loaders.livecodebench_loader import LiveCodeBenchLoader
 from wisent.core.model import Model
+from wisent.core.constants import (
+    CODE_GENERATION_MAX_TOKENS,
+    DEFAULT_LAYER,
+    GENERATION_TEMPERATURE,
+    GENERATION_TOP_P_NARROW,
+    BENCHMARK_MAX_TOKENS_ARGPARSE,
+    TEST_DEFAULT_LIMIT,
+)
 
 # Check and print datasets version
 import datasets
@@ -29,7 +37,7 @@ def setup_output_directory(output_dir: str = "results") -> Path:
     return output_path
 
 
-def generate_code_completion(model: Model, problem: Dict[str, Any], max_tokens: int = 512) -> Dict[str, Any]:
+def generate_code_completion(model: Model, problem: Dict[str, Any], max_tokens: int = CODE_GENERATION_MAX_TOKENS) -> Dict[str, Any]:
     """
     Generate code completion for a given problem using the model.
     
@@ -59,11 +67,11 @@ Please provide a complete solution:"""
         start_time = time.time()
         response = model.generate(
             prompt=prompt,
-            layer_index=15,  # Use middle layer
+            layer_index=DEFAULT_LAYER,
             max_new_tokens=max_tokens,
             do_sample=True,
-            temperature=0.7,
-            top_p=0.9
+            temperature=GENERATION_TEMPERATURE,
+            top_p=GENERATION_TOP_P_NARROW
         )
         generation_time = time.time() - start_time
         
@@ -99,9 +107,9 @@ def main():
                        help="HuggingFace model name")
     parser.add_argument("--release-version", default="release_v1", 
                        help="LiveCodeBench release version")
-    parser.add_argument("--limit", type=int, default=10, 
+    parser.add_argument("--limit", type=int, default=TEST_DEFAULT_LIMIT,
                        help="Limit number of problems to process")
-    parser.add_argument("--max-tokens", type=int, default=512, 
+    parser.add_argument("--max-tokens", type=int, default=BENCHMARK_MAX_TOKENS_ARGPARSE,
                        help="Maximum tokens to generate per problem")
     parser.add_argument("--output-dir", default="results", 
                        help="Output directory for results")

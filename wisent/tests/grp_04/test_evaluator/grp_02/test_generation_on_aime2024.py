@@ -2,6 +2,7 @@
 
 from datasets import load_dataset
 from wisent.core.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
+from wisent.core.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT
 
 # Load dataset
 ds = load_dataset("HuggingFaceH4/aime_2024", split="train")
@@ -10,7 +11,7 @@ ds = load_dataset("HuggingFaceH4/aime_2024", split="train")
 evaluator = GenerationEvaluator()
 
 # Test on a few examples
-num_examples = 5
+num_examples = NUM_EXAMPLES_DEFAULT
 
 print("=" * 80)
 print("Testing GenerationEvaluator answer extraction on AIME 2024")
@@ -25,7 +26,7 @@ for i in range(num_examples):
     expected_answer = example["answer"]
 
     print(f"\n--- Example {i} ---")
-    print(f"Problem: {example['problem'][:100]}...")
+    print(f"Problem: {example['problem'][:DISPLAY_TRUNCATION_COMPACT]}...")
     print(f"\nFull solution:\n{solution}")
     print(f"\n>>> Expected answer: {expected_answer}")
 
@@ -35,7 +36,7 @@ for i in range(num_examples):
 
     # Check if correct
     try:
-        is_correct = abs(float(extracted) - float(expected_answer)) < 1e-6
+        is_correct = abs(float(extracted) - float(expected_answer)) < COMPARE_TOL
         if is_correct:
             correct += 1
             print(">>> ✓ CORRECT")

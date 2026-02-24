@@ -6,6 +6,11 @@ import time
 import sys
 import os
 
+from wisent.core.constants import (
+    CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_CLASSIFIER_LR,
+    CLASSIFIER_EARLY_STOPPING_PATIENCE, CLASSIFIER_MLP_HIDDEN_DIM,
+)
+
 # Add the lm-harness-integration path for benchmark selection
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'lm-harness-integration'))
 
@@ -51,11 +56,11 @@ class ClassifierParams:
     # Additional classifier configuration parameters
     aggregation_method: str = "last_token"  # last_token/mean/max for activation aggregation
     token_aggregation: str = "average"  # average/final/first/max/min for token score aggregation
-    num_epochs: int = 50
-    batch_size: int = 32
-    learning_rate: float = 0.001
-    early_stopping_patience: int = 10
-    hidden_dim: int = 128
+    num_epochs: int = CLASSIFIER_NUM_EPOCHS
+    batch_size: int = CLASSIFIER_BATCH_SIZE
+    learning_rate: float = DEFAULT_CLASSIFIER_LR
+    early_stopping_patience: int = CLASSIFIER_EARLY_STOPPING_PATIENCE
+    hidden_dim: int = CLASSIFIER_MLP_HIDDEN_DIM
 
 @dataclass
 class SteeringParams:

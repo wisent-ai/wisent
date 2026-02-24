@@ -4,6 +4,10 @@ import json
 import os
 from pathlib import Path
 
+from wisent.core.constants import (
+    SPLIT_RATIO_HALF, DEFAULT_RANDOM_SEED, BENCHMARK_TEST_DATA_LIMIT,
+    BENCHMARK_SPLIT_LIMIT,
+)
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.rotator import EvaluatorRotator
@@ -60,11 +64,11 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
             
         result = loader._load_one_task(
             task_name=task_name,
-            split_ratio=0.5,
-            seed=42,
-            limit=300,
-            training_limit=15,
-            testing_limit=15
+            split_ratio=SPLIT_RATIO_HALF,
+            seed=DEFAULT_RANDOM_SEED,
+            limit=BENCHMARK_TEST_DATA_LIMIT,
+            training_limit=BENCHMARK_SPLIT_LIMIT,
+            testing_limit=BENCHMARK_SPLIT_LIMIT
         )
 
         test_pairs = result['test_qa_pairs']

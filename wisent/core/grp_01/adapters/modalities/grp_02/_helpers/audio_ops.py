@@ -17,6 +17,7 @@ from wisent.core.adapters.base import (
     SteeringConfig,
 )
 from wisent.core.modalities import AudioContent
+from wisent.core.constants import AUDIO_WHISPER_MAX_TOKENS, AUDIO_GENERIC_MAX_TOKENS
 from wisent.core.activations.core.atoms import LayerActivations
 
 
@@ -32,7 +33,7 @@ class AudioOpsMixin:
                     latent = latent.unsqueeze(0)
                 generated_ids = self.model.generate(
                     encoder_outputs={"last_hidden_state": latent},
-                    max_new_tokens=448,
+                    max_new_tokens=AUDIO_WHISPER_MAX_TOKENS,
                 )
             return self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
         elif model_type in (self.MODEL_TYPE_WAV2VEC, self.MODEL_TYPE_HUBERT):
@@ -64,7 +65,7 @@ class AudioOpsMixin:
                 if hasattr(self.model, "generate"):
                     generated_ids = self.model.generate(
                         encoder_outputs={"last_hidden_state": latent},
-                        max_new_tokens=256,
+                        max_new_tokens=AUDIO_GENERIC_MAX_TOKENS,
                     )
                     return self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
                 return f"[Latent: shape={latent.shape}, dtype={latent.dtype}]"

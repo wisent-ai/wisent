@@ -11,6 +11,7 @@ import torch
 import torch.nn as nn
 
 from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.constants import NORM_EPS, DEFAULT_LAYER_WEIGHT
 
 
 class SteeringHookMixin:
@@ -85,7 +86,7 @@ class SteeringHookMixin:
         """Create a forward hook that adds the steering vector."""
         # Get per-layer method if config.method is a dict
         method = config.method.get(layer_name) if isinstance(config.method, dict) else config.method
-        scale = config.scale.get(layer_name, 1.0) if isinstance(config.scale, dict) else config.scale
+        scale = config.scale.get(layer_name, DEFAULT_LAYER_WEIGHT) if isinstance(config.scale, dict) else config.scale
 
         def hook(module: nn.Module, input: tuple, output: torch.Tensor) -> torch.Tensor:
             if method is not None:
@@ -97,7 +98,7 @@ class SteeringHookMixin:
             # Default: linear steering
             v = vector.to(output.device, output.dtype)
             if config.normalize:
-                v = v / (v.norm(dim=-1, keepdim=True) + 1e-8)
+                v = v / (v.norm(dim=-1, keepdim=True) + NORM_EPS)
             v = v * scale
             while v.dim() < output.dim():
                 v = v.unsqueeze(0)

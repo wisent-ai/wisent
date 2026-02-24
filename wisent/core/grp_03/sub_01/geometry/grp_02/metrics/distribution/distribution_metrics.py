@@ -8,6 +8,7 @@ negative activation distributions without assuming linear separability.
 import torch
 import numpy as np
 from typing import Dict
+from wisent.core.constants import ZERO_THRESHOLD, DISPLAY_TOP_N_SMALL
 
 
 def compute_mmd_rbf(
@@ -36,7 +37,7 @@ def compute_mmd_rbf(
         
         all_data = np.vstack([pos, neg])
         dists = cdist(all_data, all_data, 'euclidean')
-        gamma = 1.0 / (2 * np.median(dists[dists > 0]) ** 2 + 1e-10)
+        gamma = 1.0 / (2 * np.median(dists[dists > 0]) ** 2 + ZERO_THRESHOLD)
         
         K_pp = rbf_kernel(pos, pos, gamma=gamma)
         K_nn = rbf_kernel(neg, neg, gamma=gamma)
@@ -88,7 +89,7 @@ def compute_density_ratio(
         avg_pos = np.nanmean(pos_dists)
         avg_neg = np.nanmean(neg_dists)
         
-        if avg_neg < 1e-10:
+        if avg_neg < ZERO_THRESHOLD:
             return 1.0
         
         return float(avg_pos / avg_neg)
@@ -129,13 +130,13 @@ def compute_fisher_per_dimension(
             between_var = (mean_pos - mean_neg) ** 2
             within_var = (var_pos + var_neg) / 2
             
-            if within_var > 1e-10:
+            if within_var > ZERO_THRESHOLD:
                 fishers[d] = between_var / within_var
         
         fisher_max = float(fishers.max())
         
         values = np.abs(fishers)
-        if values.sum() > 1e-10:
+        if values.sum() > ZERO_THRESHOLD:
             values = np.sort(values)
             n = len(values)
             fisher_gini = (2 * np.sum((np.arange(1, n+1) * values)) / (n * values.sum())) - (n + 1) / n
@@ -143,8 +144,8 @@ def compute_fisher_per_dimension(
             fisher_gini = 0.0
         
         sorted_fishers = np.sort(fishers)[::-1]
-        top10_sum = sorted_fishers[:10].sum()
-        total_sum = fishers.sum() + 1e-10
+        top10_sum = sorted_fishers[:DISPLAY_TOP_N_SMALL].sum()
+        total_sum = fishers.sum() + ZERO_THRESHOLD
         fisher_top10_ratio = float(top10_sum / total_sum)
         
         num_dims_above_1 = int((fishers > 1.0).sum())

@@ -13,6 +13,13 @@ from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.errors import NoCandidateLayersError
+from wisent.core.constants import (
+    STEERING_OPTI_SAMPLE_SIZE,
+    STEERING_OPTI_BATCH_SIZE,
+    STEERING_OPTI_JUDGE_MAX_TOKENS,
+    STEERING_ALPHA_MIN,
+    STEERING_ALPHA_MAX,
+)
 
 __all__ = [
     "Prompt",
@@ -55,10 +62,10 @@ class SteeringOptimizer(BaseOptimizer):
         val_prompts: ContrastivePairSet,
         vectors_by_layer: dict[str | int, Any],
         judge_prompt_builder: Callable[[str, str, str], list[ChatMessage]] = build_judge_prompt,
-        alpha_range: tuple[float, float] = (-3.0, 3.0),
+        alpha_range: tuple[float, float] = (STEERING_ALPHA_MIN, STEERING_ALPHA_MAX),
         candidate_layers: Sequence[str | int] | None = None,
-        sample_size: int = 64,
-        batch_size: int = 16,
+        sample_size: int = STEERING_OPTI_SAMPLE_SIZE,
+        batch_size: int = STEERING_OPTI_BATCH_SIZE,
         normalize_vectors: bool = True,
         gen_kwargs: dict[str, Any] | None = None,
         judge_kwargs: dict[str, Any] | None = None,
@@ -83,7 +90,7 @@ class SteeringOptimizer(BaseOptimizer):
         self.batch_size = max(1, int(batch_size))
         self.normalize_vectors = bool(normalize_vectors)
         self.gen_kwargs = dict(gen_kwargs or {})
-        self.judge_kwargs = dict(judge_kwargs or {"max_new_tokens": 8})
+        self.judge_kwargs = dict(judge_kwargs or {"max_new_tokens": STEERING_OPTI_JUDGE_MAX_TOKENS})
 
     def _objective(self, trial: optuna.Trial) -> float:
         layer = trial.suggest_categorical("layer", self.candidate_layers)

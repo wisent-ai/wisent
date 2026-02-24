@@ -5,6 +5,13 @@ from typing import Dict, List, Optional, Any
 from wisent.core.errors import BudgetCalculationError, NoBenchmarkDataError, ResourceEstimationError
 from wisent.core.agent.resources._budget_types import ResourceType, ResourceBudget, TaskEstimate
 from wisent.core.agent.resources._budget_manager import BudgetManager
+from wisent.core.constants import (
+    AGENT_RESOURCE_BUDGET_MINUTES,
+    BENCHMARK_LOADING_TIME_DEFAULT,
+    PRIORITY_HIGH,
+    PRIORITY_MEDIUM,
+    PRIORITY_LOW,
+)
 logger = logging.getLogger(__name__)
 
 def get_budget_manager() -> BudgetManager:
@@ -17,8 +24,8 @@ def set_time_budget(minutes: float) -> None:
     _budget_manager.set_time_budget(minutes)
 
 
-def calculate_max_tasks_for_time_budget(task_type: str = "benchmark_evaluation", 
-                                       time_budget_minutes: float = 5.0) -> int:
+def calculate_max_tasks_for_time_budget(task_type: str = "benchmark_evaluation",
+                                       time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES) -> int:
     """
     Calculate maximum number of tasks that can fit within a time budget.
     
@@ -59,8 +66,8 @@ def calculate_max_tasks_for_time_budget(task_type: str = "benchmark_evaluation",
         raise BudgetCalculationError(task_type=task_type, cause=e)
 
 
-def optimize_tasks_for_budget(task_candidates: List[str], 
-                            time_budget_minutes: float = 5.0,
+def optimize_tasks_for_budget(task_candidates: List[str],
+                            time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES,
                             max_tasks: Optional[int] = None) -> List[str]:
     """
     Optimize task selection within a time budget.
@@ -81,8 +88,8 @@ def optimize_tasks_for_budget(task_candidates: List[str],
     )
 
 
-def optimize_benchmarks_for_budget(task_candidates: List[str], 
-                                 time_budget_minutes: float = 5.0,
+def optimize_benchmarks_for_budget(task_candidates: List[str],
+                                 time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES,
                                  max_tasks: Optional[int] = None,
                                  prefer_fast: bool = False) -> List[str]:
     """
@@ -109,17 +116,17 @@ def optimize_benchmarks_for_budget(task_candidates: List[str],
         for task in task_candidates:
             if task in BENCHMARKS:
                 config = BENCHMARKS[task]
-                loading_time = config.get('loading_time', 60.0)  # seconds
+                loading_time = config.get('loading_time', BENCHMARK_LOADING_TIME_DEFAULT)  # seconds
                 priority = config.get('priority', 'unknown')
                 
                 # Calculate priority score for selection
                 priority_score = 0
                 if priority == 'high':
-                    priority_score = 3
+                    priority_score = PRIORITY_HIGH
                 elif priority == 'medium':
-                    priority_score = 2
+                    priority_score = PRIORITY_MEDIUM
                 elif priority == 'low':
-                    priority_score = 1
+                    priority_score = PRIORITY_LOW
                 
                 # Calculate efficiency score (priority per second)
                 efficiency_score = priority_score / max(loading_time, 1.0)
@@ -135,7 +142,7 @@ def optimize_benchmarks_for_budget(task_candidates: List[str],
                 # Fallback for unknown benchmarks
                 benchmark_info.append({
                     'task': task,
-                    'loading_time': 60.0,
+                    'loading_time': BENCHMARK_LOADING_TIME_DEFAULT,
                     'priority': 'unknown',
                     'priority_score': 0,
                     'efficiency_score': 0.0

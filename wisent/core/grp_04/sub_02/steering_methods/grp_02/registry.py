@@ -12,6 +12,7 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Type
 
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.constants import DEFAULT_STRENGTH, STEERING_STRENGTH_RANGE_WIDE
 
 
 class SteeringMethodType(Enum):
@@ -62,8 +63,8 @@ class SteeringMethodDefinition:
     optimization_config: Dict[str, Any] = field(default_factory=dict)
     
     # Default values for common settings
-    default_strength: float = 1.0
-    strength_range: tuple = (0.1, 5.0)
+    default_strength: float = DEFAULT_STRENGTH
+    strength_range: tuple = STEERING_STRENGTH_RANGE_WIDE
     
     def get_method_class(self) -> Type[BaseSteeringMethod]:
         """Dynamically import and return the method class."""

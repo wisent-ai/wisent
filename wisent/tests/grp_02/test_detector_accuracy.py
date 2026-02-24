@@ -14,6 +14,7 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
+from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PARSER_DEFAULT_NUM_PAIRS, TEST_DETECTOR_DEFAULT_LAYER
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
@@ -25,8 +26,8 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", default="truthfulqa_gen")
     parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--num-pairs", type=int, default=50)
-    parser.add_argument("--layer", type=int, default=6)
+    parser.add_argument("--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
+    parser.add_argument("--layer", type=int, default=TEST_DETECTOR_DEFAULT_LAYER)
     args = parser.parse_args()
 
     print(f"Loading model {args.model}...")
@@ -74,7 +75,7 @@ def main():
     print(f"Sparsity (fraction < 0.1): {sparsity:.2%}")
     
     # 2. Cosine similarity of difference vectors (for cone detection)
-    diff_norm = diff_np / (np.linalg.norm(diff_np, axis=1, keepdims=True) + 1e-8)
+    diff_norm = diff_np / (np.linalg.norm(diff_np, axis=1, keepdims=True) + NORM_EPS)
     cos_sim = diff_norm @ diff_norm.T
     cos_sim_flat = cos_sim[np.triu_indices(len(cos_sim), k=1)]
     mean_cos_sim = cos_sim_flat.mean()
@@ -96,8 +97,8 @@ def main():
     print("="*70)
     
     config = GeometryAnalysisConfig(
-        num_components=5,
-        optimization_steps=50,
+        num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS,
+        optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_DEFAULT,
     )
     result = detect_geometry_structure(pos_tensor, neg_tensor, config)
     

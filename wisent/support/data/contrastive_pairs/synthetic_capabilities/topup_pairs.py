@@ -16,6 +16,14 @@ from wisent.core.synthetic.cleaners.deduper_cleaner import DeduperCleaner
 from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
 from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
 from wisent.core.models import get_generate_kwargs
+from wisent.core.constants import (
+    TOKENS_PER_PAIR_ESTIMATE,
+    TOKENS_BASE_OFFSET,
+    TOKEN_ESTIMATE_MIN,
+    TOKEN_ESTIMATE_MAX,
+    SIMHASH_THRESHOLD_AGGRESSIVE,
+    DISPLAY_TRUNCATION_SHORT,
+)
 
 CAPABILITIES = {
     "coding": "writing correct, complete, and well-structured code that solves programming problems accurately",
@@ -64,12 +72,12 @@ def topup_capability(capability: str, trait: str, base_dir: str):
     model = WisentModel(MODEL_NAME, device=DEVICE)
 
     # Set up generator
-    estimated_tokens = needed * 150 + 500
-    max_tokens = max(2048, min(estimated_tokens, 8192))
+    estimated_tokens = needed * TOKENS_PER_PAIR_ESTIMATE + TOKENS_BASE_OFFSET
+    max_tokens = max(TOKEN_ESTIMATE_MIN, min(estimated_tokens, TOKEN_ESTIMATE_MAX))
     generation_config = get_generate_kwargs(max_new_tokens=max_tokens)
 
     cleaning_steps = [
-        DeduperCleaner(deduper=SimHashDeduper(threshold_bits=10)),
+        DeduperCleaner(deduper=SimHashDeduper(threshold_bits=SIMHASH_THRESHOLD_AGGRESSIVE)),
     ]
     cleaner = PairsCleaner(steps=cleaning_steps)
     db_instructions = Default_DB_Instructions()
@@ -80,7 +88,7 @@ def topup_capability(capability: str, trait: str, base_dir: str):
         generation_config=generation_config,
         contrastive_set_name=f"synthetic_{capability}",
         trait_description=trait,
-        trait_label=trait[:50],
+        trait_label=trait[:DISPLAY_TRUNCATION_SHORT],
         db_instructions=db_instructions,
         cleaner=cleaner,
         diversity=diversity,

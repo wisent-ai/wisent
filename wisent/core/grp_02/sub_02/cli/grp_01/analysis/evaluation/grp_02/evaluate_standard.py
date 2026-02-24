@@ -1,9 +1,12 @@
 """Standard benchmark evaluation loop for evaluate-responses command."""
 
+from wisent.core.constants import DISPLAY_TRUNCATION_EVAL
+
 
 def evaluate_standard(
     args, input_data, responses, task_name,
     evaluation_results, task_results, evaluator, task_docs,
+    evaluation_type="generate_until",
 ):
     """Run standard evaluation loop for benchmark responses."""
     for idx, response_data in enumerate(responses, 1):
@@ -52,9 +55,9 @@ def evaluate_standard(
 
                 if args.verbose:
                     print(f"Question {idx}:")
-                    print(f"   Prompt: {prompt[:60]}...")
-                    print(f"   Expected: {str(positive_reference)[:60]}...")
-                    print(f"   Generated: {generated_response[:60]}...")
+                    print(f"   Prompt: {prompt[:DISPLAY_TRUNCATION_EVAL]}...")
+                    print(f"   Expected: {str(positive_reference)[:DISPLAY_TRUNCATION_EVAL]}...")
+                    print(f"   Generated: {generated_response[:DISPLAY_TRUNCATION_EVAL]}...")
                     print(f"   Ground truth: {result.ground_truth}")
                     print(f"   Confidence: {result.confidence:.3f}")
                     print(f"   Result: {'✓ CORRECT' if is_correct else '✗ INCORRECT'}\n")
@@ -147,7 +150,7 @@ def evaluate_standard(
                 if args.verbose:
                     doc_question = task_doc.get('question', '')
                     print(f"Question {idx}:")
-                    print(f"   Question: {doc_question[:60]}...")
+                    print(f"   Question: {doc_question[:DISPLAY_TRUNCATION_EVAL]}...")
                     print(f"   Predicted choice: {best_choice_idx} (F1: {best_score:.3f})")
                     print(f"   Correct choice: {gold_idx}")
                     print(f"   Result: {'✓ CORRECT' if is_correct else '✗ INCORRECT'}\n")
@@ -198,7 +201,7 @@ def evaluate_standard(
                 if args.verbose:
                     doc_question = task_doc.get('question', '')
                     print(f"Question {idx}:")
-                    print(f"   Question: {doc_question[:60]}...")
+                    print(f"   Question: {doc_question[:DISPLAY_TRUNCATION_EVAL]}...")
                     print(f"   Ground truth: {result.ground_truth}")
                     print(f"   Confidence: {result.confidence:.3f}")
                     print(f"   Result: {'✓ CORRECT' if is_correct else '✗ INCORRECT'}\n")

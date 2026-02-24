@@ -7,6 +7,16 @@ import json
 import random
 import numpy as np
 from pathlib import Path
+from wisent.core.constants import (
+    DISCOVER_STEERING_TASK_LIMIT,
+    DISCOVER_STEERING_TRAIN_LIMIT,
+    NORM_EPS,
+    STEERING_GEN_MAX_TOKENS,
+    AGENT_DIAG_TEMPERATURE,
+    DATA_SPLIT_RATIO,
+    DEFAULT_RANDOM_SEED,
+    DEFAULT_BASE_STRENGTH,
+)
 
 
 def execute_discover_steering(args):
@@ -31,13 +41,13 @@ def execute_discover_steering(args):
     # Load data
     print(f"\nLoading data...")
     all_pair_texts = load_pair_texts_from_database(
-        task_name=args.task, limit=1000, database_url=args.database_url
+        task_name=args.task, limit=DISCOVER_STEERING_TASK_LIMIT, database_url=args.database_url
     )
     all_pair_ids = list(all_pair_texts.keys())
-    random.seed(42)
+    random.seed(DEFAULT_RANDOM_SEED)
     random.shuffle(all_pair_ids)
 
-    split_idx = int(len(all_pair_ids) * 0.8)
+    split_idx = int(len(all_pair_ids) * DATA_SPLIT_RATIO)
     train_ids = set(all_pair_ids[:split_idx])
     test_ids = all_pair_ids[split_idx:][:args.n_test_samples]
 
@@ -46,7 +56,7 @@ def execute_discover_steering(args):
     # Load reference activations
     pos_ref, neg_ref = load_activations_from_database(
         model_name=args.model, task_name=args.task, layer=args.layer,
-        limit=500, database_url=args.database_url, pair_ids=train_ids
+        limit=DISCOVER_STEERING_TRAIN_LIMIT, database_url=args.database_url, pair_ids=train_ids
     )
     pos_np = pos_ref.cpu().numpy()
     neg_np = neg_ref.cpu().numpy()
@@ -54,7 +64,7 @@ def execute_discover_steering(args):
 
     # Original steering vector
     original_direction = pos_np.mean(axis=0) - neg_np.mean(axis=0)
-    original_direction = original_direction / (np.linalg.norm(original_direction) + 1e-8)
+    original_direction = original_direction / (np.linalg.norm(original_direction) + NORM_EPS)
 
     # Load model and evaluator
     print(f"\nLoading model: {args.model}")
@@ -74,14 +84,14 @@ def execute_discover_steering(args):
     layer_name = f"layer.{args.layer}"
     results = {"model": args.model, "task": args.task, "layer": args.layer, "methods": {}}
 
-    def evaluate_direction(direction, strength=1.0):
+    def evaluate_direction(direction, strength=DEFAULT_BASE_STRENGTH):
         steering_vec = torch.from_numpy(direction).float() * strength
         steering_vectors = LayerActivations({layer_name: steering_vec})
         base_evals, steered_evals, base_resps, steered_resps = [], [], [], []
         for prompt, pos_ref, neg_ref in zip(test_prompts, test_pos_refs, test_neg_refs):
             msgs = [{"role": "user", "content": prompt}]
             fmt = adapter.apply_chat_template(msgs, add_generation_prompt=True)
-            base_r = _extract_response(adapter._generate_unsteered(fmt, max_new_tokens=100, temperature=0.1))
+            base_r = _extract_response(adapter._generate_unsteered(fmt, max_new_tokens=STEERING_GEN_MAX_TOKENS, temperature=AGENT_DIAG_TEMPERATURE))
             base_evals.append(evaluator.evaluate(base_r, pos_ref, correct_answers=[pos_ref], incorrect_answers=[neg_ref]).ground_truth)
             base_resps.append(base_r)
             steer_r = _extract_response(adapter.forward_with_steering(fmt, steering_vectors=steering_vectors, config=SteeringConfig(scale=1.0)))

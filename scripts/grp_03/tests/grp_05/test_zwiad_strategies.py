@@ -14,6 +14,7 @@ from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import NORM_EPS, DIAGNOSTIC_MLP_HIDDEN_SIZES
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 STRATEGIES = [
@@ -37,7 +38,7 @@ def compute_metrics(pos: torch.Tensor, neg: torch.Tensor):
     linear_acc = linear_scores.mean()
 
     # Nonlinear classifier (geometry)
-    mlp = MLPClassifier(hidden_layer_sizes=(64,),  early_stopping=True)
+    mlp = MLPClassifier(hidden_layer_sizes=DIAGNOSTIC_MLP_HIDDEN_SIZES,  early_stopping=True)
     mlp_scores = cross_val_score(mlp, X, y, cv=5, scoring="accuracy")
     nonlinear_acc = mlp_scores.mean()
 
@@ -46,7 +47,7 @@ def compute_metrics(pos: torch.Tensor, neg: torch.Tensor):
 
     # Direction consistency
     diffs = pos - neg
-    diffs_norm = diffs / (torch.norm(diffs, dim=1, keepdim=True) + 1e-8)
+    diffs_norm = diffs / (torch.norm(diffs, dim=1, keepdim=True) + NORM_EPS)
     pairwise = diffs_norm @ diffs_norm.T
     mask = torch.triu(torch.ones_like(pairwise), diagonal=1).bool()
     consistency = pairwise[mask].mean().item()

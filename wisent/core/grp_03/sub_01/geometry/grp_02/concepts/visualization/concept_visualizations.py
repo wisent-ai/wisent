@@ -6,6 +6,8 @@ from typing import Dict, Any, List, Optional
 import io
 import base64
 
+from wisent.core.constants import VIZ_DPI, VIZ_MARKER_SIZE
+
 from ...visualization.visualizations import (
     plot_pca_projection,
     plot_pacmap_projection,
@@ -46,7 +48,7 @@ def create_concept_overview_figure(
         fig, ax = plt.subplots(figsize=(10, 8))
         ax.text(0.5, 0.5, f"Error: {proj_data['error']}", ha='center', va='center')
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=150)
+        fig.savefig(buf, format='png', dpi=VIZ_DPI)
         buf.seek(0)
         plt.close(fig)
         return base64.b64encode(buf.read()).decode('utf-8')
@@ -57,7 +59,7 @@ def create_concept_overview_figure(
 
     for i in range(n_concepts):
         mask = labels == i
-        ax.scatter(diff_2d[mask, 0], diff_2d[mask, 1], c=[colors[i]], label=concept_names[i], alpha=0.7, s=50)
+        ax.scatter(diff_2d[mask, 0], diff_2d[mask, 1], c=[colors[i]], label=concept_names[i], alpha=0.7, s=VIZ_MARKER_SIZE)
 
     ax.set_xlabel("Component 1")
     ax.set_ylabel("Component 2")
@@ -66,7 +68,7 @@ def create_concept_overview_figure(
     ax.grid(True, alpha=0.3)
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=VIZ_DPI, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
     return base64.b64encode(buf.read()).decode('utf-8')
@@ -91,7 +93,7 @@ def create_per_concept_figure(
         fig, ax = plt.subplots(figsize=(8, 6))
         ax.text(0.5, 0.5, "Not enough data", ha='center', va='center')
         buf = io.BytesIO()
-        fig.savefig(buf, format='png', dpi=150)
+        fig.savefig(buf, format='png', dpi=VIZ_DPI)
         buf.seek(0)
         plt.close(fig)
         return base64.b64encode(buf.read()).decode('utf-8')

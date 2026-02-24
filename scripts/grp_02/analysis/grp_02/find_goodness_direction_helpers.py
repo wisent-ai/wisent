@@ -8,6 +8,12 @@ import subprocess
 import os
 from pathlib import Path
 
+from wisent.core.constants import (
+    LAYER_THRESHOLD_LARGE,
+    LAYER_THRESHOLD_MEDIUM,
+    LAYER_THRESHOLD_SMALL,
+)
+
 
 def run_cmd(cmd: list, check: bool = True) -> subprocess.CompletedProcess:
     """Run command and return result."""
@@ -53,11 +59,11 @@ def check_linearity(pairs_path: str, model: str, strategy: str, output_path: str
 
 def get_layer_configs(num_layers: int) -> list:
     """Generate layer configurations to test: individual layers + combinations."""
-    if num_layers <= 16:
+    if num_layers <= LAYER_THRESHOLD_SMALL:
         individual_layers = [2, 4, 6, 8, 10, 12, 14]
-    elif num_layers <= 32:
+    elif num_layers <= LAYER_THRESHOLD_MEDIUM:
         individual_layers = [4, 8, 12, 16, 20, 24, 28]
-    elif num_layers <= 48:
+    elif num_layers <= LAYER_THRESHOLD_LARGE:
         individual_layers = [6, 12, 18, 24, 30, 36, 42]
     else:
         individual_layers = [8, 16, 24, 32, 40, 48, 56]

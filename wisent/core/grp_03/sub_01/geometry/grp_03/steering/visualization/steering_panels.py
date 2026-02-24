@@ -2,6 +2,8 @@
 
 import numpy as np
 import warnings
+from wisent.core import constants as _C
+from wisent.core.constants import VIZ_BAR_WIDTH
 
 
 def get_eval_colors(evaluations, n_points):
@@ -25,9 +27,9 @@ def plot_projection_panel(ax, pos_2d, neg_2d, base_2d, steered_2d,
 
     pos_centroid = pos_2d.mean(axis=0)
     neg_centroid = neg_2d.mean(axis=0)
-    ax.scatter([pos_centroid[0]], [pos_centroid[1]], c='blue', s=150, marker='*',
+    ax.scatter([pos_centroid[0]], [pos_centroid[1]], c='blue', s=_C.VIZ_CENTROID_MARKER_SIZE_ALT, marker='*',
                edgecolors='black', linewidths=1, zorder=5)
-    ax.scatter([neg_centroid[0]], [neg_centroid[1]], c='red', s=150, marker='*',
+    ax.scatter([neg_centroid[0]], [neg_centroid[1]], c='red', s=_C.VIZ_CENTROID_MARKER_SIZE_ALT, marker='*',
                edgecolors='black', linewidths=1, zorder=5)
 
     base_colors = get_eval_colors(base_evals, len(base_2d))
@@ -53,7 +55,7 @@ def plot_pca_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
     """PCA projection panel."""
     from sklearn.decomposition import PCA
     reference = np.vstack([pos, neg])
-    pca = PCA(n_components=2, random_state=42)
+    pca = PCA(n_components=_C.VIZ_N_COMPONENTS_2D, random_state=_C.DEFAULT_RANDOM_SEED)
     pca.fit(reference)
     var_explained = sum(pca.explained_variance_ratio_) * 100
     plot_projection_panel(ax, pca.transform(pos), pca.transform(neg),
@@ -71,7 +73,7 @@ def plot_lda_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
         lda = LinearDiscriminantAnalysis(n_components=1)
         lda.fit(reference, labels)
         lda_ref = lda.transform(reference)
-        pca = PCA(n_components=1, random_state=42)
+        pca = PCA(n_components=1, random_state=_C.DEFAULT_RANDOM_SEED)
         residual = reference - (lda_ref @ lda.scalings_.T + lda.xbar_)
         pca.fit(residual)
         ref_2d = np.hstack([lda_ref, pca.transform(residual)])
@@ -102,7 +104,7 @@ def plot_tsne_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
         return
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        tsne = TSNE(n_components=2, perplexity=min(30, n-1), random_state=42)
+        tsne = TSNE(n_components=_C.VIZ_N_COMPONENTS_2D, perplexity=min(_C.VIZ_PERPLEXITY, n-1), random_state=_C.DEFAULT_RANDOM_SEED)
         all_2d = tsne.fit_transform(all_data)
     n_pos, n_neg = len(pos), len(neg)
     plot_projection_panel(ax, all_2d[:n_pos], all_2d[n_pos:n_pos+n_neg],
@@ -124,7 +126,7 @@ def plot_umap_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
         ax.text(0.5, 0.5, "Not enough samples", ha='center', va='center', transform=ax.transAxes)
         ax.set_title("UMAP (failed)")
         return
-    reducer = umap.UMAP(n_components=2, n_neighbors=min(15, n-1), min_dist=0.1, random_state=42)
+    reducer = umap.UMAP(n_components=_C.VIZ_N_COMPONENTS_2D, n_neighbors=min(_C.VIZ_N_NEIGHBORS, n-1), min_dist=_C.VIZ_MIN_DIST, random_state=_C.DEFAULT_RANDOM_SEED)
     all_2d = reducer.fit_transform(all_data)
     n_pos, n_neg = len(pos), len(neg)
     plot_projection_panel(ax, all_2d[:n_pos], all_2d[n_pos:n_pos+n_neg],
@@ -140,13 +142,13 @@ def plot_pacmap_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
         n = len(all_data)
         if n < 5:
             raise ValueError("Not enough samples")
-        all_2d = pacmap_embedding(all_data, n_components=2, n_neighbors=min(10, n//4), num_iters=50)
+        all_2d = pacmap_embedding(all_data, n_components=_C.VIZ_N_COMPONENTS_2D, n_neighbors=min(_C.PACMAP_NEIGHBORS_MAX, n // _C.PACMAP_NEIGHBORS_DIVISOR), num_iters=_C.PACMAP_NUM_ITERS_DEFAULT)
         n_pos, n_neg = len(pos), len(neg)
         plot_projection_panel(ax, all_2d[:n_pos], all_2d[n_pos:n_pos+n_neg],
                               all_2d[n_pos+n_neg:n_pos+n_neg+len(base)],
                               all_2d[n_pos+n_neg+len(base):], base_evals, steered_evals, "PaCMAP")
     except Exception as e:
-        ax.text(0.5, 0.5, f"PaCMAP: {str(e)[:25]}", ha='center', va='center', transform=ax.transAxes)
+        ax.text(0.5, 0.5, f"PaCMAP: {str(e)[:_C.DISPLAY_TRUNCATION_DESCRIPTION]}", ha='center', va='center', transform=ax.transAxes)
         ax.set_title("PaCMAP (failed)")
 
 
@@ -155,23 +157,23 @@ def plot_pca_with_boundary(ax, pos, neg, base, steered, base_evals, steered_eval
     from sklearn.decomposition import PCA
     from sklearn.linear_model import LogisticRegression
     reference = np.vstack([pos, neg])
-    pca = PCA(n_components=2, random_state=42)
+    pca = PCA(n_components=_C.VIZ_N_COMPONENTS_2D, random_state=_C.DEFAULT_RANDOM_SEED)
     pca.fit(reference)
     pos_2d, neg_2d = pca.transform(pos), pca.transform(neg)
     base_2d, steered_2d = pca.transform(base), pca.transform(steered)
 
     X_2d = np.vstack([pos_2d, neg_2d])
     y_2d = np.concatenate([np.ones(len(pos_2d)), np.zeros(len(neg_2d))])
-    clf = LogisticRegression(random_state=42, )
+    clf = LogisticRegression(random_state=_C.DEFAULT_RANDOM_SEED, )
     clf.fit(X_2d, y_2d)
 
     x_min, x_max = X_2d[:, 0].min() - 1, X_2d[:, 0].max() + 1
     y_min, y_max = X_2d[:, 1].min() - 1, X_2d[:, 1].max() + 1
-    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 100), np.linspace(y_min, y_max, 100))
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, _C.VIZ_MESHGRID_RESOLUTION_MED), np.linspace(y_min, y_max, _C.VIZ_MESHGRID_RESOLUTION_MED))
     Z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])[:, 1].reshape(xx.shape)
 
-    ax.contourf(xx, yy, Z, levels=[0, 0.5, 1], colors=['#FFCCCC', '#CCCCFF'], alpha=0.4)
-    ax.contour(xx, yy, Z, levels=[0.5], colors=['black'], linewidths=2, linestyles=['--'])
+    ax.contourf(xx, yy, Z, levels=[0, _C.VIZ_CONTOURF_LEVEL, 1], colors=['#FFCCCC', '#CCCCFF'], alpha=0.4)
+    ax.contour(xx, yy, Z, levels=[_C.VIZ_CONTOURF_LEVEL], colors=['black'], linewidths=2, linestyles=['--'])
     plot_projection_panel(ax, pos_2d, neg_2d, base_2d, steered_2d,
                           base_evals, steered_evals, "PCA + Decision Boundary")
 
@@ -182,23 +184,23 @@ def plot_movement_vectors(ax, pos, neg, base, steered):
     n = min(len(base), len(steered))
     movements = steered[:n] - base[:n]
     mean_steering = pos.mean(axis=0) - neg.mean(axis=0)
-    mean_steering_norm = mean_steering / (np.linalg.norm(mean_steering) + 1e-8)
+    mean_steering_norm = mean_steering / (np.linalg.norm(mean_steering) + _C.NORM_EPS)
 
     if len(movements) > 2:
-        pca = PCA(n_components=2, random_state=42)
+        pca = PCA(n_components=_C.VIZ_N_COMPONENTS_2D, random_state=_C.DEFAULT_RANDOM_SEED)
         movements_2d = pca.fit_transform(movements)
         mean_steering_2d = pca.transform(mean_steering.reshape(1, -1))[0]
 
         ax.scatter(movements_2d[:, 0], movements_2d[:, 1], c='green', alpha=0.6, s=40)
-        ax.scatter([0], [0], c='black', s=100, marker='x', zorder=5)
+        ax.scatter([0], [0], c='black', s=_C.VIZ_X_MARKER_SIZE, marker='x', zorder=5)
 
-        scale = np.max(np.abs(movements_2d)) * 0.8
-        norm_ms = np.linalg.norm(mean_steering_2d) + 1e-8
+        scale = np.max(np.abs(movements_2d)) * _C.VIZ_MOVEMENT_SCALE
+        norm_ms = np.linalg.norm(mean_steering_2d) + _C.NORM_EPS
         ax.arrow(0, 0, mean_steering_2d[0]*scale/norm_ms, mean_steering_2d[1]*scale/norm_ms,
-                 head_width=scale*0.1, head_length=scale*0.05, fc='red', ec='red')
+                 head_width=scale*_C.VIZ_ARROW_HEAD_LENGTH, head_length=scale*_C.VIZ_ARROW_HEAD_WIDTH, fc='red', ec='red')
 
         movement_norms = np.linalg.norm(movements, axis=1)
-        valid = movement_norms > 1e-8
+        valid = movement_norms > _C.NORM_EPS
         alignments = np.zeros(n)
         alignments[valid] = (movements[valid] / movement_norms[valid, np.newaxis]) @ mean_steering_norm
         mean_align = alignments[valid].mean() if valid.any() else 0
@@ -220,7 +222,7 @@ def plot_norm_distribution(ax, pos, neg, base, steered):
 
     bins = np.linspace(
         min(pos_norms.min(), neg_norms.min(), base_norms.min(), steered_norms.min()),
-        max(pos_norms.max(), neg_norms.max(), base_norms.max(), steered_norms.max()), 30)
+        max(pos_norms.max(), neg_norms.max(), base_norms.max(), steered_norms.max()), _C.VIZ_HISTOGRAM_BINS)
 
     ax.hist(pos_norms, bins=bins, alpha=0.4, label='Positive', color='blue')
     ax.hist(neg_norms, bins=bins, alpha=0.4, label='Negative', color='red')
@@ -236,18 +238,18 @@ def plot_norm_distribution(ax, pos, neg, base, steered):
 def plot_alignment_histogram(ax, pos, neg, base, steered):
     """Alignment with steering direction histogram."""
     mean_steering = pos.mean(axis=0) - neg.mean(axis=0)
-    mean_steering_norm = mean_steering / (np.linalg.norm(mean_steering) + 1e-8)
+    mean_steering_norm = mean_steering / (np.linalg.norm(mean_steering) + _C.NORM_EPS)
 
     def compute_alignments(data):
         norms = np.linalg.norm(data, axis=1, keepdims=True)
-        valid = norms.squeeze() > 1e-8
+        valid = norms.squeeze() > _C.NORM_EPS
         normalized = np.zeros_like(data)
         normalized[valid] = data[valid] / norms[valid]
         return normalized @ mean_steering_norm
 
     base_align = compute_alignments(base)
     steered_align = compute_alignments(steered)
-    bins = np.linspace(-1, 1, 30)
+    bins = np.linspace(-1, 1, _C.VIZ_HISTOGRAM_BINS)
     ax.hist(base_align, bins=bins, alpha=0.6, label='Base', color='gray')
     ax.hist(steered_align, bins=bins, alpha=0.6, label='Steered', color='green')
     ax.axvline(base_align.mean(), color='gray', linestyle='--', linewidth=2)
@@ -269,7 +271,7 @@ def plot_centroid_distances(ax, pos, neg, base, steered):
     steered_to_neg = np.linalg.norm(steered - neg_centroid, axis=1)
 
     x = np.arange(len(base))
-    width = 0.35
+    width = VIZ_BAR_WIDTH
     ax.bar(x - width/2, base_to_pos - base_to_neg, width, label='Base', color='gray', alpha=0.7)
     ax.bar(x + width/2, steered_to_pos - steered_to_neg, width, label='Steered', color='green', alpha=0.7)
     ax.axhline(0, color='black', linestyle='-', linewidth=1)
@@ -280,5 +282,5 @@ def plot_centroid_distances(ax, pos, neg, base, steered):
     ax.grid(True, alpha=0.3)
     base_closer = np.sum(base_to_pos < base_to_neg)
     steered_closer = np.sum(steered_to_pos < steered_to_neg)
-    ax.text(0.02, 0.98, f"Closer to pos: Base {base_closer}/{len(base)}, Steered {steered_closer}/{len(steered)}",
+    ax.text(_C.VIZ_TEXT_BOX_LEFT, _C.VIZ_TEXT_BOX_RIGHT, f"Closer to pos: Base {base_closer}/{len(base)}, Steered {steered_closer}/{len(steered)}",
             transform=ax.transAxes, fontsize=8, verticalalignment='top')

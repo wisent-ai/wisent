@@ -17,6 +17,7 @@ Usage:
 
 import argparse
 
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS
 from wisent.examples.scripts._comparison import run_analysis
 
 
@@ -33,7 +34,7 @@ def main():
         help="Comma-separated list of layers to analyze (default: auto-select)"
     )
     parser.add_argument(
-        "--n-pairs", type=int, default=50,
+        "--n-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS,
         help="Number of contrastive pairs per concept (default: 50)"
     )
     parser.add_argument(

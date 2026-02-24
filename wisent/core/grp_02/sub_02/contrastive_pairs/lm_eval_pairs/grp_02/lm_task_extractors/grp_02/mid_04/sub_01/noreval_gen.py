@@ -7,6 +7,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -167,7 +168,7 @@ class NorevalGenerationExtractor(LMEvalBenchmarkExtractor):
                 # Create synthetic negative by shuffling words in the correct answer
                 incorrect = self._create_shuffled_text(correct)
 
-                formatted_question = f"Context: {context[:200]}...\n\nQuestion: {question}" if len(context) > 200 else f"Context: {context}\n\nQuestion: {question}"
+                formatted_question = f"Context: {context[:DISPLAY_TRUNCATION_MEDIUM]}...\n\nQuestion: {question}" if len(context) > DISPLAY_TRUNCATION_MEDIUM else f"Context: {context}\n\nQuestion: {question}"
 
                 metadata = {"label": "noreval_qa"}
 
@@ -188,7 +189,7 @@ class NorevalGenerationExtractor(LMEvalBenchmarkExtractor):
                     log.debug("Skipping doc due to empty prompt/context/target", extra={"doc": doc})
                     return None
 
-                question = f"{prompt}\n\n{context[:300]}..." if len(context) > 300 else f"{prompt}\n\n{context}"
+                question = f"{prompt}\n\n{context[:DISPLAY_TRUNCATION_LONG]}..." if len(context) > DISPLAY_TRUNCATION_LONG else f"{prompt}\n\n{context}"
                 correct = target
 
                 # Create synthetic negative by shuffling sentences in the target

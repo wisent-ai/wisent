@@ -13,6 +13,11 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
+from wisent.core.constants import (
+    NURT_T_MAX, NURT_NUM_INTEGRATION_STEPS,
+    NURT_FLOW_HIDDEN_MIN, NURT_FLOW_HIDDEN_MAX, NURT_FLOW_HIDDEN_MULTIPLIER,
+)
+
 
 __all__ = [
     "FlowVelocityNetwork",
@@ -37,7 +42,7 @@ class FlowVelocityNetwork(nn.Module):
         super().__init__()
         self.concept_dim = concept_dim
         if hidden_dim is None:
-            hidden_dim = max(32, min(128, 4 * concept_dim))
+            hidden_dim = max(NURT_FLOW_HIDDEN_MIN, min(NURT_FLOW_HIDDEN_MAX, NURT_FLOW_HIDDEN_MULTIPLIER * concept_dim))
         self.hidden_dim = hidden_dim
 
         self.net = nn.Sequential(
@@ -78,8 +83,8 @@ class FlowVelocityNetwork(nn.Module):
 def euler_integrate(
     network: FlowVelocityNetwork,
     z_0: torch.Tensor,
-    t_max: float = 1.0,
-    num_steps: int = 4,
+    t_max: float = NURT_T_MAX,
+    num_steps: int = NURT_NUM_INTEGRATION_STEPS,
 ) -> torch.Tensor:
     """
     Euler integration of the learned velocity field.

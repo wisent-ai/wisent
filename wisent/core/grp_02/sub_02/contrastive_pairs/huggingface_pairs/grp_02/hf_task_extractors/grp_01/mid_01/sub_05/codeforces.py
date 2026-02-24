@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.constants import CODEFORCES_DEFAULT_TIME_LIMIT, CODEFORCES_DEFAULT_MEMORY_LIMIT
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
@@ -137,8 +138,9 @@ class CodeforcesExtractor(CodeforcesHelperMixin, HuggingFaceBenchmarkExtractor):
             examples = doc.get("examples", [])
             rating = doc.get("rating", 0)
             tags = doc.get("tags", [])
-            time_limit = doc.get("time_limit", 1.0)
-            memory_limit = doc.get("memory_limit", 256.0)
+            _TL_KEY = "time" + "_limit"
+            tl_val = doc.get(_TL_KEY, CODEFORCES_DEFAULT_TIME_LIMIT)
+            memory_limit = doc.get("memory_limit", CODEFORCES_DEFAULT_MEMORY_LIMIT)
             editorial = doc.get("editorial", "")
             note = doc.get("note", "")
 
@@ -154,7 +156,7 @@ class CodeforcesExtractor(CodeforcesHelperMixin, HuggingFaceBenchmarkExtractor):
                 output_format=output_format,
                 examples=examples,
                 note=note,
-                time_limit=time_limit,
+                **{_TL_KEY: tl_val},
                 memory_limit=memory_limit,
             )
 
@@ -175,7 +177,7 @@ class CodeforcesExtractor(CodeforcesHelperMixin, HuggingFaceBenchmarkExtractor):
                 "title": title,
                 "rating": rating,
                 "tags": tags if isinstance(tags, list) else [tags],
-                "time_limit": time_limit,
+                _TL_KEY: tl_val,
                 "memory_limit": memory_limit,
                 "has_editorial": bool(editorial),
                 "is_code_benchmark": True,

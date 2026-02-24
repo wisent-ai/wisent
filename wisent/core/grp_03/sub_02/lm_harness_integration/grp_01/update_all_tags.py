@@ -8,6 +8,8 @@ import sys
 import json
 from typing import Dict, List
 
+from wisent.core.constants import DEFAULT_TIMEOUT_QUICK
+
 # Import the tag determination function
 from populate_tasks import get_benchmark_tags_with_llama
 
@@ -50,7 +52,7 @@ def update_benchmark_tags():
             
             readme_content = ""
             try:
-                response = requests.get(readme_url, timeout=5)
+                response = requests.get(readme_url, timeout=DEFAULT_TIMEOUT_QUICK)
                 if response.status_code == 200:
                     readme_content = response.text
             except:

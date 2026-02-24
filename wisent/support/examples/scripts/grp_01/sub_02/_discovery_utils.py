@@ -1,7 +1,7 @@
 """
 Utility functions and dataclasses for direction discovery.
 
-Contains S3 helpers, data loading, and result dataclasses.
+Contains GCS helpers, data loading, and result dataclasses.
 """
 
 import json
@@ -11,38 +11,38 @@ from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, field
 
 
-S3_BUCKET = "wisent-bucket"
-S3_PREFIX = "direction_discovery"
+GCS_BUCKET = "wisent-images-bucket"
+GCS_PREFIX = "direction_discovery"
 
 
-def s3_sync_download(model_name: str, output_dir: Path) -> None:
-    """Download existing results from S3."""
+def gcs_sync_download(model_name: str, output_dir: Path) -> None:
+    """Download existing results from GCS."""
     model_prefix = model_name.replace('/', '_')
-    s3_path = f"s3://{S3_BUCKET}/{S3_PREFIX}/{model_prefix}/"
+    gcs_path = f"gs://{GCS_BUCKET}/{GCS_PREFIX}/{model_prefix}/"
     try:
         subprocess.run(
-            ["aws", "s3", "sync", s3_path, str(output_dir), "--quiet"],
+            ["gcloud", "storage", "rsync", gcs_path, str(output_dir), "--quiet"],
             check=False,
             capture_output=True,
         )
-        print(f"Synced existing results from S3: {s3_path}")
+        print(f"Synced existing results from GCS: {gcs_path}")
     except Exception as e:
-        print(f"S3 download skipped: {e}")
+        print(f"GCS download skipped: {e}")
 
 
-def s3_upload_file(local_path: Path, model_name: str) -> None:
-    """Upload a single file to S3."""
+def gcs_upload_file(local_path: Path, model_name: str) -> None:
+    """Upload a single file to GCS."""
     model_prefix = model_name.replace('/', '_')
-    s3_path = f"s3://{S3_BUCKET}/{S3_PREFIX}/{model_prefix}/{local_path.name}"
+    gcs_path = f"gs://{GCS_BUCKET}/{GCS_PREFIX}/{model_prefix}/{local_path.name}"
     try:
         subprocess.run(
-            ["aws", "s3", "cp", str(local_path), s3_path, "--quiet"],
+            ["gcloud", "storage", "cp", str(local_path), gcs_path, "--quiet"],
             check=True,
             capture_output=True,
         )
-        print(f"  Uploaded to S3: {s3_path}")
+        print(f"  Uploaded to GCS: {gcs_path}")
     except Exception as e:
-        print(f"  S3 upload failed: {e}")
+        print(f"  GCS upload failed: {e}")
 
 
 def load_categorized_benchmarks() -> Dict[str, List[str]]:

@@ -14,6 +14,13 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
     import torch
 
+from wisent.core.constants import (
+    COHERENCE_UNIQUE_TOKEN_RATIO_MIN, COHERENCE_REPETITION_RATIO_MAX,
+    COHERENCE_SPECIAL_CHAR_RATIO_MAX, COHERENCE_SPECIAL_CHAR_PENALTY,
+    COHERENCE_SHORT_RESPONSE_PENALTY, COHERENCE_NONSENSE_WORD_RATIO_MAX,
+    COHERENCE_TRIGRAM_REPEAT_THRESHOLD, COHERENCE_CONTENT_WORD_REPEAT_THRESHOLD,
+    COHERENCE_FUNCTION_WORD_THRESHOLD, MIN_SENTENCE_LENGTH, SCORE_SCALE_100,
+)
 from wisent.core.evaluators.personalization.coherence import (
     _is_gibberish,
     _get_tokenizer,
@@ -37,7 +44,7 @@ def _is_incoherent(text: str) -> bool:
     text = text.strip()
 
     # Check 1: Too short to be a helpful response
-    if len(text) < 20:
+    if len(text) < MIN_SENTENCE_LENGTH:
         return True
 
     # Check 2: Single word or very few words (unhelpful)
@@ -66,14 +73,14 @@ def _is_incoherent(text: str) -> bool:
         trigram_counts = Counter(trigrams)
         most_common_count = trigram_counts.most_common(1)[0][1] if trigrams else 0
         # If any trigram appears 3+ times, it's repetitive
-        if most_common_count >= 3:
+        if most_common_count >= COHERENCE_TRIGRAM_REPEAT_THRESHOLD:
             return True
 
     # Check 6: Circular statements that don't add information
     # e.g., "Football, football, and the beautiful game are intertwined, intertwined, intertwined"
     unique_tokens = set(t.lower().strip('.,!?"\'-') for t in tokens)
     # If unique words are less than 40% of total words, very repetitive
-    if len(tokens) >= 5 and len(unique_tokens) / len(tokens) < 0.4:
+    if len(tokens) >= 5 and len(unique_tokens) / len(tokens) < COHERENCE_UNIQUE_TOKEN_RATIO_MIN:
         return True
 
     # Check 7: Non-answer patterns
@@ -97,7 +104,7 @@ def _is_incoherent(text: str) -> bool:
             if word in {'that', 'this', 'have', 'been', 'with', 'from', 'they', 'would', 'could', 'should'}:
                 continue
             # If any content word appears more than 3 times in a short response, flag it
-            if count >= 3 and count / len(content_words) > 0.15:
+            if count >= COHERENCE_CONTENT_WORD_REPEAT_THRESHOLD and count / len(content_words) > COHERENCE_FUNCTION_WORD_THRESHOLD:
                 return True
 
     # Check 9: Nonsense words (using tokenizer fragmentation)
@@ -108,7 +115,7 @@ def _is_incoherent(text: str) -> bool:
             if len(token) >= 4 and _is_nonsense_word(token, tokenizer):
                 nonsense_count += 1
         # If more than 15% of words are nonsense, flag it
-        if nonsense_count / len(tokens) > 0.15:
+        if nonsense_count / len(tokens) > COHERENCE_NONSENSE_WORD_RATIO_MAX:
             return True
 
     return False
@@ -162,9 +169,9 @@ def evaluate_quality(
 
     # Check 1: Empty or too short
     if len(response.strip()) < 10:
-        score *= 0.1
+        score *= COHERENCE_SHORT_RESPONSE_PENALTY
         # Scale to 1-100 and return early
-        return max(1.0, score * 99.0 + 1.0)
+        return max(1.0, score * SCORE_SCALE_100 + 1.0)
 
     tokens = response.lower().split()
 
@@ -175,8 +182,8 @@ def evaluate_quality(
         repetition_ratio = most_common_count / len(tokens)
 
         # Penalize if any token appears more than 30% of the time
-        if repetition_ratio > 0.3:
-            score *= 1.0 - (repetition_ratio - 0.3)
+        if repetition_ratio > COHERENCE_REPETITION_RATIO_MAX:
+            score *= 1.0 - (repetition_ratio - COHERENCE_REPETITION_RATIO_MAX)
 
     # Check 3: Repeated n-grams (phrases)
     bigrams = [f"{tokens[i]} {tokens[i+1]}" for i in range(len(tokens) - 1)]
@@ -190,8 +197,8 @@ def evaluate_quality(
     special_char_ratio = len(re.findall(r"[^a-zA-Z0-9\s.,!?']", response)) / max(
         len(response), 1
     )
-    if special_char_ratio > 0.2:
-        score *= 0.7
+    if special_char_ratio > COHERENCE_SPECIAL_CHAR_RATIO_MAX:
+        score *= COHERENCE_SPECIAL_CHAR_PENALTY
 
     # Check 5: Single repeated character
     if re.search(r"(.)\1{10,}", response):  # Same char 10+ times in a row
@@ -201,6 +208,6 @@ def evaluate_quality(
     score = max(0.0, score)
 
     # Scale from 0-1 to 1-100
-    quality_score = score * 99.0 + 1.0
+    quality_score = score * SCORE_SCALE_100 + 1.0
 
     return quality_score

@@ -26,6 +26,7 @@ from wisent.core.modalities import (
 )
 from wisent.core.errors import UnknownTypeError
 from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.constants import VIDEO_KEYFRAME_INTERVAL, VIDEO_TEMPORAL_DECAY, VIDEO_NUM_FRAMES, VIDEO_FRAME_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
 
@@ -45,8 +46,8 @@ class VideoSteeringConfig(SteeringConfig):
         temporal_decay_rate: Decay rate for temporal_decay mode
     """
     frame_mode: str = "all"
-    keyframe_interval: int = 4
-    temporal_decay_rate: float = 0.9
+    keyframe_interval: int = VIDEO_KEYFRAME_INTERVAL
+    temporal_decay_rate: float = VIDEO_TEMPORAL_DECAY
 
 
 class VideoAdapterCore(BaseAdapter[VideoContent, Union[torch.Tensor, str]]):
@@ -73,8 +74,8 @@ class VideoAdapterCore(BaseAdapter[VideoContent, Union[torch.Tensor, str]]):
         processor: Any | None = None,
         device: str | None = None,
         model_type: str | None = None,
-        num_frames: int = 16,
-        frame_sample_rate: int = 4,
+        num_frames: int = VIDEO_NUM_FRAMES,
+        frame_sample_rate: int = VIDEO_FRAME_SAMPLE_RATE,
         **kwargs: Any,
     ):
         super().__init__(model=model, model_name=model_name, device=device, **kwargs)

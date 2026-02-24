@@ -1,13 +1,14 @@
 """Public functions for synthetic classifier creation."""
-import logging
-import time
+import logging, time
 from typing import List, Tuple
 from wisent.core.classifier.classifier import ActivationClassifier
+from wisent.core.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_PAIRS_PER_TRAIT, AGENT_CLASSIFIER_NUM_PAIRS, TRAIT_LABEL_MAX_LENGTH
 from wisent.core.errors import InsufficientDataError, MissingParameterError, ExecutionError
 from wisent.core.agent.diagnose.classifiers._synthetic_classes import (
     TraitDiscoveryResult, SyntheticClassifierResult,
     AutomaticTraitDiscovery, SyntheticClassifierFactory)
 from wisent.core.agent.diagnose.classifiers._synthetic_system import SyntheticClassifierSystem
+from wisent.core import constants as _C
 logger = logging.getLogger(__name__)
 
 def get_time_budget_from_manager() -> float:
@@ -26,7 +27,7 @@ def create_synthetic_classifier_system(model) -> SyntheticClassifierSystem:
 
 
 def create_classifiers_for_prompt(
-    model, prompt: str, pairs_per_trait: int = 12
+    model, prompt: str, pairs_per_trait: int = AGENT_SYNTH_PAIRS_PER_TRAIT
 ) -> Tuple[List[ActivationClassifier], TraitDiscoveryResult]:
     """
     Convenience function to create synthetic classifiers for a prompt.
@@ -64,7 +65,7 @@ def apply_classifiers_to_response(
 
 
 def create_classifier_from_trait_description(
-    model, trait_description: str, num_pairs: int = 15
+    model, trait_description: str, num_pairs: int = AGENT_CLASSIFIER_NUM_PAIRS
 ) -> ActivationClassifier:
     """
     Direct function to create a classifier from a trait description.
@@ -100,7 +101,7 @@ def create_classifier_from_trait_description(
     pair_set = pair_generator.generate_contrastive_pair_set(
         trait_description=trait_description,
         num_pairs=num_pairs,
-        name=f"synthetic_{trait_description[:20].replace(' ', '_')}",
+        name=f"synthetic_{trait_description[:TRAIT_LABEL_MAX_LENGTH].replace(' ', '_')}",
     )
 
     log_and_print(f"✅ Generated {len(pair_set.pairs)} pairs total")
@@ -132,10 +133,10 @@ def create_classifier_from_trait_description(
 
     log_and_print("=" * 80)
 
-    if len(pair_set.pairs) < 3:
+    if len(pair_set.pairs) < AGENT_SYNTH_MIN_PAIRS:
         error_msg = f"Insufficient training pairs generated: {len(pair_set.pairs)}"
         log_and_print(f"❌ ERROR: {error_msg}")
-        raise InsufficientDataError(reason="training pairs", required=10, actual=len(pair_set.pairs))
+        raise InsufficientDataError(reason="training pairs", required=AGENT_SYNTH_MIN_PAIRS, actual=len(pair_set.pairs))
 
     # Extract activations for training
     positive_activations = []
@@ -146,14 +147,14 @@ def create_classifier_from_trait_description(
     # Create Layer object for activation extraction
     from wisent.core.layer import Layer
 
-    layer_obj = Layer(index=15, type="transformer")
+    layer_obj = Layer(index=DEFAULT_LAYER, type="transformer")
     log_and_print(f"🔧 Created Layer object: index={layer_obj.index}, type={layer_obj.type}")
 
     for i, pair in enumerate(pair_set.pairs):
         log_and_print(f"\n🔍 Processing pair {i + 1}/{len(pair_set.pairs)}...")
         try:
             # Get activations for positive response
-            log_and_print(f"   📊 Extracting positive activations for: {pair.positive_response.text[:100]!r}")
+            log_and_print(f"   📊 Extracting positive activations for: {pair.positive_response.text[:_C.DISPLAY_TRUNCATION_COMPACT]!r}")
             pos_activations = model.extract_activations(pair.positive_response.text, layer_obj)
             log_and_print(
                 f"   ✅ Positive activations shape: {pos_activations.shape if hasattr(pos_activations, 'shape') else 'N/A'}"
@@ -161,7 +162,7 @@ def create_classifier_from_trait_description(
             positive_activations.append(pos_activations)
 
             # Get activations for negative response
-            log_and_print(f"   📊 Extracting negative activations for: {pair.negative_response.text[:100]!r}")
+            log_and_print(f"   📊 Extracting negative activations for: {pair.negative_response.text[:_C.DISPLAY_TRUNCATION_COMPACT]!r}")
             neg_activations = model.extract_activations(pair.negative_response.text, layer_obj)
             log_and_print(
                 f"   ✅ Negative activations shape: {neg_activations.shape if hasattr(neg_activations, 'shape') else 'N/A'}"
@@ -243,8 +244,7 @@ def create_classifier_from_trait_description(
     classifier._pairs_count = len(pair_set.pairs)
     log_and_print(f"📝 Stored metadata: trait='{trait_description}', pairs_count={len(pair_set.pairs)}")
 
-    log_and_print("🎉 Classifier creation completed successfully!")
-    log_and_print(f"📁 Debug log saved to: {log_file}")
+    log_and_print(f"🎉 Classifier creation completed successfully! Debug log saved to: {log_file}")
 
     return classifier
 
@@ -270,7 +270,7 @@ def evaluate_response_with_trait_classifier(
 
     # Extract activations from response
     try:
-        response_activations, _ = model.extract_activations(response_text, layer=15)
+        response_activations, _ = model.extract_activations(response_text, layer=DEFAULT_LAYER)
     except Exception as e:
         raise ExecutionError(reason=f"Error extracting response activations: {e}", cause=e)
 

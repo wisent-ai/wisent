@@ -14,6 +14,8 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
+from wisent.core.constants import VIZ_DPI
+
 _metrics_path = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),
     '..', '..', 'wisent', 'core', 'activations', 'core', 'diagnostics', 'metrics.py')
@@ -145,7 +147,7 @@ def plot_model(model_name: str, model_data: dict, output_dir: str):
         ax.set_title(label)
         ax.set_ylim(0, max(1.0, max(means) * 1.1) if means else 1.0)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'{safe}_best_layer.png'), dpi=150)
+    plt.savefig(os.path.join(output_dir, f'{safe}_best_layer.png'), dpi=VIZ_DPI)
     plt.close()
     # Fig 2: Mean-across-layers + signal breadth
     fig, axes = plt.subplots(1, 3, figsize=(16, 5))
@@ -163,7 +165,7 @@ def plot_model(model_name: str, model_data: dict, output_dir: str):
     axes[2].set_xticklabels(strats, rotation=45, ha='right', fontsize=7)
     axes[2].set_title('Signal Breadth (layers > 0.6)')
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'{safe}_multi_layer.png'), dpi=150)
+    plt.savefig(os.path.join(output_dir, f'{safe}_multi_layer.png'), dpi=VIZ_DPI)
     plt.close()
     # Fig 3: Linear vs Nonlinear scatter (curse of dimensionality diagnostic)
     fig, ax = plt.subplots(figsize=(8, 8))
@@ -181,7 +183,7 @@ def plot_model(model_name: str, model_data: dict, output_dir: str):
     ax.set_xlim(0.4, 1.05)
     ax.set_ylim(0.4, 1.05)
     plt.tight_layout()
-    plt.savefig(os.path.join(output_dir, f'{safe}_lin_vs_nlin.png'), dpi=150)
+    plt.savefig(os.path.join(output_dir, f'{safe}_lin_vs_nlin.png'), dpi=VIZ_DPI)
     plt.close()
     # Fig 4: Per-category heatmap (best_linear_acc)
     cats = defaultdict(lambda: defaultdict(list))
@@ -214,7 +216,7 @@ def plot_model(model_name: str, model_data: dict, output_dir: str):
         plt.colorbar(im, ax=ax, label='Best Linear Accuracy')
         ax.set_title(f'{model_name} - Strategy x Category (best linear acc)')
         plt.tight_layout()
-        plt.savefig(os.path.join(output_dir, f'{safe}_category_heatmap.png'), dpi=150)
+        plt.savefig(os.path.join(output_dir, f'{safe}_category_heatmap.png'), dpi=VIZ_DPI)
         plt.close()
     print(f"  Plots saved to {output_dir}/{safe}_*.png")
 

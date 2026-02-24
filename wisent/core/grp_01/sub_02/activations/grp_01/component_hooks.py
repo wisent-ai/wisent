@@ -12,6 +12,7 @@ from typing import Dict, List, Optional
 import torch
 import torch.nn as nn
 
+from wisent.core.constants import ARCHITECTURE_MODULE_LIMIT
 from wisent.core.activations.strategies.extraction_strategy import ExtractionComponent
 from wisent.core.geometry.analysis.structure.transformer_analysis import (
     TransformerComponent,
@@ -70,7 +71,7 @@ def _detect_model_type(model: nn.Module) -> str:
 
     # Fallback: check for common module patterns
     module_names = [name for name, _ in model.named_modules()]
-    joined = " ".join(module_names[:50])
+    joined = " ".join(module_names[:ARCHITECTURE_MODULE_LIMIT])
     if "self_attn" in joined:
         return "llama"  # Llama-like architecture
     if "attn" in joined and "transformer.h" in joined:

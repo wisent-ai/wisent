@@ -4,6 +4,7 @@ import re
 from typing import List
 from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema, NormalizeResult, CodeStandardizer
 from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.utils import extract_code_block, normalize_whitespace
+from wisent.core.constants import JAVA_INDENT_SPACES
 
 CLASS_RE = re.compile(r"\bclass\s+([A-Za-z_]\w*)")
 METHOD_RE = re.compile(r"(public\s+static\s+[\w\<\>\[\]]+\s+)(\w+)\s*\(")
@@ -73,6 +74,6 @@ class JavaStandardizer(CodeStandardizer):
         code = re.sub(rf"(class\s+{schema.java_class}\s*{{)", r"\1" + fallback, code, count=1)
         return NormalizeResult(files={schema.file_name: code}, notes="\n".join(notes), ok=True)
 
-def indent(s: str, n: int = 4) -> str:
+def indent(s: str, n: int = JAVA_INDENT_SPACES) -> str:
     pad = " " * n
     return "\n".join(pad + line if line.strip() else line for line in s.splitlines())

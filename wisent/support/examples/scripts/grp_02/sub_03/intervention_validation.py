@@ -10,8 +10,9 @@ from typing import Dict, List, Any, Optional
 from dataclasses import asdict
 import random
 
+from wisent.core import constants as _C
 from wisent.examples.scripts.intervention_validation_helpers import (
-    s3_upload_file,
+    gcs_upload_file,
     SteeringResult,
     ValidationResults,
     compute_caa_direction,
@@ -28,8 +29,8 @@ from wisent.examples.scripts.intervention_validation_eval import (
 def run_intervention_validation(
     model_name: str,
     benchmarks_to_test: Optional[List[str]] = None,
-    samples_per_benchmark: int = 20,
-    test_samples: int = 30,
+    samples_per_benchmark: int = _C.PARSER_DEFAULT_SYNTHETIC_PAIRS,
+    test_samples: int = _C.PARSER_DEFAULT_NUM_PAIRS_GENERATE,
     steering_coefficients: List[float] = [1.0, 2.0, 5.0, 10.0],
 ):
     """
@@ -89,7 +90,7 @@ def run_intervention_validation(
                     by_diagnosis["NONLINEAR"].append(bench)
         
         # Sample 3 from each category
-        random.seed(42)
+        random.seed(_C.DEFAULT_RANDOM_SEED)
         for diag, benches in by_diagnosis.items():
             if benches:
                 sampled = random.sample(benches, min(3, len(benches)))
@@ -272,7 +273,7 @@ def run_intervention_validation(
         }, f, indent=2)
     
     print(f"\nResults saved to: {results_file}")
-    s3_upload_file(results_file, model_name)
+    gcs_upload_file(results_file, model_name)
     
     # Cleanup
     del model
@@ -284,8 +285,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Intervention validation for Zwiad")
     parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model to test")
     parser.add_argument("--benchmarks", type=str, nargs="+", default=None, help="Specific benchmarks to test")
-    parser.add_argument("--samples", type=int, default=20, help="Samples for direction computation")
-    parser.add_argument("--test-samples", type=int, default=30, help="Samples for evaluation")
+    parser.add_argument("--samples", type=int, default=_C.PARSER_DEFAULT_SYNTHETIC_PAIRS, help="Samples for direction computation")
+    parser.add_argument("--test-samples", type=int, default=_C.PARSER_DEFAULT_NUM_PAIRS_GENERATE, help="Samples for evaluation")
     args = parser.parse_args()
     
     run_intervention_validation(

@@ -21,6 +21,7 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PARSER_DEFAULT_NUM_PAIRS, DISPLAY_TOP_N_SMALL
 
 
 # Best configs loaded from comprehensive test results
@@ -103,7 +104,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", default="truthfulqa_gen")
     parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--num-pairs", type=int, default=50)
+    parser.add_argument("--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
     parser.add_argument("--layer", type=int, default=None, help="Single layer (overrides multi-config)")
     parser.add_argument("--aggregation", default=None, help="Single aggregation (overrides multi-config)")
     parser.add_argument("--prompt-strategy", default=None, help="Single prompt strategy (overrides multi-config)")
@@ -178,7 +179,7 @@ def run_multi_config(args, wisent_model, pairs, collector, configs_json=None):
     
     for structure_name, data in results.items():
         cfg = data["config"]
-        cfg_str = f"L{cfg['layer']}/{cfg['aggregation']}/{cfg['prompt'][:10]}"
+        cfg_str = f"L{cfg['layer']}/{cfg['aggregation']}/{cfg['prompt'][:DISPLAY_TOP_N_SMALL]}"
         viz_cos = data["visualization"].get("cosine_sim", 0)
         det_cone = data["detection"].get("cone", 0)
         det_best = data["detection"].get(structure_name, 0)
@@ -217,7 +218,7 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     
     # Compute visualization metrics
     pos_sparsity = (np.abs(pos_arr) < 0.1).mean(axis=1)
-    diff_norm = diff_arr / (np.linalg.norm(diff_arr, axis=1, keepdims=True) + 1e-8)
+    diff_norm = diff_arr / (np.linalg.norm(diff_arr, axis=1, keepdims=True) + NORM_EPS)
     cos_sim = diff_norm @ diff_norm.T
     cos_sim_flat = cos_sim[np.triu_indices(len(cos_sim), k=1)]
     
@@ -235,7 +236,7 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     pos_tensor = torch.from_numpy(pos_arr).float()
     neg_tensor = torch.from_numpy(neg_arr).float()
     
-    config = GeometryAnalysisConfig(num_components=5, optimization_steps=50)
+    config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_DEFAULT)
     result = detect_geometry_structure(pos_tensor, neg_tensor, config)
     
     detector_scores = {name: score.score for name, score in result.all_scores.items()}
@@ -293,7 +294,7 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     ax.set_ylabel('PC2')
 
     # 3. t-SNE
-    tsne = TSNE(n_components=2, perplexity=min(30, len(all_arr)-1), random_state=42)
+    tsne = TSNE(n_components=2, perplexity=min(30, len(all_arr)-1), random_state=DEFAULT_RANDOM_SEED)
     all_tsne = tsne.fit_transform(all_arr)
     ax = axes[0, 2]
     ax.scatter(all_tsne[:len(pos_arr), 0], all_tsne[:len(pos_arr), 1], c='blue', alpha=0.6, label='True')

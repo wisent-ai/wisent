@@ -7,6 +7,13 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import torch
+from wisent.core.constants import (
+    MOVEMENT_THRESHOLD, BEHAVIOR_THRESHOLD,
+    DEFAULT_STRENGTH, DEFAULT_MAX_NEW_TOKENS_EVAL,
+    DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD,
+    BEHAVIORAL_CONF_IMPROPERLY, BEHAVIORAL_CONF_UNEXPECTED,
+    BEHAVIORAL_CONF_INEFFECTIVE, AGENT_DIAG_TEMPERATURE,
+)
 
 
 @dataclass
@@ -51,14 +58,14 @@ def compute_activation_movement(
     from sklearn.linear_model import LogisticRegression
     X_train = np.vstack([pos, neg])
     y_train = np.concatenate([np.ones(len(pos)), np.zeros(len(neg))])
-    clf = LogisticRegression( random_state=42)
+    clf = LogisticRegression(random_state=DEFAULT_RANDOM_SEED)
     clf.fit(X_train, y_train)
 
     base_probs = clf.predict_proba(base)[:, 1]
     steered_probs = clf.predict_proba(steered)[:, 1]
 
-    base_in_pos_region = np.sum(base_probs >= 0.5)
-    steered_in_pos_region = np.sum(steered_probs >= 0.5)
+    base_in_pos_region = np.sum(base_probs >= CLASSIFIER_THRESHOLD)
+    steered_in_pos_region = np.sum(steered_probs >= CLASSIFIER_THRESHOLD)
 
     return {
         "moved_toward_pos_count": int(moved_toward_pos),
@@ -115,8 +122,8 @@ def validate_steering_behavioral(
     base_evaluations: List[str],
     steered_evaluations: List[str],
     positive_label: str = "TRUTHFUL",
-    movement_threshold: float = 0.6,
-    behavior_threshold: float = 0.0,
+    movement_threshold: float = MOVEMENT_THRESHOLD,
+    behavior_threshold: float = BEHAVIOR_THRESHOLD,
 ) -> BehavioralValidationResult:
     """
     Validate if steering actually works by comparing activation movement vs behavior.
@@ -152,13 +159,13 @@ def validate_steering_behavioral(
                         0.5 + behavior_metrics["delta"])
     elif activations_moved and not behavior_improved:
         diagnosis = "IMPROPERLY_IDENTIFIED"
-        confidence = activation_metrics["moved_toward_pos_rate"] * 0.5
+        confidence = activation_metrics["moved_toward_pos_rate"] * BEHAVIORAL_CONF_IMPROPERLY
     elif not activations_moved and behavior_improved:
         diagnosis = "UNEXPECTED_IMPROVEMENT"
-        confidence = 0.3
+        confidence = BEHAVIORAL_CONF_UNEXPECTED
     else:
         diagnosis = "INEFFECTIVE"
-        confidence = 0.1
+        confidence = BEHAVIORAL_CONF_INEFFECTIVE
 
     return BehavioralValidationResult(
         diagnosis=diagnosis,
@@ -184,8 +191,8 @@ def run_behavioral_validation(
     test_prompts: List[str],
     evaluator,
     layer_name: str,
-    strength: float = 1.0,
-    max_new_tokens: int = 100,
+    strength: float = DEFAULT_STRENGTH,
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL,
     positive_label: str = "TRUTHFUL",
     extraction_strategy: str = "chat_last",
 ) -> BehavioralValidationResult:
@@ -229,7 +236,7 @@ def run_behavioral_validation(
 
         # Generate outputs FIRST
         base_full_response = adapter._generate_unsteered(
-            formatted, max_new_tokens=max_new_tokens, temperature=0.1, do_sample=True
+            formatted, max_new_tokens=max_new_tokens, temperature=AGENT_DIAG_TEMPERATURE, do_sample=True
         )
         steered_full_response = adapter.forward_with_steering(
             formatted, steering_vectors=steering_vectors, config=config

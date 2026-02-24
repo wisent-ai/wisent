@@ -10,6 +10,13 @@ import os
 import json
 import torch
 
+from wisent.core.constants import (
+    DEFAULT_RANDOM_SEED,
+    GROM_TEST_HIDDEN_DIM,
+    GROM_TEST_N_SAMPLES,
+    GEOMETRY_OPTIMIZATION_STEPS_SMALL,
+)
+
 try:
     import pytest
 except ImportError:
@@ -114,7 +121,7 @@ def test_grom_geometry_on_truthfulqa():
             steering_layers=[8, 12, 15],
             sensor_layer=15,
             adapt_to_geometry=True,
-            optimization_steps=30,
+            optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_SMALL,
         )
         
         # Test the geometry adaptation logic directly with our tensors
@@ -146,16 +153,16 @@ def test_geometry_detection_synthetic():
     """Test geometry detection with synthetic data."""
     from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure
     
-    torch.manual_seed(42)
-    hidden_dim = 256
-    n_samples = 30
-    
+    torch.manual_seed(DEFAULT_RANDOM_SEED)
+    hidden_dim = GROM_TEST_HIDDEN_DIM
+    n_samples = GROM_TEST_N_SAMPLES
+
     # Create linear data
     base = torch.randn(hidden_dim)
     base = base / base.norm()
     pos_linear = base.unsqueeze(0) * 3 + torch.randn(n_samples, hidden_dim) * 0.05
     neg_linear = base.unsqueeze(0) * -3 + torch.randn(n_samples, hidden_dim) * 0.05
-    
+
     result = detect_geometry_structure(pos_linear, neg_linear)
     
     assert result.best_structure.value == "linear", f"Expected linear, got {result.best_structure.value}"
@@ -167,16 +174,16 @@ def test_preflight_checks():
     """Test pre-flight check system."""
     from wisent.core.steering_methods.preflight import run_preflight_check
     
-    torch.manual_seed(42)
-    hidden_dim = 256
-    n_samples = 30
-    
+    torch.manual_seed(DEFAULT_RANDOM_SEED)
+    hidden_dim = GROM_TEST_HIDDEN_DIM
+    n_samples = GROM_TEST_N_SAMPLES
+
     # Linear data
     base = torch.randn(hidden_dim)
     base = base / base.norm()
     pos = base.unsqueeze(0) * 3 + torch.randn(n_samples, hidden_dim) * 0.05
     neg = base.unsqueeze(0) * -3 + torch.randn(n_samples, hidden_dim) * 0.05
-    
+
     caa_result = run_preflight_check(pos, neg, "caa")
     grom_result = run_preflight_check(pos, neg, "grom")
     
@@ -192,16 +199,16 @@ def test_grom_adaptation_linear():
     """Test GROM adapts correctly to linear data."""
     from wisent.core.steering_methods.methods.grom import GROMMethod
     
-    torch.manual_seed(42)
-    hidden_dim = 256
-    n_samples = 30
-    
+    torch.manual_seed(DEFAULT_RANDOM_SEED)
+    hidden_dim = GROM_TEST_HIDDEN_DIM
+    n_samples = GROM_TEST_N_SAMPLES
+
     # Create linear data
     base = torch.randn(hidden_dim)
     base = base / base.norm()
     pos_linear = base.unsqueeze(0) * 3 + torch.randn(n_samples, hidden_dim) * 0.05
     neg_linear = base.unsqueeze(0) * -3 + torch.randn(n_samples, hidden_dim) * 0.05
-    
+
     method = GROMMethod(
         num_directions=5,
         steering_layers=[0],

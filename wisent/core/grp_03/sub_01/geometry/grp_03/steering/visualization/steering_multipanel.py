@@ -5,6 +5,12 @@ import torch
 from typing import List, Optional
 import io
 import base64
+from wisent.core.constants import (
+    DEFAULT_RANDOM_SEED, VIZ_DPI_STANDARD,
+    VIZ_FIGURE_WIDTH_PX, VIZ_FIGURE_HEIGHT_PX, VIZ_LEGEND_Y_TOP,
+    VIZ_GRID_SUMMARY_ROWS, VIZ_GRID_SUMMARY_COLS, VIZ_FIGSIZE_SUMMARY,
+    DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_RESPONSE,
+)
 
 
 def create_steering_multipanel_figure(
@@ -53,7 +59,7 @@ def create_steering_multipanel_figure(
     base = to_numpy(base_activations)
     steered = to_numpy(steered_activations)
 
-    fig, axes = plt.subplots(3, 3, figsize=(18, 18))
+    fig, axes = plt.subplots(VIZ_GRID_SUMMARY_ROWS, VIZ_GRID_SUMMARY_COLS, figsize=VIZ_FIGSIZE_SUMMARY)
 
     # Row 1: Dimensionality reduction methods
     plot_pca_panel(axes[0, 0], pos, neg, base, steered, base_evaluations, steered_evaluations)
@@ -83,7 +89,7 @@ def create_steering_multipanel_figure(
     plt.tight_layout()
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=120, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=VIZ_DPI_STANDARD, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
 
@@ -145,7 +151,7 @@ def create_interactive_steering_figure(
     pos, neg = to_numpy(pos_activations), to_numpy(neg_activations)
     base, steered = to_numpy(base_activations), to_numpy(steered_activations)
     reference = np.vstack([pos, neg])
-    pca = PCA(n_components=2, random_state=42)
+    pca = PCA(n_components=2, random_state=DEFAULT_RANDOM_SEED)
     pca.fit(reference)
     pos_2d, neg_2d = pca.transform(pos), pca.transform(neg)
     base_2d, steered_2d = pca.transform(base), pca.transform(steered)
@@ -186,7 +192,7 @@ def create_interactive_steering_figure(
                                            base_evaluations, steered_evaluations, base_space_probs, steered_space_probs)
     fig.update_layout(title=dict(text=f"{title}<br><sub>{metrics}</sub>", x=0.5),
         xaxis_title="PCA Component 1", yaxis_title="PCA Component 2", hovermode='closest',
-        showlegend=True, legend=dict(yanchor="top", y=0.99, xanchor="right", x=0.99), width=1000, height=800)
+        showlegend=True, legend=dict(yanchor="top", y=VIZ_LEGEND_Y_TOP, xanchor="right", x=VIZ_LEGEND_Y_TOP), width=VIZ_FIGURE_WIDTH_PX, height=VIZ_FIGURE_HEIGHT_PX)
     return fig.to_html(full_html=True, include_plotlyjs=True)
 
 
@@ -196,9 +202,9 @@ def _build_hover_texts(n, prefix, prompts, responses, evals, probs):
     for i in range(n):
         parts = [f"<b>{prefix} Sample #{i+1}</b>"]
         if prompts and i < len(prompts):
-            parts.append(f"<b>Prompt:</b> {prompts[i][:100]}..." if len(prompts[i]) > 100 else f"<b>Prompt:</b> {prompts[i]}")
+            parts.append(f"<b>Prompt:</b> {prompts[i][:DISPLAY_TRUNCATION_COMPACT]}..." if len(prompts[i]) > DISPLAY_TRUNCATION_COMPACT else f"<b>Prompt:</b> {prompts[i]}")
         if responses and i < len(responses):
-            parts.append(f"<b>Response:</b> {responses[i][:150]}..." if len(responses[i]) > 150 else f"<b>Response:</b> {responses[i]}")
+            parts.append(f"<b>Response:</b> {responses[i][:DISPLAY_TRUNCATION_RESPONSE]}..." if len(responses[i]) > DISPLAY_TRUNCATION_RESPONSE else f"<b>Response:</b> {responses[i]}")
         if evals and i < len(evals):
             parts.append(f"<b>Evaluation:</b> {evals[i]}")
         if probs and i < len(probs):

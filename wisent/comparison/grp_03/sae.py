@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from wisent.core.constants import COMPARISON_NUM_PAIRS, TOKENIZER_MAX_LENGTH_CLUSTER, SAE_TOP_K_DEFAULT, DISPLAY_TOP_N_SMALL
 from wisent.comparison.utils import (
     apply_steering_to_model,
     remove_steering,
@@ -52,7 +53,7 @@ def _get_residual_stream_activations(
     Returns:
         Tensor of shape (1, seq_len, d_model)
     """
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER)
     inputs = {k: v.to(device) for k, v in inputs.items()}
 
     with torch.no_grad():
@@ -130,7 +131,7 @@ def compute_feature_diff(
 def compute_steering_vector_from_decoder(
     feature_diff: torch.Tensor,
     sae,
-    top_k: int = 4,
+    top_k: int = SAE_TOP_K_DEFAULT,
     normalize: bool = True,
 ) -> tuple[torch.Tensor, dict]:
     """
@@ -152,8 +153,8 @@ def compute_steering_vector_from_decoder(
     top_values, top_indices = abs_diff.topk(min(top_k, len(feature_diff)))
 
     print(f"   Selected top {len(top_indices)} features")
-    print(f"   Top feature indices: {top_indices[:10].tolist()}...")
-    print(f"   Top feature diff magnitudes: {top_values[:10].tolist()}")
+    print(f"   Top feature indices: {top_indices[:DISPLAY_TOP_N_SMALL].tolist()}...")
+    print(f"   Top feature diff magnitudes: {top_values[:DISPLAY_TOP_N_SMALL].tolist()}")
 
     # Construct steering vector from decoder
     # W_dec shape: [d_sae, d_model]
@@ -184,13 +185,13 @@ def generate_steering_vector(
     model_name: str,
     output_path: str | Path,
     trait_label: str = "correctness",
-    num_pairs: int = 50,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
     method: str = "sae",
     layers: str | None = None,
     normalize: bool = True,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    top_k: int = 4,
+    top_k: int = SAE_TOP_K_DEFAULT,
     **kwargs,  # Accept additional kwargs for compatibility
 ) -> Path:
     """

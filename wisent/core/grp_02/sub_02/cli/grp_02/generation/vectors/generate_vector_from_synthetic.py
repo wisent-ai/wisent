@@ -9,6 +9,7 @@ import re
 from argparse import Namespace
 
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import DISPLAY_TRUNCATION_SHORT
 from ..pairs.generate_pairs import execute_generate_pairs
 from ...analysis.geometry.get_activations import execute_get_activations
 from ...steering.core.create_steering_object import execute_create_steering_object
@@ -18,7 +19,7 @@ def _get_pairs_cache_filename(trait: str, num_pairs: int) -> str:
     """Generate a consistent filename for cached pairs based on trait and num_pairs."""
     # Create a safe filename from trait
     safe_trait = re.sub(r'[^\w\s-]', '', trait.lower())
-    safe_trait = re.sub(r'[\s]+', '_', safe_trait)[:50]  # Limit length
+    safe_trait = re.sub(r'[\s]+', '_', safe_trait)[:DISPLAY_TRUNCATION_SHORT]  # Limit length
     # Add hash for uniqueness if trait is complex
     trait_hash = hashlib.md5(trait.encode()).hexdigest()[:8]
     return f"pairs_{safe_trait}_{trait_hash}_n{num_pairs}.json"

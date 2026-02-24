@@ -7,12 +7,13 @@ Metrics for manifold structure, curvature, and direction overlap.
 import torch
 import numpy as np
 from typing import Dict, Any, Optional
+from wisent.core.constants import NORM_EPS, MANIFOLD_LINEARITY_SAMPLE_LIMIT, SPECTRAL_N_NEIGHBORS_DEFAULT
 
 
 def compute_manifold_metrics(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_neighbors: int = 10,
+    n_neighbors: int = SPECTRAL_N_NEIGHBORS_DEFAULT,
 ) -> Dict[str, Any]:
     """
     Compute manifold and curvature metrics.
@@ -45,11 +46,11 @@ def compute_manifold_metrics(
     dims_for_99 = int(np.searchsorted(cumsum_variance, 0.99) + 1)
 
     # Participation ratio (effective dimensionality)
-    participation_ratio = (explained_variance.sum() ** 2) / (np.sum(explained_variance ** 2) + 1e-8)
+    participation_ratio = (explained_variance.sum() ** 2) / (np.sum(explained_variance ** 2) + NORM_EPS)
 
     # Local linearity: how well does local PCA match global PCA
     local_linearities = []
-    for i in range(min(n, 50)):
+    for i in range(min(n, MANIFOLD_LINEARITY_SAMPLE_LIMIT)):
         # Find k nearest neighbors
         distances = np.linalg.norm(diffs - diffs[i], axis=1)
         neighbor_idx = np.argsort(distances)[1:n_neighbors+1]
@@ -62,7 +63,7 @@ def compute_manifold_metrics(
             global_mean = diffs.mean(axis=0)
             global_norm = np.linalg.norm(global_mean)
 
-            if local_norm > 1e-8 and global_norm > 1e-8:
+            if local_norm > NORM_EPS and global_norm > NORM_EPS:
                 local_dir = local_mean / local_norm
                 global_dir = global_mean / global_norm
                 local_linearities.append(np.abs(np.dot(local_dir, global_dir)))
@@ -120,7 +121,7 @@ def compute_direction_overlap_metrics(
     mean_diff = diffs.mean(axis=0)
     norm = np.linalg.norm(mean_diff)
 
-    if norm < 1e-8:
+    if norm < NORM_EPS:
         return {"error": "steering direction norm too small"}
 
     direction = mean_diff / norm
@@ -136,7 +137,7 @@ def compute_direction_overlap_metrics(
     for name, other_dir in other_directions.items():
         if len(other_dir) == len(direction):
             other_norm = np.linalg.norm(other_dir)
-            if other_norm > 1e-8:
+            if other_norm > NORM_EPS:
                 other_normalized = other_dir / other_norm
                 overlap = float(np.dot(direction, other_normalized))
                 overlaps[name] = overlap

@@ -8,13 +8,30 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
+from wisent.core.constants import (
+    DEFAULT_RANDOM_SEED,
+    LINEARITY_N_INIT,
+    STABILITY_ACCURACY_MARGIN,
+    STABILITY_BINARY_VARIANCE,
+    STABILITY_MIN_SAMPLES_LARGE,
+    STABILITY_MIN_SAMPLES_MED,
+    STABILITY_MIN_SAMPLES_SMALL,
+    STABILITY_N_BOOTSTRAP,
+    STABILITY_N_CLUSTERS,
+    STABILITY_N_SUBSAMPLES,
+    STABILITY_SUBSAMPLE_RATIO,
+    STABILITY_THRESHOLD_HIGH,
+    STABILITY_THRESHOLD_MED,
+    STABILITY_Z_MARGIN,
+    ZERO_THRESHOLD,
+)
 
 
 def direction_stability_bootstrap(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_bootstrap: int = 50,
-    random_state: int = 42,
+    n_bootstrap: int = STABILITY_N_BOOTSTRAP,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Test if the CAA direction is stable across bootstrap samples.
 
@@ -36,12 +53,12 @@ def direction_stability_bootstrap(
         pos_boot = pos_np[idx]
         neg_boot = neg_np[idx]
         direction = (pos_boot - neg_boot).mean(axis=0)
-        direction = direction / (np.linalg.norm(direction) + 1e-10)
+        direction = direction / (np.linalg.norm(direction) + ZERO_THRESHOLD)
         directions.append(direction)
 
     directions = np.array(directions)
     mean_dir = directions.mean(axis=0)
-    mean_dir = mean_dir / (np.linalg.norm(mean_dir) + 1e-10)
+    mean_dir = mean_dir / (np.linalg.norm(mean_dir) + ZERO_THRESHOLD)
 
     cosines = np.array([np.dot(d, mean_dir) for d in directions])
 
@@ -49,16 +66,16 @@ def direction_stability_bootstrap(
         "mean_cosine_similarity": float(np.mean(cosines)),
         "std_cosine_similarity": float(np.std(cosines)),
         "min_cosine_similarity": float(np.min(cosines)),
-        "is_stable": float(np.mean(cosines)) > 0.9,
+        "is_stable": float(np.mean(cosines)) > STABILITY_THRESHOLD_HIGH,
     }
 
 
 def cluster_stability_test(
     data: torch.Tensor,
     n_clusters: int,
-    n_subsamples: int = 20,
-    subsample_ratio: float = 0.8,
-    random_state: int = 42,
+    n_subsamples: int = STABILITY_N_SUBSAMPLES,
+    subsample_ratio: float = STABILITY_SUBSAMPLE_RATIO,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Test cluster stability by subsampling and measuring consistency.
 
@@ -73,7 +90,7 @@ def cluster_stability_test(
     n = len(data_np)
     subsample_size = int(n * subsample_ratio)
 
-    base_kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=10)
+    base_kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=LINEARITY_N_INIT)
     base_labels = base_kmeans.fit_predict(data_np)
 
     ari_scores = []
@@ -81,7 +98,7 @@ def cluster_stability_test(
         idx = rng.choice(n, subsample_size, replace=False)
         subsample = data_np[idx]
 
-        kmeans = KMeans(n_clusters=n_clusters, random_state=random_state + i, n_init=5)
+        kmeans = KMeans(n_clusters=n_clusters, random_state=random_state + i, n_init=LINEARITY_N_INIT)
         subsample_labels = kmeans.fit_predict(subsample)
 
         ari = adjusted_rand_score(base_labels[idx], subsample_labels)
@@ -91,7 +108,7 @@ def cluster_stability_test(
         "mean_ari": float(np.mean(ari_scores)),
         "std_ari": float(np.std(ari_scores)),
         "min_ari": float(np.min(ari_scores)),
-        "is_stable": float(np.mean(ari_scores)) > 0.7,
+        "is_stable": float(np.mean(ari_scores)) > STABILITY_THRESHOLD_MED,
     }
 
 
@@ -104,8 +121,8 @@ def sample_size_feasibility(n_samples: int, n_dims: int) -> Dict[str, Any]:
     """
     gmm_2_needed = 2 * n_dims * n_dims
 
-    accuracy_se = np.sqrt(0.5 * 0.5 / n_samples)
-    accuracy_margin = 1.96 * accuracy_se
+    accuracy_se = np.sqrt(STABILITY_BINARY_VARIANCE * STABILITY_BINARY_VARIANCE / n_samples)
+    accuracy_margin = STABILITY_Z_MARGIN * accuracy_se
 
     linear_probe_effective_n = n_samples / max(1, n_dims / 100)
     linear_probe_reliable = linear_probe_effective_n > 10
@@ -116,7 +133,7 @@ def sample_size_feasibility(n_samples: int, n_dims: int) -> Dict[str, Any]:
         "n_samples": n_samples,
         "n_dims": n_dims,
         "accuracy_margin_of_error": accuracy_margin,
-        "accuracy_bounds_reliable": accuracy_margin < 0.1,
+        "accuracy_bounds_reliable": accuracy_margin < STABILITY_ACCURACY_MARGIN,
         "linear_probe_effective_n": linear_probe_effective_n,
         "linear_probe_reliable": linear_probe_reliable,
         "clustering_uncertainty": clustering_se,
@@ -142,13 +159,13 @@ def _gmm_estimation_error(n_samples: int, n_dims: int, k: int) -> Dict[str, floa
 def _what_can_bound(n_samples: int, n_dims: int) -> List[str]:
     """List what estimation can be bounded with current sample size."""
     bounded = []
-    if n_samples >= 50:
+    if n_samples >= STABILITY_MIN_SAMPLES_MED:
         bounded.append("Classification accuracy (±margin of error)")
-    if n_samples >= 100:
+    if n_samples >= STABILITY_MIN_SAMPLES_LARGE:
         bounded.append("Effect size (Cohen's d with CI)")
-    if n_samples >= 30:
+    if n_samples >= STABILITY_MIN_SAMPLES_SMALL:
         bounded.append("Direction stability (cosine similarity)")
-    if n_samples >= 50:
+    if n_samples >= STABILITY_MIN_SAMPLES_MED:
         bounded.append("K-means cluster assignments")
     return bounded
 
@@ -169,8 +186,8 @@ def _what_has_high_uncertainty(n_samples: int, n_dims: int) -> List[str]:
 def compute_full_stability_report(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_clusters: int = 2,
-    random_state: int = 42,
+    n_clusters: int = STABILITY_N_CLUSTERS,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, Any]:
     """Compute complete stability and feasibility report.
 
@@ -186,7 +203,7 @@ def compute_full_stability_report(
     diff = pos_np - (neg.cpu().numpy() if isinstance(neg, torch.Tensor) else neg)
 
     cluster_stability = None
-    if n_clusters > 1 and n_samples >= 50:
+    if n_clusters > 1 and n_samples >= STABILITY_MIN_SAMPLES_MED:
         cluster_stability = cluster_stability_test(
             torch.tensor(diff), n_clusters, random_state=random_state
         )

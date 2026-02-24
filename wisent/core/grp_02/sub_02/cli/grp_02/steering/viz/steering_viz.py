@@ -7,6 +7,7 @@ import os
 os.environ["NUMBA_NUM_THREADS"] = "1"
 
 import json
+from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_MAX_NEW_TOKENS_EVAL, AGENT_DIAG_TEMPERATURE, VIZ_TRUTHFUL_REGION_THRESHOLD
 import base64
 import tempfile
 from pathlib import Path
@@ -106,7 +107,7 @@ def _load_or_generate_reference_activations(args):
             model_name=args.model, task_name=args.task, layer=args.layer,
             prompt_format=getattr(args, 'prompt_format', 'chat'),
             extraction_strategy=getattr(args, 'extraction_strategy', 'chat_last'),
-            limit=getattr(args, 'limit', 100),
+            limit=getattr(args, 'limit', DEFAULT_LIMIT),
             database_url=getattr(args, 'database_url', None),
         )
         print(f"  Found activations in database")
@@ -128,7 +129,7 @@ def _generate_reference_activations(args):
         tmpdir = Path(tmpdir)
         pairs_path = tmpdir / "pairs.json"
         pair_texts = load_pair_texts_from_database(
-            task_name=args.task, limit=getattr(args, 'limit', 100),
+            task_name=args.task, limit=getattr(args, 'limit', DEFAULT_LIMIT),
             database_url=getattr(args, 'database_url', None)
         )
         pairs_list = [{"prompt": p.get("prompt", ""),
@@ -184,13 +185,13 @@ def _generate_and_extract(args, steering_vector):
     strategy_map = {"last_token": "chat_last", "first_token": "chat_first", "mean": "chat_mean"}
     strategy_str = strategy_map.get(strategy_str, strategy_str)
     extraction_strategy = ExtractionStrategy(strategy_str)
-    max_new_tokens = getattr(args, 'max_new_tokens', 100)
+    max_new_tokens = getattr(args, 'max_new_tokens', DEFAULT_MAX_NEW_TOKENS_EVAL)
 
     steering_vectors = LayerActivations({layer_name: steering_vector})
     config = SteeringConfig(scale={layer_name: args.strength})
 
     pair_texts = load_pair_texts_from_database(
-        task_name=args.task, limit=getattr(args, 'limit', 100),
+        task_name=args.task, limit=getattr(args, 'limit', DEFAULT_LIMIT),
         database_url=getattr(args, 'database_url', None)
     )
 
@@ -204,7 +205,7 @@ def _generate_and_extract(args, steering_vector):
         messages = [{"role": "user", "content": prompt}]
         formatted_prompt = adapter.apply_chat_template(messages, add_generation_prompt=True)
 
-        base_full = adapter._generate_unsteered(formatted_prompt, max_new_tokens=max_new_tokens, temperature=0.1, do_sample=True)
+        base_full = adapter._generate_unsteered(formatted_prompt, max_new_tokens=max_new_tokens, temperature=AGENT_DIAG_TEMPERATURE, do_sample=True)
         steered_full = adapter.forward_with_steering(formatted_prompt, steering_vectors=steering_vectors, config=config)
 
         # Extract just the assistant response, handling various chat template formats
@@ -258,8 +259,8 @@ def _save_summary(output_path, args, base_evals, steered_evals, base_probs, stee
         json.dump({"model": args.model, "task": args.task, "layer": args.layer, "strength": args.strength,
                    "text_evaluation": {"base_truthful": base_truthful, "steered_truthful": steered_truthful, "total": len(base_evals)},
                    "activation_space": {"classifier_accuracy": train_report.final.accuracy,
-                       "base_in_truthful": sum(1 for p in base_probs if p >= 0.5),
-                       "steered_in_truthful": sum(1 for p in steered_probs if p >= 0.5),
+                       "base_in_truthful": sum(1 for p in base_probs if p >= VIZ_TRUTHFUL_REGION_THRESHOLD),
+                       "steered_in_truthful": sum(1 for p in steered_probs if p >= VIZ_TRUTHFUL_REGION_THRESHOLD),
                        "base_mean_prob": float(np.mean(base_probs)), "steered_mean_prob": float(np.mean(steered_probs))},
                    "responses": [{"prompt": b["prompt"], "base": b["response"], "steered": s["response"],
                                   "base_eval": b["evaluation"], "steered_eval": s["evaluation"]}

@@ -10,16 +10,19 @@ from typing import Dict, Optional
 import torch
 
 from wisent.core.cli.optimize_steering.pipeline import _make_args
-from wisent.core.cli.optimize_steering.data.contrastive_pairs import (
+from wisent.core.cli.optimize_steering.data.contrastive_pairs_data import (
     execute_generate_pairs_from_task,
 )
-from wisent.core.cli.optimize_steering.data.activations import execute_get_activations
+from wisent.core.cli.optimize_steering.data.activations_data import execute_get_activations
 from wisent.core.cli.optimize_steering.data.responses import execute_generate_responses
 from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.steering_methods.steering_object import (
     load_steering_object,
     CAASteeringObject,
 )
+from wisent.core.constants import (TIKHONOV_REG, RL_NUM_EPISODES, RL_EPSILON,
+    PIPELINE_STEERING_STRENGTH, PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P,
+    PRZELOM_EPSILON, SZLAK_INFERENCE_K, DEFAULT_LIMIT, CONTINUAL_LOOP_QUERY_LIMIT)
 
 
 def ensure_enriched_pairs(
@@ -92,9 +95,9 @@ def evaluate_vectors(
 
     execute_generate_responses(_make_args(
         task=task, input_file=enriched_path, model=model, output=rf,
-        num_questions=limit, steering_object=sf, steering_strength=1.0,
+        num_questions=limit, steering_object=sf, steering_strength=PIPELINE_STEERING_STRENGTH,
         steering_strategy="constant", use_steering=True, device=device,
-        max_new_tokens=128, temperature=0.7, top_p=0.95,
+        max_new_tokens=PIPELINE_MAX_NEW_TOKENS, temperature=PIPELINE_TEMPERATURE, top_p=PIPELINE_TOP_P,
         verbose=False, cached_model=None,
     ))
 
@@ -134,13 +137,13 @@ def run_rl_iteration(
             rl_args = _make_args(
                 model=model, task=task, enriched_pairs_file=enriched_path,
                 method=method_lower,
-                max_iterations=getattr(args, 'max_iterations', 10),
-                learning_rate=getattr(args, 'learning_rate', 0.1),
-                epsilon=getattr(args, 'epsilon', 1.0),
-                regularization=getattr(args, 'regularization', 1e-4),
-                inference_k=getattr(args, 'inference_k', 5),
-                noise_scale=getattr(args, 'noise_scale', 0.1),
-                limit=getattr(args, 'limit', 100),
+                max_iterations=getattr(args, 'max_iterations', RL_NUM_EPISODES),
+                learning_rate=getattr(args, 'learning_rate', RL_EPSILON),
+                epsilon=getattr(args, 'epsilon', PRZELOM_EPSILON),
+                regularization=getattr(args, 'regularization', TIKHONOV_REG),
+                inference_k=getattr(args, 'inference_k', SZLAK_INFERENCE_K),
+                noise_scale=getattr(args, 'noise_scale', RL_EPSILON),
+                limit=getattr(args, 'limit', DEFAULT_LIMIT),
                 output=output_path,
                 device=getattr(args, 'device', None),
             )
@@ -152,10 +155,10 @@ def run_rl_iteration(
             rl_args = _make_args(
                 model=model, task=task, enriched_pairs_file=enriched_path,
                 method=method,
-                max_iterations=getattr(args, 'max_iterations', 10),
-                learning_rate=getattr(args, 'learning_rate', 0.1),
-                noise_scale=getattr(args, 'noise_scale', 0.1),
-                limit=getattr(args, 'limit', 100),
+                max_iterations=getattr(args, 'max_iterations', RL_NUM_EPISODES),
+                learning_rate=getattr(args, 'learning_rate', RL_EPSILON),
+                noise_scale=getattr(args, 'noise_scale', RL_EPSILON),
+                limit=getattr(args, 'limit', DEFAULT_LIMIT),
                 output=output_path,
                 device=getattr(args, 'device', None),
             )
@@ -177,7 +180,7 @@ def select_method_for_task(task: str, model: str) -> str:
     try:
         from wisent.core.steering_optimizer import run_auto_steering_optimization
         result = run_auto_steering_optimization(
-            model_name=model, task_name=task, limit=20,
+            model_name=model, task_name=task, limit=CONTINUAL_LOOP_QUERY_LIMIT,
             device=None, verbose=False,
         )
         if "error" not in result:

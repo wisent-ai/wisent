@@ -11,8 +11,9 @@ import os
 import json
 import torch
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple
-from itertools import product
+from typing import Dict, List
+from wisent.core import constants as _C
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, DISPLAY_TOP_N_SMALL
 
 
 @dataclass
@@ -29,7 +30,7 @@ class GeometryResult:
 def run_comprehensive_geometry_analysis(
     task: str = "truthfulqa_gen",
     model: str = "meta-llama/Llama-3.2-1B-Instruct",
-    num_pairs: int = 50,
+    num_pairs: int = PARSER_DEFAULT_NUM_PAIRS,
     output_dir: str = "/home/ubuntu/output",
 ):
     """
@@ -135,7 +136,7 @@ def run_comprehensive_geometry_analysis(
                     )
                     
                     if result.returncode != 0:
-                        print(f"    ERROR: {result.stderr[:200]}")
+                        print(f"    ERROR: {result.stderr[:_C.DISPLAY_TRUNCATION_MEDIUM]}")
                         continue
                     
                     # Load activations
@@ -219,7 +220,7 @@ def run_comprehensive_geometry_analysis(
         print("-" * 80)
         
         sorted_results = sorted(all_results, key=lambda x: x.best_score, reverse=True)
-        for i, r in enumerate(sorted_results[:10]):
+        for i, r in enumerate(sorted_results[:DISPLAY_TOP_N_SMALL]):
             print(f"\n  #{i+1}: {r.best_structure} = {r.best_score:.4f}")
             print(f"      Layer={r.layer}, Agg={r.token_aggregation}, Prompt={r.prompt_strategy}")
         

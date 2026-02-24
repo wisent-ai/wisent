@@ -26,6 +26,9 @@ from wisent.core.cli.optimize_steering.data.responses import execute_generate_re
 from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.cli.optimize_steering.pipeline import _make_args
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import (LOG_EPS, TIKHONOV_REG, RL_BASELINE, DEFAULT_SCORE, RL_NUM_EPISODES,
+    PIPELINE_STEERING_STRENGTH, PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P,
+    RL_EPSILON, PRZELOM_EPSILON, PRZELOM_INFERENCE_K, RL_BATCH_LIMIT, CLASSIFIER_DECISION_THRESHOLD)
 
 
 def _precompute_layer_data(
@@ -98,16 +101,22 @@ def _update_cost_shaping(
     layer_data: Dict[int, dict],
     rewards: List[float],
     learning_rate: float,
+    baseline: float = RL_BASELINE,
 ) -> None:
-    """REINFORCE update: lower cost where high-reward transport happened."""
-    rewards_t = torch.tensor(rewards, dtype=torch.float32)
-    if rewards_t.std() < 1e-8:
+    """REINFORCE update: scalar advantage from mean reward shapes cost.
+
+    The transport plan T_current (n_pairs x n_pairs) operates on enriched
+    pairs, while rewards come from task evaluation (different examples).
+    We use the aggregate reward as a scalar advantage: when steering performs
+    above baseline, reinforce current transport paths; below, discourage them.
+    """
+    if not rewards:
         return
-    advantage = (rewards_t - rewards_t.mean()) / (rewards_t.std() + 1e-8)
+    mean_reward = sum(rewards) / len(rewards)
+    advantage = mean_reward - baseline
     for layer_int, data in layer_data.items():
         T_current = data["T_current"]
-        adv = advantage[:T_current.shape[0]].unsqueeze(1)
-        C_shaping[layer_int] -= learning_rate * (adv * T_current)
+        C_shaping[layer_int] -= learning_rate * advantage * T_current
 
 
 def _create_przelom_from_shaping(
@@ -126,8 +135,8 @@ def _create_przelom_from_shaping(
         C_eff = data["C_original"] + C_shaping[layer_int]
         T_target = torch.softmax(-C_eff / epsilon, dim=1)
         T_current = data["T_current"]
-        delta_C = epsilon * (torch.log(T_target.clamp(min=1e-12))
-                             - torch.log(T_current.clamp(min=1e-12)))
+        delta_C = epsilon * (torch.log(T_target.clamp(min=LOG_EPS))
+                             - torch.log(T_current.clamp(min=LOG_EPS)))
         q_dim = data["q_neg"].shape[-1]
         k_dim = data["k_pos"].shape[-1]
         if q_dim == k_dim:
@@ -163,7 +172,7 @@ def _extract_per_example_rewards(scores_file: str) -> List[float]:
         if isinstance(evaluation, dict) and "correct" in evaluation:
             rewards.append(1.0 if evaluation["correct"] else 0.0)
         elif isinstance(evaluation, dict):
-            rewards.append(evaluation.get("score", 0.0))
+            rewards.append(evaluation.get("score", DEFAULT_SCORE))
         else:
             rewards.append(0.0)
     return rewards
@@ -191,12 +200,12 @@ def execute_transport_rl(args):
     model = args.model
     task = args.task
     epf = args.enriched_pairs_file
-    max_iter = getattr(args, 'max_iterations', 10)
-    lr = getattr(args, 'learning_rate', 0.1)
-    epsilon = getattr(args, 'epsilon', 1.0)
-    reg = getattr(args, 'regularization', 1e-4)
-    inf_k = getattr(args, 'inference_k', 5)
-    limit = getattr(args, 'limit', 100)
+    max_iter = getattr(args, 'max_iterations', RL_NUM_EPISODES)
+    lr = getattr(args, 'learning_rate', RL_EPSILON)
+    epsilon = getattr(args, 'epsilon', PRZELOM_EPSILON)
+    reg = getattr(args, 'regularization', TIKHONOV_REG)
+    inf_k = getattr(args, 'inference_k', PRZELOM_INFERENCE_K)
+    limit = getattr(args, 'limit', RL_BATCH_LIMIT)
     output_path = getattr(args, 'output', 'best_transport_rl.pt')
     device = getattr(args, 'device', None)
 
@@ -222,6 +231,7 @@ def execute_transport_rl(args):
     }
     best_score = -float('inf')
     best_obj = None
+    score_history: List[float] = []
 
     # 3. RL loop
     for it in range(1, max_iter + 1):
@@ -236,9 +246,9 @@ def execute_transport_rl(args):
             # Generate steered responses
             execute_generate_responses(_make_args(
                 task=task, input_file=epf, model=model, output=rf,
-                num_questions=limit, steering_object=sf, steering_strength=1.0,
+                num_questions=limit, steering_object=sf, steering_strength=PIPELINE_STEERING_STRENGTH,
                 steering_strategy="constant", use_steering=True, device=device,
-                max_new_tokens=128, temperature=0.7, top_p=0.95,
+                max_new_tokens=PIPELINE_MAX_NEW_TOKENS, temperature=PIPELINE_TEMPERATURE, top_p=PIPELINE_TOP_P,
                 verbose=False, cached_model=None,
             ))
             # Evaluate
@@ -247,18 +257,21 @@ def execute_transport_rl(args):
             agg = _extract_aggregate_score(ef)
             n = max(len(rewards), 1)
             print(f"   Score: {agg:.4f} (mean_reward={sum(rewards)/n:.3f}, n={len(rewards)})")
-            # Update cost shaping
+            # Update cost shaping with running baseline
             if rewards:
-                _update_cost_shaping(C_shaping, layer_data, rewards, lr)
-            # Track best
+                baseline = sum(score_history) / len(score_history) if score_history else CLASSIFIER_DECISION_THRESHOLD
+                _update_cost_shaping(C_shaping, layer_data, rewards, lr, baseline=baseline)
+            score_history.append(agg)
+            # Track best — save incrementally so progress survives timeouts
             if agg > best_score:
                 best_score = agg
                 best_obj = obj
-                print(f"   ** New best: {best_score:.4f}")
+                os.makedirs(os.path.dirname(os.path.abspath(output_path)) or '.', exist_ok=True)
+                best_obj.save(output_path)
+                print(f"   ** New best: {best_score:.4f} (saved to {output_path})")
 
-    # 4. Save best
+    # 4. Final save confirmation
     if best_obj is not None:
-        os.makedirs(os.path.dirname(os.path.abspath(output_path)) or '.', exist_ok=True)
         best_obj.save(output_path)
         print(f"\nBest steering object saved to: {output_path} (score: {best_score:.4f})")
     else:

@@ -7,6 +7,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import DISPLAY_TRUNCATION_LARGE
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -111,8 +112,8 @@ class WikitextExtractor(LMEvalBenchmarkExtractor):
             incorrect_continuation = ' '.join(shuffled_words)
 
             # Truncate context if too long
-            if len(context) > 500:
-                context = context[:500] + "..."
+            if len(context) > DISPLAY_TRUNCATION_LARGE:
+                context = context[:DISPLAY_TRUNCATION_LARGE] + "..."
 
             metadata = {
                 "label": "perplexity",

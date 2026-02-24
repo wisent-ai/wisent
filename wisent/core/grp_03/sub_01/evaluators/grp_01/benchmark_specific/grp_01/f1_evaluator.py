@@ -7,6 +7,7 @@ from typing import Any, Set
 import logging
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.constants import EVAL_F1_MATCH_THRESHOLD, EVAL_F1_PARTIAL_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +70,7 @@ class F1Evaluator(BaseEvaluator):
 
             # If correct answer has better F1 with expected, return TRUTHFUL
             # If incorrect answer has better F1 with expected, return UNTRUTHFUL
-            if best_f1_correct >= 0.8 and best_f1_incorrect < 0.8:
+            if best_f1_correct >= EVAL_F1_MATCH_THRESHOLD and best_f1_incorrect < EVAL_F1_MATCH_THRESHOLD:
                 return EvalResult(
                     ground_truth="TRUTHFUL",
                     method_used=self.name,
@@ -82,7 +83,7 @@ class F1Evaluator(BaseEvaluator):
                         "incorrect_answer": incorrect_answer,
                     }
                 )
-            elif best_f1_incorrect >= 0.8 and best_f1_correct < 0.8:
+            elif best_f1_incorrect >= EVAL_F1_MATCH_THRESHOLD and best_f1_correct < EVAL_F1_MATCH_THRESHOLD:
                 return EvalResult(
                     ground_truth="UNTRUTHFUL",
                     method_used=self.name,
@@ -126,9 +127,9 @@ class F1Evaluator(BaseEvaluator):
                 best_match = exp
 
         # Determine ground truth based on F1 threshold
-        if best_f1 >= 0.8:
+        if best_f1 >= EVAL_F1_MATCH_THRESHOLD:
             ground_truth = "TRUTHFUL"
-        elif best_f1 >= 0.5:
+        elif best_f1 >= EVAL_F1_PARTIAL_THRESHOLD:
             ground_truth = "UNKNOWN"  # Partial match
         else:
             ground_truth = "UNTRUTHFUL"

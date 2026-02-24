@@ -19,6 +19,7 @@ from wisent.core.activations import (
     build_extraction_texts,
 )
 from wisent.core.errors import NoHiddenStatesError
+from wisent.core.constants import MAX_TOKENIZATION_LENGTH
 
 if TYPE_CHECKING:
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -114,7 +115,7 @@ def collect_single_raw(
 
         full_enc = tok(
             full_text, return_tensors="pt",
-            add_special_tokens=False, truncation=True, max_length=2048
+            add_special_tokens=False, truncation=True, max_length=MAX_TOKENIZATION_LENGTH
         )
         compute_device = (
             getattr(collector.model, "compute_device", None)

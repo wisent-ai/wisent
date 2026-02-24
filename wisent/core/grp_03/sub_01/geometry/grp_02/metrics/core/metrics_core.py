@@ -10,6 +10,7 @@ os.environ["NUMBA_NUM_THREADS"] = "1"
 
 from typing import Dict, Optional, Any
 import torch
+from wisent.core.constants import DEFAULT_RANDOM_SEED, MAX_PAIRS_FOR_METRICS, CLASSIFIER_DECISION_THRESHOLD, CV_DEFAULT_N_FOLDS
 
 from ..probe.probe_metrics import (
     compute_signal_strength, compute_linear_probe_accuracy,
@@ -26,7 +27,7 @@ from ..direction.direction_metrics import (
 from ..direction.multi_direction import compute_multi_direction_accuracy
 from ...steering.analysis.steerability import compute_steerability_metrics
 from ...steering.analysis.steering_recommendation import compute_steering_recommendation
-from ...utils.icd import compute_icd
+from ...geo_utils.icd import compute_icd
 from ...concepts import detect_multiple_concepts, compute_concept_coherence
 from ...analysis.signal_analysis import compute_signal_to_noise
 from ...analysis.structure import (
@@ -41,13 +42,11 @@ from ...analysis.structure import compare_components_for_benchmark
 from .metrics_viz import generate_metrics_visualizations
 
 
-MAX_PAIRS_FOR_METRICS = 1000
-
 
 def compute_geometry_metrics(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_folds: int = 5,
+    n_folds: int = CV_DEFAULT_N_FOLDS,
     model=None,
     tokenizer=None,
     layer: Optional[int] = None,
@@ -70,7 +69,7 @@ def compute_geometry_metrics(
 
     # Subsample pairs for metrics when dataset is large (O(n²) ops)
     if n_samples > MAX_PAIRS_FOR_METRICS:
-        idx = np.random.RandomState(42).choice(n_samples, MAX_PAIRS_FOR_METRICS, replace=False)
+        idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(n_samples, MAX_PAIRS_FOR_METRICS, replace=False)
         idx.sort()
         pos_activations = pos_activations[idx]
         neg_activations = neg_activations[idx]
@@ -83,7 +82,7 @@ def compute_geometry_metrics(
     pca_dims = min(n_samples - 1, n_features, 50)
     if pca_dims < n_features and pca_dims >= 2:
         combined = torch.cat([pos_activations, neg_activations], dim=0).cpu().numpy()
-        combined_pca = PCA(n_components=pca_dims, random_state=42).fit_transform(combined)
+        combined_pca = PCA(n_components=pca_dims, random_state=DEFAULT_RANDOM_SEED).fit_transform(combined)
         pos_reduced = torch.tensor(combined_pca[:n_samples], dtype=pos_activations.dtype)
         neg_reduced = torch.tensor(combined_pca[n_samples:], dtype=neg_activations.dtype)
         metrics["pca_dims"] = pca_dims
@@ -228,7 +227,7 @@ def compute_geometry_metrics(
     # Generate recommendation
     recommendation = compute_steering_recommendation(metrics)
     metrics["recommended_method"] = recommendation.get("recommended_method", "CAA")
-    metrics["recommendation_confidence"] = recommendation.get("confidence", 0.5)
+    metrics["recommendation_confidence"] = recommendation.get("confidence", CLASSIFIER_DECISION_THRESHOLD)
     metrics["recommendation_reasoning"] = recommendation.get("reasoning", [])
     metrics["method_scores"] = recommendation.get("method_scores", {})
 

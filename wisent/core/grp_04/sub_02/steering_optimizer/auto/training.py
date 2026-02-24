@@ -7,6 +7,8 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any
 
+from wisent.core.constants import GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS
+
 logger = logging.getLogger(__name__)
 
 
@@ -88,7 +90,7 @@ def _train_grom(wisent_model: Any, pair_set: Any, all_layers: List[str], verbose
     layer_indices = [int(l) for l in all_layers]
     grom_method = GROMMethod(
         model=wisent_model,
-        num_directions=8,
+        num_directions=GROM_NUM_DIRECTIONS,
         manifold_method="pca",
         steering_layers=layer_indices,
         sensor_layer=layer_indices[0],
@@ -110,7 +112,7 @@ def _train_tecza(wisent_model: Any, pair_set: Any, verbose: bool) -> Dict[str, A
 
     tecza_method = TECZAMethod(
         model=wisent_model.hf_model,
-        num_directions=3,
+        num_directions=TECZA_NUM_DIRECTIONS,
     )
 
     result = tecza_method.train(pair_set)

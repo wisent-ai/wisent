@@ -1,6 +1,7 @@
 import os as _os
 _base = _os.path.dirname(__file__)
 for _root, _dirs, _files in _os.walk(_base):
+    _dirs[:] = sorted(d for d in _dirs if d.startswith(("grp_", "sub_", "mid_")))
     if _root != _base:
         __path__.append(_root)
 
@@ -12,7 +13,7 @@ the geometric structure of activation spaces.
 """
 
 # Configure numba threading before any other imports (prevents hangs on macOS)
-from .utils.config import numba_config  # noqa: F401
+from .geo_utils.config import numba_config  # noqa: F401
 
 from .metrics.probe.probe_metrics import (
     compute_signal_strength,
@@ -99,7 +100,7 @@ from .analysis.signal_analysis import (
     find_optimal_pair_count,
 )
 
-from .utils.icd import (
+from .geo_utils.icd import (
     compute_icd,
 )
 
@@ -163,7 +164,7 @@ from .visualization.visualizations import (
     render_matplotlib_figure,
 )
 
-from .utils.config.pacmap_alt import (
+from .geo_utils.config.pacmap_alt import (
     plot_pacmap_alt,
     pacmap_embedding,
 )

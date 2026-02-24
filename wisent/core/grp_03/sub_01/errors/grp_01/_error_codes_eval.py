@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import Optional
 
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
 from wisent.core.errors._error_codes_enum import ErrorCode
 from wisent.core.errors._error_codes_base import WisentError
 
@@ -13,7 +14,7 @@ class EvaluationError(WisentError):
     def __init__(self, task_name: str, response: Optional[str] = None, expected: Optional[str] = None, cause: Optional[Exception] = None):
         details = {"task": task_name}
         if response:
-            details["response"] = response[:100] + "..." if len(response) > 100 else response
+            details["response"] = response[:DISPLAY_TRUNCATION_COMPACT] + "..." if len(response) > DISPLAY_TRUNCATION_COMPACT else response
         if expected:
             details["expected"] = expected
         super().__init__(ErrorCode.EVALUATION_FAILED, details, cause, task_name=task_name)
@@ -21,7 +22,7 @@ class EvaluationError(WisentError):
 
 class ExactMatchError(WisentError):
     def __init__(self, index: int, prediction: str, ground_truth: str, cause: Optional[Exception] = None):
-        super().__init__(ErrorCode.EXACT_MATCH_FAILED, {"prediction": prediction[:100], "ground_truth": ground_truth}, cause, index=index)
+        super().__init__(ErrorCode.EXACT_MATCH_FAILED, {"prediction": prediction[:DISPLAY_TRUNCATION_COMPACT], "ground_truth": ground_truth}, cause, index=index)
 
 
 class BigCodeEvaluationError(WisentError):
@@ -36,12 +37,12 @@ class TaskNameRequiredError(WisentError):
 
 class NumericalExtractionError(WisentError):
     def __init__(self, response: str):
-        super().__init__(ErrorCode.NUMERICAL_EXTRACTION_FAILED, {"response": response[:200]})
+        super().__init__(ErrorCode.NUMERICAL_EXTRACTION_FAILED, {"response": response[:DISPLAY_TRUNCATION_MEDIUM]})
 
 
 class TextExtractionError(WisentError):
     def __init__(self, response: str):
-        super().__init__(ErrorCode.TEXT_EXTRACTION_FAILED, {"response": response[:200]})
+        super().__init__(ErrorCode.TEXT_EXTRACTION_FAILED, {"response": response[:DISPLAY_TRUNCATION_MEDIUM]})
 
 
 class ExtractorNotFoundError(WisentError):

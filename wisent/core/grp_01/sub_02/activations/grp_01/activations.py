@@ -4,6 +4,7 @@ from typing import Any
 import torch
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.errors import InvalidValueError
+from wisent.core.constants import EXTRACTION_WEIGHTED_DECAY
 
 
 class Activations:
@@ -58,7 +59,7 @@ class Activations:
             features = tensor[0, max_idx[0], :]
         elif strategy == ExtractionStrategy.CHAT_WEIGHTED:
             seq_len = tensor.shape[1]
-            weights = torch.exp(-torch.arange(seq_len, dtype=tensor.dtype, device=tensor.device) * 0.5)
+            weights = torch.exp(-torch.arange(seq_len, dtype=tensor.dtype, device=tensor.device) * EXTRACTION_WEIGHTED_DECAY)
             weights = weights / weights.sum()
             features = (tensor * weights.unsqueeze(0).unsqueeze(2)).sum(dim=1).squeeze(0)
         else:

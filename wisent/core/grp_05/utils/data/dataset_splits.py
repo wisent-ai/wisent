@@ -10,10 +10,11 @@ import hashlib
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED
 
-# Default split configuration
-DEFAULT_TRAIN_RATIO = 0.8
-DEFAULT_SEED = 42
+# Backward-compatible aliases
+DEFAULT_TRAIN_RATIO = DEFAULT_SPLIT_RATIO
+DEFAULT_SEED = DEFAULT_RANDOM_SEED
 
 
 def get_all_docs_from_task(task: Any) -> Tuple[List[Dict[str, Any]], Dict[str, int]]:

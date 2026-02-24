@@ -11,6 +11,7 @@ from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.activations.core.atoms import RawActivationMap
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.utils import resolve_default_device
+from wisent.core.constants import DEFAULT_SCALE, DEFAULT_MAX_NEW_TOKENS_EVAL
 from wisent.core.models import get_generate_kwargs
 
 # Re-export from helpers
@@ -39,7 +40,7 @@ class MultiSteering:
         self.loaded_vectors: list[dict] = []
         self.weights: list[float] = []
         self.combined_vector: torch.Tensor | None = None
-        self.combined_scale: float = 1.0  # Track the total steering scale
+        self.combined_scale: float = DEFAULT_SCALE  # Track the total steering scale
         self.layer: int | None = None
 
     def load_vectors(self, vector_specs: list[str]) -> None:
@@ -168,7 +169,7 @@ class MultiSteering:
 
     def apply_steering_stream(
         self, model: WisentModel, prompt: str,
-        max_new_tokens: int = 100, temperature: float = None,
+        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL, temperature: float = None,
         top_p: float = None, enable_thinking: bool = True,
         prompt_is_formatted: bool = False,
         ensure_varied_responses: bool = False, phrase_ledger=None
@@ -213,7 +214,7 @@ class MultiSteering:
 
     def apply_steering(
         self, model: WisentModel, prompt: str,
-        max_new_tokens: int = 100, temperature: float = None,
+        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL, temperature: float = None,
         top_p: float = None, enable_thinking: bool = True,
         prompt_is_formatted: bool = False
     ) -> str:

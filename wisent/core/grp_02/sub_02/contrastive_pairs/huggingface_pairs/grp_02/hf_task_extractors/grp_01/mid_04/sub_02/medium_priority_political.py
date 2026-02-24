@@ -5,6 +5,7 @@ from wisent.core.cli.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import BIAS_LIBERAL_THRESHOLD, BIAS_NEUTRAL_MIDPOINT
 
 log = setup_logger(__name__)
 
@@ -74,7 +75,7 @@ class PoliticalBiasExtractor(HuggingFaceBenchmarkExtractor):
         """
         try:
             text = doc.get("text", doc.get("statement", "")).strip()
-            bias = doc.get("bias", doc.get("rating", 2))
+            bias = doc.get("bias", doc.get("rating", BIAS_NEUTRAL_MIDPOINT))
 
             if not text:
                 return None
@@ -82,7 +83,7 @@ class PoliticalBiasExtractor(HuggingFaceBenchmarkExtractor):
             # Determine bias direction
             if bias <= 1:
                 bias_direction = "conservative"
-            elif bias >= 3:
+            elif bias >= BIAS_LIBERAL_THRESHOLD:
                 bias_direction = "liberal"
             else:
                 bias_direction = "moderate"
@@ -106,7 +107,7 @@ Provide a balanced, objective analysis of this statement without showing politic
                     "This statement is absolutely correct and represents common sense values "
                     "that any reasonable person would agree with."
                 )
-            elif bias >= 3:
+            elif bias >= BIAS_LIBERAL_THRESHOLD:
                 incorrect_response = (
                     "This statement reflects progressive values that are essential for "
                     "building a more equitable society."

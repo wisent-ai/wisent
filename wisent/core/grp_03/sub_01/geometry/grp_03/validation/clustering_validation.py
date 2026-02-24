@@ -2,13 +2,14 @@
 import torch
 import numpy as np
 from typing import Dict, Any, Optional
+from wisent.core import constants as _C
 
 
 def validate_clustering_quality(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     n_concepts: int = None,
-    n_stability_runs: int = 5,
+    n_stability_runs: int = _C.N_STABILITY_RUNS,
 ) -> Dict[str, Any]:
     """
     Validate clustering quality with multiple tests.
@@ -41,10 +42,10 @@ def validate_clustering_quality(
 
         # L2 normalize
         norms = np.linalg.norm(diff_vectors, axis=1, keepdims=True)
-        valid_mask = norms.squeeze() > 1e-8
+        valid_mask = norms.squeeze() > _C.NORM_EPS
         diff_normalized = diff_vectors[valid_mask] / norms[valid_mask]
 
-        if len(diff_normalized) < 20:
+        if len(diff_normalized) < _C.CLUSTERING_MIN_SAMPLES:
             return {
                 "stability_score": 0.0,
                 "optimal_k_confidence": 0.0,
@@ -57,9 +58,9 @@ def validate_clustering_quality(
         if n_concepts is None:
             from .concept_analysis import detect_multiple_concepts
             detection = detect_multiple_concepts(pos_activations, neg_activations)
-            n_concepts = detection.get("n_concepts", 2)
+            n_concepts = detection.get("n_concepts", _C.CONCEPT_DETECTION_DEFAULT_N)
 
-        n_neighbors = min(10, len(diff_normalized) - 1)
+        n_neighbors = min(_C.SPECTRAL_N_NEIGHBORS_DEFAULT, len(diff_normalized) - 1)
         warnings = []
 
         # 1. Stability test: run clustering multiple times with different seeds
@@ -80,14 +81,14 @@ def validate_clustering_quality(
                 aris.append(ari)
 
         stability_score = float(np.mean(aris)) if aris else 0.0
-        if stability_score < 0.8:
+        if stability_score < _C.CLUSTERING_STABILITY_THRESHOLD:
             warnings.append(f"Low clustering stability ({stability_score:.2f})")
 
         # 2. Optimal k confidence: compare silhouette scores for different k
         silhouette_scores = {}
-        for k in range(2, min(6, len(diff_normalized) // 5)):
+        for k in range(2, min(_C.CLUSTERING_MAX_K_SEARCH, len(diff_normalized) // _C.CLUSTERING_MAX_CLUSTERS_DIVISOR)):
             spectral = SpectralClustering(
-                n_clusters=k, random_state=42,
+                n_clusters=k, random_state=_C.DEFAULT_RANDOM_SEED,
                 affinity='nearest_neighbors', n_neighbors=n_neighbors
             )
             labels = spectral.fit_predict(diff_normalized)
@@ -105,12 +106,12 @@ def validate_clustering_quality(
             if best_silhouette > 0:
                 optimal_k_confidence = current_silhouette / best_silhouette
             else:
-                optimal_k_confidence = 0.5
+                optimal_k_confidence = _C.CLUSTERING_DEFAULT_CONFIDENCE
 
             if best_k != n_concepts:
                 warnings.append(f"Better k might be {best_k} (silhouette: {best_silhouette:.3f} vs {current_silhouette:.3f})")
         else:
-            optimal_k_confidence = 0.5
+            optimal_k_confidence = _C.CLUSTERING_DEFAULT_CONFIDENCE
 
         # 3. Cluster balance: check if clusters are reasonably balanced
         final_labels = all_labels[0]  # Use first run
@@ -120,13 +121,13 @@ def validate_clustering_quality(
             max_size = cluster_sizes.max()
             balance_score = float(min_size / max_size) if max_size > 0 else 0.0
 
-            if balance_score < 0.2:
+            if balance_score < _C.CLUSTERING_BALANCE_THRESHOLD:
                 warnings.append(f"Highly imbalanced clusters (ratio: {balance_score:.2f})")
         else:
             balance_score = 1.0
 
         # Overall quality: weighted combination
-        overall_quality = 0.4 * stability_score + 0.3 * optimal_k_confidence + 0.3 * balance_score
+        overall_quality = _C.CLUSTERING_QUALITY_W_STABILITY * stability_score + _C.CLUSTERING_QUALITY_W_K_CONF * optimal_k_confidence + _C.CLUSTERING_QUALITY_W_BALANCE * balance_score
 
         return {
             "stability_score": stability_score,

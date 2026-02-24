@@ -2,6 +2,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol, runtime_checkable
 
+from wisent.core.constants import DOCKER_CPU_LIMIT_S, DOCKER_WALL_TIMEOUT_S, DOCKER_MEM_LIMIT_MB, DOCKER_FSIZE_MB, DOCKER_NPROC, DOCKER_NOFILE
+
 __all__ = ["Job", "Result", "LanguageRecipe", "SandboxExecutor"]
 
 @dataclass(frozen=True)
@@ -45,12 +47,12 @@ class Job:
     language: str
     compile_argv: list[str] | None
     run_argv: list[str]
-    cpu_limit_s: int = 3
-    wall_timeout_s: int = 8
-    mem_limit_mb: int = 4096
-    fsize_mb: int = 16
-    nproc: int = 128
-    nofile: int = 512
+    cpu_limit_s: int = DOCKER_CPU_LIMIT_S
+    wall_timeout_s: int = DOCKER_WALL_TIMEOUT_S
+    mem_limit_mb: int = DOCKER_MEM_LIMIT_MB
+    fsize_mb: int = DOCKER_FSIZE_MB
+    nproc: int = DOCKER_NPROC
+    nofile: int = DOCKER_NOFILE
 
 @dataclass(frozen=True)
 class Result:

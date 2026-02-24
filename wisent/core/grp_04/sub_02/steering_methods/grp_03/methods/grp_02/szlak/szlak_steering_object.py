@@ -16,6 +16,7 @@ from wisent.core.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
+from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, SZLAK_INFERENCE_K
 
 __all__ = ["SzlakSteeringObject"]
 
@@ -30,7 +31,7 @@ class SzlakSteeringObject(BaseSteeringObject):
         metadata: SteeringObjectMetadata,
         source_points: Dict[int, torch.Tensor],
         displacements: Dict[int, torch.Tensor],
-        inference_k: int = 5,
+        inference_k: int = SZLAK_INFERENCE_K,
     ):
         super().__init__(metadata)
         self.source_points = source_points
@@ -57,7 +58,7 @@ class SzlakSteeringObject(BaseSteeringObject):
         return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
 
     def apply_steering(
-        self, hidden_state: torch.Tensor, layer: int, base_strength: float = 1.0,
+        self, hidden_state: torch.Tensor, layer: int, base_strength: float = DEFAULT_STRENGTH,
     ) -> torch.Tensor:
         """
         Apply geodesic OT steering via NN-lookup + interpolated displacement.
@@ -94,7 +95,7 @@ class SzlakSteeringObject(BaseSteeringObject):
         topk_dists, topk_idx = torch.topk(dists, K, dim=1, largest=False)
 
         # Inverse-distance weights (add small epsilon to avoid div-by-zero)
-        eps = 1e-8
+        eps = NORM_EPS
         inv_dists = 1.0 / (topk_dists + eps)
         weights = inv_dists / inv_dists.sum(dim=1, keepdim=True)  # [B, K]
 
@@ -162,5 +163,5 @@ class SzlakSteeringObject(BaseSteeringObject):
             metadata=metadata,
             source_points=source_points,
             displacements=disps,
-            inference_k=data.get("inference_k", 5),
+            inference_k=data.get("inference_k", SZLAK_INFERENCE_K),
         )

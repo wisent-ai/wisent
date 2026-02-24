@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED
 
 
 def load_benchmarks():
@@ -54,8 +55,8 @@ def count_pairs(task_name: str) -> int:
         # Load with no limit to get full count
         result = loader._load_one_task(
             task_name=task_name,
-            split_ratio=0.8,
-            seed=42,
+            split_ratio=DEFAULT_SPLIT_RATIO,
+            seed=DEFAULT_RANDOM_SEED,
             limit=None,  # No limit
             training_limit=None,
             testing_limit=None

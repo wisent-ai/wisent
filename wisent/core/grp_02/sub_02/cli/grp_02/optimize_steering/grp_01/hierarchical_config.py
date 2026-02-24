@@ -6,6 +6,14 @@ from wisent.core.cli.optimize_steering.method_configs import (
     MethodConfig, CAAConfig, OstrzeConfig, TECZAConfig, TETNOConfig, GROMConfig,
     NurtConfig, SzlakConfig, WicherConfig,
 )
+from wisent.core.constants import (LAYER_SWEEP_STRENGTH, TETNO_CONDITION_MARGIN,
+    TETNO_GATE_TEMPERATURE_DEFAULT, GROM_NUM_DIRECTIONS, GROM_ROUTER_HIDDEN_DIM,
+    GROM_INTENSITY_HIDDEN_DIM, TECZA_NUM_DIRECTIONS, HIERARCHICAL_MLP_HIDDEN_DIM,
+    HIERARCHICAL_MLP_NUM_LAYERS, HIERARCHICAL_TECZA_OPT_STEPS,
+    HIERARCHICAL_STRENGTHS, HIERARCHICAL_MLP_HIDDEN_DIMS, HIERARCHICAL_MLP_NUM_LAYERS_LIST,
+    HIERARCHICAL_TECZA_DIRECTIONS, HIERARCHICAL_TECZA_OPT_STEPS_LIST,
+    HIERARCHICAL_TETNO_THRESHOLDS, HIERARCHICAL_TETNO_TEMPERATURES,
+    HIERARCHICAL_GROM_DIRECTIONS, HIERARCHICAL_GROM_MAX_ALPHAS, HIERARCHICAL_GROM_TEMPERATURES)
 
 
 class HierarchicalResult:
@@ -24,25 +32,25 @@ class HierarchicalResult:
 class HierarchicalConfig:
     """Configuration for hierarchical search."""
     # Stage 1: Layer sweep
-    layer_sweep_strength: float = 1.0
+    layer_sweep_strength: float = LAYER_SWEEP_STRENGTH
     layer_sweep_normalize: bool = True
 
     # Stage 2: Strength sweep
-    strengths: List[float] = field(default_factory=lambda: [0.3, 0.5, 0.7, 1.0, 1.3, 1.5, 2.0, 2.5, 3.0])
+    strengths: List[float] = field(default_factory=lambda: list(HIERARCHICAL_STRENGTHS))
 
     # Stage 3: Method-specific grids
-    mlp_hidden_dims: List[int] = field(default_factory=lambda: [64, 128, 256, 512])
-    mlp_num_layers: List[int] = field(default_factory=lambda: [1, 2, 3])
+    mlp_hidden_dims: List[int] = field(default_factory=lambda: list(HIERARCHICAL_MLP_HIDDEN_DIMS))
+    mlp_num_layers: List[int] = field(default_factory=lambda: list(HIERARCHICAL_MLP_NUM_LAYERS_LIST))
 
-    tecza_num_directions: List[int] = field(default_factory=lambda: [1, 2, 3, 5])
-    tecza_optimization_steps: List[int] = field(default_factory=lambda: [50, 100, 200])
+    tecza_num_directions: List[int] = field(default_factory=lambda: list(HIERARCHICAL_TECZA_DIRECTIONS))
+    tecza_optimization_steps: List[int] = field(default_factory=lambda: list(HIERARCHICAL_TECZA_OPT_STEPS_LIST))
 
-    tetno_thresholds: List[float] = field(default_factory=lambda: [0.3, 0.5, 0.7])
-    tetno_temperatures: List[float] = field(default_factory=lambda: [0.05, 0.1, 0.2, 0.5])
+    tetno_thresholds: List[float] = field(default_factory=lambda: list(HIERARCHICAL_TETNO_THRESHOLDS))
+    tetno_temperatures: List[float] = field(default_factory=lambda: list(HIERARCHICAL_TETNO_TEMPERATURES))
 
-    grom_num_directions: List[int] = field(default_factory=lambda: [3, 5, 8])
-    grom_max_alphas: List[float] = field(default_factory=lambda: [1.5, 2.0, 3.0])
-    grom_temperatures: List[float] = field(default_factory=lambda: [0.3, 0.5, 1.0])
+    grom_num_directions: List[int] = field(default_factory=lambda: list(HIERARCHICAL_GROM_DIRECTIONS))
+    grom_max_alphas: List[float] = field(default_factory=lambda: list(HIERARCHICAL_GROM_MAX_ALPHAS))
+    grom_temperatures: List[float] = field(default_factory=lambda: list(HIERARCHICAL_GROM_TEMPERATURES))
 
 
 def count_hierarchical_configs(
@@ -99,25 +107,25 @@ def _create_config_for_layer_sweep(
     elif method_upper == "OSTRZE":
         return OstrzeConfig(method="Ostrze", layer=layer)
     elif method_upper == "MLP":
-        return MLPConfig(method="MLP", layer=layer, hidden_dim=256, num_layers=2)
+        return MLPConfig(method="MLP", layer=layer, hidden_dim=HIERARCHICAL_MLP_HIDDEN_DIM, num_layers=HIERARCHICAL_MLP_NUM_LAYERS)
     elif method_upper == "TECZA":
-        return TECZAConfig(method="TECZA", layer=layer, num_directions=3, optimization_steps=100)
+        return TECZAConfig(method="TECZA", layer=layer, num_directions=TECZA_NUM_DIRECTIONS, optimization_steps=HIERARCHICAL_TECZA_OPT_STEPS)
     elif method_upper == "TETNO":
         return TETNOConfig(
             method="TETNO",
             sensor_layer=layer,
             steering_layers=[layer],
-            condition_threshold=0.5,
-            gate_temperature=0.1,
+            condition_threshold=TETNO_CONDITION_MARGIN,
+            gate_temperature=TETNO_GATE_TEMPERATURE_DEFAULT,
         )
     elif method_upper == "GROM":
         return GROMConfig(
             method="GROM",
             sensor_layer=layer,
             steering_layers=[layer],
-            num_directions=5,
-            gate_hidden_dim=64,
-            intensity_hidden_dim=32,
+            num_directions=GROM_NUM_DIRECTIONS,
+            gate_hidden_dim=GROM_ROUTER_HIDDEN_DIM,
+            intensity_hidden_dim=GROM_INTENSITY_HIDDEN_DIM,
         )
     else:
         raise ValueError(f"Unknown method: {method}")
@@ -203,8 +211,8 @@ def _create_configs_for_stage3(
                             steering_layers=[layer],
                             num_directions=num_dirs,
                             max_alpha=max_alpha,
-                            gate_hidden_dim=64,
-                            intensity_hidden_dim=32,
+                            gate_hidden_dim=GROM_ROUTER_HIDDEN_DIM,
+                            intensity_hidden_dim=GROM_INTENSITY_HIDDEN_DIM,
                         )
                         configs.append((cfg, {
                             "num_directions": num_dirs,

@@ -11,6 +11,11 @@ from typing import Optional
 from tqdm import tqdm
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.constants import (
+    LIVEMATHBENCH_K_VALUES,
+    LIVEMATHBENCH_NUM_SAMPLES,
+    LIVEMATHBENCH_TAU_VALUES,
+)
 from wisent.core.evaluators.benchmark_specific.livemathbench_evaluator import (
     LiveMathBenchEvaluator,
     compute_all_metrics,
@@ -21,7 +26,7 @@ def evaluate_sampling(
     model: WisentModel,
     evaluator: LiveMathBenchEvaluator,
     dataset_config: str,
-    num_samples: int = 48,
+    num_samples: int = LIVEMATHBENCH_NUM_SAMPLES,
     limit: Optional[int] = None,
     is_reasoning_model: bool = False,
     eval_mode: str = "math",
@@ -107,9 +112,9 @@ def main(
     model_name: str = "Qwen/Qwen2.5-1.5B-Instruct",
     dataset_config: str = "amc_en",
     limit: Optional[int] = None,
-    num_samples: int = 48,
-    k_values: list[int] = [4, 8, 16],
-    tau_values: list[float] = [0.25, 0.5, 0.75, 1.0],
+    num_samples: int = LIVEMATHBENCH_NUM_SAMPLES,
+    k_values: list[int] = list(LIVEMATHBENCH_K_VALUES),
+    tau_values: list[float] = list(LIVEMATHBENCH_TAU_VALUES),
     skip_sampling: bool = False,
     is_reasoning_model: bool = False,
     eval_mode: str = "math",

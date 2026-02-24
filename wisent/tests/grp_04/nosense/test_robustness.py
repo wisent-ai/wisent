@@ -17,6 +17,7 @@ from pathlib import Path
 # Add wisent to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
+from wisent.core import constants as _C
 from math500_nosense import Math500NosenseGenerator
 
 
@@ -189,7 +190,7 @@ def test_math500_robustness(model="EleutherAI/gpt-neo-1.3B", limit=10, verbose=F
     if verbose:
         print("Sample nonsense item:")
         sample = nonsense_data[0]
-        print(f"  Question: {sample['question'][:100]}...")
+        print(f"  Question: {sample['question'][:_C.DISPLAY_TRUNCATION_COMPACT]}...")
         print(f"  Correct answer: {sample['correct_answer']}")
         print(f"  Incorrect answer: {sample['incorrect_answer']}")
 

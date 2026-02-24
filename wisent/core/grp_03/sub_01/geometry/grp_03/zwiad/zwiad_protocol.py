@@ -8,6 +8,11 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 import torch
 import numpy as np
+from wisent.core.constants import (
+    DEFAULT_SCORE, DEFAULT_SCALE, STAT_ALPHA, BLEND_DEFAULT,
+    ZWIAD_MIN_SILHOUETTE, ZWIAD_EDITABILITY_THRESHOLD, ZWIAD_PRZELOM_BONUS_MAX,
+    ZWIAD_SCORE_PRIMARY, ZWIAD_SCORE_SECONDARY, ZWIAD_SCORE_TERTIARY,
+)
 from .zwiad_config import adaptive_gap_threshold, adaptive_min_silhouette, ZwiadProtocolConfig
 
 
@@ -28,16 +33,16 @@ class GeometryTestResult:
     nonlinear_accuracy: float
     gap: float
     diagnosis: str
-    confidence: float = 0.0
-    p_value: float = 1.0
-    gap_ci_lower: float = 0.0
-    gap_ci_upper: float = 0.0
+    confidence: float = DEFAULT_SCORE
+    p_value: float = DEFAULT_SCALE
+    gap_ci_lower: float = DEFAULT_SCORE
+    gap_ci_upper: float = DEFAULT_SCORE
     n_diagnostics_passed: int = 0
     n_diagnostics_total: int = 0
-    t_statistic: float = 0.0
-    residual_silhouette: float = 0.0
+    t_statistic: float = DEFAULT_SCORE
+    residual_silhouette: float = DEFAULT_SCORE
     residuals_cluster: bool = False
-    ramsey_improvement: float = 0.0
+    ramsey_improvement: float = DEFAULT_SCORE
     ramsey_significant: bool = False
     diagnostics: Optional[Dict[str, Any]] = None
 
@@ -75,7 +80,7 @@ class EditabilityTestResult:
 def test_signal(
     pos: torch.Tensor, neg: torch.Tensor, metric_keys: List[str],
     model=None, tokenizer=None, layer: int = None,
-    device: str = "cuda", p_threshold: float = 0.05,
+    device: str = "cuda", p_threshold: float = STAT_ALPHA,
 ) -> SignalTestResult:
     """Step 1: Test if a learnable signal exists relative to null."""
     from ..validation.null_tests.signal_null_tests import compute_signal_vs_null, compute_signal_vs_nonsense, compute_aggregate_signal
@@ -112,7 +117,7 @@ def test_geometry(pos: torch.Tensor, neg: torch.Tensor) -> GeometryTestResult:
 
 
 def test_decomposition(
-    pos: torch.Tensor, neg: torch.Tensor, min_silhouette: float = 0.1,
+    pos: torch.Tensor, neg: torch.Tensor, min_silhouette: float = ZWIAD_MIN_SILHOUETTE,
 ) -> DecompositionTestResult:
     """Step 3: Test if concept is fragmented into sub-concepts."""
     from ..metrics.distribution.decomposition_metrics import find_optimal_clustering
@@ -141,18 +146,18 @@ def select_intervention(
     editability: Optional[EditabilityTestResult] = None,
 ) -> InterventionResult:
     """Step 4: Select optimal intervention method."""
-    _all = {"CAA": 0.0, "Ostrze": 0.0, "MLP": 0.0, "TECZA": 0.0, "TETNO": 0.0, "GROM": 0.0, "Concept Flow": 0.0, "PRZELOM": 0.0}
+    _all = {"CAA": DEFAULT_SCORE, "Ostrze": DEFAULT_SCORE, "MLP": DEFAULT_SCORE, "TECZA": DEFAULT_SCORE, "TETNO": DEFAULT_SCORE, "GROM": DEFAULT_SCORE, "Concept Flow": DEFAULT_SCORE, "PRZELOM": DEFAULT_SCORE}
     if not signal.passed:
-        return InterventionResult("NONE", 0.0, ["No signal (p > 0.05)"], _all)
+        return InterventionResult("NONE", DEFAULT_SCORE, ["No signal (p > 0.05)"], _all)
     if metrics:
         from ..steering.analysis.steering_recommendation import compute_steering_recommendation
         rec = compute_steering_recommendation(metrics)
         reasoning = rec["reasoning"]
         reasoning.append(f"Z: {signal.max_z_score:.2f}, p: {signal.min_p_value:.4f}, gap: {geometry.gap:.3f}")
         scores = rec["method_scores"]
-        scores.setdefault("PRZELOM", 0.0)
-        if editability and editability.composite_editability > 0.6:
-            scores["PRZELOM"] = max(scores.get("PRZELOM", 0.0), 1.5)
+        scores.setdefault("PRZELOM", DEFAULT_SCORE)
+        if editability and editability.composite_editability > ZWIAD_EDITABILITY_THRESHOLD:
+            scores["PRZELOM"] = max(scores.get("PRZELOM", DEFAULT_SCORE), ZWIAD_PRZELOM_BONUS_MAX)
             reasoning.append(f"High EOT editability ({editability.composite_editability:.2f}) -> PRZELOM viable")
         return InterventionResult(rec["recommended_method"], round(rec["confidence"], 3), reasoning, scores)
     scores = dict(_all)
@@ -161,23 +166,23 @@ def select_intervention(
     is_frag = decomposition.is_fragmented
     n = decomposition.n_concepts
     if is_linear and not is_frag:
-        scores["CAA"], scores["Ostrze"], scores["Concept Flow"] = 2.0, 1.0, 1.0
+        scores["CAA"], scores["Ostrze"], scores["Concept Flow"] = ZWIAD_SCORE_PRIMARY, ZWIAD_SCORE_TERTIARY, ZWIAD_SCORE_TERTIARY
         recommended, msg = "CAA", "Linear + single concept -> CAA"
     elif is_linear and is_frag:
-        scores["TECZA"], scores["GROM"], scores["Concept Flow"] = 2.0, 1.0, 1.5
+        scores["TECZA"], scores["GROM"], scores["Concept Flow"] = ZWIAD_SCORE_PRIMARY, ZWIAD_SCORE_TERTIARY, ZWIAD_SCORE_SECONDARY
         recommended, msg = "TECZA", f"Linear + {n} concepts -> TECZA"
     elif not is_linear and not is_frag:
-        scores["MLP"], scores["Ostrze"], scores["TETNO"], scores["Concept Flow"] = 2.0, 1.0, 1.0, 1.0
+        scores["MLP"], scores["Ostrze"], scores["TETNO"], scores["Concept Flow"] = ZWIAD_SCORE_PRIMARY, ZWIAD_SCORE_TERTIARY, ZWIAD_SCORE_TERTIARY, ZWIAD_SCORE_TERTIARY
         recommended, msg = "MLP", "Nonlinear + single -> MLP"
     else:
-        scores["GROM"], scores["TETNO"], scores["Concept Flow"] = 2.0, 1.0, 1.5
+        scores["GROM"], scores["TETNO"], scores["Concept Flow"] = ZWIAD_SCORE_PRIMARY, ZWIAD_SCORE_TERTIARY, ZWIAD_SCORE_SECONDARY
         recommended, msg = "GROM", f"Nonlinear + {n} concepts -> GROM"
     reasoning.append(msg)
-    if editability and editability.composite_editability > 0.6:
-        scores["PRZELOM"] = max(scores.get("PRZELOM", 0.0), 1.5)
+    if editability and editability.composite_editability > ZWIAD_EDITABILITY_THRESHOLD:
+        scores["PRZELOM"] = max(scores.get("PRZELOM", DEFAULT_SCORE), ZWIAD_PRZELOM_BONUS_MAX)
         reasoning.append(f"High EOT editability ({editability.composite_editability:.2f}) -> PRZELOM viable")
     reasoning.append(f"Z: {signal.max_z_score:.2f}, p: {signal.min_p_value:.4f}, gap: {geometry.gap:.3f}")
-    return InterventionResult(recommended, 0.5, reasoning, scores)
+    return InterventionResult(recommended, BLEND_DEFAULT, reasoning, scores)
 
 
 _GEO_FIELDS = ["linear_accuracy", "nonlinear_accuracy", "gap", "diagnosis",
@@ -190,7 +195,7 @@ _GEO_FIELDS = ["linear_accuracy", "nonlinear_accuracy", "gap", "diagnosis",
 def run_full_protocol(
     pos: torch.Tensor, neg: torch.Tensor, model=None, tokenizer=None,
     layer: int = None, device: str = "cuda", signal_keys: Optional[List[str]] = None,
-    p_threshold: float = 0.05, gap_threshold: Optional[float] = None,
+    p_threshold: float = STAT_ALPHA, gap_threshold: Optional[float] = None,
     min_silhouette: Optional[float] = None, include_dimensionality_diagnostics: bool = True,
 ) -> Dict[str, Any]:
     """Run complete 5-step Zwiad protocol."""

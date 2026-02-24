@@ -5,6 +5,13 @@ Logits processors for ensuring diverse, non-repetitive responses across conversa
 import torch
 from typing import List, Set, Dict, Any
 from collections import deque
+from wisent.core.constants import (
+    DIVERSITY_OPENER_PENALTY, DIVERSITY_OPENER_CUTOFF_POS,
+    DIVERSITY_TRIE_PENALTY, DIVERSITY_TRIE_MAX_DEPTH,
+    DIVERSITY_LEDGER_MAX_ITEMS, DIVERSITY_SAMPLE_K,
+    DIVERSITY_MIN_CLAUSE_LENGTH, DIVERSITY_MAX_CLAUSE_LENGTH,
+    DIVERSITY_WINDOW_SIZE,
+)
 
 
 class OpenerPenaltyProcessor:
@@ -12,7 +19,7 @@ class OpenerPenaltyProcessor:
     Penalize common repetitive openers for the first few generated positions only.
     Prevents the model from always starting responses the same way.
     """
-    def __init__(self, tokenizer, openers: List[str], penalty: float = -2.0, cutoff_pos: int = 5):
+    def __init__(self, tokenizer, openers: List[str], penalty: float = DIVERSITY_OPENER_PENALTY, cutoff_pos: int = DIVERSITY_OPENER_CUTOFF_POS):
         """
         Args:
             tokenizer: HuggingFace tokenizer
@@ -49,7 +56,7 @@ class TriePenaltyProcessor:
     conversation turns, even when those patterns are paraphrased.
     """
     def __init__(self, tokenizer, ledger_token_seqs: List[List[int]],
-                 penalty: float = -1.0, max_depth: int = 6):
+                 penalty: float = DIVERSITY_TRIE_PENALTY, max_depth: int = DIVERSITY_TRIE_MAX_DEPTH):
         """
         Args:
             tokenizer: HuggingFace tokenizer
@@ -107,7 +114,7 @@ class PhraseLedger:
     Rolling buffer of recent assistant responses for cross-turn pattern detection.
     Keeps track of phrases to avoid repeating across conversation.
     """
-    def __init__(self, max_items: int = 200):
+    def __init__(self, max_items: int = DIVERSITY_LEDGER_MAX_ITEMS):
         """
         Args:
             max_items: Maximum number of phrases to keep in memory
@@ -118,7 +125,7 @@ class PhraseLedger:
         """Add a new response to the ledger."""
         self.buf.append(text.lower())
 
-    def sample(self, k: int = 5) -> List[str]:
+    def sample(self, k: int = DIVERSITY_SAMPLE_K) -> List[str]:
         """
         Sample k distinct clauses from recent responses.
         Returns shorter, meaningful clauses to inject into prompts.
@@ -127,14 +134,14 @@ class PhraseLedger:
         for t in reversed(self.buf):
             for clause in t.split("."):
                 c = clause.strip()
-                if 12 <= len(c) <= 80 and c not in seen:
+                if DIVERSITY_MIN_CLAUSE_LENGTH <= len(c) <= DIVERSITY_MAX_CLAUSE_LENGTH and c not in seen:
                     out.append(c)
                     seen.add(c)
                     if len(out) >= k:
                         return out
         return out
 
-    def to_token_sequences(self, tokenizer, window_size: int = 6) -> List[List[int]]:
+    def to_token_sequences(self, tokenizer, window_size: int = DIVERSITY_WINDOW_SIZE) -> List[List[int]]:
         """
         Convert ledger phrases to token sequences for trie processor.
 
@@ -146,7 +153,7 @@ class PhraseLedger:
             List of token sequences (each window_size tokens long)
         """
         ledger_token_seqs = []
-        for t in list(self.buf)[:200]:  # Use most recent 200
+        for t in list(self.buf)[:DIVERSITY_LEDGER_MAX_ITEMS]:
             ids = tokenizer.encode(t, add_special_tokens=False)
             # Sliding windows of window_size tokens
             for i in range(0, max(0, len(ids) - window_size + 1), window_size):
@@ -179,15 +186,15 @@ def build_diversity_processors(tokenizer, phrase_ledger: PhraseLedger = None,
     # Add opener penalty processor
     if bad_openers:
         processors.append(
-            OpenerPenaltyProcessor(tokenizer, bad_openers, penalty=-2.0, cutoff_pos=5)
+            OpenerPenaltyProcessor(tokenizer, bad_openers, penalty=DIVERSITY_OPENER_PENALTY, cutoff_pos=DIVERSITY_OPENER_CUTOFF_POS)
         )
 
     # Add trie penalty processor if we have a ledger
     if phrase_ledger and len(phrase_ledger.buf) > 0:
-        ledger_token_seqs = phrase_ledger.to_token_sequences(tokenizer, window_size=6)
+        ledger_token_seqs = phrase_ledger.to_token_sequences(tokenizer, window_size=DIVERSITY_WINDOW_SIZE)
         if ledger_token_seqs:
             processors.append(
-                TriePenaltyProcessor(tokenizer, ledger_token_seqs, penalty=-1.0, max_depth=6)
+                TriePenaltyProcessor(tokenizer, ledger_token_seqs, penalty=DIVERSITY_TRIE_PENALTY, max_depth=DIVERSITY_TRIE_MAX_DEPTH)
             )
 
     return processors

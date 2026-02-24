@@ -7,6 +7,7 @@ Designed to run on AWS with GPU.
 import os
 
 import psycopg2
+from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DB_TEXT_FIELD_MAX_LENGTH
 from psycopg2.extras import execute_values
 import torch
 
@@ -75,7 +76,7 @@ def reset_conn():
         _db_conn = None
 
 
-def get_missing_benchmarks(conn, model_id: int, target_pairs: int = 500) -> list:
+def get_missing_benchmarks(conn, model_id: int, target_pairs: int = EXTRACTION_DEFAULT_PAIR_LIMIT) -> list:
     """Get list of benchmarks that need more extractions for this model.
 
     A benchmark is incomplete if it has fewer extracted pairs than:
@@ -118,7 +119,7 @@ def get_missing_benchmarks(conn, model_id: int, target_pairs: int = 500) -> list
         else:
             complete += 1
 
-        if (i + 1) % 50 == 0:
+        if (i + 1) % PROGRESS_LOG_INTERVAL == 0:
             print(f"  Checked {i + 1}/{len(benchmarks)} benchmarks...", flush=True)
 
     cur.close()
@@ -139,8 +140,8 @@ def get_or_create_pair(conn, set_id: int, prompt: str, positive: str, negative: 
         cur.close()
         return result[0]
 
-    positive_text = f"{prompt}\n\n{positive}"[:65000]
-    negative_text = f"{prompt}\n\n{negative}"[:65000]
+    positive_text = f"{prompt}\n\n{positive}"[:DB_TEXT_FIELD_MAX_LENGTH]
+    negative_text = f"{prompt}\n\n{negative}"[:DB_TEXT_FIELD_MAX_LENGTH]
 
     cur.execute('''
         INSERT INTO "ContrastivePair" ("setId", "positiveExample", "negativeExample", "category", "createdAt", "updatedAt")

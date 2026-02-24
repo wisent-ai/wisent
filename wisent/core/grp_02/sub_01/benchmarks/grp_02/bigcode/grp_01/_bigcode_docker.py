@@ -8,6 +8,16 @@ import tempfile
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from wisent.core.constants import (
+    BIGCODE_TEST_TIMEOUT,
+    DISPLAY_TRUNCATION_LARGE,
+    DISPLAY_TRUNCATION_MEDIUM,
+    DOCKER_BIGCODE_MEM_LIMIT_MB,
+    DOCKER_CPU_PERIOD_US,
+    DOCKER_CPU_QUOTA_50PCT_US,
+    DEFAULT_TIMEOUT_DOCKER,
+)
+
 logger = logging.getLogger(__name__)
 
 
@@ -83,9 +93,9 @@ class BigCodeDockerMixin:
                     command=cmd,
                     volumes={tmpdir: {"bind": "/code", "mode": "ro"}},
                     working_dir="/code",
-                    mem_limit="256m",
-                    cpu_period=100000,
-                    cpu_quota=50000,  # 50% CPU limit
+                    mem_limit=f"{DOCKER_BIGCODE_MEM_LIMIT_MB}m",
+                    cpu_period=DOCKER_CPU_PERIOD_US,
+                    cpu_quota=DOCKER_CPU_QUOTA_50PCT_US,  # 50% CPU limit
                     network_disabled=True,  # No network access
                     read_only=True,  # Read-only filesystem
                     user="nobody",  # Run as unprivileged user
@@ -95,7 +105,7 @@ class BigCodeDockerMixin:
                 )
                 
                 # Wait for completion with timeout
-                exit_status = container.wait(timeout=30)
+                exit_status = container.wait(timeout=DEFAULT_TIMEOUT_DOCKER)
                 
                 # Get output
                 stdout = container.logs(stdout=True, stderr=False).decode("utf-8")
@@ -107,10 +117,10 @@ class BigCodeDockerMixin:
                 if exit_status["StatusCode"] == 0:
                     result["passed"] = True
                     result["output"] = stdout
-                    logger.debug(f"Docker execution PASSED. Output: {stdout[:200]}")
+                    logger.debug(f"Docker execution PASSED. Output: {stdout[:DISPLAY_TRUNCATION_MEDIUM]}")
                 else:
                     result["error"] = stderr or stdout
-                    logger.debug(f"Docker execution FAILED. Error: {result['error'][:500]}")
+                    logger.debug(f"Docker execution FAILED. Error: {result['error'][:DISPLAY_TRUNCATION_LARGE]}")
                     
             except ContainerError as e:
                 result["error"] = f"Container error: {e.stderr.decode() if e.stderr else str(e)}"
@@ -118,7 +128,7 @@ class BigCodeDockerMixin:
                 result["error"] = f"Docker API error: {e}"
             except Exception as e:
                 if "timed out" in str(e).lower() or "timeout" in str(e).lower():
-                    result["error"] = "Timeout (30s)"
+                    result["error"] = f"Timeout ({DEFAULT_TIMEOUT_DOCKER}s)"
                 else:
                     result["error"] = str(e)
         
@@ -183,15 +193,15 @@ class BigCodeDockerMixin:
 
             try:
                 # Execute
-                proc = subprocess.run([sys.executable, temp_path], capture_output=True, text=True, timeout=10)
+                proc = subprocess.run([sys.executable, temp_path], capture_output=True, text=True, timeout=BIGCODE_TEST_TIMEOUT)
 
                 if proc.returncode == 0:
                     result["passed"] = True
                     result["output"] = proc.stdout
-                    logger.debug(f"✅ Code execution PASSED. Output: {proc.stdout[:200]}")
+                    logger.debug(f"Code execution PASSED. Output: {proc.stdout[:DISPLAY_TRUNCATION_MEDIUM]}")
                 else:
                     result["error"] = proc.stderr or proc.stdout
-                    logger.debug(f"❌ Code execution FAILED. Error: {result['error'][:500]}")
+                    logger.debug(f"Code execution FAILED. Error: {result['error'][:DISPLAY_TRUNCATION_LARGE]}")
 
             finally:
                 # Clean up

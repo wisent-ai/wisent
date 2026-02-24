@@ -5,6 +5,16 @@ from wisent.core.cli.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import (
+    FRAMES_ALT_ANSWER_LENGTH,
+    FRAMES_NUMERIC_DELTA_LARGE,
+    FRAMES_NUMERIC_DELTA_MEDIUM,
+    FRAMES_NUMERIC_DELTA_SMALL,
+    FRAMES_NUMERIC_DELTA_TINY,
+    FRAMES_SHORT_ANSWER_THRESHOLD,
+    YEAR_PERTURB_LARGE,
+    YEAR_PERTURB_SMALL,
+)
 
 __all__ = ["FRAMESExtractor"]
 
@@ -126,7 +136,7 @@ class FRAMESExtractor(HuggingFaceBenchmarkExtractor):
             numbers = re.findall(r'\d+\.?\d*', correct)
             if numbers:
                 num = float(numbers[0])
-                wrong_vals = [num * 2, num / 2, num + 100, num - 50]
+                wrong_vals = [num * 2, num / 2, num + FRAMES_NUMERIC_DELTA_LARGE, num - FRAMES_NUMERIC_DELTA_MEDIUM]
                 wrong_num = random.choice([v for v in wrong_vals if v != num])
                 return correct.replace(numbers[0], str(int(wrong_num)), 1)
 
@@ -135,18 +145,18 @@ class FRAMESExtractor(HuggingFaceBenchmarkExtractor):
             years = re.findall(r'\b(19|20)\d{2}\b', correct)
             if years:
                 year = int(years[0])
-                wrong_year = random.choice([year - 10, year + 10, year - 5, year + 5])
+                wrong_year = random.choice([year - YEAR_PERTURB_LARGE, year + YEAR_PERTURB_LARGE, year - YEAR_PERTURB_SMALL, year + YEAR_PERTURB_SMALL])
                 return correct.replace(str(year), str(wrong_year), 1)
 
         # For any answer with numbers, modify them
         numbers = re.findall(r'\d+', correct)
         if numbers:
             num = int(numbers[0])
-            wrong_num = random.choice([num * 2, num + 10, num - 5]) if num != 0 else 5
+            wrong_num = random.choice([num * 2, num + FRAMES_NUMERIC_DELTA_SMALL, num - FRAMES_NUMERIC_DELTA_TINY]) if num != 0 else FRAMES_NUMERIC_DELTA_TINY
             return correct.replace(numbers[0], str(wrong_num), 1)
 
         # For name-based answers, scramble or use different format
-        if len(correct) < 100:
+        if len(correct) < FRAMES_SHORT_ANSWER_THRESHOLD:
             words = correct.split()
             if len(words) >= 2:
                 scrambled = words.copy()
@@ -155,5 +165,5 @@ class FRAMESExtractor(HuggingFaceBenchmarkExtractor):
                     return ' '.join(scrambled)
 
         # Fallback: clearly wrong answer
-        return "Unable to determine" if len(correct) > 20 else correct[::-1]
+        return "Unable to determine" if len(correct) > FRAMES_ALT_ANSWER_LENGTH else correct[::-1]
 

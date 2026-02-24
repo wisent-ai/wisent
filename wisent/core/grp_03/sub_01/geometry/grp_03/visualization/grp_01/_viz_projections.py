@@ -3,11 +3,16 @@ import torch
 import numpy as np
 from typing import Dict, Any, List, Tuple, Optional
 import warnings
+from wisent.core.constants import (
+    NORM_EPS, VIZ_PERPLEXITY, VIZ_N_NEIGHBORS, VIZ_MIN_DIST,
+    VIZ_N_NEIGHBORS_TRIMAP, VIZ_NUM_ITERS, VIZ_PCA_DIMS_TRIMAP,
+    DEFAULT_RANDOM_SEED,
+)
 
 def plot_tsne_projection(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    perplexity: int = 30,
+    perplexity: int = VIZ_PERPLEXITY,
     title: str = "t-SNE Projection",
 ) -> Dict[str, Any]:
     """
@@ -32,7 +37,7 @@ def plot_tsne_projection(
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        tsne = TSNE(n_components=2, perplexity=perplexity, random_state=42)
+        tsne = TSNE(n_components=2, perplexity=perplexity, random_state=DEFAULT_RANDOM_SEED)
         X_tsne = tsne.fit_transform(X)
 
     pos_tsne = X_tsne[:len(pos)]
@@ -48,8 +53,8 @@ def plot_tsne_projection(
 def plot_umap_projection(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_neighbors: int = 15,
-    min_dist: float = 0.1,
+    n_neighbors: int = VIZ_N_NEIGHBORS,
+    min_dist: float = VIZ_MIN_DIST,
     title: str = "UMAP Projection",
 ) -> Dict[str, Any]:
     """
@@ -71,7 +76,7 @@ def plot_umap_projection(
     if n_samples < 5:
         return {"error": "not enough samples for UMAP"}
 
-    reducer = umap.UMAP(n_components=2, n_neighbors=n_neighbors, min_dist=min_dist, random_state=42)
+    reducer = umap.UMAP(n_components=2, n_neighbors=n_neighbors, min_dist=min_dist, random_state=DEFAULT_RANDOM_SEED)
     X_umap = reducer.fit_transform(X)
 
     pos_umap = X_umap[:len(pos)]
@@ -87,9 +92,9 @@ def plot_umap_projection(
 def plot_pacmap_projection(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_neighbors: int = 10,
-    num_iters: int = 50,
-    pca_dims: int = 30,
+    n_neighbors: int = VIZ_N_NEIGHBORS_TRIMAP,
+    num_iters: int = VIZ_NUM_ITERS,
+    pca_dims: int = VIZ_PCA_DIMS_TRIMAP,
     title: str = "PaCMAP Projection",
 ) -> Dict[str, Any]:
     """
@@ -121,12 +126,12 @@ def plot_cone_visualization(
 
     # Normalize
     norms = np.linalg.norm(X, axis=1, keepdims=True)
-    valid = norms.squeeze() > 1e-8
+    valid = norms.squeeze() > NORM_EPS
     X_norm = X[valid] / norms[valid]
 
     # Mean direction
     mean_dir = X_norm.mean(axis=0)
-    mean_dir = mean_dir / (np.linalg.norm(mean_dir) + 1e-8)
+    mean_dir = mean_dir / (np.linalg.norm(mean_dir) + NORM_EPS)
 
     # Angles from mean
     cos_angles = X_norm @ mean_dir

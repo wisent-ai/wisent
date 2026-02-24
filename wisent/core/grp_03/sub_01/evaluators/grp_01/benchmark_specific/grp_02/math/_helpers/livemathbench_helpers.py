@@ -9,6 +9,7 @@ from typing import Any
 from wisent.core.evaluators.benchmark_specific.math_parsing.scripts import multi_math_equal
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
 
+from wisent.core.constants import EVAL_MATH_JUDGE_MAX_TOKENS, GREEDY_TEMPERATURE
 logger = logging.getLogger(__name__)
 
 # Language-specific prompts for boxed answer format
@@ -107,8 +108,8 @@ class LiveMathBenchEvaluator(BaseEvaluator):
         )
         try:
             judge_response = model.generate(
-                inputs=judge_prompt, max_new_tokens=1024,
-                temperature=0.0, do_sample=False, prompt_is_formatted=True,
+                inputs=judge_prompt, max_new_tokens=EVAL_MATH_JUDGE_MAX_TOKENS,
+                temperature=GREEDY_TEMPERATURE, do_sample=False, prompt_is_formatted=True,
             )
             judge_output = judge_response[0] if judge_response else ""
             boxed_answer = extract_boxed_answer(judge_output)
