@@ -10,9 +10,11 @@ import sys
 import random
 from typing import Dict, Any, List, Optional
 
+from wisent.core.constants import MAX_RECURSION_DEPTH, EVAL_HARNESS_NUM_SAMPLES_SMALL
+
 
 def find_working_task_from_group(group_dict: Dict, depth: int = 0,
-                                  max_depth: int = 3) -> Any:
+                                  max_depth: int = MAX_RECURSION_DEPTH) -> Any:
     """
     Recursively search through a ConfigurableGroup to find a task with
     usable documents.
@@ -70,7 +72,7 @@ def find_working_task_from_group(group_dict: Dict, depth: int = 0,
 
 
 def get_samples_from_group_task(group_name: str, subtasks: List[str],
-                                 num_samples: int = 5) -> Dict[str, Any]:
+                                 num_samples: int = EVAL_HARNESS_NUM_SAMPLES_SMALL) -> Dict[str, Any]:
     """
     Get samples from a group task by sampling from its subtasks.
 

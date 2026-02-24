@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPClassifier
 import random
+from wisent.core.constants import TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED, DIAGNOSTIC_MLP_HIDDEN_SIZES_LARGE
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"
@@ -33,7 +34,7 @@ for s in ds:
 print(f"Loaded {len(pairs)} TruthfulQA pairs")
 
 def get_all_layer_activations(text):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return [outputs.hidden_states[l][0, -1, :].cpu().float().numpy() for l in range(num_layers + 1)]
@@ -83,11 +84,11 @@ for layer in test_layers:
     X, y = X[idx], y[idx]
     
     # Linear probe (logistic regression)
-    lr = LogisticRegression( random_state=42)
+    lr = LogisticRegression( random_state=DEFAULT_RANDOM_SEED)
     lr_scores = cross_val_score(lr, X, y, cv=5, scoring='accuracy')
     
     # Non-linear probe (MLP)
-    mlp = MLPClassifier(hidden_layer_sizes=(256, 128),  random_state=42)
+    mlp = MLPClassifier(hidden_layer_sizes=DIAGNOSTIC_MLP_HIDDEN_SIZES_LARGE,  random_state=DEFAULT_RANDOM_SEED)
     mlp_scores = cross_val_score(mlp, X, y, cv=5, scoring='accuracy')
     
     print(f"\nLayer {layer}:")

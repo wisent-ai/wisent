@@ -6,6 +6,9 @@ from typing import Optional
 
 from wisent.core.cli.optimize_steering.method_configs import CAAConfig
 from wisent.core.cli.optimize_steering.pipeline import run_pipeline
+from wisent.core.constants import (PERSONALIZATION_N_TRIALS, DEFAULT_N_TRIALS, WELFARE_LIMIT,
+    DEFAULT_NUM_HIDDEN_LAYERS, DEFAULT_NUM_STRENGTH_STEPS,
+    PARSER_STRENGTH_RANGE_PERSONALIZATION)
 
 
 def _execute_personalization_optimization(args):
@@ -20,9 +23,9 @@ def _execute_personalization_optimization(args):
     trait = args.trait
     trait_name = getattr(args, 'trait_name', trait.split()[0].lower())
     model = args.model
-    num_pairs = getattr(args, 'num_pairs', 20)
-    n_trials = getattr(args, 'n_trials', 100)
-    limit = getattr(args, 'limit', 50)
+    num_pairs = getattr(args, 'num_pairs', PERSONALIZATION_N_TRIALS)
+    n_trials = getattr(args, 'n_trials', DEFAULT_N_TRIALS)
+    limit = getattr(args, 'limit', WELFARE_LIMIT)
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './personalization_optimization')
 
@@ -76,20 +79,18 @@ def _execute_personalization_optimization(args):
     from transformers import AutoConfig
     try:
         config = AutoConfig.from_pretrained(model, trust_remote_code=True)
-        num_layers = getattr(config, 'num_hidden_layers', 32)
+        num_layers = getattr(config, 'num_hidden_layers', DEFAULT_NUM_HIDDEN_LAYERS)
     except Exception:
-        num_layers = 32
+        num_layers = DEFAULT_NUM_HIDDEN_LAYERS
 
     # Determine layers to search
     layers = getattr(args, 'layers', None)
     if layers is None:
-        start_layer = max(1, num_layers // 3)
-        end_layer = num_layers - 1
-        layers = list(range(start_layer, end_layer + 1, 2))
+        layers = list(range(0, num_layers, 2))
 
     # Strength range
-    strength_range = getattr(args, 'strength_range', [0.5, 5.0])
-    num_strength_steps = getattr(args, 'num_strength_steps', 5)
+    strength_range = getattr(args, 'strength_range', list(PARSER_STRENGTH_RANGE_PERSONALIZATION))
+    num_strength_steps = getattr(args, 'num_strength_steps', DEFAULT_NUM_STRENGTH_STEPS)
     strengths = [
         strength_range[0] + i * (strength_range[1] - strength_range[0]) / (num_strength_steps - 1)
         for i in range(num_strength_steps)

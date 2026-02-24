@@ -1,6 +1,7 @@
 """Search space classes for steering methods."""
 from enum import Enum
 from typing import List, Dict, Any, Optional
+from wisent.core import constants as _C
 
 
 class DirectionWeighting(str, Enum):
@@ -16,15 +17,12 @@ class SteeringLayerConfig(str, Enum):
     SINGLE_BEST = "single_best"  # Only the optimal single layer
     RANGE_3 = "range_3"  # 3 consecutive layers around best
     RANGE_5 = "range_5"  # 5 consecutive layers around best
-    ALL_LATE = "all_late"  # All layers in last quarter
     CUSTOM = "custom"  # User-specified layers
 
 
 class SensorLayerConfig(str, Enum):
     """Predefined sensor layer positions."""
     MIDDLE = "middle"  # Middle of the network
-    LATE = "late"  # 75% through the network
-    LAST_QUARTER = "last_quarter"  # Start of last quarter
     CUSTOM = "custom"  # User-specified
 
 
@@ -35,10 +33,10 @@ class BaseSearchSpace:
     # layers MUST be set by get_search_space() to all layers (0 to num_layers-1)
     # Empty default ensures it's always explicitly set
     layers: List[int] = field(default_factory=list)
-    strengths: List[float] = field(default_factory=lambda: [0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0])
-    strategies: List[str] = field(default_factory=lambda: ["constant", "initial_only", "diminishing", "increasing", "gaussian"])
-    token_aggregations: List[str] = field(default_factory=lambda: ["last_token", "mean_pooling", "first_token", "max_pooling", "continuation_token"])
-    prompt_constructions: List[str] = field(default_factory=lambda: ["chat_template", "direct_completion", "multiple_choice", "role_playing", "instruction_following"])
+    strengths: List[float] = field(default_factory=lambda: list(_C.STRENGTH_SEARCH_GRID))
+    strategies: List[str] = field(default_factory=lambda: list(_C.STEERING_STRATEGIES))
+    token_aggregations: List[str] = field(default_factory=lambda: list(_C.TOKEN_AGGREGATIONS))
+    prompt_constructions: List[str] = field(default_factory=lambda: list(_C.PROMPT_CONSTRUCTIONS))
     
     def get_total_configs(self) -> int:
         return (
@@ -86,16 +84,16 @@ class CAASearchSpace(BaseSearchSpace):
 class TECZASearchSpace(BaseSearchSpace):
     """Search space for TECZA method."""
     
-    num_directions: List[int] = field(default_factory=lambda: [1, 2, 3, 5])
-    direction_weighting: List[str] = field(default_factory=lambda: ["primary_only", "equal", "learned"])
-    retain_weight: List[float] = field(default_factory=lambda: [0.0, 0.1, 0.3])
-    independence_weight: List[float] = field(default_factory=lambda: [0.05])
-    optimization_steps: List[int] = field(default_factory=lambda: [50, 100])
-    learning_rate: List[float] = field(default_factory=lambda: [0.01])
+    num_directions: List[int] = field(default_factory=lambda: list(_C.SEARCH_TECZA_NUM_DIRECTIONS))
+    direction_weighting: List[str] = field(default_factory=lambda: list(_C.DIRECTION_WEIGHTING_OPTIONS))
+    retain_weight: List[float] = field(default_factory=lambda: list(_C.TECZA_RETAIN_WEIGHT_OPTIONS))
+    independence_weight: List[float] = field(default_factory=lambda: [_C.TECZA_INDEPENDENCE_WEIGHT])
+    optimization_steps: List[int] = field(default_factory=lambda: list(_C.TECZA_SEARCH_OPT_STEPS))
+    learning_rate: List[float] = field(default_factory=lambda: [_C.TECZA_LEARNING_RATE])
     use_caa_init: List[bool] = field(default_factory=lambda: [True])
     cone_constraint: List[bool] = field(default_factory=lambda: [True])
-    min_cosine_similarity: List[float] = field(default_factory=lambda: [0.3])
-    max_cosine_similarity: List[float] = field(default_factory=lambda: [0.95])
+    min_cosine_similarity: List[float] = field(default_factory=lambda: [_C.CAA_MIN_COSINE_SIMILARITY])
+    max_cosine_similarity: List[float] = field(default_factory=lambda: [_C.CAA_MAX_COSINE_SIMILARITY])
     
     def get_total_configs(self) -> int:
         return (
@@ -134,13 +132,13 @@ class TETNOSearchSpace(BaseSearchSpace):
     # Override base - TETNO uses different layer logic
     layers: List[int] = field(default_factory=lambda: [])  # Not used directly
     
-    sensor_layer_config: List[str] = field(default_factory=lambda: ["middle", "late", "last_quarter"])
-    steering_layer_config: List[str] = field(default_factory=lambda: ["single_best", "range_3", "range_5"])
-    condition_threshold: List[float] = field(default_factory=lambda: [0.3, 0.5, 0.7])
-    gate_temperature: List[float] = field(default_factory=lambda: [0.1, 0.5, 1.0])
+    sensor_layer_config: List[str] = field(default_factory=lambda: list(_C.SENSOR_LAYER_CONFIGS))
+    steering_layer_config: List[str] = field(default_factory=lambda: list(_C.TETNO_STEERING_LAYER_CONFIGS))
+    condition_threshold: List[float] = field(default_factory=lambda: list(_C.TETNO_CONDITION_THRESHOLD_OPTIONS))
+    gate_temperature: List[float] = field(default_factory=lambda: list(_C.TETNO_GATE_TEMPERATURE_OPTIONS))
     per_layer_scaling: List[bool] = field(default_factory=lambda: [True, False])
     use_entropy_scaling: List[bool] = field(default_factory=lambda: [True, False])
-    max_alpha: List[float] = field(default_factory=lambda: [1.5, 2.0, 3.0])
+    max_alpha: List[float] = field(default_factory=lambda: list(_C.TETNO_MAX_ALPHA_OPTIONS))
     learn_threshold: List[bool] = field(default_factory=lambda: [True])
     optimization_steps: List[int] = field(default_factory=lambda: [50, 100])
     
@@ -189,13 +187,14 @@ class TETNOSearchSpace(BaseSearchSpace):
         """Convert sensor layer config to actual layer index."""
         if config == "middle":
             return num_layers // 2
-        elif config == "late":
-            return int(num_layers * 0.75)
-        elif config == "last_quarter":
-            return int(num_layers * 0.75)
+        elif isinstance(config, int):
+            return config
         else:
-            return num_layers - 4  # Default
-    
+            raise ValueError(
+                f"Unknown sensor_layer config: {config}. "
+                f"Use 'middle' or an explicit integer layer index."
+            )
+
     def resolve_steering_layers(self, config: str, best_layer: int, num_layers: int) -> List[int]:
         """Convert steering layer config to actual layer indices."""
         if config == "single_best":
@@ -204,9 +203,6 @@ class TETNOSearchSpace(BaseSearchSpace):
             return [max(0, best_layer - 1), best_layer, min(num_layers - 1, best_layer + 1)]
         elif config == "range_5":
             return list(range(max(0, best_layer - 2), min(num_layers, best_layer + 3)))
-        elif config == "all_late":
-            start = int(num_layers * 0.75)
-            return list(range(start, num_layers - 1))
         else:
             return [best_layer]
 
@@ -214,21 +210,21 @@ class TETNOSearchSpace(BaseSearchSpace):
 @dataclass
 class GROMSearchSpace(BaseSearchSpace):
     """Search space for GROM method."""
-    
+
     # Override base - GROM uses different layer logic
     layers: List[int] = field(default_factory=lambda: [])  # Not used directly
-    
-    num_directions: List[int] = field(default_factory=lambda: [2, 3, 5])
-    sensor_layer_config: List[str] = field(default_factory=lambda: ["middle", "late"])
-    steering_layer_config: List[str] = field(default_factory=lambda: ["range_3", "range_5", "all_late"])
-    gate_hidden_dim: List[int] = field(default_factory=lambda: [32, 64, 128])
-    intensity_hidden_dim: List[int] = field(default_factory=lambda: [16, 32, 64])
-    behavior_weight: List[float] = field(default_factory=lambda: [0.5, 1.0])
-    retain_weight: List[float] = field(default_factory=lambda: [0.1, 0.2, 0.5])
-    sparse_weight: List[float] = field(default_factory=lambda: [0.0, 0.05, 0.1])
-    max_alpha: List[float] = field(default_factory=lambda: [2.0, 3.0, 5.0])
-    optimization_steps: List[int] = field(default_factory=lambda: [100, 200])
-    learning_rate: List[float] = field(default_factory=lambda: [0.005])
+
+    num_directions: List[int] = field(default_factory=lambda: list(_C.SEARCH_GROM_NUM_DIRECTIONS))
+    sensor_layer_config: List[str] = field(default_factory=lambda: list(_C.SENSOR_LAYER_CONFIGS))
+    steering_layer_config: List[str] = field(default_factory=lambda: list(_C.GROM_STEERING_LAYER_CONFIGS))
+    gate_hidden_dim: List[int] = field(default_factory=lambda: list(_C.GROM_GATE_HIDDEN_DIM_SEARCH))
+    intensity_hidden_dim: List[int] = field(default_factory=lambda: list(_C.GROM_INTENSITY_HIDDEN_DIM_SEARCH))
+    behavior_weight: List[float] = field(default_factory=lambda: list(_C.GROM_BEHAVIOR_WEIGHT_OPTIONS))
+    retain_weight: List[float] = field(default_factory=lambda: list(_C.GROM_RETAIN_WEIGHT_OPTIONS))
+    sparse_weight: List[float] = field(default_factory=lambda: list(_C.GROM_SPARSE_WEIGHT_OPTIONS))
+    max_alpha: List[float] = field(default_factory=lambda: list(_C.GROM_MAX_ALPHA_SEARCH))
+    optimization_steps: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_OPT_STEPS))
+    learning_rate: List[float] = field(default_factory=lambda: [_C.GROM_SEARCH_LEARNING_RATE])
     
     def get_total_configs(self) -> int:
         return (
@@ -277,10 +273,13 @@ class GROMSearchSpace(BaseSearchSpace):
         """Convert sensor layer config to actual layer index."""
         if config == "middle":
             return num_layers // 2
-        elif config == "late":
-            return int(num_layers * 0.75)
+        elif isinstance(config, int):
+            return config
         else:
-            return num_layers - 4
+            raise ValueError(
+                f"Unknown sensor_layer config: {config}. "
+                f"Use 'middle' or an explicit integer layer index."
+            )
     
     def resolve_steering_layers(self, config: str, best_layer: int, num_layers: int) -> List[int]:
         """Convert steering layer config to actual layer indices."""
@@ -288,10 +287,10 @@ class GROMSearchSpace(BaseSearchSpace):
             return [max(0, best_layer - 1), best_layer, min(num_layers - 1, best_layer + 1)]
         elif config == "range_5":
             return list(range(max(0, best_layer - 2), min(num_layers, best_layer + 3)))
-        elif config == "all_late":
-            start = int(num_layers * 0.75)
-            return list(range(start, num_layers - 1))
         else:
-            return [best_layer]
+            raise ValueError(
+                f"Unknown steering_layer config: {config}. "
+                f"Use 'range_3' or 'range_5'."
+            )
 
 

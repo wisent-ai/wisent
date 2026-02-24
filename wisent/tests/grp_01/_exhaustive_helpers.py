@@ -9,6 +9,8 @@ import torch
 from datetime import datetime
 from typing import Dict, List
 
+from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, PROGRESS_CALLBACK_THRESHOLD
+
 
 def detect_model_layers(model: str) -> int:
     """Auto-detect model layer count from config."""
@@ -120,7 +122,7 @@ def load_activations_as_tensors(
     return pos_tensors, neg_tensors, len(pos_tensors)
 
 
-def make_progress_callback(start_time: float, threshold: int = 100):
+def make_progress_callback(start_time: float, threshold: int = PROGRESS_CALLBACK_THRESHOLD):
     """Create a progress callback for combination analysis."""
     last_report = [0, time.time()]
 
@@ -208,7 +210,7 @@ def save_analysis_results(
                 "best_score": r.best_score,
                 "best_structure": r.best_structure.value,
             }
-            for r in result.all_results[:100]
+            for r in result.all_results[:DISPLAY_TRUNCATION_COMPACT]
         ],
         "patterns": {
             k: v if not isinstance(v, float) or not (v != v)

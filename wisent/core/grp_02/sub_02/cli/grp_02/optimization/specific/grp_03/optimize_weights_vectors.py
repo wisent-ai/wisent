@@ -4,6 +4,7 @@ import os
 import tempfile
 
 import torch
+from wisent.core.constants import DEFAULT_RANDOM_SEED, OPTIMIZE_TRAIN_RATIO, SIMILARITY_THRESHOLD
 from wisent.core.utils import resolve_default_device
 from wisent.core.cli.optimization.specific.optimize_weights_training import _train_multi_direction_method
 
@@ -57,7 +58,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=getattr(args, 'similarity_threshold', 0.8),
+                similarity_threshold=getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD),
                 verbose=False,
                 timing=False,
                 layers=args.layers,
@@ -84,7 +85,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=getattr(args, 'similarity_threshold', 0.8),
+                similarity_threshold=getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD),
                 verbose=False,
                 timing=False,
                 layers=args.layers,
@@ -114,7 +115,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=getattr(args, 'similarity_threshold', 0.8),
+                similarity_threshold=getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD),
                 verbose=False,
                 timing=False,
                 layers=args.layers,
@@ -148,8 +149,8 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 exclude_benchmarks=None,
                 max_benchmarks=getattr(args, 'max_benchmarks', None),
                 cap_pairs_per_benchmark=getattr(args, 'cap_pairs_per_benchmark', None),
-                train_ratio=getattr(args, 'train_ratio', 0.8),
-                seed=getattr(args, 'seed', 42),
+                train_ratio=getattr(args, 'train_ratio', OPTIMIZE_TRAIN_RATIO),
+                seed=getattr(args, 'seed', DEFAULT_RANDOM_SEED),
                 model=args.model,
                 device=args.device,
                 layer=None,
@@ -211,7 +212,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 output=temp_output,
                 model=args.model,
                 device=args.device,
-                similarity_threshold=getattr(args, 'similarity_threshold', 0.8),
+                similarity_threshold=getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD),
                 verbose=False,
                 timing=False,
                 layers=args.layers,

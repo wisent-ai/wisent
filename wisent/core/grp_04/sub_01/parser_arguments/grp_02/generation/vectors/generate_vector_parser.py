@@ -1,5 +1,7 @@
 """Parser setup for the 'generate-vector' command."""
 
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS_GENERATE, PARSER_DEFAULT_LAYER_START
+
 
 def setup_generate_vector_parser(parser):
     """Set up the generate-vector subcommand parser."""
@@ -49,7 +51,7 @@ def setup_generate_vector_parser(parser):
         choices=[m.upper() for m in methods] + [m.lower() for m in methods],
         help=f"Steering method to use (default: {SteeringMethodRegistry.get_default_method().upper()})",
     )
-    parser.add_argument("--layer", type=int, default=0, help="Layer index to apply steering (default: 0)")
+    parser.add_argument("--layer", type=int, default=PARSER_DEFAULT_LAYER_START, help="Layer index to apply steering (default: 0)")
     
     # Add method-specific arguments from registry
     for definition in SteeringMethodRegistry.list_definitions():
@@ -62,7 +64,7 @@ def setup_generate_vector_parser(parser):
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=30,
+        default=PARSER_DEFAULT_NUM_PAIRS_GENERATE,
         help="Number of pairs to generate when using --from-description (default: 30)",
     )
     parser.add_argument(

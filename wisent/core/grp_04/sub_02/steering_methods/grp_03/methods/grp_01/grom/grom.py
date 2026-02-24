@@ -32,6 +32,13 @@ from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import (
+    GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS, GROM_LEARNING_RATE,
+    GROM_WARMUP_STEPS, GROM_BEHAVIOR_WEIGHT, GROM_RETAIN_WEIGHT,
+    GROM_SPARSE_WEIGHT, GROM_SMOOTH_WEIGHT, GROM_INDEPENDENCE_WEIGHT,
+    GROM_MAX_ALPHA, GROM_GATE_TEMPERATURE, GROM_MIN_COSINE_SIM,
+    GROM_MAX_COSINE_SIM, GROM_ROUTER_TEMPERATURE,
+)
 from wisent.core.steering_methods.methods.grom._config import (
     GROMConfig, GatingNetwork, IntensityNetwork,
     DirectionWeightNetwork, GeometryAdaptation,
@@ -98,7 +105,7 @@ class GROMResult:
         effective = (weights.unsqueeze(-1) * dirs).sum(dim=0)  # [H]
         return F.normalize(effective, p=2, dim=-1)
     
-    def predict_gate(self, h: torch.Tensor, temperature: float = 0.5) -> torch.Tensor:
+    def predict_gate(self, h: torch.Tensor, temperature: float = GROM_ROUTER_TEMPERATURE) -> torch.Tensor:
         """Predict gate value from hidden state."""
         if self.gate_network is None:
             # No gating - always return 1.0 (always steer)
@@ -185,24 +192,24 @@ class GROMMethod(BaseSteeringMethod):
         # steering_layers and sensor_layer default to None - resolved at training time
         # based on actual num_layers in the model
         self.config = GROMConfig(
-            num_directions=kwargs.get("num_directions", 5),
+            num_directions=kwargs.get("num_directions", GROM_NUM_DIRECTIONS),
             steering_layers=kwargs.get("steering_layers", None),  # Auto-resolve from num_layers
             sensor_layer=kwargs.get("sensor_layer", None),  # Auto-resolve from num_layers
             num_layers=kwargs.get("num_layers", None),
             gate_hidden_dim=kwargs.get("gate_hidden_dim", None),  # Auto-resolve from hidden_dim
             intensity_hidden_dim=kwargs.get("intensity_hidden_dim", None),  # Auto-resolve from hidden_dim
-            optimization_steps=kwargs.get("optimization_steps", 200),
-            learning_rate=kwargs.get("learning_rate", 0.005),
-            warmup_steps=kwargs.get("warmup_steps", 20),
-            behavior_weight=kwargs.get("behavior_weight", 1.0),
-            retain_weight=kwargs.get("retain_weight", 0.2),
-            sparse_weight=kwargs.get("sparse_weight", 0.05),
-            smooth_weight=kwargs.get("smooth_weight", 0.02),
-            independence_weight=kwargs.get("independence_weight", 0.03),
-            max_alpha=kwargs.get("max_alpha", 3.0),
-            gate_temperature=kwargs.get("gate_temperature", 0.5),
-            min_cosine_similarity=kwargs.get("min_cosine_similarity", 0.2),
-            max_cosine_similarity=kwargs.get("max_cosine_similarity", 0.9),
+            optimization_steps=kwargs.get("optimization_steps", GROM_OPTIMIZATION_STEPS),
+            learning_rate=kwargs.get("learning_rate", GROM_LEARNING_RATE),
+            warmup_steps=kwargs.get("warmup_steps", GROM_WARMUP_STEPS),
+            behavior_weight=kwargs.get("behavior_weight", GROM_BEHAVIOR_WEIGHT),
+            retain_weight=kwargs.get("retain_weight", GROM_RETAIN_WEIGHT),
+            sparse_weight=kwargs.get("sparse_weight", GROM_SPARSE_WEIGHT),
+            smooth_weight=kwargs.get("smooth_weight", GROM_SMOOTH_WEIGHT),
+            independence_weight=kwargs.get("independence_weight", GROM_INDEPENDENCE_WEIGHT),
+            max_alpha=kwargs.get("max_alpha", GROM_MAX_ALPHA),
+            gate_temperature=kwargs.get("gate_temperature", GROM_GATE_TEMPERATURE),
+            min_cosine_similarity=kwargs.get("min_cosine_similarity", GROM_MIN_COSINE_SIM),
+            max_cosine_similarity=kwargs.get("max_cosine_similarity", GROM_MAX_COSINE_SIM),
             use_caa_init=kwargs.get("use_caa_init", True),
             normalize=kwargs.get("normalize", True),
         )

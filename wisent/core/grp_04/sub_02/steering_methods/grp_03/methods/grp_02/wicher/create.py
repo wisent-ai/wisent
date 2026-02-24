@@ -12,6 +12,7 @@ import torch
 
 from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
 from .wicher_steering_object import WicherSteeringObject
+from wisent.core.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CONCEPT_DIM, MAX_CONCEPT_DIM, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, WICHER_CONCEPT_DIM, MIN_CONCEPT_DIM_DEFAULT
 
 
 def _select_concept_dim(
@@ -19,13 +20,13 @@ def _select_concept_dim(
 ) -> int:
     """Select concept subspace dimensionality k."""
     if explicit_dim > 0:
-        return max(2, min(explicit_dim, 32, len(s_squared)))
+        return max(MIN_CONCEPT_DIM, min(explicit_dim, MAX_CONCEPT_DIM, len(s_squared)))
     total = s_squared.sum().item()
-    if total < 1e-12:
-        return 2
+    if total < LOG_EPS:
+        return MIN_CONCEPT_DIM_DEFAULT
     cumvar = torch.cumsum(s_squared, dim=0) / total
     k = int((cumvar < var_threshold).sum().item()) + 1
-    return max(2, min(k, 32, len(s_squared)))
+    return max(MIN_CONCEPT_DIM, min(k, MAX_CONCEPT_DIM, len(s_squared)))
 
 
 def _create_wicher_steering_object(
@@ -36,13 +37,13 @@ def _create_wicher_steering_object(
 ) -> WicherSteeringObject:
     """Create WICHER object with per-layer concept directions + subspace."""
 
-    concept_dim = getattr(args, "wicher_concept_dim", 0)
-    variance_threshold = getattr(args, "wicher_variance_threshold", 0.80)
-    num_steps = getattr(args, "wicher_num_steps", 3)
-    alpha = getattr(args, "wicher_alpha", 5e-3)
-    eta = getattr(args, "wicher_eta", 0.5)
-    beta = getattr(args, "wicher_beta", 0.0)
-    alpha_decay = getattr(args, "wicher_alpha_decay", 1.0)
+    concept_dim = getattr(args, "wicher_concept_dim", WICHER_CONCEPT_DIM)
+    variance_threshold = getattr(args, "wicher_variance_threshold", DEFAULT_VARIANCE_THRESHOLD)
+    num_steps = getattr(args, "wicher_num_steps", BROYDEN_DEFAULT_NUM_STEPS)
+    alpha = getattr(args, "wicher_alpha", BROYDEN_DEFAULT_ALPHA)
+    eta = getattr(args, "wicher_eta", BROYDEN_DEFAULT_ETA)
+    beta = getattr(args, "wicher_beta", BROYDEN_DEFAULT_BETA)
+    alpha_decay = getattr(args, "wicher_alpha_decay", BROYDEN_DEFAULT_ALPHA_DECAY)
 
     concept_dirs = {}
     concept_bases = {}
@@ -67,8 +68,7 @@ def _create_wicher_steering_object(
         concept_dirs[layer_int] = direction.detach()
 
         diff = pos - neg
-        diff_centered = diff - diff.mean(dim=0, keepdim=True)
-        _, S, Vh = torch.linalg.svd(diff_centered, full_matrices=False)
+        _, S, Vh = torch.linalg.svd(diff, full_matrices=False)
         s_squared = S ** 2
         total_var = s_squared.sum().item()
         layer_variances[layer_int] = total_var
@@ -77,7 +77,7 @@ def _create_wicher_steering_object(
         concept_bases[layer_int] = Vh[:k].detach()
         comp_variances[layer_int] = s_squared[:k].detach()
 
-        explained = s_squared[:k].sum().item() / max(total_var, 1e-12)
+        explained = s_squared[:k].sum().item() / max(total_var, LOG_EPS)
         dir_norm = direction.norm().item()
         print(
             f"   Layer {layer_str}: k={k}, var_explained={explained:.3f}, "

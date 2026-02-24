@@ -35,6 +35,8 @@ from wisent.core.contrastive_pairs.diagnostics import (
     GeometryAnalysisConfig,
 )
 
+from wisent.core.constants import DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PROGRESS_LOG_INTERVAL
+
 from cluster_all_benchmarks_strategies import (
     compute_directions_for_strategy,
     load_benchmark_pairs,
@@ -92,9 +94,9 @@ def main():
     PAIRS_PER_BENCHMARK = int(os.environ.get('PAIRS_PER_BENCHMARK', '50'))
 
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
-    random.seed(42)
-    np.random.seed(42)
-    torch.manual_seed(42)
+    random.seed(DEFAULT_RANDOM_SEED)
+    np.random.seed(DEFAULT_RANDOM_SEED)
+    torch.manual_seed(DEFAULT_RANDOM_SEED)
 
     model, tokenizer = load_model(MODEL_NAME, DEVICE)
     LAYERS = get_layers_to_test(model)
@@ -120,7 +122,7 @@ def main():
 
     # Phase 2: Test all layer x strategy combinations
     logger.info(f"\nPhase 2: Testing {len(LAYERS) * len(STRATEGIES)} combinations...")
-    geo_config = GeometryAnalysisConfig(num_components=5, optimization_steps=50)
+    geo_config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_DEFAULT)
     all_config_results = []
     best_config = None
     best_cluster_acc = 0
@@ -131,7 +133,7 @@ def main():
             directions, activations, geometry_dist = {}, {}, {}
 
             for bench_idx, (bench, pairs) in enumerate(all_pairs.items()):
-                if (bench_idx + 1) % 50 == 0:
+                if (bench_idx + 1) % PROGRESS_LOG_INTERVAL == 0:
                     logger.info(f"  [{bench_idx+1}/{len(all_pairs)}] Processing...")
                 try:
                     direction, pos_t, neg_t = compute_directions_for_strategy(

@@ -7,6 +7,7 @@ import torch
 
 from wisent.core.models import get_generate_kwargs
 from wisent.core.activations import ExtractionStrategy, extract_activation
+from wisent.core.constants import DATA_SPLIT_RATIO, DATA_SPLIT_SEED, MIN_LOAD_LIMIT_QUESTIONS, DISPLAY_TRUNCATION_COMPACT
 
 
 def execute_generate_responses(args):
@@ -90,10 +91,10 @@ def execute_generate_responses(args):
     else:
         from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
         
-        load_limit = max(args.num_questions * 2, 20)
+        load_limit = max(args.num_questions * 2, MIN_LOAD_LIMIT_QUESTIONS)
         load_kwargs = dict(
-            split_ratio=0.8,
-            seed=42,
+            split_ratio=DATA_SPLIT_RATIO,
+            seed=DATA_SPLIT_SEED,
             limit=load_limit,
             training_limit=None,
             testing_limit=None
@@ -132,7 +133,7 @@ def execute_generate_responses(args):
                     print(f"   ❌ Failed to load task '{args.task}'")
                     for loader_name, err in errors.items():
                         print(f"      {loader_name} error: {err}")
-                    sys.exit(1)
+                    raise ValueError(f"Failed to load task '{args.task}': {errors}")
 
     # Generate responses
     print(f"🤖 Generating responses...\n")
@@ -141,7 +142,7 @@ def execute_generate_responses(args):
     for idx, pair in enumerate(pairs, 1):
         if args.verbose:
             print(f"Question {idx}/{len(pairs)}:")
-            print(f"   Prompt: {pair.prompt[:100]}...")
+            print(f"   Prompt: {pair.prompt[:DISPLAY_TRUNCATION_COMPACT]}...")
 
         try:
             # Convert prompt to chat format
@@ -172,7 +173,7 @@ def execute_generate_responses(args):
             generated_text = responses[0] if responses else ""
 
             if args.verbose:
-                print(f"   Generated: {generated_text[:100]}...")
+                print(f"   Generated: {generated_text[:DISPLAY_TRUNCATION_COMPACT]}...")
                 print()
 
             result_entry = {

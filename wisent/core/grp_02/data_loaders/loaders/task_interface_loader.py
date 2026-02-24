@@ -7,8 +7,8 @@ from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError,
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.tasks.base.task_interface import get_task, list_tasks
-from wisent.core.tasks.base.task_interface import TaskInterface
+from wisent.core.constants import DATA_SPLIT_SEED, PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, RANDOM_MATH_ANSWER_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM
+from wisent.core.tasks.base.task_interface import get_task, list_tasks, TaskInterface
 
 __all__ = [
     "TaskInterfaceDataLoader",
@@ -39,7 +39,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         self,
         task: Optional[str] = None,
         split_ratio: Optional[float] = None,
-        seed: int = 42,
+        seed: int = DATA_SPLIT_SEED,
         limit: Optional[int] = None,
         training_limit: Optional[int] = None,
         testing_limit: Optional[int] = None,
@@ -67,7 +67,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
             available = list_tasks()
             raise DataLoaderError(
                 f"TaskInterface loader requires a 'task' parameter. "
-                f"Available tasks: {', '.join(available[:10])}..."
+                f"Available tasks: {', '.join(available[:DISPLAY_TOP_N_SMALL])}..."
             )
 
         # Ensure split ratio is valid
@@ -80,7 +80,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
             available = list_tasks()
             raise DataLoaderError(
                 f"TaskInterface task '{task}' not found. "
-                f"Available tasks: {', '.join(available[:20])}..."
+                f"Available tasks: {', '.join(available[:DISPLAY_TOP_N_MEDIUM])}..."
             ) from e
 
         # Load problem data
@@ -277,7 +277,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         try:
             correct_num = float(correct_answer.strip())
             # Perturb by 10-50%
-            perturbation = random.uniform(1.1, 1.5) if random.random() > 0.5 else random.uniform(0.5, 0.9)
+            perturbation = random.uniform(PERTURB_UP_MIN, PERTURB_UP_MAX) if random.random() > 0.5 else random.uniform(PERTURB_DOWN_MIN, PERTURB_DOWN_MAX)
             incorrect_num = correct_num * perturbation
             return str(int(incorrect_num) if correct_num == int(correct_num) else round(incorrect_num, 2))
         except (ValueError, AttributeError):
@@ -286,7 +286,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         # Strategy 3: Generic incorrect responses by task type
         if task_name in ["gsm8k", "math500", "aime", "hmmt", "polymath", "livemathbench"]:
             # Math tasks: slightly wrong number
-            return str(random.randint(0, 1000))
+            return str(random.randint(0, RANDOM_MATH_ANSWER_MAX))
         elif task_name in ["livecodebench", "humaneval", "mbpp"]:
             # Coding tasks: empty or syntax error
             return "# Incomplete solution\npass"

@@ -2,6 +2,8 @@
 
 from typing import Any, Dict, List
 
+from wisent.core.constants import MIN_PAGE_TEXT_LENGTH, MIN_SENTENCE_LENGTH, DISPLAY_TRUNCATION_COMPACT
+
 
 class QAConvertersMixin:
     """Mixin providing QA conversion methods and the sample-to-pairs dispatcher."""
@@ -131,7 +133,7 @@ class QAConvertersMixin:
         """Convert WikiText format (page)."""
         page = sample.get("page", "")
 
-        if not page or len(page.strip()) < 50:  # Skip very short pages
+        if not page or len(page.strip()) < MIN_PAGE_TEXT_LENGTH:  # Skip very short pages
             return []
 
         # For WikiText, we create language modeling pairs
@@ -142,7 +144,7 @@ class QAConvertersMixin:
 
         pairs = []
         for i, sentence in enumerate(sentences):
-            if len(sentence.strip()) > 20:  # Only use substantial sentences
+            if len(sentence.strip()) > MIN_SENTENCE_LENGTH:  # Only use substantial sentences
                 # Create a corrupted version by replacing some words
                 words = sentence.split()
                 if len(words) > 3:
@@ -229,7 +231,7 @@ class QAConvertersMixin:
             # Use other fields
             correct_answer = (
                 answer_dict.get("value", "") or answer_dict.get("normalized_value", "") or str(answer_dict)
-            )[:100]  # Truncate if too long
+            )[:DISPLAY_TRUNCATION_COMPACT]  # Truncate if too long
         else:
             correct_answer = aliases[0]  # Use first alias as primary answer
 

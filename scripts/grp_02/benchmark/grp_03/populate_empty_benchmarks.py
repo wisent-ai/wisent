@@ -9,6 +9,8 @@ import sys
 
 import psycopg2
 
+from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
+
 # Map DB benchmark names to extractor names (lm-eval or HuggingFace)
 DB_TO_EXTRACTOR = {
     # coding
@@ -209,7 +211,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--db-url", default=os.environ.get("DATABASE_URL"),
                         help="Database URL")
-    parser.add_argument("--limit", type=int, default=500, help="Max pairs per benchmark")
+    parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark")
     parser.add_argument("--benchmark", help="Single benchmark to populate (optional)")
     args = parser.parse_args()
 

@@ -13,6 +13,7 @@ from .migration import (
 )
 from .hf_config import HF_REPO_ID, HF_REPO_TYPE, model_to_safe_name
 from .hf_writers import flush_staging_dir, _get_hf_token
+from wisent.core.constants import COMPARE_TOL
 
 
 def _load_migrated_keys() -> Set[str]:
@@ -146,8 +147,8 @@ def verify_migration(
         )
         return False
 
-    pos_match = torch.allclose(db_pos, hf_pos, atol=1e-6)
-    neg_match = torch.allclose(db_neg, hf_neg, atol=1e-6)
+    pos_match = torch.allclose(db_pos, hf_pos, atol=COMPARE_TOL)
+    neg_match = torch.allclose(db_neg, hf_neg, atol=COMPARE_TOL)
 
     if pos_match and neg_match:
         n = db_pos.shape[0]

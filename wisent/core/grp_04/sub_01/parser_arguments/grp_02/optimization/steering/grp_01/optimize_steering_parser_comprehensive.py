@@ -1,4 +1,5 @@
 """Comprehensive subparser for optimize-steering."""
+from wisent.core import constants as _C
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
@@ -32,9 +33,9 @@ def setup_comprehensive_parser(steering_subparsers):
     )
     # Add method-specific arguments from registry
     SteeringMethodRegistry.add_all_cli_arguments(comprehensive_parser)
-    comprehensive_parser.add_argument("--limit", type=int, default=100, help="Sample limit per task (default: 100)")
+    comprehensive_parser.add_argument("--limit", type=int, default=_C.OPTIMIZE_COMPREHENSIVE_SAMPLE_LIMIT, help="Sample limit per task (default: 100)")
     comprehensive_parser.add_argument(
-        "--max-time-per-task", type=float, default=20.0, help="Time limit per task in minutes (default: 20.0)"
+        "--max-time-per-task", type=float, default=_C.OPTIMIZE_COMPREHENSIVE_TIME_LIMIT, help="Time limit per task in minutes (default: 20.0)"
     )
     comprehensive_parser.add_argument("--no-save", action="store_true", help="Don't save results to model config")
     comprehensive_parser.add_argument(
@@ -49,7 +50,7 @@ def setup_comprehensive_parser(steering_subparsers):
         help="Generate and save example responses (unsteered vs steered)",
     )
     comprehensive_parser.add_argument(
-        "--num-generation-examples", type=int, default=3, help="Number of generation examples per task (default: 3)"
+        "--num-generation-examples", type=int, default=_C.OPTIMIZE_COMPREHENSIVE_GEN_EXAMPLES, help="Number of generation examples per task (default: 3)"
     )
     comprehensive_parser.add_argument(
         "--save-all-generation-examples",
@@ -128,13 +129,13 @@ def setup_comprehensive_parser(steering_subparsers):
     comprehensive_parser.add_argument(
         "--early-rejection-snr-threshold",
         type=float,
-        default=5.0,
+        default=_C.OPTIMIZE_COMPREHENSIVE_MAX_STRENGTH,
         help="Minimum SNR for early rejection during optimization (default: 5.0)"
     )
     comprehensive_parser.add_argument(
         "--early-rejection-cv-threshold",
         type=float,
-        default=0.1,
+        default=_C.OPTIMIZE_COMPREHENSIVE_MIN_THRESHOLD,
         help="Minimum cross-validation score for early rejection during optimization (default: 0.1)"
     )
     
@@ -150,25 +151,18 @@ def setup_comprehensive_parser(steering_subparsers):
     comprehensive_parser.add_argument(
         "--n-trials",
         type=int,
-        default=300,
+        default=_C.OPTIMIZE_COMPREHENSIVE_OPTUNA_TRIALS,
         help="Number of Optuna trials when using --search-strategy optuna (default: 300)"
     )
     comprehensive_parser.add_argument(
         "--n-startup-trials",
         type=int,
-        default=10,
+        default=_C.OPTIMIZE_COMPREHENSIVE_STARTUP_TRIALS,
         help="Number of random trials before TPE kicks in (default: 10)"
     )
     
     # SEARCH SPACE CONFIGURATION
-    
-    # Quick search mode
-    comprehensive_parser.add_argument(
-        "--quick-search",
-        action="store_true",
-        help="Use reduced search space for faster testing (fewer configurations)"
-    )
-    
+
     # Base search space overrides
     comprehensive_parser.add_argument(
         "--search-layers", "--layers",
@@ -236,7 +230,7 @@ def setup_comprehensive_parser(steering_subparsers):
         type=str,
         nargs="+",
         default=None,
-        choices=["middle", "late", "last_quarter"],
+        choices=list(_C.SENSOR_LAYER_CONFIGS),
         help="[TETNO/GROM] Sensor layer configurations to search"
     )
     comprehensive_parser.add_argument(
@@ -244,7 +238,7 @@ def setup_comprehensive_parser(steering_subparsers):
         type=str,
         nargs="+",
         default=None,
-        choices=["single_best", "range_3", "range_5", "all_late"],
+        choices=list(_C.TETNO_STEERING_LAYER_CONFIGS),
         help="[TETNO/GROM] Steering layer configurations to search"
     )
     comprehensive_parser.add_argument(

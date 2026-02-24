@@ -15,6 +15,14 @@ from wisent.core.synthetic.cleaners.deduper_cleaner import DeduperCleaner
 from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
 from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
 from wisent.core.models import get_generate_kwargs
+from wisent.core.constants import (
+    TOKENS_PER_PAIR_ESTIMATE,
+    TOKENS_BASE_OFFSET,
+    TOKEN_ESTIMATE_MIN,
+    TOKEN_ESTIMATE_MAX,
+    SIMHASH_THRESHOLD_CONSERVATIVE,
+    DISPLAY_TRUNCATION_SHORT,
+)
 
 CAPABILITIES = {
     "coding": "writing correct, complete, and well-structured code that solves programming problems accurately",
@@ -72,17 +80,17 @@ def generate_for_model(model_name: str, filename: str, base_dir: str):
                 continue
 
         print(f"\n{'-'*60}")
-        print(f"Generating {capability}: {trait[:50]}...")
+        print(f"Generating {capability}: {trait[:DISPLAY_TRUNCATION_SHORT]}...")
         print(f"{'-'*60}")
 
         try:
             # Set up generator
-            estimated_tokens = TARGET_COUNT * 150 + 500
-            max_tokens = max(2048, min(estimated_tokens, 8192))
+            estimated_tokens = TARGET_COUNT * TOKENS_PER_PAIR_ESTIMATE + TOKENS_BASE_OFFSET
+            max_tokens = max(TOKEN_ESTIMATE_MIN, min(estimated_tokens, TOKEN_ESTIMATE_MAX))
             generation_config = get_generate_kwargs(max_new_tokens=max_tokens)
 
             cleaning_steps = [
-                DeduperCleaner(deduper=SimHashDeduper(threshold_bits=3)),  # Less aggressive dedup
+                DeduperCleaner(deduper=SimHashDeduper(threshold_bits=SIMHASH_THRESHOLD_CONSERVATIVE)),  # Less aggressive dedup
             ]
             cleaner = PairsCleaner(steps=cleaning_steps)
             db_instructions = Default_DB_Instructions()
@@ -93,7 +101,7 @@ def generate_for_model(model_name: str, filename: str, base_dir: str):
                 generation_config=generation_config,
                 contrastive_set_name=f"synthetic_{capability}",
                 trait_description=trait,
-                trait_label=trait[:50],
+                trait_label=trait[:DISPLAY_TRUNCATION_SHORT],
                 db_instructions=db_instructions,
                 cleaner=cleaner,
                 diversity=diversity,
@@ -111,7 +119,7 @@ def generate_for_model(model_name: str, filename: str, base_dir: str):
             save_data = {
                 'model': model_name,
                 'trait_description': trait,
-                'trait_label': trait[:50],
+                'trait_label': trait[:DISPLAY_TRUNCATION_SHORT],
                 'num_pairs': len(pairs_data),
                 'requested': report.requested,
                 'kept_after_dedupe': report.kept_after_dedupe,

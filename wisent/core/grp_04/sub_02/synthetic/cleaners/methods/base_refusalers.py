@@ -1,5 +1,6 @@
 from wisent.core.synthetic.cleaners.methods.core.atoms import Refusaler
-from wisent.core.models.wisent_model import WisentModel 
+from wisent.core.models.wisent_model import WisentModel
+from wisent.core import constants as _C
 
 import re, unicodedata
 
@@ -97,14 +98,14 @@ class BaseRefusaler(Refusaler):
         "policy": 0.9,
         "apology_hedge": 0.4, 
         "unable": 0.9,
-        "cannot_action": 1.0,
-        "prefer_rather": 0.6,
-        "decline_refuse": 0.9,
-        "no_support": 0.8,
-        "no_ability": 0.8,
-        "refusal_word": 0.6,
+        "cannot_action": _C.REFUSAL_WEIGHT_CANNOT_ACTION,
+        "prefer_rather": _C.REFUSAL_WEIGHT_PREFER_RATHER,
+        "decline_refuse": _C.REFUSAL_WEIGHT_DECLINE_REFUSE,
+        "no_support": _C.REFUSAL_WEIGHT_NO_SUPPORT,
+        "no_ability": _C.REFUSAL_WEIGHT_NO_ABILITY,
+        "refusal_word": _C.REFUSAL_WEIGHT_REFUSAL_WORD,
     }
-    _THRESHOLD = 0.9  
+    _THRESHOLD = _C.REFUSAL_DETECTION_THRESHOLD
 
     @staticmethod
     def _normalize(text: str) -> str:
@@ -170,13 +171,13 @@ class BaseRefusaler(Refusaler):
         best_family, best_w = None, 0.0
         for name, val in m.groupdict().items():
             if val:
-                w = self._FAMILY_WEIGHTS.get(name, 0.5)
+                w = self._FAMILY_WEIGHTS.get(name, _C.REFUSAL_FAMILY_DEFAULT_WEIGHT)
                 if w > best_w:
                     best_family, best_w = name, w
         bonus = 0.0
         if m.group("apology_hedge"):
             if any(name != "apology_hedge" and m.group(name) for name in self._FAMILY_WEIGHTS):
-                bonus = 0.1
+                bonus = _C.REFUSAL_APOLOGY_BONUS
         score = min(1.0, best_w + bonus)
         return score, best_family, m.group(0)
 
@@ -277,10 +278,10 @@ class BaseRefusaler(Refusaler):
         ]
         neg_trial = model.generate(
             inputs=[msgs],
-            max_tokens=generation_conf.get("max_tokens", 256),
-            temperature=generation_conf.get("temperature", 1.0),
+            max_tokens=generation_conf.get("max_tokens", _C.SYNTHETIC_GENERATION_MAX_TOKENS),
+            temperature=generation_conf.get("temperature", _C.SYNTHETIC_GENERATION_TEMPERATURE),
             use_steering=False,
-            top_p=generation_conf.get("top_p", 1.0),
+            top_p=generation_conf.get("top_p", _C.SYNTHETIC_GENERATION_TOP_P),
         )
         return "" if self.looks_like_refusal(neg_trial) else neg_trial
     

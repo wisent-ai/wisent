@@ -3,6 +3,7 @@ import re
 from typing import Union, Optional
 from math import isclose
 from word2number import w2n
+from wisent.core.constants import MATH_REL_TOL
 from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_constants import (
     unit_texts,
 )
@@ -11,10 +12,10 @@ def numeric_equal(prediction: float, reference: float):
     # Note that relative tolerance has significant impact
     # on the result of the synthesized GSM-Hard dataset
     # if reference.is_integer():
-    #     return isclose(reference, round(prediction), abs_tol=1e-4)
+    #     return isclose(reference, round(prediction), abs_tol=MATH_REL_TOL)
     # else:
     # prediction = round(prediction, len(str(reference).split(".")[-1]))
-    return isclose(reference, prediction, rel_tol=1e-4)
+    return isclose(reference, prediction, rel_tol=MATH_REL_TOL)
 
 def parse_digits(num):
     num = regex.sub(",", "", str(num))

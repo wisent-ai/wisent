@@ -22,11 +22,16 @@ except ImportError:
     HAS_PACMAP = False
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.constants import (
+    ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
+    VIZ_N_NEIGHBORS, VIZ_MIN_DIST, STABILITY_N_CLUSTERS,
+    TOKENIZER_MAX_LENGTH_GEOMETRY, N_COMPONENTS_2D,
+)
 
 
 def get_activations_all_layers(model: WisentModel, text: str) -> Dict[int, torch.Tensor]:
     """Extract last token activation from ALL layers."""
-    inputs = model.tokenizer(text, return_tensors="pt", truncation=True, max_length=512)
+    inputs = model.tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY)
     inputs = {k: v.to(model.device) for k, v in inputs.items()}
     
     activations = {}
@@ -96,8 +101,8 @@ def extract_difference_vectors_all_layers(
 def compute_projection(
     diff_vectors: np.ndarray,
     method: str = "pca",
-    n_components: int = 2,
-    seed: int = 42,
+    n_components: int = N_COMPONENTS_2D,
+    seed: int = DEFAULT_RANDOM_SEED,
 ) -> Tuple[np.ndarray, str]:
     """
     Project difference vectors to 2D using various methods.
@@ -117,7 +122,7 @@ def compute_projection(
             print("  UMAP not installed, falling back to PCA")
             method = "pca"
         else:
-            reducer = umap.UMAP(n_components=n_components, random_state=seed, n_neighbors=15, min_dist=0.1)
+            reducer = umap.UMAP(n_components=n_components, random_state=seed, n_neighbors=VIZ_N_NEIGHBORS, min_dist=VIZ_MIN_DIST)
             projected = reducer.fit_transform(diff_vectors)
             return projected, "umap"
     
@@ -152,7 +157,7 @@ def analyze_layer_separability(
     
     for layer_idx, diffs in diff_vectors_by_layer.items():
         # Cluster
-        km = KMeans(n_clusters=2, random_state=42, n_init=10)
+        km = KMeans(n_clusters=STABILITY_N_CLUSTERS, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
         labels = km.fit_predict(diffs)
         
         # Silhouette
@@ -164,8 +169,8 @@ def analyze_layer_separability(
         if mask0.sum() >= 3 and mask1.sum() >= 3:
             dir0 = diffs[mask0].mean(axis=0)
             dir1 = diffs[mask1].mean(axis=0)
-            dir0 = dir0 / (np.linalg.norm(dir0) + 1e-10)
-            dir1 = dir1 / (np.linalg.norm(dir1) + 1e-10)
+            dir0 = dir0 / (np.linalg.norm(dir0) + ZERO_THRESHOLD)
+            dir1 = dir1 / (np.linalg.norm(dir1) + ZERO_THRESHOLD)
             dir_sim = np.abs(np.dot(dir0, dir1))
         else:
             dir_sim = 1.0

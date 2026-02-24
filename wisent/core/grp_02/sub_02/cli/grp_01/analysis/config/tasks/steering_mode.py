@@ -4,6 +4,7 @@ import sys
 import torch
 
 from wisent.core.models import get_generate_kwargs
+from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, STEERING_GEN_MAX_TOKENS_LONG, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS
 
 
 def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy):
@@ -12,7 +13,7 @@ def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector,
 
     print(f"\n🎯 Starting steering evaluation on task: {args.task_names}")
     print(f"   Steering method: {getattr(args, 'steering_method', 'CAA')}")
-    print(f"   Steering strength: {getattr(args, 'steering_strength', 1.0)}")
+    print(f"   Steering strength: {getattr(args, 'steering_strength', DEFAULT_STRENGTH)}")
 
     layer = int(args.layer) if isinstance(args.layer, str) else args.layer
     layer_str = str(layer)
@@ -86,13 +87,13 @@ def _compute_steering_vector(args, model, train_pair_set, collector, extraction_
     neg_tensor = torch.stack(negative_activations)
 
     print(f"\n🔍 Running zwiad geometry analysis...")
-    metrics = compute_geometry_metrics(pos_tensor, neg_tensor, n_folds=3)
+    metrics = compute_geometry_metrics(pos_tensor, neg_tensor, n_folds=GEOMETRY_CV_FOLDS)
     recommendation = compute_recommendation(metrics)
     recommended_method = recommendation.get("recommended_method", "CAA").upper()
-    confidence = recommendation.get("confidence", 0.5)
+    confidence = recommendation.get("confidence", CLASSIFIER_THRESHOLD)
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
 
-    print(f"   ├─ Linear probe accuracy: {metrics.get('linear_probe_accuracy', 0):.3f}")
+    print(f"   ├─ Linear probe accuracy: {metrics.get('linear_probe_accuracy', DEFAULT_SCORE):.3f}")
     print(f"   ├─ Concept coherence:     {coherence:.3f}")
     print(f"   └─ Recommendation:        {recommended_method} (confidence={confidence:.2f})")
 
@@ -112,7 +113,7 @@ def _train_steering_method(args, model, method, pos_tensor, neg_tensor, layer, c
         pos_mean, neg_mean = pos_tensor.mean(dim=0), neg_tensor.mean(dim=0)
         steering_vector = pos_mean - neg_mean
         if getattr(args, 'caa_normalize', True):
-            steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+            steering_vector = steering_vector / (steering_vector.norm() + NORM_EPS)
         print(f"   ✓ CAA steering vector computed, norm={steering_vector.norm().item():.4f}")
         return steering_vector
 
@@ -125,7 +126,7 @@ def _train_steering_method(args, model, method, pos_tensor, neg_tensor, layer, c
     else:
         print(f"   ⚠️  Unknown method {method}, using CAA")
         steering_vector = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
-        steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+        steering_vector = steering_vector / (steering_vector.norm() + NORM_EPS)
         return steering_vector
 
 
@@ -135,21 +136,21 @@ def _train_grom(model, layer, collector, extraction_strategy, train_pair_set, po
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
-    enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:50]]
+    enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:ENRICHMENT_MAX_PAIRS]]
     pair_set = ContrastivePairSet(pairs=enriched_pairs, name="grom_training")
 
-    grom_method = GROMMethod(model=model, num_directions=8, manifold_method="pca",
+    grom_method = GROMMethod(model=model, num_directions=GROM_NUM_DIRECTIONS, manifold_method="pca",
                                steering_layers=[int(l) for l in all_layers], sensor_layer=1)
     grom_result = grom_method.train_grom(pair_set)
     layer_key = f"layer_{layer}"
 
     if layer_key in grom_result.directions:
         dirs, weights = grom_result.directions[layer_key], grom_result.direction_weights[layer_key]
-        steering_vector = (dirs * (weights / (weights.sum() + 1e-8)).unsqueeze(-1)).sum(dim=0)
+        steering_vector = (dirs * (weights / (weights.sum() + NORM_EPS)).unsqueeze(-1)).sum(dim=0)
     else:
         steering_vector = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
 
-    steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+    steering_vector = steering_vector / (steering_vector.norm() + NORM_EPS)
     print(f"   ✓ GROM steering vector computed, norm={steering_vector.norm().item():.4f}")
     return steering_vector
 
@@ -160,10 +161,10 @@ def _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, p
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
-    enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:50]]
+    enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:ENRICHMENT_MAX_PAIRS]]
     pair_set = ContrastivePairSet(pairs=enriched_pairs, name="tecza_training")
 
-    tecza_method = TECZAMethod(model=model.hf_model, num_directions=3)
+    tecza_method = TECZAMethod(model=model.hf_model, num_directions=TECZA_NUM_DIRECTIONS)
     tecza_result = tecza_method.train(pair_set)
     layer_key = f"layer_{layer}"
 
@@ -172,7 +173,7 @@ def _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, p
     else:
         steering_vector = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
 
-    steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+    steering_vector = steering_vector / (steering_vector.norm() + NORM_EPS)
     print(f"   ✓ TECZA steering vector computed, norm={steering_vector.norm().item():.4f}")
     return steering_vector
 
@@ -185,7 +186,7 @@ def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer
     print(f"\n📊 Evaluating on {len(test_pair_set.pairs)} test pairs...")
     baseline_correct, steered_correct, total = 0, 0, 0
     results = []
-    steering_strength = getattr(args, 'steering_strength', 1.0)
+    steering_strength = getattr(args, 'steering_strength', DEFAULT_STRENGTH)
 
     for i, pair in enumerate(test_pair_set.pairs):
         print(f"   Processing {i+1}/{len(test_pair_set.pairs)}...", end='\r')
@@ -194,14 +195,14 @@ def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer
         choices = [pair.negative_response.model_response, pair.positive_response.model_response]
         messages = [{"role": "user", "content": question}]
 
-        resp_base = model.generate([messages], **get_generate_kwargs(max_new_tokens=512))[0]
+        resp_base = model.generate([messages], **get_generate_kwargs(max_new_tokens=STEERING_GEN_MAX_TOKENS_LONG))[0]
         eval_kwargs = {'response': resp_base, 'expected': expected, 'model': model, 'question': question, 'choices': choices, 'task_name': task_name}
         if hasattr(pair, 'metadata') and pair.metadata:
             eval_kwargs.update({k: v for k, v in pair.metadata.items() if v is not None and k not in eval_kwargs})
         base_correct = evaluator.evaluate(**eval_kwargs).ground_truth == "TRUTHFUL"
 
         model.set_steering_from_raw({layer_str: steering_vector}, scale=steering_strength, normalize=False)
-        resp_steer = model.generate([messages], **get_generate_kwargs(max_new_tokens=512))[0]
+        resp_steer = model.generate([messages], **get_generate_kwargs(max_new_tokens=STEERING_GEN_MAX_TOKENS_LONG))[0]
         model.clear_steering()
 
         eval_kwargs['response'] = resp_steer
@@ -209,7 +210,7 @@ def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer
 
         baseline_correct += int(base_correct)
         steered_correct += int(steer_correct)
-        results.append({'question': question[:100], 'baseline_correct': base_correct, 'steered_correct': steer_correct})
+        results.append({'question': question[:DISPLAY_TRUNCATION_COMPACT], 'baseline_correct': base_correct, 'steered_correct': steer_correct})
         total += 1
 
     print(f"\n\n{'='*60}\n📊 STEERING EVALUATION RESULTS\n{'='*60}")

@@ -15,6 +15,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Protocol, Union
 
+from wisent.core.constants import DEFAULT_TIMEOUT_DOCKER, DEFAULT_API_RETRIES, DEFAULT_RETRY_DELAY, SCORE_RANGE_MIN, SCORE_RANGE_MAX
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
 
 # Re-export from helpers
@@ -45,8 +46,8 @@ class CustomEvaluatorConfig:
     description: str = "Custom evaluator"
     invert_score: bool = False
     score_key: str = "score"
-    min_score: float = 0.0
-    max_score: float = 1.0
+    min_score: float = SCORE_RANGE_MIN
+    max_score: float = SCORE_RANGE_MAX
     normalize: bool = True
 
 
@@ -131,9 +132,9 @@ class APIEvaluator(CustomEvaluator):
         config: Optional[CustomEvaluatorConfig] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,
-        timeout: float = 30.0,
-        max_retries: int = 3,
-        retry_delay: float = 1.0,
+        timeout: float = DEFAULT_TIMEOUT_DOCKER,
+        max_retries: int = DEFAULT_API_RETRIES,
+        retry_delay: float = DEFAULT_RETRY_DELAY,
         cache_responses: bool = True,
     ):
         super().__init__(name=name, description=description, config=config)

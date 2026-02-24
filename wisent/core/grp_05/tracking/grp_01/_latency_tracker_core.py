@@ -209,26 +209,3 @@ class LatencyTracker(LatencyReportingMixin):
                 name: self._calculate_stats(name, events)
                 for name, events in operation_events.items()
             }
-    
-    def _calculate_stats(self, operation: str, events: List[TimingEvent]) -> LatencyStats:
-        """Calculate statistics for a list of timing events."""
-        durations = [e.duration for e in events]
-        
-        if not durations:
-            return LatencyStats(
-                operation=operation,
-                count=0,
-                total_time=0,
-                mean_time=0,
-                median_time=0,
-                min_time=0,
-                max_time=0,
-                std_dev=0,
-                percentile_95=0,
-                percentile_99=0,
-                events=[]
-            )
-        
-        durations.sort()
-        
-        return LatencyStats(

@@ -16,6 +16,8 @@ from typing import Dict, List, Optional, Any, Tuple
 import torch
 import numpy as np
 
+from wisent.core.constants import DEFAULT_RANDOM_SEED
+
 # Import compute_geometry_metrics from metrics_core (single source of truth)
 from .metrics.core.metrics_core import compute_geometry_metrics
 from .steering.analysis.steerability import compute_final_steering_prescription
@@ -175,7 +177,7 @@ def evaluate_activation_regions(
 
         # Fit GMM to combined data
         X = np.vstack([pos, neg])
-        gmm = GaussianMixture(n_components=2, random_state=42)
+        gmm = GaussianMixture(n_components=2, random_state=DEFAULT_RANDOM_SEED)
         gmm.fit(X)
 
         # Predict cluster assignments

@@ -7,6 +7,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -86,7 +87,7 @@ class JapaneseLeaderboardGenerationExtractor(LMEvalBenchmarkExtractor):
                 # Create synthetic negative by shuffling words
                 incorrect = self._create_shuffled_text(correct)
 
-                formatted_question = f"Context: {context_text[:200]}...\n\nQuestion: {question}" if len(context_text) > 200 else f"Context: {context_text}\n\nQuestion: {question}"
+                formatted_question = f"Context: {context_text[:DISPLAY_TRUNCATION_MEDIUM]}...\n\nQuestion: {question}" if len(context_text) > DISPLAY_TRUNCATION_MEDIUM else f"Context: {context_text}\n\nQuestion: {question}"
 
                 return self._build_pair(
                     question=formatted_question,
@@ -122,7 +123,7 @@ class JapaneseLeaderboardGenerationExtractor(LMEvalBenchmarkExtractor):
                 if "[SEP]" in context:
                     context = context.split("[SEP]")[-1].strip()
 
-                formatted_question = f"Context: {context[:200]}...\n\nQuestion: {question}" if len(context) > 200 else f"Context: {context}\n\nQuestion: {question}"
+                formatted_question = f"Context: {context[:DISPLAY_TRUNCATION_MEDIUM]}...\n\nQuestion: {question}" if len(context) > DISPLAY_TRUNCATION_MEDIUM else f"Context: {context}\n\nQuestion: {question}"
 
                 return self._build_pair(
                     question=formatted_question,
@@ -170,7 +171,7 @@ class JapaneseLeaderboardGenerationExtractor(LMEvalBenchmarkExtractor):
                 # Create synthetic negative by shuffling
                 incorrect = self._create_shuffled_text(correct)
 
-                formatted_question = f"Summarize the following text:\n\n{text[:300]}..." if len(text) > 300 else f"Summarize the following text:\n\n{text}"
+                formatted_question = f"Summarize the following text:\n\n{text[:DISPLAY_TRUNCATION_LONG]}..." if len(text) > DISPLAY_TRUNCATION_LONG else f"Summarize the following text:\n\n{text}"
 
                 return self._build_pair(
                     question=formatted_question,

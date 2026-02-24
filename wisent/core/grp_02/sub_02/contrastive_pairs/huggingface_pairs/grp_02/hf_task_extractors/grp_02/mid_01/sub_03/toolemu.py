@@ -6,6 +6,7 @@ import requests
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import HTTP_TIMEOUT_MEDIUM
 
 __all__ = ["ToolEmuExtractor"]
 
@@ -111,7 +112,7 @@ class ToolEmuExtractor(HuggingFaceBenchmarkExtractor):
     def _load_from_github(self) -> list[dict[str, Any]]:
         """Load ToolEmu test cases from GitHub repository."""
         try:
-            response = requests.get(TOOLEMU_GITHUB_URL, timeout=30)
+            response = requests.get(TOOLEMU_GITHUB_URL, timeout=HTTP_TIMEOUT_MEDIUM)
             response.raise_for_status()
             return response.json()
         except Exception as e:

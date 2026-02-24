@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 
 import torch
+from wisent.core.constants import DEFAULT_LAYER, SIMILARITY_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO
 
 from wisent.core.utils import resolve_default_device
 
@@ -34,7 +35,7 @@ def load_vectors_from_file(path: str, verbose: bool = False) -> Dict[int, torch.
                     for layer, vec in raw_vectors.items()
                 }
         elif 'vector' in checkpoint:
-            layer = checkpoint.get('layer', checkpoint.get('best_layer', 14))
+            layer = checkpoint.get('layer', checkpoint.get('best_layer', DEFAULT_LAYER))
             steering_vectors = {layer: checkpoint['vector']}
         else:
             steering_vectors = {
@@ -81,7 +82,7 @@ def generate_personalization_vectors(args, verbose: bool = False) -> Dict[int, t
     vector_args.trait = args.trait
     vector_args.model = args.model
     vector_args.num_pairs = args.num_pairs
-    vector_args.similarity_threshold = getattr(args, 'similarity_threshold', 0.8)
+    vector_args.similarity_threshold = getattr(args, 'similarity_threshold', SIMILARITY_THRESHOLD)
     vector_args.layers = str(args.layers) if args.layers is not None else "all"
     vector_args.method = getattr(args, 'steering_method', 'caa')
     vector_args.normalize = args.normalize_vectors
@@ -130,8 +131,8 @@ def generate_multi_benchmark_vectors(args, verbose: bool = False) -> Dict[int, t
     unified_args.exclude_benchmarks = None
     unified_args.max_benchmarks = getattr(args, 'max_benchmarks', None)
     unified_args.cap_pairs_per_benchmark = getattr(args, 'cap_pairs_per_benchmark', None)
-    unified_args.train_ratio = getattr(args, 'train_ratio', 0.8)
-    unified_args.seed = getattr(args, 'seed', 42)
+    unified_args.train_ratio = getattr(args, 'train_ratio', DEFAULT_SPLIT_RATIO)
+    unified_args.seed = getattr(args, 'seed', DEFAULT_RANDOM_SEED)
     unified_args.model = args.model
     unified_args.device = getattr(args, 'device', None)
     unified_args.layer = None

@@ -3,6 +3,7 @@ from __future__ import annotations
 import random
 from typing import Any, TYPE_CHECKING
 
+from wisent.core.constants import ANSWER_MAX_DISPLAY_LENGTH
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
@@ -85,8 +86,8 @@ class BasqueBenchGenerationExtractor(LMEvalBenchmarkExtractor):
                 if answer is not None:
                     answer_str = str(answer).strip()
                     # Remove prefix if present
-                    if len(answer_str) > 27:
-                        correct = answer_str[27:]
+                    if len(answer_str) > ANSWER_MAX_DISPLAY_LENGTH:
+                        correct = answer_str[ANSWER_MAX_DISPLAY_LENGTH:]
                     else:
                         correct = answer_str
                 elif answer_number is not None:

@@ -18,6 +18,8 @@ import sys
 import time
 from pathlib import Path
 
+from wisent.core.constants import QWEN3_4B_DEFAULT_LAYER
+
 from control_vector_generator import ControlVectorGenerator
 
 logger = logging.getLogger(__name__)
@@ -63,7 +65,7 @@ def main():
     parser.add_argument(
         '--layer',
         type=int,
-        default=17,
+        default=QWEN3_4B_DEFAULT_LAYER,
         help='Layer index to extract activations from'
     )
 

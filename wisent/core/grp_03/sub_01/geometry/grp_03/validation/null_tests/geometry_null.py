@@ -7,6 +7,8 @@ import numpy as np
 import torch
 from typing import Dict
 
+from wisent.core.constants import ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED
+
 from ...analysis.structure import (
     compute_cone_fit,
     compute_sphere_fit,
@@ -27,8 +29,8 @@ def _generate_null_activations(
 def compute_cone_null(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = 10,
-    random_state: int = 42,
+    n_bootstrap: int = N_BOOTSTRAP,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Compute cone metrics for random (null) data."""
     rng = np.random.RandomState(random_state)
@@ -58,8 +60,8 @@ def compute_cone_null(
 def compute_sphere_null(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = 10,
-    random_state: int = 42,
+    n_bootstrap: int = N_BOOTSTRAP,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Compute sphere metrics for random (null) data."""
     rng = np.random.RandomState(random_state)
@@ -85,8 +87,8 @@ def compute_sphere_null(
 def compute_cluster_null(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = 10,
-    random_state: int = 42,
+    n_bootstrap: int = N_BOOTSTRAP,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Compute cluster metrics for random (null) data."""
     rng = np.random.RandomState(random_state)
@@ -115,8 +117,8 @@ def compute_cluster_null(
 def compute_translation_null(
     n_samples: int,
     n_dims: int,
-    n_bootstrap: int = 10,
-    random_state: int = 42,
+    n_bootstrap: int = N_BOOTSTRAP,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Compute translation metrics for random (null) pairs."""
     rng = np.random.RandomState(random_state)
@@ -146,7 +148,7 @@ def compute_translation_null(
 
 def _z_score(real_val: float, null_mean: float, null_std: float) -> float:
     """Compute z-score relative to null distribution."""
-    if null_std < 1e-10:
+    if null_std < ZERO_THRESHOLD:
         return 0.0
     return (real_val - null_mean) / null_std
 
@@ -154,8 +156,8 @@ def _z_score(real_val: float, null_mean: float, null_std: float) -> float:
 def compute_geometry_vs_null(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_bootstrap: int = 10,
-    random_state: int = 42,
+    n_bootstrap: int = N_BOOTSTRAP,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, any]:
     """
     Compare detected geometry against null baselines.

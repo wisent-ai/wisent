@@ -2,14 +2,15 @@
 
 import numpy as np
 import torch
+from wisent.core import constants as _C
 
 
 def compute_knn_pacmap_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    k: int = 10,
-    n_components: int = 10,
-    n_folds: int = 5,
+    k: int = _C.KNN_DEFAULT_K,
+    n_components: int = _C.PACMAP_N_COMPONENTS_DEFAULT,
+    n_folds: int = _C.CV_DEFAULT_N_FOLDS,
 ) -> float:
     """Compute k-NN accuracy on PaCMAP-reduced features.
 
@@ -47,10 +48,10 @@ def compute_knn_pacmap_accuracy(
 
         reducer = pacmap.PaCMAP(
             n_components=n_components,
-            n_neighbors=min(10, len(X) // 4),
-            MN_ratio=0.5,
-            FP_ratio=2.0,
-            random_state=42,
+            n_neighbors=min(_C.PACMAP_NEIGHBORS_MAX, len(X) // _C.PACMAP_NEIGHBORS_DIVISOR),
+            MN_ratio=_C.PACMAP_MN_RATIO_DEFAULT,
+            FP_ratio=_C.PACMAP_FP_RATIO_DEFAULT,
+            random_state=_C.DEFAULT_RANDOM_SEED,
         )
         X_pacmap = reducer.fit_transform(X)
 

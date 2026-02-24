@@ -21,6 +21,7 @@ pynndescent>=0.5.0
 hdbscan>=0.8.0
 umap-learn>=0.5.0
 pacmap>=0.7.0
+optuna>=3.0.0
 
 [cuda]
 flash-attn>=2.5.0

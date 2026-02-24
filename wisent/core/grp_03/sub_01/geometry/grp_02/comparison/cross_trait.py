@@ -16,6 +16,7 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
+from wisent.core.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD
 
 
 @dataclass
@@ -88,7 +89,7 @@ def _compute_pairwise_cosine(
 def compute_shared_subspace(
     all_vectors: List[Dict[int, torch.Tensor]],
     layers: List[int],
-    variance_threshold: float = 0.8,
+    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
 ) -> Tuple[Dict[int, torch.Tensor], float]:
     """Find shared subspace across all objects per layer via SVD.
 
@@ -105,7 +106,7 @@ def compute_shared_subspace(
         stacked = torch.stack(vecs, dim=0)  # (n_objects, hidden_dim)
         U, S, Vh = torch.linalg.svd(stacked, full_matrices=False)
         total_var = (S ** 2).sum()
-        if total_var < 1e-12:
+        if total_var < LOG_EPS:
             continue
         cumvar = torch.cumsum(S ** 2, dim=0) / total_var
         k = int((cumvar >= variance_threshold).float().argmax().item()) + 1
@@ -218,7 +219,7 @@ def compare_steering_objects(
     objects: list,
     labels: List[str],
     layers: Optional[List[int]] = None,
-    variance_threshold: float = 0.8,
+    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
 ) -> ComparisonResult:
     """Compare multiple steering objects across traits.
 

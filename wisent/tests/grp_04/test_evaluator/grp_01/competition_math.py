@@ -56,7 +56,7 @@ print("Testing extract_boxed_answer:")
 for text, expected in test_cases:
     result = extract_boxed_answer(text)
     status = "✓" if result == expected else "✗"
-    print(f"  {status} Input: {text[:50]}... -> Got: {result}, Expected: {expected}")
+    print(f"  {status} Input: {text[:DISPLAY_TRUNCATION_SHORT]}... -> Got: {result}, Expected: {expected}")
 
 print()
 
@@ -82,6 +82,7 @@ print("Comparing extraction methods on competition_math dataset:")
 print("="*60)
 
 from wisent.core.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
+from wisent.core.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
 
 evaluator = GenerationEvaluator()
 ds = load_dataset('qwedsacf/competition_math', split='train')
@@ -118,12 +119,12 @@ for i, example in enumerate(ds):
             pass
 
     if boxed_as_num is not None and gen_answer is not None:
-        if abs(boxed_as_num - gen_answer) > 1e-6:
+        if abs(boxed_as_num - gen_answer) > COMPARE_TOL:
             different += 1
             if len(examples_different) < 10:
                 examples_different.append({
                     'idx': i,
-                    'problem': example.get('problem', '')[:100],
+                    'problem': example.get('problem', '')[:DISPLAY_TRUNCATION_COMPACT],
                     'boxed': boxed_answer,
                     'boxed_num': boxed_as_num,
                     'gen': gen_answer,
@@ -135,7 +136,7 @@ for i, example in enumerate(ds):
         if len(examples_different) < 10:
             examples_different.append({
                 'idx': i,
-                'problem': example.get('problem', '')[:100],
+                'problem': example.get('problem', '')[:DISPLAY_TRUNCATION_COMPACT],
                 'boxed': boxed_answer,
                 'boxed_num': boxed_as_num,
                 'gen': gen_answer,

@@ -10,6 +10,7 @@ import torch
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
 from wisent.core.errors import ModelNotProvidedError, InvalidValueError
+from wisent.core.constants import EVAL_PERPLEXITY_DIFF_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +83,7 @@ class PerplexityEvaluator(BaseEvaluator):
 
                 # Calculate confidence (inverse of perplexity difference)
                 perp_diff = abs(perplexities[choices[0]] - perplexities[choices[1]])
-                confidence = 1.0 if perp_diff > 1.0 else perp_diff
+                confidence = 1.0 if perp_diff > EVAL_PERPLEXITY_DIFF_THRESHOLD else perp_diff
 
                 details = f"Predicted: '{best_choice}' (ppl={best_perplexity:.2f}), Expected: '{expected}'"
 

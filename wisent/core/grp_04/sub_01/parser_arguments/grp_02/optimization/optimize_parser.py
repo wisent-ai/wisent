@@ -1,5 +1,7 @@
 """Parser for the 'optimize' command - full model optimization."""
 
+from wisent.core.constants import OPTUNA_DEFAULT_N_TRIALS, PARSER_DEFAULT_NUM_PAIRS
+
 
 def setup_optimize_parser(parser):
     """
@@ -7,7 +9,6 @@ def setup_optimize_parser(parser):
     
     Usage:
         wisent optimize meta-llama/Llama-3.1-8B-Instruct
-        wisent optimize Qwen/Qwen2-7B --quick
         wisent optimize mistralai/Mistral-7B --methods CAA TECZA TETNO GROM
     
     This runs FULL optimization:
@@ -32,11 +33,6 @@ def setup_optimize_parser(parser):
         nargs="+",
         default=None,
         help="Specific benchmarks to optimize (default: ALL available benchmarks)"
-    )
-    scope_group.add_argument(
-        "--quick",
-        action="store_true",
-        help="Quick mode: only 4 key benchmarks (truthfulqa, arc_easy, hellaswag, gsm8k)"
     )
     scope_group.add_argument(
         "--skip-personalization",
@@ -97,13 +93,13 @@ def setup_optimize_parser(parser):
     optuna_group.add_argument(
         "--n-trials",
         type=int,
-        default=50,
+        default=PARSER_DEFAULT_NUM_PAIRS,
         help="Number of Optuna trials per task (default: 50)"
     )
     optuna_group.add_argument(
         "--limit",
         type=int,
-        default=100,
+        default=OPTUNA_DEFAULT_N_TRIALS,
         help="Maximum samples per benchmark (default: 100)"
     )
     

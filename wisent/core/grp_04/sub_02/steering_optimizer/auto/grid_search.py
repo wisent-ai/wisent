@@ -8,6 +8,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 
 import torch
+from wisent.core.constants import NORM_EPS, AUTO_EVAL_SUBSET, DEFAULT_MAX_NEW_TOKENS_ADAPTER
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +64,7 @@ def run_grid_search(
         if steering_vector is None:
             continue
 
-        steering_vector = steering_vector / (steering_vector.norm() + 1e-8)
+        steering_vector = steering_vector / (steering_vector.norm() + NORM_EPS)
 
         for strength in strength_range:
             combo_idx += 1
@@ -132,12 +133,12 @@ def _get_steering_vector(
         if layer_key_simple in result.directions:
             dirs = result.directions[layer_key_simple]
             weights = result.direction_weights[layer_key_simple]
-            weights_norm = weights / (weights.sum() + 1e-8)
+            weights_norm = weights / (weights.sum() + NORM_EPS)
             return (dirs * weights_norm.unsqueeze(-1)).sum(dim=0)
         elif layer_key_prefixed in result.directions:
             dirs = result.directions[layer_key_prefixed]
             weights = result.direction_weights[layer_key_prefixed]
-            weights_norm = weights / (weights.sum() + 1e-8)
+            weights_norm = weights / (weights.sum() + NORM_EPS)
             return (dirs * weights_norm.unsqueeze(-1)).sum(dim=0)
 
     elif method == "TECZA":
@@ -160,13 +161,13 @@ def _evaluate_pairs(
 
     correct = 0
     total = 0
-    eval_subset = eval_pairs[:min(30, len(eval_pairs))]
+    eval_subset = eval_pairs[:min(AUTO_EVAL_SUBSET, len(eval_pairs))]
 
     for pair in eval_subset:
         messages = [{"role": "user", "content": pair.prompt}]
         response = wisent_model.generate(
             [messages],
-            **get_generate_kwargs(max_new_tokens=256),
+            **get_generate_kwargs(max_new_tokens=DEFAULT_MAX_NEW_TOKENS_ADAPTER),
         )[0]
 
         eval_kwargs = {

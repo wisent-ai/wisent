@@ -22,6 +22,7 @@ from typing import Any, Dict, Optional
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
+from wisent.core.constants import HUMANIZATION_COHERENCE_THRESHOLD, HUMANIZATION_MAX_LENGTH, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
 from wisent.core.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
@@ -65,7 +66,7 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
     
     def __init__(
         self,
-        coherence_threshold: float = 0.3,
+        coherence_threshold: float = HUMANIZATION_COHERENCE_THRESHOLD,
         device: Optional[str] = None,
     ):
         config = CustomEvaluatorConfig(
@@ -90,7 +91,7 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
             prompt, response, 
             return_tensors="pt", 
             truncation=True, 
-            max_length=512
+            max_length=HUMANIZATION_MAX_LENGTH
         )
         if self.device:
             inputs = {k: v.to(self.device) for k, v in inputs.items()}
@@ -130,8 +131,8 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
         # If coherence is below threshold, return 0
         if coherence_score < self.coherence_threshold:
             logger.warning(f"Coherence check failed: {coherence_score:.3f} < {self.coherence_threshold}")
-            logger.warning(f"Prompt: {prompt[:50]}...")
-            logger.warning(f"Response preview: {response[:100]}...")
+            logger.warning(f"Prompt: {prompt[:DISPLAY_TRUNCATION_SHORT]}...")
+            logger.warning(f"Response preview: {response[:DISPLAY_TRUNCATION_COMPACT]}...")
             return {
                 "score": 0.0,
                 "human_prob": 0.0,
@@ -157,7 +158,7 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
 
 
 def create_humanization_coherent_evaluator(
-    coherence_threshold: float = 0.3,
+    coherence_threshold: float = HUMANIZATION_COHERENCE_THRESHOLD,
     device: Optional[str] = None,
     **kwargs
 ) -> HumanizationCoherentEvaluator:

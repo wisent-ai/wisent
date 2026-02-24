@@ -1,4 +1,14 @@
 """Parser setup for the 'synthetic' command."""
+from wisent.core.constants import (
+    DEFAULT_LAYER,
+    PARSER_DEFAULT_NUM_PAIRS_GENERATE,
+    SYNTHETIC_DEDUP_SIMILARITY,
+    SYNTHETIC_QUALITY_THRESHOLD,
+    SYNTHETIC_MIN_QUALITY,
+    DEFAULT_BASE_STRENGTH,
+    PARSER_DEFAULT_TEST_QUESTIONS,
+    NONSENSE_MAX_WORD_LENGTH,
+)
 
 
 def setup_synthetic_parser(parser):
@@ -14,7 +24,7 @@ def setup_synthetic_parser(parser):
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=30,
+        default=PARSER_DEFAULT_NUM_PAIRS_GENERATE,
         help="Number of contrastive pairs to generate (default: 30, only used with --trait)",
     )
     parser.add_argument(
@@ -29,7 +39,7 @@ def setup_synthetic_parser(parser):
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
 
     # Training/evaluation parameters
-    parser.add_argument("--layer", type=str, default="15", help="Layer(s) to extract activations from")
+    parser.add_argument("--layer", type=str, default=str(DEFAULT_LAYER), help="Layer(s) to extract activations from")
     parser.add_argument(
         "--steering-method",
         type=str,
@@ -37,19 +47,19 @@ def setup_synthetic_parser(parser):
         choices=["CAA"],
         help="Steering method to use",
     )
-    parser.add_argument("--steering-strength", type=float, default=1.0, help="Strength of steering vector application")
+    parser.add_argument("--steering-strength", type=float, default=DEFAULT_BASE_STRENGTH, help="Strength of steering vector application")
     parser.add_argument(
-        "--test-questions", type=int, default=5, help="Number of test questions to generate for evaluation"
+        "--test-questions", type=int, default=PARSER_DEFAULT_TEST_QUESTIONS, help="Number of test questions to generate for evaluation"
     )
 
     # Output
     parser.add_argument("--output", type=str, default="./results", help="Output directory for results")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--timing", action="store_true", help="Show timing information")
-    parser.add_argument("--similarity-threshold", type=float, default=0.95, help="Similarity threshold for deduplication")
+    parser.add_argument("--similarity-threshold", type=float, default=SYNTHETIC_DEDUP_SIMILARITY, help="Similarity threshold for deduplication")
     parser.add_argument("--intermediate-dir", type=str, default=None, help="Directory for intermediate files")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files after completion")
-    parser.add_argument("--layers", type=str, default="15", help="Layers to extract activations from")
+    parser.add_argument("--layers", type=str, default=str(DEFAULT_LAYER), help="Layers to extract activations from")
 
     # Steering method configuration - uses centralized registry
     from wisent.core.steering_methods import SteeringMethodRegistry
@@ -86,19 +96,19 @@ def setup_synthetic_parser(parser):
     parser.add_argument(
         "--max-word-length",
         type=int,
-        default=20,
+        default=NONSENSE_MAX_WORD_LENGTH,
         help="Maximum reasonable word length for nonsense detection (default: 20)",
     )
     parser.add_argument(
         "--repetition-threshold",
         type=float,
-        default=0.7,
+        default=SYNTHETIC_QUALITY_THRESHOLD,
         help="Threshold for repetitive content detection (0-1, default: 0.7)",
     )
     parser.add_argument(
         "--gibberish-threshold",
         type=float,
-        default=0.3,
+        default=SYNTHETIC_MIN_QUALITY,
         help="Threshold for gibberish word detection (0-1, default: 0.3)",
     )
     parser.add_argument(

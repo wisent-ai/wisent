@@ -28,6 +28,16 @@ from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import (
+    TETNO_CONDITION_THRESHOLD,
+    TETNO_GATE_TEMPERATURE,
+    TETNO_ENTROPY_FLOOR,
+    TETNO_ENTROPY_CEILING,
+    TETNO_MAX_ALPHA,
+    TETNO_OPTIMIZATION_STEPS,
+    TETNO_LEARNING_RATE,
+    TETNO_THRESHOLD_SEARCH_STEPS,
+)
 
 __all__ = [
     "TETNOMethod",
@@ -51,7 +61,7 @@ class TETNOMethod(TETNOTrainingMixin, TETNOScalingMixin, BaseSteeringMethod):
     - Applies steering across multiple layers with per-layer scaling
     
     Usage:
-        method = TETNOMethod(sensor_layer=15, steering_layers=[12,13,14,15,16,17,18])
+        method = TETNOMethod(sensor_layer=16, steering_layers=[13,14,15,16,17,18,19])
         result = method.train_tetno(behavior_pairs, condition_pairs)
         
         # At inference:
@@ -72,18 +82,18 @@ class TETNOMethod(TETNOTrainingMixin, TETNOScalingMixin, BaseSteeringMethod):
             steering_layers=kwargs.get("steering_layers", None),  # Auto-resolve from num_layers
             num_layers=kwargs.get("num_layers", None),
             per_layer_scaling=kwargs.get("per_layer_scaling", True),
-            condition_threshold=kwargs.get("condition_threshold", 0.5),
-            gate_temperature=kwargs.get("gate_temperature", 0.1),
+            condition_threshold=kwargs.get("condition_threshold", TETNO_CONDITION_THRESHOLD),
+            gate_temperature=kwargs.get("gate_temperature", TETNO_GATE_TEMPERATURE),
             learn_threshold=kwargs.get("learn_threshold", True),
             use_entropy_scaling=kwargs.get("use_entropy_scaling", True),
-            entropy_floor=kwargs.get("entropy_floor", 0.5),
-            entropy_ceiling=kwargs.get("entropy_ceiling", 2.0),
-            max_alpha=kwargs.get("max_alpha", 2.0),
-            optimization_steps=kwargs.get("optimization_steps", 100),
-            learning_rate=kwargs.get("learning_rate", 0.01),
+            entropy_floor=kwargs.get("entropy_floor", TETNO_ENTROPY_FLOOR),
+            entropy_ceiling=kwargs.get("entropy_ceiling", TETNO_ENTROPY_CEILING),
+            max_alpha=kwargs.get("max_alpha", TETNO_MAX_ALPHA),
+            optimization_steps=kwargs.get("optimization_steps", TETNO_OPTIMIZATION_STEPS),
+            learning_rate=kwargs.get("learning_rate", TETNO_LEARNING_RATE),
             use_caa_init=kwargs.get("use_caa_init", True),
             normalize=kwargs.get("normalize", True),
-            threshold_search_steps=kwargs.get("threshold_search_steps", 20),
+            threshold_search_steps=kwargs.get("threshold_search_steps", TETNO_THRESHOLD_SEARCH_STEPS),
         )
         self._training_logs: List[Dict[str, float]] = []
     
@@ -189,9 +199,9 @@ def compute_entropy(logits: torch.Tensor) -> torch.Tensor:
 
 def compute_intensity_from_entropy(
     entropy: torch.Tensor,
-    floor: float = 0.5,
-    ceiling: float = 2.0,
-    max_alpha: float = 2.0,
+    floor: float = TETNO_ENTROPY_FLOOR,
+    ceiling: float = TETNO_ENTROPY_CEILING,
+    max_alpha: float = TETNO_MAX_ALPHA,
 ) -> torch.Tensor:
     """
     Compute steering intensity from entropy.

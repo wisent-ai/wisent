@@ -19,6 +19,7 @@ from wisent.core.steering_methods.steering_object import (
     SteeringObjectMetadata,
 )
 from .solvers.broyden import wicher_broyden_step
+from wisent.core.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH
 
 __all__ = ["WicherSteeringObject"]
 
@@ -34,11 +35,11 @@ class WicherSteeringObject(BaseSteeringObject):
         concept_directions: Dict[int, torch.Tensor],
         concept_bases: Dict[int, torch.Tensor],
         component_variances: Dict[int, torch.Tensor],
-        num_steps: int = 3,
-        alpha: float = 5e-3,
-        eta: float = 0.5,
-        beta: float = 0.0,
-        alpha_decay: float = 1.0,
+        num_steps: int = BROYDEN_DEFAULT_NUM_STEPS,
+        alpha: float = BROYDEN_DEFAULT_ALPHA,
+        eta: float = BROYDEN_DEFAULT_ETA,
+        beta: float = BROYDEN_DEFAULT_BETA,
+        alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY,
         layer_variance: Optional[Dict[int, float]] = None,
     ):
         super().__init__(metadata)
@@ -88,7 +89,7 @@ class WicherSteeringObject(BaseSteeringObject):
         self,
         hidden_state: torch.Tensor,
         layer: int,
-        base_strength: float = 1.0,
+        base_strength: float = DEFAULT_STRENGTH,
     ) -> torch.Tensor:
         """Apply WICHER Broyden steering with layer variance weighting."""
         if layer not in self.concept_directions:
@@ -101,8 +102,6 @@ class WicherSteeringObject(BaseSteeringObject):
         original_dtype = hidden_state.dtype
 
         effective_strength = base_strength
-        if layer in self._variance_weights:
-            effective_strength = base_strength * self._variance_weights[layer]
 
         return self._apply_broyden(
             hidden_state, concept_dir, effective_strength,
@@ -120,6 +119,7 @@ class WicherSteeringObject(BaseSteeringObject):
     ) -> torch.Tensor:
         """Broyden iteration in SVD concept subspace."""
         cd = concept_dir.to(hidden_state.device)
+        cd = cd / cd.norm().clamp(min=NORM_EPS)
         basis = self.concept_bases[layer].float().to(hidden_state.device)
         comp_var = self.component_variances[layer].float().to(
             hidden_state.device
@@ -238,10 +238,10 @@ class WicherSteeringObject(BaseSteeringObject):
             concept_directions=concept_dirs,
             concept_bases=concept_bases,
             component_variances=comp_variances,
-            num_steps=data.get("num_steps", 3),
-            alpha=data.get("alpha", 5e-3),
-            eta=data.get("eta", 0.5),
-            beta=data.get("beta", 0.0),
-            alpha_decay=data.get("alpha_decay", 1.0),
+            num_steps=data.get("num_steps", BROYDEN_DEFAULT_NUM_STEPS),
+            alpha=data.get("alpha", BROYDEN_DEFAULT_ALPHA),
+            eta=data.get("eta", BROYDEN_DEFAULT_ETA),
+            beta=data.get("beta", BROYDEN_DEFAULT_BETA),
+            alpha_decay=data.get("alpha_decay", BROYDEN_DEFAULT_ALPHA_DECAY),
             layer_variance=layer_variance,
         )

@@ -11,6 +11,7 @@ import json
 import tempfile
 import os
 import torch
+from wisent.core.constants import DISPLAY_TOP_N_SMALL
 
 POSITIVE_WORDS = [
     "happy", "joyful", "excited", "wonderful", "amazing",
@@ -228,7 +229,7 @@ def main():
                 linear_results.append((key, linear_score))
         
         linear_results.sort(key=lambda x: x[1], reverse=True)
-        for (prompt_strategy, layer, agg), score in linear_results[:10]:
+        for (prompt_strategy, layer, agg), score in linear_results[:DISPLAY_TOP_N_SMALL]:
             print(f"{prompt_strategy:<20} Layer {layer:<3} {agg:<10}: {score:.4f}")
 
 

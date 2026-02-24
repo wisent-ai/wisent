@@ -1,5 +1,7 @@
 """Parser for the 'discover-steering' command - find optimal steering directions."""
 
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, COMPARISON_STEERING_LAYER, DEFAULT_BASE_STRENGTH, PARSER_DEFAULT_RANDOM_DIRECTIONS
+
 
 def setup_discover_steering_parser(parser):
     """Set up the discover-steering command parser."""
@@ -12,7 +14,7 @@ def setup_discover_steering_parser(parser):
         help="Task/benchmark name in database (e.g., truthfulqa_custom)"
     )
     parser.add_argument(
-        "--layer", type=int, default=12,
+        "--layer", type=int, default=COMPARISON_STEERING_LAYER,
         help="Primary layer to test (default: 12)"
     )
     parser.add_argument(
@@ -20,15 +22,15 @@ def setup_discover_steering_parser(parser):
         help="Layer range to search, e.g., '8-16' (default: None, only test --layer)"
     )
     parser.add_argument(
-        "--strength", type=float, default=1.0,
+        "--strength", type=float, default=DEFAULT_BASE_STRENGTH,
         help="Steering strength multiplier (default: 1.0)"
     )
     parser.add_argument(
-        "--n-test-samples", type=int, default=50,
+        "--n-test-samples", type=int, default=PARSER_DEFAULT_NUM_PAIRS,
         help="Number of test samples for evaluation (default: 50)"
     )
     parser.add_argument(
-        "--n-random-directions", type=int, default=20,
+        "--n-random-directions", type=int, default=PARSER_DEFAULT_RANDOM_DIRECTIONS,
         help="Number of random directions to try (default: 20)"
     )
     parser.add_argument(

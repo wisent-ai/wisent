@@ -13,6 +13,8 @@ import sys
 import psycopg2
 import torch
 
+from wisent.core.constants import MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.split('?')[0]
@@ -88,7 +90,7 @@ def get_missing_benchmarks(conn, model_id: int, target_pairs: int = 500) -> list
         else:
             complete += 1
 
-        if (i + 1) % 50 == 0:
+        if (i + 1) % PROGRESS_LOG_INTERVAL == 0:
             print(f"  Checked {i + 1}/{len(benchmarks)} benchmarks...", flush=True)
 
     cur.close()
@@ -177,7 +179,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         # pos_text and neg_text already contain the full example from database
         # Extract activations
         def get_hidden_states(text):
-            enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
+            enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
             enc = {k: v.to(device) for k, v in enc.items()}
             with torch.inference_mode():
                 out = model(**enc, output_hidden_states=True, use_cache=False)
@@ -199,7 +201,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         del pos_hidden, neg_hidden
         extracted += 1
 
-        if (pair_idx + 1) % 50 == 0:
+        if (pair_idx + 1) % PROGRESS_LOG_INTERVAL == 0:
             print(f"    Processed {pair_idx + 1}/{len(db_pairs)} pairs", flush=True)
 
     if device == "cuda":
@@ -212,7 +214,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="Model name (e.g., meta-llama/Llama-3.2-1B-Instruct)")
     parser.add_argument("--device", default="cuda", help="Device (cuda/mps/cpu)")
-    parser.add_argument("--limit", type=int, default=500, help="Max pairs per benchmark")
+    parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark")
     parser.add_argument("--benchmark", default=None, help="Single benchmark to extract (optional)")
     args = parser.parse_args()
 

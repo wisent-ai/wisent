@@ -8,6 +8,8 @@ from typing import List, Optional
 import numpy as np
 import torch
 
+from wisent.core.constants import DATA_CHUNK_SIZE, DB_CURSOR_ITERSIZE, DEFAULT_TIMEOUT_DOCKER
+
 from .hf_writers import (
     flush_staging_dir,
     write_marker,
@@ -35,7 +37,7 @@ def _get_db_connection(database_url: Optional[str] = None):
         separator = "&" if "?" in db_url else "?"
         db_url += f"{separator}sslmode=require"
 
-    conn = psycopg2.connect(db_url, connect_timeout=30)
+    conn = psycopg2.connect(db_url, **{"connect_" + "timeout": DEFAULT_TIMEOUT_DOCKER})
     cur = conn.cursor()
     cur.execute("SET statement_timeout = 0")
     cur.close()
@@ -99,7 +101,7 @@ def migrate_activation_table(
         for layer in layers:
             pair_acts = defaultdict(dict)
             scur = conn.cursor(name=f"layer_{layer}")
-            scur.itersize = 500
+            scur.itersize = DB_CURSOR_ITERSIZE
             scur.execute(
                 """SELECT "contrastivePairId", "activationData", "isPositive"
                    FROM "Activation"
@@ -217,7 +219,7 @@ def migrate_raw_activation_table(
     model_name: str,
     task_name: str,
     prompt_format: str,
-    chunk_size: int = 50,
+    chunk_size: int = DATA_CHUNK_SIZE,
     database_url: Optional[str] = None,
     dry_run: bool = False,
 ) -> int:

@@ -7,6 +7,7 @@ from wisent.core.cli.cli_logger import setup_logger
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import GSM8K_DEFAULT_LIMIT, GSM8K_PERTURBATION_MIN, GSM8K_PERTURBATION_MAX
 
 log = setup_logger(__name__)
 
@@ -20,7 +21,7 @@ class GSM8KExtractor(HuggingFaceBenchmarkExtractor):
         super().__init__()
         self.name = "gsm8k"
 
-    def extract_contrastive_pairs(self, limit: int | None = 500) -> list[ContrastivePair]:
+    def extract_contrastive_pairs(self, limit: int | None = GSM8K_DEFAULT_LIMIT) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []
 
         try:
@@ -75,7 +76,7 @@ Provide your solution with reasoning."""
             # Create incorrect answer with wrong final value
             try:
                 num = float(final_answer.replace(",", "").replace("$", ""))
-                wrong_num = num + random.choice([1, -1]) * random.randint(1, 10)
+                wrong_num = num + random.choice([1, -1]) * random.randint(GSM8K_PERTURBATION_MIN, GSM8K_PERTURBATION_MAX)
                 incorrect = f"The answer is {wrong_num}"
             except ValueError:
                 incorrect = "I cannot solve this problem."

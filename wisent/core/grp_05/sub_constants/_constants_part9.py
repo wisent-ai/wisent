@@ -1,0 +1,295 @@
+"""
+Overflow named constants for the wisent package (part 9).
+Imported by _constants_part8.py via star-import so all constants remain
+accessible from wisent.core.constants.
+"""
+from wisent.core.grp_05.sub_constants._constants_part10 import *  # noqa: F401,F403
+
+# --- Model architecture detection thresholds ---
+HIDDEN_SIZE_QWEN3_SMALL = 1024
+HIDDEN_SIZE_QWEN3_MEDIUM = 2048
+HIDDEN_SIZE_QWEN3_LARGE = 3072
+HIDDEN_SIZE_LLAMA_MEDIUM = 4096
+NUM_LAYERS_QWEN3_SMALL_MAX = 28
+NUM_LAYERS_LARGE_MODEL = 36
+
+# --- Layer sampling divisors ---
+LAYER_SAMPLING_DIVISOR_TRAINING = 4
+SENSOR_LAYER_SAMPLING_DIVISOR = 6
+
+# --- Audio defaults ---
+DEFAULT_AUDIO_SAMPLE_RATE = 16000
+
+# --- Task interface ---
+RANDOM_MATH_ANSWER_MAX = 1000
+
+# --- Refusal detection weights ---
+REFUSAL_WEIGHT_CANNOT_ACTION = 1.0
+REFUSAL_WEIGHT_PREFER_RATHER = 0.6
+REFUSAL_WEIGHT_DECLINE_REFUSE = 0.9
+REFUSAL_WEIGHT_NO_SUPPORT = 0.8
+REFUSAL_WEIGHT_NO_ABILITY = 0.8
+REFUSAL_WEIGHT_REFUSAL_WORD = 0.6
+REFUSAL_DETECTION_THRESHOLD = 0.9
+REFUSAL_APOLOGY_BONUS = 0.1
+
+# --- Geometry confidence ---
+SPARSE_DETECTION_CONFIDENCE = 0.8
+BIMODAL_DETECTION_CONFIDENCE = 0.7
+CONTROL_VECTOR_MAX_ZERO_FRACTION = 0.999
+
+# --- Evaluation confidence ---
+EVAL_CONFIDENCE_BASE = 0.5
+NLP_EVAL_CONFIDENCE_BASE = 0.75
+
+# --- Quality evaluation clamp ---
+QUALITY_THRESHOLD_CLAMP_MIN = 0.1
+QUALITY_THRESHOLD_CLAMP_MAX = 0.9
+
+# --- Classifier thresholds ---
+CLASSIFIER_MIN_TARGET_SCORE = 0.7
+CLASSIFIER_MIN_PERFORMANCE_SCORE = 0.1
+
+# --- Task relevance ---
+TASK_MIN_RELEVANCE_SCORE = 0.1
+
+# --- Subspace validation ---
+SUBSPACE_ROBUSTNESS_NOISE_SCALE = 0.1
+
+# --- Steering search grids ---
+STRENGTH_SEARCH_GRID = (0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0)
+CAA_MIN_COSINE_SIMILARITY = 0.3
+CAA_MAX_COSINE_SIMILARITY = 0.95
+TECZA_RETAIN_WEIGHT_OPTIONS = (0.0, 0.1, 0.3)
+TECZA_INDEPENDENCE_WEIGHT = 0.05
+TECZA_LEARNING_RATE = 0.01
+TETNO_CONDITION_THRESHOLD_OPTIONS = (0.3, 0.5, 0.7)
+TETNO_GATE_TEMPERATURE_OPTIONS = (0.1, 0.5, 1.0)
+TETNO_MAX_ALPHA_OPTIONS = (1.5, 2.0, 3.0)
+GROM_BEHAVIOR_WEIGHT_OPTIONS = (0.5, 1.0)
+GROM_RETAIN_WEIGHT_OPTIONS = (0.1, 0.2, 0.5)
+GROM_SPARSE_WEIGHT_OPTIONS = (0.0, 0.05, 0.1)
+GROM_SEARCH_LEARNING_RATE = 0.005
+
+# --- Advanced steering ---
+CLAMPING_STEERING_MARGIN = 0.5
+BETA_SEARCH_GRID = (0.3, 0.5, 0.7, 0.9)
+
+# --- Hyperparameter optimizer ---
+THRESHOLD_RANGE_DEFAULT = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+
+# --- Code evaluation ---
+CODE_CORRECTNESS_THRESHOLD = 0.5
+
+# --- Optimizer registry bounds ---
+GROM_LR_UPPER = 0.05
+GROM_RETAIN_UPPER = 0.3
+GROM_SPARSE_UPPER = 0.2
+GROM_BEHAVIOR_UPPER = 10.0
+GROM_STEPS_UPPER = 1000
+GROM_LAMBDA_UPPER = 2.0
+TECZA_RETAIN_UPPER = 1.0
+TECZA_DIRECTIONS_UPPER = 5.0
+TECZA_INDEPENDENCE_UPPER = 0.5
+TETNO_GATE_TEMP_LOWER = 0.1
+TETNO_GATE_TEMP_UPPER = 2.0
+TETNO_CONDITION_UPPER = 0.9
+TETNO_ALPHA_UPPER = 5.0
+TETNO_DIRECTIONS_UPPER = 1.5
+
+# --- K-values for benchmarks ---
+LIVEMATHBENCH_K_VALUES = (4, 8, 16)
+LIVEMATHBENCH_K_VALUES_SMALL = (2, 4, 8)
+BIGCODE_K_VALUES = (1, 10, 100)
+DIRECTION_K_VALUES = (1, 2, 3, 5, 10)
+CONCEPT_DETECTION_COARSE_K = (
+    2, 3, 5, 8, 10, 15, 20, 30, 50, 75, 100, 150, 200,
+)
+
+# --- Pair count ablation ---
+PAIR_COUNT_ABLATION_SERIES = (10, 25, 50, 100, 200)
+
+# --- Optuna classifier ---
+OPTUNA_CLASSIFIER_BATCH_SIZES = (16, 32, 64)
+
+# --- SAE features (comparison module) ---
+GEMMA_2B_BOS_FEATURES_PAPER = (11087, 3220, 11752, 12160, 11498)
+GEMMA_2B_BOS_FEATURES_DETECTED = (
+    1041, 7507, 11087, 3220, 11767, 11752,
+    14669, 6889, 12160, 13700, 2747, 11498,
+)
+GEMMA_9B_BOS_FEATURES_DETECTED = (
+    8032, 11906, 7768, 14845, 14483, 10562,
+    8892, 9151, 5721, 15738, 5285, 13895,
+)
+
+# --- TETNO threshold search ---
+TETNO_THRESHOLD_SEARCH_STEPS = 20
+THRESHOLD_SEARCH_INIT_VALUE = 0.5
+
+# --- Benchmark relevance priority bonuses ---
+RELEVANCE_PRIORITY_BONUS_FAST_HIGH = 0.15
+RELEVANCE_PRIORITY_BONUS_HIGH = 0.05
+RELEVANCE_PRIORITY_BONUS_MEDIUM = 0.02
+
+# --- Visualization bar/direction ---
+VIZ_BAR_WIDTH = 0.35
+VIZ_DIRECTION_N_PCA = 5
+VIZ_DIRECTION_N_RANDOM_SEARCH = 10
+VIZ_TRUTHFUL_REGION_THRESHOLD = 0.5
+
+# --- Diversity sampling ---
+DIVERSITY_MAX_SAMPLE_SIZE = 20
+
+# --- Optimization limits ---
+OPTIMIZATION_BENCHMARK_LIMIT = 50
+METHOD_SELECTION_SAMPLE_SIZE = 50
+MIN_LAYER_ACTIVATIONS_FOR_GEOMETRY = 10
+PAIRS_ABLATION_DEFAULT_MIN = 50
+
+# --- Extraction batch ---
+EXTRACTION_DB_BATCH_SIZE = 50
+
+# --- SimHash dedup ---
+SIMHASH_DEFAULT_THRESHOLD_BITS = 3
+SIMHASH_RELAXED_THRESHOLD_BITS = 10
+SIMHASH_DEFAULT_NUM_BANDS = 8
+
+# --- Discover steering ---
+DISCOVER_STEERING_TASK_LIMIT = 1000
+DISCOVER_STEERING_TRAIN_LIMIT = 500
+
+# --- Continual loop ---
+CONTINUAL_LOOP_QUERY_LIMIT = 20
+
+# --- Geometry detector defaults ---
+GEO_MANIFOLD_SCORE_DEFAULT = 0.4
+GEO_MANIFOLD_CONFIDENCE = 0.5
+GEO_ORTHOGONAL_CONFIDENCE = 0.6
+
+# --- NLI reverse entailment ---
+NLI_REVERSE_ENTAILMENT_THRESHOLD = 0.50
+NLI_CONFIDENCE_BASE_WEIGHT = 0.7
+NLI_CONFIDENCE_SCALE_WEIGHT = 0.3
+
+# --- Exhaustive search ---
+EXHAUSTIVE_SEARCH_TOP_K = 50
+
+# --- Agent defaults ---
+AGENT_TIMEOUT_CHECK_INTERVAL = 10
+AGENT_SYNTH_PAIRS_PER_ISSUE = 5
+AGENT_BENCH_MIN_PAIRS_TRAINING = 3
+
+# --- FGAA comparison ---
+FGAA_DENSITY_THRESHOLD = 0.01
+FGAA_TOP_K_POSITIVE = 50
+FGAA_TOP_K_NEGATIVE = 0
+
+# --- LoRA comparison defaults ---
+LORA_DEFAULT_R = 16
+LORA_DEFAULT_ALPHA = 32
+LORA_DEFAULT_DROPOUT = 0.05
+
+# --- LiveMathBench tau ---
+LIVEMATHBENCH_TAU_VALUES = (0.25, 0.5, 0.75, 1.0)
+
+# --- Search space string options ---
+STEERING_STRATEGIES = (
+    "constant", "initial_only", "diminishing", "increasing", "gaussian",
+)
+TOKEN_AGGREGATIONS = (
+    "last_token", "mean_pooling", "first_token", "max_pooling",
+    "continuation_token",
+)
+PROMPT_CONSTRUCTIONS = (
+    "chat_template", "direct_completion", "multiple_choice",
+    "role_playing", "instruction_following",
+)
+DIRECTION_WEIGHTING_OPTIONS = ("primary_only", "equal", "learned")
+
+# --- Hyperparameter optimizer string options ---
+OPTIMIZER_AGGREGATION_METHODS = (
+    "average", "final", "first", "max", "min",
+)
+OPTIMIZER_TOKEN_TARGETING = (
+    "choice_token", "continuation_token", "last_token",
+    "first_token", "mean_pooling",
+)
+
+# --- Weight modification default components ---
+WEIGHT_MOD_DEFAULT_COMPONENTS = ("self_attn.o_proj", "mlp.down_proj")
+
+# --- Role play tokens ---
+ROLE_PLAY_TOKENS = (
+    "I", "Well", "The", "Sure", "Let",
+    "That", "It", "This", "My", "To",
+)
+
+# --- Classifier cache scoring weights ---
+CACHE_WEIGHT_MODEL_NAME = 0.4
+CACHE_WEIGHT_TASK_NAME = 0.3
+CACHE_WEIGHT_MODEL_TYPE = 0.2
+CACHE_WEIGHT_LAYER_PROXIMITY = 0.1
+
+# --- Search space layer/dim configs ---
+SENSOR_LAYER_CONFIGS = ("middle",)
+TETNO_STEERING_LAYER_CONFIGS = ("single_best", "range_3", "range_5")
+GROM_STEERING_LAYER_CONFIGS = ("range_3", "range_5")
+GROM_MAX_ALPHA_SEARCH = (2.0, 3.0, 5.0)
+GROM_GATE_HIDDEN_DIM_SEARCH = (32, 64, 128)
+GROM_INTENSITY_HIDDEN_DIM_SEARCH = (16, 32, 64)
+
+# --- Comparison module defaults ---
+COMPARISON_EVAL_BATCH_SIZE = 64
+COMPARISON_MAX_BATCH_SIZE = 8
+COMPARISON_NUM_PAIRS = 50
+COMPARISON_STEERING_LAYER = 12
+DPO_DEFAULT_BETA = 0.1
+
+# --- LiveMathBench sampling ---
+LIVEMATHBENCH_NUM_SAMPLES = 48
+
+# --- Extraction script limits ---
+EXTRACTION_DEFAULT_PAIR_LIMIT = 500
+
+# --- Concept detection thresholds ---
+CONCEPT_PCA_VARIANCE_90 = 0.90
+CONCEPT_BIC_STRONG_THRESHOLD = 10
+CONCEPT_SILHOUETTE_STRONG = 0.15
+CONCEPT_SILHOUETTE_MODERATE = 0.08
+CONCEPT_DIRECTION_DISTINCT = 0.15
+CONCEPT_DIRECTION_MODERATE = 0.25
+CONCEPT_STABILITY_THRESHOLD = 0.85
+CONCEPT_K_DIRECTION_THRESHOLD = 0.20
+
+# --- Training hyperparameters (comparison module) ---
+TRAINING_WEIGHT_DECAY = 0.01
+TRAINING_WARMUP_RATIO = 0.1
+
+# --- DPO training defaults ---
+DPO_MAX_LENGTH = 512
+DPO_MAX_PROMPT_LENGTH = 256
+
+# --- Nonsense detection parser defaults ---
+NONSENSE_REPETITION_THRESHOLD = 0.7
+NONSENSE_GIBBERISH_THRESHOLD = 0.3
+
+# --- Token steering parser defaults ---
+TOKEN_DECAY_RATE_DEFAULT = 0.5
+TOKEN_MIN_STRENGTH_DEFAULT = 0.1
+TOKEN_PROMPT_STRENGTH_MULTIPLIER = 0.1
+
+# --- Steering strength ranges ---
+STEERING_STRENGTH_RANGE_WIDE = (0.1, 5.0)
+STEERING_STRENGTH_RANGE_NARROW = (0.1, 3.0)
+
+# --- Optuna classifier config ranges ---
+OPTUNA_HIDDEN_DIM_RANGE = (32, 512)
+OPTUNA_THRESHOLD_RANGE = (0.3, 0.9)
+OPTUNA_EPOCH_RANGE = (20, 100)
+
+# --- Weight optimization ranges ---
+OPTI_WEIGHTS_STRENGTH_RANGE = (0.5, 2.0)
+OPTI_WEIGHTS_MAX_WEIGHT_RANGE = (0.1, 1.0)
+OPTI_WEIGHTS_MIN_WEIGHT_RANGE = (0.0, 0.3)
+OPTI_WEIGHTS_POSITION_RANGE = (0.3, 0.7)

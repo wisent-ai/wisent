@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 
 from wisent.core import Model
+from wisent.core.constants import QWEN3_4B_DEFAULT_LAYER
 from wisent.core.layer import Layer
 from wisent.core.steering_methods.caa import CAA
 from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
@@ -19,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ControlVectorGenerator:
     """Generates control vectors from seed pair JSON files and serializes them."""
 
-    def __init__(self, model_name: str = "unsloth/Qwen3-4B-bnb-4bit", layer_index: int = 17, device: str = "auto"):
+    def __init__(self, model_name: str = "unsloth/Qwen3-4B-bnb-4bit", layer_index: int = QWEN3_4B_DEFAULT_LAYER, device: str = "auto"):
         """
         Initialize the control vector generator.
 

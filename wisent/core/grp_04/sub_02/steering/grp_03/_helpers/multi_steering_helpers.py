@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from wisent.core.utils import resolve_default_device
 
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL
 
 def run_multi_steer(
     vector_specs: list[str],
@@ -13,7 +14,7 @@ def run_multi_steer(
     prompt: str,
     method: str = "CAA",
     layer: int | None = None,
-    max_new_tokens: int = 100,
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL,
     temperature: float = None,
     top_p: float = None,
     device: str | None = None,

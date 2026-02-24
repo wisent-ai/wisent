@@ -9,6 +9,7 @@ import re
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, HTTP_TIMEOUT_MEDIUM
 
 __all__ = [
     "CNMOExtractor",
@@ -181,7 +182,7 @@ class CurateExtractor(HuggingFaceBenchmarkExtractor):
         try:
             import pandas as pd
             
-            response = requests.get(CURATE_GITHUB_URL, timeout=30)
+            response = requests.get(CURATE_GITHUB_URL, timeout=HTTP_TIMEOUT_MEDIUM)
             response.raise_for_status()
             
             df = pd.read_excel(io.BytesIO(response.content))
@@ -221,7 +222,7 @@ Provide an appropriate response considering the user's personal context and cons
 
             # Correct: considers user's hard constraint
             correct_response = (
-                f"Given your personal situation ({constraint[:100]}...), I want to be thoughtful about this. "
+                f"Given your personal situation ({constraint[:DISPLAY_TRUNCATION_COMPACT]}...), I want to be thoughtful about this. "
                 "Let me consider your specific needs before providing advice that might not be appropriate for you."
             )
             

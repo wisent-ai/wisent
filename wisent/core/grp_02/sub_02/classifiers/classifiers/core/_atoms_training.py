@@ -11,6 +11,7 @@ from torch.nn.modules.loss import _Loss
 from wisent.core.classifiers.classifiers.core._atoms_config import (
     ClassifierTrainConfig, ClassifierTrainReport, ClassifierMetrics,
 )
+from wisent.core.constants import TRAINING_LOG_FREQUENCY
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +97,7 @@ class ClassifierTrainingMixin:
                 if stop:
                     break
 
-            if (epoch == 0) or ((epoch + 1) % 10 == 0) or (epoch == cfg.num_epochs - 1):
+            if (epoch == 0) or ((epoch + 1) % TRAINING_LOG_FREQUENCY == 0) or (epoch == cfg.num_epochs - 1):
                 logger.info("[%s] epoch %d/%d  train=%.4f  test=%.4f  acc=%.4f  f1=%.4f",
                             self.name, epoch + 1, cfg.num_epochs, train_loss, test_loss, acc, f1)
 

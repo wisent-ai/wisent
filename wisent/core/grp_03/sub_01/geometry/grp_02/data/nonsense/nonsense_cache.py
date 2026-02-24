@@ -6,10 +6,12 @@ from typing import Dict, Tuple, Optional
 import numpy as np
 import torch
 
+from wisent.core.constants import DEFAULT_DB_PORT
+
 # Database config from environment
 DB_CONFIG = {
     "host": os.environ.get("DB_HOST", "aws-0-eu-west-2.pooler.supabase.com"),
-    "port": int(os.environ.get("DB_PORT", 5432)),
+    "port": int(os.environ.get("DB_PORT", DEFAULT_DB_PORT)),
     "database": os.environ.get("DB_NAME", "postgres"),
     "user": os.environ.get("DB_USER", "postgres.rbqjqnouluslojmmnuqi"),
     "password": os.environ.get("DB_PASSWORD", "BsKuEnPFLCFurN4a"),

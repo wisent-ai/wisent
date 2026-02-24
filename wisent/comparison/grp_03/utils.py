@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING
 
 import torch
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import DEFAULT_RANDOM_SEED, DATA_SPLIT_RATIO, PROGRESS_LOG_INTERVAL, COMPARISON_MAX_BATCH_SIZE, COMPARISON_DEFAULT_BATCH_SIZE
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -113,7 +114,7 @@ def load_model_and_tokenizer(
 def generate_contrastive_pairs(
     task: str,
     num_pairs: int,
-    seed: int = 42,
+    seed: int = DEFAULT_RANDOM_SEED,
     verbose: bool = False,
 ) -> tuple[list[dict], str]:
     """
@@ -148,7 +149,7 @@ def generate_contrastive_pairs(
     return pairs, pairs_file
 
 
-def create_test_only_task(task_name: str, train_ratio: float = 0.8) -> dict:
+def create_test_only_task(task_name: str, train_ratio: float = DATA_SPLIT_RATIO) -> dict:
     """
     Create a task that evaluates only on our test split.
 
@@ -190,8 +191,8 @@ def run_lm_eval_evaluation(
     wisent_model: "WisentModel",
     task_dict: dict,
     task_name: str,
-    batch_size: int | str = 1,
-    max_batch_size: int = 8,
+    batch_size: int | str = COMPARISON_DEFAULT_BATCH_SIZE,
+    max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     limit: int | None = None,
 ) -> dict:
     """Run evaluation using lm-eval-harness."""
@@ -252,7 +253,7 @@ def run_ll_evaluation(
         if result.ground_truth == "TRUTHFUL":
             correct += 1
 
-        if (i + 1) % 50 == 0:
+        if (i + 1) % PROGRESS_LOG_INTERVAL == 0:
             print(f"  Processed {i + 1}/{len(docs)}, acc: {correct/(i+1):.4f}")
 
     return correct / len(docs) if docs else 0.0

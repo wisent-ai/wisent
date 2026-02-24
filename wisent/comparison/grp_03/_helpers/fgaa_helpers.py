@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 import torch
+from wisent.core.constants import NORM_EPS, FGAA_DENSITY_THRESHOLD, FGAA_TOP_K_POSITIVE, FGAA_TOP_K_NEGATIVE, TOKENIZER_MAX_LENGTH_CLUSTER, COMPARISON_NUM_PAIRS, DISPLAY_TOP_N_MEDIUM
 
 __all__ = [
     "compute_v_target",
@@ -23,9 +24,9 @@ def compute_v_target(
     bos_features_paper: dict,
     bos_features_detected: dict,
     bos_features_source: str = "detected",
-    density_threshold: float = 0.01,
-    top_k_positive: int = 50,
-    top_k_negative: int = 0,
+    density_threshold: float = FGAA_DENSITY_THRESHOLD,
+    top_k_positive: int = FGAA_TOP_K_POSITIVE,
+    top_k_negative: int = FGAA_TOP_K_NEGATIVE,
 ) -> torch.Tensor:
     """Compute v_target by filtering v_diff with density, BOS, and top-k."""
     v_filtered = v_diff.clone()
@@ -72,11 +73,11 @@ def compute_v_target(
 
 def compute_v_opt(v_target: torch.Tensor, W: torch.Tensor, b: torch.Tensor) -> torch.Tensor:
     """Compute v_opt using the effect approximator."""
-    v_target_norm = v_target / (v_target.abs().sum() + 1e-8)
+    v_target_norm = v_target / (v_target.abs().sum() + NORM_EPS)
     Wv = W @ v_target_norm
-    Wv_normalized = Wv / (Wv.norm() + 1e-8)
+    Wv_normalized = Wv / (Wv.norm() + NORM_EPS)
     Wb = W @ b
-    Wb_normalized = Wb / (Wb.norm() + 1e-8)
+    Wb_normalized = Wb / (Wb.norm() + NORM_EPS)
     v_opt = Wv_normalized - Wb_normalized
     print(f"   v_opt computed, shape: {v_opt.shape}, norm: {v_opt.norm():.6f}")
     return v_opt
@@ -84,7 +85,7 @@ def compute_v_opt(v_target: torch.Tensor, W: torch.Tensor, b: torch.Tensor) -> t
 
 def get_residual_stream_activations(model, tokenizer, text: str, layer_idx: int, device: str) -> torch.Tensor:
     """Get residual stream activations from a specific layer."""
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER)
     inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
         out = model(**inputs, output_hidden_states=True, use_cache=False)
@@ -97,10 +98,10 @@ def generate_steering_vector(
     sae_configs: dict, bos_features_paper: dict, bos_features_detected: dict,
     load_model_fn, load_effect_approximator_fn, load_sae_fn,
     generate_pairs_fn, compute_v_diff_fn,
-    trait_label: str = "correctness", num_pairs: int = 50,
+    trait_label: str = "correctness", num_pairs: int = COMPARISON_NUM_PAIRS,
     layers: str | None = None, device: str = "cuda:0",
-    keep_intermediate: bool = False, density_threshold: float = 0.01,
-    top_k_positive: int = 50, top_k_negative: int = 0,
+    keep_intermediate: bool = False, density_threshold: float = FGAA_DENSITY_THRESHOLD,
+    top_k_positive: int = FGAA_TOP_K_POSITIVE, top_k_negative: int = FGAA_TOP_K_NEGATIVE,
     bos_features_source: str = "detected", **kwargs,
 ) -> Path:
     """Generate a steering vector using the FGAA method."""
@@ -143,7 +144,7 @@ def generate_steering_vector(
         nonzero_indices = nonzero_mask.nonzero().squeeze(-1).tolist()
         feature_info[str(layer_idx)] = {
             "num_selected_features": len(nonzero_indices) if isinstance(nonzero_indices, list) else 1,
-            "selected_feature_indices": nonzero_indices[:20] if isinstance(nonzero_indices, list) else [nonzero_indices],
+            "selected_feature_indices": nonzero_indices[:DISPLAY_TOP_N_MEDIUM] if isinstance(nonzero_indices, list) else [nonzero_indices],
             "v_diff_stats": {"mean": v_diff.mean().item(), "std": v_diff.std().item(),
                             "min": v_diff.min().item(), "max": v_diff.max().item()},
         }

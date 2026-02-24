@@ -12,6 +12,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'lm-harness-
 from .classifier_marketplace import ClassifierMarketplace, ClassifierListing, ClassifierCreationEstimate
 from ..budget import get_budget_manager, track_task_performance, ResourceType
 
+from wisent.core.constants import AGENT_RESOURCE_BUDGET_MINUTES, MAX_BENCHMARKS_SINGLE
+
 from wisent.core.agent.diagnose._agent_decision_types import (
     TaskAnalysis, ClassifierDecision, SingleClassifierDecision,
     ClassifierParams, SteeringParams, QualityResult, QualityControlledResponse,
@@ -31,7 +33,7 @@ class AgentClassifierDecisionSystem(ClassifierCreationMixin, ClassifierPipelineM
         
     def analyze_task_requirements(self, prompt: str, context: str = "", 
                                  priority: str = "all", fast_only: bool = False, 
-                                 time_budget_minutes: float = 5.0, max_benchmarks: int = 1) -> TaskAnalysis:
+                                 time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES, max_benchmarks: int = MAX_BENCHMARKS_SINGLE) -> TaskAnalysis:
         """
         Analyze a task/prompt to select relevant benchmarks for training and steering.
         
@@ -68,7 +70,7 @@ class AgentClassifierDecisionSystem(ClassifierCreationMixin, ClassifierPipelineM
     
     def _get_relevant_benchmarks_for_prompt(self, prompt: str, existing_model=None, 
                                            priority: str = "all", fast_only: bool = False, 
-                                           time_budget_minutes: float = 5.0, max_benchmarks: int = 1) -> List[Dict[str, Any]]:
+                                           time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES, max_benchmarks: int = MAX_BENCHMARKS_SINGLE) -> List[Dict[str, Any]]:
         """Get relevant benchmarks for the prompt using the intelligent selection system with priority awareness."""
         try:
             # Import the benchmark selection function from the correct location

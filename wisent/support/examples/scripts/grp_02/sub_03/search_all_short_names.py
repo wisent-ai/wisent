@@ -5,6 +5,7 @@ import sys
 sys.path.insert(0, '/Users/lukaszbartoszcze/Documents/CodingProjects/Wisent/backends/wisent-open-source')
 
 from lm_eval.tasks import TaskManager
+from wisent.core.constants import DISPLAY_TOP_N_MEDIUM
 
 def main():
     tm = TaskManager()
@@ -24,7 +25,7 @@ def main():
     # Search for anything with T, A, G in sequence (case insensitive)
     tag_pattern = [t for t in tm.task_index.keys() if 't' in t.lower() and 'a' in t.lower() and 'g' in t.lower()]
     print(f"\nFound {len(tag_pattern)} tasks containing t, a, and g:")
-    for task in sorted(tag_pattern)[:20]:  # Show first 20
+    for task in sorted(tag_pattern)[:DISPLAY_TOP_N_MEDIUM]:
         print(f"  - {task}")
 
 if __name__ == "__main__":

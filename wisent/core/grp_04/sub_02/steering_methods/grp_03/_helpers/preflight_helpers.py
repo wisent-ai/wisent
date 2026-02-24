@@ -2,6 +2,9 @@
 
 from typing import Dict, List, Tuple
 from wisent.core.geometry.structure_types import StructureType
+from wisent.core.constants import (
+    PREFLIGHT_COMPAT_DEFAULT, PREFLIGHT_COMPAT_THRESHOLD, PREFLIGHT_MANIFOLD_HIGH,
+)
 
 
 def complete_method_compatibility_check(
@@ -32,7 +35,7 @@ def complete_method_compatibility_check(
     method_lower = method.lower()
 
     # Unknown method - give generic advice
-    compat_score = 0.5
+    compat_score = PREFLIGHT_COMPAT_DEFAULT
     warnings.append(PreflightWarning(
         severity="info",
         message=f"Unknown method '{method}' - cannot provide specific "
@@ -51,7 +54,7 @@ def complete_method_compatibility_check(
                        "better",
         ))
 
-    if (structure_scores.get("sparse", 0) > 0.8
+    if (structure_scores.get("sparse", 0) > PREFLIGHT_MANIFOLD_HIGH
             and method_lower not in ["sae", "sparse_steering"]):
         warnings.append(PreflightWarning(
             severity="info",
@@ -61,5 +64,5 @@ def complete_method_compatibility_check(
                        "intervention",
         ))
 
-    is_compatible = compat_score >= 0.5
+    is_compatible = compat_score >= PREFLIGHT_COMPAT_THRESHOLD
     return is_compatible, compat_score, warnings

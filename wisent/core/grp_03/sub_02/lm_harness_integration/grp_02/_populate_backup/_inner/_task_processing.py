@@ -6,6 +6,7 @@ Split from populate_tasks_backup.py to meet 300-line limit.
 
 import random
 from typing import Dict, Any, List, Optional
+from wisent.core.constants import DISPLAY_TOP_N_SMALL
 
 from wisent.core.lm_harness_integration._populate_backup._part3 import (
     expand_group_task,
@@ -117,7 +118,7 @@ def process_group_task(group_name: str, sub_tasks: List[str],
     all_categories = set()
     print(f"  Analyzing all {len(sub_tasks)} sub-tasks for "
           f"evaluation methods and categories...")
-    for i, subtask_name in enumerate(sub_tasks[:10]):
+    for i, subtask_name in enumerate(sub_tasks[:DISPLAY_TOP_N_SMALL]):
         try:
             subtask_dict = get_task_dict([subtask_name])
             if subtask_name in subtask_dict:

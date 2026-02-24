@@ -1,9 +1,10 @@
 """Docker execution evaluation for evaluate-responses command."""
 import json
 import os
+from wisent.core.constants import EVAL_TIME_LIMIT_S, EVAL_CPU_LIMIT_S, EVAL_MEM_LIMIT_MB, DEFAULT_SCORE
 
 
-def evaluate_docker_execution(args, input_data, responses, task_name, evaluation_results, task_results):
+def evaluate_docker_execution(args, input_data, responses, task_name, evaluation_results, task_results, task_config=None):
     """Handle docker_execution evaluation.
 
     Returns aggregated_metrics dict or None if evaluation should continue.
@@ -14,6 +15,9 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.python_sanitizer import PythonStandardizer
     from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.cpp_sanitizer import CppStandardizer
     from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.java_sanitizer import JavaStandardizer
+
+    if task_config is None:
+        task_config = {}
 
     _SANITIZERS = {
         "python": PythonStandardizer(),
@@ -39,8 +43,7 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
         )
         print(f"   ✓ LiveCodeBench provider loaded")
     else:
-        print(f"   ❌ Unknown provider: {provider_name}")
-        sys.exit(1)
+        raise ValueError(f"Unknown provider: {provider_name}")
 
     # Create mapping of problem_id to generated code
     code_map = {}
@@ -66,11 +69,12 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
             return None
 
     # Configure evaluator
+    docker_config = task_config.get('docker_config', {})
     config = EvaluatorConfig(
         image=docker_config.get('image', 'coding/sandbox:polyglot-1.0'),
-        time_limit_s=docker_config.get('time_limit_s', 8),
-        cpu_limit_s=docker_config.get('cpu_limit_s', 3),
-        mem_limit_mb=docker_config.get('mem_limit_mb', 768),
+        time_limit_s=docker_config.get('time_limit_s', EVAL_TIME_LIMIT_S),
+        cpu_limit_s=docker_config.get('cpu_limit_s', EVAL_CPU_LIMIT_S),
+        mem_limit_mb=docker_config.get('mem_limit_mb', EVAL_MEM_LIMIT_MB),
         self_repair=False  # No self-repair for evaluation
     )
 
@@ -165,7 +169,7 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
         "input_file": args.input,
         "task": task_name if isinstance(input_data, list) else input_data.get('task'),
         "model": None if isinstance(input_data, list) else input_data.get('model'),
-        "evaluation_type": evaluation_type,
+        "evaluation_type": "docker_execution",
         "evaluator_used": "CodingEvaluator",
         "aggregated_metrics": aggregated_metrics,
         "num_evaluated": len(task_results),
@@ -181,10 +185,8 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     print(f"✅ EVALUATION COMPLETE")
     print(f"{'='*80}")
     print(f"   Total problems: {len(task_results)}")
-    print(f"   Passed: {int(aggregated_metrics.get('total_passed', 0))}")
-    print(f"   Failed: {len(task_results) - int(aggregated_metrics.get('total_passed', 0))}")
-    print(f"   Pass rate: {aggregated_metrics.get('pass_rate', 0):.2%}")
+    print(f"   Passed: {int(aggregated_metrics.get('total_passed', DEFAULT_SCORE))}")
+    print(f"   Failed: {len(task_results) - int(aggregated_metrics.get('total_passed', DEFAULT_SCORE))}")
+    print(f"   Pass rate: {aggregated_metrics.get('pass_rate', DEFAULT_SCORE):.2%}")
     print(f"{'='*80}\n")
-    return
-
     return aggregated_metrics

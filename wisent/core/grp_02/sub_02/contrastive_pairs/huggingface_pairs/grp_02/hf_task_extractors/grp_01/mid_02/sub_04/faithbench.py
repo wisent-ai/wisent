@@ -7,6 +7,7 @@ import requests
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import HTTP_TIMEOUT_MEDIUM
 
 __all__ = ["FaithBenchExtractor"]
 
@@ -124,7 +125,7 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
                 
             url = f"{FAITHBENCH_GITHUB_BASE}/batch_{batch_id}.json"
             try:
-                response = requests.get(url, timeout=30)
+                response = requests.get(url, timeout=HTTP_TIMEOUT_MEDIUM)
                 response.raise_for_status()
                 batch_data = response.json()
                 

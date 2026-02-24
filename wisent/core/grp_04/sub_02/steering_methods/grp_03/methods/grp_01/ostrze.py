@@ -7,6 +7,7 @@ import numpy as np
 from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
 from wisent.core.errors import InsufficientDataError
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import LOG_EPS, OSTRZE_C
 
 __all__ = [
     "OstrzeMethod",
@@ -55,7 +56,7 @@ class OstrzeMethod(PerLayerBaseSteeringMethod):
         # Train logistic regression classifier
         from sklearn.linear_model import LogisticRegression
 
-        C = float(self.kwargs.get("C", 1.0))
+        C = float(self.kwargs.get("C", OSTRZE_C))
 
         clf = LogisticRegression(C=C, solver="lbfgs")
         clf.fit(X, y)
@@ -68,7 +69,7 @@ class OstrzeMethod(PerLayerBaseSteeringMethod):
         
         return v
 
-    def _safe_l2_normalize(self, v: torch.Tensor, eps: float = 1e-12) -> torch.Tensor:
+    def _safe_l2_normalize(self, v: torch.Tensor, eps: float = LOG_EPS) -> torch.Tensor:
         if v.ndim != 1:
             v = v.reshape(-1)
         return v / (torch.linalg.norm(v) + eps)

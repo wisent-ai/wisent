@@ -16,6 +16,7 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
 from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator_bc import LogLikelihoodsEvaluatorBC
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
+from wisent.core.constants import COMPARISON_DEFAULT_BATCH_SIZE, COMPARISON_MAX_BATCH_SIZE, DISPLAY_TRUNCATION_MEDIUM
 
 
 MODEL_NAME = "meta-llama/Llama-3.2-1B"
@@ -28,8 +29,8 @@ def run_lm_eval_evaluation(wisent_model, task_dict, task_name, limit):
     lm = HFLM(
         pretrained=wisent_model.hf_model,
         tokenizer=wisent_model.tokenizer,
-        batch_size=1,
-        max_batch_size=8,
+        batch_size=COMPARISON_DEFAULT_BATCH_SIZE,
+        max_batch_size=COMPARISON_MAX_BATCH_SIZE,
     )
 
     results = evaluator.evaluate(
@@ -147,7 +148,7 @@ def main():
         if orig["predicted"] != bc["predicted"]:
             diff_count += 1
             print(f"\n--- Example {orig['idx']} ---")
-            print(f"Question: {orig['question'][:200]}...")
+            print(f"Question: {orig['question'][:DISPLAY_TRUNCATION_MEDIUM]}...")
             print(f"Choices: {orig['choices']}")
             print(f"Expected: {orig['expected']}")
             print(f"")

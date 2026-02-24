@@ -2,6 +2,7 @@
 
 from typing import Any, Dict, List
 
+from wisent.core.constants import AGENT_DEFAULT_TIME_BUDGET, BENCHMARK_LOADING_TIME_DEFAULT, TASK_MIN_RELEVANCE_SCORE
 from ....model import Model
 
 
@@ -32,7 +33,7 @@ class DataGenerationMixin:
         print("   No specific benchmarks found, using synthetic generation...")
         return self._generate_synthetic_training_data(issue_type, num_samples)
 
-    def _find_relevant_benchmarks(self, issue_type: str, time_budget_minutes: float = 5.0) -> List[str]:
+    def _find_relevant_benchmarks(self, issue_type: str, time_budget_minutes: float = AGENT_DEFAULT_TIME_BUDGET) -> List[str]:
         """Find relevant benchmarks for the given issue type based on time budget with priority-aware selection."""
         from ...budget import calculate_max_tasks_for_time_budget
         from ..tasks.task_relevance import find_relevant_tasks
@@ -71,7 +72,7 @@ class DataGenerationMixin:
                     print(f"   Found {len(relevant_benchmarks)} priority-aware benchmarks for '{issue_type}':")
                     for i, result in enumerate(relevant_results[:3]):
                         priority_str = f" (priority: {result.get('priority', 'unknown')})"
-                        loading_time_str = f" (loading time: {result.get('loading_time', 60.0):.1f}s)"
+                        loading_time_str = f" (loading time: {result.get('loading_time', BENCHMARK_LOADING_TIME_DEFAULT):.1f}s)"
                         print(f"      {i + 1}. {result['benchmark']}{priority_str}{loading_time_str}")
                     if len(relevant_benchmarks) > 3:
                         print(f"      ... and {len(relevant_benchmarks) - 3} more")
@@ -84,7 +85,7 @@ class DataGenerationMixin:
 
                 # Use legacy system
                 relevant_task_results = find_relevant_tasks(
-                    query=issue_type, max_results=max_tasks, min_relevance_score=0.1
+                    query=issue_type, max_results=max_tasks, min_relevance_score=TASK_MIN_RELEVANCE_SCORE
                 )
 
                 # Extract just the task names

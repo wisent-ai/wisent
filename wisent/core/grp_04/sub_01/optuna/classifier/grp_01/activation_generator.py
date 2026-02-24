@@ -18,7 +18,7 @@ import torch
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.activations import Activations
-
+from wisent.core.constants import CLASSIFIER_BATCH_SIZE
 logger = logging.getLogger(__name__)
 
 
@@ -106,7 +106,7 @@ class GenerationConfig:
     cache_dir: Optional[str] = None
     device: Optional[str] = None
     dtype: Optional[torch.dtype] = None  # Auto-detect if None
-    batch_size: int = 32
+    batch_size: int = CLASSIFIER_BATCH_SIZE
 
     def __post_init__(self):
         if self.cache_dir is None:
@@ -297,3 +297,6 @@ class ActivationGenerator:
         try:
             with open(cache_file, "rb") as f:
                 data = pickle.load(f)
+                return data
+        except Exception:
+            return None

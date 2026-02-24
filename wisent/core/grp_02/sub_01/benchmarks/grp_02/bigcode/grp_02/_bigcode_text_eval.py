@@ -3,6 +3,8 @@ import logging
 import re
 from typing import Any, Dict, List, Optional
 
+from wisent.core.constants import BLEU_MAX_N_GRAM
+
 logger = logging.getLogger(__name__)
 
 
@@ -92,7 +94,7 @@ class BigCodeTextEvalMixin:
         bleu = sacrebleu.sentence_bleu(hypothesis, [reference])
         return bleu.score / 100.0  # Normalize to [0, 1]
     
-    def _compute_simple_bleu(self, hypothesis: str, reference: str, max_n: int = 4) -> float:
+    def _compute_simple_bleu(self, hypothesis: str, reference: str, max_n: int = BLEU_MAX_N_GRAM) -> float:
         """
         Compute simple BLEU score without external dependencies.
         

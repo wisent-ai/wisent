@@ -11,6 +11,13 @@ from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
+from wisent.core.constants import (
+    BLEND_DEFAULT, DEFAULT_SCALE, DEFAULT_SCORE, STAT_ALPHA,
+    ZWIAD_PER_TYPE_DEFAULT, ZWIAD_RANGE_CONC_MAX, ZWIAD_RANGE_DIM_MAX,
+    ZWIAD_RANGE_DIM_MIN, ZWIAD_RANGE_SHARP_MAX, ZWIAD_RANGE_SPECTRAL_MIN,
+    ZWIAD_RANGE_SURVIVAL_MIN, ZWIAD_WEIGHT_CONC, ZWIAD_WEIGHT_DIM,
+    ZWIAD_WEIGHT_EDITABILITY, ZWIAD_WEIGHT_SHARP, ZWIAD_WEIGHT_SPECTRAL,
+    ZWIAD_WEIGHT_SURVIVAL)
 
 
 class GeometryType(Enum):
@@ -23,18 +30,7 @@ class GeometryType(Enum):
 
 
 class GeometryTypeFine(Enum):
-    """Eight fine-grained geometry types (k=8).
-
-    Maps to geometry_runner.py shape scores:
-      LINEAR_STABLE      -> linear    (flat hyperplane)
-      LINEAR_CONCENTRATED -> cone     (narrow linear cone)
-      LINEAR_MULTIDIR    -> orthogonal (multi-dir linear)
-      CONCENTRATED_FEW   -> bimodal   (2 concentrated poles)
-      MID_MULTI_CONCEPT  -> cluster   (many concept clusters)
-      DIFFUSE_CURVED     -> manifold  (curved surface)
-      LOW_LINEAR_UNSTABLE -> sparse   (noisy, unstable)
-      MANY_CONCEPT_CURVED -> manifold+cluster (fragmented)
-    """
+    """Eight fine-grained geometry types (k=8)."""
     LINEAR_STABLE = "linear_stable"
     DIFFUSE_CURVED = "diffuse_curved"
     CONCENTRATED_FEW = "concentrated_few"
@@ -147,13 +143,17 @@ _METRIC_ALIASES = {
 }
 
 _RANGES = {
-    "linear": (0.3, 1.0), "stability": (0.5, 1.0),
-    "n_concepts": (1, 100), "var_pc1": (0.05, 0.9),
-    "curvature": (0.0, 0.9), "coherence": (0.0, 1.0),
+    "linear": (ZWIAD_RANGE_SPECTRAL_MIN, DEFAULT_SCALE),
+    "stability": (ZWIAD_RANGE_SURVIVAL_MIN, DEFAULT_SCALE),
+    "n_concepts": (ZWIAD_RANGE_DIM_MIN, ZWIAD_RANGE_DIM_MAX),
+    "var_pc1": (STAT_ALPHA, ZWIAD_RANGE_CONC_MAX),
+    "curvature": (DEFAULT_SCORE, ZWIAD_RANGE_SHARP_MAX),
+    "coherence": (DEFAULT_SCORE, DEFAULT_SCALE),
 }
 _WEIGHTS = {
-    "linear": 3.0, "stability": 1.5, "n_concepts": 1.0,
-    "var_pc1": 2.0, "curvature": 2.0, "coherence": 1.5,
+    "linear": ZWIAD_WEIGHT_SPECTRAL, "stability": ZWIAD_WEIGHT_SURVIVAL,
+    "n_concepts": ZWIAD_WEIGHT_DIM, "var_pc1": ZWIAD_WEIGHT_CONC,
+    "curvature": ZWIAD_WEIGHT_SHARP, "coherence": ZWIAD_WEIGHT_EDITABILITY,
 }
 
 
@@ -173,18 +173,18 @@ def _classify(metrics, centroids, default_type):
         vals[key] = v
     distances = {}
     for gtype, centroid in centroids.items():
-        dist = 0.0
+        dist = DEFAULT_SCORE
         for key in centroid:
             lo, hi = _RANGES[key]
             span = hi - lo if hi > lo else 1.0
             nv = (vals[key] - lo) / span
             nc = (centroid[key] - lo) / span
             dist += _WEIGHTS[key] * (nv - nc) ** 2
-        distances[gtype] = dist ** 0.5
+        distances[gtype] = dist ** BLEND_DEFAULT
     ranked = sorted(distances.items(), key=lambda x: x[1])
     best, best_d = ranked[0]
     second_d = ranked[1][1]
-    conf = min((second_d - best_d) / best_d, 1.0) if best_d > 0 else 1.0
+    conf = min((second_d - best_d) / best_d, DEFAULT_SCALE) if best_d > 0 else DEFAULT_SCALE
     return best, round(conf, 3)
 
 
@@ -204,7 +204,7 @@ def _build_categorized_reverse_map():
     import wisent
     pkg_root = Path(wisent.__file__).parent
     candidates = [
-        pkg_root / "parameters" / "lm_eval" / "working_benchmarks_categorized.json",
+        pkg_root / "support" / "parameters" / "lm_eval" / "working_benchmarks_categorized.json",
     ]
     for c in candidates:
         if c.exists():
@@ -219,7 +219,7 @@ def _build_categorized_reverse_map():
 
 def select_representative_benchmarks(
     zwiad_dir: str, model_slug: str,
-    per_type: int = 2, fine: bool = False,
+    per_type: int = ZWIAD_PER_TYPE_DEFAULT, fine: bool = False,
 ) -> Dict:
     """Select representative benchmarks covering all types."""
     zwiad_path = Path(zwiad_dir)

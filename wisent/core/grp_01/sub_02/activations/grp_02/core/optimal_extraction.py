@@ -32,6 +32,7 @@ Usage:
 from dataclasses import dataclass
 from typing import Tuple, List, Optional
 import torch
+from wisent.core.constants import NORM_EPS, PCA_TOP_N_COMPONENTS
 
 
 @dataclass
@@ -58,7 +59,7 @@ def compute_signal_trajectory(
     """
     # Cast steering direction to same dtype as hidden states
     steering_direction = steering_direction.to(pos_hidden_states.dtype)
-    steering_direction = steering_direction / (torch.norm(steering_direction) + 1e-8)
+    steering_direction = steering_direction / (torch.norm(steering_direction) + NORM_EPS)
     pos_answer = pos_hidden_states[prompt_len:]
     neg_answer = neg_hidden_states[prompt_len:]
     min_len = min(len(pos_answer), len(neg_answer))
@@ -169,11 +170,11 @@ def find_direction_from_all_tokens(
     # Compute explained variance ratios
     variance = S ** 2
     total_var = variance.sum()
-    explained_ratio = (variance / total_var).tolist()[:10]  # Top 10 components
+    explained_ratio = (variance / total_var).tolist()[:PCA_TOP_N_COMPONENTS]
     return PCADirectionResult(
         direction=direction,
         explained_variance_ratio=explained_ratio,
-        singular_values=S[:10],
+        singular_values=S[:PCA_TOP_N_COMPONENTS],
         n_tokens=n_tokens,
         n_pairs=len(pos_batch),
     )
@@ -221,7 +222,7 @@ def compare_extraction_strategies(
     prompt_len: int,
 ) -> dict:
     """Compare signal strength across extraction strategies for a single pair."""
-    steering_direction = steering_direction / (torch.norm(steering_direction) + 1e-8)
+    steering_direction = steering_direction / (torch.norm(steering_direction) + NORM_EPS)
     trajectory, optimal_pos, max_signal = compute_signal_trajectory(
         pos_hidden_states, neg_hidden_states, steering_direction, prompt_len
     )
@@ -245,5 +246,5 @@ def compare_extraction_strategies(
         "chat_mean": float(((pos_mean - neg_mean) @ steering_direction).item()),
         "chat_optimal": max_signal,
         "optimal_position": optimal_pos,
-        "improvement_over_last": max_signal / (abs(last_signal) + 1e-8),
+        "improvement_over_last": max_signal / (abs(last_signal) + NORM_EPS),
     }

@@ -5,6 +5,8 @@ import json
 import argparse
 from typing import Optional
 
+from wisent.core.constants import NUM_EXAMPLES_DEFAULT, DISPLAY_TRUNCATION_LONG, DISPLAY_TRUNCATION_XLARGE, DISPLAY_TRUNCATION_COMPACT
+
 
 def execute_preview_pairs(args):
     """Preview contrastive pairs from a benchmark with different strategies applied."""
@@ -88,9 +90,9 @@ def execute_preview_pairs(args):
         print(f"{'='*80}")
         
         print(f"\n--- RAW DATA (from extractor) ---")
-        print(f"Prompt: {pair.prompt[:300]}{'...' if len(pair.prompt) > 300 else ''}")
-        print(f"Correct: {pair.positive_response.model_response[:100]}{'...' if len(pair.positive_response.model_response) > 100 else ''}")
-        print(f"Incorrect: {pair.negative_response.model_response[:100]}{'...' if len(pair.negative_response.model_response) > 100 else ''}")
+        print(f"Prompt: {pair.prompt[:DISPLAY_TRUNCATION_LONG]}{'...' if len(pair.prompt) > DISPLAY_TRUNCATION_LONG else ''}")
+        print(f"Correct: {pair.positive_response.model_response[:DISPLAY_TRUNCATION_COMPACT]}{'...' if len(pair.positive_response.model_response) > DISPLAY_TRUNCATION_COMPACT else ''}")
+        print(f"Incorrect: {pair.negative_response.model_response[:DISPLAY_TRUNCATION_COMPACT]}{'...' if len(pair.negative_response.model_response) > DISPLAY_TRUNCATION_COMPACT else ''}")
         
         for strategy_name in strategies:
             try:
@@ -123,7 +125,7 @@ def execute_preview_pairs(args):
                     )
                 
                 print(f"Full text (positive):")
-                print(f"  {full_text[:400]}{'...' if len(full_text) > 400 else ''}")
+                print(f"  {full_text[:DISPLAY_TRUNCATION_XLARGE]}{'...' if len(full_text) > DISPLAY_TRUNCATION_XLARGE else ''}")
                 print(f"Answer token: {answer}")
                 
             except Exception as e:
@@ -188,7 +190,7 @@ def execute_preview_pairs(args):
 def main():
     parser = argparse.ArgumentParser(description="Preview contrastive pairs with different strategies")
     parser.add_argument("task_name", help="Task/benchmark name (e.g., boolq, mmlu, hellaswag)")
-    parser.add_argument("--limit", "-n", type=int, default=5, help="Number of pairs to show (default: 5)")
+    parser.add_argument("--limit", "-n", type=int, default=NUM_EXAMPLES_DEFAULT, help="Number of pairs to show (default: 5)")
     parser.add_argument("--strategies", "-s", nargs="+", 
                         default=["chat_last", "mc_balanced", "completion_last"],
                         help="Strategies to preview")

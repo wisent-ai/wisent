@@ -27,6 +27,7 @@ from typing import Dict, List, Any
 import numpy as np
 
 from .common import ActivationData, load_activations_from_db
+from wisent.core.constants import ZERO_THRESHOLD
 
 
 def analyze_unified_direction(
@@ -81,7 +82,7 @@ def analyze_unified_direction(
     # Train unified steering vector
     unified_vector = all_pos.mean(axis=0) - all_neg.mean(axis=0)
     unified_norm = np.linalg.norm(unified_vector)
-    if unified_norm > 1e-10:
+    if unified_norm > ZERO_THRESHOLD:
         unified_vector = unified_vector / unified_norm
 
     # Evaluate on each benchmark
@@ -112,7 +113,7 @@ def analyze_unified_direction(
         # Per-benchmark direction accuracy
         per_bench_vector = pos.mean(axis=0) - neg.mean(axis=0)
         per_bench_norm = np.linalg.norm(per_bench_vector)
-        if per_bench_norm > 1e-10:
+        if per_bench_norm > ZERO_THRESHOLD:
             per_bench_vector = per_bench_vector / per_bench_norm
             per_benchmark_vectors[benchmark] = per_bench_vector
 

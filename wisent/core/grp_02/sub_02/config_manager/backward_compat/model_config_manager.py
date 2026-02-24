@@ -9,6 +9,7 @@ from ..convenience import (
     get_config_manager, save_classification_config, save_steering_config,
 )
 
+from wisent.core.constants import MOVEMENT_THRESHOLD
 
 class ModelConfigManager:
     """Backward-compatible wrapper class for the unified config manager."""
@@ -25,7 +26,7 @@ class ModelConfigManager:
     def save_model_config(
         self, model_name: str, classification_layer: int,
         steering_layer: Optional[int] = None, token_aggregation: str = "average",
-        detection_threshold: float = 0.6, optimization_method: str = "manual",
+        detection_threshold: float = MOVEMENT_THRESHOLD, optimization_method: str = "manual",
         optimization_metrics: Optional[Dict[str, Any]] = None,
         task_specific_overrides: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> str:

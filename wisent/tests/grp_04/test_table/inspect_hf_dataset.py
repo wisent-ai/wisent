@@ -16,8 +16,10 @@ import argparse
 import sys
 from datasets import load_dataset, get_dataset_config_names
 
+from wisent.core.constants import NUM_EXAMPLES_DEFAULT
 
-def inspect_hf_dataset(dataset_name: str, config_name: str | None = None, num_examples: int = 5) -> None:
+
+def inspect_hf_dataset(dataset_name: str, config_name: str | None = None, num_examples: int = NUM_EXAMPLES_DEFAULT) -> None:
     """Load a dataset from Hugging Face and display its structure and examples."""
 
     print(f"\n{'='*80}")
@@ -130,7 +132,7 @@ Examples:
     parser.add_argument(
         "--examples", "-n",
         type=int,
-        default=5,
+        default=NUM_EXAMPLES_DEFAULT,
         help="Number of examples to display per split (default: 5)"
     )
 

@@ -11,6 +11,8 @@ import os
 import sys
 import subprocess
 
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
+
 # Re-export all public API from the split parts
 from wisent.core.lm_harness_integration._populate_backup import (
     find_working_task_from_group,
@@ -54,7 +56,7 @@ def test_sample_retrieval(task_name: str = "truthfulqa_mc1"):
         return False
     print(f"Successfully retrieved samples from '{result['task_name']}'")
     description = result.get('description') or "No description available"
-    print(f"Description: {description[:200]}...")
+    print(f"Description: {description[:DISPLAY_TRUNCATION_MEDIUM]}...")
     print(f"Total documents: {result['total_docs']}")
     print(f"Sampled documents: {result['sampled_docs']}")
     print(f"Output type: {result['output_type']}")
@@ -62,7 +64,7 @@ def test_sample_retrieval(task_name: str = "truthfulqa_mc1"):
     for i, sample in enumerate(result['samples']):
         print(f"\nSample {sample['sample_id']}:")
         question = sample.get('question', 'No question available')
-        print(f"Question: {question[:300]}...")
+        print(f"Question: {question[:DISPLAY_TRUNCATION_LONG]}...")
         answer = sample.get('correct_answer', 'No answer available')
         print(f"Correct Answer: {answer}")
         format_type = sample.get('format', 'unknown')

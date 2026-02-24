@@ -8,6 +8,7 @@ import torch
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.utils import resolve_default_device, preferred_dtype
 from wisent.core.optuna.classifier._optuna_config import get_model_dtype
+from wisent.core.constants import OPTUNA_PRUNE_ACCURACY_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -198,7 +199,7 @@ class OptunaObjectiveMixin:
             print(f"Training results: {results}")
 
             accuracy = results.get("accuracy", 0)
-            if accuracy <= 0.35:  # More permissive threshold - only prune very poor performance
+            if accuracy <= OPTUNA_PRUNE_ACCURACY_THRESHOLD:  # Only prune very poor performance
                 self.logger.debug(f"Classifier performance too low ({accuracy:.3f}), pruning")
                 print(f"Classifier pruned - accuracy too low: {accuracy:.3f}")
                 return None

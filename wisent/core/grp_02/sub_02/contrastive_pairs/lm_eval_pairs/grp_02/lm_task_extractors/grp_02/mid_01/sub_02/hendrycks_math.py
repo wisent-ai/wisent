@@ -7,6 +7,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import MATH_NUMBER_PERTURBATION_OFFSET
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -179,9 +180,9 @@ class HendrycksMathExtractor(LMEvalBenchmarkExtractor):
                 wrong_transforms = [
                     num * 2,
                     num / 2,
-                    num - 0.5,
-                    num + 0.25,
-                    round(num) if num != round(num) else num + 0.5,
+                    num - 2 * MATH_NUMBER_PERTURBATION_OFFSET,
+                    num + MATH_NUMBER_PERTURBATION_OFFSET,
+                    round(num) if num != round(num) else num + 2 * MATH_NUMBER_PERTURBATION_OFFSET,
                 ]
                 return str(random.choice(wrong_transforms))
             except ValueError:

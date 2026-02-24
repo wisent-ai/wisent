@@ -30,6 +30,15 @@ from wisent.comparison._helpers.fgaa_helpers import (
     compute_v_opt,
     get_residual_stream_activations as _get_residual_stream_activations,
 )
+from wisent.core.constants import (
+    GEMMA_2B_BOS_FEATURES_PAPER,
+    GEMMA_2B_BOS_FEATURES_DETECTED,
+    GEMMA_9B_BOS_FEATURES_DETECTED,
+    FGAA_DENSITY_THRESHOLD,
+    FGAA_TOP_K_POSITIVE,
+    FGAA_TOP_K_NEGATIVE,
+    COMPARISON_NUM_PAIRS,
+)
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -40,14 +49,14 @@ __all__ = ["generate_steering_vector", "apply_steering_to_model", "remove_steeri
 # BOS feature indices - these features activate most strongly on the BOS token
 # Paper features from Appendix G (5 features)
 BOS_FEATURES_PAPER = {
-    "google/gemma-2-2b": [11087, 3220, 11752, 12160, 11498],
+    "google/gemma-2-2b": list(GEMMA_2B_BOS_FEATURES_PAPER),
     "google/gemma-2-9b": [],  # Not listed in paper
 }
 
 # Detected features from running detect_bos_features.py (top 12 by mean activation)
 BOS_FEATURES_DETECTED = {
-    "google/gemma-2-2b": [1041, 7507, 11087, 3220, 11767, 11752, 14669, 6889, 12160, 13700, 2747, 11498],
-    "google/gemma-2-9b": [8032, 11906, 7768, 14845, 14483, 10562, 8892, 9151, 5721, 15738, 5285, 13895],
+    "google/gemma-2-2b": list(GEMMA_2B_BOS_FEATURES_DETECTED),
+    "google/gemma-2-9b": list(GEMMA_9B_BOS_FEATURES_DETECTED),
 }
 
 # FGAA-specific: effect approximator config (adapter files)
@@ -148,14 +157,14 @@ def generate_steering_vector(
     model_name: str,
     output_path: str | Path,
     trait_label: str = "correctness",
-    num_pairs: int = 50,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
     method: str = "fgaa",
     layers: str | None = None,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    density_threshold: float = 0.01,
-    top_k_positive: int = 50,
-    top_k_negative: int = 0,
+    density_threshold: float = FGAA_DENSITY_THRESHOLD,
+    top_k_positive: int = FGAA_TOP_K_POSITIVE,
+    top_k_negative: int = FGAA_TOP_K_NEGATIVE,
     bos_features_source: str = "detected",
     **kwargs,
 ) -> Path:

@@ -6,6 +6,7 @@ import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.steering_methods.methods.advanced._tetno_types import TETNOConfig, TETNOResult
+from wisent.core.constants import TETNO_CONDITION_MARGIN, TETNO_CONDITION_LOGGING_INTERVAL
 
 class TETNOTrainingMixin:
     """Mixin: behavior and condition vector training."""
@@ -157,7 +158,7 @@ class TETNOTrainingMixin:
             
             # Loss: maximize pos_sim, minimize neg_sim
             # Equivalent to minimizing -pos_sim + neg_sim
-            margin = 0.5
+            margin = TETNO_CONDITION_MARGIN
             pos_loss = F.relu(margin - pos_sim).mean()
             neg_loss = F.relu(neg_sim + margin).mean()
             
@@ -172,7 +173,7 @@ class TETNOTrainingMixin:
                 best_separation = separation.item()
                 best_vec = condition_vec.detach().clone()
             
-            if step % 20 == 0:
+            if step % TETNO_CONDITION_LOGGING_INTERVAL == 0:
                 self._training_logs.append({
                     "phase": "condition_opt",
                     "step": step,

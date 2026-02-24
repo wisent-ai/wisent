@@ -6,6 +6,7 @@ from wisent.core.cli.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import HTTP_TIMEOUT_MEDIUM
 
 __all__ = ["TauBenchExtractor"]
 
@@ -111,7 +112,7 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
                 continue
 
             try:
-                response = requests.get(url, timeout=30)
+                response = requests.get(url, timeout=HTTP_TIMEOUT_MEDIUM)
                 response.raise_for_status()
                 content = response.text
 

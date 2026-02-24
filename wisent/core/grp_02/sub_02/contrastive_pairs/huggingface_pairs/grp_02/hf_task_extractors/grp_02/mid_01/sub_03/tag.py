@@ -12,6 +12,7 @@ from wisent.core.cli.cli_logger import setup_logger
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import HTTP_TIMEOUT_MEDIUM
 
 __all__ = ["TagExtractor"]
 
@@ -115,7 +116,7 @@ class TagExtractor(HuggingFaceBenchmarkExtractor):
     def _download_from_github(self) -> str:
         """Download TAG-Bench CSV from GitHub."""
         try:
-            response = requests.get(TAG_GITHUB_URL, timeout=30)
+            response = requests.get(TAG_GITHUB_URL, timeout=HTTP_TIMEOUT_MEDIUM)
             response.raise_for_status()
             return response.text
         except Exception as e:

@@ -16,9 +16,15 @@ from wisent.core.steering_methods.methods.szlak.transport import (
     compute_attention_affinity_cost,
     sinkhorn_one_sided,
 )
+from wisent.core.constants import (
+    LOG_EPS,
+    TIKHONOV_REG,
+    PRZELOM_EPSILON,
+    PRZELOM_INFERENCE_K,
+)
 
 
-def _regularized_pinv(M: torch.Tensor, reg: float = 1e-4) -> torch.Tensor:
+def _regularized_pinv(M: torch.Tensor, reg: float = TIKHONOV_REG) -> torch.Tensor:
     """Tikhonov-regularized pseudoinverse: (M^T M + reg I)^-1 M^T."""
     MtM = M.T @ M
     I = torch.eye(MtM.shape[0], device=M.device, dtype=M.dtype)
@@ -45,10 +51,10 @@ def _create_przelom_steering_object(
     args,
 ) -> PrzelomSteeringObject:
     """Create attention-transport steering object with per-layer displacements."""
-    epsilon = getattr(args, "przelom_epsilon", 1.0)
+    epsilon = getattr(args, "przelom_epsilon", PRZELOM_EPSILON)
     target_mode = getattr(args, "przelom_target_mode", "uniform")
-    regularization = getattr(args, "przelom_regularization", 1e-4)
-    inference_k = getattr(args, "przelom_inference_k", 5)
+    regularization = getattr(args, "przelom_regularization", TIKHONOV_REG)
+    inference_k = getattr(args, "przelom_inference_k", PRZELOM_INFERENCE_K)
 
     num_heads = metadata.extra.get('num_attention_heads')
     num_kv_heads = metadata.extra.get('num_key_value_heads')
@@ -70,8 +76,8 @@ def _create_przelom_steering_object(
         C = compute_attention_affinity_cost(q_neg, k_pos, num_heads=num_heads, num_kv_heads=num_kv_heads)
         T_current = torch.softmax(-C / epsilon, dim=1)
         T_target = _compute_target_transport(neg, pos, target_mode)
-        log_target = torch.log(T_target.clamp(min=1e-12))
-        log_current = torch.log(T_current.clamp(min=1e-12))
+        log_target = torch.log(T_target.clamp(min=LOG_EPS))
+        log_current = torch.log(T_current.clamp(min=LOG_EPS))
         delta_C = epsilon * (log_target - log_current)
         # GQA-aware inversion: map delta_C back to delta_q in full Q-dim
         q_dim = q_neg.shape[-1]

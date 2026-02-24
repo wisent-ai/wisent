@@ -19,6 +19,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoConfig, AutoModel, PreTrainedModel
 
+from wisent.core.constants import NEAR_ZERO_TOL, DESKLIB_MAX_LENGTH, MIN_RESPONSE_TEXT_LENGTH
 from wisent.core.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
@@ -45,7 +46,7 @@ class DesklibAIDetectionModel(PreTrainedModel):
         # Mean pooling
         input_mask_expanded = attention_mask.unsqueeze(-1).expand(last_hidden_state.size()).float()
         sum_embeddings = torch.sum(last_hidden_state * input_mask_expanded, dim=1)
-        sum_mask = torch.clamp(input_mask_expanded.sum(dim=1), min=1e-9)
+        sum_mask = torch.clamp(input_mask_expanded.sum(dim=1), min=NEAR_ZERO_TOL)
         pooled_output = sum_embeddings / sum_mask
         logits = self.classifier(pooled_output)
         
@@ -68,7 +69,7 @@ class DesklibDetectorEvaluator(CustomEvaluator):
     Score is normalized to [0, 1] where higher = more human-like.
     """
     
-    def __init__(self, device: Optional[str] = None, max_length: int = 768):
+    def __init__(self, device: Optional[str] = None, max_length: int = DESKLIB_MAX_LENGTH):
         config = CustomEvaluatorConfig(
             name="desklib_detector",
             description="Desklib AI detector (RAID benchmark leader, higher = more human-like)",
@@ -125,7 +126,7 @@ class DesklibDetectorEvaluator(CustomEvaluator):
         
         Returns score where higher = more human-like.
         """
-        if len(response.strip()) < 50:
+        if len(response.strip()) < MIN_RESPONSE_TEXT_LENGTH:
             logger.warning("Text too short for reliable detection")
             return {
                 "score": 0.5,
@@ -146,14 +147,14 @@ class DesklibDetectorEvaluator(CustomEvaluator):
 
 def create_desklib_detector_evaluator(
     device: Optional[str] = None,
-    max_length: int = 768,
+    max_length: int = DESKLIB_MAX_LENGTH,
     **kwargs
 ) -> DesklibDetectorEvaluator:
     """Create a Desklib detector evaluator.
     
     Args:
         device: Device to run on (cuda, mps, cpu)
-        max_length: Max token length (default 768)
+        max_length: Max token length (default DESKLIB_MAX_LENGTH)
     
     Returns:
         DesklibDetectorEvaluator instance

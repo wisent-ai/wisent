@@ -6,6 +6,7 @@ from typing import List, Optional
 import io
 import base64
 from sklearn.decomposition import PCA
+from wisent.core.constants import VIZ_DPI, DEFAULT_RANDOM_SEED, VIZ_TEXT_BOX_LEFT, VIZ_TEXT_BOX_RIGHT, VIZ_CONTOURF_LEVEL, VIZ_MESHGRID_RESOLUTION_HIGH, VIZ_CENTROID_MARKER_SIZE, VIZ_FIGSIZE_DETAIL
 
 
 def create_steering_effect_figure(
@@ -31,14 +32,14 @@ def create_steering_effect_figure(
     pos, neg, base, steered = _prepare_arrays(pos_activations, neg_activations,
                                                base_activations, steered_activations)
     reference = np.vstack([pos, neg])
-    pca = PCA(n_components=2, random_state=42)
+    pca = PCA(n_components=2, random_state=DEFAULT_RANDOM_SEED)
     pca.fit(reference)
 
     pos_2d, neg_2d = pca.transform(pos), pca.transform(neg)
     base_2d, steered_2d = pca.transform(base), pca.transform(steered)
     pos_centroid, neg_centroid = pos_2d.mean(axis=0), neg_2d.mean(axis=0)
 
-    fig, ax = plt.subplots(figsize=(12, 10))
+    fig, ax = plt.subplots(figsize=VIZ_FIGSIZE_DETAIL)
 
     if base_space_probs is not None and steered_space_probs is not None:
         _draw_decision_boundary(ax, pos_2d, neg_2d)
@@ -54,7 +55,7 @@ def create_steering_effect_figure(
     metrics_text = _compute_metrics_text(base_2d, steered_2d, pos_centroid, neg_centroid,
                                          base_evaluations, steered_evaluations,
                                          base_space_probs, steered_space_probs)
-    ax.text(0.02, 0.98, metrics_text, transform=ax.transAxes, fontsize=10,
+    ax.text(VIZ_TEXT_BOX_LEFT, VIZ_TEXT_BOX_RIGHT, metrics_text, transform=ax.transAxes, fontsize=10,
             verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
 
     ax.set_xlabel("PCA Component 1")
@@ -64,7 +65,7 @@ def create_steering_effect_figure(
     ax.grid(True, alpha=0.3)
 
     buf = io.BytesIO()
-    fig.savefig(buf, format='png', dpi=150, bbox_inches='tight')
+    fig.savefig(buf, format='png', dpi=VIZ_DPI, bbox_inches='tight')
     buf.seek(0)
     plt.close(fig)
     return base64.b64encode(buf.read()).decode('utf-8')
@@ -102,14 +103,14 @@ def _draw_decision_boundary(ax, pos_2d, neg_2d):
     from sklearn.linear_model import LogisticRegression
     X_2d = np.vstack([pos_2d, neg_2d])
     y_2d = np.concatenate([np.ones(len(pos_2d)), np.zeros(len(neg_2d))])
-    clf_2d = LogisticRegression(random_state=42, )
+    clf_2d = LogisticRegression(random_state=DEFAULT_RANDOM_SEED, )
     clf_2d.fit(X_2d, y_2d)
     x_min, x_max = X_2d[:, 0].min() - 1, X_2d[:, 0].max() + 1
     y_min, y_max = X_2d[:, 1].min() - 1, X_2d[:, 1].max() + 1
-    xx, yy = np.meshgrid(np.linspace(x_min, x_max, 200), np.linspace(y_min, y_max, 200))
+    xx, yy = np.meshgrid(np.linspace(x_min, x_max, VIZ_MESHGRID_RESOLUTION_HIGH), np.linspace(y_min, y_max, VIZ_MESHGRID_RESOLUTION_HIGH))
     Z = clf_2d.predict_proba(np.c_[xx.ravel(), yy.ravel()])[:, 1].reshape(xx.shape)
-    ax.contourf(xx, yy, Z, levels=[0, 0.5, 1], colors=['#FFCCCC', '#CCCCFF'], alpha=0.4)
-    ax.contour(xx, yy, Z, levels=[0.5], colors=['black'], linewidths=2, linestyles=['--'])
+    ax.contourf(xx, yy, Z, levels=[0, VIZ_CONTOURF_LEVEL, 1], colors=['#FFCCCC', '#CCCCFF'], alpha=0.4)
+    ax.contour(xx, yy, Z, levels=[VIZ_CONTOURF_LEVEL], colors=['black'], linewidths=2, linestyles=['--'])
     ax.plot([], [], 'k--', linewidth=2, label='Decision boundary (P=0.5)')
 
 
@@ -117,9 +118,9 @@ def _plot_scatter_points(ax, pos_2d, neg_2d, base_2d, steered_2d, pos_c, neg_c, 
     """Plot all scatter points on matplotlib axis."""
     ax.scatter(pos_2d[:, 0], pos_2d[:, 1], c='blue', alpha=0.3, s=30, label='Positive (truthful)')
     ax.scatter(neg_2d[:, 0], neg_2d[:, 1], c='red', alpha=0.3, s=30, label='Negative (untruthful)')
-    ax.scatter([pos_c[0]], [pos_c[1]], c='blue', s=200, marker='*', edgecolors='black', linewidths=1,
+    ax.scatter([pos_c[0]], [pos_c[1]], c='blue', s=VIZ_CENTROID_MARKER_SIZE, marker='*', edgecolors='black', linewidths=1,
                label='Positive centroid', zorder=5)
-    ax.scatter([neg_c[0]], [neg_c[1]], c='red', s=200, marker='*', edgecolors='black', linewidths=1,
+    ax.scatter([neg_c[0]], [neg_c[1]], c='red', s=VIZ_CENTROID_MARKER_SIZE, marker='*', edgecolors='black', linewidths=1,
                label='Negative centroid', zorder=5)
     if base_evals is not None:
         for i, (x, y) in enumerate(base_2d):

@@ -282,4 +282,4 @@ def execute_get_activations(args):
         if args.verbose:
             import traceback
             traceback.print_exc()
-        sys.exit(1)
+        raise

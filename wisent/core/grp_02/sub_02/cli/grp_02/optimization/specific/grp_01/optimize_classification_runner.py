@@ -2,6 +2,8 @@
 from __future__ import annotations
 import os
 import time
+
+from wisent.core.constants import DEFAULT_SCORE, DATA_SPLIT_RATIO, DATA_SPLIT_SEED
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
@@ -83,7 +85,7 @@ def _build_task_args(task_name, args, layer, classifier_type, agg_method, thresh
         detection_threshold=threshold,
         prompt_construction_strategy=prompt_strategy,
         token_targeting_strategy=token_strategy,
-        split_ratio=0.8, seed=42, limit=args.limit,
+        split_ratio=DATA_SPLIT_RATIO, seed=DATA_SPLIT_SEED, limit=args.limit,
         training_limit=None, testing_limit=None,
         device=args.device, save_classifier=None, output=None,
         inference_only=False, load_steering_vector=None,
@@ -97,7 +99,7 @@ def _extract_metric(result, args, steering_evaluator):
         generated_responses = result.get('generated_responses', [])
         if generated_responses:
             eval_results = steering_evaluator.evaluate_responses(generated_responses)
-            metric_value = eval_results.get('score', 0)
+            metric_value = eval_results.get('score', DEFAULT_SCORE)
             result['steering_score'] = metric_value
             result['steering_metrics'] = eval_results
         else:
@@ -108,7 +110,7 @@ def _extract_metric(result, args, steering_evaluator):
             'precision': 'precision', 'recall': 'recall',
         }
         metric_key = metric_map.get(args.optimization_metric, 'f1_score')
-        metric_value = result.get(metric_key, 0)
+        metric_value = result.get(metric_key, DEFAULT_SCORE)
     return metric_value
 
 
@@ -119,10 +121,10 @@ def _build_best_config(layer, ctype, agg, thresh, prompt_s, token_s, result):
         'aggregation': agg, 'threshold': thresh,
         'prompt_construction_strategy': prompt_s,
         'token_targeting_strategy': token_s,
-        'accuracy': result.get('accuracy', 0),
-        'f1_score': result.get('f1_score', 0),
-        'precision': result.get('precision', 0),
-        'recall': result.get('recall', 0),
+        'accuracy': result.get('accuracy', DEFAULT_SCORE),
+        'f1_score': result.get('f1_score', DEFAULT_SCORE),
+        'precision': result.get('precision', DEFAULT_SCORE),
+        'recall': result.get('recall', DEFAULT_SCORE),
         'generation_count': result.get('generation_count', 0),
         'steering_score': result.get('steering_score', None),
         'steering_metrics': result.get('steering_metrics', None),
@@ -153,7 +155,7 @@ def _train_final_if_needed(args, task_name, best_config, execute_tasks_fn):
         detection_threshold=c['threshold'],
         prompt_construction_strategy=c['prompt_construction_strategy'],
         token_targeting_strategy=c['token_targeting_strategy'],
-        split_ratio=0.8, seed=42, limit=args.limit,
+        split_ratio=DATA_SPLIT_RATIO, seed=DATA_SPLIT_SEED, limit=args.limit,
         training_limit=None, testing_limit=None, device=args.device,
         save_classifier=os.path.join(args.classifiers_dir, f"{task_name}_classifier.pt"),
         output=os.path.join(args.classifiers_dir, task_name),

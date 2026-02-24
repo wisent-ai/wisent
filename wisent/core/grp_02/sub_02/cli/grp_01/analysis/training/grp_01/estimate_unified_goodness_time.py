@@ -1,4 +1,5 @@
 """CLI entry point for estimating unified goodness training time."""
+from wisent.core.constants import DATA_SPLIT_RATIO, PARSER_DEFAULT_NUM_STRENGTH_STEPS, BENCHMARK_FAST_LOAD_THRESHOLD
 from wisent.core.cli.analysis.training.estimate_time_functions import (
     BENCHMARK_SIZES, BENCHMARK_LOAD_TIMES, estimate_runtime,
     get_benchmark_load_time, get_benchmark_size, format_time,
@@ -18,11 +19,11 @@ def main():
         help="Cap pairs per benchmark (benchmarks with more get randomly sampled down)"
     )
     parser.add_argument(
-        "--train-ratio", type=float, default=0.8,
+        "--train-ratio", type=float, default=DATA_SPLIT_RATIO,
         help="Fraction of pairs for training (default: 0.8 = 80%% train, 20%% eval)"
     )
     parser.add_argument(
-        "--eval-scales", type=int, default=5,
+        "--eval-scales", type=int, default=PARSER_DEFAULT_NUM_STRENGTH_STEPS,
         help="Number of steering scales to evaluate"
     )
     parser.add_argument(
@@ -60,7 +61,7 @@ def main():
         if name in BENCHMARK_LOAD_TIMES:
             if BENCHMARK_LOAD_TIMES[name] < 15:
                 priority = 'high'
-            elif BENCHMARK_LOAD_TIMES[name] < 50:
+            elif BENCHMARK_LOAD_TIMES[name] < BENCHMARK_FAST_LOAD_THRESHOLD:
                 priority = 'medium'
             else:
                 priority = 'low'
@@ -149,7 +150,7 @@ def main():
             if name in BENCHMARK_LOAD_TIMES:
                 if BENCHMARK_LOAD_TIMES[name] < 15:
                     priority = 'high'
-                elif BENCHMARK_LOAD_TIMES[name] < 50:
+                elif BENCHMARK_LOAD_TIMES[name] < BENCHMARK_FAST_LOAD_THRESHOLD:
                     priority = 'medium'
                 else:
                     priority = 'low'

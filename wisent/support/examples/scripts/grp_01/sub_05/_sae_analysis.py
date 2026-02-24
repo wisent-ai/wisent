@@ -5,13 +5,14 @@ import torch
 from pathlib import Path
 from typing import Dict, Tuple
 
+from wisent.core.constants import VIZ_DPI, VIZ_HISTOGRAM_BINS, SAE_TOP_K_ANALYSIS, SAE_TOP_FEATURES_DISPLAY, SAE_TOP_FEATURES_MAX
 from wisent.examples.scripts._sae import SparseAutoencoder
 
 
 def analyze_sae_features(
     sae: SparseAutoencoder,
     activations_by_concept: Dict[str, torch.Tensor],
-    top_k: int = 20,
+    top_k: int = SAE_TOP_K_ANALYSIS,
     device: str = "cpu",
 ) -> Dict:
     """
@@ -102,8 +103,8 @@ def visualize_sae_analysis(
     # Collect top features across all concepts
     all_top_features = set()
     for concept in concepts:
-        all_top_features.update(sae_results["top_features"][concept][:15])
-    all_top_features = sorted(list(all_top_features))[:40]  # Limit to 40 features
+        all_top_features.update(sae_results["top_features"][concept][:SAE_TOP_FEATURES_DISPLAY])
+    all_top_features = sorted(list(all_top_features))[:SAE_TOP_FEATURES_MAX]
     
     # Create heatmap data
     heatmap_data = []
@@ -179,7 +180,7 @@ def visualize_sae_analysis(
         
         # Number of active features per sample
         active_per_sample = (features > 0.1).sum(dim=1).cpu().numpy()
-        ax.hist(active_per_sample, bins=30, alpha=0.5, label=concept, color=colors.get(concept, 'gray'))
+        ax.hist(active_per_sample, bins=VIZ_HISTOGRAM_BINS, alpha=0.5, label=concept, color=colors.get(concept, 'gray'))
     
     ax.set_xlabel('Number of Active Features per Sample')
     ax.set_ylabel('Count')
@@ -189,7 +190,7 @@ def visualize_sae_analysis(
     
     plt.suptitle(f'Sparse Autoencoder Feature Analysis - {model_name}\nHidden dim: {sae.hidden_dim}, L1: {sae.l1_coef}', fontsize=14)
     plt.tight_layout()
-    plt.savefig(output_path / 'sae_feature_analysis.png', dpi=150, bbox_inches='tight')
+    plt.savefig(output_path / 'sae_feature_analysis.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()
     print(f"Saved: {output_path / 'sae_feature_analysis.png'}")
     
@@ -211,7 +212,7 @@ def visualize_sae_analysis(
     ax.grid(True, alpha=0.3)
     
     plt.tight_layout()
-    plt.savefig(output_path / 'sae_feature_profiles.png', dpi=150, bbox_inches='tight')
+    plt.savefig(output_path / 'sae_feature_profiles.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()
     print(f"Saved: {output_path / 'sae_feature_profiles.png'}")
 

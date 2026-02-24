@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Full extraction strategy analysis - parallel workers with batch layer queries."""
 import argparse, json, struct, os, sys, multiprocessing
+from wisent.core.constants import COMPARISON_MAX_BATCH_SIZE
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from collections import defaultdict
 from typing import Dict, List, Optional
@@ -227,7 +228,7 @@ def main():
     parser.add_argument("--models", nargs="*", default=None)
     parser.add_argument("--multi-layer", action="store_true")
     parser.add_argument("--benchmark", help="Single benchmark")
-    parser.add_argument("--workers", type=int, default=8)
+    parser.add_argument("--workers", type=int, default=COMPARISON_MAX_BATCH_SIZE)
     args = parser.parse_args()
     models = args.models or MODELS
     if args.multi_layer:

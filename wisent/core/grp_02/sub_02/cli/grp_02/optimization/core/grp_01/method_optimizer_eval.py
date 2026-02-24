@@ -14,6 +14,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL
 from wisent.core.cli.optimization.core.method_optimizer_config import (
     OptimizationConfig, OptimizationResult, OptimizationSummary,
 )
@@ -71,11 +72,6 @@ def _resolve_params(
     resolved = dict(params)
     num_layers = self.model.num_layers
 
-    # Resolve sensor_layer
-    if resolved.get("sensor_layer") == "auto":
-        # Use 75% through the network
-        resolved["sensor_layer"] = int(num_layers * 0.75)
-
     # Resolve steering_layers from string config to actual layer list
     steering_config = resolved.get("steering_layers")
     if isinstance(steering_config, str):
@@ -92,9 +88,6 @@ def _resolve_params(
                 max(0, base_layer - 2),
                 min(num_layers, base_layer + 3)
             ))
-        elif steering_config == "all_late":
-            start = int(num_layers * 0.75)
-            resolved["steering_layers"] = list(range(start, num_layers - 1))
 
     return resolved
 
@@ -147,7 +140,7 @@ def evaluate(
             self.model.apply_steering(steering_plan)
             generated_response = self.model.generate(
                 [[{"role": "user", "content": pair.prompt}]],
-                max_new_tokens=100,
+                max_new_tokens=DEFAULT_MAX_NEW_TOKENS_EVAL,
                 use_steering=True,
                 steering_plan=steering_plan,
             )[0]
@@ -214,7 +207,7 @@ def evaluate_baseline(
             # Generate response WITHOUT steering
             generated_response = self.model.generate(
                 [[{"role": "user", "content": pair.prompt}]],
-                max_new_tokens=100,
+                max_new_tokens=DEFAULT_MAX_NEW_TOKENS_EVAL,
             )[0]
 
             expected = pair.positive_response.model_response

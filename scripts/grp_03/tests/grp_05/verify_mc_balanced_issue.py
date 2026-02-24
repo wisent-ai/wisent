@@ -74,7 +74,7 @@ for i, letter in enumerate(letter_assignments):
 
 # Now compute consistency for raw vs corrected directions
 def compute_consistency(directions):
-    dirs_norm = directions / (torch.norm(directions, dim=1, keepdim=True) + 1e-8)
+    dirs_norm = directions / (torch.norm(directions, dim=1, keepdim=True) + NORM_EPS)
     pairwise = (dirs_norm @ dirs_norm.T).numpy()
     mask = np.triu(np.ones_like(pairwise), k=1).astype(bool)
     return pairwise[mask].mean(), pairwise[mask].std()
@@ -100,7 +100,7 @@ print(f"{'='*60}")
 
 # Compute the mean (B-A) direction from corrected directions
 ab_direction = corrected_directions.mean(dim=0)
-ab_direction = ab_direction / (torch.norm(ab_direction) + 1e-8)
+ab_direction = ab_direction / (torch.norm(ab_direction) + NORM_EPS)
 
 print(f"\nMean (B-A) direction computed from {len(corrected_directions)} samples")
 
@@ -126,8 +126,8 @@ semantic_variance = []
 for i, d in enumerate(raw_directions):
     ab_component = (d @ ab_direction).item() ** 2
     total_var = (d @ d).item()
-    ab_variance.append(ab_component / (total_var + 1e-8))
-    semantic_variance.append(1 - ab_component / (total_var + 1e-8))
+    ab_variance.append(ab_component / (total_var + NORM_EPS))
+    semantic_variance.append(1 - ab_component / (total_var + NORM_EPS))
 
 print(f"\nVariance explained:")
 print(f"  By A/B token: {np.mean(ab_variance)*100:.1f}%")
@@ -161,7 +161,7 @@ print(f"{'='*60}")
 
 # The raw mean direction (averaging all pos-neg directions)
 mean_raw_direction = raw_directions.mean(dim=0)
-mean_raw_direction_norm = mean_raw_direction / (torch.norm(mean_raw_direction) + 1e-8)
+mean_raw_direction_norm = mean_raw_direction / (torch.norm(mean_raw_direction) + NORM_EPS)
 
 # Compare to CHAT_LAST mean direction
 print("\nCollecting CHAT_LAST for comparison...")
@@ -176,7 +176,7 @@ for i, pair in enumerate(train_pairs):
 
 chat_last_dirs = torch.stack(chat_last_dirs)
 mean_chat_last = chat_last_dirs.mean(dim=0)
-mean_chat_last_norm = mean_chat_last / (torch.norm(mean_chat_last) + 1e-8)
+mean_chat_last_norm = mean_chat_last / (torch.norm(mean_chat_last) + NORM_EPS)
 
 # How similar are the averaged directions?
 cos_sim = (mean_raw_direction_norm @ mean_chat_last_norm).item()
@@ -185,6 +185,7 @@ print(f"  MC_BALANCED avg vs CHAT_LAST avg: {cos_sim:.4f}")
 
 # Test steering accuracy using the averaged directions
 from sklearn.linear_model import LogisticRegression
+from wisent.core.constants import NORM_EPS
 
 # For MC_BALANCED: project all samples onto its mean direction
 mc_proj = (raw_directions @ mean_raw_direction_norm).numpy()

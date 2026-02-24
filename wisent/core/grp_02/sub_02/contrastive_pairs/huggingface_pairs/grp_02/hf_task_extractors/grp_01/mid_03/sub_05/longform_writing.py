@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.constants import EXTRACTOR_MIN_TEXT_LENGTH
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
@@ -41,7 +42,7 @@ class LongformWritingExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "longform_writing_quality"
 
-    def __init__(self, category: str | None = None, min_length: int = 500):
+    def __init__(self, category: str | None = None, min_length: int = EXTRACTOR_MIN_TEXT_LENGTH):
         """
         Initialize Longform Writing extractor.
 

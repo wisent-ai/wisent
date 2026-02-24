@@ -8,6 +8,13 @@ from typing import Optional, Dict, Any
 
 from ..convenience import save_steering_config, get_steering_config
 
+from wisent.core.constants import (
+    DEFAULT_SCORE, TECZA_INDEPENDENCE_WEIGHT, TECZA_OPTIMIZATION_STEPS,
+    TECZA_MIN_COSINE_SIM, TECZA_MAX_COSINE_SIM, TETNO_CONDITION_THRESHOLD,
+    TETNO_MAX_ALPHA, TETNO_OPTIMIZATION_STEPS, TETNO_GATE_TEMPERATURE_LEGACY,
+    GROM_ROUTER_HIDDEN_DIM, GROM_INTENSITY_HIDDEN_DIM, GROM_BEHAVIOR_WEIGHT,
+    GROM_SPARSE_WEIGHT, GROM_OPTIMIZATION_STEPS, GROM_LEARNING_RATE,
+)
 
 @dataclass
 class OptimizationResult:
@@ -20,7 +27,7 @@ class OptimizationResult:
     token_aggregation: str = "average"
     prompt_strategy: str = "question_only"
     strategy: str = "constant"
-    score: float = 0.0
+    score: float = DEFAULT_SCORE
     metric: str = "accuracy"
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     metadata: Dict[str, Any] = field(default_factory=dict)
@@ -28,29 +35,29 @@ class OptimizationResult:
     num_directions: int = 1
     direction_weighting: str = "primary_only"
     retain_weight: float = 0.0
-    independence_weight: float = 0.05
-    tecza_optimization_steps: int = 100
+    independence_weight: float = TECZA_INDEPENDENCE_WEIGHT
+    tecza_optimization_steps: int = TECZA_OPTIMIZATION_STEPS
     use_caa_init: bool = True
     cone_constraint: bool = True
-    min_cosine_similarity: float = 0.3
-    max_cosine_similarity: float = 0.95
+    min_cosine_similarity: float = TECZA_MIN_COSINE_SIM
+    max_cosine_similarity: float = TECZA_MAX_COSINE_SIM
     # TETNO
     sensor_layer: int = -1
     steering_layers: str = ""
-    condition_threshold: float = 0.5
-    gate_temperature: float = 0.5
+    condition_threshold: float = TETNO_CONDITION_THRESHOLD
+    gate_temperature: float = TETNO_GATE_TEMPERATURE_LEGACY
     per_layer_scaling: bool = True
     use_entropy_scaling: bool = False
-    max_alpha: float = 2.0
+    max_alpha: float = TETNO_MAX_ALPHA
     learn_threshold: bool = True
-    tetno_optimization_steps: int = 100
+    tetno_optimization_steps: int = TETNO_OPTIMIZATION_STEPS
     # GROM
-    gate_hidden_dim: int = 64
-    intensity_hidden_dim: int = 32
-    behavior_weight: float = 1.0
-    sparse_weight: float = 0.05
-    grom_optimization_steps: int = 200
-    grom_learning_rate: float = 0.005
+    gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM
+    intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM
+    behavior_weight: float = GROM_BEHAVIOR_WEIGHT
+    sparse_weight: float = GROM_SPARSE_WEIGHT
+    grom_optimization_steps: int = GROM_OPTIMIZATION_STEPS
+    grom_learning_rate: float = GROM_LEARNING_RATE
     method_params: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
@@ -65,20 +72,20 @@ def store_optimization(
     model: str, task: str, layer: int, strength: float,
     method: str = "CAA", token_aggregation: str = "average",
     prompt_strategy: str = "question_only", strategy: str = "constant",
-    score: float = 0.0, metric: str = "accuracy",
+    score: float = DEFAULT_SCORE, metric: str = "accuracy",
     metadata: Optional[Dict[str, Any]] = None, set_as_default: bool = False,
     num_directions: int = 1, direction_weighting: str = "primary_only",
-    retain_weight: float = 0.0, independence_weight: float = 0.05,
-    tecza_optimization_steps: int = 100, use_caa_init: bool = True,
-    cone_constraint: bool = True, min_cosine_similarity: float = 0.3,
-    max_cosine_similarity: float = 0.95, sensor_layer: int = -1,
-    steering_layers: str = "", condition_threshold: float = 0.5,
-    gate_temperature: float = 0.5, per_layer_scaling: bool = True,
-    use_entropy_scaling: bool = False, max_alpha: float = 2.0,
-    learn_threshold: bool = True, tetno_optimization_steps: int = 100,
-    gate_hidden_dim: int = 64, intensity_hidden_dim: int = 32,
-    behavior_weight: float = 1.0, sparse_weight: float = 0.05,
-    grom_optimization_steps: int = 200, grom_learning_rate: float = 0.005,
+    retain_weight: float = 0.0, independence_weight: float = TECZA_INDEPENDENCE_WEIGHT,
+    tecza_optimization_steps: int = TECZA_OPTIMIZATION_STEPS, use_caa_init: bool = True,
+    cone_constraint: bool = True, min_cosine_similarity: float = TECZA_MIN_COSINE_SIM,
+    max_cosine_similarity: float = TECZA_MAX_COSINE_SIM, sensor_layer: int = -1,
+    steering_layers: str = "", condition_threshold: float = TETNO_CONDITION_THRESHOLD,
+    gate_temperature: float = TETNO_GATE_TEMPERATURE_LEGACY, per_layer_scaling: bool = True,
+    use_entropy_scaling: bool = False, max_alpha: float = TETNO_MAX_ALPHA,
+    learn_threshold: bool = True, tetno_optimization_steps: int = TETNO_OPTIMIZATION_STEPS,
+    gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM, intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM,
+    behavior_weight: float = GROM_BEHAVIOR_WEIGHT, sparse_weight: float = GROM_SPARSE_WEIGHT,
+    grom_optimization_steps: int = GROM_OPTIMIZATION_STEPS, grom_learning_rate: float = GROM_LEARNING_RATE,
     method_params: Optional[Dict[str, Any]] = None,
 ) -> str:
     """Backward-compatible function to store steering optimization result."""

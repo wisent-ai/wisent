@@ -6,13 +6,17 @@ from typing import Dict
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from wisent.core.constants import (
+    ZERO_THRESHOLD, LINEARITY_N_INIT, CONCEPT_K_DIRECTION_THRESHOLD,
+    DEFAULT_RANDOM_SEED, MAX_K_DEFAULT,
+)
 
 
 def detect_k_concepts(
     diff_vectors: np.ndarray,
-    max_k: int = 6,
-    direction_threshold: float = 0.20,  # Clusters with similarity < this are distinct concepts
-    seed: int = 42,
+    max_k: int = MAX_K_DEFAULT,
+    direction_threshold: float = CONCEPT_K_DIRECTION_THRESHOLD,  # Clusters with similarity < this are distinct concepts
+    seed: int = DEFAULT_RANDOM_SEED,
 ) -> Dict:
     """
     Detect the number of distinct concepts in a sample of contrastive pairs.
@@ -39,7 +43,7 @@ def detect_k_concepts(
     
     for k in range(2, max_k + 1):
         # Cluster
-        km = KMeans(n_clusters=k, random_state=seed, n_init=10)
+        km = KMeans(n_clusters=k, random_state=seed, n_init=LINEARITY_N_INIT)
         labels = km.fit_predict(diff_vectors)
         
         # Compute direction for each cluster
@@ -52,7 +56,7 @@ def detect_k_concepts(
             
             if cluster_size >= 3:
                 direction = diff_vectors[mask].mean(axis=0)
-                direction = direction / (np.linalg.norm(direction) + 1e-10)
+                direction = direction / (np.linalg.norm(direction) + ZERO_THRESHOLD)
                 directions.append(direction)
             else:
                 directions.append(None)

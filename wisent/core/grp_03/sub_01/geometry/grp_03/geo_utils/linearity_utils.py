@@ -7,8 +7,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-
-MAX_PAIRS_FOR_LINEARITY = 1000
+from wisent.core.constants import (ZERO_THRESHOLD, LINEARITY_MAX_PAIRS, LINEARITY_PCA_COMPONENTS, CV_FOLDS, DEFAULT_RANDOM_SEED, LINEARITY_HIDDEN_DIM_LARGE, LINEARITY_HIDDEN_DIM_SMALL, LINEARITY_N_CLUSTERS, LINEARITY_NONLINEAR_ERROR, LINEARITY_N_INIT, LINEARITY_N_BOOTSTRAP, LINEARITY_MLP_MAX_ITER, LINEARITY_MIN_GAPS, LINEARITY_DEGREE, LINEARITY_N_FEATURES, LINEARITY_REG_C, LINEARITY_RIDGE_ALPHA, LINEARITY_BOOTSTRAP_ITER, LINEARITY_Z_SCORE_THRESHOLD, CONFIDENCE_LEVEL)
 
 def _prepare_data(
     pos: torch.Tensor, neg: torch.Tensor
@@ -18,23 +17,23 @@ def _prepare_data(
     pos_np = pos.cpu().numpy() if isinstance(pos, torch.Tensor) else pos
     neg_np = neg.cpu().numpy() if isinstance(neg, torch.Tensor) else neg
     import sys; print(f"  [TRACE] _prepare_data: {len(pos_np)} pairs, {pos_np.shape[1]} dims", file=sys.stderr, flush=True)
-    if len(pos_np) > MAX_PAIRS_FOR_LINEARITY:
-        idx = np.random.RandomState(42).choice(len(pos_np), MAX_PAIRS_FOR_LINEARITY, replace=False)
+    if len(pos_np) > LINEARITY_MAX_PAIRS:
+        idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(len(pos_np), LINEARITY_MAX_PAIRS, replace=False)
         idx.sort()
         pos_np, neg_np = pos_np[idx], neg_np[idx]
     X = np.vstack([pos_np, neg_np])
     y = np.array([1] * len(pos_np) + [0] * len(neg_np))
     n_samples, n_features = X.shape
-    pca_dims = min(n_samples - 1, n_features, 50)
+    pca_dims = min(n_samples - 1, n_features, LINEARITY_PCA_COMPONENTS)
     if pca_dims < n_features and pca_dims >= 2:
-        X = PCA(n_components=pca_dims, random_state=42).fit_transform(X)
+        X = PCA(n_components=pca_dims, random_state=DEFAULT_RANDOM_SEED).fit_transform(X)
     return X, y
 
 def compute_probe_accuracies(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_splits: int = 5,
-    random_state: int = 42,
+    n_splits: int = CV_FOLDS,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Tuple[float, float, np.ndarray, np.ndarray]:
     """Compute linear and nonlinear probe accuracies with cross-validation.
 
@@ -46,9 +45,9 @@ def compute_probe_accuracies(
     n_per_class = min(len(pos), len(neg))
     n_splits = max(2, min(n_splits, n_per_class))
     cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-    linear_model = LogisticRegression( solver="lbfgs", random_state=random_state)
+    linear_model = LogisticRegression(solver="lbfgs", random_state=random_state)
     nonlinear_model = MLPClassifier(
-        hidden_layer_sizes=(64,),  random_state=random_state
+        hidden_layer_sizes=(LINEARITY_HIDDEN_DIM_LARGE,), random_state=random_state
     )
 
     linear_scores = cross_val_score(linear_model, X, y, cv=cv, scoring="accuracy")
@@ -64,8 +63,8 @@ def compute_probe_accuracies(
 def analyze_residuals(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_clusters: int = 3,
-    random_state: int = 42,
+    n_clusters: int = LINEARITY_N_CLUSTERS,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Analyze linear probe residuals for systematic patterns.
 
@@ -77,13 +76,13 @@ def analyze_residuals(
     """
     X, y = _prepare_data(pos, neg)
 
-    model = LogisticRegression( solver="lbfgs", random_state=random_state)
+    model = LogisticRegression(solver="lbfgs", random_state=random_state)
     model.fit(X, y)
 
     probs = model.predict_proba(X)[:, 1]
     errors = np.abs(y - probs)
 
-    error_mask = errors > 0.3
+    error_mask = errors > LINEARITY_NONLINEAR_ERROR
     if error_mask.sum() < n_clusters * 2:
         return {
             "residual_silhouette": 0.0,
@@ -93,7 +92,7 @@ def analyze_residuals(
 
     high_error_X = X[error_mask]
 
-    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=10)
+    kmeans = KMeans(n_clusters=n_clusters, random_state=random_state, n_init=LINEARITY_N_INIT)
     cluster_labels = kmeans.fit_predict(high_error_X)
 
     if len(np.unique(cluster_labels)) > 1:
@@ -110,9 +109,9 @@ def analyze_residuals(
 def bootstrap_gap_ci(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    n_bootstrap: int = 100,
-    ci_level: float = 0.95,
-    random_state: int = 42,
+    n_bootstrap: int = LINEARITY_N_BOOTSTRAP,
+    ci_level: float = CONFIDENCE_LEVEL,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Tuple[float, float, float]:
     """Compute bootstrap confidence interval on linear-nonlinear gap.
 
@@ -131,8 +130,8 @@ def bootstrap_gap_ci(
         if len(np.unique(y_boot)) < 2:
             continue
 
-        linear = LogisticRegression( solver="lbfgs", random_state=42)
-        nonlinear = MLPClassifier(hidden_layer_sizes=(32,), max_iter=50, random_state=42)
+        linear = LogisticRegression(solver="lbfgs", random_state=DEFAULT_RANDOM_SEED)
+        nonlinear = MLPClassifier(hidden_layer_sizes=(LINEARITY_HIDDEN_DIM_SMALL,), max_iter=LINEARITY_MLP_MAX_ITER, random_state=DEFAULT_RANDOM_SEED)
 
         try:
             linear.fit(X_boot, y_boot)
@@ -144,7 +143,7 @@ def bootstrap_gap_ci(
         except Exception:
             continue
 
-    if len(gaps) < 10:
+    if len(gaps) < LINEARITY_MIN_GAPS:
         return 0.0, 0.0, 0.0
 
     gaps = np.array(gaps)
@@ -156,7 +155,7 @@ def bootstrap_gap_ci(
 
 def test_cross_context_linearity(
     contexts: List[Tuple[torch.Tensor, torch.Tensor]],
-    random_state: int = 42,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Test if linear directions transfer across contexts (Lampinen-style).
 
@@ -178,7 +177,7 @@ def test_cross_context_linearity(
     for i, (pos_train, neg_train) in enumerate(contexts):
         X_train, y_train = _prepare_data(pos_train, neg_train)
 
-        model = LogisticRegression( solver="lbfgs", random_state=random_state)
+        model = LogisticRegression(solver="lbfgs", random_state=random_state)
         model.fit(X_train, y_train)
 
         for j, (pos_test, neg_test) in enumerate(contexts):
@@ -198,9 +197,9 @@ def test_cross_context_linearity(
 def ramsey_polynomial_test(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    degree: int = 2,
-    n_features: int = 50,
-    random_state: int = 42,
+    degree: int = LINEARITY_DEGREE,
+    n_features: int = LINEARITY_N_FEATURES,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Ramsey-style test: do polynomial features significantly improve fit?
 
@@ -219,16 +218,16 @@ def ramsey_polynomial_test(
     pca = PCA(n_components=n_components, random_state=random_state)
     X_reduced = pca.fit_transform(X)
 
-    n_per_class = min(len(pos), len(neg)); _ns = max(2, min(5, n_per_class))
+    n_per_class = min(len(pos), len(neg)); _ns = max(2, min(CV_FOLDS, n_per_class))
     cv = StratifiedKFold(n_splits=_ns, shuffle=True, random_state=random_state)
-    linear = LogisticRegression( solver="lbfgs", random_state=random_state)
+    linear = LogisticRegression(solver="lbfgs", random_state=random_state)
     linear_scores = cross_val_score(linear, X_reduced, y, cv=cv, scoring="accuracy")
     linear_acc = float(np.mean(linear_scores))
 
     poly = PolynomialFeatures(degree=degree, include_bias=False)
     X_poly = poly.fit_transform(X_reduced)
 
-    poly_model = LogisticRegression( solver="lbfgs", random_state=random_state, C=0.1)
+    poly_model = LogisticRegression(solver="lbfgs", random_state=random_state, C=LINEARITY_REG_C)
     poly_scores = cross_val_score(poly_model, X_poly, y, cv=cv, scoring="accuracy")
     poly_acc = float(np.mean(poly_scores))
 
@@ -246,8 +245,8 @@ def regression_probe(
     pos: torch.Tensor,
     neg: torch.Tensor,
     target: np.ndarray,
-    n_splits: int = 5,
-    random_state: int = 42,
+    n_splits: int = CV_FOLDS,
+    random_state: int = DEFAULT_RANDOM_SEED,
 ) -> Dict[str, float]:
     """Regression probe for predicting continuous outcomes.
 
@@ -269,7 +268,7 @@ def regression_probe(
     diff = pos.cpu().numpy() - neg.cpu().numpy() if isinstance(pos, torch.Tensor) else pos - neg
 
     cv = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
-    model = Ridge(alpha=1.0)
+    model = Ridge(alpha=LINEARITY_RIDGE_ALPHA)
 
     r2_scores = cross_val_score(model, diff, target, cv=cv, scoring="r2")
     r2_mean = float(np.mean(r2_scores))
@@ -280,14 +279,14 @@ def regression_probe(
 
     rng = np.random.RandomState(random_state)
     null_r2s = []
-    for _ in range(50):
+    for _ in range(LINEARITY_BOOTSTRAP_ITER):
         target_perm = rng.permutation(target)
         null_scores = cross_val_score(model, diff, target_perm, cv=cv, scoring="r2")
         null_r2s.append(np.mean(null_scores))
 
     null_mean = float(np.mean(null_r2s))
     null_std = float(np.std(null_r2s))
-    z_score = (r2_mean - null_mean) / (null_std + 1e-10)
+    z_score = (r2_mean - null_mean) / (null_std + ZERO_THRESHOLD)
 
     return {
         "r2_mean": r2_mean,
@@ -296,5 +295,5 @@ def regression_probe(
         "correlation_p_value": float(p_value),
         "null_r2_mean": null_mean,
         "z_score_vs_null": z_score,
-        "significant": z_score > 2.0,
+        "significant": z_score > LINEARITY_Z_SCORE_THRESHOLD,
     }

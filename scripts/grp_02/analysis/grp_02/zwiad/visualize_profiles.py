@@ -9,6 +9,8 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
+from wisent.core.constants import VIZ_DPI, VIZ_MARKER_SIZE, VIZ_ALPHA_HIGH, VIZ_LINEWIDTH_THIN
+
 ZWIAD_DIR = Path("zwiad_results")
 MODEL_SLUG = "meta-llama_Llama-3.2-1B-Instruct"
 OUTPUT_DIR = Path("zwiad_results/figures")
@@ -90,7 +92,7 @@ def plot_signal_curvature(recs):
         p = r["_profile"]
         ax.scatter(r["signal_strength"], r["manifold_curvature"],
                    c=PROFILE_COLORS[p], marker=CAT_MARKERS.get(r["category"], "."),
-                   s=60, alpha=0.7, edgecolors="white", linewidth=0.3)
+                   s=60, alpha=VIZ_ALPHA_HIGH, edgecolors="white", linewidth=0.3)
     ax.set_xlabel("Signal Strength", fontsize=13)
     ax.set_ylabel("Manifold Curvature", fontsize=13)
     ax.set_title(f"Zwiad: Signal vs Curvature ({len(recs)} benchmarks)", fontsize=14)
@@ -101,12 +103,12 @@ def plot_signal_curvature(recs):
     ax.add_artist(leg1)
     ax.legend(handles=cat_handles, loc="lower right", fontsize=8, title="Category")
     for x in [0.50, 0.65, 0.80, 0.93]:
-        ax.axvline(x=x, color="gray", ls="--", alpha=0.4, lw=0.8)
+        ax.axvline(x=x, color="gray", ls="--", alpha=0.4, lw=VIZ_LINEWIDTH_THIN)
     ax.set_xlim(0.3, 1.05)
     ax.set_ylim(-0.05, 1.0)
     ax.grid(True, alpha=0.2)
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "signal_vs_curvature.png", dpi=150)
+    fig.savefig(OUTPUT_DIR / "signal_vs_curvature.png", dpi=VIZ_DPI)
     print(f"Saved signal_vs_curvature.png")
     plt.close(fig)
 
@@ -138,7 +140,7 @@ def plot_heatmap(recs):
     fig.colorbar(im, ax=ax, shrink=0.8)
     ax.set_title(f"Mean Metrics per Profile ({len(recs)} benchmarks)", fontsize=13)
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "profile_heatmap.png", dpi=150)
+    fig.savefig(OUTPUT_DIR / "profile_heatmap.png", dpi=VIZ_DPI)
     print(f"Saved profile_heatmap.png")
     plt.close(fig)
 
@@ -168,7 +170,7 @@ def plot_method_dist(recs):
     ax.legend(fontsize=10)
     ax.grid(True, axis="y", alpha=0.2)
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "method_by_profile.png", dpi=150)
+    fig.savefig(OUTPUT_DIR / "method_by_profile.png", dpi=VIZ_DPI)
     print(f"Saved method_by_profile.png")
     plt.close(fig)
 
@@ -178,7 +180,7 @@ def plot_consistency_sep(recs):
     for r in recs:
         ax.scatter(r["consistency_consistency_score"],
                    min(r["cloud_separation_ratio"], 4.0),
-                   c=PROFILE_COLORS[r["_profile"]], s=50, alpha=0.65,
+                   c=PROFILE_COLORS[r["_profile"]], s=VIZ_MARKER_SIZE, alpha=0.65,
                    edgecolors="white", linewidth=0.3)
     ax.set_xlabel("Consistency Score", fontsize=13)
     ax.set_ylabel("Cloud Separation Ratio (capped 4)", fontsize=13)
@@ -187,7 +189,7 @@ def plot_consistency_sep(recs):
     ax.legend(handles=patches, loc="upper left", fontsize=9)
     ax.grid(True, alpha=0.2)
     fig.tight_layout()
-    fig.savefig(OUTPUT_DIR / "consistency_vs_separation.png", dpi=150)
+    fig.savefig(OUTPUT_DIR / "consistency_vs_separation.png", dpi=VIZ_DPI)
     print(f"Saved consistency_vs_separation.png")
     plt.close(fig)
 

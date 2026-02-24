@@ -25,6 +25,7 @@ import numpy as np
 import psycopg2
 import torch
 
+from wisent.core.constants import NORM_EPS, EXTRACTION_SINGLE_PAIR_LIMIT
 from wisent.core.activations.core.optimal_extraction import (
     extract_at_optimal_position, extract_at_max_diff_norm, find_direction_from_all_tokens
 )
@@ -111,7 +112,7 @@ def load_raw_activations(model_name: str, benchmark: str, layer: int, limit: int
 
 def compute_pairwise_accuracy(pos_acts: torch.Tensor, neg_acts: torch.Tensor, direction: torch.Tensor) -> float:
     """Compute pairwise steering accuracy."""
-    direction = direction / (torch.norm(direction) + 1e-8)
+    direction = direction / (torch.norm(direction) + NORM_EPS)
     return (pos_acts @ direction > neg_acts @ direction).float().mean().item()
 
 
@@ -240,6 +241,6 @@ if __name__ == "__main__":
     parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model name")
     parser.add_argument("--benchmark", type=str, default="truthfulqa_custom", help="Benchmark")
     parser.add_argument("--layer", type=int, default=None, help="Layer (default: middle)")
-    parser.add_argument("--limit", type=int, default=200, help="Max pairs to load")
+    parser.add_argument("--limit", type=int, default=EXTRACTION_SINGLE_PAIR_LIMIT, help="Max pairs to load")
     args = parser.parse_args()
     run_comparison(args.model, args.benchmark, args.layer, args.limit)

@@ -4,6 +4,7 @@ import random
 from typing import Any
 from datasets import load_dataset
 from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.constants import EXTRACTOR_DEFAULT_LIMIT, DISPLAY_TRUNCATION_LARGE
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
@@ -110,7 +111,7 @@ class RefusalBenchExtractor(HuggingFaceBenchmarkExtractor):
             perturbation_types = list(PERTURBATION_CATEGORIES.keys())
             
             for i, item in enumerate(ds):
-                if i >= 500:
+                if i >= EXTRACTOR_DEFAULT_LIMIT:
                     break
                     
                 question = item.get("question", {}).get("text", "")
@@ -134,7 +135,7 @@ class RefusalBenchExtractor(HuggingFaceBenchmarkExtractor):
                 
                 context = item.get("document", {}).get("tokens", {}).get("token", [])
                 if isinstance(context, list):
-                    context = " ".join(context[:500])
+                    context = " ".join(context[:DISPLAY_TRUNCATION_LARGE])
                 
                 if not context or len(context) < 100:
                     continue

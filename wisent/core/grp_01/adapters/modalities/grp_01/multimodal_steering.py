@@ -5,6 +5,7 @@ import torch
 import torch.nn as nn
 from wisent.core.adapters.base import SteeringConfig, InterventionPoint
 from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_ADAPTER, DEFAULT_INFERENCE_TEMPERATURE
 
 __all__ = [
     "get_intervention_points_multimodal",
@@ -104,14 +105,14 @@ def forward_with_steering_multimodal(adapter, content, steering_vectors, config=
     with adapter._steering_hooks(steering_vectors, config):
         with torch.no_grad():
             outputs = adapter.model.generate(
-                **inputs, max_new_tokens=256, do_sample=True, temperature=0.7,
+                **inputs, max_new_tokens=DEFAULT_MAX_NEW_TOKENS_ADAPTER, do_sample=True, temperature=DEFAULT_INFERENCE_TEMPERATURE,
             )
     generated = adapter.processor.decode(outputs[0], skip_special_tokens=True)
     return generated
 
 
 def generate_unsteered_multimodal(
-    adapter, content, max_new_tokens: int = 256, temperature: float = 0.7, **kwargs,
+    adapter, content, max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_ADAPTER, temperature: float = DEFAULT_INFERENCE_TEMPERATURE, **kwargs,
 ) -> str:
     """Generate output without steering."""
     inputs = adapter._prepare_inputs(content)

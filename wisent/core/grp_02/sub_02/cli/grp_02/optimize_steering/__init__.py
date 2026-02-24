@@ -1,6 +1,7 @@
 import os as _os
 _base = _os.path.dirname(__file__)
 for _root, _dirs, _files in _os.walk(_base):
+    _dirs[:] = sorted(d for d in _dirs if d.startswith(("grp_", "sub_", "mid_")))
     if _root != _base:
         __path__.append(_root)
 
@@ -49,6 +50,7 @@ from wisent.core.cli.optimize_steering.pipeline import (
 from wisent.core.cli.optimize_steering.welfare import _execute_welfare_optimization
 from wisent.core.cli.optimize_steering.personalization import _execute_personalization_optimization
 from wisent.core.cli.optimize_steering.continual import execute_continual_learning
+from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, DEFAULT_NUM_HIDDEN_LAYERS
 
 
 def execute_optimize_steering(args):
@@ -69,7 +71,7 @@ def execute_optimize_steering(args):
         result = run_auto_steering_optimization(
             model_name=args.model,
             task_name=args.task,
-            limit=getattr(args, 'limit', 100),
+            limit=getattr(args, 'limit', DEFAULT_LIMIT),
             device=getattr(args, 'device', None),
             verbose=getattr(args, 'verbose', False),
             layer_range=getattr(args, 'layer_range', None),
@@ -108,7 +110,7 @@ def execute_optimize_steering(args):
     import optuna
 
     method = getattr(args, 'method', 'CAA')
-    n_trials = getattr(args, 'n_trials', 100)
+    n_trials = getattr(args, 'n_trials', DEFAULT_N_TRIALS)
     enriched_pairs_file = getattr(args, 'enriched_pairs_file', None)
     task = getattr(args, 'task', None) or "custom"
 
@@ -128,19 +130,19 @@ def execute_optimize_steering(args):
     from transformers import AutoConfig as _AC
     try:
         _cfg = _AC.from_pretrained(args.model, trust_remote_code=True)
-        num_layers = getattr(_cfg, "num_hidden_layers", 32)
+        num_layers = getattr(_cfg, "num_hidden_layers", DEFAULT_NUM_HIDDEN_LAYERS)
     except Exception:
-        num_layers = 32
+        num_layers = DEFAULT_NUM_HIDDEN_LAYERS
     method = args.method if hasattr(args, 'method') else "CAA"
-    n_trials = getattr(args, 'n_trials', 100)
-    limit = getattr(args, 'limit', 100)
+    n_trials = getattr(args, 'n_trials', DEFAULT_N_TRIALS)
+    limit = getattr(args, 'limit', DEFAULT_LIMIT)
     device = getattr(args, 'device', None)
 
     # If enriched_pairs_file provided, get num_layers from it
     if enriched_pairs_file:
         with open(enriched_pairs_file) as f:
             data = json.load(f)
-        num_layers = len(data.get("layers", [])) or 32
+        num_layers = len(data.get("layers", [])) or DEFAULT_NUM_HIDDEN_LAYERS
         print(f"   Loaded {num_layers} layers from enriched pairs file")
 
     with tempfile.TemporaryDirectory() as work_dir:

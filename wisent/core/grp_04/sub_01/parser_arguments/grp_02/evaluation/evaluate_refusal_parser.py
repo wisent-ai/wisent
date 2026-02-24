@@ -1,5 +1,7 @@
 """Parser setup for the 'evaluate-refusal' command."""
 
+from wisent.core import constants as _C
+
 
 def setup_evaluate_refusal_parser(parser):
     """Set up the evaluate-refusal command parser."""
@@ -21,7 +23,7 @@ def setup_evaluate_refusal_parser(parser):
         "gambling, controversial_speech, evasion, self_harm, adult_content",
     )
     parser.add_argument(
-        "--max-new-tokens", type=int, default=150, help="Maximum tokens to generate per response (default: 150)"
+        "--max-new-tokens", type=int, default=_C.EVAL_REFUSAL_MAX_TOKENS, help="Maximum tokens to generate per response (default: 150)"
     )
     parser.add_argument(
         "--num-prompts",

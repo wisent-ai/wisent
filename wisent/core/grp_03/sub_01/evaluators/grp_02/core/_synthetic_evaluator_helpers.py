@@ -5,6 +5,7 @@ Contains evaluate_model implementation and create_synthetic_evaluator factory.
 """
 
 from typing import Dict, List, Optional
+from wisent.core.constants import SYNTHETIC_EVAL_NUM_PROMPTS
 
 
 def evaluate_model_impl(evaluator, model=None, num_samples: int = None) -> Dict:
@@ -60,7 +61,7 @@ def create_synthetic_evaluator(
     model=None,
     test_prompts_file: str = None,
     generate_prompts: bool = False,
-    num_test_prompts: int = 10,
+    num_test_prompts: int = SYNTHETIC_EVAL_NUM_PROMPTS,
     verbose: bool = False,
 ):
     """Factory function to create a SyntheticEvaluator.

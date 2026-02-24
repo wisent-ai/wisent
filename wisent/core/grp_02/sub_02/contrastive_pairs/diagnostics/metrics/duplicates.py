@@ -6,6 +6,8 @@ from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 from typing import Dict, Iterable, List
 
+from wisent.core.constants import DEDUP_ITEM_THRESHOLD
+
 from ..base import DiagnosticsConfig, DiagnosticsIssue, MetricReport
 
 
@@ -84,7 +86,7 @@ def compute_duplicate_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Met
     near_duplicate_pairs: List[tuple[int, int, float]] = []
     prompt_items = list(prompt_counter.keys())
     # Skip O(n^2) near-duplicate detection for large sets (>1000 unique prompts)
-    if len(prompt_items) <= 1000:
+    if len(prompt_items) <= DEDUP_ITEM_THRESHOLD:
         for i, prompt_a in enumerate(prompt_items):
             for prompt_b in prompt_items[i + 1 :]:
                 similarity = SequenceMatcher(None, prompt_a, prompt_b).ratio()

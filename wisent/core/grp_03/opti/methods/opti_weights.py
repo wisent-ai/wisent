@@ -21,6 +21,13 @@ import optuna
 import torch
 
 from wisent.core.opti.core.atoms import BaseOptimizer, Direction, HPOConfig, HPORun
+from wisent.core.constants import (
+    WEIGHT_MIN_DISTANCE_FRACTION,
+    OPTI_WEIGHTS_STRENGTH_RANGE,
+    OPTI_WEIGHTS_MAX_WEIGHT_RANGE,
+    OPTI_WEIGHTS_MIN_WEIGHT_RANGE,
+    OPTI_WEIGHTS_POSITION_RANGE,
+)
 
 from wisent.core.opti.methods._opti_weights_checkpointing import WeightsCheckpointingMixin
 
@@ -57,10 +64,10 @@ class WeightsOptimizerConfig:
         target_value:
             Target value to achieve (for early stopping).
     """
-    strength_range: tuple[float, float] = (0.5, 2.0)
-    max_weight_range: tuple[float, float] = (0.1, 1.0)
-    min_weight_range: tuple[float, float] = (0.0, 0.3)
-    position_range: tuple[float, float] = (0.3, 0.7)
+    strength_range: tuple[float, float] = OPTI_WEIGHTS_STRENGTH_RANGE
+    max_weight_range: tuple[float, float] = OPTI_WEIGHTS_MAX_WEIGHT_RANGE
+    min_weight_range: tuple[float, float] = OPTI_WEIGHTS_MIN_WEIGHT_RANGE
+    position_range: tuple[float, float] = OPTI_WEIGHTS_POSITION_RANGE
     method: Literal["directional", "bake"] = "directional"
     components: int = 1
     norm_preserve: bool = True
@@ -228,7 +235,7 @@ class WeightsOptimizer(BaseOptimizer, WeightsCheckpointingMixin):
         max_weight_position = params["max_weight_position"] * (self.num_layers - 1)
 
         # Compute min_weight_distance from position
-        min_weight_distance = 0.6 * (self.num_layers - 1)
+        min_weight_distance = WEIGHT_MIN_DISTANCE_FRACTION * (self.num_layers - 1)
 
         if self.config.method == "directional":
             project_with_kernel(

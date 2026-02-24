@@ -1,5 +1,19 @@
 """Steering method definitions: TETNO, GROM, PRZELOM."""
 
+from wisent.core.constants import (
+    DEFAULT_BASE_STRENGTH,
+    TIKHONOV_REG,
+    TETNO_CONDITION_THRESHOLD, TETNO_GATE_TEMPERATURE,
+    TETNO_ENTROPY_FLOOR, TETNO_ENTROPY_CEILING, TETNO_MAX_ALPHA,
+    TETNO_OPTIMIZATION_STEPS, TETNO_LEARNING_RATE,
+    GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS, GROM_LEARNING_RATE,
+    GROM_BEHAVIOR_WEIGHT, GROM_RETAIN_WEIGHT, GROM_SPARSE_WEIGHT,
+    GROM_MAX_ALPHA,
+    PRZELOM_EPSILON, PRZELOM_INFERENCE_K,
+    DEFAULT_STRENGTH,
+    STEERING_STRENGTH_RANGE_WIDE,
+    STEERING_STRENGTH_RANGE_NARROW,
+)
 from wisent.core.steering_methods.registry import (
     SteeringMethodDefinition,
     SteeringMethodParameter,
@@ -38,14 +52,14 @@ TETNO_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="condition_threshold",
             type=float,
-            default=0.5,
+            default=TETNO_CONDITION_THRESHOLD,
             help="Threshold for condition activation (0-1)",
             cli_flag="--tetno-condition-threshold",
         ),
         SteeringMethodParameter(
             name="gate_temperature",
             type=float,
-            default=0.1,
+            default=TETNO_GATE_TEMPERATURE,
             help="Temperature for sigmoid gating (lower = sharper)",
             cli_flag="--tetno-gate-temperature",
         ),
@@ -68,35 +82,35 @@ TETNO_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="entropy_floor",
             type=float,
-            default=0.5,
+            default=TETNO_ENTROPY_FLOOR,
             help="Minimum entropy to trigger scaling",
             cli_flag="--tetno-entropy-floor",
         ),
         SteeringMethodParameter(
             name="entropy_ceiling",
             type=float,
-            default=2.0,
+            default=TETNO_ENTROPY_CEILING,
             help="Entropy at which max_alpha is reached",
             cli_flag="--tetno-entropy-ceiling",
         ),
         SteeringMethodParameter(
             name="max_alpha",
             type=float,
-            default=2.0,
+            default=TETNO_MAX_ALPHA,
             help="Maximum steering strength",
             cli_flag="--tetno-max-alpha",
         ),
         SteeringMethodParameter(
             name="optimization_steps",
             type=int,
-            default=100,
+            default=TETNO_OPTIMIZATION_STEPS,
             help="Steps for condition vector optimization",
             cli_flag="--tetno-optimization-steps",
         ),
         SteeringMethodParameter(
             name="learning_rate",
             type=float,
-            default=0.01,
+            default=TETNO_LEARNING_RATE,
             help="Learning rate for optimization",
             cli_flag="--tetno-learning-rate",
         ),
@@ -110,12 +124,12 @@ TETNO_DEFINITION = SteeringMethodDefinition(
         ),
     ],
     optimization_config={
-        "strength_search_range": (0.1, 3.0),
-        "default_strength": 1.0,
+        "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
+        "default_strength": DEFAULT_STRENGTH,
         "threshold_search_range": (0.0, 1.0),
     },
-    default_strength=1.0,
-    strength_range=(0.1, 3.0),
+    default_strength=DEFAULT_STRENGTH,
+    strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )
 
 
@@ -128,7 +142,7 @@ GROM_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="num_directions",
             type=int,
-            default=5,
+            default=GROM_NUM_DIRECTIONS,
             help="Number of directions per layer in the steering manifold",
             cli_flag="--grom-num-directions",
         ),
@@ -163,42 +177,42 @@ GROM_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="optimization_steps",
             type=int,
-            default=200,
+            default=GROM_OPTIMIZATION_STEPS,
             help="Total optimization steps",
             cli_flag="--grom-optimization-steps",
         ),
         SteeringMethodParameter(
             name="learning_rate",
             type=float,
-            default=0.005,
+            default=GROM_LEARNING_RATE,
             help="Learning rate for all components",
             cli_flag="--grom-learning-rate",
         ),
         SteeringMethodParameter(
             name="behavior_weight",
             type=float,
-            default=1.0,
+            default=GROM_BEHAVIOR_WEIGHT,
             help="Weight for behavior effectiveness loss",
             cli_flag="--grom-behavior-weight",
         ),
         SteeringMethodParameter(
             name="retain_weight",
             type=float,
-            default=0.2,
+            default=GROM_RETAIN_WEIGHT,
             help="Weight for retain loss (minimize side effects)",
             cli_flag="--grom-retain-weight",
         ),
         SteeringMethodParameter(
             name="sparse_weight",
             type=float,
-            default=0.05,
+            default=GROM_SPARSE_WEIGHT,
             help="Weight for sparsity loss",
             cli_flag="--grom-sparse-weight",
         ),
         SteeringMethodParameter(
             name="max_alpha",
             type=float,
-            default=3.0,
+            default=GROM_MAX_ALPHA,
             help="Maximum steering intensity",
             cli_flag="--grom-max-alpha",
         ),
@@ -212,12 +226,12 @@ GROM_DEFINITION = SteeringMethodDefinition(
         ),
     ],
     optimization_config={
-        "strength_search_range": (0.1, 5.0),
-        "default_strength": 1.0,
+        "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
+        "default_strength": DEFAULT_BASE_STRENGTH,
         "num_directions_range": (3, 10),
     },
-    default_strength=1.0,
-    strength_range=(0.1, 5.0),
+    default_strength=DEFAULT_BASE_STRENGTH,
+    strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
 
@@ -230,7 +244,7 @@ PRZELOM_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="epsilon",
             type=float,
-            default=1.0,
+            default=PRZELOM_EPSILON,
             help="Entropic regularization (softmax temperature) for transport plan",
             cli_flag="--przelom-epsilon",
         ),
@@ -245,22 +259,22 @@ PRZELOM_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="regularization",
             type=float,
-            default=1e-4,
+            default=TIKHONOV_REG,
             help="Tikhonov regularization for pseudoinverse",
             cli_flag="--przelom-regularization",
         ),
         SteeringMethodParameter(
             name="inference_k",
             type=int,
-            default=5,
+            default=PRZELOM_INFERENCE_K,
             help="Nearest source points for inference interpolation",
             cli_flag="--przelom-inference-k",
         ),
     ],
     optimization_config={
-        "strength_search_range": (0.1, 3.0),
-        "default_strength": 1.0,
+        "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
+        "default_strength": DEFAULT_BASE_STRENGTH,
     },
-    default_strength=1.0,
-    strength_range=(0.1, 3.0),
+    default_strength=DEFAULT_BASE_STRENGTH,
+    strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )

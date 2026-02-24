@@ -7,6 +7,16 @@ import numpy as np
 import torch
 from typing import Dict, List, Optional, Any, Tuple
 from sklearn.decomposition import PCA
+from wisent.core.constants import (
+    ZERO_THRESHOLD,
+    DIRECTION_ORTHOGONAL_THRESHOLD,
+    DIRECTION_ALIGNED_THRESHOLD,
+    DIRECTION_HIGH_SIMILARITY,
+    DIRECTION_MODERATE_SIMILARITY,
+    DIRECTION_LOW_SIMILARITY,
+    N_COMPONENTS_2D,
+    ANGLE_DEVIATION_DEGREES_THRESHOLD,
+)
 
 
 def compute_direction_angles(
@@ -32,7 +42,7 @@ def compute_direction_angles(
     for d in directions:
         d_np = d.cpu().numpy() if isinstance(d, torch.Tensor) else d
         norm = np.linalg.norm(d_np)
-        dirs_np.append(d_np / norm if norm > 1e-10 else d_np)
+        dirs_np.append(d_np / norm if norm > ZERO_THRESHOLD else d_np)
 
     dirs_matrix = np.stack(dirs_np)
 
@@ -59,8 +69,8 @@ def compute_direction_angles(
         "mean_angle_degrees": float(off_diag_ang.mean()) if n > 1 else 0.0,
         "min_angle_degrees": float(off_diag_ang.min()) if n > 1 else 0.0,
         "max_angle_degrees": float(off_diag_ang.max()) if n > 1 else 0.0,
-        "orthogonal_pairs": int((np.abs(off_diag_cos) < 0.1).sum() // 2) if n > 1 else 0,
-        "aligned_pairs": int((off_diag_cos > 0.9).sum() // 2) if n > 1 else 0,
+        "orthogonal_pairs": int((np.abs(off_diag_cos) < DIRECTION_ORTHOGONAL_THRESHOLD).sum() // 2) if n > 1 else 0,
+        "aligned_pairs": int((off_diag_cos > DIRECTION_ALIGNED_THRESHOLD).sum() // 2) if n > 1 else 0,
     }
 
 
@@ -95,7 +105,7 @@ def plot_directions_in_pca_space(
     pos_activations: Optional[torch.Tensor] = None,
     neg_activations: Optional[torch.Tensor] = None,
     names: Optional[List[str]] = None,
-    n_components: int = 2,
+    n_components: int = N_COMPONENTS_2D,
 ) -> Dict[str, Any]:
     """
     Project directions to PCA space and visualize as arrows.
@@ -143,7 +153,7 @@ def plot_directions_in_pca_space(
 
     # Normalize for visualization (scale to unit length in projected space)
     norms = np.linalg.norm(dirs_proj, axis=1, keepdims=True)
-    dirs_proj_normalized = dirs_proj / (norms + 1e-10)
+    dirs_proj_normalized = dirs_proj / (norms + ZERO_THRESHOLD)
 
     return {
         "directions_projected": dirs_proj_normalized.tolist(),
@@ -241,13 +251,13 @@ def _interpret_direction_relationships(angles: Dict[str, Any]) -> List[str]:
     aligned = angles["aligned_pairs"]
     n = angles["n_directions"]
 
-    if mean_cos > 0.8:
+    if mean_cos > DIRECTION_HIGH_SIMILARITY:
         interpretations.append("Directions are highly aligned - may be same concept")
-    elif mean_cos > 0.5:
+    elif mean_cos > DIRECTION_MODERATE_SIMILARITY:
         interpretations.append("Directions are moderately correlated")
-    elif mean_cos > 0.1:
+    elif mean_cos > DIRECTION_LOW_SIMILARITY:
         interpretations.append("Directions are weakly correlated")
-    elif mean_cos > -0.1:
+    elif mean_cos > -DIRECTION_LOW_SIMILARITY:
         interpretations.append("Directions are approximately orthogonal")
     else:
         interpretations.append("Directions are anti-correlated (opposing)")
@@ -258,7 +268,7 @@ def _interpret_direction_relationships(angles: Dict[str, Any]) -> List[str]:
     if aligned > 0 and n > 2:
         interpretations.append(f"{aligned} direction pairs are nearly identical")
 
-    if angles["max_angle_degrees"] - angles["min_angle_degrees"] > 60:
+    if angles["max_angle_degrees"] - angles["min_angle_degrees"] > ANGLE_DEVIATION_DEGREES_THRESHOLD:
         interpretations.append("Direction angles vary widely - concepts are distinct")
 
     return interpretations

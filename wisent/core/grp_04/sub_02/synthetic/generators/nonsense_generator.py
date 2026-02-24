@@ -7,6 +7,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import UnknownTypeError
+from wisent.core import constants as _C
 
 __all__ = [
     "ProgrammaticNonsenseGenerator",
@@ -45,11 +46,11 @@ class ProgrammaticNonsenseGenerator:
         for token, token_id in vocab.items():
             decoded = tokenizer.decode([token_id])
             clean = decoded.strip()
-            if clean.isalpha() and len(clean) > 1 and len(clean) < 15:
+            if clean.isalpha() and len(clean) > 1 and len(clean) < _C.NONSENSE_WORD_FILTER_MAX_LEN:
                 valid_words.append(clean)
         self._valid_words = list(set(valid_words))
 
-    def generate(self, num_pairs: int = 10) -> ContrastivePairSet:
+    def generate(self, num_pairs: int = _C.NONSENSE_DEFAULT_NUM_PAIRS) -> ContrastivePairSet:
         """
         Generate nonsense contrastive pairs programmatically.
 
@@ -97,12 +98,12 @@ class ProgrammaticNonsenseGenerator:
 
     def _generate_random_chars(self) -> str:
         """Generate random character gibberish."""
-        length = random.randint(20, 50)
+        length = random.randint(_C.NONSENSE_CHAR_LEN_MIN, _C.NONSENSE_CHAR_LEN_MAX)
         chars = []
         for _ in range(length):
-            if random.random() < 0.7:  # 70% lowercase letters
+            if random.random() < _C.NONSENSE_LOWERCASE_PROB:  # 70% lowercase letters
                 chars.append(random.choice(string.ascii_lowercase))
-            elif random.random() < 0.9:  # 20% spaces
+            elif random.random() < _C.NONSENSE_SPACE_PROB:  # ~20% spaces
                 chars.append(' ')
             else:  # 10% random punctuation
                 chars.append(random.choice('.,;!?'))
@@ -122,12 +123,12 @@ class ProgrammaticNonsenseGenerator:
         unit = random.choice(choices)
 
         # Repeat it many times
-        repetitions = random.randint(10, 30)
+        repetitions = random.randint(_C.NONSENSE_REPETITION_MIN, _C.NONSENSE_REPETITION_MAX)
         return ' '.join([unit] * repetitions)
 
     def _generate_word_salad(self) -> str:
         """Generate word salad (random tokens from tokenizer vocabulary)."""
-        num_words = random.randint(3, 10)
+        num_words = random.randint(_C.NONSENSE_WORD_SALAD_MIN, _C.NONSENSE_WORD_SALAD_MAX)
         
         if self._valid_words is not None:
             words = random.choices(self._valid_words, k=num_words)
@@ -143,20 +144,20 @@ class ProgrammaticNonsenseGenerator:
         components = []
 
         # Add 2-4 different types of nonsense
-        num_components = random.randint(2, 4)
+        num_components = random.randint(_C.NONSENSE_MIXED_COMPONENTS_MIN, _C.NONSENSE_MIXED_COMPONENTS_MAX)
 
         for _ in range(num_components):
             mode = random.choice(['random_chars', 'repetitive', 'word_salad'])
 
             if mode == 'random_chars':
-                length = random.randint(5, 15)
+                length = random.randint(_C.NONSENSE_MIXED_CHAR_LEN_MIN, _C.NONSENSE_MIXED_CHAR_LEN_MAX)
                 components.append(''.join(random.choices(string.ascii_lowercase, k=length)))
             elif mode == 'repetitive':
                 word = random.choice(self._valid_words)
-                reps = random.randint(3, 6)
+                reps = random.randint(_C.NONSENSE_MIXED_REPS_MIN, _C.NONSENSE_MIXED_REPS_MAX)
                 components.append(' '.join([word] * reps))
             else:  # word_salad
-                num_words = random.randint(3, 6)
+                num_words = random.randint(_C.NONSENSE_MIXED_WORDS_MIN, _C.NONSENSE_MIXED_WORDS_MAX)
                 components.append(' '.join(random.choices(self._valid_words, k=num_words)))
 
         return ' '.join(components)

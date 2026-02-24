@@ -2,6 +2,22 @@
 from __future__ import annotations
 import torch
 
+from wisent.core.constants import (
+    GROM_GATE_TEMPERATURE,
+    GROM_MAX_ALPHA,
+    GROM_NUM_DIRECTIONS,
+    GROM_GATE_DIM_DIVISOR,
+    GROM_INTENSITY_DIM_DIVISOR,
+    GROM_CREATE_NOISE_SCALE,
+    GROM_CREATE_LR,
+    GROM_WEIGHT_DECAY,
+    GROM_CREATE_STEPS,
+    GROM_CREATE_GATE_THRESHOLD,
+    GROM_CREATE_RETAIN_WEIGHT,
+    GROM_MAX_GRAD_NORM,
+    GROM_CREATE_LOG_INTERVAL,
+)
+
 
 def _create_grom_steering_object(
     metadata: SteeringObjectMetadata,
@@ -11,27 +27,27 @@ def _create_grom_steering_object(
 ) -> GROMSteeringObject:
     """Create GROM steering object with learned networks."""
     from wisent.core.steering_methods.methods.grom import GROMMethod
-    from wisent.core.steering_methods.steering_object import GROMGateNetwork, GROMIntensityNetwork
+    from wisent.core.steering_methods._steering_object_grom import GROMGateNetwork, GROMIntensityNetwork
     
-    num_directions = getattr(args, 'grom_num_directions', 5)
+    num_directions = getattr(args, 'grom_num_directions', GROM_NUM_DIRECTIONS)
     hidden_dim = metadata.hidden_dim
     num_layers = len(available_layers)
     
-    # Determine sensor layer
+    # Determine sensor layer — use last available layer if not specified
     sensor_layer_idx = getattr(args, 'grom_sensor_layer', None)
     if sensor_layer_idx is None:
-        sensor_layer_idx = int(num_layers * 0.75)
+        sensor_layer_idx = num_layers - 1
     sensor_layer = int(available_layers[min(sensor_layer_idx, num_layers - 1)])
     
     gate_hidden_dim = getattr(args, 'grom_gate_hidden_dim', None)
     if gate_hidden_dim is None:
-        gate_hidden_dim = max(32, min(512, hidden_dim // 16))
+        gate_hidden_dim = max(32, min(512, hidden_dim // GROM_GATE_DIM_DIVISOR))
     intensity_hidden_dim = getattr(args, 'grom_intensity_hidden_dim', None)
     if intensity_hidden_dim is None:
-        intensity_hidden_dim = max(16, min(256, hidden_dim // 32))
+        intensity_hidden_dim = max(16, min(256, hidden_dim // GROM_INTENSITY_DIM_DIVISOR))
     max_alpha = getattr(args, 'grom_max_alpha', None)
     if max_alpha is None:
-        max_alpha = 3.0
+        max_alpha = GROM_MAX_ALPHA
     
     # Initialize networks
     gate_network = GROMGateNetwork(hidden_dim, gate_hidden_dim)
@@ -67,7 +83,7 @@ def _create_grom_steering_object(
         dirs = torch.randn(num_directions, hidden_dim)
         dirs[0] = caa_dir
         for i in range(1, num_directions):
-            dirs[i] = torch.nn.functional.normalize(caa_dir + torch.randn(hidden_dim) * 0.3, dim=0)
+            dirs[i] = torch.nn.functional.normalize(caa_dir + torch.randn(hidden_dim) * GROM_CREATE_NOISE_SCALE, dim=0)
         
         directions[layer_int] = torch.nn.Parameter(dirs)
         direction_weights[layer_int] = torch.nn.Parameter(torch.zeros(num_directions))
@@ -77,14 +93,14 @@ def _create_grom_steering_object(
     all_params.extend(gate_network.parameters())
     all_params.extend(intensity_network.parameters())
     
-    optimizer = torch.optim.AdamW(all_params, lr=0.005, weight_decay=0.01)
+    optimizer = torch.optim.AdamW(all_params, lr=GROM_CREATE_LR, weight_decay=GROM_WEIGHT_DECAY)
     
     sensor_pos = all_pos[sensor_layer]
     sensor_neg = all_neg[sensor_layer]
     
     print(f"   Training GROM ({num_directions} directions, {len(layer_order)} layers)...")
     
-    for step in range(200):
+    for step in range(GROM_CREATE_STEPS):
         optimizer.zero_grad()
         
         total_loss = torch.tensor(0.0)
@@ -92,7 +108,7 @@ def _create_grom_steering_object(
         # Gate loss
         pos_gate = gate_network(sensor_pos)
         neg_gate = gate_network(sensor_neg)
-        gate_loss = torch.relu(0.5 - pos_gate).mean() + torch.relu(neg_gate - 0.5).mean()
+        gate_loss = torch.relu(GROM_CREATE_GATE_THRESHOLD - pos_gate).mean() + torch.relu(neg_gate - GROM_CREATE_GATE_THRESHOLD).mean()
         total_loss = total_loss + gate_loss
         
         # Per-layer losses
@@ -113,15 +129,15 @@ def _create_grom_steering_object(
             
             # Retain loss
             neg_proj = (neg_data * effective_dir).sum(dim=1).abs()
-            retain_loss = neg_proj.mean() * 0.2
+            retain_loss = neg_proj.mean() * GROM_CREATE_RETAIN_WEIGHT
             
             total_loss = total_loss + behavior_loss + retain_loss
         
         total_loss.backward()
-        torch.nn.utils.clip_grad_norm_(all_params, max_norm=1.0)
+        torch.nn.utils.clip_grad_norm_(all_params, max_norm=GROM_MAX_GRAD_NORM)
         optimizer.step()
         
-        if step % 50 == 0:
+        if step % GROM_CREATE_LOG_INTERVAL == 0:
             print(f"      Step {step}: loss={total_loss.item():.4f}")
     
     # Finalize directions
@@ -136,6 +152,7 @@ def _create_grom_steering_object(
     print(f"   Sensor layer: {sensor_layer}")
     print(f"   Final gate accuracy: pos={pos_gate.mean().item():.3f}, neg={neg_gate.mean().item():.3f}")
     
+    from wisent.core.steering_methods._steering_object_grom import GROMSteeringObject
     return GROMSteeringObject(
         metadata=metadata,
         directions=final_directions,
@@ -143,6 +160,6 @@ def _create_grom_steering_object(
         gate_network=gate_network,
         intensity_network=intensity_network,
         layer_order=layer_order,
-        gate_temperature=getattr(args, 'grom_gate_temperature', 0.5),
+        gate_temperature=getattr(args, 'grom_gate_temperature', GROM_GATE_TEMPERATURE),
         max_alpha=max_alpha,
     )

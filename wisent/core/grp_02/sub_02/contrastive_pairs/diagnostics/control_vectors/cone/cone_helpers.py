@@ -6,6 +6,8 @@ from typing import Dict, Any, List, Tuple
 
 import torch
 import torch.nn.functional as F
+from wisent.core import constants as _C
+from wisent.core.constants import COMPARE_TOL
 
 
 def compute_pca_directions(
@@ -48,7 +50,7 @@ def discover_cone_directions(
     directions[0] = caa_dir
 
     for i in range(1, num_directions):
-        noise = torch.randn(hidden_dim) * 0.3
+        noise = torch.randn(hidden_dim) * _C.CONE_NOISE_SCALE
         directions[i] = F.normalize(caa_dir + noise, p=2, dim=0)
 
     directions = F.normalize(directions, p=2, dim=1)
@@ -74,9 +76,12 @@ def discover_cone_directions(
         too_similar = F.relu(off_diag - max_cos_sim).sum()
         too_dissimilar = F.relu(min_cos_sim - off_diag).sum()
 
-        cone_loss = negative_penalty + too_similar + 0.5 * too_dissimilar
+        cone_loss = (negative_penalty + too_similar
+                     + _C.CONE_LOSS_WEIGHT_DISSIMILAR * too_dissimilar)
         diversity_loss = -off_diag.var()
-        total_loss = separation_loss + 0.5 * cone_loss + 0.1 * diversity_loss
+        total_loss = (separation_loss
+                      + _C.CONE_LOSS_WEIGHT_CONE * cone_loss
+                      + _C.CONE_LOSS_WEIGHT_DIVERSITY * diversity_loss)
 
         total_loss.backward()
         optimizer.step()
@@ -142,12 +147,14 @@ def test_positive_combinations(
 
     projections = (diff_norm @ dirs_norm.T).squeeze()
     positive_projections = (projections >= 0).sum().item()
-    significant_projections = (projections > 0.1).sum().item()
+    significant_projections = (
+        projections > _C.CONE_SIGNIFICANCE_THRESHOLD
+    ).sum().item()
 
     pos_ratio = positive_projections / directions.shape[0]
     sig_ratio = significant_projections / directions.shape[0]
 
-    return 0.7 * pos_ratio + 0.3 * sig_ratio
+    return _C.CONE_POS_RATIO_WEIGHT * pos_ratio + _C.CONE_SIG_RATIO_WEIGHT * sig_ratio
 
 
 def compute_cosine_similarity_matrix(directions: torch.Tensor) -> torch.Tensor:
@@ -187,31 +194,41 @@ def compute_cone_score(
     separation_scores: List[float],
 ) -> float:
     """Compute overall cone score combining all metrics."""
-    var_ratio = cone_explained / max(pca_explained, 1e-6)
+    var_ratio = cone_explained / max(pca_explained, COMPARE_TOL)
     var_score = min(var_ratio, 1.0)
 
     half_space_component = half_space_score
 
     if avg_cos_sim < 0:
         cos_score = 0.0
-    elif avg_cos_sim < 0.3:
-        cos_score = avg_cos_sim / 0.3 * 0.5
-    elif avg_cos_sim <= 0.7:
+    elif avg_cos_sim < _C.CONE_COS_THRESHOLD_LOW:
+        cos_score = (avg_cos_sim / _C.CONE_COS_THRESHOLD_LOW
+                     * _C.CONE_COS_SCORE_LOW)
+    elif avg_cos_sim <= _C.CONE_COS_THRESHOLD_HIGH:
         cos_score = 1.0
     else:
-        cos_score = max(0.5, 1.0 - (avg_cos_sim - 0.7) / 0.3)
+        cos_score = max(
+            _C.CONE_COS_SCORE_LOW,
+            1.0 - (avg_cos_sim - _C.CONE_COS_THRESHOLD_HIGH)
+            / _C.CONE_COS_THRESHOLD_LOW,
+        )
 
     combo_component = pos_combo_score
 
-    significant_directions = sum(1 for s in separation_scores if abs(s) > 0.1)
-    multi_dir_score = min(significant_directions / max(len(separation_scores), 1), 1.0)
+    significant_directions = sum(
+        1 for s in separation_scores
+        if abs(s) > _C.CONE_SIGNIFICANCE_THRESHOLD
+    )
+    multi_dir_score = min(
+        significant_directions / max(len(separation_scores), 1), 1.0
+    )
 
     cone_score = (
-        0.20 * var_score +
-        0.25 * half_space_component +
-        0.20 * cos_score +
-        0.20 * combo_component +
-        0.15 * multi_dir_score
+        _C.CONE_WEIGHT_COS * var_score
+        + _C.CONE_WEIGHT_SIG * half_space_component
+        + _C.CONE_WEIGHT_EFFECT * cos_score
+        + _C.CONE_WEIGHT_SAMPLE * combo_component
+        + _C.CONE_WEIGHT_RATIO * multi_dir_score
     )
 
     return float(cone_score)

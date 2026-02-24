@@ -4,6 +4,7 @@ from typing import Dict, Tuple, Optional
 from pathlib import Path
 
 from .timing_calibration import TimingCalibrator
+from wisent.core.constants import DATA_LOAD_LIMIT, TIMING_SAMPLES_PER_TASK, TIME_ESTIMATOR_CLASSIFICATION_LAYERS, TIME_ESTIMATOR_CV_LAYERS
 from wisent.core.errors import (
     ModelConfigAccessError,
     CalibrationRequiredError,
@@ -67,7 +68,7 @@ class OptimizationTimeEstimator:
     def estimate_classification_time(
         self,
         num_tasks: int,
-        sample_limit: int = 200,
+        sample_limit: int = DATA_LOAD_LIMIT,
         layers: Optional[list] = None
     ) -> Tuple[float, Dict[str, float]]:
         """
@@ -76,7 +77,7 @@ class OptimizationTimeEstimator:
         Returns:
             Tuple of (total_seconds, breakdown)
         """
-        num_layers = len(layers) if layers else min(5, self.total_layers)
+        num_layers = len(layers) if layers else min(TIME_ESTIMATOR_CLASSIFICATION_LAYERS, self.total_layers)
         
         total_time, breakdown = self.calibrator.estimate_optimization_time(
             num_tasks=num_tasks,
@@ -92,9 +93,9 @@ class OptimizationTimeEstimator:
     def estimate_full_optimization_time(
         self,
         num_tasks: int,
-        classification_limit: int = 200,
+        classification_limit: int = DATA_LOAD_LIMIT,
         sample_sizes: list = None,
-        sample_size_limit: int = 1000,
+        sample_size_limit: int = TIMING_SAMPLES_PER_TASK,
         include_sample_size_opt: bool = True,
         include_classifier_training: bool = True,
         include_control_vectors: bool = True
@@ -106,10 +107,10 @@ class OptimizationTimeEstimator:
             Tuple of (total_seconds, breakdown)
         """
         # Typical number of layers tested in classification
-        num_layers = min(5, self.total_layers)
-        
+        num_layers = min(TIME_ESTIMATOR_CLASSIFICATION_LAYERS, self.total_layers)
+
         # Control vectors typically test more layers
-        cv_layers = min(10, self.total_layers)
+        cv_layers = min(TIME_ESTIMATOR_CV_LAYERS, self.total_layers)
         
         # Sample sizes must be provided
         if sample_sizes is None:

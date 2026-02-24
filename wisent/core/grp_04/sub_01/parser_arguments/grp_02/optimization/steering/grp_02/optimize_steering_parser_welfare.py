@@ -1,4 +1,5 @@
 """Welfare and universal subparsers for optimize-steering."""
+from wisent.core import constants as _C
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
@@ -46,7 +47,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
         help="Direction to steer: 'positive' (comfort, satisfaction, etc.) or 'negative' (distress, etc.)"
     )
     welfare_parser.add_argument(
-        "--num-pairs", type=int, default=50, help="Number of pairs to use for training (default: 50)"
+        "--num-pairs", type=int, default=_C.PARSER_DEFAULT_NUM_PAIRS, help="Number of pairs to use for training (default: 50)"
     )
     welfare_parser.add_argument(
         "--layers",
@@ -59,11 +60,11 @@ def setup_welfare_universal_parsers(steering_subparsers):
         "--strength-range",
         type=float,
         nargs=2,
-        default=[0.5, 3.0],
+        default=list(_C.PARSER_STRENGTH_RANGE_WELFARE),
         help="Min and max steering strength to test (default: 0.5 3.0)",
     )
     welfare_parser.add_argument(
-        "--num-strength-steps", type=int, default=5, help="Number of strength values to test (default: 5)"
+        "--num-strength-steps", type=int, default=_C.PARSER_DEFAULT_NUM_STRENGTH_STEPS, help="Number of strength values to test (default: 5)"
     )
     welfare_parser.add_argument(
         "--output-dir",
@@ -72,7 +73,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
         help="Directory to save results and best vectors (default: ./welfare_optimization)",
     )
     welfare_parser.add_argument(
-        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
+        "--max-new-tokens", type=int, default=_C.MAX_NEW_TOKENS_GENERATION, help="Max tokens to generate for evaluation (default: 150)"
     )
     welfare_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     welfare_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -96,13 +97,13 @@ def setup_welfare_universal_parsers(steering_subparsers):
     welfare_parser.add_argument(
         "--n-trials",
         type=int,
-        default=100,
+        default=_C.OPTUNA_DEFAULT_N_TRIALS,
         help="Number of Optuna trials when using --search-strategy optuna (default: 100)"
     )
     welfare_parser.add_argument(
         "--limit",
         type=int,
-        default=50,
+        default=_C.PARSER_DEFAULT_NUM_PAIRS,
         help="Sample limit for optimization (default: 50)"
     )
 
@@ -141,13 +142,8 @@ def setup_welfare_universal_parsers(steering_subparsers):
     universal_parser.add_argument(
         "--limit",
         type=int,
-        default=100,
+        default=_C.OPTUNA_DEFAULT_N_TRIALS,
         help="Maximum samples to use (default: 100)"
-    )
-    universal_parser.add_argument(
-        "--quick",
-        action="store_true",
-        help="Use reduced search space for faster testing"
     )
     universal_parser.add_argument(
         "--max-configs",

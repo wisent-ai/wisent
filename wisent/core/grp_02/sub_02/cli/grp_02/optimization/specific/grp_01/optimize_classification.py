@@ -9,6 +9,11 @@ import json
 import os
 from typing import Dict, Any
 
+from wisent.core.constants import (
+    DEFAULT_NUM_EVAL_PROMPTS,
+    DEFAULT_SHOW_COMPARISONS,
+    OPTIMIZE_DEFAULT_CLASSIFICATION_THRESHOLD,
+)
 from wisent.core.config_manager import save_classification_config
 from wisent.core.evaluators.steering_evaluators import SteeringEvaluatorFactory, EvaluatorConfig
 from wisent.core.cli.optimization.specific.optimize_classification_runner import (
@@ -37,7 +42,7 @@ def execute_optimize_classification(args):
         eval_config = EvaluatorConfig(
             evaluator_type=evaluator_type, trait=trait,
             eval_prompts_path=getattr(args, 'eval_prompts', None),
-            num_eval_prompts=getattr(args, 'num_eval_prompts', 30),
+            num_eval_prompts=getattr(args, 'num_eval_prompts', DEFAULT_NUM_EVAL_PROMPTS),
             custom_evaluator_path=getattr(args, 'custom_evaluator', None),
         )
         steering_evaluator = SteeringEvaluatorFactory.create(eval_config, args.model)
@@ -154,7 +159,7 @@ def _print_summary(args, all_results):
 
 def _handle_comparisons(args, all_results, total_layers):
     """Handle --show-comparisons and --save-comparisons flags."""
-    show = getattr(args, 'show_comparisons', 0)
+    show = getattr(args, 'show_comparisons', DEFAULT_SHOW_COMPARISONS)
     save_path = getattr(args, 'save_comparisons', None)
     if show <= 0 and not save_path:
         return
@@ -163,7 +168,7 @@ def _handle_comparisons(args, all_results, total_layers):
     for task_name, result in all_results.items():
         bc = result['best_config']
         dc = {
-            'layer': total_layers // 2, 'aggregation': 'average', 'threshold': 0.5,
+            'layer': total_layers // 2, 'aggregation': 'average', 'threshold': OPTIMIZE_DEFAULT_CLASSIFICATION_THRESHOLD,
             'classifier_type': 'logistic', 'prompt_construction_strategy': 'multiple_choice',
             'token_targeting_strategy': 'last_token',
         }

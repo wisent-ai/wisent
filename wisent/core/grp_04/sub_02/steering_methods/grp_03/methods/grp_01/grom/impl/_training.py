@@ -5,6 +5,13 @@ import torch
 import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.constants import (
+    MAX_CLUSTERS, MANIFOLD_NEIGHBORS, GROM_ADAPT_CONE_THRESHOLD,
+    GROM_ADAPT_LINEAR_DIRECTIONS, GROM_ADAPT_MAX_DIRECTIONS,
+    GROM_ADAPT_MANIFOLD_THRESHOLD, GROM_ADAPT_COMPLEX_DIRECTIONS,
+    GROM_CAA_ALIGNMENT_THRESHOLD, GROM_CAA_SIMILARITY_SKIP,
+    GROM_SIGNIFICANT_DIRECTIONS_DEFAULT,
+)
 from wisent.core.steering_methods.methods.grom._config import GeometryAdaptation
 
 def _analyze_and_adapt_geometry_impl(
@@ -47,8 +54,8 @@ def _analyze_and_adapt_geometry_impl(
     # Run geometry detection
     geo_config = GeometryAnalysisConfig(
         num_components=self.config.num_directions,
-        max_clusters=5,
-        manifold_neighbors=min(10, len(pos_list) - 1),
+        max_clusters=MAX_CLUSTERS,
+        manifold_neighbors=min(MANIFOLD_NEIGHBORS, len(pos_list) - 1),
     )
     geo_result = detect_geometry_structure(pos_tensor, neg_tensor, geo_config)
 
@@ -71,31 +78,31 @@ def _analyze_and_adapt_geometry_impl(
     # Adaptation 1: Simplify if linear
     if linear_score > self.config.linear_threshold:
         if self.config.auto_num_directions:
-            adapted_num_directions = 1
-            adaptations.append(f"Reduced num_directions to 1 (linear score={linear_score:.2f})")
+            adapted_num_directions = GROM_ADAPT_LINEAR_DIRECTIONS
+            adaptations.append(f"Reduced num_directions to {GROM_ADAPT_LINEAR_DIRECTIONS} (linear score={linear_score:.2f})")
 
         if self.config.skip_gating_if_linear:
             gating_enabled = False
             adaptations.append("Disabled gating network (linear structure)")
 
     # Adaptation 2: Adjust directions based on cone structure
-    elif cone_score > 0.7 and self.config.auto_num_directions:
+    elif cone_score > GROM_ADAPT_CONE_THRESHOLD and self.config.auto_num_directions:
         # Cone structure benefits from multiple directions
         cone_details = geo_result.all_scores.get("cone")
         if cone_details and hasattr(cone_details, "details"):
-            sig_dirs = cone_details.details.get("significant_directions", 3)
-            adapted_num_directions = max(2, min(sig_dirs + 1, 7))
+            sig_dirs = cone_details.details.get("significant_directions", GROM_SIGNIFICANT_DIRECTIONS_DEFAULT)
+            adapted_num_directions = max(2, min(sig_dirs + 1, GROM_ADAPT_MAX_DIRECTIONS))
             if adapted_num_directions != original_num_directions:
                 adaptations.append(
                     f"Adjusted num_directions to {adapted_num_directions} based on cone structure"
                 )
 
     # Adaptation 3: Increase directions for complex structures
-    elif (manifold_score > 0.8 or structure_scores.get("orthogonal", 0) > 0.7):
-        if self.config.auto_num_directions and adapted_num_directions < 5:
-            adapted_num_directions = 5
+    elif (manifold_score > GROM_ADAPT_MANIFOLD_THRESHOLD or structure_scores.get("orthogonal", 0) > GROM_ADAPT_CONE_THRESHOLD):
+        if self.config.auto_num_directions and adapted_num_directions < GROM_ADAPT_COMPLEX_DIRECTIONS:
+            adapted_num_directions = GROM_ADAPT_COMPLEX_DIRECTIONS
             adaptations.append(
-                f"Increased num_directions to 5 for manifold/orthogonal structure"
+                f"Increased num_directions to {GROM_ADAPT_COMPLEX_DIRECTIONS} for manifold/orthogonal structure"
             )
 
     if not adaptations:
@@ -161,7 +168,7 @@ def _initialize_directions_impl(
                     cos_with_caa = (candidate * caa_dir).sum().abs()
 
                     # If too similar to CAA, try next PCA component
-                    if cos_with_caa > 0.9 and pca_idx + 1 < pca_dirs.shape[0]:
+                    if cos_with_caa > GROM_CAA_SIMILARITY_SKIP and pca_idx + 1 < pca_dirs.shape[0]:
                         pca_idx += 1
                         candidate = F.normalize(pca_dirs[pca_idx], p=2, dim=0)
 

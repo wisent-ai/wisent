@@ -1,5 +1,8 @@
 """Parser setup for the 'optimize-sample-size' command."""
 
+from wisent.core import constants as _C
+from wisent.core.constants import DATA_SPLIT_SEED, CLASSIFIER_THRESHOLD
+
 
 def setup_sample_size_optimizer_parser(parser):
     """Set up the sample-size-optimizer subcommand parser."""
@@ -8,7 +11,7 @@ def setup_sample_size_optimizer_parser(parser):
     parser.add_argument("--layer", type=int, required=True, help="Layer index to use (REQUIRED)")
     # Classification-specific arguments
     parser.add_argument(
-        "--threshold", type=float, default=0.5, help="Detection threshold for classification (default: 0.5)"
+        "--threshold", type=float, default=CLASSIFIER_THRESHOLD, help="Detection threshold for classification (default: 0.5)"
     )
 
     # Steering mode
@@ -20,7 +23,7 @@ def setup_sample_size_optimizer_parser(parser):
         choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
-    parser.add_argument("--steering-strength", type=float, default=1.0, help="Steering strength to use (default: 1.0)")
+    parser.add_argument("--steering-strength", type=float, default=_C.DEFAULT_BASE_STRENGTH, help="Steering strength to use (default: 1.0)")
     parser.add_argument(
         "--token-targeting-strategy",
         type=str,
@@ -34,12 +37,12 @@ def setup_sample_size_optimizer_parser(parser):
         "--sample-sizes",
         type=int,
         nargs="+",
-        default=[5, 10, 20, 50, 100, 200, 500],
+        default=list(_C.PARSER_FULL_OPTIMIZE_SAMPLE_SIZES),
         help="Sample sizes to test (default: 5 10 20 50 100 200 500)",
     )
-    parser.add_argument("--test-size", type=int, default=200, help="Fixed test set size (default: 200)")
-    parser.add_argument("--test-split", type=float, default=0.2, help="DEPRECATED: Use --test-size instead")
-    parser.add_argument("--seed", type=int, default=42, help="Random seed for reproducibility (default: 42)")
+    parser.add_argument("--test-size", type=int, default=_C.OPTIMIZE_SAMPLE_TEST_SIZE, help="Fixed test set size (default: 200)")
+    parser.add_argument("--test-split", type=float, default=_C.OPTIMIZE_SAMPLE_TEST_SPLIT, help="DEPRECATED: Use --test-size instead")
+    parser.add_argument("--seed", type=int, default=DATA_SPLIT_SEED, help="Random seed for reproducibility (default: 42)")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of samples to load from dataset")
     parser.add_argument("--save-plot", action="store_true", help="Save performance plot")
     parser.add_argument("--no-save-config", action="store_true", help="Don't save optimal sample size to model config")

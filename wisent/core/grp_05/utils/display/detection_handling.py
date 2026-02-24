@@ -10,6 +10,7 @@ from typing import Optional, Callable, Dict, Any
 import logging
 
 from wisent.core.errors import UnknownTypeError
+from wisent.core.constants import MAX_REGENERATION_ATTEMPTS, DISPLAY_TRUNCATION_COMPACT
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +34,7 @@ class DetectionHandler:
         self,
         action: DetectionAction = DetectionAction.REPLACE_WITH_PLACEHOLDER,
         placeholder_message: Optional[str] = None,
-        max_regeneration_attempts: int = 3,
+        max_regeneration_attempts: int = MAX_REGENERATION_ATTEMPTS,
         custom_placeholder_generator: Optional[Callable[[str, str], str]] = None,
         log_detections: bool = True
     ):
@@ -88,7 +89,7 @@ class DetectionHandler:
         if self.log_detections:
             logger.warning(
                 f"Detected {detection_type} with confidence {confidence_score:.3f} "
-                f"in response: {original_response[:100]}..."
+                f"in response: {original_response[:DISPLAY_TRUNCATION_COMPACT]}..."
             )
         
         if self.action == DetectionAction.PASS_THROUGH:
@@ -204,7 +205,7 @@ def create_placeholder_handler(custom_message: Optional[str] = None) -> Detectio
     )
 
 
-def create_regeneration_handler(max_attempts: int = 3) -> DetectionHandler:
+def create_regeneration_handler(max_attempts: int = MAX_REGENERATION_ATTEMPTS) -> DetectionHandler:
     """Create a handler that regenerates responses until they're safe."""
     return DetectionHandler(
         action=DetectionAction.REGENERATE_UNTIL_SAFE,

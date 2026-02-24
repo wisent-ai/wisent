@@ -14,6 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
+from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, PROBE_TRAINING_LR
 
 # Database configuration
 DB_CONFIG = {
@@ -96,23 +97,23 @@ def compute_zwiad_metrics(pos: np.ndarray, neg: np.ndarray) -> dict:
     mean_diff = diffs.mean(axis=0)
     mean_diff_norm = np.linalg.norm(mean_diff)
 
-    if mean_diff_norm < 1e-10:
+    if mean_diff_norm < ZERO_THRESHOLD:
         return {"linear_probe": 0.5, "signal_strength": 0, "cluster_sep": 0}
 
     X = np.vstack([pos, neg])
     y = np.array([1] * len(pos) + [0] * len(neg))
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=(1 - DEFAULT_SPLIT_RATIO), random_state=DEFAULT_RANDOM_SEED)
     clf = LogisticRegression()
     clf.fit(X_train, y_train)
     linear_probe = clf.score(X_test, y_test)
 
     signal = mean_diff_norm
     noise = np.std([np.linalg.norm(d - mean_diff) for d in diffs])
-    signal_strength = signal / (noise + 1e-10)
+    signal_strength = signal / (noise + ZERO_THRESHOLD)
 
     pos_center = pos.mean(axis=0)
     neg_center = neg.mean(axis=0)
-    cluster_sep = np.linalg.norm(pos_center - neg_center) / (np.std(pos) + np.std(neg) + 1e-10)
+    cluster_sep = np.linalg.norm(pos_center - neg_center) / (np.std(pos) + np.std(neg) + ZERO_THRESHOLD)
 
     return {
         "linear_probe": linear_probe,
@@ -125,7 +126,7 @@ def train_caa(train_pos: np.ndarray, train_neg: np.ndarray) -> np.ndarray:
     """Train CAA steering vector (mean difference)."""
     vec = train_pos.mean(axis=0) - train_neg.mean(axis=0)
     norm = np.linalg.norm(vec)
-    return vec / norm if norm > 1e-10 else vec
+    return vec / norm if norm > ZERO_THRESHOLD else vec
 
 
 def train_ostrze(train_pos: np.ndarray, train_neg: np.ndarray) -> np.ndarray:
@@ -136,7 +137,7 @@ def train_ostrze(train_pos: np.ndarray, train_neg: np.ndarray) -> np.ndarray:
     clf.fit(X, y)
     vec = clf.coef_[0]
     norm = np.linalg.norm(vec)
-    return vec / norm if norm > 1e-10 else vec
+    return vec / norm if norm > ZERO_THRESHOLD else vec
 
 
 def train_mlp(train_pos: np.ndarray, train_neg: np.ndarray, hidden_dim=256, epochs=100) -> np.ndarray:
@@ -152,7 +153,7 @@ def train_mlp(train_pos: np.ndarray, train_neg: np.ndarray, hidden_dim=256, epoc
         nn.Sigmoid()
     )
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    optimizer = torch.optim.Adam(model.parameters(), lr=PROBE_TRAINING_LR)
     loss_fn = nn.BCELoss()
 
     for _ in range(epochs):
@@ -164,7 +165,7 @@ def train_mlp(train_pos: np.ndarray, train_neg: np.ndarray, hidden_dim=256, epoc
 
     vec = model[0].weight.data.mean(dim=0).numpy()
     norm = np.linalg.norm(vec)
-    return vec / norm if norm > 1e-10 else vec
+    return vec / norm if norm > ZERO_THRESHOLD else vec
 
 
 def train_pca_based(train_pos: np.ndarray, train_neg: np.ndarray, n_components=3) -> np.ndarray:
@@ -175,7 +176,7 @@ def train_pca_based(train_pos: np.ndarray, train_neg: np.ndarray, n_components=3
     pca.fit(diffs)
     vec = pca.components_[0]
     norm = np.linalg.norm(vec)
-    return vec / norm if norm > 1e-10 else vec
+    return vec / norm if norm > ZERO_THRESHOLD else vec
 
 
 def evaluate_steering(vec: np.ndarray, test_pos: np.ndarray, test_neg: np.ndarray) -> float:

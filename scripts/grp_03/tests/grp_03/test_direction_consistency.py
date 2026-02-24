@@ -12,6 +12,7 @@ from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import NORM_EPS
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 
@@ -51,7 +52,7 @@ def compute_gradient_direction(model, prompt, response, layer):
 def pairwise_consistency(directions):
     """Compute mean pairwise cosine similarity between normalized directions."""
     stack = torch.stack(directions)
-    stack_norm = stack / (torch.norm(stack, dim=1, keepdim=True) + 1e-8)
+    stack_norm = stack / (torch.norm(stack, dim=1, keepdim=True) + NORM_EPS)
     pairwise = stack_norm @ stack_norm.T
     mask = torch.triu(torch.ones_like(pairwise), diagonal=1).bool()
     vals = pairwise[mask]
@@ -104,12 +105,12 @@ print(f"CAA consistency:      {caa_mean:.4f} (+/- {caa_std:.4f})")
 
 # Alignment with averaged direction
 grad_avg = torch.stack(gradient_dirs).mean(dim=0)
-grad_avg = grad_avg / (torch.norm(grad_avg) + 1e-8)
+grad_avg = grad_avg / (torch.norm(grad_avg) + NORM_EPS)
 caa_avg = torch.stack(caa_dirs).mean(dim=0)
-caa_avg = caa_avg / (torch.norm(caa_avg) + 1e-8)
+caa_avg = caa_avg / (torch.norm(caa_avg) + NORM_EPS)
 
-grad_stack_norm = torch.stack(gradient_dirs) / (torch.norm(torch.stack(gradient_dirs), dim=1, keepdim=True) + 1e-8)
-caa_stack_norm = torch.stack(caa_dirs) / (torch.norm(torch.stack(caa_dirs), dim=1, keepdim=True) + 1e-8)
+grad_stack_norm = torch.stack(gradient_dirs) / (torch.norm(torch.stack(gradient_dirs), dim=1, keepdim=True) + NORM_EPS)
+caa_stack_norm = torch.stack(caa_dirs) / (torch.norm(torch.stack(caa_dirs), dim=1, keepdim=True) + NORM_EPS)
 
 grad_align = (grad_stack_norm @ grad_avg).abs()
 caa_align = (caa_stack_norm @ caa_avg).abs()

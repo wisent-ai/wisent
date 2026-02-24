@@ -5,6 +5,7 @@ import torch
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainReport
 from wisent.core.errors import UnknownTypeError
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, CLASSIFIER_THRESHOLD, CLASSIFIER_MLP_HIDDEN_DIM, CLASSIFIER_TEST_SIZE
 
 
 def _torch_dtype_to_numpy(torch_dtype: torch.dtype):
@@ -50,8 +51,8 @@ def train_classifier_on_pairs(
     pair_set,
     target_layer: int,
     verbose: bool = False,
-    classifier_epochs: int = 50,
-    classifier_lr: float = 1e-3,
+    classifier_epochs: int = AGENT_CLASSIFIER_EPOCHS,
+    classifier_lr: float = DEFAULT_CLASSIFIER_LR,
     classifier_batch_size: int = None,
     token_aggregation: str = "average",
     prompt_strategy: str = "chat_template",
@@ -152,10 +153,10 @@ def train_classifier_on_pairs(
 
     # Instantiate classifier based on type
     if classifier_type == "logistic":
-        classifier = LogisticClassifier(threshold=0.5)
+        classifier = LogisticClassifier(threshold=CLASSIFIER_THRESHOLD)
         print(f"   Training logistic classifier...")
     elif classifier_type == "mlp":
-        classifier = MLPClassifier(threshold=0.5, hidden_dim=128)
+        classifier = MLPClassifier(threshold=CLASSIFIER_THRESHOLD, hidden_dim=CLASSIFIER_MLP_HIDDEN_DIM)
         print(f"   Training MLP classifier...")
     else:
         raise UnknownTypeError(entity_type="classifier_type", value=classifier_type, valid_values=["logistic", "mlp"])
@@ -167,7 +168,7 @@ def train_classifier_on_pairs(
         batch_size = classifier_batch_size
 
     train_config = ClassifierTrainConfig(
-        test_size=0.2,
+        test_size=CLASSIFIER_TEST_SIZE,
         num_epochs=classifier_epochs,
         batch_size=batch_size,
         learning_rate=classifier_lr,

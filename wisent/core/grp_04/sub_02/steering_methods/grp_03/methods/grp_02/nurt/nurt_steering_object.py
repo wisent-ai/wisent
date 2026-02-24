@@ -18,6 +18,11 @@ from wisent.core.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
+from wisent.core.constants import (
+    DEFAULT_STRENGTH,
+    NURT_NUM_INTEGRATION_STEPS,
+    NURT_T_MAX,
+)
 from .flow_network import FlowVelocityNetwork, euler_integrate
 from .subspace import project_to_subspace, reconstruct_from_subspace
 
@@ -36,8 +41,8 @@ class NurtSteeringObject(BaseSteeringObject):
         concept_bases: Dict[int, torch.Tensor],
         mean_neg: Dict[int, torch.Tensor],
         mean_pos: Dict[int, torch.Tensor],
-        num_integration_steps: int = 4,
-        t_max: float = 1.0,
+        num_integration_steps: int = NURT_NUM_INTEGRATION_STEPS,
+        t_max: float = NURT_T_MAX,
         layer_variance: Optional[Dict[int, float]] = None,
     ):
         super().__init__(metadata)
@@ -79,7 +84,7 @@ class NurtSteeringObject(BaseSteeringObject):
         return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
 
     def apply_steering(
-        self, hidden_state: torch.Tensor, layer: int, base_strength: float = 1.0,
+        self, hidden_state: torch.Tensor, layer: int, base_strength: float = DEFAULT_STRENGTH,
     ) -> torch.Tensor:
         """
         Apply flow-based steering: project -> integrate -> reconstruct.
@@ -134,7 +139,7 @@ class NurtSteeringObject(BaseSteeringObject):
             return h_new.reshape(original_shape)
         return h_new
 
-    def compute_mean_transport(self, base_strength: float = 1.0) -> Dict[int, torch.Tensor]:
+    def compute_mean_transport(self, base_strength: float = DEFAULT_STRENGTH) -> Dict[int, torch.Tensor]:
         """
         Compute mean transport direction per layer in full hidden space.
 
@@ -249,7 +254,7 @@ class NurtSteeringObject(BaseSteeringObject):
             concept_bases=concept_bases,
             mean_neg=mean_neg,
             mean_pos=mean_pos,
-            num_integration_steps=data.get("num_integration_steps", 4),
-            t_max=data.get("t_max", 1.0),
+            num_integration_steps=data.get("num_integration_steps", NURT_NUM_INTEGRATION_STEPS),
+            t_max=data.get("t_max", NURT_T_MAX),
             layer_variance=layer_variance,
         )

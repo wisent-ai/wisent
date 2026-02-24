@@ -17,6 +17,7 @@ import itertools
 
 
 
+from wisent.core.constants import SEARCH_SPACE_DEFAULT_STRENGTHS
 from wisent.core.cli.steering.core.config.steering_search_space_classes import (
     DirectionWeighting, SteeringLayerConfig, SensorLayerConfig,
     BaseSearchSpace, CAASearchSpace, TECZASearchSpace,
@@ -24,92 +25,31 @@ from wisent.core.cli.steering.core.config.steering_search_space_classes import (
 )
 
 
-def get_search_space(method_name: str, num_layers: int, quick: bool = False) -> BaseSearchSpace:
+def get_search_space(method_name: str, num_layers: int) -> BaseSearchSpace:
     """
     Get the search space for a given method.
-    
+
     Args:
         method_name: Name of steering method (CAA, TECZA, TETNO, GROM)
         num_layers: Number of layers in the model
-        quick: If True, use reduced search space for faster testing
-        
+
     Returns:
         Search space instance for the method
     """
     method = method_name.upper()
-    
+
     # Full search uses ALL layers
     all_layers = list(range(num_layers))
-    
-    # Quick search uses subset of layers
-    if num_layers > 20:
-        quick_layers = list(range(num_layers // 2, num_layers - 2, 2))
-    elif num_layers > 12:
-        quick_layers = [4, 6, 8, 10, 12]
-    else:
-        quick_layers = list(range(2, num_layers, 2))
-    
-    if quick:
-        # Reduced search space for quick testing
-        if method == "CAA":
-            return CAASearchSpace(
-                layers=quick_layers[:3],
-                strengths=[0.5, 1.0, 1.5],
-                strategies=["constant"],
-                token_aggregations=["last_token"],
-                prompt_constructions=["chat_template"],
-            )
-        elif method == "TECZA":
-            return TECZASearchSpace(
-                layers=quick_layers[:3],
-                strengths=[0.5, 1.0, 1.5],
-                strategies=["constant"],
-                token_aggregations=["last_token"],
-                prompt_constructions=["chat_template"],
-                num_directions=[2, 3],
-                direction_weighting=["primary_only", "equal"],
-                retain_weight=[0.1],
-                optimization_steps=[50],
-            )
-        elif method == "TETNO":
-            return TETNOSearchSpace(
-                strengths=[1.0, 1.5],
-                strategies=["constant"],
-                token_aggregations=["last_token"],
-                prompt_constructions=["chat_template"],
-                sensor_layer_config=["late"],
-                steering_layer_config=["range_3"],
-                condition_threshold=[0.5],
-                gate_temperature=[0.5],
-                per_layer_scaling=[True],
-                use_entropy_scaling=[False],
-                max_alpha=[2.0],
-            )
-        elif method == "GROM":
-            return GROMSearchSpace(
-                strengths=[1.0, 1.5],
-                token_aggregations=["last_token"],
-                num_directions=[3],
-                sensor_layer_config=["late"],
-                steering_layer_config=["range_3"],
-                gate_hidden_dim=[64],
-                intensity_hidden_dim=[32],
-                behavior_weight=[1.0],
-                retain_weight=[0.2],
-                sparse_weight=[0.05],
-                max_alpha=[2.0],
-                optimization_steps=[100],
-            )
-    
+
     # Full search space - uses ALL layers
     if method == "CAA":
         return CAASearchSpace(layers=all_layers)
     elif method == "TECZA":
         return TECZASearchSpace(layers=all_layers)
     elif method == "TETNO":
-        return TETNOSearchSpace(strengths=[0.5, 1.0, 1.5, 2.0])
+        return TETNOSearchSpace(strengths=list(SEARCH_SPACE_DEFAULT_STRENGTHS))
     elif method == "GROM":
-        return GROMSearchSpace(strengths=[0.5, 1.0, 1.5, 2.0])
+        return GROMSearchSpace(strengths=list(SEARCH_SPACE_DEFAULT_STRENGTHS))
     else:
         # Default to CAA search space
         return CAASearchSpace(layers=all_layers)
@@ -128,10 +68,9 @@ def get_search_space_from_args(method_name: str, args, num_layers: int) -> BaseS
         Search space configured from arguments
     """
     method = method_name.upper()
-    quick = getattr(args, 'quick_search', False)
-    
+
     # Get base search space
-    search_space = get_search_space(method, num_layers, quick=quick)
+    search_space = get_search_space(method, num_layers)
     
     # Override with any explicit CLI arguments
     if hasattr(args, 'search_layers') and args.search_layers:

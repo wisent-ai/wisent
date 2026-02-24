@@ -6,11 +6,18 @@ import torch
 import torch.nn.functional as F
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.activations.core.atoms import LayerActivations, LayerName
+from wisent.core.constants import (
+    NORM_EPS, ZERO_THRESHOLD, COMPARE_TOL, DEFAULT_VARIANCE_THRESHOLD,
+    UNIVERSAL_SUBSPACE_RANK, SUBSPACE_MIN_VECTORS,
+    SUBSPACE_DECAY_NORMALIZE, SUBSPACE_SPARSITY_THRESHOLD,
+    SUBSPACE_TOP_CONTRIB_THRESHOLD, SUBSPACE_DEFAULT_QUALITY,
+    SUBSPACE_QUALITY_W_CONCENTRATION, SUBSPACE_QUALITY_W_RANK,
+    SUBSPACE_QUALITY_W_DECAY,
+    QUALITY_SCORE_SPARSE, QUALITY_SCORE_CONCENTRATED,
+    QUALITY_SCORE_GOOD, QUALITY_SPARSITY_THRESHOLD,
+)
 
 _LOG = setup_logger(__name__)
-
-UNIVERSAL_SUBSPACE_RANK = 16
-VARIANCE_EXPLAINED_THRESHOLD = 0.80
 
 @dataclass
 class SubspaceAnalysisConfig:
@@ -19,10 +26,10 @@ class SubspaceAnalysisConfig:
     n_components: int = UNIVERSAL_SUBSPACE_RANK
     """Number of principal components to analyze."""
     
-    variance_threshold: float = VARIANCE_EXPLAINED_THRESHOLD
+    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
     """Variance explained threshold for quality check."""
-    
-    min_vectors: int = 3
+
+    min_vectors: int = SUBSPACE_MIN_VECTORS
     """Minimum vectors needed for meaningful analysis."""
     
     normalize_vectors: bool = True
@@ -135,7 +142,7 @@ def analyze_steering_vector_subspace(
     
     # Compute variance explained
     total_var = (S ** 2).sum()
-    if total_var < 1e-10:
+    if total_var < ZERO_THRESHOLD:
         return SubspaceAnalysisResult(
             lies_in_subspace=True,
             variance_explained=1.0,
@@ -167,12 +174,12 @@ def analyze_steering_vector_subspace(
     
     # Spectral decay rate (faster decay = better)
     if len(S) > 1:
-        decay_rate = (S[0] / (S[1] + 1e-10)).item()
-        decay_score = min(decay_rate / 10, 1.0)  # Normalize
+        decay_rate = (S[0] / (S[1] + ZERO_THRESHOLD)).item()
+        decay_score = min(decay_rate / SUBSPACE_DECAY_NORMALIZE, 1.0)  # Normalize
     else:
         decay_score = 1.0
     
-    quality_score = 0.5 * concentration_score + 0.3 * rank_score + 0.2 * decay_score
+    quality_score = SUBSPACE_QUALITY_W_CONCENTRATION * concentration_score + SUBSPACE_QUALITY_W_RANK * rank_score + SUBSPACE_QUALITY_W_DECAY * decay_score
     
     lies_in_subspace = variance_explained_k >= cfg.variance_threshold
     
@@ -208,7 +215,7 @@ def analyze_steering_vector_subspace(
 def check_vector_quality(
     vector: torch.Tensor,
     reference_vectors: Optional[List[torch.Tensor]] = None,
-    threshold: float = VARIANCE_EXPLAINED_THRESHOLD,
+    threshold: float = DEFAULT_VARIANCE_THRESHOLD,
 ) -> Tuple[bool, float, str]:
     """
     Quick check if a single steering vector is high quality.
@@ -226,7 +233,7 @@ def check_vector_quality(
         return False, 0.0, "Vector is empty or None"
     
     norm = vector.float().norm().item()
-    if norm < 1e-8:
+    if norm < NORM_EPS:
         return False, 0.0, "Vector has near-zero norm"
     
     # Check for NaN/Inf
@@ -245,18 +252,18 @@ def check_vector_quality(
     
     # Without reference, do basic quality checks
     # Check sparsity (too sparse = suspicious)
-    sparsity = (vector.abs() < 1e-6).float().mean().item()
-    if sparsity > 0.99:
-        return False, 0.1, f"Vector is too sparse ({sparsity:.1%} zeros)"
+    sparsity = (vector.abs() < COMPARE_TOL).float().mean().item()
+    if sparsity > QUALITY_SPARSITY_THRESHOLD:
+        return False, QUALITY_SCORE_SPARSE, f"Vector is too sparse ({sparsity:.1%} zeros)"
     
     # Check concentration (variance should be spread reasonably)
     sorted_abs = vector.abs().sort(descending=True).values
-    top_10_contribution = sorted_abs[:max(1, len(sorted_abs)//10)].sum() / (sorted_abs.sum() + 1e-10)
+    top_10_contribution = sorted_abs[:max(1, len(sorted_abs)//10)].sum() / (sorted_abs.sum() + ZERO_THRESHOLD)
     
-    if top_10_contribution > 0.99:
-        return False, 0.3, f"Vector is too concentrated (top 10% = {top_10_contribution:.1%})"
-    
-    return True, 0.8, "Vector passes basic quality checks"
+    if top_10_contribution > QUALITY_SPARSITY_THRESHOLD:
+        return False, QUALITY_SCORE_CONCENTRATED, f"Vector is too concentrated (top 10% = {top_10_contribution:.1%})"
+
+    return True, QUALITY_SCORE_GOOD, "Vector passes basic quality checks"
 
 
 # =============================================================================

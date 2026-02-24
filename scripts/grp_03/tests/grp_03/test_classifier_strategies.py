@@ -15,6 +15,7 @@ from sklearn.linear_model import LogisticRegression
 import gc
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
+from wisent.core.constants import DEFAULT_RANDOM_SEED
 from test_classifier_strategies_helpers import (
     load_task_pairs,
     build_train_text,
@@ -72,7 +73,7 @@ def test_combination(model, tokenizer, pairs, layer, train_strategy, inference_s
     X_train = np.array(X_train)
     y_train = np.array(y_train)
 
-    clf = LogisticRegression(random_state=42)
+    clf = LogisticRegression(random_state=DEFAULT_RANDOM_SEED)
     clf.fit(X_train, y_train)
 
     # INFERENCE: test using inference_strategy

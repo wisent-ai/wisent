@@ -4,6 +4,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.constants import NORM_EPS, GEO_PAIRS_PER_BENCHMARK, CLUSTER_SMALL_MAX_LAYERS, CLUSTER_MEDIUM_MAX_LAYERS, CLUSTER_LAYERS_SMALL, CLUSTER_LAYERS_MEDIUM, CLUSTER_LAYERS_LARGE, TOKENIZER_MAX_LENGTH_CLUSTER, EXTRACTION_WEIGHTED_DECAY, BENCHMARK_PAIR_LOADING_LIMIT, CLUSTER_PROMPT_TRUNCATION, CLUSTER_RESPONSE_TRUNCATION, CLUSTER_MIN_PAIRS
 
 
 class ConfigResult:
@@ -19,24 +20,24 @@ class ConfigResult:
 
 def get_layers_to_test(model) -> List[int]:
     num_layers = model.config.num_hidden_layers
-    if num_layers <= 16:
-        test_layers = [4, 6, 8, 10, 12, 14]
-    elif num_layers <= 32:
-        test_layers = [8, 12, 16, 20, 24, 28]
+    if num_layers <= CLUSTER_SMALL_MAX_LAYERS:
+        test_layers = list(CLUSTER_LAYERS_SMALL)
+    elif num_layers <= CLUSTER_MEDIUM_MAX_LAYERS:
+        test_layers = list(CLUSTER_LAYERS_MEDIUM)
     else:
-        test_layers = [10, 20, 30, 40, 50, 60]
+        test_layers = list(CLUSTER_LAYERS_LARGE)
     return [l for l in test_layers if l < num_layers]
 
 
 def get_last_token_act(model, tokenizer, text: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float()
 
 
 def get_mean_answer_tokens_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -49,7 +50,7 @@ def get_mean_answer_tokens_act(model, tokenizer, text: str, answer: str, layer: 
 
 
 def get_first_answer_token_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -62,7 +63,7 @@ def get_first_answer_token_act(model, tokenizer, text: str, answer: str, layer: 
 
 
 def get_generation_point_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -73,7 +74,7 @@ def get_generation_point_act(model, tokenizer, text: str, answer: str, layer: in
 
 
 def get_max_norm_answer_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -88,7 +89,7 @@ def get_max_norm_answer_act(model, tokenizer, text: str, answer: str, layer: int
 
 
 def get_weighted_mean_answer_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=1024).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -96,7 +97,7 @@ def get_weighted_mean_answer_act(model, tokenizer, text: str, answer: str, layer
     hidden = outputs.hidden_states[layer][0]
     if num_answer_tokens > 0 and num_answer_tokens < hidden.shape[0]:
         answer_hidden = hidden[-num_answer_tokens-1:-1, :]
-        weights = torch.exp(-torch.arange(answer_hidden.shape[0], dtype=answer_hidden.dtype, device=answer_hidden.device) * 0.5)
+        weights = torch.exp(-torch.arange(answer_hidden.shape[0], dtype=answer_hidden.dtype, device=answer_hidden.device) * EXTRACTION_WEIGHTED_DECAY)
         weights = weights / weights.sum()
         weighted_mean = (answer_hidden * weights.unsqueeze(1)).sum(dim=0)
         return weighted_mean.cpu().float()
@@ -108,7 +109,7 @@ def get_activation(model, tokenizer, prompt: str, response: str, layer: int, dev
     
     if strategy.startswith("chat_"):
         text = tokenizer.apply_chat_template(
-            [{"role": "user", "content": prompt[:500]}, {"role": "assistant", "content": response}],
+            [{"role": "user", "content": prompt[:CLUSTER_PROMPT_TRUNCATION]}, {"role": "assistant", "content": response}],
             tokenize=False, add_generation_prompt=False
         )
         
@@ -124,7 +125,7 @@ def get_activation(model, tokenizer, prompt: str, response: str, layer: int, dev
             return get_weighted_mean_answer_act(model, tokenizer, text, response, layer, device)
     
     elif strategy == "role_play":
-        instruction = f"Behave like a person that would answer {prompt[:300]} with {response[:200]}"
+        instruction = f"Behave like a person that would answer {prompt[:CLUSTER_PROMPT_TRUNCATION]} with {response[:CLUSTER_RESPONSE_TRUNCATION]}"
         text = tokenizer.apply_chat_template(
             [{"role": "user", "content": instruction}, {"role": "assistant", "content": random_token}],
             tokenize=False, add_generation_prompt=False
@@ -135,7 +136,7 @@ def get_activation(model, tokenizer, prompt: str, response: str, layer: int, dev
         raise ValueError("mc_balanced requires special handling")
     
     text = tokenizer.apply_chat_template(
-        [{"role": "user", "content": prompt[:500]}, {"role": "assistant", "content": response}],
+        [{"role": "user", "content": prompt[:CLUSTER_PROMPT_TRUNCATION]}, {"role": "assistant", "content": response}],
         tokenize=False, add_generation_prompt=False
     )
     return get_last_token_act(model, tokenizer, text, layer, device)
@@ -144,10 +145,10 @@ def get_activation(model, tokenizer, prompt: str, response: str, layer: int, dev
 def get_mc_balanced_activations(model, tokenizer, prompt: str, pos_response: str, neg_response: str, layer: int, device: str) -> Tuple[torch.Tensor, torch.Tensor]:
     pos_goes_in_b = hash(prompt) % 2 == 0
     if pos_goes_in_b:
-        mc_text = f"Which is correct?\nA. {neg_response[:200]}\nB. {pos_response[:200]}\nAnswer:"
+        mc_text = f"Which is correct?\nA. {neg_response[:CLUSTER_RESPONSE_TRUNCATION]}\nB. {pos_response[:CLUSTER_RESPONSE_TRUNCATION]}\nAnswer:"
         pos_ans, neg_ans = "B", "A"
     else:
-        mc_text = f"Which is correct?\nA. {pos_response[:200]}\nB. {neg_response[:200]}\nAnswer:"
+        mc_text = f"Which is correct?\nA. {pos_response[:CLUSTER_RESPONSE_TRUNCATION]}\nB. {neg_response[:CLUSTER_RESPONSE_TRUNCATION]}\nAnswer:"
         pos_ans, neg_ans = "A", "B"
     
     pos_text = tokenizer.apply_chat_template(
@@ -164,7 +165,7 @@ def get_mc_balanced_activations(model, tokenizer, prompt: str, pos_response: str
     return pos_act, neg_act
 
 
-def load_benchmark_pairs(benchmark_name: str, loader: LMEvalDataLoader, limit: int = 60) -> List:
+def load_benchmark_pairs(benchmark_name: str, loader: LMEvalDataLoader, limit: int = BENCHMARK_PAIR_LOADING_LIMIT) -> List:
     task_name_lower = benchmark_name.lower()
     is_hf = task_name_lower in {k.lower() for k in HF_EXTRACTORS.keys()}
     
@@ -185,7 +186,7 @@ def load_benchmark_pairs(benchmark_name: str, loader: LMEvalDataLoader, limit: i
     return pairs
 
 
-def compute_directions_for_strategy(model, tokenizer, pairs: List, layer: int, device: str, strategy: str, max_pairs: int = 50):
+def compute_directions_for_strategy(model, tokenizer, pairs: List, layer: int, device: str, strategy: str, max_pairs: int = GEO_PAIRS_PER_BENCHMARK):
     pos_acts, neg_acts = [], []
     
     for pair in pairs[:max_pairs]:
@@ -205,14 +206,14 @@ def compute_directions_for_strategy(model, tokenizer, pairs: List, layer: int, d
         except:
             continue
     
-    if len(pos_acts) < 10:
+    if len(pos_acts) < CLUSTER_MIN_PAIRS:
         return None, None, None
     
     pos_tensor = torch.stack(pos_acts)
     neg_tensor = torch.stack(neg_acts)
     direction = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
     norm = torch.norm(direction)
-    if norm > 1e-8:
+    if norm > NORM_EPS:
         direction = direction / norm
     return direction, pos_tensor, neg_tensor
 

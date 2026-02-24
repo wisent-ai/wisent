@@ -8,6 +8,13 @@ import torch
 from datasets import Dataset
 from wisent.comparison.utils import generate_contrastive_pairs
 from wisent.core.utils import preferred_dtype
+from wisent.core.constants import (
+    COMPARISON_NUM_PAIRS, TRAINING_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
+    COMPARISON_REFT_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,
+    COMPARISON_TRAINING_BATCH_SIZE, COMPARISON_MAX_LENGTH,
+    COMPARISON_LOGGING_STEPS, LOREFT_DEFAULT_RANK,
+    GRADIENT_ACCUMULATION_STEPS_DEFAULT,
+)
 import pyreft
 import transformers
 
@@ -17,7 +24,7 @@ __all__ = ["prepare_reft_dataset", "train_reft_adapter"]
 def prepare_reft_dataset(
     pairs: list[dict],
     tokenizer,
-    max_length: int = 512,
+    max_length: int = COMPARISON_MAX_LENGTH,
 ) -> tuple[list[str], list[str]]:
     """
     Prepare dataset for ReFT training from contrastive pairs.
@@ -45,15 +52,15 @@ def train_reft_adapter(
     model_name: str,
     output_path: str | Path,
     trait_label: str = "correctness",
-    num_pairs: int = 50,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    low_rank_dimension: int = 4,
+    low_rank_dimension: int = LOREFT_DEFAULT_RANK,
     intervention_layers: str | None = None,
-    learning_rate: float = 5e-4,
-    num_epochs: int = 3,
-    batch_size: int = 2,
-    max_length: int = 512,
+    learning_rate: float = COMPARISON_REFT_LEARNING_RATE,
+    num_epochs: int = COMPARISON_NUM_EPOCHS_DEFAULT,
+    batch_size: int = COMPARISON_TRAINING_BATCH_SIZE,
+    max_length: int = COMPARISON_MAX_LENGTH,
 ) -> Path:
     """Train a LoReFT intervention using SFT on positive responses."""
     _original_compute_loss = pyreft.ReftTrainer.compute_loss
@@ -107,9 +114,9 @@ def train_reft_adapter(
     training_output_dir = tempfile.mkdtemp(prefix="reft_training_")
     training_args = transformers.TrainingArguments(
         output_dir=training_output_dir, num_train_epochs=num_epochs,
-        per_device_train_batch_size=batch_size, gradient_accumulation_steps=1,
-        learning_rate=learning_rate, weight_decay=0.01, warmup_ratio=0.1,
-        logging_steps=10, save_strategy="no",
+        per_device_train_batch_size=batch_size, gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_DEFAULT,
+        learning_rate=learning_rate, weight_decay=TRAINING_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
+        logging_steps=COMPARISON_LOGGING_STEPS, save_strategy="no",
         bf16=(dtype == torch.bfloat16), fp16=(dtype == torch.float16), report_to="none",
     )
     trainer = pyreft.ReftTrainerForCausalLM(

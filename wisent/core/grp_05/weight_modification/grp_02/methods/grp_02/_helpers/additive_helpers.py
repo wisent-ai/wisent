@@ -1,4 +1,5 @@
 """Extracted from additive.py - bake_steering_with_kernel implementation."""
+from wisent.core.constants import KERNEL_DISTANCE_FRACTION
 
 
 def bake_steering_with_kernel_impl(
@@ -42,7 +43,7 @@ def bake_steering_with_kernel_impl(
         max_alpha_position = (num_layers - 1) / 2
 
     if min_alpha_distance is None:
-        min_alpha_distance = 0.6 * (num_layers - 1)
+        min_alpha_distance = KERNEL_DISTANCE_FRACTION * (num_layers - 1)
 
     # Compute per-layer alphas
     layer_weights = {}

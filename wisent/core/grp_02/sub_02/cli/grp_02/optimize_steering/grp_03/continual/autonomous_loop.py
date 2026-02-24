@@ -21,7 +21,7 @@ from wisent.core.cli.optimize_steering.continual.state import (
     compose_vectors,
     save_state,
     load_state,
-    upload_to_s3,
+    upload_to_gcs,
     ewc_constrained_update,
 )
 from wisent.core.cli.optimize_steering.continual.replay_buffer import detect_forgetting
@@ -33,6 +33,10 @@ from wisent.core.cli.optimize_steering.continual._loop_helpers import (
     check_convergence,
     get_task_priority,
 )
+from wisent.core.constants import (DEFAULT_LIMIT, CONTINUAL_EWC_LAMBDA, WELFARE_LIMIT,
+    CONTINUAL_SHARED_UPDATE_RATE,
+    CONTINUAL_REPLAY_INTERVAL, CONTINUAL_FORGETTING_THRESHOLD,
+    CONTINUAL_CONVERGENCE_WINDOW)
 
 
 def _run_replay_check(state, model, pairs_dir, limit, device,
@@ -74,17 +78,17 @@ def execute_continual_learning(args):
     model = args.model
     tasks_str = getattr(args, 'tasks', None)
     method = getattr(args, 'method', None)
-    max_cycles = getattr(args, 'max_cycles', 100)
+    max_cycles = getattr(args, 'max_cycles', DEFAULT_LIMIT)
     pairs_dir = getattr(args, 'enriched_pairs_dir', './pairs/')
     checkpoint_dir = getattr(args, 'checkpoint_dir', './checkpoints/')
-    ewc_lambda = getattr(args, 'ewc_lambda', 1000.0)
-    replay_size = getattr(args, 'replay_size', 50)
-    replay_interval = getattr(args, 'replay_interval', 5)
-    forgetting_threshold = getattr(args, 'forgetting_threshold', 0.9)
-    convergence_window = getattr(args, 'convergence_window', 10)
-    limit = getattr(args, 'limit', 100)
+    ewc_lambda = getattr(args, 'ewc_lambda', CONTINUAL_EWC_LAMBDA)
+    replay_size = getattr(args, 'replay_size', WELFARE_LIMIT)
+    replay_interval = getattr(args, 'replay_interval', CONTINUAL_REPLAY_INTERVAL)
+    forgetting_threshold = getattr(args, 'forgetting_threshold', CONTINUAL_FORGETTING_THRESHOLD)
+    convergence_window = getattr(args, 'convergence_window', CONTINUAL_CONVERGENCE_WINDOW)
+    limit = getattr(args, 'limit', DEFAULT_LIMIT)
     device = getattr(args, 'device', None)
-    s3_bucket = getattr(args, 's3_bucket', None)
+    gcs_bucket = getattr(args, 'gcs_bucket', None)
 
     tasks = ([t.strip() for t in tasks_str.split(",")]
              if tasks_str else get_all_benchmarks())
@@ -164,7 +168,7 @@ def execute_continual_learning(args):
         )
         for layer in shared_update:
             if layer in state.shared_vectors:
-                state.shared_vectors[layer] += 0.1 * shared_update[layer]
+                state.shared_vectors[layer] += CONTINUAL_SHARED_UPDATE_RATE * shared_update[layer]
             else:
                 state.shared_vectors[layer] = shared_update[layer].clone()
         state.task_vectors[task] = task_update
@@ -194,8 +198,8 @@ def execute_continual_learning(args):
         # 11. Checkpoint
         save_state(state, checkpoint_dir)
         print(f"   Checkpoint saved to {checkpoint_dir}")
-        if s3_bucket:
-            upload_to_s3(checkpoint_dir, s3_bucket, f"continual/{model}/{cycle}")
+        if gcs_bucket:
+            upload_to_gcs(checkpoint_dir, gcs_bucket, f"continual/{model}/{cycle}")
 
         # 12. Convergence check
         if check_convergence(state.metrics, convergence_window):

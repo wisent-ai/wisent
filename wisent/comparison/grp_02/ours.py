@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
+from wisent.core.constants import COMPARISON_NUM_PAIRS
 from wisent.comparison.utils import apply_steering_to_model, remove_steering, convert_to_lm_eval_format
 
 if TYPE_CHECKING:
@@ -27,7 +28,7 @@ def generate_steering_vector(
     model_name: str,
     output_path: str | Path,
     trait_label: str = "correctness",
-    num_pairs: int = 50,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
     method: str = "caa",
     layers: str | None = None,
     normalize: bool = True,

@@ -5,6 +5,8 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
+from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT
+from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -16,7 +18,7 @@ _LOG = setup_logger(__name__)
 class TETNORuntimeHooks:
     """Runtime hooks for TETNO conditional steering."""
 
-    def __init__(self, model: Module, tetno_result, base_strength: float = 1.0, gate_temperature: float = 0.1) -> None:
+    def __init__(self, model: Module, tetno_result, base_strength: float = DEFAULT_STRENGTH, gate_temperature: float = TETNO_GATE_TEMPERATURE) -> None:
         self.model = model
         self.tetno_result = tetno_result
         self.base_strength = base_strength
@@ -39,7 +41,7 @@ class TETNORuntimeHooks:
                     layer_indices.append(idx)
                 except (ValueError, IndexError):
                     pass
-            sensor_layer = layer_indices[len(layer_indices)//2] if layer_indices else 15
+            sensor_layer = layer_indices[len(layer_indices)//2] if layer_indices else DEFAULT_LAYER
         self._sensor_layer_idx = sensor_layer
         self._layer_name_to_idx = {}
         for layer_name in tetno_result.behavior_vectors.keys():
@@ -94,7 +96,7 @@ class TETNORuntimeHooks:
         if behavior_vector is None:
             return output
         behavior_vector = behavior_vector.to(hidden_states.device)
-        layer_scale = self.tetno_result.layer_scales.get(layer_name, 1.0)
+        layer_scale = self.tetno_result.layer_scales.get(layer_name, DEFAULT_LAYER_WEIGHT)
         gate = self._current_gate.to(hidden_states.device)
         if hidden_states.dim() == 3:
             gate = gate.view(-1, 1, 1)
@@ -112,7 +114,7 @@ class TETNORuntimeHooks:
 
 
 def apply_grom_steering(
-    model: Module, grom_result, mode: str = "hybrid", base_strength: float = 1.0,
+    model: Module, grom_result, mode: str = "hybrid", base_strength: float = DEFAULT_STRENGTH,
     components: list[str] | None = None, verbose: bool = True
 ) -> dict:
     """Apply GROM steering to a model with the specified mode."""

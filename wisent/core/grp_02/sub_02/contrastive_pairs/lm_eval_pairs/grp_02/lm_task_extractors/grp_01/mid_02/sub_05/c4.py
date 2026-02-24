@@ -6,6 +6,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import C4_MIN_TEXT_LENGTH
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -71,7 +72,7 @@ class C4Extractor(LMEvalBenchmarkExtractor):
             # C4 format: just has 'text' field with raw text
             if "text" in doc:
                 text = str(doc.get("text", "")).strip()
-                if not text or len(text) < 50:  # Skip very short texts
+                if not text or len(text) < C4_MIN_TEXT_LENGTH:  # Skip very short texts
                     return None
 
                 # Split text into sentences (simple split on periods)

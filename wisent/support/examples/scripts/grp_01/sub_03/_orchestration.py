@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
+from wisent.core.constants import CONCEPT_BIC_STRONG_THRESHOLD, DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT
 from wisent.core.models.wisent_model import WisentModel
 
 from ._data_loading import extract_difference_vectors
@@ -117,7 +118,7 @@ def detect_concepts(
         num_concepts_votes.append(1)
     
     # Evidence 5: Bimodality
-    if bimodal_results["bic_difference"] > 10:
+    if bimodal_results["bic_difference"] > CONCEPT_BIC_STRONG_THRESHOLD:
         evidence.append(f"BIC favors 2 components (diff={bimodal_results['bic_difference']:.1f})")
         num_concepts_votes.append(2)
     else:
@@ -158,8 +159,8 @@ def run_single_sample_detection(
     model_name: str,
     pairs: List[Dict],
     layer: int = None,
-    n_bootstrap: int = 100,
-    seed: int = 42,
+    n_bootstrap: int = N_BOOTSTRAP_DEFAULT,
+    seed: int = DEFAULT_RANDOM_SEED,
 ):
     """
     Run detection on a SINGLE sample to determine if it contains multiple concepts.

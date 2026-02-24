@@ -8,6 +8,14 @@ from typing import Any, Callable, Dict, List, Optional
 import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
 
+from wisent.core.constants import (
+    BLEND_DEFAULT,
+    DEFAULT_SCORE,
+    EFFECTIVENESS_HIGH,
+    EFFECTIVENESS_MODERATE,
+    EFFECTIVENESS_SLIGHT,
+    MATH_PERCENT_REL_TOL,
+)
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mbpp import MBPPExtractor
 
 # Import LMEvalHarnessGroundTruth for intelligent evaluation (newer approach used by CLI)
@@ -45,10 +53,10 @@ def calculate_comprehensive_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
         test_results = results["test_results"]
 
         # Extract key metrics
-        base_benchmark_acc = test_results.get("base_benchmark_metrics", {}).get("accuracy", 0.0)
-        steered_benchmark_acc = test_results.get("steered_benchmark_metrics", {}).get("accuracy", 0.0)
-        base_probe_auc = test_results.get("base_probe_metrics", {}).get("auc", 0.5)
-        steered_probe_auc = test_results.get("steered_probe_metrics", {}).get("auc", 0.5)
+        base_benchmark_acc = test_results.get("base_benchmark_metrics", {}).get("accuracy", DEFAULT_SCORE)
+        steered_benchmark_acc = test_results.get("steered_benchmark_metrics", {}).get("accuracy", DEFAULT_SCORE)
+        base_probe_auc = test_results.get("base_probe_metrics", {}).get("auc", BLEND_DEFAULT)
+        steered_probe_auc = test_results.get("steered_probe_metrics", {}).get("auc", BLEND_DEFAULT)
 
         # Calculate improvements
         benchmark_improvement = steered_benchmark_acc - base_benchmark_acc
@@ -59,13 +67,13 @@ def calculate_comprehensive_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
                 "base_benchmark_accuracy": base_benchmark_acc,
                 "steered_benchmark_accuracy": steered_benchmark_acc,
                 "benchmark_improvement": benchmark_improvement,
-                "benchmark_improvement_percent": (benchmark_improvement / max(base_benchmark_acc, 0.001)) * 100,
+                "benchmark_improvement_percent": (benchmark_improvement / max(base_benchmark_acc, MATH_PERCENT_REL_TOL)) * 100,
                 "base_probe_auc": base_probe_auc,
                 "steered_probe_auc": steered_probe_auc,
                 "probe_improvement": probe_improvement,
-                "probe_improvement_percent": (probe_improvement / max(base_probe_auc, 0.001)) * 100,
+                "probe_improvement_percent": (probe_improvement / max(base_probe_auc, MATH_PERCENT_REL_TOL)) * 100,
                 "overall_effectiveness": (benchmark_improvement + probe_improvement) / 2,
-                "validation_score": test_results.get("validation_combined_score", 0.0),
+                "validation_score": test_results.get("validation_combined_score", DEFAULT_SCORE),
             }
         )
 
@@ -96,8 +104,8 @@ def calculate_comprehensive_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
 
         all_configs = optimization_results.get("all_configs", [])
         if all_configs:
-            combined_scores = [config.get("combined_score", 0.0) for config in all_configs]
-            benchmark_scores = [config.get("benchmark_metrics", {}).get("accuracy", 0.0) for config in all_configs]
+            combined_scores = [config.get("combined_score", DEFAULT_SCORE) for config in all_configs]
+            benchmark_scores = [config.get("benchmark_metrics", {}).get("accuracy", DEFAULT_SCORE) for config in all_configs]
 
             comprehensive_metrics.update(
                 {
@@ -162,7 +170,7 @@ def generate_performance_summary(comprehensive_metrics: Dict[str, Any]) -> str:
     # Optimization Statistics
     if "optimization_configs_tested" in comprehensive_metrics:
         num_configs = comprehensive_metrics["optimization_configs_tested"]
-        best_score = comprehensive_metrics.get("validation_score", 0.0)
+        best_score = comprehensive_metrics.get("validation_score", DEFAULT_SCORE)
 
         summary.append("\n⚙️ OPTIMIZATION STATISTICS:")
         summary.append(f"  Configurations Tested:   {num_configs}")
@@ -173,11 +181,11 @@ def generate_performance_summary(comprehensive_metrics: Dict[str, Any]) -> str:
         effectiveness = comprehensive_metrics["overall_effectiveness"]
 
         summary.append("\n🏆 OVERALL ASSESSMENT:")
-        if effectiveness > 0.1:
+        if effectiveness > EFFECTIVENESS_HIGH:
             assessment = "Highly Effective"
-        elif effectiveness > 0.05:
+        elif effectiveness > EFFECTIVENESS_MODERATE:
             assessment = "Moderately Effective"
-        elif effectiveness > 0.01:
+        elif effectiveness > EFFECTIVENESS_SLIGHT:
             assessment = "Slightly Effective"
         else:
             assessment = "Minimal Effect"

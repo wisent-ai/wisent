@@ -8,6 +8,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from difflib import SequenceMatcher
 
 from wisent.core.errors import TaskLoadError, TaskNotFoundError, NoDocsAvailableError
+from wisent.core.constants import DATA_SPLIT_RATIO, DATA_SPLIT_SEED, DEFAULT_TIMEOUT_DOCKER, TASK_FUZZY_MATCH_THRESHOLD
 
 
 def load_available_tasks() -> List[str]:
@@ -34,7 +35,7 @@ def load_available_tasks() -> List[str]:
     except ImportError:
         try:
             import subprocess
-            result = subprocess.run(['lm_eval', '--tasks', 'list'], capture_output=True, text=True, timeout=30)
+            result = subprocess.run(['lm_eval', '--tasks', 'list'], capture_output=True, text=True, timeout=DEFAULT_TIMEOUT_DOCKER)
             task_names = []
             for line in result.stdout.split('\n'):
                 if '|' in line and not line.startswith('|---') and 'Group' not in line and 'Config Location' not in line:
@@ -145,7 +146,7 @@ class TaskManager:
         best_match, best_similarity = None, 0.0
         for available_task in self.available_tasks:
             similarity = self._calculate_task_name_similarity(task_name, available_task)
-            if similarity > best_similarity and similarity >= 0.6:
+            if similarity > best_similarity and similarity >= TASK_FUZZY_MATCH_THRESHOLD:
                 best_similarity, best_match = similarity, available_task
         if best_match:
             self._task_name_mappings[task_name] = best_match
@@ -176,7 +177,7 @@ class TaskManager:
                 raise TaskNotFoundError(task_name=task_name)
             raise TaskLoadError(task_name=task_name, cause=e)
 
-    def split_task_data(self, task_data, split_ratio: float = 0.8, random_seed: int = 42) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    def split_task_data(self, task_data, split_ratio: float = DATA_SPLIT_RATIO, random_seed: int = DATA_SPLIT_SEED) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """Split task data into training and testing sets."""
         limit = getattr(task_data, '_limit', None)
         docs = load_docs(task_data, limit)

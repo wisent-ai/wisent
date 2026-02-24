@@ -52,6 +52,7 @@ from wisent.core.cli.optimize_steering.hierarchical_config import (
 from wisent.core.cli.optimize_steering.hierarchical_runner import (
     run_hierarchical_optimization,
 )
+from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS
 
 
 def execute_hierarchical_optimization(args):
@@ -65,15 +66,15 @@ def execute_hierarchical_optimization(args):
     if not num_layers and enriched_pairs_file:
         with open(enriched_pairs_file) as f:
             data = json.load(f)
-        num_layers = len(data.get("layers", [])) or 32
-    num_layers = num_layers or 32
+        num_layers = len(data.get("layers", [])) or DEFAULT_NUM_HIDDEN_LAYERS
+    num_layers = num_layers or DEFAULT_NUM_HIDDEN_LAYERS
 
     return run_hierarchical_optimization(
         model=args.model,
         task=task,
         methods=methods,
         num_layers=num_layers,
-        limit=getattr(args, 'limit', 100),
+        limit=getattr(args, 'limit', DEFAULT_LIMIT),
         device=getattr(args, 'device', None),
         enriched_pairs_file=enriched_pairs_file,
         output_dir=getattr(args, 'output_dir', './hierarchical_results'),

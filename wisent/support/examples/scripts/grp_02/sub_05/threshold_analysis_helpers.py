@@ -9,24 +9,30 @@ from dataclasses import dataclass
 import torch
 import numpy as np
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
+from wisent.core.constants import (
+    N_BOOTSTRAP_DEFAULT, PAIR_GENERATORS_DEFAULT_N,
+    THRESHOLD_HIDDEN_DIM_LARGE, THRESHOLD_HIDDEN_DIM_DEFAULT,
+    ZERO_THRESHOLD, NULL_DISTRIBUTION_SAMPLES_PER_CLASS,
+    EXISTENCE_THRESHOLD_GRID, GAP_THRESHOLD_CANDIDATES,
+)
 
-S3_BUCKET = "wisent-bucket"
-S3_PREFIX = "threshold_analysis"
+GCS_BUCKET = "wisent-images-bucket"
+GCS_PREFIX = "threshold_analysis"
 
 
-def s3_upload_file(local_path: Path, model_name: str) -> None:
-    """Upload a single file to S3."""
+def gcs_upload_file(local_path: Path, model_name: str) -> None:
+    """Upload a single file to GCS."""
     model_prefix = model_name.replace('/', '_')
-    s3_path = f"s3://{S3_BUCKET}/{S3_PREFIX}/{model_prefix}/{local_path.name}"
+    gcs_path = f"gs://{GCS_BUCKET}/{GCS_PREFIX}/{model_prefix}/{local_path.name}"
     try:
         subprocess.run(
-            ["aws", "s3", "cp", str(local_path), s3_path, "--quiet"],
+            ["gcloud", "storage", "cp", str(local_path), gcs_path, "--quiet"],
             check=True,
             capture_output=True,
         )
-        print(f"  Uploaded to S3: {s3_path}")
+        print(f"  Uploaded to GCS: {gcs_path}")
     except Exception as e:
-        print(f"  S3 upload failed: {e}")
+        print(f"  GCS upload failed: {e}")
 
 
 @dataclass
@@ -58,8 +64,8 @@ class ThresholdAnalysisResult:
 
 def generate_null_distribution(
     model: "WisentModel",
-    n_samples: int = 100,
-    hidden_dim: int = 4096,
+    n_samples: int = N_BOOTSTRAP_DEFAULT,
+    hidden_dim: int = THRESHOLD_HIDDEN_DIM_LARGE,
 ) -> Tuple[List[float], List[float]]:
     """
     Generate null distribution by testing random/nonsense data.
@@ -79,8 +85,8 @@ def generate_null_distribution(
     
     for _ in range(n_samples):
         # Generate random activations (no real signal)
-        pos = torch.randn(50, hidden_dim)
-        neg = torch.randn(50, hidden_dim)
+        pos = torch.randn(NULL_DISTRIBUTION_SAMPLES_PER_CLASS, hidden_dim)
+        neg = torch.randn(NULL_DISTRIBUTION_SAMPLES_PER_CLASS, hidden_dim)
         
         knn = compute_knn_accuracy(pos, neg, k=10)
         linear = compute_linear_probe_accuracy(pos, neg)
@@ -93,8 +99,8 @@ def generate_null_distribution(
 
 def generate_synthetic_data(
     structure: str,
-    n_samples: int = 50,
-    hidden_dim: int = 100,
+    n_samples: int = PAIR_GENERATORS_DEFAULT_N,
+    hidden_dim: int = THRESHOLD_HIDDEN_DIM_DEFAULT,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Generate synthetic data with known structure for validation.
@@ -206,15 +212,15 @@ def compute_precision_recall_for_gap(
     precision, recall, thresholds = precision_recall_curve(labels, gaps)
     
     # Compute F1
-    f1 = [2 * p * r / (p + r + 1e-10) for p, r in zip(precision, recall)]
+    f1 = [2 * p * r / (p + r + ZERO_THRESHOLD) for p, r in zip(precision, recall)]
     
     return thresholds.tolist(), precision.tolist(), recall.tolist(), f1
 
 
 def run_sensitivity_analysis(
     results: List[Dict],
-    existence_thresholds: List[float] = [0.5, 0.55, 0.6, 0.65, 0.7],
-    gap_thresholds: List[float] = [0.05, 0.10, 0.15, 0.20, 0.25],
+    existence_thresholds: List[float] = EXISTENCE_THRESHOLD_GRID,
+    gap_thresholds: List[float] = GAP_THRESHOLD_CANDIDATES,
 ) -> Dict[str, Dict[str, float]]:
     """
     Run sensitivity analysis across threshold combinations.
@@ -258,11 +264,11 @@ def load_diagnosis_results(model_name: str, output_dir: Path) -> List[Dict]:
     """Load all diagnosis results."""
     model_prefix = model_name.replace('/', '_')
     
-    # Try to download from S3
+    # Try to download from GCS
     try:
         subprocess.run(
-            ["aws", "s3", "sync", 
-             f"s3://{S3_BUCKET}/direction_discovery/{model_prefix}/",
+            ["gcloud", "storage", "rsync",
+             f"gs://{GCS_BUCKET}/direction_discovery/{model_prefix}/",
              str(output_dir / "diagnosis"),
              "--quiet"],
             check=False,

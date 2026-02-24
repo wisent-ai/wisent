@@ -6,6 +6,20 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Tuple
 
+from wisent.core.constants import (
+    DIAG_NUM_COMPONENTS,
+    TECZA_OPTIMIZATION_STEPS,
+    GEO_DIAG_LINEAR_VARIANCE,
+    GEO_DIAG_CONE_THRESHOLD,
+    MAX_CLUSTERS,
+    GEO_DIAG_CLUSTER_SILHOUETTE,
+    MANIFOLD_NEIGHBORS,
+    GEO_DIAG_MANIFOLD_THRESHOLD,
+    GEO_DIAG_SPARSE_THRESHOLD,
+    GEO_DIAG_BIMODAL_DIP,
+    GEO_DIAG_ORTHOGONAL_THRESHOLD,
+)
+
 __all__ = [
     "StructureType",
     "StructureScore",
@@ -39,37 +53,37 @@ class StructureScore:
 class GeometryAnalysisConfig:
     """Configuration for comprehensive geometry analysis."""
 
-    num_components: int = 5
+    num_components: int = DIAG_NUM_COMPONENTS
     """Number of components/directions to analyze."""
 
-    optimization_steps: int = 100
+    optimization_steps: int = TECZA_OPTIMIZATION_STEPS
     """Steps for optimization-based methods."""
 
-    linear_variance_threshold: float = 0.85
+    linear_variance_threshold: float = GEO_DIAG_LINEAR_VARIANCE
     """Variance explained threshold for linear structure."""
 
-    cone_threshold: float = 0.65
+    cone_threshold: float = GEO_DIAG_CONE_THRESHOLD
     """Cone score threshold."""
 
-    max_clusters: int = 5
+    max_clusters: int = MAX_CLUSTERS
     """Maximum number of clusters to try."""
 
-    cluster_silhouette_threshold: float = 0.55
+    cluster_silhouette_threshold: float = GEO_DIAG_CLUSTER_SILHOUETTE
     """Silhouette score threshold for cluster detection."""
 
-    manifold_neighbors: int = 10
+    manifold_neighbors: int = MANIFOLD_NEIGHBORS
     """Number of neighbors for manifold analysis."""
 
-    manifold_threshold: float = 0.70
+    manifold_threshold: float = GEO_DIAG_MANIFOLD_THRESHOLD
     """Score threshold for manifold structure."""
 
-    sparse_threshold: float = 0.1
+    sparse_threshold: float = GEO_DIAG_SPARSE_THRESHOLD
     """Fraction of active dimensions threshold."""
 
-    bimodal_dip_threshold: float = 0.05
+    bimodal_dip_threshold: float = GEO_DIAG_BIMODAL_DIP
     """P-value threshold for dip test."""
 
-    orthogonal_threshold: float = 0.12
+    orthogonal_threshold: float = GEO_DIAG_ORTHOGONAL_THRESHOLD
     """Max correlation for orthogonal subspaces."""
 
     use_universal_thresholds: bool = True

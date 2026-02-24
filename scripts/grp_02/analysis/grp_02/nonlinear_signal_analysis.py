@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Optional
 from dataclasses import asdict
 
+from wisent.core.constants import OPTUNA_DEFAULT_N_TRIALS
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
 from wisent.core.activations import ExtractionStrategy
@@ -33,7 +34,7 @@ def analyze_benchmark(
     model: WisentModel,
     benchmark: str,
     strategy: ExtractionStrategy,
-    limit: int = 100,
+    limit: int = OPTUNA_DEFAULT_N_TRIALS,
     cache_dir: str = "/tmp/wisent_nonlinear_cache",
 ) -> Optional[BenchmarkNonlinearAnalysis]:
     """Run full nonlinear analysis on a benchmark."""
@@ -105,7 +106,7 @@ def main():
     parser.add_argument("--model", default="Qwen/Qwen3-8B")
     parser.add_argument("--benchmarks", nargs="+", default=["halulens", "truthfulqa_generation"])
     parser.add_argument("--strategies", nargs="+", default=["chat_last", "chat_mean"])
-    parser.add_argument("--limit", type=int, default=100)
+    parser.add_argument("--limit", type=int, default=OPTUNA_DEFAULT_N_TRIALS)
     parser.add_argument("--cache-dir", default="/tmp/wisent_nonlinear_cache")
     parser.add_argument("--output-dir", default="/tmp/nonlinear_results")
     args = parser.parse_args()

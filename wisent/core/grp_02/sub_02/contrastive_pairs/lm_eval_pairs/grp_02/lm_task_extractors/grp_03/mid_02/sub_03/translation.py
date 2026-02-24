@@ -6,6 +6,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import TRANSLATION_MAX_SHUFFLE_ATTEMPTS
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -116,7 +117,7 @@ class TranslationExtractor(LMEvalBenchmarkExtractor):
         if len(target_words) > 1:
             shuffled_words = target_words.copy()
             # Shuffle until different
-            max_attempts = 10
+            max_attempts = TRANSLATION_MAX_SHUFFLE_ATTEMPTS
             for _ in range(max_attempts):
                 random.shuffle(shuffled_words)
                 if shuffled_words != target_words:

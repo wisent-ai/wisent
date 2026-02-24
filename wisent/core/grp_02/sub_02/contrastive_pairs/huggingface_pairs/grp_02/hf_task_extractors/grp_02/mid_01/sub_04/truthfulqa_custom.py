@@ -7,6 +7,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import DISPLAY_TRUNCATION_SHORT
 
 
 __all__ = ["TruthfulQACustomExtractor"]
@@ -81,7 +82,7 @@ class TruthfulQACustomExtractor(HuggingFaceBenchmarkExtractor):
         """
         Convert a single TruthfulQA doc into a ContrastivePair.
         """
-        log = bind(_LOG, doc_id=doc.get("question", "unknown")[:50])
+        log = bind(_LOG, doc_id=doc.get("question", "unknown")[:DISPLAY_TRUNCATION_SHORT])
 
         try:
             question = str(doc.get("question", "")).strip()

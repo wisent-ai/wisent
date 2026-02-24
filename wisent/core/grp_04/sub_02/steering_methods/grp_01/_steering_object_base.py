@@ -20,6 +20,7 @@ import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_SCALE
 
 
 LayerName = str
@@ -42,7 +43,7 @@ class SteeringObjectMetadata:
     calibration_norms: Dict[int, float] = field(default_factory=dict)
     extraction_component: str = "residual_stream"
     
-    def get_calibrated_strength(self, layer: int, target_percentage: float = 1.0) -> float:
+    def get_calibrated_strength(self, layer: int, target_percentage: float = DEFAULT_STRENGTH) -> float:
         """
         Compute calibrated strength for a layer based on hidden state norms.
         
@@ -90,7 +91,7 @@ class BaseSteeringObject(ABC):
         """Compute steering intensity for a layer."""
         pass
     
-    def get_calibrated_strength(self, target_percentage: float = 1.0) -> float:
+    def get_calibrated_strength(self, target_percentage: float = DEFAULT_STRENGTH) -> float:
         """
         Get auto-calibrated strength based on hidden state norms.
         
@@ -112,7 +113,7 @@ class BaseSteeringObject(ABC):
         self,
         hidden_state: torch.Tensor,
         layer: int,
-        base_strength: float = 1.0,
+        base_strength: float = DEFAULT_STRENGTH,
     ) -> torch.Tensor:
         """
         Apply steering to hidden state.
@@ -156,7 +157,7 @@ class BaseSteeringObject(ABC):
 
         return (hidden_state + delta).to(original_dtype)
     
-    def to_steering_plan(self, scale: float = 1.0, normalize: bool = True) -> "SteeringPlan":
+    def to_steering_plan(self, scale: float = DEFAULT_SCALE, normalize: bool = True) -> "SteeringPlan":
         """
         Convert this steering object to a SteeringPlan for use with WisentModel.
         
@@ -246,18 +247,24 @@ class BaseSteeringObject(ABC):
         
         method = data.get('method', 'caa')
         
-        # Dispatch to appropriate class
+        # Dispatch to appropriate class (lazy imports to avoid circular deps)
         if method == 'caa':
+            from wisent.core.steering_methods._steering_object_simple import CAASteeringObject
             return CAASteeringObject.from_dict(data)
         elif method == 'ostrze':
+            from wisent.core.steering_methods._steering_object_simple import OstrzeSteeringObject
             return OstrzeSteeringObject.from_dict(data)
         elif method == 'mlp':
+            from wisent.core.steering_methods._steering_object_simple import MLPSteeringObject
             return MLPSteeringObject.from_dict(data)
         elif method == 'tecza':
+            from wisent.core.steering_methods._steering_object_advanced import TECZASteeringObject
             return TECZASteeringObject.from_dict(data)
         elif method == 'tetno':
+            from wisent.core.steering_methods._steering_object_advanced import TETNOSteeringObject
             return TETNOSteeringObject.from_dict(data)
         elif method == 'grom':
+            from wisent.core.steering_methods._steering_object_grom import GROMSteeringObject
             return GROMSteeringObject.from_dict(data)
         elif method == 'nurt':
             from wisent.core.steering_methods.methods.nurt import NurtSteeringObject

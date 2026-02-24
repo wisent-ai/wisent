@@ -4,6 +4,7 @@ from typing import Dict, List
 from wisent.core.errors import NoBenchmarkDataError
 from wisent.core.agent.resources._budget_manager import BudgetManager
 from wisent.core.agent.resources._budget_functions import get_budget_manager
+from wisent.core.constants import AGENT_RESOURCE_BUDGET_MINUTES, DEVICE_HASH_PREFIX
 logger = logging.getLogger(__name__)
 
 def estimate_completion_time_minutes(tasks: List[str]) -> float:
@@ -46,7 +47,7 @@ def run_device_benchmark(force_rerun: bool = False) -> None:
     
     print("\n✅ Benchmark Results:")
     print("=" * 50)
-    print(f"Device ID: {benchmark.device_id[:12]}...")
+    print(f"Device ID: {benchmark.device_id[:DEVICE_HASH_PREFIX]}...")
     print(f"Device Type: {benchmark.device_type}")
     print(f"Model Loading: {benchmark.model_loading_seconds:.1f}s")
     print(f"Evaluation: {benchmark.benchmark_eval_seconds_per_100_examples:.1f}s per 100 examples")
@@ -115,7 +116,7 @@ def main():
     
     # Budget command
     budget_parser = subparsers.add_parser('budget', help='Calculate budget allocations')
-    budget_parser.add_argument('--time-minutes', '-t', type=float, default=5.0, help='Time budget in minutes')
+    budget_parser.add_argument('--time-minutes', '-t', type=float, default=AGENT_RESOURCE_BUDGET_MINUTES, help='Time budget in minutes')
     budget_parser.add_argument('--task-type', default='benchmark_evaluation', help='Task type to optimize for')
     
     args = parser.parse_args()

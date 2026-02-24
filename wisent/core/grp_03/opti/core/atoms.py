@@ -7,7 +7,7 @@ from typing import Any, Literal
 import optuna
 
 from wisent.core.errors import UnknownTypeError
-
+from wisent.core.constants import DEFAULT_N_TRIALS, DEFAULT_RANDOM_SEED
 __all__ = [
     "Direction",
     "HPOConfig",
@@ -43,14 +43,14 @@ class HPOConfig:
         load_if_exists:
             reuse persisted study if it already exists (when storage+study_name set).
     """
-    n_trials: int = 100
+    n_trials: int = DEFAULT_N_TRIALS
     direction: Direction = "maximize"
     sampler: str | None = "tpe"
     pruner: str | None = "asha"
     timeout: int | None = None
     storage: str | None = None
     study_name: str | None = None
-    seed: int | None = 42
+    seed: int | None = DEFAULT_RANDOM_SEED
     load_if_exists: bool = True
 
 

@@ -6,6 +6,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import MMLU_PRO_MAX_OPTIONS
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -72,7 +73,7 @@ class MMLUProExtractor(LMEvalBenchmarkExtractor):
             # Handle option_0, option_1, etc. format (mmlu_prox)
             if not options:
                 options = []
-                for i in range(10):
+                for i in range(MMLU_PRO_MAX_OPTIONS):
                     opt = doc.get(f"option_{i}")
                     if opt is not None and opt != "None" and str(opt).strip():
                         options.append(str(opt).strip())

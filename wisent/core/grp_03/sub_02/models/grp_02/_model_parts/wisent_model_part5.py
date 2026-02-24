@@ -10,6 +10,11 @@ from transformers import TextIteratorStreamer
 from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import (
+    DEFAULT_MAX_NEW_TOKENS, DEFAULT_INFERENCE_TEMPERATURE,
+    DEFAULT_TOP_P, DEFAULT_TOP_K, DEFAULT_REPETITION_PENALTY,
+    DEFAULT_NO_REPEAT_NGRAM_SIZE, DEFAULT_BASE_STRENGTH,
+)
 
 # Non-blocking join for the generation worker thread
 _JOIN_NOWAIT = 0.0
@@ -19,17 +24,17 @@ _JOIN_NOWAIT = 0.0
 def _generate_stream(
     self,
     inputs: list[list[ChatMessage]] | str,
-    max_new_tokens: int = 128,
-    temperature: float = 0.7,
-    top_p: float = 0.95,
-    top_k: int = 50,
-    repetition_penalty: float = 1.12,
-    no_repeat_ngram_size: int = 4,
+    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
+    temperature: float = DEFAULT_INFERENCE_TEMPERATURE,
+    top_p: float = DEFAULT_TOP_P,
+    top_k: int = DEFAULT_TOP_K,
+    repetition_penalty: float = DEFAULT_REPETITION_PENALTY,
+    no_repeat_ngram_size: int = DEFAULT_NO_REPEAT_NGRAM_SIZE,
     do_sample: bool = True,
     use_steering: bool = False,
     steering_plan: SteeringPlan | None = None,
     steering_object: "BaseSteeringObject | None" = None,
-    steering_strength: float = 1.0,
+    steering_strength: float = DEFAULT_BASE_STRENGTH,
     skip_prompt: bool = True,
     skip_special_tokens: bool = True,
     enable_thinking: bool = False,

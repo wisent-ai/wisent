@@ -11,6 +11,8 @@ import time
 import psycopg2
 import torch
 
+from wisent.core.constants import EXTRACTION_SINGLE_PAIR_LIMIT
+
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
     DATABASE_URL = DATABASE_URL.split('?')[0]
@@ -122,11 +124,12 @@ def create_activation(conn, model_id: int, pair_id: int, set_id: int, layer: int
     cur.close()
 
 
-def extract_single_benchmark(model_name: str, benchmark: str, limit: int = 200, device: str = "cuda"):
+def extract_single_benchmark(model_name: str, benchmark: str, limit: int = EXTRACTION_SINGLE_PAIR_LIMIT, device: str = "cuda"):
     """Extract activations for a single benchmark."""
     from transformers import AutoTokenizer, AutoModelForCausalLM
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.activations import ExtractionStrategy
+    from wisent.core.constants import MAX_TOKENIZATION_LENGTH
 
     conn = psycopg2.connect(DATABASE_URL)
 
@@ -190,7 +193,7 @@ def extract_single_benchmark(model_name: str, benchmark: str, limit: int = 200, 
 
             # Extract activations
             def get_hidden_states(text):
-                enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=2048)
+                enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
                 enc = {k: v.to(device) for k, v in enc.items()}
                 with torch.inference_mode():
                     out = model(**enc, output_hidden_states=True, use_cache=False)
@@ -221,7 +224,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="Model name")
     parser.add_argument("--benchmark", required=True, help="Benchmark name")
-    parser.add_argument("--limit", type=int, default=200, help="Max pairs")
+    parser.add_argument("--limit", type=int, default=EXTRACTION_SINGLE_PAIR_LIMIT, help="Max pairs")
     parser.add_argument("--device", default="cuda", help="Device")
     args = parser.parse_args()
 

@@ -4,6 +4,7 @@ import numpy as np
 import torch
 from typing import List, Dict, Tuple, Optional, Callable
 from dataclasses import dataclass
+from wisent.core.constants import NORM_EPS, STEERING_N_RANDOM, STEERING_N_PCA, DEFAULT_STRENGTH, DEFAULT_RANDOM_SEED, STEERING_GEN_MAX_TOKENS, AGENT_DIAG_TEMPERATURE
 
 
 @dataclass
@@ -38,16 +39,16 @@ def discover_behavioral_direction(
     X_scaled = scaler.fit_transform(base_activations)
 
     # Train logistic regression to find separating direction
-    clf = LogisticRegression( random_state=42)
+    clf = LogisticRegression( random_state=DEFAULT_RANDOM_SEED)
     clf.fit(X_scaled, y)
 
     # The coefficient vector is the separating direction
     direction = clf.coef_[0]
-    direction = direction / (np.linalg.norm(direction) + 1e-8)
+    direction = direction / (np.linalg.norm(direction) + NORM_EPS)
 
     # Transform back to original scale
-    direction_original = direction / (scaler.scale_ + 1e-8)
-    direction_original = direction_original / (np.linalg.norm(direction_original) + 1e-8)
+    direction_original = direction / (scaler.scale_ + NORM_EPS)
+    direction_original = direction_original / (np.linalg.norm(direction_original) + NORM_EPS)
 
     # Compute separation quality
     probs = clf.predict_proba(X_scaled)[:, 1]
@@ -90,8 +91,8 @@ def search_directions(
 def generate_candidate_directions(
     pos_activations: np.ndarray,
     neg_activations: np.ndarray,
-    n_random: int = 20,
-    n_pca: int = 10,
+    n_random: int = STEERING_N_RANDOM,
+    n_pca: int = STEERING_N_PCA,
 ) -> List[Tuple[str, np.ndarray]]:
     """Generate candidate steering directions to search."""
     from sklearn.decomposition import PCA
@@ -100,7 +101,7 @@ def generate_candidate_directions(
 
     # 1. Mean difference (baseline)
     mean_diff = pos_activations.mean(axis=0) - neg_activations.mean(axis=0)
-    mean_diff = mean_diff / (np.linalg.norm(mean_diff) + 1e-8)
+    mean_diff = mean_diff / (np.linalg.norm(mean_diff) + NORM_EPS)
     candidates.append(("mean_diff", mean_diff))
 
     # 2. Negative mean difference
@@ -111,26 +112,26 @@ def generate_candidate_directions(
     diffs = pos_activations[:n_pairs] - neg_activations[:n_pairs]
     n_pca_actual = min(n_pca, n_pairs - 1, diffs.shape[1])
     if n_pca_actual > 0:
-        pca = PCA(n_components=n_pca_actual, random_state=42)
+        pca = PCA(n_components=n_pca_actual, random_state=DEFAULT_RANDOM_SEED)
         pca.fit(diffs)
         for i, comp in enumerate(pca.components_):
-            comp_norm = comp / (np.linalg.norm(comp) + 1e-8)
+            comp_norm = comp / (np.linalg.norm(comp) + NORM_EPS)
             candidates.append((f"pca_{i}", comp_norm))
             candidates.append((f"pca_{i}_neg", -comp_norm))
 
     # 4. Random directions in the subspace spanned by activations
     all_acts = np.vstack([pos_activations, neg_activations])
-    pca_all = PCA(n_components=min(50, len(all_acts) - 1), random_state=42)
+    pca_all = PCA(n_components=min(50, len(all_acts) - 1), random_state=DEFAULT_RANDOM_SEED)
     pca_all.fit(all_acts)
 
-    rng = np.random.RandomState(42)
+    rng = np.random.RandomState(DEFAULT_RANDOM_SEED)
     for i in range(n_random):
         # Random combination of top PCA components
         weights = rng.randn(min(20, len(pca_all.components_)))
         direction = np.zeros(all_acts.shape[1])
         for j, w in enumerate(weights):
             direction += w * pca_all.components_[j]
-        direction = direction / (np.linalg.norm(direction) + 1e-8)
+        direction = direction / (np.linalg.norm(direction) + NORM_EPS)
         candidates.append((f"random_{i}", direction))
 
     # 5. Per-class centroids to overall centroid
@@ -139,11 +140,11 @@ def generate_candidate_directions(
     overall_centroid = all_acts.mean(axis=0)
 
     pos_to_overall = overall_centroid - pos_centroid
-    pos_to_overall = pos_to_overall / (np.linalg.norm(pos_to_overall) + 1e-8)
+    pos_to_overall = pos_to_overall / (np.linalg.norm(pos_to_overall) + NORM_EPS)
     candidates.append(("pos_to_center", pos_to_overall))
 
     neg_to_overall = overall_centroid - neg_centroid
-    neg_to_overall = neg_to_overall / (np.linalg.norm(neg_to_overall) + 1e-8)
+    neg_to_overall = neg_to_overall / (np.linalg.norm(neg_to_overall) + NORM_EPS)
     candidates.append(("neg_to_center", neg_to_overall))
 
     return candidates
@@ -156,7 +157,7 @@ def search_layers(
     neg_ref_by_layer: Dict[int, np.ndarray],
     evaluate_fn: Callable[[str], str],  # Returns "TRUTHFUL" or "UNTRUTHFUL"
     layers: List[int],
-    strength: float = 1.0,
+    strength: float = DEFAULT_STRENGTH,
 ) -> List[Tuple[int, int, int, float]]:
     """
     Search across layers to find which layer steering actually improves behavior.
@@ -188,7 +189,7 @@ def search_layers(
             formatted = adapter.apply_chat_template(messages, add_generation_prompt=True)
 
             # Base response
-            base_resp = adapter._generate_unsteered(formatted, max_new_tokens=100, temperature=0.1)
+            base_resp = adapter._generate_unsteered(formatted, max_new_tokens=STEERING_GEN_MAX_TOKENS, temperature=AGENT_DIAG_TEMPERATURE)
             base_resp = _extract_response(base_resp)
             base_eval = evaluate_fn(base_resp)
             if base_eval == "TRUTHFUL":
@@ -253,7 +254,7 @@ def compute_generation_direction(
 
     direction = truthful_acts.mean(axis=0) - untruthful_acts.mean(axis=0)
     norm = np.linalg.norm(direction)
-    direction = direction / (norm + 1e-8)
+    direction = direction / (norm + NORM_EPS)
 
     details = {
         "n_truthful": len(truthful_acts),

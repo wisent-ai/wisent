@@ -9,6 +9,7 @@ from wisent.core.cli.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import SUBPROCESS_EXEC_TIMEOUT
 
 __all__ = ["AppsExtractor"]
 
@@ -165,7 +166,7 @@ from typing import List, Optional, Dict, Tuple, Set, Any
 def compare_outputs(actual, expected):
     """Compare outputs, handling floating point and nested structures."""
     if isinstance(expected, float) and isinstance(actual, float):
-        return abs(actual - expected) < 1e-6
+        return abs(actual - expected) < COMPARE_TOL
     if isinstance(expected, list) and isinstance(actual, list):
         if len(expected) != len(actual):
             return False
@@ -216,7 +217,7 @@ def run_solution(input_str):
         input=input_str,
         capture_output=True,
         text=True,
-        timeout=10
+        timeout=SUBPROCESS_EXEC_TIMEOUT
     )
     if result.returncode != 0:
         raise RuntimeError(f"Solution failed: {{result.stderr}}")
@@ -250,6 +251,7 @@ import functools
 import math
 import bisect
 from collections import defaultdict, Counter, deque
+from wisent.core.constants import COMPARE_TOL
 """
 
     @staticmethod

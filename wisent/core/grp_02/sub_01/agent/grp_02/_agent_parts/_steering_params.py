@@ -8,6 +8,18 @@ from typing import List
 
 from wisent.core.errors import MissingParameterError
 from wisent.core.models import get_generate_kwargs
+from wisent.core.constants import (
+    CLASSIFIER_THRESHOLD, CLASSIFIER_TRAINING_SAMPLES,
+    CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE,
+    DEFAULT_CLASSIFIER_LR, CLASSIFIER_EARLY_STOPPING_PATIENCE,
+    CLASSIFIER_HIDDEN_DIM, DEFAULT_LAYER,
+    AGENT_STEERING_PARAMS_MAX_TOKENS, AGENT_STEERING_INITIAL_STRENGTH,
+    AGENT_STEERING_INCREMENT, AGENT_STEERING_MAX_STRENGTH,
+    AGENT_STEERING_INITIAL_MIN, AGENT_STEERING_INITIAL_MAX,
+    AGENT_STEERING_INCREMENT_MIN, AGENT_STEERING_INCREMENT_MAX,
+    AGENT_STEERING_MAX_MIN, AGENT_STEERING_MAX_MAX,
+    AGENT_QUALITY_STORAGE_THRESHOLD,
+)
 
 
 class SteeringParamsMixin:
@@ -46,8 +58,8 @@ class SteeringParamsMixin:
         REASONING: [one sentence explanation]
         """
 
-        gen_kwargs = get_generate_kwargs(max_new_tokens=150)
-        result = self.model.generate(steering_prompt, layer_index=15, **gen_kwargs)
+        gen_kwargs = get_generate_kwargs(max_new_tokens=AGENT_STEERING_PARAMS_MAX_TOKENS)
+        result = self.model.generate(steering_prompt, layer_index=DEFAULT_LAYER, **gen_kwargs)
         response = result[0] if isinstance(result, tuple) else result
         return self._parse_steering_params(response)
 
@@ -56,9 +68,9 @@ class SteeringParamsMixin:
         from ..agent.diagnose.agent_classifier_decision import SteeringParams
 
         method = "CAA"
-        initial = 0.5
-        increment = 0.2
-        maximum = 1.5
+        initial = AGENT_STEERING_INITIAL_STRENGTH
+        increment = AGENT_STEERING_INCREMENT
+        maximum = AGENT_STEERING_MAX_STRENGTH
         reasoning = "Using default parameters due to parsing failure"
 
         try:
@@ -81,9 +93,9 @@ class SteeringParamsMixin:
 
         if method not in ["CAA"]:
             method = "CAA"
-        initial = max(0.1, min(2.0, initial))
-        increment = max(0.1, min(0.5, increment))
-        maximum = max(0.5, min(3.0, maximum))
+        initial = max(AGENT_STEERING_INITIAL_MIN, min(AGENT_STEERING_INITIAL_MAX, initial))
+        increment = max(AGENT_STEERING_INCREMENT_MIN, min(AGENT_STEERING_INCREMENT_MAX, increment))
+        maximum = max(AGENT_STEERING_MAX_MIN, min(AGENT_STEERING_MAX_MAX, maximum))
 
         return SteeringParams(
             steering_method=method,
@@ -148,8 +160,8 @@ class SteeringParamsMixin:
 
             params = ClassifierParams(
                 optimal_layer=classifier_config["layer"],
-                classification_threshold=classifier_config.get("threshold", 0.5),
-                training_samples=classifier_config.get("samples", 25),
+                classification_threshold=classifier_config.get("threshold", CLASSIFIER_THRESHOLD),
+                training_samples=classifier_config.get("samples", CLASSIFIER_TRAINING_SAMPLES),
                 classifier_type=classifier_config.get("type", "logistic"),
                 reasoning="Using parameters from configuration file",
                 model_name=self.model_name,
@@ -157,11 +169,11 @@ class SteeringParamsMixin:
 
             params.aggregation_method = classifier_config.get("aggregation_method", "last_token")
             params.token_aggregation = classifier_config.get("token_aggregation", "average")
-            params.num_epochs = classifier_config.get("num_epochs", 50)
-            params.batch_size = classifier_config.get("batch_size", 32)
-            params.learning_rate = classifier_config.get("learning_rate", 0.001)
-            params.early_stopping_patience = classifier_config.get("early_stopping_patience", 10)
-            params.hidden_dim = classifier_config.get("hidden_dim", 128)
+            params.num_epochs = classifier_config.get("num_epochs", CLASSIFIER_NUM_EPOCHS)
+            params.batch_size = classifier_config.get("batch_size", CLASSIFIER_BATCH_SIZE)
+            params.learning_rate = classifier_config.get("learning_rate", DEFAULT_CLASSIFIER_LR)
+            params.early_stopping_patience = classifier_config.get("early_stopping_patience", CLASSIFIER_EARLY_STOPPING_PATIENCE)
+            params.hidden_dim = classifier_config.get("hidden_dim", CLASSIFIER_HIDDEN_DIM)
             return params
 
         except Exception as e:
@@ -204,7 +216,7 @@ class SteeringParamsMixin:
     ):
         """Store successful parameter combinations for future use."""
         try:
-            if final_quality < 0.7:
+            if final_quality < AGENT_QUALITY_STORAGE_THRESHOLD:
                 return
 
             prompt_type = self._classify_prompt_type(prompt)

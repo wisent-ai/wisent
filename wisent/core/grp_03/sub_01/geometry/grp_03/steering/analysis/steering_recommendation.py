@@ -8,6 +8,7 @@ config) or default (zeros for untuned methods).
 
 from typing import Dict, Any, Optional
 
+from wisent.core.constants import MIN_CONCEPT_PAIRS
 from .recommendation.config import (
     RecommendationConfig, Thresholds as SteeringThresholds)
 from .recommendation.configurable import compute_configurable_recommendation
@@ -82,7 +83,7 @@ def get_method_requirements(method: str) -> Dict[str, Any]:
         return {}
     defn = SteeringMethodRegistry.get(name)
     return {
-        "min_pairs": defn.optimization_config.get("min_pairs", 10),
+        "min_pairs": defn.optimization_config.get("min_pairs", MIN_CONCEPT_PAIRS),
         "default_strength": defn.default_strength,
         "strength_range": defn.strength_range,
         "parameters": [p.name for p in defn.parameters],

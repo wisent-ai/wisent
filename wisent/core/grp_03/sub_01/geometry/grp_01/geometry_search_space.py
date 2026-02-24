@@ -21,6 +21,10 @@ from wisent.core.activations import ExtractionStrategy
 from wisent.core.utils import get_layer_combinations
 from wisent.core.benchmarks import get_all_benchmarks
 from wisent.core.activations.activation_cache import ActivationCache, CachedActivations
+from wisent.core.constants import (
+    GEO_PAIRS_PER_BENCHMARK, DEFAULT_RANDOM_SEED,
+    GEO_MAX_LAYER_COMBO_SIZE, GEO_ESTIMATED_TIME_PER_EXTRACTION,
+)
 
 
 @dataclass
@@ -28,18 +32,18 @@ class GeometrySearchConfig:
     """Configuration for a single geometry search run."""
     
     # Pairs settings
-    pairs_per_benchmark: int = 50
-    random_seed: int = 42
+    pairs_per_benchmark: int = GEO_PAIRS_PER_BENCHMARK
+    random_seed: int = DEFAULT_RANDOM_SEED
     
     # Layer settings
-    max_layer_combo_size: int = 3
+    max_layer_combo_size: int = GEO_MAX_LAYER_COMBO_SIZE
     
     # Caching
     cache_activations: bool = True
     cache_dir: Optional[str] = None
     
     # Estimation
-    estimated_time_per_extraction_seconds: float = 120.0  # ~2 min per (benchmark, strategy)
+    estimated_time_per_extraction_seconds: float = GEO_ESTIMATED_TIME_PER_EXTRACTION  # ~2 min per (benchmark, strategy)
     
     def to_dict(self) -> Dict[str, Any]:
         return {

@@ -9,6 +9,8 @@ import signal
 import sys
 from pathlib import Path
 
+from wisent.core.constants import BENCHMARKS_PER_TYPE, DEFAULT_TIMEOUT_DOCKER, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_MEDIUM
+
 
 class TimeoutError(Exception):
     pass
@@ -118,7 +120,7 @@ def format_pair_with_strategies(pair, tokenizer):
     return result
 
 
-def test_all_benchmarks(timeout_per_task: int = 30, limit: int = 2):
+def test_all_benchmarks(timeout_per_task: int = DEFAULT_TIMEOUT_DOCKER, limit: int = BENCHMARKS_PER_TYPE):
     """Test contrastive pairs generation for all supported benchmarks.
     
     Args:
@@ -183,9 +185,9 @@ def test_all_benchmarks(timeout_per_task: int = 30, limit: int = 2):
         except Exception as e:
             
             results["failed"] += 1
-            error_msg = str(e)[:200]
+            error_msg = str(e)[:DISPLAY_TRUNCATION_MEDIUM]
             results["benchmarks"][benchmark] = {"status": "error", "error": error_msg}
-            print(f"[{i+1}/{len(benchmarks)}] ERROR: {benchmark} - {error_msg[:100]}")
+            print(f"[{i+1}/{len(benchmarks)}] ERROR: {benchmark} - {error_msg[:DISPLAY_TRUNCATION_COMPACT]}")
     
     # Summary
     print()
@@ -206,8 +208,8 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="Test contrastive pairs for all supported benchmarks")
-    parser.add_argument("--timeout", "-t", type=int, default=30, help="Timeout per task in seconds (default: 30)")
-    parser.add_argument("--limit", "-l", type=int, default=2, help="Number of pairs per benchmark (default: 2)")
+    parser.add_argument("--timeout", "-t", type=int, default=DEFAULT_TIMEOUT_DOCKER, help="Timeout per task in seconds (default: 30)")
+    parser.add_argument("--limit", "-l", type=int, default=BENCHMARKS_PER_TYPE, help="Number of pairs per benchmark (default: 2)")
     parser.add_argument("--output", "-o", type=str, required=True, help="Output JSON file for results")
     
     args = parser.parse_args()

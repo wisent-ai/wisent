@@ -9,6 +9,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import numpy as np
 from datasets import load_dataset
 import random
+from wisent.core.constants import NORM_EPS, TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"
@@ -23,7 +24,7 @@ print(f"Model has {num_layers} layers")
 
 # Load TruthfulQA
 ds = load_dataset("truthfulqa/truthful_qa", "generation", split="validation")
-random.seed(42)
+random.seed(DEFAULT_RANDOM_SEED)
 samples = random.sample(list(ds), N_SAMPLES)
 pairs = []
 for s in samples:
@@ -39,7 +40,7 @@ RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", 
 
 
 def get_last_token_act(text, layer):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=512).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float().numpy()
@@ -51,7 +52,7 @@ def compute_cosine(diffs):
     cosines = []
     for i in range(len(diffs)):
         for j in range(i+1, len(diffs)):
-            cos = np.dot(diffs[i], diffs[j]) / (np.linalg.norm(diffs[i]) * np.linalg.norm(diffs[j]) + 1e-8)
+            cos = np.dot(diffs[i], diffs[j]) / (np.linalg.norm(diffs[i]) * np.linalg.norm(diffs[j]) + NORM_EPS)
             cosines.append(cos)
     return np.mean(cosines)
 

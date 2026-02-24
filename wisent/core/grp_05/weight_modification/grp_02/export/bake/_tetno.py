@@ -6,6 +6,10 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import MissingParameterError
+from wisent.core.constants import (
+    DEFAULT_STRENGTH, TETNO_HYBRID_STRENGTH_FACTOR,
+    TETNO_GATE_TEMPERATURE_DEFAULT, TETNO_DYNAMIC_BASE_STRENGTH,
+)
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
@@ -22,7 +26,7 @@ def export_tetno_model(
     save_path: str | Path,
     tokenizer=None,
     mode: str = "hybrid",
-    strength: float = 1.0,
+    strength: float = DEFAULT_STRENGTH,
     push_to_hub: bool = False,
     repo_id: str | None = None,
     commit_message: str | None = None,
@@ -58,7 +62,7 @@ def export_tetno_model(
     
     # Step 1: Bake behavior vectors into weights (for static/hybrid mode)
     if mode in ("static", "hybrid"):
-        bake_strength = strength if mode == "static" else strength * 0.5
+        bake_strength = strength if mode == "static" else strength * TETNO_HYBRID_STRENGTH_FACTOR
         
         # Convert layer names to integer indices
         int_keyed_vectors = {}
@@ -231,7 +235,7 @@ def load_tetno_model(
         # Add methods
         import torch.nn.functional as F
         
-        def compute_gate(hidden_state, temperature=0.1):
+        def compute_gate(hidden_state, temperature=TETNO_GATE_TEMPERATURE_DEFAULT):
             if hidden_state.dim() > 1:
                 hidden_state = hidden_state.reshape(-1, hidden_state.shape[-1]).mean(dim=0)
             h_norm = F.normalize(hidden_state, p=2, dim=-1)
@@ -244,7 +248,7 @@ def load_tetno_model(
         hooks = TETNORuntimeHooks(
             model=model,
             tetno_result=tetno_result,
-            base_strength=0.5 if mode == "hybrid" else 1.0,
+            base_strength=TETNO_HYBRID_STRENGTH_FACTOR if mode == "hybrid" else TETNO_DYNAMIC_BASE_STRENGTH,
         )
         hooks.install()
         log.info(f"Installed TETNO runtime hooks (threshold={tetno_result.optimal_threshold:.3f})")

@@ -11,6 +11,7 @@ from ..geometry import (
     GeometryAnalysisResult,
     detect_geometry_structure,
 )
+from wisent.core import constants as _C
 
 
 __all__ = [
@@ -42,7 +43,7 @@ def combine_layer_activations(
     elif method == "mean":
         return torch.stack(pos_acts, dim=0).mean(dim=0), torch.stack(neg_acts, dim=0).mean(dim=0)
     elif method == "weighted":
-        weights = torch.linspace(0.5, 1.5, len(pos_acts))
+        weights = torch.linspace(_C.MULTI_LAYER_WEIGHT_MIN, _C.MULTI_LAYER_WEIGHT_MAX, len(pos_acts))
         weights = weights / weights.sum()
         combined_pos = sum(w * a for w, a in zip(weights, pos_acts))
         combined_neg = sum(w * a for w, a in zip(weights, neg_acts))
@@ -150,9 +151,9 @@ def compare_combined_vs_single(combined_result, best_layer, best_score):
     """Compare combined vs single layer performance."""
     if not combined_result:
         return "No comparison available"
-    if combined_result.best_score > best_score + 0.1:
+    if combined_result.best_score > best_score + _C.MULTI_LAYER_SCORE_THRESHOLD:
         return f"Combined ({combined_result.best_score:.2f}) better than single ({best_score:.2f})"
-    elif best_score > combined_result.best_score + 0.1:
+    elif best_score > combined_result.best_score + _C.MULTI_LAYER_SCORE_THRESHOLD:
         return f"Single L{best_layer} ({best_score:.2f}) better than combined"
     return f"Similar: combined={combined_result.best_score:.2f}, single={best_score:.2f}"
 
@@ -165,14 +166,14 @@ def generate_recommendation(
 ):
     """Generate comprehensive recommendation based on multi-layer analysis."""
     parts = []
-    if layer_agreement > 0.8:
+    if layer_agreement > _C.MULTI_LAYER_AGREEMENT_THRESHOLD:
         parts.append(f"High agreement ({layer_agreement:.0%}): consistent structure.")
-    elif layer_agreement < 0.4:
+    elif layer_agreement < _C.MULTI_LAYER_LOW_AGREEMENT:
         parts.append(f"Low agreement ({layer_agreement:.0%}): varies by depth.")
     else:
         parts.append(f"Moderate agreement ({layer_agreement:.0%}).")
 
-    if best_combination and best_combination_score > best_single_layer_score + 0.05:
+    if best_combination and best_combination_score > best_single_layer_score + _C.MULTI_LAYER_IMPROVEMENT_THRESHOLD:
         improvement = best_combination_score - best_single_layer_score
         parts.append(
             f"BEST: '{best_combination}' ({best_combination_structure.value}: "

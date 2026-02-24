@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 
+from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
@@ -66,7 +67,7 @@ def compare_concept_directions(
 def run_analysis(
     model_name: str,
     layers_to_analyze: Optional[List[int]] = None,
-    n_pairs: int = 50,
+    n_pairs: int = PAIR_GENERATORS_DEFAULT_N,
     output_dir: str = "/tmp/concept_evolution",
     device: str = "cuda",
 ):

@@ -6,6 +6,16 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import (
+    PALOMA_CHUNK_SIZE_WORDS,
+    PALOMA_DOCS_DIVISOR,
+    PALOMA_MAX_CHARS,
+    PALOMA_MAX_WORDS,
+    PALOMA_MIN_CHUNK_WORDS,
+    PALOMA_MIN_TEXT_LENGTH,
+    PALOMA_MIN_WORDS,
+    PALOMA_TARGET_PAIRS_PER_DOC,
+)
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -54,7 +64,7 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
 
         max_items = self._normalize_limit(limit)
         # Load fewer docs since we'll split each into multiple pairs
-        docs_to_load = 1 if max_items is None else max(1, max_items // 4)
+        docs_to_load = 1 if max_items is None else max(1, max_items // PALOMA_DOCS_DIVISOR)
         docs = self.load_docs(lm_eval_task_data, docs_to_load, preferred_doc=preferred_doc)
 
         pairs: list[ContrastivePair] = []
@@ -89,13 +99,13 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
         pairs = []
         text = doc.get("text", "").strip()
 
-        if not text or len(text) < 200:
+        if not text or len(text) < PALOMA_MIN_TEXT_LENGTH:
             return pairs
 
-        # Split long text into chunks of ~200 words
+        # Split long text into chunks of ~PALOMA_CHUNK_SIZE_WORDS words
         words = text.split()
-        chunk_size = 200
-        target_pairs = max_pairs if max_pairs else 4  # Default to 4 pairs per doc
+        chunk_size = PALOMA_CHUNK_SIZE_WORDS
+        target_pairs = max_pairs if max_pairs else PALOMA_TARGET_PAIRS_PER_DOC
 
         for i in range(target_pairs):
             start_idx = i * chunk_size
@@ -105,7 +115,7 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
             end_idx = min(start_idx + chunk_size, len(words))
             chunk_words = words[start_idx:end_idx]
 
-            if len(chunk_words) < 50:  # Skip very short chunks
+            if len(chunk_words) < PALOMA_MIN_CHUNK_WORDS:  # Skip very short chunks
                 continue
 
             chunk_text = " ".join(chunk_words)
@@ -149,21 +159,21 @@ class PalomaExtractor(LMEvalBenchmarkExtractor):
             # Paloma docs have a 'text' field with the passage
             text = doc.get("text", "").strip()
 
-            if not text or len(text) < 50:  # Skip very short texts
+            if not text or len(text) < PALOMA_MIN_CHUNK_WORDS:  # Skip very short texts
                 log.debug("Skipping doc with insufficient text", extra={"text_len": len(text)})
                 return None
 
-            # Take a reasonable chunk (first ~200 words or ~1000 chars)
+            # Take a reasonable chunk (first ~PALOMA_MAX_WORDS words or ~PALOMA_MAX_CHARS chars)
             words = text.split()
-            if len(words) > 200:
-                text = " ".join(words[:200])
-            elif len(text) > 1000:
-                text = text[:1000]
+            if len(words) > PALOMA_MAX_WORDS:
+                text = " ".join(words[:PALOMA_MAX_WORDS])
+            elif len(text) > PALOMA_MAX_CHARS:
+                text = text[:PALOMA_MAX_CHARS]
 
             # Create corrupted version by shuffling some words
             # This should have higher perplexity than the original
             words = text.split()
-            if len(words) < 10:
+            if len(words) < PALOMA_MIN_WORDS:
                 return None
 
             # Shuffle middle 30% of words to create unnatural text

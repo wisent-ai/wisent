@@ -1,5 +1,7 @@
 """Parser for the 'steering-viz' command - steering effect visualization."""
 
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL, AUTOTUNE_VAL_SPLIT, PARSER_DEFAULT_NUM_PAIRS, COMPARISON_STEERING_LAYER, DEFAULT_BASE_STRENGTH, PARSER_DEFAULT_RESPONSE_SAMPLES, PARSER_DEFAULT_REF_PAIRS
+
 
 def setup_steering_viz_parser(parser):
     """Set up the steering-viz command parser."""
@@ -18,25 +20,25 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--layer",
         type=int,
-        default=12,
+        default=COMPARISON_STEERING_LAYER,
         help="Layer to visualize (default: 12)"
     )
     parser.add_argument(
         "--strength",
         type=float,
-        default=1.0,
+        default=DEFAULT_BASE_STRENGTH,
         help="Steering strength multiplier (default: 1.0)"
     )
     parser.add_argument(
         "--n-test-prompts",
         type=int,
-        default=50,
+        default=PARSER_DEFAULT_NUM_PAIRS,
         help="Number of test prompts to run (default: 50)"
     )
     parser.add_argument(
         "--limit",
         type=int,
-        default=200,
+        default=PARSER_DEFAULT_REF_PAIRS,
         help="Maximum reference pairs to load (default: 200)"
     )
     parser.add_argument(
@@ -73,13 +75,13 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--n-response-samples",
         type=int,
-        default=5,
+        default=PARSER_DEFAULT_RESPONSE_SAMPLES,
         help="Number of samples to show response comparison for (default: 5)"
     )
     parser.add_argument(
         "--max-new-tokens",
         type=int,
-        default=100,
+        default=DEFAULT_MAX_NEW_TOKENS_EVAL,
         help="Max tokens to generate per response (default: 100)"
     )
     parser.add_argument(
@@ -162,7 +164,7 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--val-split",
         type=float,
-        default=0.5,
+        default=AUTOTUNE_VAL_SPLIT,
         help="Fraction of test set to use for validation during autotune (default: 0.5)"
     )
     parser.add_argument(

@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 from wisent.core.weight_modification.methods.guided import (
     LayerDiagnostics,
 )
+from wisent.core.constants import NORM_EPS
 from wisent.core.weight_modification.methods._guided_scoring import (
     _compute_knn_accuracy,
     _compute_fisher_ratio,
@@ -193,7 +194,7 @@ def _compute_linear_probe_accuracy(
     mean_diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
     mean_diff_norm = mean_diff.norm()
     
-    if mean_diff_norm < 1e-8:
+    if mean_diff_norm < NORM_EPS:
         return 0.5, {"reason": "no_separation"}
     
     direction = mean_diff / mean_diff_norm
@@ -212,14 +213,14 @@ def _compute_linear_probe_accuracy(
     pos_mean, pos_std = pos_proj.mean(), pos_proj.std()
     neg_mean, neg_std = neg_proj.mean(), neg_proj.std()
     pooled_std = ((pos_std**2 + neg_std**2) / 2).sqrt()
-    cohens_d = abs(pos_mean - neg_mean) / (pooled_std + 1e-8)
+    cohens_d = abs(pos_mean - neg_mean) / (pooled_std + NORM_EPS)
     
     # Variance explained
     pos_residual = pos_tensor - (pos_proj.unsqueeze(1) * direction.unsqueeze(0))
     neg_residual = neg_tensor - (neg_proj.unsqueeze(1) * direction.unsqueeze(0))
     total_var = pos_tensor.var() + neg_tensor.var()
     residual_var = pos_residual.var() + neg_residual.var()
-    variance_explained = max(0, 1 - (residual_var / (total_var + 1e-8)))
+    variance_explained = max(0, 1 - (residual_var / (total_var + NORM_EPS)))
     
     return accuracy, {
         "cohens_d": float(cohens_d),

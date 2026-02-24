@@ -4,6 +4,8 @@ import random
 import re
 from typing import Any, Dict, List
 
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISTRACTOR_NEARBY_MIN, DISTRACTOR_NEARBY_MAX, DISTRACTOR_MAX_COUNT
+
 
 class AdvancedConvertersMixin:
     """Mixin providing advanced format conversion methods including code perturbation."""
@@ -29,9 +31,9 @@ class AdvancedConvertersMixin:
         distractors.append(str(int(final_number / 2)))
 
         # Random nearby numbers
-        distractors.append(str(int(final_number + random.randint(2, 10))))
+        distractors.append(str(int(final_number + random.randint(DISTRACTOR_NEARBY_MIN, DISTRACTOR_NEARBY_MAX))))
 
-        return distractors[:3]  # Return top 3
+        return distractors[:DISTRACTOR_MAX_COUNT]  # Return top 3
 
     def _convert_humaneval_format(self, sample: Dict[str, Any]) -> List[Dict[str, Any]]:
         """Convert HumanEval code generation format."""
@@ -101,7 +103,7 @@ class AdvancedConvertersMixin:
                             "high_level_domain": sample.get("High-level domain", ""),
                             "difficulty_estimate": sample.get("Writer's Difficulty Estimate", ""),
                             "expert_accuracy": sample.get("Expert Validator Accuracy", ""),
-                            "explanation": sample.get("Explanation", "")[:200]
+                            "explanation": sample.get("Explanation", "")[:DISPLAY_TRUNCATION_MEDIUM]
                             if sample.get("Explanation")
                             else "",  # Truncate long explanations
                         },

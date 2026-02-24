@@ -7,6 +7,7 @@ import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import GROM_WEIGHT_DECAY, GROM_ETA_MIN_FACTOR, GROM_MAX_GRAD_NORM, TRAINING_LOG_INTERVAL
 from wisent.core.steering_methods.methods.grom._config import (
     GatingNetwork,
     IntensityNetwork,
@@ -154,9 +155,9 @@ def _joint_optimization_impl(
         all_params.extend(gate_network.parameters())
     all_params.extend(intensity_network.parameters())
     all_params.extend(direction_weight_params.values())
-    optimizer = torch.optim.AdamW(all_params, lr=self.config.learning_rate, weight_decay=0.01)
+    optimizer = torch.optim.AdamW(all_params, lr=self.config.learning_rate, weight_decay=GROM_WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=self.config.optimization_steps, eta_min=self.config.learning_rate * 0.1
+        optimizer, T_max=self.config.optimization_steps, eta_min=self.config.learning_rate * GROM_ETA_MIN_FACTOR
     )
     best_loss = float('inf')
     best_state = None
@@ -197,7 +198,7 @@ def _joint_optimization_impl(
         )
         loss.backward()
         # Gradient clipping
-        torch.nn.utils.clip_grad_norm_(all_params, max_norm=1.0)
+        torch.nn.utils.clip_grad_norm_(all_params, max_norm=GROM_MAX_GRAD_NORM)
         optimizer.step()
         scheduler.step()
         # Apply constraints to directions
@@ -216,7 +217,7 @@ def _joint_optimization_impl(
                 "direction_weights": {l: F.softmax(p.detach().clone(), dim=0) for l, p in direction_weight_params.items()},
             }
         # Log
-        if step % 20 == 0 or step == self.config.optimization_steps - 1:
+        if step % TRAINING_LOG_INTERVAL == 0 or step == self.config.optimization_steps - 1:
             # Compute direction weight statistics
             weight_stds = []
             weight_maxes = []

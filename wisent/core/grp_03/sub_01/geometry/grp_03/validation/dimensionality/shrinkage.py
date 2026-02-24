@@ -2,6 +2,7 @@
 
 import numpy as np
 from typing import Dict, Any, Tuple
+from wisent.core.constants import SHRINKAGE_LOW, SHRINKAGE_MODERATE, SHRINKAGE_HIGH
 
 
 def compute_shrinkage_covariance(
@@ -55,11 +56,11 @@ def compute_shrinkage_covariance(
 
 def _interpret_shrinkage(shrinkage: float) -> str:
     """Interpret shrinkage intensity."""
-    if shrinkage < 0.1:
+    if shrinkage < SHRINKAGE_LOW:
         return "Low shrinkage: sample covariance is reliable"
-    elif shrinkage < 0.3:
+    elif shrinkage < SHRINKAGE_MODERATE:
         return "Moderate shrinkage: some regularization needed"
-    elif shrinkage < 0.6:
+    elif shrinkage < SHRINKAGE_HIGH:
         return "High shrinkage: sample covariance unreliable"
     else:
         return "Very high shrinkage: severe high-dimensional effects"

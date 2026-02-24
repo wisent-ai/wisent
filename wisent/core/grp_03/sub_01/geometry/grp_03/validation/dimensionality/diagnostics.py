@@ -7,6 +7,14 @@ from dataclasses import dataclass
 
 from .sample_adequacy import compute_sample_dimension_ratio, compute_effective_sample_size
 from .power_analysis import compute_statistical_power
+from wisent.core.constants import (
+    STAT_ALPHA,
+    SHRINKAGE_INTENSITY_THRESHOLD,
+    STATISTICAL_POWER_THRESHOLD,
+    EFFECT_SIZE_LARGE,
+    CONDITION_NUMBER_HIGH,
+    DIAGNOSTICS_LINE_WIDTH,
+)
 from .shrinkage import compute_shrinkage_covariance
 
 
@@ -36,7 +44,7 @@ class DimensionalityDiagnostics:
 def run_dimensionality_diagnostics(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    alpha: float = 0.05,
+    alpha: float = STAT_ALPHA,
 ) -> DimensionalityDiagnostics:
     """Run complete curse of dimensionality diagnostics."""
     pos_np = pos.cpu().numpy() if isinstance(pos, torch.Tensor) else pos
@@ -62,11 +70,11 @@ def run_dimensionality_diagnostics(
 
     if severity in ["moderate", "severe"]:
         recommendations.append(f"Increase sample size: need {power_analysis['required_n_for_80_power']} for 80% power")
-    if shrinkage_info["shrinkage_intensity"] > 0.3:
+    if shrinkage_info["shrinkage_intensity"] > SHRINKAGE_INTENSITY_THRESHOLD:
         recommendations.append("Use regularized methods (shrinkage covariance, L2 regularization)")
-    if power_analysis["power_at_medium_effect"] < 0.5:
-        recommendations.append("Current sample can only reliably detect large effects (d > 0.8)")
-    if eff_sample["condition_number"] > 1000:
+    if power_analysis["power_at_medium_effect"] < STATISTICAL_POWER_THRESHOLD:
+        recommendations.append(f"Current sample can only reliably detect large effects (d > {EFFECT_SIZE_LARGE})")
+    if eff_sample["condition_number"] > CONDITION_NUMBER_HIGH:
         recommendations.append("High condition number: consider dimensionality reduction")
     if not recommendations:
         recommendations.append("Sample size appears adequate for analysis")
@@ -96,9 +104,9 @@ def run_dimensionality_diagnostics(
 def format_diagnostics_report(diag: DimensionalityDiagnostics) -> str:
     """Format diagnostics as human-readable report."""
     lines = [
-        "=" * 60,
+        "=" * DIAGNOSTICS_LINE_WIDTH,
         "CURSE OF DIMENSIONALITY DIAGNOSTICS",
-        "=" * 60,
+        "=" * DIAGNOSTICS_LINE_WIDTH,
         "",
         "SAMPLE SIZE ADEQUACY:",
         f"  Samples (n):          {diag.n_samples}",
@@ -133,5 +141,5 @@ def format_diagnostics_report(diag: DimensionalityDiagnostics) -> str:
     ])
     for rec in diag.recommendations:
         lines.append(f"  - {rec}")
-    lines.append("=" * 60)
+    lines.append("=" * DIAGNOSTICS_LINE_WIDTH)
     return "\n".join(lines)

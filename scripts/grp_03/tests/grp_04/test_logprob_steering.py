@@ -15,6 +15,7 @@ from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.constants import MAX_NEW_TOKENS_TEST_DEFAULT, TEST_STEERING_SCALE
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 
@@ -87,7 +88,7 @@ for strategy in strategies:
     print(f"  Training CAA for {strategy.value}...")
     caa = CAAMethod()
     steering = caa.train(pair_set)
-    plan = SteeringPlan.from_raw(raw=dict(steering), scale=0.5)
+    plan = SteeringPlan.from_raw(raw=dict(steering), scale=TEST_STEERING_SCALE)
     steering_plans[strategy.value] = plan
 
 # Evaluate via generation
@@ -111,7 +112,7 @@ for i, pair in enumerate(test_pairs):
 
     # Baseline
     model.detach()
-    resp_base = model.generate(prompt_msg, max_new_tokens=100)[0]
+    resp_base = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
     eval_base = evaluator.evaluate(
         response=resp_base, expected=pair.positive_response.model_response,
         correct_answers=metadata.get("correct_answers", []),
@@ -123,7 +124,7 @@ for i, pair in enumerate(test_pairs):
     # Each strategy
     for name, plan in steering_plans.items():
         model.apply_steering(plan=plan)
-        resp = model.generate(prompt_msg, max_new_tokens=100)[0]
+        resp = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
         model.detach()
 
         eval_res = evaluator.evaluate(

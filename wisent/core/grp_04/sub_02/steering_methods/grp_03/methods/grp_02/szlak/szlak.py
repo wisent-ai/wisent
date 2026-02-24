@@ -18,6 +18,7 @@ from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import LOG_EPS, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K
 
 from .transport import (
     compute_attention_affinity_cost,
@@ -34,9 +35,9 @@ __all__ = [
 @dataclass
 class SzlakConfig:
     """Configuration for Attention-Transport steering method."""
-    sinkhorn_reg: float = 0.1
+    sinkhorn_reg: float = SZLAK_SINKHORN_REG
     """Entropic regularization for one-sided EOT solver."""
-    inference_k: int = 5
+    inference_k: int = SZLAK_INFERENCE_K
     """Number of nearest source points for inference interpolation."""
 
 
@@ -70,8 +71,8 @@ class SzlakMethod(BaseSteeringMethod):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.config = SzlakConfig(
-            sinkhorn_reg=kwargs.get("sinkhorn_reg", 0.1),
-            inference_k=kwargs.get("inference_k", 5),
+            sinkhorn_reg=kwargs.get("sinkhorn_reg", SZLAK_SINKHORN_REG),
+            inference_k=kwargs.get("inference_k", SZLAK_INFERENCE_K),
         )
 
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:
@@ -122,7 +123,7 @@ class SzlakMethod(BaseSteeringMethod):
             cost = compute_attention_affinity_cost(
                 q_neg.float(), k_pos.float(), num_heads=num_heads, num_kv_heads=num_kv_heads)
             T = sinkhorn_one_sided(cost, reg=self.config.sinkhorn_reg)
-            row_sums = T.sum(dim=1, keepdim=True).clamp(min=1e-12)
+            row_sums = T.sum(dim=1, keepdim=True).clamp(min=LOG_EPS)
             T_norm = T / row_sums
             targets = T_norm @ pos
             delta = targets - neg

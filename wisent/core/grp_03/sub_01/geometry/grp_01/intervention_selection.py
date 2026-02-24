@@ -6,6 +6,22 @@ to make steering recommendations with confidence bounds.
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 import numpy as np
+from wisent.core.constants import (
+    NULL_TEST_Z_SCORE_SIGNIFICANT, NULL_TEST_SIGNIFICANCE_THRESHOLD,
+    INTERVENTION_CONFIDENCE_BASE, INTERVENTION_MARGIN_WEIGHT,
+    INTERVENTION_Z_NORMALIZER, INTERVENTION_CONF_STD_FACTOR,
+    INTERVENTION_MIN_SILHOUETTE, STABILITY_Z_MARGIN,
+    INTERVENTION_SCORE_LOW_DIM_CAA, INTERVENTION_SCORE_LOW_DIM_OSTRZE,
+    INTERVENTION_SCORE_NO_LOW_DIM, INTERVENTION_SCORE_LINEAR_CAA,
+    INTERVENTION_SCORE_LINEAR_OSTRZE, INTERVENTION_SCORE_NONLINEAR_MLP,
+    INTERVENTION_SCORE_NONLINEAR_OSTRZE, INTERVENTION_SCORE_NONLINEAR_GROM,
+    INTERVENTION_SCORE_FRAGMENTED_TECZA, INTERVENTION_SCORE_FRAGMENTED_GROM,
+    INTERVENTION_SCORE_FRAGMENTED_CAA_PENALTY, INTERVENTION_SCORE_SINGLE_CAA,
+    INTERVENTION_SCORE_TRANSLATION_CAA,
+    CONFIDENCE_UPPER_BOUND, CONFIDENCE_LOWER_BOUND,
+    MIN_PAIRS_CAA, MIN_PAIRS_OSTRZE, MIN_PAIRS_MLP,
+    MIN_PAIRS_TECZA, MIN_PAIRS_GROM,
+)
 
 
 @dataclass
@@ -55,7 +71,7 @@ def rigorous_select_intervention(
     z_scores_used = {"signal_z": signal_z, "effective_dim_z": effective_dim_z}
 
     # Check signal significance
-    signal_significant = signal_z > 2.0 and signal_p < 0.05
+    signal_significant = signal_z > NULL_TEST_Z_SCORE_SIGNIFICANT and signal_p < NULL_TEST_SIGNIFICANCE_THRESHOLD
     if not signal_significant:
         warnings.append(f"Signal not significant (z={signal_z:.2f}, p={signal_p:.4f})")
         return RigorousInterventionResult(
@@ -67,45 +83,45 @@ def rigorous_select_intervention(
     reasoning.append(f"Signal significant: z={signal_z:.2f}, p={signal_p:.4f}")
 
     # Check effective dimension - significant low dimension means steering viable
-    low_dim_structure = effective_dim_z < -2.0
+    low_dim_structure = effective_dim_z < -NULL_TEST_Z_SCORE_SIGNIFICANT
     if low_dim_structure:
         reasoning.append(f"Low-dimensional structure detected (z={effective_dim_z:.2f})")
-        scores["CAA"] += 1.0
-        scores["Ostrze"] += 0.5
+        scores["CAA"] += INTERVENTION_SCORE_LOW_DIM_CAA
+        scores["Ostrze"] += INTERVENTION_SCORE_LOW_DIM_OSTRZE
     else:
         reasoning.append(f"No significant low-dim structure (z={effective_dim_z:.2f})")
-        scores["MLP"] += 0.5
-        scores["GROM"] += 0.5
+        scores["MLP"] += INTERVENTION_SCORE_NO_LOW_DIM
+        scores["GROM"] += INTERVENTION_SCORE_NO_LOW_DIM
 
     # Use geometry diagnosis
     is_linear = geometry_diagnosis.startswith("LINEAR")
     if is_linear:
         reasoning.append(f"Linear geometry (conf={geometry_confidence:.2f})")
-        scores["CAA"] += 2.0
-        scores["Ostrze"] += 1.5
+        scores["CAA"] += INTERVENTION_SCORE_LINEAR_CAA
+        scores["Ostrze"] += INTERVENTION_SCORE_LINEAR_OSTRZE
     else:
         reasoning.append(f"Nonlinear geometry (conf={geometry_confidence:.2f})")
-        scores["MLP"] += 1.5
-        scores["Ostrze"] += 1.0
-        scores["GROM"] += 0.5
+        scores["MLP"] += INTERVENTION_SCORE_NONLINEAR_MLP
+        scores["Ostrze"] += INTERVENTION_SCORE_NONLINEAR_OSTRZE
+        scores["GROM"] += INTERVENTION_SCORE_NONLINEAR_GROM
 
     # Use concept decomposition
-    is_fragmented = n_concepts > 1 and silhouette > 0.1
+    is_fragmented = n_concepts > 1 and silhouette > INTERVENTION_MIN_SILHOUETTE
     if is_fragmented:
         reasoning.append(f"Fragmented into {n_concepts} concepts (sil={silhouette:.2f})")
-        scores["TECZA"] += 2.0
-        scores["GROM"] += 1.0
-        scores["CAA"] -= 1.0
+        scores["TECZA"] += INTERVENTION_SCORE_FRAGMENTED_TECZA
+        scores["GROM"] += INTERVENTION_SCORE_FRAGMENTED_GROM
+        scores["CAA"] += INTERVENTION_SCORE_FRAGMENTED_CAA_PENALTY
     else:
         reasoning.append("Single concept detected")
-        scores["CAA"] += 0.5
+        scores["CAA"] += INTERVENTION_SCORE_SINGLE_CAA
 
     # Use geometry type z-scores if available
     if geometry_type_z:
         z_scores_used.update(geometry_type_z)
         if geometry_type_z.get("translation_z", 0) > 2:
             reasoning.append("Significant translation structure")
-            scores["CAA"] += 1.0
+            scores["CAA"] += INTERVENTION_SCORE_TRANSLATION_CAA
 
     # Determine best method
     min_score = min(scores.values())
@@ -118,18 +134,18 @@ def rigorous_select_intervention(
     sorted_scores = sorted(scores.values(), reverse=True)
     if sorted_scores[0] > 0:
         margin = (sorted_scores[0] - sorted_scores[1]) / sorted_scores[0]
-        base_conf = 0.5 + margin * 0.3
+        base_conf = INTERVENTION_CONFIDENCE_BASE + margin * INTERVENTION_MARGIN_WEIGHT
     else:
-        base_conf = 0.5
+        base_conf = INTERVENTION_CONFIDENCE_BASE
 
     # Adjust confidence by geometry confidence and signal strength
-    conf = base_conf * geometry_confidence * min(1.0, signal_z / 3.0)
-    conf = min(0.95, max(0.1, conf))
+    conf = base_conf * geometry_confidence * min(1.0, signal_z / INTERVENTION_Z_NORMALIZER)
+    conf = min(CONFIDENCE_UPPER_BOUND, max(CONFIDENCE_LOWER_BOUND, conf))
 
     # Bootstrap-style confidence interval (approximate)
-    conf_std = 0.1 * (1 - geometry_confidence)
-    conf_lower = max(0.0, conf - 1.96 * conf_std)
-    conf_upper = min(1.0, conf + 1.96 * conf_std)
+    conf_std = INTERVENTION_CONF_STD_FACTOR * (1 - geometry_confidence)
+    conf_lower = max(0.0, conf - STABILITY_Z_MARGIN * conf_std)
+    conf_upper = min(1.0, conf + STABILITY_Z_MARGIN * conf_std)
 
     return RigorousInterventionResult(
         best_method, conf, conf_lower, conf_upper,
@@ -140,9 +156,9 @@ def rigorous_select_intervention(
 def get_method_requirements(method: str) -> Dict[str, any]:
     """Get requirements for a steering method."""
     return {
-        "CAA": {"min_pairs": 10, "assumes_linear": True, "assumes_single_concept": True},
-        "Ostrze": {"min_pairs": 20, "assumes_linear": True, "assumes_single_concept": True},
-        "MLP": {"min_pairs": 50, "assumes_linear": False, "assumes_single_concept": True},
-        "TECZA": {"min_pairs": 30, "assumes_linear": True, "assumes_single_concept": False},
-        "GROM": {"min_pairs": 100, "assumes_linear": False, "assumes_single_concept": False},
+        "CAA": {"min_pairs": MIN_PAIRS_CAA, "assumes_linear": True, "assumes_single_concept": True},
+        "Ostrze": {"min_pairs": MIN_PAIRS_OSTRZE, "assumes_linear": True, "assumes_single_concept": True},
+        "MLP": {"min_pairs": MIN_PAIRS_MLP, "assumes_linear": False, "assumes_single_concept": True},
+        "TECZA": {"min_pairs": MIN_PAIRS_TECZA, "assumes_linear": True, "assumes_single_concept": False},
+        "GROM": {"min_pairs": MIN_PAIRS_GROM, "assumes_linear": False, "assumes_single_concept": False},
     }.get(method, {})

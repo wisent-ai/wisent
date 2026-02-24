@@ -7,6 +7,11 @@ and extracts examples that failed test cases.
 from __future__ import annotations
 
 from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.constants import (
+    GIBBERISH_WORD_COUNT_MIN, GIBBERISH_WORD_COUNT_MAX,
+    GIBBERISH_WORD_LEN_MIN, GIBBERISH_WORD_LEN_MAX,
+    GIBBERISH_LINE_COUNT_MIN, GIBBERISH_LINE_COUNT_MAX,
+)
 import random
 import string
 from typing import Any
@@ -114,14 +119,14 @@ def _generate_gibberish_negative(problem_idx: int) -> dict[str, Any]:
         Dictionary with synthetic gibberish code that will definitely fail.
     """
     words = []
-    for _ in range(random.randint(10, 30)):
-        word_len = random.randint(3, 12)
+    for _ in range(random.randint(GIBBERISH_WORD_COUNT_MIN, GIBBERISH_WORD_COUNT_MAX)):
+        word_len = random.randint(GIBBERISH_WORD_LEN_MIN, GIBBERISH_WORD_LEN_MAX)
         word = ''.join(random.choices(string.ascii_lowercase, k=word_len))
         words.append(word)
 
     gibberish_lines = []
     gibberish_lines.append(f"def {random.choice(words)}():")
-    for _ in range(random.randint(3, 8)):
+    for _ in range(random.randint(GIBBERISH_LINE_COUNT_MIN, GIBBERISH_LINE_COUNT_MAX)):
         indent = "    "
         line_type = random.choice(["assign", "return", "print", "comment"])
         if line_type == "assign":

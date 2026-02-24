@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional
 import time
 from wisent.core.agent.diagnose._agent_decision_types import (
     SingleClassifierDecision, ClassifierDecision, ClassifierParams)
+from wisent.core.constants import AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET
 
 class ClassifierCreationMixin:
     """Mixin providing classifier creation and execution methods."""
@@ -10,8 +11,8 @@ class ClassifierCreationMixin:
     async def create_single_quality_classifier(self, 
                                           task_analysis: TaskAnalysis,
                                           classifier_params: 'ClassifierParams',
-                                          quality_threshold: float = 0.3,
-                                          time_budget_minutes: float = 10.0) -> SingleClassifierDecision:
+                                          quality_threshold: float = AGENT_DECISION_QUALITY_THRESHOLD,
+                                          time_budget_minutes: float = AGENT_DECISION_TIME_BUDGET) -> SingleClassifierDecision:
         """
         Create a single classifier trained on one benchmark.
         

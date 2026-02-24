@@ -136,7 +136,7 @@ for i, pair in enumerate(train_pairs.pairs[:100]):  # Use subset for speed
 
 # Average directions
 gradient_steering = torch.stack(gradient_directions).mean(dim=0)
-gradient_steering = gradient_steering / (torch.norm(gradient_steering) + 1e-8)
+gradient_steering = gradient_steering / (torch.norm(gradient_steering) + NORM_EPS)
 print(f"Gradient steering direction norm: {torch.norm(gradient_steering):.4f}")
 
 # Compute CAA-based steering direction for comparison
@@ -173,15 +173,16 @@ print(f"\nCosine similarity between gradient and CAA directions: {cosine_sim.ite
 # Create steering plans
 gradient_plan = SteeringPlan.from_raw(
     raw={str(layer): gradient_steering.cpu().numpy().tolist()},
-    scale=0.5
+    scale=TEST_STEERING_SCALE
 )
 caa_plan = SteeringPlan.from_raw(
     raw={str(layer): caa_direction.cpu().numpy().tolist()},
-    scale=0.5
+    scale=TEST_STEERING_SCALE
 )
 
 # Evaluate with generation
 from wisent.core.evaluators.rotator import EvaluatorRotator
+from wisent.core.constants import MAX_NEW_TOKENS_TEST_DEFAULT, NORM_EPS, TEST_STEERING_SCALE
 
 EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
 evaluator = EvaluatorRotator(evaluator=None, task_name="truthfulqa_gen")
@@ -199,7 +200,7 @@ for i, pair in enumerate(test_pairs):
 
     # Baseline
     model.detach()
-    resp_base = model.generate(prompt_msg, max_new_tokens=100)[0]
+    resp_base = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
     eval_base = evaluator.evaluate(
         response=resp_base,
         expected=pair.positive_response.model_response,
@@ -211,7 +212,7 @@ for i, pair in enumerate(test_pairs):
 
     # Gradient steering
     model.apply_steering(plan=gradient_plan)
-    resp_grad = model.generate(prompt_msg, max_new_tokens=100)[0]
+    resp_grad = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
     model.detach()
 
     eval_grad = evaluator.evaluate(
@@ -225,7 +226,7 @@ for i, pair in enumerate(test_pairs):
 
     # CAA steering
     model.apply_steering(plan=caa_plan)
-    resp_caa = model.generate(prompt_msg, max_new_tokens=100)[0]
+    resp_caa = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
     model.detach()
 
     eval_caa = evaluator.evaluate(

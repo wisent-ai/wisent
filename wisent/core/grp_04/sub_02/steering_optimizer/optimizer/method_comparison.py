@@ -10,6 +10,11 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
 
 from wisent.core.steering_methods import SteeringMethodRegistry, SteeringMethodType
+from wisent.core.constants import (
+    DEFAULT_LIMIT, DEFAULT_NUM_LAYERS, DEFAULT_SPLIT_RATIO,
+    SEARCH_DEFAULT_STRENGTHS, SEARCH_MAX_LAYER_CAP,
+    OPTIMIZE_MAX_TIME_MINUTES,
+)
 
 from ..types import (
     SteeringMethodConfig,
@@ -33,9 +38,9 @@ class MethodComparisonMixin:
         methods_to_test: Optional[Union[List[SteeringMethod], List[SteeringMethodConfig]]] = None,
         layer_range: Optional[str] = None,
         strength_range: Optional[List[float]] = None,
-        limit: int = 100,
-        max_time_minutes: float = 30.0,
-        split_ratio: float = 0.8
+        limit: int = DEFAULT_LIMIT,
+        max_time_minutes: float = OPTIMIZE_MAX_TIME_MINUTES,
+        split_ratio: float = DEFAULT_SPLIT_RATIO
     ) -> SteeringOptimizationSummary:
         """
         Compare different steering methods to find the best one for a task.
@@ -76,7 +81,7 @@ class MethodComparisonMixin:
                     logger.warning(f"Unknown method type: {type(item)}, value: {item}")
 
         if strength_range is None:
-            strength_range = [0.5, 1.0, 1.5, 2.0]
+            strength_range = list(SEARCH_DEFAULT_STRENGTHS)
 
         logger.info(f"Comparing {len(method_configs)} steering method configs for: {task_name}")
 
@@ -182,7 +187,7 @@ class MethodComparisonMixin:
             return self._parse_layer_range(layer_range)
         elif self.base_classification_layer:
             min_layer = max(1, self.base_classification_layer - 2)
-            max_layer = min(32, self.base_classification_layer + 2)
+            max_layer = min(SEARCH_MAX_LAYER_CAP, self.base_classification_layer + 2)
             return list(range(min_layer, max_layer + 1))
         else:
             try:
@@ -190,10 +195,10 @@ class MethodComparisonMixin:
                 config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=True)
                 num_layers = getattr(config, 'num_hidden_layers', None) or \
                              getattr(config, 'n_layer', None) or \
-                             getattr(config, 'num_layers', None) or 32
+                             getattr(config, 'num_layers', None) or DEFAULT_NUM_LAYERS
                 return list(range(num_layers))
             except Exception:
-                return list(range(32))
+                return list(range(DEFAULT_NUM_LAYERS))
 
     def _analyze_results(self, all_results: Dict) -> tuple:
         """Analyze optimization results to compute rankings."""

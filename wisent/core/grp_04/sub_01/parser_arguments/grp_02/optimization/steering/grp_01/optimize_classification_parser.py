@@ -1,5 +1,12 @@
 """Parser setup for the 'optimize-classification' command."""
 
+from wisent.core.constants import (
+    CLASSIFICATION_THRESHOLD_RANGE,
+    OPTIMIZE_MAX_TIME_MINUTES_SHORT,
+    OPTIMIZER_AGGREGATION_METHODS,
+    PARSER_DEFAULT_TOTAL_SAMPLES,
+)
+
 
 def setup_classification_optimizer_parser(parser):
     """Set up the classification-optimizer subcommand parser."""
@@ -11,7 +18,7 @@ def setup_classification_optimizer_parser(parser):
         default=None,
         help="Specific tasks to optimize (e.g., 'truthfulqa_mc1 arc_easy'). If not provided, runs all supported tasks.",
     )
-    parser.add_argument("--limit", type=int, default=1000, help="Maximum samples per task (default: 1000)")
+    parser.add_argument("--limit", type=int, default=PARSER_DEFAULT_TOTAL_SAMPLES, help="Maximum samples per task (default: 1000)")
     parser.add_argument(
         "--optimization-metric",
         type=str,
@@ -20,7 +27,7 @@ def setup_classification_optimizer_parser(parser):
         help="Metric to optimize (default: f1)",
     )
     parser.add_argument(
-        "--max-time-per-task", type=float, default=15.0, help="Maximum time per task in minutes (default: 15.0)"
+        "--max-time-per-task", type=float, default=OPTIMIZE_MAX_TIME_MINUTES_SHORT, help="Maximum time per task in minutes (default: 15.0)"
     )
     parser.add_argument(
         "--layer-range", type=str, default=None, help="Layer range to test (e.g., '10-20', if None uses all layers)"
@@ -29,14 +36,14 @@ def setup_classification_optimizer_parser(parser):
         "--aggregation-methods",
         type=str,
         nargs="+",
-        default=["average", "final", "first", "max", "min"],
+        default=list(OPTIMIZER_AGGREGATION_METHODS),
         help="Token aggregation methods to test",
     )
     parser.add_argument(
         "--threshold-range",
         type=float,
         nargs="+",
-        default=[0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9],
+        default=CLASSIFICATION_THRESHOLD_RANGE,
         help="Detection thresholds to test",
     )
     parser.add_argument("--device", type=str, default=None, help="Device to run on")

@@ -4,6 +4,9 @@ from __future__ import annotations
 import torch
 from pathlib import Path
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import (
+    GROM_HIDDEN_DIM, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE, GROM_MAX_ALPHA,
+)
 from wisent.core.weight_modification.export._generic import load_steered_model
 
 _LOG = setup_logger(__name__)
@@ -124,8 +127,8 @@ def load_grom_model(
         grom_result.layer_order = grom_data["layer_order"]
         grom_result.directions = {k: v.to(model.device) for k, v in grom_data["directions"].items()}
         grom_result.direction_weights = {k: v.to(model.device) for k, v in grom_data["direction_weights"].items()}
-        grom_result.gate_temperature = grom_data.get("gate_temperature", 0.5)
-        grom_result.max_alpha = grom_data.get("max_alpha", 3.0)
+        grom_result.gate_temperature = grom_data.get("gate_temperature", GROM_ROUTER_TEMPERATURE)
+        grom_result.max_alpha = grom_data.get("max_alpha", GROM_MAX_ALPHA)
         
         # Reconstruct gate network
         if "gate_network_state" in grom_data:
@@ -133,7 +136,7 @@ def load_grom_model(
             config = grom_data["gate_network_config"]
             grom_result.gate_network = GatingNetwork(
                 config["input_dim"],
-                config.get("hidden_dim", 128),
+                config.get("hidden_dim", GROM_HIDDEN_DIM),
             )
             grom_result.gate_network.load_state_dict(grom_data["gate_network_state"])
             grom_result.gate_network = grom_result.gate_network.to(model.device)
@@ -147,7 +150,7 @@ def load_grom_model(
             grom_result.intensity_network = IntensityNetwork(
                 config["input_dim"],
                 config["num_layers"],
-                config.get("hidden_dim", 64),
+                config.get("hidden_dim", GROM_ROUTER_HIDDEN_DIM),
             )
             grom_result.intensity_network.load_state_dict(grom_data["intensity_network_state"])
             grom_result.intensity_network = grom_result.intensity_network.to(model.device)

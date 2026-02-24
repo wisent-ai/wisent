@@ -15,6 +15,7 @@ from wisent.core.activations import (
     build_extraction_texts,
 )
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.constants import MAX_NEW_TOKENS_TEST_MINIMAL, GREEDY_TEMPERATURE
 
 # Small models < 1GB
 CHAT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"  # instruct/chat model with chat template
@@ -183,8 +184,8 @@ def test_generation(pairs, model: WisentModel):
         messages = [[{"role": "user", "content": prompt}]]
         responses = model.generate(
             inputs=messages,
-            max_new_tokens=32,
-            temperature=0.0,
+            max_new_tokens=MAX_NEW_TOKENS_TEST_MINIMAL,
+            temperature=GREEDY_TEMPERATURE,
             do_sample=False,
         )
 

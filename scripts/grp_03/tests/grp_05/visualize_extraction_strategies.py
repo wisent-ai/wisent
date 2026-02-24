@@ -17,6 +17,7 @@ from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import NORM_EPS, VIZ_DPI, VIZ_HISTOGRAM_BINS_LARGE, VIZ_LINEWIDTH_NORMAL
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 STRATEGIES = [
@@ -60,7 +61,7 @@ for strategy in STRATEGIES:
 
     # Compute direction vectors (pos - neg for each sample)
     directions = pos_tensor - neg_tensor
-    directions_norm = directions / (torch.norm(directions, dim=1, keepdim=True) + 1e-8)
+    directions_norm = directions / (torch.norm(directions, dim=1, keepdim=True) + NORM_EPS)
 
     # Pairwise consistency
     pairwise = directions_norm @ directions_norm.T
@@ -114,7 +115,7 @@ for idx, strategy_name in enumerate(all_data.keys()):
     dir_projected = dir_pca.fit_transform(data["directions"][:20])
 
     # Normalize for visualization
-    dir_projected_norm = dir_projected / (np.linalg.norm(dir_projected, axis=1, keepdims=True) + 1e-8)
+    dir_projected_norm = dir_projected / (np.linalg.norm(dir_projected, axis=1, keepdims=True) + NORM_EPS)
 
     # Plot arrows from origin
     for i in range(len(dir_projected_norm)):
@@ -123,7 +124,7 @@ for idx, strategy_name in enumerate(all_data.keys()):
 
     # Mean direction
     mean_dir = dir_projected_norm.mean(axis=0)
-    mean_dir = mean_dir / (np.linalg.norm(mean_dir) + 1e-8)
+    mean_dir = mean_dir / (np.linalg.norm(mean_dir) + NORM_EPS)
     ax2.arrow(0, 0, mean_dir[0] * 0.9, mean_dir[1] * 0.9,
               head_width=0.08, head_length=0.05, fc='red', ec='red', linewidth=2)
 
@@ -136,7 +137,7 @@ for idx, strategy_name in enumerate(all_data.keys()):
 
 plt.suptitle("Extraction Strategy Comparison: CHAT_LAST shows highest consistency and separability", fontsize=14)
 plt.tight_layout()
-plt.savefig("extraction_strategy_comparison.png", dpi=150, bbox_inches='tight')
+plt.savefig("extraction_strategy_comparison.png", dpi=VIZ_DPI, bbox_inches='tight')
 print("Saved to extraction_strategy_comparison.png")
 
 # Create summary bar chart
@@ -170,7 +171,7 @@ ax_a.set_xticklabels(names, rotation=45, ha='right')
 
 plt.suptitle("CHAT_LAST: Highest Consistency (0.37) + Perfect Separability (1.00)", fontsize=14)
 plt.tight_layout()
-plt.savefig("extraction_strategy_summary.png", dpi=150, bbox_inches='tight')
+plt.savefig("extraction_strategy_summary.png", dpi=VIZ_DPI, bbox_inches='tight')
 print("Saved to extraction_strategy_summary.png")
 
 print("\n" + "="*60)
@@ -204,9 +205,9 @@ for idx, strategy_name in enumerate(all_data.keys()):
 
     # Plot histogram
     color = 'green' if strategy_name == 'chat_last' else 'steelblue'
-    ax.hist(similarities, bins=50, color=color, alpha=0.7, edgecolor='black', linewidth=0.5)
+    ax.hist(similarities, bins=VIZ_HISTOGRAM_BINS_LARGE, color=color, alpha=0.7, edgecolor='black', linewidth=0.5)
     ax.axvline(x=0, color='red', linestyle='--', alpha=0.7, label='zero')
-    ax.axvline(x=similarities.mean(), color='orange', linestyle='-', linewidth=2, label=f'mean={similarities.mean():.3f}')
+    ax.axvline(x=similarities.mean(), color='orange', linestyle='-', linewidth=VIZ_LINEWIDTH_NORMAL, label=f'mean={similarities.mean():.3f}')
     ax.set_xlim(-1, 1)
     ax.set_xlabel("Cosine Similarity")
     ax.set_ylabel("Count")
@@ -216,5 +217,5 @@ for idx, strategy_name in enumerate(all_data.keys()):
 
 plt.suptitle("Distribution of Pairwise Cosine Similarities (full 2048-dim space)", fontsize=14)
 plt.tight_layout()
-plt.savefig("extraction_strategy_histograms.png", dpi=150, bbox_inches='tight')
+plt.savefig("extraction_strategy_histograms.png", dpi=VIZ_DPI, bbox_inches='tight')
 print("Saved to extraction_strategy_histograms.png")

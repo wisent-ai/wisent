@@ -5,6 +5,7 @@ from typing import List, Tuple
 import torch
 import numpy as np
 
+from wisent.core.constants import MAX_TOKENIZATION_LENGTH
 from wisent.examples.scripts.intervention_validation_helpers import (
     apply_steering_to_model,
 )
@@ -32,14 +33,14 @@ def get_model_logprobs(
         full_text,
         return_tensors="pt",
         truncation=True,
-        max_length=2048,
+        max_length=MAX_TOKENIZATION_LENGTH,
     ).to(model.device)
     
     prompt_tokens = model.tokenizer(
         prompt,
         return_tensors="pt",
         truncation=True,
-        max_length=2048,
+        max_length=MAX_TOKENIZATION_LENGTH,
     ).input_ids.shape[1]
     
     with torch.no_grad():

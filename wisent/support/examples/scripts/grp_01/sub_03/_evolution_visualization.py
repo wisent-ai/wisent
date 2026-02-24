@@ -5,6 +5,10 @@ import torch
 from pathlib import Path
 from typing import Dict, List, Tuple
 
+from wisent.core.constants import (
+    DEFAULT_RANDOM_SEED, VIZ_N_NEIGHBORS, VIZ_MIN_DIST,
+    VIZ_PERPLEXITY, TSNE_N_ITER, VIZ_DPI, VIZ_N_COMPONENTS_2D,
+)
 from wisent.examples.scripts._pair_generators_neutral import ConceptMetrics
 from wisent.examples.scripts._evolution_visualization_plots import (
     visualize_concept_evolution_plots,
@@ -71,7 +75,7 @@ def visualize_concept_evolution(
     fig, axes = plt.subplots(1, 3, figsize=(18, 6))
     
     # --- PCA ---
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=VIZ_N_COMPONENTS_2D)
     pca_2d = pca.fit_transform(all_data)
     pca_pos = pca_2d[:n_pos_total]
     pca_neg = pca_2d[n_pos_total:]
@@ -94,7 +98,7 @@ def visualize_concept_evolution(
     # --- UMAP ---
     try:
         import umap
-        reducer_umap = umap.UMAP(n_components=2, n_neighbors=15, min_dist=0.1, random_state=42)
+        reducer_umap = umap.UMAP(n_components=VIZ_N_COMPONENTS_2D, n_neighbors=VIZ_N_NEIGHBORS, min_dist=VIZ_MIN_DIST, random_state=DEFAULT_RANDOM_SEED)
         umap_2d = reducer_umap.fit_transform(all_data)
         umap_pos = umap_2d[:n_pos_total]
         umap_neg = umap_2d[n_pos_total:]
@@ -120,7 +124,7 @@ def visualize_concept_evolution(
     # --- t-SNE as alternative to PaCMAP (which segfaults) ---
     try:
         from sklearn.manifold import TSNE
-        tsne = TSNE(n_components=2, perplexity=30, random_state=42, n_iter=1000)
+        tsne = TSNE(n_components=VIZ_N_COMPONENTS_2D, perplexity=VIZ_PERPLEXITY, random_state=DEFAULT_RANDOM_SEED, n_iter=TSNE_N_ITER)
         tsne_2d = tsne.fit_transform(all_data)
         tsne_pos = tsne_2d[:n_pos_total]
         tsne_neg = tsne_2d[n_pos_total:]
@@ -145,7 +149,7 @@ def visualize_concept_evolution(
     
     plt.suptitle(f'Dimensionality Reduction Comparison - Layer {mid_layer} - {model_name}\n(o) = positive/harmful, (x) = negative/safe', fontsize=12)
     plt.tight_layout()
-    plt.savefig(output_path / 'concept_dimred_comparison.png', dpi=150, bbox_inches='tight')
+    plt.savefig(output_path / 'concept_dimred_comparison.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()
     print(f"Saved: {output_path / 'concept_dimred_comparison.png'}")
     
@@ -166,7 +170,7 @@ def visualize_concept_evolution(
         dir_matrix = np.stack(list(directions.values()))
         
         # PCA on directions
-        pca_dir = PCA(n_components=2)
+        pca_dir = PCA(n_components=VIZ_N_COMPONENTS_2D)
         dir_pca = pca_dir.fit_transform(dir_matrix)
         
         ax = axes[0]
@@ -187,7 +191,7 @@ def visualize_concept_evolution(
         try:
             import umap
             if len(dir_matrix) >= 4:
-                reducer = umap.UMAP(n_components=2, n_neighbors=min(3, len(dir_matrix)-1), min_dist=0.1, random_state=42)
+                reducer = umap.UMAP(n_components=VIZ_N_COMPONENTS_2D, n_neighbors=min(3, len(dir_matrix)-1), min_dist=VIZ_MIN_DIST, random_state=DEFAULT_RANDOM_SEED)
                 dir_umap = reducer.fit_transform(dir_matrix)
                 
                 ax = axes[1]
@@ -215,7 +219,7 @@ def visualize_concept_evolution(
     
     plt.suptitle(f'Direction Vectors Comparison - Layer {mid_layer} - {model_name}', fontsize=12)
     plt.tight_layout()
-    plt.savefig(output_path / 'concept_directions_comparison.png', dpi=150, bbox_inches='tight')
+    plt.savefig(output_path / 'concept_directions_comparison.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()
     print(f"Saved: {output_path / 'concept_directions_comparison.png'}")
 

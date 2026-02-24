@@ -1,6 +1,7 @@
 """Benchmark relevance scoring and similarity methods for ClassifierCreator."""
 
 from typing import Dict, List
+from wisent.core import constants as _C
 
 
 class ScoringMixin:
@@ -31,7 +32,7 @@ class ScoringMixin:
 
         # Direct name matching (highest weight)
         if issue_lower in benchmark_lower or benchmark_lower in issue_lower:
-            score += 5.0
+            score += _C.CLASSIFIER_SCORE_DIRECT_MATCH
 
         # Concept matching
         for concept in concepts:
@@ -39,13 +40,13 @@ class ScoringMixin:
 
             # Exact concept match
             if issue_lower == concept_lower:
-                score += 4.0
+                score += _C.CLASSIFIER_SCORE_EXACT_CONCEPT
             # Partial concept match
             elif issue_lower in concept_lower or concept_lower in issue_lower:
-                score += 2.0
+                score += _C.CLASSIFIER_SCORE_PARTIAL_CONCEPT
             # Semantic similarity check
             elif self._are_semantically_similar(issue_lower, concept_lower):
-                score += 1.5
+                score += _C.CLASSIFIER_SCORE_SEMANTIC_SIMILAR
 
         # Token-level similarity in benchmark name
         benchmark_tokens = benchmark_lower.replace("_", " ").replace("-", " ").split()
@@ -55,11 +56,11 @@ class ScoringMixin:
             for benchmark_token in benchmark_tokens:
                 if len(issue_token) > 2 and len(benchmark_token) > 2:
                     if issue_token == benchmark_token:
-                        score += 3.0
+                        score += _C.CLASSIFIER_SCORE_TOKEN_EXACT
                     elif issue_token in benchmark_token or benchmark_token in issue_token:
-                        score += 1.0
+                        score += _C.CLASSIFIER_SCORE_TOKEN_SUBSTRING
                     elif self._are_semantically_similar(issue_token, benchmark_token):
-                        score += 0.5
+                        score += _C.CLASSIFIER_SCORE_TOKEN_SEMANTIC
 
         return score
 
@@ -96,7 +97,13 @@ class ScoringMixin:
         affix_similarity = (prefix_len + suffix_len) / max(len(term1), len(term2))
 
         # Combined similarity score
-        return char_similarity > 0.6 or substring_match or affix_similarity > 0.4 or prefix_len >= 3 or suffix_len >= 3
+        return (
+            char_similarity > _C.CLASSIFIER_SIMILARITY_CHAR_THRESHOLD
+            or substring_match
+            or affix_similarity > _C.CLASSIFIER_SIMILARITY_AFFIX_THRESHOLD
+            or prefix_len >= _C.CLASSIFIER_SIMILARITY_AFFIX_MIN_LEN
+            or suffix_len >= _C.CLASSIFIER_SIMILARITY_AFFIX_MIN_LEN
+        )
 
     def _prioritize_benchmarks(self, relevant_benchmarks: List[str]) -> List[str]:
         """Prioritize benchmarks algorithmically based on naming patterns and characteristics."""
@@ -117,24 +124,24 @@ class ScoringMixin:
 
         # Length heuristic - moderate length names tend to be well-established
         name_length = len(benchmark_name)
-        if 8 <= name_length <= 25:
-            score += 2.0
-        elif name_length < 8:
-            score += 0.5  # Very short names might be too simple
+        if _C.CLASSIFIER_NAME_LENGTH_MIN <= name_length <= _C.CLASSIFIER_NAME_LENGTH_MAX:
+            score += _C.CLASSIFIER_QUALITY_GOOD_LENGTH
+        elif name_length < _C.CLASSIFIER_NAME_LENGTH_MIN:
+            score += _C.CLASSIFIER_QUALITY_SHORT_NAME  # Very short names might be too simple
         else:
-            score += 1.0  # Very long names might be overly specific
+            score += _C.CLASSIFIER_QUALITY_LONG_NAME  # Very long names might be overly specific
 
         # Component analysis
         parts = benchmark_lower.split("_")
         num_parts = len(parts)
 
         # Well-structured benchmarks often have 2-3 parts
-        if 2 <= num_parts <= 3:
-            score += 2.0
+        if _C.CLASSIFIER_PARTS_OPTIMAL_MIN <= num_parts <= _C.CLASSIFIER_PARTS_OPTIMAL_MAX:
+            score += _C.CLASSIFIER_QUALITY_OPTIMAL_PARTS
         elif num_parts == 1:
-            score += 1.5  # Simple names can be good too
+            score += _C.CLASSIFIER_QUALITY_SINGLE_PART  # Simple names can be good too
         else:
-            score += 0.5  # Too many parts might indicate over-specification
+            score += _C.CLASSIFIER_QUALITY_MANY_PARTS  # Too many parts might indicate over-specification
 
         # Indicator of established benchmarks (avoid hardcoding specific names)
         quality_indicators = [
@@ -180,13 +187,13 @@ class ScoringMixin:
 
         for indicator in experimental_indicators:
             if indicator in benchmark_lower:
-                score -= 1.0
+                score -= _C.CLASSIFIER_PENALTY_EXPERIMENTAL
 
         # Bonus for domain diversity indicators
         domain_indicators = ["multilingual", "global", "cross", "multi", "diverse"]
 
         for indicator in domain_indicators:
             if indicator in benchmark_lower:
-                score += 0.5
+                score += _C.CLASSIFIER_BONUS_DOMAIN_DIVERSITY
 
         return max(0.0, score)  # Ensure non-negative score

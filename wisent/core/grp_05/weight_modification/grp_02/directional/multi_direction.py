@@ -5,6 +5,8 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
+from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_LAYER_WEIGHT
+from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
@@ -58,7 +60,7 @@ def project_weights_multi_direction(
     components: list[str] | None = None,
     layer_weights: dict[int, float] | None = None,
     direction_strengths: list[float] | None = None,
-    global_strength: float = 1.0,
+    global_strength: float = DEFAULT_STRENGTH,
     use_biprojection: bool = True,
     verbose: bool = True,
 ) -> dict[str, int]:
@@ -86,7 +88,7 @@ def project_weights_multi_direction(
             continue
         layer = layers[layer_idx]
         layer_modified = False
-        layer_weight = 1.0 if layer_weights is None else layer_weights.get(layer_idx, 1.0)
+        layer_weight = DEFAULT_LAYER_WEIGHT if layer_weights is None else layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT)
         effective_global_strength = global_strength * layer_weight
         if steering_vectors.dim() == 1:
             steering_vectors = steering_vectors.unsqueeze(0)

@@ -18,6 +18,7 @@ from wisent.core.modalities import VideoContent
 from wisent.core.errors import UnknownTypeError
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.adapters.modalities._video_helpers.video_core import VideoSteeringConfig
+from wisent.core.constants import NORM_EPS, TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
 
 
 class VideoOpsMixin:
@@ -82,7 +83,7 @@ class VideoOpsMixin:
         def hook(module: nn.Module, input: tuple, output: torch.Tensor) -> torch.Tensor:
             v = vector.to(output.device, output.dtype)
             if config.normalize:
-                v = v / (v.norm(dim=-1, keepdim=True) + 1e-8)
+                v = v / (v.norm(dim=-1, keepdim=True) + NORM_EPS)
             if config.frame_mode == "keyframes":
                 mask = torch.zeros(num_frames, device=output.device)
                 mask[::config.keyframe_interval] = 1.0
@@ -94,7 +95,7 @@ class VideoOpsMixin:
                 )
                 v = v * decay.view(-1, 1, 1) if v.dim() >= 3 else v * decay.mean()
             elif config.frame_mode == "temporal_ramp":
-                ramp = torch.linspace(0.1, 1.0, num_frames, device=output.device)
+                ramp = torch.linspace(TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX, num_frames, device=output.device)
                 v = v * ramp.view(-1, 1, 1) if v.dim() >= 3 else v * ramp.mean()
             v = v * config.scale
             while v.dim() < output.dim():

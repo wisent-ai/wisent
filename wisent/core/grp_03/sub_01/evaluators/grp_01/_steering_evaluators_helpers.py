@@ -8,6 +8,11 @@ import logging
 from typing import Optional
 
 from wisent.core.models import get_generate_kwargs
+from wisent.core.constants import (
+    EVAL_DEFAULT_DIFFERENCE_SCORE, EVAL_DIFFERENCE_CUTOFF,
+    EVAL_W_DIFFERENCE, EVAL_W_QUALITY, EVAL_W_ALIGNMENT,
+    EVAL_MAX_NEW_TOKENS,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +93,7 @@ class PersonalizationEvaluator:
             messages = [{"role": "user", "content": prompt_text}]
             result = self.wisent_model.generate(
                 [messages],
-                **get_generate_kwargs(max_new_tokens=150),
+                **get_generate_kwargs(max_new_tokens=EVAL_MAX_NEW_TOKENS),
             )
             responses.append(result[0] if result else "")
 
@@ -108,7 +113,7 @@ class PersonalizationEvaluator:
         if baseline_responses:
             difference_score = evaluate_difference(baseline_responses, responses)
         else:
-            difference_score = 50.0
+            difference_score = EVAL_DEFAULT_DIFFERENCE_SCORE
 
         quality_score = evaluate_quality(responses)
         alignment_score = estimate_alignment(
@@ -116,10 +121,10 @@ class PersonalizationEvaluator:
             self.positive_examples, self.negative_examples,
         )
 
-        if difference_score < 70:
+        if difference_score < EVAL_DIFFERENCE_CUTOFF:
             overall_score = 0.0
         else:
-            overall_score = 0.2 * difference_score + 0.3 * quality_score + 0.5 * alignment_score
+            overall_score = EVAL_W_DIFFERENCE * difference_score + EVAL_W_QUALITY * quality_score + EVAL_W_ALIGNMENT * alignment_score
 
         return {
             "difference_score": difference_score,

@@ -1,4 +1,5 @@
 """Personalization subparsers for optimize-steering."""
+from wisent.core import constants as _C
 
 
 def setup_personalization_parsers(steering_subparsers):
@@ -26,10 +27,10 @@ def setup_personalization_parsers(steering_subparsers):
         help="Short name for the trait (e.g., 'evil'). Defaults to first word of trait.",
     )
     personalization_parser.add_argument(
-        "--num-pairs", type=int, default=20, help="Number of synthetic pairs to generate (default: 20)"
+        "--num-pairs", type=int, default=_C.PARSER_DEFAULT_NUM_PAIRS_OPTIMIZE, help="Number of synthetic pairs to generate (default: 20)"
     )
     personalization_parser.add_argument(
-        "--num-test-prompts", type=int, default=5, help="Number of test prompts for evaluation (default: 5)"
+        "--num-test-prompts", type=int, default=_C.PARSER_DEFAULT_NUM_STRENGTH_STEPS, help="Number of test prompts for evaluation (default: 5)"
     )
     personalization_parser.add_argument(
         "--layers",
@@ -42,11 +43,11 @@ def setup_personalization_parsers(steering_subparsers):
         "--strength-range",
         type=float,
         nargs=2,
-        default=[0.5, 5.0],
+        default=list(_C.PARSER_STRENGTH_RANGE_PERSONALIZATION),
         help="Min and max steering strength to test (default: 0.5 5.0)",
     )
     personalization_parser.add_argument(
-        "--num-strength-steps", type=int, default=5, help="Number of strength values to test (default: 5)"
+        "--num-strength-steps", type=int, default=_C.PARSER_DEFAULT_NUM_STRENGTH_STEPS, help="Number of strength values to test (default: 5)"
     )
     personalization_parser.add_argument(
         "--output-dir",
@@ -55,7 +56,7 @@ def setup_personalization_parsers(steering_subparsers):
         help="Directory to save results and best vectors (default: ./personalization_optimization)",
     )
     personalization_parser.add_argument(
-        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
+        "--max-new-tokens", type=int, default=_C.MAX_NEW_TOKENS_GENERATION, help="Max tokens to generate for evaluation (default: 150)"
     )
     personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -102,13 +103,13 @@ def setup_personalization_parsers(steering_subparsers):
     personalization_parser.add_argument(
         "--n-trials",
         type=int,
-        default=300,
+        default=_C.OPTUNA_TRIALS_LARGE,
         help="Number of Optuna trials when using --search-strategy optuna (default: 300)"
     )
     personalization_parser.add_argument(
         "--limit",
         type=int,
-        default=50,
+        default=_C.PARSER_DEFAULT_NUM_PAIRS,
         help="Sample limit for optimization (default: 50)"
     )
 
@@ -133,10 +134,10 @@ def setup_personalization_parsers(steering_subparsers):
         help="Short name for each trait (must match number of --trait args)",
     )
     multi_personalization_parser.add_argument(
-        "--num-pairs", type=int, default=10, help="Number of synthetic pairs per trait (default: 10)"
+        "--num-pairs", type=int, default=_C.PARSER_DEFAULT_NUM_PAIRS_TRAIT, help="Number of synthetic pairs per trait (default: 10)"
     )
     multi_personalization_parser.add_argument(
-        "--num-test-prompts", type=int, default=5, help="Number of test prompts for evaluation (default: 5)"
+        "--num-test-prompts", type=int, default=_C.PARSER_DEFAULT_NUM_STRENGTH_STEPS, help="Number of test prompts for evaluation (default: 5)"
     )
     multi_personalization_parser.add_argument(
         "--layers", type=int, nargs="+", default=None, help="Specific layers to test (default: ALL layers)"
@@ -145,11 +146,11 @@ def setup_personalization_parsers(steering_subparsers):
         "--strength-range",
         type=float,
         nargs=2,
-        default=[0.5, 5.0],
+        default=list(_C.PARSER_STRENGTH_RANGE_PERSONALIZATION),
         help="Min and max steering strength to test per trait (default: 0.5 5.0)",
     )
     multi_personalization_parser.add_argument(
-        "--num-strength-steps", type=int, default=5, help="Number of strength values to test (default: 5)"
+        "--num-strength-steps", type=int, default=_C.PARSER_DEFAULT_NUM_STRENGTH_STEPS, help="Number of strength values to test (default: 5)"
     )
     multi_personalization_parser.add_argument(
         "--output-dir",
@@ -158,7 +159,7 @@ def setup_personalization_parsers(steering_subparsers):
         help="Directory to save results and vectors (default: ./multi_personalization_optimization)",
     )
     multi_personalization_parser.add_argument(
-        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
+        "--max-new-tokens", type=int, default=_C.MAX_NEW_TOKENS_GENERATION, help="Max tokens to generate for evaluation (default: 150)"
     )
     multi_personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     multi_personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")

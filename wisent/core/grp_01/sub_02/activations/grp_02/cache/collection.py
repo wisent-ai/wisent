@@ -9,6 +9,7 @@ from __future__ import annotations
 from typing import List, Optional, TYPE_CHECKING
 
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import PROGRESS_REPORT_INTERVAL
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from .cached_activations import CachedActivations, get_strategy_text_family
 from .raw_cached_activations import RawCachedActivations
@@ -62,7 +63,7 @@ def collect_and_cache_activations(
     )
 
     for i, pair in enumerate(pairs):
-        if show_progress and i % 10 == 0:
+        if show_progress and i % PROGRESS_REPORT_INTERVAL == 0:
             print(f"Collecting activations: {i+1}/{len(pairs)}", end="\r", flush=True)
 
         updated = collector.collect(pair, strategy=strategy, layers=None)
@@ -119,7 +120,7 @@ def collect_and_cache_raw_activations(
     )
 
     for i, pair in enumerate(pairs):
-        if show_progress and i % 10 == 0:
+        if show_progress and i % PROGRESS_REPORT_INTERVAL == 0:
             print(f"Collecting raw activations: {i+1}/{len(pairs)}", end="\r", flush=True)
 
         raw_data = collector.collect_raw(pair, strategy=strategy, layers=None)

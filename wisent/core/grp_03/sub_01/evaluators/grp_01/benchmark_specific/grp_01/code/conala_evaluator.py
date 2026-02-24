@@ -18,6 +18,7 @@ from typing import Any
 import evaluate
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.constants import BLEU_THRESHOLD, BLEU_MAX_ORDER
 
 logger = logging.getLogger(__name__)
 
@@ -60,7 +61,7 @@ class CoNaLaEvaluator(BaseEvaluator):
     name = "conala"
     description = "CoNaLa evaluator using BLEU score for code generation"
 
-    def __init__(self, bleu_threshold: float = 0.5, max_order: int = 4):
+    def __init__(self, bleu_threshold: float = BLEU_THRESHOLD, max_order: int = BLEU_MAX_ORDER):
         """Initialize the CoNaLa evaluator.
 
         Args:

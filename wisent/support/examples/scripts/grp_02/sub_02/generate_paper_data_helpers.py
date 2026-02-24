@@ -5,17 +5,18 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any
 from collections import defaultdict
+from wisent.core.constants import DISPLAY_TOP_N_MEDIUM
 
-S3_BUCKET = "wisent-bucket"
+GCS_BUCKET = "wisent-images-bucket"
 
 
 def download_all_results(output_dir: Path) -> Dict[str, Path]:
-    """Download all results from S3."""
+    """Download all results from GCS."""
     output_dir.mkdir(parents=True, exist_ok=True)
-    
+
     subprocess.run(
-        ["aws", "s3", "sync", 
-         f"s3://{S3_BUCKET}/direction_discovery/",
+        ["gcloud", "storage", "rsync",
+         f"gs://{GCS_BUCKET}/direction_discovery/",
          str(output_dir),
          "--quiet"],
         check=False,
@@ -142,7 +143,7 @@ def generate_benchmark_table(all_models: Dict[str, Dict]) -> str:
     ]
     
     for bench, data in sorted(benchmarks.items(), key=lambda x: -max(x[1]["signal"]) if x[1]["signal"] else 0):
-        cats = ", ".join(sorted(data["categories"]))[:20]
+        cats = ", ".join(sorted(data["categories"]))[:DISPLAY_TOP_N_MEDIUM]
         avg_signal = sum(data["signal"]) / len(data["signal"]) if data["signal"] else 0
         avg_linear = sum(data["linear"]) / len(data["linear"]) if data["linear"] else 0
         avg_knn = sum(data["knn"]) / len(data["knn"]) if data["knn"] else 0

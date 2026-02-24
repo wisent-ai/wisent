@@ -16,6 +16,7 @@ from tqdm import tqdm
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
 from wisent.core.errors import InvalidChoicesError
+from wisent.core.constants import DEFAULT_INFERENCE_TEMPERATURE, MAX_NEW_TOKENS_BENCHMARK_MATH
 
 
 QUESTION_TYPES = [
@@ -81,8 +82,8 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
         # Generate using WisentModel
         responses = model.generate(
             inputs=prompt,
-            max_new_tokens=1000,
-            temperature=0.7,
+            max_new_tokens=MAX_NEW_TOKENS_BENCHMARK_MATH,
+            temperature=DEFAULT_INFERENCE_TEMPERATURE,
             do_sample=True,
             prompt_is_formatted=True
         )

@@ -2,6 +2,8 @@
 
 import argparse
 
+from wisent.core import constants as _C
+
 
 def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None:
     """
@@ -60,37 +62,37 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--mlp-hidden-dim",
         type=int,
-        default=256,
+        default=_C.VIZ_MLP_HIDDEN_DIM,
         help="Hidden dimension for MLP classifier (default: 256)"
     )
     parser.add_argument(
         "--mlp-num-layers",
         type=int,
-        default=2,
+        default=_C.MLP_DEFAULT_HIDDEN_LAYERS,
         help="Number of hidden layers in MLP (default: 2)"
     )
     parser.add_argument(
         "--mlp-dropout",
         type=float,
-        default=0.1,
+        default=_C.MLP_DEFAULT_DROPOUT,
         help="Dropout rate for MLP (default: 0.1)"
     )
     parser.add_argument(
         "--mlp-epochs",
         type=int,
-        default=100,
+        default=_C.VIZ_MLP_EPOCHS,
         help="Training epochs for MLP (default: 100)"
     )
     parser.add_argument(
         "--mlp-learning-rate",
         type=float,
-        default=0.001,
+        default=_C.MLP_DEFAULT_LR,
         help="Learning rate for MLP (default: 0.001)"
     )
     parser.add_argument(
         "--mlp-weight-decay",
         type=float,
-        default=0.01,
+        default=_C.MLP_DEFAULT_WEIGHT_DECAY,
         help="Weight decay for MLP (default: 0.01)"
     )
 
@@ -98,13 +100,13 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--ostrze-max-iter",
         type=int,
-        default=1000,
+        default=_C.OSTRZE_DEFAULT_ITERATIONS,
         help="Max iterations for logistic regression (default: 1000)"
     )
     parser.add_argument(
         "--ostrze-C",
         type=float,
-        default=1.0,
+        default=_C.OSTRZE_C,
         help="Regularization strength for logistic regression (default: 1.0)"
     )
 
@@ -112,19 +114,19 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--tecza-num-directions",
         type=int,
-        default=3,
+        default=_C.TETNO_DEFAULT_NUM_DIRECTIONS,
         help="Number of directions to discover per layer (default: 3)"
     )
     parser.add_argument(
         "--tecza-optimization-steps",
         type=int,
-        default=100,
+        default=_C.TETNO_DEFAULT_NUM_STEPS,
         help="Optimization steps for TECZA (default: 100)"
     )
     parser.add_argument(
         "--tecza-learning-rate",
         type=float,
-        default=0.01,
+        default=_C.TETNO_DEFAULT_STEP_SIZE,
         help="Learning rate for TECZA (default: 0.01)"
     )
 
@@ -138,13 +140,13 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--tetno-condition-threshold",
         type=float,
-        default=0.5,
+        default=_C.NURT_DEFAULT_TEMPERATURE,
         help="Condition threshold for gating (default: 0.5)"
     )
     parser.add_argument(
         "--tetno-gate-temperature",
         type=float,
-        default=0.1,
+        default=_C.GROM_DEFAULT_LR,
         help="Gate temperature (default: 0.1)"
     )
     parser.add_argument(
@@ -158,7 +160,7 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--grom-num-directions",
         type=int,
-        default=5,
+        default=_C.GROM_DEFAULT_NUM_ITER,
         help="Number of directions per layer (default: 5)"
     )
     parser.add_argument(
@@ -182,13 +184,13 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--grom-max-alpha",
         type=float,
-        default=3.0,
+        default=_C.NURT_DEFAULT_STRENGTH,
         help="Maximum steering intensity (default: 3.0)"
     )
     parser.add_argument(
         "--grom-gate-temperature",
         type=float,
-        default=0.5,
+        default=_C.GROM_DEFAULT_LAMBDA,
         help="Gate temperature (default: 0.5)"
     )
 
@@ -202,31 +204,31 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--nurt-variance-threshold",
         type=float,
-        default=0.80,
+        default=_C.SZLAK_DEFAULT_EPSILON,
         help="Cumulative variance threshold for auto dim selection (default: 0.80)"
     )
     parser.add_argument(
         "--nurt-training-epochs",
         type=int,
-        default=300,
+        default=_C.SZLAK_DEFAULT_MAX_ITER,
         help="Training epochs for flow matching (default: 300)"
     )
     parser.add_argument(
         "--nurt-lr",
         type=float,
-        default=0.001,
+        default=_C.SZLAK_DEFAULT_STEP_SIZE,
         help="Learning rate for flow network (default: 0.001)"
     )
     parser.add_argument(
         "--nurt-num-integration-steps",
         type=int,
-        default=4,
+        default=_C.SZLAK_DEFAULT_ITER_PER_SCALE,
         help="Euler integration steps at inference (default: 4)"
     )
     parser.add_argument(
         "--nurt-t-max",
         type=float,
-        default=1.0,
+        default=_C.PRZELOM_DEFAULT_INFERENCE_K,
         help="Integration endpoint / max steering strength (default: 1.0)"
     )
     parser.add_argument(

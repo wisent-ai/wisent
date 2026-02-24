@@ -3,6 +3,7 @@
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.synthetic.generators.core.atoms import GenerationReport
 from wisent.core.errors import PairGenerationError
+from wisent.core.constants import AGENT_MAX_WORKERS, GENERATE_PAIRS_MIN_TOKENS, GENERATE_PAIRS_MAX_TOKENS, SIMHASH_DEFAULT_THRESHOLD_BITS, SYNTHETIC_PAIRS_TEMPERATURE, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH
 
 
 def generate_synthetic_pairs(
@@ -12,7 +13,7 @@ def generate_synthetic_pairs(
     verbose: bool = False,
     num_pairs: int = None,
     similarity_threshold: float = None,
-    max_workers: int = 4
+    max_workers: int = AGENT_MAX_WORKERS
 ) -> tuple[ContrastivePairSet, GenerationReport]:
     """
     Generate synthetic contrastive pairs for the given prompt.
@@ -60,11 +61,11 @@ def generate_synthetic_pairs(
 
     # Scale max_new_tokens based on number of pairs (same as generate-pairs CLI)
     estimated_tokens = num_pairs * 150 + 500
-    max_tokens = max(2048, min(estimated_tokens, 8192))
+    max_tokens = max(GENERATE_PAIRS_MIN_TOKENS, min(estimated_tokens, GENERATE_PAIRS_MAX_TOKENS))
 
     generation_config = {
         "max_new_tokens": max_tokens,
-        "temperature": 0.9,
+        "temperature": SYNTHETIC_PAIRS_TEMPERATURE,
         "do_sample": True,
     }
 
@@ -76,8 +77,8 @@ def generate_synthetic_pairs(
         print(f"   Using similarity threshold: {similarity_threshold}")
         deduper = SimHashDeduper(threshold=similarity_threshold)
     else:
-        print(f"   Using SimHash deduper with threshold_bits=3")
-        deduper = SimHashDeduper(threshold_bits=3)
+        print(f"   Using SimHash deduper with threshold_bits={SIMHASH_DEFAULT_THRESHOLD_BITS}")
+        deduper = SimHashDeduper(threshold_bits=SIMHASH_DEFAULT_THRESHOLD_BITS)
 
     cleaning_steps = [
         DeduperCleaner(deduper=deduper),
@@ -93,9 +94,9 @@ def generate_synthetic_pairs(
     generator = SyntheticContrastivePairsGenerator(
         model=model,
         generation_config=generation_config,
-        contrastive_set_name=f"agent_synthetic_{prompt[:20].replace(' ', '_')}",
+        contrastive_set_name=f"agent_synthetic_{prompt[:TRAIT_LABEL_MAX_LENGTH].replace(' ', '_')}",
         trait_description=prompt,
-        trait_label=prompt[:50],
+        trait_label=prompt[:DISPLAY_TRUNCATION_SHORT],
         db_instructions=db_instructions,
         cleaner=cleaner,
         diversity=diversity,

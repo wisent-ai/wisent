@@ -8,6 +8,7 @@ import torch
 import numpy as np
 from typing import List, Dict
 from sklearn.cluster import AgglomerativeClustering
+from wisent.core.constants import NORM_EPS
 
 def find_optimal_clusters(sim_matrix: np.ndarray, names: List[str], max_clusters: int = 10):
     dist_matrix = 1 - sim_matrix
@@ -44,7 +45,7 @@ def evaluate_directions(directions, activations, clusters):
     all_neg = torch.cat([activations[b]['neg'] for b in activations])
     global_dir = all_pos.mean(dim=0) - all_neg.mean(dim=0)
     norm = torch.norm(global_dir)
-    if norm > 1e-8:
+    if norm > NORM_EPS:
         global_dir = global_dir / norm
     
     cluster_dirs = {}
@@ -56,7 +57,7 @@ def evaluate_directions(directions, activations, clusters):
             n = torch.cat([activations[m]['neg'] for m in valid])
             d = p.mean(dim=0) - n.mean(dim=0)
             norm = torch.norm(d)
-            if norm > 1e-8:
+            if norm > NORM_EPS:
                 cluster_dirs[cid] = d / norm
             for m in members:
                 bench_to_cluster[m] = cid

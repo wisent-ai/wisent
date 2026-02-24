@@ -28,6 +28,13 @@ logger = logging.getLogger(__name__)
 
 
 
+from wisent.core.constants import (
+    DISPLAY_TRUNCATION_ERROR,
+    OPTUNA_N_TRIALS_SMALL,
+    OPTIMIZE_CLASSIFICATION_THRESHOLDS,
+    OPTIMIZE_WEIGHT_MOD_TARGET,
+    OPTIMIZATION_BENCHMARK_LIMIT,
+)
 from wisent.core.cli.optimization.core.optimize_helpers import (
     get_checkpoint_path, get_s3_checkpoint_key, load_checkpoint,
     save_checkpoint, get_all_benchmarks, get_personalization_traits,
@@ -66,8 +73,6 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
     # Filter based on args
     if args.benchmarks:
         benchmarks = args.benchmarks
-    elif args.quick:
-        benchmarks = ["truthfulqa_mc1", "arc_easy", "hellaswag", "gsm8k"]
     else:
         benchmarks = all_benchmarks
 
@@ -121,15 +126,14 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
             
             clf_args = argparse.Namespace(
                 model=args.model,
-                tasks=benchmarks[:50] if len(benchmarks) > 50 else benchmarks,
+                tasks=benchmarks[:OPTIMIZATION_BENCHMARK_LIMIT] if len(benchmarks) > OPTIMIZATION_BENCHMARK_LIMIT else benchmarks,
                 limit=args.limit,
                 device=args.device,
                 verbose=getattr(args, 'verbose', False),
                 layer_range=None,
                 skip_full_search=False,
-                quick=args.quick,
                 aggregation_methods=['average', 'final', 'first', 'max'],
-                threshold_range=[0.3, 0.5, 0.7],
+                threshold_range=list(OPTIMIZE_CLASSIFICATION_THRESHOLDS),
                 optimization_metric='f1',
                 save_plots=False,
             )
@@ -188,9 +192,9 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                         trait=task,
                         task=None,
                         steering_vectors=None,
-                        trials=getattr(args, 'n_trials', 20),
+                        trials=getattr(args, 'n_trials', OPTUNA_N_TRIALS_SMALL),
                         target_metric="score",
-                        target_value=0.8,
+                        target_value=OPTIMIZE_WEIGHT_MOD_TARGET,
                         device=args.device,
                         verbose=getattr(args, 'verbose', False),
                         output_dir=f"outputs/optimize/{args.model.replace('/', '_')}/weights_{task}",
@@ -202,7 +206,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
                 except Exception as e:
                     error_msg = f"weights:{task}: {str(e)}"
                     results["errors"].append(error_msg)
-                    print(f"       Error: {str(e)[:80]}")
+                    print(f"       Error: {str(e)[:DISPLAY_TRUNCATION_ERROR]}")
         except ImportError as e:
             print(f"   Weight optimization not available: {e}")
     else:

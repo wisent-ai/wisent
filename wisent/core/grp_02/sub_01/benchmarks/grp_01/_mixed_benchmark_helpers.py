@@ -3,13 +3,14 @@
 import random
 import logging
 from typing import List, Dict, Any, Optional
+from wisent.core.constants import SAMPLES_PER_BENCHMARK
 
 logger = logging.getLogger(__name__)
 
 
 def sample_benchmarks_by_tag(
     tag: str,
-    samples_per_benchmark: int = 10,
+    samples_per_benchmark: int = SAMPLES_PER_BENCHMARK,
     max_benchmarks: Optional[int] = None,
     random_seed: Optional[int] = None
 ) -> Dict[str, List[Dict[str, Any]]]:
