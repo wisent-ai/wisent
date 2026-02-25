@@ -11,7 +11,7 @@ from wisent.cli_utils.cli_prepare_dataset import (
     PrepState,
     Caps,
 )
-from wisent.core.constants import DEFAULT_SPLIT_RATIO
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, JSON_INDENT, SEPARATOR_WIDTH_REPORT
 
 
 def create_test_csv(path: Path, data: List[Dict[str, str]]):
@@ -28,7 +28,7 @@ def create_test_csv(path: Path, data: List[Dict[str, str]]):
 
 def create_test_json(path: Path, data: List[Dict[str, Any]]):
     """Create a test JSON file."""
-    path.write_text(json.dumps(data, indent=2))
+    path.write_text(json.dumps(data, indent=JSON_INDENT))
 
 
 def test_deterministic_split():
@@ -171,9 +171,9 @@ def test_split_ratios():
 
 def run_all_tests(test_functions):
     """Run all CSV/JSON loading tests."""
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print("COMPREHENSIVE TESTING OF _load_from_csv_json() FUNCTION")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     failed = []
     for test_func in test_functions:
@@ -190,9 +190,9 @@ def run_all_tests(test_functions):
             traceback.print_exc()
 
     # Print summary
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("TEST SUMMARY")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print(f"Total tests: {len(test_functions)}")
     print(f"Passed: {len(test_functions) - len(failed)}")
     print(f"Failed: {len(failed)}")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from typing import Dict, TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import NORM_EPS, PRZELOM_INFERENCE_K, DEFAULT_STRENGTH
+from wisent.core.constants import NORM_EPS, PRZELOM_INFERENCE_K, DEFAULT_STRENGTH, SEPARATOR_WIDTH_STANDARD
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -108,9 +108,9 @@ def project_weights_przelom(
     for layer_idx, disp in steering_obj.displacements.items():
         mean_vectors[layer_idx] = disp.mean(dim=0)
     if verbose:
-        print(f"\n{'='*60}")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print("PRZELOM WEIGHT MODIFICATION (ADDITIVE - mean displacement)")
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Layers: {len(mean_vectors)}, Strength: {base_strength}")
     steering_vectors = LayerActivations(mean_vectors)
     stats = bake_steering_into_weights(

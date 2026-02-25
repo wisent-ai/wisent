@@ -22,7 +22,7 @@ from wisent.core.constants import (
     GENERATION_TEMPERATURE,
     GENERATION_TOP_P_NARROW,
     BENCHMARK_MAX_TOKENS_ARGPARSE,
-    TEST_DEFAULT_LIMIT,
+    TEST_DEFAULT_LIMIT, JSON_INDENT,
 )
 
 # Check and print datasets version
@@ -183,7 +183,7 @@ def main():
                     "device": device
                 },
                 "results": results
-            }, f, indent=2)
+            }, f, indent=JSON_INDENT)
         
         print(f"\n✅ Results saved to: {results_file}")
         

@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 
-from wisent.core.constants import DEFAULT_SHOW_COMPARISONS, DISPLAY_TRUNCATION_SHORT
+from wisent.core.constants import DEFAULT_SHOW_COMPARISONS, DISPLAY_TRUNCATION_SHORT, JSON_INDENT, SECONDS_PER_MINUTE
 
 
 def upload_to_gcs(local_path: str, gcs_bucket: str, gcs_key: str) -> bool:
@@ -103,7 +103,7 @@ def _finalize_optimization(
     }
 
     with open(os.path.join(args.output_dir, "optimization_metadata.json"), "w") as f:
-        json.dump(metadata, f, indent=2)
+        json.dump(metadata, f, indent=JSON_INDENT)
 
     print(f"   Model saved")
     print(f"   Metadata saved to optimization_metadata.json")
@@ -130,7 +130,7 @@ def _finalize_optimization(
             for t in result.study.trials
         ]
         with open(args.save_trials, "w") as f:
-            json.dump(trials_data, f, indent=2)
+            json.dump(trials_data, f, indent=JSON_INDENT)
         print(f"   Trials saved to {args.save_trials}")
 
     # Push to hub if requested
@@ -163,7 +163,7 @@ def _finalize_optimization(
     total_time = time.time() - start_time
 
     print(f"\n{'='*80}")
-    print(f"Total optimization time: {total_time:.1f}s ({total_time/60:.1f} min)")
+    print(f"Total optimization time: {total_time:.1f}s ({total_time/SECONDS_PER_MINUTE:.1f} min)")
     print(f"{'='*80}\n")
 
     from wisent.core.cli.optimization.specific.optimize_weights import OptimizationResult

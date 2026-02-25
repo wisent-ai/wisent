@@ -62,7 +62,7 @@ def plot_diff_vectors(
     diffs = pos[:n] - neg[:n]
 
     # Project diffs to 2D
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=VIZ_N_COMPONENTS_2D)
     diffs_2d = pca.fit_transform(diffs)
 
     # Mean direction

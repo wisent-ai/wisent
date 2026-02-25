@@ -6,7 +6,7 @@ from pathlib import Path
 
 from wisent.core.constants import (
     SPLIT_RATIO_HALF, DEFAULT_RANDOM_SEED, BENCHMARK_TEST_DATA_LIMIT,
-    BENCHMARK_SPLIT_LIMIT,
+    BENCHMARK_SPLIT_LIMIT, JSON_INDENT,
 )
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
@@ -86,7 +86,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
 
         pairs_file = output_path / f"test_{task_name}_pairs.json"
         with open(pairs_file, 'w') as f:
-            json.dump(pairs_data, f, indent=2)
+            json.dump(pairs_data, f, indent=JSON_INDENT)
         print(f"    Saved pairs to: {pairs_file}")
 
         # Step 2: Find evaluator
@@ -233,7 +233,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
         }
 
         with open(eval_file, 'w') as f:
-            json.dump(summary, f, indent=2)
+            json.dump(summary, f, indent=JSON_INDENT)
         print(f"    Saved results to: {eval_file}")
 
         if all_correct:

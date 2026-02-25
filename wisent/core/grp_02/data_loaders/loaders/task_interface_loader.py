@@ -7,7 +7,7 @@ from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError,
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.constants import DATA_SPLIT_SEED, PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, RANDOM_MATH_ANSWER_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM
+from wisent.core.constants import DATA_SPLIT_SEED, PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, RANDOM_MATH_ANSWER_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_DECIMAL_PRECISION
 from wisent.core.tasks.base.task_interface import get_task, list_tasks, TaskInterface
 
 __all__ = [
@@ -279,7 +279,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
             # Perturb by 10-50%
             perturbation = random.uniform(PERTURB_UP_MIN, PERTURB_UP_MAX) if random.random() > 0.5 else random.uniform(PERTURB_DOWN_MIN, PERTURB_DOWN_MAX)
             incorrect_num = correct_num * perturbation
-            return str(int(incorrect_num) if correct_num == int(correct_num) else round(incorrect_num, 2))
+            return str(int(incorrect_num) if correct_num == int(correct_num) else round(incorrect_num, DISPLAY_DECIMAL_PRECISION))
         except (ValueError, AttributeError):
             pass
 

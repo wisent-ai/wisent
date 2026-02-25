@@ -9,6 +9,7 @@ from difflib import SequenceMatcher
 
 from wisent.core.errors import TaskLoadError, TaskNotFoundError, NoDocsAvailableError
 from wisent.core.constants import DATA_SPLIT_RATIO, DATA_SPLIT_SEED, DEFAULT_TIMEOUT_DOCKER, TASK_FUZZY_MATCH_THRESHOLD
+from wisent.core import constants as _C
 
 
 def load_available_tasks() -> List[str]:
@@ -151,7 +152,7 @@ class TaskManager:
         if best_match:
             self._task_name_mappings[task_name] = best_match
             return best_match
-        suggestions = [t for t in self.available_tasks if any(w.lower() in t.lower() for w in task_name.split('_'))][:5]
+        suggestions = [t for t in self.available_tasks if any(w.lower() in t.lower() for w in task_name.split('_'))][:_C.DISPLAY_TOP_N_MINI]
         raise TaskNotFoundError(task_name=task_name, available_tasks=suggestions if suggestions else None)
 
     def _calculate_task_name_similarity(self, name1: str, name2: str) -> float:

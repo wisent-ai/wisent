@@ -9,7 +9,7 @@ import torch
 from datetime import datetime
 from typing import Dict, List
 
-from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, PROGRESS_CALLBACK_THRESHOLD
+from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, PROGRESS_CALLBACK_THRESHOLD, SEPARATOR_WIDTH_REPORT, JSON_INDENT
 
 
 def detect_model_layers(model: str) -> int:
@@ -152,9 +152,9 @@ def make_progress_callback(start_time: float, threshold: int = PROGRESS_CALLBACK
 
 def print_analysis_results(result):
     """Print standard analysis results."""
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("RESULTS")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print(f"\nTotal combinations tested: {result.total_combinations}")
     print(f"\nBest combination: {result.best_combination}")
     print(f"Best score: {result.best_score:.4f}")
@@ -222,6 +222,6 @@ def save_analysis_results(
     if extra_fields:
         results_json.update(extra_fields)
     with open(output_file, "w") as f:
-        json.dump(results_json, f, indent=2)
+        json.dump(results_json, f, indent=JSON_INDENT)
     print(f"\nResults saved to: {output_file}")
     return output_file

@@ -20,7 +20,7 @@ import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_SCALE
+from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_SCALE, JSON_INDENT
 
 
 LayerName = str
@@ -234,7 +234,7 @@ class BaseSteeringObject(ABC):
                 return obj
             
             with open(path, 'w') as f:
-                json.dump(convert(data), f, indent=2)
+                json.dump(convert(data), f, indent=JSON_INDENT)
     
     @classmethod
     def load(cls, path: str) -> "BaseSteeringObject":

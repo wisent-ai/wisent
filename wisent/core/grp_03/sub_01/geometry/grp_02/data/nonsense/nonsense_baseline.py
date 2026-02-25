@@ -21,7 +21,7 @@ from wisent.core.constants import (
     NONSENSE_N_PAIRS, NONSENSE_N_FOLDS,
     NONSENSE_MIN_TOKENS, NONSENSE_MAX_TOKENS, NONSENSE_TOKEN_OFFSET,
     TOKENIZER_MAX_LENGTH_NONSENSE, SIGNIFICANCE_MARGIN,
-    NONSENSE_Z_SIGNIFICANCE,
+    NONSENSE_Z_SIGNIFICANCE, HASH_DISPLAY_LENGTH,
 )
 
 # In-memory cache for nonsense activations
@@ -39,7 +39,7 @@ def _get_model_name(model) -> str:
         return model.name_or_path.replace('/', '_')
     if hasattr(model, 'config') and hasattr(model.config, '_name_or_path'):
         return model.config._name_or_path.replace('/', '_')
-    return hashlib.md5(str(type(model)).encode()).hexdigest()[:8]
+    return hashlib.md5(str(type(model)).encode()).hexdigest()[:HASH_DISPLAY_LENGTH]
 
 
 def get_cached_nonsense(

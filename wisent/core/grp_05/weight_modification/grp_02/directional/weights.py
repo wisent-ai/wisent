@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
-from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_LAYER_WEIGHT
+from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
@@ -42,9 +42,9 @@ def project_weights_norm_preserved(
         layers = model.layers
     layers_modified, components_modified, total_params = 0, 0, 0
     if verbose:
-        print(f"\n{'='*60}\nNORM-PRESERVING BIPROJECTED DIRECTIONAL MODIFICATION\n{'='*60}")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}\nNORM-PRESERVING BIPROJECTED DIRECTIONAL MODIFICATION\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Layers: {len(steering_vectors)}, Components: {components}, Strength: {strength}")
-        print(f"Biprojection: {use_biprojection and harmless_vectors is not None}\n{'='*60}\n")
+        print(f"Biprojection: {use_biprojection and harmless_vectors is not None}\n{'='*SEPARATOR_WIDTH_STANDARD}\n")
     for layer_idx, (steering_direction, layer_weight) in kernel.items():
         if layer_idx >= len(layers):
             log.warning(f"Layer {layer_idx} out of range, skipping")
@@ -75,8 +75,8 @@ def project_weights_norm_preserved(
         if layer_modified:
             layers_modified += 1
     if verbose:
-        print(f"\n{'='*60}\nDIRECTIONAL MODIFICATION COMPLETE\n{'='*60}")
-        print(f"  Layers modified: {layers_modified}, Components: {components_modified}, Params: {total_params:,}\n{'='*60}\n")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}\nDIRECTIONAL MODIFICATION COMPLETE\n{'='*SEPARATOR_WIDTH_STANDARD}")
+        print(f"  Layers modified: {layers_modified}, Components: {components_modified}, Params: {total_params:,}\n{'='*SEPARATOR_WIDTH_STANDARD}\n")
     return {"layers_modified": layers_modified, "components_modified": components_modified,
             "total_parameters_modified": total_params, "norm_preserved": True}
 

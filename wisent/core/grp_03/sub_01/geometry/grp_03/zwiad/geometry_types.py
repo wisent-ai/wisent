@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from wisent.core.constants import (
-    BLEND_DEFAULT, DEFAULT_SCALE, DEFAULT_SCORE, STAT_ALPHA,
+    BLEND_DEFAULT, DEFAULT_SCALE, DEFAULT_SCORE, ROUNDING_PRECISION, STAT_ALPHA,
     ZWIAD_PER_TYPE_DEFAULT, ZWIAD_RANGE_CONC_MAX, ZWIAD_RANGE_DIM_MAX,
     ZWIAD_RANGE_DIM_MIN, ZWIAD_RANGE_SHARP_MAX, ZWIAD_RANGE_SPECTRAL_MIN,
     ZWIAD_RANGE_SURVIVAL_MIN, ZWIAD_WEIGHT_CONC, ZWIAD_WEIGHT_DIM,
@@ -185,7 +185,7 @@ def _classify(metrics, centroids, default_type):
     best, best_d = ranked[0]
     second_d = ranked[1][1]
     conf = min((second_d - best_d) / best_d, DEFAULT_SCALE) if best_d > 0 else DEFAULT_SCALE
-    return best, round(conf, 3)
+    return best, round(conf, ROUNDING_PRECISION)
 
 
 def classify_geometry(

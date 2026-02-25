@@ -4,6 +4,7 @@ import json
 import os
 from pathlib import Path
 
+from wisent.core.constants import JSON_INDENT
 from wisent.core.errors import TaskNotFoundError
 from wisent.core.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
@@ -252,7 +253,7 @@ def execute_evaluate_responses(args):
     }
 
     with open(args.output, 'w') as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=JSON_INDENT)
 
     print(f"   ✓ Results saved to: {args.output}\n")
 

@@ -4,6 +4,7 @@ from dataclasses import dataclass
 
 from wisent.core.constants import (
     DEFAULT_SPLIT_RATIO,
+    SEPARATOR_WIDTH_REPORT,
     SPLIT_RATIO_HALF,
     SPLIT_RATIO_70,
 )
@@ -132,7 +133,7 @@ def test_split_and_cap_preserves_data():
 def run_all_tests(test_functions):
     """Run all tests."""
     print("\nRunning _split_and_cap tests...")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     failed = []
     for test_func in test_functions:
@@ -145,7 +146,7 @@ def run_all_tests(test_functions):
             traceback.print_exc()
             failed.append(test_func.__name__)
 
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     if failed:
         print(f"{len(failed)} test(s) failed: {', '.join(failed)}")
         return False

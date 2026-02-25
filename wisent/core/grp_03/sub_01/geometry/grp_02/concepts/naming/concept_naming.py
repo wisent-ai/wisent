@@ -80,7 +80,7 @@ def find_optimal_layer_per_concept(
 
             clf = LogisticRegression( solver='lbfgs', C=1.0)
             try:
-                n_cv = min(5, min(np.sum(y == 0), np.sum(y == 1)))
+                n_cv = min(_C.CV_FOLDS, min(np.sum(y == 0), np.sum(y == 1)))
                 if n_cv >= 2:
                     scores = cross_val_score(clf, X, y, cv=n_cv, scoring='accuracy')
                     acc = float(np.mean(scores))
@@ -88,7 +88,7 @@ def find_optimal_layer_per_concept(
                     clf.fit(X, y)
                     acc = float(clf.score(X, y))
             except Exception:
-                acc = 0.5
+                acc = _C.CHANCE_LEVEL_ACCURACY
 
             layer_accuracies[layer] = acc
 

@@ -52,6 +52,7 @@ from wisent.core.constants import (
     PARSER_DEFAULT_NUM_PAIRS,
     PARSER_DEFAULT_NUM_PAIRS_GENERATE,
     OPTUNA_DEFAULT_N_TRIALS,
+    SEPARATOR_WIDTH_REPORT,
 )
 
 
@@ -110,15 +111,15 @@ def main():
         print("Error: --trait is required when --task personalization")
         sys.exit(1)
 
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print("ABLITERATION PARAMETER OPTIMIZATION (OPTUNA)")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print(f"Model: {args.model}")
     print(f"Task: {args.task}")
     if args.trait:
         print(f"Trait: {args.trait}")
     print(f"Trials: {args.trials}")
-    print("=" * 80 + "\n")
+    print("=" * SEPARATOR_WIDTH_REPORT + "\n")
 
     # Build the optimize-weights command
     cmd = [

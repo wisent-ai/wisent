@@ -10,6 +10,7 @@ import torch
 
 from wisent.core.activations.core.atoms import RawActivationMap
 from wisent.core.trainers.core.atoms import TrainingResult
+from wisent.core.constants import JSON_INDENT
 from wisent.core.errors import NoTrainingResultError
 
 
@@ -46,10 +47,10 @@ def save_result_impl(result, last_result, output_dir):
         }
         for k, v in cpu_map.items()
     }
-    (out / "steering_vectors_summary.json").write_text(json.dumps(vec_summary, indent=2))
+    (out / "steering_vectors_summary.json").write_text(json.dumps(vec_summary, indent=JSON_INDENT))
 
     # Metadata
-    (out / "metadata.json").write_text(json.dumps(result.metadata, indent=2))
+    (out / "metadata.json").write_text(json.dumps(result.metadata, indent=JSON_INDENT))
 
     # Full pair set with activations (Python pickle via torch.save)
     torch.save(result.pair_set_with_activations, out / "pairs_with_activations.pt")

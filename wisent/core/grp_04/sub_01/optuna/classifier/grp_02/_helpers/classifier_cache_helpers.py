@@ -11,14 +11,19 @@ from typing import Any, Optional
 import torch
 
 from wisent.core.constants import (
+    BYTES_PER_KB,
     CACHE_WEIGHT_LAYER_PROXIMITY,
     CACHE_WEIGHT_MODEL_NAME,
     CACHE_WEIGHT_MODEL_TYPE,
     CACHE_WEIGHT_TASK_NAME,
     CLASSIFIER_CACHE_TOP_K,
     HASH_SAMPLE_SIZE,
+    JSON_INDENT,
     LAYER_CACHE_DECAY_DENOMINATOR,
     LAYER_CACHE_MIN_SCORE,
+    HASH_DISPLAY_LENGTH,
+    SECONDS_PER_HOUR,
+    SECONDS_PER_DAY,
 )
 
 logger = logging.getLogger(__name__)
@@ -90,7 +95,7 @@ class ClassifierCacheHelpersMixin:
         Returns:
             Number of models removed
         """
-        cutoff_time = time.time() - (keep_recent_hours * 3600)
+        cutoff_time = time.time() - (keep_recent_hours * SECONDS_PER_HOUR)
         removed_count = 0
 
         keys_to_remove = []
@@ -150,7 +155,7 @@ class ClassifierCacheHelpersMixin:
                 data[cache_key] = metadata.to_dict()
 
             with open(self.metadata_file, "w") as f:
-                json.dump(data, f, indent=2)
+                json.dump(data, f, indent=JSON_INDENT)
 
         except Exception as e:
             self.logger.error(f"Failed to save cache metadata: {e}")
@@ -161,7 +166,7 @@ class ClassifierCacheHelpersMixin:
         total_size_mb = sum(metadata.file_size_mb for metadata in self.metadata.values())
 
         # Remove old models
-        old_threshold = current_time - (self.config.max_age_days * 24 * 3600)
+        old_threshold = current_time - (self.config.max_age_days * SECONDS_PER_DAY)
         old_models = [cache_key for cache_key, metadata in self.metadata.items() if metadata.timestamp < old_threshold]
 
         if old_models:
@@ -178,13 +183,13 @@ class ClassifierCacheHelpersMixin:
             total_size_mb = sum(metadata.file_size_mb for metadata in self.metadata.values())
 
         # Remove largest models if over size limit
-        if total_size_mb > self.config.max_cache_size_gb * 1024:
+        if total_size_mb > self.config.max_cache_size_gb * BYTES_PER_KB:
             # Sort by size (largest first)
             models_by_size = sorted(self.metadata.items(), key=lambda x: x[1].file_size_mb, reverse=True)
 
             removed_count = 0
             for cache_key, metadata in models_by_size:
-                if total_size_mb <= self.config.max_cache_size_gb * 1024:
+                if total_size_mb <= self.config.max_cache_size_gb * BYTES_PER_KB:
                     break
 
                 try:
@@ -218,8 +223,8 @@ class ClassifierCacheHelpersMixin:
         """
         # Work directly with tensors - no numpy conversion needed
         # Use shape and sample of data for hashing (efficient for large datasets)
-        x_hash = hashlib.md5(str(tuple(X.shape)).encode()).hexdigest()[:8]
-        y_hash = hashlib.md5(str(tuple(y.shape)).encode()).hexdigest()[:8]
+        x_hash = hashlib.md5(str(tuple(X.shape)).encode()).hexdigest()[:HASH_DISPLAY_LENGTH]
+        y_hash = hashlib.md5(str(tuple(y.shape)).encode()).hexdigest()[:HASH_DISPLAY_LENGTH]
 
         # Sample some data points for more unique hash (tensor operations)
         if X.size(0) > 10:
@@ -235,7 +240,7 @@ class ClassifierCacheHelpersMixin:
         x_sample_bytes = x_sample.detach().cpu().float().numpy().tobytes()
         y_sample_bytes = y_sample.detach().cpu().float().numpy().tobytes()
 
-        x_sample_hash = hashlib.md5(x_sample_bytes).hexdigest()[:8]
-        y_sample_hash = hashlib.md5(y_sample_bytes).hexdigest()[:8]
+        x_sample_hash = hashlib.md5(x_sample_bytes).hexdigest()[:HASH_DISPLAY_LENGTH]
+        y_sample_hash = hashlib.md5(y_sample_bytes).hexdigest()[:HASH_DISPLAY_LENGTH]
 
         return f"{x_hash}_{y_hash}_{x_sample_hash}_{y_sample_hash}"

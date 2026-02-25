@@ -4,6 +4,8 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
+from wisent.core.constants import JSON_INDENT
+
 
 class SteeringLoggingMixin:
     """Mixin providing response logging methods."""
@@ -79,7 +81,7 @@ class SteeringLoggingMixin:
 
             # Write updated log
             with open(self.log_file_path, "w") as f:
-                json.dump(log_entries, f, indent=2)
+                json.dump(log_entries, f, indent=JSON_INDENT)
 
             return True
 

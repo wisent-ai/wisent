@@ -13,7 +13,7 @@ from datasets import load_dataset
 from wisent.core.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import DISPLAY_TRUNCATION_ERROR, GENERATION_TEMPERATURE
+from wisent.core.constants import DISPLAY_TRUNCATION_ERROR, GENERATION_TEMPERATURE, SEPARATOR_WIDTH_STANDARD
 
 
 def extract_boxed_answer(text: str) -> str | None:
@@ -95,7 +95,7 @@ def main():
     results = []
 
     print(f"\nTesting on {num_examples} examples...")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     for i, example in enumerate(ds.select(range(num_examples))):
         problem = example.get('problem', '')
@@ -159,9 +159,9 @@ def main():
         })
 
     # Summary
-    print("\n" + "=" * 60)
+    print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
     print("SUMMARY")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print(f"Total examples: {num_examples}")
     print(f"No boxed in ground truth: {no_boxed_in_ground_truth}")
     print(f"No boxed in LLM response: {no_boxed_in_response}")

@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict
 
 from wisent.core.activations.activations import Activations
-from wisent.core.constants import EVAL_MAX_NEW_TOKENS, AGENT_DIAG_TEMPERATURE, CLASSIFIER_DECISION_THRESHOLD
+from wisent.core.constants import EVAL_MAX_NEW_TOKENS, AGENT_DIAG_TEMPERATURE, CLASSIFIER_DECISION_THRESHOLD, SPLIT_RATIO_FULL
 from wisent.core.layer import Layer
 from wisent.core.models import get_generate_kwargs
 
@@ -20,7 +20,7 @@ def evaluate_text_generation(evaluator, classifier, task_name: str, num_samples:
             docs, task_data = evaluator._load_task_interface_data(task_name, num_samples)
         else:
             task_data = model.load_lm_eval_task(task_name, shots=0, limit=num_samples)
-            docs, _ = model.split_task_data(task_data, split_ratio=1.0)
+            docs, _ = model.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL)
         if not docs:
             return evaluator._error_result(f"No documents retrieved from task: {task_name}")
         logger.info(f"Retrieved {len(docs)} documents from {task_name}")

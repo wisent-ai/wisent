@@ -10,7 +10,7 @@ from typing import Any, Dict, List
 # Add wisent to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT
+from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, SEPARATOR_WIDTH_NARROW
 from wisent.core.tasks.math500_task import Math500Task
 from base_nosense import BaseNosenseGenerator
 
@@ -47,7 +47,7 @@ class Math500NosenseGenerator(BaseNosenseGenerator):
 def test_math500_nosense():
     """Test Math500 nonsense generation."""
     print("Testing Math500 Nonsense Generation")
-    print("=" * 40)
+    print("=" * SEPARATOR_WIDTH_NARROW)
 
     generator = Math500NosenseGenerator()
 

@@ -7,7 +7,7 @@ import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score, roc_auc_score
 
 from wisent.core.errors import NoActivationDataError, InsufficientDataError
-from wisent.core.constants import DEFAULT_MODEL_LAYER_COUNT
+from wisent.core.constants import DEFAULT_MODEL_LAYER_COUNT, JSON_INDENT
 
 logger = logging.getLogger(__name__)
 
@@ -254,5 +254,5 @@ class HyperparameterEvaluateMixin:
             'all_results': result.all_results
         }
         with open(filepath, 'w') as f:
-            json.dump(result_dict, f, indent=2)
+            json.dump(result_dict, f, indent=JSON_INDENT)
         logger.info(f"Optimization results saved to {filepath}")

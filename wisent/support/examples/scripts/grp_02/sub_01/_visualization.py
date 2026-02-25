@@ -21,7 +21,14 @@ except ImportError:
     HAS_PACMAP = False
 
 from ._layer_analysis import compute_projection
-from wisent.core.constants import ZERO_THRESHOLD, VIZ_DPI, DEFAULT_RANDOM_SEED, DISPLAY_TRUNCATION_ERROR, DISPLAY_TRUNCATION_SHORT, LINEARITY_N_INIT, VIZ_MARKER_SIZE
+from wisent.core.constants import (
+    ZERO_THRESHOLD, VIZ_DPI, DEFAULT_RANDOM_SEED,
+    DISPLAY_TRUNCATION_ERROR, DISPLAY_TRUNCATION_SHORT,
+    LINEARITY_N_INIT, VIZ_MARKER_SIZE, VIZ_ALPHA_LIGHT,
+    VIZ_ALPHA_MEDIUM, VIZ_LINEWIDTH_NORMAL,
+    VIZ_MARKERSIZE_LINE_SMALL,
+    VIZ_FONTSIZE_SUPTITLE, SEPARATOR_WIDTH_WIDE,
+)
 
 
 def visualize_multi_method(
@@ -45,7 +52,7 @@ def visualize_multi_method(
     if n_methods == 1:
         axes = [axes]
     
-    fig.suptitle(title, fontsize=14, fontweight='bold')
+    fig.suptitle(title, fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')
     
     source_colors = {'truthfulqa': '#e74c3c', 'hellaswag': '#3498db', 'unknown': '#95a5a6'}
     unique_sources = list(set(sources))
@@ -56,13 +63,13 @@ def visualize_multi_method(
         for source in unique_sources:
             mask = np.array([s == source for s in sources])
             color = source_colors.get(source, '#95a5a6')
-            ax.scatter(proj[mask, 0], proj[mask, 1], c=color, label=source, alpha=0.6, s=VIZ_MARKER_SIZE)
+            ax.scatter(proj[mask, 0], proj[mask, 1], c=color, label=source, alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE)
         
         ax.set_xlabel('Dim 1')
         ax.set_ylabel('Dim 2')
         ax.set_title(f'{method_used.upper()}')
         ax.legend()
-        ax.grid(True, alpha=0.3)
+        ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
     plt.tight_layout()
     
@@ -92,44 +99,44 @@ def visualize_layer_analysis(
     sep_scores = [layer_results[l]['separability_score'] for l in layers]
     
     fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    fig.suptitle(title, fontsize=14, fontweight='bold')
+    fig.suptitle(title, fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')
     
     # Silhouette
     ax1 = axes[0, 0]
-    ax1.plot(layers, silhouettes, 'b-o', linewidth=2, markersize=6)
+    ax1.plot(layers, silhouettes, 'b-o', linewidth=VIZ_LINEWIDTH_NORMAL, markersize=VIZ_MARKERSIZE_LINE_SMALL)
     ax1.set_xlabel('Layer')
     ax1.set_ylabel('Silhouette Score')
     ax1.set_title('Cluster Quality (higher = better clusters)')
-    ax1.grid(True, alpha=0.3)
+    ax1.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
     # Direction similarity
     ax2 = axes[0, 1]
-    ax2.plot(layers, dir_sims, 'r-o', linewidth=2, markersize=6)
+    ax2.plot(layers, dir_sims, 'r-o', linewidth=VIZ_LINEWIDTH_NORMAL, markersize=VIZ_MARKERSIZE_LINE_SMALL)
     ax2.set_xlabel('Layer')
     ax2.set_ylabel('Direction Similarity')
     ax2.set_title('Cluster Direction Similarity (lower = more distinct)')
     ax2.axhline(y=0.2, color='g', linestyle='--', label='Threshold (0.2)')
     ax2.legend()
-    ax2.grid(True, alpha=0.3)
+    ax2.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
     # Cluster purity
     ax3 = axes[1, 0]
-    ax3.plot(layers, purities, 'g-o', linewidth=2, markersize=6)
+    ax3.plot(layers, purities, 'g-o', linewidth=VIZ_LINEWIDTH_NORMAL, markersize=VIZ_MARKERSIZE_LINE_SMALL)
     ax3.set_xlabel('Layer')
     ax3.set_ylabel('Cluster Purity')
     ax3.set_title('Alignment with True Sources (higher = better)')
-    ax3.grid(True, alpha=0.3)
+    ax3.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
     # Combined separability
     ax4 = axes[1, 1]
-    ax4.plot(layers, sep_scores, 'm-o', linewidth=2, markersize=6)
+    ax4.plot(layers, sep_scores, 'm-o', linewidth=VIZ_LINEWIDTH_NORMAL, markersize=VIZ_MARKERSIZE_LINE_SMALL)
     ax4.set_xlabel('Layer')
     ax4.set_ylabel('Separability Score')
     ax4.set_title('Combined Score: (1 - dir_sim) * purity')
     best_layer = layers[np.argmax(sep_scores)]
     ax4.axvline(x=best_layer, color='orange', linestyle='--', label=f'Best: Layer {best_layer}')
     ax4.legend()
-    ax4.grid(True, alpha=0.3)
+    ax4.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
     plt.tight_layout()
     
@@ -231,9 +238,9 @@ def attribute_pairs_to_concepts(
 
 def print_concept_attribution(attribution: Dict, show_samples: bool = True):
     """Print a summary of concept attributions."""
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"CONCEPT ATTRIBUTION RESULTS")
-    print(f"{'=' * 70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"\nDetected {attribution['num_concepts']} distinct concepts\n")
     
     for concept_id, details in attribution['concept_details'].items():

@@ -12,6 +12,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from wisent.core.constants import JSON_INDENT
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.contrastive_pairs.core.io.serialization import (
@@ -84,7 +85,7 @@ def save_benchmark_pairs(
     if metadata:
         meta_filepath = filepath.with_suffix(".meta.json")
         with open(meta_filepath, "w") as f:
-            json.dump(metadata, f, indent=2)
+            json.dump(metadata, f, indent=JSON_INDENT)
 
     return filepath
 
@@ -169,7 +170,7 @@ def save_welfare_pairs(
     if metadata:
         meta_filepath = filepath.with_suffix(".meta.json")
         with open(meta_filepath, "w") as f:
-            json.dump(metadata, f, indent=2)
+            json.dump(metadata, f, indent=JSON_INDENT)
 
     return filepath
 

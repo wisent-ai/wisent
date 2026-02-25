@@ -15,7 +15,7 @@ from wisent.core.synthetic.generators.core.atoms import GenerationReport
 from wisent.core.synthetic.generators.diversities.core.core import Diversity
 
 from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
-from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS_TRAIT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS_TRAIT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_COMPACT, PAIR_GEN_RETRY_MULTIPLIER, PROGRESS_LOG_INTERVAL_10
 
 __all__ = [
     "SyntheticContrastivePairsGenerator",
@@ -88,7 +88,7 @@ class SyntheticContrastivePairsGenerator:
 
         # Generate pairs one at a time, retry until we have num_pairs AFTER cleaning
         # With aggressive deduplication (~3% retention), need many more attempts
-        max_attempts = num_pairs * 50
+        max_attempts = num_pairs * PAIR_GEN_RETRY_MULTIPLIER
         attempts = 0
         total_retries_for_refusals = 0
 
@@ -164,7 +164,7 @@ class SyntheticContrastivePairsGenerator:
             logger.info(f"[GENERATE] Successfully added pair {len(parsed)}")
 
             # Check cleaned count every 10 pairs or when we think we might be close
-            if len(parsed) % 10 == 0 or len(parsed) >= num_pairs:
+            if len(parsed) % PROGRESS_LOG_INTERVAL_10 == 0 or len(parsed) >= num_pairs:
                 temp_cleaned, temp_stats = self.cleaner.clean(parsed)
                 cleaned_count = len(temp_cleaned)
                 refusaler_stats = temp_stats.step_stats.get("refusaler_cleaner")

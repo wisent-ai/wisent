@@ -7,7 +7,9 @@ import numpy as np
 import torch
 from typing import Dict
 
-from wisent.core.constants import ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED
+from wisent.core.constants import (
+    ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED, Z_SCORE_SIGNIFICANCE,
+)
 
 from ...analysis.structure import (
     compute_cone_fit,
@@ -163,10 +165,10 @@ def compute_geometry_vs_null(
     Compare detected geometry against null baselines.
 
     Returns z-scores for each geometry type:
-    - cone_z > 2: significant cone structure
-    - sphere_z < -2: significantly better sphere fit than null
-    - cluster_z > 2: significant cluster structure
-    - translation_z > 2: significant translation relationship
+    - cone_z > Z_SCORE_SIGNIFICANCE: significant cone structure
+    - sphere_z < -Z_SCORE_SIGNIFICANCE: significantly better sphere fit than null
+    - cluster_z > Z_SCORE_SIGNIFICANCE: significant cluster structure
+    - translation_z > Z_SCORE_SIGNIFICANCE: significant translation relationship
     """
     n_samples = len(pos)
     n_dims = pos.shape[1]
@@ -219,13 +221,13 @@ def compute_geometry_vs_null(
 
     # Determine significant structures
     significant = []
-    if z_scores.get("cone_concentration_z", 0) > 2:
+    if z_scores.get("cone_concentration_z", 0) > Z_SCORE_SIGNIFICANCE:
         significant.append("cone")
-    if z_scores.get("sphere_fit_z", 0) < -2:  # Lower CV is better
+    if z_scores.get("sphere_fit_z", 0) < -Z_SCORE_SIGNIFICANCE:  # Lower CV is better
         significant.append("sphere")
-    if z_scores.get("cluster_z", 0) > 2:
+    if z_scores.get("cluster_z", 0) > Z_SCORE_SIGNIFICANCE:
         significant.append("clusters")
-    if z_scores.get("translation_z", 0) > 2:
+    if z_scores.get("translation_z", 0) > Z_SCORE_SIGNIFICANCE:
         significant.append("translation")
 
     return {

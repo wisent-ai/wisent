@@ -74,8 +74,8 @@ def detect_with_hdbscan(diff_normalized: np.ndarray) -> Dict[str, Any]:
         from sklearn.metrics import silhouette_score
 
         clusterer = hdbscan.HDBSCAN(
-            min_cluster_size=max(5, len(diff_normalized) // 20),
-            min_samples=3,
+            min_cluster_size=max(_C.HDBSCAN_MIN_CLUSTER_FLOOR, len(diff_normalized) // _C.HDBSCAN_ADAPTIVE_DIVISOR),
+            min_samples=_C.HDBSCAN_MIN_SAMPLES_DEFAULT,
             metric='euclidean',
             cluster_selection_method='eom'
         )
@@ -84,7 +84,7 @@ def detect_with_hdbscan(diff_normalized: np.ndarray) -> Dict[str, Any]:
         unique_labels = set(labels)
         n_clusters = len([l for l in unique_labels if l >= 0])
 
-        if n_clusters < 2:
+        if n_clusters < _C.MIN_CLUSTERS:
             return {"n_concepts": 1, "silhouette_scores": {}, "method": "hdbscan"}
 
         valid_mask = labels >= 0
@@ -122,7 +122,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
     coarse_k_values = [k for k in coarse_k_values if k <= max_k]
 
     if not coarse_k_values:
-        coarse_k_values = [2]
+        coarse_k_values = [_C.MIN_CLUSTERS]
 
     kmeans_scores = {}
     for k in coarse_k_values:
@@ -139,7 +139,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
 
     # Find top 3 k values from K-means screening
     sorted_k = sorted(kmeans_scores.items(), key=lambda x: x[1], reverse=True)
-    top_candidates = [k for k, _ in sorted_k[:3]]
+    top_candidates = [k for k, _ in sorted_k[:_C.CUMULATIVE_VARIANCE_TOP_N]]
 
     # Phase 2: Refine around top candidates with SpectralClustering
     n_neighbors = min(_C.SPECTRAL_N_NEIGHBORS_DEFAULT, n_samples - 1)
@@ -148,7 +148,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
     for k in top_candidates:
         for delta in range(-3, 4):
             candidate = k + delta
-            if 2 <= candidate <= max_k:
+            if _C.MIN_CLUSTERS <= candidate <= max_k:
                 refine_k_values.add(candidate)
 
     refine_k_values = sorted(refine_k_values)
@@ -156,7 +156,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
     consecutive_decreases = 0
     prev_score = None
     best_score = -1
-    best_k = 2
+    best_k = _C.MIN_CLUSTERS
 
     for k in refine_k_values:
         try:
@@ -175,7 +175,7 @@ def detect_with_coarse_fine_search(diff_normalized: np.ndarray) -> Dict[str, Any
             if prev_score is not None:
                 if score < prev_score:
                     consecutive_decreases += 1
-                    if consecutive_decreases >= 3 and k > best_k:
+                    if consecutive_decreases >= _C.ELBOW_CONSECUTIVE_DECREASES and k > best_k:
                         break
                 else:
                     consecutive_decreases = 0

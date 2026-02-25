@@ -15,6 +15,7 @@ from wisent.core.steering_methods import SteeringMethodType
 from wisent.core.constants import (
     DEFAULT_LIMIT, DEFAULT_SPLIT_RATIO, AUTO_MAX_TIME_MINUTES,
     SEARCH_DEFAULT_STRENGTHS, SEARCH_MAX_LAYER_CAP, SEARCH_DEFAULT_LAYERS,
+    SECONDS_PER_MINUTE,
 )
 
 from ..types import (
@@ -105,7 +106,7 @@ class FullPipelineMixin:
                     for token_agg in token_aggregation_strategies:
                         for prompt_const in prompt_construction_strategies:
                             for steering_app in steering_application_configs:
-                                if time.time() - start_time > max_time_minutes * 60:
+                                if time.time() - start_time > max_time_minutes * SECONDS_PER_MINUTE:
                                     logger.warning("Time limit reached")
                                     break
 
@@ -268,7 +269,7 @@ class FullPipelineMixin:
             model_name=self.model_name,
             optimization_type="comprehensive",
             total_configurations_tested=configurations_tested,
-            optimization_time_minutes=optimization_time / 60,
+            optimization_time_minutes=optimization_time / SECONDS_PER_MINUTE,
             best_overall_method=best_config['method'] if best_config else "none",
             best_overall_layer=best_config['layer'] if best_config else 0,
             best_overall_strength=best_config['strength'] if best_config else 0.0,

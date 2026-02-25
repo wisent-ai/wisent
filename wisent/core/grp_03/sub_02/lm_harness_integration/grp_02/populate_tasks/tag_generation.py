@@ -3,7 +3,7 @@
 from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
-from wisent.core.constants import DEFAULT_TIMEOUT_SHORT, TAG_GEN_MAX_NEW_TOKENS, TAG_GEN_TEMPERATURE, TAG_ANALYSIS_MAX_NEW_TOKENS, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH
+from wisent.core.constants import DEFAULT_TIMEOUT_SHORT, TAG_GEN_MAX_NEW_TOKENS, TAG_GEN_TEMPERATURE, TAG_ANALYSIS_MAX_NEW_TOKENS, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH, MAX_TAGS_PER_BENCHMARK, DISPLAY_TOP_N_MINI
 
 
 APPROVED_SKILLS = [
@@ -99,7 +99,7 @@ You are an expert in AI evaluation benchmarks analyzing benchmark tasks to deter
         lines = [line.strip() for line in generated_text.split('\n') if line.strip()]
         determined_tags = []
 
-        for line in lines[:5]:
+        for line in lines[:DISPLAY_TOP_N_MINI]:
             clean_line = line.strip('- *123456789.').strip()
             for tag in all_approved_tags:
                 if tag.lower() == clean_line.lower() or clean_line.lower() in tag.lower():
@@ -107,15 +107,15 @@ You are an expert in AI evaluation benchmarks analyzing benchmark tasks to deter
                         determined_tags.append(tag)
                         break
 
-        if len(determined_tags) < 3:
+        if len(determined_tags) < MAX_TAGS_PER_BENCHMARK:
             default_tags = ["reasoning", "general knowledge", "science"]
             for default in default_tags:
                 if default not in determined_tags:
                     determined_tags.append(default)
-                if len(determined_tags) >= 3:
+                if len(determined_tags) >= MAX_TAGS_PER_BENCHMARK:
                     break
 
-        determined_tags = determined_tags[:3]
+        determined_tags = determined_tags[:MAX_TAGS_PER_BENCHMARK]
         print(f"   Final LLM-determined tags: {determined_tags}")
         return determined_tags
 
@@ -148,12 +148,12 @@ def _basic_tag_analysis(readme_content: str) -> List[str]:
 
         if "reasoning" not in determined_tags:
             determined_tags.append("reasoning")
-        if len(determined_tags) < 3 and "general knowledge" not in determined_tags:
+        if len(determined_tags) < MAX_TAGS_PER_BENCHMARK and "general knowledge" not in determined_tags:
             determined_tags.append("general knowledge")
-        if len(determined_tags) < 3:
+        if len(determined_tags) < MAX_TAGS_PER_BENCHMARK:
             determined_tags.append("science")
 
-        return determined_tags[:3]
+        return determined_tags[:MAX_TAGS_PER_BENCHMARK]
 
     return ["reasoning", "general knowledge", "science"]
 

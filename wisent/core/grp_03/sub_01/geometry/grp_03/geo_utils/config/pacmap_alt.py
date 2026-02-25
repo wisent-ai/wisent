@@ -14,7 +14,7 @@ from wisent.core.constants import (NORM_EPS, DEFAULT_RANDOM_SEED, PACMAP_INITIAL
     PACMAP_P1_NEAR, PACMAP_P1_MID, PACMAP_P1_FAR, PACMAP_P2_NEAR, PACMAP_P2_MID,
     PACMAP_P2_FAR, PACMAP_P3_NEAR, PACMAP_P3_MID, PACMAP_P3_FAR, PACMAP_FAR_REPULSE_EPS,
     PACMAP_ALT_NUM_ITERS, PACMAP_LEARNING_RATE_DEFAULT, PACMAP_N_MID_PAIRS,
-    PACMAP_N_FAR_PAIRS, N_COMPONENTS_2D, PACMAP_PCA_DIM_THRESHOLD)
+    PACMAP_N_FAR_PAIRS, N_COMPONENTS_2D, PACMAP_PCA_DIM_THRESHOLD, N_JOBS_SINGLE)
 
 
 def find_neighbors(
@@ -29,7 +29,7 @@ def find_neighbors(
         X,
         n_neighbors=n_neighbors + 1,
         metric='euclidean',
-        n_jobs=1,
+        n_jobs=N_JOBS_SINGLE,
         random_state=DEFAULT_RANDOM_SEED,
     )
     neighbors, _ = index.neighbor_graph
@@ -208,7 +208,7 @@ def plot_pacmap_alt(
 
     embedding = pacmap_embedding(
         X,
-        n_components=2,
+        n_components=N_COMPONENTS_2D,
         n_neighbors=n_neighbors,
         num_iters=num_iters,
     )

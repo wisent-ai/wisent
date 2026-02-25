@@ -7,6 +7,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import DISPLAY_TOP_N_TINY
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -100,7 +101,7 @@ class MBPPExtractor(LMEvalBenchmarkExtractor):
             incorrect = "    return None  # Incomplete implementation"
 
             # Format tests (use first 3 if available)
-            tests_str = "\n".join(test_list[:3]) if test_list else ""
+            tests_str = "\n".join(test_list[:DISPLAY_TOP_N_TINY]) if test_list else ""
 
             # Different prompt format for instruct vs base
             is_instruct = "instruct" in task_name.lower()

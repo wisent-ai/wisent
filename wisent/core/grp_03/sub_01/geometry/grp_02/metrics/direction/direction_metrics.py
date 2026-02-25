@@ -14,7 +14,7 @@ from wisent.core.constants import (
     NORM_EPS, DEFAULT_RANDOM_SEED,
     DIRECTION_N_BOOTSTRAP, DIRECTION_SUBSET_FRACTION, DIRECTION_STD_PENALTY,
     CONSISTENCY_W_COSINE, CONSISTENCY_W_POSITIVE, CONSISTENCY_W_HIGH_SIM,
-    DIRECTION_MODERATE_SIMILARITY,
+    DIRECTION_MODERATE_SIMILARITY, CHANCE_LEVEL_ACCURACY,
 )
 
 
@@ -153,7 +153,7 @@ def compute_pairwise_diff_consistency(
             return {
                 "mean_pairwise_cosine": 0.0,
                 "std_pairwise_cosine": 1.0,
-                "fraction_positive": 0.5,
+                "fraction_positive": CHANCE_LEVEL_ACCURACY,
                 "fraction_high_sim": 0.0,
                 "consistency_score": 0.0,
             }
@@ -168,7 +168,7 @@ def compute_pairwise_diff_consistency(
             return {
                 "mean_pairwise_cosine": 0.0,
                 "std_pairwise_cosine": 1.0,
-                "fraction_positive": 0.5,
+                "fraction_positive": CHANCE_LEVEL_ACCURACY,
                 "fraction_high_sim": 0.0,
                 "consistency_score": 0.0,
             }
@@ -203,7 +203,7 @@ def compute_pairwise_diff_consistency(
         return {
             "mean_pairwise_cosine": 0.0,
             "std_pairwise_cosine": 1.0,
-            "fraction_positive": 0.5,
+            "fraction_positive": CHANCE_LEVEL_ACCURACY,
             "fraction_high_sim": 0.0,
             "consistency_score": 0.0,
         }

@@ -265,7 +265,7 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
 async def demo_autonomous_agent():
     """Demo function for the autonomous agent."""
     print("AUTONOMOUS AGENT DEMO - Intelligent Classifier Selection")
-    print("=" * 60)
+    print("=" * _C.SEPARATOR_WIDTH_STANDARD)
     agent = AutonomousAgent()
     try:
         await agent.initialize(quality_threshold=AGENT_QUALITY_THRESHOLD, default_time_budget_minutes=AGENT_DEFAULT_TIME_BUDGET)
@@ -277,9 +277,9 @@ async def demo_autonomous_agent():
             "Explain quantum physics in simple terms",
         ]
         for i, prompt in enumerate(test_prompts, 1):
-            print(f"\n{'=' * 20} Test {i} {'=' * 20}")
+            print(f"\n{'=' * _C.SEPARATOR_PAD_SMALL} Test {i} {'=' * _C.SEPARATOR_PAD_SMALL}")
             result = await agent.respond_autonomously(
-                prompt=prompt, max_attempts=2, time_budget_minutes=AGENT_DEMO_TIME_BUDGET,
+                prompt=prompt, max_attempts=_C.AGENT_RETRY_ATTEMPTS, time_budget_minutes=AGENT_DEMO_TIME_BUDGET,
             )
             print("\nRESULT SUMMARY:")
             print(f"   Final Response: {result['final_response'][:_C.DISPLAY_TRUNCATION_COMPACT]}...")

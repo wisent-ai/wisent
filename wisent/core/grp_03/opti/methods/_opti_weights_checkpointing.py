@@ -10,7 +10,7 @@ import optuna
 import torch
 
 from wisent.core.opti.core.atoms import Direction, HPOConfig, HPORun
-from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, WEIGHT_MIN_DISTANCE_FRACTION
+from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION
 
 class WeightsCheckpointingMixin:
     """Mixin providing checkpointing support for WeightsOptimizer."""
@@ -207,7 +207,7 @@ class WeightsCheckpointingMixin:
 
         temp_path = checkpoint_path + ".tmp"
         with open(temp_path, "w") as f:
-            json.dump(checkpoint, f, indent=2)
+            json.dump(checkpoint, f, indent=JSON_INDENT)
         os.replace(temp_path, checkpoint_path)
 
     def _load_checkpoint(self, checkpoint_path: str) -> dict | None:
@@ -246,7 +246,7 @@ class WeightsCheckpointingMixin:
             "total_trials": len(study.trials),
         }
         with open(os.path.join(checkpoint_dir, "checkpoint_metadata.json"), "w") as f:
-            json.dump(metadata, f, indent=2)
+            json.dump(metadata, f, indent=JSON_INDENT)
 
     def _upload_to_gcs(self, local_path: str, gcs_bucket: str, gcs_key: str) -> bool:
         """Upload a file or directory to GCS."""

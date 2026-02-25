@@ -35,7 +35,7 @@ from wisent.core.constants import (
     BOS_TOP_K_DEFAULT,
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_MAX_BATCH_SIZE,
-    TEST_DEFAULT_LIMIT,
+    TEST_DEFAULT_LIMIT, JSON_INDENT,
 )
 
 
@@ -280,7 +280,7 @@ def main():
     output_dir.mkdir(parents=True, exist_ok=True)
     output_path = output_dir / f"bos_features_{args.model.replace('/', '_')}_layer{args.layer}.json"
     with open(output_path, "w") as f:
-        json.dump(output, f, indent=2)
+        json.dump(output, f, indent=JSON_INDENT)
     print(f"\nSaved to {output_path}")
 
 

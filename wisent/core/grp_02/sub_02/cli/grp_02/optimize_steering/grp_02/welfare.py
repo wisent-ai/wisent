@@ -15,7 +15,8 @@ from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.constants import (DEFAULT_N_TRIALS, WELFARE_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS,
     DEFAULT_NUM_STRENGTH_STEPS, DEFAULT_LAYER,
     PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P,
-    PARSER_STRENGTH_RANGE_WELFARE)
+    PARSER_STRENGTH_RANGE_WELFARE, REPORT_LINE_WIDTH,
+    JSON_INDENT, LAYER_STRIDE_DEFAULT)
 
 
 def _execute_welfare_optimization(args):
@@ -36,15 +37,15 @@ def _execute_welfare_optimization(args):
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './welfare_optimization')
 
-    print(f"\n{'=' * 80}")
+    print(f"\n{'=' * REPORT_LINE_WIDTH}")
     print(f"🧠 WELFARE STATE STEERING OPTIMIZATION (ANIMA)")
-    print(f"{'=' * 80}")
+    print(f"{'=' * REPORT_LINE_WIDTH}")
     print(f"   Model: {model}")
     print(f"   Welfare Trait: {trait}")
     print(f"   Direction: {direction}")
     print(f"   Trials: {n_trials}")
     print(f"   Output: {output_dir}")
-    print(f"{'=' * 80}\n")
+    print(f"{'=' * REPORT_LINE_WIDTH}\n")
 
     # Load welfare pairs
     try:
@@ -82,7 +83,7 @@ def _execute_welfare_optimization(args):
     # Determine layers to search
     layers = getattr(args, 'layers', None)
     if layers is None:
-        layers = list(range(0, num_layers, 2))
+        layers = list(range(0, num_layers, LAYER_STRIDE_DEFAULT))
 
     # Strength range
     strength_range = getattr(args, 'strength_range', list(PARSER_STRENGTH_RANGE_WELFARE))
@@ -179,9 +180,9 @@ def _execute_welfare_optimization(args):
                             print(f"   [{current}/{total_configs}] Failed: {e}")
 
     # Print results
-    print(f"\n{'=' * 80}")
+    print(f"\n{'=' * REPORT_LINE_WIDTH}")
     print(f"📊 WELFARE OPTIMIZATION COMPLETE")
-    print(f"{'=' * 80}")
+    print(f"{'=' * REPORT_LINE_WIDTH}")
     print(f"\n✅ Best configuration for '{trait}' ({direction}):")
     print(f"   Score: {best_score:.4f}")
     for k, v in best_params.items():
@@ -197,7 +198,7 @@ def _execute_welfare_optimization(args):
         "best_params": best_params,
     }
     with open(results_file, 'w') as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=JSON_INDENT)
     print(f"\n💾 Results saved to: {results_file}")
 
     return output_data

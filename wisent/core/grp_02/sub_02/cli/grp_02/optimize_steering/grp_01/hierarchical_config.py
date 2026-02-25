@@ -13,7 +13,8 @@ from wisent.core.constants import (LAYER_SWEEP_STRENGTH, TETNO_CONDITION_MARGIN,
     HIERARCHICAL_STRENGTHS, HIERARCHICAL_MLP_HIDDEN_DIMS, HIERARCHICAL_MLP_NUM_LAYERS_LIST,
     HIERARCHICAL_TECZA_DIRECTIONS, HIERARCHICAL_TECZA_OPT_STEPS_LIST,
     HIERARCHICAL_TETNO_THRESHOLDS, HIERARCHICAL_TETNO_TEMPERATURES,
-    HIERARCHICAL_GROM_DIRECTIONS, HIERARCHICAL_GROM_MAX_ALPHAS, HIERARCHICAL_GROM_TEMPERATURES)
+    HIERARCHICAL_GROM_DIRECTIONS, HIERARCHICAL_GROM_MAX_ALPHAS, HIERARCHICAL_GROM_TEMPERATURES,
+    MIN_CLUSTERS)
 
 
 class HierarchicalResult:
@@ -67,9 +68,9 @@ def count_hierarchical_configs(
         stage2 = len(config.strengths)
 
         if method_upper == "CAA":
-            stage3 = 2  # normalize True/False
+            stage3 = MIN_CLUSTERS  # normalize True/False
         elif method_upper == "OSTRZE":
-            stage3 = 2
+            stage3 = MIN_CLUSTERS
         elif method_upper == "MLP":
             stage3 = len(config.mlp_hidden_dims) * len(config.mlp_num_layers) * 2
         elif method_upper == "TECZA":
@@ -81,7 +82,7 @@ def count_hierarchical_configs(
                      len(config.grom_max_alphas) *
                      len(config.grom_temperatures) * 2)
         else:
-            stage3 = 2
+            stage3 = MIN_CLUSTERS
 
         counts[method] = {
             "stage1_layer": stage1,

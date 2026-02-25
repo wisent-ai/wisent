@@ -16,7 +16,7 @@ from tqdm import tqdm
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.polymath_evaluator import PolyMathEvaluator
-from wisent.core.constants import POLYMATH_DEFAULT_TOTAL, POLYMATH_DEFAULT_K
+from wisent.core.constants import POLYMATH_DEFAULT_TOTAL, POLYMATH_DEFAULT_K, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 # Generation configs following PolyMath benchmark methodology
@@ -156,7 +156,7 @@ def main(limit: int | None = None, language: str = "en"):
     total_count = 0
 
     print(f"\nEvaluating on language: {language}")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     for difficulty in DIFFICULTIES:
         print(f"\n--- {difficulty.upper()} ---")
@@ -174,9 +174,9 @@ def main(limit: int | None = None, language: str = "en"):
     dw_acc = compute_dw_acc(accuracies)
 
     # Summary
-    print("\n" + "=" * 60)
+    print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
     print("SUMMARY")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print(f"Language: {language}")
     print(f"Model: {model_name}")
     print()
@@ -206,7 +206,7 @@ def main(limit: int | None = None, language: str = "en"):
     }
 
     with open(output_file, "w") as f:
-        json.dump(output_data, f, indent=2, ensure_ascii=False)
+        json.dump(output_data, f, indent=JSON_INDENT, ensure_ascii=False)
 
     print(f"\nResults saved to: {output_file}")
 

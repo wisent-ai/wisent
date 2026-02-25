@@ -21,7 +21,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 
 from wisent.core.constants import (
-    DEFAULT_LIMIT, DEFAULT_SCORE, SENSITIVITY_DEFAULT_STEPS,
+    DEFAULT_LIMIT, DEFAULT_SCORE, JSON_INDENT, SENSITIVITY_DEFAULT_STEPS,
     SENSITIVITY_DEFAULT_CONSTANT_LIMIT,
 )
 
@@ -83,7 +83,7 @@ class SensitivityResult:
     def save(self, path: Path) -> None:
         """Save results to JSON."""
         with open(path, "w") as f:
-            json.dump(self.to_dict(), f, indent=2)
+            json.dump(self.to_dict(), f, indent=JSON_INDENT)
 
     @classmethod
     def load(cls, path: Path) -> SensitivityResult:

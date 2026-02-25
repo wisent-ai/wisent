@@ -9,6 +9,8 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 from enum import Enum
 
+from wisent.core.constants import JSON_INDENT
+
 
 class ModelArchitecture(Enum):
     """Supported model architectures for layer access."""
@@ -41,7 +43,7 @@ class UserModelConfig:
         """Save configurations to file."""
         self.config_dir.mkdir(exist_ok=True)
         with open(self.config_file, 'w') as f:
-            json.dump(self.configs, f, indent=2)
+            json.dump(self.configs, f, indent=JSON_INDENT)
     
     def has_config(self, model_name: str) -> bool:
         """Check if we have a configuration for this model."""

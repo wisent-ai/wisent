@@ -6,7 +6,7 @@ import os
 
 from wisent.core.models import get_generate_kwargs
 from wisent.data.contrastive_pairs import save_personalization_pairs, save_synthetic_pairs
-from wisent.core.constants import GENERATE_PAIRS_MIN_TOKENS, GENERATE_PAIRS_MAX_TOKENS, SIMHASH_RELAXED_THRESHOLD_BITS, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, TRAIT_NAME_MAX_LENGTH
+from wisent.core.constants import GENERATE_PAIRS_MIN_TOKENS, GENERATE_PAIRS_MAX_TOKENS, JSON_INDENT, SIMHASH_RELAXED_THRESHOLD_BITS, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, TRAIT_NAME_MAX_LENGTH
 
 
 def execute_generate_pairs(args):
@@ -164,7 +164,7 @@ def execute_generate_pairs(args):
             }
 
         with open(args.output, 'w') as f:
-            json.dump(save_data, f, indent=2)
+            json.dump(save_data, f, indent=JSON_INDENT)
 
         print(f"   ✓ Saved {len(pairs_data)} pairs to: {args.output}")
 

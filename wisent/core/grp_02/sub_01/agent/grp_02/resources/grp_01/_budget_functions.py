@@ -11,6 +11,7 @@ from wisent.core.constants import (
     PRIORITY_HIGH,
     PRIORITY_MEDIUM,
     PRIORITY_LOW,
+    SECONDS_PER_MINUTE,
 )
 logger = logging.getLogger(__name__)
 
@@ -57,7 +58,7 @@ def calculate_max_tasks_for_time_budget(task_type: str = "benchmark_evaluation",
         else:
             time_per_task = estimate_task_time(benchmark_type, 1)
         
-        time_budget_seconds = time_budget_minutes * 60.0
+        time_budget_seconds = time_budget_minutes * SECONDS_PER_MINUTE
         max_tasks = max(1, int(time_budget_seconds / time_per_task))
         
         return max_tasks
@@ -157,8 +158,8 @@ def optimize_benchmarks_for_budget(task_candidates: List[str],
         # Select benchmarks that fit within budget
         selected_benchmarks = []
         total_time = 0.0
-        time_budget_seconds = time_budget_minutes * 60.0
-        
+        time_budget_seconds = time_budget_minutes * SECONDS_PER_MINUTE
+
         for info in benchmark_info:
             if total_time + info['loading_time'] <= time_budget_seconds:
                 selected_benchmarks.append(info['task'])

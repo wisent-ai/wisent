@@ -13,6 +13,7 @@ from wisent.core.constants import (
     GEO_DEFAULT_DIRECTION_ANGLE,
     GEO_MAX_LAYER_COMBO_SIZE,
     GEO_PAIRS_PER_BENCHMARK,
+    JSON_INDENT,
     MIN_CONCEPT_DIM,
     MULTI_DIR_MIN_K_NOT_FOUND,
     MULTI_DIR_SATURATION_K_DEFAULT,
@@ -93,7 +94,7 @@ class GeometrySearchResults:
 
     def save(self, path: str) -> None:
         with open(path, "w") as f:
-            json.dump(self.to_dict(), f, indent=2)
+            json.dump(self.to_dict(), f, indent=JSON_INDENT)
 
     @classmethod
     def load(cls, path: str) -> "GeometrySearchResults":

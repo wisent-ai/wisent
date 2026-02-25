@@ -6,6 +6,8 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from wisent.core.constants import JSON_INDENT
+
 
 def get_checkpoint_path(model: str) -> Path:
     """Get the checkpoint file path for a model."""
@@ -42,7 +44,7 @@ def load_checkpoint(model: str) -> Optional[Dict[str, Any]]:
         logger.info(f"Loaded checkpoint from gs://wisent-images-bucket/{gcs_key}")
         # Save locally for faster access
         with open(checkpoint_path, "w") as f:
-            json.dump(checkpoint, f, indent=2, default=str)
+            json.dump(checkpoint, f, indent=JSON_INDENT, default=str)
         return checkpoint
     except Exception as e:
         logger.debug(f"No GCS checkpoint found: {e}")
@@ -59,7 +61,7 @@ def save_checkpoint(model: str, results: Dict[str, Any], phase: str = "unknown")
     # Save locally
     try:
         with open(checkpoint_path, "w") as f:
-            json.dump(results, f, indent=2, default=str)
+            json.dump(results, f, indent=JSON_INDENT, default=str)
         logger.info(f"Saved checkpoint to {checkpoint_path}")
     except Exception as e:
         logger.warning(f"Failed to save local checkpoint: {e}")
@@ -71,7 +73,7 @@ def save_checkpoint(model: str, results: Dict[str, Any], phase: str = "unknown")
         gcs_key = get_s3_checkpoint_key(model)
         blob = gcs_client.bucket('wisent-images-bucket').blob(gcs_key)
         blob.upload_from_string(
-            json.dumps(results, indent=2, default=str),
+            json.dumps(results, indent=JSON_INDENT, default=str),
             content_type='application/json'
         )
         logger.info(f"Saved checkpoint to gs://wisent-images-bucket/{gcs_key}")

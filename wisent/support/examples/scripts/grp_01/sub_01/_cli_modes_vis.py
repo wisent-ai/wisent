@@ -3,6 +3,7 @@
 import random
 from pathlib import Path
 
+from wisent.core.constants import SEPARATOR_WIDTH_WIDE
 from wisent.core.models.wisent_model import WisentModel
 
 from ._data_loading import (
@@ -17,9 +18,9 @@ from ._orchestration import run_single_sample_detection
 def run_visualize_mode(args):
     """Run visualization mode."""
     # Run visualization mode
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("CONCEPT DETECTION VISUALIZATION")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     vis_output = Path(args.vis_output_dir)
     vis_output.mkdir(parents=True, exist_ok=True)
@@ -84,17 +85,17 @@ def run_visualize_mode(args):
         show_plot=False
     )
     
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"Visualizations saved to: {vis_output}")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
 
 
 def run_single_sample_test_mode(args):
     """Test single-sample detection on mixed vs pure samples."""
     # Test the single-sample detection on both mixed and pure samples
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("TESTING SINGLE-SAMPLE DETECTION")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("\nThis test verifies that single-sample detection works by testing")
     print("it on samples we KNOW are mixed vs pure.\n")
     
@@ -112,33 +113,33 @@ def run_single_sample_test_mode(args):
     random.seed(args.seed)
     random.shuffle(mixed_pairs)
     
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("TEST A: Mixed sample (should detect MULTIPLE_CONCEPTS)")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     mixed_result = run_single_sample_detection(
         args.model, mixed_pairs, args.layer, args.n_bootstrap, args.seed
     )
     
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("TEST B: Pure TruthfulQA (should detect SINGLE_CONCEPT)")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     tqa_result = run_single_sample_detection(
         args.model, tqa_pairs, args.layer, args.n_bootstrap, args.seed
     )
     
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("TEST C: Pure HellaSwag (should detect SINGLE_CONCEPT)")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     hs_result = run_single_sample_detection(
         args.model, hs_pairs, args.layer, args.n_bootstrap, args.seed
     )
     
     # Summary
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("SINGLE-SAMPLE DETECTION SUMMARY")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"\n{'Sample':<20} {'Verdict':<20} {'Expected':<20} {'Match':<10}")
-    print("-" * 70)
+    print("-" * SEPARATOR_WIDTH_WIDE)
     
     tests = [
         ("Mixed", mixed_result["verdict"], "MULTIPLE_CONCEPTS"),

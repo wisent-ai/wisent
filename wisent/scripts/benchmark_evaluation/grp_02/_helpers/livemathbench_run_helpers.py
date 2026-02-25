@@ -15,6 +15,7 @@ from wisent.core.constants import (
     LIVEMATHBENCH_K_VALUES,
     LIVEMATHBENCH_NUM_SAMPLES,
     LIVEMATHBENCH_TAU_VALUES,
+    SEPARATOR_WIDTH_STANDARD, JSON_INDENT,
 )
 from wisent.core.evaluators.benchmark_specific.livemathbench_evaluator import (
     LiveMathBenchEvaluator,
@@ -142,7 +143,7 @@ def main(
     hf_config = DATASET_CONFIGS.get(dataset_config, dataset_config)
     print(f"Dataset config: {hf_config}")
     print(f"Evaluation mode: {eval_mode}")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     # Greedy evaluation
     print("\n--- GREEDY EVALUATION ---")
@@ -180,9 +181,9 @@ def main(
                 metrics[key] = metrics[key] * 100
 
     # Print summary
-    print("\n" + "=" * 60)
+    print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
     print("SUMMARY")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print(f"Model: {model_name}")
     print(f"Dataset: opencompass/LiveMathBench ({hf_config})")
     print(f"Greedy Accuracy: {metrics['greedy_accuracy']:.2f}%")
@@ -218,7 +219,7 @@ def main(
     }
 
     with open(output_file, "w") as f:
-        json.dump(output_data, f, indent=2, ensure_ascii=False)
+        json.dump(output_data, f, indent=JSON_INDENT, ensure_ascii=False)
 
     print(f"\nResults saved to: {output_file}")
     return metrics

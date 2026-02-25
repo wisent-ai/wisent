@@ -7,6 +7,7 @@ with all 7 extraction strategies present.
 
 import argparse
 import psycopg2
+from wisent.core.constants import DB_CONNECT_WAIT_S
 
 # Same database as extraction script
 DATABASE_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:5432/postgres'
@@ -35,7 +36,7 @@ def main():
     parser.add_argument("--create-indexes", action="store_true", help="Create indexes first")
     args = parser.parse_args()
 
-    conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
+    conn = psycopg2.connect(DATABASE_URL, connect_timeout=DB_CONNECT_WAIT_S)
     conn.autocommit = True
     cur = conn.cursor()
 

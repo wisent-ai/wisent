@@ -7,7 +7,7 @@ Metrics for cross-layer consistency and token position dependence.
 import torch
 import numpy as np
 from typing import Dict, Any, Tuple
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, CHANCE_LEVEL_ACCURACY
 
 
 def compute_cross_layer_consistency(
@@ -147,7 +147,7 @@ def compute_token_position_metrics(
             clf.fit(X, y)
             accuracy = clf.score(X, y)
         except:
-            accuracy = 0.5
+            accuracy = CHANCE_LEVEL_ACCURACY
 
         # Steering direction
         mean_diff = (pos[:n] - neg[:n]).mean(axis=0)

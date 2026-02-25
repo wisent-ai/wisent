@@ -16,7 +16,7 @@ import torch
 
 from wisent.core.utils import resolve_default_device
 from wisent.core.errors import InvalidValueError, InsufficientDataError
-from wisent.core.constants import TRACKING_SAMPLING_INTERVAL
+from wisent.core.constants import TRACKING_SAMPLING_INTERVAL, BYTES_PER_MB
 
 try:
     import nvidia_ml_py3 as nvml
@@ -103,7 +103,7 @@ class MemoryTracker:
         # CPU memory
         process = psutil.Process()
         memory_info = process.memory_info()
-        cpu_memory_mb = memory_info.rss / 1024 / 1024
+        cpu_memory_mb = memory_info.rss / BYTES_PER_MB
         cpu_memory_percent = process.memory_percent()
         
         # GPU memory
@@ -114,8 +114,8 @@ class MemoryTracker:
         
         if self.track_gpu:
             if self.device_kind == "cuda" and torch.cuda.is_available():
-                gpu_memory_mb = torch.cuda.memory_allocated() / 1024 / 1024
-                cached_memory_mb = torch.cuda.memory_reserved() / 1024 / 1024
+                gpu_memory_mb = torch.cuda.memory_allocated() / BYTES_PER_MB
+                cached_memory_mb = torch.cuda.memory_reserved() / BYTES_PER_MB
                 allocated_tensors = len(
                     [
                         obj
@@ -127,7 +127,7 @@ class MemoryTracker:
                 if self.gpu_available and self.gpu_handle is not None:
                     try:
                         gpu_info = nvml.nvmlDeviceGetMemoryInfo(self.gpu_handle)
-                        total_gpu_mb = gpu_info.total / 1024 / 1024
+                        total_gpu_mb = gpu_info.total / BYTES_PER_MB
                         gpu_memory_percent = (gpu_memory_mb / total_gpu_mb) * 100
                     except Exception:
                         pass
@@ -142,8 +142,8 @@ class MemoryTracker:
                 except AttributeError:
                     cached_bytes = allocated_bytes
 
-                gpu_memory_mb = allocated_bytes / 1024 / 1024
-                cached_memory_mb = cached_bytes / 1024 / 1024
+                gpu_memory_mb = allocated_bytes / BYTES_PER_MB
+                cached_memory_mb = cached_bytes / BYTES_PER_MB
                 allocated_tensors = len(
                     [
                         obj

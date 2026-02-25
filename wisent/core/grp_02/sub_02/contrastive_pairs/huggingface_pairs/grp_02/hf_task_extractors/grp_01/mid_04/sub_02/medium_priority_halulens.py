@@ -8,7 +8,8 @@ import re
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.constants import (
-    CONTEXT_MAX_LENGTH, DATA_SPLIT_SEED, HALULENS_MIN_CONTENT_LENGTH,
+    CONTEXT_MAX_LENGTH, DATA_SPLIT_SEED, DATABASE_PAIR_LOADING_LIMIT,
+    DISPLAY_TOP_N_TINY, HALULENS_MIN_CONTENT_LENGTH,
     HALULENS_SENT_LEN_MIN, HALULENS_SENT_LEN_MAX,
 )
 from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.medium_priority_halulens_helpers import (
@@ -111,7 +112,7 @@ class HalulensExtractor(HuggingFaceBenchmarkExtractor):
             docs = self.load_dataset(
                 dataset_name="euirim/goodwiki",
                 split="train",
-                limit=limit * 2 if limit else 1000,  # Load extra for filtering
+                limit=limit * 2 if limit else DATABASE_PAIR_LOADING_LIMIT,  # Load extra for filtering
             )
             return docs
         except Exception as e:
@@ -224,7 +225,7 @@ Answer the question based only on the provided context. Be factual and accurate.
         """Generate correct answer based on the actual Wikipedia content."""
         sentences = context.split('.')
         # Take first 2-3 sentences as the factual answer
-        answer_sentences = [s.strip() for s in sentences[:3] if s.strip()]
+        answer_sentences = [s.strip() for s in sentences[:DISPLAY_TOP_N_TINY] if s.strip()]
         return '. '.join(answer_sentences) + '.' if answer_sentences else None
 
     def _generate_hallucinated_answer(

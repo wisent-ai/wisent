@@ -9,7 +9,7 @@ import os
 import psycopg2
 from psycopg2.extras import execute_values
 import torch
-from wisent.core.constants import EXTRACTION_RAW_BATCH_SIZE
+from wisent.core.constants import EXTRACTION_RAW_BATCH_SIZE, DEFAULT_MAX_RETRIES, DB_CONNECT_WAIT_S
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
@@ -28,7 +28,7 @@ def get_db_connection():
         db_url = db_url.replace(":6543", ":5432")
     conn = psycopg2.connect(
         db_url,
-        connect_timeout=30,
+        connect_timeout=DB_CONNECT_WAIT_S,
         keepalives=1,
         keepalives_idle=30,
         keepalives_interval=10,
@@ -186,13 +186,12 @@ def batch_create_raw_activations(activations_data: list):
         return
 
     batch_size = EXTRACTION_RAW_BATCH_SIZE  # Small batch - each record is ~10MB
-    max_retries = 3
 
     total_batches = (len(activations_data) + batch_size - 1) // batch_size
     for batch_idx, i in enumerate(range(0, len(activations_data), batch_size)):
         batch = activations_data[i:i + batch_size]
 
-        for attempt in range(max_retries):
+        for attempt in range(DEFAULT_MAX_RETRIES):
             try:
                 conn = get_conn()
                 cur = conn.cursor()
@@ -207,7 +206,7 @@ def batch_create_raw_activations(activations_data: list):
                     print(f"      [DB insert batch {batch_idx+1}/{total_batches}]", flush=True)
                 break
             except (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.errors.QueryCanceled) as e:
-                print(f"  [DB batch error attempt {attempt+1}/{max_retries}: {e}]", flush=True)
+                print(f"  [DB batch error attempt {attempt+1}/{DEFAULT_MAX_RETRIES}: {e}]", flush=True)
                 reset_conn()
-                if attempt == max_retries - 1:
+                if attempt == DEFAULT_MAX_RETRIES - 1:
                     raise

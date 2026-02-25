@@ -16,7 +16,7 @@ from wisent.core.constants import (
     NORM_EPS, VIZ_LIMIT, VIZ_CLAMPING_MARGIN, VIZ_PROJECTION_COMPONENTS,
     VIZ_REPLACEMENT_BLEND, VIZ_MLP_HIDDEN_DIM, VIZ_MLP_EPOCHS,
     VIZ_DIRECTION_N_PCA, VIZ_DIRECTION_N_RANDOM_SEARCH,
-    CLASSIFIER_DECISION_THRESHOLD,
+    CLASSIFIER_DECISION_THRESHOLD, ADAPTIVE_STRENGTH_MULTIPLIER,
 )
 # Re-export from steering_viz_utils for backwards compatibility
 from wisent.core.geometry.steering_viz_utils import (
@@ -126,7 +126,7 @@ def create_steering_method(
     elif steering_method_name == "mlp":
         method = MLPSteering(hidden_dim=VIZ_MLP_HIDDEN_DIM, epochs=VIZ_MLP_EPOCHS)
     elif steering_method_name == "adaptive":
-        method = AdaptiveSteering(max_strength=strength * 2)
+        method = AdaptiveSteering(max_strength=strength * ADAPTIVE_STRENGTH_MULTIPLIER)
     else:
         return None
 

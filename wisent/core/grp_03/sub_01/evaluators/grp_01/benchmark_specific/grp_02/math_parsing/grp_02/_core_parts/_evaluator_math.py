@@ -9,6 +9,7 @@ from sympy import Expr, Matrix
 from sympy.parsing.latex.errors import LaTeXParsingError
 from sympy.parsing.sympy_parser import parse_expr
 from wisent.core.errors import InvalidDataFormatError, InvalidValueError
+from wisent.core.constants import MATH_EVAL_N_CHECKS
 from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (
     DEF_ABS_TOL, DEF_PERCENT_REL_TOL, DEF_REL_TOL,
     has_non_ascii, is_querying4set, is_set,
@@ -181,11 +182,10 @@ class EvaluatorMath(EvaluatorMathHelpersMixin):
             and self.is_sym_eq(pred_obj, ref_spobj)
         ):
             return True
-        n_checks = 5
         expr_parse_errs: T_Dict[str, List[Exception]] = {}
-        if len(pred_parse_errs) == n_checks:
+        if len(pred_parse_errs) == MATH_EVAL_N_CHECKS:
             expr_parse_errs["pred"] = pred_parse_errs
-        if len(ref_parse_errs) == n_checks:
+        if len(ref_parse_errs) == MATH_EVAL_N_CHECKS:
             expr_parse_errs["ref"] = ref_parse_errs
         if len(expr_parse_errs) > 0:
             raise InvalidDataFormatError(reason=str(expr_parse_errs))

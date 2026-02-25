@@ -17,7 +17,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 from only_benchmarks import CORE_BENCHMARKS, get_task_samples_for_analysis
-from wisent.core.constants import LM_HARNESS_NUM_SAMPLES_DEFAULT
+from wisent.core.constants import JSON_INDENT, LM_HARNESS_NUM_SAMPLES_DEFAULT, STEERABILITY_MIN_PAIRS
 
 def test_failed_benchmark(benchmark_name: str, benchmark_config: Dict) -> Dict:
     """Test a single failed benchmark with the fixes."""
@@ -48,7 +48,7 @@ def test_failed_benchmark(benchmark_name: str, benchmark_config: Dict) -> Dict:
                 "benchmark_name": benchmark_name,
                 "task_name": task_name,
                 "tags": benchmark_config["tags"],
-                "num_samples": 5,
+                "num_samples": STEERABILITY_MIN_PAIRS,
                 "success": True,
                 "loading_time_seconds": loading_time,
                 "samples_retrieved": len(result['samples']),
@@ -63,7 +63,7 @@ def test_failed_benchmark(benchmark_name: str, benchmark_config: Dict) -> Dict:
                 "benchmark_name": benchmark_name,
                 "task_name": task_name,
                 "tags": benchmark_config["tags"],
-                "num_samples": 5,
+                "num_samples": STEERABILITY_MIN_PAIRS,
                 "success": False,
                 "loading_time_seconds": loading_time,
                 "samples_retrieved": 0,
@@ -80,7 +80,7 @@ def test_failed_benchmark(benchmark_name: str, benchmark_config: Dict) -> Dict:
             "benchmark_name": benchmark_name,
             "task_name": task_name,
             "tags": benchmark_config["tags"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": False,
             "loading_time_seconds": loading_time,
             "samples_retrieved": 0,
@@ -98,7 +98,7 @@ def main():
             "benchmark_name": "math_qa",
             "task_name": "mathqa",
             "tags": ["mathematics", "reasoning", "science"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": True,
             "loading_time_seconds": 12.50,
             "samples_retrieved": 5,
@@ -109,7 +109,7 @@ def main():
             "benchmark_name": "crows_pairs",
             "task_name": "crows_pairs",
             "tags": ["bias", "reasoning", "general knowledge"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": True,
             "loading_time_seconds": 76.64,
             "samples_retrieved": 5,
@@ -120,7 +120,7 @@ def main():
             "benchmark_name": "hendrycks_ethics",
             "task_name": "hendrycks_ethics",
             "tags": ["long context", "reasoning", "general knowledge"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": True,
             "loading_time_seconds": 65.36,
             "samples_retrieved": 5,
@@ -131,7 +131,7 @@ def main():
             "benchmark_name": "paws_x",
             "task_name": "pawsx",
             "tags": ["reasoning", "general knowledge", "science"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": True,
             "loading_time_seconds": 103.78,
             "samples_retrieved": 5,
@@ -142,7 +142,7 @@ def main():
             "benchmark_name": "mmmlu",
             "task_name": "m_mmlu_en",
             "tags": ["general knowledge", "science", "reasoning"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": True,
             "loading_time_seconds": 12.38,
             "samples_retrieved": 5,
@@ -153,7 +153,7 @@ def main():
             "benchmark_name": "pubmedqa",
             "task_name": "pubmedqa",
             "tags": ["medical", "science", "reasoning"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": True,
             "loading_time_seconds": 10.61,
             "samples_retrieved": 5,
@@ -181,7 +181,7 @@ def main():
             "benchmark_name": "storycloze",
             "task_name": "storycloze_2016",
             "tags": ["long context", "creative writing", "reasoning"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": False,
             "loading_time_seconds": 42.45,
             "samples_retrieved": 0,
@@ -192,7 +192,7 @@ def main():
             "benchmark_name": "narrativeqa",
             "task_name": "scrolls_narrativeqa",
             "tags": ["reasoning", "long context", "general knowledge"],
-            "num_samples": 5,
+            "num_samples": STEERABILITY_MIN_PAIRS,
             "success": False,
             "loading_time_seconds": 180.0,  # Estimated based on download time
             "samples_retrieved": 0,
@@ -292,7 +292,7 @@ def main():
     # Write updated results
     output_file = Path("benchmark_timing_results/benchmark_timing_20250705_142530_fixed.json")
     with open(output_file, 'w') as f:
-        json.dump(updated_results, f, indent=2)
+        json.dump(updated_results, f, indent=JSON_INDENT)
     
     print(f"\n📊 Final Results Summary:")
     print(f"   Total benchmarks: {total_benchmarks}")

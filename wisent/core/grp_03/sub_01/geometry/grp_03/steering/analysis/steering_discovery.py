@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from typing import List, Dict, Tuple, Optional, Callable
 from dataclasses import dataclass
-from wisent.core.constants import NORM_EPS, STEERING_N_RANDOM, STEERING_N_PCA, DEFAULT_STRENGTH, DEFAULT_RANDOM_SEED, STEERING_GEN_MAX_TOKENS, AGENT_DIAG_TEMPERATURE
+from wisent.core.constants import NORM_EPS, STEERING_N_RANDOM, STEERING_N_PCA, DEFAULT_STRENGTH, DEFAULT_RANDOM_SEED, STEERING_GEN_MAX_TOKENS, AGENT_DIAG_TEMPERATURE, DISCOVERY_MAX_PCA_COMPONENTS, DEFAULT_SCALE_FACTOR
 
 
 @dataclass
@@ -127,7 +127,7 @@ def generate_candidate_directions(
     rng = np.random.RandomState(DEFAULT_RANDOM_SEED)
     for i in range(n_random):
         # Random combination of top PCA components
-        weights = rng.randn(min(20, len(pca_all.components_)))
+        weights = rng.randn(min(DISCOVERY_MAX_PCA_COMPONENTS, len(pca_all.components_)))
         direction = np.zeros(all_acts.shape[1])
         for j, w in enumerate(weights):
             direction += w * pca_all.components_[j]
@@ -197,7 +197,7 @@ def search_layers(
 
             # Steered response
             steered_resp = adapter.forward_with_steering(
-                formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=1.0)
+                formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=DEFAULT_SCALE_FACTOR)
             )
             steered_resp = _extract_response(steered_resp)
             steered_eval = evaluate_fn(steered_resp)

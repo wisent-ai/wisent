@@ -5,7 +5,7 @@ import os
 import sys
 from datetime import datetime
 
-from wisent.core.constants import GEO_MAX_LAYER_COMBO_SIZE, PARSER_DEFAULT_NUM_PAIRS, TEST_MAX_COMBO_SIZE, DISPLAY_TOP_N_SMALL
+from wisent.core.constants import GEO_MAX_LAYER_COMBO_SIZE, PARSER_DEFAULT_NUM_PAIRS, TEST_MAX_COMBO_SIZE, DISPLAY_TOP_N_SMALL, JSON_INDENT
 from wisent.tests.test_geometry_exhaustive import (
     run_exhaustive_layer_analysis,
     run_limited_layer_analysis,
@@ -88,7 +88,7 @@ def run_comprehensive_sweep(
         "top_10": successful[:DISPLAY_TOP_N_SMALL],
     }
     with open(summary_file, "w") as f:
-        json.dump(summary, f, indent=2)
+        json.dump(summary, f, indent=JSON_INDENT)
     print(f"Sweep summary saved to: {summary_file}")
     return summary
 

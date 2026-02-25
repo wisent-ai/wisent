@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Any
 import torch
 
 from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import HASH_DIGEST_PREFIX
+from wisent.core.constants import HASH_DIGEST_PREFIX, JSON_INDENT
 from wisent.core.utils import resolve_default_device
 from .cached_activations import CachedActivations, get_strategy_text_family
 from .raw_cached_activations import RawCachedActivations, RawPairData
@@ -136,7 +136,7 @@ class RawActivationCache:
                 "num_pairs": cached.num_pairs,
             }
             with open(self._get_metadata_path(key), "w") as f:
-                json.dump(metadata, f, indent=2)
+                json.dump(metadata, f, indent=JSON_INDENT)
 
     def clear_memory(self) -> None:
         self._memory_cache.clear()
@@ -226,7 +226,7 @@ class ActivationCache:
                 "num_pairs": cached.num_pairs,
             }
             with open(self._get_metadata_path(key), "w") as f:
-                json.dump(metadata, f, indent=2)
+                json.dump(metadata, f, indent=JSON_INDENT)
 
     def clear_memory(self) -> None:
         self._memory_cache.clear()

@@ -6,6 +6,8 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
+from wisent.core.constants import JSON_INDENT
+
 
 @dataclass
 class SteeringConfig:
@@ -61,7 +63,7 @@ class AutotuneCheckpoint:
     def save(self, path: Path):
         """Save checkpoint to file."""
         with open(path, 'w') as f:
-            json.dump(self.to_dict(), f, indent=2)
+            json.dump(self.to_dict(), f, indent=JSON_INDENT)
 
     @classmethod
     def load(cls, path: Path) -> Optional["AutotuneCheckpoint"]:

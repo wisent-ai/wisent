@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any, List
 
 from wisent.core import Model
-from wisent.core.constants import QWEN3_4B_DEFAULT_LAYER
+from wisent.core.constants import QWEN3_4B_DEFAULT_LAYER, JSON_INDENT
 from wisent.core.layer import Layer
 from wisent.core.steering_methods.caa import CAA
 from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
@@ -124,7 +124,7 @@ class ControlVectorGenerator:
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(output_path, 'w', encoding='utf-8') as f:
-            json.dump(control_vector_data, f, indent=2)
+            json.dump(control_vector_data, f, indent=JSON_INDENT)
 
         logger.info(f"Saved control vector to {output_path}")
 

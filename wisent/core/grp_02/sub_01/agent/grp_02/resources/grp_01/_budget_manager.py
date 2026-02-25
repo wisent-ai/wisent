@@ -6,7 +6,7 @@ from wisent.core.errors import BudgetCalculationError, NoBenchmarkDataError, Res
 from wisent.core.agent.resources._budget_types import (
     ResourceType, ResourceBudget, TaskEstimate,
 )
-from wisent.core.constants import BUDGET_EMA_ALPHA, BUDGET_DEFAULT_QUANTITY, AGENT_RESOURCE_BUDGET_MINUTES
+from wisent.core.constants import BUDGET_EMA_ALPHA, BUDGET_DEFAULT_QUANTITY, AGENT_RESOURCE_BUDGET_MINUTES, SECONDS_PER_MINUTE
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +22,7 @@ class BudgetManager:
         """Set a time budget in minutes."""
         self.budgets[ResourceType.TIME] = ResourceBudget(
             resource_type=ResourceType.TIME,
-            total_budget=minutes * 60.0,  # Convert to seconds
+            total_budget=minutes * SECONDS_PER_MINUTE,  # Convert to seconds
             unit="seconds"
         )
     
@@ -94,8 +94,8 @@ class BudgetManager:
         Returns:
             Maximum number of tasks
         """
-        time_budget_seconds = time_budget_minutes * 60.0
-        
+        time_budget_seconds = time_budget_minutes * SECONDS_PER_MINUTE
+
         # Get estimate for this task type
         task_estimate = self._estimate_task_cost(task_type, ResourceType.TIME)
         

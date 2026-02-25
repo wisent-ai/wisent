@@ -10,6 +10,9 @@ from wisent.core.constants import (
     VIZ_FIGURE_WIDTH_PX, VIZ_FIGURE_HEIGHT_PX, VIZ_LEGEND_Y_TOP,
     VIZ_GRID_SUMMARY_ROWS, VIZ_GRID_SUMMARY_COLS, VIZ_FIGSIZE_SUMMARY,
     DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_RESPONSE,
+    VIZ_ARROW_SIZE_DEFAULT, VIZ_ARROW_LINEWIDTH,
+    BINARY_CLASSIFICATION_THRESHOLD, VIZ_N_COMPONENTS_2D,
+    VIZ_FONTSIZE_SUBTITLE, VIZ_SUPTITLE_Y_OFFSET_HIGH,
 )
 
 
@@ -84,7 +87,7 @@ def create_steering_multipanel_figure(
     )
     # Show extraction source in title
     extraction_info = f"Activations from: GENERATED RESPONSE ({extraction_strategy})" if extraction_strategy else ""
-    fig.suptitle(f"{title}\n{metrics_text}\n{extraction_info}", fontsize=12, y=1.02)
+    fig.suptitle(f"{title}\n{metrics_text}\n{extraction_info}", fontsize=VIZ_FONTSIZE_SUBTITLE, y=VIZ_SUPTITLE_Y_OFFSET_HIGH)
 
     plt.tight_layout()
 
@@ -111,8 +114,8 @@ def _compute_summary_metrics(pos, neg, base, steered, base_evals, steered_evals,
         steered_truthful = sum(1 for e in steered_evals if e == "TRUTHFUL")
         parts.append(f"Text TRUTHFUL: {base_truthful}->{steered_truthful}")
     if base_probs and steered_probs:
-        base_in_truthful = sum(1 for p in base_probs if p >= 0.5)
-        steered_in_truthful = sum(1 for p in steered_probs if p >= 0.5)
+        base_in_truthful = sum(1 for p in base_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
+        steered_in_truthful = sum(1 for p in steered_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
         parts.append(f"In truthful region: {base_in_truthful}->{steered_in_truthful}")
         if base_evals and steered_evals:
             activations_shifted = steered_in_truthful > base_in_truthful
@@ -151,7 +154,7 @@ def create_interactive_steering_figure(
     pos, neg = to_numpy(pos_activations), to_numpy(neg_activations)
     base, steered = to_numpy(base_activations), to_numpy(steered_activations)
     reference = np.vstack([pos, neg])
-    pca = PCA(n_components=2, random_state=DEFAULT_RANDOM_SEED)
+    pca = PCA(n_components=VIZ_N_COMPONENTS_2D, random_state=DEFAULT_RANDOM_SEED)
     pca.fit(reference)
     pos_2d, neg_2d = pca.transform(pos), pca.transform(neg)
     base_2d, steered_2d = pca.transform(base), pca.transform(steered)
@@ -186,7 +189,7 @@ def create_interactive_steering_figure(
     for i in range(min(len(base_2d), len(steered_2d))):
         fig.add_annotation(x=steered_2d[i, 0], y=steered_2d[i, 1], ax=base_2d[i, 0], ay=base_2d[i, 1],
             xref='x', yref='y', axref='x', ayref='y', showarrow=True, arrowhead=2,
-            arrowsize=1, arrowwidth=1.5, arrowcolor='green', opacity=0.6)
+            arrowsize=VIZ_ARROW_SIZE_DEFAULT, arrowwidth=VIZ_ARROW_LINEWIDTH, arrowcolor='green', opacity=0.6)
 
     metrics = _compute_interactive_metrics(base_2d, steered_2d, pos_centroid, neg_centroid,
                                            base_evaluations, steered_evaluations, base_space_probs, steered_space_probs)
@@ -232,7 +235,7 @@ def _compute_interactive_metrics(base_2d, steered_2d, pos_c, neg_c, base_evals, 
         st = sum(1 for e in steered_evals if e == "TRUTHFUL")
         parts.append(f"Text: {bt}->{st} truthful")
     if base_probs and steered_probs:
-        bit = sum(1 for p in base_probs if p >= 0.5)
-        sit = sum(1 for p in steered_probs if p >= 0.5)
+        bit = sum(1 for p in base_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
+        sit = sum(1 for p in steered_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
         parts.append(f"Activation: {bit}->{sit} in truthful")
     return " | ".join(parts)

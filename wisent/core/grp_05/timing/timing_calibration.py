@@ -7,7 +7,7 @@ from typing import Dict, Optional, Tuple
 from pathlib import Path
 
 from wisent.core.errors import LayerRangeError, ModelConfigAccessError, CalibrationError, CalibrationDataMissingError
-from wisent.core.constants import TIMING_SAMPLES_PER_TASK, TIMING_CALIBRATION_BASE_SAMPLES
+from wisent.core.constants import JSON_INDENT, TIMING_SAMPLES_PER_TASK, TIMING_CALIBRATION_BASE_SAMPLES
 
 
 class TimingCalibrator:
@@ -94,7 +94,7 @@ class TimingCalibrator:
     def save_to_file(self, filepath: Path):
         """Save calibration results to a file"""
         with open(filepath, 'w') as f:
-            json.dump(self.timings, f, indent=2)
+            json.dump(self.timings, f, indent=JSON_INDENT)
         if self.verbose:
             print(f"💾 Saved calibration to {filepath}")
     

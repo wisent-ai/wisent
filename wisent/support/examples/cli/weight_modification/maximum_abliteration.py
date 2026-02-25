@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from wisent.core.constants import ABLITERATION_BASELINE_ACC, EXTRACTION_DEFAULT_PAIR_LIMIT
+from wisent.core.constants import ABLITERATION_BASELINE_ACC, EXTRACTION_DEFAULT_PAIR_LIMIT, SEPARATOR_WIDTH_REPORT
 from wisent.examples.cli.weight_modification.maximum_abliteration_helpers import (
     AbliterationConfig,
     evaluate_model,
@@ -37,44 +37,44 @@ def maximum_abliteration(
     """
     os.makedirs(output_dir, exist_ok=True)
 
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print("MAXIMUM ABLITERATION OPTIMIZATION")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print(f"Task: {task}")
     print(f"Model: {model}")
     print(f"Baseline accuracy: {baseline_acc:.1%}")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     # Phase 1: Find best components
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("PHASE 1: COMPONENT OPTIMIZATION")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     best_components, _ = grid_search_components(
         task, model, output_dir, baseline_acc, num_pairs=200
     )
 
     # Phase 2: Find best kernel shape
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("PHASE 2: KERNEL SHAPE OPTIMIZATION")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     best_position, best_distance, _, _ = grid_search_kernel_shape(
         task, model, output_dir, baseline_acc,
         num_pairs=200, best_components=best_components
     )
 
     # Phase 3: Fine-tune strength
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("PHASE 3: STRENGTH CALIBRATION")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     best_strength, _, _ = binary_search_strength(
         task, model, output_dir, baseline_acc,
         low=0.5, high=2.5, iterations=5, num_pairs=300
     )
 
     # Phase 4: Final model with all optimized parameters
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("PHASE 4: FINAL OPTIMIZATION")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     # Try different num_pairs with optimized config
     best_acc = baseline_acc
@@ -106,9 +106,9 @@ def maximum_abliteration(
             best_model_path = model_path
 
     # Final report
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("MAXIMUM ABLITERATION COMPLETE")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     final_gain = (best_acc - baseline_acc) * 100
 

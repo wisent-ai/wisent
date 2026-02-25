@@ -5,7 +5,7 @@ import torch
 from pathlib import Path
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import MissingParameterError
-from wisent.core.constants import DEFAULT_STRENGTH, NURT_NUM_INTEGRATION_STEPS, NURT_T_MAX, DEFAULT_BASE_STRENGTH
+from wisent.core.constants import DEFAULT_STRENGTH, JSON_INDENT, NURT_NUM_INTEGRATION_STEPS, NURT_T_MAX, DEFAULT_BASE_STRENGTH
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
@@ -123,7 +123,7 @@ def export_nurt_model(
         "num_integration_steps": cf.num_integration_steps,
     }
     with open(config_path, "w") as f:
-        json.dump(cf_config, f, indent=2)
+        json.dump(cf_config, f, indent=JSON_INDENT)
     log.info("Saved concept flow config")
 
     # Step 5: Save standalone loader

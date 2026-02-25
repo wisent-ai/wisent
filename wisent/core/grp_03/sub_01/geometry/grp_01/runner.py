@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Any, Tuple
 import torch
 import numpy as np
 
-from wisent.core.constants import DEFAULT_RANDOM_SEED
+from wisent.core.constants import DEFAULT_RANDOM_SEED, JSON_INDENT, CHANCE_LEVEL_ACCURACY
 
 # Import compute_geometry_metrics from metrics_core (single source of truth)
 from .metrics.core.metrics_core import compute_geometry_metrics
@@ -60,7 +60,7 @@ def run_full_zwiad(
         output_path = Path(output_dir) / f"{benchmark_name}_layer{layer}_zwiad.json"
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'w') as f:
-            json.dump(result, f, indent=2, default=str)
+            json.dump(result, f, indent=JSON_INDENT, default=str)
 
     return result
 
@@ -101,7 +101,7 @@ def run_full_zwiad_with_layer_search(
     if output_dir:
         output_path = Path(output_dir) / f"{benchmark_name}_layer_search.json"
         with open(output_path, 'w') as f:
-            json.dump(summary, f, indent=2, default=str)
+            json.dump(summary, f, indent=JSON_INDENT, default=str)
 
     return summary
 
@@ -198,8 +198,8 @@ def evaluate_activation_regions(
         }
     except Exception:
         return {
-            "gmm_separation": 0.5,
-            "pos_cluster_purity": 0.5,
-            "neg_cluster_purity": 0.5,
+            "gmm_separation": CHANCE_LEVEL_ACCURACY,
+            "pos_cluster_purity": CHANCE_LEVEL_ACCURACY,
+            "neg_cluster_purity": CHANCE_LEVEL_ACCURACY,
             "clusters_are_separated": False,
         }

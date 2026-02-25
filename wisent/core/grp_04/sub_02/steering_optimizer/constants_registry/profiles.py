@@ -78,7 +78,7 @@ class ConstantProfileManager:
         self._profiles_dir.mkdir(parents=True, exist_ok=True)
         path = self._profile_path(profile.model_name, profile.task_name)
         with open(path, "w") as f:
-            json.dump(profile.to_dict(), f, indent=2)
+            json.dump(profile.to_dict(), f, indent=_constants_module.JSON_INDENT)
         logger.info("Saved constant profile to %s", path)
         return path
 
@@ -161,7 +161,7 @@ class ConstantProfileManager:
             blob_name = f"{_GCS_PREFIX}/{safe_model}.json"
         blob = bucket.blob(blob_name)
         blob.upload_from_string(
-            json.dumps(profile.to_dict(), indent=2),
+            json.dumps(profile.to_dict(), indent=_constants_module.JSON_INDENT),
             content_type="application/json",
         )
         gcs_path = f"gs://{bucket_name}/{blob_name}"

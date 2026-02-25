@@ -7,7 +7,7 @@ iterative improvement loop, and steered generation.
 """
 
 import time
-from wisent.core.constants import QUALITY_CONTROL_MAX_ATTEMPTS, CLASSIFIER_DECISION_THRESHOLD, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.constants import QUALITY_CONTROL_MAX_ATTEMPTS, CLASSIFIER_DECISION_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, SECONDS_PER_MINUTE
 
 
 class QualityControlMixin:
@@ -97,7 +97,7 @@ class QualityControlMixin:
         print("\n Step 3: Training combined classifier...")
         timeout_mgr.check_timeout()
 
-        remaining_minutes = timeout_mgr.get_remaining_time() / 60.0
+        remaining_minutes = timeout_mgr.get_remaining_time() / SECONDS_PER_MINUTE
         classifier_time_budget = min(time_budget, remaining_minutes)
 
         classifier_decision = await self.decision_system.create_single_quality_classifier(
@@ -208,7 +208,7 @@ class QualityControlMixin:
         print(f"   Final quality: {result.final_quality_score:.3f}")
         print(f"   Attempts: {result.attempts_needed}")
         print(f"   Total time: {result.total_time_seconds:.1f}s")
-        print(f"   Time used: {timeout_mgr.get_elapsed_time():.1f}s / {time_budget * 60:.1f}s")
+        print(f"   Time used: {timeout_mgr.get_elapsed_time():.1f}s / {time_budget * SECONDS_PER_MINUTE:.1f}s")
 
         return result
 

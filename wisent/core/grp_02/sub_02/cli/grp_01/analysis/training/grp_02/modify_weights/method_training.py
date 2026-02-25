@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, List, Dict, Any, Tuple
 
 import torch
-from wisent.core.constants import CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DEFAULT_METHOD_LAYER_RANGE_END, NUM_LAYERS_LARGE_MODEL, LAYER_SAMPLING_DIVISOR_TRAINING, METHOD_SELECTION_SAMPLE_SIZE, MIN_LAYER_ACTIVATIONS_FOR_GEOMETRY
+from wisent.core.constants import CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DEFAULT_METHOD_LAYER_RANGE_END, NUM_LAYERS_LARGE_MODEL, LAYER_SAMPLING_DIVISOR_TRAINING, METHOD_SELECTION_SAMPLE_SIZE, MIN_LAYER_ACTIVATIONS_FOR_GEOMETRY, SEPARATOR_WIDTH_STANDARD, PROGRESS_LOG_INTERVAL_10
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -46,9 +46,9 @@ def auto_select_steering_method(
     )
 
     if verbose:
-        print("\n" + "=" * 60)
+        print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
         print("AUTO-SELECTING STEERING METHOD (zwiad)")
-        print("=" * 60)
+        print("=" * SEPARATOR_WIDTH_STANDARD)
         print("   Analyzing activation geometry...")
 
     collector = ActivationCollector(model=model)
@@ -125,7 +125,7 @@ def auto_select_steering_method(
 
     if verbose:
         print(f"\n   Selected: {steering_method.upper()} / {modification_method}")
-        print("=" * 60 + "\n")
+        print("=" * SEPARATOR_WIDTH_STANDARD + "\n")
 
     return steering_method, modification_method, metrics
 
@@ -159,7 +159,7 @@ def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair
     for i, pair in enumerate(pair_set.pairs):
         enriched_pair = collector.collect(pair, strategy=strategy, layers=layers)
         enriched_pairs.append(enriched_pair)
-        if args.verbose and (i + 1) % 10 == 0:
+        if args.verbose and (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"    Collected {i + 1}/{len(pair_set.pairs)} pairs")
 
     pair_set.pairs = enriched_pairs
@@ -206,7 +206,7 @@ def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     for i, pair in enumerate(pairs):
         enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=layers)
         enriched_pairs.append(enriched)
-        if args.verbose and (i + 1) % 10 == 0:
+        if args.verbose and (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
 
     pair_set = ContrastivePairSet(pairs=enriched_pairs, name="tetno_training")
@@ -252,7 +252,7 @@ def train_tecza_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
     for i, pair in enumerate(pairs):
         enriched = collector.collect(pair, strategy=ExtractionStrategy.default(), layers=layers)
         enriched_pairs.append(enriched)
-        if args.verbose and (i + 1) % 10 == 0:
+        if args.verbose and (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
 
     pair_set = ContrastivePairSet(pairs=enriched_pairs, name="tecza_training")

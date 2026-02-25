@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Any
 
 import numpy as np
 
-from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_SCORE, CALIBRATION_MIN_OBSERVATIONS
+from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_SCORE, CALIBRATION_MIN_OBSERVATIONS, JSON_INDENT
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ class CalibrationResult:
     def save(self, path: Path) -> None:
         """Save to JSON."""
         with open(path, "w") as f:
-            json.dump(self.to_dict(), f, indent=2)
+            json.dump(self.to_dict(), f, indent=JSON_INDENT)
 
     @classmethod
     def load(cls, path: Path) -> CalibrationResult:

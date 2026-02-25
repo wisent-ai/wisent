@@ -8,6 +8,8 @@ import csv
 import logging
 from typing import Dict, Any
 
+from wisent.core.constants import JSON_INDENT
+
 logger = logging.getLogger(__name__)
 
 
@@ -17,7 +19,7 @@ def save_results_json(results: Dict[str, Any], output_path: str) -> None:
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         
         with open(output_path, 'w') as f:
-            json.dump(results, f, indent=2, default=str)
+            json.dump(results, f, indent=JSON_INDENT, default=str)
         
         logger.info(f"Results saved to {output_path}")
         

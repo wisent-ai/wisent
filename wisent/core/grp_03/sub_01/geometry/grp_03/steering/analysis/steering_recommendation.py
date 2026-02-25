@@ -8,7 +8,7 @@ config) or default (zeros for untuned methods).
 
 from typing import Dict, Any, Optional
 
-from wisent.core.constants import MIN_CONCEPT_PAIRS
+from wisent.core.constants import MIN_CONCEPT_PAIRS, STEERING_ICD_WEIGHT
 from .recommendation.config import (
     RecommendationConfig, Thresholds as SteeringThresholds)
 from .recommendation.configurable import compute_configurable_recommendation
@@ -53,7 +53,7 @@ def compute_per_layer_recommendation(
         alignment = rec["raw_signals"].get("alignment")
         score = 0.0
         if icd is not None:
-            score += icd * 2.0
+            score += icd * STEERING_ICD_WEIGHT
         if stability is not None:
             score += stability
         if alignment is not None:

@@ -18,7 +18,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from wisent.core.constants import JSON_INDENT
+
 from wisent.core.lm_harness_integration.only_benchmarks import CORE_BENCHMARKS
+from wisent.core.constants import SECONDS_PER_MINUTE
 
 from ._download_helpers import (
     BasicConvertersMixin,
@@ -168,7 +171,7 @@ class FullBenchmarkDownloader(
 
             # Save metadata as JSON
             with open(metadata_file, "w") as f:
-                json.dump(metadata, f, indent=2)
+                json.dump(metadata, f, indent=JSON_INDENT)
 
             print(f"      ✅ Saved benchmark: {benchmark_name}")
             print(f"         📊 Contrastive pairs: {len(contrastive_data['contrastive_pairs'])}")
@@ -243,7 +246,7 @@ class FullBenchmarkDownloader(
             if i < len(benchmarks_to_download):
                 eta = elapsed * (len(benchmarks_to_download) - i) / i
                 print(f"\n📊 Progress: {i}/{len(benchmarks_to_download)} benchmarks completed")
-                print(f"   ⏱️  Elapsed: {elapsed / 60:.1f}min, ETA: {eta / 60:.1f}min")
+                print(f"   ⏱️  Elapsed: {elapsed / SECONDS_PER_MINUTE:.1f}min, ETA: {eta / SECONDS_PER_MINUTE:.1f}min")
 
         results["total_time"] = time.time() - total_start_time
         return results
@@ -277,7 +280,7 @@ def main():
         to_dl = None if args.all else args.benchmarks
         results = downloader.download_all_benchmarks(benchmarks=to_dl, force=args.force)
         ok, fail = len(results["successful"]), len(results["failed"])
-        t = results["total_time"] / 60
+        t = results["total_time"] / SECONDS_PER_MINUTE
         print(f"Summary: {ok} OK, {fail} failed, {t:.1f}min")
     except Exception as e:
         print(f"Error: {e}")

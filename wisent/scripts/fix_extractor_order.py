@@ -12,6 +12,8 @@ This script:
 import re
 from pathlib import Path
 
+from wisent.core.constants import SEPARATOR_WIDTH_STANDARD
+
 
 def fix_extractor_order():
     """Find and fix extractors with incorrect A/B order."""
@@ -70,9 +72,9 @@ def fix_extractor_order():
                 log_likelihood_missing_ab.append(py_file)
 
     # Report results
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print("EXTRACTOR ORDER FIX REPORT")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     print(f"\n1. Files with incorrect order (A.correct/B.incorrect -> fixed): {len(files_with_incorrect_order)}")
     if files_with_incorrect_order:

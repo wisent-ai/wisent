@@ -115,7 +115,7 @@ def analyze_skip(pos_by_layer, neg_by_layer, layers, cfg, geo_cfg, all_combo_res
     if not cfg.analyze_skip or len(layers) < 4:
         return results
 
-    patterns = [("every_2nd", layers[::2]), ("first_last", [layers[0], layers[-1]])]
+    patterns = [("every_2nd", layers[::_C.LAYER_STRIDE_DEFAULT]), ("first_last", [layers[0], layers[-1]])]
     if len(layers) >= 6:
         patterns.append(("every_3rd", layers[::3]))
     if len(layers) >= 3:
@@ -185,8 +185,8 @@ def generate_recommendation(
             f"{best_single_layer_score:.2f}). Multi-layer doesn't improve."
         )
 
-    if len(all_combinations_ranked) >= 3:
-        top3 = ", ".join([f"{n}={s:.2f}" for n, s, _ in all_combinations_ranked[:3]])
+    if len(all_combinations_ranked) >= _C.DISPLAY_TOP_N_TINY:
+        top3 = ", ".join([f"{n}={s:.2f}" for n, s, _ in all_combinations_ranked[:_C.DISPLAY_TOP_N_TINY]])
         parts.append(f"Top 3: {top3}.")
 
     return " ".join(parts)

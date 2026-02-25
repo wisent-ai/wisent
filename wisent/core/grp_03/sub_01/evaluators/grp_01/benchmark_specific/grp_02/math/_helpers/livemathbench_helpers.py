@@ -9,7 +9,7 @@ from typing import Any
 from wisent.core.evaluators.benchmark_specific.math_parsing.scripts import multi_math_equal
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
 
-from wisent.core.constants import EVAL_MATH_JUDGE_MAX_TOKENS, GREEDY_TEMPERATURE
+from wisent.core.constants import EVAL_MATH_JUDGE_MAX_TOKENS, GREEDY_TEMPERATURE, CHANCE_LEVEL_ACCURACY
 logger = logging.getLogger(__name__)
 
 # Language-specific prompts for boxed answer format
@@ -121,7 +121,7 @@ class LiveMathBenchEvaluator(BaseEvaluator):
             return EvalResult(
                 ground_truth="TRUTHFUL" if is_correct else "UNTRUTHFUL",
                 method_used=f"{self.name}_llm_judge",
-                confidence=1.0 if boxed_answer else 0.5,
+                confidence=1.0 if boxed_answer else CHANCE_LEVEL_ACCURACY,
                 details=f"Judge verdict: {boxed_answer or 'unclear'}",
                 meta={
                     "expected_answer": expected_str, "judge_output": judge_output,

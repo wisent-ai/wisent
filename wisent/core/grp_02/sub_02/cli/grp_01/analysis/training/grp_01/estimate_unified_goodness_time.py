@@ -1,5 +1,5 @@
 """CLI entry point for estimating unified goodness training time."""
-from wisent.core.constants import DATA_SPLIT_RATIO, PARSER_DEFAULT_NUM_STRENGTH_STEPS, BENCHMARK_FAST_LOAD_THRESHOLD
+from wisent.core.constants import DATA_SPLIT_RATIO, PARSER_DEFAULT_NUM_STRENGTH_STEPS, BENCHMARK_FAST_LOAD_THRESHOLD, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_HALF
 from wisent.core.cli.analysis.training.estimate_time_functions import (
     BENCHMARK_SIZES, BENCHMARK_LOAD_TIMES, estimate_runtime,
     get_benchmark_load_time, get_benchmark_size, format_time,
@@ -74,9 +74,9 @@ def main():
         selected = dict(list(selected.items())[:args.max_benchmarks])
     
     # Print header
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("  UNIFIED GOODNESS TRAINING - TIME ESTIMATE")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     # Print configuration
     print(f"\n CONFIGURATION:")
@@ -127,7 +127,7 @@ def main():
         print(f"   Activation collection:{format_time(estimate['activation_collection']):>10s}")
         print(f"   Vector training:      {format_time(estimate['vector_training']):>10s}")
         print(f"   Evaluation:           {format_time(estimate['evaluation']):>10s}")
-        print(f"   " + "-" * 35)
+        print(f"   " + "-" * SEPARATOR_WIDTH_HALF)
         print(f"   TOTAL:                {format_time(estimate['total_seconds']):>10s}")
     
     # Print data summary
@@ -181,8 +181,8 @@ def main():
         )
         print(f"   {name:<45s} {est['total_pairs']:>10,} {format_time(est['total_seconds']):>12s}")
     
-    print("\n" + "=" * 70)
-    
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
+
     return estimate
 
 

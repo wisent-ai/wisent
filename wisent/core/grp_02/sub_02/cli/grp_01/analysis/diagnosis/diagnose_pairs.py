@@ -4,7 +4,7 @@ import sys
 import json
 import os
 
-from wisent.core.constants import PAIR_MIN_TEXT_LENGTH, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.constants import PAIR_MIN_TEXT_LENGTH, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_MINI
 
 
 def execute_diagnose_pairs(args):
@@ -127,10 +127,10 @@ def execute_diagnose_pairs(args):
             print(f"   All pairs have required fields")
         else:
             print(f"   ❌ Found {len(missing_fields)} schema issues:")
-            for issue in missing_fields[:5]:  # Show first 5
+            for issue in missing_fields[:DISPLAY_TOP_N_MINI]:  # Show first 5
                 print(f"      {issue}")
-            if len(missing_fields) > 5:
-                print(f"      ... and {len(missing_fields) - 5} more")
+            if len(missing_fields) > DISPLAY_TOP_N_MINI:
+                print(f"      ... and {len(missing_fields) - DISPLAY_TOP_N_MINI} more")
 
         # 6. Show sample if requested
         if args.show_sample and len(pairs_list) > 0:

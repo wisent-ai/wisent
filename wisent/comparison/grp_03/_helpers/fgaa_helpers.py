@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 import torch
-from wisent.core.constants import NORM_EPS, FGAA_DENSITY_THRESHOLD, FGAA_TOP_K_POSITIVE, FGAA_TOP_K_NEGATIVE, TOKENIZER_MAX_LENGTH_CLUSTER, COMPARISON_NUM_PAIRS, DISPLAY_TOP_N_MEDIUM
+from wisent.core.constants import NORM_EPS, FGAA_DENSITY_THRESHOLD, FGAA_TOP_K_POSITIVE, FGAA_TOP_K_NEGATIVE, TOKENIZER_MAX_LENGTH_CLUSTER, COMPARISON_NUM_PAIRS, DISPLAY_TOP_N_MEDIUM, JSON_INDENT
 
 __all__ = [
     "compute_v_target",
@@ -173,6 +173,6 @@ def generate_steering_vector(
     }
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with open(output_path, "w") as f:
-        json.dump(result, f, indent=2)
+        json.dump(result, f, indent=JSON_INDENT)
     print(f"\nSaved FGAA steering vector to {output_path}")
     return output_path

@@ -148,7 +148,7 @@ def compute_cluster_structure(activations: torch.Tensor, max_clusters: int = _C.
     from sklearn.metrics import silhouette_score
     X = activations.float().cpu().numpy()
     n, d = X.shape
-    if n < 6:
+    if n < _C.MIN_CLOUD_CLUSTER_POINTS:
         return {"error": "need at least 6 points"}
     silhouettes = {}
     inertias = {}

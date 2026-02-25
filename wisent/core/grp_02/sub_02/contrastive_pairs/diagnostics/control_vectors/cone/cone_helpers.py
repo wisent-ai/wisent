@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Tuple
 import torch
 import torch.nn.functional as F
 from wisent.core import constants as _C
-from wisent.core.constants import COMPARE_TOL
+from wisent.core.constants import COMPARE_TOL, PROGRESS_LOG_INTERVAL_20
 
 
 def compute_pca_directions(
@@ -94,7 +94,7 @@ def discover_cone_directions(
                     if (directions[i:i+1] @ primary.T).item() < 0:
                         directions.data[i] = -directions.data[i]
 
-        if step % 20 == 0:
+        if step % PROGRESS_LOG_INTERVAL_20 == 0:
             training_losses.append(float(total_loss.item()))
 
     return directions.detach(), {"training_losses": training_losses,

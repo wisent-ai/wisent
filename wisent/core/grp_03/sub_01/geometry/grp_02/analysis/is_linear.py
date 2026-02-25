@@ -18,6 +18,7 @@ from wisent.core.constants import (
     LINEARITY_TEST_RAMSEY_THRESHOLD, LINEARITY_TEST_N_BOOTSTRAP,
     LINEARITY_TEST_N_CV_SPLITS, LINEARITY_CONFIDENCE_HIGH,
     LINEARITY_CONFIDENCE_LOW, LINEARITY_CROSS_CONTEXT_THRESHOLD,
+    DIAGNOSTICS_TOTAL_CHECKS,
 )
 
 from ..geo_utils.linearity_utils import (
@@ -144,7 +145,7 @@ def test_linearity(
     }
 
     diagnostics_passed = 0
-    diagnostics_total = 4
+    diagnostics_total = DIAGNOSTICS_TOTAL_CHECKS
 
     if not gap_significant:
         diagnostics_passed += 1

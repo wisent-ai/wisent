@@ -32,7 +32,7 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
     use_subtasks = benchmark_config.get("use_subtasks", False)
     limit_subtasks = benchmark_config.get("limit_subtasks", None)
 
-    print(f"\n{'='*60}")
+    print(f"\n{'='*_C.SEPARATOR_WIDTH_STANDARD}")
     print(f"Testing: {benchmark_name} ({task_name})")
     print(f"Tags: {', '.join(tags)}")
     if trust_remote_code:
@@ -41,7 +41,7 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
         print("Use subtasks: ENABLED")
         if limit_subtasks:
             print(f"Limit subtasks: {limit_subtasks}")
-    print("=" * 60)
+    print("=" * _C.SEPARATOR_WIDTH_STANDARD)
 
     try:
         output_dir = f"test_results/{benchmark_name}"
@@ -97,7 +97,7 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
                 print(f"Found {len(contrastive_pairs)} contrastive pairs")
                 pairs_file = os.path.join(output_dir, "contrastive_pairs.json")
                 with open(pairs_file, "w") as f:
-                    json.dump(contrastive_pairs, f, indent=2)
+                    json.dump(contrastive_pairs, f, indent=_C.JSON_INDENT)
                 print(f"Contrastive pairs saved to: {pairs_file}")
 
             return True

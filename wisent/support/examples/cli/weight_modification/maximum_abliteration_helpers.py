@@ -14,6 +14,7 @@ from wisent.core.constants import (
     ABLITERATION_BINARY_SEARCH_ITERS,
     SUBPROCESS_TIMEOUT_LONG,
     DISPLAY_TRUNCATION_LARGE,
+    SEPARATOR_WIDTH_REPORT,
 )
 
 
@@ -135,9 +136,9 @@ def binary_search_strength(
 
     Returns: (best_strength, best_acc, best_acc_norm)
     """
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("BINARY SEARCH FOR OPTIMAL STRENGTH")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     best_strength = 1.0
     best_acc = baseline_acc
@@ -187,9 +188,9 @@ def grid_search_components(
 
     Returns: (best_components, best_acc)
     """
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("COMPONENT SEARCH")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     # Component combinations to try
     component_sets = [
@@ -243,9 +244,9 @@ def grid_search_kernel_shape(
 
     Returns: (best_position, best_distance, best_acc, best_acc_norm)
     """
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("KERNEL SHAPE SEARCH")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     if best_components is None:
         best_components = ["self_attn.o_proj", "mlp.down_proj"]

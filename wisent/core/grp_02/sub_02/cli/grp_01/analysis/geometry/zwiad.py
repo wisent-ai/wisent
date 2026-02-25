@@ -13,9 +13,9 @@ from wisent.core import constants as _C
 
 def execute_zwiad(args):
     """Execute the zwiad command."""
-    print(f"\n{'='*60}")
+    print(f"\n{'='*_C.SEPARATOR_WIDTH_STANDARD}")
     print("ZWIAD - Geometry Analysis with Concept Decomposition")
-    print(f"{'='*60}")
+    print(f"{'='*_C.SEPARATOR_WIDTH_STANDARD}")
 
     # Import dependencies
     from wisent.core.geometry.zwiad.zwiad_with_concepts import (
@@ -195,9 +195,9 @@ def execute_zwiad(args):
         sys.exit(1)
 
     # Run zwiad with specified steps
-    print(f"\n{'='*60}")
+    print(f"\n{'='*_C.SEPARATOR_WIDTH_STANDARD}")
     print(f"Running Zwiad protocol (steps: {args.steps})")
-    print(f"{'='*60}")
+    print(f"{'='*_C.SEPARATOR_WIDTH_STANDARD}")
 
     results = run_zwiad_with_concept_naming(
         activations_by_layer=activations_by_layer,
@@ -208,9 +208,9 @@ def execute_zwiad(args):
     )
 
     # Print results
-    print(f"\n{'='*60}")
+    print(f"\n{'='*_C.SEPARATOR_WIDTH_STANDARD}")
     print("RESULTS")
-    print(f"{'='*60}")
+    print(f"{'='*_C.SEPARATOR_WIDTH_STANDARD}")
     print(f"\nLayers concatenated: {results.get('n_layers')} (layers {results.get('layers_used', [])})")
     print(f"Total dimensions: {results.get('total_dims')}")
     print(f"Pairs analyzed: {results.get('n_pairs')}")
@@ -245,7 +245,7 @@ def execute_zwiad(args):
             rep_pairs = concept.get("representative_pairs", [])
             if rep_pairs:
                 print(f"  Representative pairs:")
-                for pair in rep_pairs[:3]:
+                for pair in rep_pairs[:_C.DISPLAY_TOP_N_TINY]:
                     if isinstance(pair, dict):
                         prompt = pair.get("prompt", "")[:_C.DISPLAY_TRUNCATION_ERROR]
                         print(f"    - {prompt}...")
@@ -294,7 +294,7 @@ def execute_zwiad(args):
         serialized = serialize(results)
 
         with open(output_path, 'w') as f:
-            json.dump(serialized, f, indent=2)
+            json.dump(serialized, f, indent=_C.JSON_INDENT)
         print(f"\nResults saved to: {output_path}")
-    print("\n" + "="*60 + "\nZWIAD COMPLETE\n" + "="*60)
+    print("\n" + "="*_C.SEPARATOR_WIDTH_STANDARD + "\nZWIAD COMPLETE\n" + "="*_C.SEPARATOR_WIDTH_STANDARD)
     return results

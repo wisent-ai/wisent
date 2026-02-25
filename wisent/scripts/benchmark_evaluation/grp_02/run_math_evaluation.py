@@ -16,7 +16,7 @@ from tqdm import tqdm
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
 from wisent.core.errors import InvalidChoicesError
-from wisent.core.constants import DEFAULT_INFERENCE_TEMPERATURE, MAX_NEW_TOKENS_BENCHMARK_MATH
+from wisent.core.constants import DEFAULT_INFERENCE_TEMPERATURE, MAX_NEW_TOKENS_BENCHMARK_MATH, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 QUESTION_TYPES = [
@@ -70,7 +70,7 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
     results = []
 
     print(f"\nTesting on {len(ds)} examples...")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     for i, example in enumerate(tqdm(ds, desc="Evaluating")):
         problem = example.get('problem', '')
@@ -109,9 +109,9 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
         })
 
     # Summary
-    print("\n" + "=" * 60)
+    print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
     print("SUMMARY")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print(f"Total examples: {len(ds)}")
     print(f"Correct (TRUTHFUL): {correct}")
     print(f"Incorrect (UNTRUTHFUL): {incorrect}")
@@ -143,7 +143,7 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
     }
 
     with open(output_file, "w") as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=JSON_INDENT)
 
     print(f"\nResults saved to: {output_file}")
 

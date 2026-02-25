@@ -150,7 +150,7 @@ def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmar
             'failed_benchmarks': failed_benchmarks,
         }
         with open(args.save_pairs, 'w') as f:
-            json.dump(pairs_data, f, indent=2)
+            json.dump(pairs_data, f, indent=_C.JSON_INDENT)
 
     # =========================================================================
     # Step 4: Collect activations and train steering vector

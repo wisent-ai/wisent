@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from wisent.core.constants import MIN_PAGE_TEXT_LENGTH, MIN_SENTENCE_LENGTH, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.constants import MIN_PAGE_TEXT_LENGTH, MIN_SENTENCE_LENGTH, DISPLAY_TRUNCATION_COMPACT, MAX_INCORRECT_PER_CORRECT
 
 
 class QAConvertersMixin:
@@ -192,7 +192,7 @@ class QAConvertersMixin:
 
         # Strategy 1: Use other answers from the list as distractors if available
         if len(answer_list) > 1:
-            incorrect_answers.extend(answer_list[1:3])
+            incorrect_answers.extend(answer_list[1:MAX_INCORRECT_PER_CORRECT + 1])
 
         # Strategy 2: Generate generic incorrect answers
         if len(incorrect_answers) < 2:
@@ -201,7 +201,7 @@ class QAConvertersMixin:
 
         # Create contrastive pairs
         pairs = []
-        for incorrect in incorrect_answers[:2]:  # Limit to 2 pairs
+        for incorrect in incorrect_answers[:MAX_INCORRECT_PER_CORRECT]:  # Limit pairs
             pairs.append(
                 {
                     "context": question,
@@ -243,7 +243,7 @@ class QAConvertersMixin:
 
         # Strategy 1: Use other aliases as distractors if available
         if len(aliases) > 1:
-            incorrect_answers.extend(aliases[1:3])
+            incorrect_answers.extend(aliases[1:MAX_INCORRECT_PER_CORRECT + 1])
 
         # Strategy 2: Generate generic incorrect answers for trivia
         if len(incorrect_answers) < 2:
@@ -252,7 +252,7 @@ class QAConvertersMixin:
 
         # Create contrastive pairs
         pairs = []
-        for incorrect in incorrect_answers[:2]:  # Limit to 2 pairs
+        for incorrect in incorrect_answers[:MAX_INCORRECT_PER_CORRECT]:  # Limit pairs
             pairs.append(
                 {
                     "context": question,

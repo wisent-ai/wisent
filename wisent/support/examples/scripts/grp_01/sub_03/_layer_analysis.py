@@ -26,6 +26,7 @@ from wisent.core.constants import (
     ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     VIZ_N_NEIGHBORS, VIZ_MIN_DIST, STABILITY_N_CLUSTERS,
     TOKENIZER_MAX_LENGTH_GEOMETRY, N_COMPONENTS_2D,
+    PROGRESS_LOG_INTERVAL_20,
 )
 
 
@@ -74,7 +75,7 @@ def extract_difference_vectors_all_layers(
     
     total = len(pairs)
     for i, pair in enumerate(pairs):
-        if show_progress and (i + 1) % 20 == 0:
+        if show_progress and (i + 1) % PROGRESS_LOG_INTERVAL_20 == 0:
             print(f"  Extracting activations: {i+1}/{total}")
         
         prompt = pair["question"]

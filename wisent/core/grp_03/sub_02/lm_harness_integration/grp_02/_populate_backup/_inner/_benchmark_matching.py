@@ -9,8 +9,9 @@ import sys
 import re
 from typing import Dict, Any, List, Optional
 
-from wisent.core.constants import (DEFAULT_LAYER, LLAMA_PAD_TOKEN_ID, MAX_BENCHMARKS_SINGLE,
-    TAG_ANALYSIS_MAX_NEW_TOKENS, TAG_GEN_MAX_NEW_TOKENS, TAG_GEN_TEMPERATURE)
+from wisent.core.constants import (DEFAULT_LAYER, DISPLAY_TOP_N_TINY, LLAMA_PAD_TOKEN_ID,
+    MAX_BENCHMARKS_SINGLE, TAG_ANALYSIS_MAX_NEW_TOKENS, TAG_GEN_MAX_NEW_TOKENS,
+    TAG_GEN_TEMPERATURE)
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
 
 
@@ -165,7 +166,7 @@ def _parse_benchmark_response(generated_text, available_benchmarks,
     lines = generated_text.split('\n')
     for line in lines:
         line = line.strip()
-        if not line or not any(char.isdigit() for char in line[:3]):
+        if not line or not any(char.isdigit() for char in line[:DISPLAY_TOP_N_TINY]):
             continue
         if ':' in line:
             parts = line.split(':', 1)

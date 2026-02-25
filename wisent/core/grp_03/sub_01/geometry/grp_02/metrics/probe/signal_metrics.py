@@ -7,7 +7,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.decomposition import PCA
-from wisent.core.constants import DEFAULT_RANDOM_SEED
+from wisent.core.constants import DEFAULT_RANDOM_SEED, N_JOBS_SINGLE
 from wisent.core import constants as _C
 
 
@@ -113,7 +113,7 @@ def _knn_umap_accuracy(X: np.ndarray, y: np.ndarray, n_components: int, k: int, 
     try:
         import umap
         umap_neighbors = max(_C.UMAP_NEIGHBORS_MIN, min(_C.UMAP_NEIGHBORS_MAX, len(y) // _C.UMAP_NEIGHBORS_DIVISOR))
-        reducer = umap.UMAP(n_components=n_components, n_neighbors=umap_neighbors, random_state=DEFAULT_RANDOM_SEED, n_jobs=1)
+        reducer = umap.UMAP(n_components=n_components, n_neighbors=umap_neighbors, random_state=DEFAULT_RANDOM_SEED, n_jobs=N_JOBS_SINGLE)
         X_umap = reducer.fit_transform(X)
         clf = KNeighborsClassifier(n_neighbors=k)
         scores = cross_val_score(clf, X_umap, y, cv=cv, scoring="accuracy")

@@ -12,7 +12,7 @@ from wisent.core.cli.optimize_steering.hierarchical_config import (
 )
 from wisent.core.cli.optimize_steering.pipeline import run_pipeline, OptimizationResult
 from wisent.core.cli.optimize_steering.method_configs import MethodConfig
-from wisent.core.constants import DEFAULT_LIMIT
+from wisent.core.constants import DEFAULT_LIMIT, DISPLAY_TOP_N_TINY, JSON_INDENT, SEPARATOR_WIDTH_WIDE
 
 
 def run_hierarchical_optimization(
@@ -42,9 +42,9 @@ def run_hierarchical_optimization(
     config_counts = count_hierarchical_configs(methods, num_layers, search_config)
     total_configs = sum(c["total"] for c in config_counts.values())
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"HIERARCHICAL STEERING OPTIMIZATION")
-    print(f"{'='*70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"Model: {model}")
     print(f"Task: {task}")
     print(f"Methods: {methods}")
@@ -57,16 +57,16 @@ def run_hierarchical_optimization(
         print(f"    Stage 3 (params):   {counts['stage3_params']}")
         print(f"    Total:              {counts['total']}")
     print(f"\nTotal configurations: {total_configs}")
-    print(f"{'='*70}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
 
     results = {}
     configs_done = 0
 
     with tempfile.TemporaryDirectory() as work_dir:
         for method in methods:
-            print(f"\n{'='*70}")
+            print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
             print(f"OPTIMIZING: {method}")
-            print(f"{'='*70}")
+            print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
 
             # =========================================================
             # STAGE 1: Layer Sweep
@@ -223,14 +223,14 @@ def run_hierarchical_optimization(
             print(f"{'='*50}")
 
     # Final summary
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"HIERARCHICAL OPTIMIZATION COMPLETE")
-    print(f"{'='*70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"\n{'Method':<12} {'Layer':<8} {'Strength':<10} {'Score':<10} {'Best Params'}")
-    print(f"{'-'*70}")
+    print(f"{'-' * SEPARATOR_WIDTH_WIDE}")
 
     for method, res in sorted(results.items(), key=lambda x: -x[1].best_score):
-        params_str = ", ".join(f"{k}={v}" for k, v in list(res.best_params.items())[:3])
+        params_str = ", ".join(f"{k}={v}" for k, v in list(res.best_params.items())[:DISPLAY_TOP_N_TINY])
         print(f"{method:<12} {res.best_layer:<8} {res.best_strength:<10.2f} {res.best_score:<10.4f} {params_str}")
 
     # Save results
@@ -255,7 +255,7 @@ def run_hierarchical_optimization(
             },
         }
         with open(results_file, 'w') as f:
-            json.dump(output_data, f, indent=2)
+            json.dump(output_data, f, indent=JSON_INDENT)
         print(f"\nResults saved to: {results_file}")
 
     return results

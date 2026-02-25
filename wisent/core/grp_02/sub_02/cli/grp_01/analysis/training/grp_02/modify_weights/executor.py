@@ -10,6 +10,7 @@ from typing import Dict, Optional, List, Any
 import torch
 
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import GUIDED_MAX_DEGRADATION, REPORT_LINE_WIDTH
 from wisent.core.weight_modification import (
     project_weights, project_with_kernel,
     bake_steering_into_weights, bake_steering_with_kernel,
@@ -165,9 +166,9 @@ def execute_guided_modification(args, wisent_model, model, tokenizer):
     start_time = time.time()
 
     if args.verbose:
-        print("\n" + "=" * 80)
+        print("\n" + "=" * REPORT_LINE_WIDTH)
         print("GUIDED WEIGHT MODIFICATION (Linearity-Driven)")
-        print("=" * 80)
+        print("=" * REPORT_LINE_WIDTH)
 
     pairs = generate_pairs_for_guided_mode(args)
     if not pairs:
@@ -183,7 +184,7 @@ def execute_guided_modification(args, wisent_model, model, tokenizer):
         use_fisher_weights=not getattr(args, 'no_fisher_weights', False),
         extraction_strategy=args.extraction_strategy,
         validate_collateral=getattr(args, 'validate_collateral', False),
-        max_allowed_degradation=getattr(args, 'max_degradation', 0.1),
+        max_allowed_degradation=getattr(args, 'max_degradation', GUIDED_MAX_DEGRADATION),
         base_strength=args.strength,
         normalize_vectors=getattr(args, 'normalize_vectors', True),
         verbose=args.verbose,
@@ -214,9 +215,9 @@ def execute_multi_concept_modification(args, wisent_model, model, tokenizer, bas
     log = bind(_LOG)
 
     if args.verbose:
-        print("\n" + "=" * 80)
+        print("\n" + "=" * REPORT_LINE_WIDTH)
         print("MULTI-CONCEPT WEIGHT MODIFICATION")
-        print("=" * 80)
+        print("=" * REPORT_LINE_WIDTH)
 
     concepts = []
     action_map = {"suppress": ConceptAction.SUPPRESS, "enhance": ConceptAction.ENHANCE, "neutral": ConceptAction.NEUTRAL}

@@ -21,7 +21,7 @@ from wisent.core.constants import (
     TOKEN_ESTIMATE_MIN,
     TOKEN_ESTIMATE_MAX,
     SIMHASH_THRESHOLD_CONSERVATIVE,
-    DISPLAY_TRUNCATION_SHORT,
+    DISPLAY_TRUNCATION_SHORT, JSON_INDENT,
 )
 
 CAPABILITIES = {
@@ -137,7 +137,7 @@ def generate_for_model(model_name: str, filename: str, base_dir: str):
             # Save
             os.makedirs(os.path.dirname(filepath), exist_ok=True)
             with open(filepath, 'w') as f:
-                json.dump(save_data, f, indent=2)
+                json.dump(save_data, f, indent=JSON_INDENT)
 
             print(f"✓ Saved {len(pairs_data)} pairs to {filepath}")
 

@@ -17,7 +17,7 @@ from typing import Any, Optional
 import torch
 
 from wisent.core.classifier.classifier import Classifier
-from wisent.core.constants import CACHE_MAX_SIZE_GB_DEFAULT, CACHE_MAX_AGE_DAYS_DEFAULT, CACHE_MEMORY_SIZE_DEFAULT, HASH_DIGEST_PREFIX
+from wisent.core.constants import CACHE_MAX_SIZE_GB_DEFAULT, CACHE_MAX_AGE_DAYS_DEFAULT, CACHE_MEMORY_SIZE_DEFAULT, HASH_DIGEST_PREFIX, BYTES_PER_MB, SECONDS_PER_HOUR
 
 logger = logging.getLogger(__name__)
 
@@ -186,7 +186,7 @@ class ClassifierCache(ClassifierCacheHelpersMixin):
                 pickle.dump(classifier, f)
 
             # Calculate file size
-            file_size_mb = model_file.stat().st_size / (1024 * 1024)
+            file_size_mb = model_file.stat().st_size / BYTES_PER_MB
 
             # Create metadata
             metadata = CacheMetadata(
@@ -294,7 +294,7 @@ class ClassifierCache(ClassifierCacheHelpersMixin):
             "oldest_cache_age_hours": (
                 time.time() - min((m.timestamp for m in self.metadata.values()), default=time.time())
             )
-            / 3600,
+            / SECONDS_PER_HOUR,
             "config": asdict(self.config),
         }
 

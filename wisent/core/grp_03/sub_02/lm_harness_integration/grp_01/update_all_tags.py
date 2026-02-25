@@ -8,7 +8,7 @@ import sys
 import json
 from typing import Dict, List
 
-from wisent.core.constants import DEFAULT_TIMEOUT_QUICK
+from wisent.core.constants import DEFAULT_TIMEOUT_QUICK, DISPLAY_TOP_N_MINI, HTTP_STATUS_OK
 
 # Import the tag determination function
 from populate_tasks import get_benchmark_tags_with_llama
@@ -53,7 +53,7 @@ def update_benchmark_tags():
             readme_content = ""
             try:
                 response = requests.get(readme_url, timeout=DEFAULT_TIMEOUT_QUICK)
-                if response.status_code == 200:
+                if response.status_code == HTTP_STATUS_OK:
                     readme_content = response.text
             except:
                 pass  # Use empty content if README fetch fails
@@ -136,7 +136,7 @@ def update_benchmark_tags():
     
     # Show some examples
     print(f"\n📋 Example updates:")
-    for i, (name, config) in enumerate(list(updated_benchmarks.items())[:5]):
+    for i, (name, config) in enumerate(list(updated_benchmarks.items())[:DISPLAY_TOP_N_MINI]):
         print(f"   {name}: {config['tags']}")
     
     return updated_benchmarks

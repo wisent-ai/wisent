@@ -2,6 +2,8 @@
 
 from typing import Any, Dict, List
 
+from wisent.core.constants import DISPLAY_TOP_N_TINY, MAX_INCORRECT_PER_CORRECT
+
 
 class BasicConvertersMixin:
     """Mixin providing basic format conversion methods."""
@@ -138,7 +140,7 @@ class BasicConvertersMixin:
 
         pairs = []
         for correct in correct_answers:
-            for incorrect in incorrect_answers[:3]:  # Limit to 3 incorrect per correct
+            for incorrect in incorrect_answers[:DISPLAY_TOP_N_TINY]:  # Limit to 3 incorrect per correct
                 pairs.append(
                     {
                         "context": question,
@@ -164,7 +166,7 @@ class BasicConvertersMixin:
 
         pairs = []
         for correct in correct_answers:
-            for incorrect in incorrect_answers[:2]:  # Limit to 2 incorrect per correct
+            for incorrect in incorrect_answers[:MAX_INCORRECT_PER_CORRECT]:  # Limit incorrect per correct
                 pairs.append(
                     {
                         "context": question,

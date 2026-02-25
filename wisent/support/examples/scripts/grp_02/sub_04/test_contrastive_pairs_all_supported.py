@@ -9,7 +9,7 @@ import signal
 import sys
 from pathlib import Path
 
-from wisent.core.constants import BENCHMARKS_PER_TYPE, DEFAULT_TIMEOUT_DOCKER, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.constants import BENCHMARKS_PER_TYPE, DEFAULT_TIMEOUT_DOCKER, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_MEDIUM, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 class TimeoutError(Exception):
@@ -191,15 +191,15 @@ def test_all_benchmarks(timeout_per_task: int = DEFAULT_TIMEOUT_DOCKER, limit: i
     
     # Summary
     print()
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print("SUMMARY")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print(f"Total tested: {results['total']}")
     print(f"OK: {results['ok']}")
     print(f"Failed: {results['failed']}")
     print(f"Timeout: {results['timeout']}")
     print(f"Success rate: {results['ok']/results['total']*100:.1f}%")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     
     return results
 
@@ -217,7 +217,7 @@ def main():
     results = test_all_benchmarks(timeout_per_task=args.timeout, limit=args.limit)
     
     with open(args.output, 'w') as f:
-        json.dump(results, f, indent=2, ensure_ascii=False)
+        json.dump(results, f, indent=JSON_INDENT, ensure_ascii=False)
     print(f"\nResults saved to: {args.output}")
     
     # Exit with error code if any failures

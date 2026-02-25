@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import numpy as np
 
-from wisent.core.constants import NORM_EPS, DATA_SPLIT_RATIO
+from wisent.core.constants import NORM_EPS, DATA_SPLIT_RATIO, MIN_SAMPLES_PCA, PCA_QUALITY_COMPONENTS, CUMULATIVE_VARIANCE_TOP_N, MIN_CLUSTERS, MIN_CLOUD_POINTS
 from wisent.core.contrastive_pairs.diagnostics.analysis.vector_quality import (
     _cosine_similarity,
     _create_vector_from_diffs,
@@ -56,20 +56,20 @@ def _compute_pca(
     issues = []
     n = len(difference_vectors)
     
-    if n < 3:
+    if n < MIN_SAMPLES_PCA:
         return None, None, None, issues
-    
+
     try:
         from sklearn.decomposition import PCA
-        
-        n_components = min(5, n - 1)
+
+        n_components = min(PCA_QUALITY_COMPONENTS, n - 1)
         pca = PCA(n_components=n_components)
         # Convert to float32 for sklearn compatibility (BFloat16 not supported)
         pca.fit(difference_vectors.float().numpy())
         
         pc1_var = pca.explained_variance_ratio_[0]
         pc2_var = pca.explained_variance_ratio_[1] if n_components > 1 else 0.0
-        cumulative_3 = sum(pca.explained_variance_ratio_[:min(3, n_components)])
+        cumulative_3 = sum(pca.explained_variance_ratio_[:min(CUMULATIVE_VARIANCE_TOP_N, n_components)])
         
         if pc1_var < config.pca_variance_critical:
             issues.append(DiagnosticsIssue(
@@ -150,9 +150,9 @@ def _compute_clustering(
     n_pos = len(positive_activations)
     n_neg = len(negative_activations)
     
-    if n_pos < 2 or n_neg < 2:
+    if n_pos < MIN_CLUSTERS or n_neg < MIN_CLUSTERS:
         return None, issues
-    
+
     try:
         from sklearn.metrics import silhouette_score
         
@@ -213,9 +213,9 @@ def _compute_cv_classification(
     n_pos = len(positive_activations)
     n_neg = len(negative_activations)
     
-    if n_pos < 3 or n_neg < 3:
+    if n_pos < MIN_CLOUD_POINTS or n_neg < MIN_CLOUD_POINTS:
         return None
-    
+
     try:
         from sklearn.linear_model import LogisticRegression
         from sklearn.model_selection import cross_val_score
@@ -242,9 +242,9 @@ def _compute_cohens_d(
     n_pos = len(positive_activations)
     n_neg = len(negative_activations)
     
-    if n_pos < 2 or n_neg < 2:
+    if n_pos < MIN_CLUSTERS or n_neg < MIN_CLUSTERS:
         return None
-    
+
     # Project onto the mean difference direction
     mean_pos = positive_activations.mean(dim=0)
     mean_neg = negative_activations.mean(dim=0)

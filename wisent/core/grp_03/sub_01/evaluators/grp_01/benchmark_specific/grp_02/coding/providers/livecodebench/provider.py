@@ -3,9 +3,7 @@ from __future__ import annotations
 import json
 from typing import Iterable, Optional
 from ..core.atoms import CodingTask, Language
-from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
-
-_SUBPROCESS_TIMEOUT = 5
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, SUBPROCESS_TIMEOUT_SHORT
 
 
 class LiveCodeBenchProvider:
@@ -132,7 +130,7 @@ def test_functional():
 
     def _generate_stdin_test(self, problem: dict, test_cases: list) -> str:
         """Generate test file for stdin-based tests (CodeForces/AtCoder style)."""
-        limit_secs = _SUBPROCESS_TIMEOUT
+        limit_secs = SUBPROCESS_TIMEOUT_SHORT
         test_code = f"""import subprocess
 import sys
 

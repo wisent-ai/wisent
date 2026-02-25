@@ -10,7 +10,7 @@ from typing import Dict, Any, List, Tuple
 from wisent.core.constants import (
     NORM_EPS, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     CONCEPT_MIN_SAMPLES, CONCEPT_SEPARABILITY_HIGH, CONCEPT_MIXED_PAIR_THRESHOLD,
-    CONCEPT_DETECTION_DEFAULT_N,
+    CONCEPT_DETECTION_DEFAULT_N, CHANCE_LEVEL_ACCURACY, CV_FOLDS,
 )
 
 
@@ -45,7 +45,7 @@ def compute_concept_linear_separability(
 
                 clf = LogisticRegression( solver='lbfgs')
                 try:
-                    n_cv = min(5, min(np.sum(y == 0), np.sum(y == 1)))
+                    n_cv = min(CV_FOLDS, min(np.sum(y == 0), np.sum(y == 1)))
                     if n_cv >= 2:
                         scores = cross_val_score(clf, X, y, cv=n_cv, scoring='accuracy')
                         acc = float(np.mean(scores))
@@ -54,10 +54,10 @@ def compute_concept_linear_separability(
                         acc = float(clf.score(X, y))
                     pairwise_scores[(int(c_i), int(c_j))] = acc
                 except Exception:
-                    pairwise_scores[(int(c_i), int(c_j))] = 0.5
+                    pairwise_scores[(int(c_i), int(c_j))] = CHANCE_LEVEL_ACCURACY
 
         if not pairwise_scores:
-            return {"separability": 0.5, "pairwise_separability": {}, "all_linearly_separable": False}
+            return {"separability": CHANCE_LEVEL_ACCURACY, "pairwise_separability": {}, "all_linearly_separable": False}
 
         mean_separability = float(np.mean(list(pairwise_scores.values())))
         all_separable = all(s >= CONCEPT_SEPARABILITY_HIGH for s in pairwise_scores.values())
@@ -68,7 +68,7 @@ def compute_concept_linear_separability(
             "all_linearly_separable": all_separable,
         }
     except Exception:
-        return {"separability": 0.5, "pairwise_separability": {}, "all_linearly_separable": False}
+        return {"separability": CHANCE_LEVEL_ACCURACY, "pairwise_separability": {}, "all_linearly_separable": False}
 
 
 def get_pair_concept_assignments(

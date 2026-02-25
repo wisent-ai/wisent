@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 
+from wisent.core.constants import JSON_INDENT
+
 
 def execute_szlak_mode(args, model, tokenizer, wisent_model, pairs):
     """Execute SZLAK weight modification mode."""
@@ -66,4 +68,4 @@ def save_diagnostics(path: str, result):
         "mode_used": result.mode_used.value,
     }
     with open(path, 'w') as f:
-        json.dump(diagnostics_data, f, indent=2)
+        json.dump(diagnostics_data, f, indent=JSON_INDENT)
