@@ -9,7 +9,7 @@ from wisent.core.errors import TaskLoadError, FallbackNotPermittedError
 
 from ..populate_tasks import get_task_samples_for_analysis as _get_task_samples_for_analysis
 from .sample_helpers import get_task_samples_direct
-from wisent.core.constants import DEFAULT_NUM_SAMPLES
+from wisent.core.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TOP_N_TINY
 
 
 __all__ = [
@@ -119,7 +119,7 @@ def get_task_samples_with_subtasks(
 
                     print(f"Found {len(subtask_names)} subtasks, trying first few...")
 
-                    for i, subtask_name in enumerate(subtask_names[:3]):
+                    for i, subtask_name in enumerate(subtask_names[:DISPLAY_TOP_N_TINY]):
                         print(f"   Trying subtask {i+1}: {subtask_name}")
                         try:
                             result = get_task_samples_for_analysis(

@@ -4,6 +4,8 @@ import sys
 import json
 import os
 
+from wisent.core.constants import JSON_INDENT
+
 
 def execute_generate_pairs_from_task(args):
     """Execute the generate-pairs-from-task command - load and save contrastive pairs from a task."""
@@ -48,7 +50,7 @@ def execute_generate_pairs_from_task(args):
                 'task_name': pairs_task_name,
                 'num_pairs': len(pairs),
                 'pairs': pairs_data
-            }, f, indent=2)
+            }, f, indent=JSON_INDENT)
 
         print(f"   ✓ Saved {len(pairs)} pairs to: {args.output}")
         print(f"\n✅ Contrastive pairs generation completed successfully!\n")

@@ -12,7 +12,7 @@ from wisent.core.constants import (
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_STEERING_LAYER,
     DATA_SPLIT_RATIO,
-    DEFAULT_BASE_STRENGTH,
+    DEFAULT_BASE_STRENGTH, JSON_INDENT,
 )
 
 
@@ -84,7 +84,7 @@ def run_comparison(
         # Save results for this task (includes all strategies)
         task_results_file = results_dir / f"{task}_results.json"
         with open(task_results_file, "w") as f:
-            json.dump(task_results, f, indent=2)
+            json.dump(task_results, f, indent=JSON_INDENT)
         print(f"Results for {task} saved to: {task_results_file}")
 
     # Print final summary table

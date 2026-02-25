@@ -11,7 +11,7 @@ from wisent.core.constants import (
     COMPARISON_NUM_PAIRS,
     COMPARISON_STEERING_LAYER,
     COMPARISON_STEERING_SCALES,
-    DATA_SPLIT_RATIO,
+    DATA_SPLIT_RATIO, JSON_INDENT,
 )
 from wisent.comparison.utils import (
     create_test_only_task, extract_accuracy, run_lm_eval_evaluation,
@@ -149,7 +149,7 @@ def evaluate_lora(
         output_dir.mkdir(parents=True, exist_ok=True)
         results_file = output_dir / f"{task}_lora_eval_results.json"
         with open(results_file, "w") as f:
-            json.dump(results, f, indent=2)
+            json.dump(results, f, indent=JSON_INDENT)
         print(f"\nResults saved to: {results_file}")
     return results
 

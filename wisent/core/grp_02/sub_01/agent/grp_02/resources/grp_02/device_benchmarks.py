@@ -19,7 +19,7 @@ import hashlib
 
 import torch
 
-from wisent.core.constants import DEVICE_HASH_PREFIX
+from wisent.core.constants import DEVICE_HASH_PREFIX, JSON_INDENT, SECONDS_PER_DAY, HOURS_PER_DAY
 from wisent.core.utils import resolve_default_device
 from wisent.core.errors import (
     DeviceBenchmarkError,
@@ -110,7 +110,7 @@ class DeviceBenchmarker(DeviceBenchTestsMixin1, DeviceBenchTestsMixin2, DeviceBe
             
             # Check if benchmark is recent (within 7 days)
             current_time = time.time()
-            age_days = (current_time - benchmark.benchmark_timestamp) / (24 * 3600)
+            age_days = (current_time - benchmark.benchmark_timestamp) / SECONDS_PER_DAY
             
             if age_days > 7:
                 print(f"   ⚠️ Cached benchmark is {age_days:.1f} days old, will re-run")
@@ -136,7 +136,7 @@ class DeviceBenchmarker(DeviceBenchTestsMixin1, DeviceBenchTestsMixin2, DeviceBe
             
             # Save back to file
             with open(self.benchmarks_file, 'w') as f:
-                json.dump(existing_data, f, indent=2)
+                json.dump(existing_data, f, indent=JSON_INDENT)
                 
             print(f"   💾 Saved benchmark results to {self.benchmarks_file}")
             

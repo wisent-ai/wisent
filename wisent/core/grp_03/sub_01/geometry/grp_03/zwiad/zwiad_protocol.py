@@ -9,7 +9,7 @@ from typing import Any, Dict, List, Optional
 import torch
 import numpy as np
 from wisent.core.constants import (
-    DEFAULT_SCORE, DEFAULT_SCALE, STAT_ALPHA, BLEND_DEFAULT,
+    DEFAULT_SCORE, DEFAULT_SCALE, ROUNDING_PRECISION, STAT_ALPHA, BLEND_DEFAULT,
     ZWIAD_MIN_SILHOUETTE, ZWIAD_EDITABILITY_THRESHOLD, ZWIAD_PRZELOM_BONUS_MAX,
     ZWIAD_SCORE_PRIMARY, ZWIAD_SCORE_SECONDARY, ZWIAD_SCORE_TERTIARY,
 )
@@ -159,7 +159,7 @@ def select_intervention(
         if editability and editability.composite_editability > ZWIAD_EDITABILITY_THRESHOLD:
             scores["PRZELOM"] = max(scores.get("PRZELOM", DEFAULT_SCORE), ZWIAD_PRZELOM_BONUS_MAX)
             reasoning.append(f"High EOT editability ({editability.composite_editability:.2f}) -> PRZELOM viable")
-        return InterventionResult(rec["recommended_method"], round(rec["confidence"], 3), reasoning, scores)
+        return InterventionResult(rec["recommended_method"], round(rec["confidence"], ROUNDING_PRECISION), reasoning, scores)
     scores = dict(_all)
     reasoning = []
     is_linear = geometry.diagnosis.startswith("LINEAR")

@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from wisent.core.constants import JSON_INDENT
 from .evidence_data import (
     AxisEvidence, AxisReduction,
     CROSS_MODEL_CONFIDENCE_DECAY, MAX_AGE_DAYS, _model_family,
@@ -44,7 +45,7 @@ class EvidenceLedger:
         )
         path = self._dir / fname
         with open(path, "w") as f:
-            json.dump(evidence.to_dict(), f, indent=2)
+            json.dump(evidence.to_dict(), f, indent=JSON_INDENT)
         logger.info("Recorded evidence: %s -> %s", evidence.id, path)
         return path
 

@@ -7,7 +7,7 @@ import torch
 
 from wisent.core.models import get_generate_kwargs
 from wisent.core.activations import ExtractionStrategy, extract_activation
-from wisent.core.constants import DATA_SPLIT_RATIO, DATA_SPLIT_SEED, MIN_LOAD_LIMIT_QUESTIONS, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.constants import DATA_SPLIT_RATIO, DATA_SPLIT_SEED, JSON_INDENT, MIN_LOAD_LIMIT_QUESTIONS, DISPLAY_TRUNCATION_COMPACT
 
 
 def execute_generate_responses(args):
@@ -270,7 +270,7 @@ def execute_generate_responses(args):
     }
 
     with open(args.output, 'w') as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=JSON_INDENT)
 
     print(f"   ✓ Results saved to: {args.output}\n")
 

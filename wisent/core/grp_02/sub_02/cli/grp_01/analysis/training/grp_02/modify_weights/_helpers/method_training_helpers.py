@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
+from wisent.core.constants import PROGRESS_LOG_INTERVAL_10
+
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
@@ -41,7 +43,7 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
                 layer_acts[l]["positive"].append(pa)
             if na is not None:
                 layer_acts[l]["negative"].append(na)
-        if args.verbose and (i + 1) % 10 == 0:
+        if args.verbose and (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
 
     meta = SteeringObjectMetadata(
@@ -79,7 +81,7 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
                 layer_acts[l]["positive"].append(pa)
             if na is not None:
                 layer_acts[l]["negative"].append(na)
-        if args.verbose and (i + 1) % 10 == 0:
+        if args.verbose and (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
 
     meta = SteeringObjectMetadata(
@@ -117,7 +119,7 @@ def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["Contra
                 layer_acts[l]["positive"].append(pa)
             if na is not None:
                 layer_acts[l]["negative"].append(na)
-        if args.verbose and (i + 1) % 10 == 0:
+        if args.verbose and (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"    Collected {i + 1}/{len(pairs)} pairs")
 
     meta = SteeringObjectMetadata(

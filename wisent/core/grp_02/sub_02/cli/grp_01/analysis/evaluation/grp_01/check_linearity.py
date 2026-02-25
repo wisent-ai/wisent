@@ -2,14 +2,14 @@
 
 import json
 import sys
-from wisent.core.constants import MIN_PAIRS_FOR_LINEARITY, DISPLAY_TOP_N_MEDIUM
+from wisent.core.constants import JSON_INDENT, MIN_PAIRS_FOR_LINEARITY, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_MEDIUM_PLUS, SEPARATOR_WIDTH_STANDARD, SEPARATOR_WIDTH_WIDE
 
 
 def execute_check_linearity(args):
     """Execute the check-linearity command."""
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("LINEARITY CHECK")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
     print(f"Pairs file: {args.pairs_file}")
     print(f"Model: {args.model}")
     
@@ -83,9 +83,9 @@ def execute_check_linearity(args):
     result = check_linearity(pairs, model, config)
     
     # Output results
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("RESULTS")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
     print(f"Verdict: {result.verdict.value.upper()}")
     print(f"Best linear score: {result.best_linear_score:.3f}")
     print(f"Best layer: {result.best_layer}")
@@ -105,19 +105,19 @@ def execute_check_linearity(args):
         output_data["all_results"] = result.all_results
         
         with open(args.output, 'w') as f:
-            json.dump(output_data, f, indent=2)
+            json.dump(output_data, f, indent=JSON_INDENT)
         print(f"\nResults saved to {args.output}")
     
     # Verbose output
     if args.verbose:
-        print(f"\n{'='*60}")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print("ALL CONFIGURATIONS (sorted by linear score)")
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         
         sorted_results = sorted(result.all_results, key=lambda x: x['linear_score'], reverse=True)
         
         print(f"{'Linear':<8} {'d':<8} {'Layer':<6} {'Strategy':<20} {'Structure':<12} {'Norm'}")
-        print("-" * 70)
+        print("-" * SEPARATOR_WIDTH_WIDE)
         
         for r in sorted_results[:DISPLAY_TOP_N_MEDIUM]:
             print(f"{r['linear_score']:<8.3f} {r['cohens_d']:<8.2f} {r['layer']:<6} "
@@ -125,9 +125,9 @@ def execute_check_linearity(args):
         
         # Show best result for each structure type
         if sorted_results and 'all_structure_scores' in sorted_results[0]:
-            print(f"\n{'='*60}")
+            print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
             print("BEST SCORE PER STRUCTURE TYPE")
-            print(f"{'='*60}")
+            print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
             
             # Collect best score for each structure across all configs
             best_per_structure = {}
@@ -145,7 +145,7 @@ def execute_check_linearity(args):
                         }
             
             print(f"{'Structure':<12} {'Score':<8} {'Conf':<8} {'Layer':<6} {'Strategy'}")
-            print("-" * 55)
+            print("-" * SEPARATOR_WIDTH_MEDIUM_PLUS)
             sorted_structs = sorted(best_per_structure.items(), key=lambda x: x[1]['score'], reverse=True)
             for name, data in sorted_structs:
                 print(f"{name:<12} {data['score']:<8.3f} {data['confidence']:<8.3f} {data['layer']:<6} {data['strategy']}")

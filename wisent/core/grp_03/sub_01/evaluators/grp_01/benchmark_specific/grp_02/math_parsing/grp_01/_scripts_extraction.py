@@ -2,7 +2,7 @@
 import re
 import multiprocessing
 from latex2sympy2_extended import latex2sympy
-from wisent.core.constants import DEFAULT_TIMEOUT_MATH_SCRIPT
+from wisent.core.constants import DEFAULT_TIMEOUT_MATH_SCRIPT, ROUNDING_PRECISION
 from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_constants import (
     STRIP_EXCEPTIONS,
 )
@@ -133,8 +133,8 @@ def symbolic_equal(a, b):
     try:
         # if a and b are matrix
         if a.shape == b.shape:
-            _a = a.applyfunc(lambda x: round(x, 3))
-            _b = b.applyfunc(lambda x: round(x, 3))
+            _a = a.applyfunc(lambda x: round(x, ROUNDING_PRECISION))
+            _b = b.applyfunc(lambda x: round(x, ROUNDING_PRECISION))
             if _a.equals(_b):
                 return True
     except:

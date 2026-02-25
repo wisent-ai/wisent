@@ -20,6 +20,9 @@ from wisent.core.constants import (
     COHERENCE_SHORT_RESPONSE_PENALTY, COHERENCE_NONSENSE_WORD_RATIO_MAX,
     COHERENCE_TRIGRAM_REPEAT_THRESHOLD, COHERENCE_CONTENT_WORD_REPEAT_THRESHOLD,
     COHERENCE_FUNCTION_WORD_THRESHOLD, MIN_SENTENCE_LENGTH, SCORE_SCALE_100,
+    MIN_RESPONSE_TOKENS, MIN_TOKENS_TRIGRAM, MIN_CONTENT_WORD_LENGTH,
+    MIN_TOKENS_NONSENSE, MIN_TOKEN_LENGTH_NONSENSE,
+    COHERENCE_DEGENERATION_PENALTY,
 )
 from wisent.core.evaluators.personalization.coherence import (
     _is_gibberish,
@@ -49,7 +52,7 @@ def _is_incoherent(text: str) -> bool:
 
     # Check 2: Single word or very few words (unhelpful)
     tokens = text.split()
-    if len(tokens) < 4:
+    if len(tokens) < MIN_RESPONSE_TOKENS:
         return True
 
     # Check 3: Consecutive duplicate words (e.g., "policymakers policymakers")
@@ -68,7 +71,7 @@ def _is_incoherent(text: str) -> bool:
             return True
 
     # Check 5: Repeated phrases (3+ word sequences appearing multiple times)
-    if len(tokens) >= 6:
+    if len(tokens) >= MIN_TOKENS_TRIGRAM:
         trigrams = [' '.join(tokens[i:i+3]) for i in range(len(tokens) - 2)]
         trigram_counts = Counter(trigrams)
         most_common_count = trigram_counts.most_common(1)[0][1] if trigrams else 0
@@ -96,7 +99,7 @@ def _is_incoherent(text: str) -> bool:
             return True
 
     # Check 8: Excessive repetition of the same word (3+ times for content words)
-    content_words = [t.lower().strip('.,!?"\'-') for t in tokens if len(t) > 3]
+    content_words = [t.lower().strip('.,!?"\'-') for t in tokens if len(t) >= MIN_CONTENT_WORD_LENGTH]
     if content_words:
         word_counts = Counter(content_words)
         for word, count in word_counts.items():
@@ -109,10 +112,10 @@ def _is_incoherent(text: str) -> bool:
 
     # Check 9: Nonsense words (using tokenizer fragmentation)
     tokenizer = _get_tokenizer()
-    if tokenizer and len(tokens) >= 5:
+    if tokenizer and len(tokens) >= MIN_TOKENS_NONSENSE:
         nonsense_count = 0
         for token in tokens_lower:
-            if len(token) >= 4 and _is_nonsense_word(token, tokenizer):
+            if len(token) >= MIN_TOKEN_LENGTH_NONSENSE and _is_nonsense_word(token, tokenizer):
                 nonsense_count += 1
         # If more than 15% of words are nonsense, flag it
         if nonsense_count / len(tokens) > COHERENCE_NONSENSE_WORD_RATIO_MAX:
@@ -191,7 +194,7 @@ def evaluate_quality(
         bigram_counts = Counter(bigrams)
         most_common_bigram_count = bigram_counts.most_common(1)[0][1]
         if most_common_bigram_count > 2:  # Same phrase repeated 3+ times
-            score *= 0.5
+            score *= COHERENCE_DEGENERATION_PENALTY
 
     # Check 4: Nonsensical patterns (too many special chars)
     special_char_ratio = len(re.findall(r"[^a-zA-Z0-9\s.,!?']", response)) / max(

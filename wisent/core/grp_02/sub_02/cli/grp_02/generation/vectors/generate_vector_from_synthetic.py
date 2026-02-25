@@ -9,7 +9,7 @@ import re
 from argparse import Namespace
 
 from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import DISPLAY_TRUNCATION_SHORT
+from wisent.core.constants import DISPLAY_TRUNCATION_SHORT, HASH_DISPLAY_LENGTH, SEPARATOR_WIDTH_STANDARD
 from ..pairs.generate_pairs import execute_generate_pairs
 from ...analysis.geometry.get_activations import execute_get_activations
 from ...steering.core.create_steering_object import execute_create_steering_object
@@ -21,7 +21,7 @@ def _get_pairs_cache_filename(trait: str, num_pairs: int) -> str:
     safe_trait = re.sub(r'[^\w\s-]', '', trait.lower())
     safe_trait = re.sub(r'[\s]+', '_', safe_trait)[:DISPLAY_TRUNCATION_SHORT]  # Limit length
     # Add hash for uniqueness if trait is complex
-    trait_hash = hashlib.md5(trait.encode()).hexdigest()[:8]
+    trait_hash = hashlib.md5(trait.encode()).hexdigest()[:HASH_DISPLAY_LENGTH]
     return f"pairs_{safe_trait}_{trait_hash}_n{num_pairs}.json"
 
 
@@ -34,13 +34,13 @@ def execute_generate_vector_from_synthetic(args):
     2. Collect activations from those pairs
     3. Create steering vectors from the activations
     """
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print(f"🎯 Generating Steering Vector from Synthetic Pairs (Full Pipeline)")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
     print(f"   Trait: {args.trait}")
     print(f"   Model: {args.model}")
     print(f"   Num Pairs: {args.num_pairs}")
-    print(f"{'='*60}\n")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
 
     pipeline_start = time.time() if args.timing else None
 
@@ -81,14 +81,14 @@ def execute_generate_vector_from_synthetic(args):
             enriched_file = tempfile.NamedTemporaryFile(mode='w', suffix='_enriched.json', delete=False).name
 
         # Step 1: Generate synthetic pairs (or use cached)
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         if use_cached_pairs:
             print(f"Step 1/3: Using cached contrastive pairs...")
             pairs_file = cached_pairs_file
             print(f"   ✓ Loaded from: {cached_pairs_file}")
         else:
             print(f"Step 1/3: Generating synthetic contrastive pairs...")
-        print(f"{'='*60}\n")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
         if not use_cached_pairs:
             # Determine output path for pairs - use cache dir if specified
@@ -122,9 +122,9 @@ def execute_generate_vector_from_synthetic(args):
             print(f"\n✓ Step 1 complete: Using cached pairs from {pairs_file}")
         
         # Step 2: Collect activations
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Step 2/3: Collecting activations from pairs...")
-        print(f"{'='*60}\n")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
         activations_args = Namespace(
             pairs_file=pairs_file,
@@ -141,9 +141,9 @@ def execute_generate_vector_from_synthetic(args):
         print(f"\n✓ Step 2 complete: Enriched pairs saved to {enriched_file}\n")
         
         # Step 3: Create steering vector
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Step 3/3: Creating steering vector...")
-        print(f"{'='*60}\n")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
         vector_args = Namespace(
             enriched_pairs_file=enriched_file,
@@ -183,9 +183,9 @@ def execute_generate_vector_from_synthetic(args):
                     print(f"   ⚠️  Warning: Could not remove some temporary files: {e}")
         
         # Final summary
-        print(f"\n{'='*60}")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"✅ Full Pipeline Completed Successfully!")
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"   Final steering vector: {args.output}")
         if pairs_cache_dir:
             print(f"   Cached pairs: {cached_pairs_file}")
@@ -195,7 +195,7 @@ def execute_generate_vector_from_synthetic(args):
         if args.timing and pipeline_start:
             total_time = time.time() - pipeline_start
             print(f"   ⏱️  Total pipeline time: {total_time:.2f}s")
-        print(f"{'='*60}\n")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
     except Exception as e:
         print(f"\n❌ Pipeline failed: {str(e)}", file=sys.stderr)

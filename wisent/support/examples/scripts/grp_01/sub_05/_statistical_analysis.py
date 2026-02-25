@@ -14,7 +14,8 @@ from wisent.core.constants import (
     ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     LINEARITY_PCA_COMPONENTS, LINEARITY_N_BOOTSTRAP, STAT_ALPHA,
     CV_FOLDS, DIP_TEST_SIMULATIONS, DIRECTION_N_SPLITS, CV_DEFAULT_N_FOLDS,
-    N_BOOTSTRAP_DEFAULT, DISPLAY_TOP_N_SMALL,
+    N_BOOTSTRAP_DEFAULT, DISPLAY_TOP_N_SMALL, DIP_TEST_N_SIMULATIONS,
+    PERCENTILE_HIGH,
 )
 
 
@@ -158,9 +159,8 @@ def hartigans_dip_test(data: np.ndarray) -> Tuple[float, float]:
     dip = np.max(np.abs(ecdf - data_norm))
     
     # Approximate p-value using Monte Carlo
-    n_simulations = 1000
     dip_null = []
-    for _ in range(n_simulations):
+    for _ in range(DIP_TEST_N_SIMULATIONS):
         sample = np.sort(np.random.uniform(0, 1, n))
         sample_ecdf = np.arange(1, n + 1) / n
         dip_null.append(np.max(np.abs(sample_ecdf - sample)))
@@ -259,19 +259,19 @@ def compute_null_distribution(
         "bic_diff": {
             "mean": np.mean(null_bic_diffs),
             "std": np.std(null_bic_diffs),
-            "p95": np.percentile(null_bic_diffs, 95),
+            "p95": np.percentile(null_bic_diffs, PERCENTILE_HIGH),
             "values": null_bic_diffs,
         },
         "silhouette": {
             "mean": np.mean(null_silhouettes),
             "std": np.std(null_silhouettes),
-            "p95": np.percentile(null_silhouettes, 95),
+            "p95": np.percentile(null_silhouettes, PERCENTILE_HIGH),
             "values": null_silhouettes,
         },
         "eigenvalue_ratio": {
             "mean": np.mean(null_eigenvalue_ratios),
             "std": np.std(null_eigenvalue_ratios),
-            "p95": np.percentile(null_eigenvalue_ratios, 95),
+            "p95": np.percentile(null_eigenvalue_ratios, PERCENTILE_HIGH),
             "values": null_eigenvalue_ratios,
         },
     }

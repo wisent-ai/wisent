@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from ...model_persistence import ModelPersistence
 from wisent.core.errors import NoSuitableClassifierError
-from wisent.core.constants import DEFAULT_LAYER, SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_DECISION_THRESHOLD
+from wisent.core.constants import DEFAULT_LAYER, SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_DECISION_THRESHOLD, CLASSIFIER_RECENCY_BONUS
 
 
 from wisent.core.agent.diagnose.classifiers._select_classifiers_helpers import ClassifierSelectorHelpersMixin, auto_select_classifiers_for_agent  # noqa: F401
@@ -276,7 +276,7 @@ class ClassifierSelector(ClassifierSelectorHelpersMixin):
                 created_at = datetime.fromisoformat(metadata['created_at'])
                 days_old = (datetime.now() - created_at).days
                 if days_old < CLASSIFIER_RECENCY_DAYS:
-                    score += 0.1
+                    score += CLASSIFIER_RECENCY_BONUS
             except:
                 pass
         

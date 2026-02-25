@@ -7,8 +7,8 @@ from pathlib import Path
 from argparse import Namespace
 from typing import Tuple
 from wisent.core.constants import (
-    BLEND_DEFAULT, CLASSIFIER_TEST_SIZE, DEFAULT_BASE_STRENGTH, VIZ_MLP_EPOCHS,
-    CLASSIFIER_BATCH_SIZE, VIZ_MLP_HIDDEN_DIM,
+    BLEND_DEFAULT, CLASSIFIER_TEST_SIZE, DEFAULT_BASE_STRENGTH, JSON_INDENT,
+    VIZ_MLP_EPOCHS, CLASSIFIER_BATCH_SIZE, VIZ_MLP_HIDDEN_DIM,
 )
 
 
@@ -113,7 +113,7 @@ def save_viz_summary(output_path: Path, args, base_evaluations, steered_evaluati
                        "steered_in_truthful_region": sum(1 for p in steered_space_probs if p >= BLEND_DEFAULT),
                        "total": len(base_space_probs), "base_mean_prob": float(np.mean(base_space_probs)),
                        "steered_mean_prob": float(np.mean(steered_space_probs))},
-                   "responses": all_responses}, f, indent=2)
+                   "responses": all_responses}, f, indent=JSON_INDENT)
     print(f"Summary saved to: {json_path}")
 
 

@@ -5,7 +5,7 @@ import json
 import argparse
 from typing import Optional
 
-from wisent.core.constants import NUM_EXAMPLES_DEFAULT, DISPLAY_TRUNCATION_LONG, DISPLAY_TRUNCATION_XLARGE, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.constants import JSON_INDENT, NUM_EXAMPLES_DEFAULT, DISPLAY_TRUNCATION_LONG, DISPLAY_TRUNCATION_XLARGE, DISPLAY_TRUNCATION_COMPACT
 
 
 def execute_preview_pairs(args):
@@ -183,7 +183,7 @@ def execute_preview_pairs(args):
             output_data["pairs"].append(pair_data)
         
         with open(args.output, 'w') as f:
-            json.dump(output_data, f, indent=2)
+            json.dump(output_data, f, indent=JSON_INDENT)
         print(f"Saved to: {args.output}")
 
 

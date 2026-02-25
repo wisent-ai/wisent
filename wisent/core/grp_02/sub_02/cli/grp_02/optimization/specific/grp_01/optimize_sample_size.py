@@ -12,7 +12,7 @@ from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifi
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, OPTIMIZE_ACCURACY_THRESHOLD_MULT, AUTOTUNE_VAL_SPLIT
+from wisent.core.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, OPTIMIZE_ACCURACY_THRESHOLD_MULT, AUTOTUNE_VAL_SPLIT, SAMPLE_LOADING_BUFFER, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
 
 
 def execute_optimize_sample_size(args):
@@ -39,7 +39,7 @@ def execute_optimize_sample_size(args):
 
         print(f"Loading task '{args.task}'...")
         max_train_samples = max(args.sample_sizes)
-        total_limit = max_train_samples + args.test_size + 50
+        total_limit = max_train_samples + args.test_size + SAMPLE_LOADING_BUFFER
 
         loader = LMEvalDataLoader()
         result = loader._load_one_task(
@@ -74,7 +74,7 @@ def execute_optimize_sample_size(args):
         X_test_list, y_test_list = [], []
         print(f"   Collecting activations for {len(test_pairs)} test pairs...")
         for i, pair in enumerate(test_pairs):
-            if i % 10 == 0:
+            if i % PROGRESS_LOG_INTERVAL_10 == 0:
                 print(f"      Processing test pair {i+1}/{len(test_pairs)}...", end='\r')
             collected_pair = collector.collect(pair, strategy=extraction_strategy, layers=[layer_str])
             if collected_pair.positive_response.layers_activations and layer_str in collected_pair.positive_response.layers_activations:
@@ -100,7 +100,7 @@ def execute_optimize_sample_size(args):
         print(f"\nGenerating test responses (ONCE)...")
         test_generations = []
         for i, pair in enumerate(test_pairs):
-            if i % 10 == 0:
+            if i % PROGRESS_LOG_INTERVAL_10 == 0:
                 print(f"      Processing {i+1}/{len(test_pairs)}...", end='\r')
             question = pair.prompt
             expected = pair.positive_response.model_response
@@ -125,12 +125,12 @@ def execute_optimize_sample_size(args):
         # Test each sample size
         results = []
         for sample_size in args.sample_sizes:
-            print(f"\n{'='*60}\nTesting training size: {sample_size}\n{'='*60}")
+            print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}\nTesting training size: {sample_size}\n{'='*SEPARATOR_WIDTH_STANDARD}")
             start_time = time.time()
             train_pairs_subset = available_train_pairs[:sample_size]
             X_train_list, y_train_list = [], []
             for i, pair in enumerate(train_pairs_subset):
-                if i % 10 == 0:
+                if i % PROGRESS_LOG_INTERVAL_10 == 0:
                     print(f"      Processing train pair {i+1}/{sample_size}...", end='\r')
                 collected_pair = collector.collect(pair, strategy=extraction_strategy, layers=[layer_str])
                 if collected_pair.positive_response.layers_activations and layer_str in collected_pair.positive_response.layers_activations:

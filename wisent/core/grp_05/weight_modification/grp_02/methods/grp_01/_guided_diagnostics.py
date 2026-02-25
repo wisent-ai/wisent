@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 from wisent.core.weight_modification.methods.guided import (
     LayerDiagnostics,
 )
-from wisent.core.constants import NORM_EPS
+from wisent.core.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD, CHANCE_LEVEL_ACCURACY
 from wisent.core.weight_modification.methods._guided_scoring import (
     _compute_knn_accuracy,
     _compute_fisher_ratio,
@@ -72,7 +72,7 @@ def compute_layer_diagnostics(
         print(f"\nComputing layer diagnostics for {len(layers)} layers...")
         print(f"Using {len(pairs)} contrastive pairs")
         print(f"Extraction strategy: {extraction_strategy}")
-        print("-" * 60)
+        print("-" * SEPARATOR_WIDTH_STANDARD)
     
     # Collect activations for all layers
     pos_activations: Dict[int, List[Tensor]] = {l: [] for l in layers}
@@ -128,7 +128,7 @@ def compute_layer_diagnostics(
             )
     
     if verbose:
-        print("-" * 60)
+        print("-" * SEPARATOR_WIDTH_STANDARD)
         best_layer = max(diagnostics.keys(), key=lambda l: diagnostics[l].linear_score) if diagnostics else -1
         if best_layer >= 0:
             print(f"Best layer: {best_layer} (linear_score={diagnostics[best_layer].linear_score:.3f})")
@@ -195,7 +195,7 @@ def _compute_linear_probe_accuracy(
     mean_diff_norm = mean_diff.norm()
     
     if mean_diff_norm < NORM_EPS:
-        return 0.5, {"reason": "no_separation"}
+        return CHANCE_LEVEL_ACCURACY, {"reason": "no_separation"}
     
     direction = mean_diff / mean_diff_norm
     

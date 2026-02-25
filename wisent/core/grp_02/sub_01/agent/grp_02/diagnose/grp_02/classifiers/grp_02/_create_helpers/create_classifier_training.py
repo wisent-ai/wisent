@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Tuple
 
 from wisent.core.classifier.classifier import ActivationClassifier
 from wisent.core.errors import InsufficientDataError
+from wisent.core.constants import DATA_OVERSAMPLE_MULTIPLIER, SPLIT_RATIO_FULL
 
 from ....activations import Activations
 from ....layer import Layer
@@ -31,8 +32,8 @@ class TrainingMixin:
                 print(f"     Loading from {benchmark}...")
 
                 # Load benchmark task using TaskManager
-                task_data = task_manager.load_task(benchmark, limit=samples_per_benchmark * 3)
-                docs = task_manager.split_task_data(task_data, split_ratio=1.0)[0]
+                task_data = task_manager.load_task(benchmark, limit=samples_per_benchmark * DATA_OVERSAMPLE_MULTIPLIER)
+                docs = task_manager.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL)[0]
 
                 # Extract QA pairs using existing system
                 from ....contrastive_pairs.contrastive_pair_set import ContrastivePairSet

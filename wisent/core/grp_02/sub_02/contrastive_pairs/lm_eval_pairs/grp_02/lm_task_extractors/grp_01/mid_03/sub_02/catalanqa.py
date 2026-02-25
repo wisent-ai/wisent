@@ -6,6 +6,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import DISPLAY_TOP_N_TINY
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -96,7 +97,7 @@ class CatalanqaExtractor(LMEvalBenchmarkExtractor):
 
                 if not incorrect_answer:
                     # Fallback: use first few words of context
-                    words = context.split()[:3]
+                    words = context.split()[:DISPLAY_TOP_N_TINY]
                     incorrect_answer = ' '.join(words) if words else "incorrect answer"
 
                 # Format prompt

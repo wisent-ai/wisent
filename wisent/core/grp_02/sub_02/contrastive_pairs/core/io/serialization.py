@@ -11,6 +11,7 @@ import torch
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.constants import JSON_INDENT
 from wisent.core.errors import (
     DecodeError,
     UnknownTypeError,
@@ -241,7 +242,7 @@ def save_contrastive_pair_set(
 
     filepath = Path(filepath)
     with filepath.open("w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
+        json.dump(data, f, indent=JSON_INDENT, ensure_ascii=False)
 
 
 

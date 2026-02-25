@@ -3,7 +3,7 @@
 import json
 import argparse
 
-from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, SEPARATOR_WIDTH_REPORT, JSON_INDENT
 
 
 def save_results_and_finish(all_results, results_file):
@@ -31,12 +31,12 @@ def save_results_and_finish(all_results, results_file):
     }
 
     with open(results_file, 'w') as f:
-        json.dump(results_data, f, indent=2)
+        json.dump(results_data, f, indent=JSON_INDENT)
     print(f"\nFull results saved to: {results_file}")
 
-    print("\n" + "=" * 80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("ANALYSIS COMPLETE")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
 
 def main():

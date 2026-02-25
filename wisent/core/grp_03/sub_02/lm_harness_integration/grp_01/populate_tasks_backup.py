@@ -11,7 +11,7 @@ import os
 import sys
 import subprocess
 
-from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
+from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, BENCH_TEST_SAMPLE_SIZE, JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
 
 # Re-export all public API from the split parts
 from wisent.core.lm_harness_integration._populate_backup import (
@@ -36,7 +36,7 @@ def test_prompt_benchmark_matching(test_prompt: str = "I like food"):
     """Test the prompt-to-benchmark matching function."""
     print(f"Testing prompt-to-benchmark matching")
     print(f"Test prompt: '{test_prompt}'")
-    print("=" * 50)
+    print("=" * SEPARATOR_WIDTH_MEDIUM)
     results = get_relevant_benchmarks_for_prompt(test_prompt)
     print("\nResults:")
     for i, result in enumerate(results, 1):
@@ -50,7 +50,7 @@ def test_prompt_benchmark_matching(test_prompt: str = "I like food"):
 def test_sample_retrieval(task_name: str = "truthfulqa_mc1"):
     """Test function to demonstrate the get_task_samples_for_analysis function."""
     print(f"\n=== Testing Sample Retrieval for '{task_name}' ===")
-    result = get_task_samples_for_analysis(task_name, num_samples=3)
+    result = get_task_samples_for_analysis(task_name, num_samples=BENCH_TEST_SAMPLE_SIZE)
     if "error" in result:
         print(f"Error: {result['error']}")
         return False
@@ -95,7 +95,7 @@ def test_specific_task():
     for task_name in test_tasks:
         print(f"\nTesting task: {task_name}")
         try:
-            result = get_task_samples_for_analysis(task_name, num_samples=3)
+            result = get_task_samples_for_analysis(task_name, num_samples=BENCH_TEST_SAMPLE_SIZE)
             print(f"Result keys: {list(result.keys())}")
             if 'error' in result:
                 print(f"Error: {result['error']}")
@@ -155,7 +155,7 @@ def main():
         "task_list": available_tasks
     }
     with open(tasks_file, 'w') as f:
-        json.dump(initial_data, f, indent=2, ensure_ascii=False)
+        json.dump(initial_data, f, indent=JSON_INDENT, ensure_ascii=False)
     print(f"Saved {len(available_tasks)} task names to {tasks_file}")
     print(f"\nPhase 2: Populating detailed information for 2 test tasks...")
     tasks_to_populate = ["truthfulqa_mc1", "hellaswag"]
@@ -170,7 +170,7 @@ def main():
             current_data["tasks"][task_name] = task_info
             processed += 1
             with open(tasks_file, 'w') as f:
-                json.dump(current_data, f, indent=2, ensure_ascii=False)
+                json.dump(current_data, f, indent=JSON_INDENT, ensure_ascii=False)
             print(f"  Updated {task_name}")
         else:
             print(f"  Failed to process {task_name}")

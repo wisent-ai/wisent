@@ -5,7 +5,7 @@ import os
 import time
 import tempfile
 from argparse import Namespace
-from wisent.core.constants import TECZA_NUM_DIRECTIONS, DATA_SPLIT_SEED
+from wisent.core.constants import TECZA_NUM_DIRECTIONS, DATA_SPLIT_SEED, SEPARATOR_WIDTH_STANDARD
 
 from ..pairs.generate_pairs_from_task import execute_generate_pairs_from_task
 from ...analysis.geometry.get_activations import execute_get_activations
@@ -83,16 +83,16 @@ def execute_generate_vector_from_task(args):
         optimal_config = _load_optimal_defaults(args.model, args.task, args)
         
         if optimal_config:
-            print(f"\n{'='*60}")
+            print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
             print(f"📊 Found optimal steering config from previous optimization!")
-            print(f"{'='*60}")
+            print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
             print(f"   Method: {optimal_config['method']}")
             print(f"   Layer: {optimal_config['layer']}")
             print(f"   Strength: {optimal_config['strength']}")
             if optimal_config.get('extraction_strategy'):
                 print(f"   Extraction Strategy: {optimal_config['extraction_strategy']}")
             print(f"   Score: {optimal_config['score']:.3f}")
-            print(f"{'='*60}")
+            print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
 
             # Apply optimal defaults if user didn't explicitly override
             if not getattr(args, '_layers_set_by_user', False) and args.layers is None:
@@ -111,16 +111,16 @@ def execute_generate_vector_from_task(args):
             args._optimal_config = optimal_config
             print()
     
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print(f"🎯 Generating Steering Vector from Task (Full Pipeline)")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
     print(f"   Task: {args.task}")
     print(f"   Trait Label: {args.trait_label}")
     print(f"   Model: {args.model}")
     print(f"   Num Pairs: {args.num_pairs}")
     if optimal_config:
         print(f"   Using Optimal Config: YES (score={optimal_config['score']:.3f})")
-    print(f"{'='*60}\n")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
     
     pipeline_start = time.time() if args.timing else None
     
@@ -143,9 +143,9 @@ def execute_generate_vector_from_task(args):
             enriched_file = tempfile.NamedTemporaryFile(mode='w', suffix='_enriched.json', delete=False).name
 
         # Step 1: Generate pairs from task
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Step 1/3: Generating contrastive pairs from task...")
-        print(f"{'='*60}\n")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
         pairs_args = Namespace(
             task_name=args.task,
@@ -159,9 +159,9 @@ def execute_generate_vector_from_task(args):
         print(f"\n✓ Step 1 complete: Pairs saved to {pairs_file}\n")
         
         # Step 2: Collect activations
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Step 2/3: Collecting activations from pairs...")
-        print(f"{'='*60}\n")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
         activations_args = Namespace(
             pairs_file=pairs_file,
@@ -179,9 +179,9 @@ def execute_generate_vector_from_task(args):
         print(f"\n✓ Step 2 complete: Enriched pairs saved to {enriched_file}\n")
         
         # Step 3: Create steering vector
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Step 3/3: Creating steering vector...")
-        print(f"{'='*60}\n")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
         vector_args = Namespace(
             enriched_pairs_file=enriched_file,
@@ -214,9 +214,9 @@ def execute_generate_vector_from_task(args):
                     print(f"   ⚠️  Warning: Could not remove some temporary files: {e}")
         
         # Final summary
-        print(f"\n{'='*60}")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"✅ Full Pipeline Completed Successfully!")
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"   Final steering vector: {args.output}")
         if args.keep_intermediate:
             print(f"   Intermediate pairs: {pairs_file}")
@@ -224,7 +224,7 @@ def execute_generate_vector_from_task(args):
         if args.timing and pipeline_start:
             total_time = time.time() - pipeline_start
             print(f"   ⏱️  Total pipeline time: {total_time:.2f}s")
-        print(f"{'='*60}\n")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
     except Exception as e:
         print(f"\n❌ Pipeline failed: {str(e)}", file=sys.stderr)

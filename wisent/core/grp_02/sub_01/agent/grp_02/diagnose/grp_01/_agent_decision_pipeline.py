@@ -6,7 +6,7 @@ from wisent.core.agent.diagnose._agent_decision_types import (
     QualityResult, QualityControlledResponse, SteeringParams)
 from wisent.core.agent.diagnose.classifier_marketplace import (
     ClassifierMarketplace, ClassifierListing, ClassifierCreationEstimate)
-from wisent.core.constants import AGENT_DECISION_NUM_SAMPLES, AGENT_PENALTY_MULTIPLIER, AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET
+from wisent.core.constants import AGENT_DECISION_NUM_SAMPLES, AGENT_PENALTY_MULTIPLIER, AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET, SECONDS_PER_MINUTE, SEPARATOR_WIDTH_NARROW
 
 class ClassifierPipelineMixin:
     """Mixin providing decision pipeline methods."""
@@ -68,10 +68,10 @@ class ClassifierPipelineMixin:
             
             # Update budget and count
             if decision.action == "create_new":
-                training_time_seconds = creation_estimate.estimated_training_time_minutes * 60
+                training_time_seconds = creation_estimate.estimated_training_time_minutes * SECONDS_PER_MINUTE
                 budget_manager.get_budget(ResourceType.TIME).spend(training_time_seconds)
                 classifier_count += 1
-                remaining_minutes = budget_manager.get_budget(ResourceType.TIME).remaining_budget / 60
+                remaining_minutes = budget_manager.get_budget(ResourceType.TIME).remaining_budget / SECONDS_PER_MINUTE
                 print(f"      ⏱️ Remaining time budget: {remaining_minutes:.1f} minutes")
             elif decision.action == "use_existing":
                 classifier_count += 1
@@ -96,7 +96,7 @@ class ClassifierPipelineMixin:
         
         # Factor 2: Time constraints
         time_budget = budget_manager.get_budget(ResourceType.TIME)
-        training_time_seconds = creation_estimate.estimated_training_time_minutes * 60
+        training_time_seconds = creation_estimate.estimated_training_time_minutes * SECONDS_PER_MINUTE
         can_afford_creation = time_budget.can_afford(training_time_seconds)
         
         # Factor 3: Expected benefit vs cost
@@ -226,7 +226,7 @@ class ClassifierPipelineMixin:
         recent_decisions = self.decision_history[-10:]  # Last 10 decisions
         
         summary = "\n🤖 Recent Classifier Decisions\n"
-        summary += "=" * 40 + "\n"
+        summary += "=" * SEPARATOR_WIDTH_NARROW + "\n"
         
         action_counts = {}
         for decision in recent_decisions:

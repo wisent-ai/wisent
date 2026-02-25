@@ -22,6 +22,7 @@ from wisent.core.evaluators.benchmark_specific.conala_evaluator import (
     tokenize_for_bleu_eval,
 )
 from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
+from wisent.core.constants import SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 # Generation config for code generation
@@ -125,14 +126,14 @@ def main(limit: int | None = None, split: str = "test"):
     evaluator = CoNaLaEvaluator()
 
     print(f"\nEvaluating on CoNaLa {split} split")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     metrics = evaluate_conala(model, evaluator, split, limit)
 
     # Summary
-    print("\n" + "=" * 60)
+    print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
     print("SUMMARY")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print(f"Model: {model_name}")
     print(f"Dataset: neulab/conala (curated)")
     print(f"Split: {split}")
@@ -160,7 +161,7 @@ def main(limit: int | None = None, split: str = "test"):
     }
 
     with open(output_file, "w") as f:
-        json.dump(output_data, f, indent=2, ensure_ascii=False)
+        json.dump(output_data, f, indent=JSON_INDENT, ensure_ascii=False)
 
     print(f"\nResults saved to: {output_file}")
 

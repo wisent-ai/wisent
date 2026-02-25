@@ -6,7 +6,7 @@ import subprocess
 import sys
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.constants import DEFAULT_LAYER, DEVICE_BENCH_TIMEOUT_SECS, GPU_TEST_TIMEOUT_SECS, AGENT_BENCH_MIN_PAIRS_TRAINING
+from wisent.core.constants import DEFAULT_LAYER, DEVICE_BENCH_TIMEOUT_SECS, GPU_TEST_TIMEOUT_SECS, AGENT_BENCH_MIN_PAIRS_TRAINING, BENCH_TEST_SAMPLE_SIZE
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin1:
@@ -82,19 +82,19 @@ try:
         task_name="truthfulqa_mc",
         model_name="meta-llama/Llama-3.1-8B-Instruct",
         layer="__LAYER__",  # Required parameter
-        limit=3,  # Minimum examples for timing
+        limit=__BENCH_SAMPLE__,  # Minimum examples for timing
         steering_mode=False,  # No steering for baseline timing
         verbose=False,
         allow_small_dataset=True,
         output_mode="likelihoods"
     )
     print("BENCHMARK_DEBUG: Task pipeline completed")
-    
+
     end_time = time.time()
     total_time = end_time - start_time
-    print(f"BENCHMARK_DEBUG: Total time: {total_time}s for 3 examples")
+    print(f"BENCHMARK_DEBUG: Total time: {total_time}s for __BENCH_SAMPLE__ examples")
     # Scale to per-100-examples
-    time_per_100 = (total_time / 3) * 100
+    time_per_100 = (total_time / __BENCH_SAMPLE__) * 100
     print(f"BENCHMARK_DEBUG: Scaled time per 100: {time_per_100}s")
     print(f"BENCHMARK_RESULT:{time_per_100}")
     
@@ -105,6 +105,7 @@ except Exception as e:
     raise
 '''
         test_script = test_script.replace("__LAYER__", str(DEFAULT_LAYER))
+        test_script = test_script.replace("__BENCH_SAMPLE__", str(BENCH_TEST_SAMPLE_SIZE))
         print("   🔧 DEBUG: Writing test script to temporary file...")
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:

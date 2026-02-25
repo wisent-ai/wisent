@@ -7,6 +7,8 @@ This module provides data loaders for tasks that need special handling.
 from typing import Any, Dict, List, Optional
 from dataclasses import dataclass
 
+from wisent.core.constants import DISPLAY_TOP_N_TINY
+
 
 __all__ = ["LiveCodeBenchLoader", "LiveCodeBenchProblem"]
 
@@ -65,7 +67,7 @@ class LiveCodeBenchProblem:
                     "output": "",
                     "testtype": "FUNCTIONAL"
                 }
-                for tc in self.public_test_cases[:3]  # Limit to first 3 for brevity
+                for tc in self.public_test_cases[:DISPLAY_TOP_N_TINY]  # Limit for brevity
             ] if self.public_test_cases else [],
             "metadata": self.metadata,
             "answer": self.good_code,  # Use good_code as the correct answer

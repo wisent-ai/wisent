@@ -15,7 +15,7 @@ from wisent.core.constants import (
     COMPARISON_NUM_PAIRS, TRAINING_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
     COMPARISON_LORA_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,
     COMPARISON_TRAINING_BATCH_SIZE, COMPARISON_MAX_LENGTH,
-    COMPARISON_LOGGING_STEPS,
+    COMPARISON_LOGGING_STEPS, JSON_INDENT,
 )
 
 __all__ = ["prepare_sft_dataset", "get_target_modules", "train_lora_adapter"]
@@ -107,7 +107,7 @@ def train_lora_adapter(
                             "batch_size": batch_size, "max_length": max_length},
     }
     with open(output_path / "metadata.json", "w") as f:
-        json.dump(metadata, f, indent=2)
+        json.dump(metadata, f, indent=JSON_INDENT)
     del model, trainer
     gc.collect()
     if torch.cuda.is_available():

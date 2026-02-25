@@ -15,6 +15,7 @@ import sys
 from pathlib import Path
 from wisent.core.parser_arguments import setup_parser
 from wisent.core.utils import print_banner
+from wisent.core.constants import BANNER_WIDTH
 from wisent.core.cli import (
     execute_tasks, execute_generate_pairs_from_task, execute_generate_pairs,
     execute_diagnose_pairs, execute_get_activations, execute_diagnose_vectors,
@@ -52,7 +53,7 @@ def main():
     """Main entry point for the Wisent CLI."""
     # Show banner only on first use
     if _should_show_banner():
-        print_banner("Wisent CLI", width=64, use_color=True)
+        print_banner("Wisent CLI", width=BANNER_WIDTH, use_color=True)
 
     # Parse arguments
     parser = setup_parser()

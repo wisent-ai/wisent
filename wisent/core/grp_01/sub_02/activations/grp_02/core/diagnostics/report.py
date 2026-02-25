@@ -8,6 +8,7 @@ from typing import List, Tuple, Optional
 import torch
 
 from wisent.core.activations import ExtractionStrategy
+from wisent.core.constants import REPORT_LINE_WIDTH
 from .strategy_diagnostics import StrategyDiagnostics, run_strategy_diagnostics
 
 
@@ -20,12 +21,12 @@ def generate_diagnostics_report(diagnostics_list: List[StrategyDiagnostics]) -> 
     """Generate a formatted diagnostics report."""
     ranked = compare_strategies(diagnostics_list)
     lines = []
-    lines.append("=" * 80)
+    lines.append("=" * REPORT_LINE_WIDTH)
     lines.append("EXTRACTION STRATEGY DIAGNOSTICS REPORT")
-    lines.append("=" * 80)
+    lines.append("=" * REPORT_LINE_WIDTH)
     lines.append("")
     lines.append(f"{'Strategy':<15} {'LinAcc':>8} {'Consist':>10} {'Geom':>10} {'SteerAcc':>10} {'Score':>8}")
-    lines.append("-" * 80)
+    lines.append("-" * REPORT_LINE_WIDTH)
 
     for d in ranked:
         steer = f"{d.steering_accuracy:.3f}" if d.steering_accuracy else "N/A"
@@ -36,9 +37,9 @@ def generate_diagnostics_report(diagnostics_list: List[StrategyDiagnostics]) -> 
 
     best = ranked[0]
     lines.append("")
-    lines.append("=" * 80)
+    lines.append("=" * REPORT_LINE_WIDTH)
     lines.append(f"RECOMMENDATION: {best.strategy}")
-    lines.append("=" * 80)
+    lines.append("=" * REPORT_LINE_WIDTH)
     lines.append(f"  Linear accuracy:   {best.linear_accuracy:.3f}")
     lines.append(f"  Consistency:       {best.consistency:.4f}")
     if best.steering_accuracy:
@@ -59,7 +60,7 @@ def generate_diagnostics_report(diagnostics_list: List[StrategyDiagnostics]) -> 
             lines.append(f"  {d.strategy}: A/B={d.ab_variance_fraction*100:.1f}%, semantic={d.semantic_consistency:.4f}")
 
     lines.append("")
-    lines.append("=" * 80)
+    lines.append("=" * REPORT_LINE_WIDTH)
     return "\n".join(lines)
 
 

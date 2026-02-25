@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.constants import NORM_EPS, GEO_PAIRS_PER_BENCHMARK, CLUSTER_SMALL_MAX_LAYERS, CLUSTER_MEDIUM_MAX_LAYERS, CLUSTER_LAYERS_SMALL, CLUSTER_LAYERS_MEDIUM, CLUSTER_LAYERS_LARGE, TOKENIZER_MAX_LENGTH_CLUSTER, EXTRACTION_WEIGHTED_DECAY, BENCHMARK_PAIR_LOADING_LIMIT, CLUSTER_PROMPT_TRUNCATION, CLUSTER_RESPONSE_TRUNCATION, CLUSTER_MIN_PAIRS
+from wisent.core.constants import NORM_EPS, GEO_PAIRS_PER_BENCHMARK, CLUSTER_SMALL_MAX_LAYERS, CLUSTER_MEDIUM_MAX_LAYERS, CLUSTER_LAYERS_SMALL, CLUSTER_LAYERS_MEDIUM, CLUSTER_LAYERS_LARGE, TOKENIZER_MAX_LENGTH_CLUSTER, EXTRACTION_WEIGHTED_DECAY, BENCHMARK_PAIR_LOADING_LIMIT, CLUSTER_PROMPT_TRUNCATION, CLUSTER_RESPONSE_TRUNCATION, CLUSTER_MIN_PAIRS, DISPLAY_TOP_N_TINY
 
 
 class ConfigResult:
@@ -175,7 +175,7 @@ def load_benchmark_pairs(benchmark_name: str, loader: LMEvalDataLoader, limit: i
         task_obj = loader.load_lm_eval_task(benchmark_name)
         if isinstance(task_obj, dict):
             pairs = []
-            for subname, subtask in list(task_obj.items())[:3]:
+            for subname, subtask in list(task_obj.items())[:DISPLAY_TOP_N_TINY]:
                 try:
                     sub_pairs = lm_build_contrastive_pairs(task_name=subname, lm_eval_task=subtask, limit=limit//3)
                     pairs.extend(sub_pairs)

@@ -7,7 +7,7 @@ from typing import Dict, List, Any
 
 import torch
 import numpy as np
-from wisent.core.constants import DEFAULT_RANDOM_SEED, VIZ_MARKER_SIZE_SMALL, PCA_GALLERY_COMPONENTS, VIZ_GALLERY_N_PER_TYPE, TSNE_PERPLEXITY_MAX, SIGNAL_EXISTENCE_THRESHOLD, LINEAR_GAP_THRESHOLD
+from wisent.core.constants import DEFAULT_RANDOM_SEED, VIZ_MARKER_SIZE_SMALL, PCA_GALLERY_COMPONENTS, VIZ_GALLERY_N_PER_TYPE, TSNE_PERPLEXITY_MAX, SIGNAL_EXISTENCE_THRESHOLD, LINEAR_GAP_THRESHOLD, VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_HIGH, VIZ_BBOX_ALPHA
 
 try:
     import matplotlib.pyplot as plt
@@ -169,16 +169,16 @@ def create_tsne_plot(
     
     # Plot
     ax.scatter(X_2d[labels == 1, 0], X_2d[labels == 1, 1],
-               c=pos_color, label='Positive', alpha=0.7, s=VIZ_MARKER_SIZE_SMALL)
+               c=pos_color, label='Positive', alpha=VIZ_ALPHA_HIGH, s=VIZ_MARKER_SIZE_SMALL)
     ax.scatter(X_2d[labels == 0, 0], X_2d[labels == 0, 1],
-               c=neg_color, label='Negative', alpha=0.7, s=VIZ_MARKER_SIZE_SMALL)
+               c=neg_color, label='Negative', alpha=VIZ_ALPHA_HIGH, s=VIZ_MARKER_SIZE_SMALL)
     
-    ax.set_title(title, fontsize=12, fontweight='bold')
+    ax.set_title(title, fontsize=VIZ_FONTSIZE_SUBTITLE, fontweight='bold')
     ax.set_xticks([])
     ax.set_yticks([])
     
     # Add diagnosis label
     ax.text(0.02, 0.98, diagnosis, transform=ax.transAxes, 
-            fontsize=10, fontweight='bold', va='top',
-            bbox=dict(boxstyle='round', facecolor='white', alpha=0.8))
+            fontsize=VIZ_FONTSIZE_BODY, fontweight='bold', va='top',
+            bbox=dict(boxstyle='round', facecolor='white', alpha=VIZ_BBOX_ALPHA))
 

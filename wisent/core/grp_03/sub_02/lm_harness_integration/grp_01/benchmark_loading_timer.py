@@ -30,6 +30,7 @@ sys.path.insert(0, current_dir)
 from populate_tasks import get_task_samples_for_analysis
 from only_benchmarks import CORE_BENCHMARKS
 from wisent.core.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
+from wisent.core import constants as _C
 
 def time_benchmark_loading(benchmark_name: str, benchmark_config: dict, num_samples: int = DEFAULT_NUM_SAMPLES) -> Dict:
     """
@@ -150,7 +151,7 @@ def analyze_timing_results(results: List[Dict]) -> Dict:
                 "samples": r["samples_retrieved"],
                 "tags": r["tags"]
             }
-            for r in sorted_by_time[:5]
+            for r in sorted_by_time[:_C.DISPLAY_TOP_N_MINI]
         ]
         analysis["slowest_benchmarks"] = [
             {
@@ -159,7 +160,7 @@ def analyze_timing_results(results: List[Dict]) -> Dict:
                 "samples": r["samples_retrieved"],
                 "tags": r["tags"]
             }
-            for r in sorted_by_time[-5:]
+            for r in sorted_by_time[-_C.DISPLAY_TOP_N_MINI:]
         ]
     
     # Category analysis
@@ -248,14 +249,14 @@ def save_detailed_results(results: List[Dict], analysis: Dict, output_file: str)
     }
     
     with open(output_file, 'w') as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=_C.JSON_INDENT)
     
     print(f"\n💾 Detailed results saved to: {output_file}")
 
 def main():
     """Main function to time all benchmark loading."""
     print("🚀 Benchmark Loading Timer")
-    print("="*50)
+    print("=" * _C.SEPARATOR_WIDTH_MEDIUM)
     print(f"📋 Testing {len(CORE_BENCHMARKS)} benchmarks...")
     print("⏱️  Measuring time to load 5 samples from each benchmark")
     print()

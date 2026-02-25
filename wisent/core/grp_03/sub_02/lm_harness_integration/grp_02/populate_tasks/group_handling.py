@@ -4,7 +4,7 @@ import random
 from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import get_all_docs_from_task
-from wisent.core.constants import MAX_DEPTH, DEFAULT_NUM_SAMPLES
+from wisent.core.constants import MAX_DEPTH, DEFAULT_NUM_SAMPLES, DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI
 
 
 def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: int = MAX_DEPTH) -> Any:
@@ -16,7 +16,7 @@ def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: in
     items = list(group_dict.items())
     random.shuffle(items)
 
-    for item_name, item in items[:3]:
+    for item_name, item in items[:DISPLAY_TOP_N_TINY]:
         indent = "   " + "  " * depth
         print(f"{indent}Checking '{item_name}'...")
 
@@ -144,7 +144,7 @@ def process_group_task(group_name: str, sub_tasks: List[str], get_task_dict) -> 
             task = task_dict[first_subtask_name]
             result["evaluation_method"] = get_evaluation_method(task)
             result["category"] = get_category(task)
-            result["description"] = f"Group task containing: {', '.join(sub_tasks[:5])}" + ("..." if len(sub_tasks) > 5 else "")
+            result["description"] = f"Group task containing: {', '.join(sub_tasks[:DISPLAY_TOP_N_MINI])}" + ("..." if len(sub_tasks) > DISPLAY_TOP_N_MINI else "")
         else:
             result["evaluation_method"] = "unknown"
             result["category"] = "unknown"

@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from wisent.core.constants import COMPARISON_NUM_PAIRS, TOKENIZER_MAX_LENGTH_CLUSTER, SAE_TOP_K_DEFAULT, DISPLAY_TOP_N_SMALL
+from wisent.core.constants import COMPARISON_NUM_PAIRS, TOKENIZER_MAX_LENGTH_CLUSTER, SAE_TOP_K_DEFAULT, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10
 from wisent.comparison.utils import (
     apply_steering_to_model,
     remove_steering,
@@ -113,7 +113,7 @@ def compute_feature_diff(
         neg_latents = sae.encode(neg_acts)
         neg_features_list.append(neg_latents.mean(dim=1).detach())
 
-        if (i + 1) % 10 == 0:
+        if (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"      Processed {i + 1}/{len(pairs)} pairs")
 
     # Stack and compute mean difference

@@ -6,7 +6,7 @@ from argparse import Namespace
 from typing import List, Dict
 
 from datasets import load_dataset
-from wisent.core.constants import PAIRS_NUM_PAIRS, DEFAULT_RANDOM_SEED, PAIRS_MIN_LENGTH, PAIRS_MAX_LENGTH
+from wisent.core.constants import JSON_INDENT, PAIRS_NUM_PAIRS, DEFAULT_RANDOM_SEED, PAIRS_MIN_LENGTH, PAIRS_MAX_LENGTH
 
 
 def generate_humanization_pairs(
@@ -99,7 +99,7 @@ def generate_humanization_pairs(
             }
         }
         with open(output_path, 'w') as f:
-            json.dump(output_data, f, indent=2)
+            json.dump(output_data, f, indent=JSON_INDENT)
         print(f"  Saved to {output_path}")
     
     return pairs

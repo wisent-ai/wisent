@@ -5,6 +5,7 @@ import torch
 from pathlib import Path
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.constants import JSON_INDENT
 from wisent.core.errors import MissingParameterError
 
 if TYPE_CHECKING:
@@ -80,7 +81,7 @@ def export_modified_model(
         
         if config_updated:
             with open(config_path, 'w') as f:
-                json.dump(config, f, indent=2)
+                json.dump(config, f, indent=JSON_INDENT)
             log.info(f"Updated config: attention_bias={has_attn_bias}, mlp_bias={has_mlp_bias}")
 
     # Save MLP biases separately (transformers doesn't support mlp_bias config)

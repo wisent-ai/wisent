@@ -1,6 +1,8 @@
 from __future__ import annotations
 import json, os, shutil, subprocess, sys, time, signal, resource
 
+from wisent.core.constants import BYTES_PER_MB
+
 JOB_FILE = "/job/job.json"
 WORKDIR = "/work"
 
@@ -16,8 +18,8 @@ def set_limits(job):
         
     """
     resource.setrlimit(resource.RLIMIT_CPU,  (job["cpu_limit_s"],)*2)
-    resource.setrlimit(resource.RLIMIT_AS,   (job["mem_limit_mb"]*1024*1024,)*2)
-    resource.setrlimit(resource.RLIMIT_FSIZE,(job["fsize_mb"]*1024*1024,)*2)
+    resource.setrlimit(resource.RLIMIT_AS,   (job["mem_limit_mb"]*BYTES_PER_MB,)*2)
+    resource.setrlimit(resource.RLIMIT_FSIZE,(job["fsize_mb"]*BYTES_PER_MB,)*2)
     resource.setrlimit(resource.RLIMIT_NPROC,(job["nproc"],)*2)
     resource.setrlimit(resource.RLIMIT_NOFILE,(job["nofile"],)*2)
     resource.setrlimit(resource.RLIMIT_CORE,(0,0))

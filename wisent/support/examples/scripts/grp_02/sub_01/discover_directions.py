@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from wisent.core.constants import PARSER_DEFAULT_FEW_SHOT, PAIR_GENERATORS_DEFAULT_N
+from wisent.core.constants import PARSER_DEFAULT_FEW_SHOT, PAIR_GENERATORS_DEFAULT_N, SEPARATOR_WIDTH_WIDE, JSON_INDENT
 from wisent.core.geometry import GeometrySearchSpace
 from wisent.examples.scripts._discovery_utils import (
     load_categorized_benchmarks,
@@ -122,9 +122,9 @@ def generate_cross_model_comparison(all_model_results: Dict[str, "DiscoveryResul
 
 def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int = PAIR_GENERATORS_DEFAULT_N, with_nonsense_baseline: bool = False, with_pairs_ablation: bool = False):
     """Run full category direction discovery."""
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("CATEGORY DIRECTION DISCOVERY")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     # Load categories
     categories = load_categorized_benchmarks()
@@ -191,11 +191,11 @@ def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int
         overall["cross_model_comparison"] = generate_cross_model_comparison(all_model_results)
         
         with open(overall_file, "w") as f:
-            json.dump(overall, f, indent=2)
+            json.dump(overall, f, indent=JSON_INDENT)
     
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print("DISCOVERY COMPLETE")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"Results saved to: {output_dir}")
 
 

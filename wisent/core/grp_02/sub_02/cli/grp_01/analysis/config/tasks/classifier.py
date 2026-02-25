@@ -7,7 +7,7 @@ import torch
 
 from wisent.core.models import get_generate_kwargs
 from wisent.core.errors import UnknownTypeError
-from wisent.core.constants import DEFAULT_CLASSIFIER_LR, QUALITY_THRESHOLD, MAX_REGENERATION_ATTEMPTS, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE
+from wisent.core.constants import DEFAULT_CLASSIFIER_LR, JSON_INDENT, QUALITY_THRESHOLD, MAX_REGENERATION_ATTEMPTS, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, PROGRESS_LOG_INTERVAL_10
 
 
 def collect_activations(args, model, pair_set, ActivationCollector, ExtractionStrategy):
@@ -23,7 +23,7 @@ def collect_activations(args, model, pair_set, ActivationCollector, ExtractionSt
     positive_activations, negative_activations = [], []
 
     for i, pair in enumerate(pair_set.pairs):
-        if i % 10 == 0:
+        if i % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...", end='\r')
 
         updated_pair = collector.collect(pair, strategy=extraction_strategy, layers=[layer_str])
@@ -76,7 +76,7 @@ def train_steering_vector(args, activations):
         with open(os.path.join(args.output, 'training_report.json'), 'w') as f:
             json.dump({'method': args.steering_method, 'layer': activations['layer'],
                       'num_positive': len(activations['positive']), 'num_negative': len(activations['negative']),
-                      'vector_shape': list(steering_vector.shape)}, f, indent=2)
+                      'vector_shape': list(steering_vector.shape)}, f, indent=JSON_INDENT)
 
     return {
         "steering_vector_saved": True, "vector_path": args.save_steering_vector,
@@ -139,7 +139,7 @@ def evaluate_classifier(args, model, classifier, test_pairs, activations, task_n
     generation_results = []
 
     for i, pair in enumerate(test_pairs.pairs):
-        if i % 10 == 0:
+        if i % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"      Processing {i+1}/{len(test_pairs.pairs)}...", end='\r')
 
         result = _evaluate_single_generation(
@@ -260,7 +260,7 @@ def save_classifier_and_results(args, classifier, report, activations, generatio
     if args.output:
         os.makedirs(args.output, exist_ok=True)
         with open(os.path.join(args.output, 'training_report.json'), 'w') as f:
-            json.dump(report.asdict(), f, indent=2)
+            json.dump(report.asdict(), f, indent=JSON_INDENT)
 
         if generation_results:
             with open(os.path.join(args.output, 'generation_details.json'), 'w') as f:
@@ -269,7 +269,7 @@ def save_classifier_and_results(args, classifier, report, activations, generatio
                     'aggregation': activations['extraction_strategy'].value, 'threshold': args.detection_threshold,
                     'num_generations': len(generation_results), 'detection_stats': detection_stats,
                     'generations': generation_results
-                }, f, indent=2)
+                }, f, indent=JSON_INDENT)
 
     print(f"\n   📊 Real-world performance:")
     print(f"     • Accuracy:  {metrics['accuracy']:.4f}")

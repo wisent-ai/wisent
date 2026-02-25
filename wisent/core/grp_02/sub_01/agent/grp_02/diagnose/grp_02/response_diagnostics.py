@@ -16,7 +16,7 @@ from wisent.core.activations.activations import Activations
 from wisent.core.classifier.classifier import Classifier
 from wisent.core.layer import Layer
 from wisent.core.model import Model
-from wisent.core.constants import AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, CLASSIFIER_DEFAULT_THRESHOLD, DEFAULT_LAYER, QUALITY_CLASSIFIER_DEFAULT_LAYER
+from wisent.core.constants import AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, CLASSIFIER_DEFAULT_THRESHOLD, DEFAULT_LAYER, QUALITY_CLASSIFIER_DEFAULT_LAYER, CHANCE_LEVEL_ACCURACY
 from wisent.core.errors import (
     ClassifierConfigRequiredError,
     ClassifierLoadError,
@@ -102,7 +102,7 @@ class ResponseDiagnostics:
             confidence = (
                 sum(result["confidence"] for result in classifier_results) / len(classifier_results)
                 if classifier_results
-                else 0.5
+                else CHANCE_LEVEL_ACCURACY
             )
         else:
             confidence = sum(confidence_scores) / len(confidence_scores)

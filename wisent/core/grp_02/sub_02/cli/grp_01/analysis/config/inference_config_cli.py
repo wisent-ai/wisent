@@ -1,6 +1,7 @@
 """CLI execution for inference config command."""
 
 import json
+from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
 from wisent.core.models import (
     get_config,
     update_config,
@@ -16,8 +17,8 @@ def execute_inference_config(args):
     if subcommand == "show" or subcommand is None:
         config = get_config()
         print(f"Inference Config (stored at {CONFIG_FILE}):")
-        print("-" * 50)
-        print(json.dumps(config.to_dict(), indent=2))
+        print("-" * SEPARATOR_WIDTH_MEDIUM)
+        print(json.dumps(config.to_dict(), indent=JSON_INDENT))
 
     elif subcommand == "set":
         updates = {}
@@ -42,13 +43,13 @@ def execute_inference_config(args):
         if updates:
             config = update_config(**updates)
             print("Updated inference config:")
-            print(json.dumps(config.to_dict(), indent=2))
+            print(json.dumps(config.to_dict(), indent=JSON_INDENT))
         else:
             print("No updates specified. Use --help to see available options.")
             print("\nCurrent config:")
-            print(json.dumps(get_config().to_dict(), indent=2))
+            print(json.dumps(get_config().to_dict(), indent=JSON_INDENT))
 
     elif subcommand == "reset":
         config = reset_config()
         print("Inference config reset to defaults:")
-        print(json.dumps(config.to_dict(), indent=2))
+        print(json.dumps(config.to_dict(), indent=JSON_INDENT))

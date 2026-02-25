@@ -28,7 +28,8 @@ from wisent.core.cli.optimize_steering.pipeline import _make_args
 from wisent.core.utils import preferred_dtype
 from wisent.core.constants import (LOG_EPS, TIKHONOV_REG, RL_BASELINE, DEFAULT_SCORE, RL_NUM_EPISODES,
     PIPELINE_STEERING_STRENGTH, PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P,
-    RL_EPSILON, PRZELOM_EPSILON, PRZELOM_INFERENCE_K, RL_BATCH_LIMIT, CLASSIFIER_DECISION_THRESHOLD)
+    RL_EPSILON, PRZELOM_EPSILON, PRZELOM_INFERENCE_K, RL_BATCH_LIMIT, CLASSIFIER_DECISION_THRESHOLD,
+    SEPARATOR_WIDTH_WIDE)
 
 
 def _precompute_layer_data(
@@ -209,13 +210,13 @@ def execute_transport_rl(args):
     output_path = getattr(args, 'output', 'best_transport_rl.pt')
     device = getattr(args, 'device', None)
 
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"REWARD-SHAPED COST TRANSPORT (RSCT)")
-    print(f"{'=' * 70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"   Model: {model}  |  Task: {task}")
     print(f"   Iterations: {max_iter}  |  LR: {lr}  |  Epsilon: {epsilon}")
     print(f"   Regularization: {reg}  |  Inference K: {inf_k}  |  Limit: {limit}")
-    print(f"{'=' * 70}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
 
     # 1. Load and precompute
     print("Loading enriched pairs and precomputing layer data...")

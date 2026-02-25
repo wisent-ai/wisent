@@ -34,9 +34,9 @@ from wisent.core.cli.optimize_steering.continual._loop_helpers import (
     get_task_priority,
 )
 from wisent.core.constants import (DEFAULT_LIMIT, CONTINUAL_EWC_LAMBDA, WELFARE_LIMIT,
-    CONTINUAL_SHARED_UPDATE_RATE,
-    CONTINUAL_REPLAY_INTERVAL, CONTINUAL_FORGETTING_THRESHOLD,
-    CONTINUAL_CONVERGENCE_WINDOW)
+    CONTINUAL_SHARED_UPDATE_RATE, DISPLAY_TOP_N_MINI, SEPARATOR_WIDTH_WIDE,
+    SEPARATOR_WIDTH_MEDIUM, CONTINUAL_REPLAY_INTERVAL,
+    CONTINUAL_FORGETTING_THRESHOLD, CONTINUAL_CONVERGENCE_WINDOW)
 
 
 def _run_replay_check(state, model, pairs_dir, limit, device,
@@ -93,16 +93,16 @@ def execute_continual_learning(args):
     tasks = ([t.strip() for t in tasks_str.split(",")]
              if tasks_str else get_all_benchmarks())
 
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"AUTONOMOUS CONTINUAL LEARNING")
-    print(f"{'=' * 70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"   Model: {model}")
-    print(f"   Tasks: {len(tasks)} ({', '.join(tasks[:5])}"
-          f"{'...' if len(tasks) > 5 else ''})")
+    print(f"   Tasks: {len(tasks)} ({', '.join(tasks[:DISPLAY_TOP_N_MINI])}"
+          f"{'...' if len(tasks) > DISPLAY_TOP_N_MINI else ''})")
     print(f"   Method: {method or 'auto (zwiad per task)'}")
     print(f"   Max cycles: {max_cycles}  |  EWC lambda: {ewc_lambda}")
     print(f"   Checkpoint: {checkpoint_dir}")
-    print(f"{'=' * 70}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
 
     state = load_state(checkpoint_dir) or ContinualState()
     start_cycle = state.current_cycle + 1
@@ -111,9 +111,9 @@ def execute_continual_learning(args):
             state.task_priorities[task] = 0
 
     for cycle in range(start_cycle, start_cycle + max_cycles):
-        print(f"\n{'=' * 50}")
+        print(f"\n{'=' * SEPARATOR_WIDTH_MEDIUM}")
         print(f"CYCLE {cycle}/{start_cycle + max_cycles - 1}")
-        print(f"{'=' * 50}")
+        print(f"{'=' * SEPARATOR_WIDTH_MEDIUM}")
 
         # 1. Select highest-priority task
         task_scores = {
@@ -206,9 +206,9 @@ def execute_continual_learning(args):
             print(f"\n   Converged after {convergence_window} cycles w/o improvement")
             break
 
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"CONTINUAL LEARNING COMPLETE  |  Cycles: {state.current_cycle}")
-    print(f"{'=' * 70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     for t, scores in state.metrics.items():
         print(f"   {t}: best={max(scores):.4f}, latest={scores[-1]:.4f}")
     return state

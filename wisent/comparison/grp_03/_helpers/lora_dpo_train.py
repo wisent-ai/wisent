@@ -21,6 +21,7 @@ from wisent.core.constants import (
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_NUM_PAIRS, TRAINING_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
     COMPARISON_LOGGING_STEPS, LORA_DPO_LEARNING_RATE, LORA_DPO_NUM_EPOCHS,
+    JSON_INDENT,
 )
 from wisent.comparison.utils import (
     generate_contrastive_pairs,
@@ -150,7 +151,7 @@ def train_lora_dpo(
         "beta": beta,
     }
     with open(output_path / "metadata.json", "w") as f:
-        json.dump(metadata, f, indent=2)
+        json.dump(metadata, f, indent=JSON_INDENT)
 
     del model, trainer
     gc.collect()

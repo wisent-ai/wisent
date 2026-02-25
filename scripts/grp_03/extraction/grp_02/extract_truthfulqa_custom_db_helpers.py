@@ -10,7 +10,7 @@ import os
 
 import torch
 import psycopg2
-from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE
+from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE, DEFAULT_MAX_RETRIES, DB_CONNECT_WAIT_S
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
@@ -25,7 +25,7 @@ def get_db_connection():
     # Add TCP keepalive to prevent connection timeout during long forward passes
     conn = psycopg2.connect(
         db_url,
-        connect_timeout=30,
+        connect_timeout=DB_CONNECT_WAIT_S,
         keepalives=1,
         keepalives_idle=30,
         keepalives_interval=10,
@@ -139,8 +139,7 @@ def get_or_create_pair_set(conn, benchmark: str) -> int:
 
 def get_or_create_pair(set_id: int, prompt: str, positive: str, negative: str, pair_idx: int) -> int:
     """Get or create ContrastivePair with auto-reconnect."""
-    max_retries = 3
-    for attempt in range(max_retries):
+    for attempt in range(DEFAULT_MAX_RETRIES):
         try:
             conn = get_conn()
             cur = conn.cursor()
@@ -166,9 +165,9 @@ def get_or_create_pair(set_id: int, prompt: str, positive: str, negative: str, p
             cur.close()
             return pair_id
         except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
-            print(f"  [DB error in get_or_create_pair attempt {attempt+1}/{max_retries}: {e}]", flush=True)
+            print(f"  [DB error in get_or_create_pair attempt {attempt+1}/{DEFAULT_MAX_RETRIES}: {e}]", flush=True)
             reset_conn()
-            if attempt == max_retries - 1:
+            if attempt == DEFAULT_MAX_RETRIES - 1:
                 raise
 
 
@@ -208,12 +207,11 @@ def batch_create_raw_activations(activations_data: list):
 
     # Split into smaller batches to avoid timeout (max 50 rows per batch)
     batch_size = EXTRACTION_DB_BATCH_SIZE
-    max_retries = 3
 
     for i in range(0, len(activations_data), batch_size):
         batch = activations_data[i:i + batch_size]
 
-        for attempt in range(max_retries):
+        for attempt in range(DEFAULT_MAX_RETRIES):
             try:
                 conn = get_conn()
                 cur = conn.cursor()
@@ -228,9 +226,9 @@ def batch_create_raw_activations(activations_data: list):
                 cur.close()
                 break  # Success, move to next batch
             except (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.errors.QueryCanceled) as e:
-                print(f"  [DB batch error on attempt {attempt+1}/{max_retries}: {e}]", flush=True)
+                print(f"  [DB batch error on attempt {attempt+1}/{DEFAULT_MAX_RETRIES}: {e}]", flush=True)
                 reset_conn()
-                if attempt == max_retries - 1:
+                if attempt == DEFAULT_MAX_RETRIES - 1:
                     raise
 
 
@@ -250,8 +248,7 @@ def create_raw_activation(
     hidden_dim = hidden_states.shape[1]
     hidden_bytes = hidden_states_to_bytes(hidden_states)
 
-    max_retries = 3
-    for attempt in range(max_retries):
+    for attempt in range(DEFAULT_MAX_RETRIES):
         try:
             conn = get_conn()
             cur = conn.cursor()
@@ -264,9 +261,9 @@ def create_raw_activation(
             cur.close()
             return
         except (psycopg2.OperationalError, psycopg2.InterfaceError) as e:
-            print(f"  [DB error on attempt {attempt+1}/{max_retries}: {e}]", flush=True)
+            print(f"  [DB error on attempt {attempt+1}/{DEFAULT_MAX_RETRIES}: {e}]", flush=True)
             reset_conn()
-            if attempt == max_retries - 1:
+            if attempt == DEFAULT_MAX_RETRIES - 1:
                 raise
 
 

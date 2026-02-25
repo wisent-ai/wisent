@@ -21,7 +21,7 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PARSER_DEFAULT_NUM_PAIRS, DISPLAY_TOP_N_SMALL
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PARSER_DEFAULT_NUM_PAIRS, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE
 
 
 # Best configs loaded from comprehensive test results
@@ -143,9 +143,9 @@ def run_multi_config(args, wisent_model, pairs, collector, configs_json=None):
         print("Run test_geometry_comprehensive.py first to generate the results file.")
         return
     
-    print("\n" + "="*80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("MULTI-CONFIG COMPARISON: Visualization vs Detection at each structure's best config")
-    print("="*80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     
     results = {}
     
@@ -154,9 +154,9 @@ def run_multi_config(args, wisent_model, pairs, collector, configs_json=None):
         agg = AGG_MAP[config["aggregation"]]
         prompt_strat = PROMPT_MAP[config["prompt"]]
         
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * SEPARATOR_WIDTH_STANDARD}")
         print(f"Config for {structure_name.upper()}: Layer={layer}, Agg={config['aggregation']}, Prompt={config['prompt']}")
-        print("="*60)
+        print("=" * SEPARATOR_WIDTH_STANDARD)
         
         output_file = f"geometry_{structure_name}_L{layer}_{config['aggregation']}_{config['prompt']}.png"
         
@@ -171,11 +171,11 @@ def run_multi_config(args, wisent_model, pairs, collector, configs_json=None):
         }
     
     # Print comparison summary
-    print("\n" + "="*80)
+    print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
     print("COMPARISON SUMMARY: Visualization vs Detection")
-    print("="*80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print(f"{'Structure':<12} {'Config':<30} {'Viz Cosine':<12} {'Det Cone':<10} {'Det Score':<10}")
-    print("-"*80)
+    print("-" * SEPARATOR_WIDTH_REPORT)
     
     for structure_name, data in results.items():
         cfg = data["config"]
@@ -206,7 +206,7 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
         pos_activations.append(pos_vec)
         neg_activations.append(neg_vec)
         
-        if (i + 1) % 10 == 0:
+        if (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"  Processed {i + 1}/{len(pairs)} pairs")
 
     pos_arr = np.array(pos_activations)
@@ -269,14 +269,14 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     # Create visualization
     fig, axes = plt.subplots(2, 3, figsize=(15, 10))
     agg_name = {v: k for k, v in AGG_MAP.items()}.get(aggregation, str(aggregation))
-    fig.suptitle(f'Geometry of {args.task} (Layer {layer}, Agg={agg_name}, {args.num_pairs} pairs)', fontsize=14)
+    fig.suptitle(f'Geometry of {args.task} (Layer {layer}, Agg={agg_name}, {args.num_pairs} pairs)', fontsize=VIZ_FONTSIZE_SUPTITLE)
 
     # 1. PCA of all activations
     pca_full = PCA(n_components=2)
     all_pca = pca_full.fit_transform(all_arr)
     ax = axes[0, 0]
-    ax.scatter(all_pca[:len(pos_arr), 0], all_pca[:len(pos_arr), 1], c='blue', alpha=0.6, label='True')
-    ax.scatter(all_pca[len(pos_arr):, 0], all_pca[len(pos_arr):, 1], c='red', alpha=0.6, label='False')
+    ax.scatter(all_pca[:len(pos_arr), 0], all_pca[:len(pos_arr), 1], c='blue', alpha=VIZ_ALPHA_MEDIUM, label='True')
+    ax.scatter(all_pca[len(pos_arr):, 0], all_pca[len(pos_arr):, 1], c='red', alpha=VIZ_ALPHA_MEDIUM, label='False')
     ax.set_title(f'PCA of Activations\n(var explained: {pca_full.explained_variance_ratio_.sum():.1%})')
     ax.legend()
     ax.set_xlabel('PC1')
@@ -286,9 +286,9 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     pca_diff = PCA(n_components=2)
     diff_pca = pca_diff.fit_transform(diff_arr)
     ax = axes[0, 1]
-    ax.scatter(diff_pca[:, 0], diff_pca[:, 1], c='green', alpha=0.6)
-    ax.axhline(y=0, color='k', linestyle='--', alpha=0.3)
-    ax.axvline(x=0, color='k', linestyle='--', alpha=0.3)
+    ax.scatter(diff_pca[:, 0], diff_pca[:, 1], c='green', alpha=VIZ_ALPHA_MEDIUM)
+    ax.axhline(y=0, color='k', linestyle='--', alpha=VIZ_ALPHA_LIGHT)
+    ax.axvline(x=0, color='k', linestyle='--', alpha=VIZ_ALPHA_LIGHT)
     ax.set_title(f'PCA of Difference Vectors\n(var explained: {pca_diff.explained_variance_ratio_.sum():.1%})')
     ax.set_xlabel('PC1')
     ax.set_ylabel('PC2')
@@ -297,4 +297,4 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     tsne = TSNE(n_components=2, perplexity=min(30, len(all_arr)-1), random_state=DEFAULT_RANDOM_SEED)
     all_tsne = tsne.fit_transform(all_arr)
     ax = axes[0, 2]
-    ax.scatter(all_tsne[:len(pos_arr), 0], all_tsne[:len(pos_arr), 1], c='blue', alpha=0.6, label='True')
+    ax.scatter(all_tsne[:len(pos_arr), 0], all_tsne[:len(pos_arr), 1], c='blue', alpha=VIZ_ALPHA_MEDIUM, label='True')

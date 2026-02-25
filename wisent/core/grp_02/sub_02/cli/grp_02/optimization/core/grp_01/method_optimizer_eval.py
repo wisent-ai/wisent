@@ -14,7 +14,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL, LAYER_RANGE_SMALL_OFFSET, LAYER_RANGE_LARGE_OFFSET
 from wisent.core.cli.optimization.core.method_optimizer_config import (
     OptimizationConfig, OptimizationResult, OptimizationSummary,
 )
@@ -81,12 +81,12 @@ def _resolve_params(
         elif steering_config == "range_3":
             resolved["steering_layers"] = list(range(
                 max(0, base_layer - 1),
-                min(num_layers, base_layer + 2)
+                min(num_layers, base_layer + LAYER_RANGE_SMALL_OFFSET)
             ))
         elif steering_config == "range_5":
             resolved["steering_layers"] = list(range(
-                max(0, base_layer - 2),
-                min(num_layers, base_layer + 3)
+                max(0, base_layer - LAYER_RANGE_SMALL_OFFSET),
+                min(num_layers, base_layer + LAYER_RANGE_LARGE_OFFSET)
             ))
 
     return resolved

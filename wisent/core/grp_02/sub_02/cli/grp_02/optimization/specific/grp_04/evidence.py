@@ -8,7 +8,10 @@ Dispatches to four subcommands:
 """
 from __future__ import annotations
 
-from wisent.core.constants import DEFAULT_LIMIT
+from wisent.core.constants import (
+    DEFAULT_LIMIT, DISPLAY_TOP_N_TINY, SEPARATOR_WIDTH_ULTRA,
+    EVIDENCE_TRAIN_SPLIT_NUM, EVIDENCE_TRAIN_SPLIT_DEN,
+)
 
 # Axis name -> list of string values the search-space uses
 _AXIS_DEFAULTS = {
@@ -60,7 +63,7 @@ def _load_resources(model_name, task_name, limit, device):
     model = WisentModel(model_name, device=device)
     print(f"Generating contrastive pairs for: {task_name}")
     all_pairs = build_contrastive_pairs(task_name=task_name, limit=limit)
-    split = len(all_pairs) * 2 // 3
+    split = len(all_pairs) * EVIDENCE_TRAIN_SPLIT_NUM // EVIDENCE_TRAIN_SPLIT_DEN
     train_pairs = ContrastivePairSet(
         name=f"{task_name}_train", pairs=all_pairs[:split],
     )
@@ -195,9 +198,9 @@ def _run_list(args) -> None:
         return
     print(f"{'ID':<18}{'Axis':<24}{'Model':<36}"
           f"{'Task':<16}{'Dominant':<28}{'Conf':<6}")
-    print("-" * 128)
+    print("-" * SEPARATOR_WIDTH_ULTRA)
     for ev in records:
-        dom = ",".join(ev.dominant_values[:3])
+        dom = ",".join(ev.dominant_values[:DISPLAY_TOP_N_TINY])
         print(f"{ev.id:<18}{ev.axis_name:<24}"
               f"{ev.model_name:<36}{ev.task_name:<16}"
               f"{dom:<28}{ev.confidence:<6.2f}")

@@ -12,7 +12,9 @@ from typing import Dict, Any
 from wisent.core.constants import (
     DEFAULT_NUM_EVAL_PROMPTS,
     DEFAULT_SHOW_COMPARISONS,
+    JSON_INDENT,
     OPTIMIZE_DEFAULT_CLASSIFICATION_THRESHOLD,
+    SEPARATOR_WIDTH_MAX,
 )
 from wisent.core.config_manager import save_classification_config
 from wisent.core.evaluators.steering_evaluators import SteeringEvaluatorFactory, EvaluatorConfig
@@ -92,7 +94,7 @@ def _save_results(args, all_results, total_layers):
     results_file = os.path.join(results_dir, f'classification_optimization_{model_safe}.json')
     with open(results_file, 'w') as f:
         json.dump({'model': args.model, 'optimization_metric': args.optimization_metric,
-                   'results': all_results}, f, indent=2)
+                   'results': all_results}, f, indent=JSON_INDENT)
     print(f"\n{'='*80}")
     print(f"OPTIMIZATION COMPLETE - Results saved to: {results_file}")
     print(f"{'='*80}\n")
@@ -141,7 +143,7 @@ def _persist_configs(args, all_results):
 
 def _print_summary(args, all_results):
     """Print summary table of results."""
-    sep = "-" * 150
+    sep = "-" * SEPARATOR_WIDTH_MAX
     print(f"SUMMARY BY TASK:")
     print(sep)
     hdr = (f"{'Task':<20} | {'Layer':>5} | {'Classifier':<10} | {'Agg':<12} | "
@@ -191,7 +193,7 @@ def _handle_comparisons(args, all_results, total_layers):
             os.makedirs(parent, exist_ok=True)
         with open(save_path, 'w') as f:
             json.dump({'model': args.model, 'optimization_metric': args.optimization_metric,
-                       'comparisons': comparisons}, f, indent=2)
+                       'comparisons': comparisons}, f, indent=JSON_INDENT)
         print(f"Saved comparisons to: {save_path}")
     if show > 0:
         print(f"\nComparisons (showing {min(show, len(comparisons))} tasks):\n")

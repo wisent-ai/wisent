@@ -24,7 +24,7 @@ os.environ['HF_ALLOW_CODE_EVAL'] = '1'
 from wisent.core.constants import (
     CODING_BENCHMARK_DEFAULT_LIMIT, SPLIT_RATIO_HALF, TEST_DEFAULT_LIMIT,
     DEFAULT_RANDOM_SEED, DOCKER_SANDBOX_TIME_LIMIT, DOCKER_SANDBOX_CPU_LIMIT,
-    DOCKER_SANDBOX_MEM_LIMIT_MB, DEFAULT_TIMEOUT_DOCKER,
+    DOCKER_SANDBOX_MEM_LIMIT_MB, DEFAULT_TIMEOUT_DOCKER, JSON_INDENT,
 )
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
@@ -104,7 +104,7 @@ def test_coding_benchmark(
 
         pairs_file = output_path / f"coding_{task_name}_pairs.json"
         with open(pairs_file, 'w') as f:
-            json.dump(pairs_data, f, indent=2)
+            json.dump(pairs_data, f, indent=JSON_INDENT)
         print(f"  Saved pairs to: {pairs_file}")
 
         # Step 4: Evaluate with Docker execution
@@ -216,7 +216,7 @@ def test_coding_benchmark(
         }
 
         with open(eval_file, 'w') as f:
-            json.dump(summary, f, indent=2)
+            json.dump(summary, f, indent=JSON_INDENT)
 
         # Final summary
         print(f"\n{'='*60}")

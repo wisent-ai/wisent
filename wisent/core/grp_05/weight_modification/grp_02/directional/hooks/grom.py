@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-from wisent.core.constants import DEFAULT_STRENGTH, GROM_GATE_TEMPERATURE, GROM_SENSOR_LAYER_DEFAULT, DEFAULT_LAYER_WEIGHT
+from wisent.core.constants import DEFAULT_STRENGTH, GROM_GATE_TEMPERATURE, GROM_SENSOR_LAYER_DEFAULT, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
@@ -135,8 +135,8 @@ def project_weights_grom(
             weight = 1.0 + (dir_weights.max() - dir_weights.min()).item() if dir_weights is not None else DEFAULT_LAYER_WEIGHT
             layer_weights[layer_idx] = weight
     if verbose:
-        print(f"\n{'='*60}\nGROM WEIGHT MODIFICATION (ADDITIVE)\n{'='*60}")
-        print(f"Layers: {len(effective_vectors)}, Components: {components}, Base strength: {base_strength}\n{'='*60}\n")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}\nGROM WEIGHT MODIFICATION (ADDITIVE)\n{'='*SEPARATOR_WIDTH_STANDARD}")
+        print(f"Layers: {len(effective_vectors)}, Components: {components}, Base strength: {base_strength}\n{'='*SEPARATOR_WIDTH_STANDARD}\n")
     weighted_vectors = {layer_idx: vec * layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT) if use_learned_intensities else vec
                         for layer_idx, vec in effective_vectors.items()}
     steering_vectors = LayerActivations(weighted_vectors)

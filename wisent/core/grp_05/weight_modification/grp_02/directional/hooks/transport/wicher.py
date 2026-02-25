@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from typing import Dict, Optional, TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH
+from wisent.core.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH, SEPARATOR_WIDTH_STANDARD
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -164,9 +164,9 @@ def project_weights_wicher(
         direction_vectors[layer_idx] = F.normalize(cd.float(), p=2, dim=-1)
 
     if verbose:
-        print(f"\n{'='*60}")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print("WICHER WEIGHT MODIFICATION (ADDITIVE — concept direction)")
-        print(f"{'='*60}")
+        print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Layers: {len(direction_vectors)}, Strength: {base_strength}")
 
     steering_vectors = LayerActivations(direction_vectors)

@@ -4,7 +4,7 @@ import sys
 import torch
 
 from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, STEERING_GEN_MAX_TOKENS_LONG, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS
+from wisent.core.constants import JSON_INDENT, NORM_EPS, DEFAULT_STRENGTH, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, STEERING_GEN_MAX_TOKENS_LONG, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
 
 
 def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy):
@@ -66,7 +66,7 @@ def _compute_steering_vector(args, model, train_pair_set, collector, extraction_
     positive_activations, negative_activations = [], []
 
     for i, pair in enumerate(train_pair_set.pairs):
-        if i % 10 == 0:
+        if i % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"   Processing pair {i+1}/{len(train_pair_set.pairs)}...", end='\r')
 
         updated_pair = collector.collect(pair, strategy=extraction_strategy, layers=[layer_str])
@@ -213,7 +213,7 @@ def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer
         results.append({'question': question[:DISPLAY_TRUNCATION_COMPACT], 'baseline_correct': base_correct, 'steered_correct': steer_correct})
         total += 1
 
-    print(f"\n\n{'='*60}\n📊 STEERING EVALUATION RESULTS\n{'='*60}")
+    print(f"\n\n{'='*SEPARATOR_WIDTH_STANDARD}\n📊 STEERING EVALUATION RESULTS\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print(f"   Baseline accuracy:  {baseline_correct}/{total} ({100*baseline_correct/total:.1f}%)")
     print(f"   Steered accuracy:   {steered_correct}/{total} ({100*steered_correct/total:.1f}%)")
     print(f"   Delta:              {steered_correct - baseline_correct:+d} ({100*(steered_correct-baseline_correct)/total:+.1f}%)")
@@ -222,6 +222,6 @@ def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer
         os.makedirs(args.output, exist_ok=True)
         with open(os.path.join(args.output, 'steering_evaluation.json'), 'w') as f:
             json.dump({'task': task_name, 'layer': layer, 'baseline_accuracy': baseline_correct/total,
-                      'steered_accuracy': steered_correct/total, 'delta': (steered_correct-baseline_correct)/total}, f, indent=2)
+                      'steered_accuracy': steered_correct/total, 'delta': (steered_correct-baseline_correct)/total}, f, indent=JSON_INDENT)
 
     return {'task': task_name, 'baseline_accuracy': baseline_correct/total, 'steered_accuracy': steered_correct/total}

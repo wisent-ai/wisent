@@ -6,7 +6,7 @@ import json
 import torch
 import numpy as np
 from wisent.core.constants import (
-    DEFAULT_SCORE, DEFAULT_RANDOM_SEED, VIZ_PCA_COMPONENTS,
+    DEFAULT_SCORE, DEFAULT_RANDOM_SEED, JSON_INDENT, VIZ_PCA_COMPONENTS,
     LINEARITY_MAX_PAIRS, MIN_CONCEPT_DIM,
 )
 from ..metrics.core.metrics_core import compute_geometry_metrics
@@ -32,7 +32,7 @@ def _save_checkpoint(results: Dict, output_path: Optional[str]) -> None:
     p = Path(output_path)
     p.parent.mkdir(parents=True, exist_ok=True)
     with open(p, 'w') as f:
-        json.dump(_ser(results), f, indent=2)
+        json.dump(_ser(results), f, indent=JSON_INDENT)
 
 
 def _load_checkpoint(output_path: Optional[str]) -> Dict:

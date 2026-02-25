@@ -5,6 +5,7 @@ from wisent.core.cli.cli_logger import setup_logger
 
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.constants import DISPLAY_TOP_N_TINY
 
 __all__ = ["BrowseCompExtractor", "SealExtractor", "FinSearchCompExtractor"]
 
@@ -240,7 +241,7 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
             # Build context from available info
             context_parts = []
             if urls:
-                context_parts.append(f"Sources: {', '.join(urls[:3])}")
+                context_parts.append(f"Sources: {', '.join(urls[:DISPLAY_TOP_N_TINY])}")
             if search_type:
                 context_parts.append(f"Search result type: {search_type}")
             context_text = "\n".join(context_parts)

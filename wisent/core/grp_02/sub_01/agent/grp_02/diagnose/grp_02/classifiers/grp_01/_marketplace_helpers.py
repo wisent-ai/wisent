@@ -46,7 +46,7 @@ class MarketplaceEstimationMixin:
             base = {
                 "training_time_minutes": _C.MARKETPLACE_BASE_TRAINING_TIME + (benchmark_count * _C.MARKETPLACE_PER_BENCHMARK_TIME),
                 "quality_score": min(_C.MARKETPLACE_QUALITY_MAX, _C.MARKETPLACE_QUALITY_BASE + (benchmark_count * _C.MARKETPLACE_QUALITY_INCREMENT)),
-                "samples_needed": min(500, 100 + (benchmark_count * 30)),
+                "samples_needed": min(_C.MARKETPLACE_MAX_SAMPLES_NEEDED, _C.MARKETPLACE_BASE_SAMPLES_NEEDED + (benchmark_count * _C.MARKETPLACE_PER_BENCHMARK_SAMPLES)),
                 "optimal_layer": self._estimate_optimal_layer_for_issue(issue_type)
             }
             print(f"   Using {benchmark_count} benchmarks for {issue_type}")
@@ -266,7 +266,7 @@ Respond with just the layer number ({_C.MARKETPLACE_LAYER_MIN}-{_C.MARKETPLACE_L
         self.available_classifiers.append(listing)
         self.available_classifiers.sort(key=lambda x: x.quality_score, reverse=True)
 
-        print(f"   Created classifier in {training_time/60:.1f} minutes")
+        print(f"   Created classifier in {training_time/_C.SECONDS_PER_MINUTE:.1f} minutes")
         print(f"   Quality score: {listing.quality_score:.3f}")
 
         return listing

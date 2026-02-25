@@ -10,7 +10,7 @@ import hashlib
 import random
 from typing import Any, Dict, List, Optional, Tuple
 
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, HASH_DISPLAY_LENGTH
 
 # Backward-compatible aliases
 DEFAULT_TRAIN_RATIO = DEFAULT_SPLIT_RATIO
@@ -85,7 +85,7 @@ def create_deterministic_split(
     # Create deterministic seed based on benchmark name
     combined_seed = int(hashlib.md5(
         f"{benchmark_name}_{seed}".encode()
-    ).hexdigest()[:8], 16)
+    ).hexdigest()[:HASH_DISPLAY_LENGTH], 16)
 
     # Shuffle indices deterministically
     rng = random.Random(combined_seed)

@@ -11,7 +11,12 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, DISPLAY_TOP_N_SMALL
+from wisent.core.constants import (
+    DEFAULT_LIMIT, DEFAULT_N_TRIALS, DISPLAY_TOP_N_SMALL,
+    SEPARATOR_WIDTH_SENSITIVITY, SENSITIVITY_DEFAULT_STEPS,
+    SENSITIVITY_DEFAULT_THRESHOLD, EVIDENCE_TRAIN_SPLIT_NUM,
+    EVIDENCE_TRAIN_SPLIT_DEN,
+)
 
 
 def execute_sensitivity(args) -> None:
@@ -48,7 +53,7 @@ def _load_resources(model_name, task_name, limit, device):
     all_pairs = build_contrastive_pairs(
         task_name=task_name, limit=limit,
     )
-    split = len(all_pairs) * 2 // 3
+    split = len(all_pairs) * EVIDENCE_TRAIN_SPLIT_NUM // EVIDENCE_TRAIN_SPLIT_DEN
     train_pairs = ContrastivePairSet(
         name=f"{task_name}_train", pairs=all_pairs[:split],
     )
@@ -75,7 +80,7 @@ def _run_sensitivity(args) -> None:
     model_name = args.model
     task_name = args.task
     method_name = args.method
-    steps = getattr(args, "steps", 5)
+    steps = getattr(args, "steps", SENSITIVITY_DEFAULT_STEPS)
     limit = getattr(args, "limit", DEFAULT_LIMIT)
     device = getattr(args, "device", None)
     output_path = getattr(args, "output", "sensitivity_result.json")
@@ -124,7 +129,7 @@ def _show_report(args) -> None:
     )
 
     input_path = args.input
-    threshold = getattr(args, "threshold", 0.01)
+    threshold = getattr(args, "threshold", SENSITIVITY_DEFAULT_THRESHOLD)
     top_n = getattr(args, "top_n", None)
 
     result = SensitivityResult.load(Path(input_path))
@@ -143,7 +148,7 @@ def _show_report(args) -> None:
 
     print(f"{'Rank':<6}{'Name':<35}{'Group':<6}"
           f"{'Sensitivity':<14}{'Best Value':<14}{'Current':<14}")
-    print("-" * 89)
+    print("-" * SEPARATOR_WIDTH_SENSITIVITY)
 
     for idx, r in enumerate(filtered):
         print(f"{idx + 1:<6}{r.name:<35}{r.group:<6}"

@@ -104,7 +104,7 @@ def generate_exhaustive_recommendation(
 
     important_layers = patterns.get("most_important_layers", [])
     if important_layers:
-        layers_str = ", ".join(f"L{l}" for l in important_layers[:3])
+        layers_str = ", ".join(f"L{l}" for l in important_layers[:_C.DISPLAY_TOP_N_TINY])
         parts.append(f"Most important layers: {layers_str}.")
 
     dominant = patterns.get("dominant_structure", "unknown")

@@ -2,7 +2,7 @@
 
 from datasets import load_dataset
 from wisent.core.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT
+from wisent.core.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT
 
 # Load dataset
 ds = load_dataset("HuggingFaceH4/aime_2024", split="train")
@@ -13,9 +13,9 @@ evaluator = GenerationEvaluator()
 # Test on a few examples
 num_examples = NUM_EXAMPLES_DEFAULT
 
-print("=" * 80)
+print("=" * SEPARATOR_WIDTH_REPORT)
 print("Testing GenerationEvaluator answer extraction on AIME 2024")
-print("=" * 80)
+print("=" * SEPARATOR_WIDTH_REPORT)
 
 correct = 0
 total = num_examples
@@ -45,6 +45,6 @@ for i in range(num_examples):
     except (TypeError, ValueError):
         print(">>> ✗ FAILED TO EXTRACT")
 
-    print("-" * 80)
+    print("-" * SEPARATOR_WIDTH_REPORT)
 
 print(f"\n\nAccuracy: {correct}/{total} = {correct/total*100:.1f}%")

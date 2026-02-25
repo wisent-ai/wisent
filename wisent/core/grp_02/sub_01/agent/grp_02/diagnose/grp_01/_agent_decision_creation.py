@@ -3,7 +3,7 @@ from typing import List, Dict, Any, Optional
 import time
 from wisent.core.agent.diagnose._agent_decision_types import (
     SingleClassifierDecision, ClassifierDecision, ClassifierParams)
-from wisent.core.constants import AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET
+from wisent.core.constants import AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET, SECONDS_PER_MINUTE
 
 class ClassifierCreationMixin:
     """Mixin providing classifier creation and execution methods."""
@@ -81,7 +81,7 @@ class ClassifierCreationMixin:
         creation_estimate = self.marketplace.get_creation_estimate(benchmark_name)
         
         # Check if we can afford to create new classifier
-        training_time_seconds = creation_estimate.estimated_training_time_minutes * 60
+        training_time_seconds = creation_estimate.estimated_training_time_minutes * SECONDS_PER_MINUTE
         time_budget = budget_manager.get_budget(ResourceType.TIME)
         
         if time_budget.can_afford(training_time_seconds):

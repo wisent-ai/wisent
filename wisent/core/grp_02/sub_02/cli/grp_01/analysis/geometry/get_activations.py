@@ -5,6 +5,8 @@ import json
 import os
 import time
 
+from wisent.core.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
+
 
 def execute_get_activations(args):
     """Execute the get-activations command - load pairs and collect activations."""
@@ -113,7 +115,7 @@ def execute_get_activations(args):
             
             raw_pairs_data = []
             for i, pair in enumerate(pair_set.pairs):
-                if args.verbose or (i + 1) % 10 == 0:
+                if args.verbose or (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
                     print(f"   Processing pair {i+1}/{len(pair_set.pairs)}...", end='\r', flush=True)
 
                 # Collect RAW hidden states (full sequences)
@@ -267,7 +269,7 @@ def execute_get_activations(args):
         # 8. Save to file
         os.makedirs(os.path.dirname(os.path.abspath(args.output)), exist_ok=True)
         with open(args.output, 'w') as f:
-            json.dump(output_data, f, indent=2)
+            json.dump(output_data, f, indent=JSON_INDENT)
 
         print(f"   ✓ Saved enriched pairs to: {args.output}")
 

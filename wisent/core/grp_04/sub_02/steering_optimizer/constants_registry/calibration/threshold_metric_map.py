@@ -15,6 +15,7 @@ from typing import Callable, Dict, List, Optional, Any
 from wisent.core.constants import (
     CALIBRATION_Q_NLI_MARGIN, CALIBRATION_Q_NLI_ENT, CALIBRATION_Q_EMB_DELTA,
     CALIBRATION_Q_EMB_MATCH, CALIBRATION_Q_PROBE_HIGH, CALIBRATION_Q_PROBE_LOW,
+    STEERABILITY_MIN_PAIRS,
 )
 
 
@@ -96,7 +97,7 @@ def _collect_linear_probe_accuracies(
         if p_act is not None and n_act is not None:
             pos_acts.append(p_act)
             neg_acts.append(n_act)
-    if len(pos_acts) >= 5:
+    if len(pos_acts) >= STEERABILITY_MIN_PAIRS:
         pos_t = torch.stack(pos_acts)
         neg_t = torch.stack(neg_acts)
         metrics = compute_geometry_metrics(pos_t, neg_t)

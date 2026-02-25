@@ -24,6 +24,7 @@ from wisent.core.activations.activation_cache import ActivationCache, CachedActi
 from wisent.core.constants import (
     GEO_PAIRS_PER_BENCHMARK, DEFAULT_RANDOM_SEED,
     GEO_MAX_LAYER_COMBO_SIZE, GEO_ESTIMATED_TIME_PER_EXTRACTION,
+    JSON_INDENT, SECONDS_PER_HOUR,
 )
 
 
@@ -172,7 +173,7 @@ class GeometrySearchSpace:
         """
         extractions = self.get_extraction_count()
         seconds = extractions * self.config.estimated_time_per_extraction_seconds
-        return seconds / 3600
+        return seconds / SECONDS_PER_HOUR
     
     def to_dict(self) -> Dict[str, Any]:
         """Serialize to dictionary."""
@@ -214,7 +215,7 @@ class GeometrySearchSpace:
     def save(self, path: str) -> None:
         """Save search space to JSON file."""
         with open(path, "w") as f:
-            json.dump(self.to_dict(), f, indent=2)
+            json.dump(self.to_dict(), f, indent=JSON_INDENT)
     
     @classmethod
     def load(cls, path: str) -> "GeometrySearchSpace":

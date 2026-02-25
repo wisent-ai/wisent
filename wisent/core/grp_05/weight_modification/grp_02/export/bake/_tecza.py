@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import MissingParameterError
-from wisent.core.constants import DEFAULT_STRENGTH
+from wisent.core.constants import DEFAULT_STRENGTH, JSON_INDENT
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -116,7 +116,7 @@ def export_tecza_model(
         "layer_order": list(tecza_result.directions.keys()),
     }
     with open(config_path, 'w') as f:
-        json.dump(tecza_config, f, indent=2)
+        json.dump(tecza_config, f, indent=JSON_INDENT)
     log.info("Saved TECZA config")
     
     # Step 6: Push to hub

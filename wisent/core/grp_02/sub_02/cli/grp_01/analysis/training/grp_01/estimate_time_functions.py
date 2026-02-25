@@ -16,6 +16,8 @@ from __future__ import annotations
 import argparse
 import sys
 
+from wisent.core.constants import SECONDS_PER_MINUTE, SECONDS_PER_HOUR
+
 
 # Measured benchmark loading times (seconds) from lm-eval-harness
 BENCHMARK_LOAD_TIMES = {
@@ -214,21 +216,21 @@ def estimate_runtime(
         results['evaluation']
     )
     
-    results['total_minutes'] = results['total_seconds'] / 60
-    results['total_hours'] = results['total_seconds'] / 3600
+    results['total_minutes'] = results['total_seconds'] / SECONDS_PER_MINUTE
+    results['total_hours'] = results['total_seconds'] / SECONDS_PER_HOUR
     
     return results
 
 
 def format_time(seconds: float) -> str:
     """Format seconds as human-readable time."""
-    if seconds < 60:
+    if seconds < SECONDS_PER_MINUTE:
         return f"{seconds:.1f}s"
-    elif seconds < 3600:
-        return f"{seconds/60:.1f}m"
+    elif seconds < SECONDS_PER_HOUR:
+        return f"{seconds/SECONDS_PER_MINUTE:.1f}m"
     else:
-        hours = int(seconds // 3600)
-        mins = int((seconds % 3600) // 60)
+        hours = int(seconds // SECONDS_PER_HOUR)
+        mins = int((seconds % SECONDS_PER_HOUR) // SECONDS_PER_MINUTE)
         return f"{hours}h {mins}m"
 
 

@@ -6,6 +6,7 @@ from typing import Dict, List, Any
 from pathlib import Path
 from wisent.core.benchmarks.cache._cached_bench_types import (
     CacheInfo, CacheMetadata, CacheCorruptionError)
+from wisent.core.constants import BYTES_PER_MB, JSON_INDENT, DISPLAY_DECIMAL_PRECISION
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,7 @@ class CachedBenchIOMixin:
             chunk_path = task_dir / chunk_filename
 
             with open(chunk_path, "w") as f:
-                json.dump(chunk_samples, f, indent=2)
+                json.dump(chunk_samples, f, indent=JSON_INDENT)
 
             chunks.append(chunk_filename)
 
@@ -172,7 +173,7 @@ class CachedBenchIOMixin:
         }
 
         with open(self.metadata_file, "w") as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=JSON_INDENT)
 
     def cache_status(self) -> Dict[str, Any]:
         """Get comprehensive cache status."""
@@ -191,7 +192,7 @@ class CachedBenchIOMixin:
             "total_tasks": len(self._metadata.tasks),
             "total_samples": total_samples,
             "total_size_bytes": total_size,
-            "total_size_mb": round(total_size / (1024 * 1024), 2),
+            "total_size_mb": round(total_size / BYTES_PER_MB, DISPLAY_DECIMAL_PRECISION),
             "created_at": self._metadata.created_at.isoformat(),
             "last_cleanup": self._metadata.last_cleanup.isoformat(),
             "tasks": {

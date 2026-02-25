@@ -6,7 +6,7 @@ import torch
 from typing import Any, Dict
 
 from wisent.core.activations.activations import Activations
-from wisent.core.constants import CONTEXT_MAX_PREVIEW, EVAL_GT_PERPLEXITY_MAX_TOKENS, AGENT_DIAG_TEMPERATURE, PERPLEXITY_WIKITEXT_THRESHOLD, CLASSIFIER_DECISION_THRESHOLD, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_SMALL
+from wisent.core.constants import CONTEXT_MAX_PREVIEW, EVAL_GT_PERPLEXITY_MAX_TOKENS, AGENT_DIAG_TEMPERATURE, PERPLEXITY_WIKITEXT_THRESHOLD, CLASSIFIER_DECISION_THRESHOLD, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_SMALL, SPLIT_RATIO_FULL
 from wisent.core.layer import Layer
 from wisent.core.models import get_generate_kwargs
 
@@ -41,7 +41,7 @@ def evaluate_perplexity(evaluator, classifier, task_name: str, num_samples: int,
     try:
         logger.info(f"PERPLEXITY EVALUATION: {task_name}")
         task_data = model.load_lm_eval_task(task_name, shots=0, limit=num_samples)
-        docs, _ = model.split_task_data(task_data, split_ratio=1.0)
+        docs, _ = model.split_task_data(task_data, split_ratio=SPLIT_RATIO_FULL)
         if not docs:
             return evaluator._error_result(f"No documents retrieved from task: {task_name}")
         logger.info(f"Retrieved {len(docs)} documents from {task_name}")

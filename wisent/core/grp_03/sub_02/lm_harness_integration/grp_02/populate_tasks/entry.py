@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import get_all_docs_from_task
 from wisent.core.errors import InsufficientDataError, TaskNotFoundError
-from wisent.core.constants import DEFAULT_TIMEOUT_SUBPROCESS, LM_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL
+from wisent.core.constants import DEFAULT_TIMEOUT_SUBPROCESS, JSON_INDENT, LM_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
 
 from .sample_extraction import get_evaluation_method, get_category, extract_examples_from_task
 from .group_handling import expand_group_task, get_samples_from_group_task
@@ -36,7 +36,7 @@ def get_task_info(task_name: str, get_task_dict, task_registry) -> Optional[Dict
             if not sub_tasks:
                 print(f"  Warning: Task {task_name} not found and no sub-tasks found")
                 return None
-            print(f"  Found group task with {len(sub_tasks)} sub-tasks: {sub_tasks[:3]}{'...' if len(sub_tasks) > 3 else ''}")
+            print(f"  Found group task with {len(sub_tasks)} sub-tasks: {sub_tasks[:DISPLAY_TOP_N_TINY]}{'...' if len(sub_tasks) > DISPLAY_TOP_N_TINY else ''}")
             return process_group_task(task_name, sub_tasks, get_task_dict)
         task = task_dict[task_name]
         return process_individual_task(task_name, task)
@@ -208,7 +208,7 @@ def main():
     print(f"\nPhase 1: Saving {len(available_tasks)} task names to {tasks_file}")
     initial_data = {"tasks": {task_name: {} for task_name in available_tasks}, "task_list": available_tasks}
     with open(tasks_file, 'w') as f:
-        json.dump(initial_data, f, indent=2, ensure_ascii=False)
+        json.dump(initial_data, f, indent=JSON_INDENT, ensure_ascii=False)
     print(f"Saved {len(available_tasks)} task names to {tasks_file}")
     print(f"\nPhase 2: Populating detailed information for 2 test tasks...")
     tasks_to_populate = ["truthfulqa_mc1", "hellaswag"]
@@ -222,7 +222,7 @@ def main():
             current_data["tasks"][task_name] = task_info
             processed += 1
             with open(tasks_file, 'w') as f:
-                json.dump(current_data, f, indent=2, ensure_ascii=False)
+                json.dump(current_data, f, indent=JSON_INDENT, ensure_ascii=False)
             print(f"  Updated {task_name}")
         else:
             print(f"  Failed to process {task_name}")

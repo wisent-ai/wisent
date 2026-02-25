@@ -5,6 +5,7 @@ from typing import Iterable, TYPE_CHECKING
 from wisent.core.synthetic.cleaners.core.atoms import CleanStep, Cleaner
 from wisent.core.synthetic.cleaners.core.atoms import CleanerStats
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.constants import REFUSAL_CLEANER_MAX_RETRIES
 
 __all__ = [
     "PairsCleaner",
@@ -53,7 +54,7 @@ class PairsCleaner(Cleaner):
             ...         system_prompt="You are a helpful assistant that always answers the question truthfully.",
             ...         trait_label="honesty",
             ...         trait_description="honest vs dishonest",
-            ...         max_retries=2,
+            ...         max_retries=REFUSAL_CLEANER_MAX_RETRIES,
             ...     ),
             ...     DeduperCleaner(deduper=deduper),
             ... ])

@@ -14,7 +14,9 @@ from wisent.core.constants import (
     DATA_SPLIT_RATIO, DATABASE_PAIR_LOADING_LIMIT,
     DATABASE_ACTIVATION_LOADING_LIMIT,
     VIZ_TRUTHFUL_REGION_THRESHOLD,
-    DEFAULT_RANDOM_SEED,
+    DEFAULT_RANDOM_SEED, DEFAULT_SCALE_FACTOR,
+    JSON_INDENT,
+    SEPARATOR_WIDTH_STANDARD,
 )
 
 
@@ -34,9 +36,9 @@ def execute_per_concept_steering_viz(args):
     from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
     from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
 
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("PER-CONCEPT STEERING VISUALIZATION WITH EVALUATION")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
 
     # Load cache if provided
     cache_data = None
@@ -200,7 +202,7 @@ def execute_per_concept_steering_viz(args):
             base_resp = adapter._generate_unsteered(formatted, max_new_tokens=STEERING_GEN_MAX_TOKENS, temperature=AGENT_DIAG_TEMPERATURE, do_sample=True)
             if "assistant\n" in base_resp:
                 base_resp = base_resp.split("assistant\n")[-1].strip()
-            steered_resp = adapter.forward_with_steering(formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=1.0))
+            steered_resp = adapter.forward_with_steering(formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=DEFAULT_SCALE_FACTOR))
             if "assistant\n" in steered_resp:
                 steered_resp = steered_resp.split("assistant\n")[-1].strip()
 
@@ -288,8 +290,8 @@ def execute_per_concept_steering_viz(args):
     # Save summary
     summary_path = output_dir / "summary.json"
     with open(summary_path, 'w') as f:
-        json.dump(all_results, f, indent=2)
+        json.dump(all_results, f, indent=JSON_INDENT)
     print(f"\nSummary saved to: {summary_path}")
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("PER-CONCEPT STEERING VISUALIZATION COMPLETE")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")

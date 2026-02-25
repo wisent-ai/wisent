@@ -7,6 +7,7 @@ import os
 import sys
 from typing import Dict
 
+from wisent.core.constants import JSON_INDENT, REPORT_LINE_WIDTH, SEPARATOR_WIDTH_STANDARD
 from ..registry import CORE_BENCHMARKS
 from ..readme_parsing import update_all_benchmarks_from_readme
 from ..matching import (
@@ -55,13 +56,13 @@ def main() -> None:
             "original_tags": tags,
         }
 
-        print(f"\n{'='*80}")
+        print(f"\n{'='*REPORT_LINE_WIDTH}")
         print(f"BENCHMARK {current_idx}/{total_benchmarks}: {benchmark_name}")
-        print("=" * 80)
+        print("=" * REPORT_LINE_WIDTH)
 
-        print(f"\n{'='*80}")
+        print(f"\n{'='*REPORT_LINE_WIDTH}")
         print(f"STEP 1: Testing dataset creation for {benchmark_name}")
-        print("=" * 80)
+        print("=" * REPORT_LINE_WIDTH)
 
         dataset_success, actual_tags = test_benchmark_creation(benchmark_name, benchmark_config)
 
@@ -74,9 +75,9 @@ def main() -> None:
         if dataset_success:
             results["dataset_creation"]["successful"].append(benchmark_name)
 
-            print(f"\n{'='*80}")
+            print(f"\n{'='*REPORT_LINE_WIDTH}")
             print(f"STEP 2: Testing CLI integration for {benchmark_name}")
-            print("=" * 80)
+            print("=" * REPORT_LINE_WIDTH)
 
             cli_success = test_single_benchmark_direct(benchmark_name, benchmark_config)
 
@@ -98,9 +99,9 @@ def main() -> None:
             print(f"Tags: {', '.join(tags)}")
             sys.exit(1)
 
-        print(f"\n{'='*80}")
+        print(f"\n{'='*REPORT_LINE_WIDTH}")
         print("CURRENT STATUS")
-        print("=" * 80)
+        print("=" * REPORT_LINE_WIDTH)
         print(f"Dataset creation successful: {len(results['dataset_creation']['successful'])}")
         print(f"Dataset creation failed: {len(results['dataset_creation']['failed'])}")
         print(f"CLI testing successful: {len(results['cli_testing']['successful'])}")
@@ -114,9 +115,9 @@ def main() -> None:
 
 def _print_final_summary(results: Dict, updated_benchmarks: Dict) -> None:
     """Print final summary of test results."""
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("FINAL SUMMARY")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     print(f"\nDataset Creation Results:")
     print(f"Successful: {len(results['dataset_creation']['successful'])}")
@@ -142,7 +143,7 @@ def _print_final_summary(results: Dict, updated_benchmarks: Dict) -> None:
 
     results_file = "test_results/benchmark_test_results.json"
     with open(results_file, "w") as f:
-        json.dump(results, f, indent=2)
+        json.dump(results, f, indent=JSON_INDENT)
     print(f"\nResults saved to: {results_file}")
 
     print(f"\nSUCCESS! All {len(updated_benchmarks)} benchmarks passed!")

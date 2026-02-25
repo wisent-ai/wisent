@@ -49,10 +49,10 @@ def create_full_summary_figure(
         else:
             pos = data["pos_projected"]
             neg = data["neg_projected"]
-            ax.scatter(pos[:, 0], pos[:, 1], c='blue', alpha=0.6, label='Pos', s=20)
-            ax.scatter(neg[:, 0], neg[:, 1], c='red', alpha=0.6, label='Neg', s=20)
-            ax.legend(loc='upper right', fontsize=8)
-        ax.set_title(title, fontsize=11)
+            ax.scatter(pos[:, 0], pos[:, 1], c='blue', alpha=_C.VIZ_ALPHA_MEDIUM, label='Pos', s=_C.VIZ_MARKER_SIZE_XS)
+            ax.scatter(neg[:, 0], neg[:, 1], c='red', alpha=_C.VIZ_ALPHA_MEDIUM, label='Neg', s=_C.VIZ_MARKER_SIZE_XS)
+            ax.legend(loc='upper right', fontsize=_C.VIZ_FONTSIZE_SMALL)
+        ax.set_title(title, fontsize=_C.VIZ_FONTSIZE_TITLE)
 
     # Row 1: Dimensionality reduction projections
     pca_data = plot_pca_projection(pos_activations, neg_activations)
@@ -76,38 +76,38 @@ def create_full_summary_figure(
     if "error" not in diff_data:
         diffs = diff_data["diffs_projected"]
         mean = diff_data["mean_diff_projected"]
-        ax.scatter(diffs[:, 0], diffs[:, 1], c='green', alpha=0.6, s=20)
+        ax.scatter(diffs[:, 0], diffs[:, 1], c='green', alpha=_C.VIZ_ALPHA_MEDIUM, s=_C.VIZ_MARKER_SIZE_XS)
         scale = max(abs(mean[0]), abs(mean[1]), _C.VIZ_MIN_SCALE) * _C.VIZ_SCALE_PADDING
-        ax.arrow(0, 0, mean[0]*0.8, mean[1]*0.8, head_width=scale*0.1, head_length=scale*0.05, fc='black', ec='black')
-    ax.set_title("Diff Vectors (Mean Direction)", fontsize=11)
+        ax.arrow(0, 0, mean[0]*_C.VIZ_MOVEMENT_SCALE, mean[1]*_C.VIZ_MOVEMENT_SCALE, head_width=scale*_C.VIZ_ARROW_HEAD_LENGTH, head_length=scale*_C.VIZ_ARROW_HEAD_WIDTH, fc='black', ec='black')
+    ax.set_title("Diff Vectors (Mean Direction)", fontsize=_C.VIZ_FONTSIZE_TITLE)
 
     align_data = plot_alignment_distribution(pos_activations, neg_activations)
     ax = axes[1, 2]
     if "error" not in align_data:
-        ax.hist(align_data["alignments"], bins=_C.VIZ_HISTOGRAM_BINS_20, color='green', alpha=0.7)
-        ax.axvline(align_data["mean"], color='black', linestyle='--', linewidth=2)
-        ax.set_title(f"Alignment (mean={align_data['mean']:.2f})", fontsize=11)
+        ax.hist(align_data["alignments"], bins=_C.VIZ_HISTOGRAM_BINS_20, color='green', alpha=_C.VIZ_ALPHA_HIGH)
+        ax.axvline(align_data["mean"], color='black', linestyle='--', linewidth=_C.VIZ_LINEWIDTH_NORMAL)
+        ax.set_title(f"Alignment (mean={align_data['mean']:.2f})", fontsize=_C.VIZ_FONTSIZE_TITLE)
     else:
         ax.text(0.5, 0.5, "Error", ha='center', va='center', transform=ax.transAxes)
-        ax.set_title("Alignment Distribution", fontsize=11)
+        ax.set_title("Alignment Distribution", fontsize=_C.VIZ_FONTSIZE_TITLE)
     ax.set_xlabel("Cosine Alignment")
     ax.set_ylabel("Count")
 
     # Row 3: Spectral and distance analysis
     eigen_data = plot_eigenvalue_spectrum(pos_activations, neg_activations)
     ax = axes[2, 0]
-    n_show = min(20, len(eigen_data["explained_variance_ratio"]))
-    ax.bar(range(n_show), eigen_data["explained_variance_ratio"][:n_show], color='purple', alpha=0.7)
-    ax.set_title("Eigenvalue Spectrum", fontsize=11)
+    n_show = min(_C.EIGENVALUE_DISPLAY_LIMIT, len(eigen_data["explained_variance_ratio"]))
+    ax.bar(range(n_show), eigen_data["explained_variance_ratio"][:n_show], color='purple', alpha=_C.VIZ_ALPHA_HIGH)
+    ax.set_title("Eigenvalue Spectrum", fontsize=_C.VIZ_FONTSIZE_TITLE)
     ax.set_xlabel("Principal Component")
     ax.set_ylabel("Variance Ratio")
 
     norm_data = plot_norm_distribution(pos_activations, neg_activations)
     ax = axes[2, 1]
-    ax.hist(norm_data["pos_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=0.5, label='Pos', color='blue')
-    ax.hist(norm_data["neg_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=0.5, label='Neg', color='red')
-    ax.legend(fontsize=8)
-    ax.set_title("Norm Distribution", fontsize=11)
+    ax.hist(norm_data["pos_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=_C.VIZ_HISTOGRAM_ALPHA, label='Pos', color='blue')
+    ax.hist(norm_data["neg_norms"], bins=_C.VIZ_HISTOGRAM_BINS_20, alpha=_C.VIZ_HISTOGRAM_ALPHA, label='Neg', color='red')
+    ax.legend(fontsize=_C.VIZ_FONTSIZE_SMALL)
+    ax.set_title("Norm Distribution", fontsize=_C.VIZ_FONTSIZE_TITLE)
     ax.set_xlabel("L2 Norm")
     ax.set_ylabel("Count")
 
@@ -116,10 +116,10 @@ def create_full_summary_figure(
     if "error" not in dist_data:
         im = ax.imshow(dist_data["distance_matrix"], cmap='viridis', aspect='auto')
         n_pos = dist_data.get("n_pos", len(pos_activations))
-        ax.axhline(n_pos - 0.5, color='white', linestyle='--', linewidth=1)
-        ax.axvline(n_pos - 0.5, color='white', linestyle='--', linewidth=1)
-        plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    ax.set_title("Pairwise Distances", fontsize=11)
+        ax.axhline(n_pos - 0.5, color='white', linestyle='--', linewidth=_C.VIZ_LINEWIDTH_HAIRLINE)
+        ax.axvline(n_pos - 0.5, color='white', linestyle='--', linewidth=_C.VIZ_LINEWIDTH_HAIRLINE)
+        plt.colorbar(im, ax=ax, fraction=_C.VIZ_COLORBAR_FRACTION, pad=_C.VIZ_COLORBAR_PAD)
+    ax.set_title("Pairwise Distances", fontsize=_C.VIZ_FONTSIZE_TITLE)
     ax.set_xlabel("Sample Index")
     ax.set_ylabel("Sample Index")
 
@@ -132,7 +132,7 @@ def create_full_summary_figure(
         title_parts.append(f"ICD: {metrics.get('icd_icd', 0):.1f}")
         title_parts.append(f"Rec: {metrics.get('recommended_method', 'N/A')}")
     if title_parts:
-        fig.suptitle(" | ".join(title_parts), fontsize=14, y=1.01)
+        fig.suptitle(" | ".join(title_parts), fontsize=_C.VIZ_FONTSIZE_SUPTITLE, y=_C.VIZ_SUPTITLE_Y_OFFSET)
 
     plt.tight_layout()
 

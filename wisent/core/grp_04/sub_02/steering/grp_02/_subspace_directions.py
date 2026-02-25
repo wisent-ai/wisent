@@ -8,7 +8,7 @@ import torch
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.activations.core.atoms import LayerName
 from wisent.core.steering._subspace_compression import UniversalBasis, compute_universal_basis
-from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_VARIANCE_THRESHOLD, TECZA_MAX_DIRECTIONS, MARGINAL_VARIANCE_THRESHOLD, SUBSPACE_ROBUSTNESS_NOISE_SCALE, MAX_PCA_COMPONENTS_ANALYSIS
+from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_VARIANCE_THRESHOLD, TECZA_MAX_DIRECTIONS, MARGINAL_VARIANCE_THRESHOLD, SUBSPACE_ROBUSTNESS_NOISE_SCALE, MAX_PCA_COMPONENTS_ANALYSIS, SUBSPACE_DIRECTION_PADDING
 
 VARIANCE_EXPLAINED_THRESHOLD = DEFAULT_VARIANCE_THRESHOLD
 
@@ -84,7 +84,7 @@ def compute_optimal_num_directions(
     log = bind(_LOG)
     
     individual, cumulative = explained_variance_analysis(
-        pos_activations, neg_activations, max_directions + 5
+        pos_activations, neg_activations, max_directions + SUBSPACE_DIRECTION_PADDING
     )
     
     # Find optimal k

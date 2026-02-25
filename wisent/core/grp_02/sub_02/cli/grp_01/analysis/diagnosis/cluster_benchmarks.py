@@ -45,7 +45,7 @@ RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", 
 from wisent.core.constants import (
     NORM_EPS, CLUSTER_PROGRESS_INTERVAL, CLUSTER_MIN_PAIRS,
     GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT,
-    DEFAULT_RANDOM_SEED,
+    DEFAULT_RANDOM_SEED, JSON_INDENT, CHANCE_LEVEL_ACCURACY,
 )
 from wisent.core.cli.analysis.diagnosis.cluster_benchmarks_activations import (
     ConfigResult, get_layers_to_test, get_activation, get_mc_balanced_activations,
@@ -81,12 +81,12 @@ def evaluate_directions(directions, activations, clusters):
         n = min(len(pos), len(neg))
         
         g_correct = sum(1 for i in range(n) if torch.dot(pos[i], global_dir) > torch.dot(neg[i], global_dir))
-        global_accs.append(g_correct / n if n > 0 else 0.5)
+        global_accs.append(g_correct / n if n > 0 else CHANCE_LEVEL_ACCURACY)
         
         cid = bench_to_cluster.get(bench)
         if cid in cluster_dirs:
             c_correct = sum(1 for i in range(n) if torch.dot(pos[i], cluster_dirs[cid]) > torch.dot(neg[i], cluster_dirs[cid]))
-            cluster_accs.append(c_correct / n if n > 0 else 0.5)
+            cluster_accs.append(c_correct / n if n > 0 else CHANCE_LEVEL_ACCURACY)
         else:
             cluster_accs.append(global_accs[-1])
     
@@ -209,7 +209,7 @@ def execute_cluster_benchmarks(args):
             
             # Save intermediate
             with open(output_dir / 'intermediate.json', 'w') as f:
-                json.dump({'results': [asdict(r) for r in all_results], 'best_acc': best_acc}, f, indent=2)
+                json.dump({'results': [asdict(r) for r in all_results], 'best_acc': best_acc}, f, indent=JSON_INDENT)
     
     # Save final
     if best_config:
@@ -230,7 +230,7 @@ def execute_cluster_benchmarks(args):
         }
         
         with open(output_dir / 'cluster_summary.json', 'w') as f:
-            json.dump(summary, f, indent=2)
+            json.dump(summary, f, indent=JSON_INDENT)
         
         print(f"\nBest: Layer {best_config['layer']}, Strategy {best_config['strategy']}")
         print(f"Global: {best_config['global_acc']:.3f}, Cluster: {best_config['cluster_acc']:.3f}")

@@ -8,7 +8,7 @@ import torch
 from datasets import load_dataset
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT
+from wisent.core.constants import TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, PROGRESS_LOG_INTERVAL_20
 
 
 def load_truthfulqa_pairs(n_pairs: int = N_BOOTSTRAP_DEFAULT, seed: int = DEFAULT_RANDOM_SEED) -> List[Dict]:
@@ -104,7 +104,7 @@ def extract_difference_vectors(
     
     total = len(pairs)
     for i, pair in enumerate(pairs):
-        if show_progress and (i + 1) % 20 == 0:
+        if show_progress and (i + 1) % PROGRESS_LOG_INTERVAL_20 == 0:
             print(f"  Extracting activations: {i+1}/{total}")
         
         # Format as chat

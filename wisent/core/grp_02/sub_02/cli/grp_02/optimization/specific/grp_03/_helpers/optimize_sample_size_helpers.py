@@ -2,7 +2,7 @@
 
 Extracted from optimize_sample_size.py to keep file under 300 lines.
 """
-from wisent.core.constants import VIZ_DPI
+from wisent.core.constants import VIZ_DPI, VIZ_FIGSIZE_WIDE, VIZ_LINEWIDTH_NORMAL, VIZ_ALPHA_HIGH
 
 
 def save_optimization_plots(args, results, optimal_size):
@@ -34,8 +34,8 @@ def save_optimization_plots(args, results, optimal_size):
     times = [r['time'] for r in results]
 
     # Create performance plot (Accuracy and F1)
-    chart1 = LineChart(style=1, figsize=(10, 6), show_markers=True)
-    fig1, ax1 = plt.subplots(1, 1, figsize=(10, 6))
+    chart1 = LineChart(style=1, figsize=VIZ_FIGSIZE_WIDE, show_markers=True)
+    fig1, ax1 = plt.subplots(1, 1, figsize=VIZ_FIGSIZE_WIDE)
 
     chart1.plot_multiple(
         x=x_data,
@@ -50,8 +50,8 @@ def save_optimization_plots(args, results, optimal_size):
     )
 
     # Add vertical line for optimal size
-    ax1.axvline(x=optimal_size, color='#2ecc71', linestyle='--', linewidth=2,
-               label=f'Optimal: {optimal_size}', alpha=0.7)
+    ax1.axvline(x=optimal_size, color='#2ecc71', linestyle='--', linewidth=VIZ_LINEWIDTH_NORMAL,
+               label=f'Optimal: {optimal_size}', alpha=VIZ_ALPHA_HIGH)
     ax1.legend()
 
     # Save performance plot
@@ -62,8 +62,8 @@ def save_optimization_plots(args, results, optimal_size):
     plt.close(fig1)
 
     # Create training time plot
-    chart2 = LineChart(style=1, figsize=(10, 6), show_markers=True)
-    fig2, ax2 = plt.subplots(1, 1, figsize=(10, 6))
+    chart2 = LineChart(style=1, figsize=VIZ_FIGSIZE_WIDE, show_markers=True)
+    fig2, ax2 = plt.subplots(1, 1, figsize=VIZ_FIGSIZE_WIDE)
 
     chart2.plot_multiple(
         x=x_data,

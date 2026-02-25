@@ -7,6 +7,7 @@ from wisent.core.evaluators.core.atoms import EvalResult
 from wisent.core.constants import (
     EVAL_WEIGHT_EMBEDDING, EVAL_WEIGHT_NLI, EVAL_MIN_MARGIN,
     EVAL_CONFIDENCE_CEILING, EVAL_CONFIDENCE_BASELINE,
+    ROUNDING_PRECISION,
 )
 
 __all__ = ["GenerationEvaluatorHelpersMixin"]
@@ -66,13 +67,13 @@ class GenerationEvaluatorHelpersMixin:
         margin = score_correct - score_incorrect
 
         meta = {
-            "embedding_sim_correct": round(max_correct_sim, 3),
-            "embedding_sim_incorrect": round(max_incorrect_sim, 3),
-            "nli_correct": round(nli_correct, 3),
-            "nli_incorrect": round(nli_incorrect, 3),
-            "score_correct": round(score_correct, 3),
-            "score_incorrect": round(score_incorrect, 3),
-            "margin": round(margin, 3),
+            "embedding_sim_correct": round(max_correct_sim, ROUNDING_PRECISION),
+            "embedding_sim_incorrect": round(max_incorrect_sim, ROUNDING_PRECISION),
+            "nli_correct": round(nli_correct, ROUNDING_PRECISION),
+            "nli_incorrect": round(nli_incorrect, ROUNDING_PRECISION),
+            "score_correct": round(score_correct, ROUNDING_PRECISION),
+            "score_incorrect": round(score_incorrect, ROUNDING_PRECISION),
+            "margin": round(margin, ROUNDING_PRECISION),
             "best_correct_match": best_correct,
             "best_incorrect_match": best_incorrect,
         }

@@ -19,7 +19,7 @@ try:
 except ImportError:
     HAS_SKLEARN = False
 
-from wisent.core.constants import VIZ_PLOT_DPI, TRAIT_NAME_MAX_LENGTH
+from wisent.core.constants import VIZ_PLOT_DPI, TRAIT_NAME_MAX_LENGTH, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, SEPARATOR_WIDTH_WIDE
 from wisent.examples.scripts.visualization_gallery_helpers import (
     gcs_upload_file,
     load_diagnosis_results,
@@ -59,7 +59,7 @@ def create_tsne_gallery(
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
     
     fig, axes = plt.subplots(2, 3, figsize=(12, 8))
-    fig.suptitle(f't-SNE Visualization Gallery\n{model_name}', fontsize=14, fontweight='bold')
+    fig.suptitle(f't-SNE Visualization Gallery\n{model_name}', fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')
     
     cache_dir = f"/tmp/wisent_viz_cache_{model_name.replace('/', '_')}"
     cache = ActivationCache(cache_dir)
@@ -114,7 +114,7 @@ def create_tsne_gallery(
     
     # Add column labels
     for idx, diagnosis in enumerate(["LINEAR", "NONLINEAR", "NO_SIGNAL"]):
-        axes[0, idx].set_xlabel(diagnosis, fontsize=12, fontweight='bold')
+        axes[0, idx].set_xlabel(diagnosis, fontsize=VIZ_FONTSIZE_SUBTITLE, fontweight='bold')
     
     plt.tight_layout()
     plt.savefig(output_path, dpi=VIZ_PLOT_DPI, bbox_inches='tight')
@@ -143,7 +143,7 @@ def create_layer_accuracy_curves(
         return
     
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    fig.suptitle(f'Layer-wise Accuracy Curves\n{model_name}', fontsize=14, fontweight='bold')
+    fig.suptitle(f'Layer-wise Accuracy Curves\n{model_name}', fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')
     
     # Collect layer-wise data (we don't have per-layer data in current results,
     # so we'll create placeholder showing the concept)
@@ -171,16 +171,16 @@ def create_layer_accuracy_curves(
             knn = 0.5 + 0.05 * np.random.randn(len(layers))
             linear = 0.5 + 0.05 * np.random.randn(len(layers))
         
-        ax.plot(layers, knn, 'b-', linewidth=2, label='kNN-10')
-        ax.plot(layers, linear, 'g--', linewidth=2, label='Linear Probe')
-        ax.fill_between(layers, knn, linear, alpha=0.3, color='yellow', label='Gap')
+        ax.plot(layers, knn, 'b-', linewidth=VIZ_LINEWIDTH_NORMAL, label='kNN-10')
+        ax.plot(layers, linear, 'g--', linewidth=VIZ_LINEWIDTH_NORMAL, label='Linear Probe')
+        ax.fill_between(layers, knn, linear, alpha=VIZ_ALPHA_LIGHT, color='yellow', label='Gap')
         
         ax.set_xlabel('Layer')
         ax.set_ylabel('Accuracy')
-        ax.set_title(diagnosis, fontsize=12, fontweight='bold')
+        ax.set_title(diagnosis, fontsize=VIZ_FONTSIZE_SUBTITLE, fontweight='bold')
         ax.legend()
         ax.set_ylim(0.4, 1.0)
-        ax.axhline(y=0.6, color='gray', linestyle='--', alpha=0.5)
+        ax.axhline(y=0.6, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
         ax.set_xlim(1, 32)
     
     plt.tight_layout()
@@ -198,9 +198,9 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
         model_name: Model to visualize
         skip_tsne: Skip t-SNE (requires model loading)
     """
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("VISUALIZATION GALLERY")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"Model: {model_name}")
     
     output_dir = Path("/tmp/visualizations")
@@ -248,9 +248,9 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
     else:
         print("\n3. Skipping t-SNE gallery (--skip-tsne)")
     
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("VISUALIZATION COMPLETE")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"Figures saved to: {output_dir}")
 
 

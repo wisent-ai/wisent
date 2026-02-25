@@ -4,7 +4,7 @@ from typing import Dict, Tuple, Optional
 from pathlib import Path
 
 from .timing_calibration import TimingCalibrator
-from wisent.core.constants import DATA_LOAD_LIMIT, TIMING_SAMPLES_PER_TASK, TIME_ESTIMATOR_CLASSIFICATION_LAYERS, TIME_ESTIMATOR_CV_LAYERS
+from wisent.core.constants import DATA_LOAD_LIMIT, TIMING_SAMPLES_PER_TASK, TIME_ESTIMATOR_CLASSIFICATION_LAYERS, TIME_ESTIMATOR_CV_LAYERS, SECONDS_PER_MINUTE, SECONDS_PER_HOUR
 from wisent.core.errors import (
     ModelConfigAccessError,
     CalibrationRequiredError,
@@ -131,14 +131,14 @@ class OptimizationTimeEstimator:
     @staticmethod
     def format_time(seconds: float) -> str:
         """Format time in human-readable format"""
-        if seconds < 60:
+        if seconds < SECONDS_PER_MINUTE:
             return f"{seconds:.0f} seconds"
-        elif seconds < 3600:
-            minutes = seconds / 60
+        elif seconds < SECONDS_PER_HOUR:
+            minutes = seconds / SECONDS_PER_MINUTE
             return f"{minutes:.0f} minutes"
         else:
-            hours = seconds / 3600
-            minutes = (seconds % 3600) / 60
+            hours = seconds / SECONDS_PER_HOUR
+            minutes = (seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE
             if minutes > 0:
                 return f"{hours:.0f} hours {minutes:.0f} minutes"
             else:

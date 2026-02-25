@@ -163,7 +163,7 @@ class MixedBenchmarkSampler:
                 
             try:
                 # Get samples from this benchmark
-                samples_per_benchmark = max(10, total_samples // len(matching_benchmarks))
+                samples_per_benchmark = max(DISPLAY_TOP_N_SMALL, total_samples // len(matching_benchmarks))
                 
                 cached_samples = self.managed_cache.get_task_samples(
                     task_name=benchmark_name,

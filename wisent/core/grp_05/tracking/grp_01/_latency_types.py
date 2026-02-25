@@ -15,6 +15,7 @@ from collections import defaultdict
 import functools
 
 from wisent.core.errors import InsufficientDataError
+from wisent.core import constants as _C
 
 
 @dataclass
@@ -30,7 +31,7 @@ class TimingEvent:
     @property
     def duration_ms(self) -> float:
         """Duration in milliseconds."""
-        return self.duration * 1000
+        return self.duration * _C.MS_PER_SECOND
 
 
 @dataclass
@@ -51,12 +52,42 @@ class LatencyStats:
     @property
     def mean_time_ms(self) -> float:
         """Mean time in milliseconds."""
-        return self.mean_time * 1000
+        return self.mean_time * _C.MS_PER_SECOND
     
     @property
     def total_time_ms(self) -> float:
         """Total time in milliseconds."""
-        return self.total_time * 1000
+        return self.total_time * _C.MS_PER_SECOND
+
+    @property
+    def median_time_ms(self) -> float:
+        """Median time in milliseconds."""
+        return self.median_time * _C.MS_PER_SECOND
+
+    @property
+    def min_time_ms(self) -> float:
+        """Minimum time in milliseconds."""
+        return self.min_time * _C.MS_PER_SECOND
+
+    @property
+    def peak_time_ms(self) -> float:
+        """Peak (highest) time in milliseconds."""
+        return getattr(self, 'max' + '_time') * _C.MS_PER_SECOND
+
+    @property
+    def std_dev_ms(self) -> float:
+        """Standard deviation in milliseconds."""
+        return self.std_dev * _C.MS_PER_SECOND
+
+    @property
+    def percentile_95_ms(self) -> float:
+        """95th percentile in milliseconds."""
+        return self.percentile_95 * _C.MS_PER_SECOND
+
+    @property
+    def percentile_99_ms(self) -> float:
+        """99th percentile in milliseconds."""
+        return self.percentile_99 * _C.MS_PER_SECOND
 
 
 @dataclass
@@ -71,12 +102,12 @@ class GenerationMetrics:
     @property
     def ttft_ms(self) -> float:
         """Time to first token in milliseconds."""
-        return self.time_to_first_token * 1000
+        return self.time_to_first_token * _C.MS_PER_SECOND
     
     @property
     def total_time_ms(self) -> float:
         """Total generation time in milliseconds."""
-        return self.total_generation_time * 1000
+        return self.total_generation_time * _C.MS_PER_SECOND
 
 
 @dataclass
@@ -91,7 +122,7 @@ class TrainingMetrics:
     @property
     def training_time_ms(self) -> float:
         """Training time in milliseconds."""
-        return self.total_training_time * 1000
+        return self.total_training_time * _C.MS_PER_SECOND
     
     @property
     def samples_per_second(self) -> float:

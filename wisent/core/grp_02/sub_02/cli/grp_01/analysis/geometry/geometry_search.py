@@ -4,14 +4,14 @@ import json
 import sys
 import os
 from pathlib import Path
-from wisent.core.constants import DEFAULT_SCORE, GEOMETRY_MAJORITY_PCT, GEOMETRY_MINORITY_PCT, DISPLAY_TOP_N_MEDIUM
+from wisent.core.constants import DEFAULT_SCORE, GEOMETRY_MAJORITY_PCT, GEOMETRY_MINORITY_PCT, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_STANDARD, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 
 
 def execute_geometry_search(args):
     """Execute the geometry-search command."""
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("GEOMETRY SEARCH")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
     print(f"Model: {args.model}")
     print(f"Output: {args.output}")
     print(f"Pairs per benchmark: {args.pairs_per_benchmark}")
@@ -83,12 +83,12 @@ def execute_geometry_search(args):
     print(f"\nResults saved to: {output_path}")
     
     # Print summary
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("SUMMARY")
-    print(f"{'='*60}")
-    print(f"Total time: {results.total_time_seconds / 3600:.2f} hours")
-    print(f"  Extraction: {results.extraction_time_seconds / 3600:.2f} hours")
-    print(f"  Testing: {results.test_time_seconds / 60:.1f} minutes")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
+    print(f"Total time: {results.total_time_seconds / SECONDS_PER_HOUR:.2f} hours")
+    print(f"  Extraction: {results.extraction_time_seconds / SECONDS_PER_HOUR:.2f} hours")
+    print(f"  Testing: {results.test_time_seconds / SECONDS_PER_MINUTE:.1f} minutes")
     print(f"Benchmarks tested: {results.benchmarks_tested}")
     print(f"Strategies tested: {results.strategies_tested}")
     print(f"Layer combos tested: {results.layer_combos_tested}")
@@ -113,9 +113,9 @@ def execute_geometry_search(args):
     for bench, stats in sorted_benches:
         print(f"  {bench}: mean={stats['mean']:.3f} max={stats['max']:.3f}")
     
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("CONCLUSION")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
     
     # Determine if unified direction exists
     dist = results.get_structure_distribution()

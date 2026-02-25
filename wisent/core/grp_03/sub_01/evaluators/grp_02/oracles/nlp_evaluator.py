@@ -2,7 +2,7 @@ import re
 from typing import Any, Mapping
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.constants import COMPARE_TOL, NLI_MARGIN, NLI_ENT_MIN, EMB_DELTA_MIN, EMB_MATCH_MIN, NLI_ENTAILMENT_THRESHOLD, NLP_EVAL_CONFIDENCE_BASE, NLI_REVERSE_ENTAILMENT_THRESHOLD, NLI_CONFIDENCE_BASE_WEIGHT, NLI_CONFIDENCE_SCALE_WEIGHT, NLP_EMB_CONFIDENCE_CAP, NLP_EMB_CONFIDENCE_BASE
+from wisent.core.constants import COMPARE_TOL, NLI_MARGIN, NLI_ENT_MIN, EMB_DELTA_MIN, EMB_MATCH_MIN, NLI_ENTAILMENT_THRESHOLD, NLP_EVAL_CONFIDENCE_BASE, NLI_REVERSE_ENTAILMENT_THRESHOLD, NLI_CONFIDENCE_BASE_WEIGHT, NLI_CONFIDENCE_SCALE_WEIGHT, NLP_EMB_CONFIDENCE_CAP, NLP_EMB_CONFIDENCE_BASE, ROUNDING_PRECISION
 from wisent.core.evaluators.oracles._helpers._nlp_evaluator_helpers import (
     NLPEvaluatorHelpersMixin,
 )
@@ -151,7 +151,7 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
             pred_idx, ent_scores, margin = self._nli_pick_between(
                 cleaned, options)
             meta["nli"]["entailment"] = ent_scores
-            meta["nli"]["margin"] = round(margin, 3)
+            meta["nli"]["margin"] = round(margin, ROUNDING_PRECISION)
             meta["nli"]["pred_idx"] = pred_idx
             if (pred_idx in (1, 2)
                     and ent_scores[pred_idx - 1] >= self.NLI_ENT_MIN
@@ -167,9 +167,9 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
             ent, ent_rev = self._nli_entailment_pair(
                 cleaned, exp_textnormalize_text)
             meta["nli"]["entail_resp_to_exp"] = (
-                round(ent, 3) if ent is not None else None)
+                round(ent, ROUNDING_PRECISION) if ent is not None else None)
             meta["nli"]["entail_exp_to_resp"] = (
-                round(ent_rev, 3) if ent_rev is not None else None)
+                round(ent_rev, ROUNDING_PRECISION) if ent_rev is not None else None)
             if ent is not None:
                 if (ent >= max(self.NLI_ENT_MIN, NLI_ENTAILMENT_THRESHOLD) or
                         (ent_rev is not None and ent_rev >= NLI_REVERSE_ENTAILMENT_THRESHOLD)):
@@ -188,11 +188,11 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
         if categorical_mode and options and len(options) == 2:
             sA, sB = self._emb_sims(cleaned, options)
             meta["emb"]["cos_sim"] = {
-                "A": round(sA, 3) if sA is not None else None,
-                "B": round(sB, 3) if sB is not None else None}
+                "A": round(sA, ROUNDING_PRECISION) if sA is not None else None,
+                "B": round(sB, ROUNDING_PRECISION) if sB is not None else None}
             if sA is not None and sB is not None:
                 delta = abs(sA - sB)
-                meta["emb"]["delta"] = round(delta, 3)
+                meta["emb"]["delta"] = round(delta, ROUNDING_PRECISION)
                 if (delta >= self.EMB_DELTA_MIN
                         and max(sA, sB) >= self.EMB_MATCH_MIN):
                     pred_idx = 1 if sA > sB else 2
@@ -207,7 +207,7 @@ class NLPEvaluator(NLPEvaluatorHelpersMixin, BaseEvaluator):
         elif exp_textnormalize_text:
             s = self._emb_sim(cleaned, exp_textnormalize_text)
             meta["emb"]["cos_sim"] = (
-                round(s, 3) if s is not None else None)
+                round(s, ROUNDING_PRECISION) if s is not None else None)
             if s is not None and s >= self.EMB_MATCH_MIN:
                 ok = True
                 confidence = float(min(

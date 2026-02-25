@@ -6,7 +6,7 @@ import warnings
 from wisent.core.constants import (
     NORM_EPS, VIZ_PERPLEXITY, VIZ_N_NEIGHBORS, VIZ_MIN_DIST,
     VIZ_N_NEIGHBORS_TRIMAP, VIZ_NUM_ITERS, VIZ_PCA_DIMS_TRIMAP,
-    DEFAULT_RANDOM_SEED,
+    DEFAULT_RANDOM_SEED, VIZ_N_COMPONENTS_2D,
 )
 
 def plot_tsne_projection(
@@ -37,7 +37,7 @@ def plot_tsne_projection(
 
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        tsne = TSNE(n_components=2, perplexity=perplexity, random_state=DEFAULT_RANDOM_SEED)
+        tsne = TSNE(n_components=VIZ_N_COMPONENTS_2D, perplexity=perplexity, random_state=DEFAULT_RANDOM_SEED)
         X_tsne = tsne.fit_transform(X)
 
     pos_tsne = X_tsne[:len(pos)]
@@ -76,7 +76,7 @@ def plot_umap_projection(
     if n_samples < 5:
         return {"error": "not enough samples for UMAP"}
 
-    reducer = umap.UMAP(n_components=2, n_neighbors=n_neighbors, min_dist=min_dist, random_state=DEFAULT_RANDOM_SEED)
+    reducer = umap.UMAP(n_components=VIZ_N_COMPONENTS_2D, n_neighbors=n_neighbors, min_dist=min_dist, random_state=DEFAULT_RANDOM_SEED)
     X_umap = reducer.fit_transform(X)
 
     pos_umap = X_umap[:len(pos)]
@@ -139,7 +139,7 @@ def plot_cone_visualization(
 
     # Project to 2D: mean direction and orthogonal
     from sklearn.decomposition import PCA
-    pca = PCA(n_components=2)
+    pca = PCA(n_components=VIZ_N_COMPONENTS_2D)
     X_2d = pca.fit_transform(X_norm)
 
     return {

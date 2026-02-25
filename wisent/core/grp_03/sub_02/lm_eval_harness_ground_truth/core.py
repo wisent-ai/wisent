@@ -7,6 +7,7 @@ from typing import Any, Dict
 
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.constants import COMPARE_TOL, DEFAULT_LAYER, EVAL_HARNESS_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT
+from wisent.core import constants as _C
 
 logger = logging.getLogger(__name__)
 
@@ -134,7 +135,7 @@ class LMEvalHarnessGroundTruth:
                                           "ground_truth": ground_truth, "correct": is_correct})
             accuracy = correct / total if total > 0 else 0.0
             return {"accuracy": accuracy, "correct_predictions": correct, "total_samples": total,
-                    "evaluation_details": evaluation_details[:5], "task_name": task_name}
+                    "evaluation_details": evaluation_details[:_C.DISPLAY_TOP_N_MINI], "task_name": task_name}
         except Exception as e:
             logger.error(f"Error in metrics evaluation: {e}")
             return {"accuracy": 0.0, "correct_predictions": 0, "total_samples": len(response_data), "error": str(e)}

@@ -16,7 +16,7 @@ from wisent.core.constants import (
     STABILITY_N_BOOTSTRAP, STABILITY_SUBSAMPLE_RATIO, STAT_ALPHA,
     DETECTION_THRESHOLD, LINEARITY_Z_SCORE_THRESHOLD, SIMILARITY_THRESHOLD,
     BOOTSTRAP_CI_LOW_DEFAULT, BOOTSTRAP_CI_HIGH_DEFAULT, CV_FOLDS,
-    VQ_MIN_PAIRS,
+    VQ_MIN_PAIRS, PERCENTILE_HIGH, CI_PERCENTILE_LOW, CI_PERCENTILE_HIGH,
 )
 
 
@@ -70,7 +70,7 @@ def compute_null_distribution(
         return {
             "null_mean": float(np.mean(null_accuracies)),
             "null_std": float(np.std(null_accuracies)),
-            "null_95th": float(np.percentile(null_accuracies, 95)),
+            "null_95th": float(np.percentile(null_accuracies, PERCENTILE_HIGH)),
         }
     except Exception:
         return {"null_mean": SIGNAL_NULL_MEAN, "null_std": SIGNAL_NULL_STD}
@@ -166,8 +166,8 @@ def compute_bootstrap_signal_estimate(
         return {
             "mean": float(np.mean(accuracies)),
             "std": float(np.std(accuracies)),
-            "ci_low": float(np.percentile(accuracies, 2.5)),
-            "ci_high": float(np.percentile(accuracies, 97.5)),
+            "ci_low": float(np.percentile(accuracies, CI_PERCENTILE_LOW)),
+            "ci_high": float(np.percentile(accuracies, CI_PERCENTILE_HIGH)),
         }
     except Exception:
         return {

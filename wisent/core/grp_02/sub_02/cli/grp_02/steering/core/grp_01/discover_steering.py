@@ -10,12 +10,16 @@ from pathlib import Path
 from wisent.core.constants import (
     DISCOVER_STEERING_TASK_LIMIT,
     DISCOVER_STEERING_TRAIN_LIMIT,
+    DISPLAY_TOP_N_BRIEF,
     NORM_EPS,
+    SEPARATOR_WIDTH_STANDARD,
     STEERING_GEN_MAX_TOKENS,
     AGENT_DIAG_TEMPERATURE,
     DATA_SPLIT_RATIO,
     DEFAULT_RANDOM_SEED,
     DEFAULT_BASE_STRENGTH,
+    DEFAULT_SCALE_FACTOR,
+    JSON_INDENT,
 )
 
 
@@ -34,9 +38,9 @@ def execute_discover_steering(args):
     from wisent.core.activations.core.atoms import LayerActivations
     from wisent.core.adapters.base import SteeringConfig
 
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("STEERING DIRECTION DISCOVERY")
-    print(f"{'='*60}")
+    print(f"{'='*SEPARATOR_WIDTH_STANDARD}")
 
     # Load data
     print(f"\nLoading data...")
@@ -94,7 +98,7 @@ def execute_discover_steering(args):
             base_r = _extract_response(adapter._generate_unsteered(fmt, max_new_tokens=STEERING_GEN_MAX_TOKENS, temperature=AGENT_DIAG_TEMPERATURE))
             base_evals.append(evaluator.evaluate(base_r, pos_ref, correct_answers=[pos_ref], incorrect_answers=[neg_ref]).ground_truth)
             base_resps.append(base_r)
-            steer_r = _extract_response(adapter.forward_with_steering(fmt, steering_vectors=steering_vectors, config=SteeringConfig(scale=1.0)))
+            steer_r = _extract_response(adapter.forward_with_steering(fmt, steering_vectors=steering_vectors, config=SteeringConfig(scale=DEFAULT_SCALE_FACTOR)))
             steered_evals.append(evaluator.evaluate(steer_r, pos_ref, correct_answers=[pos_ref], incorrect_answers=[neg_ref]).ground_truth)
             steered_resps.append(steer_r)
         base_t = sum(1 for e in base_evals if e == "TRUTHFUL")
@@ -145,7 +149,7 @@ def execute_discover_steering(args):
         candidates = generate_candidate_directions(pos_np, neg_np, n_random=args.n_random_directions)
         best_imp, best_name = steered_t - base_t, "baseline"
         dir_results = []
-        for name, direction in candidates[:8]:
+        for name, direction in candidates[:DISPLAY_TOP_N_BRIEF]:
             _, s_count, _, _, _, _ = evaluate_direction(direction, args.strength)
             imp = s_count - base_t
             dir_results.append({"name": name, "steered": s_count, "imp": imp})
@@ -155,12 +159,12 @@ def execute_discover_steering(args):
         results["methods"]["direction_search"] = {"best": best_name, "best_imp": best_imp, "all": dir_results}
 
     # Summary
-    print(f"\n{'='*60}")
+    print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     best = max(results["methods"].items(), key=lambda x: x[1].get("improvement", -999))
     print(f"BEST METHOD: {best[0]} (improvement: {best[1].get('improvement', 'N/A')})")
 
     with open(args.output, 'w') as f:
-        json.dump(results, f, indent=2)
+        json.dump(results, f, indent=JSON_INDENT)
     print(f"Results saved to: {args.output}")
     return results
 

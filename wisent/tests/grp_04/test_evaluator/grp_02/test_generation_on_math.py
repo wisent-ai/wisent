@@ -2,7 +2,7 @@
 
 from datasets import load_dataset
 from wisent.core.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT
+from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT
 
 # Load dataset
 ds = load_dataset("qwedsacf/competition_math", split="train")
@@ -13,9 +13,9 @@ evaluator = GenerationEvaluator()
 # Test on a few examples
 num_examples = NUM_EXAMPLES_DEFAULT
 
-print("=" * 80)
+print("=" * SEPARATOR_WIDTH_REPORT)
 print("Testing GenerationEvaluator answer extraction on competition_math")
-print("=" * 80)
+print("=" * SEPARATOR_WIDTH_REPORT)
 
 for i in range(num_examples):
     example = ds[i]
@@ -33,4 +33,4 @@ for i in range(num_examples):
     text_extracted = evaluator._extract_text_answer(solution)
     print(f">>> Extracted text answer: {text_extracted[:DISPLAY_TRUNCATION_COMPACT]}..." if len(str(text_extracted)) > DISPLAY_TRUNCATION_COMPACT else f">>> Extracted text answer: {text_extracted}")
 
-    print("-" * 80)
+    print("-" * SEPARATOR_WIDTH_REPORT)

@@ -5,6 +5,7 @@ import random
 from typing import Any
 
 from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.constants import DISPLAY_TOP_N_MINI
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 
@@ -114,7 +115,7 @@ Answer:"""
                 # Multiple choice format
                 choice_letters = ['A', 'B', 'C', 'D', 'E']
                 choices_text = "\n".join(
-                    f"{choice_letters[i]}. {opt}" for i, opt in enumerate(options[:5])
+                    f"{choice_letters[i]}. {opt}" for i, opt in enumerate(options[:DISPLAY_TOP_N_MINI])
                 )
 
                 task_prompt = f"""Question: {question}

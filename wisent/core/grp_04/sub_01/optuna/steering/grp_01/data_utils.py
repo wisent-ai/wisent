@@ -17,7 +17,7 @@ from wisent.core.tasks.base.task_interface import get_task
 from wisent.core.utils import empty_device_cache, preferred_dtype, resolve_default_device
 from wisent.core.errors import ModelArchitectureUnknownError
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER, BYTES_PER_GB
 logger = logging.getLogger(__name__)
 
 
@@ -285,11 +285,11 @@ def load_model_and_tokenizer(model_name: str, device: torch.device):
 
     # Log memory usage
     if device_kind == "cuda" and torch.cuda.is_available():
-        memory_gb = torch.cuda.memory_allocated() / 1024**3
+        memory_gb = torch.cuda.memory_allocated() / BYTES_PER_GB
         logger.info(f"✓ Model loaded on {device}, GPU memory: {memory_gb:.2f} GB")
     elif device_kind == "mps" and hasattr(torch, "mps"):
         try:
-            memory_gb = torch.mps.current_allocated_memory() / 1024**3
+            memory_gb = torch.mps.current_allocated_memory() / BYTES_PER_GB
             logger.info(f"✓ Model loaded on {device}, MPS memory: {memory_gb:.2f} GB")
         except AttributeError:
             logger.info(f"✓ Model loaded on {device}")

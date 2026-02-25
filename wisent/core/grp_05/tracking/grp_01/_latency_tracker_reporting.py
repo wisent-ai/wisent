@@ -5,6 +5,7 @@ from collections import defaultdict
 import time
 from wisent.core.tracking._latency_types import (
     LatencyStats, GenerationMetrics, TrainingMetrics, TimingEvent)
+from wisent.core import constants as _C
 
 class LatencyReportingMixin:
     """Mixin providing reporting and summary methods."""
@@ -23,8 +24,8 @@ class LatencyReportingMixin:
             min_time=min(durations),
             max_time=max(durations),
             std_dev=statistics.stdev(durations) if len(durations) > 1 else 0,
-            percentile_95=self._percentile(durations, 95),
-            percentile_99=self._percentile(durations, 99),
+            percentile_95=self._percentile(durations, _C.PERCENTILE_HIGH),
+            percentile_99=self._percentile(durations, _C.PERCENTILE_CRITICAL),
             events=events.copy()
         )
     
@@ -138,8 +139,8 @@ class LatencyReportingMixin:
             
             lines.extend([
                 f"\n⚡ Steering Overhead:",
-                f"  Unsteered Avg: {unsteered_avg * 1000:.0f} ms ({len(unsteered_events)} runs)",
-                f"  Steered Avg: {steered_avg * 1000:.0f} ms ({len(steered_events)} runs)",
+                f"  Unsteered Avg: {unsteered_avg * _C.MS_PER_SECOND:.0f} ms ({len(unsteered_events)} runs)",
+                f"  Steered Avg: {steered_avg * _C.MS_PER_SECOND:.0f} ms ({len(steered_events)} runs)",
                 f"  Overhead: {overhead:+.1f}%"
             ])
         elif steered_events:
@@ -147,14 +148,14 @@ class LatencyReportingMixin:
             steered_avg = sum(e.duration for e in steered_events) / len(steered_events)
             lines.extend([
                 f"\n🎯 Steered Generation:",
-                f"  Average Time: {steered_avg * 1000:.0f} ms ({len(steered_events)} runs)"
+                f"  Average Time: {steered_avg * _C.MS_PER_SECOND:.0f} ms ({len(steered_events)} runs)"
             ])
         elif unsteered_events:
             # Show unsteered performance even without comparison
             unsteered_avg = sum(e.duration for e in unsteered_events) / len(unsteered_events)
             lines.extend([
                 f"\n🔄 Unsteered Generation:",
-                f"  Average Time: {unsteered_avg * 1000:.0f} ms ({len(unsteered_events)} runs)"
+                f"  Average Time: {unsteered_avg * _C.MS_PER_SECOND:.0f} ms ({len(unsteered_events)} runs)"
             ])
         
         # Show warning if no generation metrics found
@@ -188,16 +189,16 @@ class LatencyReportingMixin:
             f"Count: {stats.count}",
             f"Total Time: {stats.total_time_ms:.1f} ms",
             f"Mean Time: {stats.mean_time_ms:.1f} ms",
-            f"Median Time: {stats.median_time * 1000:.1f} ms",
-            f"Min Time: {stats.min_time * 1000:.1f} ms",
-            f"Max Time: {stats.max_time * 1000:.1f} ms",
+            f"Median Time: {stats.median_time_ms:.1f} ms",
+            f"Min Time: {stats.min_time_ms:.1f} ms",
+            f"Max Time: {stats.peak_time_ms:.1f} ms",
         ]
         
         if stats.count > 1:
             lines.extend([
-                f"Std Dev: {stats.std_dev * 1000:.1f} ms",
-                f"95th Percentile: {stats.percentile_95 * 1000:.1f} ms",
-                f"99th Percentile: {stats.percentile_99 * 1000:.1f} ms",
+                f"Std Dev: {stats.std_dev_ms:.1f} ms",
+                f"95th Percentile: {stats.percentile_95_ms:.1f} ms",
+                f"99th Percentile: {stats.percentile_99_ms:.1f} ms",
             ])
         
         if detailed and stats.events:

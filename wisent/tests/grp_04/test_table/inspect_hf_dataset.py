@@ -16,17 +16,17 @@ import argparse
 import sys
 from datasets import load_dataset, get_dataset_config_names
 
-from wisent.core.constants import NUM_EXAMPLES_DEFAULT
+from wisent.core.constants import NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_NARROW
 
 
 def inspect_hf_dataset(dataset_name: str, config_name: str | None = None, num_examples: int = NUM_EXAMPLES_DEFAULT) -> None:
     """Load a dataset from Hugging Face and display its structure and examples."""
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"INSPECTING HF DATASET: {dataset_name}")
     if config_name:
         print(f"CONFIG: {config_name}")
-    print(f"{'='*80}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_REPORT}\n")
 
     # Try to get available configs
     try:
@@ -45,7 +45,7 @@ def inspect_hf_dataset(dataset_name: str, config_name: str | None = None, num_ex
     split_names = ['train', 'test', 'validation', 'dev']
 
     print("\nAVAILABLE SPLITS:")
-    print("-" * 40)
+    print("-" * SEPARATOR_WIDTH_NARROW)
 
     available_splits = {}
     for split_name in split_names:
@@ -79,9 +79,9 @@ def inspect_hf_dataset(dataset_name: str, config_name: str | None = None, num_ex
 
     # For each available split, show examples
     for split_name, ds in available_splits.items():
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
         print(f"SPLIT: {split_name.upper()} ({len(ds)} samples)")
-        print(f"{'='*80}")
+        print(f"{'=' * SEPARATOR_WIDTH_REPORT}")
 
         # Show structure
         print(f"\nColumn names: {ds.column_names}")
@@ -90,9 +90,9 @@ def inspect_hf_dataset(dataset_name: str, config_name: str | None = None, num_ex
             print(f"  {name}: {feature}")
 
         # Show examples
-        print(f"\n{'-'*40}")
+        print(f"\n{'-' * SEPARATOR_WIDTH_NARROW}")
         print(f"FIRST {min(num_examples, len(ds))} EXAMPLES:")
-        print(f"{'-'*40}")
+        print(f"{'-' * SEPARATOR_WIDTH_NARROW}")
 
         for i in range(min(num_examples, len(ds))):
             doc = ds[i]
