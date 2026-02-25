@@ -47,13 +47,13 @@ def run_comprehensive_geometry_analysis(
     from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure
     from wisent.core.steering_methods.preflight import run_preflight_check
     
-    print("=" * 80)
+    print("=" * _C.SEPARATOR_WIDTH_REPORT)
     print("COMPREHENSIVE GEOMETRY ANALYSIS")
-    print("=" * 80)
+    print("=" * _C.SEPARATOR_WIDTH_REPORT)
     print(f"Task: {task}")
     print(f"Model: {model}")
     print(f"Num pairs: {num_pairs}")
-    print("=" * 80)
+    print("=" * _C.SEPARATOR_WIDTH_REPORT)
     
     # Load model to get layer count
     print("\n[1] Loading model to determine layer count...")
@@ -108,7 +108,7 @@ def run_comprehensive_geometry_analysis(
         
         # Sweep search space
         print(f"\n[4] Running geometry analysis across {total_configs} configurations...")
-        print("-" * 80)
+        print("-" * _C.SEPARATOR_WIDTH_REPORT)
         
         for prompt_strategy in prompt_strategies:
             for token_agg in token_aggregations:
@@ -194,16 +194,16 @@ def run_comprehensive_geometry_analysis(
                         continue
         
         # Print summary
-        print("\n" + "=" * 80)
+        print("\n" + "=" * _C.SEPARATOR_WIDTH_REPORT)
         print("RESULTS SUMMARY")
-        print("=" * 80)
+        print("=" * _C.SEPARATOR_WIDTH_REPORT)
         
         print(f"\nTotal configurations tested: {len(all_results)}/{total_configs}")
         
         # Best configuration for each geometry type
-        print("\n" + "-" * 80)
+        print("\n" + "-" * _C.SEPARATOR_WIDTH_REPORT)
         print("BEST CONFIGURATION FOR EACH GEOMETRY TYPE:")
-        print("-" * 80)
+        print("-" * _C.SEPARATOR_WIDTH_REPORT)
         
         for geo_type in sorted(best_by_geometry.keys()):
             r = best_by_geometry[geo_type]
@@ -215,9 +215,9 @@ def run_comprehensive_geometry_analysis(
             print(f"    Num pairs: {r.num_pairs}")
         
         # Overall best configurations
-        print("\n" + "-" * 80)
+        print("\n" + "-" * _C.SEPARATOR_WIDTH_REPORT)
         print("TOP 10 CONFIGURATIONS BY BEST SCORE:")
-        print("-" * 80)
+        print("-" * _C.SEPARATOR_WIDTH_REPORT)
         
         sorted_results = sorted(all_results, key=lambda x: x.best_score, reverse=True)
         for i, r in enumerate(sorted_results[:DISPLAY_TOP_N_SMALL]):
@@ -225,9 +225,9 @@ def run_comprehensive_geometry_analysis(
             print(f"      Layer={r.layer}, Agg={r.token_aggregation}, Prompt={r.prompt_strategy}")
         
         # Pre-flight recommendations
-        print("\n" + "-" * 80)
+        print("\n" + "-" * _C.SEPARATOR_WIDTH_REPORT)
         print("PRE-FLIGHT RECOMMENDATIONS:")
-        print("-" * 80)
+        print("-" * _C.SEPARATOR_WIDTH_REPORT)
         
         # Get the overall best config
         if sorted_results:

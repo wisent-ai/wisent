@@ -11,7 +11,7 @@ from .activations.activations_collector import ActivationCollector
 from .activations.extraction_strategy import ExtractionStrategy
 
 from wisent.core.errors import OptimizationError, NoActivationDataError, InsufficientDataError
-from wisent.core.constants import VAL_SPLIT, MAX_COMBINATIONS, DEFAULT_RANDOM_SEED, THRESHOLD_RANGE_DEFAULT, OPTIMIZER_AGGREGATION_METHODS, OPTIMIZER_TOKEN_TARGETING
+from wisent.core.constants import VAL_SPLIT, MAX_COMBINATIONS, DEFAULT_RANDOM_SEED, THRESHOLD_RANGE_DEFAULT, OPTIMIZER_AGGREGATION_METHODS, OPTIMIZER_TOKEN_TARGETING, PROGRESS_LOG_INTERVAL_20
 from wisent.core.opti._hyperparameter_evaluate import (
     HyperparameterEvaluateMixin,
     detect_model_layers,
@@ -160,7 +160,7 @@ class HyperparameterOptimizer(HyperparameterEvaluateMixin):
         
         for i, (layer, aggregation, prompt_strategy, token_strategy, threshold, classifier_type) in enumerate(combinations):
             try:
-                if verbose and (i + 1) % 20 == 0:
+                if verbose and (i + 1) % PROGRESS_LOG_INTERVAL_20 == 0:
                     print(f"   • Progress: {i + 1}/{len(combinations)} combinations tested")
 
                 # Train and evaluate this combination

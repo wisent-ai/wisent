@@ -24,7 +24,7 @@ from wisent.core.errors import (
 
 # Use the standard evaluator system
 from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.core.constants import BENCHMARK_WEIGHT, PROBE_WEIGHT, CLASSIFIER_DECISION_THRESHOLD
+from wisent.core.constants import BENCHMARK_WEIGHT, PROBE_WEIGHT, CLASSIFIER_DECISION_THRESHOLD, DISPLAY_TOP_N_MINI, CHANCE_LEVEL_ACCURACY
 logger = logging.getLogger(__name__)
 
 
@@ -189,7 +189,7 @@ def evaluate_benchmark_performance(
         "incorrect": len(predictions) - total_correct,
         "evaluation_method": evaluator_name,
         "task_name": task_name,
-        "evaluation_details": evaluation_details[:5],  # Include first 5 for debugging
+        "evaluation_details": evaluation_details[:DISPLAY_TOP_N_MINI],  # Include first 5 for debugging
     }
 
 
@@ -207,7 +207,7 @@ def evaluate_probe_performance(y_true: np.ndarray, y_pred: np.ndarray, y_pred_pr
     """
     if len(y_true) == 0:
         # Return default metrics if no data
-        return {"accuracy": 0.5, "precision": 0.5, "recall": 0.5, "f1": 0.5, "auc": 0.5, "total_samples": 0}
+        return {"accuracy": CHANCE_LEVEL_ACCURACY, "precision": CHANCE_LEVEL_ACCURACY, "recall": CHANCE_LEVEL_ACCURACY, "f1": CHANCE_LEVEL_ACCURACY, "auc": CHANCE_LEVEL_ACCURACY, "total_samples": 0}
 
     accuracy = accuracy_score(y_true, y_pred)
     precision, recall, f1, _ = precision_recall_fscore_support(y_true, y_pred, average="binary")
@@ -215,7 +215,7 @@ def evaluate_probe_performance(y_true: np.ndarray, y_pred: np.ndarray, y_pred_pr
     try:
         auc = roc_auc_score(y_true, y_pred_proba)
     except:
-        auc = 0.5  # Default for cases where AUC can't be computed
+        auc = CHANCE_LEVEL_ACCURACY  # Default for cases where AUC can't be computed
 
     return {
         "accuracy": accuracy,

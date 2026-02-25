@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from typing import List, Optional
 
+from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_NARROW
 from wisent.core.steering_methods.steering_object import load_steering_object
 from wisent.core.geometry.comparison.cross_trait import compare_steering_objects
 
@@ -50,18 +51,18 @@ def _print_similarity_table(result) -> None:
         print(row)
 
     # Uniqueness scores
-    print(f"\n{'=' * 40}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_NARROW}")
     print("UNIQUENESS SCORES (higher = more unique)")
-    print(f"{'=' * 40}")
+    print(f"{'=' * SEPARATOR_WIDTH_NARROW}")
     for label, score in sorted(result.uniqueness_scores.items(),
                                 key=lambda x: x[1], reverse=True):
         bar = "#" * int(score * 40)
         print(f"   {label:<20} {score:.4f}  {bar}")
 
     # Clusters
-    print(f"\n{'=' * 40}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_NARROW}")
     print("CLUSTER ASSIGNMENTS")
-    print(f"{'=' * 40}")
+    print(f"{'=' * SEPARATOR_WIDTH_NARROW}")
     for i, label in enumerate(labels):
         print(f"   {label:<20} cluster {result.clusters[i]}")
 
@@ -136,7 +137,7 @@ def execute_compare_steering(args):
     if output_path and output_format in ("json", "both"):
         data = _result_to_dict(result)
         with open(output_path, "w") as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=JSON_INDENT)
         print(f"\nResults saved to: {output_path}")
 
     return result

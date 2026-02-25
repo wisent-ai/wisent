@@ -1,7 +1,7 @@
 """Behavioral label collection for steering direction discovery."""
 
 import numpy as np
-from wisent.core.constants import AGENT_DIAG_TEMPERATURE, STEERING_GEN_MAX_TOKENS, STEERING_GEN_MAX_TOKENS_SHORT
+from wisent.core.constants import AGENT_DIAG_TEMPERATURE, STEERING_GEN_MAX_TOKENS, STEERING_GEN_MAX_TOKENS_SHORT, PROGRESS_LOG_INTERVAL_20
 
 
 def extract_response(raw_response: str) -> str:
@@ -46,7 +46,7 @@ def collect_behavioral_labels(adapter, test_ids, pair_texts, evaluator, layer_na
             correct_answers=correct_answers, incorrect_answers=incorrect_answers)
         labels.append(1 if result.ground_truth == "TRUTHFUL" else 0)
 
-        if i % 20 == 0:
+        if i % PROGRESS_LOG_INTERVAL_20 == 0:
             print(f"    Collecting behavioral labels: {i+1}/{len(test_ids)}...")
 
     return np.array(activations), np.array(labels)
@@ -87,7 +87,7 @@ def collect_behavioral_labels_all_layers(adapter, test_ids, pair_texts, evaluato
             correct_answers=correct_answers, incorrect_answers=incorrect_answers)
         labels.append(1 if result.ground_truth == "TRUTHFUL" else 0)
 
-        if i % 20 == 0:
+        if i % PROGRESS_LOG_INTERVAL_20 == 0:
             print(f"    Collecting behavioral labels (all layers): {i+1}/{len(test_ids)}...")
 
     # Convert to numpy arrays

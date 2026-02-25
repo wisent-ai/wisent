@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import numpy as np
 
-from wisent.core.constants import VIZ_PLOT_DPI, SIGNAL_EXISTENCE_THRESHOLD, LINEAR_GAP_THRESHOLD
+from wisent.core.constants import VIZ_PLOT_DPI, SIGNAL_EXISTENCE_THRESHOLD, LINEAR_GAP_THRESHOLD, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_FONTSIZE_ANNOTATION, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, CHANCE_LEVEL_ACCURACY
 
 try:
     import matplotlib.pyplot as plt
@@ -44,7 +44,7 @@ def create_hero_figure(
     ax1.set_xlim(0, 10)
     ax1.set_ylim(0, 10)
     ax1.axis('off')
-    ax1.set_title('Zwiad Pipeline', fontsize=14, fontweight='bold')
+    ax1.set_title('Zwiad Pipeline', fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')
     
     # Draw boxes
     boxes = [
@@ -61,7 +61,7 @@ def create_hero_figure(
                                         boxstyle="round,pad=0.1",
                                         facecolor='lightblue', edgecolor='black')
         ax1.add_patch(rect)
-        ax1.text(x, y, label, ha='center', va='center', fontsize=9)
+        ax1.text(x, y, label, ha='center', va='center', fontsize=VIZ_FONTSIZE_ANNOTATION)
     
     # Draw arrows
     ax1.annotate('', xy=(3.2, 7), xytext=(1.8, 7),
@@ -109,7 +109,7 @@ def create_hero_figure(
     ax2.pie(sizes, explode=explode, labels=labels, colors=colors,
             autopct='%1.1f%%', shadow=True, startangle=90)
     ax2.set_title(f'Diagnosis Distribution\n({sum(sizes)} benchmarks)', 
-                  fontsize=14, fontweight='bold')
+                  fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')
     
     # Panel 3: Key metrics bar chart
     ax3 = fig.add_subplot(gs[2])
@@ -143,11 +143,11 @@ def create_hero_figure(
     x = np.arange(3)
     width = 0.25
     
-    knn_means = [np.mean(metrics_by_diag[d]["knn"]) if metrics_by_diag[d]["knn"] else 0.5 
+    knn_means = [np.mean(metrics_by_diag[d]["knn"]) if metrics_by_diag[d]["knn"] else CHANCE_LEVEL_ACCURACY
                  for d in ["LINEAR", "NONLINEAR", "NO_SIGNAL"]]
-    linear_means = [np.mean(metrics_by_diag[d]["linear"]) if metrics_by_diag[d]["linear"] else 0.5 
+    linear_means = [np.mean(metrics_by_diag[d]["linear"]) if metrics_by_diag[d]["linear"] else CHANCE_LEVEL_ACCURACY
                     for d in ["LINEAR", "NONLINEAR", "NO_SIGNAL"]]
-    signal_means = [np.mean(metrics_by_diag[d]["signal"]) if metrics_by_diag[d]["signal"] else 0.5 
+    signal_means = [np.mean(metrics_by_diag[d]["signal"]) if metrics_by_diag[d]["signal"] else CHANCE_LEVEL_ACCURACY
                     for d in ["LINEAR", "NONLINEAR", "NO_SIGNAL"]]
     
     ax3.bar(x - width, knn_means, width, label='kNN Acc', color='#3498db')
@@ -155,12 +155,12 @@ def create_hero_figure(
     ax3.bar(x + width, signal_means, width, label='MLP Signal', color='#e74c3c')
     
     ax3.set_ylabel('Accuracy')
-    ax3.set_title('Metrics by Diagnosis', fontsize=14, fontweight='bold')
+    ax3.set_title('Metrics by Diagnosis', fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')
     ax3.set_xticks(x)
     ax3.set_xticklabels(['LINEAR', 'NONLINEAR', 'NO_SIGNAL'])
     ax3.legend(loc='upper right')
     ax3.set_ylim(0, 1)
-    ax3.axhline(y=0.6, color='gray', linestyle='--', alpha=0.5)
+    ax3.axhline(y=0.6, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
     
     plt.tight_layout()
     plt.savefig(output_path, dpi=VIZ_PLOT_DPI, bbox_inches='tight')
@@ -189,7 +189,7 @@ def create_layer_accuracy_curves(
         return
     
     fig, axes = plt.subplots(1, 3, figsize=(15, 5))
-    fig.suptitle(f'Layer-wise Accuracy Curves\n{model_name}', fontsize=14, fontweight='bold')
+    fig.suptitle(f'Layer-wise Accuracy Curves\n{model_name}', fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')
     
     # Collect layer-wise data (we don't have per-layer data in current results,
     # so we'll create placeholder showing the concept)
@@ -217,16 +217,16 @@ def create_layer_accuracy_curves(
             knn = 0.5 + 0.05 * np.random.randn(len(layers))
             linear = 0.5 + 0.05 * np.random.randn(len(layers))
         
-        ax.plot(layers, knn, 'b-', linewidth=2, label='kNN-10')
-        ax.plot(layers, linear, 'g--', linewidth=2, label='Linear Probe')
-        ax.fill_between(layers, knn, linear, alpha=0.3, color='yellow', label='Gap')
+        ax.plot(layers, knn, 'b-', linewidth=VIZ_LINEWIDTH_NORMAL, label='kNN-10')
+        ax.plot(layers, linear, 'g--', linewidth=VIZ_LINEWIDTH_NORMAL, label='Linear Probe')
+        ax.fill_between(layers, knn, linear, alpha=VIZ_ALPHA_LIGHT, color='yellow', label='Gap')
         
         ax.set_xlabel('Layer')
         ax.set_ylabel('Accuracy')
-        ax.set_title(diagnosis, fontsize=12, fontweight='bold')
+        ax.set_title(diagnosis, fontsize=VIZ_FONTSIZE_SUBTITLE, fontweight='bold')
         ax.legend()
         ax.set_ylim(0.4, 1.0)
-        ax.axhline(y=0.6, color='gray', linestyle='--', alpha=0.5)
+        ax.axhline(y=0.6, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
         ax.set_xlim(1, 32)
     
     plt.tight_layout()

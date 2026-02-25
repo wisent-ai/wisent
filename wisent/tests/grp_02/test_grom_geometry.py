@@ -15,6 +15,7 @@ from wisent.core.constants import (
     GROM_TEST_HIDDEN_DIM,
     GROM_TEST_N_SAMPLES,
     GEOMETRY_OPTIMIZATION_STEPS_SMALL,
+    SEPARATOR_WIDTH_STANDARD,
 )
 
 try:
@@ -144,9 +145,9 @@ def test_grom_geometry_on_truthfulqa():
         for adapt in adaptation.adaptations_made:
             print(f"     - {adapt}")
         
-        print("\n" + "="*60)
+        print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
         print("TEST PASSED - GROM geometry adaptation working!")
-        print("="*60)
+        print("=" * SEPARATOR_WIDTH_STANDARD)
 
 
 def test_geometry_detection_synthetic():
@@ -237,27 +238,27 @@ def test_grom_adaptation_linear():
 if __name__ == "__main__":
     print("Running GROM geometry tests...\n")
     
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print("Test 1: Geometry detection with synthetic data")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     test_geometry_detection_synthetic()
     print("PASSED\n")
     
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print("Test 2: Pre-flight checks")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     test_preflight_checks()
     print("PASSED\n")
     
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print("Test 3: GROM adaptation for linear data")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     test_grom_adaptation_linear()
     print("PASSED\n")
     
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print("Test 4: Full GROM geometry on truthfulqa_gen")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     test_grom_geometry_on_truthfulqa()
     print("PASSED\n")
     

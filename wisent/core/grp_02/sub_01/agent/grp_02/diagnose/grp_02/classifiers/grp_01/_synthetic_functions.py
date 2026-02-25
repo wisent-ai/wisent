@@ -17,7 +17,7 @@ def get_time_budget_from_manager() -> float:
     time_budget = budget_manager.get_budget(ResourceType.TIME)
     if not time_budget:
         raise MissingParameterError(params=["time_budget"], context="Budget manager")
-    return time_budget.remaining_budget / 60.0  # Convert to minutes
+    return time_budget.remaining_budget / _C.SECONDS_PER_MINUTE  # Convert to minutes
 
 
 # Main interface functions
@@ -107,9 +107,9 @@ def create_classifier_from_trait_description(
     log_and_print(f"✅ Generated {len(pair_set.pairs)} pairs total")
 
     # Log all generated pairs in detail
-    log_and_print("=" * 80)
+    log_and_print("=" * _C.REPORT_LINE_WIDTH)
     log_and_print("DETAILED PAIR ANALYSIS:")
-    log_and_print("=" * 80)
+    log_and_print("=" * _C.REPORT_LINE_WIDTH)
 
     for i, pair in enumerate(pair_set.pairs):
         log_and_print(f"\n--- PAIR {i + 1}/{len(pair_set.pairs)} ---")
@@ -131,7 +131,7 @@ def create_classifier_from_trait_description(
         if hasattr(pair, "_prompt_strategy"):
             log_and_print(f"Has _prompt_strategy: {pair._prompt_strategy}")
 
-    log_and_print("=" * 80)
+    log_and_print("=" * _C.REPORT_LINE_WIDTH)
 
     if len(pair_set.pairs) < AGENT_SYNTH_MIN_PAIRS:
         error_msg = f"Insufficient training pairs generated: {len(pair_set.pairs)}"

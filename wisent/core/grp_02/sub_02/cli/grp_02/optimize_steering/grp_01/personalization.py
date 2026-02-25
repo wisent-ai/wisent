@@ -6,9 +6,10 @@ from typing import Optional
 
 from wisent.core.cli.optimize_steering.method_configs import CAAConfig
 from wisent.core.cli.optimize_steering.pipeline import run_pipeline
-from wisent.core.constants import (PERSONALIZATION_N_TRIALS, DEFAULT_N_TRIALS, WELFARE_LIMIT,
+from wisent.core.constants import (JSON_INDENT, PERSONALIZATION_N_TRIALS, DEFAULT_N_TRIALS, WELFARE_LIMIT,
     DEFAULT_NUM_HIDDEN_LAYERS, DEFAULT_NUM_STRENGTH_STEPS,
-    PARSER_STRENGTH_RANGE_PERSONALIZATION)
+    PARSER_STRENGTH_RANGE_PERSONALIZATION, REPORT_LINE_WIDTH,
+    LAYER_STRIDE_DEFAULT)
 
 
 def _execute_personalization_optimization(args):
@@ -29,16 +30,16 @@ def _execute_personalization_optimization(args):
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './personalization_optimization')
 
-    print(f"\n{'=' * 80}")
+    print(f"\n{'=' * REPORT_LINE_WIDTH}")
     print(f"🎭 PERSONALIZATION STEERING OPTIMIZATION")
-    print(f"{'=' * 80}")
+    print(f"{'=' * REPORT_LINE_WIDTH}")
     print(f"   Model: {model}")
     print(f"   Trait: {trait}")
     print(f"   Trait Name: {trait_name}")
     print(f"   Num Pairs: {num_pairs}")
     print(f"   Trials: {n_trials}")
     print(f"   Output: {output_dir}")
-    print(f"{'=' * 80}\n")
+    print(f"{'=' * REPORT_LINE_WIDTH}\n")
 
     # Try to load existing personalization pairs first
     try:
@@ -86,7 +87,7 @@ def _execute_personalization_optimization(args):
     # Determine layers to search
     layers = getattr(args, 'layers', None)
     if layers is None:
-        layers = list(range(0, num_layers, 2))
+        layers = list(range(0, num_layers, LAYER_STRIDE_DEFAULT))
 
     # Strength range
     strength_range = getattr(args, 'strength_range', list(PARSER_STRENGTH_RANGE_PERSONALIZATION))
@@ -136,9 +137,9 @@ def _execute_personalization_optimization(args):
                 print(f"   [{current}/{total_configs}] Failed: {e}")
 
     # Print results
-    print(f"\n{'=' * 80}")
+    print(f"\n{'=' * REPORT_LINE_WIDTH}")
     print(f"📊 PERSONALIZATION OPTIMIZATION COMPLETE")
-    print(f"{'=' * 80}")
+    print(f"{'=' * REPORT_LINE_WIDTH}")
     print(f"\n✅ Best configuration for '{trait}':")
     print(f"   Score: {best_score:.4f}")
     for k, v in best_params.items():
@@ -154,7 +155,7 @@ def _execute_personalization_optimization(args):
         "best_params": best_params,
     }
     with open(results_file, 'w') as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=JSON_INDENT)
     print(f"\n💾 Results saved to: {results_file}")
 
     return output_data

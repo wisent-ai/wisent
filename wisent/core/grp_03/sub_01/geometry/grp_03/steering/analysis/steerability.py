@@ -11,7 +11,7 @@ from typing import Dict, Any
 from wisent.core.constants import (
     NORM_EPS, STEERABILITY_AMBIENT_DIM, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     STEERABILITY_SILHOUETTE_SAMPLE_LIMIT, STEERABILITY_MIN_PAIRS,
-    CUMSUM_THRESHOLD_90,
+    CUMSUM_THRESHOLD_90, MIN_CLUSTERS,
 )
 
 
@@ -99,7 +99,7 @@ def compute_steerability_metrics(
         def spherical_silhouette(X_norm, labels):
             n = len(X_norm)
             k = len(set(labels))
-            if k < 2:
+            if k < MIN_CLUSTERS:
                 return 0.0
             
             silhouettes = []

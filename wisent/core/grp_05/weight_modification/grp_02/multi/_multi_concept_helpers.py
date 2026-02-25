@@ -129,13 +129,13 @@ def run_multi_concept_modification(
     warnings = []
     
     if cfg.verbose:
-        print("\n" + "=" * 70)
+        print("\n" + "=" * _C.SEPARATOR_WIDTH_WIDE)
         print("MULTI-CONCEPT WEIGHT MODIFICATION")
-        print("=" * 70)
+        print("=" * _C.SEPARATOR_WIDTH_WIDE)
         print(f"Concepts: {[c.name for c in concepts]}")
         print(f"Orthogonalize: {cfg.orthogonalize}")
         print(f"Norm preserve: {cfg.norm_preserve}")
-        print("=" * 70 + "\n")
+        print("=" * _C.SEPARATOR_WIDTH_WIDE + "\n")
     
     # Step 1: Compute interference
     interference = compute_interference_matrix(concepts)
@@ -272,14 +272,14 @@ def run_multi_concept_modification(
                     per_concept_stats[c.name]["layers"] += 1
     
     if cfg.verbose:
-        print(f"\n{'='*70}")
+        print(f"\n{'=' * _C.SEPARATOR_WIDTH_WIDE}")
         print("MULTI-CONCEPT MODIFICATION COMPLETE")
-        print(f"{'='*70}")
+        print(f"{'=' * _C.SEPARATOR_WIDTH_WIDE}")
         print(f"  Concepts modified: {len(concepts)}")
         print(f"  Layers modified: {layers_modified}")
         print(f"  Total parameters: {total_params:,}")
         print(f"  Warnings: {len(warnings)}")
-        print(f"{'='*70}\n")
+        print(f"{'=' * _C.SEPARATOR_WIDTH_WIDE}\n")
     
     return MultiConceptResult(
         concepts_modified=[c.name for c in concepts],

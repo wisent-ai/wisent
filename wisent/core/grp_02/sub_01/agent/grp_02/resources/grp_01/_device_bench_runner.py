@@ -4,7 +4,7 @@ import sys
 import hashlib
 from typing import Dict, Any, Optional
 from wisent.core.errors import DeviceBenchmarkError, NoBenchmarkDataError, UnknownTypeError
-from wisent.core.constants import AGENT_BENCH_EVAL_DEFAULT_SECONDS, AGENT_CLASSIFIER_TRAINING_DEFAULT_SECONDS
+from wisent.core.constants import AGENT_BENCH_EVAL_DEFAULT_SECONDS, AGENT_CLASSIFIER_TRAINING_DEFAULT_SECONDS, HASH_DISPLAY_LENGTH
 
 
 class DeviceBenchmarkRunnerMixin:
@@ -16,7 +16,7 @@ class DeviceBenchmarkRunnerMixin:
         if not force_rerun:
             cached = self.load_cached_benchmark()
             if cached:
-                print(f"   ✅ Using cached benchmark results (device: {cached.device_id[:8]}...)")
+                print(f"   ✅ Using cached benchmark results (device: {cached.device_id[:HASH_DISPLAY_LENGTH]}...)")
                 self.cached_benchmark = cached
                 return cached
         
@@ -28,7 +28,7 @@ class DeviceBenchmarkRunnerMixin:
         device_id = self.get_device_id()
         device_type = self.get_device_type()
         
-        print(f"   🖥️ Device ID: {device_id[:8]}... ({device_type})")
+        print(f"   🖥️ Device ID: {device_id[:HASH_DISPLAY_LENGTH]}... ({device_type})")
         
         # Run all benchmarks with error handling
         try:

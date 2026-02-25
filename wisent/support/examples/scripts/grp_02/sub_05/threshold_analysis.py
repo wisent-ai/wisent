@@ -9,7 +9,7 @@ import numpy as np
 from wisent.core.constants import (
     NULL_DISTRIBUTION_SAMPLES, THRESHOLD_HIDDEN_DIM_LARGE,
     JSON_ARRAY_LIMIT, GAP_THRESHOLD_CANDIDATES,
-    SEPARATOR_LINE_WIDTH,
+    SEPARATOR_LINE_WIDTH, SEPARATOR_WIDTH_STANDARD, JSON_INDENT,
 )
 from wisent.examples.scripts.threshold_analysis_helpers import (
     gcs_upload_file,
@@ -96,9 +96,9 @@ def run_threshold_analysis(model_name: str):
     sensitivity = run_sensitivity_analysis(results)
     
     print("\n   Diagnosis distribution (% of benchmarks):")
-    print("   " + "-" * 60)
+    print("   " + "-" * SEPARATOR_WIDTH_STANDARD)
     print(f"   {'Exist':>6} | {'Gap':>6} | {'LINEAR':>8} | {'NONLINEAR':>10} | {'NO_SIGNAL':>10}")
-    print("   " + "-" * 60)
+    print("   " + "-" * SEPARATOR_WIDTH_STANDARD)
     
     for exist_t, gap_data in sensitivity.items():
         for gap_t, diagnoses in gap_data.items():
@@ -128,7 +128,7 @@ def run_threshold_analysis(model_name: str):
     results_file = output_dir / f"{model_prefix}_threshold_analysis.json"
     
     with open(results_file, "w") as f:
-        json.dump(asdict(analysis_result), f, indent=2)
+        json.dump(asdict(analysis_result), f, indent=JSON_INDENT)
     
     print(f"\nResults saved to: {results_file}")
     gcs_upload_file(results_file, model_name)

@@ -8,6 +8,9 @@ from typing import Dict, List, Tuple
 from wisent.core.constants import (
     DEFAULT_RANDOM_SEED, VIZ_N_NEIGHBORS, VIZ_MIN_DIST,
     VIZ_PERPLEXITY, TSNE_N_ITER, VIZ_DPI, VIZ_N_COMPONENTS_2D,
+    VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_TITLE, VIZ_FONTSIZE_SUBTITLE,
+    VIZ_ALPHA_LIGHT, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_HALF,
+    VIZ_MARKER_SIZE_MOVEMENT, VIZ_LINEWIDTH_NORMAL, VIZ_FONTSIZE_TINY,
 )
 from wisent.examples.scripts._pair_generators_neutral import ConceptMetrics
 from wisent.examples.scripts._evolution_visualization_plots import (
@@ -86,14 +89,14 @@ def visualize_concept_evolution(
         if concept not in activations_by_concept or mid_layer not in activations_by_concept[concept]:
             continue
         n = len(activations_by_concept[concept][mid_layer][0])
-        ax.scatter(pca_pos[idx:idx+n, 0], pca_pos[idx:idx+n, 1], c=colors_pos[concept], label=f'{concept} +', alpha=0.6, s=40, marker='o')
-        ax.scatter(pca_neg[idx:idx+n, 0], pca_neg[idx:idx+n, 1], c=colors_neg[concept], label=f'{concept} -', alpha=0.6, s=40, marker='x')
+        ax.scatter(pca_pos[idx:idx+n, 0], pca_pos[idx:idx+n, 1], c=colors_pos[concept], label=f'{concept} +', alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE_MOVEMENT, marker='o')
+        ax.scatter(pca_neg[idx:idx+n, 0], pca_neg[idx:idx+n, 1], c=colors_neg[concept], label=f'{concept} -', alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE_MOVEMENT, marker='x')
         idx += n
     ax.set_title(f'PCA (Linear)\nVar explained: {pca.explained_variance_ratio_.sum()*100:.1f}%')
     ax.set_xlabel('PC1')
     ax.set_ylabel('PC2')
-    ax.legend(fontsize=7, loc='upper right')
-    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=VIZ_FONTSIZE_TINY, loc='upper right')
+    ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
     # --- UMAP ---
     try:
@@ -109,14 +112,14 @@ def visualize_concept_evolution(
             if concept not in activations_by_concept or mid_layer not in activations_by_concept[concept]:
                 continue
             n = len(activations_by_concept[concept][mid_layer][0])
-            ax.scatter(umap_pos[idx:idx+n, 0], umap_pos[idx:idx+n, 1], c=colors_pos[concept], label=f'{concept} +', alpha=0.6, s=40, marker='o')
-            ax.scatter(umap_neg[idx:idx+n, 0], umap_neg[idx:idx+n, 1], c=colors_neg[concept], label=f'{concept} -', alpha=0.6, s=40, marker='x')
+            ax.scatter(umap_pos[idx:idx+n, 0], umap_pos[idx:idx+n, 1], c=colors_pos[concept], label=f'{concept} +', alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE_MOVEMENT, marker='o')
+            ax.scatter(umap_neg[idx:idx+n, 0], umap_neg[idx:idx+n, 1], c=colors_neg[concept], label=f'{concept} -', alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE_MOVEMENT, marker='x')
             idx += n
         ax.set_title('UMAP (Nonlinear)\nPreserves local structure')
         ax.set_xlabel('UMAP1')
         ax.set_ylabel('UMAP2')
-        ax.legend(fontsize=7, loc='upper right')
-        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=VIZ_FONTSIZE_TINY, loc='upper right')
+        ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     except (ImportError, Exception) as e:
         axes[1].text(0.5, 0.5, f'UMAP unavailable\n{type(e).__name__}', ha='center', va='center', transform=axes[1].transAxes)
         axes[1].set_title('UMAP (error)')
@@ -135,19 +138,19 @@ def visualize_concept_evolution(
             if concept not in activations_by_concept or mid_layer not in activations_by_concept[concept]:
                 continue
             n = len(activations_by_concept[concept][mid_layer][0])
-            ax.scatter(tsne_pos[idx:idx+n, 0], tsne_pos[idx:idx+n, 1], c=colors_pos[concept], label=f'{concept} +', alpha=0.6, s=40, marker='o')
-            ax.scatter(tsne_neg[idx:idx+n, 0], tsne_neg[idx:idx+n, 1], c=colors_neg[concept], label=f'{concept} -', alpha=0.6, s=40, marker='x')
+            ax.scatter(tsne_pos[idx:idx+n, 0], tsne_pos[idx:idx+n, 1], c=colors_pos[concept], label=f'{concept} +', alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE_MOVEMENT, marker='o')
+            ax.scatter(tsne_neg[idx:idx+n, 0], tsne_neg[idx:idx+n, 1], c=colors_neg[concept], label=f'{concept} -', alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE_MOVEMENT, marker='x')
             idx += n
         ax.set_title('t-SNE (Nonlinear)\nPreserves local structure')
         ax.set_xlabel('t-SNE1')
         ax.set_ylabel('t-SNE2')
-        ax.legend(fontsize=7, loc='upper right')
-        ax.grid(True, alpha=0.3)
+        ax.legend(fontsize=VIZ_FONTSIZE_TINY, loc='upper right')
+        ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     except (ImportError, Exception) as e:
         axes[2].text(0.5, 0.5, f't-SNE unavailable\n{type(e).__name__}', ha='center', va='center', transform=axes[2].transAxes)
         axes[2].set_title('t-SNE (error)')
     
-    plt.suptitle(f'Dimensionality Reduction Comparison - Layer {mid_layer} - {model_name}\n(o) = positive/harmful, (x) = negative/safe', fontsize=12)
+    plt.suptitle(f'Dimensionality Reduction Comparison - Layer {mid_layer} - {model_name}\n(o) = positive/harmful, (x) = negative/safe', fontsize=VIZ_FONTSIZE_SUBTITLE)
     plt.tight_layout()
     plt.savefig(output_path / 'concept_dimred_comparison.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()
@@ -176,16 +179,16 @@ def visualize_concept_evolution(
         ax = axes[0]
         for i, concept in enumerate(directions.keys()):
             color = colors_pos.get(concept, 'gray')
-            ax.arrow(0, 0, dir_pca[i, 0], dir_pca[i, 1], head_width=0.5, head_length=0.3, fc=color, ec=color, linewidth=2)
-            ax.annotate(concept.replace('_', '\n'), (dir_pca[i, 0]*1.15, dir_pca[i, 1]*1.15), fontsize=10, ha='center', color=color, fontweight='bold')
+            ax.arrow(0, 0, dir_pca[i, 0], dir_pca[i, 1], head_width=0.5, head_length=0.3, fc=color, ec=color, linewidth=VIZ_LINEWIDTH_NORMAL)
+            ax.annotate(concept.replace('_', '\n'), (dir_pca[i, 0]*1.15, dir_pca[i, 1]*1.15), fontsize=VIZ_FONTSIZE_BODY, ha='center', color=color, fontweight='bold')
         max_val = np.abs(dir_pca).max() * 1.4
         ax.set_xlim(-max_val, max_val)
         ax.set_ylim(-max_val, max_val)
-        ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-        ax.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+        ax.axhline(y=0, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
+        ax.axvline(x=0, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
         ax.set_aspect('equal')
         ax.set_title(f'PCA Direction Vectors\nVar: {pca_dir.explained_variance_ratio_.sum()*100:.1f}%')
-        ax.grid(True, alpha=0.3)
+        ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
         
         # UMAP on directions
         try:
@@ -197,16 +200,16 @@ def visualize_concept_evolution(
                 ax = axes[1]
                 for i, concept in enumerate(directions.keys()):
                     color = colors_pos.get(concept, 'gray')
-                    ax.arrow(0, 0, dir_umap[i, 0], dir_umap[i, 1], head_width=0.3, head_length=0.2, fc=color, ec=color, linewidth=2)
-                    ax.annotate(concept.replace('_', '\n'), (dir_umap[i, 0]*1.15, dir_umap[i, 1]*1.15), fontsize=10, ha='center', color=color, fontweight='bold')
+                    ax.arrow(0, 0, dir_umap[i, 0], dir_umap[i, 1], head_width=0.3, head_length=0.2, fc=color, ec=color, linewidth=VIZ_LINEWIDTH_NORMAL)
+                    ax.annotate(concept.replace('_', '\n'), (dir_umap[i, 0]*1.15, dir_umap[i, 1]*1.15), fontsize=VIZ_FONTSIZE_BODY, ha='center', color=color, fontweight='bold')
                 max_val = np.abs(dir_umap).max() * 1.4
                 ax.set_xlim(-max_val, max_val)
                 ax.set_ylim(-max_val, max_val)
-                ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-                ax.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+                ax.axhline(y=0, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
+                ax.axvline(x=0, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
                 ax.set_aspect('equal')
                 ax.set_title('UMAP Direction Vectors')
-                ax.grid(True, alpha=0.3)
+                ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
             else:
                 axes[1].text(0.5, 0.5, 'Need >= 4 concepts for UMAP', ha='center', va='center', transform=axes[1].transAxes)
         except ImportError:
@@ -217,7 +220,7 @@ def visualize_concept_evolution(
         axes[2].text(0.5, 0.5, 'Only 4 direction vectors\n(t-SNE not meaningful)', ha='center', va='center', transform=axes[2].transAxes)
         axes[2].set_title('t-SNE Direction Vectors\n(N/A for 4 points)')
     
-    plt.suptitle(f'Direction Vectors Comparison - Layer {mid_layer} - {model_name}', fontsize=12)
+    plt.suptitle(f'Direction Vectors Comparison - Layer {mid_layer} - {model_name}', fontsize=VIZ_FONTSIZE_SUBTITLE)
     plt.tight_layout()
     plt.savefig(output_path / 'concept_directions_comparison.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()

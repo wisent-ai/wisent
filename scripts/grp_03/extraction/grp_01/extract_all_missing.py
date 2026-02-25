@@ -13,7 +13,7 @@ import sys
 import psycopg2
 import torch
 
-from wisent.core.constants import MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT
+from wisent.core.constants import MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT, DB_CONNECT_WAIT_S
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
@@ -37,7 +37,7 @@ def get_db_connection():
         db_url = db_url.replace(":6543", ":5432")
     conn = psycopg2.connect(
         db_url,
-        connect_timeout=30,
+        connect_timeout=DB_CONNECT_WAIT_S,
         keepalives=1,
         keepalives_idle=30,
         keepalives_interval=10,

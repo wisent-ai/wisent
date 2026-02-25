@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import time
 
-from wisent.core.constants import DEFAULT_SCORE, DATA_SPLIT_RATIO, DATA_SPLIT_SEED
+from wisent.core.constants import DEFAULT_SCORE, DATA_SPLIT_RATIO, DATA_SPLIT_SEED, PROGRESS_LOG_INTERVAL_20
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
@@ -52,7 +52,7 @@ def run_classification_optimization(
                                                 threshold, prompt_strategy,
                                                 token_strategy, result,
                                             )
-                                        if combinations_tested % 20 == 0:
+                                        if combinations_tested % PROGRESS_LOG_INTERVAL_20 == 0:
                                             mn = args.optimization_metric
                                             print(f"      Progress: {combinations_tested}/{total_combinations}, best {mn}: {best_score:.4f}", end='\r')
                                     except Exception as e:

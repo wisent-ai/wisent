@@ -8,7 +8,7 @@ from collections import defaultdict
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 
-from wisent.core.constants import REPLAY_BUFFER_MAX_SIZE
+from wisent.core.constants import JSON_INDENT, REPLAY_BUFFER_MAX_SIZE
 
 
 @dataclass
@@ -90,7 +90,7 @@ class ReplayBuffer:
             "entries": [asdict(e) for e in self.entries],
         }
         with open(path, "w") as f:
-            json.dump(data, f, indent=2)
+            json.dump(data, f, indent=JSON_INDENT)
 
     @classmethod
     def load(cls, path: str) -> "ReplayBuffer":

@@ -9,7 +9,7 @@ from __future__ import annotations
 from typing import Any, List, Mapping
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.constants import TRUTHFUL_MIN_SIMILARITY, TRUTHFUL_MIN_MARGIN, EVAL_CONFIDENCE_BASE
+from wisent.core.constants import TRUTHFUL_MIN_SIMILARITY, TRUTHFUL_MIN_MARGIN, EVAL_CONFIDENCE_BASE, ROUNDING_PRECISION_FINE
 
 __all__ = ["TruthfulQAGenEvaluator"]
 
@@ -119,9 +119,9 @@ class TruthfulQAGenEvaluator(BaseEvaluator):
         sim_incorrect = self._compute_max_similarity(response_text, incorrect_answers) if incorrect_answers else 0.0
 
         meta = {
-            "similarity_to_correct": round(sim_correct, 4),
-            "similarity_to_incorrect": round(sim_incorrect, 4),
-            "margin": round(sim_correct - sim_incorrect, 4),
+            "similarity_to_correct": round(sim_correct, ROUNDING_PRECISION_FINE),
+            "similarity_to_incorrect": round(sim_incorrect, ROUNDING_PRECISION_FINE),
+            "margin": round(sim_correct - sim_incorrect, ROUNDING_PRECISION_FINE),
             "num_correct_answers": len(correct_answers),
             "num_incorrect_answers": len(incorrect_answers),
         }

@@ -1,7 +1,7 @@
 """Docker execution evaluation for evaluate-responses command."""
 import json
 import os
-from wisent.core.constants import EVAL_TIME_LIMIT_S, EVAL_CPU_LIMIT_S, EVAL_MEM_LIMIT_MB, DEFAULT_SCORE
+from wisent.core.constants import EVAL_TIME_LIMIT_S, EVAL_CPU_LIMIT_S, EVAL_MEM_LIMIT_MB, DEFAULT_SCORE, JSON_INDENT
 
 
 def evaluate_docker_execution(args, input_data, responses, task_name, evaluation_results, task_results, task_config=None):
@@ -178,7 +178,7 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     }
 
     with open(args.output, 'w') as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=JSON_INDENT)
 
     print(f"   ✓ Results saved to: {args.output}\n")
     print(f"{'='*80}")

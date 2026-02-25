@@ -49,7 +49,7 @@ import tempfile
 import time
 from typing import Dict
 
-from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, TEST_MAX_COMBO_SIZE
+from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, TEST_MAX_COMBO_SIZE, SEPARATOR_WIDTH_REPORT
 from wisent.tests._exhaustive_helpers import (
     detect_model_layers,
     generate_pairs_cli,
@@ -90,9 +90,9 @@ def run_exhaustive_layer_analysis(
         detect_geometry_exhaustive,
     )
     sys.stdout.reconfigure(line_buffering=True)
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print("EXHAUSTIVE LAYER COMBINATION ANALYSIS")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print(f"Task: {task}, Model: {model}, Pairs: {num_pairs}")
 
     print(f"\n[0] Detecting model layer count from config...")
@@ -149,9 +149,9 @@ def run_limited_layer_analysis(
     )
     from math import comb
     sys.stdout.reconfigure(line_buffering=True)
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print("LIMITED LAYER COMBINATION ANALYSIS")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     start = time.time()
     model_layers = detect_model_layers(model)
@@ -199,9 +199,9 @@ def run_contiguous_layer_analysis(
         detect_geometry_contiguous,
     )
     sys.stdout.reconfigure(line_buffering=True)
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print("CONTIGUOUS LAYER COMBINATION ANALYSIS")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     start = time.time()
     model_layers = detect_model_layers(model)
@@ -247,9 +247,9 @@ def run_smart_layer_analysis(
         detect_geometry_smart,
     )
     sys.stdout.reconfigure(line_buffering=True)
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print("SMART LAYER COMBINATION ANALYSIS")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
 
     start = time.time()
     model_layers = detect_model_layers(model)

@@ -49,9 +49,9 @@ def run_intervention_validation(
     from lm_eval.tasks import TaskManager
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
     
-    print("=" * 70)
+    print("=" * _C.SEPARATOR_WIDTH_WIDE)
     print("INTERVENTION VALIDATION")
-    print("=" * 70)
+    print("=" * _C.SEPARATOR_WIDTH_WIDE)
     print(f"Model: {model_name}")
     
     output_dir = Path("/tmp/intervention_validation")
@@ -116,9 +116,9 @@ def run_intervention_validation(
     strategy = ExtractionStrategy.CHAT_LAST
     
     for benchmark in benchmarks_to_test:
-        print(f"\n{'-' * 50}")
+        print(f"\n{'-' * _C.SEPARATOR_WIDTH_MEDIUM}")
         print(f"Benchmark: {benchmark}")
-        print("-" * 50)
+        print("-" * _C.SEPARATOR_WIDTH_MEDIUM)
         
         # Get diagnosis
         diagnosis, best_layer, signal, linear_acc = get_diagnosis_for_benchmark(
@@ -239,9 +239,9 @@ def run_intervention_validation(
     validation_results.compute_summary()
     
     # Print summary
-    print("\n" + "=" * 70)
+    print("\n" + "=" * _C.SEPARATOR_WIDTH_WIDE)
     print("VALIDATION SUMMARY")
-    print("=" * 70)
+    print("=" * _C.SEPARATOR_WIDTH_WIDE)
     print(f"\nLinear diagnosis -> CAA success rate: {validation_results.linear_success_rate:.1%}")
     print(f"Nonlinear diagnosis -> CAA success rate: {validation_results.nonlinear_success_rate:.1%}")
     print(f"No signal diagnosis -> CAA success rate: {validation_results.no_signal_success_rate:.1%}")
@@ -270,7 +270,7 @@ def run_intervention_validation(
                 "nonlinear_success_rate": float(validation_results.nonlinear_success_rate),
                 "no_signal_success_rate": float(validation_results.no_signal_success_rate),
             }
-        }, f, indent=2)
+        }, f, indent=_C.JSON_INDENT)
     
     print(f"\nResults saved to: {results_file}")
     gcs_upload_file(results_file, model_name)

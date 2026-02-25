@@ -16,12 +16,12 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
 from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator_bc import LogLikelihoodsEvaluatorBC
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
-from wisent.core.constants import COMPARISON_DEFAULT_BATCH_SIZE, COMPARISON_MAX_BATCH_SIZE, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.constants import COMPARISON_DEFAULT_BATCH_SIZE, COMPARISON_MAX_BATCH_SIZE, DISPLAY_TRUNCATION_MEDIUM, EVAL_PAIR_LIMIT, SEPARATOR_WIDTH_WIDE, PROGRESS_LOG_INTERVAL_20
 
 
 MODEL_NAME = "meta-llama/Llama-3.2-1B"
 TASK_NAME = "boolq"
-EVAL_LIMIT = 1500
+EVAL_LIMIT = EVAL_PAIR_LIMIT
 
 
 def run_lm_eval_evaluation(wisent_model, task_dict, task_name, limit):
@@ -75,7 +75,7 @@ def run_ll_evaluation(wisent_model, task, extractor, docs, evaluator_class, task
                 "correct": result.ground_truth == "TRUTHFUL",
             })
 
-        if (i + 1) % 20 == 0:
+        if (i + 1) % PROGRESS_LOG_INTERVAL_20 == 0:
             print(f"  Processed {i+1}/{len(docs)}")
 
     accuracy = correct / len(docs) if docs else 0.0
@@ -85,12 +85,12 @@ def run_ll_evaluation(wisent_model, task, extractor, docs, evaluator_class, task
 
 
 def main():
-    print(f"{'='*70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"Log Likelihood Evaluation Comparison Test")
     print(f"Model: {MODEL_NAME}")
     print(f"Task: {TASK_NAME}")
     print(f"Limit: {EVAL_LIMIT}")
-    print(f"{'='*70}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
 
     # Load model
     print("Loading model...")
@@ -131,18 +131,18 @@ def main():
     print(f"   Accuracy: {bc_acc:.4f}\n")
 
     # Print summary
-    print(f"{'='*70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"ACCURACY SUMMARY")
-    print(f"{'='*70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"lm-eval-harness:                    {lm_eval_acc:.4f}")
     print(f"LogLikelihoodsEvaluator (original): {original_acc:.4f}  (diff: {original_acc - lm_eval_acc:+.4f})")
     print(f"LogLikelihoodsEvaluatorBC:          {bc_acc:.4f}  (diff: {bc_acc - lm_eval_acc:+.4f})")
-    print(f"{'='*70}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
 
     # Find and print differences
-    print(f"{'='*70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"DIFFERENCES (Original vs BC/lm-eval)")
-    print(f"{'='*70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     diff_count = 0
     for orig, bc in zip(original_details, bc_details):
         if orig["predicted"] != bc["predicted"]:
@@ -160,9 +160,9 @@ def main():
             print(f"")
             print(f"Original correct: {orig['correct']}, BC correct: {bc['correct']}")
 
-    print(f"\n{'='*70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"Total differences: {diff_count} / {len(original_details)}")
-    print(f"{'='*70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
 
 
 if __name__ == "__main__":

@@ -21,6 +21,7 @@ from wisent.core.constants import (
     CONFIDENCE_UPPER_BOUND, CONFIDENCE_LOWER_BOUND,
     MIN_PAIRS_CAA, MIN_PAIRS_OSTRZE, MIN_PAIRS_MLP,
     MIN_PAIRS_TECZA, MIN_PAIRS_GROM,
+    Z_SCORE_SIGNIFICANCE,
 )
 
 
@@ -50,7 +51,7 @@ def rigorous_select_intervention(
     """
     Select intervention using z-scores from rigorous null tests.
 
-    All decisions based on statistical significance (z > 2 or z < -2).
+    All decisions based on statistical significance (z > Z_SCORE_SIGNIFICANCE or z < -Z_SCORE_SIGNIFICANCE).
 
     Args:
         signal_z: Z-score from signal vs null test
@@ -119,7 +120,7 @@ def rigorous_select_intervention(
     # Use geometry type z-scores if available
     if geometry_type_z:
         z_scores_used.update(geometry_type_z)
-        if geometry_type_z.get("translation_z", 0) > 2:
+        if geometry_type_z.get("translation_z", 0) > Z_SCORE_SIGNIFICANCE:
             reasoning.append("Significant translation structure")
             scores["CAA"] += INTERVENTION_SCORE_TRANSLATION_CAA
 

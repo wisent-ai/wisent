@@ -22,7 +22,7 @@ from wisent.core.constants import (
     TOKEN_ESTIMATE_MIN,
     TOKEN_ESTIMATE_MAX,
     SIMHASH_THRESHOLD_AGGRESSIVE,
-    DISPLAY_TRUNCATION_SHORT,
+    DISPLAY_TRUNCATION_SHORT, JSON_INDENT,
 )
 
 CAPABILITIES = {
@@ -117,7 +117,7 @@ def topup_capability(capability: str, trait: str, base_dir: str):
 
     # Save back
     with open(filepath, 'w') as f:
-        json.dump(data, f, indent=2)
+        json.dump(data, f, indent=JSON_INDENT)
 
     print(f"✓ {capability}: now has {len(all_pairs)} pairs")
 

@@ -5,7 +5,7 @@ import torch
 from pathlib import Path
 from typing import Dict, Tuple
 
-from wisent.core.constants import VIZ_DPI, VIZ_HISTOGRAM_BINS, SAE_TOP_K_ANALYSIS, SAE_TOP_FEATURES_DISPLAY, SAE_TOP_FEATURES_MAX
+from wisent.core.constants import VIZ_DPI, VIZ_HISTOGRAM_BINS, SAE_TOP_K_ANALYSIS, SAE_TOP_FEATURES_DISPLAY, SAE_TOP_FEATURES_MAX, VIZ_FONTSIZE_ANNOTATION, VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_SUPTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_ALPHA_HIGH, VIZ_HEATMAP_VMIN_ZERO, VIZ_HEATMAP_VMAX_ONE
 from wisent.examples.scripts._sae import SparseAutoencoder
 
 
@@ -135,16 +135,16 @@ def visualize_sae_analysis(
                     overlap_matrix[j, i] = overlap_matrix[i, j]
             # else already set by symmetry
     
-    im = ax.imshow(overlap_matrix, cmap='Blues', vmin=0, vmax=1)
+    im = ax.imshow(overlap_matrix, cmap='Blues', vmin=VIZ_HEATMAP_VMIN_ZERO, vmax=VIZ_HEATMAP_VMAX_ONE)
     ax.set_xticks(range(len(concepts)))
     ax.set_yticks(range(len(concepts)))
-    ax.set_xticklabels([c.replace('_', '\n') for c in concepts], fontsize=9)
-    ax.set_yticklabels([c.replace('_', '\n') for c in concepts], fontsize=9)
+    ax.set_xticklabels([c.replace('_', '\n') for c in concepts], fontsize=VIZ_FONTSIZE_ANNOTATION)
+    ax.set_yticklabels([c.replace('_', '\n') for c in concepts], fontsize=VIZ_FONTSIZE_ANNOTATION)
     ax.set_title('Feature Overlap (Jaccard Similarity)\nof Top-20 Features')
     
     for i in range(len(concepts)):
         for j in range(len(concepts)):
-            ax.text(j, i, f'{overlap_matrix[i,j]:.2f}', ha='center', va='center', fontsize=10)
+            ax.text(j, i, f'{overlap_matrix[i,j]:.2f}', ha='center', va='center', fontsize=VIZ_FONTSIZE_BODY)
     
     plt.colorbar(im, ax=ax)
     
@@ -159,14 +159,14 @@ def visualize_sae_analysis(
     bars1 = ax.bar(x - width/2, unique_counts, width, label='Unique Features', 
                    color=[colors.get(c, 'gray') for c in concepts])
     bars2 = ax.bar(x + width/2, [shared_count]*len(concepts), width, label='Shared (all harmful)', 
-                   color='gray', alpha=0.5)
+                   color='gray', alpha=VIZ_ALPHA_HALF)
     
     ax.set_ylabel('Number of Features')
     ax.set_title('Unique vs Shared Features (Top-20)')
     ax.set_xticks(x)
-    ax.set_xticklabels([c.replace('_', '\n') for c in concepts], fontsize=9)
+    ax.set_xticklabels([c.replace('_', '\n') for c in concepts], fontsize=VIZ_FONTSIZE_ANNOTATION)
     ax.legend()
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
     # 4. Feature activation distribution
     ax = axes[1, 1]
@@ -180,15 +180,15 @@ def visualize_sae_analysis(
         
         # Number of active features per sample
         active_per_sample = (features > 0.1).sum(dim=1).cpu().numpy()
-        ax.hist(active_per_sample, bins=VIZ_HISTOGRAM_BINS, alpha=0.5, label=concept, color=colors.get(concept, 'gray'))
+        ax.hist(active_per_sample, bins=VIZ_HISTOGRAM_BINS, alpha=VIZ_ALPHA_HALF, label=concept, color=colors.get(concept, 'gray'))
     
     ax.set_xlabel('Number of Active Features per Sample')
     ax.set_ylabel('Count')
     ax.set_title('Feature Sparsity Distribution')
     ax.legend()
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
-    plt.suptitle(f'Sparse Autoencoder Feature Analysis - {model_name}\nHidden dim: {sae.hidden_dim}, L1: {sae.l1_coef}', fontsize=14)
+    plt.suptitle(f'Sparse Autoencoder Feature Analysis - {model_name}\nHidden dim: {sae.hidden_dim}, L1: {sae.l1_coef}', fontsize=VIZ_FONTSIZE_SUPTITLE)
     plt.tight_layout()
     plt.savefig(output_path / 'sae_feature_analysis.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()
@@ -203,13 +203,13 @@ def visualize_sae_analysis(
     
     for concept in concepts:
         activations = np.array(sae_results["feature_activations"][concept][:n_features_to_show])
-        ax.plot(feature_indices, activations, label=concept, color=colors.get(concept, 'gray'), alpha=0.7)
+        ax.plot(feature_indices, activations, label=concept, color=colors.get(concept, 'gray'), alpha=VIZ_ALPHA_HIGH)
     
     ax.set_xlabel('Feature Index')
     ax.set_ylabel('Mean Activation')
     ax.set_title(f'SAE Feature Activations by Concept (first {n_features_to_show} features)')
     ax.legend()
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
     plt.tight_layout()
     plt.savefig(output_path / 'sae_feature_profiles.png', dpi=VIZ_DPI, bbox_inches='tight')

@@ -5,7 +5,7 @@ import torch
 from wisent.core.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
-from wisent.core.constants import TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT
+from wisent.core.constants import TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT, BINARY_CLASSIFICATION_THRESHOLD
 
 class TECZASteeringObject(BaseSteeringObject):
     """
@@ -160,7 +160,7 @@ class TETNOSteeringObject(BaseSteeringObject):
     def should_steer(self, hidden_state: torch.Tensor) -> bool:
         """Hard decision on whether to steer."""
         gate = self.compute_gate(hidden_state)
-        return gate.mean().item() > 0.5
+        return gate.mean().item() > BINARY_CLASSIFICATION_THRESHOLD
     
     def to_dict(self) -> Dict[str, Any]:
         return {

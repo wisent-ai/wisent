@@ -6,7 +6,7 @@ import re
 import torch
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.opti.methods.opti_weights import WeightsOptimizerConfig
-from wisent.core.constants import WEIGHT_MIN_DISTANCE_FRACTION, WEIGHT_COMPARISON_MAX_NEW_TOKENS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
+from wisent.core.constants import JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION, WEIGHT_COMPARISON_MAX_NEW_TOKENS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
 
 
 def _apply_weight_modification_standalone(
@@ -223,7 +223,7 @@ def _show_response_comparisons(
             "comparisons": comparisons,
         }
         with open(save_path, "w") as f:
-            json.dump(output_data, f, indent=2)
+            json.dump(output_data, f, indent=JSON_INDENT)
         print(f"\nSaved {len(comparisons)} comparisons to: {save_path}")
 
     if num_comparisons and num_comparisons > 0:

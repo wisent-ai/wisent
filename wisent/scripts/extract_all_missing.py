@@ -7,7 +7,7 @@ Designed to run on AWS with GPU.
 import os
 
 import psycopg2
-from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DB_TEXT_FIELD_MAX_LENGTH
+from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DB_TEXT_FIELD_MAX_LENGTH, DEFAULT_MAX_RETRIES, DB_CONNECT_WAIT_S
 from psycopg2.extras import execute_values
 import torch
 
@@ -35,7 +35,7 @@ def get_db_connection():
         db_url = db_url.replace(":6543", ":5432")
     conn = psycopg2.connect(
         db_url,
-        connect_timeout=30,
+        connect_timeout=DB_CONNECT_WAIT_S,
         keepalives=1,
         keepalives_idle=30,
         keepalives_interval=10,
@@ -163,8 +163,7 @@ def batch_create_activations(activations_data: list):
     if not activations_data:
         return
 
-    max_retries = 3
-    for attempt in range(max_retries):
+    for attempt in range(DEFAULT_MAX_RETRIES):
         try:
             conn = get_conn()
             cur = conn.cursor()
@@ -179,9 +178,9 @@ def batch_create_activations(activations_data: list):
             cur.close()
             return
         except (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.errors.QueryCanceled) as e:
-            print(f"  [DB error attempt {attempt+1}/{max_retries}: {e}]", flush=True)
+            print(f"  [DB error attempt {attempt+1}/{DEFAULT_MAX_RETRIES}: {e}]", flush=True)
             reset_conn()
-            if attempt == max_retries - 1:
+            if attempt == DEFAULT_MAX_RETRIES - 1:
                 raise
 
 

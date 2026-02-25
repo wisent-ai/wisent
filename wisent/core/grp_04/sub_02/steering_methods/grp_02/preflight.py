@@ -22,7 +22,7 @@ from wisent.core.constants import (
     PREFLIGHT_COMPAT_ADAPTIVE, PREFLIGHT_COMPAT_POOR, PREFLIGHT_COMPAT_NEUTRAL,
     PREFLIGHT_COMPAT_THRESHOLD, PREFLIGHT_LINEAR_HIGH, PREFLIGHT_LINEAR_VERY_HIGH,
     PREFLIGHT_LINEAR_MODERATE, PREFLIGHT_CONE_HIGH, PREFLIGHT_MANIFOLD_HIGH,
-    PREFLIGHT_BIMODAL_MODERATE,
+    PREFLIGHT_BIMODAL_MODERATE, SEPARATOR_WIDTH_STANDARD,
 )
 
 __all__ = [
@@ -97,9 +97,9 @@ class PreflightCheckResult:
 
     def print_report(self) -> None:
         """Print a human-readable report."""
-        print("\n" + "=" * 60)
+        print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
         print("STEERING METHOD PRE-FLIGHT CHECK")
-        print("=" * 60)
+        print("=" * SEPARATOR_WIDTH_STANDARD)
         print(f"\nChosen Method: {self.chosen_method}")
         print(f"Detected Structure: {self.geometry_result.best_structure.value}")
         print(f"Structure Score: {self.geometry_result.best_score:.3f}")
@@ -107,9 +107,9 @@ class PreflightCheckResult:
         if self.recommended_methods:
             print(f"\nRecommended Methods: {', '.join(self.recommended_methods)}")
         if self.warnings:
-            print(f"\n{'='*60}")
+            print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
             print("WARNINGS")
-            print("=" * 60)
+            print("=" * SEPARATOR_WIDTH_STANDARD)
             for w in self.warnings:
                 icon = "ℹ️" if w.severity == "info" else "⚠️" if w.severity == "warning" else "❌"
                 print(f"\n{icon} [{w.severity.upper()}] {w.message}")
@@ -117,9 +117,9 @@ class PreflightCheckResult:
                     print(f"   Details: {w.details}")
                 if w.suggestion:
                     print(f"   Suggestion: {w.suggestion}")
-        print(f"\n{'='*60}")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Recommendation: {self.geometry_result.recommendation}")
-        print("=" * 60 + "\n")
+        print("=" * SEPARATOR_WIDTH_STANDARD + "\n")
 
 
 def run_preflight_check(

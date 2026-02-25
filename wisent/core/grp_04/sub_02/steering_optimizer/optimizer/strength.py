@@ -18,6 +18,7 @@ from wisent.core.errors import (
     InsufficientDataError,
 )
 from wisent.core.steering_methods import SteeringMethodType
+from wisent.core import constants as _C
 from wisent.core.constants import (
     DEFAULT_STRENGTH, DEFAULT_LIMIT, DEFAULT_LAYER,
     DEFAULT_NUM_STRENGTH_STEPS, SEARCH_LAYER_OFFSET,
@@ -199,10 +200,10 @@ class StrengthOptimizationMixin:
                           if np.isfinite(b) and np.isfinite(s)]
             if valid_pairs:
                 changes = [abs(s - b) for b, s in valid_pairs]
-                steering_effect = min(sum(changes) / len(changes), 100.0)
+                steering_effect = min(sum(changes) / len(changes), _C.STEERING_EFFECT_CAP)
                 score = steering_effect
                 if np.isfinite(accuracy) and accuracy > CLASSIFIER_DECISION_THRESHOLD:
-                    score += accuracy * 0.5
+                    score += accuracy * _C.STRENGTH_ACCURACY_WEIGHT
                 return score
 
         return float(accuracy) if np.isfinite(accuracy) else 0.0

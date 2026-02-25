@@ -9,6 +9,7 @@ Usage:
 
 import argparse
 import json
+from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
 from wisent.core.models import (
     get_config,
     update_config,
@@ -45,8 +46,8 @@ def main():
     if args.command == "show" or args.command is None:
         config = get_config()
         print(f"Inference Config (stored at {CONFIG_FILE}):")
-        print("-" * 50)
-        print(json.dumps(config.to_dict(), indent=2))
+        print("-" * SEPARATOR_WIDTH_MEDIUM)
+        print(json.dumps(config.to_dict(), indent=JSON_INDENT))
 
     elif args.command == "set":
         updates = {}
@@ -70,14 +71,14 @@ def main():
         if updates:
             config = update_config(**updates)
             print("Updated config:")
-            print(json.dumps(config.to_dict(), indent=2))
+            print(json.dumps(config.to_dict(), indent=JSON_INDENT))
         else:
             print("No updates specified. Use --help to see options.")
 
     elif args.command == "reset":
         config = reset_config()
         print("Config reset to defaults:")
-        print(json.dumps(config.to_dict(), indent=2))
+        print(json.dumps(config.to_dict(), indent=JSON_INDENT))
 
 
 if __name__ == "__main__":

@@ -18,7 +18,7 @@ import sys
 import time
 from pathlib import Path
 
-from wisent.core.constants import QWEN3_4B_DEFAULT_LAYER
+from wisent.core.constants import QWEN3_4B_DEFAULT_LAYER, JSON_INDENT
 
 from control_vector_generator import ControlVectorGenerator
 
@@ -210,7 +210,7 @@ def main():
 
     summary_file = output_dir / "generation_summary.json"
     with open(summary_file, 'w') as f:
-        json.dump(summary, f, indent=2)
+        json.dump(summary, f, indent=JSON_INDENT)
 
     # Print final summary
     logger.info("=== Generation Complete ===")

@@ -8,7 +8,7 @@ from wisent.core.constants import (
     SAMPLE_RATIO_MARGINAL,
     EFFECT_SIZE_SMALL, EFFECT_SIZE_MEDIUM, EFFECT_SIZE_LARGE,
     POWER_ANALYSIS_MIN_N, POWER_ANALYSIS_STEP, SAMPLE_ADEQUACY_MAX_N,
-    CLASSIFIER_DECISION_THRESHOLD,
+    CLASSIFIER_DECISION_THRESHOLD, PCA_QUALITY_COMPONENTS,
 )
 
 
@@ -98,7 +98,7 @@ def compute_effective_sample_size(X: np.ndarray, method: str = "eigenvalue") -> 
         "avg_abs_correlation": float(avg_abs_corr),
         "eigenvalue_decay_rate": float(decay_rate),
         "condition_number": float(min(cond, 1e10)),
-        "top_5_eigenvalues": eigenvalues[:5].tolist() if len(eigenvalues) >= 5 else eigenvalues.tolist(),
+        "top_5_eigenvalues": eigenvalues[:PCA_QUALITY_COMPONENTS].tolist() if len(eigenvalues) >= PCA_QUALITY_COMPONENTS else eigenvalues.tolist(),
         "n_eff_ratio": float(n_eff / n) if n > 0 else 1.0,
     }
 

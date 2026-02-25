@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from wisent.core.constants import AGENT_DEFAULT_TIME_BUDGET, BENCHMARK_LOADING_TIME_DEFAULT, TASK_MIN_RELEVANCE_SCORE
+from wisent.core.constants import AGENT_DEFAULT_TIME_BUDGET, BENCHMARK_LOADING_TIME_DEFAULT, TASK_MIN_RELEVANCE_SCORE, DISPLAY_TOP_N_TINY
 from ....model import Model
 
 
@@ -28,7 +28,7 @@ class DataGenerationMixin:
         relevant_benchmarks = self._find_relevant_benchmarks(issue_type)
 
         if relevant_benchmarks:
-            print(f"   Found {len(relevant_benchmarks)} relevant benchmarks: {relevant_benchmarks[:3]}...")
+            print(f"   Found {len(relevant_benchmarks)} relevant benchmarks: {relevant_benchmarks[:DISPLAY_TOP_N_TINY]}...")
             return self._load_benchmark_data(relevant_benchmarks, num_samples)
         print("   No specific benchmarks found, using synthetic generation...")
         return self._generate_synthetic_training_data(issue_type, num_samples)
@@ -70,12 +70,12 @@ class DataGenerationMixin:
 
                 if relevant_benchmarks:
                     print(f"   Found {len(relevant_benchmarks)} priority-aware benchmarks for '{issue_type}':")
-                    for i, result in enumerate(relevant_results[:3]):
+                    for i, result in enumerate(relevant_results[:DISPLAY_TOP_N_TINY]):
                         priority_str = f" (priority: {result.get('priority', 'unknown')})"
                         loading_time_str = f" (loading time: {result.get('loading_time', BENCHMARK_LOADING_TIME_DEFAULT):.1f}s)"
                         print(f"      {i + 1}. {result['benchmark']}{priority_str}{loading_time_str}")
-                    if len(relevant_benchmarks) > 3:
-                        print(f"      ... and {len(relevant_benchmarks) - 3} more")
+                    if len(relevant_benchmarks) > DISPLAY_TOP_N_TINY:
+                        print(f"      ... and {len(relevant_benchmarks) - DISPLAY_TOP_N_TINY} more")
 
                 return relevant_benchmarks
 
@@ -104,11 +104,11 @@ class DataGenerationMixin:
                 if relevant_benchmarks:
                     print(f"   Found {len(relevant_benchmarks)} relevant benchmarks for '{issue_type}':")
                     # Show the scores for the selected benchmarks
-                    for i, (task_name, score) in enumerate(relevant_task_results[:3]):
+                    for i, (task_name, score) in enumerate(relevant_task_results[:DISPLAY_TOP_N_TINY]):
                         if task_name in relevant_benchmarks:
                             print(f"      {i + 1}. {task_name} (relevance: {score:.3f})")
-                    if len(relevant_benchmarks) > 3:
-                        print(f"      ... and {len(relevant_benchmarks) - 3} more")
+                    if len(relevant_benchmarks) > DISPLAY_TOP_N_TINY:
+                        print(f"      ... and {len(relevant_benchmarks) - DISPLAY_TOP_N_TINY} more")
 
                 return relevant_benchmarks
 

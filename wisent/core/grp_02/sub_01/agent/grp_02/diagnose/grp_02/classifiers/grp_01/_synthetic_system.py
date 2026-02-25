@@ -3,7 +3,7 @@ import logging
 import time
 from typing import List, Tuple
 from wisent.core.classifier.classifier import ActivationClassifier
-from wisent.core.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, AGENT_SYNTH_TRAIT_DISCOVERY_COST_S, AGENT_SYNTH_DATA_GEN_COST_PER_PAIR_S, AGENT_SYNTH_CLASSIFIER_TRAINING_COST_S, AGENT_SYNTH_PAIRS_PER_TRAIT
+from wisent.core.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, AGENT_SYNTH_TRAIT_DISCOVERY_COST_S, AGENT_SYNTH_DATA_GEN_COST_PER_PAIR_S, AGENT_SYNTH_CLASSIFIER_TRAINING_COST_S, AGENT_SYNTH_PAIRS_PER_TRAIT, SECONDS_PER_MINUTE
 from wisent.core.agent.diagnose.classifiers._synthetic_classes import (
     TraitDiscoveryResult, SyntheticClassifierResult,
     AutomaticTraitDiscovery, SyntheticClassifierFactory,
@@ -66,7 +66,7 @@ class SyntheticClassifierSystem:
             data_generation_cost = AGENT_SYNTH_DATA_GEN_COST_PER_PAIR_S  # Per pair
             classifier_training_cost = AGENT_SYNTH_CLASSIFIER_TRAINING_COST_S  # Per classifier
 
-        budget_seconds = time_budget_minutes * 60.0
+        budget_seconds = time_budget_minutes * SECONDS_PER_MINUTE
 
         # Step 1: Budget-aware trait discovery
         logging.info("Discovering relevant traits for this prompt...")

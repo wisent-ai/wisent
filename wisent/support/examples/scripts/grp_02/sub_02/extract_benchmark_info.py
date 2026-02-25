@@ -5,7 +5,7 @@ import json
 import re
 from pathlib import Path
 
-from wisent.core.constants import DISPLAY_TRUNCATION_LARGE
+from wisent.core.constants import DISPLAY_TRUNCATION_LARGE, JSON_INDENT
 
 def extract_info_from_readme(readme_path):
     """Extract title, description, paper, homepage from README."""
@@ -64,7 +64,7 @@ def main():
         print(f"Processed {benchmark_name}")
 
     with open(output_file, 'w') as f:
-        json.dump(all_info, f, indent=2)
+        json.dump(all_info, f, indent=JSON_INDENT)
 
     print(f"\nExtracted info for {len(all_info)} benchmarks")
     print(f"Output: {output_file}")

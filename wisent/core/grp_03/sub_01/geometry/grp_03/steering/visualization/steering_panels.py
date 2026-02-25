@@ -22,33 +22,33 @@ def get_eval_colors(evaluations, n_points):
 def plot_projection_panel(ax, pos_2d, neg_2d, base_2d, steered_2d,
                           base_evals, steered_evals, title):
     """Common projection plotting logic."""
-    ax.scatter(pos_2d[:, 0], pos_2d[:, 1], c='blue', alpha=0.3, s=30, label='Positive')
-    ax.scatter(neg_2d[:, 0], neg_2d[:, 1], c='red', alpha=0.3, s=30, label='Negative')
+    ax.scatter(pos_2d[:, 0], pos_2d[:, 1], c='blue', alpha=_C.VIZ_ALPHA_LIGHT, s=_C.VIZ_MARKER_SIZE_SMALL, label='Positive')
+    ax.scatter(neg_2d[:, 0], neg_2d[:, 1], c='red', alpha=_C.VIZ_ALPHA_LIGHT, s=_C.VIZ_MARKER_SIZE_SMALL, label='Negative')
 
     pos_centroid = pos_2d.mean(axis=0)
     neg_centroid = neg_2d.mean(axis=0)
     ax.scatter([pos_centroid[0]], [pos_centroid[1]], c='blue', s=_C.VIZ_CENTROID_MARKER_SIZE_ALT, marker='*',
-               edgecolors='black', linewidths=1, zorder=5)
+               edgecolors='black', linewidths=_C.VIZ_LINEWIDTH_HAIRLINE, zorder=5)
     ax.scatter([neg_centroid[0]], [neg_centroid[1]], c='red', s=_C.VIZ_CENTROID_MARKER_SIZE_ALT, marker='*',
-               edgecolors='black', linewidths=1, zorder=5)
+               edgecolors='black', linewidths=_C.VIZ_LINEWIDTH_HAIRLINE, zorder=5)
 
     base_colors = get_eval_colors(base_evals, len(base_2d))
     for i, (x, y) in enumerate(base_2d):
-        ax.scatter([x], [y], c='gray', s=60, marker='o',
-                   edgecolors=base_colors[i], linewidths=2, zorder=4)
+        ax.scatter([x], [y], c='gray', s=_C.VIZ_MARKER_SIZE_LARGE, marker='o',
+                   edgecolors=base_colors[i], linewidths=_C.VIZ_LINEWIDTH_NORMAL, zorder=4)
 
     steered_colors = get_eval_colors(steered_evals, len(steered_2d))
     for i, (x, y) in enumerate(steered_2d):
-        ax.scatter([x], [y], c='lime', s=60, marker='s',
-                   edgecolors=steered_colors[i], linewidths=2, zorder=4)
+        ax.scatter([x], [y], c='lime', s=_C.VIZ_MARKER_SIZE_LARGE, marker='s',
+                   edgecolors=steered_colors[i], linewidths=_C.VIZ_LINEWIDTH_NORMAL, zorder=4)
 
     for i in range(min(len(base_2d), len(steered_2d))):
         ax.annotate('', xy=(steered_2d[i, 0], steered_2d[i, 1]),
                     xytext=(base_2d[i, 0], base_2d[i, 1]),
-                    arrowprops=dict(arrowstyle='->', color='green', alpha=0.5, lw=1))
+                    arrowprops=dict(arrowstyle='->', color='green', alpha=_C.VIZ_HISTOGRAM_ALPHA, lw=_C.VIZ_ARROW_SIZE_DEFAULT))
 
-    ax.set_title(title, fontsize=10)
-    ax.grid(True, alpha=0.3)
+    ax.set_title(title, fontsize=_C.VIZ_FONTSIZE_BODY)
+    ax.grid(True, alpha=_C.VIZ_ALPHA_LIGHT)
 
 
 def plot_pca_panel(ax, pos, neg, base, steered, base_evals, steered_evals):
@@ -172,8 +172,8 @@ def plot_pca_with_boundary(ax, pos, neg, base, steered, base_evals, steered_eval
     xx, yy = np.meshgrid(np.linspace(x_min, x_max, _C.VIZ_MESHGRID_RESOLUTION_MED), np.linspace(y_min, y_max, _C.VIZ_MESHGRID_RESOLUTION_MED))
     Z = clf.predict_proba(np.c_[xx.ravel(), yy.ravel()])[:, 1].reshape(xx.shape)
 
-    ax.contourf(xx, yy, Z, levels=[0, _C.VIZ_CONTOURF_LEVEL, 1], colors=['#FFCCCC', '#CCCCFF'], alpha=0.4)
-    ax.contour(xx, yy, Z, levels=[_C.VIZ_CONTOURF_LEVEL], colors=['black'], linewidths=2, linestyles=['--'])
+    ax.contourf(xx, yy, Z, levels=[0, _C.VIZ_CONTOURF_LEVEL, 1], colors=['#FFCCCC', '#CCCCFF'], alpha=_C.VIZ_ALPHA_HIST)
+    ax.contour(xx, yy, Z, levels=[_C.VIZ_CONTOURF_LEVEL], colors=['black'], linewidths=_C.VIZ_LINEWIDTH_NORMAL, linestyles=['--'])
     plot_projection_panel(ax, pos_2d, neg_2d, base_2d, steered_2d,
                           base_evals, steered_evals, "PCA + Decision Boundary")
 
@@ -191,7 +191,7 @@ def plot_movement_vectors(ax, pos, neg, base, steered):
         movements_2d = pca.fit_transform(movements)
         mean_steering_2d = pca.transform(mean_steering.reshape(1, -1))[0]
 
-        ax.scatter(movements_2d[:, 0], movements_2d[:, 1], c='green', alpha=0.6, s=40)
+        ax.scatter(movements_2d[:, 0], movements_2d[:, 1], c='green', alpha=_C.VIZ_ALPHA_MEDIUM, s=_C.VIZ_MARKER_SIZE_MOVEMENT)
         ax.scatter([0], [0], c='black', s=_C.VIZ_X_MARKER_SIZE, marker='x', zorder=5)
 
         scale = np.max(np.abs(movements_2d)) * _C.VIZ_MOVEMENT_SCALE
@@ -208,7 +208,7 @@ def plot_movement_vectors(ax, pos, neg, base, steered):
     else:
         ax.text(0.5, 0.5, "Not enough samples", ha='center', va='center', transform=ax.transAxes)
         ax.set_title("Movement Vectors")
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=_C.VIZ_ALPHA_LIGHT)
     ax.set_xlabel("PC1")
     ax.set_ylabel("PC2")
 
@@ -224,15 +224,15 @@ def plot_norm_distribution(ax, pos, neg, base, steered):
         min(pos_norms.min(), neg_norms.min(), base_norms.min(), steered_norms.min()),
         max(pos_norms.max(), neg_norms.max(), base_norms.max(), steered_norms.max()), _C.VIZ_HISTOGRAM_BINS)
 
-    ax.hist(pos_norms, bins=bins, alpha=0.4, label='Positive', color='blue')
-    ax.hist(neg_norms, bins=bins, alpha=0.4, label='Negative', color='red')
-    ax.hist(base_norms, bins=bins, alpha=0.6, label='Base', color='gray', histtype='step', linewidth=2)
-    ax.hist(steered_norms, bins=bins, alpha=0.6, label='Steered', color='green', histtype='step', linewidth=2)
+    ax.hist(pos_norms, bins=bins, alpha=_C.VIZ_ALPHA_HIST, label='Positive', color='blue')
+    ax.hist(neg_norms, bins=bins, alpha=_C.VIZ_ALPHA_HIST, label='Negative', color='red')
+    ax.hist(base_norms, bins=bins, alpha=_C.VIZ_ALPHA_MEDIUM, label='Base', color='gray', histtype='step', linewidth=_C.VIZ_LINEWIDTH_NORMAL)
+    ax.hist(steered_norms, bins=bins, alpha=_C.VIZ_ALPHA_MEDIUM, label='Steered', color='green', histtype='step', linewidth=_C.VIZ_LINEWIDTH_NORMAL)
     ax.set_title("Norm Distribution")
     ax.set_xlabel("L2 Norm")
     ax.set_ylabel("Count")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=_C.VIZ_FONTSIZE_SMALL)
+    ax.grid(True, alpha=_C.VIZ_ALPHA_LIGHT)
 
 
 def plot_alignment_histogram(ax, pos, neg, base, steered):
@@ -250,15 +250,15 @@ def plot_alignment_histogram(ax, pos, neg, base, steered):
     base_align = compute_alignments(base)
     steered_align = compute_alignments(steered)
     bins = np.linspace(-1, 1, _C.VIZ_HISTOGRAM_BINS)
-    ax.hist(base_align, bins=bins, alpha=0.6, label='Base', color='gray')
-    ax.hist(steered_align, bins=bins, alpha=0.6, label='Steered', color='green')
-    ax.axvline(base_align.mean(), color='gray', linestyle='--', linewidth=2)
-    ax.axvline(steered_align.mean(), color='green', linestyle='--', linewidth=2)
+    ax.hist(base_align, bins=bins, alpha=_C.VIZ_ALPHA_MEDIUM, label='Base', color='gray')
+    ax.hist(steered_align, bins=bins, alpha=_C.VIZ_ALPHA_MEDIUM, label='Steered', color='green')
+    ax.axvline(base_align.mean(), color='gray', linestyle='--', linewidth=_C.VIZ_LINEWIDTH_NORMAL)
+    ax.axvline(steered_align.mean(), color='green', linestyle='--', linewidth=_C.VIZ_LINEWIDTH_NORMAL)
     ax.set_title("Alignment with Steering Direction")
     ax.set_xlabel("Cosine Alignment")
     ax.set_ylabel("Count")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=_C.VIZ_FONTSIZE_SMALL)
+    ax.grid(True, alpha=_C.VIZ_ALPHA_LIGHT)
 
 
 def plot_centroid_distances(ax, pos, neg, base, steered):
@@ -272,15 +272,15 @@ def plot_centroid_distances(ax, pos, neg, base, steered):
 
     x = np.arange(len(base))
     width = VIZ_BAR_WIDTH
-    ax.bar(x - width/2, base_to_pos - base_to_neg, width, label='Base', color='gray', alpha=0.7)
-    ax.bar(x + width/2, steered_to_pos - steered_to_neg, width, label='Steered', color='green', alpha=0.7)
-    ax.axhline(0, color='black', linestyle='-', linewidth=1)
+    ax.bar(x - width/2, base_to_pos - base_to_neg, width, label='Base', color='gray', alpha=_C.VIZ_ALPHA_HIGH)
+    ax.bar(x + width/2, steered_to_pos - steered_to_neg, width, label='Steered', color='green', alpha=_C.VIZ_ALPHA_HIGH)
+    ax.axhline(0, color='black', linestyle='-', linewidth=_C.VIZ_LINEWIDTH_HAIRLINE)
     ax.set_title("Distance Difference (closer to pos = negative)")
     ax.set_xlabel("Sample Index")
     ax.set_ylabel("d(pos) - d(neg)")
-    ax.legend(fontsize=8)
-    ax.grid(True, alpha=0.3)
+    ax.legend(fontsize=_C.VIZ_FONTSIZE_SMALL)
+    ax.grid(True, alpha=_C.VIZ_ALPHA_LIGHT)
     base_closer = np.sum(base_to_pos < base_to_neg)
     steered_closer = np.sum(steered_to_pos < steered_to_neg)
     ax.text(_C.VIZ_TEXT_BOX_LEFT, _C.VIZ_TEXT_BOX_RIGHT, f"Closer to pos: Base {base_closer}/{len(base)}, Steered {steered_closer}/{len(steered)}",
-            transform=ax.transAxes, fontsize=8, verticalalignment='top')
+            transform=ax.transAxes, fontsize=_C.VIZ_FONTSIZE_SMALL, verticalalignment='top')

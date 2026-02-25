@@ -6,7 +6,7 @@ from typing import Dict, Any, List, Optional
 import io
 import base64
 
-from wisent.core.constants import VIZ_DPI, VIZ_MARKER_SIZE
+from wisent.core.constants import VIZ_DPI, VIZ_MARKER_SIZE, VIZ_FIGSIZE_STANDARD, VIZ_FIGSIZE_COMPACT, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HIGH
 
 from ...visualization.visualizations import (
     plot_pca_projection,
@@ -45,7 +45,7 @@ def create_concept_overview_figure(
         proj_data = plot_pca_projection(diff_tensor, zeros, title="Concept Overview (PCA)")
 
     if "error" in proj_data:
-        fig, ax = plt.subplots(figsize=(10, 8))
+        fig, ax = plt.subplots(figsize=VIZ_FIGSIZE_STANDARD)
         ax.text(0.5, 0.5, f"Error: {proj_data['error']}", ha='center', va='center')
         buf = io.BytesIO()
         fig.savefig(buf, format='png', dpi=VIZ_DPI)
@@ -54,18 +54,18 @@ def create_concept_overview_figure(
         return base64.b64encode(buf.read()).decode('utf-8')
 
     diff_2d = proj_data["pos_projected"]
-    fig, ax = plt.subplots(figsize=(10, 8))
+    fig, ax = plt.subplots(figsize=VIZ_FIGSIZE_STANDARD)
     colors = plt.cm.tab10(np.linspace(0, 1, n_concepts))
 
     for i in range(n_concepts):
         mask = labels == i
-        ax.scatter(diff_2d[mask, 0], diff_2d[mask, 1], c=[colors[i]], label=concept_names[i], alpha=0.7, s=VIZ_MARKER_SIZE)
+        ax.scatter(diff_2d[mask, 0], diff_2d[mask, 1], c=[colors[i]], label=concept_names[i], alpha=VIZ_ALPHA_HIGH, s=VIZ_MARKER_SIZE)
 
     ax.set_xlabel("Component 1")
     ax.set_ylabel("Component 2")
     ax.set_title(proj_data.get("title", "Concept Overview"))
     ax.legend(loc='best')
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
 
     buf = io.BytesIO()
     fig.savefig(buf, format='png', dpi=VIZ_DPI, bbox_inches='tight')
@@ -90,7 +90,7 @@ def create_per_concept_figure(
         import matplotlib
         matplotlib.use('Agg')
         import matplotlib.pyplot as plt
-        fig, ax = plt.subplots(figsize=(8, 6))
+        fig, ax = plt.subplots(figsize=VIZ_FIGSIZE_COMPACT)
         ax.text(0.5, 0.5, "Not enough data", ha='center', va='center')
         buf = io.BytesIO()
         fig.savefig(buf, format='png', dpi=VIZ_DPI)

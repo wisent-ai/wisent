@@ -4,6 +4,7 @@ import sys
 
 from wisent.core.models import get_generate_kwargs
 from wisent.core.errors import UnknownTypeError
+from wisent.core.constants import SEPARATOR_WIDTH_STANDARD
 
 
 def execute_tasks(args):
@@ -116,15 +117,15 @@ def execute_tasks(args):
 
 def _prompt_for_mode(args):
     """Prompt user to select steering or classification mode."""
-    print("\n" + "=" * 60)
+    print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
     print("MODE SELECTION REQUIRED")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print("\nThe 'tasks' command can run in two modes:\n")
     print("  1. STEERING MODE (--steering-mode)")
     print("     Train steering vectors to modify model behavior\n")
     print("  2. CLASSIFICATION MODE (--classification-mode)")
     print("     Train a classifier to detect good/bad responses\n")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     while True:
         try:

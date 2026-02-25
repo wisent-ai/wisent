@@ -9,7 +9,8 @@ from typing import Dict, List, Optional
 import torch
 
 from wisent.core.constants import (HF_UPLOAD_MAX_RETRIES, HF_UPLOAD_BASE_WAIT,
-    HF_UPLOAD_BACKOFF_MAX_EXPONENT, HF_UPLOAD_JITTER_MIN, HF_UPLOAD_JITTER_MAX)
+    HF_UPLOAD_BACKOFF_MAX_EXPONENT, HF_UPLOAD_JITTER_MIN, HF_UPLOAD_JITTER_MAX,
+    JSON_INDENT)
 from .hf_config import (
     HF_REPO_ID,
     HF_REPO_TYPE,
@@ -172,12 +173,12 @@ def upload_pair_texts(
         out_path = Path(staging_dir) / hf_path
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with open(out_path, "w") as f:
-            json.dump(pairs, f, indent=2)
+            json.dump(pairs, f, indent=JSON_INDENT)
         print(f"  Staged {hf_path} ({len(pairs)} pairs)")
         return hf_path
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-        json.dump(pairs, tmp, indent=2)
+        json.dump(pairs, tmp, indent=JSON_INDENT)
         tmp_path = tmp.name
     try:
         api = _get_api()
@@ -224,7 +225,7 @@ def write_marker(
         return
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-        json.dump(payload, tmp, indent=2)
+        json.dump(payload, tmp, indent=JSON_INDENT)
         tmp_path = tmp.name
     try:
         api = _get_api()
@@ -285,7 +286,7 @@ def consolidate_index(dry_run: bool = False) -> Dict[str, List[int]]:
         return index
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as tmp:
-        json.dump(index, tmp, indent=2)
+        json.dump(index, tmp, indent=JSON_INDENT)
         tmp_path = tmp.name
     try:
         _retry_upload(lambda: api.upload_file(

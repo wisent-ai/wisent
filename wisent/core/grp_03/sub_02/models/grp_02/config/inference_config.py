@@ -16,6 +16,7 @@ from typing import Any
 from wisent.core.constants import (
     DEFAULT_INFERENCE_TEMPERATURE, DEFAULT_TOP_P, DEFAULT_TOP_K,
     DEFAULT_MAX_NEW_TOKENS_LONG, DEFAULT_REPETITION_PENALTY, DEFAULT_NO_REPEAT_NGRAM,
+    JSON_INDENT,
 )
 
 
@@ -74,7 +75,7 @@ class InferenceConfig:
         path = Path(path) if path else CONFIG_FILE
         path.parent.mkdir(parents=True, exist_ok=True)
         with open(path, "w") as f:
-            json.dump(self.to_dict(), f, indent=2)
+            json.dump(self.to_dict(), f, indent=JSON_INDENT)
 
     @classmethod
     def load(cls, path: Path | str | None = None) -> "InferenceConfig":

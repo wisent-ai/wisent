@@ -7,7 +7,11 @@ Metrics for manifold structure, curvature, and direction overlap.
 import torch
 import numpy as np
 from typing import Dict, Any, Optional
-from wisent.core.constants import NORM_EPS, MANIFOLD_LINEARITY_SAMPLE_LIMIT, SPECTRAL_N_NEIGHBORS_DEFAULT
+from wisent.core.constants import (
+    NORM_EPS, MANIFOLD_LINEARITY_SAMPLE_LIMIT, SPECTRAL_N_NEIGHBORS_DEFAULT,
+    PCA_MAX_COMPONENTS_NULL, CUMULATIVE_VARIANCE_TOP_N, PCA_QUALITY_COMPONENTS,
+    DISPLAY_TOP_N_SMALL,
+)
 
 
 def compute_manifold_metrics(
@@ -33,7 +37,7 @@ def compute_manifold_metrics(
     # PCA on diffs
     from sklearn.decomposition import PCA
 
-    n_components = min(50, n - 1, diffs.shape[1])
+    n_components = min(PCA_MAX_COMPONENTS_NULL, n - 1, diffs.shape[1])
     pca = PCA(n_components=n_components)
     diffs_pca = pca.fit_transform(diffs)
 
@@ -77,9 +81,9 @@ def compute_manifold_metrics(
         # PCA variance
         "variance_pc1": float(explained_variance[0]) if len(explained_variance) > 0 else None,
         "variance_pc2": float(explained_variance[1]) if len(explained_variance) > 1 else None,
-        "variance_pc3": float(explained_variance[2]) if len(explained_variance) > 2 else None,
-        "variance_top5": float(cumsum_variance[4]) if len(cumsum_variance) > 4 else None,
-        "variance_top10": float(cumsum_variance[9]) if len(cumsum_variance) > 9 else None,
+        "variance_pc3": float(explained_variance[CUMULATIVE_VARIANCE_TOP_N - 1]) if len(explained_variance) > CUMULATIVE_VARIANCE_TOP_N - 1 else None,
+        "variance_top5": float(cumsum_variance[PCA_QUALITY_COMPONENTS - 1]) if len(cumsum_variance) > PCA_QUALITY_COMPONENTS - 1 else None,
+        "variance_top10": float(cumsum_variance[DISPLAY_TOP_N_SMALL - 1]) if len(cumsum_variance) > DISPLAY_TOP_N_SMALL - 1 else None,
 
         # Dimensionality
         "dims_for_50pct_variance": dims_for_50,

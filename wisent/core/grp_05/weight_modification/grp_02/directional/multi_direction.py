@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
-from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_LAYER_WEIGHT
+from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
@@ -79,9 +79,9 @@ def project_weights_multi_direction(
     if verbose:
         first_layer_vecs = next(iter(multi_steering_vectors.values()))
         num_dirs = first_layer_vecs.shape[0] if first_layer_vecs.dim() > 1 else 1
-        print(f"\n{'='*60}\nTECZA MULTI-DIRECTIONAL WEIGHT MODIFICATION\n{'='*60}")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}\nTECZA MULTI-DIRECTIONAL WEIGHT MODIFICATION\n{'='*SEPARATOR_WIDTH_STANDARD}")
         print(f"Layers: {len(multi_steering_vectors)}, Directions per layer: {num_dirs}")
-        print(f"Components: {components}, Global strength: {global_strength}\n{'='*60}\n")
+        print(f"Components: {components}, Global strength: {global_strength}\n{'='*SEPARATOR_WIDTH_STANDARD}\n")
     for layer_idx, steering_vectors in multi_steering_vectors.items():
         if layer_idx >= len(layers):
             log.warning(f"Layer {layer_idx} out of range, skipping")
@@ -128,7 +128,7 @@ def project_weights_multi_direction(
         if layer_modified:
             layers_modified += 1
     if verbose:
-        print(f"\n{'='*60}\nTECZA MODIFICATION COMPLETE\n{'='*60}")
-        print(f"  Layers: {layers_modified}, Components: {components_modified}, Directions: {total_directions_applied}, Params: {total_params:,}\n{'='*60}\n")
+        print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}\nTECZA MODIFICATION COMPLETE\n{'='*SEPARATOR_WIDTH_STANDARD}")
+        print(f"  Layers: {layers_modified}, Components: {components_modified}, Directions: {total_directions_applied}, Params: {total_params:,}\n{'='*SEPARATOR_WIDTH_STANDARD}\n")
     return {"layers_modified": layers_modified, "components_modified": components_modified,
             "total_parameters_modified": total_params, "total_directions_applied": total_directions_applied, "norm_preserved": True}

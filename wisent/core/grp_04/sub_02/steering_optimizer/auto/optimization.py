@@ -13,7 +13,7 @@ from wisent.core.constants import (
     DEFAULT_LIMIT, DEFAULT_SCORE, BLEND_DEFAULT,
     AUTO_MAX_TIME_MINUTES, AUTO_MIN_PAIRS, AUTO_SAMPLE_SIZE,
     AUTO_N_FOLDS, AUTO_DEFAULT_STRENGTHS, AUTO_MIN_PAIRS_SPLIT,
-    AUTO_LAYER_DIVISOR,
+    AUTO_LAYER_DIVISOR, SEPARATOR_WIDTH_WIDE,
 )
 from .training import train_recommended_method
 from .grid_search import run_grid_search
@@ -40,8 +40,8 @@ def run_auto_steering_optimization(
         return {"error": "Task name is required for auto steering optimization"}
 
     if verbose:
-        print(f"\n{'='*70}\nAUTO STEERING OPTIMIZATION (zwiad)\n{'='*70}")
-        print(f"   Model: {model_name}\n   Task: {task_name}\n{'='*70}\n")
+        print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}\nAUTO STEERING OPTIMIZATION (zwiad)\n{'=' * SEPARATOR_WIDTH_WIDE}")
+        print(f"   Model: {model_name}\n   Task: {task_name}\n{'=' * SEPARATOR_WIDTH_WIDE}\n")
         print("Loading model...", flush=True)
 
     wisent_model = WisentModel(model_name, device=device)

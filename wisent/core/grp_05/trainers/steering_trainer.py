@@ -25,6 +25,7 @@ from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.contrastive_pairs.diagnostics import run_control_vector_diagnostics, run_vector_quality_diagnostics, VectorQualityConfig
 from wisent.core.errors import ControlVectorDiagnosticsError, NoTrainingResultError, VectorQualityTooLowError
+from wisent.core.constants import STEERABILITY_MIN_PAIRS, DISPLAY_TOP_N_TINY
 
 __all__ = [
     "WisentSteeringTrainer",
@@ -144,7 +145,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         # 3b) Run vector quality diagnostics if we have enough pairs
         quality_report = None
         quality_diagnostics_report = None
-        if len(self.pair_set.pairs) >= 5:
+        if len(self.pair_set.pairs) >= STEERABILITY_MIN_PAIRS:
             try:
                 # Extract activations for quality analysis (use first layer with data)
                 positive_activations = []
@@ -170,7 +171,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
                     
                     pair_prompts.append(pair.prompt if hasattr(pair, 'prompt') else "")
                 
-                if len(positive_activations) >= 5 and len(negative_activations) >= 5:
+                if len(positive_activations) >= STEERABILITY_MIN_PAIRS and len(negative_activations) >= STEERABILITY_MIN_PAIRS:
                     pos_stacked = torch.stack(positive_activations)
                     neg_stacked = torch.stack(negative_activations)
                     
@@ -190,7 +191,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
                     # Raise error if quality is poor and not accepted
                     if quality_diagnostics_report.has_critical_issues and not accept_low_quality_vector:
                         critical_issues = [i for i in quality_diagnostics_report.issues if i.severity == "critical"]
-                        reason = "; ".join(i.message for i in critical_issues[:3])
+                        reason = "; ".join(i.message for i in critical_issues[:DISPLAY_TOP_N_TINY])
                         raise VectorQualityTooLowError(
                             quality=quality_report.overall_quality,
                             reason=reason,

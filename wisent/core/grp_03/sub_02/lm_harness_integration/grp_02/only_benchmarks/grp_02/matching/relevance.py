@@ -7,6 +7,7 @@ from typing import Any, Dict, List
 
 from wisent.core.constants import (
     BENCHMARK_LOADING_TIME_DEFAULT,
+    JSON_INDENT,
     RELEVANCE_CONTENT_MATCH_SCORE,
     RELEVANCE_FAST_HIGH_SCORING_BONUS,
     RELEVANCE_HIGH_SCORING_BONUS,
@@ -34,7 +35,7 @@ def _create_llm_prompt(prompt: str, benchmark_list: List[Dict]) -> str:
 USER PROMPT TO ANALYZE: "{prompt}"
 
 AVAILABLE BENCHMARKS:
-{json.dumps(benchmark_list, indent=2)}
+{json.dumps(benchmark_list, indent=JSON_INDENT)}
 
 TASK: Analyze the user prompt and identify the 3 most relevant benchmarks for evaluating this type of query. Consider:
 1. What cognitive skills does the prompt require?

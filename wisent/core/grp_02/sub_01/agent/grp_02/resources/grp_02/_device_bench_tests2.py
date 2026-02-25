@@ -2,7 +2,7 @@
 import time
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, SUBPROCESS_TIMEOUT_SECS
+from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, SUBPROCESS_TIMEOUT_SECS, BENCH_TEST_SAMPLE_MIN
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin2:
@@ -26,7 +26,7 @@ try:
     run_task_pipeline(
         task_name="truthfulqa_mc",
         model_name="meta-llama/Llama-3.1-8B-Instruct",
-        limit=2,  # Minimum examples for timing
+        limit=__BENCH_SAMPLE_MIN__,  # Minimum examples for timing
         steering_mode=True,
         steering_method="CAA",
         steering_strength=__STRENGTH__,
@@ -35,11 +35,11 @@ try:
         allow_small_dataset=True,
         output_mode="likelihoods"
     )
-    
+
     end_time = time.time()
     total_time = end_time - start_time
     # Time per example
-    time_per_example = total_time / 2
+    time_per_example = total_time / __BENCH_SAMPLE_MIN__
     print(f"BENCHMARK_RESULT:{time_per_example}")
 
 except Exception as e:
@@ -48,6 +48,7 @@ except Exception as e:
 '''
         test_script = test_script.replace("__LAYER__", str(DEFAULT_LAYER))
         test_script = test_script.replace("__STRENGTH__", str(DEFAULT_STRENGTH))
+        test_script = test_script.replace("__BENCH_SAMPLE_MIN__", str(BENCH_TEST_SAMPLE_MIN))
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
                 f.write(test_script)

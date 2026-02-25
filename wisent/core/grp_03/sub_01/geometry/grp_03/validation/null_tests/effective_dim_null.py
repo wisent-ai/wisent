@@ -7,7 +7,9 @@ import numpy as np
 import torch
 from typing import Dict
 
-from wisent.core.constants import ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED
+from wisent.core.constants import (
+    ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED, Z_SCORE_SIGNIFICANCE,
+)
 
 from ...analysis.intrinsic_dim import (
     participation_ratio,
@@ -63,9 +65,9 @@ def compute_effective_dimensions_vs_null(
     Significant compression vs null indicates real low-dimensional structure.
 
     Z-score interpretation:
-    - z < -2: Real effective dim is significantly LOWER than null (good - structure exists)
-    - z ≈ 0: Real effective dim similar to null (no structure)
-    - z > 2: Real effective dim is HIGHER than null (unusual)
+    - z < -Z_SCORE_SIGNIFICANCE: Real effective dim is significantly LOWER than null (good - structure exists)
+    - z near 0: Real effective dim similar to null (no structure)
+    - z > Z_SCORE_SIGNIFICANCE: Real effective dim is HIGHER than null (unusual)
     """
     real = compute_effective_dimensions(pos, neg)
 
@@ -94,5 +96,5 @@ def compute_effective_dimensions_vs_null(
             "stable_rank_z": sr_z,
         },
         "compression_vs_null": compression_vs_null,
-        "significant_structure": pr_z < -2.0 or er_z < -2.0 or sr_z < -2.0,
+        "significant_structure": pr_z < -Z_SCORE_SIGNIFICANCE or er_z < -Z_SCORE_SIGNIFICANCE or sr_z < -Z_SCORE_SIGNIFICANCE,
     }

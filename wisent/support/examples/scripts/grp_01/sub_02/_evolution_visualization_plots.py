@@ -4,7 +4,13 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from wisent.core.constants import VIZ_DPI, VIZ_MARKER_SIZE
+from wisent.core.constants import (
+    VIZ_DPI, VIZ_MARKER_SIZE, VIZ_FONTSIZE_SMALL, VIZ_FONTSIZE_SUBTITLE,
+    VIZ_FONTSIZE_SUPTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_MEDIUM,
+    VIZ_ALPHA_HIGH, VIZ_ALPHA_HALF,
+    VIZ_LINEWIDTH_NORMAL, VIZ_LINEWIDTH_FINE, VIZ_MARKERSIZE_LINE,
+    VIZ_MARKER_SIZE_MOVEMENT, VIZ_CORRELATION_VMIN, VIZ_CORRELATION_VMAX,
+)
 from wisent.examples.scripts._pair_generators_neutral import ConceptMetrics
 
 
@@ -64,14 +70,14 @@ def visualize_concept_evolution_plots(
                 continue
             n = len(activations_by_concept[concept][mid_layer][0])
             ax.scatter(pos_2d[idx:idx+n, 0], pos_2d[idx:idx+n, 1],
-                      c=colors_pos[concept], label=f'{concept} (pos)', alpha=0.7, s=VIZ_MARKER_SIZE)
+                      c=colors_pos[concept], label=f'{concept} (pos)', alpha=VIZ_ALPHA_HIGH, s=VIZ_MARKER_SIZE)
             idx += n
         ax.set_title(f'Positive Responses (Layer {mid_layer})')
         ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)')
         ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)')
         ax.legend()
-        ax.grid(True, alpha=0.3)
-        
+        ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
+
         # Plot negative (safe) responses
         ax = axes[1]
         idx = 0
@@ -80,15 +86,15 @@ def visualize_concept_evolution_plots(
                 continue
             n = len(activations_by_concept[concept][mid_layer][1])
             ax.scatter(neg_2d[idx:idx+n, 0], neg_2d[idx:idx+n, 1],
-                      c=colors_neg[concept], label=f'{concept} (neg)', alpha=0.7, s=VIZ_MARKER_SIZE)
+                      c=colors_neg[concept], label=f'{concept} (neg)', alpha=VIZ_ALPHA_HIGH, s=VIZ_MARKER_SIZE)
             idx += n
         ax.set_title(f'Negative Responses (Layer {mid_layer})')
         ax.set_xlabel(f'PC1 ({pca.explained_variance_ratio_[0]*100:.1f}%)')
         ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)')
         ax.legend()
-        ax.grid(True, alpha=0.3)
+        ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     
-    plt.suptitle(f'Concept Activations - {model_name}', fontsize=14)
+    plt.suptitle(f'Concept Activations - {model_name}', fontsize=VIZ_FONTSIZE_SUPTITLE)
     plt.tight_layout()
     plt.savefig(output_path / 'concept_pca_activations.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()
@@ -113,23 +119,23 @@ def visualize_concept_evolution_plots(
         # Plot directions as arrows from origin
         for i, (concept, _) in enumerate(directions.items()):
             color = colors_pos.get(concept, 'gray')
-            ax.arrow(0, 0, dir_2d[i, 0], dir_2d[i, 1], 
-                    head_width=0.05, head_length=0.03, fc=color, ec=color, linewidth=2)
-            ax.annotate(concept.replace('_', '\n'), (dir_2d[i, 0]*1.1, dir_2d[i, 1]*1.1), 
-                       fontsize=11, ha='center', color=color, fontweight='bold')
+            ax.arrow(0, 0, dir_2d[i, 0], dir_2d[i, 1],
+                    head_width=0.05, head_length=0.03, fc=color, ec=color, linewidth=VIZ_LINEWIDTH_NORMAL)
+            ax.annotate(concept.replace('_', '\n'), (dir_2d[i, 0]*1.1, dir_2d[i, 1]*1.1),
+                       fontsize=VIZ_FONTSIZE_TITLE, ha='center', color=color, fontweight='bold')
         
         # Set equal aspect and limits
         max_val = np.abs(dir_2d).max() * 1.3
         ax.set_xlim(-max_val, max_val)
         ax.set_ylim(-max_val, max_val)
-        ax.axhline(y=0, color='gray', linestyle='--', alpha=0.5)
-        ax.axvline(x=0, color='gray', linestyle='--', alpha=0.5)
+        ax.axhline(y=0, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
+        ax.axvline(x=0, color='gray', linestyle='--', alpha=VIZ_ALPHA_HALF)
         ax.set_aspect('equal')
         ax.set_title(f'Concept Direction Vectors (Layer {mid_layer})\nArrows show pos-neg direction for each concept')
         ax.set_xlabel(f'PC1 ({pca_dir.explained_variance_ratio_[0]*100:.1f}%)')
         ax.set_ylabel(f'PC2 ({pca_dir.explained_variance_ratio_[1]*100:.1f}%)')
-        ax.grid(True, alpha=0.3)
-    
+        ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
+
     plt.tight_layout()
     plt.savefig(output_path / 'concept_direction_vectors.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()
@@ -159,11 +165,11 @@ def visualize_concept_evolution_plots(
                         sim_matrix[i, j] = direction_comparisons[layer][key]
                         sim_matrix[j, i] = direction_comparisons[layer][key]
         
-        im = ax.imshow(sim_matrix, cmap='RdYlGn', vmin=-1, vmax=1)
+        im = ax.imshow(sim_matrix, cmap='RdYlGn', vmin=VIZ_CORRELATION_VMIN, vmax=VIZ_CORRELATION_VMAX)
         ax.set_xticks(range(len(concepts)))
         ax.set_yticks(range(len(concepts)))
-        ax.set_xticklabels([c.replace('_', '\n') for c in concepts], fontsize=8)
-        ax.set_yticklabels([c.replace('_', '\n') for c in concepts], fontsize=8)
+        ax.set_xticklabels([c.replace('_', '\n') for c in concepts], fontsize=VIZ_FONTSIZE_SMALL)
+        ax.set_yticklabels([c.replace('_', '\n') for c in concepts], fontsize=VIZ_FONTSIZE_SMALL)
         ax.set_title(f'Layer {layer}')
         
         # Add text annotations
@@ -171,9 +177,9 @@ def visualize_concept_evolution_plots(
             for j in range(len(concepts)):
                 text = f'{sim_matrix[i, j]:.2f}'
                 color = 'white' if abs(sim_matrix[i, j]) > 0.5 else 'black'
-                ax.text(j, i, text, ha='center', va='center', color=color, fontsize=8)
+                ax.text(j, i, text, ha='center', va='center', color=color, fontsize=VIZ_FONTSIZE_SMALL)
     
-    plt.suptitle(f'Direction Cosine Similarities Across Layers - {model_name}', fontsize=14)
+    plt.suptitle(f'Direction Cosine Similarities Across Layers - {model_name}', fontsize=VIZ_FONTSIZE_SUPTITLE)
     fig.colorbar(im, ax=axes, shrink=0.6, label='Cosine Similarity')
     plt.tight_layout()
     plt.savefig(output_path / 'concept_similarity_heatmaps.png', dpi=VIZ_DPI, bbox_inches='tight')
@@ -198,14 +204,14 @@ def visualize_concept_evolution_plots(
                 sims.append(direction_comparisons[layer][key])
                 valid_layers.append(layer)
         if sims:
-            ax.plot(valid_layers, sims, 'o-', label=label, color=color, linewidth=2, markersize=8)
+            ax.plot(valid_layers, sims, 'o-', label=label, color=color, linewidth=VIZ_LINEWIDTH_NORMAL, markersize=VIZ_MARKERSIZE_LINE)
     
-    ax.axhline(y=0, color='black', linestyle='--', alpha=0.3)
-    ax.set_xlabel('Layer', fontsize=12)
-    ax.set_ylabel('Cosine Similarity', fontsize=12)
-    ax.set_title(f'Concept Direction Similarity Across Layers - {model_name}', fontsize=14)
+    ax.axhline(y=0, color='black', linestyle='--', alpha=VIZ_ALPHA_LIGHT)
+    ax.set_xlabel('Layer', fontsize=VIZ_FONTSIZE_SUBTITLE)
+    ax.set_ylabel('Cosine Similarity', fontsize=VIZ_FONTSIZE_SUBTITLE)
+    ax.set_title(f'Concept Direction Similarity Across Layers - {model_name}', fontsize=VIZ_FONTSIZE_SUPTITLE)
     ax.legend(loc='best')
-    ax.grid(True, alpha=0.3)
+    ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
     ax.set_ylim(-0.6, 1.0)
     
     plt.tight_layout()
@@ -230,10 +236,10 @@ def visualize_concept_evolution_plots(
             
             # Positive (filled)
             ax.scatter(pos_2d[idx:idx+n, 0], pos_2d[idx:idx+n, 1],
-                      c=colors_pos[concept], label=f'{concept} +', alpha=0.6, s=40, marker='o')
+                      c=colors_pos[concept], label=f'{concept} +', alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE_MOVEMENT, marker='o')
             # Negative (hollow)
             ax.scatter(neg_2d[idx:idx+n, 0], neg_2d[idx:idx+n, 1],
-                      c=colors_neg[concept], label=f'{concept} -', alpha=0.6, s=40, marker='x')
+                      c=colors_neg[concept], label=f'{concept} -', alpha=VIZ_ALPHA_MEDIUM, s=VIZ_MARKER_SIZE_MOVEMENT, marker='x')
             
             # Draw arrow from neg centroid to pos centroid
             pos_centroid = pos_2d[idx:idx+n].mean(axis=0)
@@ -247,8 +253,8 @@ def visualize_concept_evolution_plots(
         ax.set_ylabel(f'PC2 ({pca.explained_variance_ratio_[1]*100:.1f}%)')
         ax.set_title(f'All Concepts: Positive (o) vs Negative (x) with Direction Arrows\nLayer {mid_layer} - {model_name}')
         ax.legend(loc='upper left', bbox_to_anchor=(1, 1))
-        ax.grid(True, alpha=0.3)
-    
+        ax.grid(True, alpha=VIZ_ALPHA_LIGHT)
+
     plt.tight_layout()
     plt.savefig(output_path / 'concept_combined_visualization.png', dpi=VIZ_DPI, bbox_inches='tight')
     plt.close()

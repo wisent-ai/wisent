@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.errors import MissingParameterError
-from wisent.core.constants import GROM_GATE_TEMPERATURE, GROM_MAX_ALPHA
+from wisent.core.constants import GROM_GATE_TEMPERATURE, GROM_MAX_ALPHA, JSON_INDENT
 from wisent.core.weight_modification.export._generic import (
     _save_standalone_loader,
 )
@@ -98,7 +98,7 @@ def export_grom_model(
 
         if config_updated:
             with open(config_path, 'w') as f:
-                json.dump(config, f, indent=2)
+                json.dump(config, f, indent=JSON_INDENT)
             log.info(f"Updated config: attention_bias={has_attn_bias}, mlp_bias={has_mlp_bias}")
 
     # Step 2c: Save MLP biases to separate file for models that don't support mlp_bias config
@@ -160,7 +160,7 @@ def export_grom_model(
         "layer_order": grom_result.layer_order,
     }
     with open(config_path, 'w') as f:
-        json.dump(grom_config, f, indent=2)
+        json.dump(grom_config, f, indent=JSON_INDENT)
     log.info("Saved GROM config")
     
     # Step 6: Save standalone loader for use without wisent

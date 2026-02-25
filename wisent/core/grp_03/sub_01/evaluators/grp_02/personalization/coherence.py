@@ -15,6 +15,7 @@ from wisent.core.constants import (
     COHERENCE_LONG_TOKEN_LEN, COHERENCE_LONG_TOKEN_RATIO,
     COHERENCE_VALIDITY_RATIO_MIN, COHERENCE_QUALITY_MIN_TOKENS,
     COHERENCE_RATIO_THRESHOLD,
+    MIN_TOKENS_TRIGRAM, MIN_TOKENS_NONSENSE,
 )
 
 if TYPE_CHECKING:
@@ -57,7 +58,7 @@ def _has_low_function_word_ratio(text: str, threshold: float = COHERENCE_FUNCTIO
         True if text has too few function words (likely gibberish)
     """
     tokens = re.findall(r'\b\w+\b', text.lower())
-    if len(tokens) < 6:
+    if len(tokens) < MIN_TOKENS_TRIGRAM:
         return False  # Too short to judge
 
     function_count = sum(1 for t in tokens if t in FUNCTION_WORDS)
@@ -92,7 +93,7 @@ def _is_nonsense_word(word: str, tokenizer) -> bool:
     Returns:
         True if the word appears to be nonsense
     """
-    if not tokenizer or len(word) < 5:
+    if not tokenizer or len(word) < MIN_TOKENS_NONSENSE:
         return False
 
     # Skip non-ASCII words (likely other languages)
@@ -167,7 +168,7 @@ def _is_gibberish(text: str) -> bool:
         "more", "some", "any", "also", "than", "then",
     }
 
-    if len(tokens) >= 5:
+    if len(tokens) >= MIN_TOKENS_NONSENSE:
         # Check what fraction of tokens are recognizable
         valid_count = 0
         for token in tokens:

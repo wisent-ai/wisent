@@ -15,7 +15,7 @@ import argparse
 import os
 import sys
 
-from wisent.core.constants import NUM_EXAMPLES_DEFAULT, MAX_DOCS_INSPECT
+from wisent.core.constants import NUM_EXAMPLES_DEFAULT, MAX_DOCS_INSPECT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_NARROW
 
 os.environ["HF_ALLOW_CODE_EVAL"] = "1"
 
@@ -33,9 +33,9 @@ TaskConfig.__init__ = _patched_taskconfig_init
 def inspect_benchmark(benchmark_name: str, num_examples: int = NUM_EXAMPLES_DEFAULT) -> None:
     """Load a benchmark from lm-eval and display its structure and examples."""
 
-    print(f"\n{'='*80}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"INSPECTING BENCHMARK: {benchmark_name}")
-    print(f"{'='*80}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_REPORT}\n")
 
     # Load task
     try:
@@ -54,7 +54,7 @@ def inspect_benchmark(benchmark_name: str, num_examples: int = NUM_EXAMPLES_DEFA
     ]
 
     print("AVAILABLE SPLITS:")
-    print("-" * 40)
+    print("-" * SEPARATOR_WIDTH_NARROW)
 
     max_docs_to_load = MAX_DOCS_INSPECT  # Limit to avoid loading millions of rows into memory
     available_splits = {}
@@ -85,9 +85,9 @@ def inspect_benchmark(benchmark_name: str, num_examples: int = NUM_EXAMPLES_DEFA
 
     # For each available split, show examples
     for split_name, (method_name, docs) in available_splits.items():
-        print(f"\n{'='*80}")
+        print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
         print(f"SPLIT: {split_name.upper()} ({len(docs)} samples)")
-        print(f"{'='*80}")
+        print(f"{'=' * SEPARATOR_WIDTH_REPORT}")
 
         # Show structure
         print(f"\nDocument keys: {list(docs[0].keys())}")
@@ -97,9 +97,9 @@ def inspect_benchmark(benchmark_name: str, num_examples: int = NUM_EXAMPLES_DEFA
             print(f"  {key}: {type(value).__name__}")
 
         # Show examples
-        print(f"\n{'-'*40}")
+        print(f"\n{'-' * SEPARATOR_WIDTH_NARROW}")
         print(f"FIRST {min(num_examples, len(docs))} EXAMPLES:")
-        print(f"{'-'*40}")
+        print(f"{'-' * SEPARATOR_WIDTH_NARROW}")
 
         for i, doc in enumerate(docs[:num_examples]):
             print(f"\n--- EXAMPLE {i+1} ---")

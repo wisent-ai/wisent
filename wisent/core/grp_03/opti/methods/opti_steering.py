@@ -19,6 +19,7 @@ from wisent.core.constants import (
     STEERING_OPTI_JUDGE_MAX_TOKENS,
     STEERING_ALPHA_MIN,
     STEERING_ALPHA_MAX,
+    BINARY_CLASSIFICATION_THRESHOLD,
 )
 
 __all__ = [
@@ -124,7 +125,7 @@ class SteeringOptimizer(BaseOptimizer):
             flips = [] 
             for p, A, B in zip(batch, base_out, steered_out):
                 q = next((m["content"] for m in p if m.get("role") == "user"), "")
-                flip = random.random() < 0.5
+                flip = random.random() < BINARY_CLASSIFICATION_THRESHOLD
                 if flip:
                     jp = self.judge_prompt_builder(q, B, A) 
                 else:

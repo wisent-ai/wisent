@@ -3,6 +3,8 @@ import json
 import os
 from pathlib import Path
 
+from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_WIDE
+
 
 def run_evaluation(args, wisent_model, all_layer_vectors, train_pairs, eval_pairs, benchmarks_used, checkpoint_dir):
     """Run Step 5: pooled evaluation and generate summary."""
@@ -176,7 +178,7 @@ def run_evaluation(args, wisent_model, all_layer_vectors, train_pairs, eval_pair
                 'evaluation': evaluation_results,
             }
             with open(args.save_report, 'w') as f:
-                json.dump(report, f, indent=2)
+                json.dump(report, f, indent=JSON_INDENT)
 
     # =========================================================================
     # Final summary
@@ -185,9 +187,9 @@ def run_evaluation(args, wisent_model, all_layer_vectors, train_pairs, eval_pair
     # Clear checkpoints on successful completion
     clear_checkpoints(checkpoint_dir)
     
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("✅ UNIFIED GOODNESS VECTOR TRAINING COMPLETE")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"   Output vector: {args.output}")
     print(f"   Benchmarks used: {len(benchmark_pair_counts)}")
     print(f"   Training pairs (pooled): {len(all_train_pairs)}")
@@ -197,7 +199,7 @@ def run_evaluation(args, wisent_model, all_layer_vectors, train_pairs, eval_pair
         total_time = time.time() - pipeline_start
         print(f"   ⏱️  Total time: {total_time:.2f}s")
 
-    print("=" * 70 + "\n")
+    print("=" * SEPARATOR_WIDTH_WIDE + "\n")
 
     return {
         'output': args.output,

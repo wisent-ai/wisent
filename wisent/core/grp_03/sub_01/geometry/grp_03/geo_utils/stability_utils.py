@@ -10,6 +10,7 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
 from wisent.core.constants import (
     DEFAULT_RANDOM_SEED,
+    HIGH_DIM_THRESHOLD,
     LINEARITY_N_INIT,
     STABILITY_ACCURACY_MARGIN,
     STABILITY_BINARY_VARIANCE,
@@ -176,7 +177,7 @@ def _what_has_high_uncertainty(n_samples: int, n_dims: int) -> List[str]:
     gmm_needed = 2 * n_dims * n_dims
     if n_samples < gmm_needed / 100:
         uncertain.append(f"GMM covariance estimation (error bound: >{100*n_dims/n_samples:.0f}%)")
-    if n_dims > 1000 and n_samples < 1000:
+    if n_dims > HIGH_DIM_THRESHOLD and n_samples < HIGH_DIM_THRESHOLD:
         uncertain.append("Cluster existence in original space (dimension reduction may create artifacts)")
     if n_samples < n_dims / 10:
         uncertain.append(f"Linear probe coefficients (underdetermined by {n_dims/n_samples/10:.1f}x)")

@@ -1,7 +1,7 @@
 """Personalization evaluation for evaluate-responses command."""
 import json
 import os
-from wisent.core.constants import QUALITY_THRESHOLD, DEFAULT_SCORE, PERSONALIZATION_GOOD_THRESHOLD, PERSONALIZATION_FAIR_THRESHOLD
+from wisent.core.constants import JSON_INDENT, QUALITY_THRESHOLD, DEFAULT_SCORE, PERSONALIZATION_GOOD_THRESHOLD, PERSONALIZATION_FAIR_THRESHOLD
 
 from wisent.core.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
@@ -200,7 +200,7 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
     }
 
     with open(args.output, 'w') as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=JSON_INDENT)
 
     print(f"   ✓ Results saved to: {args.output}\n")
     print(f"{'='*80}")

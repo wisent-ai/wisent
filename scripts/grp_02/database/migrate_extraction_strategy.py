@@ -10,6 +10,7 @@ Run with: python scripts/database/migrate_extraction_strategy.py
 
 import os
 import psycopg2
+from wisent.core.constants import DB_CONNECT_WAIT_S
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
@@ -23,7 +24,7 @@ def get_db_connection():
     db_url = DATABASE_URL
     if "pooler.supabase.com:6543" in db_url:
         db_url = db_url.replace(":6543", ":5432")
-    conn = psycopg2.connect(db_url, connect_timeout=30)
+    conn = psycopg2.connect(db_url, connect_timeout=DB_CONNECT_WAIT_S)
     return conn
 
 

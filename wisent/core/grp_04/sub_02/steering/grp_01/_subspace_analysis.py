@@ -15,6 +15,7 @@ from wisent.core.constants import (
     SUBSPACE_QUALITY_W_DECAY,
     QUALITY_SCORE_SPARSE, QUALITY_SCORE_CONCENTRATED,
     QUALITY_SCORE_GOOD, QUALITY_SPARSITY_THRESHOLD,
+    EIGENVALUE_DISPLAY_LIMIT,
 )
 
 _LOG = setup_logger(__name__)
@@ -207,7 +208,7 @@ def analyze_steering_vector_subspace(
             "concentration_score": concentration_score,
             "rank_score": rank_score,
             "decay_score": decay_score,
-            "cumulative_variance": cumulative_var.tolist()[:min(20, len(cumulative_var))],
+            "cumulative_variance": cumulative_var.tolist()[:min(EIGENVALUE_DISPLAY_LIMIT, len(cumulative_var))],
         }
     )
 

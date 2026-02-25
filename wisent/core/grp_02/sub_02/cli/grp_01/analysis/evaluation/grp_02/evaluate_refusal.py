@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 import os
-from wisent.core.constants import DEFAULT_SCORE
+from wisent.core.constants import DEFAULT_SCORE, JSON_INDENT
 
 from wisent.core.evaluators.steering_evaluators import (
     EvaluatorConfig,
@@ -116,7 +116,7 @@ def evaluate_refusal(args, input_data, responses, task_name, evaluation_results,
     }
 
     with open(args.output, 'w') as f:
-        json.dump(output_data, f, indent=2)
+        json.dump(output_data, f, indent=JSON_INDENT)
 
     print(f"   ✓ Results saved to: {args.output}\n")
     print(f"{'='*80}")

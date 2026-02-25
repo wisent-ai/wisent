@@ -11,7 +11,7 @@ import json
 import tempfile
 import os
 import torch
-from wisent.core.constants import DISPLAY_TOP_N_SMALL
+from wisent.core.constants import DISPLAY_TOP_N_SMALL, SEPARATOR_WIDTH_REPORT, JSON_INDENT
 
 POSITIVE_WORDS = [
     "happy", "joyful", "excited", "wonderful", "amazing",
@@ -44,7 +44,7 @@ def create_pairs_file(output_path):
         })
     
     with open(output_path, "w") as f:
-        json.dump({"pairs": pairs}, f, indent=2)
+        json.dump({"pairs": pairs}, f, indent=JSON_INDENT)
     
     return len(pairs)
 
@@ -81,9 +81,9 @@ def convert_to_pt(json_path, pt_path, layer):
 
 
 def main():
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print("AGGREGATION STRATEGY vs GEOMETRY STRUCTURE TEST")
-    print("=" * 80)
+    print("=" * SEPARATOR_WIDTH_REPORT)
     print(f"Model: {MODEL}")
     print(f"Layers: {LAYERS}")
     print(f"Aggregations: {AGGREGATIONS}")
@@ -110,7 +110,7 @@ def main():
             for layer in LAYERS:
                 print(f"\n{'='*80}")
                 print(f"LAYER {layer}")
-                print("=" * 80)
+                print("=" * SEPARATOR_WIDTH_REPORT)
                 
                 for agg in AGGREGATIONS:
                     acts_file = os.path.join(tmpdir, f"acts_L{layer}_{agg}_{prompt_strategy}.json")
@@ -185,11 +185,11 @@ def main():
                         print(f"  All: " + ", ".join(f"{k}={v:.3f}" for k, v in sorted(scores.items())))
         
         # Summary table
-        print("\n" + "=" * 80)
+        print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
         print("SUMMARY TABLE")
-        print("=" * 80)
+        print("=" * SEPARATOR_WIDTH_REPORT)
         print(f"{'Prompt':<20} {'Layer':<8} {'Agg':<10} {'Best':<15} {'Score':<8} {'Linear':<8}")
-        print("-" * 80)
+        print("-" * SEPARATOR_WIDTH_REPORT)
         
         for prompt_strategy in PROMPT_STRATEGIES:
             for layer in LAYERS:
@@ -200,9 +200,9 @@ def main():
                         print(f"{prompt_strategy:<20} {layer:<8} {agg:<10} {r['best_structure']:<15} {r['best_score']:.4f}   {linear_score:.4f}")
         
         # Best config per prompt strategy
-        print("\n" + "=" * 80)
+        print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
         print("BEST CONFIG PER PROMPT STRATEGY")
-        print("=" * 80)
+        print("=" * SEPARATOR_WIDTH_REPORT)
         
         for prompt_strategy in PROMPT_STRATEGIES:
             best_config = None
@@ -218,9 +218,9 @@ def main():
                 print(f"{prompt_strategy:<25}: Layer {best_config[0]}, {best_config[1]}, {best_config[2]} = {best_score:.4f}")
         
         # Best config for LINEAR structure specifically
-        print("\n" + "=" * 80)
+        print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
         print("BEST CONFIG FOR LINEAR STRUCTURE")
-        print("=" * 80)
+        print("=" * SEPARATOR_WIDTH_REPORT)
         
         linear_results = []
         for key, r in results.items():

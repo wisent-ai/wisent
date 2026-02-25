@@ -37,12 +37,12 @@ def execute_modify_weights(args):
         if getattr(args, 'verbose', False):
             print(f"Auto-selected --components {args.components} from --extraction-component {extraction_component}")
     if args.verbose:
-        print("\n" + "=" * 80)
+        print("\n" + "=" * _C.REPORT_LINE_WIDTH)
         print("WEIGHT MODIFICATION")
-        print("=" * 80)
+        print("=" * _C.REPORT_LINE_WIDTH)
         print(f"Model: {args.model}")
         print(f"Output: {args.output_dir}")
-        print("=" * 80 + "\n")
+        print("=" * _C.REPORT_LINE_WIDTH + "\n")
     steering_vectors = _load_or_generate_vectors(args, needs_auto_selection)
     harmless_vectors = _load_harmless_vectors(args)
     wisent_model, model, tokenizer = _load_model(args)
@@ -276,11 +276,11 @@ def _print_timing(args, start_time: float):
 def _print_summary(args, stats: Dict):
     """Print final summary."""
     if args.verbose:
-        print("\n" + "=" * 80)
+        print("\n" + "=" * _C.REPORT_LINE_WIDTH)
         print("WEIGHT MODIFICATION COMPLETE")
-        print("=" * 80)
+        print("=" * _C.REPORT_LINE_WIDTH)
         print(f"Modified model: {args.output_dir}")
         print(f"Method: {args.method}")
         print(f"Layers modified: {stats['layers_modified']}")
         print(f"Parameters modified: {stats['total_parameters_modified']:,}")
-        print("=" * 80 + "\n")
+        print("=" * _C.REPORT_LINE_WIDTH + "\n")

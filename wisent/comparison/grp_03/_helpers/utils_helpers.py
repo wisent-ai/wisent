@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
-from wisent.core.constants import DEFAULT_BASE_STRENGTH
+from wisent.core.constants import DEFAULT_BASE_STRENGTH, JSON_INDENT
 from wisent.core.utils import preferred_dtype
 
 if TYPE_CHECKING:
@@ -126,7 +126,7 @@ def save_sae_steering_result(result: dict, output_path) -> "Path":
     """
     import json
     with open(output_path, "w") as f:
-        json.dump(result, f, indent=2)
+        json.dump(result, f, indent=JSON_INDENT)
 
     print(f"\nSaved SAE steering vector to {output_path}")
     return output_path

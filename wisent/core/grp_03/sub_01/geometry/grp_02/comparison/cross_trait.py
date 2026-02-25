@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-from wisent.core.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD
+from wisent.core.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CLUSTERS, MAX_SILHOUETTE_CLUSTERS
 
 
 @dataclass
@@ -184,7 +184,7 @@ def cluster_traits(
         # Auto-detect k via silhouette
         from sklearn.metrics import silhouette_score
         best_k, best_sil = 2, -1.0
-        for k in range(2, min(n, 6)):
+        for k in range(MIN_CLUSTERS, min(n, MAX_SILHOUETTE_CLUSTERS)):
             labels = fcluster(Z, t=k, criterion='maxclust')
             if len(set(labels)) < 2:
                 continue

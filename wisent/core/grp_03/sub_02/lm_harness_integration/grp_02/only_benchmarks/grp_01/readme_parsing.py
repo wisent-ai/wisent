@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from .constants import LM_EVAL_TASKS_PATH
+from wisent.core.constants import MAX_TAGS_PER_BENCHMARK, DISPLAY_TOP_N_TINY
 
 
 __all__ = [
@@ -73,8 +74,8 @@ def extract_readme_info(benchmark_name: str) -> Dict[str, Any]:
                         if task_name and len(task_name) > 1:
                             result["tasks"].append(task_name.strip())
 
-        tasks_preview = result["tasks"][:3]
-        tasks_str = f"{tasks_preview}{'...' if len(result['tasks']) > 3 else ''}"
+        tasks_preview = result["tasks"][:DISPLAY_TOP_N_TINY]
+        tasks_str = f"{tasks_preview}{'...' if len(result['tasks']) > DISPLAY_TOP_N_TINY else ''}"
         print(
             f"   {benchmark_name}: Groups={result['groups']}, "
             f"Tags={result['tags']}, Tasks={tasks_str}"
@@ -138,7 +139,7 @@ def determine_skill_risk_tags(benchmark_name: str, readme_content: str = "") -> 
     elif any(word in name_lower for word in ["sycophancy"]):
         determined_tags.append("sycophancy")
 
-    return determined_tags[:3]
+    return determined_tags[:MAX_TAGS_PER_BENCHMARK]
 
 
 def update_benchmark_from_readme(benchmark_name: str, current_config: Dict) -> Dict:

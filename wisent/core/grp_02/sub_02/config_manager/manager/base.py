@@ -8,6 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict
 
+from wisent.core.constants import JSON_INDENT
 from ..types import ModelConfig, NumpyEncoder, DEFAULT_CONFIG_DIR
 
 
@@ -58,7 +59,7 @@ class WisentConfigManagerBase:
         config_path = self._get_config_path(config.model_name)
 
         with open(config_path, "w") as f:
-            json.dump(config.to_dict(), f, indent=2, cls=NumpyEncoder)
+            json.dump(config.to_dict(), f, indent=JSON_INDENT, cls=NumpyEncoder)
 
         self._cache[config.model_name] = config
         return config_path

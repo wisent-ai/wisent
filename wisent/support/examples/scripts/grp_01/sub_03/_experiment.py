@@ -12,6 +12,8 @@ from sklearn.cluster import KMeans
 from wisent.core.constants import (
     DEFAULT_RANDOM_SEED, LINEARITY_N_INIT, STABILITY_N_CLUSTERS,
     N_PAIRS_PER_CONCEPT_DEFAULT,
+    SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, SEPARATOR_WIDTH_WIDE_PLUS,
+    JSON_INDENT,
 )
 from wisent.core.models.wisent_model import WisentModel
 
@@ -37,9 +39,9 @@ def run_experiment(
     3. Test PURE TruthfulQA (should detect 1 concept)
     4. Test PURE HellaSwag (should detect 1 concept)
     """
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("MIXED CONCEPT DETECTION EXPERIMENT")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     # Create output directory
     output_path = Path(output_dir)
@@ -66,10 +68,10 @@ def run_experiment(
     results = {}
     
     # ===== TEST 1: MIXED (should detect 2 concepts) =====
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("TEST 1: MIXED CONCEPTS (TruthfulQA + HellaSwag)")
     print("Expected: Should detect 2 distinct concepts")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     mixed_pairs = truthfulqa_pairs + hellaswag_pairs
     random.seed(seed)
@@ -102,10 +104,10 @@ def run_experiment(
     print(f"Cluster 1: {Counter(cluster_1_sources)}")
     
     # ===== TEST 2: PURE TruthfulQA (should detect 1 concept) =====
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("TEST 2: PURE TruthfulQA")
     print("Expected: Should detect 1 concept")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     print(f"\nExtracting activations for {len(truthfulqa_pairs)} TruthfulQA pairs...")
     tqa_diffs, tqa_sources = extract_difference_vectors(model, truthfulqa_pairs, layer)
@@ -121,10 +123,10 @@ def run_experiment(
     print(tqa_result.evidence_summary)
     
     # ===== TEST 3: PURE HellaSwag (should detect 1 concept) =====
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("TEST 3: PURE HellaSwag")
     print("Expected: Should detect 1 concept")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     print(f"\nExtracting activations for {len(hellaswag_pairs)} HellaSwag pairs...")
     hs_diffs, hs_sources = extract_difference_vectors(model, hellaswag_pairs, layer)
@@ -140,12 +142,12 @@ def run_experiment(
     print(hs_result.evidence_summary)
     
     # ===== SUMMARY =====
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("EXPERIMENT SUMMARY")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     print(f"\n{'Condition':<20} {'Detected':<10} {'Expected':<10} {'Match':<10}")
-    print("-" * 50)
+    print("-" * SEPARATOR_WIDTH_MEDIUM)
     
     conditions = [
         ("Mixed", mixed_result.num_concepts_detected, 2),
@@ -159,7 +161,7 @@ def run_experiment(
     
     # Key metrics comparison
     print(f"\n{'Metric':<30} {'Mixed':<15} {'TruthfulQA':<15} {'HellaSwag':<15}")
-    print("-" * 75)
+    print("-" * SEPARATOR_WIDTH_WIDE_PLUS)
     print(f"{'Eigenvalue ratio (λ2/λ1)':<30} {mixed_result.eigenvalue_ratio:<15.3f} {tqa_result.eigenvalue_ratio:<15.3f} {hs_result.eigenvalue_ratio:<15.3f}")
     print(f"{'Silhouette (k=2)':<30} {mixed_result.silhouette_k2:<15.3f} {tqa_result.silhouette_k2:<15.3f} {hs_result.silhouette_k2:<15.3f}")
     print(f"{'Direction consistency (std)':<30} {mixed_result.direction_consistency_std:<15.3f} {tqa_result.direction_consistency_std:<15.3f} {hs_result.direction_consistency_std:<15.3f}")
@@ -209,7 +211,7 @@ def run_experiment(
                     "bic_difference": to_python_float(hs_result.bic_difference),
                 },
             }
-        }, f, indent=2)
+        }, f, indent=JSON_INDENT)
     
     print(f"\nResults saved to: {output_file}")
     

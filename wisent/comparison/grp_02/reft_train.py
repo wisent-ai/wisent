@@ -13,7 +13,7 @@ from wisent.core.constants import (
     COMPARISON_REFT_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,
     COMPARISON_TRAINING_BATCH_SIZE, COMPARISON_MAX_LENGTH,
     COMPARISON_LOGGING_STEPS, LOREFT_DEFAULT_RANK,
-    GRADIENT_ACCUMULATION_STEPS_DEFAULT,
+    GRADIENT_ACCUMULATION_STEPS_DEFAULT, JSON_INDENT,
 )
 import pyreft
 import transformers
@@ -135,7 +135,7 @@ def train_reft_adapter(
         "training_config": {"learning_rate": learning_rate, "num_epochs": num_epochs, "batch_size": batch_size, "max_length": max_length},
     }
     with open(output_path / "metadata.json", "w") as f:
-        json.dump(metadata, f, indent=2)
+        json.dump(metadata, f, indent=JSON_INDENT)
 
     del reft_model, trainer, model
     gc.collect()

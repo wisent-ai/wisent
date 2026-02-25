@@ -24,7 +24,7 @@ from tqdm import tqdm
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.apps_evaluator import APPSEvaluator
-from wisent.core.constants import DISPLAY_TRUNCATION_LARGE
+from wisent.core.constants import DISPLAY_TRUNCATION_LARGE, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 # Generation config
@@ -236,14 +236,14 @@ def main(
     print(f"\nEvaluating on APPS {split} split")
     if difficulty:
         print(f"Difficulty filter: {difficulty}")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
 
     metrics = evaluate_apps(model, evaluator, split, difficulty, limit)
 
     # Summary
-    print("\n" + "=" * 60)
+    print("\n" + "=" * SEPARATOR_WIDTH_STANDARD)
     print("SUMMARY")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH_STANDARD)
     print(f"Model: {model_name}")
     print(f"Dataset: codeparrot/apps")
     print(f"Split: {split}")
@@ -282,7 +282,7 @@ def main(
     }
 
     with open(output_file, "w") as f:
-        json.dump(output_data, f, indent=2, ensure_ascii=False)
+        json.dump(output_data, f, indent=JSON_INDENT, ensure_ascii=False)
 
     print(f"\nResults saved to: {output_file}")
 

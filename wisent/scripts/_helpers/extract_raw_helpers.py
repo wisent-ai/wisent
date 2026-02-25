@@ -7,7 +7,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 import torch
 
-from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE, EXTRACTION_DEFAULT_PAIR_LIMIT, MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL
+from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE, EXTRACTION_DEFAULT_PAIR_LIMIT, MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL, DEFAULT_MAX_RETRIES, PROGRESS_LOG_INTERVAL_10
 
 
 def hidden_states_to_bytes(hidden_states: torch.Tensor) -> bytes:
@@ -58,12 +58,11 @@ def batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_data: l
         return
 
     batch_size = EXTRACTION_DB_BATCH_SIZE
-    max_retries = 3
 
     for i in range(0, len(activations_data), batch_size):
         batch = activations_data[i:i + batch_size]
 
-        for attempt in range(max_retries):
+        for attempt in range(DEFAULT_MAX_RETRIES):
             try:
                 conn = get_conn_fn()
                 cur = conn.cursor()
@@ -76,9 +75,9 @@ def batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_data: l
                 cur.close()
                 break
             except (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.errors.QueryCanceled) as e:
-                print(f"  [DB batch error attempt {attempt+1}/{max_retries}: {e}]", flush=True)
+                print(f"  [DB batch error attempt {attempt+1}/{DEFAULT_MAX_RETRIES}: {e}]", flush=True)
                 reset_conn_fn()
-                if attempt == max_retries - 1:
+                if attempt == DEFAULT_MAX_RETRIES - 1:
                     raise
 
 
@@ -196,7 +195,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         batch_create_raw_activations(get_conn_fn, reset_conn_fn, activations_batch)
         extracted += 1
 
-        if (pair_idx + 1) % 10 == 0:
+        if (pair_idx + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"    Processed {pair_idx + 1}/{len(db_pairs)} pairs", flush=True)
 
     if device == "cuda":

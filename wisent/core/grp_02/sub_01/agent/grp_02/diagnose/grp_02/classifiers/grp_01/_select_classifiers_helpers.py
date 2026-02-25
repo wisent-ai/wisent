@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 
-from wisent.core.constants import CLASSIFIER_MIN_PERFORMANCE_SCORE, DEFAULT_MAX_CLASSIFIERS_SELECT
+from wisent.core.constants import CLASSIFIER_MIN_PERFORMANCE_SCORE, DEFAULT_MAX_CLASSIFIERS_SELECT, DISPLAY_TOP_N_TINY
 
 
 class ClassifierSelectorHelpersMixin:
@@ -187,7 +187,7 @@ class ClassifierSelectorHelpersMixin:
         
         for issue_type, classifiers in by_issue_type.items():
             summary += f"{issue_type.upper()}: {len(classifiers)} classifiers\n"
-            for classifier in sorted(classifiers, key=lambda x: x.performance_score, reverse=True)[:3]:
+            for classifier in sorted(classifiers, key=lambda x: x.performance_score, reverse=True)[:DISPLAY_TOP_N_TINY]:
                 summary += f"  • {os.path.basename(classifier.path)} "
                 summary += f"(layer {classifier.layer}, score: {classifier.performance_score:.3f})\n"
             summary += "\n"

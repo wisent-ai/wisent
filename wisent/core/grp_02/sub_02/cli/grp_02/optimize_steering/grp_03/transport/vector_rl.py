@@ -21,7 +21,8 @@ from wisent.core.cli.optimize_steering.data.responses import execute_generate_re
 from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.cli.optimize_steering.pipeline import _make_args
 from wisent.core.constants import (COMPARE_TOL, DEFAULT_LIMIT, RL_NUM_EPISODES, RL_EPSILON,
-    PIPELINE_STEERING_STRENGTH, PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P)
+    PIPELINE_STEERING_STRENGTH, PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P,
+    SEPARATOR_WIDTH_WIDE)
 
 
 def _extract_vectors(obj) -> Dict[int, torch.Tensor]:
@@ -84,13 +85,13 @@ def run_vector_rl_loop(args) -> dict:
     limit = getattr(args, 'limit', DEFAULT_LIMIT)
     output_path = getattr(args, 'output', 'best_transport_rl.pt')
 
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"VECTOR RL OPTIMIZATION (ES)")
-    print(f"{'=' * 70}")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"   Model: {args.model}  |  Task: {args.task}")
     print(f"   Base method: {method}  |  Iterations: {max_iter}  |  LR: {lr}")
     print(f"   Noise scale: {noise_scale}  |  Limit: {limit}")
-    print(f"{'=' * 70}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
 
     # 1. Create initial steering object using specified method
     print(f"Creating initial {method} steering object...")

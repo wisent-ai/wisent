@@ -14,7 +14,7 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
-from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PARSER_DEFAULT_NUM_PAIRS, TEST_DETECTOR_DEFAULT_LAYER
+from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PARSER_DEFAULT_NUM_PAIRS, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
@@ -55,7 +55,7 @@ def main():
         pos_activations.append(pos_vec)
         neg_activations.append(neg_vec)
         
-        if (i + 1) % 10 == 0:
+        if (i + 1) % PROGRESS_LOG_INTERVAL_10 == 0:
             print(f"  Processed {i + 1}/{len(pairs)} pairs")
 
     pos_tensor = torch.stack(pos_activations)

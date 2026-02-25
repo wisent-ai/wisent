@@ -2,7 +2,7 @@
 
 import sys
 import json
-from wisent.core.constants import DEFAULT_SCORE, DISPLAY_TRUNCATION_MODEL, DISPLAY_TRUNCATION_TASK
+from wisent.core.constants import DEFAULT_SCORE, DISPLAY_TRUNCATION_MODEL, DISPLAY_TRUNCATION_TASK, JSON_INDENT, SEPARATOR_WIDTH_FULL
 from wisent.core.config_manager import (
     get_cache,
     get_cached_optimization,
@@ -73,14 +73,14 @@ def execute_list(args, cache: OptimizationCache):
 
     print(f"\nFound {len(results)} cached optimization result(s):\n")
     print(f"{'Model':<40} {'Task':<20} {'Method':<8} {'Layer':<6} {'Strength':<10} {'Score':<8}")
-    print("-" * 100)
+    print("-" * SEPARATOR_WIDTH_FULL)
 
     for result in results:
         model_display = result.model[:DISPLAY_TRUNCATION_MODEL - 3] + "..." if len(result.model) > DISPLAY_TRUNCATION_MODEL else result.model
         task_display = result.task[:DISPLAY_TRUNCATION_TASK - 3] + "..." if len(result.task) > DISPLAY_TRUNCATION_TASK else result.task
         print(f"{model_display:<40} {task_display:<20} {result.method:<8} {result.layer:<6} {result.strength:<10.2f} {result.score:<8.3f}")
 
-    print("-" * 100)
+    print("-" * SEPARATOR_WIDTH_FULL)
     print()
 
     return {
@@ -226,7 +226,7 @@ def execute_export(args, cache: OptimizationCache):
     }
 
     with open(args.output, 'w') as f:
-        json.dump(export_data, f, indent=2)
+        json.dump(export_data, f, indent=JSON_INDENT)
 
     print(f"\n   Exported {len(results)} cached result(s) to: {args.output}")
     print()

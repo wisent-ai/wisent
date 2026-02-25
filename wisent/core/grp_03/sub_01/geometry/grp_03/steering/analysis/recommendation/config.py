@@ -7,6 +7,7 @@ import json
 from dataclasses import dataclass, fields, asdict
 from pathlib import Path
 from wisent.core.constants import (
+    JSON_INDENT,
     RECOMMEND_LINEAR_PROBE_HIGH, RECOMMEND_LINEAR_PROBE_LOW,
     RECOMMEND_NONLINEARITY_GAP, RECOMMEND_ICD_HIGH, RECOMMEND_ICD_LOW,
     RECOMMEND_STABILITY_HIGH, RECOMMEND_STABILITY_LOW,
@@ -120,7 +121,7 @@ class RecommendationConfig:
     def save(self, path: str | Path) -> None:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(asdict(self), indent=2))
+        p.write_text(json.dumps(asdict(self), indent=JSON_INDENT))
 
     @classmethod
     def load(cls, path: str | Path) -> RecommendationConfig:

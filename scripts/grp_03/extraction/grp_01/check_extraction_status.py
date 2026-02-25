@@ -3,11 +3,12 @@
 
 import psycopg2
 import sys
+from wisent.core.constants import DB_CONNECT_WAIT_S
 
 DATABASE_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:BsKuEnPFLCFurN4a@aws-0-eu-west-2.pooler.supabase.com:5432/postgres'
 
 def main():
-    conn = psycopg2.connect(DATABASE_URL, connect_timeout=30)
+    conn = psycopg2.connect(DATABASE_URL, connect_timeout=DB_CONNECT_WAIT_S)
     cur = conn.cursor()
 
     # Get total benchmark sets

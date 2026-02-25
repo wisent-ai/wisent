@@ -5,7 +5,7 @@ import torch
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainReport
 from wisent.core.errors import UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, CLASSIFIER_THRESHOLD, CLASSIFIER_MLP_HIDDEN_DIM, CLASSIFIER_TEST_SIZE
+from wisent.core.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, CLASSIFIER_THRESHOLD, CLASSIFIER_MLP_HIDDEN_DIM, CLASSIFIER_TEST_SIZE, BATCH_SIZE_CAP
 
 
 def _torch_dtype_to_numpy(torch_dtype: torch.dtype):
@@ -163,7 +163,7 @@ def train_classifier_on_pairs(
 
     # Determine batch size: use provided value or adaptive default
     if classifier_batch_size is None:
-        batch_size = min(32, len(X_train) // 2)
+        batch_size = min(BATCH_SIZE_CAP, len(X_train) // 2)
     else:
         batch_size = classifier_batch_size
 

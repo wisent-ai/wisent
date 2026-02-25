@@ -5,6 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any
 
+from wisent.core.constants import SEPARATOR_WIDTH_WIDE, JSON_INDENT
 from wisent.examples.scripts.generate_paper_data_helpers import (
     GCS_BUCKET,
     download_all_results,
@@ -154,9 +155,9 @@ def generate_summary_statistics(all_models: Dict[str, Dict]) -> str:
 
 def main():
     """Generate all paper data."""
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("GENERATING PAPER DATA")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     output_dir = Path("/tmp/paper_data")
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -192,7 +193,7 @@ def main():
     print("\n5. Generating figure data...")
     figure_data = generate_figure_data(all_models)
     with open(output_dir / "figure_data.json", "w") as f:
-        json.dump(figure_data, f, indent=2)
+        json.dump(figure_data, f, indent=JSON_INDENT)
     print(f"   Saved: {output_dir / 'figure_data.json'}")
     
     # Generate summary statistics
@@ -212,9 +213,9 @@ def main():
                 check=False,
             )
     
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("PAPER DATA GENERATION COMPLETE")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"Output directory: {output_dir}")
 
 

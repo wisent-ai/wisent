@@ -15,6 +15,7 @@ from wisent.core.constants import (
     EFFECTIVENESS_MODERATE,
     EFFECTIVENESS_SLIGHT,
     MATH_PERCENT_REL_TOL,
+    SEPARATOR_WIDTH_STANDARD,
 )
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mbpp import MBPPExtractor
 
@@ -131,9 +132,9 @@ def generate_performance_summary(comprehensive_metrics: Dict[str, Any]) -> str:
         String summary of performance
     """
     summary = []
-    summary.append("=" * 60)
+    summary.append("=" * SEPARATOR_WIDTH_STANDARD)
     summary.append("COMPREHENSIVE EVALUATION PERFORMANCE SUMMARY")
-    summary.append("=" * 60)
+    summary.append("=" * SEPARATOR_WIDTH_STANDARD)
 
     # Benchmark Performance
     if "base_benchmark_accuracy" in comprehensive_metrics:
@@ -192,6 +193,6 @@ def generate_performance_summary(comprehensive_metrics: Dict[str, Any]) -> str:
 
         summary.append(f"  Steering Effectiveness:  {assessment} ({effectiveness:+.3f})")
 
-    summary.append("=" * 60)
+    summary.append("=" * SEPARATOR_WIDTH_STANDARD)
 
     return "\n".join(summary)

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Full extraction strategy analysis - parallel workers with batch layer queries."""
 import argparse, json, struct, os, sys, multiprocessing
-from wisent.core.constants import COMPARISON_MAX_BATCH_SIZE
+from wisent.core.constants import COMPARISON_MAX_BATCH_SIZE, DEFAULT_MAX_RETRIES, DB_CONNECTION_MAX_RETRIES
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from collections import defaultdict
 from typing import Dict, List, Optional
@@ -57,7 +57,7 @@ def get_model_id(conn, model_name: str):
     return (result[0], result[1]) if result else (None, None)
 
 
-def make_connection(max_retries=5):
+def make_connection(max_retries=DB_CONNECTION_MAX_RETRIES):
     """Create a DB connection with TCP keepalives and no statement_timeout."""
     for attempt in range(max_retries):
         try:
@@ -128,7 +128,7 @@ def _run_benchmark(conn, model_id, num_layers, benchmark, multi_layer):
     return bench_results if bench_results else "NO_DATA"
 
 
-def process_benchmark(args, max_retries=3):
+def process_benchmark(args, max_retries=DEFAULT_MAX_RETRIES):
     """Worker: process one (model, benchmark) pair. Retries on connection errors."""
     model_name, model_id, num_layers, benchmark, multi_layer = args
     for attempt in range(max_retries):

@@ -29,6 +29,7 @@ from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.constants import SEPARATOR_WIDTH_STANDARD
 
 from wisent.core.cli.optimization.core.method_optimizer_config import (
     OptimizationConfig, OptimizationResult, OptimizationSummary,
@@ -163,10 +164,10 @@ class MethodOptimizer:
                 evidence_reductions=evidence_reductions,
             )
         
-        self._log(f"\n{'='*60}")
+        self._log(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
         self._log(f"Optimizing {self.method_name.upper()} with {len(configs)} configurations")
         self._log(f"Baseline: {baseline_score:.4f}")
-        self._log(f"{'='*60}\n")
+        self._log(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
         results: List[OptimizationResult] = []
         best_result: Optional[OptimizationResult] = None
@@ -225,12 +226,12 @@ class MethodOptimizer:
         
         improvement = (best_result.score - baseline_score) if best_result else 0.0
         
-        self._log(f"\n{'='*60}")
+        self._log(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
         self._log(f"Optimization complete in {total_time:.1f}s")
         self._log(f"Baseline: {baseline_score:.4f}")
         self._log(f"Best score: {best_result.score:.4f}" if best_result else "No results")
         self._log(f"Improvement: {improvement:+.4f}" if best_result else "")
-        self._log(f"{'='*60}\n")
+        self._log(f"{'='*SEPARATOR_WIDTH_STANDARD}\n")
         
         return OptimizationSummary(
             best_result=best_result,

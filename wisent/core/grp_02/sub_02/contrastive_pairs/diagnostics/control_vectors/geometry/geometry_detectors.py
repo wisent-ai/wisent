@@ -140,9 +140,9 @@ def detect_cluster_structure(
         return StructureScore(StructureType.CLUSTER, 0.0, 0.0, {"reason": "insufficient_data"})
 
     best_silhouette = -1.0
-    best_k = 2
+    best_k = _C.MIN_CLUSTERS
 
-    for k in range(2, min(cfg.max_clusters + 1, n_samples // 2)):
+    for k in range(_C.MIN_CLUSTERS, min(cfg.max_clusters + 1, n_samples // 2)):
         try:
             labels, centroids, silhouette = _kmeans_with_silhouette(all_activations, k)
             if silhouette > best_silhouette:

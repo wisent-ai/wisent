@@ -4,7 +4,7 @@ import os
 import glob
 import random
 from typing import Optional, Tuple, Any
-from wisent.core.constants import MAX_DEPTH, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
+from wisent.core.constants import MAX_DEPTH, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_MINI
 
 
 def find_working_task_from_group(group_dict, max_depth=MAX_DEPTH, current_depth=0):
@@ -20,7 +20,7 @@ def find_working_task_from_group(group_dict, max_depth=MAX_DEPTH, current_depth=
         else:
             return None, None
         random.shuffle(items)
-        for key, value in items[:5]:
+        for key, value in items[:DISPLAY_TOP_N_MINI]:
             print(f"   {'  ' * current_depth}🔍 Checking: {key}")
             if hasattr(value, 'items') and callable(value.items):
                 result_task, result_name = find_working_task_from_group(value, max_depth, current_depth + 1)

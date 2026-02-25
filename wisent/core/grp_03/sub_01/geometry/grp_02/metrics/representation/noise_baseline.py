@@ -7,7 +7,7 @@ Compare actual metrics to random noise baselines.
 import torch
 import numpy as np
 from typing import Dict, Any
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, VARIANCE_EXPLAINED_90PCT, NOISE_BASELINE_N_SAMPLES
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, VARIANCE_EXPLAINED_90PCT, NOISE_BASELINE_N_SAMPLES, CHANCE_LEVEL_ACCURACY, PCA_MAX_COMPONENTS_NULL
 
 
 def compute_noise_baseline_comparison(
@@ -55,7 +55,7 @@ def compute_noise_baseline_comparison(
 
     # Actual variance concentration (PC1)
     from sklearn.decomposition import PCA
-    n_components = min(50, n - 1, hidden_dim)
+    n_components = min(PCA_MAX_COMPONENTS_NULL, n - 1, hidden_dim)
     if n_components < 1:
         return {"error": "not enough samples for PCA"}
 
@@ -74,7 +74,7 @@ def compute_noise_baseline_comparison(
         clf.fit(X, y)
         actual_linear_probe = float(clf.score(X, y))
     except:
-        actual_linear_probe = 0.5
+        actual_linear_probe = CHANCE_LEVEL_ACCURACY
 
     # Actual steering/activation ratio
     actual_steering_ratio = mean_diff_norm / (mean_norm + NORM_EPS)
@@ -129,7 +129,7 @@ def compute_noise_baseline_comparison(
             noise_clf.fit(noise_X, y)
             noise_metrics['linear_probe'].append(float(noise_clf.score(noise_X, y)))
         except:
-            noise_metrics['linear_probe'].append(0.5)
+            noise_metrics['linear_probe'].append(CHANCE_LEVEL_ACCURACY)
 
         # Noise steering ratio
         noise_metrics['steering_ratio'].append(noise_mean_diff_norm / (mean_norm + NORM_EPS))

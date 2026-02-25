@@ -13,7 +13,7 @@ from wisent.core.steering_methods import SteeringMethodRegistry, SteeringMethodT
 from wisent.core.constants import (
     DEFAULT_LIMIT, DEFAULT_NUM_LAYERS, DEFAULT_SPLIT_RATIO,
     SEARCH_DEFAULT_STRENGTHS, SEARCH_MAX_LAYER_CAP,
-    OPTIMIZE_MAX_TIME_MINUTES,
+    OPTIMIZE_MAX_TIME_MINUTES, SECONDS_PER_MINUTE,
 )
 
 from ..types import (
@@ -102,7 +102,7 @@ class MethodComparisonMixin:
 
             for layer in layers_to_test:
                 for strength in strength_range:
-                    if time.time() - start_time > max_time_minutes * 60:
+                    if time.time() - start_time > max_time_minutes * SECONDS_PER_MINUTE:
                         logger.warning("Time limit reached, stopping optimization")
                         break
 
@@ -168,7 +168,7 @@ class MethodComparisonMixin:
             model_name=self.model_name,
             optimization_type="method_comparison",
             total_configurations_tested=configurations_tested,
-            optimization_time_minutes=optimization_time / 60,
+            optimization_time_minutes=optimization_time / SECONDS_PER_MINUTE,
             best_overall_method=best_overall_config['method'] if best_overall_config else "none",
             best_overall_layer=best_overall_config['layer'] if best_overall_config else 0,
             best_overall_strength=best_overall_config['strength'] if best_overall_config else 0.0,

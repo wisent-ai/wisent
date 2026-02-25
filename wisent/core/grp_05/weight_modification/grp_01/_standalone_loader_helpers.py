@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, TETNO_GATE_SCALE_FACTOR, DEFAULT_LAYER_WEIGHT
+from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, TETNO_GATE_SCALE_FACTOR, DEFAULT_LAYER_WEIGHT, STEERING_BASE_STRENGTH_DEFAULT
 
 
 class TETNOHooks:
@@ -220,7 +220,7 @@ def load_model(
                     repo_id=str(model_path), filename="tetno_steering.pt")
                 tetno_data = torch.load(data_file, map_location="cpu")
 
-            hooks = TETNOHooksClass(model, tetno_data, base_strength=0.5)
+            hooks = TETNOHooksClass(model, tetno_data, base_strength=STEERING_BASE_STRENGTH_DEFAULT)
             hooks.install()
 
     return model, tokenizer, hooks

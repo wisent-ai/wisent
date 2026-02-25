@@ -70,7 +70,7 @@ class RefusalerCleaner(CleanStep):
             ...     system_prompt="You are a helpful assistant.",
             ...     trait_label="honesty",
             ...     trait_description="honest vs dishonest",
-            ...     max_retries=2,
+            ...     max_retries=REFUSAL_CLEANER_MAX_RETRIES,
             ... )
             >>> items = ContrastivePairSet(
             ...     name="example",

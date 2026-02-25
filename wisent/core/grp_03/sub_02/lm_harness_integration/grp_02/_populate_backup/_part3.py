@@ -10,7 +10,7 @@ import sys
 import random
 from typing import Dict, Any, List, Optional
 
-from wisent.core.constants import MAX_RECURSION_DEPTH, EVAL_HARNESS_NUM_SAMPLES_SMALL
+from wisent.core.constants import MAX_RECURSION_DEPTH, EVAL_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TOP_N_TINY
 
 
 def find_working_task_from_group(group_dict: Dict, depth: int = 0,
@@ -32,7 +32,7 @@ def find_working_task_from_group(group_dict: Dict, depth: int = 0,
         return None
     items = list(group_dict.items())
     random.shuffle(items)
-    for item_name, item in items[:3]:
+    for item_name, item in items[:DISPLAY_TOP_N_TINY]:
         indent = "   " + "  " * depth
         print(f"{indent} Checking '{item_name}'...")
         if hasattr(item, 'items') and callable(item.items):

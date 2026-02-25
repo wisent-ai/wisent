@@ -17,7 +17,7 @@ from wisent.core.errors import (
     ModelArchitectureUnknownError,
     NoActivationDataError,
 )
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER, ACTIVATIONS_BATCH_SIZE, COMPARISON_MAX_LENGTH, COMPARISON_STEERING_LAYER
+from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER, ACTIVATIONS_BATCH_SIZE, COMPARISON_MAX_LENGTH, COMPARISON_STEERING_LAYER, CHANCE_LEVEL_ACCURACY
 
 logger = logging.getLogger(__name__)
 
@@ -273,7 +273,7 @@ class _SteeringOptimizerEval:
         confidence_scores = confidence_scores[: len(predictions)]
 
         # Log statistics
-        avg_score = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0.5
+        avg_score = sum(confidence_scores) / len(confidence_scores) if confidence_scores else CHANCE_LEVEL_ACCURACY
         self.logger.debug(
             f"Generated {len(confidence_scores)} classifier confidence scores for {description} (avg={avg_score:.3f})"
         )

@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from wisent.examples.scripts._sae import train_sparse_autoencoder
-from wisent.core.constants import DEFAULT_CLASSIFIER_LR, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_BATCH_SIZE_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER, SAE_TOP_K_ANALYSIS, DISPLAY_TOP_N_SMALL
+from wisent.core.constants import DEFAULT_CLASSIFIER_LR, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_BATCH_SIZE_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER, SAE_TOP_K_ANALYSIS, DISPLAY_TOP_N_SMALL, JSON_INDENT
 from wisent.examples.scripts._sae_analysis import (
     analyze_sae_features,
     visualize_sae_analysis,
@@ -126,7 +126,7 @@ def run_sae_analysis(
             "shared_features": sae_results["shared_features"],
             "top_features": sae_results["top_features"],
         }
-        json.dump(json_results, f, indent=2)
+        json.dump(json_results, f, indent=JSON_INDENT)
     print(f"Saved: {results_file}")
     
     return sae_results

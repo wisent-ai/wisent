@@ -9,7 +9,7 @@ from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
 )
-from wisent.core.constants import BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_BASE_STRENGTH, DEFAULT_STRENGTH
+from wisent.core.constants import BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_BASE_STRENGTH, DEFAULT_STRENGTH, JSON_INDENT
 
 _LOG = setup_logger(__name__)
 
@@ -89,7 +89,7 @@ def export_wicher_model(
         "num_steps": wicher_steering.num_steps,
     }
     with open(config_path, "w") as f:
-        json.dump(wicher_config, f, indent=2)
+        json.dump(wicher_config, f, indent=JSON_INDENT)
     log.info("Saved WICHER config")
 
     _save_standalone_loader(save_path)

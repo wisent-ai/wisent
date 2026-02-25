@@ -9,7 +9,7 @@ if TYPE_CHECKING:
     from torch.nn import Module
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.constants import GUIDED_VARIANCE_THRESHOLD, GUIDED_STRONG_SIGNAL, GUIDED_MODERATE_SIGNAL
+from wisent.core.constants import GUIDED_VARIANCE_THRESHOLD, GUIDED_STRONG_SIGNAL, GUIDED_MODERATE_SIGNAL, SEPARATOR_WIDTH_WIDE
 from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig, GuidedModificationResult, CollateralDamageReport)
 from wisent.core.weight_modification.methods._guided_diagnostics import compute_layer_diagnostics
@@ -87,13 +87,13 @@ def run_guided_modification(
     log = bind(_LOG)
     
     if cfg.verbose:
-        print("\n" + "=" * 70)
+        print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
         print("GUIDED WEIGHT MODIFICATION (Linearity-Driven)")
-        print("=" * 70)
+        print("=" * SEPARATOR_WIDTH_WIDE)
         print(f"Mode: {cfg.mode.value}")
         print(f"Use Fisher weights: {cfg.use_fisher_weights}")
         print(f"Validate collateral: {cfg.validate_collateral}")
-        print("=" * 70 + "\n")
+        print("=" * SEPARATOR_WIDTH_WIDE + "\n")
     
     # Step 1: Compute layer diagnostics
     diagnostics = compute_layer_diagnostics(

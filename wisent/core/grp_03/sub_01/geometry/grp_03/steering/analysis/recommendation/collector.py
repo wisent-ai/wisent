@@ -6,7 +6,7 @@ import tempfile
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, RECOMMEND_COLLECTOR_PER_TYPE, DATA_SPLIT_SEED
+from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, JSON_INDENT, RECOMMEND_COLLECTOR_PER_TYPE, DATA_SPLIT_SEED
 from wisent.core.geometry.data.enriched_builder import build_enriched_from_db, generate_and_collect_enriched
 
 # ── Data types ─────────────────────────────────────────────────
@@ -57,7 +57,7 @@ class GroundTruthDataset:
         p = Path(path)
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(json.dumps(
-            [r.to_dict() for r in self.records], indent=2))
+            [r.to_dict() for r in self.records], indent=JSON_INDENT))
 
     @classmethod
     def load(cls, path: str | Path) -> GroundTruthDataset:

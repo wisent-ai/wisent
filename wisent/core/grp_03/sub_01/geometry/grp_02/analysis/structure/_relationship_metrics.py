@@ -11,7 +11,7 @@ import torch
 import numpy as np
 from typing import Dict, Any
 
-from wisent.core.constants import NORM_EPS
+from wisent.core.constants import NORM_EPS, MIN_CLOUD_POINTS
 from wisent.core.geometry.analysis.structure._cloud_metrics import (
     compute_cloud_shape,
     compute_cone_fit,
@@ -31,7 +31,7 @@ def compute_two_cloud_relationship(
     neg = neg_activations.float().cpu().numpy()
     n_pos, d = pos.shape
     n_neg = neg.shape[0]
-    if n_pos < 3 or n_neg < 3:
+    if n_pos < MIN_CLOUD_POINTS or n_neg < MIN_CLOUD_POINTS:
         return {"error": "need at least 3 points in each cloud"}
     pos_centroid = pos.mean(axis=0)
     neg_centroid = neg.mean(axis=0)

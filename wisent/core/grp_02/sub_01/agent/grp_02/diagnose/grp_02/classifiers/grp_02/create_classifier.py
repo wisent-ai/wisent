@@ -13,7 +13,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
 from wisent.core.classifier.classifier import ActivationClassifier, Classifier
-from wisent.core.constants import CLASSIFIER_TRAINING_SAMPLES, CLASSIFIER_TEST_SIZE, CLASSIFIER_DEFAULT_THRESHOLD, CLASSIFIER_MIN_TARGET_SCORE
+from wisent.core.constants import CLASSIFIER_TRAINING_SAMPLES, CLASSIFIER_TEST_SIZE, CLASSIFIER_DEFAULT_THRESHOLD, CLASSIFIER_MIN_TARGET_SCORE, LAYER_STRIDE_DEFAULT
 from wisent.core.errors import ClassifierCreationError, InsufficientDataError
 
 from ...activations import Activations
@@ -195,7 +195,7 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
         best_result = None
         best_score = 0.0
 
-        layers_to_test = range(layer_range[0], layer_range[1] + 1, 2)
+        layers_to_test = range(layer_range[0], layer_range[1] + 1, LAYER_STRIDE_DEFAULT)
 
         for layer in layers_to_test:
             for classifier_type in classifier_types:

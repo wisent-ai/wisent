@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.constants import SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_STANDARD, SEPARATOR_WIDTH_TABLE
 
 from ._data_loading import (
     load_truthfulqa_pairs,
@@ -29,9 +30,9 @@ from ._visualization_advanced import visualize_k_concepts
 def run_analyze_layers_mode(args):
     """Run multi-layer separability analysis mode."""
     # Multi-layer analysis
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("MULTI-LAYER SEPARABILITY ANALYSIS")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     vis_output = Path(args.vis_output_dir)
     vis_output.mkdir(parents=True, exist_ok=True)
@@ -66,7 +67,7 @@ def run_analyze_layers_mode(args):
     
     # Print results
     print(f"\n{'Layer':<8} {'Silhouette':<12} {'Dir Sim':<12} {'Purity':<12} {'Sep Score':<12}")
-    print("-" * 56)
+    print("-" * SEPARATOR_WIDTH_TABLE)
     for layer_idx in sorted(layer_results.keys()):
         r = layer_results[layer_idx]
         print(f"{layer_idx:<8} {r['silhouette']:<12.3f} {r['direction_similarity']:<12.3f} {r['cluster_purity']:<12.3f} {r['separability_score']:<12.3f}")
@@ -102,9 +103,9 @@ def run_analyze_layers_mode(args):
 def run_attribute_mode(args):
     """Run attribution to trace pairs to concepts."""
     # Run attribution to trace pairs to concepts
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("CONCEPT ATTRIBUTION - Trace Pairs to Detected Concepts")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     # Load pairs
     print("\nLoading TruthfulQA pairs...")
@@ -145,9 +146,9 @@ def run_attribute_mode(args):
     print_concept_attribution(attribution, show_samples=True)
     
     # Summary of alignment with true sources
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print("VALIDATION: How well do detected concepts align with true sources?")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     for concept_id, details in attribution['concept_details'].items():
         sources = details['source_distribution']
@@ -162,9 +163,9 @@ def run_attribute_mode(args):
 def run_detect_k_mode(args):
     """Run k-concept detection mode."""
     # Run k-concept detection
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("K-CONCEPT DETECTION")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     vis_output = Path(args.vis_output_dir)
     vis_output.mkdir(parents=True, exist_ok=True)
@@ -218,11 +219,11 @@ def run_detect_k_mode(args):
     print(f"  {hs_detection['recommendation']}")
     
     # Summary
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("K-CONCEPT DETECTION SUMMARY")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"\n{'Sample':<20} {'Detected':<15} {'Expected':<15} {'Match':<10}")
-    print("-" * 60)
+    print("-" * SEPARATOR_WIDTH_STANDARD)
     print(f"{'Mixed':<20} {mixed_detection['detected_concepts']:<15} {'2':<15} {'YES' if mixed_detection['detected_concepts'] == 2 else 'NO':<10}")
     print(f"{'TruthfulQA':<20} {tqa_detection['detected_concepts']:<15} {'1':<15} {'YES' if tqa_detection['detected_concepts'] == 1 else 'NO':<10}")
     print(f"{'HellaSwag':<20} {hs_detection['detected_concepts']:<15} {'1':<15} {'YES' if hs_detection['detected_concepts'] == 1 else 'NO':<10}")

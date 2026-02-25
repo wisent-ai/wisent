@@ -17,7 +17,7 @@ from wisent.core.geometry_runner import (
     analyze_with_nonsense_baseline,
 )
 from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import PAIR_COUNT_ABLATION_SERIES
+from wisent.core.constants import PAIR_COUNT_ABLATION_SERIES, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
 from wisent.core.models.wisent_model import WisentModel
 from wisent.examples.scripts._discovery_utils import (
     gcs_sync_download,
@@ -38,9 +38,9 @@ def run_discovery_for_model(model_name: str, output_dir: Path, with_nonsense_bas
     category_info = load_category_directions()
     search_space = GeometrySearchSpace()
     
-    print(f"\n{'=' * 70}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
     print(f"MODEL: {model_name}")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     # Download existing results from GCS for resume
     gcs_sync_download(model_name, output_dir)
@@ -91,9 +91,9 @@ def run_discovery_for_model(model_name: str, output_dir: Path, with_nonsense_bas
     # Run for each remaining category
     for cat_name in remaining:
         benchmarks = categories[cat_name]
-        print(f"\n{'-' * 50}")
+        print(f"\n{'-' * SEPARATOR_WIDTH_MEDIUM}")
         print(f"Category: {cat_name.upper()} ({len(benchmarks)} benchmarks)")
-        print("-" * 50)
+        print("-" * SEPARATOR_WIDTH_MEDIUM)
         
         info = category_info.get(cat_name, {})
         description = info.get("description", "")
@@ -226,7 +226,7 @@ def run_discovery_for_model(model_name: str, output_dir: Path, with_nonsense_bas
         json.dump({
             "model": model_name,
             "categories": all_categories
-        }, f, indent=2)
+        }, f, indent=JSON_INDENT)
     
     # Upload summary to GCS
     gcs_upload_file(summary_file, model_name)

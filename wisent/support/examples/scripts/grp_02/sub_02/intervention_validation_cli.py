@@ -7,7 +7,7 @@ from pathlib import Path
 from dataclasses import asdict
 from typing import List
 
-from wisent.core.constants import DEFAULT_RANDOM_SEED, PARSER_DEFAULT_MAX_REGEN_ATTEMPTS
+from wisent.core.constants import DEFAULT_RANDOM_SEED, PARSER_DEFAULT_MAX_REGEN_ATTEMPTS, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
 from wisent.examples.scripts.intervention_validation_cli_helpers import (
     GCS_BUCKET,
     GCS_PREFIX,
@@ -25,9 +25,9 @@ def run_intervention_validation(
 ):
     """Run intervention validation using wisent CLI."""
     
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("INTERVENTION VALIDATION (using wisent CLI)")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"Model: {model_name}")
     
     # Load diagnosis
@@ -60,9 +60,9 @@ def run_intervention_validation(
     results = []
     
     for bench, diag, layer, signal, linear in test_benchmarks:
-        print(f"\n{'-' * 50}")
+        print(f"\n{'-' * SEPARATOR_WIDTH_MEDIUM}")
         print(f"Benchmark: {bench} ({diag})")
-        print("-" * 50)
+        print("-" * SEPARATOR_WIDTH_MEDIUM)
         
         # Run baseline (no steering)
         print("  Running baseline (no steering)...")
@@ -110,9 +110,9 @@ def run_intervention_validation(
         print(f"  Best result: strength={best_strength}, change={acc_change:+.3f}, success={steering_success}")
     
     # Summary
-    print("\n" + "=" * 70)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("VALIDATION SUMMARY")
-    print("=" * 70)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     
     for diag in ["LINEAR", "NONLINEAR", "NO_SIGNAL"]:
         diag_results = [r for r in results if r.diagnosis == diag]
@@ -147,7 +147,7 @@ def run_intervention_validation(
                 "linear_success_rate": linear_success,
                 "no_signal_success_rate": no_signal_success,
             }
-        }, f, indent=2)
+        }, f, indent=JSON_INDENT)
     
     print(f"\nResults saved to: {output_file}")
     

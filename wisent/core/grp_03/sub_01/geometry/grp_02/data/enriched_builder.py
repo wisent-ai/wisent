@@ -6,6 +6,8 @@ import struct
 from collections import defaultdict
 from typing import Optional
 
+from wisent.core.constants import BYTES_PER_MB
+
 
 def build_enriched_from_db(
     model_name: str,
@@ -163,7 +165,7 @@ def _query_and_build(
     with open(out_path, 'w') as f:
         json.dump(output, f)
 
-    size_mb = os.path.getsize(out_path) / (1024 * 1024)
+    size_mb = os.path.getsize(out_path) / BYTES_PER_MB
     print(f"  DB: Wrote enriched file ({size_mb:.1f} MB): {out_path}")
     return out_path
 
