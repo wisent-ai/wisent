@@ -1,4 +1,5 @@
-"""MLP, CAA, OSTRZE, and BROYDEN steering method constants."""
+"""MLP steering method constants."""
+from wisent.core.grp_05.sub_constants.for_experiments.by_method.sub_simple._caa import *  # noqa: F401,F403
 
 # --- Core MLP parameters ---
 MLP_HIDDEN_DIM = 256
@@ -26,26 +27,3 @@ HIERARCHICAL_MLP_NUM_LAYERS_LIST = (1, 2, 3)
 
 # --- MLP min pairs ---
 MIN_PAIRS_MLP = 50
-
-# --- Core CAA parameters ---
-CAA_MIN_COSINE_SIMILARITY = 0.3
-CAA_MAX_COSINE_SIMILARITY = 0.95
-
-# --- CAA min pairs ---
-MIN_PAIRS_CAA = 10
-
-# --- Core OSTRZE parameters ---
-OSTRZE_C = 1.0
-
-# --- OSTRZE parser defaults ---
-OSTRZE_DEFAULT_ITERATIONS = 1000
-
-# --- OSTRZE min pairs ---
-MIN_PAIRS_OSTRZE = 20
-
-# --- Core BROYDEN parameters ---
-BROYDEN_DEFAULT_NUM_STEPS = 3
-BROYDEN_DEFAULT_ALPHA = 1.0
-BROYDEN_DEFAULT_ETA = 0.5
-BROYDEN_DEFAULT_BETA = 0.0
-BROYDEN_DEFAULT_ALPHA_DECAY = 1.0
