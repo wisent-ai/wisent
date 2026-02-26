@@ -10,7 +10,7 @@ import torch.nn.functional as F
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.activations.core.atoms import LayerName
 from wisent.core.steering._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
-from wisent.core.constants import ZERO_THRESHOLD, MAX_PCA_COMPONENTS_ANALYSIS
+from wisent.core.constants import ZERO_THRESHOLD, CONCEPT_PCA_COMPONENTS
 
 _LOG = setup_logger(__name__)
 
@@ -233,7 +233,7 @@ def load_compressed_vectors(path: str) -> Tuple[Dict[LayerName, torch.Tensor], U
 def explained_variance_analysis(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    max_components: int = MAX_PCA_COMPONENTS_ANALYSIS,
+    max_components: int = CONCEPT_PCA_COMPONENTS,
 ) -> Tuple[List[float], List[float]]:
     """
     Analyze how many directions are needed to explain the behavioral difference.

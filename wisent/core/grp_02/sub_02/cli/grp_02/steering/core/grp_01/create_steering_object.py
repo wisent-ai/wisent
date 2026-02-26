@@ -23,8 +23,8 @@ from wisent.core.constants import (
     MLP_HIDDEN_DIM,
     MLP_LEARNING_RATE,
     MLP_NUM_LAYERS,
-    MLP_OPTIMIZATION_STEPS,
-    MLP_WEIGHT_DECAY,
+    DEFAULT_OPTIMIZATION_STEPS,
+    DEFAULT_WEIGHT_DECAY,
     OSTRZE_C,
 )
 
@@ -259,9 +259,9 @@ def _create_simple_steering_object(
             hidden_dim=getattr(args, 'mlp_hidden_dim', MLP_HIDDEN_DIM),
             num_layers=getattr(args, 'mlp_num_layers', MLP_NUM_LAYERS),
             dropout=getattr(args, 'mlp_dropout', MLP_DROPOUT),
-            epochs=getattr(args, 'mlp_epochs', MLP_OPTIMIZATION_STEPS),
+            epochs=getattr(args, 'mlp_epochs', DEFAULT_OPTIMIZATION_STEPS),
             learning_rate=getattr(args, 'mlp_learning_rate', MLP_LEARNING_RATE),
-            weight_decay=getattr(args, 'mlp_weight_decay', MLP_WEIGHT_DECAY),
+            weight_decay=getattr(args, 'mlp_weight_decay', DEFAULT_WEIGHT_DECAY),
         )
         obj_class = MLPSteeringObject
     else:

@@ -37,12 +37,12 @@ def execute_modify_weights(args):
         if getattr(args, 'verbose', False):
             print(f"Auto-selected --components {args.components} from --extraction-component {extraction_component}")
     if args.verbose:
-        print("\n" + "=" * _C.REPORT_LINE_WIDTH)
+        print("\n" + "=" * _C.SEPARATOR_WIDTH_REPORT)
         print("WEIGHT MODIFICATION")
-        print("=" * _C.REPORT_LINE_WIDTH)
+        print("=" * _C.SEPARATOR_WIDTH_REPORT)
         print(f"Model: {args.model}")
         print(f"Output: {args.output_dir}")
-        print("=" * _C.REPORT_LINE_WIDTH + "\n")
+        print("=" * _C.SEPARATOR_WIDTH_REPORT + "\n")
     steering_vectors = _load_or_generate_vectors(args, needs_auto_selection)
     harmless_vectors = _load_harmless_vectors(args)
     wisent_model, model, tokenizer = _load_model(args)
@@ -196,7 +196,7 @@ def _load_model(args):
                 elif hasattr(m, 'transformer') and hasattr(m.transformer, 'h'):
                     self.num_layers = len(m.transformer.h)
                 else:
-                    self.num_layers = _C.DEFAULT_NUM_LAYERS
+                    self.num_layers = _C.DEFAULT_NUM_HIDDEN_LAYERS
         wisent_model = ModelInfo(model)
     else:
         wisent_model = WisentModel(args.model, device=getattr(args, 'device', None))
@@ -276,11 +276,11 @@ def _print_timing(args, start_time: float):
 def _print_summary(args, stats: Dict):
     """Print final summary."""
     if args.verbose:
-        print("\n" + "=" * _C.REPORT_LINE_WIDTH)
+        print("\n" + "=" * _C.SEPARATOR_WIDTH_REPORT)
         print("WEIGHT MODIFICATION COMPLETE")
-        print("=" * _C.REPORT_LINE_WIDTH)
+        print("=" * _C.SEPARATOR_WIDTH_REPORT)
         print(f"Modified model: {args.output_dir}")
         print(f"Method: {args.method}")
         print(f"Layers modified: {stats['layers_modified']}")
         print(f"Parameters modified: {stats['total_parameters_modified']:,}")
-        print("=" * _C.REPORT_LINE_WIDTH + "\n")
+        print("=" * _C.SEPARATOR_WIDTH_REPORT + "\n")

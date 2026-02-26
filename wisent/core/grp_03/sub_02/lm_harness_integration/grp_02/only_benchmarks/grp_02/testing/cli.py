@@ -7,7 +7,7 @@ import os
 import sys
 from typing import Dict
 
-from wisent.core.constants import JSON_INDENT, REPORT_LINE_WIDTH, SEPARATOR_WIDTH_STANDARD
+from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD
 from ..registry import CORE_BENCHMARKS
 from ..readme_parsing import update_all_benchmarks_from_readme
 from ..matching import (
@@ -56,13 +56,13 @@ def main() -> None:
             "original_tags": tags,
         }
 
-        print(f"\n{'='*REPORT_LINE_WIDTH}")
+        print(f"\n{'='*SEPARATOR_WIDTH_REPORT}")
         print(f"BENCHMARK {current_idx}/{total_benchmarks}: {benchmark_name}")
-        print("=" * REPORT_LINE_WIDTH)
+        print("=" * SEPARATOR_WIDTH_REPORT)
 
-        print(f"\n{'='*REPORT_LINE_WIDTH}")
+        print(f"\n{'='*SEPARATOR_WIDTH_REPORT}")
         print(f"STEP 1: Testing dataset creation for {benchmark_name}")
-        print("=" * REPORT_LINE_WIDTH)
+        print("=" * SEPARATOR_WIDTH_REPORT)
 
         dataset_success, actual_tags = test_benchmark_creation(benchmark_name, benchmark_config)
 
@@ -75,9 +75,9 @@ def main() -> None:
         if dataset_success:
             results["dataset_creation"]["successful"].append(benchmark_name)
 
-            print(f"\n{'='*REPORT_LINE_WIDTH}")
+            print(f"\n{'='*SEPARATOR_WIDTH_REPORT}")
             print(f"STEP 2: Testing CLI integration for {benchmark_name}")
-            print("=" * REPORT_LINE_WIDTH)
+            print("=" * SEPARATOR_WIDTH_REPORT)
 
             cli_success = test_single_benchmark_direct(benchmark_name, benchmark_config)
 
@@ -99,9 +99,9 @@ def main() -> None:
             print(f"Tags: {', '.join(tags)}")
             sys.exit(1)
 
-        print(f"\n{'='*REPORT_LINE_WIDTH}")
+        print(f"\n{'='*SEPARATOR_WIDTH_REPORT}")
         print("CURRENT STATUS")
-        print("=" * REPORT_LINE_WIDTH)
+        print("=" * SEPARATOR_WIDTH_REPORT)
         print(f"Dataset creation successful: {len(results['dataset_creation']['successful'])}")
         print(f"Dataset creation failed: {len(results['dataset_creation']['failed'])}")
         print(f"CLI testing successful: {len(results['cli_testing']['successful'])}")

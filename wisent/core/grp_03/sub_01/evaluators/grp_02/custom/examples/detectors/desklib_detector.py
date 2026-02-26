@@ -19,7 +19,7 @@ import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoConfig, AutoModel, PreTrainedModel
 
-from wisent.core.constants import NEAR_ZERO_TOL, DESKLIB_MAX_LENGTH, MIN_RESPONSE_TEXT_LENGTH
+from wisent.core.constants import NEAR_ZERO_TOL, MIN_RESPONSE_TEXT_LENGTH
 from wisent.core.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
@@ -69,16 +69,15 @@ class DesklibDetectorEvaluator(CustomEvaluator):
     Score is normalized to [0, 1] where higher = more human-like.
     """
     
-    def __init__(self, device: Optional[str] = None, max_length: int = DESKLIB_MAX_LENGTH):
+    def __init__(self, device: Optional[str] = None, max_length: int | None = None):
         config = CustomEvaluatorConfig(
             name="desklib_detector",
             description="Desklib AI detector (RAID benchmark leader, higher = more human-like)",
         )
         super().__init__(name="desklib_detector", description=config.description, config=config)
-        
+
         self.model_id = "desklib/ai-text-detector-v1.01"
-        self.max_length = max_length
-        
+
         # Set device
         if device:
             self.device = torch.device(device)
@@ -88,8 +87,12 @@ class DesklibDetectorEvaluator(CustomEvaluator):
             self.device = torch.device("mps")
         else:
             self.device = torch.device("cpu")
-        
+
         self._load_model()
+
+        if max_length is None:
+            max_length = self.tokenizer.model_max_length
+        self.max_length = max_length
     
     def _load_model(self):
         """Load the Desklib model and tokenizer."""
@@ -147,14 +150,14 @@ class DesklibDetectorEvaluator(CustomEvaluator):
 
 def create_desklib_detector_evaluator(
     device: Optional[str] = None,
-    max_length: int = DESKLIB_MAX_LENGTH,
+    max_length: int | None = None,
     **kwargs
 ) -> DesklibDetectorEvaluator:
     """Create a Desklib detector evaluator.
     
     Args:
         device: Device to run on (cuda, mps, cpu)
-        max_length: Max token length (default DESKLIB_MAX_LENGTH)
+        max_length: Max token length (default: tokenizer.model_max_length)
     
     Returns:
         DesklibDetectorEvaluator instance

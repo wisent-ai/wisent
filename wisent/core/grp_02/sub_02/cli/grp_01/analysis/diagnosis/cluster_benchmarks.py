@@ -44,7 +44,7 @@ RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", 
 
 from wisent.core.constants import (
     NORM_EPS, CLUSTER_PROGRESS_INTERVAL, CLUSTER_MIN_PAIRS,
-    GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT,
+    GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS,
     DEFAULT_RANDOM_SEED, JSON_INDENT, CHANCE_LEVEL_ACCURACY,
 )
 from wisent.core.cli.analysis.diagnosis.cluster_benchmarks_activations import (
@@ -145,7 +145,7 @@ def execute_cluster_benchmarks(args):
     logger.info(f"Loaded {len(all_pairs)} benchmarks")
     
     # Test configurations
-    geo_config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_DEFAULT)
+    geo_config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=DIAG_OPTIMIZATION_STEPS)
     all_results = []
     best_config = None
     best_acc = 0

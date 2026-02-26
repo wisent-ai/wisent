@@ -33,15 +33,10 @@ from tqdm import tqdm
 from typing import Optional
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.models.config import get_generate_kwargs
 from wisent.core.constants import (
     LIVEMATHBENCH_K_VALUES_SMALL,
     LIVEMATHBENCH_TAU_VALUES,
-    LIVEMATHBENCH_MAX_NEW_TOKENS,
-    LIVEMATHBENCH_REASONING_MAX_NEW_TOKENS,
-    LIVEMATHBENCH_SAMPLING_TEMPERATURE,
-    LIVEMATHBENCH_SAMPLING_TOP_P,
-    LIVEMATHBENCH_REPETITION_PENALTY,
-    DEFAULT_TOP_K,
 )
 from wisent.core.evaluators.benchmark_specific.livemathbench_evaluator import (
     LiveMathBenchEvaluator,
@@ -75,32 +70,14 @@ DATASET_CONFIGS = {
 
 # Generation configs following LiveMathBench paper
 # For greedy decoding (temperature=0)
-GREEDY_CONFIG = {
-    "max_new_tokens": LIVEMATHBENCH_MAX_NEW_TOKENS,
-    "temperature": 0.0,
-    "do_sample": False,
-}
+GREEDY_CONFIG = get_generate_kwargs(temperature=0.0, do_sample=False)
 
 # For sampling (temperature=1.0)
 # Paper: temperature=1.0, top_p=0.8, top_k=50, repetition_penalty=1.0
-SAMPLING_CONFIG = {
-    "max_new_tokens": LIVEMATHBENCH_MAX_NEW_TOKENS,
-    "temperature": LIVEMATHBENCH_SAMPLING_TEMPERATURE,
-    "top_p": LIVEMATHBENCH_SAMPLING_TOP_P,
-    "top_k": DEFAULT_TOP_K,
-    "repetition_penalty": LIVEMATHBENCH_REPETITION_PENALTY,
-    "do_sample": True,
-}
+SAMPLING_CONFIG = get_generate_kwargs()
 
 # Reasoning model config (longer context)
-REASONING_CONFIG = {
-    "max_new_tokens": LIVEMATHBENCH_REASONING_MAX_NEW_TOKENS,
-    "temperature": LIVEMATHBENCH_SAMPLING_TEMPERATURE,
-    "top_p": LIVEMATHBENCH_SAMPLING_TOP_P,
-    "top_k": DEFAULT_TOP_K,
-    "repetition_penalty": LIVEMATHBENCH_REPETITION_PENALTY,
-    "do_sample": True,
-}
+REASONING_CONFIG = get_generate_kwargs()
 
 
 def get_language(config: str) -> str:

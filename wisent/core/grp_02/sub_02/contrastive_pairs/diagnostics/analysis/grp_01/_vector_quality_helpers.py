@@ -6,7 +6,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import numpy as np
 
-from wisent.core.constants import NORM_EPS, DATA_SPLIT_RATIO, MIN_SAMPLES_PCA, PCA_QUALITY_COMPONENTS, CUMULATIVE_VARIANCE_TOP_N, MIN_CLUSTERS, MIN_CLOUD_POINTS
+from wisent.core.constants import NORM_EPS, DEFAULT_SPLIT_RATIO, MIN_SAMPLES_PCA, PCA_QUALITY_COMPONENTS, CUMULATIVE_VARIANCE_TOP_N, MIN_CLUSTERS, MIN_CLOUD_POINTS
 from wisent.core.contrastive_pairs.diagnostics.analysis.vector_quality import (
     _cosine_similarity,
     _create_vector_from_diffs,
@@ -192,7 +192,7 @@ def _compute_held_out_transfer(
         return None
     
     # 80/20 split
-    n_train = int(n * DATA_SPLIT_RATIO)
+    n_train = int(n * DEFAULT_SPLIT_RATIO)
     if n_train < 2 or n - n_train < 1:
         return None
     

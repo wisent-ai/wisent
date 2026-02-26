@@ -4,7 +4,7 @@ import sys
 import torch
 
 from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import JSON_INDENT, NORM_EPS, DEFAULT_STRENGTH, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, STEERING_GEN_MAX_TOKENS_LONG, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.constants import JSON_INDENT, NORM_EPS, DEFAULT_STRENGTH, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
 
 
 def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy):
@@ -195,14 +195,14 @@ def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer
         choices = [pair.negative_response.model_response, pair.positive_response.model_response]
         messages = [{"role": "user", "content": question}]
 
-        resp_base = model.generate([messages], **get_generate_kwargs(max_new_tokens=STEERING_GEN_MAX_TOKENS_LONG))[0]
+        resp_base = model.generate([messages], **get_generate_kwargs())[0]
         eval_kwargs = {'response': resp_base, 'expected': expected, 'model': model, 'question': question, 'choices': choices, 'task_name': task_name}
         if hasattr(pair, 'metadata') and pair.metadata:
             eval_kwargs.update({k: v for k, v in pair.metadata.items() if v is not None and k not in eval_kwargs})
         base_correct = evaluator.evaluate(**eval_kwargs).ground_truth == "TRUTHFUL"
 
         model.set_steering_from_raw({layer_str: steering_vector}, scale=steering_strength, normalize=False)
-        resp_steer = model.generate([messages], **get_generate_kwargs(max_new_tokens=STEERING_GEN_MAX_TOKENS_LONG))[0]
+        resp_steer = model.generate([messages], **get_generate_kwargs())[0]
         model.clear_steering()
 
         eval_kwargs['response'] = resp_steer

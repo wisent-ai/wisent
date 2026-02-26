@@ -7,30 +7,20 @@ import torch
 
 from wisent.core.models.core.atoms import SteeringPlan, GenerationStats, TopLogits
 from wisent.core.prompts.core.atom import ChatMessage
-from wisent.core.constants import (
-    DEFAULT_MAX_NEW_TOKENS, DEFAULT_INFERENCE_TEMPERATURE,
-    DEFAULT_TOP_P, DEFAULT_TOP_K, DEFAULT_REPETITION_PENALTY,
-    DEFAULT_NO_REPEAT_NGRAM_SIZE, DEFAULT_BASE_STRENGTH, MODEL_COLLECT_TOPK,
-)
+from wisent.core.constants import DEFAULT_STRENGTH, MODEL_COLLECT_TOPK
+from wisent.core.models.config import get_generate_kwargs
 
 
 @torch.inference_mode()
 def _generate_with_stats(
     self,
     inputs: list[list[ChatMessage]],
-    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
-    temperature: float = DEFAULT_INFERENCE_TEMPERATURE,
-    top_p: float = DEFAULT_TOP_P,
-    top_k: int = DEFAULT_TOP_K,
-    repetition_penalty: float = DEFAULT_REPETITION_PENALTY,
-    no_repeat_ngram_size: int = DEFAULT_NO_REPEAT_NGRAM_SIZE,
-    do_sample: bool = True,
     num_return_sequences: int = 1,
     collect_topk: int = MODEL_COLLECT_TOPK,
     use_steering: bool = False,
     steering_plan: SteeringPlan | None = None,
     steering_object: "BaseSteeringObject | None" = None,
-    steering_strength: float = DEFAULT_BASE_STRENGTH,
+    steering_strength: float = DEFAULT_STRENGTH,
     enable_thinking: bool = False,
     ensure_varied_responses: bool = False,
     phrase_ledger: Any = None,
@@ -39,17 +29,12 @@ def _generate_with_stats(
     """
     Generate with efficient per-token stats (logits / probs), compatible with steering.
 
+    Sampling parameters come from the user's InferenceConfig by default.
+    Pass overrides via ``**gen_kwargs``.
+
     attributes:
         inputs:
             list of chat messages (each a list of {'role','content'} dicts).
-        max_new_tokens:
-            max tokens to generate (beyond the prompt).
-        temperature:
-            sampling temperature (0 = greedy, 1 = default sampling).
-        top_p:
-            nucleus sampling probability (0 = no filtering, 1 = full filtering).
-        do_sample:
-            if False, uses greedy decoding (top_k=1).
         num_return_sequences:
             number of completions to generate per input.
         collect_topk:
@@ -61,28 +46,15 @@ def _generate_with_stats(
         enable_thinking:
             If False, disable thinking/reasoning mode.
         **gen_kwargs:
-            additional kwargs passed to 'model.generate()'.
+            overrides for generation kwargs (temperature, max_new_tokens, etc.).
 
     returns:
         - list of generated strings (length = len(inputs) * num_return_sequences).
         - list of GenerationStats (length = len(inputs) * num_return_sequences).
-          Each GenerationStats has:
-            tokens:
-                list of generated token ids (length = actual generated tokens).
-            per_step:
-                 if collect_topk > 0, list of TopLogits (length = actual generated tokens).
-                Each TopLogits has:
-                    token_id:
-                        the generated token id at that step.
-                    logit:
-                        the raw logit for that token.
-                    prob:
-                        the softmax probability for that token.
-                    topk_ids:
-                        if collect_topk > 0, list of top-k token ids at that step.
-                    topk_probs:
-                        if collect_topk > 0, list of top-k probabilities at that step.
     """
+    # Build generation kwargs from user config + caller overrides
+    resolved = get_generate_kwargs(**gen_kwargs)
+
     if steering_object is not None:
         self.apply_steering_object(steering_object, base_strength=steering_strength)
     elif use_steering:
@@ -93,17 +65,10 @@ def _generate_with_stats(
     # Build generation kwargs
     generation_kwargs = dict(
         **batch,
-        max_new_tokens=max_new_tokens,
-        temperature=temperature,
-        top_p=top_p,
-        top_k=top_k,
-        repetition_penalty=repetition_penalty,
-        no_repeat_ngram_size=no_repeat_ngram_size,
-        do_sample=do_sample,
+        **resolved,
         num_return_sequences=num_return_sequences,
         return_dict_in_generate=True,
         output_scores=True,
-        **gen_kwargs,
     )
 
     # Add diversity processors if requested

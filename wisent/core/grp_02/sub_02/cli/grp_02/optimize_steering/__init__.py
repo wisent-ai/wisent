@@ -50,7 +50,7 @@ from wisent.core.cli.optimize_steering.pipeline import (
 from wisent.core.cli.optimize_steering.welfare import _execute_welfare_optimization
 from wisent.core.cli.optimize_steering.personalization import _execute_personalization_optimization
 from wisent.core.cli.optimize_steering.continual import execute_continual_learning
-from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, DEFAULT_NUM_HIDDEN_LAYERS, JSON_INDENT, REPORT_LINE_WIDTH
+from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, DEFAULT_NUM_HIDDEN_LAYERS, JSON_INDENT, SEPARATOR_WIDTH_REPORT
 
 
 def execute_optimize_steering(args):
@@ -114,9 +114,9 @@ def execute_optimize_steering(args):
     enriched_pairs_file = getattr(args, 'enriched_pairs_file', None)
     task = getattr(args, 'task', None) or "custom"
 
-    print(f"\n{'=' * REPORT_LINE_WIDTH}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"🎯 STEERING OPTIMIZATION (Optuna)")
-    print(f"{'=' * REPORT_LINE_WIDTH}")
+    print(f"{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"   Model: {args.model}")
     if enriched_pairs_file:
         print(f"   Data: {enriched_pairs_file}")
@@ -124,7 +124,7 @@ def execute_optimize_steering(args):
         print(f"   Task: {task}")
     print(f"   Method: {method}")
     print(f"   Trials: {n_trials}")
-    print(f"{'=' * REPORT_LINE_WIDTH}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_REPORT}\n")
 
     # Get actual num_layers from model config
     from transformers import AutoConfig as _AC
@@ -168,9 +168,9 @@ def execute_optimize_steering(args):
         study.optimize(objective, n_trials=n_trials, show_progress_bar=True)
     
     # Print results
-    print(f"\n{'=' * REPORT_LINE_WIDTH}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"📊 OPTIMIZATION COMPLETE")
-    print(f"{'=' * REPORT_LINE_WIDTH}")
+    print(f"{'=' * SEPARATOR_WIDTH_REPORT}")
     
     print(f"\n✅ Best configuration:")
     print(f"   Method: {method}")

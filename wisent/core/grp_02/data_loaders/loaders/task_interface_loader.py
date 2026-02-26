@@ -7,7 +7,7 @@ from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError,
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.constants import DATA_SPLIT_SEED, PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, RANDOM_MATH_ANSWER_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_DECIMAL_PRECISION
+from wisent.core.constants import DEFAULT_RANDOM_SEED, PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, RANDOM_MATH_ANSWER_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_DECIMAL_PRECISION
 from wisent.core.tasks.base.task_interface import get_task, list_tasks, TaskInterface
 
 __all__ = [
@@ -39,7 +39,7 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         self,
         task: Optional[str] = None,
         split_ratio: Optional[float] = None,
-        seed: int = DATA_SPLIT_SEED,
+        seed: int = DEFAULT_RANDOM_SEED,
         limit: Optional[int] = None,
         training_limit: Optional[int] = None,
         testing_limit: Optional[int] = None,

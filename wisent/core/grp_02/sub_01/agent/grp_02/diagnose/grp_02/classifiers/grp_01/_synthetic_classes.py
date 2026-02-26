@@ -12,7 +12,8 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from wisent.core.classifier.classifier import ActivationClassifier
-from wisent.core.constants import DEFAULT_LAYER, AGENT_DIAG_MAX_TOKENS_LONG, AGENT_DIAG_TEMPERATURE_CREATIVE, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_DEFAULT_PAIRS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, TRAIT_LABEL_MAX_LENGTH
+from wisent.core.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_DEFAULT_PAIRS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, TRAIT_LABEL_MAX_LENGTH
+from wisent.core.models.config import get_generate_kwargs
 from wisent.core.errors import InsufficientDataError, MissingParameterError, ExecutionError
 
 from ....core.agent.budget import ResourceType, calculate_max_tasks_for_time_budget, get_budget_manager
@@ -70,7 +71,7 @@ List {max_traits} quality traits for responses:
 
         try:
             analysis, _ = self.model.generate(
-                discovery_prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_LONG, temperature=AGENT_DIAG_TEMPERATURE_CREATIVE, do_sample=True
+                discovery_prompt, layer_index=DEFAULT_LAYER
             )
 
             logging.info(f"Model generated analysis: {analysis[:DISPLAY_TRUNCATION_MEDIUM]}...")

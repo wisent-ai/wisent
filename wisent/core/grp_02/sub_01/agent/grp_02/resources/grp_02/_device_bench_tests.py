@@ -6,7 +6,8 @@ import subprocess
 import sys
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.constants import DEFAULT_LAYER, DEVICE_BENCH_TIMEOUT_SECS, GPU_TEST_TIMEOUT_SECS, AGENT_BENCH_MIN_PAIRS_TRAINING, BENCH_TEST_SAMPLE_SIZE
+from wisent.core.constants import DEFAULT_LAYER, AGENT_BENCH_MIN_PAIRS_TRAINING, BENCH_TEST_SAMPLE_SIZE
+from wisent.core.utils.core.hardware import subprocess_timeout_s, subprocess_timeout_long_s
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin1:
@@ -42,7 +43,7 @@ except Exception as e:
             # Run with 2-minute timeout
             result = subprocess.run([
                 sys.executable, temp_script
-            ], capture_output=True, text=True, timeout=DEVICE_BENCH_TIMEOUT_SECS)
+            ], capture_output=True, text=True, timeout=subprocess_timeout_s())
 
             # Clean up
             os.unlink(temp_script)
@@ -116,7 +117,7 @@ except Exception as e:
             print("   🔧 DEBUG: Running evaluation subprocess...")
             result = subprocess.run([
                 sys.executable, temp_script
-            ], capture_output=True, text=True, timeout=DEVICE_BENCH_TIMEOUT_SECS)
+            ], capture_output=True, text=True, timeout=subprocess_timeout_s())
             
             print(f"   🔧 DEBUG: Subprocess completed with return code: {result.returncode}")
             print(f"   🔧 DEBUG: Stdout length: {len(result.stdout)} chars")
@@ -225,7 +226,7 @@ except Exception as e:
             result = subprocess.run([
                 sys.executable,
                 temp_script,
-            ], capture_output=True, text=True, timeout=GPU_TEST_TIMEOUT_SECS)
+            ], capture_output=True, text=True, timeout=subprocess_timeout_long_s())
 
             print(f"   🔧 DEBUG: Classifier subprocess completed with return code: {result.returncode}")
             print(f"   🔧 DEBUG: Stdout length: {len(result.stdout)} chars")

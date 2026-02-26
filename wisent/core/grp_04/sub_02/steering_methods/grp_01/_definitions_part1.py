@@ -1,9 +1,9 @@
 """Steering method definitions: CAA, OSTRZE, TECZA."""
 
 from wisent.core.constants import (
-    DEFAULT_BASE_STRENGTH,
+    DEFAULT_STRENGTH,
     TECZA_NUM_DIRECTIONS,
-    TECZA_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
     TECZA_LEARNING_RATE,
     TECZA_RETAIN_WEIGHT,
     TECZA_INDEPENDENCE_WEIGHT,
@@ -36,9 +36,9 @@ CAA_DEFINITION = SteeringMethodDefinition(
     ],
     optimization_config={
         "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
-        "default_strength": DEFAULT_BASE_STRENGTH,
+        "default_strength": DEFAULT_STRENGTH,
     },
-    default_strength=DEFAULT_BASE_STRENGTH,
+    default_strength=DEFAULT_STRENGTH,
     strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
@@ -60,16 +60,16 @@ OSTRZE_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="C",
             type=float,
-            default=DEFAULT_BASE_STRENGTH,
+            default=DEFAULT_STRENGTH,
             help="Regularization strength (inverse). Smaller values = stronger regularization.",
             cli_flag="--ostrze-C",
         ),
     ],
     optimization_config={
         "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
-        "default_strength": DEFAULT_BASE_STRENGTH,
+        "default_strength": DEFAULT_STRENGTH,
     },
-    default_strength=DEFAULT_BASE_STRENGTH,
+    default_strength=DEFAULT_STRENGTH,
     strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
@@ -90,7 +90,7 @@ TECZA_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="optimization_steps",
             type=int,
-            default=TECZA_OPTIMIZATION_STEPS,
+            default=DEFAULT_OPTIMIZATION_STEPS,
             help="Number of gradient descent steps for direction optimization",
             cli_flag="--tecza-optimization-steps",
         ),
@@ -156,9 +156,9 @@ TECZA_DEFINITION = SteeringMethodDefinition(
     ],
     optimization_config={
         "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
-        "default_strength": DEFAULT_BASE_STRENGTH,
+        "default_strength": DEFAULT_STRENGTH,
         "num_directions_range": (1, 7),
     },
-    default_strength=DEFAULT_BASE_STRENGTH,
+    default_strength=DEFAULT_STRENGTH,
     strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )

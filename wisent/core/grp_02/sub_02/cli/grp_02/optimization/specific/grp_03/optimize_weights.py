@@ -26,7 +26,7 @@ from dataclasses import dataclass
 
 import torch
 
-from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, DATA_SPLIT_SEED, DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT
+from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, DEFAULT_RANDOM_SEED, DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT
 from wisent.core.errors import UnknownTypeError, InsufficientDataError
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.steering_evaluators import (
@@ -198,7 +198,7 @@ def execute_optimize_weights(args):
         direction=direction,
         sampler="tpe",
         pruner=None,
-        seed=DATA_SPLIT_SEED,
+        seed=DEFAULT_RANDOM_SEED,
     )
 
     # Run optimization

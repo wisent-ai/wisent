@@ -103,6 +103,7 @@ def migrate_all(
         print("Skipping pair texts migration (--skip-pair-texts)")
 
     migrated_keys = _load_migrated_keys()
+    shared_conn = _get_db_connection(database_url)
     for idx, (model, task, strategy) in enumerate(combos):
         global_idx = combo_start + idx
         safe = model_to_safe_name(model)
@@ -111,10 +112,31 @@ def migrate_all(
             print(f"\n[{global_idx}] SKIP (already migrated): {model} / {task} / {strategy}")
             continue
         print(f"\n[{global_idx}] Migrating: {model} / {task} / {strategy}")
-        migrate_activation_table(
-            model, task, strategy,
-            database_url=database_url, dry_run=dry_run,
-        )
+        try:
+            migrate_activation_table(
+                model, task, strategy,
+                database_url=database_url, dry_run=dry_run,
+                shared_conn=shared_conn,
+            )
+        except Exception as exc:
+            if "closed the connection" in str(exc) or "connection" in str(exc).lower():
+                print(f"  Connection lost, reconnecting...")
+                try:
+                    shared_conn.close()
+                except Exception:
+                    pass
+                shared_conn = _get_db_connection(database_url)
+                migrate_activation_table(
+                    model, task, strategy,
+                    database_url=database_url, dry_run=dry_run,
+                    shared_conn=shared_conn,
+                )
+            else:
+                raise
+    try:
+        shared_conn.close()
+    except Exception:
+        pass
 
 
 def verify_migration(

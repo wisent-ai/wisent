@@ -6,7 +6,7 @@ import re
 import torch
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.opti.methods.opti_weights import WeightsOptimizerConfig
-from wisent.core.constants import JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION, WEIGHT_COMPARISON_MAX_NEW_TOKENS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
+from wisent.core.constants import JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
 
 
 def _apply_weight_modification_standalone(
@@ -116,7 +116,7 @@ def _show_response_comparisons(
         messages = [{"role": "user", "content": prompt_text}]
         responses = wisent_model.generate(
             [messages],
-            **get_generate_kwargs(max_new_tokens=WEIGHT_COMPARISON_MAX_NEW_TOKENS),
+            **get_generate_kwargs(),
         )
 
         response = responses[0] if responses else ""

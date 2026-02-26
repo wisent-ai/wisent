@@ -8,7 +8,7 @@ for training classifiers for specific issue types using model-driven decisions.
 from typing import List, Dict, Any, Set, Tuple
 from .task_manager import get_available_tasks
 from wisent.core.constants import (
-    DEFAULT_LAYER, AGENT_DIAG_MAX_TOKENS_SHORT, AGENT_DIAG_TEMPERATURE,
+    DEFAULT_LAYER,
     TASK_SELECTOR_MAX_TASKS, TASK_SELECTOR_QUALITY_THRESHOLD,
     TASK_QUALITY_SCORE_MAX, TASK_SELECTOR_LIMIT,
 )
@@ -88,7 +88,7 @@ Rate relevance from 0.0 to 1.0 (1.0 = highly relevant, 0.0 = not relevant).
 Respond with only the number:"""
         
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
             score_str = response.strip()
             
             import re
@@ -115,7 +115,7 @@ Rate quality from 0.0 to 5.0 (5.0 = excellent quality, 0.0 = poor quality).
 Respond with only the number:"""
         
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
             score_str = response.strip()
             
             import re

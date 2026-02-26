@@ -14,7 +14,7 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
-from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PARSER_DEFAULT_NUM_PAIRS, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10
+from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PARSER_DEFAULT_NUM_PAIRS, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
@@ -98,7 +98,7 @@ def main():
     
     config = GeometryAnalysisConfig(
         num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS,
-        optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_DEFAULT,
+        optimization_steps=DIAG_OPTIMIZATION_STEPS,
     )
     result = detect_geometry_structure(pos_tensor, neg_tensor, config)
     

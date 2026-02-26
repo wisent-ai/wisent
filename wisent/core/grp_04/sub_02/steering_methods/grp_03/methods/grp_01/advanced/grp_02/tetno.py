@@ -34,8 +34,8 @@ from wisent.core.constants import (
     TETNO_ENTROPY_FLOOR,
     TETNO_ENTROPY_CEILING,
     TETNO_MAX_ALPHA,
-    TETNO_OPTIMIZATION_STEPS,
-    TETNO_LEARNING_RATE,
+    DEFAULT_OPTIMIZATION_STEPS,
+    TECZA_LEARNING_RATE,
     TETNO_THRESHOLD_SEARCH_STEPS,
 )
 
@@ -89,8 +89,8 @@ class TETNOMethod(TETNOTrainingMixin, TETNOScalingMixin, BaseSteeringMethod):
             entropy_floor=kwargs.get("entropy_floor", TETNO_ENTROPY_FLOOR),
             entropy_ceiling=kwargs.get("entropy_ceiling", TETNO_ENTROPY_CEILING),
             max_alpha=kwargs.get("max_alpha", TETNO_MAX_ALPHA),
-            optimization_steps=kwargs.get("optimization_steps", TETNO_OPTIMIZATION_STEPS),
-            learning_rate=kwargs.get("learning_rate", TETNO_LEARNING_RATE),
+            optimization_steps=kwargs.get("optimization_steps", DEFAULT_OPTIMIZATION_STEPS),
+            learning_rate=kwargs.get("learning_rate", TECZA_LEARNING_RATE),
             use_caa_init=kwargs.get("use_caa_init", True),
             normalize=kwargs.get("normalize", True),
             threshold_search_steps=kwargs.get("threshold_search_steps", TETNO_THRESHOLD_SEARCH_STEPS),

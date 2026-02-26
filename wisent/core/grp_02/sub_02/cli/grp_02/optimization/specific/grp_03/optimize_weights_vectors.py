@@ -4,7 +4,7 @@ import os
 import tempfile
 
 import torch
-from wisent.core.constants import DEFAULT_RANDOM_SEED, OPTIMIZE_TRAIN_RATIO, SIMILARITY_THRESHOLD
+from wisent.core.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, SIMILARITY_THRESHOLD
 from wisent.core.utils import resolve_default_device
 from wisent.core.cli.optimization.specific.optimize_weights_training import _train_multi_direction_method
 
@@ -149,7 +149,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
                 exclude_benchmarks=None,
                 max_benchmarks=getattr(args, 'max_benchmarks', None),
                 cap_pairs_per_benchmark=getattr(args, 'cap_pairs_per_benchmark', None),
-                train_ratio=getattr(args, 'train_ratio', OPTIMIZE_TRAIN_RATIO),
+                train_ratio=getattr(args, 'train_ratio', DEFAULT_SPLIT_RATIO),
                 seed=getattr(args, 'seed', DEFAULT_RANDOM_SEED),
                 model=args.model,
                 device=args.device,

@@ -13,7 +13,7 @@ import sys
 import psycopg2
 import torch
 
-from wisent.core.constants import MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT, DB_CONNECT_WAIT_S
+from wisent.core.constants import PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT, DB_CONNECT_WAIT_S
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
@@ -179,7 +179,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         # pos_text and neg_text already contain the full example from database
         # Extract activations
         def get_hidden_states(text):
-            enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
+            enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
             enc = {k: v.to(device) for k, v in enc.items()}
             with torch.inference_mode():
                 out = model(**enc, output_hidden_states=True, use_cache=False)

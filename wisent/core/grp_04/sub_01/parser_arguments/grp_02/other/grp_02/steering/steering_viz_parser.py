@@ -1,6 +1,6 @@
 """Parser for the 'steering-viz' command - steering effect visualization."""
 
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL, AUTOTUNE_VAL_SPLIT, PARSER_DEFAULT_NUM_PAIRS, COMPARISON_STEERING_LAYER, DEFAULT_BASE_STRENGTH, PARSER_DEFAULT_RESPONSE_SAMPLES, PARSER_DEFAULT_REF_PAIRS
+from wisent.core.constants import AUTOTUNE_VAL_SPLIT, PARSER_DEFAULT_NUM_PAIRS, COMPARISON_STEERING_LAYER, DEFAULT_STRENGTH, PARSER_DEFAULT_RESPONSE_SAMPLES, PARSER_DEFAULT_REF_PAIRS
 
 
 def setup_steering_viz_parser(parser):
@@ -26,7 +26,7 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--strength",
         type=float,
-        default=DEFAULT_BASE_STRENGTH,
+        default=DEFAULT_STRENGTH,
         help="Steering strength multiplier (default: 1.0)"
     )
     parser.add_argument(
@@ -81,7 +81,7 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--max-new-tokens",
         type=int,
-        default=DEFAULT_MAX_NEW_TOKENS_EVAL,
+        default=100,
         help="Max tokens to generate per response (default: 100)"
     )
     parser.add_argument(

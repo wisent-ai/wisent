@@ -8,10 +8,9 @@ import json
 import base64
 from pathlib import Path
 from wisent.core.constants import (
-    STEERING_GEN_MAX_TOKENS, AGENT_DIAG_TEMPERATURE,
-    VIZ_MLP_HIDDEN_DIM, CLASSIFIER_TEST_SIZE,
+    MLP_HIDDEN_DIM, CLASSIFIER_TEST_SIZE,
     VIZ_MLP_EPOCHS, CLASSIFIER_BATCH_SIZE,
-    DATA_SPLIT_RATIO, DATABASE_PAIR_LOADING_LIMIT,
+    DEFAULT_SPLIT_RATIO, DATABASE_PAIR_LOADING_LIMIT,
     DATABASE_ACTIVATION_LOADING_LIMIT,
     VIZ_TRUTHFUL_REGION_THRESHOLD,
     DEFAULT_RANDOM_SEED, DEFAULT_SCALE_FACTOR,
@@ -137,7 +136,7 @@ def execute_per_concept_steering_viz(args):
         # Split 80/20
         random.seed(DEFAULT_RANDOM_SEED)
         random.shuffle(concept_pair_ids)
-        split_idx = int(len(concept_pair_ids) * DATA_SPLIT_RATIO)
+        split_idx = int(len(concept_pair_ids) * DEFAULT_SPLIT_RATIO)
         train_ids = set(concept_pair_ids[:split_idx])
         test_ids = concept_pair_ids[split_idx:]
         print(f"  Train: {len(train_ids)}, Test: {len(test_ids)}")
@@ -199,7 +198,7 @@ def execute_per_concept_steering_viz(args):
             steered_acts.append(steered_act.cpu())
 
             # Generate responses
-            base_resp = adapter._generate_unsteered(formatted, max_new_tokens=STEERING_GEN_MAX_TOKENS, temperature=AGENT_DIAG_TEMPERATURE, do_sample=True)
+            base_resp = adapter._generate_unsteered(formatted, do_sample=True)
             if "assistant\n" in base_resp:
                 base_resp = base_resp.split("assistant\n")[-1].strip()
             steered_resp = adapter.forward_with_steering(formatted, steering_vectors=steering_vectors, config=SteeringConfig(scale=DEFAULT_SCALE_FACTOR))
@@ -232,7 +231,7 @@ def execute_per_concept_steering_viz(args):
         y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
 
         if classifier_type == "mlp":
-            classifier = MLPClassifier(device="cpu", hidden_dim=VIZ_MLP_HIDDEN_DIM)
+            classifier = MLPClassifier(device="cpu", hidden_dim=MLP_HIDDEN_DIM)
         else:
             classifier = LogisticClassifier(device="cpu")
         train_config = ClassifierTrainConfig(test_size=CLASSIFIER_TEST_SIZE, num_epochs=VIZ_MLP_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE)

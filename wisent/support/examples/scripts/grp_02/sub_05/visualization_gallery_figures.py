@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import numpy as np
 
-from wisent.core.constants import VIZ_PLOT_DPI, SIGNAL_EXISTENCE_THRESHOLD, LINEAR_GAP_THRESHOLD, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_FONTSIZE_ANNOTATION, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, CHANCE_LEVEL_ACCURACY
+from wisent.core.constants import VIZ_PLOT_DPI, SIGNAL_EXIST_THRESHOLD, SIGNAL_LINEAR_GAP, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_FONTSIZE_ANNOTATION, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, CHANCE_LEVEL_ACCURACY
 
 try:
     import matplotlib.pyplot as plt
@@ -94,9 +94,9 @@ def create_hero_figure(
             signal = r["signal_strength"]
             linear = r["linear_probe_accuracy"]
             
-            if signal < SIGNAL_EXISTENCE_THRESHOLD:
+            if signal < SIGNAL_EXIST_THRESHOLD:
                 counts["NO_SIGNAL"] += 1
-            elif linear > SIGNAL_EXISTENCE_THRESHOLD and (signal - linear) < LINEAR_GAP_THRESHOLD:
+            elif linear > SIGNAL_EXIST_THRESHOLD and (signal - linear) < SIGNAL_LINEAR_GAP:
                 counts["LINEAR"] += 1
             else:
                 counts["NONLINEAR"] += 1
@@ -128,9 +128,9 @@ def create_hero_figure(
             linear = r["linear_probe_accuracy"]
             knn = r["nonlinear_metrics"]["knn_accuracy_k10"]
             
-            if signal < SIGNAL_EXISTENCE_THRESHOLD:
+            if signal < SIGNAL_EXIST_THRESHOLD:
                 diag = "NO_SIGNAL"
-            elif linear > SIGNAL_EXISTENCE_THRESHOLD and (signal - linear) < LINEAR_GAP_THRESHOLD:
+            elif linear > SIGNAL_EXIST_THRESHOLD and (signal - linear) < SIGNAL_LINEAR_GAP:
                 diag = "LINEAR"
             else:
                 diag = "NONLINEAR"

@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple
 
 from wisent.core.errors import BenchmarkLoadError
 from wisent.core import constants as _C
+from wisent.core.utils.core.hardware import subprocess_timeout_long_s
 
 from ..sample_extraction import get_task_samples_for_analysis, get_task_samples_with_subtasks
 from ..sample_helpers import try_alternative_task_names
@@ -72,7 +73,7 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
             cmd,
             capture_output=True,
             text=True,
-            timeout=_C.BENCHMARK_TEST_TIMEOUT_SECS,
+            timeout=subprocess_timeout_long_s(),
             cwd=project_root,
             env=env,
         )

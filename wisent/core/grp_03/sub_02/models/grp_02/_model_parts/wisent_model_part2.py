@@ -13,13 +13,13 @@ from wisent.core.models.core.atoms import SteeringVector
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.errors import ChatTemplateNotAvailableError
 from wisent.core.constants import (
-    DEFAULT_MAX_NEW_TOKENS,
     DEFAULT_STRENGTH,
-    STEERING_WEIGHT_DECAY_RATE,
-    STEERING_WEIGHT_GAUSSIAN_CENTER,
-    STEERING_WEIGHT_GAUSSIAN_WIDTH,
-    STEERING_WEIGHT_INITIAL_TOKENS,
+    STEERING_APP_DECAY_RATE,
+    STEERING_APP_GAUSSIAN_CENTER,
+    STEERING_APP_GAUSSIAN_WIDTH,
+    STEERING_APP_INITIAL_TOKENS,
 )
+from wisent.core.models.config import get_generate_kwargs
 
 
 def _apply_steering_object(
@@ -28,7 +28,7 @@ def _apply_steering_object(
     base_strength: float = DEFAULT_STRENGTH,
     steering_strategy: str = "constant",
     steering_strategy_config: dict | None = None,
-    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
+    max_new_tokens: int | None = None,
 ) -> None:
     """
     Register forward hooks using a SteeringObject with full method-specific logic.
@@ -58,6 +58,9 @@ def _apply_steering_object(
     """
     from wisent.core.steering_methods.steering_object import BaseSteeringObject
 
+    if max_new_tokens is None:
+        max_new_tokens = get_generate_kwargs()["max_new_tokens"]
+
     self.detach()
     if hasattr(steering_obj, 'set_model_weights'):
         steering_obj.set_model_weights(self.hf_model)
@@ -73,17 +76,17 @@ def _apply_steering_object(
         if strategy == "constant":
             return 1.0
         elif strategy == "initial_only":
-            initial_tokens = config.get("initial_tokens", STEERING_WEIGHT_INITIAL_TOKENS)
+            initial_tokens = config.get("initial_tokens", STEERING_APP_INITIAL_TOKENS)
             return 1.0 if token_pos < initial_tokens else 0.0
         elif strategy == "diminishing":
-            rate = config.get("rate", STEERING_WEIGHT_DECAY_RATE)
+            rate = config.get("rate", STEERING_APP_DECAY_RATE)
             return math.exp(-rate * token_pos)
         elif strategy == "increasing":
-            rate = config.get("rate", STEERING_WEIGHT_DECAY_RATE)
+            rate = config.get("rate", STEERING_APP_DECAY_RATE)
             return 1.0 - math.exp(-rate * token_pos)
         elif strategy == "gaussian":
-            center = config.get("gaussian_center", STEERING_WEIGHT_GAUSSIAN_CENTER)
-            width = config.get("gaussian_width", STEERING_WEIGHT_GAUSSIAN_WIDTH)
+            center = config.get("gaussian_center", STEERING_APP_GAUSSIAN_CENTER)
+            width = config.get("gaussian_width", STEERING_APP_GAUSSIAN_WIDTH)
             return math.exp(-((position_frac - center) ** 2) / (2 * width ** 2))
         else:
             return 1.0

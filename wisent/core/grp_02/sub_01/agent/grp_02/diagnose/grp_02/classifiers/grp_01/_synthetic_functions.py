@@ -107,9 +107,9 @@ def create_classifier_from_trait_description(
     log_and_print(f"✅ Generated {len(pair_set.pairs)} pairs total")
 
     # Log all generated pairs in detail
-    log_and_print("=" * _C.REPORT_LINE_WIDTH)
+    log_and_print("=" * _C.SEPARATOR_WIDTH_REPORT)
     log_and_print("DETAILED PAIR ANALYSIS:")
-    log_and_print("=" * _C.REPORT_LINE_WIDTH)
+    log_and_print("=" * _C.SEPARATOR_WIDTH_REPORT)
 
     for i, pair in enumerate(pair_set.pairs):
         log_and_print(f"\n--- PAIR {i + 1}/{len(pair_set.pairs)} ---")
@@ -131,7 +131,7 @@ def create_classifier_from_trait_description(
         if hasattr(pair, "_prompt_strategy"):
             log_and_print(f"Has _prompt_strategy: {pair._prompt_strategy}")
 
-    log_and_print("=" * _C.REPORT_LINE_WIDTH)
+    log_and_print("=" * _C.SEPARATOR_WIDTH_REPORT)
 
     if len(pair_set.pairs) < AGENT_SYNTH_MIN_PAIRS:
         error_msg = f"Insufficient training pairs generated: {len(pair_set.pairs)}"

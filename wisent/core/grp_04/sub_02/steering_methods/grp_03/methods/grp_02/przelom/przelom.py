@@ -32,7 +32,7 @@ from wisent.core.constants import (
     LOG_EPS,
     TIKHONOV_REG,
     PRZELOM_EPSILON,
-    PRZELOM_INFERENCE_K,
+    SZLAK_INFERENCE_K,
 )
 
 __all__ = ["PrzelomMethod", "PrzelomConfig", "PrzelomResult"]
@@ -47,7 +47,7 @@ class PrzelomConfig:
     """Target transport plan mode: 'uniform' or 'nearest'."""
     regularization: float = TIKHONOV_REG
     """Tikhonov regularization for pseudoinverse."""
-    inference_k: int = PRZELOM_INFERENCE_K
+    inference_k: int = SZLAK_INFERENCE_K
     """Number of nearest source points for inference interpolation."""
 
 
@@ -94,7 +94,7 @@ class PrzelomMethod(BaseSteeringMethod):
             epsilon=kwargs.get("epsilon", PRZELOM_EPSILON),
             target_mode=kwargs.get("target_mode", "uniform"),
             regularization=kwargs.get("regularization", TIKHONOV_REG),
-            inference_k=kwargs.get("inference_k", PRZELOM_INFERENCE_K),
+            inference_k=kwargs.get("inference_k", SZLAK_INFERENCE_K),
         )
 
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:

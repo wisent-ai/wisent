@@ -10,7 +10,7 @@ from typing import Dict, List, Optional, Any
 from .optimizer import SteeringOptimizer
 from .auto import run_auto_steering_optimization
 from .types import SteeringOptimizationSummary
-from wisent.core.constants import DEFAULT_LIMIT, MAX_OPTIMIZATION_TIME_MINUTES, PARSER_STRENGTH_RANGE_METHODS
+from wisent.core.constants import DEFAULT_LIMIT, AUTO_MAX_TIME_MINUTES, PARSER_STRENGTH_RANGE_METHODS
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +25,7 @@ def run_steering_optimization(
     limit: int = DEFAULT_LIMIT,
     device: str = None,
     verbose: bool = False,
-    max_time_minutes: float = MAX_OPTIMIZATION_TIME_MINUTES
+    max_time_minutes: float = AUTO_MAX_TIME_MINUTES
 ) -> Dict[str, Any]:
     """
     Run steering optimization with the specified type.

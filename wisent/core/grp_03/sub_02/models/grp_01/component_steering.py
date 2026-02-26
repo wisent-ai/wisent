@@ -17,7 +17,6 @@ import torch.nn as nn
 from wisent.core.activations.strategies.extraction_strategy import (
     ExtractionComponent,
 )
-from wisent.core.constants import DEFAULT_NUM_ATTENTION_HEADS
 from wisent.core.activations.component_hooks import (
     _COMPONENT_MAP,
     _PRE_HOOK_COMPONENTS,
@@ -138,8 +137,10 @@ def _get_num_heads(model: nn.Module) -> int:
     """Get the number of attention heads from model config."""
     config = getattr(model, "config", None)
     if config is not None:
-        return getattr(config, "num_attention_heads", DEFAULT_NUM_ATTENTION_HEADS)
-    return DEFAULT_NUM_ATTENTION_HEADS
+        num_heads = getattr(config, "num_attention_heads", None)
+        if num_heads is not None:
+            return num_heads
+    raise ValueError("model.config missing num_attention_heads")
 
 
 def _forward_hook_factory(

@@ -14,7 +14,7 @@ from wisent.core.errors import MissingParameterError
 from wisent.core import constants as _C
 from wisent.core.constants import (AGENT_STEERING_THRESHOLD, AGENT_QUALITY_THRESHOLD,
     AGENT_DEFAULT_TIME_BUDGET_INIT, AGENT_DEFAULT_TIME_BUDGET, AGENT_DEMO_TIME_BUDGET,
-    CLASSIFIER_THRESHOLD, AGENT_MAX_NEW_TOKENS, AGENT_MAX_RESPONSE_ATTEMPTS, DEFAULT_BASE_STRENGTH)
+    CLASSIFIER_THRESHOLD, AGENT_MAX_RESPONSE_ATTEMPTS, DEFAULT_STRENGTH)
 from .agent.diagnose import AgentClassifierDecisionSystem, AnalysisResult, ClassifierMarketplace, ResponseDiagnostics
 from .agent.steer import ImprovementResult, ResponseSteering
 from .model import Model
@@ -37,7 +37,7 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
         layer_override: int = None,
         enable_tracking: bool = True,
         steering_method: str = "CAA",
-        steering_strength: float = DEFAULT_BASE_STRENGTH,
+        steering_strength: float = DEFAULT_STRENGTH,
         steering_mode: bool = False,
         normalization_method: str = "none",
         target_norm: Optional[float] = None,
@@ -206,7 +206,7 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
                 from ..inference import generate_with_classification_and_handling
 
                 steering_method = self._create_steering_method()
-                gen_kwargs = get_generate_kwargs(max_new_tokens=AGENT_MAX_NEW_TOKENS)
+                gen_kwargs = get_generate_kwargs()
                 response, _, _, _ = generate_with_classification_and_handling(
                     self.model, prompt, self.params.layer, **gen_kwargs,
                     steering_method=steering_method, token_aggregation="average",
@@ -216,7 +216,7 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
             except Exception as e:
                 print(f"   Steering failed, falling back to basic generation: {e}")
 
-        gen_kwargs = get_generate_kwargs(max_new_tokens=AGENT_MAX_NEW_TOKENS)
+        gen_kwargs = get_generate_kwargs()
         result = self.model.generate(prompt, self.params.layer, **gen_kwargs)
         if isinstance(result, tuple) and len(result) == 3:
             response, _, _ = result

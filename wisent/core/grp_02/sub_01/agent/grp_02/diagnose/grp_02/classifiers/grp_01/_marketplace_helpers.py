@@ -10,8 +10,7 @@ from datetime import datetime
 from wisent.core.utils import resolve_default_device
 from wisent.core import constants as _C
 from wisent.core.constants import (
-    DEFAULT_LAYER, AGENT_DIAG_MAX_TOKENS_SHORT, AGENT_DIAG_TEMPERATURE,
-    MARKETPLACE_MIN_QUALITY_DEFAULT,
+    DEFAULT_LAYER, MARKETPLACE_MIN_QUALITY_DEFAULT,
 )
 
 
@@ -91,7 +90,7 @@ Rate similarity from 0.0 to {_C.MARKETPLACE_MAX_SIMILARITY_SCORE} ({_C.MARKETPLA
 Respond with only the number:"""
 
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
             score_str = response.strip()
 
             match = re.search(r'(\d+\.?\d*)', score_str)
@@ -116,7 +115,7 @@ Consider:
 Respond with just the layer number ({_C.MARKETPLACE_LAYER_MIN}-{_C.MARKETPLACE_LAYER_MAX}):"""
 
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
             layer_str = response.strip()
 
             match = re.search(r'(\d+)', layer_str)

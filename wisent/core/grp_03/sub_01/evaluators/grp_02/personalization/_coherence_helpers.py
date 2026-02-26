@@ -21,7 +21,7 @@ from wisent.core.constants import (
     COHERENCE_TRIGRAM_REPEAT_THRESHOLD, COHERENCE_CONTENT_WORD_REPEAT_THRESHOLD,
     COHERENCE_FUNCTION_WORD_THRESHOLD, MIN_SENTENCE_LENGTH, SCORE_SCALE_100,
     MIN_RESPONSE_TOKENS, MIN_TOKENS_TRIGRAM, MIN_CONTENT_WORD_LENGTH,
-    MIN_TOKENS_NONSENSE, MIN_TOKEN_LENGTH_NONSENSE,
+    NONSENSE_MIN_TOKENS, MIN_TOKEN_LENGTH_NONSENSE,
     COHERENCE_DEGENERATION_PENALTY,
 )
 from wisent.core.evaluators.personalization.coherence import (
@@ -112,7 +112,7 @@ def _is_incoherent(text: str) -> bool:
 
     # Check 9: Nonsense words (using tokenizer fragmentation)
     tokenizer = _get_tokenizer()
-    if tokenizer and len(tokens) >= MIN_TOKENS_NONSENSE:
+    if tokenizer and len(tokens) >= NONSENSE_MIN_TOKENS:
         nonsense_count = 0
         for token in tokens_lower:
             if len(token) >= MIN_TOKEN_LENGTH_NONSENSE and _is_nonsense_word(token, tokenizer):

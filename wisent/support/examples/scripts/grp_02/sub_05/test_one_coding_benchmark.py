@@ -23,9 +23,9 @@ os.environ['HF_ALLOW_CODE_EVAL'] = '1'
 
 from wisent.core.constants import (
     CODING_BENCHMARK_DEFAULT_LIMIT, SPLIT_RATIO_HALF, TEST_DEFAULT_LIMIT,
-    DEFAULT_RANDOM_SEED, DOCKER_SANDBOX_TIME_LIMIT, DOCKER_SANDBOX_CPU_LIMIT,
-    DOCKER_SANDBOX_MEM_LIMIT_MB, DEFAULT_TIMEOUT_DOCKER, JSON_INDENT,
+    DEFAULT_RANDOM_SEED, DEFAULT_TIMEOUT_DOCKER, JSON_INDENT,
 )
+from wisent.core.utils.core.hardware import docker_sandbox_time_limit_s, docker_sandbox_cpu_limit_s, docker_sandbox_mem_limit_mb
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
 
@@ -79,9 +79,9 @@ def test_coding_benchmark(
 
         cfg = EvaluatorConfig(
             image="coding/sandbox:polyglot-1.0",
-            time_limit_s=DOCKER_SANDBOX_TIME_LIMIT,
-            cpu_limit_s=DOCKER_SANDBOX_CPU_LIMIT,
-            mem_limit_mb=DOCKER_SANDBOX_MEM_LIMIT_MB,
+            time_limit_s=docker_sandbox_time_limit_s(),
+            cpu_limit_s=docker_sandbox_cpu_limit_s(),
+            mem_limit_mb=docker_sandbox_mem_limit_mb(),
             pre_sanitize=True,
         )
         evaluator = CodingEvaluator(cfg=cfg)

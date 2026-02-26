@@ -45,7 +45,7 @@ def _setup_transport_rl_parser(steering_subparsers):
                    help="Entropic regularization temperature for transport methods (default: 1.0)")
     p.add_argument("--regularization", type=float, default=TIKHONOV_REG,
                    help="Tikhonov regularization for pseudoinverse (default: 1e-4)")
-    p.add_argument("--inference-k", type=int, default=_C.PARSER_DEFAULT_INFERENCE_K, dest="inference_k",
+    p.add_argument("--inference-k", type=int, default=_C.SZLAK_INFERENCE_K, dest="inference_k",
                    help="k-NN neighbors at inference (default: 5)")
     p.add_argument("--noise-scale", type=float, default=_C.PARSER_DEFAULT_NOISE_SCALE, dest="noise_scale",
                    help="ES noise scale relative to vector norm (default: 0.1)")
@@ -74,16 +74,16 @@ def _setup_continual_learning_parser(steering_subparsers):
                    dest="enriched_pairs_dir", help="Dir for enriched pairs (default: ./pairs/)")
     p.add_argument("--checkpoint-dir", type=str, default="./checkpoints/",
                    dest="checkpoint_dir", help="Checkpoint directory (default: ./checkpoints/)")
-    p.add_argument("--ewc-lambda", type=float, default=_C.PARSER_CONTINUAL_EWC_LAMBDA, dest="ewc_lambda",
+    p.add_argument("--ewc-lambda", type=float, default=_C.CONTINUAL_EWC_LAMBDA, dest="ewc_lambda",
                    help="EWC penalty strength (default: 1000)")
     p.add_argument("--replay-size", type=int, default=_C.PARSER_CONTINUAL_REPLAY_SIZE, dest="replay_size",
                    help="Number of past experiences to replay (default: 50)")
-    p.add_argument("--replay-interval", type=int, default=_C.PARSER_CONTINUAL_REPLAY_INTERVAL, dest="replay_interval",
+    p.add_argument("--replay-interval", type=int, default=_C.CONTINUAL_REPLAY_INTERVAL, dest="replay_interval",
                    help="Cycles between replay checks (default: 5)")
-    p.add_argument("--forgetting-threshold", type=float, default=_C.PARSER_CONTINUAL_FORGETTING_THRESHOLD,
+    p.add_argument("--forgetting-threshold", type=float, default=_C.CONTINUAL_FORGETTING_THRESHOLD,
                    dest="forgetting_threshold",
                    help="Score ratio below which forgetting is detected (default: 0.9)")
-    p.add_argument("--convergence-window", type=int, default=_C.PARSER_CONTINUAL_CONVERGENCE_WINDOW,
+    p.add_argument("--convergence-window", type=int, default=_C.CONTINUAL_CONVERGENCE_WINDOW,
                    dest="convergence_window",
                    help="Cycles without improvement before stopping (default: 10)")
     p.add_argument("--limit", type=int, default=_C.PARSER_DEFAULT_SAMPLE_LIMIT,

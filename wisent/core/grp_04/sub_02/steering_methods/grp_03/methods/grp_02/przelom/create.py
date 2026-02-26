@@ -20,7 +20,7 @@ from wisent.core.constants import (
     LOG_EPS,
     TIKHONOV_REG,
     PRZELOM_EPSILON,
-    PRZELOM_INFERENCE_K,
+    SZLAK_INFERENCE_K,
 )
 
 
@@ -54,7 +54,7 @@ def _create_przelom_steering_object(
     epsilon = getattr(args, "przelom_epsilon", PRZELOM_EPSILON)
     target_mode = getattr(args, "przelom_target_mode", "uniform")
     regularization = getattr(args, "przelom_regularization", TIKHONOV_REG)
-    inference_k = getattr(args, "przelom_inference_k", PRZELOM_INFERENCE_K)
+    inference_k = getattr(args, "przelom_inference_k", SZLAK_INFERENCE_K)
 
     num_heads = metadata.extra.get('num_attention_heads')
     num_kv_heads = metadata.extra.get('num_key_value_heads')

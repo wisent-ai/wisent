@@ -1,35 +1,39 @@
-"""
-Overflow named constants for the wisent package (part 10).
-Imported by _constants_part9.py via star-import so all constants remain
-accessible from wisent.core.constants.
-"""
-from wisent.core.grp_05.sub_constants._constants_part11 import *  # noqa: F401,F403
+"""Constants requiring experimental optimization."""
+from wisent.core.grp_05.sub_constants.for_experiments.sub_exp.sub_exp2._exp_08 import *  # noqa: F401,F403
+
+
+# --- Nonsense detection parser defaults ---
+NONSENSE_REPETITION_THRESHOLD = 0.7
+NONSENSE_GIBBERISH_THRESHOLD = 0.3
+
+# --- Token steering parser defaults ---
+TOKEN_DECAY_RATE_DEFAULT = 0.5
+TOKEN_MIN_STRENGTH_DEFAULT = 0.1
+TOKEN_PROMPT_STRENGTH_MULTIPLIER = 0.1
+
+# --- Steering strength ranges ---
+STEERING_STRENGTH_RANGE_WIDE = (0.1, 5.0)
+STEERING_STRENGTH_RANGE_NARROW = (0.1, 3.0)
+
+# --- Optuna classifier config ranges ---
+OPTUNA_HIDDEN_DIM_RANGE = (32, 512)
+OPTUNA_THRESHOLD_RANGE = (0.3, 0.9)
+OPTUNA_EPOCH_RANGE = (20, 100)
+
+# --- Weight optimization ranges ---
+OPTI_WEIGHTS_STRENGTH_RANGE = (0.5, 2.0)
+OPTI_WEIGHTS_MAX_WEIGHT_RANGE = (0.1, 1.0)
+OPTI_WEIGHTS_MIN_WEIGHT_RANGE = (0.0, 0.3)
+OPTI_WEIGHTS_POSITION_RANGE = (0.3, 0.7)
 
 # --- Steering optimizer defaults ---
 STEERING_OPTI_SAMPLE_SIZE = 64
-STEERING_OPTI_BATCH_SIZE = 16
-STEERING_OPTI_JUDGE_MAX_TOKENS = 8
 
 # --- Diagnostic MLP hidden sizes ---
 DIAGNOSTIC_MLP_HIDDEN_SIZES = (64,)
 
-# --- Max new tokens variants ---
-MAX_NEW_TOKENS_VERIFY_SINGLE = 1
-MAX_NEW_TOKENS_BENCHMARK_MATH = 1000
-
-# --- LiveMathBench generation configs ---
-LIVEMATHBENCH_MAX_NEW_TOKENS = 8192
-LIVEMATHBENCH_REASONING_MAX_NEW_TOKENS = 32768
-LIVEMATHBENCH_SAMPLING_TEMPERATURE = 1.0
-LIVEMATHBENCH_SAMPLING_TOP_P = 0.8
-LIVEMATHBENCH_REPETITION_PENALTY = 1.0
-
 # --- Clustering defaults ---
 KMEANS_N_INIT_DEFAULT = 20
-
-# --- Extraction batch sizes ---
-EXTRACTION_RAW_BATCH_SIZE = 5
-EXTRACTION_SMALL_BATCH_SIZE = 10
 
 # --- Relevance semantic scoring weights ---
 RELEVANCE_CONTENT_MATCH_SCORE = 3
@@ -39,16 +43,7 @@ RELEVANCE_FAST_HIGH_SCORING_BONUS = 1.0
 RELEVANCE_HIGH_SCORING_BONUS = 0.3
 RELEVANCE_MEDIUM_SCORING_BONUS = 0.1
 
-# --- Test/script max new tokens ---
-MAX_NEW_TOKENS_TEST_DEFAULT = 100
-MAX_NEW_TOKENS_TEST_SHORT = 50
-MAX_NEW_TOKENS_TEST_MINIMAL = 32
-MAX_NEW_TOKENS_GENERATION = 150
-
 # --- Geometry optimization ---
-GEOMETRY_OPTIMIZATION_STEPS_DEFAULT = 50
-GEOMETRY_OPTIMIZATION_LR = 0.01
-PROBE_TRAINING_LR = 0.001
 GEOMETRY_DEFAULT_NUM_COMPONENTS = 5
 
 # --- Default layer weight (used in .get(layer, 1.0) patterns) ---
@@ -62,16 +57,10 @@ PARSER_STRENGTH_RANGE_WELFARE = (0.5, 3.0)
 # --- Optuna pruner ---
 OPTUNA_PRUNER_STARTUP_TRIALS = 5
 
-# --- Classifier cache defaults ---
-CACHE_MAX_SIZE_GB_DEFAULT = 5.0
-CACHE_MAX_AGE_DAYS_DEFAULT = 30.0
-CACHE_MEMORY_SIZE_DEFAULT = 10
-
 # --- Test steering ---
 TEST_STEERING_SCALE = 0.5
 
 # --- Search space ---
-SEARCH_SPACE_DEFAULT_STRENGTHS = (0.5, 1.0, 1.5, 2.0)
 THRESHOLD_RANGE_SHORT = (0.3, 0.5, 0.7)
 
 # --- Minimum pair thresholds ---
@@ -93,7 +82,6 @@ DIAGNOSTIC_MLP_HIDDEN_SIZES_LARGE = (256, 128)
 COMPARISON_LORA_LEARNING_RATE = 2e-4
 COMPARISON_REFT_LEARNING_RATE = 5e-4
 COMPARISON_NUM_EPOCHS_DEFAULT = 3
-COMPARISON_TRAINING_BATCH_SIZE = 2
 
 # --- SAE training defaults ---
 SAE_N_EPOCHS_DEFAULT = 500
@@ -102,19 +90,6 @@ SAE_L1_COEF_DEFAULT = 5e-4
 # --- BOS feature detection defaults ---
 BOS_NUM_SAMPLES_DEFAULT = 2000
 BOS_MIN_LENGTH_DEFAULT = 50
-
-# --- Visualization ---
-VIZ_PLOT_DPI = 300
-
-# --- Steering base strength ---
-DEFAULT_BASE_STRENGTH = 1.0
-
-# --- Comparison module max lengths ---
-COMPARISON_MAX_LENGTH = 512
-COMPARISON_TOKENIZER_MAX_LENGTH = 128
-
-# --- Comparison module logging ---
-COMPARISON_LOGGING_STEPS = 10
 
 # --- Comparison module steering evaluation ---
 COMPARISON_STEERING_SCALES = (1.0, 2.0, 4.0)
@@ -134,21 +109,9 @@ KMEANS_N_INIT_SMALL = 3
 KMEANS_N_INIT_MEDIUM = 5
 KMEANS_N_INIT_LARGE = 10
 
-# --- Synthetic pair generation ---
-SYNTHETIC_PAIRS_TEMPERATURE = 0.9
-
 # --- LM harness sample counts ---
 LM_HARNESS_NUM_SAMPLES_SMALL = 3
 LM_HARNESS_NUM_SAMPLES_DEFAULT = 5
-
-# --- Diagnosis optimization steps ---
-DIAGNOSIS_OPTIMIZATION_STEPS = 100
-
-# --- Visualization DPI variants ---
-VIZ_DPI_DRAFT = 100
-
-# --- Progress logging interval ---
-PROGRESS_LOG_INTERVAL = 50
 
 # --- Parser default num-pairs (CLI tools) ---
 PARSER_DEFAULT_NUM_PAIRS_GENERATE = 30
@@ -156,28 +119,12 @@ PARSER_DEFAULT_NUM_PAIRS = 50
 PARSER_DEFAULT_NUM_PAIRS_OPTIMIZE = 20
 PARSER_DEFAULT_NUM_PAIRS_TRAIT = 10
 
-# --- Generation temperature/sampling ---
-GENERATION_TEMPERATURE = 0.7
-GREEDY_TEMPERATURE = 0.0
-GENERATION_TOP_P = 0.95
-GENERATION_TOP_P_NARROW = 0.9
-
 # --- BOS argparse defaults ---
 BOS_TOP_K_DEFAULT = 20
 BOS_ARGPARSE_NUM_SAMPLES = 1000
 
-# --- Code evaluation ---
-CODE_EVAL_BATCH_SIZE = 4
-
-# --- Comparison default batch size (sequential) ---
-COMPARISON_DEFAULT_BATCH_SIZE = 1
-
 # --- Extraction single benchmark limit ---
 EXTRACTION_SINGLE_PAIR_LIMIT = 200
-
-# --- Visualization marker sizes ---
-VIZ_MARKER_SIZE = 50
-VIZ_MARKER_SIZE_SMALL = 30
 
 # --- Pair generator defaults ---
 PAIR_GENERATORS_DEFAULT_N = 50
@@ -189,9 +136,6 @@ MAX_DOCS_INSPECT = 100
 # --- Abliteration ---
 ABLITERATION_BASELINE_ACC = 0.44
 
-# --- Cross-validation ---
-CV_DEFAULT_N_FOLDS = 5
-
 # --- PCA gallery ---
 PCA_GALLERY_COMPONENTS = 50
 
@@ -200,48 +144,18 @@ GROM_TEST_HIDDEN_DIM = 256
 GROM_TEST_N_SAMPLES = 30
 GEOMETRY_OPTIMIZATION_STEPS_SMALL = 30
 
-# --- LoRA max-length argparse ---
-LORA_ARGPARSE_MAX_LENGTH = 512
-
-# --- Benchmark runner max tokens ---
-BENCHMARK_MAX_TOKENS_ARGPARSE = 512
-
 # --- Parser steering/epsilon/method defaults ---
 PARSER_DEFAULT_EPSILON = 1.0
-PARSER_DEFAULT_INFERENCE_K = 5
 PARSER_DEFAULT_NUM_STRENGTH_STEPS = 5
 PARSER_DEFAULT_MAX_CLUSTERS = 5
 PARSER_DEFAULT_TEST_QUESTIONS = 5
 PARSER_DEFAULT_RESPONSE_SAMPLES = 5
-PARSER_DEFAULT_LAYER_START = 0
-MONITOR_DEFAULT_INTERVAL = 1.0
 
 # --- Optuna defaults ---
-OPTUNA_DEFAULT_N_TRIALS = 100
 OPTIMIZE_MAX_COMBINATIONS_DEFAULT = 100
 
 # --- Test/detector defaults ---
 TEST_DETECTOR_DEFAULT_LAYER = 6
-
-# --- SAE batch size ---
-SAE_BATCH_SIZE_DEFAULT = 64
-
-# --- Histogram bins ---
-VIZ_HISTOGRAM_BINS_LARGE = 50
-
-# --- Visualization alpha values ---
-VIZ_ALPHA_LIGHT = 0.3
-VIZ_ALPHA_MEDIUM = 0.6
-VIZ_ALPHA_HIGH = 0.7
-VIZ_ALPHA_HALF = 0.5
-
-# --- Visualization linewidth ---
-VIZ_LINEWIDTH_THIN = 0.8
-VIZ_LINEWIDTH_NORMAL = 2
-
-# --- Visualization marker sizes (extra small) ---
-VIZ_MARKER_SIZE_TINY = 10
-VIZ_MARKER_SIZE_XS = 20
 
 # --- Detection/bootstrap defaults ---
 N_BOOTSTRAP_DEFAULT = 100
@@ -254,7 +168,6 @@ SPLIT_RATIO_70 = 0.7
 
 # --- Parser evaluation/generation defaults ---
 PARSER_DEFAULT_EVAL_STRENGTH = 2.0
-PARSER_DEFAULT_WORKERS = 4
 PARSER_DEFAULT_GENERATE_RESPONSES = 10
 PARSER_DEFAULT_RANDOM_DIRECTIONS = 20
 PARSER_DEFAULT_REF_PAIRS = 200
@@ -264,18 +177,9 @@ PARSER_DEFAULT_MAX_REGEN_ATTEMPTS = 3
 PARSER_DEFAULT_CLASSIFICATION_THRESHOLD = 0.6
 PARSER_DEFAULT_SYNTHETIC_PAIRS = 20
 PARSER_DEFAULT_FEW_SHOT = 0
-MAX_NEW_TOKENS_GENERATE_LONG = 300
-
-# --- Nonsense/quality detection thresholds ---
-NONSENSE_MAX_WORD_LENGTH = 20
-REPETITIVE_CONTENT_THRESHOLD = 0.7
-GIBBERISH_WORD_THRESHOLD = 0.3
 MIN_QUALITY_SCORE_OUTPUT = 50.0
 MIN_SNR_EARLY_REJECT = 5.0
 MIN_CV_SCORE_EARLY_REJECT = 0.1
-
-# --- Monitoring defaults ---
-MONITOR_DEFAULT_DURATION = 60
 
 # --- Optuna trial count variants ---
 OPTUNA_TRIALS_LARGE = 300
@@ -289,11 +193,84 @@ SENSITIVITY_TOP_CONSTANTS = 20
 # --- Optimization time limits (minutes) ---
 OPTIMIZE_MAX_TIME_MINUTES_SHORT = 15.0
 OPTIMIZE_MAX_TIME_MINUTES = 30.0
-
-# --- Core thresholds ---
-CLASSIFIER_DECISION_THRESHOLD = 0.5
-DEFAULT_TIMEOUT_DOCKER = 30
-DEFAULT_TIMEOUT_REQUEST = 15
 KMEANS_MAX_ITERATIONS_DEFAULT = 50
-BLEU_MAX_N_GRAM = 4
 DIRECTIONS_PER_LAYER = 5
+
+# --- Classification threshold range ---
+CLASSIFICATION_THRESHOLD_RANGE = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+# --- Weight optimization search space (string-encoded min,max ranges) ---
+WEIGHT_OPT_STRENGTH_RANGE = "0.3,2.0"
+WEIGHT_OPT_MAX_WEIGHT_RANGE = "0.5,3.0"
+WEIGHT_OPT_MIN_WEIGHT_RANGE = "0.0,0.5"
+WEIGHT_OPT_POSITION_RANGE = "0.3,0.7"
+
+# --- Steering evaluation scales (string-encoded) ---
+STEERING_EVAL_SCALES_DEFAULT = "0.0,0.5,1.0,1.5,2.0"
+
+# --- Test/runner limits ---
+TEST_DEFAULT_LIMIT = 10
+QWEN3_4B_DEFAULT_LAYER = 17
+
+# --- SAE analysis ---
+SAE_HIDDEN_DIM_MULTIPLIER = 4
+SAE_TOP_K_ANALYSIS = 20
+
+# --- Abliteration search defaults ---
+ABLITERATION_NUM_PAIRS = 300
+ABLITERATION_DEFAULT_POSITION = 8.0
+ABLITERATION_DEFAULT_DISTANCE = 6.0
+ABLITERATION_BINARY_SEARCH_LOW = 0.5
+ABLITERATION_BINARY_SEARCH_HIGH = 3.0
+ABLITERATION_BINARY_SEARCH_ITERS = 5
+
+# --- Concept experiment ---
+N_PAIRS_PER_CONCEPT_DEFAULT = 100
+
+# --- Threshold analysis ---
+THRESHOLD_HIDDEN_DIM_LARGE = 4096
+
+# --- Concept detection ---
+CONCEPT_DETECTION_DEFAULT_N = 2
+
+# --- Extractor defaults ---
+EXTRACTOR_DEFAULT_LIMIT = 500
+EXTRACTOR_MIN_TEXT_LENGTH = 500
+
+# --- Fast diversity ---
+FAST_DIVERSITY_SEED = 13
+
+# --- Nonsense generator ---
+NONSENSE_DEFAULT_NUM_PAIRS = 10
+
+# --- Classifier recency ---
+CLASSIFIER_RECENCY_DAYS = 30
+
+# --- Quality evaluation bounds ---
+QUALITY_EVAL_LAYER_MIN = 8
+QUALITY_EVAL_LAYER_MAX = 20
+QUALITY_EVAL_SAMPLES_MIN = 10
+QUALITY_EVAL_SAMPLES_MAX = 50
+
+# --- Zwiad analysis limits ---
+ZWIAD_ANALYSIS_LIMIT = 500
+ZWIAD_ANALYSIS_LIMIT_SMALL = 200
+
+# --- Token estimation ---
+TOKENS_PER_PAIR_ESTIMATE = 150
+TOKENS_BASE_OFFSET = 500
+TOKEN_ESTIMATE_MIN = 2048
+TOKEN_ESTIMATE_MAX = 8192
+
+# --- SimHash dedup thresholds ---
+SIMHASH_THRESHOLD_AGGRESSIVE = 10
+SIMHASH_THRESHOLD_CONSERVATIVE = 3
+
+# --- Dedup item threshold ---
+DEDUP_ITEM_THRESHOLD = 1000
+
+# --- Geometry structure thresholds ---
+GEOMETRY_THRESHOLD_DEFAULT = 0.5
+GEOMETRY_THRESHOLD_CLUSTER = 0.6
+GEOMETRY_THRESHOLD_SPARSE = 0.7
+GEOMETRY_THRESHOLD_MANIFOLD = 0.3

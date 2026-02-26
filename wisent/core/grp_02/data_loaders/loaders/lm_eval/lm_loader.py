@@ -20,7 +20,7 @@ import datasets.features.features as _features_module
 if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_module._FEATURE_TYPES:
     _features_module._FEATURE_TYPES['List'] = _features_module._FEATURE_TYPES['LargeList']
 
-from wisent.core.constants import DATA_SPLIT_SEED
+from wisent.core.constants import DEFAULT_RANDOM_SEED
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
@@ -119,7 +119,7 @@ class LMEvalDataLoader(BaseDataLoader):
         )
 
     def load(
-        self, task: str, split_ratio: float | None = None, seed: int = DATA_SPLIT_SEED,
+        self, task: str, split_ratio: float | None = None, seed: int = DEFAULT_RANDOM_SEED,
         limit: int | None = None, training_limit: int | None = None,
         testing_limit: int | None = None, **_: Any,
     ) -> LoadDataResult:

@@ -33,7 +33,7 @@ class BaseSearchSpace:
     # layers MUST be set by get_search_space() to all layers (0 to num_layers-1)
     # Empty default ensures it's always explicitly set
     layers: List[int] = field(default_factory=list)
-    strengths: List[float] = field(default_factory=lambda: list(_C.STRENGTH_SEARCH_GRID))
+    strengths: List[float] = field(default_factory=lambda: list(_C.AUTO_DEFAULT_STRENGTHS))
     strategies: List[str] = field(default_factory=lambda: list(_C.STEERING_STRATEGIES))
     token_aggregations: List[str] = field(default_factory=lambda: list(_C.TOKEN_AGGREGATIONS))
     prompt_constructions: List[str] = field(default_factory=lambda: list(_C.PROMPT_CONSTRUCTIONS))
@@ -84,9 +84,9 @@ class CAASearchSpace(BaseSearchSpace):
 class TECZASearchSpace(BaseSearchSpace):
     """Search space for TECZA method."""
     
-    num_directions: List[int] = field(default_factory=lambda: list(_C.SEARCH_TECZA_NUM_DIRECTIONS))
+    num_directions: List[int] = field(default_factory=lambda: list(_C.TECZA_SEARCH_NUM_DIRECTIONS))
     direction_weighting: List[str] = field(default_factory=lambda: list(_C.DIRECTION_WEIGHTING_OPTIONS))
-    retain_weight: List[float] = field(default_factory=lambda: list(_C.TECZA_RETAIN_WEIGHT_OPTIONS))
+    retain_weight: List[float] = field(default_factory=lambda: list(_C.TECZA_SEARCH_RETAIN_WEIGHTS))
     independence_weight: List[float] = field(default_factory=lambda: [_C.TECZA_INDEPENDENCE_WEIGHT])
     optimization_steps: List[int] = field(default_factory=lambda: list(_C.TECZA_SEARCH_OPT_STEPS))
     learning_rate: List[float] = field(default_factory=lambda: [_C.TECZA_LEARNING_RATE])
@@ -134,11 +134,11 @@ class TETNOSearchSpace(BaseSearchSpace):
     
     sensor_layer_config: List[str] = field(default_factory=lambda: list(_C.SENSOR_LAYER_CONFIGS))
     steering_layer_config: List[str] = field(default_factory=lambda: list(_C.TETNO_STEERING_LAYER_CONFIGS))
-    condition_threshold: List[float] = field(default_factory=lambda: list(_C.TETNO_CONDITION_THRESHOLD_OPTIONS))
-    gate_temperature: List[float] = field(default_factory=lambda: list(_C.TETNO_GATE_TEMPERATURE_OPTIONS))
+    condition_threshold: List[float] = field(default_factory=lambda: list(_C.TETNO_SEARCH_CONDITION_THRESHOLDS))
+    gate_temperature: List[float] = field(default_factory=lambda: list(_C.TETNO_SEARCH_GATE_TEMPERATURES))
     per_layer_scaling: List[bool] = field(default_factory=lambda: [True, False])
     use_entropy_scaling: List[bool] = field(default_factory=lambda: [True, False])
-    max_alpha: List[float] = field(default_factory=lambda: list(_C.TETNO_MAX_ALPHA_OPTIONS))
+    max_alpha: List[float] = field(default_factory=lambda: list(_C.TETNO_SEARCH_MAX_ALPHAS))
     learn_threshold: List[bool] = field(default_factory=lambda: [True])
     optimization_steps: List[int] = field(default_factory=lambda: [50, 100])
     
@@ -214,17 +214,17 @@ class GROMSearchSpace(BaseSearchSpace):
     # Override base - GROM uses different layer logic
     layers: List[int] = field(default_factory=lambda: [])  # Not used directly
 
-    num_directions: List[int] = field(default_factory=lambda: list(_C.SEARCH_GROM_NUM_DIRECTIONS))
+    num_directions: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_NUM_DIRECTIONS))
     sensor_layer_config: List[str] = field(default_factory=lambda: list(_C.SENSOR_LAYER_CONFIGS))
     steering_layer_config: List[str] = field(default_factory=lambda: list(_C.GROM_STEERING_LAYER_CONFIGS))
-    gate_hidden_dim: List[int] = field(default_factory=lambda: list(_C.GROM_GATE_HIDDEN_DIM_SEARCH))
-    intensity_hidden_dim: List[int] = field(default_factory=lambda: list(_C.GROM_INTENSITY_HIDDEN_DIM_SEARCH))
-    behavior_weight: List[float] = field(default_factory=lambda: list(_C.GROM_BEHAVIOR_WEIGHT_OPTIONS))
-    retain_weight: List[float] = field(default_factory=lambda: list(_C.GROM_RETAIN_WEIGHT_OPTIONS))
+    gate_hidden_dim: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_GATE_HIDDEN_DIMS))
+    intensity_hidden_dim: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_INTENSITY_HIDDEN_DIMS))
+    behavior_weight: List[float] = field(default_factory=lambda: list(_C.GROM_SEARCH_BEHAVIOR_WEIGHTS))
+    retain_weight: List[float] = field(default_factory=lambda: list(_C.GROM_SEARCH_RETAIN_WEIGHTS))
     sparse_weight: List[float] = field(default_factory=lambda: list(_C.GROM_SPARSE_WEIGHT_OPTIONS))
     max_alpha: List[float] = field(default_factory=lambda: list(_C.GROM_MAX_ALPHA_SEARCH))
     optimization_steps: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_OPT_STEPS))
-    learning_rate: List[float] = field(default_factory=lambda: [_C.GROM_SEARCH_LEARNING_RATE])
+    learning_rate: List[float] = field(default_factory=lambda: [_C.GROM_LEARNING_RATE])
     
     def get_total_configs(self) -> int:
         return (

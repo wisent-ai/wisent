@@ -3,7 +3,7 @@ import argparse
 
 from wisent.core import constants as _C
 from wisent.core.constants import (
-    DIAGNOSIS_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
     DIRECTIONS_PER_LAYER,
     PAIRS_SIMILARITY_THRESHOLD,
     WEIGHT_MOD_DEFAULT_COMPONENTS,
@@ -143,7 +143,7 @@ def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> Non
     multi_dir_group.add_argument(
         "--multi-optimization-steps",
         type=int,
-        default=DIAGNOSIS_OPTIMIZATION_STEPS,
+        default=DEFAULT_OPTIMIZATION_STEPS,
         help="Optimization steps for multi-direction training. Default: 100"
     )
 

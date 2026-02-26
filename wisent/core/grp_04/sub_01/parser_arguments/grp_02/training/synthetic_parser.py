@@ -5,7 +5,7 @@ from wisent.core.constants import (
     SYNTHETIC_DEDUP_SIMILARITY,
     SYNTHETIC_QUALITY_THRESHOLD,
     SYNTHETIC_MIN_QUALITY,
-    DEFAULT_BASE_STRENGTH,
+    DEFAULT_STRENGTH,
     PARSER_DEFAULT_TEST_QUESTIONS,
     NONSENSE_MAX_WORD_LENGTH,
 )
@@ -47,7 +47,7 @@ def setup_synthetic_parser(parser):
         choices=["CAA"],
         help="Steering method to use",
     )
-    parser.add_argument("--steering-strength", type=float, default=DEFAULT_BASE_STRENGTH, help="Strength of steering vector application")
+    parser.add_argument("--steering-strength", type=float, default=DEFAULT_STRENGTH, help="Strength of steering vector application")
     parser.add_argument(
         "--test-questions", type=int, default=PARSER_DEFAULT_TEST_QUESTIONS, help="Number of test questions to generate for evaluation"
     )

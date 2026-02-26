@@ -1,7 +1,7 @@
 """Parser setup for the 'optimize-sample-size' command."""
 
 from wisent.core import constants as _C
-from wisent.core.constants import DATA_SPLIT_SEED, CLASSIFIER_THRESHOLD
+from wisent.core.constants import DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD
 
 
 def setup_sample_size_optimizer_parser(parser):
@@ -23,7 +23,7 @@ def setup_sample_size_optimizer_parser(parser):
         choices=["CAA"],
         help="Steering method to use (default: CAA)",
     )
-    parser.add_argument("--steering-strength", type=float, default=_C.DEFAULT_BASE_STRENGTH, help="Steering strength to use (default: 1.0)")
+    parser.add_argument("--steering-strength", type=float, default=_C.DEFAULT_STRENGTH, help="Steering strength to use (default: 1.0)")
     parser.add_argument(
         "--token-targeting-strategy",
         type=str,
@@ -42,7 +42,7 @@ def setup_sample_size_optimizer_parser(parser):
     )
     parser.add_argument("--test-size", type=int, default=_C.OPTIMIZE_SAMPLE_TEST_SIZE, help="Fixed test set size (default: 200)")
     parser.add_argument("--test-split", type=float, default=_C.OPTIMIZE_SAMPLE_TEST_SPLIT, help="DEPRECATED: Use --test-size instead")
-    parser.add_argument("--seed", type=int, default=DATA_SPLIT_SEED, help="Random seed for reproducibility (default: 42)")
+    parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED, help="Random seed for reproducibility (default: 42)")
     parser.add_argument("--limit", type=int, default=None, help="Maximum number of samples to load from dataset")
     parser.add_argument("--save-plot", action="store_true", help="Save performance plot")
     parser.add_argument("--no-save-config", action="store_true", help="Don't save optimal sample size to model config")

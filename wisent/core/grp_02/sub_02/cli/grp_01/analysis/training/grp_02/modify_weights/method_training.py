@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, List, Dict, Any, Tuple
 
 import torch
-from wisent.core.constants import CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DEFAULT_METHOD_LAYER_RANGE_END, NUM_LAYERS_LARGE_MODEL, LAYER_SAMPLING_DIVISOR_TRAINING, METHOD_SELECTION_SAMPLE_SIZE, MIN_LAYER_ACTIVATIONS_FOR_GEOMETRY, SEPARATOR_WIDTH_STANDARD, PROGRESS_LOG_INTERVAL_10
+from wisent.core.constants import CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DEFAULT_METHOD_LAYER_RANGE_END, LAYER_SAMPLING_DIVISOR_TRAINING, METHOD_SELECTION_SAMPLE_SIZE, MIN_LAYER_ACTIVATIONS_FOR_GEOMETRY, SEPARATOR_WIDTH_STANDARD, PROGRESS_LOG_INTERVAL_10
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -22,7 +22,9 @@ def get_all_layers(model) -> List[str]:
 
     num_layers = getattr(config, 'num_hidden_layers', None) or \
                  getattr(config, 'n_layer', None) or \
-                 getattr(config, 'num_layers', None) or NUM_LAYERS_LARGE_MODEL
+                 getattr(config, 'num_layers', None)
+    if num_layers is None:
+        raise ValueError("Cannot determine num_layers from model config")
 
     return [str(i) for i in range(1, num_layers + 1)]
 
@@ -54,7 +56,9 @@ def auto_select_steering_method(
     collector = ActivationCollector(model=model)
     sample_pairs = pairs[:min(METHOD_SELECTION_SAMPLE_SIZE, len(pairs))]
 
-    num_layers = model.num_layers if hasattr(model, 'num_layers') else NUM_LAYERS_LARGE_MODEL
+    if not hasattr(model, 'num_layers'):
+        raise ValueError("Cannot determine num_layers from model")
+    num_layers = model.num_layers
     candidate_layers = list(range(0, num_layers, max(1, num_layers // LAYER_SAMPLING_DIVISOR_TRAINING)))
     if (num_layers - 1) not in candidate_layers:
         candidate_layers.append(num_layers - 1)

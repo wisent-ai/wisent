@@ -12,7 +12,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from wisent.core.evaluators.custom.custom_evaluator import CustomEvaluator
-from wisent.core.constants import DEFAULT_INFERENCE_TEMPERATURE, AGENT_DIAG_TEMPERATURE, TAG_GEN_TEMPERATURE, STEERING_GEN_MAX_TOKENS_LONG, EVAL_SYNTHETIC_TEMPERATURE, SYNTHETIC_EVAL_NUM_PROMPTS
+from wisent.core.constants import SYNTHETIC_EVAL_NUM_PROMPTS
+from wisent.core.models.config import get_generate_kwargs
 
 # Re-export from helpers
 from wisent.core.evaluators.core._synthetic_evaluator_helpers import (
@@ -56,8 +57,15 @@ class SyntheticEvaluatorConfig:
     test_prompts_file: Optional[str] = None
     generate_prompts: bool = False
     cache_criteria: bool = True
-    temperature: float = DEFAULT_INFERENCE_TEMPERATURE
-    max_tokens: int = STEERING_GEN_MAX_TOKENS_LONG
+    temperature: float = None
+    max_tokens: int = None
+
+    def __post_init__(self):
+        gen_kwargs = get_generate_kwargs()
+        if self.temperature is None:
+            self.temperature = gen_kwargs["temperature"]
+        if self.max_tokens is None:
+            self.max_tokens = gen_kwargs["max_new_tokens"]
 
 
 class SyntheticEvaluator(CustomEvaluator):
@@ -147,7 +155,7 @@ Return ONLY a JSON array of strings, no other text:
 ["prompt 1", "prompt 2", ...]"""
 
         try:
-            response = self._generate_with_model(generation_prompt, temperature=EVAL_SYNTHETIC_TEMPERATURE)
+            response = self._generate_with_model(generation_prompt)
             response = response.strip()
             if '```' in response:
                 response = response.split('```')[1]
@@ -174,7 +182,7 @@ Provide criteria for three levels:
 
 Be specific about what to look for. Keep the rubric concise (under 200 words)."""
         try:
-            self._criteria = self._generate_with_model(criteria_prompt, temperature=TAG_GEN_TEMPERATURE)
+            self._criteria = self._generate_with_model(criteria_prompt)
         except Exception as e:
             logger.warning(f"Failed to generate criteria: {e}")
             self._criteria = f"""Score 1-3: Response does not demonstrate "{self.trait_description}"
@@ -184,19 +192,23 @@ Score 7-10: Response strongly demonstrates "{self.trait_description}" """
             print(f"\n   Generated evaluation criteria:\n{self._criteria}\n")
         return self._criteria
 
-    def _generate_with_model(self, prompt: str, temperature: float = DEFAULT_INFERENCE_TEMPERATURE) -> str:
+    def _generate_with_model(self, prompt: str, temperature: float = None) -> str:
         """Generate text using the model."""
+        gen_kwargs = get_generate_kwargs()
+        if temperature is None:
+            temperature = gen_kwargs["temperature"]
+        max_new_tokens = gen_kwargs["max_new_tokens"]
         if self.model is None:
             raise ValueError("No model available for generation")
         if hasattr(self.model, 'generate'):
             messages = [{"role": "user", "content": prompt}]
-            response = self.model.generate(messages, temperature=temperature, max_new_tokens=STEERING_GEN_MAX_TOKENS_LONG)
+            response = self.model.generate(messages, temperature=temperature, max_new_tokens=max_new_tokens)
             return response
         elif hasattr(self.model, 'model') and hasattr(self.model.model, 'generate'):
             from transformers import AutoTokenizer
             tokenizer = self.model.tokenizer if hasattr(self.model, 'tokenizer') else AutoTokenizer.from_pretrained(self.model.model_name)
             inputs = tokenizer(prompt, return_tensors="pt").to(self.model.device)
-            outputs = self.model.model.generate(**inputs, max_new_tokens=STEERING_GEN_MAX_TOKENS_LONG, temperature=temperature, do_sample=True)
+            outputs = self.model.model.generate(**inputs, max_new_tokens=max_new_tokens, temperature=temperature, do_sample=True)
             return tokenizer.decode(outputs[0], skip_special_tokens=True)
         else:
             raise ValueError(f"Unknown model interface: {type(self.model)}")
@@ -218,7 +230,7 @@ Scoring criteria:
 Based on the criteria above, give a score from 1-10.
 Respond with ONLY a single number (1-10), nothing else."""
         try:
-            score_text = self._generate_with_model(eval_prompt, temperature=AGENT_DIAG_TEMPERATURE)
+            score_text = self._generate_with_model(eval_prompt)
             import re
             numbers = re.findall(r'\b(\d+(?:\.\d+)?)\b', score_text)
             if numbers:

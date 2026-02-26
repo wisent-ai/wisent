@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from difflib import SequenceMatcher
 
 from wisent.core.errors import TaskLoadError, TaskNotFoundError, NoDocsAvailableError
-from wisent.core.constants import DATA_SPLIT_RATIO, DATA_SPLIT_SEED, DEFAULT_TIMEOUT_DOCKER, TASK_FUZZY_MATCH_THRESHOLD
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, DEFAULT_TIMEOUT_DOCKER, TASK_FUZZY_MATCH_THRESHOLD
 from wisent.core import constants as _C
 
 
@@ -178,7 +178,7 @@ class TaskManager:
                 raise TaskNotFoundError(task_name=task_name)
             raise TaskLoadError(task_name=task_name, cause=e)
 
-    def split_task_data(self, task_data, split_ratio: float = DATA_SPLIT_RATIO, random_seed: int = DATA_SPLIT_SEED) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    def split_task_data(self, task_data, split_ratio: float = DEFAULT_SPLIT_RATIO, random_seed: int = DEFAULT_RANDOM_SEED) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """Split task data into training and testing sets."""
         limit = getattr(task_data, '_limit', None)
         docs = load_docs(task_data, limit)

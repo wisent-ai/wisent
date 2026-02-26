@@ -11,10 +11,10 @@ from trl import SFTTrainer, SFTConfig
 from wisent.comparison.utils import generate_contrastive_pairs, load_model_and_tokenizer
 from wisent.core.utils import preferred_dtype
 from wisent.core.constants import (
-    LORA_DEFAULT_R, LORA_DEFAULT_ALPHA, LORA_DEFAULT_DROPOUT,
-    COMPARISON_NUM_PAIRS, TRAINING_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
+    LORA_DEFAULT_DROPOUT,
+    COMPARISON_NUM_PAIRS, DEFAULT_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
     COMPARISON_LORA_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,
-    COMPARISON_TRAINING_BATCH_SIZE, COMPARISON_MAX_LENGTH,
+    COMPARISON_TRAINING_BATCH_SIZE,
     COMPARISON_LOGGING_STEPS, JSON_INDENT,
 )
 
@@ -57,11 +57,12 @@ def prepare_sft_dataset(pairs: list[dict], tokenizer) -> Dataset:
 
 def train_lora_adapter(
     task: str, model_name: str, output_path: str | Path,
+    lora_r: int, lora_alpha: int,
     trait_label: str = "correctness", num_pairs: int = COMPARISON_NUM_PAIRS,
     device: str = "cuda:0", keep_intermediate: bool = False,
-    lora_r: int = LORA_DEFAULT_R, lora_alpha: int = LORA_DEFAULT_ALPHA, lora_dropout: float = LORA_DEFAULT_DROPOUT,
+    lora_dropout: float = LORA_DEFAULT_DROPOUT,
     learning_rate: float = COMPARISON_LORA_LEARNING_RATE, num_epochs: int = COMPARISON_NUM_EPOCHS_DEFAULT,
-    batch_size: int = COMPARISON_TRAINING_BATCH_SIZE, max_length: int = COMPARISON_MAX_LENGTH,
+    batch_size: int = COMPARISON_TRAINING_BATCH_SIZE, max_length: int | None = None,
 ) -> Path:
     """Train a LoRA adapter using SFT on positive responses."""
     output_path = Path(output_path)
@@ -70,6 +71,8 @@ def train_lora_adapter(
     print(f"   Loaded {len(pairs)} training examples")
     print(f"\nStep 2: Loading model {model_name}...")
     model, tokenizer = load_model_and_tokenizer(model_name, device, eval_mode=False)
+    if max_length is None:
+        max_length = tokenizer.model_max_length
     print(f"\nStep 3: Configuring LoRA (r={lora_r}, alpha={lora_alpha})...")
     target_modules = get_target_modules(model_name)
     print(f"   Target modules: {target_modules}")
@@ -86,7 +89,7 @@ def train_lora_adapter(
     training_args = SFTConfig(
         output_dir=training_output_dir, num_train_epochs=num_epochs,
         per_device_train_batch_size=batch_size, gradient_accumulation_steps=1,
-        learning_rate=learning_rate, weight_decay=TRAINING_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
+        learning_rate=learning_rate, weight_decay=DEFAULT_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
         logging_steps=COMPARISON_LOGGING_STEPS, save_strategy="no",
         bf16=(dtype == torch.bfloat16), fp16=(dtype == torch.float16),
         report_to="none", max_seq_length=max_length,

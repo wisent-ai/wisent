@@ -7,7 +7,7 @@ This module provides a Python API for running tasks that would normally be invok
 import argparse
 from typing import Dict, Any, Optional
 from wisent.core.cli import execute_tasks
-from wisent.core.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, CLASSIFIER_THRESHOLD, DEFAULT_BASE_STRENGTH
+from wisent.core.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, CLASSIFIER_THRESHOLD, DEFAULT_STRENGTH
 
 
 def run_task_pipeline(
@@ -25,7 +25,7 @@ def run_task_pipeline(
     detection_threshold: float = CLASSIFIER_THRESHOLD,
     classifier_type: str = "logistic",
     steering_method: str = "CAA",
-    steering_strength: float = DEFAULT_BASE_STRENGTH,
+    steering_strength: float = DEFAULT_STRENGTH,
     token_targeting_strategy: str = "LAST_TOKEN",
     **kwargs
 ) -> Dict[str, Any]:

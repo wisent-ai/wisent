@@ -18,9 +18,9 @@ from .nonsense_cache import (
     cache_nonsense_to_db,
 )
 from wisent.core.constants import (
-    NONSENSE_N_PAIRS, NONSENSE_N_FOLDS,
+    NONSENSE_N_PAIRS, CV_FOLDS,
     NONSENSE_MIN_TOKENS, NONSENSE_MAX_TOKENS, NONSENSE_TOKEN_OFFSET,
-    TOKENIZER_MAX_LENGTH_NONSENSE, SIGNIFICANCE_MARGIN,
+    SIGNIFICANCE_MARGIN,
     NONSENSE_Z_SIGNIFICANCE, HASH_DISPLAY_LENGTH,
 )
 
@@ -109,7 +109,7 @@ def generate_nonsense_activations(
         return tokenizer.decode(token_ids)
 
     def get_activation(text):
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_NONSENSE)
+        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
         inputs = {k: v.to(device) for k, v in inputs.items()}
         with torch.no_grad():
             outputs = model(**inputs, output_hidden_states=True)
@@ -150,7 +150,7 @@ def compute_nonsense_baseline(
     neg_activations: torch.Tensor,
     nonsense_pos: torch.Tensor,
     nonsense_neg: torch.Tensor,
-    n_folds: int = NONSENSE_N_FOLDS,
+    n_folds: int = CV_FOLDS,
 ) -> Dict[str, float]:
     """
     Compare metrics against nonsense baseline.

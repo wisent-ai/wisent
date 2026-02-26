@@ -12,11 +12,11 @@ from wisent.core.constants import (
     BIGCODE_TEST_TIMEOUT,
     DISPLAY_TRUNCATION_LARGE,
     DISPLAY_TRUNCATION_MEDIUM,
-    DOCKER_BIGCODE_MEM_LIMIT_MB,
     DOCKER_CPU_PERIOD_US,
     DOCKER_CPU_QUOTA_50PCT_US,
     DEFAULT_TIMEOUT_DOCKER,
 )
+from wisent.core.utils.core.hardware import docker_bigcode_mem_limit_mb
 
 logger = logging.getLogger(__name__)
 
@@ -93,7 +93,7 @@ class BigCodeDockerMixin:
                     command=cmd,
                     volumes={tmpdir: {"bind": "/code", "mode": "ro"}},
                     working_dir="/code",
-                    mem_limit=f"{DOCKER_BIGCODE_MEM_LIMIT_MB}m",
+                    mem_limit=f"{docker_bigcode_mem_limit_mb()}m",
                     cpu_period=DOCKER_CPU_PERIOD_US,
                     cpu_quota=DOCKER_CPU_QUOTA_50PCT_US,  # 50% CPU limit
                     network_disabled=True,  # No network access

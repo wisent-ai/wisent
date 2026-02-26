@@ -21,9 +21,9 @@ import numpy as np
 from wisent.core.constants import (
     DEFAULT_LAYER_CONFIG, DEFAULT_SCORE, DEFAULT_STRENGTH,
     MOVEMENT_THRESHOLD, BROYDEN_DEFAULT_ALPHA, PAIRS_NUM_PAIRS,
-    TECZA_INDEPENDENCE_WEIGHT, TECZA_OPTIMIZATION_STEPS,
+    TECZA_INDEPENDENCE_WEIGHT, DEFAULT_OPTIMIZATION_STEPS,
     TECZA_MIN_COSINE_SIM, TECZA_MAX_COSINE_SIM,
-    TETNO_CONDITION_THRESHOLD, TETNO_MAX_ALPHA, TETNO_OPTIMIZATION_STEPS,
+    TETNO_CONDITION_THRESHOLD, TETNO_MAX_ALPHA, DEFAULT_OPTIMIZATION_STEPS,
     GROM_GATE_TEMPERATURE, GROM_ROUTER_HIDDEN_DIM, GROM_INTENSITY_HIDDEN_DIM,
     GROM_BEHAVIOR_WEIGHT, GROM_SPARSE_WEIGHT, GROM_OPTIMIZATION_STEPS,
     GROM_LEARNING_RATE, BLEND_DEFAULT,
@@ -92,7 +92,7 @@ class SteeringConfig(SerializableConfig):
     direction_weighting: str = "primary_only"
     retain_weight: float = DEFAULT_SCORE
     independence_weight: float = TECZA_INDEPENDENCE_WEIGHT
-    tecza_optimization_steps: int = TECZA_OPTIMIZATION_STEPS
+    tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     use_caa_init: bool = True
     cone_constraint: bool = True
     min_cosine_similarity: float = TECZA_MIN_COSINE_SIM
@@ -106,7 +106,7 @@ class SteeringConfig(SerializableConfig):
     use_entropy_scaling: bool = False
     max_alpha: float = TETNO_MAX_ALPHA
     learn_threshold: bool = True
-    tetno_optimization_steps: int = TETNO_OPTIMIZATION_STEPS
+    tetno_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     # GROM parameters
     gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM
     intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM

@@ -1,6 +1,5 @@
 """Parser setup for the 'multi-steer' command."""
 
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL
 
 
 def setup_multi_steer_parser(parser):
@@ -32,7 +31,7 @@ def setup_multi_steer_parser(parser):
 
     # Generation configuration
     parser.add_argument("--prompt", type=str, required=True, help="Prompt to generate with combined steering")
-    parser.add_argument("--max-new-tokens", type=int, default=DEFAULT_MAX_NEW_TOKENS_EVAL, help="Maximum new tokens to generate (default: 100)")
+    parser.add_argument("--max-new-tokens", type=int, default=100, help="Maximum new tokens to generate (default: 100)")
 
     # Weight normalization
     parser.add_argument("--normalize-weights", action="store_true", help="Normalize weights to sum to 1.0")

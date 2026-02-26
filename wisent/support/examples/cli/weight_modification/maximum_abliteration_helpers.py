@@ -12,10 +12,10 @@ from wisent.core.constants import (
     ABLITERATION_BINARY_SEARCH_LOW,
     ABLITERATION_BINARY_SEARCH_HIGH,
     ABLITERATION_BINARY_SEARCH_ITERS,
-    SUBPROCESS_TIMEOUT_LONG,
     DISPLAY_TRUNCATION_LARGE,
     SEPARATOR_WIDTH_REPORT,
 )
+from wisent.core.utils.core.hardware import subprocess_timeout_long_s
 
 
 @dataclass
@@ -57,7 +57,7 @@ def evaluate_model(model_path: str, task: str = "hellaswag", limit: int = EXTRAC
         "--batch_size", "8",
     ]
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT_LONG)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=subprocess_timeout_long_s())
 
     if result.returncode != 0:
         print(f"Evaluation failed: {result.stderr[:DISPLAY_TRUNCATION_LARGE]}")
@@ -112,7 +112,7 @@ def run_abliteration(config: AbliterationConfig, task: str, model: str, output_d
     print(f"  max_weight={config.max_weight}, strength={config.strength}")
     print(f"  num_pairs={config.num_pairs}, components={config.components}")
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT_LONG)
+    result = subprocess.run(cmd, capture_output=True, text=True, timeout=subprocess_timeout_long_s())
 
     if result.returncode != 0:
         print(f"Abliteration failed: {result.stderr[:DISPLAY_TRUNCATION_LARGE]}")

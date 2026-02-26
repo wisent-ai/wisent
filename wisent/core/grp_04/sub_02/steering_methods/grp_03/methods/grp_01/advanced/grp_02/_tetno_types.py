@@ -34,8 +34,8 @@ from wisent.core.constants import (
     TETNO_ENTROPY_FLOOR,
     TETNO_ENTROPY_CEILING,
     TETNO_MAX_ALPHA,
-    TETNO_OPTIMIZATION_STEPS,
-    TETNO_LEARNING_RATE,
+    DEFAULT_OPTIMIZATION_STEPS,
+    TECZA_LEARNING_RATE,
     TETNO_THRESHOLD_SEARCH_STEPS,
     DEFAULT_LAYER_WEIGHT,
 )
@@ -102,10 +102,10 @@ class TETNOConfig:
     """Maximum steering strength."""
     
     # Training
-    optimization_steps: int = TETNO_OPTIMIZATION_STEPS
+    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     """Steps for condition vector optimization."""
     
-    learning_rate: float = TETNO_LEARNING_RATE
+    learning_rate: float = TECZA_LEARNING_RATE
     """Learning rate for optimization."""
     
     use_caa_init: bool = True

@@ -7,10 +7,10 @@ on positive responses from contrastive pairs.
 Re-exports from reft_train and reft_eval submodules.
 """
 from wisent.core.constants import (
-    COMPARISON_NUM_PAIRS, DATA_SPLIT_RATIO, COMPARISON_EVAL_BATCH_SIZE,
+    COMPARISON_NUM_PAIRS, DEFAULT_SPLIT_RATIO, COMPARISON_EVAL_BATCH_SIZE,
     COMPARISON_STEERING_LAYER, COMPARISON_REFT_LEARNING_RATE,
     COMPARISON_NUM_EPOCHS_DEFAULT, COMPARISON_TRAINING_BATCH_SIZE,
-    LOREFT_DEFAULT_RANK, COMPARISON_MAX_LENGTH,
+    LOREFT_DEFAULT_RANK,
 )
 from wisent.comparison.reft_train import prepare_reft_dataset, train_reft_adapter
 from wisent.comparison.reft_eval import apply_reft_to_model, remove_reft, evaluate_reft
@@ -33,9 +33,9 @@ def main():
     parser.add_argument("--learning-rate", type=float, default=COMPARISON_REFT_LEARNING_RATE, help="Learning rate")
     parser.add_argument("--num-epochs", type=int, default=COMPARISON_NUM_EPOCHS_DEFAULT, help="Number of epochs")
     parser.add_argument("--batch-size", type=int, default=COMPARISON_TRAINING_BATCH_SIZE, help="Training batch size")
-    parser.add_argument("--max-length", type=int, default=COMPARISON_MAX_LENGTH, help="Max sequence length")
+    parser.add_argument("--max-length", type=int, default=None, help="Max sequence length")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files")
-    parser.add_argument("--train-ratio", type=float, default=DATA_SPLIT_RATIO, help="Train/test split ratio")
+    parser.add_argument("--train-ratio", type=float, default=DEFAULT_SPLIT_RATIO, help="Train/test split ratio")
     parser.add_argument("--eval-batch-size", default="auto", help="Eval batch size (int or 'auto')")
     parser.add_argument("--eval-max-batch-size", type=int, default=COMPARISON_EVAL_BATCH_SIZE, help="Max eval batch size for auto")
     parser.add_argument("--eval-limit", type=int, default=None, help="Limit eval examples")

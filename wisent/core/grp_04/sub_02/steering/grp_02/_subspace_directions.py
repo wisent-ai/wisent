@@ -8,7 +8,7 @@ import torch
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.activations.core.atoms import LayerName
 from wisent.core.steering._subspace_compression import UniversalBasis, compute_universal_basis
-from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_VARIANCE_THRESHOLD, TECZA_MAX_DIRECTIONS, MARGINAL_VARIANCE_THRESHOLD, SUBSPACE_ROBUSTNESS_NOISE_SCALE, MAX_PCA_COMPONENTS_ANALYSIS, SUBSPACE_DIRECTION_PADDING
+from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_VARIANCE_THRESHOLD, TECZA_MAX_DIRECTIONS, MARGINAL_VARIANCE_THRESHOLD, SUBSPACE_ROBUSTNESS_NOISE_SCALE, CONCEPT_PCA_COMPONENTS, SUBSPACE_DIRECTION_PADDING
 
 VARIANCE_EXPLAINED_THRESHOLD = DEFAULT_VARIANCE_THRESHOLD
 
@@ -17,7 +17,7 @@ _LOG = setup_logger(__name__)
 def explained_variance_analysis(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    max_components: int = MAX_PCA_COMPONENTS_ANALYSIS,
+    max_components: int = CONCEPT_PCA_COMPONENTS,
 ) -> Tuple[List[float], List[float]]:
     """
     Analyze how many directions are needed to explain the behavioral difference.
