@@ -161,7 +161,6 @@ RECOMMEND_COLLECTOR_PER_TYPE = 2
 
 # --- Personalization / welfare ---
 PERSONALIZATION_N_TRIALS = 20
-PERSONALIZATION_LIMIT = 100
 WELFARE_LIMIT = 50
 
 # --- Transport RL ---
