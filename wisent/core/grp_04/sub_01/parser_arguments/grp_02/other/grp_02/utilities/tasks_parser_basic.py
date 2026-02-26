@@ -1,6 +1,6 @@
 """Basic arguments for the tasks parser."""
 
-from wisent.core.constants import DATA_SPLIT_RATIO, DATA_SPLIT_SEED, DEFAULT_LAYER, PARSER_DEFAULT_NUM_PAIRS_GENERATE, OPTIMIZE_MAX_COMBINATIONS_DEFAULT, PARSER_DEFAULT_MIN_QUALITY, PARSER_DEFAULT_TOTAL_SAMPLES, PARSER_DEFAULT_FEW_SHOT, MAX_NEW_TOKENS_GENERATE_LONG, PARSER_DEFAULT_MAX_REGEN_ATTEMPTS, PARSER_DEFAULT_CLASSIFICATION_THRESHOLD
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, DEFAULT_LAYER, PARSER_DEFAULT_NUM_PAIRS_GENERATE, OPTIMIZE_MAX_COMBINATIONS_DEFAULT, PARSER_DEFAULT_MIN_QUALITY, PARSER_DEFAULT_TOTAL_SAMPLES, PARSER_DEFAULT_FEW_SHOT, PARSER_DEFAULT_MAX_REGEN_ATTEMPTS, PARSER_DEFAULT_CLASSIFICATION_THRESHOLD
 
 
 def setup_basic_task_args(parser):
@@ -133,7 +133,7 @@ def setup_basic_task_args(parser):
         help="Layer(s) to extract activations from. Can be a single layer, range (14-16), or comma-separated list (14,15,16)",
     )
     parser.add_argument("--shots", type=int, default=PARSER_DEFAULT_FEW_SHOT, help="Number of few-shot examples")
-    parser.add_argument("--split-ratio", type=float, default=DATA_SPLIT_RATIO, help="Train/test split ratio")
+    parser.add_argument("--split-ratio", type=float, default=DEFAULT_SPLIT_RATIO, help="Train/test split ratio")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of documents per task")
     parser.add_argument(
         "--training-limit",
@@ -151,9 +151,9 @@ def setup_basic_task_args(parser):
     parser.add_argument(
         "--classifier-type", type=str, choices=["logistic", "mlp"], default="logistic", help="Type of classifier"
     )
-    parser.add_argument("--max-new-tokens", type=int, default=MAX_NEW_TOKENS_GENERATE_LONG, help="Maximum new tokens for generation")
+    parser.add_argument("--max-new-tokens", type=int, default=300, help="Maximum new tokens for generation")
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
-    parser.add_argument("--seed", type=int, default=DATA_SPLIT_SEED, help="Random seed for reproducibility")
+    parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED, help="Random seed for reproducibility")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     # Extraction strategy - unified approach combining prompt format and token selection
     from wisent.core.activations import ExtractionStrategy

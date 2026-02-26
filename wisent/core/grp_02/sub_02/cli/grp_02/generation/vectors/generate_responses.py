@@ -7,7 +7,7 @@ import torch
 
 from wisent.core.models import get_generate_kwargs
 from wisent.core.activations import ExtractionStrategy, extract_activation
-from wisent.core.constants import DATA_SPLIT_RATIO, DATA_SPLIT_SEED, JSON_INDENT, MIN_LOAD_LIMIT_QUESTIONS, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, JSON_INDENT, MIN_LOAD_LIMIT_QUESTIONS, DISPLAY_TRUNCATION_COMPACT
 
 
 def execute_generate_responses(args):
@@ -93,8 +93,8 @@ def execute_generate_responses(args):
         
         load_limit = max(args.num_questions * 2, MIN_LOAD_LIMIT_QUESTIONS)
         load_kwargs = dict(
-            split_ratio=DATA_SPLIT_RATIO,
-            seed=DATA_SPLIT_SEED,
+            split_ratio=DEFAULT_SPLIT_RATIO,
+            seed=DEFAULT_RANDOM_SEED,
             limit=load_limit,
             training_limit=None,
             testing_limit=None

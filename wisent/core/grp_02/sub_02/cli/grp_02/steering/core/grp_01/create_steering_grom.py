@@ -9,11 +9,11 @@ from wisent.core.constants import (
     GROM_GATE_DIM_DIVISOR,
     GROM_INTENSITY_DIM_DIVISOR,
     GROM_CREATE_NOISE_SCALE,
-    GROM_CREATE_LR,
-    GROM_WEIGHT_DECAY,
-    GROM_CREATE_STEPS,
+    GROM_LEARNING_RATE,
+    DEFAULT_WEIGHT_DECAY,
+    GROM_OPTIMIZATION_STEPS,
     GROM_CREATE_GATE_THRESHOLD,
-    GROM_CREATE_RETAIN_WEIGHT,
+    GROM_RETAIN_WEIGHT,
     GROM_MAX_GRAD_NORM,
     GROM_CREATE_LOG_INTERVAL,
 )
@@ -93,14 +93,14 @@ def _create_grom_steering_object(
     all_params.extend(gate_network.parameters())
     all_params.extend(intensity_network.parameters())
     
-    optimizer = torch.optim.AdamW(all_params, lr=GROM_CREATE_LR, weight_decay=GROM_WEIGHT_DECAY)
+    optimizer = torch.optim.AdamW(all_params, lr=GROM_LEARNING_RATE, weight_decay=DEFAULT_WEIGHT_DECAY)
     
     sensor_pos = all_pos[sensor_layer]
     sensor_neg = all_neg[sensor_layer]
     
     print(f"   Training GROM ({num_directions} directions, {len(layer_order)} layers)...")
     
-    for step in range(GROM_CREATE_STEPS):
+    for step in range(GROM_OPTIMIZATION_STEPS):
         optimizer.zero_grad()
         
         total_loss = torch.tensor(0.0)
@@ -129,7 +129,7 @@ def _create_grom_steering_object(
             
             # Retain loss
             neg_proj = (neg_data * effective_dir).sum(dim=1).abs()
-            retain_loss = neg_proj.mean() * GROM_CREATE_RETAIN_WEIGHT
+            retain_loss = neg_proj.mean() * GROM_RETAIN_WEIGHT
             
             total_loss = total_loss + behavior_loss + retain_loss
         

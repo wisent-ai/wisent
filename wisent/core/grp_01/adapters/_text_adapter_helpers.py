@@ -10,7 +10,7 @@ import torch
 from wisent.core.adapters.base import SteeringConfig
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.modalities import TextContent
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_ADAPTER, DEFAULT_INFERENCE_TEMPERATURE
+from wisent.core.models.config import get_generate_kwargs
 
 
 class TextAdapterGenerationMixin:
@@ -48,13 +48,12 @@ class TextAdapterGenerationMixin:
         inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
         # Apply steering during generation
+        gen_kwargs = get_generate_kwargs()
+        gen_kwargs["pad_token_id"] = self.tokenizer.pad_token_id
         with self._steering_hooks(steering_vectors, config):
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=DEFAULT_MAX_NEW_TOKENS_ADAPTER,
-                do_sample=True,
-                temperature=DEFAULT_INFERENCE_TEMPERATURE,
-                pad_token_id=self.tokenizer.pad_token_id,
+                **gen_kwargs,
             )
 
         # Decode output
@@ -69,9 +68,6 @@ class TextAdapterGenerationMixin:
     def _generate_unsteered(
         self,
         content: TextContent | str,
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_ADAPTER,
-        temperature: float = DEFAULT_INFERENCE_TEMPERATURE,
-        do_sample: bool = True,
         **kwargs: Any,
     ) -> str:
         """Generate text without steering."""
@@ -86,14 +82,12 @@ class TextAdapterGenerationMixin:
         )
         inputs = {k: v.to(self.model.device) for k, v in inputs.items()}
 
+        gen_kwargs = get_generate_kwargs(**kwargs)
+        gen_kwargs["pad_token_id"] = self.tokenizer.pad_token_id
         with torch.no_grad():
             outputs = self.model.generate(
                 **inputs,
-                max_new_tokens=max_new_tokens,
-                do_sample=do_sample,
-                temperature=temperature,
-                pad_token_id=self.tokenizer.pad_token_id,
-                **kwargs,
+                **gen_kwargs,
             )
 
         generated = self.tokenizer.decode(outputs[0], skip_special_tokens=True)

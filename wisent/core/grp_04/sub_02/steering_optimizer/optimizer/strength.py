@@ -23,7 +23,7 @@ from wisent.core.constants import (
     DEFAULT_STRENGTH, DEFAULT_LIMIT, DEFAULT_LAYER,
     DEFAULT_NUM_STRENGTH_STEPS, SEARCH_LAYER_OFFSET,
     SEARCH_STRENGTH_RANGE_MIN, SEARCH_STRENGTH_RANGE_MAX,
-    AUTO_COMPREHENSIVE_TIME_MINUTES, CLASSIFIER_DECISION_THRESHOLD,
+    AUTO_COMPREHENSIVE_TIME_MINUTES, CLASSIFIER_THRESHOLD,
 )
 
 from ..types import SteeringOptimizationResult, SteeringOptimizationSummary
@@ -202,7 +202,7 @@ class StrengthOptimizationMixin:
                 changes = [abs(s - b) for b, s in valid_pairs]
                 steering_effect = min(sum(changes) / len(changes), _C.STEERING_EFFECT_CAP)
                 score = steering_effect
-                if np.isfinite(accuracy) and accuracy > CLASSIFIER_DECISION_THRESHOLD:
+                if np.isfinite(accuracy) and accuracy > CLASSIFIER_THRESHOLD:
                     score += accuracy * _C.STRENGTH_ACCURACY_WEIGHT
                 return score
 

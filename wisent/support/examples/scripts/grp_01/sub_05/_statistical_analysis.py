@@ -13,8 +13,8 @@ from sklearn.metrics import silhouette_score
 from wisent.core.constants import (
     ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     LINEARITY_PCA_COMPONENTS, LINEARITY_N_BOOTSTRAP, STAT_ALPHA,
-    CV_FOLDS, DIP_TEST_SIMULATIONS, DIRECTION_N_SPLITS, CV_DEFAULT_N_FOLDS,
-    N_BOOTSTRAP_DEFAULT, DISPLAY_TOP_N_SMALL, DIP_TEST_N_SIMULATIONS,
+    CV_FOLDS, DIP_TEST_SIMULATIONS, DIRECTION_N_SPLITS, CV_FOLDS,
+    N_BOOTSTRAP_DEFAULT, DISPLAY_TOP_N_SMALL,
     PERCENTILE_HIGH,
 )
 
@@ -106,7 +106,7 @@ def compute_direction_consistency(
     }
 
 
-def compute_cv_variance(diff_vectors: np.ndarray, n_folds: int = CV_DEFAULT_N_FOLDS) -> Dict:
+def compute_cv_variance(diff_vectors: np.ndarray, n_folds: int = CV_FOLDS) -> Dict:
     """
     Compute cross-validation variance for linear probe.
     
@@ -160,7 +160,7 @@ def hartigans_dip_test(data: np.ndarray) -> Tuple[float, float]:
     
     # Approximate p-value using Monte Carlo
     dip_null = []
-    for _ in range(DIP_TEST_N_SIMULATIONS):
+    for _ in range(DIP_TEST_SIMULATIONS):
         sample = np.sort(np.random.uniform(0, 1, n))
         sample_ecdf = np.arange(1, n + 1) / n
         dip_null.append(np.max(np.abs(sample_ecdf - sample)))

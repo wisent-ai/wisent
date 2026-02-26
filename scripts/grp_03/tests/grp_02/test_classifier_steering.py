@@ -8,7 +8,8 @@ import numpy as np
 from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
 import random
-from wisent.core.constants import MAX_NEW_TOKENS_TEST_SHORT, ZERO_THRESHOLD, TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED
+from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_RANDOM_SEED
+from wisent.core.models import get_generate_kwargs
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "cuda" if torch.cuda.is_available() else "mps"
@@ -41,7 +42,7 @@ print(f"Train: {len(train_pairs)}, Test: {len(test_pairs)}")
 LAYER = 8  # Best layer from earlier results
 
 def get_activation(text, layer):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float().numpy()
@@ -122,7 +123,6 @@ def generate_answer(question, alpha=0.0, vector=None):
     with torch.no_grad():
         outputs = model.generate(
             inputs.input_ids,
-            max_new_tokens=MAX_NEW_TOKENS_TEST_SHORT,
             do_sample=False,
             pad_token_id=tokenizer.eos_token_id,
         )

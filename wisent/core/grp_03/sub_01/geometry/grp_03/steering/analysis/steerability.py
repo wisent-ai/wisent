@@ -9,7 +9,7 @@ import torch
 import numpy as np
 from typing import Dict, Any
 from wisent.core.constants import (
-    NORM_EPS, STEERABILITY_AMBIENT_DIM, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
+    NORM_EPS, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     STEERABILITY_SILHOUETTE_SAMPLE_LIMIT, STEERABILITY_MIN_PAIRS,
     CUMSUM_THRESHOLD_90, MIN_CLUSTERS,
 )
@@ -174,7 +174,7 @@ def compute_linearity_score(
     direction_stability: float,
     diff_intrinsic_dim: float,
     pairwise_consistency: float,
-    ambient_dim: int = STEERABILITY_AMBIENT_DIM,
+    ambient_dim: int,
 ) -> Dict[str, Any]:
     """
     Return raw metrics relevant to linearity assessment.

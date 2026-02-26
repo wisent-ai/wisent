@@ -1,7 +1,8 @@
 """Docker execution evaluation for evaluate-responses command."""
 import json
 import os
-from wisent.core.constants import EVAL_TIME_LIMIT_S, EVAL_CPU_LIMIT_S, EVAL_MEM_LIMIT_MB, DEFAULT_SCORE, JSON_INDENT
+from wisent.core.constants import DEFAULT_SCORE, JSON_INDENT
+from wisent.core.utils.core.hardware import eval_time_limit_s, eval_cpu_limit_s, eval_mem_limit_mb
 
 
 def evaluate_docker_execution(args, input_data, responses, task_name, evaluation_results, task_results, task_config=None):
@@ -72,9 +73,9 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     docker_config = task_config.get('docker_config', {})
     config = EvaluatorConfig(
         image=docker_config.get('image', 'coding/sandbox:polyglot-1.0'),
-        time_limit_s=docker_config.get('time_limit_s', EVAL_TIME_LIMIT_S),
-        cpu_limit_s=docker_config.get('cpu_limit_s', EVAL_CPU_LIMIT_S),
-        mem_limit_mb=docker_config.get('mem_limit_mb', EVAL_MEM_LIMIT_MB),
+        time_limit_s=docker_config.get('time_limit_s', eval_time_limit_s()),
+        cpu_limit_s=docker_config.get('cpu_limit_s', eval_cpu_limit_s()),
+        mem_limit_mb=docker_config.get('mem_limit_mb', eval_mem_limit_mb()),
         self_repair=False  # No self-repair for evaluation
     )
 

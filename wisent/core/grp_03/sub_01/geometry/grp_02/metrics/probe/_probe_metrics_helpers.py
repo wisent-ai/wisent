@@ -10,7 +10,7 @@ def compute_knn_pacmap_accuracy(
     neg_activations: torch.Tensor,
     k: int = _C.KNN_DEFAULT_K,
     n_components: int = _C.PACMAP_N_COMPONENTS_DEFAULT,
-    n_folds: int = _C.CV_DEFAULT_N_FOLDS,
+    n_folds: int = _C.CV_FOLDS,
 ) -> float:
     """Compute k-NN accuracy on PaCMAP-reduced features.
 

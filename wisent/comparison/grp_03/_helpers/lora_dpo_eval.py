@@ -18,7 +18,7 @@ from wisent.core.constants import (
     COMPARISON_NUM_PAIRS,
     COMPARISON_STEERING_LAYER,
     COMPARISON_STEERING_SCALES,
-    DATA_SPLIT_RATIO, JSON_INDENT,
+    DEFAULT_SPLIT_RATIO, JSON_INDENT,
 )
 from wisent.comparison.utils import (
     generate_contrastive_pairs,
@@ -38,7 +38,7 @@ def evaluate_lora_dpo(
     model_name: str,
     lora_path: str | Path,
     task: str,
-    train_ratio: float = DATA_SPLIT_RATIO,
+    train_ratio: float = DEFAULT_SPLIT_RATIO,
     device: str = "cuda:0",
     batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE,
     max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,

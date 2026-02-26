@@ -2,14 +2,14 @@
 import argparse
 
 from wisent.core.constants import (
-    DATA_SPLIT_RATIO,
-    DATA_SPLIT_SEED,
-    MODIFY_WEIGHTS_BATCH_SIZE,
+    DEFAULT_SPLIT_RATIO,
+    DEFAULT_RANDOM_SEED,
     MODIFY_WEIGHTS_DEFAULT_ALPHA,
     MODIFY_WEIGHTS_LR_SCHEDULES,
     MODIFY_WEIGHTS_MAX_ITERATIONS,
     PAIRS_SIMILARITY_THRESHOLD,
 )
+from wisent.core.utils.core.hardware import default_batch_size
 
 
 def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
@@ -84,13 +84,13 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--train-ratio",
         type=float,
-        default=DATA_SPLIT_RATIO,
+        default=DEFAULT_SPLIT_RATIO,
         help="Fraction of pairs for training vs evaluation (default: 0.8)"
     )
     parser.add_argument(
         "--seed",
         type=int,
-        default=DATA_SPLIT_SEED,
+        default=DEFAULT_RANDOM_SEED,
         help="Random seed for reproducibility (default: 42)"
     )
 
@@ -179,7 +179,7 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     grom_group.add_argument(
         "--grom-num-directions",
         type=int,
-        default=MODIFY_WEIGHTS_BATCH_SIZE,
+        default=default_batch_size(),
         help="Number of manifold directions for GROM (default: 8)"
     )
 

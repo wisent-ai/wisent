@@ -16,12 +16,9 @@ from tqdm import tqdm
 # Import Wisent functions
 from wisent.core.data_loaders.livecodebench_loader import LiveCodeBenchLoader
 from wisent.core.model import Model
+from wisent.core.models.config import get_generate_kwargs
 from wisent.core.constants import (
-    CODE_GENERATION_MAX_TOKENS,
     DEFAULT_LAYER,
-    GENERATION_TEMPERATURE,
-    GENERATION_TOP_P_NARROW,
-    BENCHMARK_MAX_TOKENS_ARGPARSE,
     TEST_DEFAULT_LIMIT, JSON_INDENT,
 )
 
@@ -37,15 +34,15 @@ def setup_output_directory(output_dir: str = "results") -> Path:
     return output_path
 
 
-def generate_code_completion(model: Model, problem: Dict[str, Any], max_tokens: int = CODE_GENERATION_MAX_TOKENS) -> Dict[str, Any]:
+def generate_code_completion(model: Model, problem: Dict[str, Any], max_tokens: int | None = None) -> Dict[str, Any]:
     """
     Generate code completion for a given problem using the model.
-    
+
     Args:
         model: Wisent Model instance
         problem: LiveCodeBench problem dictionary
-        max_tokens: Maximum tokens to generate
-        
+        max_tokens: Maximum tokens to generate (None = use configured default)
+
     Returns:
         Dictionary with generated code and metadata
     """
@@ -64,14 +61,14 @@ Please provide a complete solution:"""
 
     try:
         # Generate response using Wisent model
+        gen_kwargs = get_generate_kwargs()
+        if max_tokens is not None:
+            gen_kwargs["max_new_tokens"] = max_tokens
         start_time = time.time()
         response = model.generate(
             prompt=prompt,
             layer_index=DEFAULT_LAYER,
-            max_new_tokens=max_tokens,
-            do_sample=True,
-            temperature=GENERATION_TEMPERATURE,
-            top_p=GENERATION_TOP_P_NARROW
+            **gen_kwargs
         )
         generation_time = time.time() - start_time
         
@@ -109,7 +106,7 @@ def main():
                        help="LiveCodeBench release version")
     parser.add_argument("--limit", type=int, default=TEST_DEFAULT_LIMIT,
                        help="Limit number of problems to process")
-    parser.add_argument("--max-tokens", type=int, default=BENCHMARK_MAX_TOKENS_ARGPARSE,
+    parser.add_argument("--max-tokens", type=int, default=512,
                        help="Maximum tokens to generate per problem")
     parser.add_argument("--output-dir", default="results", 
                        help="Output directory for results")

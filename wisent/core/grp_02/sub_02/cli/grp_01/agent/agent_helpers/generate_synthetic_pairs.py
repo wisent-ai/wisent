@@ -3,7 +3,8 @@
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.synthetic.generators.core.atoms import GenerationReport
 from wisent.core.errors import PairGenerationError
-from wisent.core.constants import AGENT_MAX_WORKERS, GENERATE_PAIRS_MIN_TOKENS, GENERATE_PAIRS_MAX_TOKENS, SIMHASH_DEFAULT_THRESHOLD_BITS, SYNTHETIC_PAIRS_TEMPERATURE, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, MIN_SYNTHETIC_PAIRS, SYNTHETIC_PAIRS_TIME_MULTIPLIER, TOKENS_PER_PAIR_SYNTHETIC, TOKENS_BASE_SYNTHETIC
+from wisent.core.models import get_generate_kwargs
+from wisent.core.constants import AGENT_MAX_WORKERS, GENERATE_PAIRS_MIN_TOKENS, SIMHASH_DEFAULT_THRESHOLD_BITS, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET
 
 
 def generate_synthetic_pairs(
@@ -52,7 +53,7 @@ def generate_synthetic_pairs(
 
     # Determine number of pairs: use parameter override or estimate from time budget
     if num_pairs is None:
-        num_pairs = max(MIN_SYNTHETIC_PAIRS, int(time_budget * SYNTHETIC_PAIRS_TIME_MULTIPLIER))
+        num_pairs = max(AGENT_SYNTH_MIN_PAIRS, int(time_budget * AGENT_SYNTH_TIME_MULTIPLIER))
         print(f"   Generating {num_pairs} pairs (based on time budget)")
     else:
         print(f"   Generating {num_pairs} pairs (user specified)")
@@ -60,14 +61,11 @@ def generate_synthetic_pairs(
     print(f"   ✓ Model loaded with {model.num_layers} layers")
 
     # Scale max_new_tokens based on number of pairs (same as generate-pairs CLI)
-    estimated_tokens = num_pairs * TOKENS_PER_PAIR_SYNTHETIC + TOKENS_BASE_SYNTHETIC
-    max_tokens = max(GENERATE_PAIRS_MIN_TOKENS, min(estimated_tokens, GENERATE_PAIRS_MAX_TOKENS))
+    gen_kwargs = get_generate_kwargs()
+    estimated_tokens = num_pairs * TOKENS_PER_PAIR_ESTIMATE + TOKENS_BASE_OFFSET
+    max_tokens = max(GENERATE_PAIRS_MIN_TOKENS, min(estimated_tokens, gen_kwargs["max_new_tokens"]))
 
-    generation_config = {
-        "max_new_tokens": max_tokens,
-        "temperature": SYNTHETIC_PAIRS_TEMPERATURE,
-        "do_sample": True,
-    }
+    generation_config = {**gen_kwargs, "max_new_tokens": max_tokens}
 
     # Set up cleaning pipeline (same as generate-pairs CLI)
     print(f"\n🧹 Setting up cleaning pipeline...")

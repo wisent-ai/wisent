@@ -4,7 +4,7 @@ from wisent.core.activations import ExtractionStrategy
 from wisent.core.constants import (
     CHECK_LINEARITY_LINEAR_THRESHOLD, CHECK_LINEARITY_WEAK_THRESHOLD,
     CHECK_LINEARITY_MIN_COHENS_D, CHECK_LINEARITY_DEFAULT_MAX_PAIRS,
-    CHECK_LINEARITY_OPT_STEPS,
+    DIAG_OPTIMIZATION_STEPS,
 )
 
 
@@ -76,7 +76,7 @@ def setup_check_linearity_parser(parser):
     parser.add_argument(
         '--optimization-steps',
         type=int,
-        default=CHECK_LINEARITY_OPT_STEPS,
+        default=DIAG_OPTIMIZATION_STEPS,
         help='Optimization steps for geometry detection (default: 50)'
     )
     

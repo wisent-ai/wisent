@@ -5,7 +5,7 @@ import torch
 from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainReport
 from wisent.core.errors import UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, CLASSIFIER_THRESHOLD, CLASSIFIER_MLP_HIDDEN_DIM, CLASSIFIER_TEST_SIZE, BATCH_SIZE_CAP
+from wisent.core.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, CLASSIFIER_THRESHOLD, CLASSIFIER_HIDDEN_DIM, CLASSIFIER_TEST_SIZE, BATCH_SIZE_CAP
 
 
 def _torch_dtype_to_numpy(torch_dtype: torch.dtype):
@@ -156,7 +156,7 @@ def train_classifier_on_pairs(
         classifier = LogisticClassifier(threshold=CLASSIFIER_THRESHOLD)
         print(f"   Training logistic classifier...")
     elif classifier_type == "mlp":
-        classifier = MLPClassifier(threshold=CLASSIFIER_THRESHOLD, hidden_dim=CLASSIFIER_MLP_HIDDEN_DIM)
+        classifier = MLPClassifier(threshold=CLASSIFIER_THRESHOLD, hidden_dim=CLASSIFIER_HIDDEN_DIM)
         print(f"   Training MLP classifier...")
     else:
         raise UnknownTypeError(entity_type="classifier_type", value=classifier_type, valid_values=["logistic", "mlp"])

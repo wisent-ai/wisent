@@ -26,7 +26,6 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     GeometryAnalysisConfig,
 )
 from wisent.core.constants import (
-    TOKENIZER_MAX_LENGTH_GEOMETRY,
     DEFAULT_RANDOM_SEED,
     GEOMETRY_OPTIMIZATION_STEPS_DEFAULT,
     TECZA_NUM_DIRECTIONS,
@@ -66,7 +65,7 @@ def main():
     print(f"Train: {len(train_samples)}, Test: {len(test_samples)}")
 
     def get_activation(text, layer):
-        inp = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY)
+        inp = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
         inp = {k: v.to(model.device) for k, v in inp.items()}
         with torch.no_grad():
             out = model(**inp, output_hidden_states=True)

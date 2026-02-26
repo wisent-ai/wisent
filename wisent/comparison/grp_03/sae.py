@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from wisent.core.constants import COMPARISON_NUM_PAIRS, TOKENIZER_MAX_LENGTH_CLUSTER, SAE_TOP_K_DEFAULT, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10
+from wisent.core.constants import COMPARISON_NUM_PAIRS, SAE_TOP_K_DEFAULT, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10
 from wisent.comparison.utils import (
     apply_steering_to_model,
     remove_steering,
@@ -53,7 +53,7 @@ def _get_residual_stream_activations(
     Returns:
         Tensor of shape (1, seq_len, d_model)
     """
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
     inputs = {k: v.to(device) for k, v in inputs.items()}
 
     with torch.no_grad():

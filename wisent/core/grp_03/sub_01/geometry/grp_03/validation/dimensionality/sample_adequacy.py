@@ -8,7 +8,7 @@ from wisent.core.constants import (
     SAMPLE_RATIO_MARGINAL,
     EFFECT_SIZE_SMALL, EFFECT_SIZE_MEDIUM, EFFECT_SIZE_LARGE,
     POWER_ANALYSIS_MIN_N, POWER_ANALYSIS_STEP, SAMPLE_ADEQUACY_MAX_N,
-    CLASSIFIER_DECISION_THRESHOLD, PCA_QUALITY_COMPONENTS,
+    CLASSIFIER_THRESHOLD, PCA_QUALITY_COMPONENTS,
 )
 
 
@@ -131,7 +131,7 @@ def recommend_sample_size(
     from scipy import stats
 
     effect_sizes = {"small": EFFECT_SIZE_SMALL, "medium": EFFECT_SIZE_MEDIUM, "large": EFFECT_SIZE_LARGE}
-    d = effect_sizes.get(target_effect_size, CLASSIFIER_DECISION_THRESHOLD)
+    d = effect_sizes.get(target_effect_size, CLASSIFIER_THRESHOLD)
 
     def required_n(eff_d: float, effect: float, power: float, a: float) -> int:
         """Compute required n for target power at given effect size."""

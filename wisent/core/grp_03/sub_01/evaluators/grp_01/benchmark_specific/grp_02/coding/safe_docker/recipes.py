@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict
-from wisent.core.constants import EVAL_CPU_LIMIT_S, EVAL_TIME_LIMIT_S, EVAL_MEM_LIMIT_MB
+from wisent.core.utils.core.hardware import eval_cpu_limit_s, eval_time_limit_s, eval_mem_limit_mb
 from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job, LanguageRecipe
 
 class PythonRecipe(LanguageRecipe):
@@ -11,9 +11,9 @@ class PythonRecipe(LanguageRecipe):
     def make_job(self, **options) -> Job:
         run = ["pytest", "-q", "--maxfail=1", "--tb=short", "-rA", "tests.py"]
         return Job(language="python", compile_argv=None, run_argv=run,
-                   cpu_limit_s=options.get("cpu_limit_s", EVAL_CPU_LIMIT_S),
-                   wall_timeout_s=options.get("time_limit_s", EVAL_TIME_LIMIT_S),
-                   mem_limit_mb=options.get("mem_limit_mb", EVAL_MEM_LIMIT_MB))
+                   cpu_limit_s=options.get("cpu_limit_s", eval_cpu_limit_s()),
+                   wall_timeout_s=options.get("time_limit_s", eval_time_limit_s()),
+                   mem_limit_mb=options.get("mem_limit_mb", eval_mem_limit_mb()))
 
 class CppRecipe(LanguageRecipe):
     language = "cpp"
@@ -22,9 +22,9 @@ class CppRecipe(LanguageRecipe):
         compile_cmd = ["bash","-lc", f"g++ -std={std} -O2 -pipe -o program solution.cpp test_main.cpp"]
         run_cmd = ["bash","-lc","./program"]
         return Job(language="cpp", compile_argv=compile_cmd, run_argv=run_cmd,
-                   cpu_limit_s=options.get("cpu_limit_s", EVAL_CPU_LIMIT_S),
-                   wall_timeout_s=options.get("time_limit_s", EVAL_TIME_LIMIT_S),
-                   mem_limit_mb=options.get("mem_limit_mb", EVAL_MEM_LIMIT_MB))
+                   cpu_limit_s=options.get("cpu_limit_s", eval_cpu_limit_s()),
+                   wall_timeout_s=options.get("time_limit_s", eval_time_limit_s()),
+                   mem_limit_mb=options.get("mem_limit_mb", eval_mem_limit_mb()))
 
 class JavaRecipe:
     language = "java"
@@ -48,9 +48,9 @@ class JavaRecipe:
             language="java",
             compile_argv=compile_cmd,
             run_argv=run_cmd,
-            cpu_limit_s=options.get("cpu_limit_s", EVAL_CPU_LIMIT_S),
-            wall_timeout_s=options.get("time_limit_s", EVAL_TIME_LIMIT_S),
-            mem_limit_mb=options.get("mem_limit_mb", EVAL_MEM_LIMIT_MB),
+            cpu_limit_s=options.get("cpu_limit_s", eval_cpu_limit_s()),
+            wall_timeout_s=options.get("time_limit_s", eval_time_limit_s()),
+            mem_limit_mb=options.get("mem_limit_mb", eval_mem_limit_mb()),
         )
 
 

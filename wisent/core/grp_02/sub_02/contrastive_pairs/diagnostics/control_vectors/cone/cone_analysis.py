@@ -9,7 +9,7 @@ import torch
 
 from wisent.core.constants import (
     CONE_DIRECTIONS,
-    TECZA_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
     TECZA_LEARNING_RATE,
     GROM_MIN_COSINE_SIM,
     TECZA_MAX_COSINE_SIM,
@@ -43,7 +43,7 @@ class ConeAnalysisConfig:
     num_directions: int = CONE_DIRECTIONS
     """Number of directions to discover in the cone."""
 
-    optimization_steps: int = TECZA_OPTIMIZATION_STEPS
+    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     """Gradient steps for cone direction optimization."""
 
     learning_rate: float = TECZA_LEARNING_RATE

@@ -7,7 +7,7 @@ from typing import Mapping, Sequence, Callable
 from wisent.core.synthetic.cleaners.methods.core.atoms import Deduper
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import InvalidValueError, InvalidRangeError
-from wisent.core.constants import BLAKE2B_DIGEST_SIZE, DEDUP_THRESHOLD_BITS, DEDUP_WORD_NGRAM, DEDUP_CHAR_NGRAM, DEDUP_NUM_BANDS, DEFAULT_LAYER_WEIGHT, SIMHASH_BIT_WIDTH, SIMHASH_DEFAULT_NUM_BANDS, SIMHASH_THRESHOLD_CONSERVATIVE
+from wisent.core.constants import BLAKE2B_DIGEST_SIZE, DEDUP_WORD_NGRAM, DEDUP_CHAR_NGRAM, DEFAULT_LAYER_WEIGHT, SIMHASH_BIT_WIDTH, SIMHASH_DEFAULT_NUM_BANDS, SIMHASH_THRESHOLD_CONSERVATIVE
 
 __all__ = [
     "SimHashDeduper",

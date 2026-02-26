@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import GROM_WEIGHT_DECAY, GROM_ETA_MIN_FACTOR, GROM_MAX_GRAD_NORM, TRAINING_LOG_INTERVAL
+from wisent.core.constants import DEFAULT_WEIGHT_DECAY, GROM_ETA_MIN_FACTOR, GROM_MAX_GRAD_NORM, TRAINING_LOG_INTERVAL
 from wisent.core.steering_methods.methods.grom._config import (
     GatingNetwork,
     IntensityNetwork,
@@ -155,7 +155,7 @@ def _joint_optimization_impl(
         all_params.extend(gate_network.parameters())
     all_params.extend(intensity_network.parameters())
     all_params.extend(direction_weight_params.values())
-    optimizer = torch.optim.AdamW(all_params, lr=self.config.learning_rate, weight_decay=GROM_WEIGHT_DECAY)
+    optimizer = torch.optim.AdamW(all_params, lr=self.config.learning_rate, weight_decay=DEFAULT_WEIGHT_DECAY)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, T_max=self.config.optimization_steps, eta_min=self.config.learning_rate * GROM_ETA_MIN_FACTOR
     )

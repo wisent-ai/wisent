@@ -3,7 +3,7 @@
 import argparse
 
 from wisent.core import constants as _C
-from wisent.core.constants import DATA_SPLIT_SEED
+from wisent.core.constants import DEFAULT_RANDOM_SEED
 
 
 def setup_geometry_search_parser(parser: argparse.ArgumentParser) -> None:
@@ -53,7 +53,7 @@ def setup_geometry_search_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--seed",
         type=int,
-        default=DATA_SPLIT_SEED,
+        default=DEFAULT_RANDOM_SEED,
         help="Random seed for reproducibility (default: 42)",
     )
     parser.add_argument(

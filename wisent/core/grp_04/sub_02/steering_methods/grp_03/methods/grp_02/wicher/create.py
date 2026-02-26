@@ -12,7 +12,7 @@ import torch
 
 from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
 from .wicher_steering_object import WicherSteeringObject
-from wisent.core.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CONCEPT_DIM, MAX_CONCEPT_DIM, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, WICHER_CONCEPT_DIM, MIN_CONCEPT_DIM_DEFAULT
+from wisent.core.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CONCEPT_DIM, MAX_CONCEPT_DIM, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, WICHER_CONCEPT_DIM
 
 
 def _select_concept_dim(
@@ -23,7 +23,7 @@ def _select_concept_dim(
         return max(MIN_CONCEPT_DIM, min(explicit_dim, MAX_CONCEPT_DIM, len(s_squared)))
     total = s_squared.sum().item()
     if total < LOG_EPS:
-        return MIN_CONCEPT_DIM_DEFAULT
+        return MIN_CONCEPT_DIM
     cumvar = torch.cumsum(s_squared, dim=0) / total
     k = int((cumvar < var_threshold).sum().item()) + 1
     return max(MIN_CONCEPT_DIM, min(k, MAX_CONCEPT_DIM, len(s_squared)))

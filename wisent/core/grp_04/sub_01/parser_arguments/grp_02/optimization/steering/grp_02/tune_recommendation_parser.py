@@ -2,8 +2,8 @@
 
 from wisent.core.constants import (
     BENCHMARKS_PER_TYPE,
-    DATA_SPLIT_SEED,
-    OPTUNA_DEFAULT_N_TRIALS,
+    DEFAULT_RANDOM_SEED,
+    DEFAULT_N_TRIALS,
     OPTUNA_TRIALS_TUNE,
     TOPK_OBJECTIVE_K,
 )
@@ -29,14 +29,14 @@ def setup_tune_recommendation_parser(parser):
     cgt.add_argument("--zwiad-dir", type=str,
                      default="zwiad_results",
                      help="Directory containing zwiad JSON files")
-    cgt.add_argument("--limit", type=int, default=OPTUNA_DEFAULT_N_TRIALS,
+    cgt.add_argument("--limit", type=int, default=DEFAULT_N_TRIALS,
                      help="Max samples per benchmark (default: 100)")
     cgt.add_argument("--device", type=str, default=None,
                      help="Device (cuda, mps, cpu)")
     cgt.add_argument("--methods", type=str, default=None,
                      help="Comma-separated methods to run "
                           "(default: all 7 pipeline methods)")
-    cgt.add_argument("--n-trials", type=int, default=OPTUNA_DEFAULT_N_TRIALS,
+    cgt.add_argument("--n-trials", type=int, default=DEFAULT_N_TRIALS,
                      help="Optuna trials per method (default: 100)")
     cgt.add_argument("--benchmark-start", type=int, default=None,
                      help="Start index for benchmark sharding")
@@ -69,5 +69,5 @@ def setup_tune_recommendation_parser(parser):
                      help="Objective function (default: top1)")
     opt.add_argument("--top-k", type=int, default=TOPK_OBJECTIVE_K,
                      help="K for topk objective (default: 2)")
-    opt.add_argument("--seed", type=int, default=DATA_SPLIT_SEED,
+    opt.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED,
                      help="Random seed (default: 42)")

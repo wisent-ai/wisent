@@ -11,15 +11,12 @@ from wisent.core.constants import (
     RELEVANCE_CONTENT_MATCH_SCORE,
     RELEVANCE_FAST_HIGH_SCORING_BONUS,
     RELEVANCE_HIGH_SCORING_BONUS,
-    RELEVANCE_MAX_NEW_TOKENS,
     RELEVANCE_MEDIUM_SCORING_BONUS,
     RELEVANCE_POPULAR_BENCHMARK_BONUS,
     RELEVANCE_PRIORITY_BONUS_FAST_HIGH,
     RELEVANCE_PRIORITY_BONUS_HIGH,
     RELEVANCE_PRIORITY_BONUS_MEDIUM,
     RELEVANCE_TAG_MATCH_SCORE,
-    RELEVANCE_TEMPERATURE,
-    TOKENIZER_MAX_LENGTH_GEOMETRY,
 )
 from .descriptions import BENCHMARK_DESCRIPTIONS
 from .filtering import apply_priority_filtering
@@ -181,12 +178,10 @@ def find_most_relevant_benchmarks(
         generator = pipeline(
             "text-generation",
             model="microsoft/DialoGPT-medium",
-            max_length=TOKENIZER_MAX_LENGTH_GEOMETRY,
             do_sample=True,
-            temperature=RELEVANCE_TEMPERATURE,
         )
 
-        response = generator(llm_prompt, max_new_tokens=RELEVANCE_MAX_NEW_TOKENS, return_full_text=False)
+        response = generator(llm_prompt, return_full_text=False)
         response_text = response[0]["generated_text"].strip()
 
         try:

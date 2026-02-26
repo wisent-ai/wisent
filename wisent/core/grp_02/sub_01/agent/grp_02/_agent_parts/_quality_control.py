@@ -7,7 +7,7 @@ iterative improvement loop, and steered generation.
 """
 
 import time
-from wisent.core.constants import QUALITY_CONTROL_MAX_ATTEMPTS, CLASSIFIER_DECISION_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, SECONDS_PER_MINUTE
+from wisent.core.constants import QUALITY_CONTROL_MAX_ATTEMPTS, CLASSIFIER_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, SECONDS_PER_MINUTE
 
 
 class QualityControlMixin:
@@ -109,7 +109,7 @@ class QualityControlMixin:
             response = await self._generate_response(prompt)
             return QualityControlledResponse(
                 response_text=response,
-                final_quality_score=CLASSIFIER_DECISION_THRESHOLD,
+                final_quality_score=CLASSIFIER_THRESHOLD,
                 attempts_needed=1,
                 classifier_params_used=classifier_params,
                 total_time_seconds=time.time() - start_time,
@@ -125,7 +125,7 @@ class QualityControlMixin:
             response = await self._generate_response(prompt)
             return QualityControlledResponse(
                 response_text=response,
-                final_quality_score=CLASSIFIER_DECISION_THRESHOLD,
+                final_quality_score=CLASSIFIER_THRESHOLD,
                 attempts_needed=1,
                 classifier_params_used=classifier_params,
                 total_time_seconds=time.time() - start_time,

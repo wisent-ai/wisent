@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass
 
 from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
-from wisent.core.constants import DEFAULT_STRENGTH, GROM_NUM_DIRECTIONS, MLP_OPTIMIZATION_STEPS
+from wisent.core.constants import DEFAULT_STRENGTH, GROM_NUM_DIRECTIONS, DEFAULT_OPTIMIZATION_STEPS
 from wisent.core.cli.cli_logger import setup_logger, bind
 from wisent.core.cli.cli_logger import setup_logger, bind
 
@@ -60,7 +60,7 @@ class MultiDirectionConfig:
     num_directions: int = GROM_NUM_DIRECTIONS
     """Number of directions per layer"""
 
-    optimization_steps: int = MLP_OPTIMIZATION_STEPS
+    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     """Training steps for direction optimization"""
 
     bake_method: str = "bias"

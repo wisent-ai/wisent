@@ -13,7 +13,6 @@ from wisent.core.constants import (
     BLEND_DEFAULT,
     CLASSIFIER_BATCH_SIZE,
     CLASSIFIER_LAYER_RANGE_END,
-    COMPARISON_MAX_LENGTH,
     DEFAULT_LIMIT,
     DEFAULT_SCORE,
     KEEP_RECENT_HOURS_DEFAULT,
@@ -41,7 +40,7 @@ class _SteeringOptimizerClassifier:
         model,
         tokenizer,
         device: str,
-        max_length: int = COMPARISON_MAX_LENGTH,
+        max_length: int | None = None,
         task_name: str = "gsm8k",
     ) -> Dict[str, Any]:
         """
@@ -50,6 +49,8 @@ class _SteeringOptimizerClassifier:
         Returns:
             Enhanced metrics with baseline vs steered comparison including classifier scores
         """
+        if max_length is None:
+            max_length = tokenizer.model_max_length
         # Create classifier scorer function for metrics integration
         classifier_scorer = lambda predictions, description: self.score_predictions_with_classifier(
             predictions, model, tokenizer, device, max_length, description

@@ -6,7 +6,7 @@ import os
 
 from wisent.core.models import get_generate_kwargs
 from wisent.data.contrastive_pairs import save_personalization_pairs, save_synthetic_pairs
-from wisent.core.constants import GENERATE_PAIRS_MIN_TOKENS, GENERATE_PAIRS_MAX_TOKENS, JSON_INDENT, SIMHASH_RELAXED_THRESHOLD_BITS, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, TRAIT_NAME_MAX_LENGTH
+from wisent.core.constants import GENERATE_PAIRS_MIN_TOKENS, JSON_INDENT, SIMHASH_RELAXED_THRESHOLD_BITS, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, TRAIT_NAME_MAX_LENGTH
 
 
 def execute_generate_pairs(args):
@@ -73,11 +73,12 @@ def execute_generate_pairs(args):
 
             # 2. Set up generation config
             # Scale max_new_tokens based on number of pairs (roughly 150 tokens per pair + buffer)
+            gen_kwargs = get_generate_kwargs()
             estimated_tokens = args.num_pairs * TOKENS_PER_PAIR_ESTIMATE + TOKENS_BASE_OFFSET
-            max_tokens = max(GENERATE_PAIRS_MIN_TOKENS, min(estimated_tokens, GENERATE_PAIRS_MAX_TOKENS))
+            max_tokens = max(GENERATE_PAIRS_MIN_TOKENS, min(estimated_tokens, gen_kwargs["max_new_tokens"]))
 
             # Get generation config from centralized inference config
-            generation_config = get_generate_kwargs(max_new_tokens=max_tokens)
+            generation_config = {**gen_kwargs, "max_new_tokens": max_tokens}
 
             # 3. Set up cleaning pipeline
             print(f"\n🧹 Setting up cleaning pipeline...")

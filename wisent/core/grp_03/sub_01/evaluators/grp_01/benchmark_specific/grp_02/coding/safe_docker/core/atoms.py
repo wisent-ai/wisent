@@ -1,8 +1,15 @@
 from __future__ import annotations
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
-from wisent.core.constants import DOCKER_CPU_LIMIT_S, DOCKER_WALL_TIMEOUT_S, DOCKER_MEM_LIMIT_MB, DOCKER_FSIZE_MB, DOCKER_NPROC, DOCKER_NOFILE
+from wisent.core.utils.core.hardware import (
+    docker_cpu_limit_s,
+    docker_wall_timeout_s,
+    docker_mem_limit_mb,
+    docker_fsize_mb,
+    docker_nproc,
+    docker_nofile,
+)
 
 __all__ = ["Job", "Result", "LanguageRecipe", "SandboxExecutor"]
 
@@ -47,12 +54,12 @@ class Job:
     language: str
     compile_argv: list[str] | None
     run_argv: list[str]
-    cpu_limit_s: int = DOCKER_CPU_LIMIT_S
-    wall_timeout_s: int = DOCKER_WALL_TIMEOUT_S
-    mem_limit_mb: int = DOCKER_MEM_LIMIT_MB
-    fsize_mb: int = DOCKER_FSIZE_MB
-    nproc: int = DOCKER_NPROC
-    nofile: int = DOCKER_NOFILE
+    cpu_limit_s: int = field(default_factory=docker_cpu_limit_s)
+    wall_timeout_s: int = field(default_factory=docker_wall_timeout_s)
+    mem_limit_mb: int = field(default_factory=docker_mem_limit_mb)
+    fsize_mb: int = field(default_factory=docker_fsize_mb)
+    nproc: int = field(default_factory=docker_nproc)
+    nofile: int = field(default_factory=docker_nofile)
 
 @dataclass(frozen=True)
 class Result:

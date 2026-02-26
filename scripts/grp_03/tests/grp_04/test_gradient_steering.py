@@ -182,7 +182,8 @@ caa_plan = SteeringPlan.from_raw(
 
 # Evaluate with generation
 from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.core.constants import MAX_NEW_TOKENS_TEST_DEFAULT, NORM_EPS, TEST_STEERING_SCALE
+from wisent.core.constants import NORM_EPS, TEST_STEERING_SCALE
+from wisent.core.models import get_generate_kwargs
 
 EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
 evaluator = EvaluatorRotator(evaluator=None, task_name="truthfulqa_gen")
@@ -200,7 +201,7 @@ for i, pair in enumerate(test_pairs):
 
     # Baseline
     model.detach()
-    resp_base = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
+    resp_base = model.generate(prompt_msg)[0]
     eval_base = evaluator.evaluate(
         response=resp_base,
         expected=pair.positive_response.model_response,
@@ -212,7 +213,7 @@ for i, pair in enumerate(test_pairs):
 
     # Gradient steering
     model.apply_steering(plan=gradient_plan)
-    resp_grad = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
+    resp_grad = model.generate(prompt_msg)[0]
     model.detach()
 
     eval_grad = evaluator.evaluate(
@@ -226,7 +227,7 @@ for i, pair in enumerate(test_pairs):
 
     # CAA steering
     model.apply_steering(plan=caa_plan)
-    resp_caa = model.generate(prompt_msg, max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
+    resp_caa = model.generate(prompt_msg)[0]
     model.detach()
 
     eval_caa = evaluator.evaluate(

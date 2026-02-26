@@ -15,7 +15,7 @@ from wisent.core.constants import (
     COHERENCE_LONG_TOKEN_LEN, COHERENCE_LONG_TOKEN_RATIO,
     COHERENCE_VALIDITY_RATIO_MIN, COHERENCE_QUALITY_MIN_TOKENS,
     COHERENCE_RATIO_THRESHOLD,
-    MIN_TOKENS_TRIGRAM, MIN_TOKENS_NONSENSE,
+    MIN_TOKENS_TRIGRAM, NONSENSE_MIN_TOKENS,
 )
 
 if TYPE_CHECKING:
@@ -93,7 +93,7 @@ def _is_nonsense_word(word: str, tokenizer) -> bool:
     Returns:
         True if the word appears to be nonsense
     """
-    if not tokenizer or len(word) < MIN_TOKENS_NONSENSE:
+    if not tokenizer or len(word) < NONSENSE_MIN_TOKENS:
         return False
 
     # Skip non-ASCII words (likely other languages)
@@ -168,7 +168,7 @@ def _is_gibberish(text: str) -> bool:
         "more", "some", "any", "also", "than", "then",
     }
 
-    if len(tokens) >= MIN_TOKENS_NONSENSE:
+    if len(tokens) >= NONSENSE_MIN_TOKENS:
         # Check what fraction of tokens are recognizable
         valid_count = 0
         for token in tokens:

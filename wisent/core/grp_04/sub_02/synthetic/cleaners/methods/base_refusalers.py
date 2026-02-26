@@ -1,5 +1,6 @@
 from wisent.core.synthetic.cleaners.methods.core.atoms import Refusaler
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.models.config import get_generate_kwargs
 from wisent.core import constants as _C
 
 import re, unicodedata
@@ -276,12 +277,13 @@ class BaseRefusaler(Refusaler):
                 "content": f"Prompt: {prompt}\nTrait label: {trait_label}\nTrait description: {trait_description}",
             },
         ]
+        _defaults = get_generate_kwargs()
         neg_trial = model.generate(
             inputs=[msgs],
-            max_tokens=generation_conf.get("max_tokens", _C.SYNTHETIC_GENERATION_MAX_TOKENS),
-            temperature=generation_conf.get("temperature", _C.SYNTHETIC_GENERATION_TEMPERATURE),
+            max_tokens=generation_conf.get("max_tokens", _defaults.get("max_new_tokens")),
+            temperature=generation_conf.get("temperature", _defaults.get("temperature")),
             use_steering=False,
-            top_p=generation_conf.get("top_p", _C.SYNTHETIC_GENERATION_TOP_P),
+            top_p=generation_conf.get("top_p", _defaults.get("top_p")),
         )
         return "" if self.looks_like_refusal(neg_trial) else neg_trial
     

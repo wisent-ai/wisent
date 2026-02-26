@@ -62,19 +62,19 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--mlp-hidden-dim",
         type=int,
-        default=_C.VIZ_MLP_HIDDEN_DIM,
+        default=_C.MLP_HIDDEN_DIM,
         help="Hidden dimension for MLP classifier (default: 256)"
     )
     parser.add_argument(
         "--mlp-num-layers",
         type=int,
-        default=_C.MLP_DEFAULT_HIDDEN_LAYERS,
+        default=_C.MLP_NUM_LAYERS,
         help="Number of hidden layers in MLP (default: 2)"
     )
     parser.add_argument(
         "--mlp-dropout",
         type=float,
-        default=_C.MLP_DEFAULT_DROPOUT,
+        default=_C.MLP_DROPOUT,
         help="Dropout rate for MLP (default: 0.1)"
     )
     parser.add_argument(
@@ -86,13 +86,13 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--mlp-learning-rate",
         type=float,
-        default=_C.MLP_DEFAULT_LR,
+        default=_C.MLP_LEARNING_RATE,
         help="Learning rate for MLP (default: 0.001)"
     )
     parser.add_argument(
         "--mlp-weight-decay",
         type=float,
-        default=_C.MLP_DEFAULT_WEIGHT_DECAY,
+        default=_C.DEFAULT_WEIGHT_DECAY,
         help="Weight decay for MLP (default: 0.01)"
     )
 
@@ -120,7 +120,7 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--tecza-optimization-steps",
         type=int,
-        default=_C.TETNO_DEFAULT_NUM_STEPS,
+        default=_C.DEFAULT_OPTIMIZATION_STEPS,
         help="Optimization steps for TECZA (default: 100)"
     )
     parser.add_argument(

@@ -11,8 +11,8 @@ from wisent.core.constants import (
     COMPARISON_MAX_BATCH_SIZE,
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_STEERING_LAYER,
-    DATA_SPLIT_RATIO,
-    DEFAULT_BASE_STRENGTH, JSON_INDENT,
+    DEFAULT_SPLIT_RATIO,
+    DEFAULT_STRENGTH, JSON_INDENT,
 )
 
 
@@ -27,7 +27,7 @@ def run_comparison(
     max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     eval_limit: int | None = None,
     output_dir: str = "comparison_results",
-    train_ratio: float = DATA_SPLIT_RATIO,
+    train_ratio: float = DEFAULT_SPLIT_RATIO,
     caa_layers: str = str(COMPARISON_STEERING_LAYER),
     sae_layers: str = str(COMPARISON_STEERING_LAYER),
     extraction_strategies: list[str] = None,
@@ -40,7 +40,7 @@ def run_comparison(
     if methods is None:
         methods = ["caa"]
     if steering_scales is None:
-        steering_scales = [DEFAULT_BASE_STRENGTH]
+        steering_scales = [DEFAULT_STRENGTH]
     if extraction_strategies is None:
         extraction_strategies = ["mc_balanced"]
 
@@ -159,7 +159,7 @@ def main(run_single_task_fn, run_comparison_fn):
     parser.add_argument("--output-dir",
                         default="wisent/comparison/comparison_results",
                         help="Output directory")
-    parser.add_argument("--train-ratio", type=float, default=DATA_SPLIT_RATIO,
+    parser.add_argument("--train-ratio", type=float, default=DEFAULT_SPLIT_RATIO,
                         help="Train/test split ratio")
     parser.add_argument("--extraction-strategy", default="mc_balanced",
                         help="Extraction strategy (comma-separated)")

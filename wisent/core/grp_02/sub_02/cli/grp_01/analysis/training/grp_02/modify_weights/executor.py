@@ -10,7 +10,7 @@ from typing import Dict, Optional, List, Any
 import torch
 
 from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import GUIDED_MAX_DEGRADATION, REPORT_LINE_WIDTH
+from wisent.core.constants import GUIDED_MAX_DEGRADATION, SEPARATOR_WIDTH_REPORT
 from wisent.core.weight_modification import (
     project_weights, project_with_kernel,
     bake_steering_into_weights, bake_steering_with_kernel,
@@ -166,9 +166,9 @@ def execute_guided_modification(args, wisent_model, model, tokenizer):
     start_time = time.time()
 
     if args.verbose:
-        print("\n" + "=" * REPORT_LINE_WIDTH)
+        print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
         print("GUIDED WEIGHT MODIFICATION (Linearity-Driven)")
-        print("=" * REPORT_LINE_WIDTH)
+        print("=" * SEPARATOR_WIDTH_REPORT)
 
     pairs = generate_pairs_for_guided_mode(args)
     if not pairs:
@@ -215,9 +215,9 @@ def execute_multi_concept_modification(args, wisent_model, model, tokenizer, bas
     log = bind(_LOG)
 
     if args.verbose:
-        print("\n" + "=" * REPORT_LINE_WIDTH)
+        print("\n" + "=" * SEPARATOR_WIDTH_REPORT)
         print("MULTI-CONCEPT WEIGHT MODIFICATION")
-        print("=" * REPORT_LINE_WIDTH)
+        print("=" * SEPARATOR_WIDTH_REPORT)
 
     concepts = []
     action_map = {"suppress": ConceptAction.SUPPRESS, "enhance": ConceptAction.ENHANCE, "neutral": ConceptAction.NEUTRAL}

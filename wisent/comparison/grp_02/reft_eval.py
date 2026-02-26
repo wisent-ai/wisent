@@ -10,7 +10,7 @@ from wisent.core.constants import (
     COMPARISON_NUM_PAIRS,
     COMPARISON_STEERING_LAYER,
     COMPARISON_STEERING_SCALES,
-    DATA_SPLIT_RATIO, JSON_INDENT,
+    DEFAULT_SPLIT_RATIO, JSON_INDENT,
 )
 from wisent.comparison.utils import (
     create_test_only_task, run_ll_evaluation, apply_steering_to_model, remove_steering,
@@ -72,7 +72,7 @@ def remove_reft(wisent_model: "WisentModel") -> None:
 
 def evaluate_reft(
     model_name: str, reft_path: str | Path, task: str,
-    train_ratio: float = DATA_SPLIT_RATIO, device: str = "cuda:0",
+    train_ratio: float = DEFAULT_SPLIT_RATIO, device: str = "cuda:0",
     batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE, max_batch_size: int = COMPARISON_MAX_BATCH_SIZE, limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None, num_epochs: int | None = None,

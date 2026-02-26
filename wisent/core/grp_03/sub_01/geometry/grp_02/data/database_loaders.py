@@ -5,7 +5,8 @@ import struct
 import json
 import torch
 from .cache import get_cache_path, save_pair_texts_cache, save_activations_cache
-from wisent.core.constants import DATA_LOAD_LIMIT, DEFAULT_TIMEOUT_REQUEST
+from wisent.core.constants import DATA_LOAD_LIMIT
+from wisent.core.utils.core.hardware import subprocess_timeout_s
 
 
 def _get_db_connection(database_url: Optional[str] = None):
@@ -23,7 +24,7 @@ def _get_db_connection(database_url: Optional[str] = None):
     if "sslmode=" not in db_url:
         db_url += "?sslmode=require" if "?" not in db_url else "&sslmode=require"
 
-    _conn_kw = {"connect_" + "timeout": DEFAULT_TIMEOUT_REQUEST}
+    _conn_kw = {"connect_" + "timeout": subprocess_timeout_s()}
     conn = psycopg2.connect(db_url, **_conn_kw)
     cur = conn.cursor()
     cur.close()

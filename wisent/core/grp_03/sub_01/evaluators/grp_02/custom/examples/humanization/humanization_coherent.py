@@ -22,7 +22,7 @@ from typing import Any, Dict, Optional
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from wisent.core.constants import HUMANIZATION_COHERENCE_THRESHOLD, HUMANIZATION_MAX_LENGTH, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
+from wisent.core.constants import HUMANIZATION_COHERENCE_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
 from wisent.core.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
@@ -88,10 +88,10 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
     def _score_coherence(self, prompt: str, response: str) -> float:
         """Score how coherent the response is to the prompt."""
         inputs = self._coherence_tokenizer(
-            prompt, response, 
-            return_tensors="pt", 
-            truncation=True, 
-            max_length=HUMANIZATION_MAX_LENGTH
+            prompt, response,
+            return_tensors="pt",
+            truncation=True,
+            max_length=self._coherence_tokenizer.model_max_length
         )
         if self.device:
             inputs = {k: v.to(self.device) for k, v in inputs.items()}

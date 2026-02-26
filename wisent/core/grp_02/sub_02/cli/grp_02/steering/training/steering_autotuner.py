@@ -7,7 +7,8 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any
 from datetime import datetime
 from wisent.core import constants as _C
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL, AUTOTUNER_STRENGTHS, AUTOTUNER_PROGRESS_INTERVAL
+from wisent.core.constants import AUTOTUNER_STRENGTHS, AUTOTUNER_PROGRESS_INTERVAL
+from wisent.core.models.config import get_generate_kwargs
 
 from wisent.core.cli.steering_checkpoint import (
     SteeringConfig, AutotuneCheckpoint, log_config_result, setup_checkpoint_paths
@@ -24,7 +25,7 @@ def evaluate_steering_config(
     steering_method_name: str,
     pos_by_layer: Dict,
     neg_by_layer: Dict,
-    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL,
+    max_new_tokens: int | None = None,
 ) -> int:
     """Evaluate a steering config on test set, return number of truthful responses."""
     from wisent.core.cli.steering_behavioral import extract_response
@@ -76,7 +77,7 @@ def evaluate_steering_config(
 def search_optimal_steering_config(
     adapter, train_ids: List, val_ids: List, pair_texts: Dict, evaluator,
     pos_by_layer: Dict, neg_by_layer: Dict, layer_accuracies: Dict[int, float],
-    steering_vectors: Dict[str, torch.Tensor], max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL,
+    steering_vectors: Dict[str, torch.Tensor], max_new_tokens: int | None = None,
     checkpoint_dir: str = "./autotune_checkpoints", log_file: str = None,
 ) -> SteeringConfig:
     """Search for optimal steering parameters with checkpointing and resume capability."""

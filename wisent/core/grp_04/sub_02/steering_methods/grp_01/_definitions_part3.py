@@ -6,14 +6,14 @@ from wisent.core.steering_methods.registry import (
     SteeringMethodType,
 )
 from wisent.core.constants import (
-    DEFAULT_BASE_STRENGTH,
+    DEFAULT_STRENGTH,
     DEFAULT_VARIANCE_THRESHOLD,
     BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA,
     BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY,
-    MLP_HIDDEN_DIM, MLP_NUM_LAYERS, MLP_OPTIMIZATION_STEPS,
-    MLP_DROPOUT, MLP_LEARNING_RATE, MLP_WEIGHT_DECAY,
+    MLP_HIDDEN_DIM, MLP_NUM_LAYERS, DEFAULT_OPTIMIZATION_STEPS,
+    MLP_DROPOUT, MLP_LEARNING_RATE, DEFAULT_WEIGHT_DECAY,
     NURT_TRAINING_EPOCHS, NURT_NUM_INTEGRATION_STEPS, NURT_T_MAX,
-    NURT_LR, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K,
+    MLP_LEARNING_RATE, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K,
     STEERING_STRENGTH_RANGE_WIDE, STEERING_STRENGTH_RANGE_NARROW,
 )
 
@@ -48,7 +48,7 @@ MLP_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="epochs",
             type=int,
-            default=MLP_OPTIMIZATION_STEPS,
+            default=DEFAULT_OPTIMIZATION_STEPS,
             help="Training epochs for MLP classifier",
             cli_flag="--mlp-epochs",
         ),
@@ -62,7 +62,7 @@ MLP_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="weight_decay",
             type=float,
-            default=MLP_WEIGHT_DECAY,
+            default=DEFAULT_WEIGHT_DECAY,
             help="Weight decay for regularization",
             cli_flag="--mlp-weight-decay",
         ),
@@ -77,9 +77,9 @@ MLP_DEFINITION = SteeringMethodDefinition(
     ],
     optimization_config={
         "strength_search_range": STEERING_STRENGTH_RANGE_WIDE,
-        "default_strength": DEFAULT_BASE_STRENGTH,
+        "default_strength": DEFAULT_STRENGTH,
     },
-    default_strength=DEFAULT_BASE_STRENGTH,
+    default_strength=DEFAULT_STRENGTH,
     strength_range=STEERING_STRENGTH_RANGE_WIDE,
 )
 
@@ -114,7 +114,7 @@ NURT_DEFINITION = SteeringMethodDefinition(
         SteeringMethodParameter(
             name="lr",
             type=float,
-            default=NURT_LR,
+            default=MLP_LEARNING_RATE,
             help="Learning rate for AdamW optimizer",
             cli_flag="--nurt-lr",
         ),
@@ -142,9 +142,9 @@ NURT_DEFINITION = SteeringMethodDefinition(
     ],
     optimization_config={
         "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
-        "default_strength": DEFAULT_BASE_STRENGTH,
+        "default_strength": DEFAULT_STRENGTH,
     },
-    default_strength=DEFAULT_BASE_STRENGTH,
+    default_strength=DEFAULT_STRENGTH,
     strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )
 
@@ -174,9 +174,9 @@ SZLAK_DEFINITION = SteeringMethodDefinition(
     ],
     optimization_config={
         "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
-        "default_strength": DEFAULT_BASE_STRENGTH,
+        "default_strength": DEFAULT_STRENGTH,
     },
-    default_strength=DEFAULT_BASE_STRENGTH,
+    default_strength=DEFAULT_STRENGTH,
     strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )
 
@@ -239,8 +239,8 @@ WICHER_DEFINITION = SteeringMethodDefinition(
     ],
     optimization_config={
         "strength_search_range": STEERING_STRENGTH_RANGE_NARROW,
-        "default_strength": DEFAULT_BASE_STRENGTH,
+        "default_strength": DEFAULT_STRENGTH,
     },
-    default_strength=DEFAULT_BASE_STRENGTH,
+    default_strength=DEFAULT_STRENGTH,
     strength_range=STEERING_STRENGTH_RANGE_NARROW,
 )

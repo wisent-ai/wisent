@@ -1,7 +1,7 @@
 """Evaluator creation for optimize-weights."""
 from typing import Any, Callable
 
-from wisent.core.constants import DEFAULT_NUM_EVAL_PROMPTS, EVAL_MAX_NEW_TOKENS
+from wisent.core.constants import DEFAULT_NUM_EVAL_PROMPTS
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
@@ -102,7 +102,7 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
             messages = [{"role": "user", "content": prompt_text}]
             result = temp_wisent_model.generate(
                 [messages],
-                **get_generate_kwargs(max_new_tokens=EVAL_MAX_NEW_TOKENS),
+                **get_generate_kwargs(),
             )
             responses.append(result[0] if result else "")
         
@@ -178,7 +178,7 @@ def _create_custom_evaluator(args, model_name: str) -> Callable:
             messages = [{"role": "user", "content": prompt_text}]
             result = temp_wisent_model.generate(
                 [messages],
-                **get_generate_kwargs(max_new_tokens=EVAL_MAX_NEW_TOKENS),
+                **get_generate_kwargs(),
             )
             response = result[0] if result else ""
             

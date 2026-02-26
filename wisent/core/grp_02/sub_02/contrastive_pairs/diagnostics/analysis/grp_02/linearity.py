@@ -14,7 +14,7 @@ from wisent.core.constants import (
     CHECK_LINEARITY_WEAK_THRESHOLD,
     CHECK_LINEARITY_MIN_COHENS_D,
     CHECK_LINEARITY_DEFAULT_MAX_PAIRS,
-    CHECK_LINEARITY_OPT_STEPS,
+    DIAG_OPTIMIZATION_STEPS,
     LINEARITY_LAYER_SAMPLING_DIVISOR,
     GEOMETRY_DEFAULT_NUM_COMPONENTS,
 )
@@ -52,7 +52,7 @@ class LinearityConfig:
     max_pairs: int = CHECK_LINEARITY_DEFAULT_MAX_PAIRS
     """Maximum number of pairs to use for analysis."""
 
-    geometry_optimization_steps: int = CHECK_LINEARITY_OPT_STEPS
+    geometry_optimization_steps: int = DIAG_OPTIMIZATION_STEPS
     """Steps for geometry detection optimization."""
 
 

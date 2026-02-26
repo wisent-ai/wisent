@@ -56,7 +56,7 @@ def setup_personalization_parsers(steering_subparsers):
         help="Directory to save results and best vectors (default: ./personalization_optimization)",
     )
     personalization_parser.add_argument(
-        "--max-new-tokens", type=int, default=_C.MAX_NEW_TOKENS_GENERATION, help="Max tokens to generate for evaluation (default: 150)"
+        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
     )
     personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -159,7 +159,7 @@ def setup_personalization_parsers(steering_subparsers):
         help="Directory to save results and vectors (default: ./multi_personalization_optimization)",
     )
     multi_personalization_parser.add_argument(
-        "--max-new-tokens", type=int, default=_C.MAX_NEW_TOKENS_GENERATION, help="Max tokens to generate for evaluation (default: 150)"
+        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
     )
     multi_personalization_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     multi_personalization_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")

@@ -9,9 +9,9 @@ from typing import Optional, Dict, Any
 from ..convenience import save_steering_config, get_steering_config
 
 from wisent.core.constants import (
-    DEFAULT_SCORE, TECZA_INDEPENDENCE_WEIGHT, TECZA_OPTIMIZATION_STEPS,
+    DEFAULT_SCORE, TECZA_INDEPENDENCE_WEIGHT, DEFAULT_OPTIMIZATION_STEPS,
     TECZA_MIN_COSINE_SIM, TECZA_MAX_COSINE_SIM, TETNO_CONDITION_THRESHOLD,
-    TETNO_MAX_ALPHA, TETNO_OPTIMIZATION_STEPS, TETNO_GATE_TEMPERATURE_LEGACY,
+    TETNO_MAX_ALPHA, DEFAULT_OPTIMIZATION_STEPS, TETNO_GATE_TEMPERATURE_LEGACY,
     GROM_ROUTER_HIDDEN_DIM, GROM_INTENSITY_HIDDEN_DIM, GROM_BEHAVIOR_WEIGHT,
     GROM_SPARSE_WEIGHT, GROM_OPTIMIZATION_STEPS, GROM_LEARNING_RATE,
 )
@@ -36,7 +36,7 @@ class OptimizationResult:
     direction_weighting: str = "primary_only"
     retain_weight: float = 0.0
     independence_weight: float = TECZA_INDEPENDENCE_WEIGHT
-    tecza_optimization_steps: int = TECZA_OPTIMIZATION_STEPS
+    tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     use_caa_init: bool = True
     cone_constraint: bool = True
     min_cosine_similarity: float = TECZA_MIN_COSINE_SIM
@@ -50,7 +50,7 @@ class OptimizationResult:
     use_entropy_scaling: bool = False
     max_alpha: float = TETNO_MAX_ALPHA
     learn_threshold: bool = True
-    tetno_optimization_steps: int = TETNO_OPTIMIZATION_STEPS
+    tetno_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     # GROM
     gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM
     intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM
@@ -76,13 +76,13 @@ def store_optimization(
     metadata: Optional[Dict[str, Any]] = None, set_as_default: bool = False,
     num_directions: int = 1, direction_weighting: str = "primary_only",
     retain_weight: float = 0.0, independence_weight: float = TECZA_INDEPENDENCE_WEIGHT,
-    tecza_optimization_steps: int = TECZA_OPTIMIZATION_STEPS, use_caa_init: bool = True,
+    tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS, use_caa_init: bool = True,
     cone_constraint: bool = True, min_cosine_similarity: float = TECZA_MIN_COSINE_SIM,
     max_cosine_similarity: float = TECZA_MAX_COSINE_SIM, sensor_layer: int = -1,
     steering_layers: str = "", condition_threshold: float = TETNO_CONDITION_THRESHOLD,
     gate_temperature: float = TETNO_GATE_TEMPERATURE_LEGACY, per_layer_scaling: bool = True,
     use_entropy_scaling: bool = False, max_alpha: float = TETNO_MAX_ALPHA,
-    learn_threshold: bool = True, tetno_optimization_steps: int = TETNO_OPTIMIZATION_STEPS,
+    learn_threshold: bool = True, tetno_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS,
     gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM, intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM,
     behavior_weight: float = GROM_BEHAVIOR_WEIGHT, sparse_weight: float = GROM_SPARSE_WEIGHT,
     grom_optimization_steps: int = GROM_OPTIMIZATION_STEPS, grom_learning_rate: float = GROM_LEARNING_RATE,

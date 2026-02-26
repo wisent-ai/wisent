@@ -10,8 +10,7 @@ import re
 from typing import Dict, Any, List, Optional
 
 from wisent.core.constants import (DEFAULT_LAYER, DISPLAY_TOP_N_TINY, LLAMA_PAD_TOKEN_ID,
-    MAX_BENCHMARKS_SINGLE, TAG_ANALYSIS_MAX_NEW_TOKENS, TAG_GEN_MAX_NEW_TOKENS,
-    TAG_GEN_TEMPERATURE)
+    MAX_BENCHMARKS_SINGLE)
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
 
 
@@ -58,8 +57,6 @@ def get_relevant_benchmarks_for_prompt(prompt: str, max_benchmarks: int = MAX_BE
             torch_dtype=torch_dtype,
             device_map=device_map,
             device=pipeline_device,
-            max_new_tokens=TAG_GEN_MAX_NEW_TOKENS,
-            temperature=TAG_GEN_TEMPERATURE,
             do_sample=True,
             pad_token_id=LLAMA_PAD_TOKEN_ID
         )
@@ -98,11 +95,11 @@ Top {max_benchmarks} most relevant benchmarks:"""
         print("   Analyzing with Llama...")
         if existing_model is not None:
             response, _ = existing_model.generate(
-                formatted_prompt, layer_index=DEFAULT_LAYER, max_new_tokens=TAG_ANALYSIS_MAX_NEW_TOKENS)
+                formatted_prompt, layer_index=DEFAULT_LAYER)
             generated_text = response.strip()
         else:
             response = generator(
-                formatted_prompt, max_new_tokens=TAG_ANALYSIS_MAX_NEW_TOKENS, temperature=TAG_GEN_TEMPERATURE)
+                formatted_prompt)
             full_response = response[0]['generated_text']
             generated_text = full_response.split(
                 "<|start_header_id|>assistant<|end_header_id|>"

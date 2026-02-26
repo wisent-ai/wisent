@@ -10,7 +10,7 @@ from wisent.core.errors import InvalidValueError, InvalidRangeError
 from wisent.core.utils import preferred_dtype
 
 # Re-export from helpers
-from wisent.core.constants import LOG_EPS, DEFAULT_BASE_STRENGTH
+from wisent.core.constants import LOG_EPS, DEFAULT_STRENGTH
 from wisent.core.models.core._atoms_helpers import (
     HookHandleGroup,
     TopLogits,
@@ -42,7 +42,7 @@ class SteeringVector:
         layer_description: human-readable description.
     """
     vector: torch.Tensor
-    scale: float = DEFAULT_BASE_STRENGTH
+    scale: float = DEFAULT_STRENGTH
     normalize: bool = False
     layer_description: str = ""
 
@@ -79,7 +79,7 @@ class SteeringPlan:
         cls,
         raw: Sequence[RawActivationMap] | RawActivationMap | None,
         layers_description: list[str] | None = None,
-        scale: float = DEFAULT_BASE_STRENGTH,
+        scale: float = DEFAULT_STRENGTH,
         normalize: bool = False,
         weights: Sequence[float] | None = None,
         expected_hidden_size: int | None = None,

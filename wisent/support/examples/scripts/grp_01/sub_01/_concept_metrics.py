@@ -15,7 +15,7 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
 
 from wisent.core.constants import (
     NORM_EPS, GEOMETRY_OPTIMIZATION_STEPS_SMALL,
-    CV_DEFAULT_N_FOLDS, KMEANS_N_INIT_SMALL, PAIR_GENERATORS_DEFAULT_N,
+    CV_FOLDS, KMEANS_N_INIT_SMALL, PAIR_GENERATORS_DEFAULT_N,
 )
 from wisent.examples.scripts._pair_generators_neutral import (
     ConceptMetrics,
@@ -44,7 +44,7 @@ def compute_cosine_similarity(v1: torch.Tensor, v2: torch.Tensor) -> float:
 def compute_linear_probe_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_folds: int = CV_DEFAULT_N_FOLDS,
+    n_folds: int = CV_FOLDS,
 ) -> float:
     """Compute linear probe cross-validation accuracy."""
     try:
@@ -76,7 +76,7 @@ def compute_knn_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     k: int = KMEANS_N_INIT_SMALL,
-    n_folds: int = CV_DEFAULT_N_FOLDS,
+    n_folds: int = CV_FOLDS,
 ) -> float:
     """Compute k-NN cross-validation accuracy."""
     try:

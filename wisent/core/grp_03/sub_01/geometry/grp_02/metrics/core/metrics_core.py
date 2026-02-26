@@ -10,7 +10,7 @@ os.environ["NUMBA_NUM_THREADS"] = "1"
 
 from typing import Dict, Optional, Any
 import torch
-from wisent.core.constants import DEFAULT_RANDOM_SEED, MAX_PAIRS_FOR_METRICS, CLASSIFIER_DECISION_THRESHOLD, CV_DEFAULT_N_FOLDS
+from wisent.core.constants import DEFAULT_RANDOM_SEED, MAX_PAIRS_FOR_METRICS, CLASSIFIER_THRESHOLD, CV_FOLDS
 
 from ..probe.probe_metrics import (
     compute_signal_strength, compute_linear_probe_accuracy,
@@ -46,7 +46,7 @@ from .metrics_viz import generate_metrics_visualizations
 def compute_geometry_metrics(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_folds: int = CV_DEFAULT_N_FOLDS,
+    n_folds: int = CV_FOLDS,
     model=None,
     tokenizer=None,
     layer: Optional[int] = None,
@@ -227,7 +227,7 @@ def compute_geometry_metrics(
     # Generate recommendation
     recommendation = compute_steering_recommendation(metrics)
     metrics["recommended_method"] = recommendation.get("recommended_method", "CAA")
-    metrics["recommendation_confidence"] = recommendation.get("confidence", CLASSIFIER_DECISION_THRESHOLD)
+    metrics["recommendation_confidence"] = recommendation.get("confidence", CLASSIFIER_THRESHOLD)
     metrics["recommendation_reasoning"] = recommendation.get("reasoning", [])
     metrics["method_scores"] = recommendation.get("method_scores", {})
 

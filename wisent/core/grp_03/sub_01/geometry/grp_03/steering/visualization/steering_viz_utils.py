@@ -7,8 +7,8 @@ from pathlib import Path
 from argparse import Namespace
 from typing import Tuple
 from wisent.core.constants import (
-    BLEND_DEFAULT, CLASSIFIER_TEST_SIZE, DEFAULT_BASE_STRENGTH, JSON_INDENT,
-    VIZ_MLP_EPOCHS, CLASSIFIER_BATCH_SIZE, VIZ_MLP_HIDDEN_DIM,
+    BLEND_DEFAULT, CLASSIFIER_TEST_SIZE, DEFAULT_STRENGTH, JSON_INDENT,
+    VIZ_MLP_EPOCHS, CLASSIFIER_BATCH_SIZE, MLP_HIDDEN_DIM,
 )
 
 
@@ -86,7 +86,7 @@ def train_classifier_and_predict(pos_ref, neg_ref, base_activations, steered_act
 
     X_train = torch.cat([pos_ref, neg_ref], dim=0).cpu().numpy()
     y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
-    classifier = MLPClassifier(device="cpu", hidden_dim=VIZ_MLP_HIDDEN_DIM) if classifier_type == "mlp" else LogisticClassifier(device="cpu")
+    classifier = MLPClassifier(device="cpu", hidden_dim=MLP_HIDDEN_DIM) if classifier_type == "mlp" else LogisticClassifier(device="cpu")
     train_report = classifier.fit(X_train, y_train, config=ClassifierTrainConfig(test_size=CLASSIFIER_TEST_SIZE, num_epochs=VIZ_MLP_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE))
     base_probs = classifier.predict_proba(base_activations.cpu().numpy())
     steered_probs = classifier.predict_proba(steered_activations.cpu().numpy())
@@ -122,7 +122,7 @@ def extract_base_and_steered_activations(
     prompts,
     steering_vectors,
     layer: int,
-    steering_strength: float = DEFAULT_BASE_STRENGTH,
+    steering_strength: float = DEFAULT_STRENGTH,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Extract activations before and after steering for a set of prompts."""
     from wisent.core.adapters.base import SteeringConfig

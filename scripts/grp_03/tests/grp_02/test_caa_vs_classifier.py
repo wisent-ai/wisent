@@ -8,7 +8,7 @@ import numpy as np
 from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
 import random
-from wisent.core.constants import ZERO_THRESHOLD, TOKENIZER_MAX_LENGTH_GEOMETRY
+from wisent.core.constants import ZERO_THRESHOLD
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"
@@ -31,7 +31,7 @@ for s in ds:
 print(f"Loaded {len(pairs)} pairs")
 
 def get_activation(text, layer):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float().numpy()

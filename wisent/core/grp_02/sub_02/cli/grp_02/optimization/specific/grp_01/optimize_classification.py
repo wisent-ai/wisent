@@ -13,7 +13,7 @@ from wisent.core.constants import (
     DEFAULT_NUM_EVAL_PROMPTS,
     DEFAULT_SHOW_COMPARISONS,
     JSON_INDENT,
-    OPTIMIZE_DEFAULT_CLASSIFICATION_THRESHOLD,
+    CLASSIFIER_THRESHOLD,
     SEPARATOR_WIDTH_MAX,
 )
 from wisent.core.config_manager import save_classification_config
@@ -170,7 +170,7 @@ def _handle_comparisons(args, all_results, total_layers):
     for task_name, result in all_results.items():
         bc = result['best_config']
         dc = {
-            'layer': total_layers // 2, 'aggregation': 'average', 'threshold': OPTIMIZE_DEFAULT_CLASSIFICATION_THRESHOLD,
+            'layer': total_layers // 2, 'aggregation': 'average', 'threshold': CLASSIFIER_THRESHOLD,
             'classifier_type': 'logistic', 'prompt_construction_strategy': 'multiple_choice',
             'token_targeting_strategy': 'last_token',
         }

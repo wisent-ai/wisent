@@ -8,7 +8,7 @@ import re
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.constants import (
-    CONTEXT_MAX_LENGTH, DATA_SPLIT_SEED, DATABASE_PAIR_LOADING_LIMIT,
+    CONTEXT_MAX_LENGTH, DEFAULT_RANDOM_SEED, DATABASE_PAIR_LOADING_LIMIT,
     DISPLAY_TOP_N_TINY, HALULENS_MIN_CONTENT_LENGTH,
     HALULENS_SENT_LEN_MIN, HALULENS_SENT_LEN_MAX,
 )
@@ -61,7 +61,7 @@ class HalulensExtractor(HuggingFaceBenchmarkExtractor):
         "fabrication",      # Add completely fabricated details
     ]
 
-    def __init__(self, seed: int = DATA_SPLIT_SEED):
+    def __init__(self, seed: int = DEFAULT_RANDOM_SEED):
         """
         Initialize HalluLens extractor with dynamic generation.
         

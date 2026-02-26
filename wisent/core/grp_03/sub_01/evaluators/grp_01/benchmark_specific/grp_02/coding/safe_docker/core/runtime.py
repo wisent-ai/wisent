@@ -4,12 +4,11 @@ from typing import TYPE_CHECKING
 from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result, SandboxExecutor
 from wisent.core.errors import DockerRuntimeError
 from wisent.core.constants import (
-    DOCKER_PIDS_LIMIT,
     DOCKER_TMPFS_TMP_SIZE_BYTES,
     DOCKER_TMPFS_WORK_SIZE_BYTES,
     DOCKER_TMPFS_MODE,
-    DOCKER_CODE_EXEC_TIMEOUT_SECS,
 )
+from wisent.core.utils.core.hardware import docker_pids_limit, docker_code_exec_timeout_s
 
 if TYPE_CHECKING:
     from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job
@@ -18,13 +17,14 @@ __all__ = ["DockerSandboxExecutor"]
 
 DEFAULT_IMAGE = "coding/sandbox:polyglot-1.0"
 
-SAFE_FLAGS = [
-    "--rm", "--network=none",
-    f"--pids-limit={DOCKER_PIDS_LIMIT}",
-    "--read-only",
-    "--cap-drop=ALL",
-    "--security-opt=no-new-privileges",
-]
+def _safe_flags() -> list[str]:
+    return [
+        "--rm", "--network=none",
+        f"--pids-limit={docker_pids_limit()}",
+        "--read-only",
+        "--cap-drop=ALL",
+        "--security-opt=no-new-privileges",
+    ]
 
 TMPFS_FLAGS = [
     "--tmpfs", f"/tmp:exec,mode={DOCKER_TMPFS_MODE:o},size={DOCKER_TMPFS_TMP_SIZE_BYTES}",
@@ -55,7 +55,7 @@ class DockerSandboxExecutor(SandboxExecutor):
                 ["docker", "info"],
                 capture_output=True,
                 text=True,
-                timeout=DOCKER_CODE_EXEC_TIMEOUT_SECS
+                timeout=docker_code_exec_timeout_s()
             )
             if result.returncode != 0:
                 raise DockerRuntimeError(reason=f"Docker daemon is not running: {result.stderr}")
@@ -128,7 +128,7 @@ class DockerSandboxExecutor(SandboxExecutor):
             base = ["docker"]
             if self.runtime:
                 base += ["--runtime", self.runtime]
-            cmd = base + ["run", "-i", *SAFE_FLAGS, *TMPFS_FLAGS, "-v", f"{job_dir}:/job:ro", self.image]
+            cmd = base + ["run", "-i", *_safe_flags(), *TMPFS_FLAGS, "-v", f"{job_dir}:/job:ro", self.image]
             p = subprocess.run(cmd, check=False, capture_output=True, text=True)
             out = (p.stdout or "").strip()
             try:

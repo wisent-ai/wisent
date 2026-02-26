@@ -148,7 +148,7 @@ def setup_optimize_all_parser(parser):
         "--steering-strength-range",
         type=float,
         nargs="+",
-        default=list(_C.PARSER_FULL_OPTIMIZE_STRENGTHS),
+        default=list(_C.SEARCH_DEFAULT_STRENGTHS),
         help="Steering strengths to test (default: 0.5 1.0 1.5 2.0)",
     )
     # Task selection options

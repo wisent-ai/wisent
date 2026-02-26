@@ -11,7 +11,7 @@ from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.activations.core.atoms import RawActivationMap
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.utils import resolve_default_device
-from wisent.core.constants import DEFAULT_SCALE, DEFAULT_MAX_NEW_TOKENS_EVAL
+from wisent.core.constants import DEFAULT_SCALE
 from wisent.core.models import get_generate_kwargs
 
 # Re-export from helpers
@@ -169,7 +169,7 @@ class MultiSteering:
 
     def apply_steering_stream(
         self, model: WisentModel, prompt: str,
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL, temperature: float = None,
+        max_new_tokens: int = None, temperature: float = None,
         top_p: float = None, enable_thinking: bool = True,
         prompt_is_formatted: bool = False,
         ensure_varied_responses: bool = False, phrase_ledger=None
@@ -180,7 +180,7 @@ class MultiSteering:
         if self.layer is None:
             raise MultiSteeringError("No layer information available")
 
-        gen_kwargs = get_generate_kwargs(max_new_tokens=max_new_tokens)
+        gen_kwargs = get_generate_kwargs() if max_new_tokens is None else get_generate_kwargs(max_new_tokens=max_new_tokens)
         if temperature is not None:
             gen_kwargs["temperature"] = temperature
         if top_p is not None:
@@ -214,7 +214,7 @@ class MultiSteering:
 
     def apply_steering(
         self, model: WisentModel, prompt: str,
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL, temperature: float = None,
+        max_new_tokens: int = None, temperature: float = None,
         top_p: float = None, enable_thinking: bool = True,
         prompt_is_formatted: bool = False
     ) -> str:
@@ -224,7 +224,7 @@ class MultiSteering:
         if self.layer is None:
             raise MultiSteeringError("No layer information available")
 
-        gen_kwargs = get_generate_kwargs(max_new_tokens=max_new_tokens)
+        gen_kwargs = get_generate_kwargs() if max_new_tokens is None else get_generate_kwargs(max_new_tokens=max_new_tokens)
         if temperature is not None:
             gen_kwargs["temperature"] = temperature
         if top_p is not None:

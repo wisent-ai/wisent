@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 import torch
-from wisent.core.constants import NORM_EPS, FGAA_DENSITY_THRESHOLD, FGAA_TOP_K_POSITIVE, FGAA_TOP_K_NEGATIVE, TOKENIZER_MAX_LENGTH_CLUSTER, COMPARISON_NUM_PAIRS, DISPLAY_TOP_N_MEDIUM, JSON_INDENT
+from wisent.core.constants import NORM_EPS, FGAA_DENSITY_THRESHOLD, FGAA_TOP_K_POSITIVE, FGAA_TOP_K_NEGATIVE, COMPARISON_NUM_PAIRS, DISPLAY_TOP_N_MEDIUM, JSON_INDENT
 
 __all__ = [
     "compute_v_target",
@@ -85,7 +85,7 @@ def compute_v_opt(v_target: torch.Tensor, W: torch.Tensor, b: torch.Tensor) -> t
 
 def get_residual_stream_activations(model, tokenizer, text: str, layer_idx: int, device: str) -> torch.Tensor:
     """Get residual stream activations from a specific layer."""
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
     inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
         out = model(**inputs, output_hidden_states=True, use_cache=False)

@@ -99,15 +99,8 @@ class ProgrammaticNonsenseGenerator:
     def _generate_random_chars(self) -> str:
         """Generate random character gibberish."""
         length = random.randint(_C.NONSENSE_CHAR_LEN_MIN, _C.NONSENSE_CHAR_LEN_MAX)
-        chars = []
-        for _ in range(length):
-            if random.random() < _C.NONSENSE_LOWERCASE_PROB:  # 70% lowercase letters
-                chars.append(random.choice(string.ascii_lowercase))
-            elif random.random() < _C.NONSENSE_SPACE_PROB:  # ~20% spaces
-                chars.append(' ')
-            else:  # 10% random punctuation
-                chars.append(random.choice('.,;!?'))
-        return ''.join(chars)
+        pool = string.ascii_lowercase + ' .,;!?'
+        return ''.join(random.choices(pool, k=length))
 
     def _generate_repetitive(self) -> str:
         """Generate pathologically repetitive text."""

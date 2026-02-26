@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 import logging
 import torch
 
-from wisent.core.constants import DEFAULT_BASE_STRENGTH
+from wisent.core.constants import DEFAULT_STRENGTH
 
 logger = logging.getLogger(__name__)
 
@@ -135,7 +135,7 @@ class WisentIOMixin:
             self._traits[trait] = TraitConfig(
                 name=trait,
                 description=trait_data.get("description", ""),
-                default_scale=trait_data.get("default_scale", DEFAULT_BASE_STRENGTH),
+                default_scale=trait_data.get("default_scale", DEFAULT_STRENGTH),
                 layers=trait_data.get("layers"),
                 steering_vectors=LayerActivations(trait_data["vectors"]),
             )

@@ -17,7 +17,7 @@ from wisent.core.constants import (
     GROM_SPARSE_WEIGHT,
     MLP_HIDDEN_DIM,
     MLP_NUM_LAYERS,
-    NURT_LR,
+    MLP_LEARNING_RATE,
     NURT_NUM_DIMS,
     NURT_NUM_INTEGRATION_STEPS,
     NURT_T_MAX,
@@ -25,7 +25,7 @@ from wisent.core.constants import (
     SZLAK_INFERENCE_K,
     SZLAK_SINKHORN_REG,
     TECZA_NUM_DIRECTIONS,
-    TECZA_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
     TECZA_RETAIN_WEIGHT,
     TETNO_CONDITION_THRESHOLD,
     TETNO_GATE_TEMPERATURE_LEGACY,
@@ -97,7 +97,7 @@ class TECZAConfig(MethodConfig):
     num_directions: int = TECZA_NUM_DIRECTIONS
     direction_weighting: str = "primary_only"
     retain_weight: float = TECZA_RETAIN_WEIGHT
-    optimization_steps: int = TECZA_OPTIMIZATION_STEPS
+    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     
     def to_args(self) -> Dict[str, Any]:
         return {
@@ -170,7 +170,7 @@ class NurtConfig(MethodConfig):
     num_dims: int = NURT_NUM_DIMS
     variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
     training_epochs: int = NURT_TRAINING_EPOCHS
-    lr: float = NURT_LR
+    lr: float = MLP_LEARNING_RATE
     num_integration_steps: int = NURT_NUM_INTEGRATION_STEPS
     t_max: float = NURT_T_MAX
     

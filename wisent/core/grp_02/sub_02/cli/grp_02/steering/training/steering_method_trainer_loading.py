@@ -10,9 +10,9 @@ from wisent.core.constants import (
     GROM_MAX_ALPHA, GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS,
     GROM_RETAIN_WEIGHT, GROM_ROUTER_HIDDEN_DIM, GROM_SPARSE_WEIGHT,
     TECZA_INDEPENDENCE_WEIGHT, TECZA_MAX_COSINE_SIM, TECZA_MIN_COSINE_SIM,
-    TECZA_NUM_DIRECTIONS, TECZA_OPTIMIZATION_STEPS, TECZA_RETAIN_WEIGHT,
+    TECZA_NUM_DIRECTIONS, DEFAULT_OPTIMIZATION_STEPS, TECZA_RETAIN_WEIGHT,
     TETNO_CONDITION_THRESHOLD, TETNO_GATE_TEMPERATURE,
-    TETNO_MAX_ALPHA, TETNO_OPTIMIZATION_STEPS,
+    TETNO_MAX_ALPHA, DEFAULT_OPTIMIZATION_STEPS,
 )
 
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
@@ -137,7 +137,7 @@ def create_steering_method_from_config(config: Dict[str, Any]) -> Any:
             "direction_weighting": config.get("direction_weighting", "primary_only"),
             "retain_weight": config.get("retain_weight", TECZA_RETAIN_WEIGHT),
             "independence_weight": config.get("independence_weight", TECZA_INDEPENDENCE_WEIGHT),
-            "optimization_steps": config.get("optimization_steps", TECZA_OPTIMIZATION_STEPS),
+            "optimization_steps": config.get("optimization_steps", DEFAULT_OPTIMIZATION_STEPS),
             "use_caa_init": config.get("use_caa_init", True),
             "cone_constraint": config.get("cone_constraint", True),
             "min_cosine_similarity": config.get("min_cosine_similarity", TECZA_MIN_COSINE_SIM),
@@ -154,7 +154,7 @@ def create_steering_method_from_config(config: Dict[str, Any]) -> Any:
             "use_entropy_scaling": config.get("use_entropy_scaling", False),
             "max_alpha": config.get("max_alpha", TETNO_MAX_ALPHA),
             "learn_threshold": config.get("learn_threshold", True),
-            "optimization_steps": config.get("optimization_steps", TETNO_OPTIMIZATION_STEPS),
+            "optimization_steps": config.get("optimization_steps", DEFAULT_OPTIMIZATION_STEPS),
         }
         
     elif method_name == "grom":

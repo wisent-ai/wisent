@@ -98,7 +98,7 @@ def setup_method_parsers(steering_subparsers):
     SteeringMethodRegistry.add_all_cli_arguments(layer_parser)
     layer_parser.add_argument("--layer-range", type=str, default=None, help="Layer range to search (e.g., '10-20')")
     layer_parser.add_argument(
-        "--strength", type=float, default=_C.DEFAULT_BASE_STRENGTH, help="Fixed steering strength during layer search (default: 1.0)"
+        "--strength", type=float, default=_C.DEFAULT_STRENGTH, help="Fixed steering strength during layer search (default: 1.0)"
     )
     layer_parser.add_argument("--limit", type=int, default=_C.PARSER_DEFAULT_SAMPLE_LIMIT, help="Maximum samples for testing (default: 100)")
     layer_parser.add_argument("--device", type=str, default=None, help="Device to run on")
@@ -177,12 +177,12 @@ def setup_method_parsers(steering_subparsers):
     )
     SteeringMethodRegistry.add_all_cli_arguments(auto_parser)
     auto_parser.add_argument("--limit", type=int, default=_C.PARSER_DEFAULT_SAMPLE_LIMIT, help="Maximum samples for testing (default: 100)")
-    auto_parser.add_argument("--max-time", type=float, default=_C.PARSER_DEFAULT_MAX_TIME_MINUTES, help="Maximum time in minutes (default: 60)")
+    auto_parser.add_argument("--max-time", type=float, default=_C.AUTO_MAX_TIME_MINUTES, help="Maximum time in minutes (default: 60)")
     auto_parser.add_argument(
         "--strength-range",
         type=float,
         nargs="+",
-        default=list(_C.PARSER_FULL_OPTIMIZE_STRENGTHS),
+        default=list(_C.SEARCH_DEFAULT_STRENGTHS),
         help="Steering strengths to test (default: 0.5 1.0 1.5 2.0)",
     )
     auto_parser.add_argument(

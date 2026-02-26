@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from ...model_persistence import ModelPersistence
 from wisent.core.errors import NoSuitableClassifierError
-from wisent.core.constants import DEFAULT_LAYER, SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_DECISION_THRESHOLD, CLASSIFIER_RECENCY_BONUS
+from wisent.core.constants import DEFAULT_LAYER, SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_THRESHOLD, CLASSIFIER_RECENCY_BONUS
 
 
 from wisent.core.agent.diagnose.classifiers._select_classifiers_helpers import ClassifierSelectorHelpersMixin, auto_select_classifiers_for_agent  # noqa: F401
@@ -131,7 +131,7 @@ class ClassifierSelector(ClassifierSelectorHelpersMixin):
             performance_score = self._calculate_performance_score(metadata)
             
             # Determine threshold
-            threshold = metadata.get('detection_threshold', CLASSIFIER_DECISION_THRESHOLD)
+            threshold = metadata.get('detection_threshold', CLASSIFIER_THRESHOLD)
             
             return ClassifierInfo(
                 path=filepath,

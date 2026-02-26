@@ -10,7 +10,6 @@ from typing import Dict, List
 import torch
 
 from wisent.core.geometry import get_component_hook_points
-from wisent.core.constants import TOKENIZER_MAX_LENGTH_GEOMETRY
 
 
 class TransformerComponent(Enum):
@@ -115,7 +114,7 @@ class ComponentActivationExtractor:
                         text,
                         return_tensors="pt",
                         truncation=True,
-                        max_length=TOKENIZER_MAX_LENGTH_GEOMETRY,
+                        max_length=self.tokenizer.model_max_length,
                     ).to(self.device)
                     _ = self.model(**inputs)
                     for hook_point in hook_points:

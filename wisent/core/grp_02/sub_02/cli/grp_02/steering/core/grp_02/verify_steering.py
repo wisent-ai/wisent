@@ -174,30 +174,7 @@ def _detect_steering_type(model_path: Path) -> tuple:
                 if main_config_path.exists():
                     with open(main_config_path) as f:
                         main_config = json.load(f)
-                    # Infer base model from architecture
-                    arch = main_config.get("architectures", [""])[0]
-                    hidden_size = main_config.get("hidden_size", 0)
-                    num_layers = main_config.get("num_hidden_layers", 0)
-
-                    # Common model mappings
-                    if "Qwen3" in arch:
-                        if hidden_size <= _C.HIDDEN_SIZE_QWEN3_SMALL and num_layers <= _C.NUM_LAYERS_QWEN3_SMALL_MAX:
-                            config["base_model"] = "Qwen/Qwen3-0.6B"
-                        elif hidden_size <= _C.HIDDEN_SIZE_QWEN3_MEDIUM:
-                            config["base_model"] = "Qwen/Qwen3-1.7B"
-                        elif hidden_size <= _C.HIDDEN_SIZE_QWEN3_LARGE:
-                            config["base_model"] = "Qwen/Qwen3-4B"
-                        else:
-                            config["base_model"] = "Qwen/Qwen3-8B"
-                    elif "Llama" in arch:
-                        if hidden_size <= _C.HIDDEN_SIZE_QWEN3_MEDIUM:
-                            config["base_model"] = "meta-llama/Llama-3.2-1B"
-                        elif hidden_size <= _C.HIDDEN_SIZE_LLAMA_MEDIUM:
-                            config["base_model"] = "meta-llama/Llama-3.2-3B"
-                        else:
-                            config["base_model"] = "meta-llama/Llama-3.1-8B"
-                    elif "Mistral" in arch:
-                        config["base_model"] = "mistralai/Mistral-7B-v0.1"
+                    config["base_model"] = main_config.get("_name_or_path", "")
 
             return steering_type, config
 

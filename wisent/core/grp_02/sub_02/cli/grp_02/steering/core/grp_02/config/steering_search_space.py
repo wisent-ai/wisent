@@ -17,7 +17,7 @@ import itertools
 
 
 
-from wisent.core.constants import SEARCH_SPACE_DEFAULT_STRENGTHS
+from wisent.core.constants import SEARCH_DEFAULT_STRENGTHS
 from wisent.core.cli.steering.core.config.steering_search_space_classes import (
     DirectionWeighting, SteeringLayerConfig, SensorLayerConfig,
     BaseSearchSpace, CAASearchSpace, TECZASearchSpace,
@@ -47,9 +47,9 @@ def get_search_space(method_name: str, num_layers: int) -> BaseSearchSpace:
     elif method == "TECZA":
         return TECZASearchSpace(layers=all_layers)
     elif method == "TETNO":
-        return TETNOSearchSpace(strengths=list(SEARCH_SPACE_DEFAULT_STRENGTHS))
+        return TETNOSearchSpace(strengths=list(SEARCH_DEFAULT_STRENGTHS))
     elif method == "GROM":
-        return GROMSearchSpace(strengths=list(SEARCH_SPACE_DEFAULT_STRENGTHS))
+        return GROMSearchSpace(strengths=list(SEARCH_DEFAULT_STRENGTHS))
     else:
         # Default to CAA search space
         return CAASearchSpace(layers=all_layers)

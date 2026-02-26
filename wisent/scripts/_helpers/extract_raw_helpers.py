@@ -7,7 +7,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 import torch
 
-from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE, EXTRACTION_DEFAULT_PAIR_LIMIT, MAX_TOKENIZATION_LENGTH, PROGRESS_LOG_INTERVAL, DEFAULT_MAX_RETRIES, PROGRESS_LOG_INTERVAL_10
+from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE, EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DEFAULT_MAX_RETRIES, PROGRESS_LOG_INTERVAL_10
 
 
 def hidden_states_to_bytes(hidden_states: torch.Tensor) -> bytes:
@@ -120,7 +120,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
     format_names = [f[0] for f in all_prompt_formats]
 
     def get_hidden_states(text):
-        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH, add_special_tokens=False)
+        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length, add_special_tokens=False)
         enc = {k: v.to(actual_device) for k, v in enc.items()}
         with torch.inference_mode():
             out = model(**enc, output_hidden_states=True, use_cache=False)

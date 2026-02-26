@@ -13,7 +13,8 @@ from datasets import load_dataset
 from wisent.core.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
 
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import DISPLAY_TRUNCATION_ERROR, GENERATION_TEMPERATURE, SEPARATOR_WIDTH_STANDARD
+from wisent.core.models.config import get_generate_kwargs
+from wisent.core.constants import DISPLAY_TRUNCATION_ERROR, SEPARATOR_WIDTH_STANDARD
 
 
 def extract_boxed_answer(text: str) -> str | None:
@@ -115,9 +116,7 @@ def main():
         # Generate using WisentModel
         responses = model.generate(
             inputs=prompt,
-            max_new_tokens=1000,
-            temperature=GENERATION_TEMPERATURE,
-            do_sample=True,
+            **get_generate_kwargs(),
             prompt_is_formatted=True
         )
 

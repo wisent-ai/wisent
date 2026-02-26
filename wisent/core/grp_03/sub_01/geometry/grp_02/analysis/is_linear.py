@@ -16,7 +16,7 @@ from wisent.core.constants import (
     DEFAULT_RANDOM_SEED, LINEARITY_TEST_GAP_THRESHOLD,
     LINEARITY_TEST_P_THRESHOLD, LINEARITY_TEST_RESIDUAL_THRESHOLD,
     LINEARITY_TEST_RAMSEY_THRESHOLD, LINEARITY_TEST_N_BOOTSTRAP,
-    LINEARITY_TEST_N_CV_SPLITS, LINEARITY_CONFIDENCE_HIGH,
+    CV_FOLDS, LINEARITY_CONFIDENCE_HIGH,
     LINEARITY_CONFIDENCE_LOW, LINEARITY_CROSS_CONTEXT_THRESHOLD,
     DIAGNOSTICS_TOTAL_CHECKS,
 )
@@ -96,7 +96,7 @@ def test_linearity(
     diagnostics = {}
 
     linear_acc, nonlinear_acc, linear_scores, nonlinear_scores = compute_probe_accuracies(
-        pos, neg, n_splits=LINEARITY_TEST_N_CV_SPLITS, random_state=random_state
+        pos, neg, n_splits=CV_FOLDS, random_state=random_state
     )
     gap = nonlinear_acc - linear_acc
 

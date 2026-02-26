@@ -32,7 +32,7 @@ from wisent.core.constants import (
     GPTZERO_DEFAULT_NEUTRAL_SCORE,
     GPTZERO_AI_PROB_WEIGHT,
     GPTZERO_AVG_PROB_WEIGHT,
-    CLASSIFIER_DECISION_THRESHOLD,
+    CLASSIFIER_THRESHOLD,
 )
 
 __all__ = ["GPTZeroEvaluator", "create_gptzero_evaluator"]
@@ -129,9 +129,9 @@ class GPTZeroEvaluator(APIEvaluator):
         documents = data.get("documents", [{}])
         doc = documents[0] if documents else {}
         
-        ai_prob = doc.get("completely_generated_prob", CLASSIFIER_DECISION_THRESHOLD)
+        ai_prob = doc.get("completely_generated_prob", CLASSIFIER_THRESHOLD)
         avg_ai_prob = doc.get("average_generated_prob", ai_prob)
-        mixed_prob = doc.get("overall_burstiness", CLASSIFIER_DECISION_THRESHOLD)
+        mixed_prob = doc.get("overall_burstiness", CLASSIFIER_THRESHOLD)
         
         human_prob = 1.0 - ai_prob
         avg_human_prob = 1.0 - avg_ai_prob

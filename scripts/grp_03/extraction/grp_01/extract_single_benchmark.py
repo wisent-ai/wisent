@@ -129,7 +129,6 @@ def extract_single_benchmark(model_name: str, benchmark: str, limit: int = EXTRA
     from transformers import AutoTokenizer, AutoModelForCausalLM
     from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.activations import ExtractionStrategy
-    from wisent.core.constants import MAX_TOKENIZATION_LENGTH
 
     conn = psycopg2.connect(DATABASE_URL)
 
@@ -193,7 +192,7 @@ def extract_single_benchmark(model_name: str, benchmark: str, limit: int = EXTRA
 
             # Extract activations
             def get_hidden_states(text):
-                enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
+                enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
                 enc = {k: v.to(device) for k, v in enc.items()}
                 with torch.inference_mode():
                     out = model(**enc, output_hidden_states=True, use_cache=False)
