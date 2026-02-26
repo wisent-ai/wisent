@@ -3,7 +3,7 @@
 import json
 import argparse
 
-from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, SEPARATOR_WIDTH_REPORT, JSON_INDENT
+from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N, SEPARATOR_WIDTH_REPORT, JSON_INDENT
 
 
 def save_results_and_finish(all_results, results_file):
@@ -49,7 +49,7 @@ def main():
     parser.add_argument("--task", default="truthfulqa_gen")
     parser.add_argument("--model",
                         default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
+    parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument("--output-dir", default="/home/ubuntu/output")
     args = parser.parse_args()
 

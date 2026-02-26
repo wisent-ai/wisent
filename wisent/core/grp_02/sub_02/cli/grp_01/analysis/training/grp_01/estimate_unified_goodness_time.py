@@ -1,5 +1,5 @@
 """CLI entry point for estimating unified goodness training time."""
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, PARSER_DEFAULT_NUM_STRENGTH_STEPS, BENCHMARK_FAST_LOAD_THRESHOLD, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_HALF
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, BENCHMARK_FAST_LOAD_THRESHOLD, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_HALF
 from wisent.core.cli.analysis.training.estimate_time_functions import (
     BENCHMARK_SIZES, BENCHMARK_LOAD_TIMES, estimate_runtime,
     get_benchmark_load_time, get_benchmark_size, format_time,
@@ -23,7 +23,7 @@ def main():
         help="Fraction of pairs for training (default: 0.8 = 80%% train, 20%% eval)"
     )
     parser.add_argument(
-        "--eval-scales", type=int, default=PARSER_DEFAULT_NUM_STRENGTH_STEPS,
+        "--eval-scales", type=int, required=True,
         help="Number of steering scales to evaluate"
     )
     parser.add_argument(

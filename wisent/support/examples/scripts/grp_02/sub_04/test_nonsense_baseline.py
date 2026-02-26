@@ -20,7 +20,7 @@ from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-from wisent.core.constants import ZERO_THRESHOLD, PARSER_DEFAULT_NUM_PAIRS, PAIR_GENERATORS_DEFAULT_N
+from wisent.core.constants import ZERO_THRESHOLD, PAIR_GENERATORS_DEFAULT_N
 
 
 WORD_LIST = [
@@ -155,7 +155,7 @@ def collect_activations(
 def main():
     parser = argparse.ArgumentParser(description="Test nonsense baseline vs real pairs")
     parser.add_argument("--model", type=str, default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--n-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
+    parser.add_argument("--n-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument("--strategies", type=str, nargs="+", 
                         default=["chat_mean", "chat_max_norm", "chat_last"])
     parser.add_argument("--layers", type=int, nargs="+", default=None,

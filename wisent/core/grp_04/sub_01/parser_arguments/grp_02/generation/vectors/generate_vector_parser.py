@@ -1,6 +1,6 @@
 """Parser setup for the 'generate-vector' command."""
 
-from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS_GENERATE, PARSER_DEFAULT_LAYER_START
+from wisent.core.constants import PARSER_DEFAULT_LAYER_START
 
 
 def setup_generate_vector_parser(parser):
@@ -64,8 +64,8 @@ def setup_generate_vector_parser(parser):
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=PARSER_DEFAULT_NUM_PAIRS_GENERATE,
-        help="Number of pairs to generate when using --from-description (default: 30)",
+        required=True,
+        help="Number of pairs to generate when using --from-description",
     )
     parser.add_argument(
         "--save-pairs", type=str, default=None, help="Save generated pairs to this file when using --from-description"

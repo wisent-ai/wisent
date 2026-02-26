@@ -25,9 +25,6 @@ import argparse
 from wisent.core.constants import (
     DEFAULT_SPLIT_RATIO,
     DEFAULT_RANDOM_SEED,
-    OPTIMIZE_WEIGHTS_CHECKPOINT_INTERVAL,
-    OPTIMIZE_WEIGHTS_NUM_EVAL_PROMPTS,
-    OPTIMIZE_WEIGHTS_TARGET_VALUE,
 )
 
 from wisent.core.parser_arguments.optimization.weights.optimize_weights_parser_advanced import (
@@ -159,8 +156,8 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--checkpoint-interval",
         type=int,
-        default=OPTIMIZE_WEIGHTS_CHECKPOINT_INTERVAL,
-        help="Save checkpoint and best model every N trials. Default: 5"
+        required=True,
+        help="Save checkpoint and best model every N trials"
     )
     parser.add_argument(
         "--gcs-bucket",
@@ -188,8 +185,8 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     eval_group.add_argument(
         "--num-eval-prompts",
         type=int,
-        default=OPTIMIZE_WEIGHTS_NUM_EVAL_PROMPTS,
-        help="Number of evaluation prompts per trial. Default: 30"
+        required=True,
+        help="Number of evaluation prompts per trial"
     )
 
     # ==========================================================================
@@ -205,8 +202,8 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     target_group.add_argument(
         "--target-value",
         type=float,
-        default=OPTIMIZE_WEIGHTS_TARGET_VALUE,
-        help="Target value for the metric. Default: 0.95"
+        required=True,
+        help="Target value for the metric"
     )
     target_group.add_argument(
         "--direction",

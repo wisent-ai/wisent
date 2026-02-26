@@ -1,5 +1,5 @@
 """Welfare and universal subparsers for optimize-steering."""
-from wisent.core import constants as _C
+from wisent.core.constants import DEFAULT_N_TRIALS
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
@@ -47,7 +47,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
         help="Direction to steer: 'positive' (comfort, satisfaction, etc.) or 'negative' (distress, etc.)"
     )
     welfare_parser.add_argument(
-        "--num-pairs", type=int, default=_C.PARSER_DEFAULT_NUM_PAIRS, help="Number of pairs to use for training (default: 50)"
+        "--num-pairs", type=int, required=True, help="Number of pairs to use for training"
     )
     welfare_parser.add_argument(
         "--layers",
@@ -60,11 +60,11 @@ def setup_welfare_universal_parsers(steering_subparsers):
         "--strength-range",
         type=float,
         nargs=2,
-        default=list(_C.PARSER_STRENGTH_RANGE_WELFARE),
-        help="Min and max steering strength to test (default: 0.5 3.0)",
+        required=True,
+        help="Min and max steering strength to test",
     )
     welfare_parser.add_argument(
-        "--num-strength-steps", type=int, default=_C.PARSER_DEFAULT_NUM_STRENGTH_STEPS, help="Number of strength values to test (default: 5)"
+        "--num-strength-steps", type=int, required=True, help="Number of strength values to test"
     )
     welfare_parser.add_argument(
         "--output-dir",
@@ -97,14 +97,14 @@ def setup_welfare_universal_parsers(steering_subparsers):
     welfare_parser.add_argument(
         "--n-trials",
         type=int,
-        default=_C.DEFAULT_N_TRIALS,
+        default=DEFAULT_N_TRIALS,
         help="Number of Optuna trials when using --search-strategy optuna (default: 100)"
     )
     welfare_parser.add_argument(
         "--limit",
         type=int,
-        default=_C.PARSER_DEFAULT_NUM_PAIRS,
-        help="Sample limit for optimization (default: 50)"
+        required=True,
+        help="Sample limit for optimization"
     )
 
     # ==========================================================================
@@ -142,7 +142,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
     universal_parser.add_argument(
         "--limit",
         type=int,
-        default=_C.DEFAULT_N_TRIALS,
+        default=DEFAULT_N_TRIALS,
         help="Maximum samples to use (default: 100)"
     )
     universal_parser.add_argument(

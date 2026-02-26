@@ -14,7 +14,7 @@ from wisent.core.models.wisent_model import WisentModel
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
-from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PARSER_DEFAULT_NUM_PAIRS, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10
+from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PAIR_GENERATORS_DEFAULT_N, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10
 from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
@@ -26,7 +26,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", default="truthfulqa_gen")
     parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
+    parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument("--layer", type=int, default=TEST_DETECTOR_DEFAULT_LAYER)
     args = parser.parse_args()
 

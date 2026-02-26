@@ -4,9 +4,6 @@ import argparse
 from wisent.core.constants import (
     DEFAULT_SPLIT_RATIO,
     DEFAULT_RANDOM_SEED,
-    MODIFY_WEIGHTS_DEFAULT_ALPHA,
-    MODIFY_WEIGHTS_LR_SCHEDULES,
-    MODIFY_WEIGHTS_MAX_ITERATIONS,
     PAIRS_SIMILARITY_THRESHOLD,
 )
 from wisent.core.utils.core.hardware import default_batch_size
@@ -114,8 +111,8 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=MODIFY_WEIGHTS_MAX_ITERATIONS,
-        help="Number of contrastive pairs to generate (default: 100)"
+        required=True,
+        help="Number of contrastive pairs to generate"
     )
     parser.add_argument(
         "--trait-label",
@@ -195,8 +192,8 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     tecza_group.add_argument(
         "--tecza-num-directions",
         type=int,
-        default=MODIFY_WEIGHTS_LR_SCHEDULES,
-        help="Number of directions per layer for TECZA (default: 3)"
+        required=True,
+        help="Number of directions per layer for TECZA"
     )
 
     # Directional projection parameters
@@ -204,8 +201,8 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     directional_group.add_argument(
         "--strength",
         type=float,
-        default=MODIFY_WEIGHTS_DEFAULT_ALPHA,
-        help="Projection strength (0=no change, 1=full projection) (default: 1.0)"
+        required=True,
+        help="Projection strength (0=no change, 1=full projection)"
     )
     directional_group.add_argument(
         "--norm-preserve",

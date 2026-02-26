@@ -1,7 +1,6 @@
 """Advanced arguments for optimize-weights parser."""
 import argparse
 
-from wisent.core import constants as _C
 from wisent.core.constants import (
     DEFAULT_OPTIMIZATION_STEPS,
     DIRECTIONS_PER_LAYER,
@@ -24,14 +23,14 @@ def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> Non
     optim_group.add_argument(
         "--trials",
         type=int,
-        default=_C.PARSER_OPTUNA_TRIALS,
-        help="Number of optimization trials. Default: 300"
+        required=True,
+        help="Number of optimization trials"
     )
     optim_group.add_argument(
         "--startup-trials",
         type=int,
-        default=_C.PARSER_OPTUNA_STARTUP_TRIALS,
-        help="Number of random startup trials before TPE. Default: 10"
+        required=True,
+        help="Number of random startup trials before TPE"
     )
     optim_group.add_argument(
         "--early-stop",
@@ -41,8 +40,8 @@ def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> Non
     optim_group.add_argument(
         "--early-stop-patience",
         type=int,
-        default=_C.PARSER_OPTUNA_EARLY_STOP_PATIENCE,
-        help="Stop if no improvement for N trials. Default: 10"
+        required=True,
+        help="Stop if no improvement for N trials"
     )
 
     # ==========================================================================
@@ -76,8 +75,8 @@ def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> Non
     search_group.add_argument(
         "--num-pairs",
         type=int,
-        default=_C.PARSER_OPTUNA_NUM_PAIRS,
-        help="Number of contrastive pairs to generate (fixed, not optimized). Default: 100"
+        required=True,
+        help="Number of contrastive pairs to generate (fixed, not optimized)"
     )
     search_group.add_argument(
         "--optimize-direction-index",

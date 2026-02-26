@@ -49,8 +49,6 @@ import subprocess
 import sys
 
 from wisent.core.constants import (
-    PARSER_DEFAULT_NUM_PAIRS,
-    PARSER_DEFAULT_NUM_PAIRS_GENERATE,
     DEFAULT_N_TRIALS,
     SEPARATOR_WIDTH_REPORT,
 )
@@ -88,7 +86,7 @@ def main():
     parser.add_argument(
         "--trials",
         type=int,
-        default=PARSER_DEFAULT_NUM_PAIRS_GENERATE,
+        required=True,
         help="Number of optimization trials",
     )
     parser.add_argument(
@@ -100,7 +98,7 @@ def main():
     parser.add_argument(
         "--num-eval-prompts",
         type=int,
-        default=PARSER_DEFAULT_NUM_PAIRS,
+        required=True,
         help="Number of prompts for evaluation",
     )
 

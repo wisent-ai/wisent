@@ -21,7 +21,7 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PARSER_DEFAULT_NUM_PAIRS, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PAIR_GENERATORS_DEFAULT_N, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE
 
 
 # Best configs loaded from comprehensive test results
@@ -104,7 +104,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", default="truthfulqa_gen")
     parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct")
-    parser.add_argument("--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
+    parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument("--layer", type=int, default=None, help="Single layer (overrides multi-config)")
     parser.add_argument("--aggregation", default=None, help="Single aggregation (overrides multi-config)")
     parser.add_argument("--prompt-strategy", default=None, help="Single prompt strategy (overrides multi-config)")

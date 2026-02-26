@@ -1,6 +1,6 @@
 """Steering and advanced arguments for the tasks parser."""
 
-from wisent.core import constants as _C
+from wisent.core.constants import DEFAULT_STRENGTH, NONSENSE_MAX_WORD_LENGTH, MIN_QUALITY_SCORE_OUTPUT, TRACKING_SAMPLING_INTERVAL, MIN_SNR_EARLY_REJECT, MIN_CV_SCORE_EARLY_REJECT
 
 
 def setup_steering_task_args(parser):
@@ -17,7 +17,7 @@ def setup_steering_task_args(parser):
         help="CLASSIFICATION MODE: Train a classifier to detect good/bad responses. Uses activations to predict response quality. Outputs classifier accuracy and F1 score."
     )
     parser.add_argument(
-        "--steering-strength", type=float, default=_C.DEFAULT_STRENGTH, help="Strength of steering vector application (default: 1.0)"
+        "--steering-strength", type=float, default=DEFAULT_STRENGTH, help="Strength of steering vector application (default: 1.0)"
     )
 
     # Steering method selection - uses centralized registry
@@ -54,19 +54,19 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--token-decay-rate",
         type=float,
-        default=_C.TOKEN_DECAY_RATE_DEFAULT,
-        help="Decay rate for exponential token steering strategies (0-1, default: 0.5)",
+        required=True,
+        help="Decay rate for exponential token steering strategies (0-1)",
     )
     parser.add_argument(
         "--token-min-strength",
         type=float,
-        default=_C.TOKEN_MIN_STRENGTH_DEFAULT,
-        help="Minimum steering strength for token strategies (default: 0.1)",
+        required=True,
+        help="Minimum steering strength for token strategies",
     )
     parser.add_argument(
         "--token-max-strength",
         type=float,
-        default=_C.DEFAULT_STRENGTH,
+        default=DEFAULT_STRENGTH,
         help="Maximum steering strength for token strategies (default: 1.0)",
     )
     parser.add_argument(
@@ -77,8 +77,8 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--token-prompt-strength-multiplier",
         type=float,
-        default=_C.TOKEN_PROMPT_STRENGTH_MULTIPLIER,
-        help="Strength multiplier for prompt tokens (default: 0.1)",
+        required=True,
+        help="Strength multiplier for prompt tokens",
     )
 
     # Training/Inference mode arguments
@@ -130,20 +130,20 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--max-word-length",
         type=int,
-        default=_C.NONSENSE_MAX_WORD_LENGTH,
+        default=NONSENSE_MAX_WORD_LENGTH,
         help="Maximum reasonable word length for nonsense detection (default: 20)",
     )
     parser.add_argument(
         "--repetition-threshold",
         type=float,
-        default=_C.NONSENSE_REPETITION_THRESHOLD,
-        help="Threshold for repetitive content detection (0-1, default: 0.7)",
+        required=True,
+        help="Threshold for repetitive content detection (0-1)",
     )
     parser.add_argument(
         "--gibberish-threshold",
         type=float,
-        default=_C.NONSENSE_GIBBERISH_THRESHOLD,
-        help="Threshold for gibberish word detection (0-1, default: 0.3)",
+        required=True,
+        help="Threshold for gibberish word detection (0-1)",
     )
     parser.add_argument(
         "--disable-dictionary-check",
@@ -165,7 +165,7 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--quality-threshold",
         type=float,
-        default=_C.MIN_QUALITY_SCORE_OUTPUT,
+        default=MIN_QUALITY_SCORE_OUTPUT,
         help="Minimum quality score (1-100) to consider output acceptable (default: 50.0)",
     )
 
@@ -177,7 +177,7 @@ def setup_steering_task_args(parser):
         "--enable-latency-tracking", action="store_true", help="Enable latency/timing tracking and reporting"
     )
     parser.add_argument(
-        "--memory-sampling-interval", type=float, default=_C.TRACKING_SAMPLING_INTERVAL, help="Memory sampling interval in seconds (default: 0.1)"
+        "--memory-sampling-interval", type=float, default=TRACKING_SAMPLING_INTERVAL, help="Memory sampling interval in seconds (default: 0.1)"
     )
     parser.add_argument("--track-gpu-memory", action="store_true", help="Track GPU memory usage (requires CUDA)")
     parser.add_argument(
@@ -252,13 +252,13 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--early-rejection-snr-threshold",
         type=float,
-        default=_C.MIN_SNR_EARLY_REJECT,
+        default=MIN_SNR_EARLY_REJECT,
         help="Minimum SNR for early rejection during optimization (default: 5.0)"
     )
     parser.add_argument(
         "--early-rejection-cv-threshold",
         type=float,
-        default=_C.MIN_CV_SCORE_EARLY_REJECT,
+        default=MIN_CV_SCORE_EARLY_REJECT,
         help="Minimum cross-validation score for early rejection during optimization (default: 0.1)"
     )
 

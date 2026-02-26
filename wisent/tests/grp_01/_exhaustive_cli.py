@@ -5,7 +5,7 @@ import os
 import sys
 from datetime import datetime
 
-from wisent.core.constants import GEO_MAX_LAYER_COMBO_SIZE, PARSER_DEFAULT_NUM_PAIRS, TEST_MAX_COMBO_SIZE, DISPLAY_TOP_N_SMALL, JSON_INDENT
+from wisent.core.constants import GEO_MAX_LAYER_COMBO_SIZE, PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, DISPLAY_TOP_N_SMALL, JSON_INDENT
 from wisent.tests.test_geometry_exhaustive import (
     run_exhaustive_layer_analysis,
     run_limited_layer_analysis,
@@ -19,7 +19,7 @@ from wisent.tests.test_geometry_exhaustive import (
 def run_comprehensive_sweep(
     task: str = "truthfulqa_gen",
     model: str = "meta-llama/Llama-3.2-1B-Instruct",
-    num_pairs: int = PARSER_DEFAULT_NUM_PAIRS,
+    num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
     max_combo_size: int = TEST_MAX_COMBO_SIZE,
     output_dir: str = "/home/ubuntu/output",
 ):
@@ -101,7 +101,7 @@ def main():
     parser.add_argument(
         "--model", default="meta-llama/Llama-3.2-1B-Instruct"
     )
-    parser.add_argument("--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS)
+    parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument(
         "--max-layers", type=int, default=None,
         help="DEBUG ONLY - DO NOT USE IN PRODUCTION.",

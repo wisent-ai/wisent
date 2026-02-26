@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any
 
 from wisent.core.constants import (
-    DEFAULT_STRENGTH, PARSER_DEFAULT_NUM_PAIRS_GENERATE,
+    DEFAULT_STRENGTH,
     PAIR_GENERATORS_DEFAULT_N,
     DISPLAY_TRUNCATION_LARGE,
 )
@@ -42,7 +42,7 @@ def run_wisent_task(
     layer: int,
     steering_mode: bool = False,
     steering_strength: float = DEFAULT_STRENGTH,
-    training_limit: int = PARSER_DEFAULT_NUM_PAIRS_GENERATE,
+    training_limit: int = PAIR_GENERATORS_DEFAULT_N,
     testing_limit: int = PAIR_GENERATORS_DEFAULT_N,
 ) -> float:
     """
