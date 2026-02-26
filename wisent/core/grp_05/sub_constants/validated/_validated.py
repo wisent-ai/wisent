@@ -13,7 +13,6 @@ MS_PER_SECOND = 1000  # SI prefix milli-
 BYTES_PER_KB = 1024  # IEC binary kibibyte
 BYTES_PER_MB = 1024 * 1024  # IEC binary mebibyte
 BYTES_PER_GB = 1024 ** 3  # IEC binary gibibyte
-PIXEL_MAX_VALUE = 255  # 8-bit unsigned max
 HTTP_STATUS_OK = 200  # RFC 7231 section 6.3.1
 
 # --- Correlation / probability range boundaries ---
