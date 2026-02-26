@@ -1,6 +1,6 @@
 """Parser for the 'steering-viz' command - steering effect visualization."""
 
-from wisent.core.constants import AUTOTUNE_VAL_SPLIT, PARSER_DEFAULT_NUM_PAIRS, COMPARISON_STEERING_LAYER, DEFAULT_STRENGTH, PARSER_DEFAULT_RESPONSE_SAMPLES, PARSER_DEFAULT_REF_PAIRS
+from wisent.core.constants import AUTOTUNE_VAL_SPLIT, COMPARISON_STEERING_LAYER, DEFAULT_STRENGTH
 
 
 def setup_steering_viz_parser(parser):
@@ -32,14 +32,14 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--n-test-prompts",
         type=int,
-        default=PARSER_DEFAULT_NUM_PAIRS,
-        help="Number of test prompts to run (default: 50)"
+        required=True,
+        help="Number of test prompts to run"
     )
     parser.add_argument(
         "--limit",
         type=int,
-        default=PARSER_DEFAULT_REF_PAIRS,
-        help="Maximum reference pairs to load (default: 200)"
+        required=True,
+        help="Maximum reference pairs to load"
     )
     parser.add_argument(
         "--prompt-format",
@@ -75,8 +75,8 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--n-response-samples",
         type=int,
-        default=PARSER_DEFAULT_RESPONSE_SAMPLES,
-        help="Number of samples to show response comparison for (default: 5)"
+        required=True,
+        help="Number of samples to show response comparison for"
     )
     parser.add_argument(
         "--max-new-tokens",

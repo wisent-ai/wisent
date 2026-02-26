@@ -7,7 +7,7 @@ from pathlib import Path
 from dataclasses import asdict
 from typing import List
 
-from wisent.core.constants import DEFAULT_RANDOM_SEED, PARSER_DEFAULT_MAX_REGEN_ATTEMPTS, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
+from wisent.core.constants import DEFAULT_RANDOM_SEED, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
 from wisent.examples.scripts.intervention_validation_cli_helpers import (
     GCS_BUCKET,
     GCS_PREFIX,
@@ -20,7 +20,7 @@ from wisent.examples.scripts.intervention_validation_cli_helpers import (
 
 def run_intervention_validation(
     model_name: str,
-    num_per_category: int = PARSER_DEFAULT_MAX_REGEN_ATTEMPTS,
+    num_per_category: int = 3,
     steering_strengths: List[float] = [1.0, 2.0, 5.0],
 ):
     """Run intervention validation using wisent CLI."""
@@ -163,7 +163,7 @@ def run_intervention_validation(
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Intervention validation using wisent CLI")
     parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model to test")
-    parser.add_argument("--num-per-category", type=int, default=PARSER_DEFAULT_MAX_REGEN_ATTEMPTS, help="Benchmarks per diagnosis category")
+    parser.add_argument("--num-per-category", type=int, required=True, help="Benchmarks per diagnosis category")
     args = parser.parse_args()
     
     run_intervention_validation(

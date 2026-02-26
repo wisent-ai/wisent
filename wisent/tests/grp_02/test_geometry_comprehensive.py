@@ -13,7 +13,7 @@ import torch
 from dataclasses import dataclass
 from typing import Dict, List
 from wisent.core import constants as _C
-from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, DISPLAY_TOP_N_SMALL
+from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N, DISPLAY_TOP_N_SMALL
 
 
 @dataclass
@@ -30,7 +30,7 @@ class GeometryResult:
 def run_comprehensive_geometry_analysis(
     task: str = "truthfulqa_gen",
     model: str = "meta-llama/Llama-3.2-1B-Instruct",
-    num_pairs: int = PARSER_DEFAULT_NUM_PAIRS,
+    num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
     output_dir: str = "/home/ubuntu/output",
 ):
     """

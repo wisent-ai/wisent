@@ -1,9 +1,5 @@
 """Parser setup for the 'model-config' command."""
 
-from wisent.core.constants import (
-    MODEL_CONFIG_DETECTION_THRESHOLD,
-    MODEL_CONFIG_TEST_SAMPLE_LIMIT,
-)
 
 
 def setup_model_config_parser(parser):
@@ -18,7 +14,7 @@ def setup_model_config_parser(parser):
     save_parser.add_argument(
         "--steering-layer", type=int, default=None, help="Optimal layer for steering (defaults to classification layer)"
     )
-    save_parser.add_argument("--detection-threshold", type=float, default=MODEL_CONFIG_DETECTION_THRESHOLD, help="Detection threshold")
+    save_parser.add_argument("--detection-threshold", type=float, required=True, help="Detection threshold")
     save_parser.add_argument(
         "--optimization-method", type=str, default="manual", help="How these parameters were determined"
     )
@@ -44,7 +40,7 @@ def setup_model_config_parser(parser):
     test_parser.add_argument(
         "--task", type=str, default="truthfulqa_mc1", help="Task to test with (default: truthfulqa_mc1)"
     )
-    test_parser.add_argument("--limit", type=int, default=MODEL_CONFIG_TEST_SAMPLE_LIMIT, help="Number of samples to test with (default: 5)")
+    test_parser.add_argument("--limit", type=int, required=True, help="Number of samples to test with")
     test_parser.add_argument("--device", type=str, default=None, help="Device to run on")
 
     # Common arguments for all subcommands

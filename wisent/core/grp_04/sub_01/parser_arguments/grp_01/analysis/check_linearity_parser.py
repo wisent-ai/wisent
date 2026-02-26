@@ -1,11 +1,7 @@
 """Parser for check-linearity command."""
 
 from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import (
-    CHECK_LINEARITY_LINEAR_THRESHOLD, CHECK_LINEARITY_WEAK_THRESHOLD,
-    CHECK_LINEARITY_MIN_COHENS_D, CHECK_LINEARITY_DEFAULT_MAX_PAIRS,
-    DIAG_OPTIMIZATION_STEPS,
-)
+from wisent.core.constants import DIAG_OPTIMIZATION_STEPS
 
 
 def setup_check_linearity_parser(parser):
@@ -41,29 +37,29 @@ def setup_check_linearity_parser(parser):
     parser.add_argument(
         '--max-pairs',
         type=int,
-        default=CHECK_LINEARITY_DEFAULT_MAX_PAIRS,
+        required=True,
         help='Maximum number of pairs to use for analysis'
     )
     
     parser.add_argument(
         '--linear-threshold',
         type=float,
-        default=CHECK_LINEARITY_LINEAR_THRESHOLD,
-        help='Linear score threshold to declare LINEAR (default: 0.7)'
+        required=True,
+        help='Linear score threshold to declare LINEAR'
     )
     
     parser.add_argument(
         '--weak-threshold',
         type=float,
-        default=CHECK_LINEARITY_WEAK_THRESHOLD,
-        help='Linear score threshold to declare WEAKLY_LINEAR (default: 0.5)'
+        required=True,
+        help='Linear score threshold to declare WEAKLY_LINEAR'
     )
     
     parser.add_argument(
         '--min-cohens-d',
         type=float,
-        default=CHECK_LINEARITY_MIN_COHENS_D,
-        help='Minimum Cohen\'s d for meaningful separation (default: 1.0)'
+        required=True,
+        help='Minimum Cohen\'s d for meaningful separation'
     )
     
     parser.add_argument(

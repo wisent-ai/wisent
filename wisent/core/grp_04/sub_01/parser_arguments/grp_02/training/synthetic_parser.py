@@ -1,12 +1,10 @@
 """Parser setup for the 'synthetic' command."""
 from wisent.core.constants import (
     DEFAULT_LAYER,
-    PARSER_DEFAULT_NUM_PAIRS_GENERATE,
     SYNTHETIC_DEDUP_SIMILARITY,
     SYNTHETIC_QUALITY_THRESHOLD,
     SYNTHETIC_MIN_QUALITY,
     DEFAULT_STRENGTH,
-    PARSER_DEFAULT_TEST_QUESTIONS,
     NONSENSE_MAX_WORD_LENGTH,
 )
 
@@ -24,8 +22,8 @@ def setup_synthetic_parser(parser):
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=PARSER_DEFAULT_NUM_PAIRS_GENERATE,
-        help="Number of contrastive pairs to generate (default: 30, only used with --trait)",
+        required=True,
+        help="Number of contrastive pairs to generate (only used with --trait)",
     )
     parser.add_argument(
         "--save-pairs",
@@ -49,7 +47,7 @@ def setup_synthetic_parser(parser):
     )
     parser.add_argument("--steering-strength", type=float, default=DEFAULT_STRENGTH, help="Strength of steering vector application")
     parser.add_argument(
-        "--test-questions", type=int, default=PARSER_DEFAULT_TEST_QUESTIONS, help="Number of test questions to generate for evaluation"
+        "--test-questions", type=int, required=True, help="Number of test questions to generate for evaluation"
     )
 
     # Output

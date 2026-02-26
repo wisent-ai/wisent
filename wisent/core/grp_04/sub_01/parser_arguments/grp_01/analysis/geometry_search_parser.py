@@ -2,7 +2,6 @@
 
 import argparse
 
-from wisent.core import constants as _C
 from wisent.core.constants import DEFAULT_RANDOM_SEED
 
 
@@ -23,14 +22,14 @@ def setup_geometry_search_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--pairs-per-benchmark",
         type=int,
-        default=_C.GEOMETRY_SEARCH_LIMIT,
-        help="Number of pairs to sample per benchmark (default: 50)",
+        required=True,
+        help="Number of pairs to sample per benchmark",
     )
     parser.add_argument(
         "--max-layer-combo-size",
         type=int,
-        default=_C.GEOMETRY_SEARCH_PARAM_COUNT,
-        help="Maximum layers in combination (default: 3 = individual + pairs + triplets)",
+        required=True,
+        help="Maximum layers in combination (e.g., 3 = individual + pairs + triplets)",
     )
     parser.add_argument(
         "--strategies",

@@ -1,6 +1,6 @@
 """Parser for the 'discover-steering' command - find optimal steering directions."""
 
-from wisent.core.constants import PARSER_DEFAULT_NUM_PAIRS, COMPARISON_STEERING_LAYER, DEFAULT_STRENGTH, PARSER_DEFAULT_RANDOM_DIRECTIONS
+from wisent.core.constants import COMPARISON_STEERING_LAYER, DEFAULT_STRENGTH
 
 
 def setup_discover_steering_parser(parser):
@@ -26,12 +26,12 @@ def setup_discover_steering_parser(parser):
         help="Steering strength multiplier (default: 1.0)"
     )
     parser.add_argument(
-        "--n-test-samples", type=int, default=PARSER_DEFAULT_NUM_PAIRS,
-        help="Number of test samples for evaluation (default: 50)"
+        "--n-test-samples", type=int, required=True,
+        help="Number of test samples for evaluation"
     )
     parser.add_argument(
-        "--n-random-directions", type=int, default=PARSER_DEFAULT_RANDOM_DIRECTIONS,
-        help="Number of random directions to try (default: 20)"
+        "--n-random-directions", type=int, required=True,
+        help="Number of random directions to try"
     )
     parser.add_argument(
         "--database-url", type=str, default=None,
