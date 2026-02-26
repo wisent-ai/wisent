@@ -17,23 +17,25 @@ from wisent.core.constants import COMPARE_TOL
 
 
 def _load_migrated_keys() -> Set[str]:
-    """Load already-migrated keys from markers/ dir in HF repo."""
+    """Load already-migrated keys from markers/ dir in HF repo.
+    Marker paths: markers/{model}/{benchmark_path}/{strategy}.json
+    where benchmark_path may contain slashes (e.g. coding/humaneval)."""
     from huggingface_hub import HfApi
     token = _get_hf_token()
     api = HfApi(token=token)
     keys: Set[str] = set()
     try:
-        all_files = api.list_repo_tree(
-            repo_id=HF_REPO_ID, repo_type=HF_REPO_TYPE,
-            path_in_repo="markers", recursive=True,
-        )
-        for f in all_files:
-            rp = getattr(f, "rpath", "")
-            if rp.endswith(".json"):
-                parts = rp.split("/")
-                if len(parts) == 4:
-                    sm, bm, st = parts[1], parts[2], parts[3].replace(".json", "")
-                    keys.add(f"{sm}/{bm}/{st}")
+        info = api.dataset_info(repo_id=HF_REPO_ID, token=token)
+        for s in (info.siblings or []):
+            fn = s.rfilename
+            if fn.startswith("markers/") and fn.endswith(".json"):
+                inner = fn[len("markers/"):-len(".json")]
+                parts = inner.split("/")
+                if len(parts) >= 3:
+                    model = parts[0]
+                    strategy = parts[-1]
+                    benchmark = "/".join(parts[1:-1])
+                    keys.add(f"{model}/{benchmark}/{strategy}")
     except Exception as exc:
         print(f"  Warning: could not load markers: {exc}")
     print(f"  Already migrated: {len(keys)} combos (from markers)")
@@ -48,23 +50,34 @@ def migrate_all(
     skip_pair_texts: bool = False,
 ) -> None:
     """Discover all (model, benchmark, strategy) combos and migrate.
-    Uses staging dirs to batch uploads and avoid HF rate limits."""
+    Uses staging dirs to batch uploads and avoid HF rate limits.
+    Builds combos from Model x ContrastivePairSet x strategies
+    (avoids scanning the massive Activation table which times out)."""
+    strategies = [
+        "chat_first", "chat_last", "chat_max_norm",
+        "chat_mean", "chat_weighted", "mc_balanced", "role_play",
+    ]
     conn = _get_db_connection(database_url)
     cur = conn.cursor()
     try:
         cur.execute(
-            """SELECT DISTINCT m."huggingFaceId", cs.name,
-                      a."extractionStrategy"
-               FROM "Activation" a
-               JOIN "Model" m ON a."modelId" = m.id
-               JOIN "ContrastivePairSet" cs
-                    ON a."contrastivePairSetId" = cs.id
-               ORDER BY 1, 2, 3"""
+            'SELECT "huggingFaceId" FROM "Model" ORDER BY id'
         )
-        combos = cur.fetchall()
+        models = [r[0] for r in cur.fetchall()]
+        cur.execute(
+            'SELECT name FROM "ContrastivePairSet" ORDER BY id'
+        )
+        benchmarks = [r[0] for r in cur.fetchall()]
     finally:
         cur.close()
         conn.close()
+    combos = [
+        (m, bm, s)
+        for m in models
+        for bm in benchmarks
+        for s in strategies
+    ]
+    combos.sort()
     total = len(combos)
     combos = combos[combo_start:combo_end]
     print(f"Found {total} total combos, processing slice [{combo_start}:{combo_end}] = {len(combos)}")
