@@ -1,5 +1,5 @@
 """GROM (Thunder) steering method constants."""
-from wisent.core.grp_05.sub_constants.for_experiments.by_method._tecza_tetno import *  # noqa: F401,F403
+from wisent.core.grp_05.sub_constants.for_experiments.by_method._tecza import *  # noqa: F401,F403
 
 # --- Core GROM parameters ---
 GROM_NUM_DIRECTIONS = 5
