@@ -47,8 +47,6 @@ from wisent.core.parser_arguments.optimization.steering import (
     setup_steering_optimizer_parser,
     setup_sample_size_optimizer_parser,
     setup_tune_recommendation_parser,
-    setup_sensitivity_parser,
-    setup_evidence_parser,
 )
 from wisent.core.parser_arguments.optimization import (
     setup_optimize_all_parser,
@@ -291,8 +289,4 @@ def setup_parser() -> argparse.ArgumentParser:
 
     compare_steering_parser = subparsers.add_parser("compare-steering", help="Compare steering objects across traits")
     setup_compare_steering_parser(compare_steering_parser)
-    sensitivity_parser = subparsers.add_parser("sensitivity", help="Analyze and optimize named constant sensitivity")
-    setup_sensitivity_parser(sensitivity_parser)
-    evidence_parser = subparsers.add_parser("evidence", help="Manage empirical evidence for search-space reduction")
-    setup_evidence_parser(evidence_parser)
     return parser

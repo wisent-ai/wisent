@@ -47,8 +47,6 @@ def run_auto_steering_optimization(
     wisent_model = WisentModel(model_name, device=device)
     num_layers = wisent_model.num_layers
 
-    profile_mgr = _try_load_constant_profile(model_name, task_name, verbose)
-
     if verbose:
         print(f"Model loaded with {num_layers} layers\n")
         print(f"Generating contrastive pairs for {task_name}...", flush=True)
@@ -113,27 +111,6 @@ def run_auto_steering_optimization(
         'optimization_date': datetime.now().isoformat(),
         'config_saved': True,
     }
-
-
-def _try_load_constant_profile(model_name: str, task_name: str, verbose: bool):
-    """Attempt to load and activate a saved constant profile."""
-    try:
-        from wisent.core.steering_optimizer.constants_registry.profiles import (
-            ConstantProfileManager,
-        )
-        manager = ConstantProfileManager()
-        profile = manager.load(model_name, task_name)
-        if profile is not None:
-            manager.activate(profile)
-            if verbose:
-                print(f"Loaded constant profile: {len(profile.constants)} "
-                      f"constants (source: {profile.source})")
-            return manager
-        if verbose:
-            print("No saved constant profile found, using defaults")
-    except Exception as e:
-        logger.debug("Could not load constant profile: %s", e)
-    return None
 
 
 def _generate_pairs(task_name: str, limit: int) -> List:
