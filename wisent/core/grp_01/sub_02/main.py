@@ -30,8 +30,6 @@ from wisent.core.cli import (
     execute_per_concept_steering_viz, execute_discover_steering,
     execute_migrate_activations, execute_tune_recommendation,
     execute_compare_steering,
-    execute_sensitivity,
-    execute_evidence,
 )
 
 
@@ -134,10 +132,6 @@ def main():
         execute_tune_recommendation(args)
     elif args.command == 'compare-steering':
         execute_compare_steering(args)
-    elif args.command == 'sensitivity':
-        execute_sensitivity(args)
-    elif args.command == 'evidence':
-        execute_evidence(args)
     else:
         print(f"\n✗ Command '{args.command}' is not yet implemented")
         sys.exit(1)

@@ -33,7 +33,7 @@ def generate_search_space(
     Args:
         num_layers: Number of layers in the model
         custom_*: Override default search values
-        evidence_reductions: Dict[str, AxisReduction] from EvidenceLedger
+        evidence_reductions: Optional dict of search-space reductions
 
     Returns:
         List of OptimizationConfig to test
@@ -273,22 +273,5 @@ def collect_activations(
 
 
 def _load_evidence_reductions(self, task_name: str):
-    """Load evidence-based search-space reductions (returns empty on error)."""
-    try:
-        from wisent.core.steering_optimizer.constants_registry.evidence import (
-            EvidenceLedger,
-        )
-        ledger = EvidenceLedger()
-        reductions = ledger.get_reductions(
-            model_name=self.model.model_name,
-            task_name=task_name,
-            method_name=self.method_name,
-        )
-        if reductions:
-            self._log(
-                f"Evidence ledger: {len(reductions)} axis reduction(s) loaded"
-            )
-        return reductions
-    except Exception as exc:
-        logger.debug("Evidence ledger unavailable: %s", exc)
-        return {}
+    """No-op stub — evidence ledger was removed."""
+    return {}
