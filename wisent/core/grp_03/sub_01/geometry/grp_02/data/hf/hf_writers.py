@@ -48,7 +48,7 @@ def _retry_upload(fn, max_retries=HF_UPLOAD_MAX_RETRIES, base_wait=HF_UPLOAD_BAS
             return fn()
         except Exception as exc:
             msg = str(exc)
-            retryable = any(k in msg for k in ("429", "412", "500", "Precondition", "ReadTimeout", "timed out", "Internal"))
+            retryable = any(k in msg for k in ("429", "412", "500", "Precondition", "ReadTimeout", "timed out", "Internal", "RevisionNotFound", "Invalid rev id"))
             if not retryable or attempt == max_retries - 1:
                 raise
             wait = int(base_wait * (2 ** min(attempt, HF_UPLOAD_BACKOFF_MAX_EXPONENT)) * random.uniform(HF_UPLOAD_JITTER_MIN, HF_UPLOAD_JITTER_MAX))
@@ -258,16 +258,16 @@ def consolidate_index(dry_run: bool = False) -> Dict[str, List[int]]:
         f.rpath for f in all_files
         if hasattr(f, "rpath") and f.rpath.endswith(".json")
     ]
-
     print(f"Found {len(marker_paths)} marker files")
     index: Dict[str, List[int]] = {}
-
     from huggingface_hub import hf_hub_download
     for mp in marker_paths:
-        parts = mp.split("/")  # markers/{safe_model}/{benchmark}/{strategy}.json
-        if len(parts) != 4:
+        if not mp.startswith("markers/") or not mp.endswith(".json"):
             continue
-        key = f"{parts[1]}/{parts[2]}/{parts[3].replace('.json', '')}"
+        inner = mp[len("markers/"):-len(".json")].split("/")
+        if len(inner) < 3:
+            continue
+        key = f"{inner[0]}/{'/'.join(inner[1:-1])}/{inner[-1]}"
         local = hf_hub_download(
             repo_id=HF_REPO_ID, filename=mp,
             repo_type=HF_REPO_TYPE, token=_get_hf_token(),
