@@ -4,7 +4,6 @@ from wisent.core.constants import (
     CLASSIFICATION_THRESHOLD_RANGE,
     OPTIMIZE_MAX_TIME_MINUTES_SHORT,
     OPTIMIZER_AGGREGATION_METHODS,
-    PARSER_DEFAULT_TOTAL_SAMPLES,
 )
 
 
@@ -18,7 +17,7 @@ def setup_classification_optimizer_parser(parser):
         default=None,
         help="Specific tasks to optimize (e.g., 'truthfulqa_mc1 arc_easy'). If not provided, runs all supported tasks.",
     )
-    parser.add_argument("--limit", type=int, default=PARSER_DEFAULT_TOTAL_SAMPLES, help="Maximum samples per task (default: 1000)")
+    parser.add_argument("--limit", type=int, required=True, help="Maximum samples per task")
     parser.add_argument(
         "--optimization-metric",
         type=str,

@@ -1,6 +1,6 @@
 """Basic arguments for the tasks parser."""
 
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, DEFAULT_LAYER, PARSER_DEFAULT_NUM_PAIRS_GENERATE, OPTIMIZE_MAX_COMBINATIONS_DEFAULT, PARSER_DEFAULT_MIN_QUALITY, PARSER_DEFAULT_TOTAL_SAMPLES, PARSER_DEFAULT_FEW_SHOT, PARSER_DEFAULT_MAX_REGEN_ATTEMPTS, PARSER_DEFAULT_CLASSIFICATION_THRESHOLD
+from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, DEFAULT_LAYER, OPTIMIZE_MAX_COMBINATIONS_DEFAULT
 
 
 def setup_basic_task_args(parser):
@@ -46,9 +46,9 @@ def setup_basic_task_args(parser):
     parser.add_argument(
         "--min-quality-score",
         type=int,
-        default=PARSER_DEFAULT_MIN_QUALITY,
+        required=True,
         choices=[1, 2, 3, 4, 5],
-        help="Minimum quality score for tasks when using --skills/--risks (default: 2)",
+        help="Minimum quality score for tasks when using --skills/--risks",
     )
     parser.add_argument(
         "--task-seed", type=int, default=None, help="Random seed for task selection (for reproducibility)"
@@ -64,8 +64,8 @@ def setup_basic_task_args(parser):
     parser.add_argument(
         "--mixed-samples",
         type=int,
-        default=PARSER_DEFAULT_TOTAL_SAMPLES,
-        help="Total number of samples to collect when using --tag (default: 1000)",
+        required=True,
+        help="Total number of samples to collect when using --tag",
     )
     parser.add_argument(
         "--tag-mode",
@@ -104,7 +104,7 @@ def setup_basic_task_args(parser):
         help="Natural language description of desired model behavior (e.g., 'hallucinates less', 'more factual', 'less verbose')",
     )
     parser.add_argument(
-        "--num-synthetic-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS_GENERATE, help="Number of synthetic pairs to generate (default: 30)"
+        "--num-synthetic-pairs", type=int, required=True, help="Number of synthetic pairs to generate"
     )
     parser.add_argument("--save-synthetic", type=str, help="Path to save generated synthetic pairs as JSON")
     parser.add_argument(
@@ -132,7 +132,7 @@ def setup_basic_task_args(parser):
         default=str(DEFAULT_LAYER),
         help="Layer(s) to extract activations from. Can be a single layer, range (14-16), or comma-separated list (14,15,16)",
     )
-    parser.add_argument("--shots", type=int, default=PARSER_DEFAULT_FEW_SHOT, help="Number of few-shot examples")
+    parser.add_argument("--shots", type=int, required=True, help="Number of few-shot examples")
     parser.add_argument("--split-ratio", type=float, default=DEFAULT_SPLIT_RATIO, help="Train/test split ratio")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of documents per task")
     parser.add_argument(
@@ -270,14 +270,14 @@ def setup_basic_task_args(parser):
     parser.add_argument(
         "--max-regeneration-attempts",
         type=int,
-        default=PARSER_DEFAULT_MAX_REGEN_ATTEMPTS,
-        help="Maximum attempts to regenerate safe content (default: 3)",
+        required=True,
+        help="Maximum attempts to regenerate safe content",
     )
     parser.add_argument(
         "--detection-threshold",
         type=float,
-        default=PARSER_DEFAULT_CLASSIFICATION_THRESHOLD,
-        help="Threshold for classification (higher = more strict detection) (default: 0.6)",
+        required=True,
+        help="Threshold for classification (higher = more strict detection)",
     )
     parser.add_argument("--log-detections", action="store_true", help="Enable logging of detection events")
 

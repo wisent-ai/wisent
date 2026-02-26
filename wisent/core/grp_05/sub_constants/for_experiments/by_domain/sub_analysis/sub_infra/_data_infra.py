@@ -1,5 +1,4 @@
 """Data infrastructure, extraction, and processing constants."""
-from wisent.core.grp_05.sub_constants.for_experiments.by_domain.sub_analysis.sub_infra._parser_defaults import *  # noqa: F401,F403
 
 # --- EWC / continual learning ---
 EWC_PERTURBATION_SCALE = 0.01
@@ -188,6 +187,20 @@ DISCOVER_STEERING_TRAIN_LIMIT = 500
 
 # --- Continual loop ---
 CONTINUAL_LOOP_QUERY_LIMIT = 20
+
+# --- Cluster benchmarks ---
+CLUSTER_PROGRESS_INTERVAL = 20
+CLUSTER_MIN_PAIRS = 10
+CLUSTER_PROMPT_TRUNCATION = 500
+CLUSTER_RESPONSE_TRUNCATION = 200
+
+# --- Additive weight modification method ---
+ADDITIVE_METHOD_MAX_ALPHA = 2.0
+ADDITIVE_KERNEL_CENTER_DIVISOR = 2.0
+ADDITIVE_KERNEL_SIGMA_DIVISOR = 2.0
+
+# --- Trait pair generation ---
+PARSER_DEFAULT_NUM_PAIRS_TRAIT = 10
 
 # --- Fast diversity ---
 FAST_DIVERSITY_SEED = 13

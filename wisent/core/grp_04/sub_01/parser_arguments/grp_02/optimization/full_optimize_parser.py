@@ -1,6 +1,6 @@
 """Parser setup for the 'optimize' and 'optimize-all' commands."""
 
-from wisent.core import constants as _C
+from wisent.core.constants import SEARCH_DEFAULT_STRENGTHS
 
 
 def setup_optimize_all_parser(parser):
@@ -79,16 +79,16 @@ def setup_optimize_all_parser(parser):
     parser.add_argument(
         "--n-trials",
         type=int,
-        default=_C.PARSER_FULL_OPTIMIZE_TRIALS,
-        help="Number of Optuna trials for optimization (default: 50)"
+        required=True,
+        help="Number of Optuna trials for optimization"
     )
 
     # General limit that applies to all optimizations unless overridden
     parser.add_argument(
         "--limit",
         type=int,
-        default=_C.PARSER_DEFAULT_SAMPLE_LIMIT,
-        help="Sample limit for all optimizations (default: 100). Can be overridden by specific limits below",
+        required=True,
+        help="Sample limit for all optimizations. Can be overridden by specific limits below",
     )
 
     # Specific limits (override general limit if provided)
@@ -112,8 +112,8 @@ def setup_optimize_all_parser(parser):
         "--sample-sizes",
         type=int,
         nargs="+",
-        default=list(_C.PARSER_FULL_OPTIMIZE_SAMPLE_SIZES),
-        help="Sample sizes to test (default: 5 10 20 50 100 200 500)",
+        required=True,
+        help="Sample sizes to test (e.g., 5 10 20 50 100 200 500)",
     )
     parser.add_argument(
         "--skip-classification", action="store_true", help="Skip classification optimization and use existing config"
@@ -148,7 +148,7 @@ def setup_optimize_all_parser(parser):
         "--steering-strength-range",
         type=float,
         nargs="+",
-        default=list(_C.SEARCH_DEFAULT_STRENGTHS),
+        default=list(SEARCH_DEFAULT_STRENGTHS),
         help="Steering strengths to test (default: 0.5 1.0 1.5 2.0)",
     )
     # Task selection options
@@ -161,16 +161,16 @@ def setup_optimize_all_parser(parser):
     parser.add_argument(
         "--min-quality-score",
         type=int,
-        default=_C.PARSER_FULL_OPTIMIZE_MIN_QUALITY,
+        required=True,
         choices=[1, 2, 3, 4, 5],
-        help="Minimum quality score for tasks (default: 2)",
+        help="Minimum quality score for tasks",
     )
     parser.add_argument(
         "--task-seed", type=int, default=None, help="Random seed for task selection (for reproducibility)"
     )
 
     parser.add_argument(
-        "--max-time-per-task", type=float, default=_C.PARSER_FULL_OPTIMIZE_MAX_TIME, help="Maximum time per task in minutes (default: 20.0)"
+        "--max-time-per-task", type=float, required=True, help="Maximum time per task in minutes"
     )
 
     parser.add_argument("--device", type=str, default=None, help="Device to run on")

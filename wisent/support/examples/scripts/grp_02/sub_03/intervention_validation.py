@@ -29,8 +29,8 @@ from wisent.examples.scripts.intervention_validation_eval import (
 def run_intervention_validation(
     model_name: str,
     benchmarks_to_test: Optional[List[str]] = None,
-    samples_per_benchmark: int = _C.PARSER_DEFAULT_SYNTHETIC_PAIRS,
-    test_samples: int = _C.PARSER_DEFAULT_NUM_PAIRS_GENERATE,
+    samples_per_benchmark: int = _C.PAIR_GENERATORS_DEFAULT_N,
+    test_samples: int = _C.PAIR_GENERATORS_DEFAULT_N,
     steering_coefficients: List[float] = [1.0, 2.0, 5.0, 10.0],
 ):
     """
@@ -285,8 +285,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Intervention validation for Zwiad")
     parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model to test")
     parser.add_argument("--benchmarks", type=str, nargs="+", default=None, help="Specific benchmarks to test")
-    parser.add_argument("--samples", type=int, default=_C.PARSER_DEFAULT_SYNTHETIC_PAIRS, help="Samples for direction computation")
-    parser.add_argument("--test-samples", type=int, default=_C.PARSER_DEFAULT_NUM_PAIRS_GENERATE, help="Samples for evaluation")
+    parser.add_argument("--samples", type=int, required=True, help="Samples for direction computation")
+    parser.add_argument("--test-samples", type=int, required=True, help="Samples for evaluation")
     args = parser.parse_args()
     
     run_intervention_validation(

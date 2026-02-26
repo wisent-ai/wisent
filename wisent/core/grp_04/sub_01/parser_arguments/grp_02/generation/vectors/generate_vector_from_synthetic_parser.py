@@ -2,7 +2,7 @@
 
 import argparse
 
-from wisent.core.constants import PAIRS_SIMILARITY_THRESHOLD, PARSER_DEFAULT_SYNTHETIC_PAIRS
+from wisent.core.constants import PAIRS_SIMILARITY_THRESHOLD
 
 
 def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser) -> None:
@@ -50,8 +50,8 @@ def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser)
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=PARSER_DEFAULT_SYNTHETIC_PAIRS,
-        help="Number of contrastive pairs to generate (default: 20)"
+        required=True,
+        help="Number of contrastive pairs to generate"
     )
     parser.add_argument(
         "--similarity-threshold",

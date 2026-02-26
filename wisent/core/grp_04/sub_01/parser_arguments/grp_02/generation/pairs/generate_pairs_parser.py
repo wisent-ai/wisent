@@ -1,6 +1,6 @@
 """Parser setup for the 'generate-pairs' command."""
 
-from wisent.core.constants import PAIRS_SIMILARITY_THRESHOLD, PARSER_DEFAULT_NUM_PAIRS_GENERATE, PARSER_DEFAULT_WORKERS
+from wisent.core.constants import PAIRS_SIMILARITY_THRESHOLD, PARSER_DEFAULT_WORKERS
 
 
 def setup_generate_pairs_parser(parser):
@@ -9,7 +9,7 @@ def setup_generate_pairs_parser(parser):
         "--trait", type=str, required=True, help="Natural language description of the desired trait or behavior"
     )
     parser.add_argument(
-        "--num-pairs", type=int, default=PARSER_DEFAULT_NUM_PAIRS_GENERATE, help="Number of contrastive pairs to generate (default: 30)"
+        "--num-pairs", type=int, required=True, help="Number of contrastive pairs to generate"
     )
     parser.add_argument(
         "--output", type=str, required=True, help="Output file path for the generated pairs (JSON format)"

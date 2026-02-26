@@ -1,14 +1,6 @@
 """Advanced arguments for modify-weights parser."""
 import argparse
 
-from wisent.core.constants import (
-    MODIFY_WEIGHTS_ADDITIVE_ALPHA,
-    MODIFY_WEIGHTS_MAX_ALPHA,
-    MODIFY_WEIGHTS_MAX_DEGRADATION,
-    MODIFY_WEIGHTS_MIN_ALPHA,
-    MODIFY_WEIGHTS_MIN_LINEAR_SCORE,
-    MODIFY_WEIGHTS_SURGICAL_TOP_K,
-)
 
 
 def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
@@ -19,8 +11,8 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     additive_group.add_argument(
         "--alpha",
         type=float,
-        default=MODIFY_WEIGHTS_ADDITIVE_ALPHA,
-        help="Steering strength for additive method (default: 1.0)"
+        required=True,
+        help="Steering strength for additive method"
     )
     additive_group.add_argument(
         "--additive-method",
@@ -64,8 +56,8 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     kernel_group.add_argument(
         "--max-weight",
         type=float,
-        default=MODIFY_WEIGHTS_MAX_ALPHA,
-        help="Peak weight/alpha at center layer (default: 1.5)"
+        required=True,
+        help="Peak weight/alpha at center layer"
     )
     kernel_group.add_argument(
         "--max-weight-position",
@@ -76,8 +68,8 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     kernel_group.add_argument(
         "--min-weight",
         type=float,
-        default=MODIFY_WEIGHTS_MIN_ALPHA,
-        help="Minimum weight/alpha at edges (default: 0.3)"
+        required=True,
+        help="Minimum weight/alpha at edges"
     )
     kernel_group.add_argument(
         "--min-weight-distance",
@@ -148,14 +140,14 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     guided_group.add_argument(
         "--surgical-top-k",
         type=int,
-        default=MODIFY_WEIGHTS_SURGICAL_TOP_K,
-        help="Number of top layers for surgical mode (default: 3)"
+        required=True,
+        help="Number of top layers for surgical mode"
     )
     guided_group.add_argument(
         "--min-linear-score",
         type=float,
-        default=MODIFY_WEIGHTS_MIN_LINEAR_SCORE,
-        help="Minimum linear score to include a layer (default: 0.5)"
+        required=True,
+        help="Minimum linear score to include a layer"
     )
     guided_group.add_argument(
         "--use-fisher-weights",
@@ -186,8 +178,8 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     validation_group.add_argument(
         "--max-degradation",
         type=float,
-        default=MODIFY_WEIGHTS_MAX_DEGRADATION,
-        help="Maximum allowed degradation on validation benchmarks (default: 0.1)"
+        required=True,
+        help="Maximum allowed degradation on validation benchmarks"
     )
     validation_group.add_argument(
         "--validation-benchmarks",

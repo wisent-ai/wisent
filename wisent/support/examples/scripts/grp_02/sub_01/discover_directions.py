@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from wisent.core.constants import PARSER_DEFAULT_FEW_SHOT, PAIR_GENERATORS_DEFAULT_N, SEPARATOR_WIDTH_WIDE, JSON_INDENT
+from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N, SEPARATOR_WIDTH_WIDE, JSON_INDENT
 from wisent.core.geometry import GeometrySearchSpace
 from wisent.examples.scripts._discovery_utils import (
     load_categorized_benchmarks,
@@ -202,7 +202,7 @@ def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Discover unified directions for skill categories")
     parser.add_argument("--model", type=str, default=None, help="Specific model to test (for parallel execution)")
-    parser.add_argument("--samples-per-benchmark", type=int, default=PARSER_DEFAULT_FEW_SHOT, help="Number of samples per benchmark (default: 0 = use all available)")
+    parser.add_argument("--samples-per-benchmark", type=int, required=True, help="Number of samples per benchmark")
     parser.add_argument("--with-nonsense-baseline", action="store_true", 
                         help="Compare against random token baseline (requires generating activations through the model)")
     parser.add_argument("--with-pairs-ablation", action="store_true",
