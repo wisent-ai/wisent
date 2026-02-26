@@ -45,8 +45,6 @@ _IMPORT_MAP = {
     'execute_per_concept_steering_viz': '.steering.viz.per_concept_steering_viz',
     'execute_agent': '.agent.main',
     'execute_migrate_activations': '.data.migrate_activations',
-    'execute_sensitivity': '.optimization.specific.sensitivity',
-    'execute_evidence': '.optimization.specific.evidence',
 }
 
 
@@ -61,4 +59,4 @@ def __getattr__(name):
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-__all__ = list(_IMPORT_MAP.keys()) + ['execute_compare_steering', 'execute_sensitivity', 'execute_evidence']
+__all__ = list(_IMPORT_MAP.keys()) + ['execute_compare_steering']

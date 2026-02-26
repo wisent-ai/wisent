@@ -17,15 +17,6 @@ AGENT_QUALITY_STORAGE_THRESHOLD = 0.7
 # --- Continual learning ---
 CONTINUAL_SHARED_UPDATE_RATE = 0.1
 
-# --- GROM optimization ---
-GROM_ETA_MIN_FACTOR = 0.1
-GROM_MAX_GRAD_NORM = 1.0
-GROM_CAA_ALIGNMENT_THRESHOLD = 0.9
-GROM_ROUTING_TEMP_EPS = 0.1
-
-# --- SZLAK transport ---
-SZLAK_GEODESIC_INF_MULTIPLIER = 2.0
-
 # --- Evaluation ground-truth generation ---
 PERPLEXITY_WIKITEXT_THRESHOLD = 100
 
@@ -52,18 +43,6 @@ SIGNIFICANCE_MARGIN = 0.1
 SIGNAL_STRENGTH_THRESHOLD = 0.6
 SIGNAL_PROBE_ACCURACY_THRESHOLD = 0.6
 
-# --- NURT architecture ---
-NURT_MAX_CONCEPT_DIM = 10
-NURT_FLOW_HIDDEN_MIN = 32
-NURT_FLOW_HIDDEN_MAX = 128
-NURT_FLOW_HIDDEN_MULTIPLIER = 4
-
-# --- GROM architecture divisors ---
-# --- GROM create-steering defaults ---
-GROM_CREATE_NOISE_SCALE = 0.3
-GROM_CREATE_GATE_THRESHOLD = 0.5
-
-# --- GROM loss weights ---
 # --- Nonsense baseline generation ---
 NONSENSE_MIN_TOKENS = 5
 NONSENSE_TOKEN_OFFSET = 100
@@ -203,9 +182,6 @@ CONFIDENCE_LOWER_BOUND = 0.1
 # --- Condition number threshold ---
 CONDITION_NUMBER_HIGH = 1000
 
-# --- GROM initialization (skip PCA component too similar to CAA) ---
-GROM_CAA_SIMILARITY_SKIP = 0.9
-
 # --- Adaptive cross-validation parameters ---
 ADAPTIVE_CV_MIN_FOLDS = 2
 ADAPTIVE_CV_MAX_FOLDS = 5
@@ -226,10 +202,6 @@ ADAPTIVE_PERMUTATIONS_DIVISOR = 5000
 # --- KNN adaptive k ---
 KNN_ADAPTIVE_K_MIN = 3
 KNN_ADAPTIVE_K_DIVISOR = 4
-
-# --- MLP probe early stopping ---
-MLP_EARLY_STOPPING_MIN_SAMPLES = 20
-MLP_PROBE_MAX_ITER = 500
 
 # --- UMAP adaptive neighbors ---
 UMAP_NEIGHBORS_MIN = 5

@@ -1,7 +1,7 @@
-"""Find all dead constants across the entire codebase.
+"""Analyze all constants across the entire codebase.
 
 Extracts every UPPER_CASE constant from all definition files,
-then greps each one to find constants with zero external consumers.
+counts external consumers for each, and reports usage statistics.
 """
 import os
 import re
@@ -46,9 +46,9 @@ def extract_constants(filepath):
 
 
 def count_external_refs(name):
-    """Count files referencing this constant, excluding definition/classification files."""
+    """Count files referencing this constant (word-boundary match)."""
     result = subprocess.run(
-        ["grep", "-rl", "--include=*.py", name, REPO_ROOT],
+        ["grep", "-rlw", "--include=*.py", name, REPO_ROOT],
         capture_output=True, text=True,
     )
     if result.returncode != 0:
@@ -76,27 +76,51 @@ def main():
             if name not in all_constants:
                 all_constants[name] = rel_path
 
-    print(f"Total constants found: {len(all_constants)}")
-    print("Checking each one for external references...\n")
+    total = len(all_constants)
+    print(f"Total constants found: {total}")
 
-    dead = []
+    usage = {}
     checked = 0
     for name, source_file in sorted(all_constants.items()):
         refs = count_external_refs(name)
+        usage[name] = (source_file, len(refs), refs)
         checked += 1
         if checked % 100 == 0:
-            print(f"  ... checked {checked}/{len(all_constants)}", file=sys.stderr)
-        if not refs:
-            dead.append((name, source_file))
+            print(f"  ... checked {checked}/{total}", file=sys.stderr)
 
-    print(f"\n{'='*60}")
-    print(f"DEAD CONSTANTS (zero external consumers): {len(dead)}")
-    print(f"{'='*60}")
-    for name, source_file in dead:
-        print(f"  {name}  ({source_file})")
+    dead = [(n, s, c, r) for n, (s, c, r) in usage.items() if c == 0]
+    single = [(n, s, c, r) for n, (s, c, r) in usage.items() if c == 1]
+    few = [(n, s, c, r) for n, (s, c, r) in usage.items() if c == 2]
+    multi = [(n, s, c, r) for n, (s, c, r) in usage.items() if c >= 3]
 
-    print(f"\nTotal checked: {checked}")
-    print(f"Total dead: {len(dead)}")
+    print(f"\n{'='*70}")
+    print(f"USAGE SUMMARY")
+    print(f"{'='*70}")
+    print(f"Dead (0 uses):      {len(dead)}")
+    print(f"Single-use (1 use): {len(single)}")
+    print(f"Two uses:           {len(few)}")
+    print(f"Multi-use (3+):     {len(multi)}")
+    print(f"Total:              {total}")
+
+    print(f"\n{'='*70}")
+    print(f"DEAD CONSTANTS (0 external consumers)")
+    print(f"{'='*70}")
+    for name, source, count, refs in sorted(dead):
+        print(f"  {name}  ({source})")
+
+    print(f"\n{'='*70}")
+    print(f"SINGLE-USE CONSTANTS (1 external consumer)")
+    print(f"{'='*70}")
+    for name, source, count, refs in sorted(single):
+        consumer = refs[0].replace(REPO_ROOT + "/", "")
+        print(f"  {name}  ->  {consumer}")
+
+    print(f"\n{'='*70}")
+    print(f"TWO-USE CONSTANTS (2 external consumers)")
+    print(f"{'='*70}")
+    for name, source, count, refs in sorted(few):
+        consumers = [r.replace(REPO_ROOT + "/", "") for r in refs]
+        print(f"  {name}  ->  {', '.join(consumers)}")
 
 
 if __name__ == "__main__":
