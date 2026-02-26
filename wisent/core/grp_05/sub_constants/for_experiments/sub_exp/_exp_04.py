@@ -59,17 +59,11 @@ NURT_FLOW_HIDDEN_MAX = 128
 NURT_FLOW_HIDDEN_MULTIPLIER = 4
 
 # --- GROM architecture divisors ---
-# GROM_GATE_DIM_DIVISOR and GROM_INTENSITY_DIM_DIVISOR defined in _arb_03
-GROM_ROUTING_DIM_DIVISOR = 32
-
 # --- GROM create-steering defaults ---
 GROM_CREATE_NOISE_SCALE = 0.3
 GROM_CREATE_GATE_THRESHOLD = 0.5
 
 # --- GROM loss weights ---
-# GROM_LOSS_CONCENTRATION_WEIGHT defined in _arb_03 (=0.3)
-GROM_LOSS_CAA_TARGET = 1.0
-
 # --- Nonsense baseline generation ---
 NONSENSE_MIN_TOKENS = 5
 NONSENSE_TOKEN_OFFSET = 100
