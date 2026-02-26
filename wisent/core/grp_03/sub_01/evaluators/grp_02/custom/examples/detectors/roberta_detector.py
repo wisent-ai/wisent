@@ -21,7 +21,7 @@ from wisent.core.evaluators.custom.custom_evaluator import (
     CustomEvaluatorConfig,
 )
 from wisent.core.constants import (
-    CLASSIFIER_DECISION_THRESHOLD,
+    CLASSIFIER_THRESHOLD,
     DEFAULT_API_RETRIES,
     DEFAULT_TIMEOUT_DOCKER,
     DETECTOR_MAX_TEXT_LENGTH,
@@ -122,8 +122,8 @@ class RobertaDetectorEvaluator(CustomEvaluator):
             scores = {item["label"]: item["score"] for item in result}
             
             # Real = human, Fake = AI
-            human_prob = scores.get("Real", scores.get("LABEL_1", CLASSIFIER_DECISION_THRESHOLD))
-            ai_prob = scores.get("Fake", scores.get("LABEL_0", CLASSIFIER_DECISION_THRESHOLD))
+            human_prob = scores.get("Real", scores.get("LABEL_1", CLASSIFIER_THRESHOLD))
+            ai_prob = scores.get("Fake", scores.get("LABEL_0", CLASSIFIER_THRESHOLD))
             
             return {
                 "human_prob": human_prob,

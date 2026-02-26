@@ -11,7 +11,7 @@ import time
 import psycopg2
 import torch
 
-from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, MAX_TOKENIZATION_LENGTH, EXTRACTION_SMALL_BATCH_SIZE, PROGRESS_LOG_INTERVAL
+from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, EXTRACTION_SMALL_BATCH_SIZE, PROGRESS_LOG_INTERVAL
 
 from wisent.scripts.extract_all_missing import (
     hidden_states_to_bytes,
@@ -54,7 +54,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
     extracted = 0
 
     def get_hidden_states(text):
-        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
+        enc = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
         enc = {k: v.to(device) for k, v in enc.items()}
         with torch.inference_mode():
             out = model(**enc, output_hidden_states=True, use_cache=False)

@@ -24,7 +24,7 @@ from wisent.core.errors import (
 
 # Use the standard evaluator system
 from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.core.constants import BENCHMARK_WEIGHT, PROBE_WEIGHT, CLASSIFIER_DECISION_THRESHOLD, DISPLAY_TOP_N_MINI, CHANCE_LEVEL_ACCURACY
+from wisent.core.constants import BENCHMARK_WEIGHT, PROBE_WEIGHT, CLASSIFIER_THRESHOLD, DISPLAY_TOP_N_MINI, CHANCE_LEVEL_ACCURACY
 logger = logging.getLogger(__name__)
 
 
@@ -246,7 +246,7 @@ def calculate_combined_score(
         Combined score (0-1)
     """
     benchmark_score = benchmark_metrics.get("accuracy", 0.0)
-    probe_score = probe_metrics.get("auc", CLASSIFIER_DECISION_THRESHOLD)  # Use AUC as primary probe metric
+    probe_score = probe_metrics.get("auc", CLASSIFIER_THRESHOLD)  # Use AUC as primary probe metric
 
     combined_score = benchmark_weight * benchmark_score + probe_weight * probe_score
     return combined_score

@@ -202,7 +202,7 @@ def decompose_into_concepts(
     return {
         "n_concepts": len(concepts),
         "concepts": concepts,
-        "independence": independence.get("independence", _C.CLASSIFIER_DECISION_THRESHOLD),
+        "independence": independence.get("independence", _C.CLASSIFIER_THRESHOLD),
         "coherences": coherences,
         "mean_coherence": float(np.mean(coherences)) if coherences else 0.0,
     }

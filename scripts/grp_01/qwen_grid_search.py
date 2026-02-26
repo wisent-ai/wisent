@@ -9,7 +9,6 @@ from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy, map_legacy_strategy
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.constants import MAX_NEW_TOKENS_TEST_DEFAULT
 
 print("Loading Qwen/Qwen3-8B...")
 model = WisentModel("Qwen/Qwen3-8B")
@@ -51,11 +50,11 @@ for layers, strength in configs:
     unsteered = steered = 0
     for p in test_pairs[:50]:
         metadata = p.metadata or {}
-        resp_u = model.generate([[{"role": "user", "content": p.prompt}]], max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT)[0]
+        resp_u = model.generate([[{"role": "user", "content": p.prompt}]])[0]
         if evaluator.evaluate(response=resp_u, expected=p.positive_response.model_response, correct_answers=metadata.get("correct_answers", []), incorrect_answers=metadata.get("incorrect_answers", [])).ground_truth == "TRUTHFUL":
             unsteered += 1
         model.apply_steering(plan)
-        resp_s = model.generate([[{"role": "user", "content": p.prompt}]], max_new_tokens=MAX_NEW_TOKENS_TEST_DEFAULT, use_steering=True, steering_plan=plan)[0]
+        resp_s = model.generate([[{"role": "user", "content": p.prompt}]], use_steering=True, steering_plan=plan)[0]
         model.clear_steering()
         if evaluator.evaluate(response=resp_s, expected=p.positive_response.model_response, correct_answers=metadata.get("correct_answers", []), incorrect_answers=metadata.get("incorrect_answers", [])).ground_truth == "TRUTHFUL":
             steered += 1

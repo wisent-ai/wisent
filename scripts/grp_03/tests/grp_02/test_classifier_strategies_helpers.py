@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import random
 from datasets import load_dataset
-from wisent.core.constants import TOKENIZER_MAX_LENGTH_CLUSTER, DEFAULT_RANDOM_SEED
+from wisent.core.constants import DEFAULT_RANDOM_SEED
 
 RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", "To"]
 
@@ -107,7 +107,7 @@ def build_train_text(tokenizer, question, answer, train_strategy, other_answer=N
 
 def get_train_activation(model, tokenizer, text, answer, layer, train_strategy, device):
     """Extract activation for TRAINING based on train_strategy."""
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     hidden = outputs.hidden_states[layer][0]
@@ -146,7 +146,7 @@ def get_train_activation(model, tokenizer, text, answer, layer, train_strategy, 
 
 def get_inference_score(clf, model, tokenizer, text, layer, inference_strategy, device):
     """Get classifier score using inference_strategy."""
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     hidden = outputs.hidden_states[layer][0].cpu().float().numpy()

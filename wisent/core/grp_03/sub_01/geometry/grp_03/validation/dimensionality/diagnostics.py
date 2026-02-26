@@ -13,7 +13,7 @@ from wisent.core.constants import (
     STATISTICAL_POWER_THRESHOLD,
     EFFECT_SIZE_LARGE,
     CONDITION_NUMBER_HIGH,
-    DIAGNOSTICS_LINE_WIDTH,
+    SEPARATOR_WIDTH_STANDARD,
 )
 from .shrinkage import compute_shrinkage_covariance
 
@@ -104,9 +104,9 @@ def run_dimensionality_diagnostics(
 def format_diagnostics_report(diag: DimensionalityDiagnostics) -> str:
     """Format diagnostics as human-readable report."""
     lines = [
-        "=" * DIAGNOSTICS_LINE_WIDTH,
+        "=" * SEPARATOR_WIDTH_STANDARD,
         "CURSE OF DIMENSIONALITY DIAGNOSTICS",
-        "=" * DIAGNOSTICS_LINE_WIDTH,
+        "=" * SEPARATOR_WIDTH_STANDARD,
         "",
         "SAMPLE SIZE ADEQUACY:",
         f"  Samples (n):          {diag.n_samples}",
@@ -141,5 +141,5 @@ def format_diagnostics_report(diag: DimensionalityDiagnostics) -> str:
     ])
     for rec in diag.recommendations:
         lines.append(f"  - {rec}")
-    lines.append("=" * DIAGNOSTICS_LINE_WIDTH)
+    lines.append("=" * SEPARATOR_WIDTH_STANDARD)
     return "\n".join(lines)

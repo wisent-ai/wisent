@@ -73,7 +73,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
         help="Directory to save results and best vectors (default: ./welfare_optimization)",
     )
     welfare_parser.add_argument(
-        "--max-new-tokens", type=int, default=_C.MAX_NEW_TOKENS_GENERATION, help="Max tokens to generate for evaluation (default: 150)"
+        "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
     )
     welfare_parser.add_argument("--device", type=str, default=None, help="Device to run on")
     welfare_parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -97,7 +97,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
     welfare_parser.add_argument(
         "--n-trials",
         type=int,
-        default=_C.OPTUNA_DEFAULT_N_TRIALS,
+        default=_C.DEFAULT_N_TRIALS,
         help="Number of Optuna trials when using --search-strategy optuna (default: 100)"
     )
     welfare_parser.add_argument(
@@ -142,7 +142,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
     universal_parser.add_argument(
         "--limit",
         type=int,
-        default=_C.OPTUNA_DEFAULT_N_TRIALS,
+        default=_C.DEFAULT_N_TRIALS,
         help="Maximum samples to use (default: 100)"
     )
     universal_parser.add_argument(

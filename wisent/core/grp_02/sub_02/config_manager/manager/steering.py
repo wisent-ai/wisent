@@ -24,9 +24,9 @@ from wisent.core.constants import (
     TECZA_INDEPENDENCE_WEIGHT,
     TECZA_MAX_COSINE_SIM,
     TECZA_MIN_COSINE_SIM,
-    TECZA_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
     TETNO_CONDITION_THRESHOLD,
-    TETNO_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
 )
 from ..types import SteeringConfig, WeightModificationConfig, TaskConfig
 
@@ -45,7 +45,7 @@ class SteeringMixin:
         num_directions: int = 1, direction_weighting: str = "primary_only",
         retain_weight: float = 0.0,
         independence_weight: float = TECZA_INDEPENDENCE_WEIGHT,
-        tecza_optimization_steps: int = TECZA_OPTIMIZATION_STEPS,
+        tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS,
         use_caa_init: bool = True,
         cone_constraint: bool = True,
         min_cosine_similarity: float = TECZA_MIN_COSINE_SIM,
@@ -58,7 +58,7 @@ class SteeringMixin:
         use_entropy_scaling: bool = False,
         max_alpha: float = CONFIG_MAX_ALPHA,
         learn_threshold: bool = True,
-        tetno_optimization_steps: int = TETNO_OPTIMIZATION_STEPS,
+        tetno_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS,
         gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM,
         intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM,
         behavior_weight: float = GROM_BEHAVIOR_WEIGHT,

@@ -15,7 +15,8 @@ from dataclasses import dataclass, asdict
 from wisent.core.evaluators.benchmark_specific.coding.providers.livecodebench.provider import LiveCodeBenchProvider
 from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
 from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
-from wisent.core.constants import EVAL_TIME_LIMIT_S, EVAL_CPU_LIMIT_S, CODE_EVAL_MEM_LIMIT_MB, JSON_INDENT, PROGRESS_LOG_INTERVAL_10
+from wisent.core.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.core.hardware import eval_time_limit_s, eval_cpu_limit_s, code_eval_mem_limit_mb
 
 
 @dataclass
@@ -71,9 +72,9 @@ class LiveCodeBenchSolutionGenerator:
         self.evaluator_config = evaluator_config or EvaluatorConfig(
             image="coding/sandbox:polyglot-1.0",
             self_repair=False,
-            time_limit_s=EVAL_TIME_LIMIT_S,
-            cpu_limit_s=EVAL_CPU_LIMIT_S,
-            mem_limit_mb=CODE_EVAL_MEM_LIMIT_MB,
+            time_limit_s=eval_time_limit_s(),
+            cpu_limit_s=eval_cpu_limit_s(),
+            mem_limit_mb=code_eval_mem_limit_mb(),
         )
 
         self.cache_file = self.cache_dir / "solutions.json"

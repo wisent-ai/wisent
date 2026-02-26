@@ -16,10 +16,10 @@ from peft import LoraConfig, TaskType, get_peft_model
 from trl import DPOTrainer, DPOConfig
 
 from wisent.core.constants import (
-    LORA_DEFAULT_R, LORA_DEFAULT_ALPHA, LORA_DEFAULT_DROPOUT,
-    DPO_DEFAULT_BETA, DPO_MAX_LENGTH, DPO_MAX_PROMPT_LENGTH,
+    LORA_DEFAULT_DROPOUT,
+    DPO_DEFAULT_BETA,
     COMPARISON_DEFAULT_BATCH_SIZE,
-    COMPARISON_NUM_PAIRS, TRAINING_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
+    COMPARISON_NUM_PAIRS, DEFAULT_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
     COMPARISON_LOGGING_STEPS, LORA_DPO_LEARNING_RATE, LORA_DPO_NUM_EPOCHS,
     JSON_INDENT,
 )
@@ -57,17 +57,17 @@ def train_lora_dpo(
     task: str,
     model_name: str,
     output_path: str | Path,
+    lora_r: int,
+    lora_alpha: int,
     num_pairs: int = COMPARISON_NUM_PAIRS,
     device: str = "cuda:0",
     keep_intermediate: bool = False,
-    lora_r: int = LORA_DEFAULT_R,
-    lora_alpha: int = LORA_DEFAULT_ALPHA,
     lora_dropout: float = LORA_DEFAULT_DROPOUT,
     learning_rate: float = LORA_DPO_LEARNING_RATE,
     num_epochs: int = LORA_DPO_NUM_EPOCHS,
     batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE,
-    max_length: int = DPO_MAX_LENGTH,
-    max_prompt_length: int = DPO_MAX_PROMPT_LENGTH,
+    max_length: int | None = None,
+    max_prompt_length: int | None = None,
     beta: float = DPO_DEFAULT_BETA,
 ) -> Path:
     """Train a LoRA adapter using DPO on contrastive pairs."""
@@ -83,6 +83,10 @@ def train_lora_dpo(
     print(f"Step 2: Loading model {model_name}")
     print(f"{'='*60}")
     model, tokenizer = load_model_and_tokenizer(model_name, device, eval_mode=False)
+    if max_length is None:
+        max_length = tokenizer.model_max_length
+    if max_prompt_length is None:
+        max_prompt_length = tokenizer.model_max_length // 2
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
     tokenizer.padding_side = "left"
@@ -116,7 +120,7 @@ def train_lora_dpo(
         per_device_train_batch_size=batch_size,
         gradient_accumulation_steps=1,
         learning_rate=learning_rate,
-        weight_decay=TRAINING_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
+        weight_decay=DEFAULT_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
         logging_steps=COMPARISON_LOGGING_STEPS, save_strategy="no",
         bf16=(dtype == torch.bfloat16),
         fp16=(dtype == torch.float16),

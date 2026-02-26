@@ -19,7 +19,6 @@ from wisent.core.response import Response
 from wisent.core.steering_methods import get_steering_method
 from wisent.core.tasks.base.task_interface import get_task
 from wisent.core.errors import ModelArchitectureUnknownError
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER, COMPARISON_TOKENIZER_MAX_LENGTH
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +40,7 @@ class SteeringMethodTrainer(ABC):
         tokenizer,
         device: str,
         task_name: str = "gsm8k",
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER,
+        max_new_tokens: int = None,
     ) -> Tuple[bool, Dict[str, Any]]:
         """Train the steering method on training data."""
 
@@ -58,7 +57,7 @@ class SteeringMethodTrainer(ABC):
         batch_size: int,
         max_length: int,
         task_name: str = "gsm8k",
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER,
+        max_new_tokens: int = None,
     ) -> Tuple[List[str], List[str]]:
         """Apply steering and generate predictions for evaluation."""
 
@@ -82,7 +81,7 @@ class SteeringTrainer(SteeringMethodTrainer):
         tokenizer,
         device: str,
         task_name: str = "gsm8k",
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER,
+        max_new_tokens: int = None,
     ) -> Tuple[bool, Dict[str, Any]]:
         """Train steering method on training data to create steering vectors."""
         try:
@@ -120,7 +119,7 @@ class SteeringTrainer(SteeringMethodTrainer):
         batch_size: int,
         max_length: int,
         task_name: str = "gsm8k",
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER,
+        max_new_tokens: int = None,
     ) -> Tuple[List[str], List[str]]:
         """Apply steering and generate predictions using task extractor."""
 
@@ -256,7 +255,7 @@ class SteeringTrainer(SteeringMethodTrainer):
 
     def _extract_activations_for_text(self, text: str, layer_index: int, model, tokenizer, device: str) -> torch.Tensor:
         """Extract activations from a specific layer for given text."""
-        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=COMPARISON_TOKENIZER_MAX_LENGTH).to(device)
+        inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
 
         activations = []
 

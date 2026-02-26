@@ -17,7 +17,7 @@ from wisent.core.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
-from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, PRZELOM_INFERENCE_K
+from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, SZLAK_INFERENCE_K
 
 __all__ = ["PrzelomSteeringObject"]
 
@@ -31,7 +31,7 @@ class PrzelomSteeringObject(BaseSteeringObject):
         self, metadata: SteeringObjectMetadata,
         source_points: Dict[int, torch.Tensor],
         displacements: Dict[int, torch.Tensor],
-        inference_k: int = PRZELOM_INFERENCE_K,
+        inference_k: int = SZLAK_INFERENCE_K,
     ):
         super().__init__(metadata)
         self.source_points = source_points
@@ -132,5 +132,5 @@ class PrzelomSteeringObject(BaseSteeringObject):
         disps = {int(k): to_tensor(v) for k, v in data["displacements"].items()}
         return cls(
             metadata=metadata, source_points=source_points,
-            displacements=disps, inference_k=data.get("inference_k", PRZELOM_INFERENCE_K),
+            displacements=disps, inference_k=data.get("inference_k", SZLAK_INFERENCE_K),
         )

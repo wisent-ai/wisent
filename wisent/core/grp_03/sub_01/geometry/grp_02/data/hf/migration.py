@@ -51,15 +51,13 @@ def _bytes_to_array(data: bytes) -> np.ndarray:
 
 
 def migrate_activation_table(
-    model_name: str,
-    task_name: str,
-    strategy: str,
-    database_url: Optional[str] = None,
-    dry_run: bool = False,
+    model_name: str, task_name: str, strategy: str,
+    database_url: Optional[str] = None, dry_run: bool = False,
+    shared_conn=None,
 ) -> List[int]:
-    """Migrate all layers for one (model, task, strategy) combo.
-    Stages all layers locally, then uploads as a single commit."""
-    conn = _get_db_connection(database_url)
+    """Migrate all layers for one (model, task, strategy) combo."""
+    own_conn = shared_conn is None
+    conn = shared_conn if shared_conn else _get_db_connection(database_url)
     cur = conn.cursor()
     staging = tempfile.mkdtemp(prefix="wisent_act_")
 
@@ -150,7 +148,8 @@ def migrate_activation_table(
         return migrated_layers
     finally:
         cur.close()
-        conn.close()
+        if own_conn:
+            conn.close()
         shutil.rmtree(staging, ignore_errors=True)
 
 

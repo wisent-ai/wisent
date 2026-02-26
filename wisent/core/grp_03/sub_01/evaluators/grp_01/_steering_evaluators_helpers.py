@@ -11,7 +11,6 @@ from wisent.core.models import get_generate_kwargs
 from wisent.core.constants import (
     EVAL_DEFAULT_DIFFERENCE_SCORE, EVAL_DIFFERENCE_CUTOFF,
     EVAL_W_DIFFERENCE, EVAL_W_QUALITY, EVAL_W_ALIGNMENT,
-    EVAL_MAX_NEW_TOKENS,
 )
 
 logger = logging.getLogger(__name__)
@@ -93,7 +92,7 @@ class PersonalizationEvaluator:
             messages = [{"role": "user", "content": prompt_text}]
             result = self.wisent_model.generate(
                 [messages],
-                **get_generate_kwargs(max_new_tokens=EVAL_MAX_NEW_TOKENS),
+                **get_generate_kwargs(),
             )
             responses.append(result[0] if result else "")
 

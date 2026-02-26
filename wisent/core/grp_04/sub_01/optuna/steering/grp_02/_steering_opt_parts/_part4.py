@@ -17,7 +17,8 @@ from wisent.core.errors import (
     ModelArchitectureUnknownError,
     NoActivationDataError,
 )
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER, ACTIVATIONS_BATCH_SIZE, COMPARISON_MAX_LENGTH, COMPARISON_STEERING_LAYER, CHANCE_LEVEL_ACCURACY
+from wisent.core.constants import COMPARISON_STEERING_LAYER, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.core.hardware import default_batch_size
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +36,7 @@ class _SteeringOptimizerEval:
         batch_size: int,
         max_length: int,
         task_name: str,
-        max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL_DOCKER,
+        max_new_tokens: int = None,
     ) -> Tuple[List[str], List[str]]:
         """
         Collect unsteered model predictions for baseline comparison.
@@ -100,7 +101,7 @@ class _SteeringOptimizerEval:
         model,
         tokenizer,
         device: str,
-        max_length: int = COMPARISON_MAX_LENGTH,
+        max_length: int | None = None,
     ) -> torch.Tensor:
         """
         Extract activation from text at specified layer with aggregation.
@@ -108,6 +109,8 @@ class _SteeringOptimizerEval:
         Returns:
             Aggregated activation tensor
         """
+        if max_length is None:
+            max_length = tokenizer.model_max_length
         inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=max_length).to(device)
         activations = []
 
@@ -183,7 +186,7 @@ class _SteeringOptimizerEval:
         model,
         tokenizer,
         device: str,
-        max_length: int = COMPARISON_MAX_LENGTH,
+        max_length: int | None = None,
         description: str = "predictions",
     ) -> List[float]:
         """
@@ -195,6 +198,8 @@ class _SteeringOptimizerEval:
         Returns:
             List of classifier scores/probabilities for each prediction
         """
+        if max_length is None:
+            max_length = tokenizer.model_max_length
         if self._session_classifier is None:
             self.logger.warning("No cached classifier available for scoring")
             return [0.5] * len(predictions)  # Return neutral scores
@@ -214,7 +219,7 @@ class _SteeringOptimizerEval:
         confidence_scores = []
 
         # Process predictions in batches for efficiency
-        batch_size = ACTIVATIONS_BATCH_SIZE  # Smaller batch size to avoid OOM
+        batch_size = default_batch_size()  # Smaller batch size to avoid OOM
         for i in range(0, len(predictions), batch_size):
             batch_predictions = predictions[i : i + batch_size]
             batch_activations = []

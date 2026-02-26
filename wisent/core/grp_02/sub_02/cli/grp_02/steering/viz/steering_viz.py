@@ -7,7 +7,8 @@ import os
 os.environ["NUMBA_NUM_THREADS"] = "1"
 
 import json
-from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_MAX_NEW_TOKENS_EVAL, AGENT_DIAG_TEMPERATURE, JSON_INDENT, VIZ_TRUTHFUL_REGION_THRESHOLD, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.constants import DEFAULT_LIMIT, JSON_INDENT, VIZ_TRUTHFUL_REGION_THRESHOLD, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.models.config import get_generate_kwargs
 import base64
 import tempfile
 from pathlib import Path
@@ -185,7 +186,7 @@ def _generate_and_extract(args, steering_vector):
     strategy_map = {"last_token": "chat_last", "first_token": "chat_first", "mean": "chat_mean"}
     strategy_str = strategy_map.get(strategy_str, strategy_str)
     extraction_strategy = ExtractionStrategy(strategy_str)
-    max_new_tokens = getattr(args, 'max_new_tokens', DEFAULT_MAX_NEW_TOKENS_EVAL)
+    max_new_tokens = getattr(args, 'max_new_tokens', None) or get_generate_kwargs()["max_new_tokens"]
 
     steering_vectors = LayerActivations({layer_name: steering_vector})
     config = SteeringConfig(scale={layer_name: args.strength})
@@ -205,7 +206,7 @@ def _generate_and_extract(args, steering_vector):
         messages = [{"role": "user", "content": prompt}]
         formatted_prompt = adapter.apply_chat_template(messages, add_generation_prompt=True)
 
-        base_full = adapter._generate_unsteered(formatted_prompt, max_new_tokens=max_new_tokens, temperature=AGENT_DIAG_TEMPERATURE, do_sample=True)
+        base_full = adapter._generate_unsteered(formatted_prompt, max_new_tokens=max_new_tokens, do_sample=True)
         steered_full = adapter.forward_with_steering(formatted_prompt, steering_vectors=steering_vectors, config=config)
 
         # Extract just the assistant response, handling various chat template formats

@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Tuple
 
 from wisent.core.constants import (
     DIAG_NUM_COMPONENTS,
-    TECZA_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
     GEO_DIAG_LINEAR_VARIANCE,
     GEO_DIAG_CONE_THRESHOLD,
     MAX_CLUSTERS,
@@ -56,7 +56,7 @@ class GeometryAnalysisConfig:
     num_components: int = DIAG_NUM_COMPONENTS
     """Number of components/directions to analyze."""
 
-    optimization_steps: int = TECZA_OPTIMIZATION_STEPS
+    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     """Steps for optimization-based methods."""
 
     linear_variance_threshold: float = GEO_DIAG_LINEAR_VARIANCE

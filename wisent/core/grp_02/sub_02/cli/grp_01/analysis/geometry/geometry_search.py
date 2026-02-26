@@ -4,7 +4,7 @@ import json
 import sys
 import os
 from pathlib import Path
-from wisent.core.constants import DEFAULT_SCORE, GEOMETRY_MAJORITY_PCT, GEOMETRY_MINORITY_PCT, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_STANDARD, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
+from wisent.core.constants import DEFAULT_SCORE, SCORE_MIDPOINT_PCT, GEOMETRY_MINORITY_PCT, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_STANDARD, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 
 
 def execute_geometry_search(args):
@@ -124,13 +124,13 @@ def execute_geometry_search(args):
     cone_pct = 100 * dist.get('cone', DEFAULT_SCORE) / total if total > 0 else 0
     orthogonal_pct = 100 * dist.get('orthogonal', DEFAULT_SCORE) / total if total > 0 else 0
     
-    if linear_pct > GEOMETRY_MAJORITY_PCT:
+    if linear_pct > SCORE_MIDPOINT_PCT:
         print(f"UNIFIED LINEAR DIRECTION EXISTS ({linear_pct:.1f}% linear)")
         print("Recommendation: Use CAA with the best layer/strategy combination")
     elif cone_pct > GEOMETRY_MINORITY_PCT:
         print(f"CONE STRUCTURE DETECTED ({cone_pct:.1f}% cone)")
         print("Recommendation: Use TECZA with multi-directional steering")
-    elif orthogonal_pct > GEOMETRY_MAJORITY_PCT:
+    elif orthogonal_pct > SCORE_MIDPOINT_PCT:
         print(f"ORTHOGONAL STRUCTURE ({orthogonal_pct:.1f}% orthogonal)")
         print("Recommendation: No unified direction - use per-benchmark directions or GROM")
     else:

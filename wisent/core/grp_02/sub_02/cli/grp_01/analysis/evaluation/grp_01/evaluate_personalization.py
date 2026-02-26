@@ -1,7 +1,7 @@
 """Personalization evaluation for evaluate-responses command."""
 import json
 import os
-from wisent.core.constants import JSON_INDENT, QUALITY_THRESHOLD, DEFAULT_SCORE, PERSONALIZATION_GOOD_THRESHOLD, PERSONALIZATION_FAIR_THRESHOLD
+from wisent.core.constants import JSON_INDENT, QUALITY_THRESHOLD, DEFAULT_SCORE, PERSONALIZATION_GOOD_THRESHOLD, SCORE_MIDPOINT_PCT
 
 from wisent.core.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
@@ -148,7 +148,7 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
             })
 
             if args.verbose:
-                score_icon = '✅' if overall >= PERSONALIZATION_GOOD_THRESHOLD else ('⚠️' if overall >= PERSONALIZATION_FAIR_THRESHOLD else '❌')
+                score_icon = '✅' if overall >= PERSONALIZATION_GOOD_THRESHOLD else ('⚠️' if overall >= SCORE_MIDPOINT_PCT else '❌')
                 print(f"{score_icon} Pair {idx}: Overall={overall:.1f} (diff={diff_score:.1f}, qual={qual_score:.1f}, align={align_score:.1f})")
 
         except Exception as e:

@@ -17,7 +17,7 @@ def setup_steering_task_args(parser):
         help="CLASSIFICATION MODE: Train a classifier to detect good/bad responses. Uses activations to predict response quality. Outputs classifier accuracy and F1 score."
     )
     parser.add_argument(
-        "--steering-strength", type=float, default=_C.DEFAULT_BASE_STRENGTH, help="Strength of steering vector application (default: 1.0)"
+        "--steering-strength", type=float, default=_C.DEFAULT_STRENGTH, help="Strength of steering vector application (default: 1.0)"
     )
 
     # Steering method selection - uses centralized registry
@@ -66,7 +66,7 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--token-max-strength",
         type=float,
-        default=_C.DEFAULT_BASE_STRENGTH,
+        default=_C.DEFAULT_STRENGTH,
         help="Maximum steering strength for token strategies (default: 1.0)",
     )
     parser.add_argument(
@@ -136,13 +136,13 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--repetition-threshold",
         type=float,
-        default=_C.REPETITIVE_CONTENT_THRESHOLD,
+        default=_C.NONSENSE_REPETITION_THRESHOLD,
         help="Threshold for repetitive content detection (0-1, default: 0.7)",
     )
     parser.add_argument(
         "--gibberish-threshold",
         type=float,
-        default=_C.GIBBERISH_WORD_THRESHOLD,
+        default=_C.NONSENSE_GIBBERISH_THRESHOLD,
         help="Threshold for gibberish word detection (0-1, default: 0.3)",
     )
     parser.add_argument(

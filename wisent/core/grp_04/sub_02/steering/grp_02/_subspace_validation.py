@@ -8,22 +8,22 @@ from wisent.core.steering._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
 from wisent.core import constants as _C
 from wisent.core.constants import (
     ZERO_THRESHOLD,
-    SUBSPACE_LINEAR_VARIANCE_THRESHOLD,
-    SUBSPACE_CONE_THRESHOLD,
-    SUBSPACE_MANIFOLD_THRESHOLD,
-    SUBSPACE_CLUSTER_SILHOUETTE_THRESHOLD,
-    SUBSPACE_ORTHOGONAL_THRESHOLD,
+    GEO_DIAG_LINEAR_VARIANCE,
+    GEO_DIAG_CONE_THRESHOLD,
+    GEO_DIAG_MANIFOLD_THRESHOLD,
+    GEO_DIAG_CLUSTER_SILHOUETTE,
+    GEO_DIAG_ORTHOGONAL_THRESHOLD,
     SUBSPACE_VAR_THRESHOLD_MAX,
     SUBSPACE_SAMPLE_CONSERVATIVE,
     SUBSPACE_SAMPLE_RELAXED,
 )
 
 UNIVERSAL_SUBSPACE_THRESHOLDS = {
-    "linear_variance_threshold": SUBSPACE_LINEAR_VARIANCE_THRESHOLD,
-    "cone_threshold": SUBSPACE_CONE_THRESHOLD,
-    "manifold_threshold": SUBSPACE_MANIFOLD_THRESHOLD,
-    "cluster_silhouette_threshold": SUBSPACE_CLUSTER_SILHOUETTE_THRESHOLD,
-    "orthogonal_threshold": SUBSPACE_ORTHOGONAL_THRESHOLD,
+    "linear_variance_threshold": GEO_DIAG_LINEAR_VARIANCE,
+    "cone_threshold": GEO_DIAG_CONE_THRESHOLD,
+    "manifold_threshold": GEO_DIAG_MANIFOLD_THRESHOLD,
+    "cluster_silhouette_threshold": GEO_DIAG_CLUSTER_SILHOUETTE,
+    "orthogonal_threshold": GEO_DIAG_ORTHOGONAL_THRESHOLD,
 }
 
 _LOG = setup_logger(__name__)

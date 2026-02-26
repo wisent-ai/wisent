@@ -9,7 +9,8 @@ from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import get_all_docs_from_task
 from wisent.core.errors import InsufficientDataError, TaskNotFoundError
-from wisent.core.constants import DEFAULT_TIMEOUT_SUBPROCESS, JSON_INDENT, LM_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
+from wisent.core.constants import JSON_INDENT, LM_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
+from wisent.core.utils.core.hardware import subprocess_timeout_s
 
 from .sample_extraction import get_evaluation_method, get_category, extract_examples_from_task
 from .group_handling import expand_group_task, get_samples_from_group_task
@@ -190,7 +191,7 @@ def main():
     print("Getting all available tasks from lm_eval...")
     try:
         print("Using subprocess to get task list...")
-        result = subprocess.run(['lm_eval', '--tasks', 'list'], capture_output=True, text=True, timeout=DEFAULT_TIMEOUT_SUBPROCESS)
+        result = subprocess.run(['lm_eval', '--tasks', 'list'], capture_output=True, text=True, timeout=subprocess_timeout_s())
         task_names = []
         for line in result.stdout.split('\n'):
             if '|' in line and not line.startswith('|---') and 'Group' not in line and 'Config Location' not in line:

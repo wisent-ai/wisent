@@ -7,10 +7,10 @@ from wisent.core.constants import (
     DEFAULT_SCORE,
     TECZA_LEARNING_RATE,
     TECZA_NUM_DIRECTIONS,
-    TECZA_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
     TETNO_CONDITION_THRESHOLD,
     TETNO_GATE_TEMPERATURE,
-    TETNO_LEARNING_RATE,
+    TECZA_LEARNING_RATE,
     TETNO_THRESHOLD_SEARCH_STEPS,
     THRESHOLD_SEARCH_INIT_VALUE,
 )
@@ -29,7 +29,7 @@ def _create_tecza_steering_object(
     
     method = TECZAMethod(
         num_directions=num_directions,
-        optimization_steps=getattr(args, 'tecza_optimization_steps', TECZA_OPTIMIZATION_STEPS),
+        optimization_steps=getattr(args, 'tecza_optimization_steps', DEFAULT_OPTIMIZATION_STEPS),
         learning_rate=getattr(args, 'tecza_learning_rate', TECZA_LEARNING_RATE),
         normalize=getattr(args, 'normalize', True),
     )
@@ -137,7 +137,7 @@ def _create_tetno_steering_object(
     
     # Optimize condition vector
     condition_vec = condition_vec.clone().requires_grad_(True)
-    optimizer = torch.optim.Adam([condition_vec], lr=TETNO_LEARNING_RATE)
+    optimizer = torch.optim.Adam([condition_vec], lr=TECZA_LEARNING_RATE)
     
     for _ in range(_C.TETNO_CONDITION_VEC_OPT_ITERS):
         optimizer.zero_grad()

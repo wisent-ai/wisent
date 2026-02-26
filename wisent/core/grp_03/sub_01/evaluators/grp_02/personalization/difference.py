@@ -8,7 +8,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from wisent.core.constants import SCORE_SCALE_100, DIFFERENCE_SCORE_NEUTRAL
+from wisent.core.constants import SCORE_SCALE_100, SCORE_MIDPOINT_PCT
 from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
 
 if TYPE_CHECKING:
@@ -55,7 +55,7 @@ def evaluate_difference(
             steered_response = steered_response[:min_len]
         
         if not baseline_response:
-            return DIFFERENCE_SCORE_NEUTRAL  # Default if empty
+            return float(SCORE_MIDPOINT_PCT)  # Default if empty
         
         differences = []
         for b, s in zip(baseline_response, steered_response):

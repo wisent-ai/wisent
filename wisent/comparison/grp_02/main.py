@@ -22,8 +22,8 @@ from wisent.core.constants import (
     COMPARISON_NUM_PAIRS,
     COMPARISON_MAX_BATCH_SIZE,
     COMPARISON_STEERING_LAYER,
-    DATA_SPLIT_RATIO,
-    DEFAULT_BASE_STRENGTH,
+    DEFAULT_SPLIT_RATIO,
+    DEFAULT_STRENGTH,
 )
 from wisent.comparison import ours
 from wisent.comparison import sae
@@ -62,7 +62,7 @@ def run_single_task(
     max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     eval_limit: int | None = None,
     vectors_dir: Path = None,
-    train_ratio: float = DATA_SPLIT_RATIO,
+    train_ratio: float = DEFAULT_SPLIT_RATIO,
     caa_layers: str = str(COMPARISON_STEERING_LAYER),
     sae_layers: str = str(COMPARISON_STEERING_LAYER),
     extraction_strategies: list[str] = None,
@@ -77,7 +77,7 @@ def run_single_task(
     if methods is None:
         methods = ["caa"]
     if steering_scales is None:
-        steering_scales = [DEFAULT_BASE_STRENGTH]
+        steering_scales = [DEFAULT_STRENGTH]
     if extraction_strategies is None:
         extraction_strategies = ["mc_balanced"]
 

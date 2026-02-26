@@ -27,8 +27,8 @@ from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.cli.optimize_steering.pipeline import _make_args
 from wisent.core.utils import preferred_dtype
 from wisent.core.constants import (LOG_EPS, TIKHONOV_REG, RL_BASELINE, DEFAULT_SCORE, RL_NUM_EPISODES,
-    PIPELINE_STEERING_STRENGTH, PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P,
-    RL_EPSILON, PRZELOM_EPSILON, PRZELOM_INFERENCE_K, RL_BATCH_LIMIT, CLASSIFIER_DECISION_THRESHOLD,
+    DEFAULT_STRENGTH,
+    RL_EPSILON, PRZELOM_EPSILON, SZLAK_INFERENCE_K, RL_BATCH_LIMIT, CLASSIFIER_THRESHOLD,
     SEPARATOR_WIDTH_WIDE)
 
 
@@ -205,7 +205,7 @@ def execute_transport_rl(args):
     lr = getattr(args, 'learning_rate', RL_EPSILON)
     epsilon = getattr(args, 'epsilon', PRZELOM_EPSILON)
     reg = getattr(args, 'regularization', TIKHONOV_REG)
-    inf_k = getattr(args, 'inference_k', PRZELOM_INFERENCE_K)
+    inf_k = getattr(args, 'inference_k', SZLAK_INFERENCE_K)
     limit = getattr(args, 'limit', RL_BATCH_LIMIT)
     output_path = getattr(args, 'output', 'best_transport_rl.pt')
     device = getattr(args, 'device', None)
@@ -247,9 +247,8 @@ def execute_transport_rl(args):
             # Generate steered responses
             execute_generate_responses(_make_args(
                 task=task, input_file=epf, model=model, output=rf,
-                num_questions=limit, steering_object=sf, steering_strength=PIPELINE_STEERING_STRENGTH,
+                num_questions=limit, steering_object=sf, steering_strength=DEFAULT_STRENGTH,
                 steering_strategy="constant", use_steering=True, device=device,
-                max_new_tokens=PIPELINE_MAX_NEW_TOKENS, temperature=PIPELINE_TEMPERATURE, top_p=PIPELINE_TOP_P,
                 verbose=False, cached_model=None,
             ))
             # Evaluate
@@ -260,7 +259,7 @@ def execute_transport_rl(args):
             print(f"   Score: {agg:.4f} (mean_reward={sum(rewards)/n:.3f}, n={len(rewards)})")
             # Update cost shaping with running baseline
             if rewards:
-                baseline = sum(score_history) / len(score_history) if score_history else CLASSIFIER_DECISION_THRESHOLD
+                baseline = sum(score_history) / len(score_history) if score_history else CLASSIFIER_THRESHOLD
                 _update_cost_shaping(C_shaping, layer_data, rewards, lr, baseline=baseline)
             score_history.append(agg)
             # Track best — save incrementally so progress survives timeouts

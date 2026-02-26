@@ -16,7 +16,7 @@ from wisent.core.steering_methods.methods.nurt import (
 )
 from wisent.core.constants import (
     DEFAULT_VARIANCE_THRESHOLD,
-    NURT_LR,
+    MLP_LEARNING_RATE,
     NURT_NUM_DIMS,
     NURT_NUM_INTEGRATION_STEPS,
     NURT_T_MAX,
@@ -35,7 +35,7 @@ def _create_nurt_steering_object(
     num_dims = getattr(args, "nurt_num_dims", NURT_NUM_DIMS)
     variance_threshold = getattr(args, "nurt_variance_threshold", DEFAULT_VARIANCE_THRESHOLD)
     training_epochs = getattr(args, "nurt_training_epochs", NURT_TRAINING_EPOCHS)
-    lr = getattr(args, "nurt_lr", NURT_LR)
+    lr = getattr(args, "nurt_lr", MLP_LEARNING_RATE)
     num_integration_steps = getattr(args, "nurt_num_integration_steps", NURT_NUM_INTEGRATION_STEPS)
     t_max = getattr(args, "nurt_t_max", NURT_T_MAX)
     flow_hidden_dim_raw = getattr(args, "nurt_hidden_dim", NURT_NUM_DIMS)

@@ -8,7 +8,7 @@ import os
 
 from wisent.core.constants import (
     CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_CLASSIFIER_LR,
-    CLASSIFIER_EARLY_STOPPING_PATIENCE, CLASSIFIER_MLP_HIDDEN_DIM,
+    CLASSIFIER_EARLY_STOPPING_PATIENCE, CLASSIFIER_HIDDEN_DIM,
 )
 
 # Add the lm-harness-integration path for benchmark selection
@@ -60,7 +60,7 @@ class ClassifierParams:
     batch_size: int = CLASSIFIER_BATCH_SIZE
     learning_rate: float = DEFAULT_CLASSIFIER_LR
     early_stopping_patience: int = CLASSIFIER_EARLY_STOPPING_PATIENCE
-    hidden_dim: int = CLASSIFIER_MLP_HIDDEN_DIM
+    hidden_dim: int = CLASSIFIER_HIDDEN_DIM
 
 @dataclass
 class SteeringParams:

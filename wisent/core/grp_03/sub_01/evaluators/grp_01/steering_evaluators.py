@@ -13,8 +13,8 @@ from typing import Any, Callable, Optional
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.models import get_generate_kwargs
 from wisent.core.constants import (
-    EVAL_MAX_NEW_TOKENS, STEERING_EVAL_NUM_PROMPTS,
-    DATA_SPLIT_RATIO, DATA_SPLIT_SEED,
+    STEERING_EVAL_NUM_PROMPTS,
+    DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED,
 )
 
 # Re-export from helpers
@@ -102,7 +102,7 @@ class BaseSteeringEvaluator:
             messages = [{"role": "user", "content": prompt_text}]
             result = wisent_model.generate(
                 [messages],
-                **get_generate_kwargs(max_new_tokens=EVAL_MAX_NEW_TOKENS),
+                **get_generate_kwargs(),
             )
             responses.append(result[0] if result else "")
 
@@ -195,7 +195,7 @@ class TaskEvaluator(BaseSteeringEvaluator):
 
         result = loader._load_one_task(
             task_name=self.config.task,
-            split_ratio=DATA_SPLIT_RATIO, seed=DATA_SPLIT_SEED,
+            split_ratio=DEFAULT_SPLIT_RATIO, seed=DEFAULT_RANDOM_SEED,
             limit=self.config.num_eval_prompts,
             training_limit=None,
             testing_limit=self.config.num_eval_prompts,

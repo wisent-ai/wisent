@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import numpy as np
 
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.constants import NORM_EPS, GEO_PAIRS_PER_BENCHMARK, CLUSTER_SMALL_MAX_LAYERS, CLUSTER_MEDIUM_MAX_LAYERS, CLUSTER_LAYERS_SMALL, CLUSTER_LAYERS_MEDIUM, CLUSTER_LAYERS_LARGE, TOKENIZER_MAX_LENGTH_CLUSTER, EXTRACTION_WEIGHTED_DECAY, BENCHMARK_PAIR_LOADING_LIMIT, CLUSTER_PROMPT_TRUNCATION, CLUSTER_RESPONSE_TRUNCATION, CLUSTER_MIN_PAIRS, DISPLAY_TOP_N_TINY
+from wisent.core.constants import NORM_EPS, GEO_PAIRS_PER_BENCHMARK, CLUSTER_SMALL_MAX_LAYERS, CLUSTER_MEDIUM_MAX_LAYERS, CLUSTER_LAYERS_SMALL, CLUSTER_LAYERS_MEDIUM, CLUSTER_LAYERS_LARGE, EXTRACTION_WEIGHTED_DECAY, BENCHMARK_PAIR_LOADING_LIMIT, CLUSTER_PROMPT_TRUNCATION, CLUSTER_RESPONSE_TRUNCATION, CLUSTER_MIN_PAIRS, DISPLAY_TOP_N_TINY
 
 
 class ConfigResult:
@@ -30,14 +30,14 @@ def get_layers_to_test(model) -> List[int]:
 
 
 def get_last_token_act(model, tokenizer, text: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float()
 
 
 def get_mean_answer_tokens_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -50,7 +50,7 @@ def get_mean_answer_tokens_act(model, tokenizer, text: str, answer: str, layer: 
 
 
 def get_first_answer_token_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -63,7 +63,7 @@ def get_first_answer_token_act(model, tokenizer, text: str, answer: str, layer: 
 
 
 def get_generation_point_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -74,7 +74,7 @@ def get_generation_point_act(model, tokenizer, text: str, answer: str, layer: in
 
 
 def get_max_norm_answer_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -89,7 +89,7 @@ def get_max_norm_answer_act(model, tokenizer, text: str, answer: str, layer: int
 
 
 def get_weighted_mean_answer_act(model, tokenizer, text: str, answer: str, layer: int, device: str) -> torch.Tensor:
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():

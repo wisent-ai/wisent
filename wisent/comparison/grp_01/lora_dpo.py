@@ -14,8 +14,8 @@ import argparse
 from pathlib import Path
 
 from wisent.core.constants import (
-    LORA_DEFAULT_R, LORA_DEFAULT_ALPHA, LORA_DEFAULT_DROPOUT,
-    DPO_DEFAULT_BETA, DATA_SPLIT_RATIO, DPO_MAX_LENGTH, DPO_MAX_PROMPT_LENGTH,
+    LORA_DEFAULT_DROPOUT,
+    DPO_DEFAULT_BETA, DEFAULT_SPLIT_RATIO,
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_EVAL_BATCH_SIZE, COMPARISON_NUM_PAIRS, COMPARISON_STEERING_LAYER,
     LORA_DPO_LEARNING_RATE, LORA_DPO_NUM_EPOCHS,
@@ -43,18 +43,18 @@ def main():
     parser.add_argument("--output-dir", default="/home/ubuntu/output", help="Output directory")
     parser.add_argument("--num-pairs", type=int, default=COMPARISON_NUM_PAIRS, help="Number of preference pairs")
     parser.add_argument("--device", default="cuda:0", help="Device")
-    parser.add_argument("--lora-r", type=int, default=LORA_DEFAULT_R, help="LoRA rank")
-    parser.add_argument("--lora-alpha", type=int, default=LORA_DEFAULT_ALPHA, help="LoRA alpha")
+    parser.add_argument("--lora-r", type=int, required=True, help="LoRA rank")
+    parser.add_argument("--lora-alpha", type=int, required=True, help="LoRA alpha")
     parser.add_argument("--lora-dropout", type=float, default=LORA_DEFAULT_DROPOUT, help="LoRA dropout")
     parser.add_argument("--learning-rate", type=float, default=LORA_DPO_LEARNING_RATE, help="Learning rate")
     parser.add_argument("--num-epochs", type=int, default=LORA_DPO_NUM_EPOCHS, help="Number of epochs")
     parser.add_argument("--batch-size", type=int, default=COMPARISON_DEFAULT_BATCH_SIZE, help="Training batch size")
-    parser.add_argument("--max-length", type=int, default=DPO_MAX_LENGTH, help="Max total sequence length")
-    parser.add_argument("--max-prompt-length", type=int, default=DPO_MAX_PROMPT_LENGTH, help="Max prompt length")
+    parser.add_argument("--max-length", type=int, default=None, help="Max total sequence length")
+    parser.add_argument("--max-prompt-length", type=int, default=None, help="Max prompt length")
     parser.add_argument("--beta", type=float, default=DPO_DEFAULT_BETA, help="DPO beta (controls KL penalty)")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files")
     # Eval args
-    parser.add_argument("--train-ratio", type=float, default=DATA_SPLIT_RATIO, help="Train/test split ratio")
+    parser.add_argument("--train-ratio", type=float, default=DEFAULT_SPLIT_RATIO, help="Train/test split ratio")
     parser.add_argument("--eval-batch-size", default="auto", help="Eval batch size")
     parser.add_argument("--eval-max-batch-size", type=int, default=COMPARISON_EVAL_BATCH_SIZE, help="Max eval batch size")
     parser.add_argument("--eval-limit", type=int, default=None, help="Limit eval examples")

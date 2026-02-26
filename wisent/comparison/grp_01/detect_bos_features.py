@@ -29,7 +29,6 @@ from wisent.core.constants import (
     GEMMA_2B_BOS_FEATURES_PAPER,
     BOS_NUM_SAMPLES_DEFAULT,
     BOS_MIN_LENGTH_DEFAULT,
-    COMPARISON_TOKENIZER_MAX_LENGTH,
     COMPARISON_STEERING_LAYER,
     BOS_ARGPARSE_NUM_SAMPLES,
     BOS_TOP_K_DEFAULT,
@@ -123,7 +122,7 @@ def detect_bos_features(
                 batch_texts,
                 return_tensors="pt",
                 truncation=True,
-                max_length=COMPARISON_TOKENIZER_MAX_LENGTH,
+                max_length=tokenizer.model_max_length,
                 padding=True,
             )
             inputs = {k: v.to(device) for k, v in inputs.items()}

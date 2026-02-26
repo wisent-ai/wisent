@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import torch
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import DEFAULT_RANDOM_SEED, DATA_SPLIT_RATIO, PROGRESS_LOG_INTERVAL, COMPARISON_MAX_BATCH_SIZE, COMPARISON_DEFAULT_BATCH_SIZE
+from wisent.core.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, PROGRESS_LOG_INTERVAL, COMPARISON_MAX_BATCH_SIZE, COMPARISON_DEFAULT_BATCH_SIZE
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
@@ -149,7 +149,7 @@ def generate_contrastive_pairs(
     return pairs, pairs_file
 
 
-def create_test_only_task(task_name: str, train_ratio: float = DATA_SPLIT_RATIO) -> dict:
+def create_test_only_task(task_name: str, train_ratio: float = DEFAULT_SPLIT_RATIO) -> dict:
     """
     Create a task that evaluates only on our test split.
 

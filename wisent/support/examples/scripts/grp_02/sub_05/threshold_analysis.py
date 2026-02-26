@@ -9,7 +9,7 @@ import numpy as np
 from wisent.core.constants import (
     NULL_DISTRIBUTION_SAMPLES, THRESHOLD_HIDDEN_DIM_LARGE,
     JSON_ARRAY_LIMIT, GAP_THRESHOLD_CANDIDATES,
-    SEPARATOR_LINE_WIDTH, SEPARATOR_WIDTH_STANDARD, JSON_INDENT,
+    SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_STANDARD, JSON_INDENT,
 )
 from wisent.examples.scripts.threshold_analysis_helpers import (
     gcs_upload_file,
@@ -29,9 +29,9 @@ def run_threshold_analysis(model_name: str):
     Args:
         model_name: Model to analyze
     """
-    print("=" * SEPARATOR_LINE_WIDTH)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print("THRESHOLD ANALYSIS")
-    print("=" * SEPARATOR_LINE_WIDTH)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"Model: {model_name}")
     
     output_dir = Path("/tmp/threshold_analysis")
@@ -134,9 +134,9 @@ def run_threshold_analysis(model_name: str):
     gcs_upload_file(results_file, model_name)
     
     # Summary
-    print("\n" + "=" * SEPARATOR_LINE_WIDTH)
+    print("\n" + "=" * SEPARATOR_WIDTH_WIDE)
     print("RECOMMENDATIONS")
-    print("=" * SEPARATOR_LINE_WIDTH)
+    print("=" * SEPARATOR_WIDTH_WIDE)
     print(f"\n1. Existence threshold: {optimal_exist:.2f}")
     print(f"   - Based on ROC analysis (AUC={roc_auc:.3f})")
     print(f"   - Null distribution: kNN={np.mean(null_knn):.3f} ± {np.std(null_knn):.3f}")

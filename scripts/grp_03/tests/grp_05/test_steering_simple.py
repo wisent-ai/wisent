@@ -8,7 +8,7 @@ import numpy as np
 from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
 import random
-from wisent.core.constants import ZERO_THRESHOLD, TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED
+from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_RANDOM_SEED
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"
@@ -29,7 +29,7 @@ test_pairs = all_pairs[100:120]
 print(f"Train: {len(train_pairs)}, Test: {len(test_pairs)}")
 
 def get_activation(text):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(DEVICE)
     with torch.no_grad():
         out = model(inputs.input_ids, output_hidden_states=True)
     return out.hidden_states[LAYER][0, -1, :].cpu().float().numpy()

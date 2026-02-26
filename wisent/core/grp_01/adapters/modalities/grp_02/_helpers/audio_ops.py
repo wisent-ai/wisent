@@ -17,7 +17,8 @@ from wisent.core.adapters.base import (
     SteeringConfig,
 )
 from wisent.core.modalities import AudioContent
-from wisent.core.constants import AUDIO_WHISPER_MAX_TOKENS, AUDIO_GENERIC_MAX_TOKENS
+from wisent.core.constants import AUDIO_WHISPER_MAX_TOKENS
+from wisent.core.models.config import get_generate_kwargs
 from wisent.core.activations.core.atoms import LayerActivations
 
 
@@ -63,9 +64,10 @@ class AudioOpsMixin:
                     predicted_ids = torch.argmax(logits, dim=-1)
                     return self.processor.batch_decode(predicted_ids, skip_special_tokens=True)[0]
                 if hasattr(self.model, "generate"):
+                    gen_kwargs = get_generate_kwargs()
                     generated_ids = self.model.generate(
                         encoder_outputs={"last_hidden_state": latent},
-                        max_new_tokens=AUDIO_GENERIC_MAX_TOKENS,
+                        max_new_tokens=gen_kwargs["max_new_tokens"],
                     )
                     return self.processor.batch_decode(generated_ids, skip_special_tokens=True)[0]
                 return f"[Latent: shape={latent.shape}, dtype={latent.dtype}]"

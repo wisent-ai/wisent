@@ -9,12 +9,11 @@ import numpy as np
 
 from wisent.core.utils import resolve_default_device
 from wisent.core.constants import (
-    DEFAULT_LAYER, AGENT_DIAG_MAX_TOKENS_SHORT,
-    AGENT_DIAG_MAX_TOKENS_MEDIUM, AGENT_DIAG_TEMPERATURE,
+    DEFAULT_LAYER,
     MARKETPLACE_F1_WEIGHT, MARKETPLACE_ACCURACY_WEIGHT,
     MARKETPLACE_DATA_QUALITY_WEIGHT, MARKETPLACE_DATA_QUALITY_DENOM,
     MARKETPLACE_RECENCY_WEIGHT, BUDGET_RECENCY_WINDOW_DAYS,
-    CLASSIFIER_DECISION_THRESHOLD,
+    CLASSIFIER_THRESHOLD,
 )
 from ._marketplace_helpers import (
     ClassifierCreationEstimate,
@@ -106,7 +105,7 @@ class ClassifierMarketplace(MarketplaceEstimationMixin):
             layer, issue_type = self._parse_filename(filepath)
             quality_score = self._calculate_quality_score(metadata)
 
-            threshold = metadata.get('threshold', CLASSIFIER_DECISION_THRESHOLD)
+            threshold = metadata.get('threshold', CLASSIFIER_THRESHOLD)
             training_samples = metadata.get('training_samples', 0)
             model_family = self._extract_model_family(metadata.get('model_name', ''))
             created_at = metadata.get('created_at', datetime.now().isoformat())
@@ -204,7 +203,7 @@ Common issue types include:
 Respond with just the issue type (one word):"""
 
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_MEDIUM, temperature=AGENT_DIAG_TEMPERATURE)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
             issue_type = response.strip().lower()
 
             match = re.search(r'(hallucination|quality|harmful|bias|coherence|unknown)', issue_type)
@@ -255,7 +254,7 @@ Common families include: llama, mistral, gemma, qwen, gpt, claude, other
 Respond with just the family name (one word):"""
 
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, max_new_tokens=AGENT_DIAG_MAX_TOKENS_SHORT, temperature=AGENT_DIAG_TEMPERATURE)
+            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
             family = response.strip().lower()
 
             match = re.search(r'(llama|mistral|gemma|qwen|gpt|claude|other|unknown)', family)

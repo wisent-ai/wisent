@@ -9,7 +9,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import numpy as np
 from datasets import load_dataset
 import random
-from wisent.core.constants import NORM_EPS, TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"
@@ -40,7 +40,7 @@ RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", 
 
 
 def get_last_token_act(text, layer):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float().numpy()

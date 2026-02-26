@@ -10,11 +10,8 @@ from transformers import TextIteratorStreamer
 from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.prompts.core.atom import ChatMessage
 from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import (
-    DEFAULT_MAX_NEW_TOKENS, DEFAULT_INFERENCE_TEMPERATURE,
-    DEFAULT_TOP_P, DEFAULT_TOP_K, DEFAULT_REPETITION_PENALTY,
-    DEFAULT_NO_REPEAT_NGRAM_SIZE, DEFAULT_BASE_STRENGTH,
-)
+from wisent.core.constants import DEFAULT_STRENGTH
+from wisent.core.models.config import get_generate_kwargs
 
 # Non-blocking join for the generation worker thread
 _JOIN_NOWAIT = 0.0
@@ -24,17 +21,10 @@ _JOIN_NOWAIT = 0.0
 def _generate_stream(
     self,
     inputs: list[list[ChatMessage]] | str,
-    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS,
-    temperature: float = DEFAULT_INFERENCE_TEMPERATURE,
-    top_p: float = DEFAULT_TOP_P,
-    top_k: int = DEFAULT_TOP_K,
-    repetition_penalty: float = DEFAULT_REPETITION_PENALTY,
-    no_repeat_ngram_size: int = DEFAULT_NO_REPEAT_NGRAM_SIZE,
-    do_sample: bool = True,
     use_steering: bool = False,
     steering_plan: SteeringPlan | None = None,
     steering_object: "BaseSteeringObject | None" = None,
-    steering_strength: float = DEFAULT_BASE_STRENGTH,
+    steering_strength: float = DEFAULT_STRENGTH,
     skip_prompt: bool = True,
     skip_special_tokens: bool = True,
     enable_thinking: bool = False,
@@ -47,18 +37,13 @@ def _generate_stream(
     Streamed text generation with optional steering.
     Uses the TextIteratorStreamer from transformers.
 
+    Sampling parameters come from the user's InferenceConfig by default.
+    Pass overrides via ``**gen_kwargs``.
+
     attributes:
         inputs:
             list of chat messages (each a list of {'role','content'} dicts) OR pre-formatted string.
             Currently only one conversation is supported.
-        max_new_tokens:
-            max tokens to generate (beyond the prompt).
-        temperature:
-            sampling temperature (0 = greedy, 1 = default sampling).
-        top_p:
-            nucleus sampling probability (1.0 = no nucleus).
-        do_sample:
-            if False, uses greedy decoding (top_k=1).
         use_steering:
             if True, apply the current steering plan (if any).
         steering_plan:
@@ -72,11 +57,14 @@ def _generate_stream(
         prompt_is_formatted:
             If True, inputs is a pre-formatted string with chat template already applied.
         **gen_kwargs:
-            additional kwargs passed to 'model.generate()'.
+            overrides for generation kwargs (temperature, max_new_tokens, etc.).
 
     yields:
         generated text chunks (str), as they become available.
     """
+
+    # Build generation kwargs from user config + caller overrides
+    resolved = get_generate_kwargs(**gen_kwargs)
 
     if steering_object is not None:
         self.apply_steering_object(steering_object, base_strength=steering_strength)
@@ -113,17 +101,10 @@ def _generate_stream(
 
     generation_kwargs = dict(
         batch,
-        max_new_tokens=max_new_tokens,
-        temperature=temperature,
-        top_p=top_p,
-        top_k=top_k,
-        repetition_penalty=repetition_penalty,
-        no_repeat_ngram_size=no_repeat_ngram_size,
-        do_sample=do_sample,
+        **resolved,
         return_dict_in_generate=False,
         output_scores=False,
         streamer=streamer,
-        **gen_kwargs,
     )
 
     # Add diversity processors if requested

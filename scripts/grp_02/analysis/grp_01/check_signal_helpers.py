@@ -17,7 +17,7 @@ from sklearn.model_selection import cross_val_score
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import load_dataset
 from huggingface_hub import hf_hub_download
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, DIAGNOSTIC_MLP_HIDDEN_SIZES, MAX_TOKENIZATION_LENGTH, KMEANS_N_INIT_LARGE
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, DIAGNOSTIC_MLP_HIDDEN_SIZES, KMEANS_N_INIT_LARGE
 
 
 def load_model(model_name, device="auto"):
@@ -124,7 +124,7 @@ def get_sentiment_pairs(limit=50):
 
 
 def get_activations(model, tokenizer, text, device):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
     inputs = {k: v.to(device) for k, v in inputs.items()}
     with torch.no_grad():
         outputs = model(**inputs, output_hidden_states=True)

@@ -16,7 +16,7 @@ from sklearn.metrics import accuracy_score
 import random
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from wisent.core.constants import TOKENIZER_MAX_LENGTH_GEOMETRY, DEFAULT_RANDOM_SEED
+from wisent.core.constants import DEFAULT_RANDOM_SEED
 
 # Config
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"
@@ -52,7 +52,7 @@ def load_truthfulqa_pairs():
 
 def get_activation(model, tokenizer, text, layer):
     """Get last token activation."""
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_GEOMETRY).to(DEVICE)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(DEVICE)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1].cpu().float().numpy()

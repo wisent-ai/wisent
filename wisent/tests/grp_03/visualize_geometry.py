@@ -21,7 +21,7 @@ from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PARSER_DEFAULT_NUM_PAIRS, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PARSER_DEFAULT_NUM_PAIRS, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD, VIZ_ALPHA_MEDIUM, VIZ_ALPHA_LIGHT, VIZ_FONTSIZE_SUPTITLE
 
 
 # Best configs loaded from comprehensive test results
@@ -236,7 +236,7 @@ def run_single_config(args, wisent_model, pairs, collector, layer, aggregation, 
     pos_tensor = torch.from_numpy(pos_arr).float()
     neg_tensor = torch.from_numpy(neg_arr).float()
     
-    config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=GEOMETRY_OPTIMIZATION_STEPS_DEFAULT)
+    config = GeometryAnalysisConfig(num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS, optimization_steps=DIAG_OPTIMIZATION_STEPS)
     result = detect_geometry_structure(pos_tensor, neg_tensor, config)
     
     detector_scores = {name: score.score for name, score in result.all_scores.items()}

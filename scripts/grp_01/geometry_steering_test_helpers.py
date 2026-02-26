@@ -10,9 +10,10 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 import torch.nn.functional as F
 from wisent.core.constants import (
-    DEFAULT_RANDOM_SEED, GEOMETRY_OPTIMIZATION_LR, MAX_NEW_TOKENS_TEST_SHORT,
+    DEFAULT_RANDOM_SEED, GEOMETRY_OPTIMIZATION_LR,
     TECZA_NUM_DIRECTIONS, DIAGNOSIS_OPTIMIZATION_STEPS,
 )
+from wisent.core.models.inference_config import get_generate_kwargs
 
 
 def train_caa(pos_tensor, neg_tensor):
@@ -67,8 +68,10 @@ def train_tecza(pos_tensor, neg_tensor, num_directions=TECZA_NUM_DIRECTIONS):
     return final_dirs.mean(dim=0)
 
 
-def generate_with_steering(model, tokenizer, prompt, direction, strength, layer, max_tokens=MAX_NEW_TOKENS_TEST_SHORT):
+def generate_with_steering(model, tokenizer, prompt, direction, strength, layer, max_tokens=None):
     """Generate text with a steering hook applied at the given layer."""
+    if max_tokens is None:
+        max_tokens = get_generate_kwargs()["max_new_tokens"]
     direction_tensor = direction.to(model.device).half()
 
     def hook(module, input, output):

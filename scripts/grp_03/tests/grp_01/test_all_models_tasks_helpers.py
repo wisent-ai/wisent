@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import random
 from datasets import load_dataset
-from wisent.core.constants import NORM_EPS, TOKENIZER_MAX_LENGTH_CLUSTER, DEFAULT_RANDOM_SEED
+from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED
 
 random_tokens = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", "To"]
 
@@ -133,14 +133,14 @@ def compute_mean_direction(diffs):
 
 
 def get_last_token_act(model, tokenizer, text, layer, device):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     with torch.no_grad():
         outputs = model(inputs.input_ids, output_hidden_states=True)
     return outputs.hidden_states[layer][0, -1, :].cpu().float()
 
 
 def get_mean_answer_tokens_act(model, tokenizer, text, answer, layer, device):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -151,7 +151,7 @@ def get_mean_answer_tokens_act(model, tokenizer, text, answer, layer, device):
 
 
 def get_first_answer_token_act(model, tokenizer, text, answer, layer, device):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -162,7 +162,7 @@ def get_first_answer_token_act(model, tokenizer, text, answer, layer, device):
 
 
 def get_max_norm_answer_act(model, tokenizer, text, answer, layer, device):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():
@@ -175,7 +175,7 @@ def get_max_norm_answer_act(model, tokenizer, text, answer, layer, device):
 
 
 def get_weighted_mean_answer_act(model, tokenizer, text, answer, layer, device):
-    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=TOKENIZER_MAX_LENGTH_CLUSTER).to(device)
+    inputs = tokenizer(text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length).to(device)
     answer_tokens = tokenizer(answer, add_special_tokens=False)["input_ids"]
     num_answer_tokens = len(answer_tokens)
     with torch.no_grad():

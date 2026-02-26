@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any, Union
 
 from wisent.core.steering_methods import SteeringMethodRegistry, SteeringMethodType
 from wisent.core.constants import (
-    DEFAULT_LIMIT, DEFAULT_NUM_LAYERS, DEFAULT_SPLIT_RATIO,
+    DEFAULT_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS, DEFAULT_SPLIT_RATIO,
     SEARCH_DEFAULT_STRENGTHS, SEARCH_MAX_LAYER_CAP,
     OPTIMIZE_MAX_TIME_MINUTES, SECONDS_PER_MINUTE,
 )
@@ -195,10 +195,10 @@ class MethodComparisonMixin:
                 config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=True)
                 num_layers = getattr(config, 'num_hidden_layers', None) or \
                              getattr(config, 'n_layer', None) or \
-                             getattr(config, 'num_layers', None) or DEFAULT_NUM_LAYERS
+                             getattr(config, 'num_layers', None) or DEFAULT_NUM_HIDDEN_LAYERS
                 return list(range(num_layers))
             except Exception:
-                return list(range(DEFAULT_NUM_LAYERS))
+                return list(range(DEFAULT_NUM_HIDDEN_LAYERS))
 
     def _analyze_results(self, all_results: Dict) -> tuple:
         """Analyze optimization results to compute rankings."""

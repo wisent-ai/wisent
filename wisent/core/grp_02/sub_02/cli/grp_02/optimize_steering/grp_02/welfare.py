@@ -14,8 +14,7 @@ from wisent.core.cli.optimize_steering.data.responses import execute_generate_re
 from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.constants import (DEFAULT_N_TRIALS, WELFARE_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS,
     DEFAULT_NUM_STRENGTH_STEPS, DEFAULT_LAYER,
-    PIPELINE_MAX_NEW_TOKENS, PIPELINE_TEMPERATURE, PIPELINE_TOP_P,
-    PARSER_STRENGTH_RANGE_WELFARE, REPORT_LINE_WIDTH,
+    PARSER_STRENGTH_RANGE_WELFARE, SEPARATOR_WIDTH_REPORT,
     JSON_INDENT, LAYER_STRIDE_DEFAULT)
 
 
@@ -37,15 +36,15 @@ def _execute_welfare_optimization(args):
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './welfare_optimization')
 
-    print(f"\n{'=' * REPORT_LINE_WIDTH}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"🧠 WELFARE STATE STEERING OPTIMIZATION (ANIMA)")
-    print(f"{'=' * REPORT_LINE_WIDTH}")
+    print(f"{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"   Model: {model}")
     print(f"   Welfare Trait: {trait}")
     print(f"   Direction: {direction}")
     print(f"   Trials: {n_trials}")
     print(f"   Output: {output_dir}")
-    print(f"{'=' * REPORT_LINE_WIDTH}\n")
+    print(f"{'=' * SEPARATOR_WIDTH_REPORT}\n")
 
     # Load welfare pairs
     try:
@@ -180,9 +179,9 @@ def _execute_welfare_optimization(args):
                             print(f"   [{current}/{total_configs}] Failed: {e}")
 
     # Print results
-    print(f"\n{'=' * REPORT_LINE_WIDTH}")
+    print(f"\n{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"📊 WELFARE OPTIMIZATION COMPLETE")
-    print(f"{'=' * REPORT_LINE_WIDTH}")
+    print(f"{'=' * SEPARATOR_WIDTH_REPORT}")
     print(f"\n✅ Best configuration for '{trait}' ({direction}):")
     print(f"   Score: {best_score:.4f}")
     for k, v in best_params.items():
@@ -258,9 +257,6 @@ def _run_welfare_pipeline(
         steering_strategy=steering_strategy,
         use_steering=True,
         device=device,
-        max_new_tokens=PIPELINE_MAX_NEW_TOKENS,
-        temperature=PIPELINE_TEMPERATURE,
-        top_p=PIPELINE_TOP_P,
         verbose=False,
     ))
 

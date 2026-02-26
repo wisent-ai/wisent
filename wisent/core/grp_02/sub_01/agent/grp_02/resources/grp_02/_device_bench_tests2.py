@@ -2,7 +2,8 @@
 import time
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, SUBPROCESS_TIMEOUT_SECS, BENCH_TEST_SAMPLE_MIN
+from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, BENCH_TEST_SAMPLE_MIN
+from wisent.core.utils.core.hardware import subprocess_timeout_s
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin2:
@@ -57,7 +58,7 @@ except Exception as e:
             result = subprocess.run([
                 sys.executable,
                 temp_script,
-            ], capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT_SECS)
+            ], capture_output=True, text=True, timeout=subprocess_timeout_s())
 
             os.unlink(temp_script)
 
@@ -126,7 +127,7 @@ except Exception as e:
             
             result = subprocess.run([
                 sys.executable, temp_script
-            ], capture_output=True, text=True, timeout=SUBPROCESS_TIMEOUT_SECS)  # 5-minute timeout
+            ], capture_output=True, text=True, timeout=subprocess_timeout_s())  # 5-minute timeout
             
             os.unlink(temp_script)
             

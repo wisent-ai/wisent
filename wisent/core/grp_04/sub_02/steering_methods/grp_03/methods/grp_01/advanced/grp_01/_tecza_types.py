@@ -31,7 +31,7 @@ from wisent.core.constants import (
     TECZA_NUM_DIRECTIONS,
     TECZA_MARGINAL_THRESHOLD,
     TECZA_MAX_DIRECTIONS,
-    TECZA_OPTIMIZATION_STEPS,
+    DEFAULT_OPTIMIZATION_STEPS,
     TECZA_LEARNING_RATE,
     TECZA_RETAIN_WEIGHT,
     TECZA_INDEPENDENCE_WEIGHT,
@@ -67,7 +67,7 @@ class TECZAConfig:
     max_directions: int = TECZA_MAX_DIRECTIONS
     """Maximum directions when using auto num_directions."""
     
-    optimization_steps: int = TECZA_OPTIMIZATION_STEPS
+    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     """Number of gradient descent steps for direction optimization."""
     
     learning_rate: float = TECZA_LEARNING_RATE

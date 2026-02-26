@@ -13,7 +13,7 @@ from wisent.core.constants import (
     CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE,
     DEFAULT_CLASSIFIER_LR, CLASSIFIER_EARLY_STOPPING_PATIENCE,
     CLASSIFIER_HIDDEN_DIM, DEFAULT_LAYER,
-    AGENT_STEERING_PARAMS_MAX_TOKENS, AGENT_STEERING_INITIAL_STRENGTH,
+    AGENT_STEERING_INITIAL_STRENGTH,
     AGENT_STEERING_INCREMENT, AGENT_STEERING_MAX_STRENGTH,
     AGENT_STEERING_INITIAL_MIN, AGENT_STEERING_INITIAL_MAX,
     AGENT_STEERING_INCREMENT_MIN, AGENT_STEERING_INCREMENT_MAX,
@@ -58,7 +58,7 @@ class SteeringParamsMixin:
         REASONING: [one sentence explanation]
         """
 
-        gen_kwargs = get_generate_kwargs(max_new_tokens=AGENT_STEERING_PARAMS_MAX_TOKENS)
+        gen_kwargs = get_generate_kwargs()
         result = self.model.generate(steering_prompt, layer_index=DEFAULT_LAYER, **gen_kwargs)
         response = result[0] if isinstance(result, tuple) else result
         return self._parse_steering_params(response)

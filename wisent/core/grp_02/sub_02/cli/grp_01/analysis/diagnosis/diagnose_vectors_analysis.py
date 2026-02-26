@@ -3,7 +3,7 @@ from typing import Dict
 
 import torch
 from wisent.core import constants as _C
-from wisent.core.constants import CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS, DIAGNOSIS_OPTIMIZATION_STEPS
+from wisent.core.constants import CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS, DEFAULT_OPTIMIZATION_STEPS
 
 
 def _run_cone_analysis(
@@ -75,7 +75,7 @@ def _run_cone_analysis(
         # Run cone analysis
         config = ConeAnalysisConfig(
             num_directions=cone_directions,
-            optimization_steps=DIAGNOSIS_OPTIMIZATION_STEPS,
+            optimization_steps=DEFAULT_OPTIMIZATION_STEPS,
             cone_threshold=cone_threshold,
         )
         

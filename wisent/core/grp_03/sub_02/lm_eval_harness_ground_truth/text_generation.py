@@ -4,7 +4,7 @@ import logging
 from typing import Any, Dict
 
 from wisent.core.activations.activations import Activations
-from wisent.core.constants import EVAL_MAX_NEW_TOKENS, AGENT_DIAG_TEMPERATURE, CLASSIFIER_DECISION_THRESHOLD, SPLIT_RATIO_FULL
+from wisent.core.constants import CLASSIFIER_THRESHOLD, SPLIT_RATIO_FULL
 from wisent.core.layer import Layer
 from wisent.core.models import get_generate_kwargs
 
@@ -32,7 +32,7 @@ def evaluate_text_generation(evaluator, classifier, task_name: str, num_samples:
                 else:
                     question = str(doc.get("question", doc.get("text", "")))
                 logger.debug(f"Generating response for: {question}...")
-                gen_kwargs = get_generate_kwargs(max_new_tokens=EVAL_MAX_NEW_TOKENS, temperature=AGENT_DIAG_TEMPERATURE, do_sample=False)
+                gen_kwargs = get_generate_kwargs(do_sample=False)
                 generated_response, _ = model.generate(prompt=question, layer_index=layer, **gen_kwargs)
                 if task_name.startswith("hle") or task_name in ["math500", "math", "hendrycks_math"]:
                     ground_truth = doc.get("answer", "")
@@ -64,30 +64,30 @@ def evaluate_text_generation(evaluator, classifier, task_name: str, num_samples:
                     features_numpy = features.cpu().numpy()
                     prediction_proba = classifier.predict_proba([features_numpy])
                     if isinstance(prediction_proba, (list, tuple)):
-                        prediction = prediction_proba[0] if len(prediction_proba) > 0 else CLASSIFIER_DECISION_THRESHOLD
+                        prediction = prediction_proba[0] if len(prediction_proba) > 0 else CLASSIFIER_THRESHOLD
                     else:
                         prediction = prediction_proba
                     if hasattr(prediction, "__len__") and not isinstance(prediction, str):
-                        prediction = prediction[0] if len(prediction) > 0 else CLASSIFIER_DECISION_THRESHOLD
+                        prediction = prediction[0] if len(prediction) > 0 else CLASSIFIER_THRESHOLD
                     prediction = float(prediction)
                 except Exception as proba_error:
                     logger.warning(f"predict_proba failed: {proba_error}, trying predict...")
                     try:
                         predictions = classifier.predict([features.cpu().numpy()])
-                        prediction = float(predictions[0]) if len(predictions) > 0 else CLASSIFIER_DECISION_THRESHOLD
+                        prediction = float(predictions[0]) if len(predictions) > 0 else CLASSIFIER_THRESHOLD
                     except Exception as predict_error:
                         logger.error(f"Both predict_proba and predict failed: {predict_error}")
-                        prediction = CLASSIFIER_DECISION_THRESHOLD
+                        prediction = CLASSIFIER_THRESHOLD
                 classification_results.append({"question": response_data["question"],
                     "generated_response": response_data["generated_response"],
-                    "classifier_score": prediction, "classifier_truthful": prediction < CLASSIFIER_DECISION_THRESHOLD})
+                    "classifier_score": prediction, "classifier_truthful": prediction < CLASSIFIER_THRESHOLD})
             except Exception as e:
                 import traceback
                 logger.error(f"Error classifying generated response: {e}")
                 logger.error(f"Full traceback: {traceback.format_exc()}")
                 classification_results.append({"question": response_data["question"],
                     "generated_response": response_data["generated_response"],
-                    "classifier_score": CLASSIFIER_DECISION_THRESHOLD, "classifier_truthful": False, "error": str(e)})
+                    "classifier_score": CLASSIFIER_THRESHOLD, "classifier_truthful": False, "error": str(e)})
                 continue
         return {"ground_truth": "EVALUATED", "method_used": "lm-eval-harness-text-generation",
                 "confidence": evaluation_results.get("accuracy", 0.0),

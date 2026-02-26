@@ -51,7 +51,7 @@ import sys
 from wisent.core.constants import (
     PARSER_DEFAULT_NUM_PAIRS,
     PARSER_DEFAULT_NUM_PAIRS_GENERATE,
-    OPTUNA_DEFAULT_N_TRIALS,
+    DEFAULT_N_TRIALS,
     SEPARATOR_WIDTH_REPORT,
 )
 
@@ -94,7 +94,7 @@ def main():
     parser.add_argument(
         "--num-pairs",
         type=int,
-        default=OPTUNA_DEFAULT_N_TRIALS,
+        default=DEFAULT_N_TRIALS,
         help="Number of contrastive pairs for training",
     )
     parser.add_argument(

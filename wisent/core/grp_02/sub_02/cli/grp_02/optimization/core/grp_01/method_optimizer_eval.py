@@ -14,7 +14,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.steering_methods.registry import SteeringMethodRegistry
-from wisent.core.constants import DEFAULT_MAX_NEW_TOKENS_EVAL, LAYER_RANGE_SMALL_OFFSET, LAYER_RANGE_LARGE_OFFSET
+from wisent.core.constants import LAYER_RANGE_SMALL_OFFSET, LAYER_RANGE_LARGE_OFFSET
 from wisent.core.cli.optimization.core.method_optimizer_config import (
     OptimizationConfig, OptimizationResult, OptimizationSummary,
 )
@@ -140,7 +140,6 @@ def evaluate(
             self.model.apply_steering(steering_plan)
             generated_response = self.model.generate(
                 [[{"role": "user", "content": pair.prompt}]],
-                max_new_tokens=DEFAULT_MAX_NEW_TOKENS_EVAL,
                 use_steering=True,
                 steering_plan=steering_plan,
             )[0]
@@ -207,7 +206,6 @@ def evaluate_baseline(
             # Generate response WITHOUT steering
             generated_response = self.model.generate(
                 [[{"role": "user", "content": pair.prompt}]],
-                max_new_tokens=DEFAULT_MAX_NEW_TOKENS_EVAL,
             )[0]
 
             expected = pair.positive_response.model_response

@@ -14,9 +14,10 @@ from datasets import load_dataset
 from tqdm import tqdm
 
 from wisent.core.models.wisent_model import WisentModel
+from wisent.core.models.config import get_generate_kwargs
 from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
 from wisent.core.errors import InvalidChoicesError
-from wisent.core.constants import DEFAULT_INFERENCE_TEMPERATURE, MAX_NEW_TOKENS_BENCHMARK_MATH, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
+from wisent.core.constants import SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 QUESTION_TYPES = [
@@ -82,9 +83,7 @@ def main(limit: int | None = None, question_type: str | None = None, level: str 
         # Generate using WisentModel
         responses = model.generate(
             inputs=prompt,
-            max_new_tokens=MAX_NEW_TOKENS_BENCHMARK_MATH,
-            temperature=DEFAULT_INFERENCE_TEMPERATURE,
-            do_sample=True,
+            **get_generate_kwargs(),
             prompt_is_formatted=True
         )
 

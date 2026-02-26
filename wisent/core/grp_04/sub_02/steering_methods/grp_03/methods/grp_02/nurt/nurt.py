@@ -23,11 +23,11 @@ from wisent.core.constants import (
     DEFAULT_VARIANCE_THRESHOLD,
     NURT_NUM_DIMS,
     NURT_TRAINING_EPOCHS,
-    NURT_LR,
+    MLP_LEARNING_RATE,
     NURT_LR_MIN,
     NURT_NUM_INTEGRATION_STEPS,
     NURT_T_MAX,
-    GROM_WEIGHT_DECAY,
+    DEFAULT_WEIGHT_DECAY,
     GROM_MAX_GRAD_NORM,
 )
 from .flow_network import FlowVelocityNetwork
@@ -49,7 +49,7 @@ class NurtConfig:
     """Cumulative variance threshold for auto dimension selection."""
     training_epochs: int = NURT_TRAINING_EPOCHS
     """Number of training epochs for flow matching."""
-    lr: float = NURT_LR
+    lr: float = MLP_LEARNING_RATE
     """Learning rate for AdamW optimizer."""
     lr_min: float = NURT_LR_MIN
     """Minimum learning rate for cosine annealing."""
@@ -94,7 +94,7 @@ class NurtMethod(BaseSteeringMethod):
             num_dims=kwargs.get("num_dims", NURT_NUM_DIMS),
             variance_threshold=kwargs.get("variance_threshold", DEFAULT_VARIANCE_THRESHOLD),
             training_epochs=kwargs.get("training_epochs", NURT_TRAINING_EPOCHS),
-            lr=kwargs.get("lr", NURT_LR),
+            lr=kwargs.get("lr", MLP_LEARNING_RATE),
             lr_min=kwargs.get("lr_min", NURT_LR_MIN),
             num_integration_steps=kwargs.get("num_integration_steps", NURT_NUM_INTEGRATION_STEPS),
             t_max=kwargs.get("t_max", NURT_T_MAX),
@@ -179,7 +179,7 @@ class NurtMethod(BaseSteeringMethod):
         """Train a single flow velocity network via conditional flow matching."""
         network = FlowVelocityNetwork(concept_dim, self.config.flow_hidden_dim)
         optimizer = torch.optim.AdamW(
-            network.parameters(), lr=self.config.lr, weight_decay=GROM_WEIGHT_DECAY,
+            network.parameters(), lr=self.config.lr, weight_decay=DEFAULT_WEIGHT_DECAY,
         )
         scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
             optimizer, T_max=self.config.training_epochs, eta_min=self.config.lr_min,

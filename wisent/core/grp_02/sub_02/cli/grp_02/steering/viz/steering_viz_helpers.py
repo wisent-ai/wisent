@@ -14,9 +14,9 @@ from wisent.core.cli.steering_behavioral import (
 from wisent.core.constants import (
     DISPLAY_TRUNCATION_DESCRIPTION,
     NORM_EPS, VIZ_LIMIT, VIZ_CLAMPING_MARGIN, VIZ_PROJECTION_COMPONENTS,
-    VIZ_REPLACEMENT_BLEND, VIZ_MLP_HIDDEN_DIM, VIZ_MLP_EPOCHS,
+    VIZ_REPLACEMENT_BLEND, MLP_HIDDEN_DIM, VIZ_MLP_EPOCHS,
     VIZ_DIRECTION_N_PCA, VIZ_DIRECTION_N_RANDOM_SEARCH,
-    CLASSIFIER_DECISION_THRESHOLD, ADAPTIVE_STRENGTH_MULTIPLIER,
+    CLASSIFIER_THRESHOLD, ADAPTIVE_STRENGTH_MULTIPLIER,
 )
 # Re-export from steering_viz_utils for backwards compatibility
 from wisent.core.geometry.steering_viz_utils import (
@@ -40,14 +40,14 @@ def select_steering_direction(
 
     For behavioral method, pass activations and labels from actual generation.
     Returns (steering_vector, description, accuracy).
-    Accuracy is the behavioral classifier accuracy (CLASSIFIER_DECISION_THRESHOLD for non-behavioral methods).
+    Accuracy is the behavioral classifier accuracy (CLASSIFIER_THRESHOLD for non-behavioral methods).
     """
     from wisent.core.geometry.steering_discovery import generate_candidate_directions
 
     pos_ref_np = pos_ref.cpu().numpy()
     neg_ref_np = neg_ref.cpu().numpy()
 
-    acc = CLASSIFIER_DECISION_THRESHOLD  # Default accuracy (random baseline) for non-behavioral methods
+    acc = CLASSIFIER_THRESHOLD  # Default accuracy (random baseline) for non-behavioral methods
 
     if direction_method == "mean_diff":
         steering_vector = (pos_ref.mean(dim=0) - neg_ref.mean(dim=0))
@@ -124,7 +124,7 @@ def create_steering_method(
     elif steering_method_name == "contrast":
         method = ContrastSteering(strength=strength)
     elif steering_method_name == "mlp":
-        method = MLPSteering(hidden_dim=VIZ_MLP_HIDDEN_DIM, epochs=VIZ_MLP_EPOCHS)
+        method = MLPSteering(hidden_dim=MLP_HIDDEN_DIM, epochs=VIZ_MLP_EPOCHS)
     elif steering_method_name == "adaptive":
         method = AdaptiveSteering(max_strength=strength * ADAPTIVE_STRENGTH_MULTIPLIER)
     else:

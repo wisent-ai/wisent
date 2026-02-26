@@ -9,9 +9,9 @@ from datasets import Dataset
 from wisent.comparison.utils import generate_contrastive_pairs
 from wisent.core.utils import preferred_dtype
 from wisent.core.constants import (
-    COMPARISON_NUM_PAIRS, TRAINING_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
+    COMPARISON_NUM_PAIRS, DEFAULT_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
     COMPARISON_REFT_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,
-    COMPARISON_TRAINING_BATCH_SIZE, COMPARISON_MAX_LENGTH,
+    COMPARISON_TRAINING_BATCH_SIZE,
     COMPARISON_LOGGING_STEPS, LOREFT_DEFAULT_RANK,
     GRADIENT_ACCUMULATION_STEPS_DEFAULT, JSON_INDENT,
 )
@@ -24,12 +24,14 @@ __all__ = ["prepare_reft_dataset", "train_reft_adapter"]
 def prepare_reft_dataset(
     pairs: list[dict],
     tokenizer,
-    max_length: int = COMPARISON_MAX_LENGTH,
+    max_length: int | None = None,
 ) -> tuple[list[str], list[str]]:
     """
     Prepare dataset for ReFT training from contrastive pairs.
     Uses only positive responses for training.
     """
+    if max_length is None:
+        max_length = tokenizer.model_max_length
     prompts = []
     responses = []
     for pair in pairs:
@@ -60,7 +62,7 @@ def train_reft_adapter(
     learning_rate: float = COMPARISON_REFT_LEARNING_RATE,
     num_epochs: int = COMPARISON_NUM_EPOCHS_DEFAULT,
     batch_size: int = COMPARISON_TRAINING_BATCH_SIZE,
-    max_length: int = COMPARISON_MAX_LENGTH,
+    max_length: int | None = None,
 ) -> Path:
     """Train a LoReFT intervention using SFT on positive responses."""
     _original_compute_loss = pyreft.ReftTrainer.compute_loss
@@ -79,6 +81,8 @@ def train_reft_adapter(
         model_name, torch_dtype=dtype, device_map=device, trust_remote_code=True,
     )
     tokenizer = transformers.AutoTokenizer.from_pretrained(model_name, trust_remote_code=True)
+    if max_length is None:
+        max_length = tokenizer.model_max_length
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
@@ -115,7 +119,7 @@ def train_reft_adapter(
     training_args = transformers.TrainingArguments(
         output_dir=training_output_dir, num_train_epochs=num_epochs,
         per_device_train_batch_size=batch_size, gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_DEFAULT,
-        learning_rate=learning_rate, weight_decay=TRAINING_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
+        learning_rate=learning_rate, weight_decay=DEFAULT_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
         logging_steps=COMPARISON_LOGGING_STEPS, save_strategy="no",
         bf16=(dtype == torch.bfloat16), fp16=(dtype == torch.float16), report_to="none",
     )

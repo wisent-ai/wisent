@@ -6,7 +6,6 @@ import os
 
 import torch
 
-from wisent.core.constants import MAX_TOKENIZATION_LENGTH
 
 # Add wisent package to path - use direct import to avoid loading full geometry module
 script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -54,10 +53,10 @@ def parse_pair_text(text: str) -> tuple:
 
 def run_model_forward(model, tokenizer, device, full_text: str, prompt_only: str):
     """Run model forward pass and return hidden states + prompt length."""
-    enc = tokenizer(full_text, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
+    enc = tokenizer(full_text, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
     enc = {k: v.to(device) for k, v in enc.items()}
 
-    prompt_enc = tokenizer(prompt_only, return_tensors="pt", truncation=True, max_length=MAX_TOKENIZATION_LENGTH)
+    prompt_enc = tokenizer(prompt_only, return_tensors="pt", truncation=True, max_length=tokenizer.model_max_length)
     prompt_len = prompt_enc["input_ids"].shape[1]
 
     with torch.inference_mode():

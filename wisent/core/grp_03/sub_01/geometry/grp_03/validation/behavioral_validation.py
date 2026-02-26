@@ -9,10 +9,10 @@ import numpy as np
 import torch
 from wisent.core.constants import (
     MOVEMENT_THRESHOLD, BEHAVIOR_THRESHOLD,
-    DEFAULT_STRENGTH, DEFAULT_MAX_NEW_TOKENS_EVAL,
+    DEFAULT_STRENGTH,
     DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD,
     BEHAVIORAL_CONF_IMPROPERLY, BEHAVIORAL_CONF_UNEXPECTED,
-    BEHAVIORAL_CONF_INEFFECTIVE, AGENT_DIAG_TEMPERATURE,
+    BEHAVIORAL_CONF_INEFFECTIVE,
 )
 
 
@@ -192,7 +192,7 @@ def run_behavioral_validation(
     evaluator,
     layer_name: str,
     strength: float = DEFAULT_STRENGTH,
-    max_new_tokens: int = DEFAULT_MAX_NEW_TOKENS_EVAL,
+    max_new_tokens: int | None = None,
     positive_label: str = "TRUTHFUL",
     extraction_strategy: str = "chat_last",
 ) -> BehavioralValidationResult:
@@ -218,12 +218,11 @@ def run_behavioral_validation(
     Returns:
         BehavioralValidationResult
     """
+    max_new_tokens = max_new_tokens if max_new_tokens is not None else 100
     from wisent.core.activations.core.atoms import LayerActivations
     from wisent.core.adapters.base import SteeringConfig
     from wisent.core.activations import ExtractionStrategy, extract_activation
-
     strategy = ExtractionStrategy(extraction_strategy)
-
     base_acts, steered_acts = [], []
     base_evals, steered_evals = [], []
 
@@ -236,7 +235,7 @@ def run_behavioral_validation(
 
         # Generate outputs FIRST
         base_full_response = adapter._generate_unsteered(
-            formatted, max_new_tokens=max_new_tokens, temperature=AGENT_DIAG_TEMPERATURE, do_sample=True
+            formatted, max_new_tokens=max_new_tokens, do_sample=True
         )
         steered_full_response = adapter.forward_with_steering(
             formatted, steering_vectors=steering_vectors, config=config

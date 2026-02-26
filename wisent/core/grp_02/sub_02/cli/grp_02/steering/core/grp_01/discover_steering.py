@@ -13,14 +13,13 @@ from wisent.core.constants import (
     DISPLAY_TOP_N_BRIEF,
     NORM_EPS,
     SEPARATOR_WIDTH_STANDARD,
-    STEERING_GEN_MAX_TOKENS,
-    AGENT_DIAG_TEMPERATURE,
-    DATA_SPLIT_RATIO,
+    DEFAULT_SPLIT_RATIO,
     DEFAULT_RANDOM_SEED,
-    DEFAULT_BASE_STRENGTH,
+    DEFAULT_STRENGTH,
     DEFAULT_SCALE_FACTOR,
     JSON_INDENT,
 )
+from wisent.core.models.config import get_generate_kwargs
 
 
 def execute_discover_steering(args):
@@ -51,7 +50,7 @@ def execute_discover_steering(args):
     random.seed(DEFAULT_RANDOM_SEED)
     random.shuffle(all_pair_ids)
 
-    split_idx = int(len(all_pair_ids) * DATA_SPLIT_RATIO)
+    split_idx = int(len(all_pair_ids) * DEFAULT_SPLIT_RATIO)
     train_ids = set(all_pair_ids[:split_idx])
     test_ids = all_pair_ids[split_idx:][:args.n_test_samples]
 
@@ -88,14 +87,15 @@ def execute_discover_steering(args):
     layer_name = f"layer.{args.layer}"
     results = {"model": args.model, "task": args.task, "layer": args.layer, "methods": {}}
 
-    def evaluate_direction(direction, strength=DEFAULT_BASE_STRENGTH):
+    def evaluate_direction(direction, strength=DEFAULT_STRENGTH):
         steering_vec = torch.from_numpy(direction).float() * strength
         steering_vectors = LayerActivations({layer_name: steering_vec})
         base_evals, steered_evals, base_resps, steered_resps = [], [], [], []
         for prompt, pos_ref, neg_ref in zip(test_prompts, test_pos_refs, test_neg_refs):
             msgs = [{"role": "user", "content": prompt}]
             fmt = adapter.apply_chat_template(msgs, add_generation_prompt=True)
-            base_r = _extract_response(adapter._generate_unsteered(fmt, max_new_tokens=STEERING_GEN_MAX_TOKENS, temperature=AGENT_DIAG_TEMPERATURE))
+            gen_kwargs = get_generate_kwargs()
+            base_r = _extract_response(adapter._generate_unsteered(fmt, **gen_kwargs))
             base_evals.append(evaluator.evaluate(base_r, pos_ref, correct_answers=[pos_ref], incorrect_answers=[neg_ref]).ground_truth)
             base_resps.append(base_r)
             steer_r = _extract_response(adapter.forward_with_steering(fmt, steering_vectors=steering_vectors, config=SteeringConfig(scale=DEFAULT_SCALE_FACTOR)))

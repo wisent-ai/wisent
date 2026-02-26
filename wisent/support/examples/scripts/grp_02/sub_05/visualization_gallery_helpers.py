@@ -7,7 +7,7 @@ from typing import Dict, List, Any
 
 import torch
 import numpy as np
-from wisent.core.constants import DEFAULT_RANDOM_SEED, VIZ_MARKER_SIZE_SMALL, PCA_GALLERY_COMPONENTS, VIZ_GALLERY_N_PER_TYPE, TSNE_PERPLEXITY_MAX, SIGNAL_EXISTENCE_THRESHOLD, LINEAR_GAP_THRESHOLD, VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_HIGH, VIZ_BBOX_ALPHA
+from wisent.core.constants import DEFAULT_RANDOM_SEED, VIZ_MARKER_SIZE_SMALL, PCA_GALLERY_COMPONENTS, VIZ_GALLERY_N_PER_TYPE, TSNE_PERPLEXITY_MAX, SIGNAL_EXIST_THRESHOLD, SIGNAL_LINEAR_GAP, VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_HIGH, VIZ_BBOX_ALPHA
 
 try:
     import matplotlib.pyplot as plt
@@ -99,9 +99,9 @@ def select_representative_benchmarks(
             linear = r["linear_probe_accuracy"]
             knn = r["nonlinear_metrics"]["knn_accuracy_k10"]
             
-            if signal < SIGNAL_EXISTENCE_THRESHOLD:
+            if signal < SIGNAL_EXIST_THRESHOLD:
                 by_diagnosis["NO_SIGNAL"].append((bench, signal, linear, knn))
-            elif linear > SIGNAL_EXISTENCE_THRESHOLD and (signal - linear) < LINEAR_GAP_THRESHOLD:
+            elif linear > SIGNAL_EXIST_THRESHOLD and (signal - linear) < SIGNAL_LINEAR_GAP:
                 by_diagnosis["LINEAR"].append((bench, signal, linear, knn))
             else:
                 by_diagnosis["NONLINEAR"].append((bench, signal, linear, knn))

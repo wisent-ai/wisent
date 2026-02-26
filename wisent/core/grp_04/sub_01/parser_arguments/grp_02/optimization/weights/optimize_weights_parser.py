@@ -23,8 +23,8 @@ Task types:
 import argparse
 
 from wisent.core.constants import (
-    DATA_SPLIT_RATIO,
-    DATA_SPLIT_SEED,
+    DEFAULT_SPLIT_RATIO,
+    DEFAULT_RANDOM_SEED,
     OPTIMIZE_WEIGHTS_CHECKPOINT_INTERVAL,
     OPTIMIZE_WEIGHTS_NUM_EVAL_PROMPTS,
     OPTIMIZE_WEIGHTS_TARGET_VALUE,
@@ -109,13 +109,13 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--train-ratio",
         type=float,
-        default=DATA_SPLIT_RATIO,
+        default=DEFAULT_SPLIT_RATIO,
         help="Fraction of pairs for training vs evaluation (default: 0.8)"
     )
     parser.add_argument(
         "--seed",
         type=int,
-        default=DATA_SPLIT_SEED,
+        default=DEFAULT_RANDOM_SEED,
         help="Random seed for reproducibility (default: 42)"
     )
 
