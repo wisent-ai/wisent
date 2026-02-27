@@ -23,22 +23,14 @@ ARB_FILES = [
     f"{BASE}/arbitrary/sub_arb/sub_arb2/sub_arb3/_inference.py",
 ]
 
-EXP_FILES = [
-    (f"{BASE}/for_experiments/_exp_01.py", f"{BASE}/for_experiments/_exp_02.py"),
-    (f"{BASE}/for_experiments/_exp_02.py", f"{BASE}/for_experiments/_exp_03.py"),
-    (f"{BASE}/for_experiments/_exp_03.py", f"{BASE}/for_experiments/sub_exp"),
-    (f"{BASE}/for_experiments/sub_exp/_exp_04.py", f"{BASE}/for_experiments/sub_exp/_exp_05.py"),
-    (f"{BASE}/for_experiments/sub_exp/_exp_05.py", f"{BASE}/for_experiments/sub_exp/_exp_06.py"),
-    (f"{BASE}/for_experiments/sub_exp/_exp_06.py", f"{BASE}/for_experiments/sub_exp/sub_exp2"),
-    (f"{BASE}/for_experiments/sub_exp/sub_exp2/_exp_07.py", f"{BASE}/for_experiments/sub_exp/sub_exp2/_exp_08.py"),
-    (f"{BASE}/for_experiments/sub_exp/sub_exp2/_exp_08.py", None),
-]
+# NOTE: EXP_FILES is stale. for_experiments/ now uses by_domain/ + by_method/ chains.
+# See find_dead_constants.py for current file list.
+EXP_FILES = []
 
 FIXED_FILES = [
-    (f"{BASE}/cannot_be_optimized/_fixed_01.py", f"{BASE}/cannot_be_optimized/_fixed_02.py"),
-    (f"{BASE}/cannot_be_optimized/_fixed_02.py", f"{BASE}/cannot_be_optimized/sub_fixed"),
-    (f"{BASE}/cannot_be_optimized/sub_fixed/_fixed_03.py", f"{BASE}/cannot_be_optimized/sub_fixed/_fixed_04.py"),
-    (f"{BASE}/cannot_be_optimized/sub_fixed/_fixed_04.py", None),
+    (f"{BASE}/cannot_be_optimized/_display_viz.py", f"{BASE}/cannot_be_optimized/_infrastructure.py"),
+    (f"{BASE}/cannot_be_optimized/_infrastructure.py", f"{BASE}/cannot_be_optimized/_benchmark_data.py"),
+    (f"{BASE}/cannot_be_optimized/_benchmark_data.py", None),
 ]
 
 
@@ -145,15 +137,13 @@ def main():
     print(f"Cannot be optimized: {len(fixed_entries)} constants")
     exp_doc = "Constants requiring experimental optimization."
     print(f"\n--- for_experiments chain ---")
-    distribute(exp_entries, EXP_FILES, exp_doc)
-    write_init(f"{BASE}/for_experiments", EXP_FILES[0][0], exp_doc)
-    write_init(f"{BASE}/for_experiments/sub_exp", EXP_FILES[3][0], exp_doc)
-    write_init(f"{BASE}/for_experiments/sub_exp/sub_exp2", EXP_FILES[6][0], exp_doc)
+    if EXP_FILES:
+        distribute(exp_entries, EXP_FILES, exp_doc)
+        write_init(f"{BASE}/for_experiments", EXP_FILES[0][0], exp_doc)
     fixed_doc = "Constants that cannot be experimentally optimized."
     print(f"\n--- cannot_be_optimized chain ---")
     distribute(fixed_entries, FIXED_FILES, fixed_doc)
     write_init(f"{BASE}/cannot_be_optimized", FIXED_FILES[0][0], fixed_doc)
-    write_init(f"{BASE}/cannot_be_optimized/sub_fixed", FIXED_FILES[2][0], fixed_doc)
     print("\nDone! Update constants.py to import from both new chains.")
 
 
