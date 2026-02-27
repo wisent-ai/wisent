@@ -2,7 +2,7 @@
 
 import numpy as np
 import torch
-from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainReport
+from wisent.core.classifiers.core.atoms import ClassifierTrainReport
 from wisent.core.errors import UnknownTypeError
 from wisent.core.utils import preferred_dtype
 from wisent.core.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, CLASSIFIER_THRESHOLD, CLASSIFIER_HIDDEN_DIM, CLASSIFIER_TEST_SIZE, BATCH_SIZE_CAP
@@ -93,9 +93,9 @@ def train_classifier_on_pairs(
         Tuple of (trained_classifier, layer_key, collector)
     """
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
-    from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
-    from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
+    from wisent.core.classifiers.models.logistic import LogisticClassifier
+    from wisent.core.classifiers.models.mlp import MLPClassifier
+    from wisent.core.classifiers.core.atoms import ClassifierTrainConfig
 
     print(f"\n🧠 Step 2: Training classifier on contrastive pairs")
     print(f"   Collecting activations for classifier training...")

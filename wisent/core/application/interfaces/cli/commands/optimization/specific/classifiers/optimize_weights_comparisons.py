@@ -5,7 +5,7 @@ import re
 
 import torch
 from wisent.core.models.wisent_model import WisentModel
-from wisent.core.opti.methods.opti_weights import WeightsOptimizerConfig
+from wisent.core.optimization.methods.opti_weights import WeightsOptimizerConfig
 from wisent.core.constants import JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
 
 

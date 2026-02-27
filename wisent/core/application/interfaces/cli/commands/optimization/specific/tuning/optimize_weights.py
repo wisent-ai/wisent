@@ -36,8 +36,8 @@ from wisent.core.evaluators.steering_evaluators import (
     TaskEvaluator,
     PersonalizationEvaluator as SharedPersonalizationEvaluator,
 )
-from wisent.core.opti.core.atoms import HPOConfig
-from wisent.core.opti.methods.opti_weights import WeightsOptimizer, WeightsOptimizerConfig
+from wisent.core.optimization.core.atoms import HPOConfig
+from wisent.core.optimization.methods.opti_weights import WeightsOptimizer, WeightsOptimizerConfig
 from wisent.core.utils import resolve_default_device, preferred_dtype
 from wisent.core.cli.optimization.specific.optimize_weights_vectors import _generate_steering_vectors
 from wisent.core.cli.optimization.specific.optimize_weights_evaluators import _create_evaluator

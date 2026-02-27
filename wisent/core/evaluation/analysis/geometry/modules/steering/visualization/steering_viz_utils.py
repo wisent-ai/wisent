@@ -80,9 +80,9 @@ def load_reference_activations(args) -> Tuple[torch.Tensor, torch.Tensor]:
 
 def train_classifier_and_predict(pos_ref, neg_ref, base_activations, steered_activations, classifier_type='mlp'):
     """Train classifier on reference data and predict on response activations."""
-    from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
-    from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
-    from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
+    from wisent.core.classifiers.models.logistic import LogisticClassifier
+    from wisent.core.classifiers.models.mlp import MLPClassifier
+    from wisent.core.classifiers.core.atoms import ClassifierTrainConfig
 
     X_train = torch.cat([pos_ref, neg_ref], dim=0).cpu().numpy()
     y_train = np.concatenate([np.ones(len(pos_ref)), np.zeros(len(neg_ref))])
