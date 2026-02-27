@@ -9,7 +9,7 @@ from typing import Literal
 
 import optuna
 
-from wisent.core.opti.core.atoms import BaseOptimizer, HPOConfig, HPORun
+from wisent.core.optimization.core.atoms import BaseOptimizer, HPOConfig, HPORun
 from .config import RecommendationConfig, Thresholds, ScoreWeights
 from .configurable import compute_configurable_recommendation
 from .collector import GroundTruthDataset

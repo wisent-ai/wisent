@@ -10,7 +10,7 @@ import torch
 
 from wisent.core.constants import (HF_UPLOAD_MAX_RETRIES, HF_UPLOAD_BASE_WAIT,
     HF_UPLOAD_BACKOFF_MAX_EXPONENT, HF_UPLOAD_JITTER_MIN, HF_UPLOAD_JITTER_MAX,
-    JSON_INDENT)
+    HF_UPLOAD_RETRYABLE_PATTERNS, JSON_INDENT)
 from .hf_config import (
     HF_REPO_ID,
     HF_REPO_TYPE,
@@ -48,7 +48,7 @@ def _retry_upload(fn, max_retries=HF_UPLOAD_MAX_RETRIES, base_wait=HF_UPLOAD_BAS
             return fn()
         except Exception as exc:
             msg = str(exc)
-            retryable = any(k in msg for k in ("429", "412", "500", "Precondition", "ReadTimeout", "timed out", "Internal", "RevisionNotFound", "Invalid rev id"))
+            retryable = any(k in msg for k in HF_UPLOAD_RETRYABLE_PATTERNS)
             if not retryable or attempt == max_retries - 1:
                 raise
             wait = int(base_wait * (2 ** min(attempt, HF_UPLOAD_BACKOFF_MAX_EXPONENT)) * random.uniform(HF_UPLOAD_JITTER_MIN, HF_UPLOAD_JITTER_MAX))

@@ -54,6 +54,13 @@ HF_UPLOAD_BASE_WAIT = 120
 HF_UPLOAD_BACKOFF_MAX_EXPONENT = 3
 HF_UPLOAD_JITTER_MIN = 0.5
 HF_UPLOAD_JITTER_MAX = 1.5
+HF_UPLOAD_RETRYABLE_PATTERNS = (
+    "429", "412", "500", "502", "503", "504", "404",
+    "Precondition", "ReadTimeout", "timed out", "Internal",
+    "RevisionNotFound", "Invalid rev id", "Entry Not Found",
+    "Gateway", "EntryNotFound", "RemoteEntryNotFound",
+    "does not exist on",
+)
 # --- Docker / sandbox ---
 FEEDBACK_MAX_CHARS = 2000
 SAFE_DOCKER_FSIZE_MB = 10

@@ -111,11 +111,11 @@ class PromptFormatter:
             RuntimeError: If the 'strategies' package is not found or no strategies are discovered.
         """
         try:
-            import wisent.core.prompts.prompt_stratiegies as strategies_pkg
+            import wisent.core.prompts.prompt_strategies as strategies_pkg
         except ModuleNotFoundError as exc:
             raise FileLoadError(file_path="strategies package", cause=exc)
 
-        import wisent.core.prompts.prompt_stratiegies as strategies_pkg
+        import wisent.core.prompts.prompt_strategies as strategies_pkg
 
         for module_info in pkgutil.iter_modules(strategies_pkg.__path__):
             name = module_info.name
@@ -123,7 +123,7 @@ class PromptFormatter:
                 # Skip private/dunder modules.
                 continue
 
-            module = importlib.import_module(f"wisent.core.prompts.prompt_stratiegies.{name}")
+            module = importlib.import_module(f"wisent.core.prompts.prompt_strategies.{name}")
             self._register_strategies_from_module(module)
 
         if not self._registry:
