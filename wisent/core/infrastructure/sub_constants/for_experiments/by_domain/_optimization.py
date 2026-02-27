@@ -1,0 +1,217 @@
+"""Optimization, search, and hyperparameter tuning constants."""
+from wisent.core.infrastructure.sub_constants.for_experiments.by_domain._evaluation import *  # noqa: F401,F403
+
+# --- Common defaults ---
+DEFAULT_N_TRIALS = 100
+DEFAULT_NUM_EVAL_PROMPTS = 30
+DEFAULT_NUM_STRENGTH_STEPS = 5
+DEFAULT_CHECKPOINT_INTERVAL = 5
+OPTUNA_N_TRIALS_SMALL = 20
+LAYER_SWEEP_STRENGTH = 1.0
+
+# --- Optuna search bounds (shared) ---
+OPTUNA_OPT_STEPS_MIN = 50
+OPTUNA_OPT_STEPS_MAX = 500
+OPTUNA_MAX_ALPHA_MIN = 0.5
+OPTUNA_MAX_ALPHA_MAX = 5.0
+OPTUNA_RETAIN_WEIGHT_MIN = 0.0
+OPTUNA_RETAIN_WEIGHT_MAX = 1.0
+OPTUNA_NUM_DIRECTIONS_MIN = 1
+OPTUNA_NUM_DIRECTIONS_MAX = 10
+OPTUNA_INFERENCE_K_MIN = 1
+OPTUNA_INFERENCE_K_MAX = 15
+OPTUNA_TEMPERATURE_MIN = 0.01
+OPTUNA_TEMPERATURE_MAX = 2.0
+OPTUNA_VARIANCE_MIN = 0.5
+OPTUNA_VARIANCE_MAX = 0.99
+
+# --- Optuna pruning ---
+OPTUNA_PRUNE_ACCURACY_THRESHOLD = 0.35
+OPTUNA_PRUNER_STARTUP_TRIALS = 5
+
+# --- Optuna classifier ---
+OPTUNA_CLASSIFIER_BATCH_SIZES = (16, 32, 64)
+OPTUNA_CLASSIFIER_CV_FOLDS = 3
+OPTUNA_HIDDEN_DIM_RANGE = (32, 512)
+OPTUNA_THRESHOLD_RANGE = (0.3, 0.9)
+OPTUNA_EPOCH_RANGE = (20, 100)
+
+# --- Optuna trial count variants ---
+OPTUNA_TRIALS_LARGE = 300
+OPTUNA_TRIALS_TUNE = 500
+
+# --- Search space defaults ---
+SEARCH_DEFAULT_STRENGTHS = (0.5, 1.0, 1.5, 2.0)
+SEARCH_STRENGTH_RANGE_MIN = 0.1
+SEARCH_STRENGTH_RANGE_MAX = 2.0
+SEARCH_LAYER_OFFSET = 3
+SEARCH_MAX_LAYER_CAP = 32
+SEARCH_DEFAULT_LAYERS = (4, 6, 8, 10, 12)
+SEARCH_RESULTS_TOP_N = 10
+SEARCH_STEERING_RANGES = (3, 5)
+
+# --- Hierarchical config ---
+HIERARCHICAL_STRENGTHS = (0.3, 0.5, 0.7, 1.0, 1.3, 1.5, 2.0, 2.5, 3.0)
+
+# --- Auto optimization ---
+AUTO_MAX_TIME_MINUTES = 60.0
+AUTO_MIN_PAIRS = 10
+AUTO_SAMPLE_SIZE = 50
+AUTO_N_FOLDS = 3
+AUTO_DEFAULT_STRENGTHS = (0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0)
+AUTO_EVAL_SUBSET = 30
+AUTO_MIN_PAIRS_SPLIT = 20
+AUTO_LAYER_DIVISOR = 4
+AUTO_COMPREHENSIVE_TIME_MINUTES = 20.0
+
+# --- Sensitivity / calibration ---
+SENSITIVITY_DEFAULT_STEPS = 5
+SENSITIVITY_DEFAULT_CONSTANT_LIMIT = 50
+SENSITIVITY_OPTUNA_TOP_N = 20
+SENSITIVITY_DEFAULT_THRESHOLD = 0.01
+SENSITIVITY_TOP_CONSTANTS = 20
+CALIBRATION_MIN_OBSERVATIONS = 5
+
+# --- Threshold calibration quantiles ---
+CALIBRATION_Q_NLI_MARGIN = 0.15
+CALIBRATION_Q_NLI_ENT = 0.25
+CALIBRATION_Q_EMB_DELTA = 0.10
+CALIBRATION_Q_EMB_MATCH = 0.20
+CALIBRATION_Q_PROBE_HIGH = 0.85
+CALIBRATION_Q_PROBE_LOW = 0.35
+
+# --- Evidence ledger ---
+EVIDENCE_DOMINANCE_MARGIN = 0.02
+EVIDENCE_MAX_AGE_DAYS = 90
+EVIDENCE_CROSS_MODEL_DECAY = 0.5
+
+# --- Registry search range bounds ---
+REGISTRY_LR_FLOOR = 0.00001
+REGISTRY_LR_SUB_FLOOR = 0.000001
+
+# --- Optimizer base thresholds ---
+OPTIMIZER_CONSISTENCY_THRESHOLD = 0.5
+OPTIMIZE_CLASSIFICATION_THRESHOLDS = (0.3, 0.5, 0.7)
+OPTIMIZE_WEIGHT_MOD_TARGET = 0.8
+OPTIMIZE_MAX_COMBINATIONS_DEFAULT = 100
+
+# --- Weight optimization ranges ---
+OPTI_WEIGHTS_STRENGTH_RANGE = (0.5, 2.0)
+OPTI_WEIGHTS_MAX_WEIGHT_RANGE = (0.1, 1.0)
+OPTI_WEIGHTS_MIN_WEIGHT_RANGE = (0.0, 0.3)
+OPTI_WEIGHTS_POSITION_RANGE = (0.3, 0.7)
+
+# --- Weight optimization search space ---
+WEIGHT_OPT_STRENGTH_RANGE = "0.3,2.0"
+WEIGHT_OPT_MAX_WEIGHT_RANGE = "0.5,3.0"
+WEIGHT_OPT_MIN_WEIGHT_RANGE = "0.0,0.5"
+WEIGHT_OPT_POSITION_RANGE = "0.3,0.7"
+
+# --- Optimize weights comparisons ---
+WEIGHT_MIN_DISTANCE_FRACTION = 0.6
+
+# --- Search results deserialization ---
+MULTI_DIR_MIN_K_NOT_FOUND = -1
+MULTI_DIR_SATURATION_K_DEFAULT = 1
+
+# --- Multi-layer ---
+MULTI_LAYER_IMPROVEMENT_THRESHOLD = 0.05
+MULTI_LAYER_AGREEMENT_THRESHOLD = 0.8
+MULTI_LAYER_WEIGHT_MIN = 0.5
+MULTI_LAYER_WEIGHT_MAX = 1.5
+MULTI_LAYER_SCORE_THRESHOLD = 0.1
+MULTI_LAYER_LOW_AGREEMENT = 0.4
+
+# --- Power analysis search ranges ---
+POWER_ANALYSIS_MIN_N = 8
+POWER_ANALYSIS_MAX_N = 10000
+POWER_ANALYSIS_STEP = 2
+SAMPLE_ADEQUACY_MAX_N = 20000
+
+# --- Steering autotuner ---
+AUTOTUNER_STRENGTHS = (0.5, 1.0, 1.5, 2.0, 3.0, 5.0)
+AUTOTUNER_PROGRESS_INTERVAL = 10
+AUTOTUNER_ACCURACY_DECREMENT = 0.01
+AUTOTUNER_ACCURACY_FILTER = 0.5
+AUTOTUNE_VAL_SPLIT = 0.5
+
+# --- Timing estimation ---
+TIME_ESTIMATOR_CLASSIFICATION_LAYERS = 5
+TIME_ESTIMATOR_CV_LAYERS = 10
+TIMING_CALIBRATION_BASE_SAMPLES = 10
+LAYER_COMBOS_PREVIEW_LIMIT = 20
+
+# --- Optimization time limits (minutes) ---
+OPTIMIZE_MAX_TIME_MINUTES_SHORT = 15.0
+OPTIMIZE_MAX_TIME_MINUTES = 30.0
+
+# --- Optimization limits ---
+OPTIMIZATION_BENCHMARK_LIMIT = 50
+METHOD_SELECTION_SAMPLE_SIZE = 50
+
+# --- Search space string options ---
+STEERING_STRATEGIES = (
+    "constant", "initial_only", "diminishing", "increasing", "gaussian",
+)
+TOKEN_AGGREGATIONS = (
+    "last_token", "mean_pooling", "first_token", "max_pooling",
+    "continuation_token",
+)
+PROMPT_CONSTRUCTIONS = (
+    "chat_template", "direct_completion", "multiple_choice",
+    "role_playing", "instruction_following",
+)
+DIRECTION_WEIGHTING_OPTIONS = ("primary_only", "equal", "learned")
+
+# --- Hyperparameter optimizer string options ---
+OPTIMIZER_AGGREGATION_METHODS = (
+    "average", "final", "first", "max", "min",
+)
+OPTIMIZER_TOKEN_TARGETING = (
+    "choice_token", "continuation_token", "last_token",
+    "first_token", "mean_pooling",
+)
+
+# --- Search space layer/dim configs ---
+SENSOR_LAYER_CONFIGS = ("middle",)
+THRESHOLD_RANGE_DEFAULT = (0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+THRESHOLD_RANGE_SHORT = (0.3, 0.5, 0.7)
+CLASSIFICATION_THRESHOLD_RANGE = [0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+
+# --- Steering strength ranges ---
+STEERING_STRENGTH_RANGE_WIDE = (0.1, 5.0)
+STEERING_STRENGTH_RANGE_NARROW = (0.1, 3.0)
+STEERING_EVAL_SCALES_DEFAULT = "0.0,0.5,1.0,1.5,2.0"
+
+# --- GAP threshold candidates ---
+GAP_THRESHOLD_CANDIDATES = [0.05, 0.10, 0.15, 0.20, 0.25]
+
+# --- Existence threshold grid ---
+EXISTENCE_THRESHOLD_GRID = [0.5, 0.55, 0.6, 0.65, 0.7]
+
+# --- Exhaustive search ---
+EXHAUSTIVE_SEARCH_TOP_K = 50
+
+# --- Steering optimizer defaults ---
+STEERING_OPTI_SAMPLE_SIZE = 64
+STEERING_OPT_NUM_EPOCHS = 10
+
+# --- Diagnostic MLP hidden sizes ---
+DIAGNOSTIC_MLP_HIDDEN_SIZES = (64,)
+DIAGNOSTIC_MLP_HIDDEN_SIZES_LARGE = (256, 128)
+
+# --- Benchmarks per type ---
+BENCHMARKS_PER_TYPE = 2
+TOPK_OBJECTIVE_K = 2
+
+# --- Steering strength ranges (optimization logic) ---
+PARSER_STRENGTH_RANGE_METHODS = (0.1, 2.0)
+PARSER_STRENGTH_RANGE_PERSONALIZATION = (0.5, 5.0)
+PARSER_STRENGTH_RANGE_WELFARE = (0.5, 3.0)
+
+# --- Optuna early stop ---
+PARSER_OPTUNA_EARLY_STOP_PATIENCE = 10
+
+# --- Tune recommendation defaults ---
+DIRECTIONS_PER_LAYER = 5
+N_PAIRS_PER_CONCEPT_DEFAULT = 100
