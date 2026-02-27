@@ -6,7 +6,7 @@ import sys
 sys.path.insert(0, os.path.dirname(__file__))
 from reorg_classify import is_cannot_optimize
 
-BASE = "wisent/core/infrastructure/sub_constants"
+BASE = "wisent/core/infrastructure/constant_definitions"
 ARB_FILES = [
     f"{BASE}/arbitrary/_arb_01.py",
     f"{BASE}/arbitrary/_arb_02.py",

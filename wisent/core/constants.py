@@ -2,9 +2,9 @@
 Named numeric constants for the wisent package.
 ALL numeric defaults MUST be defined here and imported by name.
 """
-from wisent.core.infrastructure.sub_constants.validated import *  # noqa: F401,F403
-from wisent.core.infrastructure.sub_constants.for_experiments import *  # noqa: F401,F403
-from wisent.core.infrastructure.sub_constants.cannot_be_optimized import *  # noqa: F401,F403
+from wisent.core.infrastructure.constant_definitions.validated import *  # noqa: F401,F403
+from wisent.core.infrastructure.constant_definitions.for_experiments import *  # noqa: F401,F403
+from wisent.core.infrastructure.constant_definitions.cannot_be_optimized import *  # noqa: F401,F403
 
 # --- Numerical stability ---
 NORM_EPS = 1e-8
