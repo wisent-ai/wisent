@@ -1,7 +1,5 @@
 import os as _os
 _base = _os.path.dirname(__file__)
-# Add domain directories and their immediate children to __path__
-# Do NOT add deeper descendants (prevents namespace collisions across platforms)
 for _entry in sorted(_os.listdir(_base)):
     _path = _os.path.join(_base, _entry)
     if _os.path.isdir(_path) and not _entry.startswith(('.', '_')):
@@ -16,7 +14,7 @@ from wisent.core.infrastructure.utils import empty_device_cache, preferred_dtype
 # from .steering import SteeringMethod, SteeringType
 
 # Universal Subspace Analysis (based on "Universal Weight Subspace Hypothesis")
-from wisent.core.steering.methods.steering.core.universal_subspace import (
+from wisent.core.steering.methods.steering_core.core.universal_subspace import (
     analyze_steering_vector_subspace,
     check_vector_quality,
     compress_steering_vectors,

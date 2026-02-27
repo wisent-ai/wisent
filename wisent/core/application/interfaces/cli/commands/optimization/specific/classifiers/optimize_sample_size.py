@@ -8,8 +8,8 @@ import torch
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.activations import ExtractionStrategy, ActivationCollector
-from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
-from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
+from wisent.core.classifiers.models.logistic import LogisticClassifier
+from wisent.core.classifiers.core.atoms import ClassifierTrainConfig
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.models import get_generate_kwargs
 from wisent.core.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, OPTIMIZE_ACCURACY_THRESHOLD_MULT, AUTOTUNE_VAL_SPLIT, SAMPLE_LOADING_BUFFER, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD

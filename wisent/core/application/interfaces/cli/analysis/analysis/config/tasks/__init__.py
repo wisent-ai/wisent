@@ -13,9 +13,9 @@ def execute_tasks(args):
     from wisent.core.models.wisent_model import WisentModel
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
-    from wisent.core.classifiers.classifiers.models.logistic import LogisticClassifier
-    from wisent.core.classifiers.classifiers.models.mlp import MLPClassifier
-    from wisent.core.classifiers.classifiers.core.atoms import ClassifierTrainConfig
+    from wisent.core.classifiers.models.logistic import LogisticClassifier
+    from wisent.core.classifiers.models.mlp import MLPClassifier
+    from wisent.core.classifiers.core.atoms import ClassifierTrainConfig
     from wisent.core.models.model_persistence import ModelPersistence, create_classifier_metadata
     from wisent.core.utils.display.detection_handling import DetectionHandler, DetectionAction
     from wisent.core.evaluators.personalization.coherence import evaluate_quality

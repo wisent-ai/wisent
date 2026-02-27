@@ -1,8 +1,0 @@
-[
-  {
-    "pair_id": 0,
-    "prompt": "Question: How many food item is shown in the bar graph?",
-    "positive_response": "14",
-    "negative_response": "15"
-  }
-]
