@@ -10,10 +10,10 @@ from wisent.core.constants import JSON_INDENT, NUM_EXAMPLES_DEFAULT, DISPLAY_TRU
 
 def execute_preview_pairs(args):
     """Preview contrastive pairs from a benchmark with different strategies applied."""
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import (
+    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import (
         lm_build_contrastive_pairs,
     )
-    from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS
+    from wisent.extractors.hf._registry.hf_extractor_manifest import HF_EXTRACTORS
     from wisent.core.activations import (
         ExtractionStrategy,
         build_extraction_texts,

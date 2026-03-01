@@ -223,7 +223,7 @@ def run_ll_evaluation(
 ) -> float:
     """Run evaluation using wisent's LogLikelihoodsEvaluator."""
     from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
+    from wisent.extractors.lm_eval._registry.lm_extractor_registry import get_extractor
 
     ll_evaluator = LogLikelihoodsEvaluator()
     extractor = get_extractor(task_name)

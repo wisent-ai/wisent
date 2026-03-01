@@ -149,7 +149,7 @@ def get_optimal_steering_params(
 
 def _generate_pairs_for_zwiad(task_name: str, limit: int = DEFAULT_LIMIT) -> List:
     """Generate contrastive pairs for zwiad analysis."""
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
+    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import build_contrastive_pairs
     return build_contrastive_pairs(task_name=task_name, limit=limit)
 
 

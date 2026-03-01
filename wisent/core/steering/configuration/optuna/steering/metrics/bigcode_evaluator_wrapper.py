@@ -53,7 +53,7 @@ class OptunaBigCodeEvaluator:
         
         # Check the extractor's evaluator_name
         try:
-            from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import get_extractor
+            from wisent.extractors.hf._registry.hf_extractor_registry import get_extractor
             extractor = get_extractor(task_name)
             evaluator_name = getattr(extractor, 'evaluator_name', None)
             return evaluator_name == "coding"

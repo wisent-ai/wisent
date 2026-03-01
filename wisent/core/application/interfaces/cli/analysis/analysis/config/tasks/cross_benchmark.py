@@ -5,7 +5,7 @@ import sys
 
 def load_cross_benchmark_data(args, LMEvalDataLoader):
     """Load training and evaluation data for cross-benchmark mode."""
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
+    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
     train_task_name = args.train_task

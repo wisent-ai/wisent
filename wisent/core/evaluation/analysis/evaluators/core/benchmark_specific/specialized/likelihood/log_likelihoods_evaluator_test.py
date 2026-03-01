@@ -15,7 +15,7 @@ from lm_eval.models.huggingface import HFLM
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
 from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator_bc import LogLikelihoodsEvaluatorBC
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor
+from wisent.extractors.lm_eval._registry.lm_extractor_registry import get_extractor
 from wisent.core.constants import COMPARISON_DEFAULT_BATCH_SIZE, COMPARISON_MAX_BATCH_SIZE, DISPLAY_TRUNCATION_MEDIUM, EVAL_PAIR_LIMIT, SEPARATOR_WIDTH_WIDE, PROGRESS_LOG_INTERVAL_20
 
 

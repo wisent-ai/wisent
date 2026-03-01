@@ -3,7 +3,7 @@
 This provides stub functions for bigcode extractor functionality.
 """
 
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mbpp import MBPPExtractor
+from wisent.extractors.lm_eval.mbpp import MBPPExtractor
 
 
 def get_bigcode_extractor(task_name: str):

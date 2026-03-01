@@ -49,7 +49,7 @@ class HuggingFaceDataLoader(BaseDataLoader):
         Returns:
             LoadDataResult with train/test pairs
         """
-        from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import get_extractor
+        from wisent.extractors.hf._registry.hf_extractor_registry import get_extractor
 
         # Get the extractor for this task
         try:

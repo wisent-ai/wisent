@@ -56,7 +56,7 @@ def create_tsne_gallery(
     from wisent.core.activations import ExtractionStrategy
     from wisent.core.activations.activation_cache import ActivationCache, collect_and_cache_activations
     from lm_eval.tasks import TaskManager
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
+    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import lm_build_contrastive_pairs
     
     fig, axes = plt.subplots(2, 3, figsize=(12, 8))
     fig.suptitle(f't-SNE Visualization Gallery\n{model_name}', fontsize=VIZ_FONTSIZE_SUPTITLE, fontweight='bold')

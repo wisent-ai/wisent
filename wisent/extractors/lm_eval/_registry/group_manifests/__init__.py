@@ -1,0 +1,27 @@
+"""Group task manifests for LM Eval benchmarks with multiple subtasks."""
+
+from __future__ import annotations
+
+import os as _os
+_base = _os.path.dirname(__file__)
+for _root, _dirs, _files in _os.walk(_base):
+    _dirs[:] = sorted(d for d in _dirs if not d.startswith((".", "_")))
+    if _root != _base:
+        __path__.append(_root)
+
+from wisent.extractors.lm_eval._registry.group_manifests._group_tasks_part1 import (
+    get_part1_mappings,
+)
+from wisent.extractors.lm_eval._registry.group_manifests._group_tasks_part1 import *  # noqa: F401,F403
+from wisent.extractors.lm_eval._registry.group_manifests._group_tasks_part2 import (
+    get_part2_mappings,
+)
+from wisent.extractors.lm_eval._registry.group_manifests._group_tasks_part2 import *  # noqa: F401,F403
+
+
+def get_all_group_task_mappings() -> dict[str, str]:
+    """Get all group task to extractor mappings."""
+    all_mappings = {}
+    all_mappings.update(get_part1_mappings())
+    all_mappings.update(get_part2_mappings())
+    return all_mappings

@@ -117,11 +117,11 @@ class EvaluatorRotator(BaseRotator[BaseEvaluator]):
 
     def _auto_select_for_task(self) -> BaseEvaluator:
         """Auto-select evaluator based on task_name via extractor registry."""
-        from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import (
+        from wisent.extractors.lm_eval._registry.lm_extractor_registry import (
             get_extractor as get_lm_extractor,
             UnsupportedLMEvalBenchmarkError
         )
-        from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import (
+        from wisent.extractors.hf._registry.hf_extractor_registry import (
             get_extractor as get_hf_extractor,
             UnsupportedHuggingFaceBenchmarkError
         )

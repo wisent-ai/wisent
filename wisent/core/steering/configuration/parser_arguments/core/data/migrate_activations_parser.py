@@ -35,6 +35,10 @@ def setup_migrate_activations_parser(parser):
         "--skip-pair-texts", action="store_true",
         help="Skip pair texts migration (phase 1)",
     )
+    all_parser.add_argument(
+        "--reverse", action="store_true",
+        help="Process combos in reverse order (end to start)",
+    )
 
     # consolidate - build index.json from markers
     consolidate_parser = subparsers.add_parser(

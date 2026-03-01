@@ -25,7 +25,7 @@ def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmar
         # Set random seed for reproducibility
         random.seed(args.seed)
 
-        from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_manifest import HF_EXTRACTORS
+        from wisent.extractors.hf._registry.hf_extractor_manifest import HF_EXTRACTORS
         
         loader = LMEvalDataLoader()
         all_train_pairs = []

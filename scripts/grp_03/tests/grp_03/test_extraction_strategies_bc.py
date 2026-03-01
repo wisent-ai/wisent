@@ -9,7 +9,7 @@ import torch
 from transformers import AutoTokenizer
 
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.boolq import BoolQExtractor
+from wisent.extractors.lm_eval.boolq import BoolQExtractor
 from wisent.core.activations import (
     ExtractionStrategy,
     build_extraction_texts,

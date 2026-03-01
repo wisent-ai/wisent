@@ -127,7 +127,7 @@ def create_activation(conn, model_id: int, pair_id: int, set_id: int, layer: int
 def extract_single_benchmark(model_name: str, benchmark: str, limit: int = EXTRACTION_SINGLE_PAIR_LIMIT, device: str = "cuda"):
     """Extract activations for a single benchmark."""
     from transformers import AutoTokenizer, AutoModelForCausalLM
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
+    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.activations import ExtractionStrategy
 
     conn = psycopg2.connect(DATABASE_URL)

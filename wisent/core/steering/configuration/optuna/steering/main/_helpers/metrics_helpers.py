@@ -17,7 +17,7 @@ from wisent.core.constants import (
     MATH_PERCENT_REL_TOL,
     SEPARATOR_WIDTH_STANDARD,
 )
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors.mbpp import MBPPExtractor
+from wisent.extractors.lm_eval.mbpp import MBPPExtractor
 
 # Import LMEvalHarnessGroundTruth for intelligent evaluation (newer approach used by CLI)
 from wisent.core.lm_eval_harness_ground_truth import LMEvalHarnessGroundTruth
