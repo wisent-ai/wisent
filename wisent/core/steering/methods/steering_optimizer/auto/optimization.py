@@ -115,7 +115,7 @@ def run_auto_steering_optimization(
 
 def _generate_pairs(task_name: str, limit: int) -> List:
     """Generate contrastive pairs for the task."""
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
+    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import build_contrastive_pairs
     try:
         return build_contrastive_pairs(task_name=task_name, limit=limit)
     except Exception as e:

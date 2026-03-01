@@ -14,7 +14,7 @@ def execute_generate_pairs_from_task(args):
     if hasattr(args, 'task_name') and args.task_name:
         args.task_name = expand_task_if_skill_or_risk(args.task_name)
     
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import (
+    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import (
         build_contrastive_pairs,
     )
 

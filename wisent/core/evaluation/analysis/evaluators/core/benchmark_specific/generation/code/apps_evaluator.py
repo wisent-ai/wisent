@@ -21,7 +21,7 @@ from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
 from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator
 
 # Import shared utilities from extractor
-from wisent.core.contrastive_pairs.huggingface_pairs.hf_task_extractors.apps import AppsExtractor
+from wisent.extractors.hf.apps import AppsExtractor
 
 
 class APPSEvaluator(BaseEvaluator):

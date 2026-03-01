@@ -26,7 +26,7 @@ from wisent.core.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 from lm_eval.tasks import get_task_dict
 from lm_eval.tasks import TaskManager as LMTaskManager
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import (
+from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import (
     lm_build_contrastive_pairs,
 )
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader_special_cases import get_special_case_handler

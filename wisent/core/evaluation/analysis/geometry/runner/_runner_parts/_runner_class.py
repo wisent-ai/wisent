@@ -227,7 +227,7 @@ class GeometryRunner:
     def _load_pairs(self, benchmark: str) -> List:
         """Load contrastive pairs for a benchmark."""
         from lm_eval.tasks import TaskManager
-        from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import (
+        from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import (
             lm_build_contrastive_pairs,
         )
         tm = TaskManager()

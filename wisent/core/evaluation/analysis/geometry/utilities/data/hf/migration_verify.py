@@ -13,7 +13,7 @@ from .migration import (
 )
 from .hf_config import HF_REPO_ID, HF_REPO_TYPE, model_to_safe_name
 from .hf_writers import flush_staging_dir, _get_hf_token
-from wisent.core.constants import COMPARE_TOL
+from wisent.core.constants import COMPARE_TOL, N_JOBS_SINGLE
 
 
 def _load_migrated_keys() -> Set[str]:
@@ -48,6 +48,7 @@ def migrate_all(
     combo_start: int = 0,
     combo_end: Optional[int] = None,
     skip_pair_texts: bool = False,
+    reverse: bool = False,
 ) -> None:
     """Discover all (model, benchmark, strategy) combos and migrate.
     Uses staging dirs to batch uploads and avoid HF rate limits.
@@ -80,7 +81,10 @@ def migrate_all(
     combos.sort()
     total = len(combos)
     combos = combos[combo_start:combo_end]
-    print(f"Found {total} total combos, processing slice [{combo_start}:{combo_end}] = {len(combos)}")
+    if reverse:
+        combos = list(reversed(combos))
+    direction = " (REVERSE)" if reverse else ""
+    print(f"Found {total} total combos, processing slice [{combo_start}:{combo_end}] = {len(combos)}{direction}")
 
     if not skip_pair_texts:
         pair_staging = tempfile.mkdtemp(prefix="wisent_pair_texts_")
@@ -103,9 +107,10 @@ def migrate_all(
         print("Skipping pair texts migration (--skip-pair-texts)")
 
     migrated_keys = _load_migrated_keys()
+    end_val = combo_end if combo_end is not None else total
     shared_conn = _get_db_connection(database_url)
     for idx, (model, task, strategy) in enumerate(combos):
-        global_idx = combo_start + idx
+        global_idx = end_val - N_JOBS_SINGLE - idx if reverse else combo_start + idx
         safe = model_to_safe_name(model)
         key = f"{safe}/{task}/{strategy}"
         if key in migrated_keys:

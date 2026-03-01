@@ -51,7 +51,7 @@ def fix_benchmark(conn, db_name: str, extractor_name: str, limit: int = 500):
 
     # Get extractor
     try:
-        from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import get_extractor
+        from wisent.extractors.hf._registry.hf_extractor_registry import get_extractor
         extractor = get_extractor(extractor_name)
     except Exception as e:
         log.error(f"Failed to get extractor {extractor_name}: {e}")

@@ -252,7 +252,7 @@ def _generate_pairs(args, wisent_model):
                     label=args.trait,
                 ))
         else:
-            from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
+            from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import build_contrastive_pairs
             raw_pairs = build_contrastive_pairs(task_name=args.task, limit=args.num_pairs)
             pairs.extend(raw_pairs)
     elif args.trait:

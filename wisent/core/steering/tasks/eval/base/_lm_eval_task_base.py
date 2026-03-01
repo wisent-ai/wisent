@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Optional
 
 from wisent.core.benchmarks import BenchmarkExtractor
 from wisent.core.benchmarks import get_extractor as get_benchmark_extractor
-from wisent.core.contrastive_pairs.lm_eval_pairs.lm_extractor_registry import get_extractor as get_lm_extractor
+from wisent.extractors.lm_eval._registry.lm_extractor_registry import get_extractor as get_lm_extractor
 from wisent.core.tasks.base.task_interface import TaskInterface
 from wisent.core.utils import get_test_docs, get_all_docs_from_task, create_deterministic_split
 

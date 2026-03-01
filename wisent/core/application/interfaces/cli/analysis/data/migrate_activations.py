@@ -41,6 +41,7 @@ def execute_migrate_activations(args):
             combo_start=args.combo_start,
             combo_end=args.combo_end,
             skip_pair_texts=args.skip_pair_texts,
+            reverse=getattr(args, "reverse", False),
         )
 
     elif action == "consolidate":
