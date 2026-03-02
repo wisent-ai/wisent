@@ -140,7 +140,7 @@ wisent/core/control/steering_methods/registry/preflight.py
 wisent/core/control/steering_methods/registry/registry.py
 wisent/core/control/steering_methods/registry/registry_tmp.py
 wisent/core/control/steering_optimizer/__init__.py
-wisent/core/control/steering_optimizer/cli.py
+wisent/core/control/steering_optimizer/optimizer_cli.py
 wisent/core/control/steering_optimizer/types.py
 wisent/core/control/steering_optimizer/auto/__init__.py
 wisent/core/control/steering_optimizer/auto/grid_search.py
@@ -691,7 +691,7 @@ wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extend
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/registry/__init__.py
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/registry/core_benchmarks.json
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/testing/__init__.py
-wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/testing/cli.py
+wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/testing/benchmark_cli.py
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/testing/tests.py
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extraction/__init__.py
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extraction/constants.py
@@ -721,7 +721,6 @@ wisent/core/utils/cli/analysis/agent_cli/__init__.py
 wisent/core/utils/cli/analysis/agent_cli/agent_entry.py
 wisent/core/utils/cli/analysis/agent_cli/apply_steering.py
 wisent/core/utils/cli/analysis/agent_cli/evaluate_response.py
-wisent/core/utils/cli/analysis/agent_cli/main.py
 wisent/core/utils/cli/analysis/agent_cli/agent_helpers/__init__.py
 wisent/core/utils/cli/analysis/agent_cli/agent_helpers/generate_synthetic_pairs.py
 wisent/core/utils/cli/analysis/agent_cli/agent_helpers/train_classifier.py
@@ -797,11 +796,11 @@ wisent/core/utils/cli/commands/opt_commands/core/entry/optimize_phase2a.py
 wisent/core/utils/cli/commands/opt_commands/core/entry/optimize_phase2b.py
 wisent/core/utils/cli/commands/opt_commands/core/entry/optimize_steering.py
 wisent/core/utils/cli/commands/opt_commands/specific/__init__.py
-wisent/core/utils/cli/commands/opt_commands/specific/_classifiers/__init__.py
-wisent/core/utils/cli/commands/opt_commands/specific/_classifiers/optimize_classification.py
-wisent/core/utils/cli/commands/opt_commands/specific/_classifiers/optimize_classification_runner.py
-wisent/core/utils/cli/commands/opt_commands/specific/_classifiers/optimize_sample_size.py
-wisent/core/utils/cli/commands/opt_commands/specific/_classifiers/optimize_weights_comparisons.py
+wisent/core/utils/cli/commands/opt_commands/specific/classifiers/__init__.py
+wisent/core/utils/cli/commands/opt_commands/specific/classifiers/optimize_classification.py
+wisent/core/utils/cli/commands/opt_commands/specific/classifiers/optimize_classification_runner.py
+wisent/core/utils/cli/commands/opt_commands/specific/classifiers/optimize_sample_size.py
+wisent/core/utils/cli/commands/opt_commands/specific/classifiers/optimize_weights_comparisons.py
 wisent/core/utils/cli/commands/opt_commands/specific/training/__init__.py
 wisent/core/utils/cli/commands/opt_commands/specific/training/optimize_weights_evaluators.py
 wisent/core/utils/cli/commands/opt_commands/specific/training/optimize_weights_finalize.py

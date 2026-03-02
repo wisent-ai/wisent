@@ -1,7 +1,7 @@
 """Extracted from preflight.py - check_method_compatibility tail."""
 
 from typing import Dict, List, Tuple
-from wisent.core.geometry.structure_types import StructureType
+from wisent.core.reading.structure_types import StructureType
 from wisent.core.constants import (
     PREFLIGHT_COMPAT_DEFAULT, PREFLIGHT_COMPAT_THRESHOLD, PREFLIGHT_MANIFOLD_HIGH,
 )

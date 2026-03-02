@@ -18,13 +18,13 @@ def execute_zwiad(args):
     print(f"{'='*_C.SEPARATOR_WIDTH_STANDARD}")
 
     # Import dependencies
-    from wisent.core.geometry.zwiad.zwiad_with_concepts import (
+    from wisent.core.reading.zwiad.zwiad_with_concepts import (
         run_zwiad_with_concept_naming,
         load_activations_from_database,
         load_pair_texts_from_database,
         load_available_layers_from_database,
     )
-    from wisent.core.geometry.data.cache import get_cached_layers
+    from wisent.core.reading.data.cache import get_cached_layers
     import torch
 
     activations_by_layer = {}

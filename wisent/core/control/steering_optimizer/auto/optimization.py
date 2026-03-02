@@ -127,7 +127,7 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose
     """Run zwiad geometry analysis on collected activations."""
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
-    from wisent.core.geometry import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
+    from wisent.core.reading import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
 
     if verbose:
         print("Collecting activations for geometry analysis...", flush=True)

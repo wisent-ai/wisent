@@ -41,7 +41,7 @@ def auto_select_steering_method(
     """
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
-    from wisent.core.geometry import (
+    from wisent.core.reading import (
         compute_geometry_metrics,
         compute_recommendation,
         compute_concept_coherence,

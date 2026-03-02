@@ -7,7 +7,7 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Dict, Optional
 
-from wisent.core.geometry import (
+from wisent.core.reading import (
     GeometrySearchSpace,
     GeometrySearchConfig,
 )
