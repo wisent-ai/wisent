@@ -495,6 +495,7 @@ wisent/core/geometry/evaluators/core/benchmark_specific/specialized/coding/provi
 wisent/core/geometry/evaluators/core/benchmark_specific/specialized/coding/providers/livecodebench/__init__.py
 wisent/core/geometry/evaluators/core/benchmark_specific/specialized/coding/providers/livecodebench/_livecodebench_provider_helpers.py
 wisent/core/geometry/evaluators/core/benchmark_specific/specialized/coding/providers/livecodebench/provider.py
+wisent/core/geometry/evaluators/core/benchmark_specific/specialized/coding/safe_docker/Dockerfile
 wisent/core/geometry/evaluators/core/benchmark_specific/specialized/coding/safe_docker/__init__.py
 wisent/core/geometry/evaluators/core/benchmark_specific/specialized/coding/safe_docker/entrypoint.py
 wisent/core/geometry/evaluators/core/benchmark_specific/specialized/coding/safe_docker/recipes.py
@@ -791,6 +792,7 @@ wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extend
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/matching/filtering.py
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/matching/relevance.py
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/registry/__init__.py
+wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/registry/core_benchmarks.json
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/testing/__init__.py
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/testing/cli.py
 wisent/core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/testing/tests.py
