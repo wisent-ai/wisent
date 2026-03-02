@@ -6,6 +6,7 @@ For each benchmark with < 500 pairs, checks the actual dataset size.
 import sys
 sys.path.insert(0, "/Users/lukaszbartoszcze/Documents/CodingProjects/Wisent/backends/wisent-open-source")
 
+import os
 import psycopg2
 import warnings
 warnings.filterwarnings('ignore')
@@ -16,7 +17,7 @@ from wisent.extractors.hf.atoms import UnsupportedHuggingFaceBenchmarkError
 
 def get_benchmarks_under_500():
     """Get all benchmarks with < 500 pairs from database."""
-    conn = psycopg2.connect('postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:6543/postgres')
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
     cur = conn.cursor()
     cur.execute('''
         SELECT cps.name, COUNT(cp.id) as pair_count

@@ -3,12 +3,7 @@ import os
 import psycopg2
 
 # Use direct connection (port 5432) instead of pooler to avoid statement timeout
-DB_URL = (
-    "postgresql://postgres:REDACTED_DB_PASSWORD"
-    "@db.rbqjqnouluslojmmnuqi.supabase.co:5432/postgres"
-    "?sslmode=require"
-)
-
+DB_URL = os.environ["DATABASE_URL"]
 
 def main():
     conn = psycopg2.connect(DB_URL)

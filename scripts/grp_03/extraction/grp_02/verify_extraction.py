@@ -6,11 +6,12 @@ with all 7 extraction strategies present.
 """
 
 import argparse
+import os
 import psycopg2
 from wisent.core.utils.config_tools.constants import DB_CONNECT_WAIT_S
 
 # Same database as extraction script
-DATABASE_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:5432/postgres'
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 
 def create_indexes(cur):

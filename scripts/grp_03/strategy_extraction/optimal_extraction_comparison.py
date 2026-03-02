@@ -32,7 +32,7 @@ from wisent.core.primitives.model_interface.core.activations.core.optimal_extrac
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:5432/postgres?options=-c%20statement_timeout%3D0"
+    os.environ["DATABASE_URL"]
 )
 
 

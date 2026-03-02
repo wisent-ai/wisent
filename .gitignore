@@ -71,29 +71,21 @@ Thumbs.db
 # Whitelist approach - only include specific folders
 /*
 !/wisent/
-!/models/
-!/examples/
-!/evaluation/
-!/comprehensive_evaluation/
-!/classifier_evaluation/
-!/dist/
-!/wisent.egg-info/
 !/scripts/
 !/tests/
-!/huggingface_qwen25-7b-coder-caa
-!/huggingface_qwen25-7b-math-caa
+!/.github/
+!/.runpod/
 
 # Don't ignore these files in the root directory
 !/.gitignore
+!/.pre-commit-config.yaml
 !/README.md
 !/requirements.txt
 !/setup.py
+!/pyproject.toml
 !/LICENSE
-!/upload_to_pypi.sh
 !/banner.png
-!/.github/
-!/.pre-commit-config.yaml
-!/.runpod/
+!/upload_to_pypi.sh
 
 
 # HuggingFace model files (too large for GitHub)

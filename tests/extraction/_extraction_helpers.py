@@ -1,4 +1,5 @@
 """Shared DB config and extraction integrity tests."""
+import os
 import psycopg2
 import pytest
 from collections import defaultdict
@@ -8,7 +9,7 @@ DB_CONFIG = {
     "port": 5432,
     "database": "postgres",
     "user": "postgres",
-    "password": "REDACTED_DB_PASSWORD",
+    "password": os.environ["DB_PASSWORD"],
     "sslmode": "require",
     "gssencmode": "disable",
 }

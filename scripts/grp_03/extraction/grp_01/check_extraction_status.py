@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """Check extraction status for all models."""
 
+import os
 import psycopg2
 import sys
 from wisent.core.utils.config_tools.constants import DB_CONNECT_WAIT_S
 
-DATABASE_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:5432/postgres'
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 def main():
     conn = psycopg2.connect(DATABASE_URL, connect_timeout=DB_CONNECT_WAIT_S)

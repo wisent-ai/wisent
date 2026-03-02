@@ -4,6 +4,7 @@
 import sys
 sys.path.insert(0, "/Users/lukaszbartoszcze/Documents/CodingProjects/Wisent/backends/wisent-open-source")
 
+import os
 import psycopg2
 import logging
 
@@ -100,7 +101,7 @@ def fix_benchmark(conn, db_name: str, lm_task: str, limit: int = 500):
     return count
 
 def main():
-    conn = psycopg2.connect('postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:5432/postgres')
+    conn = psycopg2.connect(os.environ["DATABASE_URL"])
     conn.autocommit = True
 
     total = 0
