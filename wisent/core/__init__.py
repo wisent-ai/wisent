@@ -9,12 +9,12 @@ for _entry in sorted(_os.listdir(_base)):
             if _os.path.isdir(_sub_path) and not _sub.startswith(('.', '_')):
                 __path__.append(_sub_path)
 
-from wisent.core.infrastructure.utils import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device, resolve_torch_device
+from wisent.core.utils.infra import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device, resolve_torch_device
 # Note: SteeringMethod and SteeringType import temporarily disabled due to missing dependencies
 # from .steering import SteeringMethod, SteeringType
 
 # Universal Subspace Analysis (based on "Universal Weight Subspace Hypothesis")
-from wisent.core.steering.methods.steering_core.core.universal_subspace import (
+from wisent.core.control.steering_core.core.universal_subspace import (
     analyze_steering_vector_subspace,
     check_vector_quality,
     compress_steering_vectors,
@@ -29,7 +29,7 @@ from wisent.core.steering.methods.steering_core.core.universal_subspace import (
 )
 
 # Geometry analysis with ICD and nonsense baseline
-from wisent.core.evaluation.analysis.geometry.runner.geometry_runner import (
+from wisent.core.reading.modules.runner.geometry_runner import (
     compute_icd,
     compute_nonsense_baseline,
     generate_nonsense_activations,

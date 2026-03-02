@@ -95,7 +95,7 @@ def fix_with_lm_eval(conn, db_name: str, lm_task: str, limit: int = 500):
 
     # Get pairs using lm-eval
     try:
-        from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
+        from wisent.extractors.lm_eval.lm_task_pairs_generation import build_contrastive_pairs
         pairs = build_contrastive_pairs(lm_task, limit=limit)
         log.info(f"Extracted {len(pairs)} pairs for {db_name}")
     except Exception as e:

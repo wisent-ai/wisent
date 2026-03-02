@@ -10,8 +10,8 @@ import psycopg2
 import warnings
 warnings.filterwarnings('ignore')
 
-from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import get_extractor, _REGISTRY
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import UnsupportedHuggingFaceBenchmarkError
+from wisent.extractors.hf.hf_extractor_registry import get_extractor, _REGISTRY
+from wisent.extractors.hf.atoms import UnsupportedHuggingFaceBenchmarkError
 
 
 def get_benchmarks_under_500():

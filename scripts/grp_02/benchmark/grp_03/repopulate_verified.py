@@ -42,10 +42,10 @@ VERIFIED_BENCHMARKS = [
 def extract_pairs(extractor_type: str, extractor_name: str, limit: int = 500):
     """Extract pairs using the specified extractor."""
     if extractor_type == "lm_eval":
-        from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
+        from wisent.extractors.lm_eval.lm_task_pairs_generation import build_contrastive_pairs
         return build_contrastive_pairs(extractor_name, limit=limit)
     else:
-        from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import get_extractor
+        from wisent.extractors.hf.hf_extractor_registry import get_extractor
         extractor = get_extractor(extractor_name)
         return extractor.extract_contrastive_pairs(limit=limit)
 

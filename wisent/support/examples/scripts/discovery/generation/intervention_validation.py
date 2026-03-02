@@ -47,7 +47,7 @@ def run_intervention_validation(
     from wisent.core.activations import ExtractionStrategy
     from wisent.core.activations.activation_cache import ActivationCache, collect_and_cache_activations
     from lm_eval.tasks import TaskManager
-    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
+    from wisent.extractors.lm_eval.lm_task_pairs_generation import lm_build_contrastive_pairs
     
     print("=" * _C.SEPARATOR_WIDTH_WIDE)
     print("INTERVENTION VALIDATION")
