@@ -43,7 +43,7 @@ _IMPORT_MAP = {
     'execute_discover_steering': '.steering.core.discover_steering',
     'execute_steering_viz': '.steering.viz.steering_viz',
     'execute_per_concept_steering_viz': '.steering.viz.per_concept_steering_viz',
-    'execute_agent': '.agent.main',
+    'execute_agent': '.agent.agent_entry',
     'execute_migrate_activations': '.data.migrate_activations',
 }
 

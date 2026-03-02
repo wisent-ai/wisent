@@ -9,7 +9,7 @@ from .tests import (
     test_readme_updates,
     test_benchmark_matching,
 )
-from .cli import main, cli_entry
+from .benchmark_cli import main, cli_entry
 
 
 __all__ = [

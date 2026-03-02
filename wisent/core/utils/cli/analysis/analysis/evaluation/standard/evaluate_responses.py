@@ -142,7 +142,7 @@ def execute_evaluate_responses(args):
     
     # Special handling for certain evaluation types
     if evaluation_type == "docker_execution":
-        from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import (
+        from wisent.core.evaluators.benchmark_specific.coding.code_metrics.evaluator import (
             CodingEvaluator,
             EvaluatorConfig
         )

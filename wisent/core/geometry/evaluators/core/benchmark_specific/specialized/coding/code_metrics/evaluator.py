@@ -15,7 +15,7 @@ from wisent.core.utils.infra.core.hardware import (
     ds1000_nproc,
 )
 from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
-from wisent.core.evaluators.benchmark_specific.coding.metrics.core.atoms import SampleOutcome
+from wisent.core.evaluators.benchmark_specific.coding.code_metrics.core.atoms import SampleOutcome
 
 from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema
 from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.python_sanitizer import PythonStandardizer
@@ -222,7 +222,7 @@ if __name__ == "__main__":
             )
 
     # --- Batch evaluation methods (from _evaluator_helpers.py) ---
-    from wisent.core.evaluators.benchmark_specific.coding.metrics._evaluator_helpers import (
+    from wisent.core.evaluators.benchmark_specific.coding.code_metrics._evaluator_helpers import (
         _feedback, _run_once, _maybe_sanitize, evaluate_all,
     )
 
