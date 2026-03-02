@@ -121,7 +121,7 @@ def evaluate_benchmark_performance(
         # Discover all evaluators including benchmark-specific ones
         EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
         EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
-        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific.coding.metrics")
+        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific.coding.code_metrics")
         
         rotator = EvaluatorRotator(task_name=task_name)
         evaluator_name = rotator._plugin.name

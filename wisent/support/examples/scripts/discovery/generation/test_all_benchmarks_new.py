@@ -3,7 +3,7 @@
 import sys
 import signal
 from contextlib import contextmanager
-from wisent.examples.scripts.test_one_benchmark import test_benchmark
+from wisent.support.examples.scripts.discovery.validation.test_one_benchmark import test_benchmark
 
 
 class TimeoutError(Exception):

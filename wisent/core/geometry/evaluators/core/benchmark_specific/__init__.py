@@ -21,7 +21,7 @@ from .generation_evaluator import GenerationEvaluator
 from .exact_match_evaluator import ExactMatchEvaluator
 from .f1_evaluator import F1Evaluator
 from .likelihood.perplexity_evaluator import PerplexityEvaluator
-from .coding.metrics.evaluator import CodingEvaluator
+from .coding.code_metrics.evaluator import CodingEvaluator
 from .code.conala_evaluator import CoNaLaEvaluator
 
 # MathEvaluator requires math_equivalence which is installed from GitHub

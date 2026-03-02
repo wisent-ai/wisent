@@ -18,7 +18,7 @@ import re
 from typing import Any
 
 from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator
+from wisent.core.evaluators.benchmark_specific.coding.code_metrics.evaluator import CodingEvaluator
 
 # Import shared utilities from extractor
 from wisent.extractors.hf.apps import AppsExtractor

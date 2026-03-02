@@ -11,7 +11,7 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     Returns aggregated_metrics dict or None if evaluation should continue.
     """
     from wisent.core.evaluators.benchmark_specific.coding.providers.livecodebench.provider import LiveCodeBenchProvider
-    from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig, _make_schema
+    from wisent.core.evaluators.benchmark_specific.coding.code_metrics.evaluator import CodingEvaluator, EvaluatorConfig, _make_schema
     from wisent.core.evaluators.benchmark_specific.coding.safe_docker.recipes import RECIPE_REGISTRY
     from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.python_sanitizer import PythonStandardizer
     from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.cpp_sanitizer import CppStandardizer
