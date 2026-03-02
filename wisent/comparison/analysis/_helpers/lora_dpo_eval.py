@@ -137,9 +137,9 @@ def _run_steering_eval(
     from wisent.core.trainers.steering_trainer import WisentSteeringTrainer
     from wisent.core.steering_methods import get_steering_method
     from wisent.core.activations import ExtractionStrategy
-    from wisent.core.contrastive_pairs.set import ContrastivePairSet
-    from wisent.core.contrastive_pairs.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
     import os
 
     pairs_data, pairs_file = generate_contrastive_pairs(task, steering_num_pairs)

@@ -11,7 +11,7 @@ from wisent.core.constants import (
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.support.examples.scripts.discovery.validation.test_one_benchmark_helpers import (
+from wisent.examples.scripts.test_one_benchmark_helpers import (
     MockModel,
     detect_loader_type,
 )

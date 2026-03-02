@@ -26,9 +26,9 @@ setup(
     package_data={
         "wisent": [
             "task-evaluator.json",
-            "core/geometry/evaluators/core/benchmark_specific/specialized/coding/safe_docker/Dockerfile",
-            "core/geometry/evaluators/core/benchmark_specific/specialized/coding/safe_docker/entrypoint.py",
-            "core/primitives/models/lm_harness_integration/core/only_benchmarks/extended/registry/*.json",
+            "core/grp_03/sub_01/evaluators/grp_01/benchmark_specific/grp_02/coding/safe_docker/Dockerfile",
+            "core/grp_03/sub_01/evaluators/grp_01/benchmark_specific/grp_02/coding/safe_docker/entrypoint.py",
+            "core/grp_03/sub_02/lm_harness_integration/grp_02/only_benchmarks/grp_02/registry/*.json",
             "support/parameters/lm_eval/*.json",
             "support/parameters/tasks/*.json",
             "scripts/*.sh",

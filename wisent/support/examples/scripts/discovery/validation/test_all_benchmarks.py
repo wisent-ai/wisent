@@ -6,7 +6,7 @@ import sys
 import signal
 from contextlib import contextmanager
 from pathlib import Path
-from wisent.support.examples.scripts.discovery.validation.test_one_benchmark import test_benchmark
+from wisent.examples.scripts.test_one_benchmark import test_benchmark
 
 # Set environment variable to trust remote code for datasets like meddialog
 os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'

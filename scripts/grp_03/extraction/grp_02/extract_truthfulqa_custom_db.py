@@ -39,7 +39,7 @@ from extract_truthfulqa_custom_db_verify import verify_extraction
 
 def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", device: str = "cuda"):
     from transformers import AutoTokenizer, AutoModelForCausalLM
-    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import lm_build_contrastive_pairs
+    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.activations import ExtractionStrategy, build_extraction_texts
 
     # Initialize DB connection (uses auto-reconnect mechanism)

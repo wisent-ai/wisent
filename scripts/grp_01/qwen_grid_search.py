@@ -8,7 +8,7 @@ from wisent.core.steering_methods import CAAMethod
 from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy, map_legacy_strategy
-from wisent.core.contrastive_pairs.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
 
 print("Loading Qwen/Qwen3-8B...")
 model = WisentModel("Qwen/Qwen3-8B")
