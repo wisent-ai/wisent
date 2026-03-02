@@ -1,1 +1,1 @@
-"""Auto-grouped modules."""
+from .flores import *
