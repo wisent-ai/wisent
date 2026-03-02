@@ -18,7 +18,7 @@ from argparse import Namespace
 def execute_steering_viz(args):
     """Execute the steering-viz command."""
     import torch
-    from wisent.core.geometry.steering import (
+    from wisent.core.reading.steering import (
         create_steering_effect_figure, create_interactive_steering_figure,
         train_classifier_and_predict,
     )
@@ -75,7 +75,7 @@ def execute_steering_viz(args):
             f.write(viz_html)
         print(f"\nInteractive visualization saved to: {output_path}")
     elif multipanel:
-        from wisent.core.geometry.steering import create_steering_multipanel_figure
+        from wisent.core.reading.steering import create_steering_multipanel_figure
         extraction_strategy = getattr(args, 'extraction_strategy', 'chat_last')
         viz_b64 = create_steering_multipanel_figure(**viz_args, extraction_strategy=extraction_strategy)
         output_path = Path(args.output)
@@ -101,7 +101,7 @@ def execute_steering_viz(args):
 
 def _load_or_generate_reference_activations(args):
     """Load activations from database if available, otherwise generate."""
-    from wisent.core.geometry.data.database_loaders import load_activations_from_database
+    from wisent.core.reading.data.database_loaders import load_activations_from_database
 
     try:
         pos_ref, neg_ref = load_activations_from_database(
@@ -124,7 +124,7 @@ def _generate_reference_activations(args):
     import tempfile
     from pathlib import Path
     from wisent.core.cli.analysis.geometry.get_activations import execute_get_activations
-    from wisent.core.geometry.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.reading.data.database_loaders import load_pair_texts_from_database
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
@@ -171,7 +171,7 @@ def _generate_and_extract(args, steering_vector):
     from wisent.core.activations.core.atoms import LayerActivations
     from wisent.core.activations import ExtractionStrategy, extract_activation
     from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.geometry.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.reading.data.database_loaders import load_pair_texts_from_database
 
     wisent = Wisent.for_text(args.model)
     adapter = wisent.adapter

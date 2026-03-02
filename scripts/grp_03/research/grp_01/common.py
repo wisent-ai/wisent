@@ -14,7 +14,7 @@ import torch
 
 # Import wisent library functions
 from wisent.core.steering_methods.registry import SteeringMethodRegistry, list_steering_methods
-from wisent.core.geometry import compute_geometry_metrics as wisent_compute_geometry_metrics
+from wisent.core.reading import compute_geometry_metrics as wisent_compute_geometry_metrics
 
 # Re-export everything from submodules
 from common_data import ActivationData, BenchmarkResults
@@ -41,7 +41,7 @@ def compute_geometry_metrics(pos_activations: np.ndarray, neg_activations: np.nd
         neg_activations: [N, D] array of negative activations
 
     Returns:
-        Dict of geometry metrics from wisent.core.geometry including:
+        Dict of geometry metrics from wisent.core.reading including:
         - signal_strength, linear_probe_accuracy, mlp_probe_accuracy
         - icd_* metrics (intrinsic concept dimensionality)
         - direction_* metrics (stability, consistency)

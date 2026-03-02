@@ -60,7 +60,7 @@ def _load_steering_vector(args, layer, layer_str):
 
 def _compute_steering_vector(args, model, train_pair_set, collector, extraction_strategy, layer, layer_str):
     """Compute steering vector from training data using zwiad."""
-    from wisent.core.geometry import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
+    from wisent.core.reading import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
 
     print(f"\n🧠 Collecting activations from layer {layer}...")
     positive_activations, negative_activations = [], []

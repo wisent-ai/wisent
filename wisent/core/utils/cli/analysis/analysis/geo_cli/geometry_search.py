@@ -19,7 +19,7 @@ def execute_geometry_search(args):
     
     # Import dependencies
     from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.geometry import GeometrySearchSpace, GeometrySearchConfig
+    from wisent.core.reading import GeometrySearchSpace, GeometrySearchConfig
     from wisent.core.geometry_runner import GeometryRunner
     from wisent.core.activations import ExtractionStrategy
     

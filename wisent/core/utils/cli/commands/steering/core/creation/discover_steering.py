@@ -25,10 +25,10 @@ from wisent.core.models.config import get_generate_kwargs
 def execute_discover_steering(args):
     """Execute the discover-steering command - find optimal steering directions."""
     import torch
-    from wisent.core.geometry.zwiad_with_concepts import (
+    from wisent.core.reading.zwiad_with_concepts import (
         load_activations_from_database, load_pair_texts_from_database,
     )
-    from wisent.core.geometry.steering_discovery import (
+    from wisent.core.reading.steering_discovery import (
         discover_behavioral_direction, generate_candidate_directions,
         extract_generation_activations, compute_generation_direction, compare_directions,
     )

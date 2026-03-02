@@ -25,11 +25,11 @@ def execute_per_concept_steering_viz(args):
     import random
     import pickle
     import numpy as np
-    from wisent.core.geometry.zwiad_with_concepts import (
+    from wisent.core.reading.zwiad_with_concepts import (
         load_activations_from_database,
         load_pair_texts_from_database,
     )
-    from wisent.core.geometry.steering_visualizations import create_per_concept_steering_figure
+    from wisent.core.reading.steering_visualizations import create_per_concept_steering_figure
     from wisent.core.wisent import Wisent
     from wisent.core.classifiers.models.logistic import LogisticClassifier
     from wisent.core.classifiers.models.mlp import MLPClassifier

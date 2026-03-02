@@ -5,9 +5,9 @@ Research Question 2: Is Zwiad effective at predicting steering?
 This module investigates whether geometry-based metrics can predict steering
 effectiveness without actually training steering vectors.
 
-Uses wisent.core.geometry.compute_geometry_metrics for comprehensive analysis.
+Uses wisent.core.reading.compute_geometry_metrics for comprehensive analysis.
 
-Geometry Metrics Computed (from wisent.core.geometry):
+Geometry Metrics Computed (from wisent.core.reading):
 - signal_strength, linear_probe_accuracy, mlp_probe_accuracy
 - icd_* metrics (intrinsic concept dimensionality)
 - direction_* metrics (stability, consistency)
