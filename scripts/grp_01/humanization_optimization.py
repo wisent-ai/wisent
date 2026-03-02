@@ -27,7 +27,7 @@ num_layers = len(model.model.layers)
 print(f"Model has {num_layers} layers")
 
 print("Generating steering vectors from contrastive pairs...")
-from wisent.core.steering.extractor import extract_steering_vectors_from_pairs
+from wisent.core.steering_core.extractor import extract_steering_vectors_from_pairs
 
 # Load humanization pairs
 pairs_path = os.path.join(os.path.dirname(__file__), "../wisent/examples/contrastive_pairs/humanization_human_vs_ai.json")
