@@ -10,7 +10,7 @@ from wisent.core.cli.cli_logger import setup_logger
 if TYPE_CHECKING:
     from torch import Tensor
     from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
 
 from wisent.core.weight_modification.methods.guided import (
     LayerDiagnostics,

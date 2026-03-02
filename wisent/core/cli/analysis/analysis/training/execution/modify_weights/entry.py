@@ -211,7 +211,7 @@ def _run_auto_selection(args, wisent_model, steering_vectors):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
     from wisent.core.steering_methods.methods.caa import CAAMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
     pairs = _generate_pairs(args, wisent_model)
     if pairs and len(pairs) >= _C.MIN_PAIRS_FOR_LINEARITY:
         steering_method, modification_method, _ = auto_select_steering_method(pairs, wisent_model, args.verbose)
@@ -235,8 +235,8 @@ def _run_auto_selection(args, wisent_model, steering_vectors):
 
 def _generate_pairs(args, wisent_model):
     """Generate contrastive pairs for training."""
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
     pairs = []
     if args.task:
         task_lower = args.task.lower()

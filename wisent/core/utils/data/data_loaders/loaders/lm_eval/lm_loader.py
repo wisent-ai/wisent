@@ -22,8 +22,8 @@ if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_mo
 
 from wisent.core.constants import DEFAULT_RANDOM_SEED
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from lm_eval.tasks import get_task_dict
 from lm_eval.tasks import TaskManager as LMTaskManager
 from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import (

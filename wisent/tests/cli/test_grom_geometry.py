@@ -69,7 +69,7 @@ def test_grom_geometry_on_truthfulqa():
         # Step 3: Run geometry analysis and GROM training
         print("[Step 3] Running geometry analysis and GROM training...")
         
-        from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure
+        from wisent.core.diagnostics import detect_geometry_structure
         from wisent.core.steering_methods.preflight import run_preflight_check
         from wisent.core.steering_methods.methods.grom import GROMMethod
         
@@ -152,7 +152,7 @@ def test_grom_geometry_on_truthfulqa():
 
 def test_geometry_detection_synthetic():
     """Test geometry detection with synthetic data."""
-    from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure
+    from wisent.core.diagnostics import detect_geometry_structure
     
     torch.manual_seed(DEFAULT_RANDOM_SEED)
     hidden_dim = GROM_TEST_HIDDEN_DIM

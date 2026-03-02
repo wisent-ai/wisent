@@ -1,6 +1,6 @@
 """Method-specific constants organized by steering method."""
-from wisent.core.infrastructure.constant_definitions.for_experiments.by_method._grom import *  # noqa: F401,F403
-from wisent.core.infrastructure.constant_definitions.for_experiments.by_domain import *  # noqa: F401,F403
+from wisent.core.constant_definitions.for_experiments.by_method._grom import *  # noqa: F401,F403
+from wisent.core.constant_definitions.for_experiments.by_domain import *  # noqa: F401,F403
 
 # --- Common steering defaults ---
 DEFAULT_STRENGTH = 1.0

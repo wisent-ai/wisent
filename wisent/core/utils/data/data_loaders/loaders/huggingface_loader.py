@@ -4,8 +4,8 @@ from typing import Any
 import logging
 
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.pair import ContrastivePair
 from wisent.core.errors import InvalidRangeError
 
 __all__ = [

@@ -10,7 +10,7 @@ from typing import List, Optional, TYPE_CHECKING
 
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.constants import PROGRESS_REPORT_INTERVAL
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.contrastive_pairs.pair import ContrastivePair
 from .cached_activations import CachedActivations, get_strategy_text_family
 from .raw_cached_activations import RawCachedActivations
 from .disk_caches import ActivationCache, RawActivationCache

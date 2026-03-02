@@ -6,8 +6,8 @@ from typing import Any
 
 from wisent.core.cli.cli_logger import setup_logger
 from wisent.core.constants import DISPLAY_TOP_N_MINI
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = [
     "MedConceptsQAExtractor",

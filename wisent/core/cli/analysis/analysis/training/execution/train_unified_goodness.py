@@ -87,7 +87,7 @@ def execute_train_unified_goodness(args):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
     
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
     from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import lm_build_contrastive_pairs
     from wisent.core.steering_methods.methods.caa import CAAMethod
     from wisent.core.evaluators.rotator import EvaluatorRotator

@@ -7,10 +7,10 @@ from dataclasses import dataclass, field
 from typing import Optional
 from typing import TYPE_CHECKING
 
-from wisent.core.contrastive_pairs.core.atoms import AtomContrastivePairSet
-from wisent.core.contrastive_pairs.diagnostics import DiagnosticsConfig, DiagnosticsReport, run_all_diagnostics
+from wisent.core.contrastive_pairs.atoms import AtomContrastivePairSet
+from wisent.core.diagnostics import DiagnosticsConfig, DiagnosticsReport, run_all_diagnostics
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.contrastive_pairs.pair import ContrastivePair
 from wisent.core.errors import PairDiagnosticsError, NoActivationDataError 
 
 __all__ = [

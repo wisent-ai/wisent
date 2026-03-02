@@ -21,7 +21,7 @@ from wisent.core.activations import (
 from wisent.core.errors import NoHiddenStatesError
 
 if TYPE_CHECKING:
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
 
 
 def _resp_text(resp_obj: object) -> str:

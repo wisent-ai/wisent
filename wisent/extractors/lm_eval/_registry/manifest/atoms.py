@@ -13,7 +13,7 @@ from wisent.core.errors import NoDocsAvailableError, DatasetLoadError
 
 
 if TYPE_CHECKING:
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
     from lm_eval.api.task import ConfigurableTask
 
 

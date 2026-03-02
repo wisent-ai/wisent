@@ -2,7 +2,7 @@
 
 import sys
 import signal
-from contextmanager import contextmanager
+from contextlib import contextmanager
 from wisent.examples.scripts.test_one_benchmark import test_benchmark
 
 

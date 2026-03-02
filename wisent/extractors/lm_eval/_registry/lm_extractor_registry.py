@@ -4,11 +4,11 @@ from typing import Type, Union
 import importlib
 import logging
 
-from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import (
+from wisent.extractors.lm_eval._registry.manifest.atoms import (
     LMEvalBenchmarkExtractor,
     UnsupportedLMEvalBenchmarkError,
 )
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 
 from wisent.extractors.lm_eval._registry.manifest.lm_extractor_manifest import EXTRACTORS as _LM_MANIFEST
 from wisent.extractors.hf._registry.hf_extractor_manifest import HF_EXTRACTORS as _HF_MANIFEST
@@ -43,7 +43,7 @@ def register_extractor(name: str, ref: Union[str, Type[LMEvalBenchmarkExtractor]
 
     example:
         >>> from wisent.extractors.lm_eval._registry.lm_extractor_registry import register_extractor
-        >>> from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
+        >>> from wisent.extractors.lm_eval._registry.manifest.atoms import LMEvalBenchmarkExtractor
         >>> class MyExtractor(LMEvalBenchmarkExtractor): ...
         >>> register_extractor("mytask", MyExtractor)
         >>> register_extractor("mytask2", "my_module:MyExtractor")

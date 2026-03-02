@@ -10,7 +10,7 @@ from wisent.core.evaluators.rotator import EvaluatorRotator
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.activations.core.optimal_extraction import (
     find_direction_from_all_tokens,
     extract_at_optimal_position,

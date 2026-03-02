@@ -14,9 +14,9 @@ def execute_get_activations(args):
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy, ExtractionComponent
     
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
 
     raw_mode = getattr(args, 'raw', False)
     mode_str = "raw hidden states" if raw_mode else "activations"

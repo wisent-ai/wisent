@@ -4,9 +4,9 @@ import random
 import logging
 from typing import Any, TYPE_CHECKING
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.lm_eval_pairs.atoms import LMEvalBenchmarkExtractor
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.io.response import NegativeResponse, PositiveResponse
+from wisent.extractors.lm_eval._registry.manifest.atoms import LMEvalBenchmarkExtractor
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask

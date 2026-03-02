@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Sequence, TYPE_CHECKING
 import torch
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.contrastive_pairs.pair import ContrastivePair
 from wisent.core.activations.core.atoms import LayerActivations, LayerName, RawActivationMap
 from wisent.core.activations import (
     ExtractionStrategy,
@@ -13,7 +13,7 @@ from wisent.core.activations import (
 )
 from wisent.core.errors import NoHiddenStatesError
 from wisent.core.constants import LOG_EPS, PROGRESS_REPORT_INTERVAL
-from wisent.core.utils.core.hardware import default_batch_size
+from wisent.core.utils.infra.core.hardware import default_batch_size
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel

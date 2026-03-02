@@ -7,8 +7,8 @@ import zipfile
 import json
 import io
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.errors import InvalidValueError
 
 __all__ = ["OJBenchExtractor", "NL2BashExtractor", "SciCodeExtractor", "TerminalBenchExtractor"]

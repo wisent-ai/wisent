@@ -1,5 +1,5 @@
 """Display, visualization, and formatting constants."""
-from wisent.core.infrastructure.constant_definitions.cannot_be_optimized._infrastructure import *  # noqa: F401,F403
+from wisent.core.constant_definitions.cannot_be_optimized._infrastructure import *  # noqa: F401,F403
 
 # --- Separator widths (print formatting) ---
 SEPARATOR_WIDTH_COMPACT = 30

@@ -65,8 +65,8 @@ def execute_generate_responses(args):
 
     # If input file is provided, load from file
     if input_file and os.path.exists(input_file):
-        from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-        from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+        from wisent.core.contrastive_pairs.pair import ContrastivePair
+        from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
         
         with open(input_file, 'r') as f:
             data = json.load(f)

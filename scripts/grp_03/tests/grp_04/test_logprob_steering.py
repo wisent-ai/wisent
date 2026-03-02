@@ -14,7 +14,7 @@ from wisent.core.steering_methods import CAAMethod
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.constants import TEST_STEERING_SCALE
 from wisent.core.models import get_generate_kwargs
 

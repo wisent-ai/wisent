@@ -35,7 +35,7 @@ if TYPE_CHECKING:
     from torch import Tensor
     from torch.nn import Module
     from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
 
 __all__ = [
     "GuidedModificationConfig",

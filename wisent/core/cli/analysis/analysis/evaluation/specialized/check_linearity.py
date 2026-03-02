@@ -25,13 +25,13 @@ def execute_check_linearity(args):
     print(f"Loaded {len(pairs_data)} pairs")
     
     # Import dependencies
-    from wisent.core.contrastive_pairs.diagnostics import (
+    from wisent.core.diagnostics import (
         check_linearity,
         LinearityConfig,
     )
     from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
     from wisent.core.activations import ExtractionStrategy
     
     # Build ContrastivePair objects

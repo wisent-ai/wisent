@@ -1,5 +1,5 @@
 """TECZA (Rainbow) steering method constants."""
-from wisent.core.infrastructure.constant_definitions.for_experiments.by_method._tetno import *  # noqa: F401,F403
+from wisent.core.constant_definitions.for_experiments.by_method._tetno import *  # noqa: F401,F403
 
 # --- Core TECZA parameters ---
 TECZA_NUM_DIRECTIONS = 3

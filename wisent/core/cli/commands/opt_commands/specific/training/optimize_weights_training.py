@@ -37,7 +37,7 @@ def _train_multi_direction_method(
     print(f"   Pairs file: {enriched_file}")
     
     try:
-        from wisent.core.contrastive_pairs.core.io.serialization import load_contrastive_pair_set
+        from wisent.core.contrastive_pairs.io.serialization import load_contrastive_pair_set
         from wisent.core.weight_modification.multi_direction import (
             MultiDirectionConfig,
             combine_directions,

@@ -4,7 +4,7 @@ from typing import Iterable, TYPE_CHECKING
 
 from wisent.core.synthetic.cleaners.core.atoms import CleanStep, Cleaner
 from wisent.core.synthetic.cleaners.core.atoms import CleanerStats
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.constants import REFUSAL_CLEANER_MAX_RETRIES
 
 __all__ = [
@@ -37,9 +37,9 @@ class PairsCleaner(Cleaner):
             Tuple of cleaned ContrastivePairSet and CleanerStats with statistics about the cleaning process.
         
         example:
-            >>> from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-            >>> from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-            >>> from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+            >>> from wisent.core.contrastive_pairs.set import ContrastivePairSet
+            >>> from wisent.core.contrastive_pairs.pair import ContrastivePair
+            >>> from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
             >>> from wisent.core.synthetic.cleaners.methods.base_refusalers import BasesRefusaler
             >>> from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
             >>> from wisent.core.synthetic.cleaners.cleaners import PairsCleaner

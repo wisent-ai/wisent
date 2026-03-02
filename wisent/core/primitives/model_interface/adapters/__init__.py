@@ -6,7 +6,7 @@ while keeping the core steering logic modality-agnostic.
 """
 from wisent.core.adapters.base import BaseAdapter, AdapterError
 from wisent.core.adapters.text import TextAdapter
-from wisent.core.adapters.modalities import (
+from wisent.core.adapters.modality_adapters import (
     AudioAdapter,
     VideoAdapter,
     RoboticsAdapter,

@@ -1,5 +1,5 @@
 """Evaluation, scoring, and quality assessment constants."""
-from wisent.core.infrastructure.constant_definitions.for_experiments.by_domain.analysis import *  # noqa: F401,F403
+from wisent.core.constant_definitions.for_experiments.by_domain.analysis import *  # noqa: F401,F403
 
 # --- Evaluator thresholds ---
 NLI_MARGIN = 0.12

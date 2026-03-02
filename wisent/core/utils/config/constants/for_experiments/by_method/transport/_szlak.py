@@ -1,5 +1,5 @@
 """SZLAK (Trail) steering method constants."""
-from wisent.core.infrastructure.constant_definitions.for_experiments.by_method.transport._przelom import *  # noqa: F401,F403
+from wisent.core.constant_definitions.for_experiments.by_method.transport._przelom import *  # noqa: F401,F403
 
 # --- Core SZLAK parameters ---
 SZLAK_SINKHORN_REG = 0.1

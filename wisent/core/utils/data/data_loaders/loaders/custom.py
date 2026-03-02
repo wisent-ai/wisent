@@ -3,8 +3,8 @@ from typing import Any, Iterable
 import logging
 
 from wisent.core.data_loaders.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet         
-from wisent.core.contrastive_pairs.core.io.serialization import load_contrastive_pair_set
+from wisent.core.contrastive_pairs.set import ContrastivePairSet         
+from wisent.core.contrastive_pairs.io.serialization import load_contrastive_pair_set
 
 __all__ = [
     "CustomUserDataLoader",

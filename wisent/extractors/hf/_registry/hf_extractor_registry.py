@@ -4,7 +4,7 @@ from typing import Type, Union
 import importlib
 import logging
 
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import (
+from wisent.extractors.hf._registry.manifest.atoms import (
     HuggingFaceBenchmarkExtractor,
     UnsupportedHuggingFaceBenchmarkError,
 )
@@ -41,7 +41,7 @@ def register_extractor(name: str, ref: Union[str, Type[HuggingFaceBenchmarkExtra
 
     example:
         >>> from wisent.extractors.hf._registry.hf_extractor_registry import register_extractor
-        >>> from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+        >>> from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
         >>> class MyExtractor(HuggingFaceBenchmarkExtractor): ...
         >>> register_extractor("mytask", MyExtractor)
         >>> register_extractor("mytask2", "my_module:MyExtractor")

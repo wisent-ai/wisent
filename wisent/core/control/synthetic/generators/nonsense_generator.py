@@ -3,9 +3,9 @@ from __future__ import annotations
 import random
 import string
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.errors import UnknownTypeError
 from wisent.core import constants as _C
 

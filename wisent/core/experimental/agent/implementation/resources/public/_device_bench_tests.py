@@ -7,7 +7,7 @@ import sys
 import torch
 from typing import Dict, Any, Optional
 from wisent.core.constants import DEFAULT_LAYER, AGENT_BENCH_MIN_PAIRS_TRAINING, BENCH_TEST_SAMPLE_SIZE
-from wisent.core.utils.core.hardware import subprocess_timeout_s, subprocess_timeout_long_s
+from wisent.core.utils.infra.core.hardware import subprocess_timeout_s, subprocess_timeout_long_s
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin1:

@@ -86,9 +86,9 @@ def apply_steering_and_evaluate(
     """
     from wisent.core.steering_methods.methods.caa import CAAMethod
     from wisent.core.models.core.atoms import SteeringPlan
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
 
     print(f"\n🎯 Step 4: Response below threshold, using steering to improve")
     print(f"   Collecting activations from pairs...")

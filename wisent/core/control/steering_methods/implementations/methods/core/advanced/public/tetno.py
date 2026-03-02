@@ -26,7 +26,7 @@ import torch.nn.functional as F
 
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
 from wisent.core.constants import (
     TETNO_CONDITION_THRESHOLD,

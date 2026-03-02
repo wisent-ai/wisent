@@ -1,5 +1,5 @@
 """MLP steering method constants."""
-from wisent.core.infrastructure.constant_definitions.for_experiments.by_method.simple._caa import *  # noqa: F401,F403
+from wisent.core.constant_definitions.for_experiments.by_method.simple._caa import *  # noqa: F401,F403
 
 # --- Core MLP parameters ---
 MLP_HIDDEN_DIM = 256

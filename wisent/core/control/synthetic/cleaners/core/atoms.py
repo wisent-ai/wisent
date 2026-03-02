@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from dataclasses import field, dataclass
 
 if TYPE_CHECKING:
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
 
 __all__ = [
     "CleanStep",

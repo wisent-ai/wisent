@@ -14,7 +14,7 @@ import torch.nn as nn
 
 from wisent.core.constants import ARCHITECTURE_MODULE_LIMIT
 from wisent.core.activations.strategies.extraction_strategy import ExtractionComponent
-from wisent.core.geometry.analysis.structure.transformer_analysis import (
+from wisent.core.signal_analysis.structure.transformer_analysis import (
     TransformerComponent,
     get_component_hook_points,
 )

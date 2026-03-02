@@ -251,8 +251,8 @@ def execute_multi_concept_modification(args, wisent_model, model, tokenizer, bas
 
 def generate_pairs_for_guided_mode(args) -> List:
     """Generate contrastive pairs for guided mode diagnostics."""
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
 
     pairs = []
     if args.task:

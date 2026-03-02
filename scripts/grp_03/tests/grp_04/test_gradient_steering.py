@@ -14,7 +14,7 @@ from wisent.core.models.core.atoms import SteeringPlan
 from wisent.core.steering_methods import CAAMethod
 from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 

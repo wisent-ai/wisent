@@ -51,7 +51,7 @@ def execute_optimize_sample_size(args):
         test_pairs = result['test_qa_pairs']
         all_pairs_list = train_pairs.pairs + test_pairs.pairs
 
-        from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+        from wisent.core.contrastive_pairs.set import ContrastivePairSet
         all_pairs = ContrastivePairSet(name="combined_pairs", pairs=all_pairs_list)
 
         total_available = len(all_pairs.pairs)
@@ -108,8 +108,8 @@ def execute_optimize_sample_size(args):
             response = model.generate([[{"role": "user", "content": question}]], **get_generate_kwargs())[0]
             eval_result = evaluator.evaluate(response=response, expected=expected, model=model,
                                              question=question, choices=choices, task_name=args.task)
-            from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-            from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+            from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
+            from wisent.core.contrastive_pairs.pair import ContrastivePair
             temp_pos = PositiveResponse(model_response=response, layers_activations={})
             temp_neg = NegativeResponse(model_response="placeholder", layers_activations={})
             temp_pair = ContrastivePair(prompt=question, positive_response=temp_pos, negative_response=temp_neg, label=None, trait_description=None)
