@@ -51,11 +51,11 @@ class ClassifierParams:
     training_samples: int  # 10-50: Based on complexity and time constraints
     classifier_type: str  # logistic/svm/neural: Based on data characteristics
     reasoning: str = ""
-    model_name: str = "unknown"  # Model name for matching existing classifiers
+    model_name: Optional[str] = None  # Model name for matching existing classifiers
     
     # Additional classifier configuration parameters
-    aggregation_method: str = "last_token"  # last_token/mean/max for activation aggregation
-    token_aggregation: str = "average"  # average/final/first/max/min for token score aggregation
+    aggregation_method: Optional[str] = None  # last_token/mean/max for activation aggregation
+    token_aggregation: Optional[str] = None  # average/final/first/max/min for token score aggregation
     num_epochs: int = CLASSIFIER_NUM_EPOCHS
     batch_size: int = CLASSIFIER_BATCH_SIZE
     learning_rate: float = DEFAULT_CLASSIFIER_LR

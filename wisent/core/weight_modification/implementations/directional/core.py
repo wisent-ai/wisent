@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from typing import TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import InvalidValueError
-from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_STRENGTH, WM_TOLERANCE, DEFAULT_LAYER_WEIGHT
+from wisent.core.utils.config_tools.constants import NORM_EPS, WM_TOLERANCE, DEFAULT_LAYER_WEIGHT
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -55,8 +55,8 @@ def compute_projection_kernel(
 def project_with_kernel(
     model,
     kernel: dict[int, tuple[Tensor, float]],
+    strength: float,
     components: list[str] | None = None,
-    strength: float = DEFAULT_STRENGTH,
     preserve_norms: bool = True,
     verbose: bool = True,
 ) -> dict[str, int]:

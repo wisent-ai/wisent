@@ -6,7 +6,7 @@ from typing import Dict, Any
 import torch
 import numpy as np
 
-from wisent.core.primitives.contrastive_pairs.diagnostics.analysis.linearity import (
+from wisent.core.reading.diagnostics.analysis.linearity import (
     LinearityConfig,
     LinearityResult,
     check_linearity,
@@ -29,7 +29,7 @@ def check_linearity_from_activations(
     Returns:
         LinearityResult
     """
-    from wisent.core.primitives.contrastive_pairs.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
+    from wisent.core.reading.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
     
     cfg = config or LinearityConfig()
     

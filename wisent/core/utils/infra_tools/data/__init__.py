@@ -165,7 +165,7 @@ class LiveCodeBenchLoader:
 
     def load_problems(
         self,
-        release_version: str = "all",
+        release_version: Optional[str] = None,
         limit: Optional[int] = None
     ) -> List[LiveCodeBenchProblem]:
         """

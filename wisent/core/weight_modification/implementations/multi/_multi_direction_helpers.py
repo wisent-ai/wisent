@@ -130,7 +130,7 @@ def train_and_bake_tetno(
 def train_and_bake(
     model: "Module",
     pair_set: "ContrastivePairSet",
-    method: str = "grom",
+    method: str,
     config: Optional[MultiDirectionConfig] = None,
     **method_kwargs,
 ) -> MultiDirectionResult:

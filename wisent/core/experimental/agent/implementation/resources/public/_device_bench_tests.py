@@ -6,8 +6,8 @@ import subprocess
 import sys
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, AGENT_BENCH_MIN_PAIRS_TRAINING, BENCH_TEST_SAMPLE_SIZE
-from wisent.core.utils.core.hardware import subprocess_timeout_s, subprocess_timeout_long_s
+from wisent.core.utils.config_tools.constants import AGENT_BENCH_MIN_PAIRS_TRAINING, BENCH_TEST_SAMPLE_SIZE
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s, subprocess_timeout_long_s
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin1:
@@ -59,7 +59,7 @@ except Exception as e:
             print(f"      Error in model loading benchmark: {e}")
             raise DeviceBenchmarkError(task_name="model_loading", cause=e)
     
-    def run_benchmark_eval_test(self) -> float:
+    def run_benchmark_eval_test(self, layer: int) -> float:
         """Benchmark evaluation performance using real CLI functionality."""
         print("   📊 Benchmarking evaluation performance...")
         print("   🔧 DEBUG: Creating evaluation test script...")
@@ -105,7 +105,7 @@ except Exception as e:
     traceback.print_exc()
     raise
 '''
-        test_script = test_script.replace("__LAYER__", str(DEFAULT_LAYER))
+        test_script = test_script.replace("__LAYER__", str(layer))
         test_script = test_script.replace("__BENCH_SAMPLE__", str(BENCH_TEST_SAMPLE_SIZE))
         print("   🔧 DEBUG: Writing test script to temporary file...")
         try:

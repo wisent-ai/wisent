@@ -17,7 +17,7 @@ def execute_tasks(args):
     from wisent.core.reading.classifiers.models.mlp import MLPClassifier
     from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
     from wisent.core.primitives.models.model_persistence import ModelPersistence, create_classifier_metadata
-    from wisent.core.utils.display.detection_handling import DetectionHandler, DetectionAction
+    from wisent.core.utils.infra_tools.infra.display.detection_handling import DetectionHandler, DetectionAction
     from wisent.core.reading.evaluators.personalization.coherence import evaluate_quality
 
     from .utilities import execute_list_tasks, execute_task_info, select_tasks_by_criteria, execute_optimization

@@ -1,6 +1,7 @@
 """LM-eval extractor manifest - Part 2 (P-Z tasks)."""
 
-base_import: str = "wisent.extractors.lm_eval.lm_task_extractors."
+from wisent.core.utils.config_tools.constants import LM_EVAL_EXTRACTOR_BASE_IMPORT
+base_import: str = LM_EVAL_EXTRACTOR_BASE_IMPORT
 
 LM_EXTRACTORS_PART2: dict[str, str] = {
     "paws_x": f"{base_import}pawsx:PawsXExtractor",

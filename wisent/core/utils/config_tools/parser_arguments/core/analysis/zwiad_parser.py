@@ -28,8 +28,8 @@ def setup_zwiad_parser(parser):
     parser.add_argument(
         "--model",
         type=str,
-        default="meta-llama/Llama-3.2-1B-Instruct",
-        help="Model name in database (default: meta-llama/Llama-3.2-1B-Instruct)"
+        required=True,
+        help="Model name in database"
     )
     parser.add_argument(
         "--task",
@@ -50,26 +50,26 @@ def setup_zwiad_parser(parser):
     parser.add_argument(
         "--prompt-format",
         type=str,
-        default="chat",
+        required=True,
         choices=["chat", "completion"],
-        help="Prompt format used for activations (default: chat)"
+        help="Prompt format used for activations"
     )
     parser.add_argument(
         "--extraction-strategy",
         type=str,
-        default="last_token",
+        required=True,
         choices=["last_token", "first_token", "chat_last"],
-        help="Token extraction strategy (default: last_token)"
+        help="Token extraction strategy"
     )
     parser.add_argument(
         "--extraction-component",
         type=str,
-        default="residual_stream",
+        required=True,
         choices=["residual_stream", "attn_output", "mlp_output", "per_head",
                  "mlp_intermediate", "post_attn_residual", "pre_attn_layernorm",
                  "embedding_output", "final_layernorm", "q_proj", "k_proj",
                  "v_proj", "mlp_gate_activation", "attention_scores", "logits"],
-        help="Transformer component to extract from (default: residual_stream)"
+        help="Transformer component to extract from"
     )
     parser.add_argument(
         "--limit",
@@ -88,7 +88,7 @@ def setup_zwiad_parser(parser):
     parser.add_argument(
         "--steps",
         type=str,
-        default="all",
+        required=True,
         help="Protocol steps to run: 'all', 'signal', 'geometry', 'decomposition', 'intervention', 'editability', or comma-separated (e.g., 'signal,geometry,editability')"
     )
 
@@ -102,8 +102,8 @@ def setup_zwiad_parser(parser):
     parser.add_argument(
         "--llm-model",
         type=str,
-        default="Qwen/Qwen3-8B",
-        help="LLM model for concept naming (default: Qwen/Qwen3-8B)"
+        required=True,
+        help="LLM model for concept naming"
     )
 
     # Output
@@ -116,6 +116,6 @@ def setup_zwiad_parser(parser):
     parser.add_argument(
         "--visualizations-dir",
         type=str,
-        default="./zwiad_visualizations",
-        help="Directory to save visualization PNGs (default: ./zwiad_visualizations)"
+        required=True,
+        help="Directory to save visualization PNGs"
     )

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -58,7 +58,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "agent_safety"
 
-    def __init__(self, config: str = "harmful", include_benign: bool = False):
+    def __init__(self, config: Optional[str] = None, include_benign: bool = False):
         """
         Initialize AgentHarm extractor.
 
@@ -67,7 +67,7 @@ class AgentHarmExtractor(HuggingFaceBenchmarkExtractor):
             include_benign: If True, also include benign counterparts
         """
         super().__init__()
-        self.config = config
+        self.config = config if config is not None else "harmful"
         self.include_benign = include_benign
 
     def extract_contrastive_pairs(

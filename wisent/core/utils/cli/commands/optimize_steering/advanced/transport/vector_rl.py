@@ -21,7 +21,7 @@ from wisent.core.utils.cli.optimize_steering.data.responses import execute_gener
 from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.utils.cli.optimize_steering.pipeline import _make_args
 from wisent.core.utils.config_tools.constants import (COMPARE_TOL, DEFAULT_LIMIT, RL_NUM_EPISODES, RL_EPSILON,
-    DEFAULT_STRENGTH,
+    LAYER_SWEEP_STRENGTH,
     SEPARATOR_WIDTH_WIDE)
 
 
@@ -50,7 +50,7 @@ def _evaluate_with_vectors(vectors, metadata, args, work_dir) -> float:
     execute_generate_responses(_make_args(
         task=args.task, input_file=args.enriched_pairs_file, model=args.model,
         output=rf, num_questions=getattr(args, 'limit', DEFAULT_LIMIT),
-        steering_object=sf, steering_strength=DEFAULT_STRENGTH, steering_strategy="constant",
+        steering_object=sf, steering_strength=LAYER_SWEEP_STRENGTH, steering_strategy="constant",
         use_steering=True, device=getattr(args, 'device', None),
         verbose=False, cached_model=None,
     ))

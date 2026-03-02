@@ -17,7 +17,7 @@ from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
-from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_STRENGTH, SZLAK_INFERENCE_K
+from wisent.core.utils.config_tools.constants import NORM_EPS, SZLAK_INFERENCE_K
 
 __all__ = ["PrzelomSteeringObject"]
 
@@ -55,7 +55,7 @@ class PrzelomSteeringObject(BaseSteeringObject):
         return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
 
     def apply_steering(
-        self, hidden_state: torch.Tensor, layer: int, base_strength: float = DEFAULT_STRENGTH,
+        self, hidden_state: torch.Tensor, layer: int, base_strength: float,
     ) -> torch.Tensor:
         """Apply via k-NN lookup + IDW interpolation of precomputed displacements."""
         if layer not in self.source_points:

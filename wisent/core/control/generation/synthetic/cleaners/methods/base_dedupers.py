@@ -2,7 +2,7 @@ import re
 import unicodedata
 import hashlib
 from collections import Counter, defaultdict
-from typing import Mapping, Sequence, Callable
+from typing import Mapping, Optional, Sequence, Callable
 
 from wisent.core.control.generation.synthetic.cleaners.methods.core.atoms import Deduper
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
@@ -24,7 +24,7 @@ class SimHashDeduper(Deduper):
         threshold_bits: int = SIMHASH_THRESHOLD_CONSERVATIVE,
         fields_to_hash: Sequence[str] = ("prompt",),
         field_weights: Mapping[str, float] | None = None,
-        tokenizer: str = "auto",  # "auto" | "word" | "char"
+        tokenizer: Optional[str] = None,  # None (=auto) | "word" | "char"
         word_ngram: int = DEDUP_WORD_NGRAM,
         char_ngram: int = DEDUP_CHAR_NGRAM,
         strip_accents: bool = True,
@@ -35,8 +35,8 @@ class SimHashDeduper(Deduper):
     ) -> None:
         if SIMHASH_BIT_WIDTH % num_bands != 0:
             raise InvalidValueError(param_name="num_bands", actual=num_bands, expected="divisor of 64 (e.g., 4, 8, 16, 32)")
-        if tokenizer not in {"auto", "word", "char"}:
-            raise InvalidValueError(param_name="tokenizer", actual=tokenizer, expected="'auto', 'word', or 'char'")
+        if tokenizer is not None and tokenizer not in {"word", "char"}:
+            raise InvalidValueError(param_name="tokenizer", actual=tokenizer, expected="None (auto), 'word', or 'char'")
         if word_ngram < 1 or char_ngram < 1:
             raise InvalidRangeError(param_name="n-gram sizes", actual=min(word_ngram, char_ngram), min_val=1)
 
@@ -230,7 +230,7 @@ class SimHashDeduper(Deduper):
         returns:
             "word" or "char"
         """
-        if self.tokenizer == "auto":
+        if self.tokenizer is None:
             return "char" if self._re_cjk.search(text) else "word"
         return self.tokenizer
 

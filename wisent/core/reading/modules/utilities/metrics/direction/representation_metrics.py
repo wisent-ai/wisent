@@ -48,12 +48,12 @@ def analyze_representation_geometry(
     - CURVED/NONLINEAR -> MLP-based
     - HIGH CURVATURE -> GROM/TETNO
     """
-    from ...probe.probe_metrics import (
+    from wisent.core.reading.modules.utilities.metrics.probe.probe_metrics import (
         compute_linear_probe_accuracy,
         compute_mlp_probe_accuracy,
         compute_knn_accuracy,
     )
-    from ....steering.steerability import compute_steerability_metrics
+    from wisent.core.reading.modules.modules.steering.analysis.steerability import compute_steerability_metrics
 
     results = {}
 

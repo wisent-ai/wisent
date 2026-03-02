@@ -136,7 +136,7 @@ class VideoOpsMixin:
         positive_video: VideoContent,
         negative_video: VideoContent,
         layer: str,
-        aggregation: str = "mean",
+        aggregation: str,
     ) -> torch.Tensor:
         """Compute a steering vector from positive/negative video pair."""
         pos_acts = self.extract_activations(positive_video, [layer])

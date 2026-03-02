@@ -23,7 +23,7 @@ def compute_v_target(
     model_name: str,
     bos_features_paper: dict,
     bos_features_detected: dict,
-    bos_features_source: str = "detected",
+    bos_features_source: str,
     density_threshold: float = FGAA_DENSITY_THRESHOLD,
     top_k_positive: int = FGAA_TOP_K_POSITIVE,
     top_k_negative: int = FGAA_TOP_K_NEGATIVE,
@@ -98,11 +98,13 @@ def generate_steering_vector(
     sae_configs: dict, bos_features_paper: dict, bos_features_detected: dict,
     load_model_fn, load_effect_approximator_fn, load_sae_fn,
     generate_pairs_fn, compute_v_diff_fn,
-    trait_label: str = "correctness", num_pairs: int = COMPARISON_NUM_PAIRS,
-    layers: str | None = None, device: str = "cuda:0",
+    bos_features_source: str,
+    trait_label: str, device: str,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
+    layers: str | None = None,
     keep_intermediate: bool = False, density_threshold: float = FGAA_DENSITY_THRESHOLD,
     top_k_positive: int = FGAA_TOP_K_POSITIVE, top_k_negative: int = FGAA_TOP_K_NEGATIVE,
-    bos_features_source: str = "detected", **kwargs,
+    **kwargs,
 ) -> Path:
     """Generate a steering vector using the FGAA method."""
     output_path = Path(output_path)

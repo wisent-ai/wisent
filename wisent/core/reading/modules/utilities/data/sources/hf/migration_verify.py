@@ -48,6 +48,7 @@ def migrate_all(
     combo_start: int = 0,
     combo_end: Optional[int] = None,
     skip_pair_texts: bool = False,
+    reverse: bool = False,
 ) -> None:
     """Discover all (model, benchmark, strategy) combos and migrate.
     Uses staging dirs to batch uploads and avoid HF rate limits.
@@ -80,7 +81,10 @@ def migrate_all(
     combos.sort()
     total = len(combos)
     combos = combos[combo_start:combo_end]
-    print(f"Found {total} total combos, processing slice [{combo_start}:{combo_end}] = {len(combos)}")
+    if reverse:
+        combos = list(reversed(combos))
+    direction = "REVERSE" if reverse else "FORWARD"
+    print(f"Found {total} total combos, processing slice [{combo_start}:{combo_end}] = {len(combos)} ({direction})")
 
     if not skip_pair_texts:
         pair_staging = tempfile.mkdtemp(prefix="wisent_pair_texts_")
@@ -144,10 +148,12 @@ def verify_migration(
     task_name: str,
     strategy: str,
     layer: int,
+    component: str,
+    prompt_format: str,
     database_url: Optional[str] = None,
 ) -> bool:
     """Verify HF data matches Supabase for a single layer."""
-    from ..database_loaders import load_activations_from_database
+    from wisent.core.reading.modules.utilities.data.database_loaders import load_activations_from_database
     from .hf_loaders import load_activations_from_hf
 
     print(
@@ -157,7 +163,9 @@ def verify_migration(
 
     db_pos, db_neg = load_activations_from_database(
         model_name, task_name, layer,
+        component=component,
         extraction_strategy=strategy,
+        prompt_format=prompt_format,
         database_url=database_url,
         use_cache=False,
     )

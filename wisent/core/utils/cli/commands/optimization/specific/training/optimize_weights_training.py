@@ -44,7 +44,7 @@ def _train_multi_direction_method(
         )
         
         # Load pair set with activations
-        pair_set = load_contrastive_pair_set(enriched_file)
+        pair_set = load_contrastive_pair_set(enriched_file, return_backend="torch")
         print(f"   Loaded {len(pair_set.pairs)} pairs with activations")
         
         # Get config from args

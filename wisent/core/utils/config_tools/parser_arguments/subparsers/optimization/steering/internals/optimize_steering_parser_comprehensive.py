@@ -28,7 +28,7 @@ def setup_comprehensive_parser(steering_subparsers):
         type=str,
         nargs="+",
         choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
-        default=["CAA"],
+        required=True,
         help=f"Steering methods to test. Available: {', '.join(AVAILABLE_METHODS)}",
     )
     # Add method-specific arguments from registry
@@ -65,14 +65,14 @@ def setup_comprehensive_parser(steering_subparsers):
     comprehensive_parser.add_argument(
         "--baseline-output-dir",
         type=str,
-        default="./baseline_comparison",
-        help="Directory to save baseline comparison results (default: ./baseline_comparison)",
+        required=True,
+        help="Directory to save baseline comparison results",
     )
     comprehensive_parser.add_argument(
         "--output-dir",
         type=str,
-        default="./optimization_results",
-        help="Directory to save optimization results (default: ./optimization_results)",
+        required=True,
+        help="Directory to save optimization results",
     )
     comprehensive_parser.add_argument(
         "--show-comparisons",
@@ -145,8 +145,8 @@ def setup_comprehensive_parser(steering_subparsers):
         "--search-strategy",
         type=str,
         choices=["grid", "optuna"],
-        default="grid",
-        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling (default: grid)"
+        required=True,
+        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling"
     )
     comprehensive_parser.add_argument(
         "--n-trials",

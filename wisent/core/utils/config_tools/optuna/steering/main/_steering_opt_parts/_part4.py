@@ -18,11 +18,9 @@ from wisent.core.utils.infra_tools.errors import (
     NoActivationDataError,
 )
 from wisent.core.utils.config_tools.constants import COMPARISON_STEERING_LAYER, CHANCE_LEVEL_ACCURACY
-from wisent.core.utils.core.hardware import default_batch_size
+from wisent.core.utils.infra_tools.infra.core.hardware import default_batch_size
 
 logger = logging.getLogger(__name__)
-
-
 class _SteeringOptimizerEval:
     """Evaluation mixin: baseline predictions, activation extraction, classifier scoring."""
 
@@ -186,8 +184,8 @@ class _SteeringOptimizerEval:
         model,
         tokenizer,
         device: str,
+        description: str,
         max_length: int | None = None,
-        description: str = "predictions",
     ) -> List[float]:
         """
         Score predictions using the cached classifier.

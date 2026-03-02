@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -61,7 +61,7 @@ class WildGuardExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "safety_classification"
 
-    def __init__(self, config: str = "wildguardtest", task: str = "prompt_harm"):
+    def __init__(self, config: Optional[str] = None, task: Optional[str] = None):
         """
         Initialize WildGuard extractor.
 
@@ -70,8 +70,8 @@ class WildGuardExtractor(HuggingFaceBenchmarkExtractor):
             task: Classification task ("prompt_harm", "response_harm", "refusal")
         """
         super().__init__()
-        self.config = config
-        self.task = task
+        self.config = config if config is not None else "wildguardtest"
+        self.task = task if task is not None else "prompt_harm"
 
     def extract_contrastive_pairs(
         self,

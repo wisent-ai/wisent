@@ -7,7 +7,7 @@ from typing import Any, Literal
 import optuna
 
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import DEFAULT_N_TRIALS, DEFAULT_RANDOM_SEED
+from wisent.core.utils.config_tools.constants import DEFAULT_N_TRIALS, DEFAULT_RANDOM_SEED, BASE_OPTIMIZER_NAME
 __all__ = [
     "Direction",
     "HPOConfig",
@@ -72,7 +72,7 @@ class BaseOptimizer(ABC):
     This class wires up samplers/pruners and runs 'study.optimize(...)'.
     """
 
-    name: str = "base-optimizer"
+    name: str = BASE_OPTIMIZER_NAME
     direction: Direction = "maximize"
 
     def optimize(self, cfg: HPOConfig) -> HPORun:

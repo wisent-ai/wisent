@@ -6,14 +6,14 @@ import subprocess
 import sys
 from pathlib import Path
 from dataclasses import dataclass
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_STRENGTH,
     PAIR_GENERATORS_DEFAULT_N,
     DISPLAY_TRUNCATION_LARGE,
 )
-from wisent.core.utils.core.hardware import subprocess_timeout_long_s
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_long_s
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 GCS_BUCKET = "wisent-images-bucket"
 GCS_PREFIX = "intervention_validation"
@@ -40,8 +40,8 @@ def run_wisent_task(
     benchmark: str,
     model: str,
     layer: int,
+    steering_strength: Optional[float] = None,
     steering_mode: bool = False,
-    steering_strength: float = DEFAULT_STRENGTH,
     training_limit: int = PAIR_GENERATORS_DEFAULT_N,
     testing_limit: int = PAIR_GENERATORS_DEFAULT_N,
 ) -> float:
@@ -59,6 +59,11 @@ def run_wisent_task(
     ]
     
     if steering_mode:
+        if steering_strength is None:
+            raise MissingParameterError(
+                params=["steering_strength"],
+                context="run_wisent_task with steering_mode=True",
+            )
         cmd.extend([
             "--steering-mode",
             "--steering-strength", str(steering_strength),

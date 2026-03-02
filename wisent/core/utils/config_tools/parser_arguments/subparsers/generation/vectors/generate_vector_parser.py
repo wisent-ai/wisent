@@ -38,7 +38,7 @@ def setup_generate_vector_parser(parser):
     )
 
     # Model configuration
-    parser.add_argument("--model", type=str, default="distilgpt2", help="Model name or path (default: distilgpt2)")
+    parser.add_argument("--model", type=str, required=True, help="Model name or path")
     parser.add_argument("--device", type=str, default=None, help="Device to run on (default: auto-detect)")
 
     # Steering method configuration - uses centralized registry
@@ -75,16 +75,16 @@ def setup_generate_vector_parser(parser):
     parser.add_argument(
         "--prompt-construction",
         type=str,
-        default="multiple_choice",
+        required=True,
         choices=["multiple_choice", "role_playing", "direct_completion", "instruction_following"],
-        help="Strategy for constructing prompts from question-answer pairs (default: multiple_choice)",
+        help="Strategy for constructing prompts from question-answer pairs",
     )
     parser.add_argument(
         "--token-targeting",
         type=str,
-        default="choice_token",
+        required=True,
         choices=["choice_token", "continuation_token", "last_token", "first_token", "mean_pooling", "max_pooling"],
-        help="Strategy for targeting tokens in activation extraction (default: choice_token)",
+        help="Strategy for targeting tokens in activation extraction",
     )
 
     # General options

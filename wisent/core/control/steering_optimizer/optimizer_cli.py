@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 def run_steering_optimization(
     model_name: str,
     task_name: str,
-    optimization_type: str = "auto",
+    optimization_type: Optional[str] = None,
     methods_to_test: Optional[List[str]] = None,
     layer_range: Optional[str] = None,
     strength_range: Optional[List[float]] = None,
@@ -50,7 +50,7 @@ def run_steering_optimization(
     Returns:
         Dictionary with optimization results
     """
-    if optimization_type == "auto":
+    if optimization_type is None:
         return run_auto_steering_optimization(
             model_name=model_name,
             task_name=task_name,

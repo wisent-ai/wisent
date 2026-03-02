@@ -20,9 +20,9 @@ from wisent.examples.cli.weight_modification.maximum_abliteration_helpers import
 
 
 def maximum_abliteration(
-    task: str = "hellaswag",
-    model: str = "meta-llama/Llama-3.2-1B-Instruct",
-    output_dir: str = "./data/modified_models/maximum",
+    task: str,
+    model: str,
+    output_dir: str,
     baseline_acc: float = ABLITERATION_BASELINE_ACC,
     full_eval_limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT,
 ):
@@ -141,9 +141,9 @@ def maximum_abliteration(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Maximum abliteration optimization")
-    parser.add_argument("--task", default="hellaswag", help="Task name")
-    parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct", help="Model name")
-    parser.add_argument("--output-dir", default="./data/modified_models/maximum", help="Output directory")
+    parser.add_argument("--task", required=True, help="Task name")
+    parser.add_argument("--model", required=True, help="Model name")
+    parser.add_argument("--output-dir", required=True, help="Output directory")
     parser.add_argument("--baseline", type=float, default=ABLITERATION_BASELINE_ACC, help="Baseline accuracy")
     parser.add_argument("--eval-limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Evaluation limit")
 

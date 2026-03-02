@@ -13,9 +13,9 @@ the geometric structure of activation spaces.
 """
 
 # Configure numba threading before any other imports (prevents hangs on macOS)
-from .geo_utils.config import numba_config  # noqa: F401
+from .modules.geo_utils.config import numba_config  # noqa: F401
 
-from .metrics.probe.probe_metrics import (
+from .utilities.metrics.probe.probe_metrics import (
     compute_signal_strength,
     compute_linear_probe_accuracy,
     compute_mlp_probe_accuracy,
@@ -25,13 +25,13 @@ from .metrics.probe.probe_metrics import (
     compute_knn_pacmap_accuracy,
 )
 
-from .metrics.distribution.distribution_metrics import (
+from .utilities.metrics.distribution.distribution_metrics import (
     compute_mmd_rbf,
     compute_density_ratio,
     compute_fisher_per_dimension,
 )
 
-from .analysis.intrinsic_dim import (
+from .utilities.signal_analysis.intrinsic_dim import (
     estimate_local_intrinsic_dim,
     compute_local_intrinsic_dims,
     compute_diff_intrinsic_dim,
@@ -43,7 +43,7 @@ from .analysis.intrinsic_dim import (
     compute_effective_dimensions,
 )
 
-from .validation.null_tests import (
+from .modules.validation.null_tests import (
     compute_null_effective_dimensions,
     compute_effective_dimensions_vs_null,
     compute_cone_null,
@@ -53,14 +53,14 @@ from .validation.null_tests import (
     compute_geometry_vs_null,
 )
 
-from .metrics.direction.direction_metrics import (
+from .utilities.metrics.direction.direction_metrics import (
     compute_direction_from_pairs,
     compute_direction_stability,
     compute_pairwise_diff_consistency,
 )
-from .metrics.direction.multi_direction import compute_multi_direction_accuracy
+from .utilities.metrics.direction.multi_direction import compute_multi_direction_accuracy
 
-from .steering.analysis.steerability import (
+from .modules.steering.analysis.steerability import (
     compute_steerability_metrics,
     compute_linearity_score,
     compute_recommendation,
@@ -69,13 +69,13 @@ from .steering.analysis.steerability import (
     compute_final_steering_prescription,
 )
 
-from .data.nonsense import (
+from .utilities.data.sources.nonsense import (
     generate_nonsense_activations,
     compute_nonsense_baseline,
     analyze_with_nonsense_baseline,
 )
 
-from .concepts import (
+from .utilities.concepts import (
     detect_multiple_concepts,
     split_by_concepts,
     analyze_concept_independence,
@@ -90,7 +90,7 @@ from .concepts import (
     compute_concept_linear_separability,
 )
 
-from .analysis.signal_analysis import (
+from .utilities.signal_analysis.signal_analysis import (
     compute_signal_to_noise,
     compute_null_distribution,
     compare_to_null,
@@ -100,7 +100,7 @@ from .analysis.signal_analysis import (
     find_optimal_pair_count,
 )
 
-from .geo_utils.icd import (
+from .modules.geo_utils.icd import (
     compute_icd,
 )
 
@@ -113,7 +113,7 @@ from .runner import (
     compute_geometry_metrics,
 )
 
-from .analysis.structure import (
+from .utilities.signal_analysis.structure import (
     TransformerComponent,
     analyze_transformer_components,
     get_component_hook_points,
@@ -121,7 +121,7 @@ from .analysis.structure import (
     compare_concept_granularity,
 )
 
-from .metrics.representation import (
+from .utilities.metrics.representation import (
     compute_magnitude_metrics,
     compute_sparsity_metrics,
     compute_pair_quality_metrics,
@@ -131,12 +131,12 @@ from .metrics.representation import (
     compute_direction_overlap_metrics,
     compute_noise_baseline_comparison,
 )
-from .metrics.direction.representation_metrics import (
+from .utilities.metrics.direction.representation_metrics import (
     compute_all_representation_metrics,
     analyze_representation_geometry,
 )
 
-from .analysis.structure import (
+from .utilities.signal_analysis.structure import (
     compute_cloud_shape,
     compute_cone_fit,
     compute_sphere_fit,
@@ -149,7 +149,7 @@ from .analysis.structure import (
     analyze_activation_structure,
 )
 
-from .visualization.visualizations import (
+from wisent.core.utils.visualization.geometry.public.visualizations import (
     plot_pca_projection,
     plot_diff_vectors,
     plot_norm_distribution,
@@ -164,12 +164,12 @@ from .visualization.visualizations import (
     render_matplotlib_figure,
 )
 
-from .geo_utils.config.pacmap_alt import (
+from .modules.geo_utils.config.pacmap_alt import (
     plot_pacmap_alt,
     pacmap_embedding,
 )
 
-from .steering.analysis.steering_recommendation import (
+from .modules.steering.analysis.steering_recommendation import (
     SteeringThresholds,
     compute_steering_recommendation,
     compute_per_layer_recommendation,
@@ -177,7 +177,7 @@ from .steering.analysis.steering_recommendation import (
     get_method_requirements,
 )
 
-from .concepts import (
+from .utilities.concepts import (
     decompose_and_name_concepts,
     name_concepts,
     create_concept_overview_figure,
@@ -185,26 +185,26 @@ from .concepts import (
     create_all_concept_figures,
 )
 
-from .zwiad.zwiad_with_concepts import (
+from .modules.zwiad.zwiad_with_concepts import (
     run_zwiad_with_concept_naming,
     extract_pair_texts_from_enriched_pairs,
 )
 
-from .zwiad.zwiad_config import ZwiadProtocolConfig
-from .zwiad.zwiad_protocol import run_zwiad_protocol
+from .modules.zwiad.zwiad_config import ZwiadProtocolConfig
+from .modules.zwiad.zwiad_protocol import run_zwiad_protocol
 
 from .intervention_selection import (
     RigorousInterventionResult,
     rigorous_select_intervention,
 )
 
-from .steering.analysis.steering_validation import (
+from .modules.steering.analysis.steering_validation import (
     compute_steering_effect_size,
     validate_steering_effectiveness,
     run_full_validation,
 )
 
-from .visualization.direction_visualization import (
+from wisent.core.utils.visualization.geometry.public.direction_visualization import (
     compute_direction_angles,
     plot_direction_similarity_matrix,
     plot_directions_in_pca_space,
@@ -212,7 +212,7 @@ from .visualization.direction_visualization import (
     visualize_concept_directions,
 )
 
-from .validation.behavioral_validation import (
+from .modules.validation.behavioral_validation import (
     BehavioralValidationResult,
     compute_activation_movement,
     compute_behavioral_change,
@@ -226,17 +226,17 @@ from .geometry_search_space import (
 )
 
 # Re-export database loaders for backward compatibility
-from .data.database_loaders import (
+from .utilities.data.database_loaders import (
     load_activations_from_database,
     load_pair_texts_from_database,
     load_available_layers_from_database,
 )
 
-from .data.cache import get_cache_path, get_cached_layers
+from .utilities.data.cache import get_cache_path, get_cached_layers
 
 # Re-export steering utilities for backward compatibility
-from .steering.visualization.steering_visualizations import create_steering_effect_figure
-from .steering.visualization.steering_viz_utils import (
+from wisent.core.utils.visualization.steering.steering_visualizations import create_steering_effect_figure
+from wisent.core.utils.visualization.steering.steering_viz_utils import (
     create_steering_object_from_pairs,
     extract_activations_from_responses,
     load_reference_activations,

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -20,7 +20,7 @@ class WMT16Extractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "generation"
 
-    def __init__(self, lang_pair: str = "de-en"):
+    def __init__(self, lang_pair: Optional[str] = None):
         """
         Initialize WMT16 extractor.
 
@@ -28,8 +28,8 @@ class WMT16Extractor(HuggingFaceBenchmarkExtractor):
             lang_pair: Language pair (e.g., 'de-en', 'en-de', 'ro-en', 'en-ro')
         """
         super().__init__()
-        self.lang_pair = lang_pair
-        parts = lang_pair.split("-")
+        self.lang_pair = lang_pair if lang_pair is not None else "de-en"
+        parts = self.lang_pair.split("-")
         self.source_lang = parts[0] if len(parts) > 0 else "de"
         self.target_lang = parts[1] if len(parts) > 1 else "en"
 

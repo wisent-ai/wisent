@@ -24,9 +24,12 @@ class ModelConfigManager:
         return str(self._manager._get_config_path(model_name))
 
     def save_model_config(
-        self, model_name: str, classification_layer: int,
-        steering_layer: Optional[int] = None, token_aggregation: str = "average",
-        detection_threshold: float = MOVEMENT_THRESHOLD, optimization_method: str = "manual",
+        self, model_name: str, method: str, classification_layer: int,
+        token_aggregation: str, classifier_type: str,
+        token_targeting_strategy: str, prompt_construction_strategy: str,
+        optimization_method: str,
+        steering_layer: Optional[int] = None,
+        detection_threshold: float = MOVEMENT_THRESHOLD,
         optimization_metrics: Optional[Dict[str, Any]] = None,
         task_specific_overrides: Optional[Dict[str, Dict[str, Any]]] = None,
     ) -> str:
@@ -36,11 +39,14 @@ class ModelConfigManager:
 
         save_classification_config(
             model_name=model_name, layer=classification_layer,
-            token_aggregation=token_aggregation, detection_threshold=detection_threshold,
+            token_aggregation=token_aggregation, classifier_type=classifier_type,
+            token_targeting_strategy=token_targeting_strategy,
+            prompt_construction_strategy=prompt_construction_strategy,
+            detection_threshold=detection_threshold,
             optimization_method=optimization_method, set_as_default=True,
         )
         save_steering_config(
-            model_name=model_name, layer=steering_layer,
+            model_name=model_name, method=method, layer=steering_layer,
             optimization_method=optimization_method, set_as_default=True,
         )
         return str(self._manager._get_config_path(model_name))

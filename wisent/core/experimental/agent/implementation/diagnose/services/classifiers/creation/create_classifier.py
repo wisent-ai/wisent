@@ -30,12 +30,12 @@ class TrainingConfig:
 
     issue_type: str
     layer: int
-    classifier_type: str = "logistic"
+    classifier_type: Optional[str] = None
     threshold: float = CLASSIFIER_THRESHOLD
     model_name: str = ""
     training_samples: int = CLASSIFIER_TRAINING_SAMPLES
     test_split: float = CLASSIFIER_TEST_SIZE
-    optimization_metric: str = "f1"
+    optimization_metric: Optional[str] = None
     save_path: Optional[str] = None
 
 
@@ -158,9 +158,9 @@ class ClassifierCreator(BenchmarkMixin, DataGenerationMixin, ScoringMixin, Train
     def optimize_classifier_for_performance(
         self,
         issue_type: str,
+        target_metric: str,
         layer_range: Tuple[int, int] = None,
         classifier_types: List[str] = None,
-        target_metric: str = "f1",
         min_target_score: float = CLASSIFIER_MIN_TARGET_SCORE,
     ) -> TrainingResult:
         """
@@ -264,7 +264,7 @@ def create_classifier_on_demand(
 
     if optimize or layer is None:
         # Optimize to find best configuration
-        result = creator.optimize_classifier_for_performance(issue_type)
+        result = creator.optimize_classifier_for_performance(issue_type, target_metric="f1")
 
         # Save if path provided
         if save_path:

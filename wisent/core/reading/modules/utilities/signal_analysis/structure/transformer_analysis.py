@@ -122,7 +122,7 @@ def analyze_transformer_components(
     pos_texts: List[str],
     neg_texts: List[str],
     layer: int,
-    device: str = "cuda",
+    device: str,
 ) -> Dict[str, Any]:
     """
     Analyze different transformer components for steering potential.

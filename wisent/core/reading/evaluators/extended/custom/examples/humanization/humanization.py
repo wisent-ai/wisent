@@ -45,7 +45,7 @@ class HumanizationEvaluator(CustomEvaluator):
         super().__init__(name="humanization", description=config.description, config=config)
         
         from wisent.core.reading.evaluators.custom.examples.gptzero import GPTZeroEvaluator
-        self._gptzero = GPTZeroEvaluator(api_key=api_key)
+        self._gptzero = GPTZeroEvaluator(optimize_for="human_prob", api_key=api_key)
     
     def evaluate_response(self, response: str, **kwargs) -> Dict[str, Any]:
         """Evaluate response using GPTZero API."""

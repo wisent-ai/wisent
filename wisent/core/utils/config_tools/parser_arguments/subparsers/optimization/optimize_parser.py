@@ -80,9 +80,9 @@ def setup_optimize_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        default=["CAA", "TECZA", "TETNO", "GROM"],
+        required=True,
         choices=["CAA", "TECZA", "TETNO", "GROM"],
-        help="Steering methods to test (default: ALL methods)"
+        help="Steering methods to test"
     )
     
     # =========================================================================

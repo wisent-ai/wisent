@@ -9,7 +9,7 @@ import torch
 import numpy as np
 from typing import Dict, Any
 
-from ...analysis.intrinsic_dim import estimate_local_intrinsic_dim
+from wisent.core.reading.modules.utilities.signal_analysis.intrinsic_dim import estimate_local_intrinsic_dim
 from wisent.core.utils.config_tools.constants import (
     NORM_EPS, DEFAULT_RANDOM_SEED,
     DIRECTION_N_BOOTSTRAP, DIRECTION_SUBSET_FRACTION, DIRECTION_STD_PENALTY,

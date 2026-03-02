@@ -4,7 +4,7 @@ import logging
 import os
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, asdict
-from typing import Any, Callable
+from typing import Any, Callable, Optional
 
 import torch
 import torch.nn as nn
@@ -51,7 +51,7 @@ class ClassifierTrainConfig:
     num_epochs: int = CLASSIFIER_NUM_EPOCHS
     batch_size: int = CLASSIFIER_BATCH_SIZE
     learning_rate: float = DEFAULT_CLASSIFIER_LR
-    monitor: str = "accuracy"  
+    monitor: Optional[str] = None
     random_state: int = DEFAULT_RANDOM_SEED
 
 @dataclass(slots=True, frozen=True)

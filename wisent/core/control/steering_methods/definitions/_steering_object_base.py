@@ -20,7 +20,7 @@ import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, DEFAULT_SCALE, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DEFAULT_SCALE, JSON_INDENT, BASE_CLASS_NAME
 
 
 LayerName = str
@@ -41,9 +41,9 @@ class SteeringObjectMetadata:
     extra: Dict[str, Any] = field(default_factory=dict)
     # Calibration data: average hidden state norm per layer
     calibration_norms: Dict[int, float] = field(default_factory=dict)
-    extraction_component: str = "residual_stream"
+    extraction_component: Optional[str] = None
     
-    def get_calibrated_strength(self, layer: int, target_percentage: float = DEFAULT_STRENGTH) -> float:
+    def get_calibrated_strength(self, layer: int, target_percentage: float) -> float:
         """
         Compute calibrated strength for a layer based on hidden state norms.
         
@@ -71,7 +71,7 @@ class BaseSteeringObject(ABC):
     - Intensity computation (how much to steer)
     """
     
-    method_name: str = "base"
+    method_name: str = BASE_CLASS_NAME
     
     def __init__(self, metadata: SteeringObjectMetadata):
         self.metadata = metadata
@@ -91,7 +91,7 @@ class BaseSteeringObject(ABC):
         """Compute steering intensity for a layer."""
         pass
     
-    def get_calibrated_strength(self, target_percentage: float = DEFAULT_STRENGTH) -> float:
+    def get_calibrated_strength(self, target_percentage: float) -> float:
         """
         Get auto-calibrated strength based on hidden state norms.
         
@@ -113,11 +113,11 @@ class BaseSteeringObject(ABC):
         self,
         hidden_state: torch.Tensor,
         layer: int,
-        base_strength: float = DEFAULT_STRENGTH,
+        base_strength: float,
     ) -> torch.Tensor:
         """
         Apply steering to hidden state.
-        
+
         Args:
             hidden_state: [batch, seq, hidden] or [seq, hidden] or [hidden]
             layer: Layer index

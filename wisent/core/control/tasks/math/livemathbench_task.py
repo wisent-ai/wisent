@@ -32,7 +32,7 @@ class LiveMathBenchTask(TaskInterface):
         },
     }
 
-    def __init__(self, language: str = "en", limit: Optional[int] = None):
+    def __init__(self, language: Optional[str] = None, limit: Optional[int] = None):
         """
         Initialize LiveMathBench task for specified language.
 

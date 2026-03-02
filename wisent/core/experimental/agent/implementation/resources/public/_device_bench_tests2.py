@@ -2,14 +2,14 @@
 import time
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, BENCH_TEST_SAMPLE_MIN
-from wisent.core.utils.core.hardware import subprocess_timeout_s
+from wisent.core.utils.config_tools.constants import BENCH_TEST_SAMPLE_MIN
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin2:
     """Mixin: steering and data generation tests."""
 
-    def run_steering_test(self) -> float:
+    def run_steering_test(self, layer: int, steering_strength: float) -> float:
         """Benchmark steering performance using real CLI functionality."""
         print("   📊 Benchmarking steering performance...")
         
@@ -47,8 +47,8 @@ except Exception as e:
     print(f"BENCHMARK_ERROR:{e}")
     raise
 '''
-        test_script = test_script.replace("__LAYER__", str(DEFAULT_LAYER))
-        test_script = test_script.replace("__STRENGTH__", str(DEFAULT_STRENGTH))
+        test_script = test_script.replace("__LAYER__", str(layer))
+        test_script = test_script.replace("__STRENGTH__", str(steering_strength))
         test_script = test_script.replace("__BENCH_SAMPLE_MIN__", str(BENCH_TEST_SAMPLE_MIN))
         try:
             with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:

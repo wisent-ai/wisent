@@ -16,15 +16,16 @@ class OptimizationCache:
         self._manager = get_config_manager()
         self._defaults: Dict[str, str] = {}
 
-    def _make_key(self, model: str, task: str, method: str = "CAA") -> str:
+    def _make_key(self, model: str, task: str, method: str) -> str:
         model_normalized = model.replace("/", "_").replace("\\", "_")
         return f"{model_normalized}::{task}::{method}"
 
     def store(
         self, model: str, task: str, layer: int, strength: float,
-        method: str = "CAA", token_aggregation: str = "average",
-        prompt_strategy: str = "question_only", score: float = DEFAULT_SCORE,
-        metric: str = "accuracy", metadata: Optional[Dict[str, Any]] = None,
+        method: str, token_aggregation: str, prompt_strategy: str,
+        metric: str,
+        score: float = DEFAULT_SCORE,
+        metadata: Optional[Dict[str, Any]] = None,
         set_as_default: bool = False,
     ) -> str:
         """Store an optimization result."""
@@ -35,7 +36,7 @@ class OptimizationCache:
             metadata=metadata, set_as_default=set_as_default,
         )
 
-    def get(self, model: str, task: str, method: str = "CAA") -> Optional[OptimizationResult]:
+    def get(self, model: str, task: str, method: str) -> Optional[OptimizationResult]:
         """Get a cached optimization result."""
         return get_cached_optimization(model, task, method, use_default=False)
 
@@ -43,7 +44,7 @@ class OptimizationCache:
         """Get the default optimization result for a model/task."""
         return get_cached_optimization(model, task, "*", use_default=True)
 
-    def set_default(self, model: str, task: str, method: str = "CAA") -> bool:
+    def set_default(self, model: str, task: str, method: str) -> bool:
         """Set a cached result as the default."""
         steering = get_steering_config(model, task)
         if steering is None:
@@ -53,11 +54,12 @@ class OptimizationCache:
             strength=steering.strength, method=steering.method,
             token_aggregation=steering.token_aggregation,
             prompt_strategy=steering.prompt_strategy, score=steering.score,
-            metric=steering.metric, set_as_default=True,
+            metric=steering.metric, optimization_method="manual",
+            set_as_default=True,
         )
         return True
 
-    def exists(self, model: str, task: str, method: str = "CAA") -> bool:
+    def exists(self, model: str, task: str, method: str) -> bool:
         """Check if a cached result exists."""
         return get_cached_optimization(model, task, method, use_default=False) is not None
 
@@ -91,7 +93,7 @@ class OptimizationCache:
                     ))
         return results
 
-    def delete(self, model: str, task: str, method: str = "CAA") -> bool:
+    def delete(self, model: str, task: str, method: str) -> bool:
         """Delete a cached result."""
         config = self._manager.get_model_config(model)
         if task in config.tasks and config.tasks[task].steering:

@@ -1,5 +1,5 @@
 """TETNO (Heartbeat) steering method constants."""
-from wisent.core.utils.constants.for_experiments.by_method.transport import *  # noqa: F401,F403
+from wisent.core.utils.config_tools.constants.for_experiments.by_method.transport import *  # noqa: F401,F403
 
 # --- Core TETNO parameters ---
 TETNO_CONDITION_THRESHOLD = 0.5

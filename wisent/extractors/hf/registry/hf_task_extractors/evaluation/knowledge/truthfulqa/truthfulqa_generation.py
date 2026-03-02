@@ -6,6 +6,7 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.utils.config_tools.constants import EVALUATOR_NAME_TRUTHFULQA_GEN
 
 __all__ = ["TruthfulQAGenerationExtractor"]
 
@@ -14,7 +15,7 @@ log = setup_logger(__name__)
 task_names = ("truthfulqa_generation", "truthfulqa_gen")
 
 # Use semantic similarity evaluator that compares response to correct vs incorrect answers
-evaluator_name = "truthfulqa_gen"
+evaluator_name = EVALUATOR_NAME_TRUTHFULQA_GEN
 
 
 class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
@@ -38,7 +39,7 @@ class TruthfulQAGenerationExtractor(HuggingFaceBenchmarkExtractor):
     """
 
     # Use semantic similarity evaluator for generation tasks
-    evaluator_name: str = "truthfulqa_gen"
+    evaluator_name: str = EVALUATOR_NAME_TRUTHFULQA_GEN
 
     def extract_contrastive_pairs(
         self,

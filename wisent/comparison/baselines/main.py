@@ -23,7 +23,6 @@ from wisent.core.utils.config_tools.constants import (
     COMPARISON_MAX_BATCH_SIZE,
     COMPARISON_STEERING_LAYER,
     DEFAULT_SPLIT_RATIO,
-    DEFAULT_STRENGTH,
 )
 from wisent.comparison import ours
 from wisent.comparison import sae
@@ -54,10 +53,11 @@ METHOD_MODULES = {
 def run_single_task(
     model_name: str,
     task: str,
+    bos_features_source: str,
+    device: str,
     methods: list[str] = None,
     num_pairs: int = COMPARISON_NUM_PAIRS,
     steering_scales: list[float] = None,
-    device: str = "cuda:0",
     batch_size: int | str = 1,
     max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     eval_limit: int | None = None,
@@ -66,7 +66,6 @@ def run_single_task(
     caa_layers: str = str(COMPARISON_STEERING_LAYER),
     sae_layers: str = str(COMPARISON_STEERING_LAYER),
     extraction_strategies: list[str] = None,
-    bos_features_source: str = "detected",
 ) -> list[dict]:
     """
     Run comparison for a single task with multiple methods, scales,
@@ -77,7 +76,7 @@ def run_single_task(
     if methods is None:
         methods = ["caa"]
     if steering_scales is None:
-        steering_scales = [DEFAULT_STRENGTH]
+        raise ValueError("steering_scales must be provided explicitly")
     if extraction_strategies is None:
         extraction_strategies = ["mc_balanced"]
 
@@ -121,6 +120,7 @@ def run_single_task(
                 "task": task, "model_name": model_name,
                 "output_path": vector_path, "num_pairs": num_pairs,
                 "device": device, "layers": method_layers,
+                "trait_label": task, "method": method,
             }
             if extraction_strategy:
                 kwargs["extraction_strategy"] = extraction_strategy

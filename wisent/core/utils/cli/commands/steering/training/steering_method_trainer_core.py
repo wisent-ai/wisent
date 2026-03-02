@@ -10,7 +10,7 @@ from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, NORM_EPS
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 logger = logging.getLogger(__name__)
 
@@ -171,7 +171,7 @@ def collect_activations_for_pair_set(
 
 def create_steering_plan_from_activations(
     layer_activations: LayerActivations,
-    strength: float = DEFAULT_STRENGTH,
+    strength: float,
     description: str = "Steering",
 ) -> SteeringPlan:
     """
@@ -203,7 +203,7 @@ def create_steering_plan_from_activations(
 def create_steering_plan_single_layer(
     steering_vector: torch.Tensor,
     layer: str,
-    strength: float = DEFAULT_STRENGTH,
+    strength: float,
     description: str = "Steering",
 ) -> SteeringPlan:
     """

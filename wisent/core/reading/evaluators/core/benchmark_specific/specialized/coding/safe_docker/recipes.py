@@ -1,6 +1,6 @@
 from __future__ import annotations
 from typing import Dict
-from wisent.core.utils.core.hardware import eval_cpu_limit_s, eval_time_limit_s, eval_mem_limit_mb
+from wisent.core.utils.infra_tools.infra.core.hardware import eval_cpu_limit_s, eval_time_limit_s, eval_mem_limit_mb
 from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job, LanguageRecipe
 
 class PythonRecipe(LanguageRecipe):

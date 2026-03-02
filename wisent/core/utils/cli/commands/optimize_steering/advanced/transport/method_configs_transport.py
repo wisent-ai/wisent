@@ -1,17 +1,17 @@
 """Method configuration for PRZELOM (attention-transport) steering optimization."""
 from dataclasses import dataclass
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 from wisent.core.utils.cli.optimize_steering.method_configs import MethodConfig
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, PRZELOM_EPSILON, SZLAK_INFERENCE_K, TIKHONOV_REG
+from wisent.core.utils.config_tools.constants import PARSER_DEFAULT_LAYER_START, PRZELOM_EPSILON, SZLAK_INFERENCE_K, TIKHONOV_REG
 
 
 @dataclass
 class PrzelomConfig(MethodConfig):
     """PRZELOM attention-transport parameters for Optuna optimization."""
-    layer: int = DEFAULT_LAYER
+    layer: int = PARSER_DEFAULT_LAYER_START
     epsilon: float = PRZELOM_EPSILON
-    target_mode: str = "uniform"
+    target_mode: Optional[str] = None
     regularization: float = TIKHONOV_REG
     inference_k: int = SZLAK_INFERENCE_K
 

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -36,7 +36,7 @@ class CLUEWSCExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "coreference_resolution"
 
-    def __init__(self, split: str = "validation"):
+    def __init__(self, split: Optional[str] = None):
         """
         Initialize CLUEWSC extractor.
 
@@ -44,7 +44,7 @@ class CLUEWSCExtractor(HuggingFaceBenchmarkExtractor):
             split: Dataset split to use ("train", "validation", "test")
         """
         super().__init__()
-        self.split = split
+        self.split = split if split is not None else "validation"
 
     def extract_contrastive_pairs(
         self,

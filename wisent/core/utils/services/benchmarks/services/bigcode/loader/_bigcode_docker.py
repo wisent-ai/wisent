@@ -16,7 +16,7 @@ from wisent.core.utils.config_tools.constants import (
     DOCKER_CPU_QUOTA_50PCT_US,
     DEFAULT_TIMEOUT_DOCKER,
 )
-from wisent.core.utils.core.hardware import docker_bigcode_mem_limit_mb
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_bigcode_mem_limit_mb
 
 logger = logging.getLogger(__name__)
 

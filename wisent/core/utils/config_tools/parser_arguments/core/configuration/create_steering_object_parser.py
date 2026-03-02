@@ -30,8 +30,8 @@ def setup_create_steering_object_parser(parser: argparse.ArgumentParser) -> None
         "--method",
         type=str,
         choices=["caa", "ostrze", "mlp", "tecza", "tetno", "grom", "nurt"],
-        default="caa",
-        help="Steering method to use (default: caa)"
+        required=True,
+        help="Steering method to use"
     )
 
     # Layer selection

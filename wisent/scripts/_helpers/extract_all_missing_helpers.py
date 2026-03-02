@@ -106,7 +106,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="Model name (e.g., meta-llama/Llama-3.2-1B-Instruct)")
-    parser.add_argument("--device", default="cuda", help="Device (cuda/mps/cpu)")
+    parser.add_argument("--device", required=True, help="Device (cuda/mps/cpu)")
     parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark")
     parser.add_argument("--benchmark", default=None, help="Single benchmark to extract (optional)")
     args = parser.parse_args()

@@ -16,7 +16,7 @@ from wisent.core.utils.config_tools.constants import (
     SILHOUETTE_MULTI_CONCEPT_THRESHOLD, SILHOUETTE_WEAK_MULTI_THRESHOLD,
     CONCEPT_CORRELATION_HIGH, CONCEPT_CORRELATION_MODERATE,
 )
-from wisent.core.primitives.contrastive_pairs.diagnostics.analysis.concept_analysis import (
+from wisent.core.reading.diagnostics.analysis.concept_analysis import (
     ConceptAnalysisResult,
     compute_icd,
     compute_eigenvalue_spectrum,
@@ -94,7 +94,7 @@ def analyze_concepts(
     
     # Decompose concepts
     k_detected, labels, directions, silhouette_scores = decompose_concepts(
-        diff_vectors, k_max=k_max
+        diff_vectors, method="kmeans", k_max=k_max
     )
     
     # Compute cluster sizes
@@ -158,8 +158,8 @@ def analyze_concepts(
 def analyze_concept_interference(
     activations_a: Tuple[np.ndarray, np.ndarray],
     activations_b: Tuple[np.ndarray, np.ndarray],
-    name_a: str = "concept_A",
-    name_b: str = "concept_B",
+    name_a: str,
+    name_b: str,
 ) -> Dict[str, Any]:
     """
     Analyze interference between two concepts.

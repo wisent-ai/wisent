@@ -84,7 +84,7 @@ def _maybe_encode_response(response: dict[str, torch.Tensor | str | None]) -> di
     return response
 
 
-def _decode_activations(obj: VectorPayload | None, return_backend: str = "torch") -> torch.Tensor | np.ndarray | list | None:
+def _decode_activations(obj: VectorPayload | None, return_backend: str) -> torch.Tensor | np.ndarray | list | None:
     """Decode from our base64 payload into torch tensor (default) or numpy array.
     return_backend: 'torch' | 'numpy' | 'list'
     map_device: 'cpu' (default) or 'original' (best-effort) for torch tensors.

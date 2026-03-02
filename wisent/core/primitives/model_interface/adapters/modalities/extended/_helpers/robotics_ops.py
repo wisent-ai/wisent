@@ -234,7 +234,7 @@ class RoboticsOpsMixin:
         positive_trajectory: RobotTrajectory,
         negative_trajectory: RobotTrajectory,
         layer: str,
-        aggregation: str = "mean",
+        aggregation: str,
     ) -> torch.Tensor:
         """Compute steering vector from trajectory pairs."""
         pos_activations = []

@@ -37,7 +37,7 @@ class ComponentActivationExtractor:
         ```
     """
 
-    def __init__(self, model, tokenizer, device: str = "cuda"):
+    def __init__(self, model, tokenizer, device: str):
         self.model = model
         self.tokenizer = tokenizer
         self.device = device

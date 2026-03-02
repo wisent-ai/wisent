@@ -15,18 +15,18 @@ class ClassificationMixin:
     def save_classification_config(
         self,
         model_name: str,
+        token_aggregation: str,
+        token_targeting_strategy: str,
+        classifier_type: str,
+        prompt_construction_strategy: str,
+        optimization_method: str,
         task_name: Optional[str] = None,
         layer: int = DEFAULT_LAYER_CONFIG,
-        token_aggregation: str = "average",
         detection_threshold: float = MOVEMENT_THRESHOLD,
-        classifier_type: str = "logistic",
-        prompt_construction_strategy: str = "multiple_choice",
-        token_targeting_strategy: str = "last_token",
         accuracy: float = DEFAULT_SCORE,
         f1_score: float = 0.0,
         precision: float = 0.0,
         recall: float = 0.0,
-        optimization_method: str = "manual",
         set_as_default: bool = False,
     ) -> Path:
         """Save classification config for a model/task."""

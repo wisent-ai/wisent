@@ -6,7 +6,7 @@ from .collector import (
     collect_ground_truth, collect_benchmark_ground_truth,
 )
 from .optimizer import RecommendationOptimizer
-from wisent.core.reading.modules.zwiad.geometry_types import (
+from wisent.core.reading.modules.modules.zwiad.geometry_types import (
     GeometryType, GeometryTypeFine, GeometryProfile,
     SHAPE_MAP, METHOD_MAP, classify_geometry,
     select_representative_benchmarks,

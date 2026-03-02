@@ -8,17 +8,18 @@ for training classifiers for specific issue types using model-driven decisions.
 from typing import List, Dict, Any, Set, Tuple
 from .task_manager import get_available_tasks
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER,
     TASK_SELECTOR_MAX_TASKS, TASK_SELECTOR_QUALITY_THRESHOLD,
     TASK_QUALITY_SCORE_MAX, TASK_SELECTOR_LIMIT,
 )
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 
 class TaskSelector:
     """Model-driven task selector for issue-type-specific training."""
-    
-    def __init__(self, model):
+
+    def __init__(self, model, layer: int):
         self.model = model
+        self.layer = layer
     
     def find_relevant_tasks_for_issue_type(self, issue_type: str, max_tasks: int = TASK_SELECTOR_MAX_TASKS) -> List[str]:
         """
@@ -88,7 +89,7 @@ Rate relevance from 0.0 to 1.0 (1.0 = highly relevant, 0.0 = not relevant).
 Respond with only the number:"""
         
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
+            response = self.model.generate(prompt, layer_index=self.layer)
             score_str = response.strip()
             
             import re
@@ -115,7 +116,7 @@ Rate quality from 0.0 to 5.0 (5.0 = excellent quality, 0.0 = poor quality).
 Respond with only the number:"""
         
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
+            response = self.model.generate(prompt, layer_index=self.layer)
             score_str = response.strip()
             
             import re
@@ -128,13 +129,15 @@ Respond with only the number:"""
             return 1.0
 
 
-def find_relevant_tasks_for_issue_type(issue_type: str, max_tasks: int = TASK_SELECTOR_MAX_TASKS, model=None) -> List[str]:
+def find_relevant_tasks_for_issue_type(issue_type: str, max_tasks: int = TASK_SELECTOR_MAX_TASKS, model=None, layer: int = None) -> List[str]:
     """Standalone function for finding relevant tasks."""
     if model is None:
         from ....model import Model
         model = Model("meta-llama/Llama-3.1-8B-Instruct")
     
-    selector = TaskSelector(model)
+    if layer is None:
+        raise MissingParameterError(params=["layer"], context="find_relevant_tasks_for_issue_type")
+    selector = TaskSelector(model, layer=layer)
     return selector.find_relevant_tasks_for_issue_type(issue_type, max_tasks)
 
 
@@ -143,14 +146,17 @@ def select_best_tasks_for_training(
     min_tasks: int = 1,
     max_tasks: int = TASK_SELECTOR_MAX_TASKS,
     quality_threshold: float = TASK_SELECTOR_QUALITY_THRESHOLD,
-    model=None
+    model=None,
+    layer: int = None,
 ) -> List[str]:
     """Standalone function for selecting best training tasks."""
     if model is None:
         from ....model import Model
         model = Model("meta-llama/Llama-3.1-8B-Instruct")
     
-    selector = TaskSelector(model)
+    if layer is None:
+        raise MissingParameterError(params=["layer"], context="select_best_tasks_for_training")
+    selector = TaskSelector(model, layer=layer)
     return selector.select_best_tasks_for_training(
         issue_type, min_tasks, max_tasks, quality_threshold
     ) 

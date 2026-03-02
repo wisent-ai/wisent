@@ -9,7 +9,7 @@ for _entry in sorted(_os.listdir(_base)):
             if _os.path.isdir(_sub_path) and not _sub.startswith(('.', '_')):
                 __path__.append(_sub_path)
 
-from wisent.core.utils.infra import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device, resolve_torch_device
+from wisent.core.utils.infra_tools.infra import empty_device_cache, preferred_dtype, resolve_default_device, resolve_device, resolve_torch_device
 # Note: SteeringMethod and SteeringType import temporarily disabled due to missing dependencies
 # from .steering import SteeringMethod, SteeringType
 

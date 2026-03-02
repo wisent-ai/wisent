@@ -4,7 +4,7 @@ import sys
 import torch
 
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import JSON_INDENT, NORM_EPS, DEFAULT_STRENGTH, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import JSON_INDENT, NORM_EPS, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
 
 
 def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy):
@@ -13,7 +13,7 @@ def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector,
 
     print(f"\n🎯 Starting steering evaluation on task: {args.task_names}")
     print(f"   Steering method: {getattr(args, 'steering_method', 'CAA')}")
-    print(f"   Steering strength: {getattr(args, 'steering_strength', DEFAULT_STRENGTH)}")
+    print(f"   Steering strength: {getattr(args, 'steering_strength', None)}")
 
     layer = int(args.layer) if isinstance(args.layer, str) else args.layer
     layer_str = str(layer)
@@ -186,7 +186,7 @@ def _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer
     print(f"\n📊 Evaluating on {len(test_pair_set.pairs)} test pairs...")
     baseline_correct, steered_correct, total = 0, 0, 0
     results = []
-    steering_strength = getattr(args, 'steering_strength', DEFAULT_STRENGTH)
+    steering_strength = getattr(args, 'steering_strength', None)
 
     for i, pair in enumerate(test_pair_set.pairs):
         print(f"   Processing {i+1}/{len(test_pair_set.pairs)}...", end='\r')

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from datasets import load_dataset
 from wisent.core.utils.cli.cli_logger import setup_logger
 
@@ -47,18 +47,19 @@ class PlanBenchExtractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "planning_reasoning"
 
-    def __init__(self, config: str = "task_1_plan_generation"):
+    def __init__(self, config: Optional[str] = None):
         """
         Initialize PlanBench extractor.
 
         Args:
-            config: PlanBench task config (default: task_1_plan_generation)
+            config: PlanBench task config (e.g., "task_1_plan_generation")
         """
         super().__init__()
-        if config not in PLANBENCH_CONFIGS:
-            log.warning(f"Unknown config '{config}', using task_1_plan_generation")
-            config = "task_1_plan_generation"
-        self.config = config
+        resolved = config if config is not None else "task_1_plan_generation"
+        if resolved not in PLANBENCH_CONFIGS:
+            log.warning(f"Unknown config '{resolved}', using task_1_plan_generation")
+            resolved = "task_1_plan_generation"
+        self.config = resolved
 
     def extract_contrastive_pairs(
         self,

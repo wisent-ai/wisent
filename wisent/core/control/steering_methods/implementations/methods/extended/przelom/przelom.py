@@ -43,7 +43,7 @@ class PrzelomConfig:
     """Configuration for PRZELOM attention-transport steering."""
     epsilon: float = PRZELOM_EPSILON
     """Entropic regularization (temperature for softmax)."""
-    target_mode: str = "uniform"
+    target_mode: Optional[str] = None
     """Target transport plan mode: 'uniform' or 'nearest'."""
     regularization: float = TIKHONOV_REG
     """Tikhonov regularization for pseudoinverse."""

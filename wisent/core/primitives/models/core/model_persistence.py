@@ -175,7 +175,7 @@ class ModelPersistence:
         return save_data['vector'], save_data.get('metadata', {})
     
     @staticmethod
-    def list_available_models(model_dir: str, model_type: str = "classifier") -> Dict[str, List[int]]:
+    def list_available_models(model_dir: str, model_type: str) -> Dict[str, List[int]]:
         """
         List available saved models in a directory.
         

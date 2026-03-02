@@ -38,7 +38,7 @@ class EvaluatorMath(EvaluatorMathHelpersMixin):
 
     def __init__(
         self,
-        ans_extract_mode: str = "boxed",
+        ans_extract_mode: str,
         include_percentage: bool = True,
         rel_tol: float = DEF_REL_TOL,
         abs_tol: float = DEF_ABS_TOL,
@@ -56,7 +56,7 @@ class EvaluatorMath(EvaluatorMathHelpersMixin):
         from wisent.core.reading.evaluators.benchmark_specific.math_parsing.core import (
             EvaluatorBase,
         )
-        raw_ans: str = EvaluatorBase().extract_ans(resp_str)
+        raw_ans: str = EvaluatorBase(self.ans_extract_mode).extract_ans(resp_str)
         math_ans: str = self.norm_ans_str(raw_ans)
         return math_ans
 

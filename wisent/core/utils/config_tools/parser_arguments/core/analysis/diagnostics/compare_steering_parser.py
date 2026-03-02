@@ -28,7 +28,7 @@ def setup_compare_steering_parser(parser):
     parser.add_argument(
         "--format",
         type=str,
-        default="both",
+        required=True,
         choices=["json", "table", "both"],
-        help="Output format: json, table, or both (default: both)",
+        help="Output format: json, table, or both",
     )

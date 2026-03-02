@@ -16,7 +16,7 @@ from .analysis import (
     detect_with_coarse_fine_search,
     detect_concepts_multilayer,
 )
-from .visualization import (
+from wisent.core.utils.visualization.concepts import (
     create_concept_overview_figure,
     create_per_concept_figure,
     create_all_concept_figures,

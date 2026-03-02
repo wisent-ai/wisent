@@ -9,7 +9,7 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.core.hardware import subprocess_timeout_s
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 __all__ = ["AppsExtractor"]
 

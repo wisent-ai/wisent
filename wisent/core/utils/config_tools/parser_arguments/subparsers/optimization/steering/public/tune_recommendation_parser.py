@@ -24,10 +24,10 @@ def setup_tune_recommendation_parser(parser):
                      help="Comma-separated benchmark names "
                           "(default: all with zwiad results)")
     cgt.add_argument("--output", type=str,
-                     default="ground_truth.json",
-                     help="Output JSON path (default: ground_truth.json)")
+                     required=True,
+                     help="Output JSON path")
     cgt.add_argument("--zwiad-dir", type=str,
-                     default="zwiad_results",
+                     required=True,
                      help="Directory containing zwiad JSON files")
     cgt.add_argument("--limit", type=int, default=DEFAULT_N_TRIALS,
                      help="Max samples per benchmark (default: 100)")
@@ -64,9 +64,9 @@ def setup_tune_recommendation_parser(parser):
                      help="Output config JSON path "
                           "(default: ~/.wisent/"
                           "learned_recommendation_config.json)")
-    opt.add_argument("--objective", type=str, default="top1",
+    opt.add_argument("--objective", type=str, required=True,
                      choices=["top1", "topk", "regret"],
-                     help="Objective function (default: top1)")
+                     help="Objective function")
     opt.add_argument("--top-k", type=int, default=TOPK_OBJECTIVE_K,
                      help="K for topk objective (default: 2)")
     opt.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED,

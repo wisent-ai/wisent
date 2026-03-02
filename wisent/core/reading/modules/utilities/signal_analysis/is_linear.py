@@ -21,7 +21,7 @@ from wisent.core.utils.config_tools.constants import (
     DIAGNOSTICS_TOTAL_CHECKS,
 )
 
-from ..geo_utils.linearity_utils import (
+from wisent.core.reading.modules.modules.geo_utils.linearity_utils import (
     compute_probe_accuracies,
     analyze_residuals,
     bootstrap_gap_ci,

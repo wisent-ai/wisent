@@ -19,15 +19,15 @@ import numpy as np
 from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, JSON_INDENT, CHANCE_LEVEL_ACCURACY
 
 # Import compute_geometry_metrics from metrics_core (single source of truth)
-from .metrics.core.metrics_core import compute_geometry_metrics
-from .steering.analysis.steerability import compute_final_steering_prescription
+from wisent.core.reading.modules.utilities.metrics.core.metrics_core import compute_geometry_metrics
+from wisent.core.reading.modules.modules.steering.analysis.steerability import compute_final_steering_prescription
 
 
 def run_full_zwiad(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     layer: int,
-    benchmark_name: str = "unknown",
+    benchmark_name: str,
     output_dir: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -67,7 +67,7 @@ def run_full_zwiad(
 
 def run_full_zwiad_with_layer_search(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
-    benchmark_name: str = "unknown",
+    benchmark_name: str,
     output_dir: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
@@ -113,7 +113,7 @@ def run_full_zwiad_with_steering_eval(
     tokenizer,
     test_prompts: List[str],
     layer: int,
-    benchmark_name: str = "unknown",
+    benchmark_name: str,
 ) -> Dict[str, Any]:
     """
     Run zwiad and evaluate actual steering effectiveness.

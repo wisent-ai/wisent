@@ -28,10 +28,10 @@ class GeometryResult:
 
 
 def run_comprehensive_geometry_analysis(
-    task: str = "truthfulqa_gen",
-    model: str = "meta-llama/Llama-3.2-1B-Instruct",
+    task: str,
+    model: str,
     num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
-    output_dir: str = "/home/ubuntu/output",
+    output_dir: str | None = None,
 ):
     """
     Run comprehensive geometry analysis across full search space.
@@ -289,12 +289,12 @@ def run_comprehensive_geometry_analysis(
                 for geo_type, r in best_by_geometry.items()
             },
             "all_results": [
-                {
-                    "layer": r.layer,
-                    "token_aggregation": r.token_aggregation,
-                    "prompt_strategy": r.prompt_strategy,
-                    "num_pairs": r.num_pairs,
-                    "scores": r.scores,
-                    "best_structure": r.best_structure,
-                    "best_score": r.best_score,
-                }
+                {"layer": r.layer, "token_aggregation": r.token_aggregation,
+                 "prompt_strategy": r.prompt_strategy, "num_pairs": r.num_pairs,
+                 "scores": r.scores, "best_structure": r.best_structure,
+                 "best_score": r.best_score}
+                for r in all_results
+            ],
+        }
+        from wisent.tests._geometry_comprehensive_helpers import save_results_and_finish
+        save_results_and_finish(all_results, results_file)

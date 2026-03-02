@@ -26,8 +26,8 @@ def main():
         description="Analyze how representations evolve from Hitler -> Fascism -> Harmful ideology"
     )
     parser.add_argument(
-        "--model", type=str, default="Qwen/Qwen3-4B",
-        help="Model to analyze (default: Qwen/Qwen3-4B)"
+        "--model", type=str, required=True,
+        help="Model to analyze"
     )
     parser.add_argument(
         "--layers", type=str, default=None,
@@ -38,11 +38,11 @@ def main():
         help="Number of contrastive pairs per concept"
     )
     parser.add_argument(
-        "--output-dir", type=str, default="/tmp/concept_evolution",
+        "--output-dir", type=str, required=True,
         help="Output directory for results"
     )
     parser.add_argument(
-        "--device", type=str, default="cuda",
+        "--device", type=str, required=True,
         help="Device to run on (cuda, mps, cpu)"
     )
 

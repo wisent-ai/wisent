@@ -121,8 +121,8 @@ class ClassificationOptimizer(BaseOptimizer):
         Y,
         base_config: ClassifierTrainConfig,
         model_space: Callable[[optuna.Trial], dict],
+        objective_metric: str,
         training_space: Callable[[optuna.Trial], dict] | None = None,
-        objective_metric: str = "accuracy",
     ) -> None:
         self._make_classifier = make_classifier
         self._X = X

@@ -19,8 +19,8 @@ def setup_welfare_universal_parsers(steering_subparsers):
     welfare_parser.add_argument(
         "--task",
         type=str,
-        default="welfare",
-        help="Task type (default: welfare). For consistency with other commands.",
+        required=True,
+        help="Task type. For consistency with other commands.",
     )
     welfare_parser.add_argument(
         "--model", type=str, required=True, help="Model name or path"
@@ -42,7 +42,7 @@ def setup_welfare_universal_parsers(steering_subparsers):
     welfare_parser.add_argument(
         "--direction",
         type=str,
-        default="positive",
+        required=True,
         choices=["positive", "negative"],
         help="Direction to steer: 'positive' (comfort, satisfaction, etc.) or 'negative' (distress, etc.)"
     )
@@ -69,8 +69,8 @@ def setup_welfare_universal_parsers(steering_subparsers):
     welfare_parser.add_argument(
         "--output-dir",
         type=str,
-        default="./welfare_optimization",
-        help="Directory to save results and best vectors (default: ./welfare_optimization)",
+        required=True,
+        help="Directory to save results and best vectors",
     )
     welfare_parser.add_argument(
         "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
@@ -91,8 +91,8 @@ def setup_welfare_universal_parsers(steering_subparsers):
         "--search-strategy",
         type=str,
         choices=["grid", "optuna"],
-        default="grid",
-        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling (default: grid)"
+        required=True,
+        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling"
     )
     welfare_parser.add_argument(
         "--n-trials",
@@ -135,9 +135,9 @@ def setup_welfare_universal_parsers(steering_subparsers):
     universal_parser.add_argument(
         "--method",
         type=str,
-        default="CAA",
+        required=True,
         choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
-        help=f"Steering method to optimize. Available: {', '.join(AVAILABLE_METHODS)} (default: CAA)"
+        help=f"Steering method to optimize. Available: {', '.join(AVAILABLE_METHODS)}"
     )
     universal_parser.add_argument(
         "--limit",
@@ -154,8 +154,8 @@ def setup_welfare_universal_parsers(steering_subparsers):
     universal_parser.add_argument(
         "--output-dir",
         type=str,
-        default="./optimization_results",
-        help="Directory to save results (default: ./optimization_results)"
+        required=True,
+        help="Directory to save results"
     )
     universal_parser.add_argument(
         "--save-best-vector",

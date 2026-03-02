@@ -15,8 +15,8 @@ def setup_cluster_benchmarks_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--output",
         type=str,
-        default="./cluster_output",
-        help="Output directory for results (default: ./cluster_output)"
+        required=True,
+        help="Output directory for results"
     )
     parser.add_argument(
         "--pairs-per-benchmark",

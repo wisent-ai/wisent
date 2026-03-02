@@ -9,9 +9,9 @@ from wisent.core.utils.config_tools.constants import (
     DEFAULT_SCORE, DEFAULT_RANDOM_SEED, JSON_INDENT, VIZ_PCA_COMPONENTS,
     LINEARITY_MAX_PAIRS, MIN_CONCEPT_DIM,
 )
-from ..metrics.core.metrics_core import compute_geometry_metrics
-from ..concepts import decompose_and_name_concepts_with_labels, find_optimal_layer_per_concept
-from ..data.database_loaders import load_activations_from_database, load_pair_texts_from_database, load_available_layers_from_database
+from wisent.core.reading.modules.utilities.metrics.core.metrics_core import compute_geometry_metrics
+from wisent.core.reading.modules.utilities.concepts import decompose_and_name_concepts_with_labels, find_optimal_layer_per_concept
+from wisent.core.reading.modules.utilities.data.database_loaders import load_activations_from_database, load_pair_texts_from_database, load_available_layers_from_database
 
 _GEO_KEYS = ["linear_accuracy", "nonlinear_accuracy", "gap", "diagnosis", "confidence",
     "p_value", "gap_ci_lower", "gap_ci_upper", "n_diagnostics_passed", "n_diagnostics_total",
@@ -53,10 +53,10 @@ __all__ = [
 
 def run_zwiad_with_concept_naming(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
+    llm_model: str,
     pair_texts: Optional[Dict[int, Dict[str, str]]] = None,
     generate_visualizations: bool = True,
-    llm_model: str = "meta-llama/Llama-3.2-1B-Instruct",
-    steps: str = "all", output_path: Optional[str] = None,
+    steps: Optional[str] = None, output_path: Optional[str] = None,
 ) -> Dict[str, Any]:
     """Run Zwiad with geometry metrics, 5-step protocol, and concept naming."""
     from .zwiad_protocol import (
@@ -69,7 +69,7 @@ def run_zwiad_with_concept_naming(
     def _log(msg): print(f"  [TRACE] {msg}", file=_sys.stderr, flush=True)
     existing = _load_checkpoint(output_path)
     _log(f"Checkpoint loaded: {list(existing.keys())}")
-    if steps == "all":
+    if steps is None:
         steps_to_run = {"signal", "geometry", "decomposition", "intervention", "editability"}
     else:
         steps_to_run = {s.strip().lower() for s in steps.split(",")}
@@ -116,7 +116,7 @@ def run_zwiad_with_concept_naming(
         elif n_pairs < min_pairs_for_probes:
             results["signal_test"] = {"status": "insufficient_data", "n_pairs": n_pairs}
         else:
-            signal_result = test_signal(pos_pca, neg_pca, ["knn_accuracy", "knn_pca_accuracy", "mlp_probe_accuracy"])
+            signal_result = test_signal(pos_pca, neg_pca, ["knn_accuracy", "knn_pca_accuracy", "mlp_probe_accuracy"], device=str(pos_pca.device))
             results["signal_test"] = {
                 "max_z_score": signal_result.max_z_score, "min_p_value": signal_result.min_p_value,
                 "passed": signal_result.passed, "permutation_metrics": signal_result.permutation_metrics,

@@ -36,7 +36,7 @@ GENERATION_CONFIG = {
 def evaluate_conala(
     model: WisentModel,
     evaluator: CoNaLaEvaluator,
-    split: str = "test",
+    split: str,
     limit: int | None = None,
 ) -> dict:
     """Evaluate model on CoNaLa dataset.
@@ -117,7 +117,7 @@ def evaluate_conala(
     }
 
 
-def main(limit: int | None = None, split: str = "test"):
+def main(limit: int | None = None, *, split: str):
     """Run CoNaLa evaluation and save results."""
     print("Loading model...")
     model_name = "Qwen/Qwen2.5-0.5B-Instruct"

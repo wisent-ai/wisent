@@ -11,7 +11,6 @@ from wisent.core.primitives.model_interface.core.activations.core.atoms import R
 from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.primitives.contrastive_pairs.diagnostics import run_control_steering_diagnostics
 from wisent.core.utils.infra_tools.errors import ControlVectorDiagnosticsError
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH
 from wisent.core.primitives.models.config import get_generate_kwargs
 
 logger = logging.getLogger(__name__)
@@ -21,12 +20,12 @@ logger = logging.getLogger(__name__)
 def _generate(
     self,
     inputs: list[list[ChatMessage]] | str,
+    steering_strength: float,
+    steering_strategy: str,
     num_return_sequences: int = 1,
     use_steering: bool = False,
     steering_plan: SteeringPlan | None = None,
     steering_object: "BaseSteeringObject | None" = None,
-    steering_strength: float = DEFAULT_STRENGTH,
-    steering_strategy: str = "constant",
     steering_strategy_config: dict | None = None,
     enable_thinking: bool = False,
     prompt_is_formatted: bool = False,
@@ -130,9 +129,9 @@ def _generate(
 def _set_steering_from_raw(
     self,
     raw: list[RawActivationMap] | RawActivationMap | None,
+    scale: float,
     layers_description: list[str] | None = None,
     steering_weights: list[float] | None = None,
-    scale: float = DEFAULT_STRENGTH,
     normalize: bool = False,
 ) -> None:
     """

@@ -7,14 +7,15 @@ import torch.nn.functional as F
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, TETNO_GATE_SCALE_FACTOR, DEFAULT_LAYER_WEIGHT, STEERING_BASE_STRENGTH_DEFAULT
+from wisent.core.utils.config_tools.constants import TETNO_GATE_SCALE_FACTOR, DEFAULT_LAYER_WEIGHT, STEERING_BASE_STRENGTH_DEFAULT
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 
 class TETNOHooks:
     """Runtime hooks for TETNO conditional steering."""
 
     def __init__(self, model, tetno_data: Dict[str, Any],
-                 base_strength: float = DEFAULT_STRENGTH):
+                 base_strength: float):
         self.model = model
         self.tetno_data = tetno_data
         self.base_strength = base_strength
@@ -49,8 +50,10 @@ class TETNOHooks:
         # Sensor layer
         layer_indices = list(self._layer_name_to_idx.values())
         self._sensor_layer_idx = (
-            layer_indices[len(layer_indices) // 2] if layer_indices else DEFAULT_LAYER
+            layer_indices[len(layer_indices) // 2] if layer_indices else None
         )
+        if self._sensor_layer_idx is None:
+            raise MissingParameterError(params=["sensor_layer"], context="TETNO hooks: no layer indices found in behavior vectors")
 
     def install(self) -> None:
         """Install forward hooks."""
@@ -125,7 +128,7 @@ class TETNOHooks:
 
 def load_model(
     model_path: str,
-    device_map: str = "auto",
+    device_map: Optional[str] = None,
     torch_dtype=None,
     install_hooks: bool = True,
     GROMHooksClass=None,

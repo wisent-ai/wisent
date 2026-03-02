@@ -25,7 +25,6 @@ from enum import Enum
 
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_STRENGTH,
     GUIDED_MIN_LINEAR_SCORE, GUIDED_SURGICAL_TOP_K,
     GUIDED_FISHER_WEIGHT_MIN, GUIDED_FISHER_WEIGHT_MAX,
     GUIDED_MAX_DEGRADATION,
@@ -62,52 +61,52 @@ class AblationMode(Enum):
 @dataclass
 class GuidedModificationConfig:
     """Configuration for guided weight modification."""
-    
+
+    # Strength parameters (required)
+    fisher_weight_scale: float
+    """Scale factor for Fisher-based weights."""
+
+    base_strength: float
+    """Base ablation strength before layer weighting."""
+
     # Layer selection
     min_linear_score: float = GUIDED_MIN_LINEAR_SCORE
     """Minimum linear score to include a layer in ablation."""
 
     surgical_top_k: int = GUIDED_SURGICAL_TOP_K
     """Number of top layers for surgical mode."""
-    
+
     # Fisher ratio weighting
     use_fisher_weights: bool = True
     """Weight ablation strength by Fisher ratio."""
-    
-    fisher_weight_scale: float = DEFAULT_STRENGTH
-    """Scale factor for Fisher-based weights."""
-    
+
     fisher_weight_min: float = GUIDED_FISHER_WEIGHT_MIN
     """Minimum weight (prevents zero ablation)."""
 
     fisher_weight_max: float = GUIDED_FISHER_WEIGHT_MAX
     """Maximum weight (prevents over-ablation)."""
-    
+
     # Ablation mode
     mode: AblationMode = AblationMode.ADAPTIVE
     """Ablation mode: full, surgical, or adaptive."""
-    
+
     # Validation
     validate_collateral: bool = True
     """Run collateral damage validation."""
-    
+
     max_allowed_degradation: float = GUIDED_MAX_DEGRADATION
     """Maximum allowed degradation on unrelated benchmarks."""
-    
+
     validation_benchmarks: Optional[List[str]] = None
     """Benchmarks to use for validation. If None, auto-select."""
-    
+
     # Extraction strategy
-    extraction_strategy: str = "chat_last"
+    extraction_strategy: Optional[str] = None
     """Extraction strategy for computing directions."""
-    
-    # General
-    base_strength: float = DEFAULT_STRENGTH
-    """Base ablation strength before layer weighting."""
-    
+
     normalize_vectors: bool = True
     """Normalize steering vectors."""
-    
+
     verbose: bool = True
     """Print progress information."""
 

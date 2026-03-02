@@ -91,10 +91,10 @@ def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> Non
     method_group.add_argument(
         "--method",
         type=str,
-        default="directional",
+        required=True,
         choices=["directional", "additive", "grom", "tecza", "tetno"],
         help=(
-            "Weight modification method. Default: directional. "
+            "Weight modification method. "
             "Options: directional (single direction), additive (bias-based), "
             "grom/tecza/tetno (multi-direction, better for non-linear representations)"
         )
@@ -130,13 +130,13 @@ def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> Non
     multi_dir_group.add_argument(
         "--combination-strategy",
         type=str,
-        default="learned",
+        required=True,
         choices=["learned", "uniform", "pca_weighted"],
         help=(
             "How to combine multiple directions when baking into weights. "
             "learned: use method's learned weights, "
             "uniform: equal weights, "
-            "pca_weighted: weight by PCA importance. Default: learned"
+            "pca_weighted: weight by PCA importance"
         )
     )
     multi_dir_group.add_argument(
@@ -153,8 +153,8 @@ def setup_advanced_optimize_weights_args(parser: argparse.ArgumentParser) -> Non
     vector_group.add_argument(
         "--layers",
         type=str,
-        default="all",
-        help="Layers for activation collection: 'all' or comma-separated indices. Default: all"
+        required=True,
+        help="Layers for activation collection: 'all' or comma-separated indices"
     )
     vector_group.add_argument(
         "--similarity-threshold",

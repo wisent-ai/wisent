@@ -163,7 +163,7 @@ def load_diagnosis_results(model_name: str, output_dir: Path) -> Dict[str, Any]:
 def get_diagnosis_for_benchmark(
     diagnosis_results: Dict[str, Any],
     benchmark: str,
-    strategy: str = "chat_last",
+    strategy: str,
 ) -> Tuple[str, int, float, float]:
     """
     Get Zwiad diagnosis for a specific benchmark.

@@ -21,8 +21,8 @@ from wisent.core.control.steering_methods.steering_object import (
     CAASteeringObject,
 )
 from wisent.core.utils.config_tools.constants import (TIKHONOV_REG, RL_NUM_EPISODES, RL_EPSILON,
-    DEFAULT_STRENGTH,
     PRZELOM_EPSILON, SZLAK_INFERENCE_K, DEFAULT_LIMIT, CONTINUAL_LOOP_QUERY_LIMIT)
+from wisent.core import constants as _C
 
 
 def ensure_enriched_pairs(
@@ -84,6 +84,7 @@ def evaluate_vectors(
     limit: int,
     device: Optional[str],
     work_dir: str,
+    strength: float,
 ) -> float:
     """Evaluate steering vectors by generating responses and scoring them."""
     sf = os.path.join(work_dir, "steering.pt")
@@ -95,7 +96,7 @@ def evaluate_vectors(
 
     execute_generate_responses(_make_args(
         task=task, input_file=enriched_path, model=model, output=rf,
-        num_questions=limit, steering_object=sf, steering_strength=DEFAULT_STRENGTH,
+        num_questions=limit, steering_object=sf, steering_strength=strength,
         steering_strategy="constant", use_steering=True, device=device,
         verbose=False, cached_model=None,
     ))

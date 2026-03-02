@@ -2,17 +2,23 @@
 Centralized Steering Method Registry.
 
 Single source of truth for all steering method definitions.
-See _definitions_part1/2/3.py for method-specific definitions.
+See _definitions_part*.py for method-specific definitions.
 """
 from __future__ import annotations
 
 import argparse
+import logging
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Type
 
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, STEERING_STRENGTH_RANGE_WIDE
+from wisent.core.utils.config_tools.constants import STEERING_STRENGTH_RANGE_WIDE
+
+logger = logging.getLogger(__name__)
+
+# Sentinel for "no default provided"
+_UNSET = object()
 
 
 class SteeringMethodType(Enum):
@@ -34,12 +40,18 @@ class SteeringMethodParameter:
     """Definition of a single parameter for a steering method."""
     name: str
     type: Type
-    default: Any
     help: str
-    cli_flag: Optional[str] = None  # e.g., "--caa-normalize"
+    default: Any = _UNSET
+    required: bool = True
+    cli_flag: Optional[str] = None
     choices: Optional[List[Any]] = None
-    action: Optional[str] = None  # e.g., "store_true" for boolean flags
-    
+    action: Optional[str] = None
+
+    @property
+    def has_default(self) -> bool:
+        """Whether this parameter has an explicit default value."""
+        return self.default is not _UNSET
+
     def get_cli_flag(self, method_name: str) -> str:
         """Get the CLI flag name for this parameter."""
         if self.cli_flag:
@@ -49,23 +61,16 @@ class SteeringMethodParameter:
 
 @dataclass
 class SteeringMethodDefinition:
-    """Complete definition of a steering method including all configuration."""
-    
+    """Complete definition of a steering method."""
     name: str
     method_type: SteeringMethodType
     description: str
-    method_class_path: str  # e.g., "wisent.core.control.steering_methods.methods.caa.CAAMethod"
-    
-    # Method-specific parameters
+    method_class_path: str
     parameters: List[SteeringMethodParameter] = field(default_factory=list)
-    
-    # Optimization configuration
     optimization_config: Dict[str, Any] = field(default_factory=dict)
-    
-    # Default values for common settings
-    default_strength: float = DEFAULT_STRENGTH
+    default_strength: Optional[float] = None
     strength_range: tuple = STEERING_STRENGTH_RANGE_WIDE
-    
+
     def get_method_class(self) -> Type[BaseSteeringMethod]:
         """Dynamically import and return the method class."""
         module_path, class_name = self.method_class_path.rsplit(".", 1)
@@ -74,38 +79,40 @@ class SteeringMethodDefinition:
         return getattr(module, class_name)
     
     def get_default_params(self) -> Dict[str, Any]:
-        """Get default parameter values as a dictionary."""
-        return {p.name: p.default for p in self.parameters}
-    
+        """Get parameter defaults defined directly on parameters."""
+        return {p.name: p.default for p in self.parameters if p.has_default}
+
+    def get_required_param_names(self) -> List[str]:
+        """Get names of required params that lack inline defaults."""
+        return [p.name for p in self.parameters if p.required and not p.has_default]
+
     def add_cli_arguments(self, parser: argparse.ArgumentParser) -> None:
         """Add this method's CLI arguments to a parser."""
         for param in self.parameters:
             flag = param.get_cli_flag(self.name)
             kwargs: Dict[str, Any] = {
-                "default": param.default,
+                "default": param.default if param.has_default else None,
                 "help": f"[{self.name.upper()}] {param.help}",
             }
-            
             if param.action:
                 kwargs["action"] = param.action
             else:
                 kwargs["type"] = param.type
-                
             if param.choices:
                 kwargs["choices"] = param.choices
-                
             parser.add_argument(flag, **kwargs)
-    
+
     def extract_params_from_args(self, args: argparse.Namespace) -> Dict[str, Any]:
         """Extract this method's parameters from parsed CLI args."""
         params = {}
         for param in self.parameters:
-            # Convert CLI flag to attribute name
             flag = param.get_cli_flag(self.name)
             attr_name = flag.lstrip("-").replace("-", "_")
             if hasattr(args, attr_name):
-                params[param.name] = getattr(args, attr_name)
-            else:
+                val = getattr(args, attr_name)
+                if val is not None:
+                    params[param.name] = val
+            elif param.has_default:
                 params[param.name] = param.default
         return params
 
@@ -222,15 +229,17 @@ class SteeringMethodRegistry:
         return cls.get(method_name).extract_params_from_args(args)
     
     @classmethod
-    def create_method_instance(cls, name: str, **kwargs) -> BaseSteeringMethod:
-        """Create an instance of a steering method with given parameters."""
+    def create_method_instance(
+        cls, name: str, model_name: Optional[str] = None,
+        task_name: Optional[str] = None, **kwargs,
+    ) -> BaseSteeringMethod:
+        """Create a method instance using three-layer config merge."""
+        from wisent.core.control.steering_methods.registry.registry_instantiation import (
+            build_merged_params,
+        )
         definition = cls.get(name)
         method_class = definition.get_method_class()
-        
-        # Merge default params with provided kwargs
-        params = definition.get_default_params()
-        params.update(kwargs)
-        
+        params = build_merged_params(definition, model_name, task_name, kwargs)
         return method_class(**params)
     
     @classmethod
@@ -256,37 +265,25 @@ class SteeringMethodRegistry:
     @classmethod
     def get_method_info(cls) -> List[Dict[str, Any]]:
         """Get detailed info about all methods for documentation/help."""
-        return [
-            {
-                "name": d.name,
-                "description": d.description,
-                "parameters": [
-                    {
-                        "name": p.name,
-                        "type": p.type.__name__,
-                        "default": p.default,
-                        "help": p.help,
-                    }
-                    for p in d.parameters
-                ],
-                "default_strength": d.default_strength,
-                "strength_range": d.strength_range,
-            }
-            for d in cls.list_definitions()
-        ]
+        from wisent.core.control.steering_methods.registry.registry_instantiation import (
+            get_method_info_impl,
+        )
+        return get_method_info_impl(cls.list_definitions())
 
 
-# Convenience function for backward compatibility
-def get_steering_method(name: str, **kwargs) -> BaseSteeringMethod:
+def get_steering_method(
+    name: str, model_name: Optional[str] = None,
+    task_name: Optional[str] = None, **kwargs,
+) -> BaseSteeringMethod:
     """Create a steering method instance by name."""
-    return SteeringMethodRegistry.create_method_instance(name, **kwargs)
+    return SteeringMethodRegistry.create_method_instance(
+        name, model_name=model_name, task_name=task_name, **kwargs,
+    )
 
 
 def list_steering_methods() -> List[str]:
-    """List all available steering methods."""
     return SteeringMethodRegistry.list_methods()
 
 
 def is_valid_steering_method(name: str) -> bool:
-    """Check if a steering method name is valid."""
     return SteeringMethodRegistry.validate_method(name)

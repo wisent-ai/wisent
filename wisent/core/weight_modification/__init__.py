@@ -56,7 +56,7 @@ Usage:
     )
 
     # Option 2: Bake in steering (enhance capability)
-    bake_steering_into_weights(model, steering_vectors, alpha=1.0)
+    bake_steering_into_weights(model, steering_vectors, alpha=strength, method="bias")
 
     # Export
     export_modified_model(model, "path/to/save")

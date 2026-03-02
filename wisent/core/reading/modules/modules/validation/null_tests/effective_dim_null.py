@@ -11,7 +11,7 @@ from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED, Z_SCORE_SIGNIFICANCE,
 )
 
-from ...analysis.intrinsic_dim import (
+from wisent.core.reading.modules.utilities.signal_analysis.intrinsic_dim import (
     participation_ratio,
     effective_rank,
     stable_rank,

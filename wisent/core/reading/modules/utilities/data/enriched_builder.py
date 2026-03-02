@@ -13,7 +13,7 @@ def build_enriched_from_db(
     model_name: str,
     task_name: str,
     work_dir: str,
-    extraction_strategy: str = "chat_last",
+    extraction_strategy: str,
     limit: Optional[int] = None,
     num_attention_heads: Optional[int] = None,
     num_key_value_heads: Optional[int] = None,

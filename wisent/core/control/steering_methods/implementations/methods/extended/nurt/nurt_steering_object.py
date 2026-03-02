@@ -19,7 +19,6 @@ from wisent.core.control.steering_methods.steering_object import (
     SteeringObjectMetadata,
 )
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_STRENGTH,
     NURT_NUM_INTEGRATION_STEPS,
     NURT_T_MAX,
 )
@@ -84,7 +83,7 @@ class NurtSteeringObject(BaseSteeringObject):
         return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
 
     def apply_steering(
-        self, hidden_state: torch.Tensor, layer: int, base_strength: float = DEFAULT_STRENGTH,
+        self, hidden_state: torch.Tensor, layer: int, base_strength: float,
     ) -> torch.Tensor:
         """
         Apply flow-based steering: project -> integrate -> reconstruct.
@@ -139,7 +138,7 @@ class NurtSteeringObject(BaseSteeringObject):
             return h_new.reshape(original_shape)
         return h_new
 
-    def compute_mean_transport(self, base_strength: float = DEFAULT_STRENGTH) -> Dict[int, torch.Tensor]:
+    def compute_mean_transport(self, base_strength: float) -> Dict[int, torch.Tensor]:
         """
         Compute mean transport direction per layer in full hidden space.
 

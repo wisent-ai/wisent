@@ -6,11 +6,11 @@ Supported tasks: any, in particular:
     - mbpp, mbpp_instruct, mbpp_plus, mbpp_plus_instruct
 
 Args:
-    --tasks       lm_eval task(s), comma-separated (default: humaneval)
-    --model       HuggingFace model name (default: EleutherAI/gpt-neo-125M)
+    --tasks       lm_eval task(s), comma-separated (required)
+    --model       HuggingFace model name (required)
     --limit       Number of samples, None for all (default: 20)
     --batch_size  Batch size (default: 4)
-    --device      Device to use (default: cuda:0)
+    --device      Device to use (required)
     --output_dir  Output directory (default: ./output)
 """
 
@@ -18,8 +18,9 @@ import argparse
 import subprocess
 import os
 from pathlib import Path
+from typing import Optional
 from wisent.core.utils.config_tools.constants import DEFAULT_CODE_EVAL_LIMIT
-from wisent.core.utils.core.hardware import eval_batch_size
+from wisent.core.utils.infra_tools.infra.core.hardware import eval_batch_size
 
 
 IMAGE_NAME = "lm-eval:code-eval"
@@ -42,8 +43,8 @@ def build_image() -> None:
 
 def run_code_eval(
     model: str = "EleutherAI/gpt-neo-125M",
-    tasks: str = "humaneval",
-    device: str = "cuda:0",
+    tasks: Optional[str] = None,
+    device: Optional[str] = None,
     batch_size: int | None = None,
     limit: int | None = DEFAULT_CODE_EVAL_LIMIT,
     output_dir: Path | None = None,
@@ -105,9 +106,9 @@ def run_code_eval(
 
 def main():
     parser = argparse.ArgumentParser(description="Run code evaluation tasks in Docker")
-    parser.add_argument("--model", default="EleutherAI/gpt-neo-125M", help="HuggingFace model name")
-    parser.add_argument("--tasks", default="humaneval", help="lm_eval task(s), comma-separated")
-    parser.add_argument("--device", default="cuda:0", help="Device to use")
+    parser.add_argument("--model", required=True, help="HuggingFace model name")
+    parser.add_argument("--tasks", required=True, help="lm_eval task(s), comma-separated")
+    parser.add_argument("--device", required=True, help="Device to use")
     parser.add_argument("--batch_size", type=int, default=None, help="Batch size (auto-detected if omitted)")
     parser.add_argument("--limit", type=int, default=DEFAULT_CODE_EVAL_LIMIT, help="Number of samples (None for all)")
     parser.add_argument("--output_dir", type=Path, default=None, help="Output directory")

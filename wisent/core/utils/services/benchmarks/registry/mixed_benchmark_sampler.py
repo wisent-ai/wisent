@@ -78,7 +78,7 @@ class MixedBenchmarkSampler:
         """Get all benchmarks that have a specific tag."""
         return self._benchmark_registry.get(tag, [])
     
-    def get_benchmarks_by_tags(self, tags: List[str], mode: str = "any") -> List[str]:
+    def get_benchmarks_by_tags(self, tags: List[str], mode: str) -> List[str]:
         """
         Get benchmarks that match the given tags.
         
@@ -117,9 +117,9 @@ class MixedBenchmarkSampler:
         self,
         tags: List[str],
         total_samples: int,
+        tag_mode: str,
         split_ratio: float = DEFAULT_SPLIT_RATIO,
         random_seed: Optional[int] = None,
-        tag_mode: str = "any",
         benchmark_weights: Optional[Dict[str, float]] = None
     ) -> Tuple[List[BenchmarkSample], List[BenchmarkSample]]:
         """

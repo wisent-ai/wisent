@@ -76,7 +76,7 @@ def evaluate_all(self) -> Iterable[SampleOutcome]:
     if self.provider is None or self.model_fn is None:
         raise MissingParameterError(params=["provider", "model_fn"], context="batch evaluation")
 
-    for idx, task in enumerate(self.provider.iter_tasks()):
+    for idx, task in enumerate(self.provider.iter_tasks(split="test")):
         files0 = self.model_fn(task)
         files0 = {**task.files, **files0}
         files0 = self._maybe_sanitize(task, files0)

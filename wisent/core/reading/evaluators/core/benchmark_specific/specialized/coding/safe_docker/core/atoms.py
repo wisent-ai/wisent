@@ -2,7 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
-from wisent.core.utils.core.hardware import (
+from wisent.core.utils.infra_tools.infra.core.hardware import (
     docker_cpu_limit_s,
     docker_wall_timeout_s,
     docker_mem_limit_mb,

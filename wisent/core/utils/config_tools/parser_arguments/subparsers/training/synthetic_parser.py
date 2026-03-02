@@ -1,10 +1,8 @@
 """Parser setup for the 'synthetic' command."""
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER,
     SYNTHETIC_DEDUP_SIMILARITY,
     SYNTHETIC_QUALITY_THRESHOLD,
     SYNTHETIC_MIN_QUALITY,
-    DEFAULT_STRENGTH,
     NONSENSE_MAX_WORD_LENGTH,
 )
 
@@ -33,31 +31,31 @@ def setup_synthetic_parser(parser):
     )
 
     # Model and device
-    parser.add_argument("--model", type=str, default="meta-llama/Llama-3.1-8B-Instruct", help="Model name or path")
+    parser.add_argument("--model", type=str, required=True, help="Model name or path")
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
 
     # Training/evaluation parameters
-    parser.add_argument("--layer", type=str, default=str(DEFAULT_LAYER), help="Layer(s) to extract activations from")
+    parser.add_argument("--layer", type=str, required=True, help="Layer(s) to extract activations from")
     parser.add_argument(
         "--steering-method",
         type=str,
-        default="CAA",
+        required=True,
         choices=["CAA"],
         help="Steering method to use",
     )
-    parser.add_argument("--steering-strength", type=float, default=DEFAULT_STRENGTH, help="Strength of steering vector application")
+    parser.add_argument("--steering-strength", type=float, required=True, help="Strength of steering vector application")
     parser.add_argument(
         "--test-questions", type=int, required=True, help="Number of test questions to generate for evaluation"
     )
 
     # Output
-    parser.add_argument("--output", type=str, default="./results", help="Output directory for results")
+    parser.add_argument("--output", type=str, required=True, help="Output directory for results")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--timing", action="store_true", help="Show timing information")
     parser.add_argument("--similarity-threshold", type=float, default=SYNTHETIC_DEDUP_SIMILARITY, help="Similarity threshold for deduplication")
     parser.add_argument("--intermediate-dir", type=str, default=None, help="Directory for intermediate files")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files after completion")
-    parser.add_argument("--layers", type=str, default=str(DEFAULT_LAYER), help="Layers to extract activations from")
+    parser.add_argument("--layers", type=str, required=True, help="Layers to extract activations from")
 
     # Steering method configuration - uses centralized registry
     from wisent.core.control.steering_methods import SteeringMethodRegistry
@@ -81,8 +79,8 @@ def setup_synthetic_parser(parser):
         "--nonsense-mode",
         type=str,
         choices=["random_chars", "repetitive", "word_salad", "mixed"],
-        default="random_chars",
-        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination). Default: random_chars",
+        required=True,
+        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination)",
     )
 
     # Nonsense detection options (for detecting nonsense in responses)
@@ -117,7 +115,7 @@ def setup_synthetic_parser(parser):
     parser.add_argument(
         "--nonsense-action",
         type=str,
-        default="regenerate",
+        required=True,
         choices=["regenerate", "stop", "flag"],
         help="Action when nonsense is detected: regenerate, stop generation, or flag for review",
     )

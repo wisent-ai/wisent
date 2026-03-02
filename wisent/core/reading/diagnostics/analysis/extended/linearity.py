@@ -114,7 +114,7 @@ def check_linearity(
         LinearityResult with verdict and best configuration
     """
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
-    from wisent.core.primitives.contrastive_pairs.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
+    from wisent.core.reading.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
     
     cfg = config or LinearityConfig()
     collector = ActivationCollector(model)
@@ -263,6 +263,6 @@ def check_linearity(
 
 
 # Re-export from split module
-from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._linearity_from_activations import (
+from wisent.core.reading.diagnostics.analysis._linearity_from_activations import (
     check_linearity_from_activations,
 )

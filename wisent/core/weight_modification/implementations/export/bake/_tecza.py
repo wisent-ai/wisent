@@ -3,10 +3,10 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -17,9 +17,9 @@ def export_tecza_model(
     model: Module,
     tecza_result,
     save_path: str | Path,
+    strength: float,
+    mode: str,
     tokenizer=None,
-    mode: str = "weighted",
-    strength: float = DEFAULT_STRENGTH,
     push_to_hub: bool = False,
     repo_id: str | None = None,
     commit_message: str | None = None,
@@ -81,6 +81,7 @@ def export_tecza_model(
         model=model,
         steering_vectors=steering_vectors,
         alpha=strength,
+        method="bias",
     )
     log.info(f"Baked TECZA vectors (mode={mode}, strength={strength})")
     
@@ -136,7 +137,7 @@ def export_tecza_model(
 
 def load_tecza_model(
     model_path: str | Path,
-    device_map: str = "auto",
+    device_map: Optional[str] = None,
     torch_dtype=None,
 ):
     """

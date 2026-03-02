@@ -15,7 +15,7 @@ from __future__ import annotations
 import json
 import os
 from dataclasses import dataclass
-from typing import Any, Callable, Literal
+from typing import Any, Callable, Literal, Optional
 
 import optuna
 import torch
@@ -72,7 +72,7 @@ class WeightsOptimizerConfig:
     components: int = 1
     norm_preserve: bool = True
     optimize_direction_index: bool = False
-    target_metric: str = "compliance_rate"
+    target_metric: Optional[str] = None
     target_value: float | None = None
 
 
@@ -260,6 +260,7 @@ class WeightsOptimizer(BaseOptimizer, WeightsCheckpointingMixin):
             bake_steering_with_kernel(
                 self.model,
                 self.steering_vectors,
+                method="bias",
                 max_alpha=params["max_weight"] * params["strength"],
                 max_alpha_position=max_weight_position,
                 min_alpha=params["min_weight"],

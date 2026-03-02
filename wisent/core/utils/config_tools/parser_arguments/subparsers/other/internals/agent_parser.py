@@ -3,7 +3,6 @@ from wisent.core.utils.config_tools.constants import (
     AGENT_CLASSIFIER_EPOCHS,
     AGENT_DECISION_QUALITY_THRESHOLD,
     AGENT_DECISION_TIME_BUDGET,
-    AGENT_DEFAULT_STEERING_STRENGTH,
     AGENT_MAX_PARALLEL_WORKERS,
     AGENT_MAX_RESPONSE_ATTEMPTS,
     DEFAULT_CLASSIFIER_LR,
@@ -14,14 +13,14 @@ from wisent.core.utils.config_tools.constants import (
 def setup_agent_parser(parser):
     """Set up the agent subcommand parser."""
     parser.add_argument("prompt", type=str, help="Prompt to send to the autonomous agent")
-    parser.add_argument("--model", type=str, default="meta-llama/Llama-3.1-8B-Instruct", help="Model to use")
+    parser.add_argument("--model", type=str, required=True, help="Model to use")
     parser.add_argument("--layer", type=int, help="Layer to use (overrides parameter file)")
     parser.add_argument(
         "--agent-strategy",
         type=str,
-        default="synthetic_pairs_classifier_steering",
+        required=True,
         choices=["synthetic_pairs_classifier_steering"],
-        help="Agent strategy to use (default: synthetic_pairs_classifier_steering)"
+        help="Agent strategy to use"
     )
     parser.add_argument(
         "--quality-threshold", type=float, default=AGENT_DECISION_QUALITY_THRESHOLD, help="Quality threshold for classifiers (default: 0.3)"
@@ -76,16 +75,16 @@ def setup_agent_parser(parser):
     parser.add_argument(
         "--classifier-type",
         type=str,
-        default="logistic",
+        required=True,
         choices=["logistic", "mlp"],
-        help="Type of classifier to use (default: logistic)",
+        help="Type of classifier to use",
     )
 
     # Steering method arguments - uses centralized registry
     from wisent.core.control.steering_methods import SteeringMethodRegistry
     SteeringMethodRegistry.add_all_cli_arguments(parser)
     parser.add_argument(
-        "--steering-strength", type=float, default=AGENT_DEFAULT_STEERING_STRENGTH, help="Strength of steering vector application (default: 1.0)"
+        "--steering-strength", type=float, required=True, help="Strength of steering vector application"
     )
     parser.add_argument("--steering-mode", action="store_true", help="Enable steering mode")
 
@@ -94,9 +93,9 @@ def setup_agent_parser(parser):
     parser.add_argument(
         "--normalization-method",
         type=str,
-        default="none",
+        required=True,
         choices=["none", "l2_unit", "l2_norm", "max_norm"],
-        help="Normalization method for steering vectors (default: none)",
+        help="Normalization method for steering vectors",
     )
     parser.add_argument("--target-norm", type=float, default=None, help="Target norm for steering vectors")
 

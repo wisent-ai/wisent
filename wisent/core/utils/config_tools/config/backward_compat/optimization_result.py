@@ -23,17 +23,17 @@ class OptimizationResult:
     task: str
     layer: int
     strength: float
-    method: str = "CAA"
-    token_aggregation: str = "average"
-    prompt_strategy: str = "question_only"
-    strategy: str = "constant"
+    method: Optional[str] = None
+    token_aggregation: Optional[str] = None
+    prompt_strategy: Optional[str] = None
+    strategy: Optional[str] = None
     score: float = DEFAULT_SCORE
-    metric: str = "accuracy"
+    metric: Optional[str] = None
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     metadata: Dict[str, Any] = field(default_factory=dict)
     # TECZA
     num_directions: int = 1
-    direction_weighting: str = "primary_only"
+    direction_weighting: Optional[str] = None
     retain_weight: float = 0.0
     independence_weight: float = TECZA_INDEPENDENCE_WEIGHT
     tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
@@ -70,11 +70,11 @@ class OptimizationResult:
 
 def store_optimization(
     model: str, task: str, layer: int, strength: float,
-    method: str = "CAA", token_aggregation: str = "average",
-    prompt_strategy: str = "question_only", strategy: str = "constant",
-    score: float = DEFAULT_SCORE, metric: str = "accuracy",
+    method: str, token_aggregation: str,
+    prompt_strategy: str, strategy: str,
+    metric: str, direction_weighting: str,
+    score: float = DEFAULT_SCORE,
     metadata: Optional[Dict[str, Any]] = None, set_as_default: bool = False,
-    num_directions: int = 1, direction_weighting: str = "primary_only",
     retain_weight: float = 0.0, independence_weight: float = TECZA_INDEPENDENCE_WEIGHT,
     tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS, use_caa_init: bool = True,
     cone_constraint: bool = True, min_cosine_similarity: float = TECZA_MIN_COSINE_SIM,
@@ -113,7 +113,7 @@ def store_optimization(
 
 
 def get_cached_optimization(
-    model: str, task: str, method: str = "CAA", use_default: bool = True
+    model: str, task: str, method: str, use_default: bool = True
 ) -> Optional[OptimizationResult]:
     """Backward-compatible function to get cached steering optimization result."""
     steering = get_steering_config(model, task)

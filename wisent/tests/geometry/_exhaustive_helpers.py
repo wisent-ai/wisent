@@ -48,7 +48,7 @@ def extract_activations_cli(
     activations_file: str,
     model: str,
     layers_str: str,
-    token_aggregation: str = "final",
+    token_aggregation: str,
     prompt_strategy: str | None = None,
 ):
     """Extract activations using CLI."""

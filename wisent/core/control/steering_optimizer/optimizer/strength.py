@@ -20,7 +20,7 @@ from wisent.core.utils.infra_tools.errors import (
 from wisent.core.control.steering_methods import SteeringMethodType
 from wisent.core import constants as _C
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_STRENGTH, DEFAULT_LIMIT, DEFAULT_LAYER,
+    DEFAULT_LIMIT, DEFAULT_SCORE, PARSER_DEFAULT_LAYER_START,
     DEFAULT_NUM_STRENGTH_STEPS, SEARCH_LAYER_OFFSET,
     SEARCH_STRENGTH_RANGE_MIN, SEARCH_STRENGTH_RANGE_MAX,
     AUTO_COMPREHENSIVE_TIME_MINUTES, CLASSIFIER_THRESHOLD,
@@ -40,9 +40,9 @@ class StrengthOptimizationMixin:
     def optimize_steering_layer(
         self,
         task_name: str,
+        strength: float,
         steering_method: SteeringMethod = SteeringMethod.CAA,
         layer_search_range: Optional[Tuple[int, int]] = None,
-        strength: float = DEFAULT_STRENGTH,
         limit: int = DEFAULT_LIMIT
     ) -> SteeringOptimizationResult:
         """
@@ -211,9 +211,9 @@ class StrengthOptimizationMixin:
     def optimize_method_specific_parameters(
         self,
         task_name: str,
-        steering_method: SteeringMethod,
+        base_strength: float,
+        steering_method: SteeringMethod = SteeringMethod.CAA,
         base_layer: Optional[int] = None,
-        base_strength: float = DEFAULT_STRENGTH,
         limit: int = DEFAULT_LIMIT
     ) -> SteeringOptimizationResult:
         """Optimize method-specific parameters for a steering approach."""
@@ -230,7 +230,7 @@ class StrengthOptimizationMixin:
         """Optimize CAA specific parameters."""
         return SteeringOptimizationResult(
             task_name=task_name,
-            best_steering_layer=layer if layer is not None else DEFAULT_LAYER,
+            best_steering_layer=layer,
             best_steering_method="caa",
             best_steering_strength=strength,
             optimal_parameters={"normalize": True},
@@ -280,14 +280,17 @@ class StrengthOptimizationMixin:
                 except Exception as e:
                     logger.warning(f"Failed to optimize {method.value} for {task}: {e}")
 
+        first_result = next(iter(all_results), None)
+        best_layer = first_result.best_steering_layer if first_result else PARSER_DEFAULT_LAYER_START
+        best_str = first_result.best_steering_strength if first_result else DEFAULT_SCORE
         return SteeringOptimizationSummary(
             model_name=self.model_name,
             optimization_type="comprehensive",
             total_configurations_tested=len(all_results),
-            optimization_time_minutes=0.0,
+            optimization_time_minutes=DEFAULT_SCORE,
             best_overall_method="caa",
-            best_overall_layer=DEFAULT_LAYER,
-            best_overall_strength=DEFAULT_STRENGTH,
+            best_overall_layer=best_layer,
+            best_overall_strength=best_str,
             method_performance_ranking={},
             layer_effectiveness_analysis={},
             task_results=all_results,

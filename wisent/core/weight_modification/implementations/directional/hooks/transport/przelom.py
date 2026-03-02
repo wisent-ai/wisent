@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from typing import Dict, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import NORM_EPS, SZLAK_INFERENCE_K, DEFAULT_STRENGTH, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import NORM_EPS, SZLAK_INFERENCE_K, SEPARATOR_WIDTH_STANDARD
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -26,8 +26,8 @@ class PrzelomRuntimeHooks:
         self, model: Module,
         source_points: Dict[int, torch.Tensor],
         displacements: Dict[int, torch.Tensor],
+        base_strength: float,
         inference_k: int = SZLAK_INFERENCE_K,
-        base_strength: float = DEFAULT_STRENGTH,
     ):
         self.model = model
         self.source_points = source_points
@@ -96,7 +96,7 @@ class PrzelomRuntimeHooks:
 
 
 def project_weights_przelom(
-    model: Module, steering_obj, base_strength: float = DEFAULT_STRENGTH,
+    model: Module, steering_obj, base_strength: float,
     components: list[str] | None = None, verbose: bool = True,
 ) -> dict[str, int]:
     """Static projection: bake mean displacement into model weights."""
@@ -115,7 +115,7 @@ def project_weights_przelom(
     steering_vectors = LayerActivations(mean_vectors)
     stats = bake_steering_into_weights(
         model=model, steering_vectors=steering_vectors,
-        alpha=base_strength, components=components, verbose=verbose)
+        alpha=base_strength, method="bias", components=components, verbose=verbose)
     stats["przelom_layers"] = len(steering_obj.source_points)
     stats["method"] = "additive"
     return stats

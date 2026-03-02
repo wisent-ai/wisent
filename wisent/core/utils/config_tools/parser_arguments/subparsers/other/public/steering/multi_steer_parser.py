@@ -24,9 +24,9 @@ def setup_multi_steer_parser(parser):
     parser.add_argument(
         "--method",
         type=str,
-        default="CAA",
+        required=True,
         choices=["CAA"],
-        help="Steering method to use for combination (default: CAA)",
+        help="Steering method to use for combination",
     )
 
     # Generation configuration

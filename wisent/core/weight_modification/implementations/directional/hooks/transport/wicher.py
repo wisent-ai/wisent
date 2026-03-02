@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from typing import Dict, Optional, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, SEPARATOR_WIDTH_STANDARD
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -28,12 +28,12 @@ class WicherRuntimeHooks:
         concept_bases: Dict[int, torch.Tensor],
         component_variances: Dict[int, torch.Tensor],
         layer_variance: Dict[int, float],
+        base_strength: float,
         num_steps: int = BROYDEN_DEFAULT_NUM_STEPS,
         alpha: float = BROYDEN_DEFAULT_ALPHA,
         eta: float = BROYDEN_DEFAULT_ETA,
         beta: float = BROYDEN_DEFAULT_BETA,
         alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY,
-        base_strength: float = DEFAULT_STRENGTH,
     ):
         self.model = model
         self.concept_directions = concept_directions
@@ -145,7 +145,7 @@ class WicherRuntimeHooks:
 def project_weights_wicher(
     model: Module,
     steering_obj,
-    base_strength: float = DEFAULT_STRENGTH,
+    base_strength: float,
     components: list[str] | None = None,
     verbose: bool = True,
 ) -> dict[str, int]:
@@ -172,7 +172,7 @@ def project_weights_wicher(
     steering_vectors = LayerActivations(direction_vectors)
     stats = bake_steering_into_weights(
         model=model, steering_vectors=steering_vectors,
-        alpha=base_strength, components=components, verbose=verbose,
+        alpha=base_strength, method="bias", components=components, verbose=verbose,
     )
     stats["wicher_layers"] = len(steering_obj.concept_directions)
     stats["method"] = "additive"

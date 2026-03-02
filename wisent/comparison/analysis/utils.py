@@ -47,7 +47,7 @@ SAE_CONFIGS = {
 }
 
 
-def load_sae(model_name: str, layer_idx: int, device: str = "cuda:0"):
+def load_sae(model_name: str, layer_idx: int, device: str):
     """
     Load Gemma Scope SAE for a specific layer.
 
@@ -79,7 +79,7 @@ def load_sae(model_name: str, layer_idx: int, device: str = "cuda:0"):
 
 def load_model_and_tokenizer(
     model_name: str,
-    device: str = "cuda:0",
+    device: str,
     eval_mode: bool = True,
 ) -> tuple:
     """

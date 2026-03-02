@@ -16,7 +16,6 @@ from wisent.core.primitives.model_interface.core.activations import ExtractionSt
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH
 
 
 
@@ -110,7 +109,7 @@ class UnifiedSteeringTrainer:
     def __init__(
         self,
         model,
-        method_name: str = "caa",
+        method_name: str,
         method_params: Optional[Dict[str, Any]] = None,
     ):
         self.model = model
@@ -172,7 +171,7 @@ class UnifiedSteeringTrainer:
     def create_plan(
         self,
         layer_activations: LayerActivations,
-        strength: float = DEFAULT_STRENGTH,
+        strength: float,
     ) -> SteeringPlan:
         """Create steering plan from trained vectors."""
         return create_steering_plan_from_activations(

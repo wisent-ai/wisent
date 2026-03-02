@@ -12,8 +12,8 @@ from wisent.examples.scripts._sae import SparseAutoencoder
 def analyze_sae_features(
     sae: SparseAutoencoder,
     activations_by_concept: Dict[str, torch.Tensor],
+    device: str,
     top_k: int = SAE_TOP_K_ANALYSIS,
-    device: str = "cpu",
 ) -> Dict:
     """
     Analyze which SAE features activate for each concept.
@@ -89,7 +89,7 @@ def visualize_sae_analysis(
     output_path: Path,
     layer: int,
     model_name: str,
-    device: str = "cpu",
+    device: str,
 ):
     """Create visualizations of SAE feature analysis."""
     import matplotlib.pyplot as plt

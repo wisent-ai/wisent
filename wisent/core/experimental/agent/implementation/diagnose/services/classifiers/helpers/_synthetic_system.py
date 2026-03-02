@@ -3,7 +3,8 @@ import logging
 import time
 from typing import List, Tuple
 from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, AGENT_SYNTH_TRAIT_DISCOVERY_COST_S, AGENT_SYNTH_DATA_GEN_COST_PER_PAIR_S, AGENT_SYNTH_CLASSIFIER_TRAINING_COST_S, AGENT_SYNTH_PAIRS_PER_TRAIT, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, AGENT_SYNTH_TRAIT_DISCOVERY_COST_S, AGENT_SYNTH_DATA_GEN_COST_PER_PAIR_S, AGENT_SYNTH_CLASSIFIER_TRAINING_COST_S, AGENT_SYNTH_PAIRS_PER_TRAIT, SECONDS_PER_MINUTE
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core.experimental.agent.diagnose.classifiers._synthetic_classes import (
     TraitDiscoveryResult, SyntheticClassifierResult,
     AutomaticTraitDiscovery, SyntheticClassifierFactory,
@@ -19,10 +20,11 @@ class SyntheticClassifierSystem:
     contrastive pairs, and applies them to response activations only.
     """
 
-    def __init__(self, model):
+    def __init__(self, model, layer: int = None):
         self.model = model
-        self.trait_discovery = AutomaticTraitDiscovery(model)
-        self.classifier_factory = SyntheticClassifierFactory(model)
+        self.layer = layer
+        self.trait_discovery = AutomaticTraitDiscovery(model, layer=layer)
+        self.classifier_factory = SyntheticClassifierFactory(model, layer=layer)
 
     def create_classifiers_for_prompt(
         self, prompt: str, time_budget_minutes: float, pairs_per_trait: int = AGENT_SYNTH_PAIRS_PER_TRAIT
@@ -185,7 +187,9 @@ class SyntheticClassifierSystem:
         # Extract activations from the response ONCE
         logging.info("Extracting activations from response...")
         try:
-            response_activations, _ = self.model.extract_activations(response_text, layer=DEFAULT_LAYER)
+            if self.layer is None:
+                raise MissingParameterError(params=["layer"], context="apply_classifiers_to_response")
+            response_activations, _ = self.model.extract_activations(response_text, layer=self.layer)
         except Exception as e:
             logging.info(f"Error extracting response activations: {e}")
             return []

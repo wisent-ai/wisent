@@ -21,8 +21,8 @@ from wisent.core.reading.modules import (
     compute_geometry_metrics,
     generate_nonsense_activations,
 )
-from wisent.core.reading.modules._runner_parts._test_result import GeometryTestResult
-from wisent.core.reading.modules._runner_parts._search_results import GeometrySearchResults
+from wisent.core.reading.modules.runner._runner_parts._test_result import GeometryTestResult
+from wisent.core.reading.modules.runner._runner_parts._search_results import GeometrySearchResults
 
 
 class GeometryRunner:
@@ -90,9 +90,9 @@ class GeometryRunner:
         nonsense_pos, nonsense_neg = generate_nonsense_activations(
             model=self.model.hf_model,
             tokenizer=self.model.tokenizer,
+            device=device,
             n_pairs=n_pairs,
             layer=layer,
-            device=device,
         )
         self._nonsense_cache[cache_key] = (nonsense_pos, nonsense_neg)
         try:

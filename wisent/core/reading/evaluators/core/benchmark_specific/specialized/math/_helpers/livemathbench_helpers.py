@@ -52,7 +52,7 @@ class LiveMathBenchEvaluator(BaseEvaluator):
     description = "LiveMathBench evaluator for mathematical olympiad problems"
 
     @staticmethod
-    def get_prompt(question: str, language: str = "en") -> str:
+    def get_prompt(question: str, language: str) -> str:
         """Create prompt by appending language-specific instruction to the question."""
         instruction = LANGUAGE_PROMPTS.get(language, LANGUAGE_PROMPTS["en"])
         return f"{question}\n\n{instruction}"

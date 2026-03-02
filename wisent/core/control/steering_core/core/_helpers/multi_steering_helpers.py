@@ -10,7 +10,7 @@ def run_multi_steer(
     vector_specs: list[str],
     model_name: str,
     prompt: str,
-    method: str = "CAA",
+    method: str,
     layer: int | None = None,
     max_new_tokens: int = None,
     temperature: float = None,

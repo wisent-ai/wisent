@@ -28,7 +28,7 @@ class MultiSteeringError(Exception):
 class MultiSteering:
     """Handles multi-steering vector combination and application using WisentModel."""
 
-    def __init__(self, device: str | None = None, method: str = "CAA"):
+    def __init__(self, method: str, device: str | None = None):
         """Initialize multi-steering handler.
 
         Args:

@@ -88,7 +88,7 @@ class CustomUserDataLoader(BaseDataLoader):
             raise DataLoaderError("'path' is required for custom loader.")
 
         split = self._effective_split(split_ratio)
-        data: ContrastivePairSet = load_contrastive_pair_set(path)
+        data: ContrastivePairSet = load_contrastive_pair_set(path, return_backend="torch")
         log.info("Loaded custom data: %r", data)
 
         if not data.pairs:

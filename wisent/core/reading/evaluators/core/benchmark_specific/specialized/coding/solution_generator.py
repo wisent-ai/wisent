@@ -16,7 +16,7 @@ from wisent.core.reading.evaluators.benchmark_specific.coding.providers.livecode
 from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
 from wisent.core.reading.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
 from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
-from wisent.core.utils.core.hardware import eval_time_limit_s, eval_cpu_limit_s, code_eval_mem_limit_mb
+from wisent.core.utils.infra_tools.infra.core.hardware import eval_time_limit_s, eval_cpu_limit_s, code_eval_mem_limit_mb
 
 
 @dataclass
@@ -35,7 +35,7 @@ class ProblemSolutions:
     question_id: str
     good_example: Optional[dict[str, Any]] = None
     bad_example: Optional[dict[str, Any]] = None
-    difficulty: str = "unknown"
+    difficulty: Optional[str] = None
     all_solutions: list[dict[str, Any]] = None
 
     def __post_init__(self):
@@ -131,7 +131,7 @@ class LiveCodeBenchSolutionGenerator:
         self,
         limit: Optional[int] = None,
         platform: Optional[str] = None,
-        release_version: str = "all",
+        release_version: Optional[str] = None,
         skip_existing: bool = True,
     ):
         """
@@ -160,7 +160,7 @@ class LiveCodeBenchSolutionGenerator:
         print(f"Processing LiveCodeBench problems...")
         print(f"Models: {list(self.model_fns.keys())}")
 
-        for idx, task in enumerate(provider.iter_tasks()):
+        for idx, task in enumerate(provider.iter_tasks(split="test")):
             question_id = task.options.get("problem_id", f"unknown_{idx}")
 
             # Skip if already has good/bad pair

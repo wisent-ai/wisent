@@ -39,8 +39,8 @@ def evaluate_response_with_classifier(
     collector,
     layer_key: str,
     quality_threshold: float,
-    token_aggregation: str = "average",
-    prompt_strategy: str = "chat_template",
+    token_aggregation: str,
+    prompt_strategy: str,
     normalize_layers: bool = False,
     return_full_sequence: bool = False
 ) -> tuple[str, float]:

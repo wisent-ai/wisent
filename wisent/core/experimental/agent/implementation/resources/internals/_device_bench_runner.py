@@ -151,6 +151,6 @@ class DeviceBenchmarkRunnerMixin:
 
 
 # Global benchmarker instance
-_device_benchmarker = DeviceBenchmarker()
+_device_benchmarker = DeviceBenchmarker(benchmarks_file="device_benchmarks.json")
 
 

@@ -33,7 +33,11 @@ def setup_migrate_activations_parser(parser):
     )
     all_parser.add_argument(
         "--skip-pair-texts", action="store_true",
-        help="Skip pair texts migration (phase 1)",
+        help="Skip pair texts migration",
+    )
+    all_parser.add_argument(
+        "--reverse", action="store_true",
+        help="Process combos in reverse order within the slice",
     )
 
     # consolidate - build index.json from markers
@@ -59,8 +63,8 @@ def setup_migrate_activations_parser(parser):
         help="Benchmark/task name",
     )
     single_parser.add_argument(
-        "--strategy", type=str, default="completion_last",
-        help="Extraction strategy (default: completion_last)",
+        "--strategy", type=str, required=True,
+        help="Extraction strategy",
     )
     single_parser.add_argument(
         "--database-url", type=str, default=None,
@@ -101,8 +105,8 @@ def setup_migrate_activations_parser(parser):
         help="Benchmark/task name",
     )
     raw_parser.add_argument(
-        "--prompt-format", type=str, default="chat",
-        help="Prompt format (default: chat)",
+        "--prompt-format", type=str, required=True,
+        help="Prompt format",
     )
     raw_parser.add_argument(
         "--database-url", type=str, default=None,
@@ -126,8 +130,8 @@ def setup_migrate_activations_parser(parser):
         help="Benchmark/task name",
     )
     verify_parser.add_argument(
-        "--strategy", type=str, default="completion_last",
-        help="Extraction strategy (default: completion_last)",
+        "--strategy", type=str, required=True,
+        help="Extraction strategy",
     )
     verify_parser.add_argument(
         "--layer", type=int, required=True,

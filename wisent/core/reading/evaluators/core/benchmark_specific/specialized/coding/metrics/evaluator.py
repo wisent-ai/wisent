@@ -5,7 +5,7 @@ import logging
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 from wisent.core.utils.config_tools.constants import FEEDBACK_MAX_CHARS, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE, DISPLAY_TRUNCATION_LARGE
-from wisent.core.utils.core.hardware import (
+from wisent.core.utils.infra_tools.infra.core.hardware import (
     eval_time_limit_s,
     eval_cpu_limit_s,
     eval_mem_limit_mb,
@@ -54,7 +54,7 @@ class EvaluatorConfig:
         pre_sanitize:
             Whether to run LLM output through a sanitizer before execution (default: True).
     """
-    image: str = "coding/sandbox:polyglot-1.0"
+    image: Optional[str] = None
     runtime: Optional[str] = None
     feedback_max_chars: int = FEEDBACK_MAX_CHARS
     self_repair: bool = True

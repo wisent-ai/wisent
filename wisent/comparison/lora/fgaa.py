@@ -67,7 +67,7 @@ FGAA_ADAPTER_FILES = {
 }
 
 
-def load_effect_approximator(model_name: str, device: str = "cuda:0") -> tuple[torch.Tensor, torch.Tensor]:
+def load_effect_approximator(model_name: str, device: str) -> tuple[torch.Tensor, torch.Tensor]:
     """
     Load the pre-trained effect approximator (adapter) from HuggingFace.
 
@@ -157,16 +157,16 @@ def generate_steering_vector(
     task: str,
     model_name: str,
     output_path: str | Path,
-    trait_label: str = "correctness",
+    bos_features_source: str,
+    trait_label: str,
+    method: str,
+    device: str,
     num_pairs: int = COMPARISON_NUM_PAIRS,
-    method: str = "fgaa",
     layers: str | None = None,
-    device: str = "cuda:0",
     keep_intermediate: bool = False,
     density_threshold: float = FGAA_DENSITY_THRESHOLD,
     top_k_positive: int = FGAA_TOP_K_POSITIVE,
     top_k_negative: int = FGAA_TOP_K_NEGATIVE,
-    bos_features_source: str = "detected",
     **kwargs,
 ) -> Path:
     """Generate a steering vector using the FGAA method."""

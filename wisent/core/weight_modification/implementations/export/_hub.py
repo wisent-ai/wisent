@@ -14,7 +14,7 @@ _LOG = setup_logger(__name__)
 def save_modified_weights(
     model: Module,
     save_path: str | Path,
-    save_format: str = "safetensors",
+    save_format: str,
 ) -> None:
     """
     Save only the modified weights (not full model).

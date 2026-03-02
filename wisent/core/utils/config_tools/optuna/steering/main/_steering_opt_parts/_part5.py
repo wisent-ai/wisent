@@ -40,9 +40,11 @@ class _SteeringOptimizerClassifier:
         model,
         tokenizer,
         device: str,
+        task_name: str,
         max_length: int | None = None,
-        task_name: str = "gsm8k",
     ) -> Dict[str, Any]:
+
+
         """
         Compare baseline vs steered predictions using benchmark metrics and classifier scores.
 
@@ -53,7 +55,7 @@ class _SteeringOptimizerClassifier:
             max_length = tokenizer.model_max_length
         # Create classifier scorer function for metrics integration
         classifier_scorer = lambda predictions, description: self.score_predictions_with_classifier(
-            predictions, model, tokenizer, device, max_length, description
+            predictions, model, tokenizer, device, description, max_length
         )
 
         # Calculate standard benchmark metrics with integrated classifier confidence scores

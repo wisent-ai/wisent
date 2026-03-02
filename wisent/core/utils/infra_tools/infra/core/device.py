@@ -170,7 +170,7 @@ def save_steering_vector(
     vector: torch.Tensor,
     layer: int,
     model_name: str,
-    method: str = "caa",
+    method: Optional[str] = None,
     metadata: dict | None = None,
 ) -> None:
     """

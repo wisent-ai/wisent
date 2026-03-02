@@ -8,7 +8,7 @@ from wisent.core.utils.config_tools.constants import (
     DOCKER_TMPFS_WORK_SIZE_BYTES,
     DOCKER_TMPFS_MODE,
 )
-from wisent.core.utils.core.hardware import docker_pids_limit, docker_code_exec_timeout_s
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_pids_limit, docker_code_exec_timeout_s
 
 if TYPE_CHECKING:
     from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job

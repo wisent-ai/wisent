@@ -40,6 +40,7 @@ def _apply_weight_modification_standalone(
         bake_steering_with_kernel(
             model,
             steering_vectors,
+            method="bias",
             max_alpha=params["max_weight"] * params["strength"],
             max_alpha_position=max_weight_position,
             min_alpha=params["min_weight"],
@@ -51,6 +52,7 @@ def _apply_weight_modification_standalone(
         bake_steering_with_kernel(
             model,
             steering_vectors,
+            method="bias",
             max_alpha=params["max_weight"] * params["strength"],
             max_alpha_position=max_weight_position,
             min_alpha=params["min_weight"],

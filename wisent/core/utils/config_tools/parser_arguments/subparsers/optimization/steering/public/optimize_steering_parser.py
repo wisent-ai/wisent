@@ -40,8 +40,8 @@ def _setup_transport_rl_parser(steering_subparsers):
     p.add_argument("--task", type=str, required=True, help="Benchmark task for evaluation")
     p.add_argument("--enriched-pairs-file", type=str, required=True,
                    dest="enriched_pairs_file", help="Enriched pairs JSON with Q/K projections")
-    p.add_argument("--method", type=str, default="przelom",
-                   help="Steering method (default: przelom). Transport methods "
+    p.add_argument("--method", type=str, required=True,
+                   help="Steering method. Transport methods "
                         "(przelom, szlak) use cost-matrix REINFORCE; all others use vector ES")
     p.add_argument("--max-iterations", type=int, required=True, dest="max_iterations",
                    help="RL iteration count")
@@ -57,8 +57,8 @@ def _setup_transport_rl_parser(steering_subparsers):
                    help="ES noise scale relative to vector norm")
     p.add_argument("--limit", type=int, required=True,
                    help="Evaluation samples per iteration")
-    p.add_argument("--output", type=str, default="best_transport_rl.pt",
-                   help="Output path for best steering object (default: best_transport_rl.pt)")
+    p.add_argument("--output", type=str, required=True,
+                   help="Output path for best steering object")
     p.add_argument("--device", type=str, default=None, help="Compute device (default: auto)")
 
 
@@ -76,10 +76,10 @@ def _setup_continual_learning_parser(steering_subparsers):
                    help="Steering method (default: zwiad-recommended per task)")
     p.add_argument("--max-cycles", type=int, required=True, dest="max_cycles",
                    help="Maximum optimization cycles")
-    p.add_argument("--enriched-pairs-dir", type=str, default="./pairs/",
-                   dest="enriched_pairs_dir", help="Dir for enriched pairs (default: ./pairs/)")
-    p.add_argument("--checkpoint-dir", type=str, default="./checkpoints/",
-                   dest="checkpoint_dir", help="Checkpoint directory (default: ./checkpoints/)")
+    p.add_argument("--enriched-pairs-dir", type=str, required=True,
+                   dest="enriched_pairs_dir", help="Dir for enriched pairs")
+    p.add_argument("--checkpoint-dir", type=str, required=True,
+                   dest="checkpoint_dir", help="Checkpoint directory")
     p.add_argument("--ewc-lambda", type=float, default=CONTINUAL_EWC_LAMBDA, dest="ewc_lambda",
                    help="EWC penalty strength (default: 1000)")
     p.add_argument("--replay-size", type=int, required=True, dest="replay_size",

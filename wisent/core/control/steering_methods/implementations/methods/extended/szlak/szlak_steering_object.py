@@ -16,7 +16,7 @@ from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
-from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_STRENGTH, SZLAK_INFERENCE_K
+from wisent.core.utils.config_tools.constants import NORM_EPS, SZLAK_INFERENCE_K
 
 __all__ = ["SzlakSteeringObject"]
 
@@ -58,7 +58,7 @@ class SzlakSteeringObject(BaseSteeringObject):
         return torch.ones(batch_size, device=hidden_state.device, dtype=hidden_state.dtype)
 
     def apply_steering(
-        self, hidden_state: torch.Tensor, layer: int, base_strength: float = DEFAULT_STRENGTH,
+        self, hidden_state: torch.Tensor, layer: int, base_strength: float,
     ) -> torch.Tensor:
         """
         Apply geodesic OT steering via NN-lookup + interpolated displacement.

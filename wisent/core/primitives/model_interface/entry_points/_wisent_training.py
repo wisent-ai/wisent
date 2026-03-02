@@ -13,9 +13,9 @@ class WisentTrainingMixin:
 
     def train(
         self,
+        aggregation: str,
         traits: List[str] | None = None,
         layers: List[str] | None = None,
-        aggregation: str = "mean",
     ) -> "Wisent":
         """
         Train steering vectors from stored pairs.

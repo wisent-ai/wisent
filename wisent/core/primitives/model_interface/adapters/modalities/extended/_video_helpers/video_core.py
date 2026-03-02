@@ -45,7 +45,7 @@ class VideoSteeringConfig(SteeringConfig):
         keyframe_interval: Interval for keyframe mode
         temporal_decay_rate: Decay rate for temporal_decay mode
     """
-    frame_mode: str = "all"
+    frame_mode: Optional[str] = None
     keyframe_interval: int = VIDEO_KEYFRAME_INTERVAL
     temporal_decay_rate: float = VIDEO_TEMPORAL_DECAY
 

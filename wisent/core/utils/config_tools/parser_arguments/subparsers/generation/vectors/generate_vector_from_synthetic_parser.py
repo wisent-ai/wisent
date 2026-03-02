@@ -36,14 +36,14 @@ def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser)
     parser.add_argument(
         "--model",
         type=str,
-        default="meta-llama/Llama-3.2-1B-Instruct",
-        help="HuggingFace model name or path (default: meta-llama/Llama-3.2-1B-Instruct)"
+        required=True,
+        help="HuggingFace model name or path"
     )
     parser.add_argument(
         "--device",
         type=str,
-        default="auto",
-        help="Device to use (e.g., 'auto', 'cpu', 'cuda', 'cuda:0', 'mps')"
+        required=True,
+        help="Device to use (e.g., cpu, cuda, cuda:N, mps)"
     )
     
     # Pair generation
@@ -72,8 +72,8 @@ def setup_generate_vector_from_synthetic_parser(parser: argparse.ArgumentParser)
         "--method",
         type=str,
         choices=["caa"],
-        default="caa",
-        help="Steering method to use (default: caa)"
+        required=True,
+        help="Steering method to use"
     )
     parser.add_argument(
         "--normalize",

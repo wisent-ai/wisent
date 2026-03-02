@@ -66,10 +66,10 @@ def compare_concept_directions(
 
 def run_analysis(
     model_name: str,
+    output_dir: str,
+    device: str,
     layers_to_analyze: Optional[List[int]] = None,
     n_pairs: int = PAIR_GENERATORS_DEFAULT_N,
-    output_dir: str = "/tmp/concept_evolution",
-    device: str = "cuda",
 ):
     """Run the full concept evolution analysis."""
     

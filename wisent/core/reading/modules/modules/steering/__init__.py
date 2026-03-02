@@ -26,7 +26,7 @@ from .analysis import (
 )
 
 # Re-export from visualization subdirectory
-from .visualization import (
+from wisent.core.utils.visualization.steering import (
     create_steering_effect_figure,
     extract_base_and_steered_activations,
     create_per_concept_steering_figure,

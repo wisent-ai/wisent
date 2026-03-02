@@ -63,8 +63,8 @@ class ClassifierOptimizationConfig:
     """Configuration for Optuna classifier optimization."""
 
     # Model configuration
-    model_name: str = "Qwen/Qwen3-0.6B"
-    device: str = "auto"  # "auto", "cuda", "cpu", "mps"
+    model_name: Optional[str] = None
+    device: Optional[str] = None  # "auto", "cuda", "cpu", "mps"
     model_dtype: Optional[torch.dtype] = None  # Auto-detect if None
 
     # Optuna settings
@@ -91,7 +91,7 @@ class ClassifierOptimizationConfig:
     random_state: int = DEFAULT_RANDOM_SEED
 
     # Optimization objective
-    primary_metric: str = "f1"  # "accuracy", "f1", "auc", "precision", "recall"
+    primary_metric: Optional[str] = None  # "accuracy", "f1", "auc", "precision", "recall"
 
     # Pruning settings
     enable_pruning: bool = True
@@ -104,7 +104,7 @@ class ClassifierOptimizationConfig:
             self.batch_size_options = list(OPTUNA_CLASSIFIER_BATCH_SIZES)
 
         # Auto-detect device if needed
-        if self.device == "auto":
+        if self.device is None:
             self.device = resolve_default_device()
 
 

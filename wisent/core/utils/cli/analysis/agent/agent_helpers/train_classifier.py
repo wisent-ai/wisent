@@ -50,15 +50,15 @@ def train_classifier_on_pairs(
     model,
     pair_set,
     target_layer: int,
+    token_aggregation: str,
+    classifier_type: str,
+    prompt_strategy: str,
     verbose: bool = False,
     classifier_epochs: int = AGENT_CLASSIFIER_EPOCHS,
     classifier_lr: float = DEFAULT_CLASSIFIER_LR,
     classifier_batch_size: int = None,
-    token_aggregation: str = "average",
-    prompt_strategy: str = "chat_template",
     normalize_layers: bool = False,
     return_full_sequence: bool = False,
-    classifier_type: str = "logistic"
 ):
     """
     Train a classifier on activations from contrastive pairs.

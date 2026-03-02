@@ -101,7 +101,7 @@ def extract_difference_vectors_all_layers(
 
 def compute_projection(
     diff_vectors: np.ndarray,
-    method: str = "pca",
+    method: str,
     n_components: int = N_COMPONENTS_2D,
     seed: int = DEFAULT_RANDOM_SEED,
 ) -> Tuple[np.ndarray, str]:

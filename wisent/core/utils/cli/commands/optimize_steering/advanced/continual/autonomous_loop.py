@@ -37,6 +37,7 @@ from wisent.core.utils.config_tools.constants import (DEFAULT_LIMIT, CONTINUAL_E
     CONTINUAL_SHARED_UPDATE_RATE, DISPLAY_TOP_N_MINI, SEPARATOR_WIDTH_WIDE,
     SEPARATOR_WIDTH_MEDIUM, CONTINUAL_REPLAY_INTERVAL,
     CONTINUAL_FORGETTING_THRESHOLD, CONTINUAL_CONVERGENCE_WINDOW)
+from wisent.core import constants as _C
 
 
 def _run_replay_check(state, model, pairs_dir, limit, device,
@@ -63,6 +64,7 @@ def _run_replay_check(state, model, pairs_dir, limit, device,
             current_scores[rt] = evaluate_vectors(
                 rt_vectors, rt_obj.metadata, model, rt,
                 rt_enriched, limit, device, wd,
+                strength=_C.LAYER_SWEEP_STRENGTH,
             )
     degraded = detect_forgetting(
         state.replay_buffer.entries, current_scores, forgetting_threshold,

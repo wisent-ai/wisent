@@ -15,7 +15,7 @@ class MultiLayerGeometryConfig:
 
     num_components: int = DIAG_NUM_COMPONENTS
     optimization_steps: int = DIAG_OPTIMIZATION_STEPS
-    combination_method: str = "concat"  # "concat", "mean", "weighted"
+    combination_method: Optional[str] = None  # "concat", "mean", "weighted"
     analyze_per_layer: bool = True
     analyze_combined: bool = True
     analyze_subsets: bool = True  # early/middle/late

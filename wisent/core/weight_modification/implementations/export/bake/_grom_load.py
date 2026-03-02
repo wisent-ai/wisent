@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
+from typing import Optional
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.config_tools.constants import (
     GROM_HIDDEN_DIM, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE, GROM_MAX_ALPHA,
@@ -13,7 +14,7 @@ _LOG = setup_logger(__name__)
 
 def load_grom_model(
     model_path: str | Path,
-    device_map: str = "auto",
+    device_map: Optional[str] = None,
     torch_dtype=None,
     install_hooks: bool = True,
 ):

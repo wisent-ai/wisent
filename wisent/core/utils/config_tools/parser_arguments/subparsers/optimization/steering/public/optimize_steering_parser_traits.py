@@ -11,8 +11,8 @@ def setup_personalization_parsers(steering_subparsers):
     personalization_parser.add_argument(
         "--task",
         type=str,
-        default="personalization",
-        help="Task type (default: personalization). For consistency with other commands.",
+        required=True,
+        help="Task type. For consistency with other commands.",
     )
     personalization_parser.add_argument(
         "--model", type=str, required=True, help="Model name or path"
@@ -52,8 +52,8 @@ def setup_personalization_parsers(steering_subparsers):
     personalization_parser.add_argument(
         "--output-dir",
         type=str,
-        default="./personalization_optimization",
-        help="Directory to save results and best vectors (default: ./personalization_optimization)",
+        required=True,
+        help="Directory to save results and best vectors",
     )
     personalization_parser.add_argument(
         "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"
@@ -97,8 +97,8 @@ def setup_personalization_parsers(steering_subparsers):
         "--search-strategy",
         type=str,
         choices=["grid", "optuna"],
-        default="grid",
-        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling (default: grid)"
+        required=True,
+        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling"
     )
     personalization_parser.add_argument(
         "--n-trials",
@@ -155,8 +155,8 @@ def setup_personalization_parsers(steering_subparsers):
     multi_personalization_parser.add_argument(
         "--output-dir",
         type=str,
-        default="./multi_personalization_optimization",
-        help="Directory to save results and vectors (default: ./multi_personalization_optimization)",
+        required=True,
+        help="Directory to save results and vectors",
     )
     multi_personalization_parser.add_argument(
         "--max-new-tokens", type=int, default=150, help="Max tokens to generate for evaluation (default: 150)"

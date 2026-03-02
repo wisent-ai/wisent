@@ -15,7 +15,6 @@ from wisent.core.utils.config_tools.constants import (
     SEPARATOR_WIDTH_STANDARD,
     DEFAULT_SPLIT_RATIO,
     DEFAULT_RANDOM_SEED,
-    DEFAULT_STRENGTH,
     DEFAULT_SCALE_FACTOR,
     JSON_INDENT,
 )
@@ -25,10 +24,10 @@ from wisent.core.primitives.models.config import get_generate_kwargs
 def execute_discover_steering(args):
     """Execute the discover-steering command - find optimal steering directions."""
     import torch
-    from wisent.core.reading.modules.zwiad_with_concepts import (
+    from wisent.core.reading.modules.utilities.data.database_loaders import (
         load_activations_from_database, load_pair_texts_from_database,
     )
-    from wisent.core.reading.modules.steering_discovery import (
+    from wisent.core.reading.modules.modules.steering.analysis.steering_discovery import (
         discover_behavioral_direction, generate_candidate_directions,
         extract_generation_activations, compute_generation_direction, compare_directions,
     )
@@ -59,6 +58,9 @@ def execute_discover_steering(args):
     # Load reference activations
     pos_ref, neg_ref = load_activations_from_database(
         model_name=args.model, task_name=args.task, layer=args.layer,
+        component=args.extraction_component,
+        extraction_strategy=args.extraction_strategy,
+        prompt_format=args.prompt_format,
         limit=DISCOVER_STEERING_TRAIN_LIMIT, database_url=args.database_url, pair_ids=train_ids
     )
     pos_np = pos_ref.cpu().numpy()
@@ -87,7 +89,7 @@ def execute_discover_steering(args):
     layer_name = f"layer.{args.layer}"
     results = {"model": args.model, "task": args.task, "layer": args.layer, "methods": {}}
 
-    def evaluate_direction(direction, strength=DEFAULT_STRENGTH):
+    def evaluate_direction(direction, strength):
         steering_vec = torch.from_numpy(direction).float() * strength
         steering_vectors = LayerActivations({layer_name: steering_vec})
         base_evals, steered_evals, base_resps, steered_resps = [], [], [], []

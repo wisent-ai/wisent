@@ -51,7 +51,7 @@ class ConceptAnalysisResult:
     
     # Interpretation
     is_single_concept: bool = True
-    confidence: str = "unknown"  # "high", "medium", "low"
+    confidence: Optional[str] = None  # "high", "medium", "low"
     interpretation: str = ""
     
     def to_dict(self) -> Dict[str, Any]:
@@ -152,8 +152,8 @@ def compute_eigenvalue_spectrum(
 
 def decompose_concepts(
     diff_vectors: np.ndarray,
+    method: str,
     k_max: int = CONCEPT_K_MAX,
-    method: str = "kmeans",
 ) -> Tuple[int, np.ndarray, List[np.ndarray], Dict[int, float]]:
     """
     Decompose mixed concepts using clustering on difference vectors.
@@ -246,7 +246,7 @@ def decompose_concepts(
 
 
 # Re-exports from split module
-from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._concept_analysis_part2 import (
+from wisent.core.reading.diagnostics.analysis._concept_analysis_part2 import (
     compute_concept_correlations,
     analyze_concepts,
     analyze_concept_interference,

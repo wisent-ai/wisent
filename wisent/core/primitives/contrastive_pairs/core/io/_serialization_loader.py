@@ -16,7 +16,7 @@ from wisent.core.primitives.contrastive_pairs.core.io.serialization import (
 
 def load_contrastive_pair_set(
     filepath: str | Path,
-    return_backend: str = "torch",
+    return_backend: str,
     validate: bool = True,
 ) -> ContrastivePairSet:
     """Load a ContrastivePairSet from a JSON file and decode activations.

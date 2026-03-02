@@ -21,9 +21,9 @@ def setup_classification_optimizer_parser(parser):
     parser.add_argument(
         "--optimization-metric",
         type=str,
-        default="f1",
+        required=True,
         choices=["f1", "accuracy", "precision", "recall"],
-        help="Metric to optimize (default: f1)",
+        help="Metric to optimize",
     )
     parser.add_argument(
         "--max-time-per-task", type=float, default=OPTIMIZE_MAX_TIME_MINUTES_SHORT, help="Maximum time per task in minutes (default: 15.0)"

@@ -13,7 +13,7 @@ from wisent.core.utils.config_tools.constants import (
     SIGNIFICANCE_MARGIN, PCA_MAX_COMPONENTS_NULL,
 )
 
-from ...metrics.probe.signal_metrics import (
+from wisent.core.reading.modules.utilities.metrics.probe.signal_metrics import (
     _adaptive_k, _adaptive_cv, _adaptive_pca_components,
     _adaptive_mlp_hidden, _adaptive_n_permutations,
     _knn_accuracy, _knn_pca_accuracy, _mlp_accuracy,
@@ -124,8 +124,8 @@ def compute_signal_vs_nonsense(
     model,
     tokenizer,
     metric_keys: List[str],
+    device: str,
     layer: int = None,
-    device: str = "cuda",
     n_nonsense_pairs: int = None,
 ) -> Dict[str, Dict[str, float]]:
     """
@@ -134,7 +134,7 @@ def compute_signal_vs_nonsense(
     This tests: "Is this signal different from random noise?"
     Generates activations from random tokens and compares metrics.
     """
-    from ...data.nonsense.nonsense_baseline import generate_nonsense_activations
+    from wisent.core.reading.modules.utilities.data.sources.nonsense.nonsense_baseline import generate_nonsense_activations
 
     pos_np = pos_activations.cpu().numpy() if isinstance(pos_activations, torch.Tensor) else pos_activations
     neg_np = neg_activations.cpu().numpy() if isinstance(neg_activations, torch.Tensor) else neg_activations
@@ -144,7 +144,7 @@ def compute_signal_vs_nonsense(
         n_nonsense_pairs = max(NONSENSE_PAIRS_MIN, min(n_samples, NONSENSE_PAIRS_MAX))
 
     nonsense_pos, nonsense_neg = generate_nonsense_activations(
-        model, tokenizer, n_pairs=n_nonsense_pairs, layer=layer, device=device
+        model, tokenizer, device=device, n_pairs=n_nonsense_pairs, layer=layer,
     )
     nonsense_pos_np = nonsense_pos.cpu().numpy()
     nonsense_neg_np = nonsense_neg.cpu().numpy()
@@ -199,7 +199,7 @@ def compute_signal_vs_nonsense(
 
 def compute_aggregate_signal(
     signal_results: Dict[str, Dict[str, float]],
-    correction: str = "bonferroni",
+    correction: str,
 ) -> Tuple[float, float, bool]:
     """
     Aggregate signal across multiple metrics with multiple testing correction.

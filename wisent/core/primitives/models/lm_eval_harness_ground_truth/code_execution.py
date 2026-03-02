@@ -13,7 +13,7 @@ logger = logging.getLogger(__name__)
 
 
 def evaluate_generic_code_execution(evaluator, classifier, task_name: str, num_samples: int, model, layer: int,
-                                     token_aggregation: str = "average") -> Dict[str, Any]:
+                                     token_aggregation: str) -> Dict[str, Any]:
     """Evaluate generic code execution tasks (non-BigCode) like LiveCodeBench."""
     try:
         logger.info(f"GENERIC CODE EXECUTION EVALUATION: {task_name}")
@@ -67,7 +67,7 @@ def evaluate_generic_code_execution(evaluator, classifier, task_name: str, num_s
 
 
 def evaluate_code_execution(evaluator, classifier, task_name: str, num_samples: int, model, layer: int,
-                             token_aggregation: str = "average") -> Dict[str, Any]:
+                             token_aggregation: str) -> Dict[str, Any]:
     """Evaluate classifier using code execution approach for BigCode tasks."""
     try:
         logger.debug(f"CODE EXECUTION EVALUATION: {task_name}")

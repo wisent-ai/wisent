@@ -52,7 +52,7 @@ def load_checkpoint(model: str) -> Optional[Dict[str, Any]]:
     return None
 
 
-def save_checkpoint(model: str, results: Dict[str, Any], phase: str = "unknown") -> None:
+def save_checkpoint(model: str, results: Dict[str, Any], phase: str) -> None:
     """Save checkpoint to local disk and S3."""
     checkpoint_path = get_checkpoint_path(model)
     results["_checkpoint_phase"] = phase

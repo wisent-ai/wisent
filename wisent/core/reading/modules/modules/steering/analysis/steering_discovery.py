@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from typing import List, Dict, Tuple, Optional, Callable
 from dataclasses import dataclass
-from wisent.core.utils.config_tools.constants import NORM_EPS, STEERING_N_RANDOM, STEERING_N_PCA, DEFAULT_STRENGTH, DEFAULT_RANDOM_SEED, CONCEPT_PCA_COMPONENTS, DEFAULT_SCALE_FACTOR
+from wisent.core.utils.config_tools.constants import NORM_EPS, STEERING_N_RANDOM, STEERING_N_PCA, DEFAULT_RANDOM_SEED, CONCEPT_PCA_COMPONENTS, DEFAULT_SCALE_FACTOR
 
 
 @dataclass
@@ -157,7 +157,7 @@ def search_layers(
     neg_ref_by_layer: Dict[int, np.ndarray],
     evaluate_fn: Callable[[str], str],  # Returns "TRUTHFUL" or "UNTRUTHFUL"
     layers: List[int],
-    strength: float = DEFAULT_STRENGTH,
+    strength: float,
 ) -> List[Tuple[int, int, int, float]]:
     """
     Search across layers to find which layer steering actually improves behavior.

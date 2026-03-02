@@ -47,10 +47,10 @@ class RoboticsSteeringConfig(SteeringConfig):
             - "goal_conditioned": Modulate based on goal proximity
         smooth_factor: Smoothing for action changes (0 = no smoothing)
     """
-    action_space: str = "continuous"
+    action_space: Optional[str] = None
     safety_clamp: bool = True
     action_bounds: tuple[float, float] | None = None
-    trajectory_mode: str = "per_step"
+    trajectory_mode: Optional[str] = None
     smooth_factor: float = 0.0
 
 

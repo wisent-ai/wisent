@@ -1,6 +1,6 @@
 """Parser setup for the 'optimize-sample-size' command."""
 
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD, DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD
 
 
 def setup_sample_size_optimizer_parser(parser):
@@ -18,17 +18,17 @@ def setup_sample_size_optimizer_parser(parser):
     parser.add_argument(
         "--steering-method",
         type=str,
-        default="CAA",
+        required=True,
         choices=["CAA"],
-        help="Steering method to use (default: CAA)",
+        help="Steering method to use",
     )
-    parser.add_argument("--steering-strength", type=float, default=DEFAULT_STRENGTH, help="Steering strength to use (default: 1.0)")
+    parser.add_argument("--steering-strength", type=float, required=True, help="Steering strength to use")
     parser.add_argument(
         "--token-targeting-strategy",
         type=str,
-        default="LAST_TOKEN",
+        required=True,
         choices=["CHOICE_TOKEN", "LAST_TOKEN", "FIRST_TOKEN", "ALL_TOKENS"],
-        help="Token targeting strategy for steering (default: LAST_TOKEN)",
+        help="Token targeting strategy for steering",
     )
 
     # Common optimization parameters

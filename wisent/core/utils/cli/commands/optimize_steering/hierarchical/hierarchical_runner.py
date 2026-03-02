@@ -12,7 +12,7 @@ from wisent.core.utils.cli.optimize_steering.hierarchical_config import (
 )
 from wisent.core.utils.cli.optimize_steering.pipeline import run_pipeline, OptimizationResult
 from wisent.core.utils.cli.optimize_steering.method_configs import MethodConfig
-from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, DISPLAY_TOP_N_TINY, JSON_INDENT, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, DEFAULT_SCORE, DISPLAY_TOP_N_TINY, JSON_INDENT, SEPARATOR_WIDTH_WIDE
 
 
 def run_hierarchical_optimization(
@@ -95,12 +95,13 @@ def run_hierarchical_optimization(
                         limit=limit,
                         device=device,
                         enriched_pairs_file=enriched_pairs_file,
+                        strength=search_config.layer_sweep_strength,
                     )
                     score = result.score
                 except Exception as e:
                     if verbose:
                         print(f"  {progress} Layer {layer}: ERROR - {e}")
-                    score = 0.0
+                    score = DEFAULT_SCORE
 
                 stage1_results.append({"layer": layer, "score": score})
 
@@ -118,7 +119,7 @@ def run_hierarchical_optimization(
             # =========================================================
             print(f"\n--- Stage 2: Strength Sweep ({len(search_config.strengths)} strengths) ---")
             stage2_results = []
-            best_strength = 1.0
+            best_strength = search_config.layer_sweep_strength
             best_strength_score = -float('inf')
 
             for strength in search_config.strengths:
@@ -140,12 +141,13 @@ def run_hierarchical_optimization(
                         limit=limit,
                         device=device,
                         enriched_pairs_file=enriched_pairs_file,
+                        strength=strength,
                     )
                     score = result.score
                 except Exception as e:
                     if verbose:
                         print(f"  {progress} Strength {strength}: ERROR - {e}")
-                    score = 0.0
+                    score = DEFAULT_SCORE
 
                 stage2_results.append({"strength": strength, "score": score})
 
@@ -182,12 +184,13 @@ def run_hierarchical_optimization(
                         limit=limit,
                         device=device,
                         enriched_pairs_file=enriched_pairs_file,
+                        strength=best_strength,
                     )
                     score = result.score
                 except Exception as e:
                     if verbose:
                         print(f"  {progress} {params}: ERROR - {e}")
-                    score = 0.0
+                    score = DEFAULT_SCORE
 
                 stage3_results.append({"params": params, "score": score})
 

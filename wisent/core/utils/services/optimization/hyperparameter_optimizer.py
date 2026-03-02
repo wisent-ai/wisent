@@ -46,7 +46,7 @@ class OptimizationConfig:
     classifier_types: List[str] = field(default_factory=lambda: ["logistic"])
 
     # Performance metric to optimize
-    metric: str = "f1"  # Options: "accuracy", "f1", "precision", "recall", "auc"
+    metric: Optional[str] = None  # Options: "accuracy", "f1", "precision", "recall", "auc"
 
     # Cross-validation folds (if 0, uses simple train/val split)
     cv_folds: int = 0

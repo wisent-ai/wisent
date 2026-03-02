@@ -38,7 +38,7 @@ def create_custom_evaluator(
         return evaluator_spec
 
     if callable(evaluator_spec) and not isinstance(evaluator_spec, str):
-        return CallableEvaluator(evaluator_spec, **kwargs)
+        return CallableEvaluator(evaluator_spec, name="callable", **kwargs)
 
     if isinstance(evaluator_spec, dict):
         module_path = evaluator_spec.get("module")

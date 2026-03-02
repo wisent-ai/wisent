@@ -6,7 +6,7 @@ import json
 from typing import Any, Dict
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import COMPARE_TOL, DEFAULT_LAYER, EVAL_HARNESS_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, EVAL_HARNESS_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT
 from wisent.core import constants as _C
 
 logger = logging.getLogger(__name__)
@@ -23,7 +23,7 @@ class LMEvalHarnessGroundTruth:
             self.evaluation_method = self._get_evaluation_method_for_task(task_name)
 
     def evaluate_classifier_on_task(self, classifier, task_name: str, num_samples: int = EVAL_HARNESS_NUM_SAMPLES,
-                                     model=None, layer: int = DEFAULT_LAYER, token_aggregation: str = "average") -> Dict[str, Any]:
+                                     model=None, *, layer: int, token_aggregation: str) -> Dict[str, Any]:
         """Evaluate a classifier on the specified lm-eval task."""
         evaluation_model = model or self.model
         if self.evaluation_method == "log-likelihoods":
@@ -42,7 +42,7 @@ class LMEvalHarnessGroundTruth:
                 "task_name": task_name, "evaluation_method": self.evaluation_method}
 
     def _evaluate_log_likelihoods(self, classifier, task_name: str, num_samples: int, model, layer: int,
-                                   token_aggregation: str = "average") -> Dict[str, Any]:
+                                   token_aggregation: str) -> Dict[str, Any]:
         """Evaluate classifier using log-likelihoods approach."""
         try:
             from ..log_likelihoods_evaluator import LogLikelihoodsEvaluator

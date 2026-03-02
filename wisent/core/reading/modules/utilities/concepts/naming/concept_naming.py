@@ -171,7 +171,7 @@ def _build_result(diff_normalized, cluster_labels, n_concepts, pair_texts,
     }
 
     if generate_visualizations:
-        from ..visualization.concept_visualizations import create_all_concept_figures
+        from wisent.core.utils.visualization.concepts.concept_visualizations import create_all_concept_figures
         result["visualizations"] = create_all_concept_figures(
             pos_activations, neg_activations, cluster_labels, concepts,
             inter_concept_similarity=result["inter_concept_similarity"])

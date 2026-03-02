@@ -27,10 +27,10 @@ def evaluate_sampling(
     model: WisentModel,
     evaluator: LiveMathBenchEvaluator,
     dataset_config: str,
+    eval_mode: str,
     num_samples: int = LIVEMATHBENCH_NUM_SAMPLES,
     limit: Optional[int] = None,
     is_reasoning_model: bool = False,
-    eval_mode: str = "math",
     judge_model: Optional[WisentModel] = None,
 ) -> tuple[list[int], list[dict]]:
     """Evaluate model with sampling (temperature=1.0).
@@ -110,15 +110,15 @@ def evaluate_sampling(
 
 
 def main(
+    dataset_config: str,
+    eval_mode: str,
     model_name: str = "Qwen/Qwen2.5-1.5B-Instruct",
-    dataset_config: str = "amc_en",
     limit: Optional[int] = None,
     num_samples: int = LIVEMATHBENCH_NUM_SAMPLES,
     k_values: list[int] = list(LIVEMATHBENCH_K_VALUES),
     tau_values: list[float] = list(LIVEMATHBENCH_TAU_VALUES),
     skip_sampling: bool = False,
     is_reasoning_model: bool = False,
-    eval_mode: str = "math",
     judge_model_name: Optional[str] = None,
 ):
     """Run full LiveMathBench evaluation with G-Pass@k metrics."""
@@ -148,8 +148,9 @@ def main(
     # Greedy evaluation
     print("\n--- GREEDY EVALUATION ---")
     greedy_accuracy, greedy_results = evaluate_greedy(
-        model, evaluator, hf_config, limit,
+        model, evaluator, hf_config,
         eval_mode=eval_mode,
+        limit=limit,
         judge_model=judge_model,
     )
     print(f"Greedy Accuracy: {greedy_accuracy * 100:.2f}%")
@@ -161,8 +162,11 @@ def main(
     if not skip_sampling:
         print(f"\n--- SAMPLING EVALUATION (n={num_samples}) ---")
         correct_counts, sampling_results = evaluate_sampling(
-            model, evaluator, hf_config, num_samples, limit, is_reasoning_model,
+            model, evaluator, hf_config,
             eval_mode=eval_mode,
+            num_samples=num_samples,
+            limit=limit,
+            is_reasoning_model=is_reasoning_model,
             judge_model=judge_model,
         )
 

@@ -47,7 +47,7 @@ class StrategyDiagnostics:
     mean_effect_size: Optional[float] = None
 
     # Recommendation
-    recommended_method: str = "CAA"
+    recommended_method: Optional[str] = None
     warnings: List[str] = field(default_factory=list)
 
     @property

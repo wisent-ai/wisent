@@ -13,7 +13,7 @@ from ..convenience import (
 )
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SCORE, DEFAULT_STRENGTH, BLEND_DEFAULT,
+    DEFAULT_SCORE, BLEND_DEFAULT,
     PAIRS_NUM_PAIRS, BROYDEN_DEFAULT_ALPHA,
     WEIGHT_MOD_DEFAULT_COMPONENTS,
 )
@@ -24,22 +24,22 @@ class WeightModificationResult:
     model: str
     task: str
     trait_label: str
-    method: str = "directional"
-    max_weight: float = DEFAULT_STRENGTH
+    method: Optional[str] = None
+    max_weight: Optional[float] = None
     min_weight: float = DEFAULT_SCORE
     max_weight_position: float = BLEND_DEFAULT
     min_weight_distance: float = BLEND_DEFAULT
-    strength: float = DEFAULT_STRENGTH
+    strength: Optional[float] = None
     num_pairs: int = PAIRS_NUM_PAIRS
     alpha: float = BROYDEN_DEFAULT_ALPHA
-    additive_method: str = "bias"
+    additive_method: Optional[str] = None
     components: List[str] = field(default_factory=lambda: list(WEIGHT_MOD_DEFAULT_COMPONENTS))
     normalize_vectors: bool = True
     norm_preserve: bool = True
     use_biprojection: bool = True
     use_kernel: bool = True
     score: float = DEFAULT_SCORE
-    metric: str = "accuracy"
+    metric: Optional[str] = None
     baseline_score: float = DEFAULT_SCORE
     timestamp: str = field(default_factory=lambda: datetime.now().isoformat())
     output_dir: str = ""
@@ -48,13 +48,14 @@ class WeightModificationResult:
 
 def store_weight_modification(
     model: str, task: str, trait_label: str,
-    method: str = "directional", max_weight: float = DEFAULT_STRENGTH, min_weight: float = DEFAULT_SCORE,
+    method: str, additive_method: str, metric: str,
+    max_weight: Optional[float] = None, min_weight: float = DEFAULT_SCORE,
     max_weight_position: float = BLEND_DEFAULT, min_weight_distance: float = BLEND_DEFAULT,
-    strength: float = DEFAULT_STRENGTH, num_pairs: int = PAIRS_NUM_PAIRS, alpha: float = BROYDEN_DEFAULT_ALPHA,
-    additive_method: str = "bias", components: Optional[List[str]] = None,
+    strength: Optional[float] = None, num_pairs: int = PAIRS_NUM_PAIRS, alpha: float = BROYDEN_DEFAULT_ALPHA,
+    components: Optional[List[str]] = None,
     normalize_vectors: bool = True, norm_preserve: bool = True,
     use_biprojection: bool = True, use_kernel: bool = True,
-    score: float = DEFAULT_SCORE, metric: str = "accuracy", baseline_score: float = DEFAULT_SCORE,
+    score: float = DEFAULT_SCORE, baseline_score: float = DEFAULT_SCORE,
     output_dir: str = "", metadata: Optional[Dict[str, Any]] = None,
     set_as_default: bool = False,
 ) -> str:
@@ -91,7 +92,7 @@ def store_weight_modification(
 
 def get_cached_weight_modification(
     model: str, task: str, trait_label: str,
-    method: str = "directional", use_default: bool = True,
+    method: str, use_default: bool = True,
 ) -> Optional[WeightModificationResult]:
     """Backward-compatible function to get cached weight modification result."""
     if trait_label:

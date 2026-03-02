@@ -3,6 +3,7 @@ from __future__ import annotations
 import gc
 import json
 from pathlib import Path
+from typing import Optional
 import torch
 from wisent.core.utils.config_tools.constants import (
     COMPARISON_DEFAULT_BATCH_SIZE,
@@ -72,15 +73,16 @@ def remove_reft(wisent_model: "WisentModel") -> None:
 
 def evaluate_reft(
     model_name: str, reft_path: str | Path, task: str,
-    train_ratio: float = DEFAULT_SPLIT_RATIO, device: str = "cuda:0",
+    extraction_strategy: str, device: str,
+    train_ratio: float = DEFAULT_SPLIT_RATIO,
     batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE, max_batch_size: int = COMPARISON_MAX_BATCH_SIZE, limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None, num_epochs: int | None = None,
     low_rank_dimension: int | None = None, intervention_layers: list[int] | None = None,
     learning_rate: float | None = None,
-    with_steering: bool = False, steering_method: str = "caa",
+    with_steering: bool = False, steering_method: Optional[str] = None,
     steering_layers: str = str(COMPARISON_STEERING_LAYER), steering_num_pairs: int = COMPARISON_NUM_PAIRS,
-    steering_scales: list[float] | None = None, extraction_strategy: str = "mc_completion",
+    steering_scales: list[float] | None = None,
 ) -> dict:
     """Evaluate a trained ReFT intervention comparing base vs ReFT performance."""
     reft_path = Path(reft_path)
@@ -147,7 +149,7 @@ def _eval_reft_with_steering(wisent_model, task, task_dict, limit, base_acc_ll, 
         ) for p in pairs_data
     ]
     pair_set = ContrastivePairSet(pairs=pairs, name=f"{task}_reft_steering")
-    steering_method_obj = get_steering_method(steering_method, device=device)
+    steering_method_obj = get_steering_method(steering_method, task_name=task, device=device)
     strategy = ExtractionStrategy(extraction_strategy)
     trainer = WisentSteeringTrainer(model=wisent_model, pair_set=pair_set, steering_method=steering_method_obj)
     result = trainer.run(layers_spec=steering_layers, strategy=strategy, accept_low_quality_vector=True)

@@ -58,7 +58,7 @@ def create_full_summary_figure(
     pca_data = plot_pca_projection(pos_activations, neg_activations)
     plot_projection(axes[0, 0], pca_data, "PCA Projection")
 
-    tsne_data = plot_tsne_projection(pos_activations, neg_activations)
+    tsne_data = plot_tsne_projection(pos_activations, neg_activations, title="t-SNE Projection")
     plot_projection(axes[0, 1], tsne_data, "t-SNE Projection")
 
     umap_data = plot_umap_projection(pos_activations, neg_activations)

@@ -12,7 +12,6 @@ from wisent.core.utils.config_tools.constants import (
     BROYDEN_DEFAULT_ALPHA,
     DEFAULT_LAYER_CONFIG,
     DEFAULT_SCORE,
-    DEFAULT_STRENGTH,
     DETECTION_THRESHOLD,
     PAIRS_NUM_PAIRS,
 )
@@ -23,16 +22,18 @@ class TraitsMixin:
     """Mixin providing trait config and general management methods."""
 
     def save_trait_classification_config(
-        self, model_name: str, trait_name: str, layer: int = DEFAULT_LAYER_CONFIG,
-        token_aggregation: str = "average",
+        self, model_name: str, trait_name: str,
+        token_aggregation: str,
+        token_targeting_strategy: str,
+        classifier_type: str,
+        prompt_construction_strategy: str,
+        optimization_method: str,
+        layer: int = DEFAULT_LAYER_CONFIG,
         detection_threshold: float = DETECTION_THRESHOLD,
-        classifier_type: str = "logistic",
-        prompt_construction_strategy: str = "multiple_choice",
-        token_targeting_strategy: str = "last_token",
         accuracy: float = DEFAULT_SCORE,
         f1_score: float = DEFAULT_SCORE, precision: float = DEFAULT_SCORE,
         recall: float = DEFAULT_SCORE,
-        optimization_method: str = "manual", set_as_default: bool = False,
+        set_as_default: bool = False,
     ) -> Path:
         """Save classification config for a trait."""
         config = self._load_model_config(model_name)
@@ -59,12 +60,13 @@ class TraitsMixin:
         return config.default_classification
 
     def save_trait_steering_config(
-        self, model_name: str, trait_name: str, layer: int = DEFAULT_LAYER_CONFIG,
-        strength: float = DEFAULT_STRENGTH,
-        method: str = "CAA", token_aggregation: str = "average",
-        prompt_strategy: str = "question_only", normalize_mode: str = "none",
-        score: float = DEFAULT_SCORE, metric: str = "accuracy",
-        optimization_method: str = "manual", set_as_default: bool = False,
+        self, model_name: str, trait_name: str, method: str,
+        token_aggregation: str, prompt_strategy: str, normalize_mode: str,
+        optimization_method: str, metric: str,
+        layer: int = DEFAULT_LAYER_CONFIG,
+        strength: Optional[float] = None,
+        score: float = DEFAULT_SCORE,
+        set_as_default: bool = False,
     ) -> Path:
         """Save steering config for a trait."""
         config = self._load_model_config(model_name)
@@ -89,18 +91,20 @@ class TraitsMixin:
         return config.default_steering
 
     def save_trait_weight_modification_config(
-        self, model_name: str, trait_name: str, method: str = "directional",
-        max_weight: float = DEFAULT_STRENGTH, min_weight: float = 0.0,
+        self, model_name: str, trait_name: str, method: str,
+        additive_method: str,
+        optimization_method: str,
+        max_weight: Optional[float] = None, min_weight: Optional[float] = None,
         max_weight_position: float = BLEND_DEFAULT,
         min_weight_distance: float = BLEND_DEFAULT,
-        strength: float = DEFAULT_STRENGTH, num_pairs: int = PAIRS_NUM_PAIRS,
-        alpha: float = BROYDEN_DEFAULT_ALPHA, additive_method: str = "bias",
+        strength: Optional[float] = None, num_pairs: int = PAIRS_NUM_PAIRS,
+        alpha: float = BROYDEN_DEFAULT_ALPHA,
         components: Optional[List[str]] = None,
         normalize_vectors: bool = True, norm_preserve: bool = True,
         use_biprojection: bool = True, use_kernel: bool = True,
         score: float = DEFAULT_SCORE,
         baseline_score: float = DEFAULT_SCORE, output_dir: str = "",
-        optimization_method: str = "manual", set_as_default: bool = False,
+        set_as_default: bool = False,
     ) -> Path:
         """Save weight modification config for a trait."""
         config = self._load_model_config(model_name)

@@ -13,7 +13,7 @@ from wisent.core.utils.infra_tools.errors import VersionValidationError, Version
 class LiveCodeBenchTask(TaskInterface):
     """LiveCodeBench task implementation."""
 
-    def __init__(self, release_version: str = "release_v1", limit: Optional[int] = None):
+    def __init__(self, release_version: Optional[str] = None, limit: Optional[int] = None):
         self._extractor = LiveCodeBenchExtractor()
         self._data_loader = LiveCodeBenchLoader()
         self._release_version = release_version

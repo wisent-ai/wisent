@@ -126,8 +126,8 @@ def save_personalization_pairs(
 
 def load_personalization_pairs(
     trait: str,
+    return_backend: str,
     filename: str | None = None,
-    return_backend: str = "torch",
 ) -> ContrastivePairSet:
     """Load personalization contrastive pairs for a specific trait.
 
@@ -206,9 +206,9 @@ def save_synthetic_pairs(
 
 
 def load_synthetic_pairs(
+    return_backend: str,
     name: str | None = None,
     filename: str | None = None,
-    return_backend: str = "torch",
 ) -> ContrastivePairSet:
     """Load synthetically generated contrastive pairs.
 

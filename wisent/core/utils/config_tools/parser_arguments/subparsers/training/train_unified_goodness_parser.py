@@ -28,14 +28,14 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
     parser.add_argument(
         "--model",
         type=str,
-        default="JunHowie/Qwen3-8B-GPTQ-Int4",
-        help="HuggingFace model name or path (default: JunHowie/Qwen3-8B-GPTQ-Int4)"
+        required=True,
+        help="HuggingFace model name or path"
     )
     parser.add_argument(
         "--device",
         type=str,
-        default="auto",
-        help="Device to use (e.g., 'auto', 'cpu', 'cuda', 'cuda:0', 'mps')"
+        required=True,
+        help="Device to use (e.g., cpu, cuda, cuda:N, mps)"
     )
 
     # Benchmark selection
@@ -103,8 +103,8 @@ def setup_train_unified_goodness_parser(parser: argparse.ArgumentParser) -> None
         "--method",
         type=str,
         choices=["caa"],
-        default="caa",
-        help="Steering method to use (default: caa)"
+        required=True,
+        help="Steering method to use"
     )
     parser.add_argument(
         "--normalize",

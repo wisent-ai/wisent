@@ -7,7 +7,7 @@ from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_SHORT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_SHORT, EVALUATOR_NAME_TRUTHFULQA_GEN
 
 
 __all__ = ["TruthfulQACustomExtractor"]
@@ -15,7 +15,7 @@ _LOG = setup_logger(__name__)
 
 task_names = ("truthfulqa_custom",)
 
-evaluator_name = "truthfulqa_gen"
+evaluator_name = EVALUATOR_NAME_TRUTHFULQA_GEN
 
 
 class TruthfulQACustomExtractor(HuggingFaceBenchmarkExtractor):
@@ -36,7 +36,7 @@ class TruthfulQACustomExtractor(HuggingFaceBenchmarkExtractor):
         - source: str
     """
 
-    evaluator_name: str = "truthfulqa_gen"
+    evaluator_name: str = EVALUATOR_NAME_TRUTHFULQA_GEN
 
     def extract_contrastive_pairs(
         self,

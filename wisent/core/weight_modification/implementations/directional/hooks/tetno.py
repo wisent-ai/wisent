@@ -5,7 +5,8 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT
+from wisent.core.utils.config_tools.constants import TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -18,7 +19,7 @@ _LOG = setup_logger(__name__)
 class TETNORuntimeHooks:
     """Runtime hooks for TETNO conditional steering."""
 
-    def __init__(self, model: Module, tetno_result, base_strength: float = DEFAULT_STRENGTH, gate_temperature: float = TETNO_GATE_TEMPERATURE) -> None:
+    def __init__(self, model: Module, tetno_result, base_strength: float, gate_temperature: float = TETNO_GATE_TEMPERATURE) -> None:
         self.model = model
         self.tetno_result = tetno_result
         self.base_strength = base_strength
@@ -41,8 +42,10 @@ class TETNORuntimeHooks:
                     layer_indices.append(idx)
                 except (ValueError, IndexError):
                     pass
-            sensor_layer = layer_indices[len(layer_indices)//2] if layer_indices else DEFAULT_LAYER
+            sensor_layer = layer_indices[len(layer_indices)//2] if layer_indices else None
         self._sensor_layer_idx = sensor_layer
+        if self._sensor_layer_idx is None:
+            raise MissingParameterError(params=["sensor_layer"], context="TETNO hooks: no layer indices found in behavior vectors")
         self._layer_name_to_idx = {}
         for layer_name in tetno_result.behavior_vectors.keys():
             try:
@@ -114,7 +117,7 @@ class TETNORuntimeHooks:
 
 
 def apply_grom_steering(
-    model: Module, grom_result, mode: str = "hybrid", base_strength: float = DEFAULT_STRENGTH,
+    model: Module, grom_result, base_strength: float, mode: str,
     components: list[str] | None = None, verbose: bool = True
 ) -> dict:
     """Apply GROM steering to a model with the specified mode."""

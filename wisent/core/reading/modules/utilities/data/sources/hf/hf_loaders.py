@@ -7,7 +7,7 @@ import torch
 
 from wisent.core.utils.config_tools.constants import DATA_LOAD_LIMIT
 
-from ..cache import get_cache_path, save_activations_cache, save_pair_texts_cache
+from wisent.core.reading.modules.utilities.data.cache import get_cache_path, save_activations_cache, save_pair_texts_cache
 from .hf_config import (
     HF_REPO_ID,
     HF_REPO_TYPE,
@@ -50,7 +50,7 @@ def load_activations_from_hf(
     model_name: str,
     task_name: str,
     layer: int,
-    extraction_strategy: str = "completion_last",
+    extraction_strategy: str,
     limit: Optional[int] = None,
     pair_ids: Optional[set] = None,
     use_cache: bool = True,
@@ -128,7 +128,7 @@ def load_activations_from_hf(
 def load_available_layers_from_hf(
     model_name: str,
     task_name: str,
-    extraction_strategy: str = "completion_last",
+    extraction_strategy: str,
 ) -> List[int]:
     """Query HF index.json to find available layers."""
     try:

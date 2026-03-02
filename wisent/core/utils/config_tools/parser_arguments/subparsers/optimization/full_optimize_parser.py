@@ -51,8 +51,8 @@ def setup_optimize_all_parser(parser):
         "--methods",
         type=str,
         nargs="+",
-        default=["CAA"],
-        help="Steering methods to use (default: CAA)"
+        required=True,
+        help="Steering methods to use"
     )
     
     # Resume/force options
@@ -73,8 +73,8 @@ def setup_optimize_all_parser(parser):
         "--search-strategy",
         type=str,
         choices=["grid", "optuna"],
-        default="grid",
-        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling (default: grid)"
+        required=True,
+        help="Search strategy: 'grid' for exhaustive search, 'optuna' for TPE sampling"
     )
     parser.add_argument(
         "--n-trials",
@@ -130,16 +130,16 @@ def setup_optimize_all_parser(parser):
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./data/modified_models",
-        help="Output directory for modified models (default: ./data/modified_models)"
+        required=True,
+        help="Output directory for modified models"
     )
     parser.add_argument(
         "--steering-methods",
         type=str,
         nargs="+",
         choices=["CAA"],
-        default=["CAA"],
-        help="Steering methods to test (default: CAA)",
+        required=True,
+        help="Steering methods to test",
     )
     parser.add_argument(
         "--steering-layer-range", type=str, default=None, help="Layer range for steering optimization (e.g., '0-5')"

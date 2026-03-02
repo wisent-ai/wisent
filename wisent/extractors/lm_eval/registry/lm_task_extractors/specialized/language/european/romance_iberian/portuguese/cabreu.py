@@ -57,7 +57,7 @@ class CabreuExtractor(LMEvalBenchmarkExtractor):
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any], summary_type: str = "extractive") -> ContrastivePair | None:
+    def _extract_pair_from_doc(self, doc: dict[str, Any], summary_type: str) -> ContrastivePair | None:
         log = bind(_LOG, doc_id=doc.get("id", "unknown"))
 
         try:

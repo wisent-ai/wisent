@@ -154,7 +154,7 @@ def collect_activations(
 
 def main():
     parser = argparse.ArgumentParser(description="Test nonsense baseline vs real pairs")
-    parser.add_argument("--model", type=str, default="meta-llama/Llama-3.2-1B-Instruct")
+    parser.add_argument("--model", type=str, required=True)
     parser.add_argument("--n-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument("--strategies", type=str, nargs="+", 
                         default=["chat_mean", "chat_max_norm", "chat_last"])

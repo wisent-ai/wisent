@@ -142,7 +142,7 @@ def evaluate_difficulty(
     return accuracy, len(ds), results
 
 
-def main(limit: int | None = None, language: str = "en"):
+def main(language: str, limit: int | None = None):
     """Run evaluation on all difficulty levels and compute DW-ACC."""
     print("Loading model...")
     model_name = "Qwen/Qwen2.5-1.5B-Instruct"

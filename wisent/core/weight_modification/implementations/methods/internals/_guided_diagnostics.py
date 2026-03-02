@@ -28,8 +28,8 @@ _LOG = setup_logger(__name__)
 def compute_layer_diagnostics(
     pairs: List["ContrastivePair"],
     model: "WisentModel",
+    extraction_strategy: str,
     layers: Optional[List[int]] = None,
-    extraction_strategy: str = "chat_last",
     verbose: bool = True,
 ) -> Dict[int, LayerDiagnostics]:
     """

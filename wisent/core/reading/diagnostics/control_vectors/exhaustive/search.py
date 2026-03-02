@@ -10,7 +10,6 @@ from typing import Dict, List, Optional, Tuple, Callable
 import torch
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER,
     DEFAULT_LIMIT,
     DEFAULT_SCORE,
     DIAG_NUM_COMPONENTS,
@@ -103,8 +102,8 @@ def _finalize_results(
 def detect_geometry_exhaustive(
     pos_activations_by_layer: Dict[int, torch.Tensor],
     neg_activations_by_layer: Dict[int, torch.Tensor],
-    max_layers: int = DEFAULT_LAYER,
-    combination_method: str = "concat",
+    max_layers: int,
+    combination_method: str,
     num_components: int = DIAG_NUM_COMPONENTS,
     progress_callback: Optional[Callable[[int, int], None]] = None,
     top_k: int = DEFAULT_LIMIT,
@@ -144,8 +143,8 @@ def detect_geometry_exhaustive(
 def detect_geometry_limited(
     pos_activations_by_layer: Dict[int, torch.Tensor],
     neg_activations_by_layer: Dict[int, torch.Tensor],
+    combination_method: str,
     max_combo_size: int = GEO_MAX_LAYER_COMBO_SIZE,
-    combination_method: str = "concat",
     num_components: int = DIAG_NUM_COMPONENTS,
     progress_callback: Optional[Callable[[int, int], None]] = None,
     top_k: int = DEFAULT_LIMIT,
@@ -191,7 +190,7 @@ def detect_geometry_limited(
 def detect_geometry_contiguous(
     pos_activations_by_layer: Dict[int, torch.Tensor],
     neg_activations_by_layer: Dict[int, torch.Tensor],
-    combination_method: str = "concat",
+    combination_method: str,
     num_components: int = DIAG_NUM_COMPONENTS,
     progress_callback: Optional[Callable[[int, int], None]] = None,
     top_k: int = DEFAULT_LIMIT,
@@ -232,8 +231,8 @@ def detect_geometry_contiguous(
 def detect_geometry_smart(
     pos_activations_by_layer: Dict[int, torch.Tensor],
     neg_activations_by_layer: Dict[int, torch.Tensor],
+    combination_method: str,
     max_combo_size: int = GEO_MAX_LAYER_COMBO_SIZE,
-    combination_method: str = "concat",
     num_components: int = DIAG_NUM_COMPONENTS,
     progress_callback: Optional[Callable[[int, int], None]] = None,
     top_k: int = DEFAULT_LIMIT,

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.config_tools.constants import JSON_INDENT
 from wisent.core.utils.infra_tools.errors import MissingParameterError
@@ -118,7 +118,7 @@ def export_modified_model(
 
 def load_steered_model(
     model_path: str | Path,
-    device_map: str = "auto",
+    device_map: Optional[str] = None,
     torch_dtype=None,
 ):
     """
