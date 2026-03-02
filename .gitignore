@@ -72,7 +72,7 @@ Thumbs.db
 /*
 !/wisent/
 # scripts/ kept locally, not tracked in git
-!/tests/
+# tests/ kept locally, not tracked in git
 !/.github/
 !/.runpod/
 
