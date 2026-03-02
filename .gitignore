@@ -71,7 +71,7 @@ Thumbs.db
 # Whitelist approach - only include specific folders
 /*
 !/wisent/
-!/scripts/
+# scripts/ kept locally, not tracked in git
 !/tests/
 !/.github/
 !/.runpod/
