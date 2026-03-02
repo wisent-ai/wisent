@@ -17,11 +17,11 @@ from pathlib import Path
 from typing import Optional
 from dataclasses import asdict
 
-from wisent.core.constants import DEFAULT_N_TRIALS
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.utils.config_tools.constants import DEFAULT_N_TRIALS
+from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.extractors.lm_eval.lm_task_pairs_generation import lm_build_contrastive_pairs
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.activation_cache import collect_and_cache_activations
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.activation_cache import collect_and_cache_activations
 from lm_eval.tasks import TaskManager
 
 from nonlinear_signal_analysis_compute import (

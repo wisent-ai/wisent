@@ -7,16 +7,16 @@ Compares extraction strategies: CHAT_LAST, ROLE_PLAY, MC_BALANCED, and optimal.
 
 import torch
 import torch.nn.functional as F
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.core.atoms import SteeringPlan
-from wisent.core.steering_methods import CAAMethod
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.constants import TEST_STEERING_SCALE
-from wisent.core.models import get_generate_kwargs
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models.core.atoms import SteeringPlan
+from wisent.core.control.steering_methods import CAAMethod
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.config_tools.constants import TEST_STEERING_SCALE
+from wisent.core.primitives.models import get_generate_kwargs
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 
@@ -93,9 +93,9 @@ for strategy in strategies:
     steering_plans[strategy.value] = plan
 
 # Evaluate via generation
-from wisent.core.evaluators.rotator import EvaluatorRotator
+from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 
-EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
 evaluator = EvaluatorRotator(evaluator=None, task_name="truthfulqa_gen")
 
 print("\n" + "=" * 70)

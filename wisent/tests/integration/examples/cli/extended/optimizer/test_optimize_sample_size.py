@@ -16,7 +16,7 @@ def test_optimize_sample_size_basic():
     with tempfile.TemporaryDirectory() as tmpdir:
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "optimize-sample-size",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "optimize-sample-size",
                 "meta-llama/Llama-3.2-1B-Instruct",  # Small model for testing
                 "--task", "boolq",
                 "--layer", "3",
@@ -45,7 +45,7 @@ def test_optimize_sample_size_with_steering():
     with tempfile.TemporaryDirectory() as tmpdir:
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "optimize-sample-size",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "optimize-sample-size",
                 "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--layer", "3",
@@ -76,7 +76,7 @@ def test_optimize_sample_size_custom_threshold():
     with tempfile.TemporaryDirectory() as tmpdir:
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "optimize-sample-size",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "optimize-sample-size",
                 "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--layer", "3",

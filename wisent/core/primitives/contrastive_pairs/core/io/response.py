@@ -2,9 +2,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from wisent.core.contrastive_pairs.core.atoms import AtomResponse
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
-from wisent.core.errors import ResponseMustBeStringError
+from wisent.core.primitives.contrastive_pairs.core.atoms import AtomResponse
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap
+from wisent.core.utils.infra_tools.errors import ResponseMustBeStringError
 
 __all__ = [
     "Response",

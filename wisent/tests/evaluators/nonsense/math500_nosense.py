@@ -10,8 +10,8 @@ from typing import Any, Dict, List
 # Add wisent to Python path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
-from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, SEPARATOR_WIDTH_NARROW
-from wisent.core.tasks.math500_task import Math500Task
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, SEPARATOR_WIDTH_NARROW
+from wisent.core.control.tasks.math500_task import Math500Task
 from base_nosense import BaseNosenseGenerator
 
 

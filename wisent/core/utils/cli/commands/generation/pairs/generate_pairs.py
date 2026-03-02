@@ -4,20 +4,20 @@ import sys
 import json
 import os
 
-from wisent.core.models import get_generate_kwargs
+from wisent.core.primitives.models import get_generate_kwargs
 from wisent.data.contrastive_pairs import save_personalization_pairs, save_synthetic_pairs
-from wisent.core.constants import GENERATE_PAIRS_MIN_TOKENS, JSON_INDENT, SIMHASH_RELAXED_THRESHOLD_BITS, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, TRAIT_NAME_MAX_LENGTH
+from wisent.core.utils.config_tools.constants import GENERATE_PAIRS_MIN_TOKENS, JSON_INDENT, SIMHASH_RELAXED_THRESHOLD_BITS, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, TRAIT_NAME_MAX_LENGTH
 
 
 def execute_generate_pairs(args):
     """Execute the generate-pairs command - generate synthetic contrastive pairs from trait description."""
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
-    from wisent.core.synthetic.db_instructions.mini_dp import Default_DB_Instructions
-    from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
-    from wisent.core.synthetic.cleaners.refusaler_cleaner import RefusalerCleaner
-    from wisent.core.synthetic.cleaners.deduper_cleaner import DeduperCleaner
-    from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.control.generation.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
+    from wisent.core.control.generation.synthetic.db_instructions.mini_dp import Default_DB_Instructions
+    from wisent.core.control.generation.synthetic.cleaners.pairs_cleaner import PairsCleaner
+    from wisent.core.control.generation.synthetic.cleaners.refusaler_cleaner import RefusalerCleaner
+    from wisent.core.control.generation.synthetic.cleaners.deduper_cleaner import DeduperCleaner
+    from wisent.core.control.generation.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
 
     print(f"\n🎨 Generating synthetic contrastive pairs")
     print(f"   Trait: {args.trait}")
@@ -30,8 +30,8 @@ def execute_generate_pairs(args):
         # If nonsense mode, use programmatic generator (no LLM needed!)
         if nonsense_mode:
             print(f"   🎲 Nonsense mode: {nonsense_mode} (programmatic generation)")
-            from wisent.core.synthetic.generators.nonsense_generator import ProgrammaticNonsenseGenerator
-            from wisent.core.synthetic.generators.core.atoms import GenerationReport
+            from wisent.core.control.generation.synthetic.generators.nonsense_generator import ProgrammaticNonsenseGenerator
+            from wisent.core.control.generation.synthetic.generators.core.atoms import GenerationReport
 
             # 1. Create programmatic generator
             print(f"\n⚙️  Initializing programmatic nonsense generator...")
@@ -82,7 +82,7 @@ def execute_generate_pairs(args):
 
             # 3. Set up cleaning pipeline
             print(f"\n🧹 Setting up cleaning pipeline...")
-            from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
+            from wisent.core.control.generation.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
 
             cleaning_steps = [
                 DeduperCleaner(deduper=SimHashDeduper(threshold_bits=SIMHASH_RELAXED_THRESHOLD_BITS)),  # Relaxed threshold to keep more diverse pairs

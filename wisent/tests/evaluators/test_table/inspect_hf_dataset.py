@@ -16,7 +16,7 @@ import argparse
 import sys
 from datasets import load_dataset, get_dataset_config_names
 
-from wisent.core.constants import NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_NARROW
+from wisent.core.utils.config_tools.constants import NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_NARROW
 
 
 def inspect_hf_dataset(dataset_name: str, config_name: str | None = None, num_examples: int = NUM_EXAMPLES_DEFAULT) -> None:

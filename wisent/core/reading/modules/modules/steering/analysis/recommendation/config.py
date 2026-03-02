@@ -6,7 +6,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass, fields, asdict
 from pathlib import Path
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     JSON_INDENT,
     RECOMMEND_LINEAR_PROBE_HIGH, RECOMMEND_LINEAR_PROBE_LOW,
     RECOMMEND_NONLINEARITY_GAP, RECOMMEND_ICD_HIGH, RECOMMEND_ICD_LOW,

@@ -9,8 +9,8 @@ from typing import Dict, Optional, List, Any
 
 import torch
 
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import GUIDED_MAX_DEGRADATION, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import GUIDED_MAX_DEGRADATION, SEPARATOR_WIDTH_REPORT
 from wisent.core.weight_modification import (
     project_weights, project_with_kernel,
     bake_steering_into_weights, bake_steering_with_kernel,
@@ -251,20 +251,20 @@ def execute_multi_concept_modification(args, wisent_model, model, tokenizer, bas
 
 def generate_pairs_for_guided_mode(args) -> List:
     """Generate contrastive pairs for guided mode diagnostics."""
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 
     pairs = []
     if args.task:
         try:
-            from wisent.core.data_loaders import load_contrastive_pairs
+            from wisent.core.utils.infra_tools.data import load_contrastive_pairs
             task_pairs = load_contrastive_pairs(task=args.task, num_pairs=args.num_pairs, model_name=args.model)
             for p in task_pairs:
                 if hasattr(p, 'prompt') and hasattr(p, 'positive_response') and hasattr(p, 'negative_response'):
                     pairs.append(p)
         except Exception:
             try:
-                from wisent.core.synthetic.generators.pairs_generator import generate_synthetic_pairs
+                from wisent.core.control.generation.synthetic.generators.pairs_generator import generate_synthetic_pairs
                 synthetic_pairs = generate_synthetic_pairs(trait=args.task, num_pairs=args.num_pairs)
                 for sp in synthetic_pairs:
                     pairs.append(ContrastivePair(

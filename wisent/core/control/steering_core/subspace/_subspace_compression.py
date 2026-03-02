@@ -7,10 +7,10 @@ from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 import torch
 import torch.nn.functional as F
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.activations.core.atoms import LayerName
-from wisent.core.steering_core._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
-from wisent.core.constants import ZERO_THRESHOLD, CONCEPT_PCA_COMPONENTS
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerName
+from wisent.core.control.steering_core._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, CONCEPT_PCA_COMPONENTS
 
 _LOG = setup_logger(__name__)
 

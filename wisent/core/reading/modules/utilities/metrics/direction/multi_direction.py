@@ -6,7 +6,7 @@ Tests how many separation directions are needed for good classification.
 
 import numpy as np
 from typing import Dict, Any, List
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS,
     BLEND_DEFAULT,
     DEFAULT_SCORE,

@@ -6,7 +6,7 @@ so they don't need to be regenerated every time.
 from pathlib import Path
 from typing import List, Dict, Any, Union
 import torch
-from wisent.core.constants import BLEND_DEFAULT
+from wisent.core.utils.config_tools.constants import BLEND_DEFAULT
 
 
 def save_steering_activations(

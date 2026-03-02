@@ -12,15 +12,15 @@ import logging
 
 import torch
 
-from wisent.core.adapters.base import BaseAdapter, SteeringConfig, AdapterError
-from wisent.core.constants import DEFAULT_SCALE
-from wisent.core.adapters.text import TextAdapter
-from wisent.core.adapters import AudioAdapter
-from wisent.core.adapters import VideoAdapter
-from wisent.core.adapters import RoboticsAdapter
-from wisent.core.adapters import MultimodalAdapter
-from wisent.core.errors import UnknownTypeError, NoTrainedVectorsError
-from wisent.core.modalities import (
+from wisent.core.primitives.model_interface.adapters.base import BaseAdapter, SteeringConfig, AdapterError
+from wisent.core.utils.config_tools.constants import DEFAULT_SCALE
+from wisent.core.primitives.model_interface.adapters.text import TextAdapter
+from wisent.core.primitives.model_interface.adapters import AudioAdapter
+from wisent.core.primitives.model_interface.adapters import VideoAdapter
+from wisent.core.primitives.model_interface.adapters import RoboticsAdapter
+from wisent.core.primitives.model_interface.adapters import MultimodalAdapter
+from wisent.core.utils.infra_tools.errors import UnknownTypeError, NoTrainedVectorsError
+from wisent.core.primitives.models.modalities import (
     Modality,
     ModalityContent,
     ContentType,
@@ -33,8 +33,8 @@ from wisent.core.modalities import (
     MultimodalContent,
     wrap_content,
 )
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 
 __all__ = [
     "Wisent",
@@ -46,9 +46,9 @@ logger = logging.getLogger(__name__)
 InputT = TypeVar("InputT", bound=ModalityContent)
 OutputT = TypeVar("OutputT")
 
-from wisent.core._wisent_pairs import WisentPairsMixin
-from wisent.core._wisent_training import WisentTrainingMixin
-from wisent.core._wisent_io import WisentIOMixin
+from wisent.core.primitives.model_interface.entry_points._wisent_pairs import WisentPairsMixin
+from wisent.core.primitives.model_interface.entry_points._wisent_training import WisentTrainingMixin
+from wisent.core.primitives.model_interface.entry_points._wisent_io import WisentIOMixin
 
 @dataclass
 class TraitConfig:

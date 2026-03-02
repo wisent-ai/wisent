@@ -8,7 +8,7 @@ import random
 from typing import Dict, Any, List
 
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
-from wisent.core.constants import DEFAULT_TIMEOUT_SHORT, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH, DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_SHORT, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH, DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI
 
 
 def get_benchmark_tags_with_llama(task_name: str, readme_content: str = "") -> List[str]:

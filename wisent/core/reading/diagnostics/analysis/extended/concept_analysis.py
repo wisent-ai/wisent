@@ -22,7 +22,7 @@ import torch
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, adjusted_rand_score
 from sklearn.decomposition import PCA
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     CONCEPT_PCA_COMPONENTS, CONCEPT_K_MAX,
     CLUSTERING_MEANINGFUL_THRESHOLD,
@@ -246,7 +246,7 @@ def decompose_concepts(
 
 
 # Re-exports from split module
-from wisent.core.contrastive_pairs.diagnostics.analysis._concept_analysis_part2 import (
+from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._concept_analysis_part2 import (
     compute_concept_correlations,
     analyze_concepts,
     analyze_concept_interference,

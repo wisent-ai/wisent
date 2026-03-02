@@ -4,8 +4,8 @@ import random
 import logging
 from typing import Any, TYPE_CHECKING
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
 
 if TYPE_CHECKING:

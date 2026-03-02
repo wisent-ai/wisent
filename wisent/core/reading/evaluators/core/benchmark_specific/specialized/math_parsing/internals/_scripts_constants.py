@@ -2,7 +2,7 @@ import re
 from typing import Union, Optional, Any
 import regex
 from latex2sympy2_extended import latex2sympy
-from wisent.core.evaluators.benchmark_specific.math_parsing.core import EvaluatorMath
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.core import EvaluatorMath
 import multiprocessing
 from math import isclose
 import time

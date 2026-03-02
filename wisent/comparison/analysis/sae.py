@@ -16,7 +16,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from wisent.core.constants import COMPARISON_NUM_PAIRS, SAE_TOP_K_DEFAULT, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import COMPARISON_NUM_PAIRS, SAE_TOP_K_DEFAULT, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10
 from wisent.comparison.utils import (
     apply_steering_to_model,
     remove_steering,
@@ -28,7 +28,7 @@ from wisent.comparison.utils import (
 )
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
 __all__ = ["generate_steering_vector", "apply_steering_to_model", "remove_steering", "convert_to_lm_eval_format"]
 

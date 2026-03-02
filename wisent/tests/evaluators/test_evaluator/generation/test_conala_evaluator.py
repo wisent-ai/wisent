@@ -1,7 +1,7 @@
 """Unit tests for CoNaLaEvaluator."""
 
 import pytest
-from wisent.core.evaluators.benchmark_specific.conala_evaluator import (
+from wisent.core.reading.evaluators.benchmark_specific.conala_evaluator import (
     CoNaLaEvaluator,
     tokenize_for_bleu_eval,
     compute_bleu_single,

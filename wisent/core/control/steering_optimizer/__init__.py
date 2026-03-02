@@ -31,7 +31,7 @@ from .optimizer import SteeringOptimizer
 from .auto import run_auto_steering_optimization
 
 # CLI convenience functions
-from .cli import (
+from .optimizer_cli import (
     run_steering_optimization,
     get_optimal_steering_params,
 )

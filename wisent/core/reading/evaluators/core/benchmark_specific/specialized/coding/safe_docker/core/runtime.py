@@ -1,9 +1,9 @@
 from __future__ import annotations
 import json, os, subprocess, tempfile
 from typing import TYPE_CHECKING
-from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result, SandboxExecutor
-from wisent.core.errors import DockerRuntimeError
-from wisent.core.constants import (
+from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result, SandboxExecutor
+from wisent.core.utils.infra_tools.errors import DockerRuntimeError
+from wisent.core.utils.config_tools.constants import (
     DOCKER_TMPFS_TMP_SIZE_BYTES,
     DOCKER_TMPFS_WORK_SIZE_BYTES,
     DOCKER_TMPFS_MODE,
@@ -11,7 +11,7 @@ from wisent.core.constants import (
 from wisent.core.utils.core.hardware import docker_pids_limit, docker_code_exec_timeout_s
 
 if TYPE_CHECKING:
-    from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job
+    from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job
 
 __all__ = ["DockerSandboxExecutor"]
 
@@ -81,8 +81,8 @@ class DockerSandboxExecutor(SandboxExecutor):
             A Result object with the outcome of the execution.
 
         example (pythonm add function)
-        >>> from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job, Result
-        >>> from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
+        >>> from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job, Result
+        >>> from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
         >>> job = Job(
         ...     language="python",
         ...     compile_argv=None,

@@ -5,8 +5,8 @@ import sys
 import time
 from typing import Dict, Optional
 import torch
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.utils import resolve_default_device
 from .method_training import get_all_layers, auto_select_steering_method
 from .vector_loading import (
@@ -24,7 +24,7 @@ _LOG = setup_logger(__name__)
 
 def execute_modify_weights(args):
     """Execute weight modification command."""
-    from wisent.core.tasks.base.task_selector import expand_task_if_skill_or_risk
+    from wisent.core.control.tasks.base.task_selector import expand_task_if_skill_or_risk
     if getattr(args, 'task', None):
         args.task = expand_task_if_skill_or_risk(args.task)
     log = bind(_LOG)
@@ -208,10 +208,10 @@ def _load_model(args):
 
 def _run_auto_selection(args, wisent_model, steering_vectors):
     """Run auto-selection and generate CAA vectors if needed."""
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.steering_methods.methods.caa import CAAMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.control.steering_methods.methods.caa import CAAMethod
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
     pairs = _generate_pairs(args, wisent_model)
     if pairs and len(pairs) >= _C.MIN_PAIRS_FOR_LINEARITY:
         steering_method, modification_method, _ = auto_select_steering_method(pairs, wisent_model, args.verbose)
@@ -235,13 +235,13 @@ def _run_auto_selection(args, wisent_model, steering_vectors):
 
 def _generate_pairs(args, wisent_model):
     """Generate contrastive pairs for training."""
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
     pairs = []
     if args.task:
         task_lower = args.task.lower()
         if task_lower == "personalization" and args.trait:
-            from wisent.core.contrastive_pairs.generators.llm_synthetic import LLMSyntheticGenerator
+            from wisent.core.primitives.contrastive_pairs.generators.llm_synthetic import LLMSyntheticGenerator
             generator = LLMSyntheticGenerator(model_id=args.model)
             raw_pairs = generator.generate_pairs(trait=args.trait, num_pairs=args.num_pairs)
             for rp in raw_pairs:
@@ -256,7 +256,7 @@ def _generate_pairs(args, wisent_model):
             raw_pairs = build_contrastive_pairs(task_name=args.task, limit=args.num_pairs)
             pairs.extend(raw_pairs)
     elif args.trait:
-        from wisent.core.contrastive_pairs.generators.llm_synthetic import LLMSyntheticGenerator
+        from wisent.core.primitives.contrastive_pairs.generators.llm_synthetic import LLMSyntheticGenerator
         generator = LLMSyntheticGenerator(model_id=args.model)
         raw_pairs = generator.generate_pairs(trait=args.trait, num_pairs=args.num_pairs)
         for rp in raw_pairs:

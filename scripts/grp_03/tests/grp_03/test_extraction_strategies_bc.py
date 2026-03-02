@@ -8,14 +8,14 @@ for contrastive pairs from BoolQ using the actual wisent extractor.
 import torch
 from transformers import AutoTokenizer
 
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.extractors.lm_eval.lm_task_extractors.boolq import BoolQExtractor
-from wisent.core.activations import (
+from wisent.core.primitives.model_interface.core.activations import (
     ExtractionStrategy,
     build_extraction_texts,
 )
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models import get_generate_kwargs
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models import get_generate_kwargs
 
 # Small models < 1GB
 CHAT_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"  # instruct/chat model with chat template

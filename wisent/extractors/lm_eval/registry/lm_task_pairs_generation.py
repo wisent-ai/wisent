@@ -5,11 +5,11 @@ from typing import TYPE_CHECKING
 
 from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
 __all__ = ["build_contrastive_pairs", "lm_build_contrastive_pairs"]
 _LOG = setup_logger(__name__)
@@ -100,7 +100,7 @@ def build_contrastive_pairs(
     
     # lm-eval extractor - need to load task
     log.info("lm-eval task - loading via LMEvalDataLoader")
-    from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
+    from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
     
     loader = LMEvalDataLoader()
     try:

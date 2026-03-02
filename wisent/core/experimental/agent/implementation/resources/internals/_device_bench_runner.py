@@ -3,8 +3,8 @@ import time
 import sys
 import hashlib
 from typing import Dict, Any, Optional
-from wisent.core.errors import DeviceBenchmarkError, NoBenchmarkDataError, UnknownTypeError
-from wisent.core.constants import AGENT_BENCH_EVAL_DEFAULT_SECONDS, AGENT_CLASSIFIER_TRAINING_DEFAULT_SECONDS, HASH_DISPLAY_LENGTH
+from wisent.core.utils.infra_tools.errors import DeviceBenchmarkError, NoBenchmarkDataError, UnknownTypeError
+from wisent.core.utils.config_tools.constants import AGENT_BENCH_EVAL_DEFAULT_SECONDS, AGENT_CLASSIFIER_TRAINING_DEFAULT_SECONDS, HASH_DISPLAY_LENGTH
 
 
 class DeviceBenchmarkRunnerMixin:

@@ -7,9 +7,9 @@ import inspect
 
 import torch
 
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName  
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.errors import DuplicateNameError  
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName  
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.infra_tools.errors import DuplicateNameError  
 
 __all__ = [
     "SteeringError",

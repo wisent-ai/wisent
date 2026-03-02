@@ -9,7 +9,7 @@ from enum import Enum
 from typing import Dict, List
 import torch
 
-from wisent.core.geometry import get_component_hook_points
+from wisent.core.reading.modules import get_component_hook_points
 
 
 class TransformerComponent(Enum):

@@ -6,7 +6,7 @@ Two subcommands:
 """
 from __future__ import annotations
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LIMIT, DEFAULT_N_TRIALS, DEFAULT_RANDOM_SEED,
     RECOMMEND_COLLECTOR_PER_TYPE, RECOMMEND_N_TRIALS, RECOMMEND_TOP_K,
 )
@@ -25,7 +25,7 @@ def execute_tune_recommendation(args) -> None:
 
 
 def _collect(args) -> None:
-    from wisent.core.geometry.steering.analysis.recommendation import (
+    from wisent.core.reading.modules.steering.analysis.recommendation import (
         collect_ground_truth,
     )
     benchmarks = None
@@ -53,7 +53,7 @@ def _collect(args) -> None:
 
 
 def _optimize(args) -> None:
-    from wisent.core.geometry.steering.analysis.recommendation import (
+    from wisent.core.reading.modules.steering.analysis.recommendation import (
         GroundTruthDataset, RecommendationOptimizer,
     )
     dataset = GroundTruthDataset.load(args.ground_truth)

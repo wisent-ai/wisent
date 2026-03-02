@@ -17,8 +17,8 @@ from typing import Any
 
 import evaluate
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.constants import BLEU_THRESHOLD, BLEU_MAX_ORDER
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.config_tools.constants import BLEU_THRESHOLD, BLEU_MAX_ORDER
 
 logger = logging.getLogger(__name__)
 

@@ -195,7 +195,7 @@ class EvaluatorBase:
         return maj_ans
 
 
-from wisent.core.constants import DEFAULT_TIMEOUT_QUICK, MAX_TASKS_PER_PROC
+from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_QUICK, MAX_TASKS_PER_PROC
 
 DEF_TIMEOUT: int = DEFAULT_TIMEOUT_QUICK
 DEF_N_PROC: int = os.cpu_count() // 2
@@ -248,7 +248,7 @@ def task_wrapper(
 
 
 # Re-export all public symbols from split parts
-from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (  # noqa: E402,F811
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (  # noqa: E402,F811
     BASIC_FN_NAMES, DATETIME_FMTS, DEF_ABS_TOL, DEF_PERCENT_REL_TOL,
     DEF_REL_TOL, LATEX_CMDS, LATEX_FMT_ENVS, LATEX_LIST_ENVS,
     PAREN_MAP, SIMPLE_REPLACE_MAP, SIMPLE_RM_STRS, STR2NUM, UNITS,
@@ -257,9 +257,9 @@ from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._sympy_u
     is_querying4set, is_set, latex2sympy_fix, latex2sympy_interval,
     norm_deg, norm_str2weekday, parse, rm_latex_env, run_with_timeout,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_math import (  # noqa: E402
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_math import (  # noqa: E402
     EvaluatorMath,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_batch import (  # noqa: E402
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_batch import (  # noqa: E402
     EvaluatorMathBatch,
 )

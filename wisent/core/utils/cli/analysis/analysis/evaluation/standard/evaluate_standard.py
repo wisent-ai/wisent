@@ -1,6 +1,6 @@
 """Standard benchmark evaluation loop for evaluate-responses command."""
 
-from wisent.core.constants import DISPLAY_TRUNCATION_EVAL
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_EVAL
 
 
 def evaluate_standard(

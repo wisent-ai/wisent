@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 
 __all__ = [
     "UserSpecifiedEvaluator",

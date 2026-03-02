@@ -6,7 +6,7 @@ from dataclasses import asdict
 
 import numpy as np
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NULL_DISTRIBUTION_SAMPLES, THRESHOLD_HIDDEN_DIM_LARGE,
     JSON_ARRAY_LIMIT, GAP_THRESHOLD_CANDIDATES,
     SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_STANDARD, JSON_INDENT,
@@ -66,7 +66,7 @@ def run_threshold_analysis(model_name: str):
     
     # 3. Synthetic validation
     print("\n3. Synthetic validation...")
-    from wisent.core.geometry_runner import compute_knn_accuracy, compute_linear_probe_accuracy
+    from wisent.core.reading.modules.runner.geometry_runner import compute_knn_accuracy, compute_linear_probe_accuracy
     
     synthetic_results = {}
     for structure in ["linear", "xor", "spirals", "random"]:

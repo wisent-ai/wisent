@@ -14,24 +14,24 @@ from typing import TYPE_CHECKING
 import torch
 import torch.nn as nn
 
-from wisent.core.activations.strategies.extraction_strategy import (
+from wisent.core.primitives.model_interface.core.activations.strategies.extraction_strategy import (
     ExtractionComponent,
 )
-from wisent.core.activations.component_hooks import (
+from wisent.core.primitives.model_interface.core.activations.component_hooks import (
     _COMPONENT_MAP,
     _PRE_HOOK_COMPONENTS,
     _GLOBAL_COMPONENTS,
     _detect_model_type,
     _get_submodule,
 )
-from wisent.core.geometry.analysis.structure.transformer_analysis import (
+from wisent.core.reading.modules.analysis.structure.transformer_analysis import (
     get_component_hook_points,
 )
 
 if TYPE_CHECKING:
     from typing import Callable, Optional
-    from wisent.core.steering_methods.steering_object import BaseSteeringObject
-    from wisent.core.models.core.atoms import HookHandleGroup
+    from wisent.core.control.steering_methods.steering_object import BaseSteeringObject
+    from wisent.core.primitives.models.core.atoms import HookHandleGroup
 
 
 def _resolve_extraction_component(value: str) -> ExtractionComponent:

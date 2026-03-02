@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass, asdict
 from datetime import datetime
 
-from wisent.core.constants import JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 @dataclass

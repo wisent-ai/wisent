@@ -13,9 +13,9 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 
 from torch.nn.modules.loss import _Loss
-from wisent.core.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
+from wisent.core.utils.infra_tools.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_RANDOM_SEED
+from wisent.core.utils.config_tools.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_RANDOM_SEED
 
 __all__ = [
     "ClassifierTrainConfig",

@@ -13,10 +13,10 @@ import pynndescent  # noqa: F401
 
 import sys
 from pathlib import Path
-from wisent.core.parser_arguments import setup_parser
+from wisent.core.utils.config_tools.parser_arguments import setup_parser
 from wisent.core.utils import print_banner
-from wisent.core.constants import BANNER_WIDTH
-import wisent.core.cli as _cli
+from wisent.core.utils.config_tools.constants import BANNER_WIDTH
+import wisent.core.utils.cli as _cli
 
 
 def _should_show_banner() -> bool:

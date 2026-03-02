@@ -1,20 +1,20 @@
 """Evaluator creation for optimize-weights."""
 from typing import Any, Callable
 
-from wisent.core.constants import DEFAULT_NUM_EVAL_PROMPTS
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.evaluators.steering_evaluators import (
+from wisent.core.utils.config_tools.constants import DEFAULT_NUM_EVAL_PROMPTS
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.reading.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
     EvaluatorConfig,
 )
-from wisent.core.cli.optimization.specific.optimize_weights_pooled import _create_pooled_evaluator
+from wisent.core.utils.cli.optimization.specific.optimize_weights_pooled import _create_pooled_evaluator
 
 
 def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
                       positive_examples: list[str] = None, negative_examples: list[str] = None) -> Callable[[Any, Any], dict[str, float]]:
     """Create the appropriate evaluator function based on --task argument.
 
-    Uses shared steering evaluators from wisent.core.evaluators.steering_evaluators.
+    Uses shared steering evaluators from wisent.core.reading.evaluators.steering_evaluators.
 
     Task types:
     - 'refusal' → RefusalEvaluator (compliance rate)
@@ -32,7 +32,7 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
         positive_examples: List of positive example responses from contrastive pairs
         negative_examples: List of negative example responses from contrastive pairs
     """
-    from wisent.core.models import get_generate_kwargs
+    from wisent.core.primitives.models import get_generate_kwargs
 
     task = args.task.lower() if args.task else ""
     
@@ -115,15 +115,15 @@ def _create_evaluator(args, model_name: str, wisent_model: WisentModel = None,
 def _create_custom_evaluator(args, model_name: str) -> Callable:
     """Create custom evaluator for --task custom.
     
-    Uses the custom evaluator framework from wisent.core.evaluators.custom.
+    Uses the custom evaluator framework from wisent.core.reading.evaluators.custom.
     
     Args:
         args: Command arguments (must have args.custom_evaluator)
         model_name: Model name/path
     """
     import json
-    from wisent.core.evaluators.custom import create_custom_evaluator
-    from wisent.core.models import get_generate_kwargs
+    from wisent.core.reading.evaluators.custom import create_custom_evaluator
+    from wisent.core.primitives.models import get_generate_kwargs
     
     # Parse custom evaluator kwargs
     custom_kwargs = {}
@@ -141,7 +141,7 @@ def _create_custom_evaluator(args, model_name: str) -> Callable:
             eval_prompts = [line.strip() for line in f if line.strip()]
     elif getattr(args, 'trait', None):
         # Use default prompts from PersonalizationEvaluator
-        from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
+        from wisent.core.reading.evaluators.steering_evaluators import PersonalizationEvaluator
         num_prompts = getattr(args, 'num_eval_prompts', DEFAULT_NUM_EVAL_PROMPTS)
         eval_prompts = PersonalizationEvaluator.DEFAULT_PROMPTS[:num_prompts]
     else:

@@ -1,9 +1,9 @@
 """Personalization evaluation for evaluate-responses command."""
 import json
 import os
-from wisent.core.constants import JSON_INDENT, QUALITY_THRESHOLD, DEFAULT_SCORE, PERSONALIZATION_GOOD_THRESHOLD, SCORE_MIDPOINT_PCT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, QUALITY_THRESHOLD, DEFAULT_SCORE, PERSONALIZATION_GOOD_THRESHOLD, SCORE_MIDPOINT_PCT
 
-from wisent.core.evaluators.steering_evaluators import (
+from wisent.core.reading.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
     EvaluatorConfig,
     PersonalizationEvaluator as SteeringPersonalizationEvaluator,
@@ -58,7 +58,7 @@ def evaluate_personalization(args, input_data, responses, task_name, evaluation_
         model_name = 'meta-llama/Llama-3.2-1B-Instruct'  # Default model
     print(f"   Model: {model_name}")
 
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
     wisent_model = WisentModel(model_name, device=getattr(args, 'device', None))
     model = wisent_model.hf_model

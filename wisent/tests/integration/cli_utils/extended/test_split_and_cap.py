@@ -12,7 +12,7 @@ from dataclasses import dataclass
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from wisent.cli_utils.cli_prepare_dataset import _split_and_cap
-from wisent.core.constants import DEFAULT_SPLIT_RATIO
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO
 
 # Import additional tests and runner from extracted module
 from wisent.tests.cli_utils._split_cap_helpers import (

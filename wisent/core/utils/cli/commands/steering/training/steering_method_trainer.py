@@ -10,22 +10,22 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Tuple
 import torch
 
-from wisent.core.steering_methods.registry import SteeringMethodRegistry
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-from wisent.core.constants import DEFAULT_STRENGTH
+from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH
 
 
 
-from wisent.core.cli.steering.training.steering_method_trainer_core import (
+from wisent.core.utils.cli.steering.training.steering_method_trainer_core import (
     get_method_params_from_args, train_steering_vector_for_layer,
     train_steering_vectors, collect_activations_for_pair_set,
     create_steering_plan_from_activations, create_steering_plan_single_layer,
 )
-from wisent.core.cli.steering.training.steering_method_trainer_loading import (
+from wisent.core.utils.cli.steering.training.steering_method_trainer_loading import (
     load_optimal_steering_config, create_steering_method_from_config,
     get_optimal_steering_plan,
 )

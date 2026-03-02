@@ -1,11 +1,11 @@
 """
 Backward-compatibility shim.
 
-All code has moved to wisent.core.activations.cache subpackage.
+All code has moved to wisent.core.primitives.model_interface.core.activations.cache subpackage.
 This file re-exports everything for existing imports.
 """
 
-from wisent.core.activations.cache import (
+from wisent.core.primitives.model_interface.core.activations.cache import (
     get_strategy_text_family,
     CachedActivations,
     RawPairData,

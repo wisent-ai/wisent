@@ -6,8 +6,8 @@ import tempfile
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
-from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, JSON_INDENT, RECOMMEND_COLLECTOR_PER_TYPE, DEFAULT_RANDOM_SEED
-from wisent.core.geometry.data.enriched_builder import build_enriched_from_db, generate_and_collect_enriched
+from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, JSON_INDENT, RECOMMEND_COLLECTOR_PER_TYPE, DEFAULT_RANDOM_SEED
+from wisent.core.reading.modules.data.enriched_builder import build_enriched_from_db, generate_and_collect_enriched
 
 # ── Data types ─────────────────────────────────────────────────
 
@@ -111,8 +111,8 @@ def collect_benchmark_ground_truth(
 ) -> Optional[BenchmarkGroundTruth]:
     """Run Optuna optimization for each method on one benchmark."""
     import optuna
-    from wisent.core.cli.optimize_steering import create_optuna_objective
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.utils.cli.optimize_steering import create_optuna_objective
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
     metrics = _load_zwiad_metrics(model_name, benchmark, zwiad_dir)
     if metrics is None:
@@ -215,7 +215,7 @@ def collect_ground_truth(
     """Collect ground truth. use_geometry_selection picks per_type per type."""
     if benchmarks is None:
         if use_geometry_selection:
-            from wisent.core.geometry.zwiad.geometry_types import (
+            from wisent.core.reading.modules.zwiad.geometry_types import (
                 select_representative_benchmarks, GeometryType, GeometryTypeFine)
             selected = select_representative_benchmarks(
                 zwiad_dir, model, per_type=per_type, fine=fine_geometry)

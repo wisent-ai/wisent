@@ -1,5 +1,5 @@
 """Extracted from additive.py - bake_steering_with_kernel implementation."""
-from wisent.core.constants import KERNEL_DISTANCE_FRACTION
+from wisent.core.utils.config_tools.constants import KERNEL_DISTANCE_FRACTION
 
 
 def bake_steering_with_kernel_impl(

@@ -1,5 +1,5 @@
 """LM eval task definitions - batch 3."""
-from wisent.core.tasks.eval._lm_eval_task_base import LMEvalTask
+from wisent.core.control.tasks.eval._lm_eval_task_base import LMEvalTask
 
 class MultipleRsTask(LMEvalTask):
     """Multiple-Rs task implementation."""

@@ -19,7 +19,7 @@ def test_steering_vector_train_only():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--steering-method", "CAA",
@@ -52,7 +52,7 @@ def test_steering_vector_inference_only():
         # First train the vector
         train_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--steering-method", "CAA",
@@ -73,7 +73,7 @@ def test_steering_vector_inference_only():
         # Now use it for inference
         inference_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--steering-method", "CAA",
@@ -104,7 +104,7 @@ def test_steering_with_caa_l2():
         # Train with CAA
         train_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--steering-method", "CAA",
@@ -124,7 +124,7 @@ def test_steering_with_caa_l2():
         # Use with stronger steering
         inference_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--steering-method", "CAA",

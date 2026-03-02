@@ -3,8 +3,8 @@
 import random
 from pathlib import Path
 
-from wisent.core.constants import SEPARATOR_WIDTH_WIDE
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE
+from wisent.core.primitives.models.wisent_model import WisentModel
 
 from ._data_loading import (
     load_truthfulqa_pairs,

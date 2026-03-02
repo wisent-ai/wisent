@@ -6,16 +6,16 @@ import torch
 from typing import Iterable
 from pathlib import Path
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.core.atoms import SteeringPlan
-from wisent.core.activations.core.atoms import RawActivationMap
-from wisent.core.prompts.core.atom import ChatMessage
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models.core.atoms import SteeringPlan
+from wisent.core.primitives.model_interface.core.activations.core.atoms import RawActivationMap
+from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.utils import resolve_default_device
-from wisent.core.constants import DEFAULT_SCALE
-from wisent.core.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import DEFAULT_SCALE
+from wisent.core.primitives.models import get_generate_kwargs
 
 # Re-export from helpers
-from wisent.core.steering_core._helpers.multi_steering_helpers import run_multi_steer
+from wisent.core.control.steering_core._helpers.multi_steering_helpers import run_multi_steer
 
 __all__ = ["MultiSteering", "MultiSteeringError", "run_multi_steer"]
 

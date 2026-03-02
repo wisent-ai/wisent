@@ -5,7 +5,7 @@ import sys
 def _create_hf_repo():
     """Create the wisent-ai/activations HF dataset repo."""
     from huggingface_hub import HfApi
-    from wisent.core.geometry.data.hf.hf_config import HF_REPO_ID, HF_REPO_TYPE
+    from wisent.core.reading.modules.data.hf.hf_config import HF_REPO_ID, HF_REPO_TYPE
     import os
 
     token = os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN")
@@ -34,7 +34,7 @@ def execute_migrate_activations(args):
         _create_hf_repo()
 
     elif action == "all":
-        from wisent.core.geometry.data.hf.migration_verify import migrate_all
+        from wisent.core.reading.modules.data.hf.migration_verify import migrate_all
         migrate_all(
             database_url=args.database_url,
             dry_run=args.dry_run,
@@ -44,11 +44,11 @@ def execute_migrate_activations(args):
         )
 
     elif action == "consolidate":
-        from wisent.core.geometry.data.hf.hf_writers import consolidate_index
+        from wisent.core.reading.modules.data.hf.hf_writers import consolidate_index
         consolidate_index(dry_run=args.dry_run)
 
     elif action == "single":
-        from wisent.core.geometry.data.hf.migration import migrate_activation_table
+        from wisent.core.reading.modules.data.hf.migration import migrate_activation_table
         layers = migrate_activation_table(
             model_name=args.model,
             task_name=args.benchmark,
@@ -59,7 +59,7 @@ def execute_migrate_activations(args):
         print(f"\nMigrated {len(layers)} layers: {layers}")
 
     elif action == "pair-texts":
-        from wisent.core.geometry.data.hf.migration import migrate_pair_texts
+        from wisent.core.reading.modules.data.hf.migration import migrate_pair_texts
         count = migrate_pair_texts(
             task_name=args.benchmark,
             database_url=args.database_url,
@@ -68,7 +68,7 @@ def execute_migrate_activations(args):
         print(f"\nMigrated {count} pair texts")
 
     elif action == "raw":
-        from wisent.core.geometry.data.hf.migration import migrate_raw_activation_table
+        from wisent.core.reading.modules.data.hf.migration import migrate_raw_activation_table
         chunks = migrate_raw_activation_table(
             model_name=args.model,
             task_name=args.benchmark,
@@ -79,7 +79,7 @@ def execute_migrate_activations(args):
         print(f"\nUploaded {chunks} chunks")
 
     elif action == "verify":
-        from wisent.core.geometry.data.hf.migration_verify import verify_migration
+        from wisent.core.reading.modules.data.hf.migration_verify import verify_migration
         ok = verify_migration(
             model_name=args.model,
             task_name=args.benchmark,

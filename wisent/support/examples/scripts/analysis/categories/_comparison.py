@@ -8,10 +8,10 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 
-from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N, JSON_INDENT
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, JSON_INDENT
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
 from wisent.examples.scripts._pair_generators_neutral import (
     CONCEPT_GENERATORS,

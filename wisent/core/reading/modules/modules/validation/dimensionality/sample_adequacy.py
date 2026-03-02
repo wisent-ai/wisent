@@ -2,7 +2,7 @@
 
 import numpy as np
 from typing import Dict, Any
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, STAT_ALPHA, TARGET_POWER,
     SAMPLE_RATIO_ADEQUATE, SAMPLE_RATIO_GOOD, SAMPLE_RATIO_ACCEPTABLE,
     SAMPLE_RATIO_MARGINAL,
@@ -123,7 +123,7 @@ def recommend_sample_size(
         Dict with recommended sample sizes for different effect sizes.
 
     Example:
-        >>> from wisent.core.geometry.analysis.intrinsic_dim import participation_ratio
+        >>> from wisent.core.reading.modules.analysis.intrinsic_dim import participation_ratio
         >>> eff_dim = participation_ratio(diff_vectors)
         >>> rec = recommend_sample_size(eff_dim)
         >>> print(f"Need {rec['recommended_pairs']} pairs for medium effects")

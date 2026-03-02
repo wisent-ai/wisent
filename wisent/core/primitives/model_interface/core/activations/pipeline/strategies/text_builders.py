@@ -8,7 +8,7 @@ Separated from extraction_strategy.py to keep files under 300 lines.
 from typing import Tuple, Optional
 import warnings
 
-from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM
 from .extraction_strategy import ExtractionStrategy, ROLE_PLAY_TOKENS
 
 

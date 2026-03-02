@@ -4,7 +4,7 @@ from __future__ import annotations
 import random
 import re
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     YEAR_SHIFT_MIN, YEAR_SHIFT_MAX, YEAR_SHIFT_DEFAULT,
     SMALL_NUM_INCREMENT_MIN, SMALL_NUM_INCREMENT_MAX,
     NUM_PERTURB_SCALE_MIN, NUM_PERTURB_SCALE_MAX,

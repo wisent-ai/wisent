@@ -4,10 +4,10 @@ LM-Evaluation-Harness task wrapper for task-agnostic architecture.
 
 from typing import Any, Dict, List, Optional
 
-from wisent.core.benchmarks import BenchmarkExtractor
-from wisent.core.benchmarks import get_extractor as get_benchmark_extractor
+from wisent.core.utils.services.benchmarks import BenchmarkExtractor
+from wisent.core.utils.services.benchmarks import get_extractor as get_benchmark_extractor
 from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor as get_lm_extractor
-from wisent.core.tasks.base.task_interface import TaskInterface
+from wisent.core.control.tasks.base.task_interface import TaskInterface
 from wisent.core.utils import get_test_docs, get_all_docs_from_task, create_deterministic_split
 
 

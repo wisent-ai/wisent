@@ -2,7 +2,7 @@
 
 import numpy as np
 from typing import Dict, Any, Tuple
-from wisent.core.constants import SHRINKAGE_LOW, SHRINKAGE_MODERATE, SHRINKAGE_HIGH
+from wisent.core.utils.config_tools.constants import SHRINKAGE_LOW, SHRINKAGE_MODERATE, SHRINKAGE_HIGH
 
 
 def compute_shrinkage_covariance(

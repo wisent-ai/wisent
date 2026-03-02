@@ -8,7 +8,7 @@ import torch
 from datasets import Dataset
 from wisent.comparison.utils import generate_contrastive_pairs
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COMPARISON_NUM_PAIRS, DEFAULT_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
     COMPARISON_REFT_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,
     COMPARISON_TRAINING_BATCH_SIZE,

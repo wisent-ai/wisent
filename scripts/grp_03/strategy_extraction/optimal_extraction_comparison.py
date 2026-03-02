@@ -25,8 +25,8 @@ import numpy as np
 import psycopg2
 import torch
 
-from wisent.core.constants import NORM_EPS, EXTRACTION_SINGLE_PAIR_LIMIT
-from wisent.core.activations.core.optimal_extraction import (
+from wisent.core.utils.config_tools.constants import NORM_EPS, EXTRACTION_SINGLE_PAIR_LIMIT
+from wisent.core.primitives.model_interface.core.activations.core.optimal_extraction import (
     extract_at_optimal_position, extract_at_max_diff_norm, find_direction_from_all_tokens
 )
 

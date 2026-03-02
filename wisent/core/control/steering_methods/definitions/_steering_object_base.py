@@ -20,7 +20,7 @@ import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from wisent.core.constants import DEFAULT_STRENGTH, DEFAULT_SCALE, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, DEFAULT_SCALE, JSON_INDENT
 
 
 LayerName = str
@@ -171,7 +171,7 @@ class BaseSteeringObject(ABC):
         Returns:
             SteeringPlan compatible with WisentModel.apply_steering()
         """
-        from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
+        from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
         
         layers_dict = {}
         for layer in self.metadata.layers:
@@ -249,34 +249,34 @@ class BaseSteeringObject(ABC):
         
         # Dispatch to appropriate class (lazy imports to avoid circular deps)
         if method == 'caa':
-            from wisent.core.steering_methods._steering_object_simple import CAASteeringObject
+            from wisent.core.control.steering_methods._steering_object_simple import CAASteeringObject
             return CAASteeringObject.from_dict(data)
         elif method == 'ostrze':
-            from wisent.core.steering_methods._steering_object_simple import OstrzeSteeringObject
+            from wisent.core.control.steering_methods._steering_object_simple import OstrzeSteeringObject
             return OstrzeSteeringObject.from_dict(data)
         elif method == 'mlp':
-            from wisent.core.steering_methods._steering_object_simple import MLPSteeringObject
+            from wisent.core.control.steering_methods._steering_object_simple import MLPSteeringObject
             return MLPSteeringObject.from_dict(data)
         elif method == 'tecza':
-            from wisent.core.steering_methods._steering_object_advanced import TECZASteeringObject
+            from wisent.core.control.steering_methods._steering_object_advanced import TECZASteeringObject
             return TECZASteeringObject.from_dict(data)
         elif method == 'tetno':
-            from wisent.core.steering_methods._steering_object_advanced import TETNOSteeringObject
+            from wisent.core.control.steering_methods._steering_object_advanced import TETNOSteeringObject
             return TETNOSteeringObject.from_dict(data)
         elif method == 'grom':
-            from wisent.core.steering_methods._steering_object_grom import GROMSteeringObject
+            from wisent.core.control.steering_methods._steering_object_grom import GROMSteeringObject
             return GROMSteeringObject.from_dict(data)
         elif method == 'nurt':
-            from wisent.core.steering_methods.methods.nurt import NurtSteeringObject
+            from wisent.core.control.steering_methods.methods.nurt import NurtSteeringObject
             return NurtSteeringObject.from_dict(data)
         elif method == 'szlak':
-            from wisent.core.steering_methods.methods.szlak import SzlakSteeringObject
+            from wisent.core.control.steering_methods.methods.szlak import SzlakSteeringObject
             return SzlakSteeringObject.from_dict(data)
         elif method == 'wicher':
-            from wisent.core.steering_methods.methods.wicher import WicherSteeringObject
+            from wisent.core.control.steering_methods.methods.wicher import WicherSteeringObject
             return WicherSteeringObject.from_dict(data)
         elif method == 'przelom':
-            from wisent.core.steering_methods.methods.przelom import PrzelomSteeringObject
+            from wisent.core.control.steering_methods.methods.przelom import PrzelomSteeringObject
             return PrzelomSteeringObject.from_dict(data)
         else:
             raise ValueError(f"Unknown steering method: {method}")

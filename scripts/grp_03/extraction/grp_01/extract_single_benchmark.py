@@ -11,7 +11,7 @@ import time
 import psycopg2
 import torch
 
-from wisent.core.constants import EXTRACTION_SINGLE_PAIR_LIMIT
+from wisent.core.utils.config_tools.constants import EXTRACTION_SINGLE_PAIR_LIMIT
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:
@@ -128,7 +128,7 @@ def extract_single_benchmark(model_name: str, benchmark: str, limit: int = EXTRA
     """Extract activations for a single benchmark."""
     from transformers import AutoTokenizer, AutoModelForCausalLM
     from wisent.extractors.lm_eval.lm_task_pairs_generation import lm_build_contrastive_pairs
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
     conn = psycopg2.connect(DATABASE_URL)
 

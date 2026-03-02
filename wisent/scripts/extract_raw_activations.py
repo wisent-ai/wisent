@@ -31,7 +31,7 @@ print("[STARTUP] Importing torch...", flush=True)
 import torch
 print(f"[STARTUP] torch imported, version: {torch.__version__}, CUDA available: {torch.cuda.is_available()}", flush=True)
 
-from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
+from wisent.core.utils.config_tools.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
 from wisent.scripts._helpers.extract_raw_helpers import extract_benchmark
 from wisent.scripts._helpers.extract_raw_db import (
     get_conn, reset_conn, get_or_create_model, get_missing_benchmarks,

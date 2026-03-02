@@ -13,7 +13,7 @@ import sys
 import psycopg2
 import torch
 
-from wisent.core.constants import PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT, DB_CONNECT_WAIT_S
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT, DB_CONNECT_WAIT_S
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:

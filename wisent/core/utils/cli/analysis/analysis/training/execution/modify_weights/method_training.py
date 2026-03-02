@@ -5,11 +5,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Optional, List, Dict, Any, Tuple
 
 import torch
-from wisent.core.constants import CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DEFAULT_METHOD_LAYER_RANGE_END, LAYER_SAMPLING_DIVISOR_TRAINING, METHOD_SELECTION_SAMPLE_SIZE, MIN_LAYER_ACTIVATIONS_FOR_GEOMETRY, SEPARATOR_WIDTH_STANDARD, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DEFAULT_METHOD_LAYER_RANGE_END, LAYER_SAMPLING_DIVISOR_TRAINING, METHOD_SELECTION_SAMPLE_SIZE, MIN_LAYER_ACTIVATIONS_FOR_GEOMETRY, SEPARATOR_WIDTH_STANDARD, PROGRESS_LOG_INTERVAL_10
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
 def get_all_layers(model) -> List[str]:
     """Get all layer indices as strings for a model (1-indexed for collector API)."""
@@ -39,9 +39,9 @@ def auto_select_steering_method(
     Returns:
         tuple: (steering_method, modification_method, metrics)
     """
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.geometry import (
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.reading.modules import (
         compute_geometry_metrics,
         compute_recommendation,
         compute_concept_coherence,
@@ -135,10 +135,10 @@ def auto_select_steering_method(
 
 def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train GROM on contrastive pairs and return the GROMResult."""
-    from wisent.core.steering_methods.methods.grom import GROMMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.control.steering_methods.methods.grom import GROMMethod
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
     if args.verbose:
         print("\nTraining GROM steering method...")
@@ -190,10 +190,10 @@ def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair
 
 def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train TETNO steering for a task."""
-    from wisent.core.steering_methods.methods.advanced import TETNOMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.control.steering_methods.methods.advanced import TETNOMethod
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
     model = wisent_model.hf_model
     if args.layers:
@@ -236,10 +236,10 @@ def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
 
 def train_tecza_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train TECZA steering for a task."""
-    from wisent.core.steering_methods.methods.advanced import TECZAMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
     model = wisent_model.hf_model
     if args.layers:
@@ -279,7 +279,7 @@ def train_tecza_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
 
 
 # Import from helpers (split to meet 300-line limit)
-from wisent.core.cli.analysis.training.modify_weights._helpers.method_training_helpers import (  # noqa: E402
+from wisent.core.utils.cli.analysis.training.modify_weights._helpers.method_training_helpers import (  # noqa: E402
     train_nurt_for_task,
     train_szlak_for_task,
     train_wicher_for_task,

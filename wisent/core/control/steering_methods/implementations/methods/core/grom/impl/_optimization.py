@@ -4,11 +4,11 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import DEFAULT_WEIGHT_DECAY, GROM_ETA_MIN_FACTOR, GROM_MAX_GRAD_NORM, TRAINING_LOG_INTERVAL
-from wisent.core.steering_methods.methods.grom._config import (
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import DEFAULT_WEIGHT_DECAY, GROM_ETA_MIN_FACTOR, GROM_MAX_GRAD_NORM, TRAINING_LOG_INTERVAL
+from wisent.core.control.steering_methods.methods.grom._config import (
     GatingNetwork,
     IntensityNetwork,
     GeometryAdaptation,
@@ -24,7 +24,7 @@ def train_grom_impl(self, pair_set: ContrastivePairSet):
         GROMResult with manifold, networks, and metadata.
     """
     # Import GROMResult here to avoid circular import
-    from wisent.core.steering_methods.methods.grom.grom import GROMResult
+    from wisent.core.control.steering_methods.methods.grom.grom import GROMResult
 
     # Collect activations
     buckets = self._collect_from_set(pair_set)

@@ -2,7 +2,7 @@
 
 import json
 import sys
-from wisent.core.constants import JSON_INDENT, MIN_PAIRS_FOR_LINEARITY, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_MEDIUM_PLUS, SEPARATOR_WIDTH_STANDARD, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.config_tools.constants import JSON_INDENT, MIN_PAIRS_FOR_LINEARITY, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_MEDIUM_PLUS, SEPARATOR_WIDTH_STANDARD, SEPARATOR_WIDTH_WIDE
 
 
 def execute_check_linearity(args):
@@ -25,14 +25,14 @@ def execute_check_linearity(args):
     print(f"Loaded {len(pairs_data)} pairs")
     
     # Import dependencies
-    from wisent.core.contrastive_pairs.diagnostics import (
+    from wisent.core.primitives.contrastive_pairs.diagnostics import (
         check_linearity,
         LinearityConfig,
     )
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     
     # Build ContrastivePair objects
     pairs = []

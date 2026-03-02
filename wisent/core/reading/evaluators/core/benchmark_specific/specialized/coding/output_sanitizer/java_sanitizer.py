@@ -2,9 +2,9 @@
 from __future__ import annotations
 import re
 from typing import List
-from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema, NormalizeResult, CodeStandardizer
-from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.utils import extract_code_block, normalize_whitespace
-from wisent.core.constants import JAVA_INDENT_SPACES
+from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema, NormalizeResult, CodeStandardizer
+from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.utils import extract_code_block, normalize_whitespace
+from wisent.core.utils.config_tools.constants import JAVA_INDENT_SPACES
 
 CLASS_RE = re.compile(r"\bclass\s+([A-Za-z_]\w*)")
 METHOD_RE = re.compile(r"(public\s+static\s+[\w\<\>\[\]]+\s+)(\w+)\s*\(")

@@ -5,7 +5,7 @@ import os
 from typing import Any, Dict, List, Optional
 
 import torch
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     GROM_BEHAVIOR_WEIGHT, GROM_INTENSITY_HIDDEN_DIM, GROM_LEARNING_RATE,
     GROM_MAX_ALPHA, GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS,
     GROM_RETAIN_WEIGHT, GROM_ROUTER_HIDDEN_DIM, GROM_SPARSE_WEIGHT,
@@ -15,7 +15,7 @@ from wisent.core.constants import (
     TETNO_MAX_ALPHA, DEFAULT_OPTIMIZATION_STEPS,
 )
 
-from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
+from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,7 @@ def load_optimal_steering_config(
         >>> if config:
         ...     print(f"Best: {config['method']} at layer {config['layer']} with strength {config['strength']}")
     """
-    from wisent.core.config_manager import get_cached_optimization
+    from wisent.core.utils.config_tools.config import get_cached_optimization
     
     result = get_cached_optimization(model_name, task_name, method)
     if result is None:
@@ -202,7 +202,7 @@ def get_optimal_steering_plan(
         Tuple of (SteeringPlan, config_dict) or None if no config found
         
     Example:
-        >>> from wisent.core.cli.steering_method_trainer import get_optimal_steering_plan
+        >>> from wisent.core.utils.cli.steering_method_trainer import get_optimal_steering_plan
         >>> 
         >>> # Load optimal config and create plan
         >>> plan, config = get_optimal_steering_plan(model, "truthfulqa_mc1", train_pairs)

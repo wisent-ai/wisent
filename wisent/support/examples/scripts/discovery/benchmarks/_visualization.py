@@ -21,7 +21,7 @@ except ImportError:
     HAS_PACMAP = False
 
 from ._layer_analysis import compute_projection
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, VIZ_DPI, DEFAULT_RANDOM_SEED,
     DISPLAY_TRUNCATION_ERROR, DISPLAY_TRUNCATION_SHORT,
     LINEARITY_N_INIT, VIZ_MARKER_SIZE, VIZ_ALPHA_LIGHT,

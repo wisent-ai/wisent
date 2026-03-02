@@ -1,6 +1,6 @@
 """Steering method definitions: TETNO, GROM, PRZELOM."""
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH,
     TIKHONOV_REG,
     TETNO_CONDITION_THRESHOLD, TETNO_GATE_TEMPERATURE,
@@ -13,7 +13,7 @@ from wisent.core.constants import (
     STEERING_STRENGTH_RANGE_WIDE,
     STEERING_STRENGTH_RANGE_NARROW,
 )
-from wisent.core.steering_methods.registry import (
+from wisent.core.control.steering_methods.registry import (
     SteeringMethodDefinition,
     SteeringMethodParameter,
     SteeringMethodType,
@@ -24,7 +24,7 @@ TETNO_DEFINITION = SteeringMethodDefinition(
     name="tetno",
     method_type=SteeringMethodType.TETNO,
     description="TETNO - Probabilistic Uncertainty-guided Layer Steering Engine. Layer-adaptive conditional steering with uncertainty-guided intensity.",
-    method_class_path="wisent.core.steering_methods.methods.tetno.TETNOMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.tetno.TETNOMethod",
     parameters=[
         SteeringMethodParameter(
             name="sensor_layer",
@@ -136,7 +136,7 @@ GROM_DEFINITION = SteeringMethodDefinition(
     name="grom",
     method_type=SteeringMethodType.GROM,
     description="GROM - Total Integrated Targeted Activation Navigation. Joint optimization of manifold, gating, and intensity.",
-    method_class_path="wisent.core.steering_methods.methods.grom.GROMMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.grom.GROMMethod",
     parameters=[
         SteeringMethodParameter(
             name="num_directions",
@@ -238,7 +238,7 @@ PRZELOM_DEFINITION = SteeringMethodDefinition(
     name="przelom",
     method_type=SteeringMethodType.PRZELOM,
     description="Attention-Transport steering - computes desired transport plan via EOT and inverts through Q-projection pseudoinverse.",
-    method_class_path="wisent.core.steering_methods.methods.przelom.PrzelomMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.przelom.PrzelomMethod",
     parameters=[
         SteeringMethodParameter(
             name="epsilon",

@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from wisent.core.constants import AGENT_DEFAULT_TIME_BUDGET, BENCHMARK_LOADING_TIME_DEFAULT, TASK_MIN_RELEVANCE_SCORE, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import AGENT_DEFAULT_TIME_BUDGET, BENCHMARK_LOADING_TIME_DEFAULT, TASK_MIN_RELEVANCE_SCORE, DISPLAY_TOP_N_TINY
 from ....model import Model
 
 

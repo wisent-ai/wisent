@@ -4,7 +4,7 @@ import gc
 import json
 from pathlib import Path
 import torch
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_MAX_BATCH_SIZE,
     COMPARISON_NUM_PAIRS,
@@ -15,7 +15,7 @@ from wisent.core.constants import (
 from wisent.comparison.utils import (
     create_test_only_task, run_ll_evaluation, apply_steering_to_model, remove_steering,
 )
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.primitives.models.wisent_model import WisentModel
 
 __all__ = ["apply_reft_to_model", "remove_reft", "evaluate_reft"]
 
@@ -131,12 +131,12 @@ def _eval_reft_with_steering(wisent_model, task, task_dict, limit, base_acc_ll, 
                               steering_method, steering_layers, steering_num_pairs,
                               steering_scales, extraction_strategy, device, results):
     """Run ReFT + steering evaluation at multiple scales."""
-    from wisent.core.trainers.steering_trainer import WisentSteeringTrainer
-    from wisent.core.steering_methods import get_steering_method
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.weight_modification.trainers.steering_trainer import WisentSteeringTrainer
+    from wisent.core.control.steering_methods import get_steering_method
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
     from wisent.comparison.utils import generate_contrastive_pairs
     pairs_data, pairs_file = generate_contrastive_pairs(task, steering_num_pairs)
     pairs = [

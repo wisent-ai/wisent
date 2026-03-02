@@ -6,7 +6,7 @@ to make steering recommendations with confidence bounds.
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 import numpy as np
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NULL_TEST_Z_SCORE_SIGNIFICANT, NULL_TEST_SIGNIFICANCE_THRESHOLD,
     INTERVENTION_CONFIDENCE_BASE, INTERVENTION_MARGIN_WEIGHT,
     INTERVENTION_Z_NORMALIZER, INTERVENTION_CONF_STD_FACTOR,

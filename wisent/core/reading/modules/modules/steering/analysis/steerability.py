@@ -8,7 +8,7 @@ for a given set of activations.
 import torch
 import numpy as np
 from typing import Dict, Any
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     STEERABILITY_SILHOUETTE_SAMPLE_LIMIT, STEERABILITY_MIN_PAIRS,
     CUMSUM_THRESHOLD_90, MIN_CLUSTERS,

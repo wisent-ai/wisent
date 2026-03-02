@@ -5,13 +5,13 @@ This evaluator uses the GPTZero API to detect AI-generated content.
 The score represents how "human-like" the text appears.
 
 Usage:
-    from wisent.core.evaluators.custom.examples.gptzero import create_gptzero_evaluator
+    from wisent.core.reading.evaluators.custom.examples.gptzero import create_gptzero_evaluator
     
     evaluator = create_gptzero_evaluator(api_key="your-api-key")
     
     # Use with optimize-steering:
     wisent optimize-steering comprehensive model_name \\
-        --custom-evaluator "wisent.core.evaluators.custom.examples.gptzero" \\
+        --custom-evaluator "wisent.core.reading.evaluators.custom.examples.gptzero" \\
         --custom-evaluator-kwargs '{"api_key": "your-key"}'
 
 For API documentation, see: https://gptzero.me/docs
@@ -23,11 +23,11 @@ import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from wisent.core.evaluators.custom.custom_evaluator import (
+from wisent.core.reading.evaluators.custom.custom_evaluator import (
     APIEvaluator,
     CustomEvaluatorConfig,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     GPTZERO_MIN_TEXT_LENGTH,
     GPTZERO_DEFAULT_NEUTRAL_SCORE,
     GPTZERO_AI_PROB_WEIGHT,

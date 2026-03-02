@@ -6,7 +6,7 @@ import time
 import sys
 import os
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_CLASSIFIER_LR,
     CLASSIFIER_EARLY_STOPPING_PATIENCE, CLASSIFIER_HIDDEN_DIM,
 )

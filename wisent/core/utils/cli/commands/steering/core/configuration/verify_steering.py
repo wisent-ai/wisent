@@ -14,7 +14,7 @@ import torch.nn.functional as F
 
 from wisent.core import constants as _C
 
-from wisent.core.cli.steering.core.verify_steering_analysis import (
+from wisent.core.utils.cli.steering.core.verify_steering_analysis import (
     _compare_activations, _check_gate_intensity, _print_summary,
 )
 

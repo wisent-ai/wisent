@@ -8,11 +8,11 @@ import requests
 from pathlib import Path
 from typing import Any
 
-from wisent.core.cli.cli_logger import setup_logger
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
+from wisent.core.utils.cli.cli_logger import setup_logger
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.constants import HTTP_TIMEOUT_MEDIUM
+from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_MEDIUM
 
 __all__ = ["TagExtractor"]
 

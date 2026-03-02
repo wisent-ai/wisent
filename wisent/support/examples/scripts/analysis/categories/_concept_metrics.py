@@ -5,15 +5,15 @@ import torch.nn.functional as F
 import numpy as np
 from typing import Dict, List, Tuple
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, GEOMETRY_OPTIMIZATION_STEPS_SMALL,
     CV_FOLDS, KMEANS_N_INIT_SMALL, PAIR_GENERATORS_DEFAULT_N,
 )

@@ -4,9 +4,9 @@ from __future__ import annotations
 import torch
 from pathlib import Path
 from typing import TYPE_CHECKING
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.errors import MissingParameterError
-from wisent.core.constants import (
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH, JSON_INDENT, TETNO_HYBRID_STRENGTH_FACTOR,
     TETNO_GATE_TEMPERATURE, TETNO_DYNAMIC_BASE_STRENGTH,
 )
@@ -52,7 +52,7 @@ def export_tetno_model(
     """
     import json
     from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
-    from wisent.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
     
     save_path = Path(save_path)
     save_path.mkdir(parents=True, exist_ok=True)

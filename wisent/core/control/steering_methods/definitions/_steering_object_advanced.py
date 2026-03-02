@@ -2,10 +2,10 @@
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
 import torch
-from wisent.core.steering_methods._steering_object_base import (
+from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
-from wisent.core.constants import TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT, BINARY_CLASSIFICATION_THRESHOLD
+from wisent.core.utils.config_tools.constants import TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT, BINARY_CLASSIFICATION_THRESHOLD
 
 class TECZASteeringObject(BaseSteeringObject):
     """

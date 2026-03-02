@@ -5,9 +5,9 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.errors import InvalidValueError
-from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, WM_TOLERANCE, DEFAULT_LAYER_WEIGHT
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.infra_tools.errors import InvalidValueError
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_STRENGTH, WM_TOLERANCE, DEFAULT_LAYER_WEIGHT
 
 if TYPE_CHECKING:
     from torch import Tensor

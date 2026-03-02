@@ -27,7 +27,7 @@ from typing import Dict, List, Any
 import numpy as np
 
 from .common import ActivationData, load_activations_from_db
-from wisent.core.constants import ZERO_THRESHOLD
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
 
 
 def analyze_unified_direction(

@@ -4,9 +4,9 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Type
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import DEFAULT_SCORE, DEFAULT_STRENGTH
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, DEFAULT_STRENGTH
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 
 
 @dataclass

@@ -9,9 +9,9 @@ import json
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from wisent.core.benchmarks import GSM8KExtractor
-from wisent.core.tasks.base.task_interface import TaskInterface
-from wisent.core.errors import InvalidJSONError, FileLoadError, InvalidDataFormatError
+from wisent.core.utils.services.benchmarks import GSM8KExtractor
+from wisent.core.control.tasks.base.task_interface import TaskInterface
+from wisent.core.utils.infra_tools.errors import InvalidJSONError, FileLoadError, InvalidDataFormatError
 
 
 class FileTask(TaskInterface):
@@ -176,7 +176,7 @@ def register_file_task(task_name: str, file_path: str, registry=None):
         file_path: Path to the JSON dataset file
         registry: Optional registry to use (defaults to global registry)
     """
-    from wisent.core.tasks.base.task_interface import register_task
+    from wisent.core.control.tasks.base.task_interface import register_task
 
     task_factory = create_file_task(file_path, task_name)
     register_task(task_name, task_factory)

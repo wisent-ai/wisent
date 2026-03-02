@@ -22,11 +22,11 @@ from dataclasses import dataclass
 import torch
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import (
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_VARIANCE_THRESHOLD,
     TECZA_NUM_DIRECTIONS,
     TECZA_MARGINAL_THRESHOLD,
@@ -47,11 +47,11 @@ __all__ = [
     "MultiDirectionResult",
 ]
 
-from wisent.core.steering_methods.methods.advanced._tecza_types import (
+from wisent.core.control.steering_methods.methods.advanced._tecza_types import (
     TECZAConfig, MultiDirectionResult,
 )
-from wisent.core.steering_methods.methods.advanced._tecza_training import TECZATrainingMixin
-from wisent.core.steering_methods.methods.advanced._tecza_utils import TECZAUtilsMixin
+from wisent.core.control.steering_methods.methods.advanced._tecza_training import TECZATrainingMixin
+from wisent.core.control.steering_methods.methods.advanced._tecza_utils import TECZAUtilsMixin
 
 
 class TECZAMethod(TECZATrainingMixin, TECZAUtilsMixin, BaseSteeringMethod):

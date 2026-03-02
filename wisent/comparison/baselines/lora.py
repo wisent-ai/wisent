@@ -2,7 +2,7 @@
 Trains a LoRA adapter on benchmark tasks using supervised fine-tuning (SFT)
 on positive responses from contrastive pairs.
 Re-exports from lora_train and lora_eval submodules."""
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     LORA_DEFAULT_DROPOUT,
     COMPARISON_NUM_PAIRS, DEFAULT_SPLIT_RATIO, COMPARISON_EVAL_BATCH_SIZE,
     COMPARISON_STEERING_LAYER, COMPARISON_LORA_LEARNING_RATE,

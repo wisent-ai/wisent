@@ -3,7 +3,7 @@
 import os
 import json
 import sys
-from wisent.core.constants import MAX_COMBINATIONS, THRESHOLD_RANGE_SHORT, MIN_QUALITY_SCORE_DEFAULT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import MAX_COMBINATIONS, THRESHOLD_RANGE_SHORT, MIN_QUALITY_SCORE_DEFAULT, SEPARATOR_WIDTH_STANDARD
 
 
 # ============================================================================
@@ -12,7 +12,7 @@ from wisent.core.constants import MAX_COMBINATIONS, THRESHOLD_RANGE_SHORT, MIN_Q
 
 def execute_list_tasks(args, LMEvalDataLoader):
     """Handle --list-tasks flag to show available tasks."""
-    from wisent.core.tasks.base.task_selector import TaskSelector
+    from wisent.core.control.tasks.base.task_selector import TaskSelector
     selector = TaskSelector()
 
     if hasattr(args, 'skills') and args.skills:
@@ -78,7 +78,7 @@ def execute_task_info(args, LMEvalDataLoader):
 
 def select_tasks_by_criteria(args):
     """Handle --skills or --risks task selection."""
-    from wisent.core.tasks.base.task_selector import TaskSelector
+    from wisent.core.control.tasks.base.task_selector import TaskSelector
     selector = TaskSelector()
 
     selected_tasks = selector.select_random_tasks(
@@ -108,7 +108,7 @@ def select_tasks_by_criteria(args):
 
 def execute_optimization(args, model, LMEvalDataLoader):
     """Handle --optimize flag for hyperparameter optimization."""
-    from wisent.core.hyperparameter_optimizer import HyperparameterOptimizer, OptimizationConfig
+    from wisent.core.utils.services.optimization.hyperparameter_optimizer import HyperparameterOptimizer, OptimizationConfig
 
     print(f"\n🔍 HYPERPARAMETER OPTIMIZATION MODE")
     print(f"   Model: {args.model}")

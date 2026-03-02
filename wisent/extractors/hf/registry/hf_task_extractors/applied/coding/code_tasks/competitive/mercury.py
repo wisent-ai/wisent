@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 from typing import Any
-from wisent.core.cli.cli_logger import setup_logger
-from wisent.core.constants import MERCURY_RUNTIME_SENTINEL, MERCURY_RUNTIME_SENTINEL_STR
+from wisent.core.utils.cli.cli_logger import setup_logger
+from wisent.core.utils.config_tools.constants import MERCURY_RUNTIME_SENTINEL, MERCURY_RUNTIME_SENTINEL_STR
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["MercuryExtractor"]

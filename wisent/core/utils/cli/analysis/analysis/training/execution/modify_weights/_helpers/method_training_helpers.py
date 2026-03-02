@@ -8,24 +8,24 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, List
 
-from wisent.core.constants import PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_10
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
 
 def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train Concept Flow on contrastive pairs and return a NurtSteeringObject."""
-    from wisent.core.steering_methods.methods.nurt import NurtMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
-    from wisent.core.cli.steering.core.create_nurt import (
+    from wisent.core.control.steering_methods.methods.nurt import NurtMethod
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
+    from wisent.core.utils.cli.steering.core.create_nurt import (
         _create_nurt_steering_object,
     )
-    from wisent.core.cli.analysis.training.modify_weights.method_training import get_all_layers
+    from wisent.core.utils.cli.analysis.training.modify_weights.method_training import get_all_layers
 
     layers = [str(l) for l in str(args.layers).split(',')] if args.layers else get_all_layers(wisent_model)
     if args.verbose:
@@ -57,13 +57,13 @@ def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["Contrast
 
 def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train SZLAK on contrastive pairs and return a SzlakSteeringObject."""
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
-    from wisent.core.steering_methods.methods.szlak.create import (
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
+    from wisent.core.control.steering_methods.methods.szlak.create import (
         _create_szlak_steering_object,
     )
-    from wisent.core.cli.analysis.training.modify_weights.method_training import get_all_layers
+    from wisent.core.utils.cli.analysis.training.modify_weights.method_training import get_all_layers
 
     layers = [str(l) for l in str(args.layers).split(',')] if args.layers else get_all_layers(wisent_model)
     if args.verbose:
@@ -95,13 +95,13 @@ def train_szlak_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
 
 def train_wicher_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train WICHER on contrastive pairs and return a WicherSteeringObject."""
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
-    from wisent.core.steering_methods.methods.wicher.create import (
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
+    from wisent.core.control.steering_methods.methods.wicher.create import (
         _create_wicher_steering_object,
     )
-    from wisent.core.cli.analysis.training.modify_weights.method_training import get_all_layers
+    from wisent.core.utils.cli.analysis.training.modify_weights.method_training import get_all_layers
 
     layers = [str(l) for l in str(args.layers).split(',')] if args.layers else get_all_layers(wisent_model)
     if args.verbose:

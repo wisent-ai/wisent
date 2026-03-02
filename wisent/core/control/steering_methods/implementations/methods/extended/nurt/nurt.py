@@ -14,12 +14,12 @@ from collections import defaultdict
 import torch
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.errors import InsufficientDataError
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_VARIANCE_THRESHOLD,
     NURT_NUM_DIMS,
     NURT_TRAINING_EPOCHS,

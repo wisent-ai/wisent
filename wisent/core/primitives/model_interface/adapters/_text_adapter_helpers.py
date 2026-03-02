@@ -7,10 +7,10 @@ from typing import Any, Dict, List, Optional
 
 import torch
 
-from wisent.core.adapters.base import SteeringConfig
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.modalities import TextContent
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.models.modalities import TextContent
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 
 class TextAdapterGenerationMixin:

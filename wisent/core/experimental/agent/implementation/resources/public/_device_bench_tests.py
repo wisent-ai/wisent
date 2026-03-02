@@ -6,7 +6,7 @@ import subprocess
 import sys
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.constants import DEFAULT_LAYER, AGENT_BENCH_MIN_PAIRS_TRAINING, BENCH_TEST_SAMPLE_SIZE
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, AGENT_BENCH_MIN_PAIRS_TRAINING, BENCH_TEST_SAMPLE_SIZE
 from wisent.core.utils.core.hardware import subprocess_timeout_s, subprocess_timeout_long_s
 from wisent.core.utils import resolve_default_device
 
@@ -25,7 +25,7 @@ sys.path.append('.')
 
 start_time = time.time()
 try:
-    from wisent.core.model import Model
+    from wisent.core.primitives.models.core.wisent_model import Model
     # Use the actual model that will be used in production
     model = Model("meta-llama/Llama-3.1-8B-Instruct")
     end_time = time.time()
@@ -167,9 +167,9 @@ from pathlib import Path
 from typing import Dict, Optional
 try:
     print("BENCHMARK_DEBUG: Importing required modules...")
-    from wisent.core.model import Model
-    from wisent.core.agent.diagnose.synthetic_classifier_option import create_classifier_from_trait_description
-    from wisent.core.agent.budget import set_time_budget
+    from wisent.core.primitives.models.core.wisent_model import Model
+    from wisent.core.experimental.agent.diagnose.synthetic_classifier_option import create_classifier_from_trait_description
+    from wisent.core.experimental.agent.budget import set_time_budget
     import time
     print("BENCHMARK_DEBUG: All modules imported successfully")
     

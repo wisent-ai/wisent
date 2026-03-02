@@ -3,8 +3,8 @@ from __future__ import annotations
 
 from typing import Any
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["MeddialogExtractor"]

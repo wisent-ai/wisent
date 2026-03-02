@@ -4,13 +4,13 @@ import sys
 import os
 import torch
 
-from wisent.core.models import get_generate_kwargs
+from wisent.core.primitives.models import get_generate_kwargs
 
 
 def execute_multi_steer(args):
     """Execute the multi-steer command - combine multiple steering vectors and apply to generation."""
-    from wisent.core.multi_steering import MultiSteering, MultiSteeringError
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.control.steering_core.subspace.multi_steering import MultiSteering, MultiSteeringError
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
     try:
         # Check if no vectors provided - unsteered baseline mode

@@ -8,13 +8,13 @@ import torch
 import torch.nn.functional as F
 
 # Note: Activations and Classifier imports removed - these classes don't exist in the current package structure
-# from wisent.core.activations import Activations
-# from wisent.core.classifier.classifier import Classifier
+# from wisent.core.primitives.model_interface.core.activations import Activations
+# from wisent.core.reading.classifiers.core.atoms import Classifier
 
-from wisent.core.contrastive_pairs import ContrastivePairSet
-from wisent.core.constants import DEFAULT_STRENGTH, BLEND_DEFAULT, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.primitives.contrastive_pairs import ContrastivePairSet
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, BLEND_DEFAULT, DISPLAY_TRUNCATION_COMPACT
 from .steering_method import CAA
-from wisent.core.errors import (
+from wisent.core.utils.infra_tools.errors import (
     MissingParameterError,
     InsufficientDataError,
     SteeringMethodUnknownError,
@@ -22,9 +22,9 @@ from wisent.core.errors import (
     LayerNotFoundError,
 )
 
-from wisent.core.steering_core._steering_logging import SteeringLoggingMixin
-from wisent.core.steering_core._steering_optimization import SteeringOptimizationMixin
-from wisent.core.steering_core._steering_eval_io import SteeringEvalIOMixin
+from wisent.core.control.steering_core._steering_logging import SteeringLoggingMixin
+from wisent.core.control.steering_core._steering_optimization import SteeringOptimizationMixin
+from wisent.core.control.steering_core._steering_eval_io import SteeringEvalIOMixin
 
 class SteeringType(Enum):
     LOGISTIC = "logistic"

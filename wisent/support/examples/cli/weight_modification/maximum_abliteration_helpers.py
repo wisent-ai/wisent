@@ -3,7 +3,7 @@
 import subprocess
 from dataclasses import dataclass
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     EXTRACTION_DEFAULT_PAIR_LIMIT,
     EXTRACTION_SINGLE_PAIR_LIMIT,
     ABLITERATION_NUM_PAIRS,
@@ -97,7 +97,7 @@ def evaluate_model(model_path: str, task: str = "hellaswag", limit: int = EXTRAC
 def run_abliteration(config: AbliterationConfig, task: str, model: str, output_dir: str) -> str:
     """Run abliteration with given config."""
     cmd = [
-        "python", "-m", "wisent.core.main", "modify-weights",
+        "python", "-m", "wisent.core.primitives.model_interface.core.main", "modify-weights",
         "--task", task,
         "--trait-label", "correctness",
         "--output-dir", output_dir,

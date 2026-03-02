@@ -11,10 +11,10 @@ import os
 import sys
 import subprocess
 
-from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, BENCH_TEST_SAMPLE_SIZE, JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, BENCH_TEST_SAMPLE_SIZE, JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
 
 # Re-export all public API from the split parts
-from wisent.core.lm_harness_integration._populate_backup import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup import (
     find_working_task_from_group,
     get_benchmark_tags_with_llama,
     get_benchmark_groups_from_readme,

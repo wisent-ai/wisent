@@ -8,7 +8,7 @@ import numpy as np
 from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
 import random
-from wisent.core.constants import ZERO_THRESHOLD
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"

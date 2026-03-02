@@ -9,9 +9,9 @@ import time
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 
-from wisent.core.config_manager import ModelConfigManager
-from wisent.core.errors import MissingParameterError
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, OPTIMIZER_CONSISTENCY_THRESHOLD
+from wisent.core.utils.config_tools.config import ModelConfigManager
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, OPTIMIZER_CONSISTENCY_THRESHOLD
 
 from ..types import SteeringOptimizationResult, SteeringOptimizationSummary
 

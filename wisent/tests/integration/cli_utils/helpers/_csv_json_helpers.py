@@ -11,7 +11,7 @@ from wisent.cli_utils.cli_prepare_dataset import (
     PrepState,
     Caps,
 )
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, JSON_INDENT, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, JSON_INDENT, SEPARATOR_WIDTH_REPORT
 
 
 def create_test_csv(path: Path, data: List[Dict[str, str]]):

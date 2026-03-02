@@ -10,7 +10,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from typing import Dict, List, Optional
 from dataclasses import dataclass
-from wisent.core.constants import NORM_EPS, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTING_TEMP_EPS
+from wisent.core.utils.config_tools.constants import NORM_EPS, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTING_TEMP_EPS
 
 
 class DirectionRoutingNetwork(nn.Module):

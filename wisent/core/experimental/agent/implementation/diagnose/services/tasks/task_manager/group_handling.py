@@ -4,7 +4,7 @@ import os
 import glob
 import random
 from typing import Optional, Tuple, Any
-from wisent.core.constants import MAX_DEPTH, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import MAX_DEPTH, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_MINI
 
 
 def find_working_task_from_group(group_dict, max_depth=MAX_DEPTH, current_depth=0):

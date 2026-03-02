@@ -9,7 +9,7 @@ import numpy as np
 from typing import Optional, Tuple
 from pynndescent import NNDescent
 from sklearn.decomposition import PCA
-from wisent.core.constants import (NORM_EPS, DEFAULT_RANDOM_SEED, PACMAP_INITIAL_SCALE, SPECTRAL_N_NEIGHBORS_DEFAULT,
+from wisent.core.utils.config_tools.constants import (NORM_EPS, DEFAULT_RANDOM_SEED, PACMAP_INITIAL_SCALE, SPECTRAL_N_NEIGHBORS_DEFAULT,
     PACMAP_W_NEAR, PACMAP_W_MID, PACMAP_W_FAR, PACMAP_PHASE_1_END, PACMAP_PHASE_2_END,
     PACMAP_P1_NEAR, PACMAP_P1_MID, PACMAP_P1_FAR, PACMAP_P2_NEAR, PACMAP_P2_MID,
     PACMAP_P2_FAR, PACMAP_P3_NEAR, PACMAP_P3_MID, PACMAP_P3_FAR, PACMAP_FAR_REPULSE_EPS,

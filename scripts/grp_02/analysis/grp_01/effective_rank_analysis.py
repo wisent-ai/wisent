@@ -12,10 +12,10 @@ import os
 from typing import Optional
 from dataclasses import asdict
 
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.extractors.lm_eval.lm_task_pairs_generation import lm_build_contrastive_pairs
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.activation_cache import collect_and_cache_activations, ActivationCache
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.activation_cache import collect_and_cache_activations, ActivationCache
 from lm_eval.tasks import TaskManager
 
 from effective_rank_analysis_compute import (

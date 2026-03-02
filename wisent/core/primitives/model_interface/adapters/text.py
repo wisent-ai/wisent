@@ -18,20 +18,20 @@ from transformers import (
     PreTrainedTokenizerBase,
 )
 
-from wisent.core.adapters.base import (
+from wisent.core.primitives.model_interface.adapters.base import (
     BaseAdapter,
     AdapterError,
     InterventionPoint,
     SteeringConfig,
 )
-from wisent.core.modalities import (
+from wisent.core.primitives.models.modalities import (
     Modality,
     TextContent,
     wrap_content,
 )
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap
 from wisent.core.utils import preferred_dtype
-from wisent.core.adapters._text_adapter_helpers import TextAdapterGenerationMixin
+from wisent.core.primitives.model_interface.adapters._text_adapter_helpers import TextAdapterGenerationMixin
 
 __all__ = ["TextAdapter"]
 

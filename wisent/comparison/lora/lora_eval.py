@@ -5,7 +5,7 @@ import json
 from pathlib import Path
 from typing import TYPE_CHECKING
 import torch
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_MAX_BATCH_SIZE,
     COMPARISON_NUM_PAIRS,
@@ -18,7 +18,7 @@ from wisent.comparison.utils import (
     run_ll_evaluation, generate_contrastive_pairs, apply_steering_to_model, remove_steering,
 )
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
 __all__ = ["apply_lora_to_model", "remove_lora", "evaluate_lora"]
 
@@ -51,12 +51,12 @@ def _eval_lora_with_steering(wisent_model, task, task_dict, limit, base_acc_lm_e
                               steering_num_pairs, steering_scales, extraction_strategy,
                               device, batch_size, max_batch_size, results):
     """Run LoRA + steering evaluation at multiple scales."""
-    from wisent.core.trainers.steering_trainer import WisentSteeringTrainer
-    from wisent.core.steering_methods import get_steering_method
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.weight_modification.trainers.steering_trainer import WisentSteeringTrainer
+    from wisent.core.control.steering_methods import get_steering_method
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
     pairs_data, pairs_file = generate_contrastive_pairs(task, steering_num_pairs)
     pairs = [ContrastivePair(prompt=p["prompt"],
                              positive_response=PositiveResponse(model_response=p["positive_response"]["model_response"]),
@@ -101,7 +101,7 @@ def evaluate_lora(
     steering_scales: list[float] | None = None, extraction_strategy: str = "mc_completion",
 ) -> dict:
     """Evaluate a trained LoRA adapter comparing base vs LoRA performance."""
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
     lora_path = Path(lora_path)
     if steering_scales is None:
         steering_scales = list(COMPARISON_STEERING_SCALES)

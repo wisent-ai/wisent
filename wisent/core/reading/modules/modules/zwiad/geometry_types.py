@@ -11,7 +11,7 @@ from enum import Enum
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     BLEND_DEFAULT, DEFAULT_SCALE, DEFAULT_SCORE, ROUNDING_PRECISION, STAT_ALPHA,
     ZWIAD_PER_TYPE_DEFAULT, ZWIAD_RANGE_CONC_MAX, ZWIAD_RANGE_DIM_MAX,
     ZWIAD_RANGE_DIM_MIN, ZWIAD_RANGE_SHARP_MAX, ZWIAD_RANGE_SPECTRAL_MIN,

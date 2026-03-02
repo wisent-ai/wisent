@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import List
 import torch
 
-from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import LOG_EPS
+from wisent.core.control.steering_methods.core.atoms import PerLayerBaseSteeringMethod
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import LOG_EPS
 
 __all__ = [
     "CAAMethod",

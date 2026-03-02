@@ -8,9 +8,9 @@ import json
 import optuna
 import os
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from wisent.core.evaluators.custom.examples.humanization_coherent import HumanizationCoherentEvaluator
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.reading.evaluators.custom.examples.humanization_coherent import HumanizationCoherentEvaluator
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models.inference_config import get_generate_kwargs
 
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "/home/ubuntu/output")
 
@@ -27,7 +27,7 @@ num_layers = len(model.model.layers)
 print(f"Model has {num_layers} layers")
 
 print("Generating steering vectors from contrastive pairs...")
-from wisent.core.steering_core.extractor import extract_steering_vectors_from_pairs
+from wisent.core.control.steering_core.extractor import extract_steering_vectors_from_pairs
 
 # Load humanization pairs
 pairs_path = os.path.join(os.path.dirname(__file__), "../wisent/examples/contrastive_pairs/humanization_human_vs_ai.json")

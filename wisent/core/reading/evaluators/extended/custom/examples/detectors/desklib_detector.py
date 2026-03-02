@@ -4,7 +4,7 @@ Desklib AI text detector - top performer on RAID benchmark.
 Uses desklib/ai-text-detector-v1.01 model (fine-tuned DeBERTa-v3-large).
 
 Usage:
-    from wisent.core.evaluators.custom.examples.desklib_detector import DesklibDetectorEvaluator
+    from wisent.core.reading.evaluators.custom.examples.desklib_detector import DesklibDetectorEvaluator
     
     evaluator = DesklibDetectorEvaluator()
     result = evaluator("Some text to analyze")
@@ -19,8 +19,8 @@ import torch
 import torch.nn as nn
 from transformers import AutoTokenizer, AutoConfig, AutoModel, PreTrainedModel
 
-from wisent.core.constants import NEAR_ZERO_TOL, MIN_RESPONSE_TEXT_LENGTH
-from wisent.core.evaluators.custom.custom_evaluator import (
+from wisent.core.utils.config_tools.constants import NEAR_ZERO_TOL, MIN_RESPONSE_TEXT_LENGTH
+from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
 )

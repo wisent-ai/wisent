@@ -8,7 +8,7 @@ negative activation distributions without assuming linear separability.
 import torch
 import numpy as np
 from typing import Dict
-from wisent.core.constants import ZERO_THRESHOLD, DISPLAY_TOP_N_SMALL
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, DISPLAY_TOP_N_SMALL
 
 
 def compute_mmd_rbf(

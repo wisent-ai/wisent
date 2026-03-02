@@ -9,7 +9,7 @@ import sys
 import re
 from typing import Dict, Any, List, Optional
 
-from wisent.core.constants import (DEFAULT_LAYER, DISPLAY_TOP_N_TINY, LLAMA_PAD_TOKEN_ID,
+from wisent.core.utils.config_tools.constants import (DEFAULT_LAYER, DISPLAY_TOP_N_TINY, LLAMA_PAD_TOKEN_ID,
     MAX_BENCHMARKS_SINGLE)
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
 

@@ -16,7 +16,7 @@ from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.preprocessing import StandardScaler
 from sklearn.pipeline import make_pipeline
-from wisent.core.constants import NORM_EPS, CV_FOLDS, DIAGNOSTIC_MLP_HIDDEN_SIZES
+from wisent.core.utils.config_tools.constants import NORM_EPS, CV_FOLDS, DIAGNOSTIC_MLP_HIDDEN_SIZES
 
 
 def compute_pairwise_consistency(directions: torch.Tensor) -> Tuple[float, float]:

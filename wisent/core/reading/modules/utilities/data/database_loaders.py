@@ -5,7 +5,7 @@ import struct
 import json
 import torch
 from .cache import get_cache_path, save_pair_texts_cache, save_activations_cache
-from wisent.core.constants import DATA_LOAD_LIMIT
+from wisent.core.utils.config_tools.constants import DATA_LOAD_LIMIT
 from wisent.core.utils.core.hardware import subprocess_timeout_s
 
 

@@ -10,7 +10,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Sequence, Type, Union
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult, EvaluatorError
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult, EvaluatorError
 from wisent.core.utils import BaseRotator
 
 __all__ = [
@@ -34,7 +34,7 @@ class EvaluatorRotator(BaseRotator[BaseEvaluator]):
         self,
         evaluator: Union[str, BaseEvaluator, Type[BaseEvaluator], None] = None,
         task_name: Optional[str] = None,
-        evaluators_location: Union[str, Path] = "wisent.core.evaluators.oracles",
+        evaluators_location: Union[str, Path] = "wisent.core.reading.evaluators.oracles",
         autoload: bool = True,
     ) -> None:
         """
@@ -66,7 +66,7 @@ class EvaluatorRotator(BaseRotator[BaseEvaluator]):
 
     # Keep static method for backward compatibility
     @staticmethod
-    def discover_evaluators(location: Union[str, Path] = "wisent.core.evaluators.oracles") -> None:
+    def discover_evaluators(location: Union[str, Path] = "wisent.core.reading.evaluators.oracles") -> None:
         """
         Import all evaluator modules so BaseEvaluator subclasses self-register.
 
@@ -208,7 +208,7 @@ class EvaluatorRotator(BaseRotator[BaseEvaluator]):
 
 if __name__ == "__main__":
     rot = EvaluatorRotator(
-        evaluators_location="wisent.core.evaluators.oracles",
+        evaluators_location="wisent.core.reading.evaluators.oracles",
         autoload=True,
     )
 

@@ -30,7 +30,7 @@ from wisent.comparison._helpers.fgaa_helpers import (
     compute_v_opt,
     get_residual_stream_activations as _get_residual_stream_activations,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     GEMMA_2B_BOS_FEATURES_PAPER,
     GEMMA_2B_BOS_FEATURES_DETECTED,
     GEMMA_9B_BOS_FEATURES_DETECTED,
@@ -42,7 +42,7 @@ from wisent.core.constants import (
 )
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
 __all__ = ["generate_steering_vector", "apply_steering_to_model", "remove_steering", "convert_to_lm_eval_format"]
 

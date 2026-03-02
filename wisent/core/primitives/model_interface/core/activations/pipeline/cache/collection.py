@@ -8,15 +8,15 @@ from __future__ import annotations
 
 from typing import List, Optional, TYPE_CHECKING
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import PROGRESS_REPORT_INTERVAL
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import PROGRESS_REPORT_INTERVAL
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from .cached_activations import CachedActivations, get_strategy_text_family
 from .raw_cached_activations import RawCachedActivations
 from .disk_caches import ActivationCache, RawActivationCache
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
 
 def collect_and_cache_activations(
@@ -43,7 +43,7 @@ def collect_and_cache_activations(
     Returns:
         CachedActivations with all layers for all pairs
     """
-    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 
     if cache is None and cache_dir:
         cache = ActivationCache(cache_dir)
@@ -98,7 +98,7 @@ def collect_and_cache_raw_activations(
     Unlike collect_and_cache_activations, this stores full sequences
     allowing extraction with any strategy in the same text family.
     """
-    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 
     text_family = get_strategy_text_family(strategy)
 

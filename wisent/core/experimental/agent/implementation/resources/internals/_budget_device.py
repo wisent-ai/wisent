@@ -1,10 +1,10 @@
 """Device benchmarking and estimation utilities."""
 import logging
 from typing import Dict, List
-from wisent.core.errors import NoBenchmarkDataError
-from wisent.core.agent.resources._budget_manager import BudgetManager
-from wisent.core.agent.resources._budget_functions import get_budget_manager
-from wisent.core.constants import AGENT_RESOURCE_BUDGET_MINUTES, DEVICE_HASH_PREFIX, SEPARATOR_WIDTH_COMPACT, SEPARATOR_WIDTH_NARROW, SEPARATOR_WIDTH_MEDIUM, SECONDS_PER_MINUTE
+from wisent.core.utils.infra_tools.errors import NoBenchmarkDataError
+from wisent.core.experimental.agent.resources._budget_manager import BudgetManager
+from wisent.core.experimental.agent.resources._budget_functions import get_budget_manager
+from wisent.core.utils.config_tools.constants import AGENT_RESOURCE_BUDGET_MINUTES, DEVICE_HASH_PREFIX, SEPARATOR_WIDTH_COMPACT, SEPARATOR_WIDTH_NARROW, SEPARATOR_WIDTH_MEDIUM, SECONDS_PER_MINUTE
 logger = logging.getLogger(__name__)
 
 def estimate_completion_time_minutes(tasks: List[str]) -> float:

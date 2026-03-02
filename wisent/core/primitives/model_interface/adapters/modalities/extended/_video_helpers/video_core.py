@@ -13,20 +13,20 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from wisent.core.adapters.base import (
+from wisent.core.primitives.model_interface.adapters.base import (
     BaseAdapter,
     AdapterError,
     InterventionPoint,
     SteeringConfig,
 )
-from wisent.core.modalities import (
+from wisent.core.primitives.models.modalities import (
     Modality,
     VideoContent,
     TextContent,
 )
-from wisent.core.errors import UnknownTypeError
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.constants import VIDEO_KEYFRAME_INTERVAL, VIDEO_TEMPORAL_DECAY, VIDEO_NUM_FRAMES, VIDEO_FRAME_SAMPLE_RATE
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.utils.config_tools.constants import VIDEO_KEYFRAME_INTERVAL, VIDEO_TEMPORAL_DECAY, VIDEO_NUM_FRAMES, VIDEO_FRAME_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
 

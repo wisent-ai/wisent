@@ -10,8 +10,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 import torch
 
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
 
 def get_strategy_text_family(strategy: ExtractionStrategy) -> str:

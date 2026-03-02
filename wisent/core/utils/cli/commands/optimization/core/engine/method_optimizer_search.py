@@ -4,10 +4,10 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Iterator, List, Optional, Tuple
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.cli.optimization.core.method_optimizer_config import OptimizationConfig
-from wisent.core.constants import (AUTO_DEFAULT_STRENGTHS, TECZA_SEARCH_NUM_DIRECTIONS, TECZA_SEARCH_OPT_STEPS, TECZA_SEARCH_RETAIN_WEIGHTS, TECZA_LEARNING_RATE, TECZA_INDEPENDENCE_WEIGHT, TETNO_SEARCH_STEERING_LAYERS, TETNO_SEARCH_CONDITION_THRESHOLDS, TETNO_SEARCH_GATE_TEMPERATURES, TETNO_SEARCH_MAX_ALPHAS, GROM_SEARCH_NUM_DIRECTIONS, GROM_SEARCH_STEERING_LAYERS, GROM_SEARCH_GATE_HIDDEN_DIMS, GROM_SEARCH_INTENSITY_HIDDEN_DIMS, GROM_SEARCH_OPT_STEPS, GROM_SEARCH_BEHAVIOR_WEIGHTS, GROM_SEARCH_RETAIN_WEIGHTS, GROM_SEARCH_SPARSE_WEIGHTS, GROM_SEARCH_MAX_ALPHAS)
-from wisent.core.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.cli.optimization.core.method_optimizer_config import OptimizationConfig
+from wisent.core.utils.config_tools.constants import (AUTO_DEFAULT_STRENGTHS, TECZA_SEARCH_NUM_DIRECTIONS, TECZA_SEARCH_OPT_STEPS, TECZA_SEARCH_RETAIN_WEIGHTS, TECZA_LEARNING_RATE, TECZA_INDEPENDENCE_WEIGHT, TETNO_SEARCH_STEERING_LAYERS, TETNO_SEARCH_CONDITION_THRESHOLDS, TETNO_SEARCH_GATE_TEMPERATURES, TETNO_SEARCH_MAX_ALPHAS, GROM_SEARCH_NUM_DIRECTIONS, GROM_SEARCH_STEERING_LAYERS, GROM_SEARCH_GATE_HIDDEN_DIMS, GROM_SEARCH_INTENSITY_HIDDEN_DIMS, GROM_SEARCH_OPT_STEPS, GROM_SEARCH_BEHAVIOR_WEIGHTS, GROM_SEARCH_RETAIN_WEIGHTS, GROM_SEARCH_SPARSE_WEIGHTS, GROM_SEARCH_MAX_ALPHAS)
+from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
 
 logger = logging.getLogger(__name__)
 

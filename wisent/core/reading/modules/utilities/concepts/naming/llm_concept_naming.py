@@ -2,7 +2,7 @@
 
 import json
 from typing import Dict, List, Any, Optional
-from wisent.core.constants import CONCEPT_NAMING_N_SAMPLES, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.utils.config_tools.constants import CONCEPT_NAMING_N_SAMPLES, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
 
 # Global cache for Wisent instance
 _wisent_cache = {}
@@ -48,7 +48,7 @@ def get_wisent_model(model_name: str):
     if model_name in _wisent_cache:
         return _wisent_cache[model_name]
 
-    from wisent.core.wisent import Wisent
+    from wisent.core.primitives.model_interface.core.wisent import Wisent
 
     print(f"  Loading {model_name}...", flush=True)
     wisent = Wisent.for_text(model_name)

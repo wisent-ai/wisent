@@ -1,7 +1,7 @@
 """Unit tests for PolyMathEvaluator."""
 
 import pytest
-from wisent.core.evaluators.benchmark_specific.polymath_evaluator import (
+from wisent.core.reading.evaluators.benchmark_specific.polymath_evaluator import (
     PolyMathEvaluator,
     LANGUAGE_PROMPTS,
 )

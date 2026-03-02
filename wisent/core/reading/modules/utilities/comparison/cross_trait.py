@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-from wisent.core.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CLUSTERS, MAX_SILHOUETTE_CLUSTERS
+from wisent.core.utils.config_tools.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CLUSTERS, MAX_SILHOUETTE_CLUSTERS
 
 
 @dataclass

@@ -7,7 +7,7 @@ from typing import Dict, Any, List
 
 import torch
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     CONE_DIRECTIONS,
     DEFAULT_OPTIMIZATION_STEPS,
     TECZA_LEARNING_RATE,

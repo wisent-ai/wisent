@@ -50,7 +50,7 @@ def test_get_activations_from_pairs():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "get-activations",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "get-activations",
                 input_file,
                 "--output", output_file,
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -78,7 +78,7 @@ def test_get_activations_multiple_layers():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "get-activations",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "get-activations",
                 input_file,
                 "--output", output_file,
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -106,7 +106,7 @@ def test_get_activations_different_aggregation():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "get-activations",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "get-activations",
                 input_file,
                 "--output", output_file,
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",

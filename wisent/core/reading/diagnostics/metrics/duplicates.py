@@ -6,7 +6,7 @@ from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 from typing import Dict, Iterable, List
 
-from wisent.core.constants import DEDUP_ITEM_THRESHOLD
+from wisent.core.utils.config_tools.constants import DEDUP_ITEM_THRESHOLD
 
 from ..base import DiagnosticsConfig, DiagnosticsIssue, MetricReport
 

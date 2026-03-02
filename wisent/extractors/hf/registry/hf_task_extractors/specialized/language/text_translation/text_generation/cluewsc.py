@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from typing import Any
-from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.utils.cli.cli_logger import setup_logger
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["CLUEWSCExtractor"]

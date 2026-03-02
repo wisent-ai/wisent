@@ -49,7 +49,7 @@ import tempfile
 import time
 from typing import Dict
 
-from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, SEPARATOR_WIDTH_REPORT
 from wisent.tests._exhaustive_helpers import (
     detect_model_layers,
     generate_pairs_cli,
@@ -86,7 +86,7 @@ def run_exhaustive_layer_analysis(
     The whole point is to test ALL layer combinations.
     max_layers exists ONLY for debugging/testing purposes.
     """
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
         detect_geometry_exhaustive,
     )
     sys.stdout.reconfigure(line_buffering=True)
@@ -144,7 +144,7 @@ def run_limited_layer_analysis(
     output_dir: str = "/home/ubuntu/output",
 ):
     """Run limited layer combination analysis (1,2,3-layer combos + all)."""
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
         detect_geometry_limited,
     )
     from math import comb
@@ -195,7 +195,7 @@ def run_contiguous_layer_analysis(
     output_dir: str = "/home/ubuntu/output",
 ):
     """Run contiguous layer combination analysis (adjacent layers only)."""
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
         detect_geometry_contiguous,
     )
     sys.stdout.reconfigure(line_buffering=True)
@@ -243,7 +243,7 @@ def run_smart_layer_analysis(
     output_dir: str = "/home/ubuntu/output",
 ):
     """Run smart analysis (contiguous + limited combos)."""
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
         detect_geometry_smart,
     )
     sys.stdout.reconfigure(line_buffering=True)

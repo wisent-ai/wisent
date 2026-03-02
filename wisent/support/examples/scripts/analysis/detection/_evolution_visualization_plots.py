@@ -4,7 +4,7 @@ import numpy as np
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     VIZ_DPI, VIZ_MARKER_SIZE, VIZ_FONTSIZE_SMALL, VIZ_FONTSIZE_SUBTITLE,
     VIZ_FONTSIZE_SUPTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_MEDIUM,
     VIZ_ALPHA_HIGH, VIZ_ALPHA_HALF,

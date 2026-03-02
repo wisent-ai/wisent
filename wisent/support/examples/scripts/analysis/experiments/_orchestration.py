@@ -5,8 +5,8 @@ from typing import Dict, List, Optional
 
 import numpy as np
 
-from wisent.core.constants import CONCEPT_BIC_STRONG_THRESHOLD, DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, CONFIDENCE_HIGH_VOTES, CONFIDENCE_MEDIUM_VOTES, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.utils.config_tools.constants import CONCEPT_BIC_STRONG_THRESHOLD, DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, CONFIDENCE_HIGH_VOTES, CONFIDENCE_MEDIUM_VOTES, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM
+from wisent.core.primitives.models.wisent_model import WisentModel
 
 from ._data_loading import extract_difference_vectors
 from ._statistical_analysis import (

@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, List, Any
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     SIGNAL_STRENGTH_THRESHOLD,
     SIGNAL_PROBE_ACCURACY_THRESHOLD,
     NONSENSE_BASELINE_ACCURACY,

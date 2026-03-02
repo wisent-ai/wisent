@@ -7,7 +7,7 @@ Compare actual metrics to random noise baselines.
 import torch
 import numpy as np
 from typing import Dict, Any
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, VARIANCE_EXPLAINED_90PCT, NOISE_BASELINE_N_SAMPLES, CHANCE_LEVEL_ACCURACY, PCA_MAX_COMPONENTS_NULL
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, VARIANCE_EXPLAINED_90PCT, NOISE_BASELINE_N_SAMPLES, CHANCE_LEVEL_ACCURACY, PCA_MAX_COMPONENTS_NULL
 
 
 def compute_noise_baseline_comparison(

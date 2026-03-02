@@ -10,7 +10,7 @@ from peft import LoraConfig, TaskType, get_peft_model
 from trl import SFTTrainer, SFTConfig
 from wisent.comparison.utils import generate_contrastive_pairs, load_model_and_tokenizer
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     LORA_DEFAULT_DROPOUT,
     COMPARISON_NUM_PAIRS, DEFAULT_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
     COMPARISON_LORA_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,

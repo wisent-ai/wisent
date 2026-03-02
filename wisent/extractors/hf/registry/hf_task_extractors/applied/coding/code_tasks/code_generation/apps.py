@@ -5,9 +5,9 @@ import random
 import re
 from typing import Any
 
-from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.utils.cli.cli_logger import setup_logger
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.utils.core.hardware import subprocess_timeout_s
 
@@ -251,7 +251,7 @@ import functools
 import math
 import bisect
 from collections import defaultdict, Counter, deque
-from wisent.core.constants import COMPARE_TOL
+from wisent.core.utils.config_tools.constants import COMPARE_TOL
 """
 
     @staticmethod

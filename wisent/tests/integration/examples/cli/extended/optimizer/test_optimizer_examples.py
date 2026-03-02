@@ -15,7 +15,7 @@ def test_optimize_classification_parameters():
     with tempfile.TemporaryDirectory() as tmpdir:
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "optimize-classification",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "optimize-classification",
                 "meta-llama/Llama-3.2-1B-Instruct",
                 "--limit", "10",
                 "--optimization-metric", "f1",
@@ -38,7 +38,7 @@ def test_optimize_steering_parameters():
     with tempfile.TemporaryDirectory() as tmpdir:
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "optimize-steering", "comprehensive",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "optimize-steering", "comprehensive",
                 "meta-llama/Llama-3.2-1B-Instruct",
                 "--tasks", "boolq",
                 "--methods", "CAA",

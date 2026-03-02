@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from wisent.core.constants import ABLITERATION_BASELINE_ACC, EXTRACTION_DEFAULT_PAIR_LIMIT, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import ABLITERATION_BASELINE_ACC, EXTRACTION_DEFAULT_PAIR_LIMIT, SEPARATOR_WIDTH_REPORT
 from wisent.examples.cli.weight_modification.maximum_abliteration_helpers import (
     AbliterationConfig,
     evaluate_model,

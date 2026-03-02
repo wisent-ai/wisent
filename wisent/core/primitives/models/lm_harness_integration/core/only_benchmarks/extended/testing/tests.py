@@ -7,7 +7,7 @@ import os
 import subprocess
 from typing import Dict, List, Tuple
 
-from wisent.core.errors import BenchmarkLoadError
+from wisent.core.utils.infra_tools.errors import BenchmarkLoadError
 from wisent.core import constants as _C
 from wisent.core.utils.core.hardware import subprocess_timeout_long_s
 

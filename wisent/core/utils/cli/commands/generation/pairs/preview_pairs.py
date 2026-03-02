@@ -5,7 +5,7 @@ import json
 import argparse
 from typing import Optional
 
-from wisent.core.constants import JSON_INDENT, NUM_EXAMPLES_DEFAULT, DISPLAY_TRUNCATION_LONG, DISPLAY_TRUNCATION_XLARGE, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, NUM_EXAMPLES_DEFAULT, DISPLAY_TRUNCATION_LONG, DISPLAY_TRUNCATION_XLARGE, DISPLAY_TRUNCATION_COMPACT
 
 
 def execute_preview_pairs(args):
@@ -14,7 +14,7 @@ def execute_preview_pairs(args):
         lm_build_contrastive_pairs,
     )
     from wisent.extractors.hf.hf_extractor_manifest import HF_EXTRACTORS
-    from wisent.core.activations import (
+    from wisent.core.primitives.model_interface.core.activations import (
         ExtractionStrategy,
         build_extraction_texts,
         get_strategy_for_model,
@@ -42,7 +42,7 @@ def execute_preview_pairs(args):
                 limit=limit,
             )
         else:
-            from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
+            from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
             loader = LMEvalDataLoader()
             task_obj = loader.load_lm_eval_task(task_name)
             

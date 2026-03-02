@@ -9,23 +9,23 @@ import json
 import os
 from typing import Dict, Any
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_NUM_EVAL_PROMPTS,
     DEFAULT_SHOW_COMPARISONS,
     JSON_INDENT,
     CLASSIFIER_THRESHOLD,
     SEPARATOR_WIDTH_MAX,
 )
-from wisent.core.config_manager import save_classification_config
-from wisent.core.evaluators.steering_evaluators import SteeringEvaluatorFactory, EvaluatorConfig
-from wisent.core.cli.optimization.specific.optimize_classification_runner import (
+from wisent.core.utils.config_tools.config import save_classification_config
+from wisent.core.reading.evaluators.steering_evaluators import SteeringEvaluatorFactory, EvaluatorConfig
+from wisent.core.utils.cli.optimization.specific.optimize_classification_runner import (
     run_classification_optimization,
 )
 
 
 def execute_optimize_classification(args):
     """Execute classification optimization using native Wisent methods."""
-    from wisent.core.cli.tasks import execute_tasks
+    from wisent.core.utils.cli.tasks import execute_tasks
     print(f"\n{'='*80}")
     print(f"CLASSIFICATION PARAMETER OPTIMIZATION")
     print(f"{'='*80}")
@@ -49,7 +49,7 @@ def execute_optimize_classification(args):
         )
         steering_evaluator = SteeringEvaluatorFactory.create(eval_config, args.model)
         print(f"Using {evaluator_type} evaluator for optimization\n")
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
     print(f"Loading model to determine layer range...")
     model = WisentModel(args.model, device=args.device)
     total_layers = model.num_layers

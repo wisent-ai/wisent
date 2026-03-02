@@ -17,11 +17,11 @@ from enum import Enum
 from pathlib import Path
 import json
 
-from wisent.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.utils import get_layer_combinations
-from wisent.core.benchmarks import get_all_benchmarks
-from wisent.core.activations.activation_cache import ActivationCache, CachedActivations
-from wisent.core.constants import (
+from wisent.core.utils.services.benchmarks import get_all_benchmarks
+from wisent.core.primitives.model_interface.core.activations.activation_cache import ActivationCache, CachedActivations
+from wisent.core.utils.config_tools.constants import (
     GEO_PAIRS_PER_BENCHMARK, DEFAULT_RANDOM_SEED,
     GEO_MAX_LAYER_COMBO_SIZE, GEO_ESTIMATED_TIME_PER_EXTRACTION,
     JSON_INDENT, SECONDS_PER_HOUR,

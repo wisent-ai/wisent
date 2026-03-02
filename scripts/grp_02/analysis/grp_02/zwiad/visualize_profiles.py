@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 
-from wisent.core.constants import VIZ_DPI, VIZ_MARKER_SIZE, VIZ_ALPHA_HIGH, VIZ_LINEWIDTH_THIN
+from wisent.core.utils.config_tools.constants import VIZ_DPI, VIZ_MARKER_SIZE, VIZ_ALPHA_HIGH, VIZ_LINEWIDTH_THIN
 
 ZWIAD_DIR = Path("zwiad_results")
 MODEL_SLUG = "meta-llama_Llama-3.2-1B-Instruct"

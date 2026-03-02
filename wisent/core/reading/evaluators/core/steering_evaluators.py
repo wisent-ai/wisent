@@ -10,15 +10,15 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import (
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import (
     STEERING_EVAL_NUM_PROMPTS,
     DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED,
 )
 
 # Re-export from helpers
-from wisent.core.evaluators._steering_evaluators_helpers import PersonalizationEvaluator
+from wisent.core.reading.evaluators._steering_evaluators_helpers import PersonalizationEvaluator
 
 logger = logging.getLogger(__name__)
 
@@ -187,11 +187,11 @@ class TaskEvaluator(BaseSteeringEvaluator):
 
     def _load_task_data(self):
         """Pre-load task data."""
-        from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-        from wisent.core.evaluators.rotator import EvaluatorRotator
+        from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+        from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 
         loader = LMEvalDataLoader()
-        EvaluatorRotator.discover_evaluators('wisent.core.evaluators.benchmark_specific')
+        EvaluatorRotator.discover_evaluators('wisent.core.reading.evaluators.benchmark_specific')
 
         result = loader._load_one_task(
             task_name=self.config.task,

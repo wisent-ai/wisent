@@ -3,7 +3,7 @@ from __future__ import annotations
 import os
 import time
 
-from wisent.core.constants import DEFAULT_SCORE, DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, PROGRESS_LOG_INTERVAL_20
+from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, PROGRESS_LOG_INTERVAL_20
 from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 

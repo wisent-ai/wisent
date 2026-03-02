@@ -5,7 +5,7 @@ import os
 import sys
 from datetime import datetime
 
-from wisent.core.constants import GEO_MAX_LAYER_COMBO_SIZE, PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, DISPLAY_TOP_N_SMALL, JSON_INDENT
+from wisent.core.utils.config_tools.constants import GEO_MAX_LAYER_COMBO_SIZE, PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, DISPLAY_TOP_N_SMALL, JSON_INDENT
 from wisent.tests.test_geometry_exhaustive import (
     run_exhaustive_layer_analysis,
     run_limited_layer_analysis,

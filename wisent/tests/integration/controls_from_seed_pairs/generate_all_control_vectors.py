@@ -18,7 +18,7 @@ import sys
 import time
 from pathlib import Path
 
-from wisent.core.constants import QWEN3_4B_DEFAULT_LAYER, JSON_INDENT
+from wisent.core.utils.config_tools.constants import QWEN3_4B_DEFAULT_LAYER, JSON_INDENT
 
 from control_vector_generator import ControlVectorGenerator
 

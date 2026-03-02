@@ -11,8 +11,8 @@ from datetime import datetime
 from enum import Enum
 from typing import Dict, List, Optional, Any
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import (
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import (
     STEERING_APP_INITIAL_TOKENS, STEERING_APP_INITIAL_TOKENS_SHORT,
     STEERING_APP_INITIAL_TOKENS_LONG, STEERING_APP_DECAY_RATE,
     STEERING_APP_DECAY_RATE_SLOW, STEERING_APP_GAUSSIAN_CENTER,
@@ -51,7 +51,7 @@ class SteeringMethodConfig:
 
     def __post_init__(self):
         """Ensure method is SteeringMethodType enum."""
-        from wisent.core.steering_methods import SteeringMethodType
+        from wisent.core.control.steering_methods import SteeringMethodType
         if isinstance(self.method, str):
             self.method = SteeringMethodType(self.method.lower())
 
@@ -131,7 +131,7 @@ def get_default_steering_application_configs() -> List[SteeringApplicationConfig
 
 def get_default_steering_configs() -> List[SteeringMethodConfig]:
     """Get default steering method configurations from centralized registry."""
-    from wisent.core.steering_methods import SteeringMethodRegistry
+    from wisent.core.control.steering_methods import SteeringMethodRegistry
 
     configs = []
     for method_name in SteeringMethodRegistry.list_methods():

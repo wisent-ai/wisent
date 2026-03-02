@@ -14,7 +14,7 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from wisent.core.constants import VIZ_DPI
+from wisent.core.utils.config_tools.constants import VIZ_DPI
 
 _metrics_path = os.path.join(
     os.path.dirname(os.path.abspath(__file__)),

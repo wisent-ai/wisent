@@ -7,7 +7,7 @@ import pathlib
 import torch
 import numpy as np
 
-from wisent.core.contrastive_pairs.core.io.serialization import (
+from wisent.core.primitives.contrastive_pairs.core.io.serialization import (
     _validate_top_level,
     _validate_pair_obj,
     _decode_activations,

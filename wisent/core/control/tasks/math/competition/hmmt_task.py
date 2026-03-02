@@ -3,9 +3,9 @@ HMMT (Harvard-MIT Math Tournament) task implementation for task-agnostic archite
 """
 
 from typing import Dict, Any, List, Optional
-from wisent.core.tasks.base.task_interface import TaskInterface
-from wisent.core.benchmarks import GSM8KExtractor
-from wisent.core.errors import InvalidValueError
+from wisent.core.control.tasks.base.task_interface import TaskInterface
+from wisent.core.utils.services.benchmarks import GSM8KExtractor
+from wisent.core.utils.infra_tools.errors import InvalidValueError
 import datasets
 
 

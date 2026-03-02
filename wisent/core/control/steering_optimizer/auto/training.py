@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 from typing import List, Dict, Any
 
-from wisent.core.constants import GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS
+from wisent.core.utils.config_tools.constants import GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +32,9 @@ def train_recommended_method(
     Returns:
         Dictionary with method name, layer count, and trained result
     """
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
     num_layers = wisent_model.num_layers
     all_layers = [str(i) for i in range(1, num_layers + 1)]
@@ -71,7 +71,7 @@ def train_recommended_method(
 
 def _train_caa(pair_set: Any, verbose: bool) -> Dict[str, Any]:
     """Train CAA method."""
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.control.steering_methods.methods.caa import CAAMethod
 
     caa_method = CAAMethod()
     result = caa_method.train(pair_set)
@@ -85,7 +85,7 @@ def _train_caa(pair_set: Any, verbose: bool) -> Dict[str, Any]:
 
 def _train_grom(wisent_model: Any, pair_set: Any, all_layers: List[str], verbose: bool) -> Dict[str, Any]:
     """Train GROM method."""
-    from wisent.core.steering_methods.methods.grom import GROMMethod
+    from wisent.core.control.steering_methods.methods.grom import GROMMethod
 
     layer_indices = [int(l) for l in all_layers]
     grom_method = GROMMethod(
@@ -108,7 +108,7 @@ def _train_grom(wisent_model: Any, pair_set: Any, all_layers: List[str], verbose
 
 def _train_tecza(wisent_model: Any, pair_set: Any, verbose: bool) -> Dict[str, Any]:
     """Train TECZA method."""
-    from wisent.core.steering_methods.methods.advanced import TECZAMethod
+    from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
 
     tecza_method = TECZAMethod(
         model=wisent_model.hf_model,
@@ -128,7 +128,7 @@ def _train_tecza(wisent_model: Any, pair_set: Any, verbose: bool) -> Dict[str, A
 
 def _train_tetno(wisent_model: Any, pair_set: Any, all_layers: List[str], verbose: bool) -> Dict[str, Any]:
     """Train TETNO method."""
-    from wisent.core.steering_methods.methods.advanced import TETNOMethod
+    from wisent.core.control.steering_methods.methods.advanced import TETNOMethod
 
     layer_indices = [int(l) for l in all_layers]
     tetno_method = TETNOMethod(

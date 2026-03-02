@@ -8,7 +8,7 @@ These examples demonstrate how to create custom evaluators for:
 - Custom API integrations
 """
 
-from wisent.core.evaluators.custom.examples.detectors import (
+from wisent.core.reading.evaluators.custom.examples.detectors import (
     GPTZeroEvaluator,
     create_gptzero_evaluator,
     RobertaDetectorEvaluator,
@@ -16,7 +16,7 @@ from wisent.core.evaluators.custom.examples.detectors import (
     DesklibDetectorEvaluator,
     create_desklib_detector_evaluator,
 )
-from wisent.core.evaluators.custom.examples.humanization import (
+from wisent.core.reading.evaluators.custom.examples.humanization import (
     HumanizationEvaluator,
     create_humanization_evaluator,
     HumanizationCoherentEvaluator,

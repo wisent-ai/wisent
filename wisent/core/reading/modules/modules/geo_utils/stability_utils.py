@@ -8,7 +8,7 @@ import numpy as np
 import torch
 from sklearn.cluster import KMeans
 from sklearn.metrics import adjusted_rand_score
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED,
     HIGH_DIM_THRESHOLD,
     LINEARITY_N_INIT,

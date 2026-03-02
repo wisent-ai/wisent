@@ -7,7 +7,7 @@ import psycopg2
 from psycopg2.extras import execute_values
 import torch
 
-from wisent.core.constants import EXTRACTION_DB_BATCH_SIZE, EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DEFAULT_MAX_RETRIES, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import EXTRACTION_DB_BATCH_SIZE, EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DEFAULT_MAX_RETRIES, PROGRESS_LOG_INTERVAL_10
 
 
 def hidden_states_to_bytes(hidden_states: torch.Tensor) -> bytes:
@@ -85,7 +85,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
                       num_layers: int, device: str, get_conn_fn, reset_conn_fn, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT):
     """Extract raw activations for a single benchmark using 3 formats."""
     print(f"  [EXTRACT] Importing extraction strategy...", flush=True)
-    from wisent.core.activations import ExtractionStrategy, build_extraction_texts
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, build_extraction_texts
     print(f"  [EXTRACT] Extraction strategy imported", flush=True)
 
     actual_device = getattr(model, '_actual_device', device)

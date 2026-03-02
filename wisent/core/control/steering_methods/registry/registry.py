@@ -11,8 +11,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Type
 
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.constants import DEFAULT_STRENGTH, STEERING_STRENGTH_RANGE_WIDE
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, STEERING_STRENGTH_RANGE_WIDE
 
 
 class SteeringMethodType(Enum):
@@ -54,7 +54,7 @@ class SteeringMethodDefinition:
     name: str
     method_type: SteeringMethodType
     description: str
-    method_class_path: str  # e.g., "wisent.core.steering_methods.methods.caa.CAAMethod"
+    method_class_path: str  # e.g., "wisent.core.control.steering_methods.methods.caa.CAAMethod"
     
     # Method-specific parameters
     parameters: List[SteeringMethodParameter] = field(default_factory=list)
@@ -113,17 +113,17 @@ class SteeringMethodDefinition:
 # =============================================================================
 # STEERING METHOD DEFINITIONS (imported from sibling modules)
 # =============================================================================
-from wisent.core.steering_methods._definitions_part1 import (
+from wisent.core.control.steering_methods._definitions_part1 import (
     CAA_DEFINITION,
     OSTRZE_DEFINITION,
     TECZA_DEFINITION,
 )
-from wisent.core.steering_methods._definitions_part2 import (
+from wisent.core.control.steering_methods._definitions_part2 import (
     TETNO_DEFINITION,
     GROM_DEFINITION,
     PRZELOM_DEFINITION,
 )
-from wisent.core.steering_methods._definitions_part3 import (
+from wisent.core.control.steering_methods._definitions_part3 import (
     MLP_DEFINITION,
     NURT_DEFINITION,
     SZLAK_DEFINITION,

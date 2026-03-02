@@ -1,12 +1,12 @@
 """Classifier decision pipeline mixin."""
 from typing import List, Dict, Any, Optional
 import time
-from wisent.core.agent.diagnose._agent_decision_types import (
+from wisent.core.experimental.agent.diagnose._agent_decision_types import (
     ClassifierDecision, SingleClassifierDecision, ClassifierParams,
     QualityResult, QualityControlledResponse, SteeringParams)
-from wisent.core.agent.diagnose.classifier_marketplace import (
+from wisent.core.experimental.agent.diagnose.classifier_marketplace import (
     ClassifierMarketplace, ClassifierListing, ClassifierCreationEstimate)
-from wisent.core.constants import AGENT_DECISION_NUM_SAMPLES, AGENT_PENALTY_MULTIPLIER, AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET, SECONDS_PER_MINUTE, SEPARATOR_WIDTH_NARROW
+from wisent.core.utils.config_tools.constants import AGENT_DECISION_NUM_SAMPLES, AGENT_PENALTY_MULTIPLIER, AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET, SECONDS_PER_MINUTE, SEPARATOR_WIDTH_NARROW
 
 class ClassifierPipelineMixin:
     """Mixin providing decision pipeline methods."""

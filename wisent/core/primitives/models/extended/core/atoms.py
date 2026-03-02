@@ -6,19 +6,19 @@ from typing import TYPE_CHECKING
 import torch
 from typing import Mapping
 
-from wisent.core.errors import InvalidValueError, InvalidRangeError
+from wisent.core.utils.infra_tools.errors import InvalidValueError, InvalidRangeError
 from wisent.core.utils import preferred_dtype
 
 # Re-export from helpers
-from wisent.core.constants import LOG_EPS, DEFAULT_STRENGTH
-from wisent.core.models.core._atoms_helpers import (
+from wisent.core.utils.config_tools.constants import LOG_EPS, DEFAULT_STRENGTH
+from wisent.core.primitives.models.core._atoms_helpers import (
     HookHandleGroup,
     TopLogits,
     GenerationStats,
 )
 
 if TYPE_CHECKING:
-    from wisent.core.activations.core.atoms import RawActivationMap
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import RawActivationMap
 
 
 __all__ = [

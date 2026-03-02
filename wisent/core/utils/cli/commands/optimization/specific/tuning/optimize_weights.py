@@ -26,22 +26,22 @@ from dataclasses import dataclass
 
 import torch
 
-from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, DEFAULT_RANDOM_SEED, DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT
-from wisent.core.errors import UnknownTypeError, InsufficientDataError
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.evaluators.steering_evaluators import (
+from wisent.core.utils.config_tools.constants import DEFAULT_CHECKPOINT_INTERVAL, DEFAULT_RANDOM_SEED, DISPLAY_TRUNCATION_EVAL, DISPLAY_TRUNCATION_SHORT
+from wisent.core.utils.infra_tools.errors import UnknownTypeError, InsufficientDataError
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.reading.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
     EvaluatorConfig,
     RefusalEvaluator,
     TaskEvaluator,
     PersonalizationEvaluator as SharedPersonalizationEvaluator,
 )
-from wisent.core.optimization.core.atoms import HPOConfig
-from wisent.core.optimization.methods.opti_weights import WeightsOptimizer, WeightsOptimizerConfig
+from wisent.core.utils.services.optimization.core.atoms import HPOConfig
+from wisent.core.utils.services.optimization.methods.opti_weights import WeightsOptimizer, WeightsOptimizerConfig
 from wisent.core.utils import resolve_default_device, preferred_dtype
-from wisent.core.cli.optimization.specific.optimize_weights_vectors import _generate_steering_vectors
-from wisent.core.cli.optimization.specific.optimize_weights_evaluators import _create_evaluator
-from wisent.core.cli.optimization.specific.optimize_weights_finalize import (
+from wisent.core.utils.cli.optimization.specific.optimize_weights_vectors import _generate_steering_vectors
+from wisent.core.utils.cli.optimization.specific.optimize_weights_evaluators import _create_evaluator
+from wisent.core.utils.cli.optimization.specific.optimize_weights_finalize import (
     upload_to_gcs, _finalize_optimization,
 )
 
@@ -64,7 +64,7 @@ def execute_optimize_weights(args):
     for any trait or task.
     """
     # Expand task if it's a skill or risk name
-    from wisent.core.tasks.base.task_selector import expand_task_if_skill_or_risk
+    from wisent.core.control.tasks.base.task_selector import expand_task_if_skill_or_risk
     if getattr(args, 'task', None):
         args.task = expand_task_if_skill_or_risk(args.task)
     

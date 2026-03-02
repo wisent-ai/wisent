@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DIAG_MIN_DIVERGENCE, DIAG_MAX_LOW_DIV_FRACTION, DIAG_NEAR_DUPLICATE_THRESHOLD,
     PAIRS_MAX_DUPLICATE_FRACTION, PAIRS_MIN_UNIQUE_PROMPT_RATIO, PAIRS_MIN_AVERAGE_LENGTH,
 )

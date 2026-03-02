@@ -4,7 +4,7 @@ import json
 import sys
 import os
 from pathlib import Path
-from wisent.core.constants import DEFAULT_SCORE, SCORE_MIDPOINT_PCT, GEOMETRY_MINORITY_PCT, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_STANDARD, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, SCORE_MIDPOINT_PCT, GEOMETRY_MINORITY_PCT, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_STANDARD, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 
 
 def execute_geometry_search(args):
@@ -18,10 +18,10 @@ def execute_geometry_search(args):
     print(f"Max layer combo size: {args.max_layer_combo_size}")
     
     # Import dependencies
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.geometry import GeometrySearchSpace, GeometrySearchConfig
-    from wisent.core.geometry_runner import GeometryRunner
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.reading.modules import GeometrySearchSpace, GeometrySearchConfig
+    from wisent.core.reading.modules.runner.geometry_runner import GeometryRunner
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     
     # Parse strategies
     if args.strategies:

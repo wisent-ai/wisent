@@ -3,9 +3,9 @@ from __future__ import annotations
 import random
 from typing import Any
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 
 __all__ = ["EvalitaSpSumTaskFpSmallP1Extractor"]

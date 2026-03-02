@@ -1,2 +1,2 @@
 [console_scripts]
-wisent = wisent.core.main:main
+wisent = wisent.core.primitives.model_interface.core.main:main

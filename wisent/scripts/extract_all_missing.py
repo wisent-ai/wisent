@@ -7,7 +7,7 @@ Designed to run on AWS with GPU.
 import os
 
 import psycopg2
-from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DB_TEXT_FIELD_MAX_LENGTH, DEFAULT_MAX_RETRIES, DB_CONNECT_WAIT_S
+from wisent.core.utils.config_tools.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DB_TEXT_FIELD_MAX_LENGTH, DEFAULT_MAX_RETRIES, DB_CONNECT_WAIT_S
 from psycopg2.extras import execute_values
 import torch
 

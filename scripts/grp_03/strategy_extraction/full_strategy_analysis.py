@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Full extraction strategy analysis - parallel workers with batch layer queries."""
 import argparse, json, struct, os, sys, multiprocessing
-from wisent.core.constants import COMPARISON_MAX_BATCH_SIZE, DEFAULT_MAX_RETRIES, DB_CONNECTION_MAX_RETRIES
+from wisent.core.utils.config_tools.constants import COMPARISON_MAX_BATCH_SIZE, DEFAULT_MAX_RETRIES, DB_CONNECTION_MAX_RETRIES
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from collections import defaultdict
 from typing import Dict, List, Optional

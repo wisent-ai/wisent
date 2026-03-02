@@ -12,7 +12,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_MAX_BATCH_SIZE,
     COMPARISON_NUM_PAIRS,
@@ -31,7 +31,7 @@ from wisent.comparison.utils import (
 )
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
 
 def evaluate_lora_dpo(
@@ -61,7 +61,7 @@ def evaluate_lora_dpo(
     extraction_strategy: str = "mc_completion",
 ) -> dict:
     """Evaluate a trained DPO LoRA adapter."""
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
     from wisent.comparison.lora import apply_lora_to_model, remove_lora
 
     lora_path = Path(lora_path)
@@ -134,12 +134,12 @@ def _run_steering_eval(
     batch_size, max_batch_size, limit, device,
 ):
     """Run optional steering evaluation on top of DPO-LoRA."""
-    from wisent.core.trainers.steering_trainer import WisentSteeringTrainer
-    from wisent.core.steering_methods import get_steering_method
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.weight_modification.trainers.steering_trainer import WisentSteeringTrainer
+    from wisent.core.control.steering_methods import get_steering_method
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
     import os
 
     pairs_data, pairs_file = generate_contrastive_pairs(task, steering_num_pairs)

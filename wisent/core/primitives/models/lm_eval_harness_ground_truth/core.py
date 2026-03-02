@@ -5,8 +5,8 @@ import re
 import json
 from typing import Any, Dict
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import COMPARE_TOL, DEFAULT_LAYER, EVAL_HARNESS_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, DEFAULT_LAYER, EVAL_HARNESS_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT
 from wisent.core import constants as _C
 
 logger = logging.getLogger(__name__)
@@ -94,7 +94,7 @@ class LMEvalHarnessGroundTruth:
     def _load_task_interface_data(self, task_name: str, num_samples: int):
         """Load data from TaskInterface tasks."""
         try:
-            from wisent.core.tasks.base.task_interface import get_task
+            from wisent.core.control.tasks.base.task_interface import get_task
             task = get_task(task_name)
             docs = task.load_data(limit=num_samples)
             return docs, task

@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
-from wisent.core.constants import NORM_EPS, SHERMAN_MORRISON_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY
+from wisent.core.utils.config_tools.constants import NORM_EPS, SHERMAN_MORRISON_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY
 
 
 def _compute_residual(

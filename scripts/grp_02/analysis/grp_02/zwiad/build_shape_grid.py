@@ -6,7 +6,7 @@ import matplotlib.image as mpimg
 from pathlib import Path
 import math
 
-from wisent.core.constants import VIZ_DPI
+from wisent.core.utils.config_tools.constants import VIZ_DPI
 
 SHAPES_DIR = Path("zwiad_results/figures/shapes")
 OUTPUT_DIR = Path("zwiad_results/figures")

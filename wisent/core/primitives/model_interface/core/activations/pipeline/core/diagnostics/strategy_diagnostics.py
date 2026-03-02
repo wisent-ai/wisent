@@ -9,8 +9,8 @@ from dataclasses import dataclass, field
 from typing import Optional, List
 import torch
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import (
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import (
     STRATEGY_DIAG_W_LINEAR, STRATEGY_DIAG_W_CONSISTENCY, STRATEGY_DIAG_W_STEERING,
     STRATEGY_DIAG_AB_THRESHOLD, STRATEGY_DIAG_AB_PENALTY,
     STRATEGY_DIAG_NONLINEAR_GAP, STRATEGY_DIAG_LOW_CONSISTENCY,

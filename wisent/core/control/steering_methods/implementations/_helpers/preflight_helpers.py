@@ -1,8 +1,8 @@
 """Extracted from preflight.py - check_method_compatibility tail."""
 
 from typing import Dict, List, Tuple
-from wisent.core.geometry.structure_types import StructureType
-from wisent.core.constants import (
+from wisent.core.reading.modules.structure_types import StructureType
+from wisent.core.utils.config_tools.constants import (
     PREFLIGHT_COMPAT_DEFAULT, PREFLIGHT_COMPAT_THRESHOLD, PREFLIGHT_MANIFOLD_HIGH,
 )
 
@@ -30,7 +30,7 @@ def complete_method_compatibility_check(
     Returns:
         Tuple of (is_compatible, compat_score, warnings)
     """
-    from wisent.core.steering_methods.preflight import PreflightWarning
+    from wisent.core.control.steering_methods.preflight import PreflightWarning
 
     method_lower = method.lower()
 

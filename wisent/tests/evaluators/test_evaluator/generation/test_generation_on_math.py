@@ -1,8 +1,8 @@
 """Test GenerationEvaluator answer extraction on competition_math dataset."""
 
 from datasets import load_dataset
-from wisent.core.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT
+from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT
 
 # Load dataset
 ds = load_dataset("qwedsacf/competition_math", split="train")

@@ -10,7 +10,7 @@ Run with: python scripts/database/migrate_extraction_strategy.py
 
 import os
 import psycopg2
-from wisent.core.constants import DB_CONNECT_WAIT_S
+from wisent.core.utils.config_tools.constants import DB_CONNECT_WAIT_S
 
 DATABASE_URL = os.environ.get("DATABASE_URL")
 if DATABASE_URL and '?' in DATABASE_URL:

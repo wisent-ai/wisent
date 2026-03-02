@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
     import torch
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COHERENCE_UNIQUE_TOKEN_RATIO_MIN, COHERENCE_REPETITION_RATIO_MAX,
     COHERENCE_SPECIAL_CHAR_RATIO_MAX, COHERENCE_SPECIAL_CHAR_PENALTY,
     COHERENCE_SHORT_RESPONSE_PENALTY, COHERENCE_NONSENSE_WORD_RATIO_MAX,
@@ -24,7 +24,7 @@ from wisent.core.constants import (
     NONSENSE_MIN_TOKENS, MIN_TOKEN_LENGTH_NONSENSE,
     COHERENCE_DEGENERATION_PENALTY,
 )
-from wisent.core.evaluators.personalization.coherence import (
+from wisent.core.reading.evaluators.personalization.coherence import (
     _is_gibberish,
     _get_tokenizer,
     _is_nonsense_word,

@@ -10,7 +10,7 @@ import re
 from collections import Counter
 from typing import TYPE_CHECKING
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COHERENCE_FUNCTION_WORD_THRESHOLD, COHERENCE_SPACE_RATIO_MIN,
     COHERENCE_LONG_TOKEN_LEN, COHERENCE_LONG_TOKEN_RATIO,
     COHERENCE_VALIDITY_RATIO_MIN, COHERENCE_QUALITY_MIN_TOKENS,
@@ -195,7 +195,7 @@ def _is_gibberish(text: str) -> bool:
 
 # Import evaluate_quality and _is_incoherent from helpers
 # (split to meet 300-line limit)
-from wisent.core.evaluators.personalization._coherence_helpers import (  # noqa: E402
+from wisent.core.reading.evaluators.personalization._coherence_helpers import (  # noqa: E402
     evaluate_quality,
     _is_incoherent,
 )

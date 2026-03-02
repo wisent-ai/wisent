@@ -4,7 +4,7 @@ Humanization evaluator for optimizing text to appear more human-written.
 Uses GPTZero API exclusively for AI detection scoring.
 
 Usage:
-    from wisent.core.evaluators.custom.examples.humanization import create_humanization_evaluator
+    from wisent.core.reading.evaluators.custom.examples.humanization import create_humanization_evaluator
     
     evaluator = create_humanization_evaluator(api_key="your-gptzero-key")
 """
@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, Optional
 
-from wisent.core.evaluators.custom.custom_evaluator import (
+from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
 )
@@ -44,7 +44,7 @@ class HumanizationEvaluator(CustomEvaluator):
         )
         super().__init__(name="humanization", description=config.description, config=config)
         
-        from wisent.core.evaluators.custom.examples.gptzero import GPTZeroEvaluator
+        from wisent.core.reading.evaluators.custom.examples.gptzero import GPTZeroEvaluator
         self._gptzero = GPTZeroEvaluator(api_key=api_key)
     
     def evaluate_response(self, response: str, **kwargs) -> Dict[str, Any]:

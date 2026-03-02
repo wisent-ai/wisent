@@ -6,7 +6,7 @@ import struct
 from collections import defaultdict
 from typing import Optional
 
-from wisent.core.constants import BYTES_PER_MB
+from wisent.core.utils.config_tools.constants import BYTES_PER_MB
 
 
 def build_enriched_from_db(
@@ -201,10 +201,10 @@ def generate_and_collect_enriched(
     model_name, benchmark, work_dir, limit, device, cached_model=None,
 ):
     """Generate contrastive pairs and collect activations from model."""
-    from wisent.core.cli.optimize_steering.data.contrastive_pairs_data import (
+    from wisent.core.utils.cli.optimize_steering.data.contrastive_pairs_data import (
         execute_generate_pairs_from_task,
     )
-    from wisent.core.cli.optimize_steering.data.activations_data import (
+    from wisent.core.utils.cli.optimize_steering.data.activations_data import (
         execute_get_activations,
     )
     import argparse

@@ -6,8 +6,8 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import numpy as np
 
-from wisent.core.constants import NORM_EPS, DEFAULT_SPLIT_RATIO, MIN_SAMPLES_PCA, PCA_QUALITY_COMPONENTS, CUMULATIVE_VARIANCE_TOP_N, MIN_CLUSTERS, MIN_CLOUD_POINTS
-from wisent.core.contrastive_pairs.diagnostics.analysis.vector_quality import (
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_SPLIT_RATIO, MIN_SAMPLES_PCA, PCA_QUALITY_COMPONENTS, CUMULATIVE_VARIANCE_TOP_N, MIN_CLUSTERS, MIN_CLOUD_POINTS
+from wisent.core.primitives.contrastive_pairs.diagnostics.analysis.vector_quality import (
     _cosine_similarity,
     _create_vector_from_diffs,
 )

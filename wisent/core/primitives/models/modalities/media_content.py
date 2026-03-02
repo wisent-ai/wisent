@@ -1,7 +1,7 @@
 """
 Media content types: Audio, Image, and Video.
 
-Extracted from wisent.core.modalities.__init__ to keep files under 300 lines.
+Extracted from wisent.core.primitives.models.modalities.__init__ to keep files under 300 lines.
 """
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from pathlib import Path
 import torch
 import numpy as np
 
-from wisent.core.modalities.text_content import Modality, ModalityContent
-from wisent.core.constants import DEFAULT_AUDIO_SAMPLE_RATE, DEFAULT_VIDEO_FPS
-from wisent.core.errors import (
+from wisent.core.primitives.models.modalities.text_content import Modality, ModalityContent
+from wisent.core.utils.config_tools.constants import DEFAULT_AUDIO_SAMPLE_RATE, DEFAULT_VIDEO_FPS
+from wisent.core.utils.infra_tools.errors import (
     NoWaveformDataError,
     NoPixelDataError,
     NoFrameDataError,

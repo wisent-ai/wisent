@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any, Dict, List, Optional, Union
 import logging
 import torch
-from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 
 logger = logging.getLogger(__name__)
 

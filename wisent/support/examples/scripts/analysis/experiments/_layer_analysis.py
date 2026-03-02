@@ -21,8 +21,8 @@ try:
 except ImportError:
     HAS_PACMAP = False
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import (
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     VIZ_N_NEIGHBORS, VIZ_MIN_DIST, STABILITY_N_CLUSTERS,
     N_COMPONENTS_2D,

@@ -8,7 +8,7 @@ import subprocess
 import os
 from pathlib import Path
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     LAYER_THRESHOLD_LARGE,
     LAYER_THRESHOLD_MEDIUM,
     LAYER_THRESHOLD_SMALL,

@@ -9,8 +9,8 @@ Usage:
 
 import argparse
 import json
-from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
-from wisent.core.models import (
+from wisent.core.utils.config_tools.constants import JSON_INDENT, SEPARATOR_WIDTH_MEDIUM
+from wisent.core.primitives.models import (
     get_config,
     update_config,
     reset_config,

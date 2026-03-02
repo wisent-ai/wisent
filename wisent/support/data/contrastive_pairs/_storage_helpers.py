@@ -12,10 +12,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from wisent.core.constants import JSON_INDENT
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.contrastive_pairs.core.io.serialization import (
+from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.primitives.contrastive_pairs.core.io.serialization import (
     save_contrastive_pair_set,
     load_contrastive_pair_set,
 )

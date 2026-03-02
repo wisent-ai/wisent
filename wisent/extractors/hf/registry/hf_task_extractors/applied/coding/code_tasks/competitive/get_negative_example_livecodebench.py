@@ -6,8 +6,8 @@ and extracts examples that failed test cases.
 """
 from __future__ import annotations
 
-from wisent.core.cli.cli_logger import setup_logger
-from wisent.core.constants import (
+from wisent.core.utils.cli.cli_logger import setup_logger
+from wisent.core.utils.config_tools.constants import (
     GIBBERISH_WORD_COUNT_MIN, GIBBERISH_WORD_COUNT_MAX,
     GIBBERISH_WORD_LEN_MIN, GIBBERISH_WORD_LEN_MAX,
     GIBBERISH_LINE_COUNT_MIN, GIBBERISH_LINE_COUNT_MAX,

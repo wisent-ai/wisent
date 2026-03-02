@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import json
 
-from wisent.core.constants import JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 def execute_szlak_mode(args, model, tokenizer, wisent_model, pairs):
     """Execute SZLAK weight modification mode."""
-    from wisent.core.cli.analysis.training.modify_weights.method_training import train_szlak_for_task
+    from wisent.core.utils.cli.analysis.training.modify_weights.method_training import train_szlak_for_task
     from wisent.core.weight_modification.export import export_szlak_model
 
     if args.verbose:
@@ -35,7 +35,7 @@ def execute_szlak_mode(args, model, tokenizer, wisent_model, pairs):
 
 def execute_wicher_mode(args, model, tokenizer, wisent_model, pairs):
     """Execute WICHER weight modification mode."""
-    from wisent.core.cli.analysis.training.modify_weights.method_training import train_wicher_for_task
+    from wisent.core.utils.cli.analysis.training.modify_weights.method_training import train_wicher_for_task
     from wisent.core.weight_modification.export import export_wicher_model
 
     if args.verbose:

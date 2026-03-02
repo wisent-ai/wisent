@@ -6,7 +6,7 @@ import torch.nn as nn
 from typing import Dict, List, Tuple, Optional, Callable
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, DEFAULT_STRENGTH, DIAG_NUM_COMPONENTS,
     BLEND_DEFAULT, MLP_HIDDEN_DIM, DEFAULT_OPTIMIZATION_STEPS,
     CLAMPING_MARGIN_DEFAULT, CENTROID_SHIFT_FACTOR,

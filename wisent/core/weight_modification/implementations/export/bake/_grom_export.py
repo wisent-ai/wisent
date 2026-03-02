@@ -4,9 +4,9 @@ from __future__ import annotations
 import torch
 from pathlib import Path
 from typing import TYPE_CHECKING
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.errors import MissingParameterError
-from wisent.core.constants import GROM_GATE_TEMPERATURE, GROM_MAX_ALPHA, JSON_INDENT
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.utils.config_tools.constants import GROM_GATE_TEMPERATURE, GROM_MAX_ALPHA, JSON_INDENT
 from wisent.core.weight_modification.export._generic import (
     _save_standalone_loader,
 )

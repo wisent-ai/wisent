@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from .constants import LM_EVAL_TASKS_PATH
-from wisent.core.constants import MAX_TAGS_PER_BENCHMARK, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import MAX_TAGS_PER_BENCHMARK, DISPLAY_TOP_N_TINY
 
 
 __all__ = [

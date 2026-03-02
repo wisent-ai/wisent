@@ -4,8 +4,8 @@ import os
 import random
 from typing import Optional, Tuple, List, Any
 
-from wisent.core.errors import TaskLoadError
-from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_TOP_N_TINY, SAE_TOP_FEATURES_DISPLAY, MAX_TASKS_TO_PROCESS
+from wisent.core.utils.infra_tools.errors import TaskLoadError
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_TOP_N_TINY, SAE_TOP_FEATURES_DISPLAY, MAX_TASKS_TO_PROCESS
 from wisent.core import constants as _C
 
 

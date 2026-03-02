@@ -2,8 +2,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict
 
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 
 __all__ = [
     "TrainingResult",

@@ -10,7 +10,7 @@ os.environ["NUMBA_NUM_THREADS"] = "1"
 
 from typing import Dict, Optional, Any
 import torch
-from wisent.core.constants import DEFAULT_RANDOM_SEED, MAX_PAIRS_FOR_METRICS, CLASSIFIER_THRESHOLD, CV_FOLDS
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, MAX_PAIRS_FOR_METRICS, CLASSIFIER_THRESHOLD, CV_FOLDS
 
 from ..probe.probe_metrics import (
     compute_signal_strength, compute_linear_probe_accuracy,

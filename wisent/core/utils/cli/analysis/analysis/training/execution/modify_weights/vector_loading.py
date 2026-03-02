@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 
 import torch
-from wisent.core.constants import DEFAULT_LAYER, SIMILARITY_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, SIMILARITY_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO
 
 from wisent.core.utils import resolve_default_device
 
@@ -73,7 +73,7 @@ def load_vectors_from_file(path: str, verbose: bool = False) -> Dict[int, torch.
 
 def generate_personalization_vectors(args, verbose: bool = False) -> Dict[int, torch.Tensor]:
     """Generate steering vectors from trait-based synthetic pairs."""
-    from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+    from wisent.core.utils.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
 
     class VectorArgs:
         pass
@@ -117,7 +117,7 @@ def generate_personalization_vectors(args, verbose: bool = False) -> Dict[int, t
 
 def generate_multi_benchmark_vectors(args, verbose: bool = False) -> Dict[int, torch.Tensor]:
     """Generate steering vectors from multiple benchmarks using unified goodness."""
-    from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
+    from wisent.core.utils.cli.train_unified_goodness import execute_train_unified_goodness
 
     benchmarks = [b.strip() for b in args.task.split(",")]
     if verbose:
@@ -179,8 +179,8 @@ def generate_multi_benchmark_vectors(args, verbose: bool = False) -> Dict[int, t
 
 def generate_task_vectors(args, verbose: bool = False) -> Dict[int, torch.Tensor]:
     """Generate steering vectors from a single benchmark task."""
-    from wisent.core.cli.generation.vectors.generate_vector_from_task import execute_generate_vector_from_task
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.utils.cli.generation.vectors.generate_vector_from_task import execute_generate_vector_from_task
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
     optimal_config = _get_optimal_config(args)
 
@@ -268,7 +268,7 @@ def _get_optimal_config(args) -> Optional[Dict[str, Any]]:
         return None
 
     try:
-        from wisent.core.config_manager import get_cached_optimization
+        from wisent.core.utils.config_tools.config import get_cached_optimization
         optimal_result = get_cached_optimization(args.model, args.task, method="*")
         if optimal_result:
             return {
@@ -289,7 +289,7 @@ def _get_optimal_config(args) -> Optional[Dict[str, Any]]:
 
 def _map_token_aggregation(optimal_config: Dict[str, Any]) -> str:
     """Map token aggregation to extraction strategy."""
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     if optimal_config.get('extraction_strategy'):
         return optimal_config['extraction_strategy']
     if optimal_config.get('token_aggregation'):

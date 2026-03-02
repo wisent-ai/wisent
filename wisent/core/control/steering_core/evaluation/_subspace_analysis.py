@@ -4,9 +4,9 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 import torch
 import torch.nn.functional as F
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.activations.core.atoms import LayerActivations, LayerName
-from wisent.core.constants import (
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, LayerName
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, ZERO_THRESHOLD, COMPARE_TOL, DEFAULT_VARIANCE_THRESHOLD,
     UNIVERSAL_SUBSPACE_RANK, SUBSPACE_MIN_VECTORS,
     SUBSPACE_DECAY_NORMALIZE, SUBSPACE_SPARSITY_THRESHOLD,

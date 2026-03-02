@@ -7,7 +7,7 @@ Metrics for cross-layer consistency and token position dependence.
 import torch
 import numpy as np
 from typing import Dict, Any, Tuple
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, CHANCE_LEVEL_ACCURACY
 
 
 def compute_cross_layer_consistency(

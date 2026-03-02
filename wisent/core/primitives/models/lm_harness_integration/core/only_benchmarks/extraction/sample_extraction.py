@@ -5,11 +5,11 @@ from __future__ import annotations
 import os
 from typing import Optional
 
-from wisent.core.errors import TaskLoadError, FallbackNotPermittedError
+from wisent.core.utils.infra_tools.errors import TaskLoadError, FallbackNotPermittedError
 
 from ..populate_tasks import get_task_samples_for_analysis as _get_task_samples_for_analysis
 from .sample_helpers import get_task_samples_direct
-from wisent.core.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TOP_N_TINY
 
 
 __all__ = [

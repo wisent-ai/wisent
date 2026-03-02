@@ -18,7 +18,7 @@ import argparse
 import subprocess
 import os
 from pathlib import Path
-from wisent.core.constants import DEFAULT_CODE_EVAL_LIMIT
+from wisent.core.utils.config_tools.constants import DEFAULT_CODE_EVAL_LIMIT
 from wisent.core.utils.core.hardware import eval_batch_size
 
 

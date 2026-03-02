@@ -4,10 +4,10 @@ LiveCodeBench task implementation for task-agnostic architecture.
 
 from typing import Any, Dict, List, Optional
 
-from wisent.core.benchmarks import LiveCodeBenchExtractor
-from wisent.core.data_loaders import LiveCodeBenchLoader
-from wisent.core.tasks.base.task_interface import TaskInterface
-from wisent.core.errors import VersionValidationError, VersionInfoError
+from wisent.core.utils.services.benchmarks import LiveCodeBenchExtractor
+from wisent.core.utils.infra_tools.data import LiveCodeBenchLoader
+from wisent.core.control.tasks.base.task_interface import TaskInterface
+from wisent.core.utils.infra_tools.errors import VersionValidationError, VersionInfoError
 
 
 class LiveCodeBenchTask(TaskInterface):

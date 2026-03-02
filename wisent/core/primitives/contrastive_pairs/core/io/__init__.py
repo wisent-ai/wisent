@@ -12,7 +12,7 @@ from .response import (
 )
 
 # Note: serialization imports are not included here to avoid circular imports
-# with pair.py. Import directly from wisent.core.contrastive_pairs.core.io.serialization
+# with pair.py. Import directly from wisent.core.primitives.contrastive_pairs.core.io.serialization
 
 __all__ = [
     "Response",

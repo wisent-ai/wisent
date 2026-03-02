@@ -13,8 +13,8 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any
 import torch
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import HASH_DIGEST_PREFIX, JSON_INDENT
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import HASH_DIGEST_PREFIX, JSON_INDENT
 from wisent.core.utils import resolve_default_device
 from .cached_activations import CachedActivations, get_strategy_text_family
 from .raw_cached_activations import RawCachedActivations, RawPairData

@@ -3,7 +3,7 @@
 import pytest
 import numpy as np
 from scipy.stats import hypergeom
-from wisent.core.evaluators.benchmark_specific.livemathbench_evaluator import (
+from wisent.core.reading.evaluators.benchmark_specific.livemathbench_evaluator import (
     LiveMathBenchEvaluator,
     LANGUAGE_PROMPTS,
     _compute_g_pass_at_k,
@@ -14,7 +14,7 @@ from wisent.core.evaluators.benchmark_specific.livemathbench_evaluator import (
 )
 
 # Re-export tests from consistency module
-from wisent.core.constants import ZERO_THRESHOLD
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
 from wisent.tests.test_evaluator._livemathbench_consistency import (
     TestGPassAtKConsistencyWithPaper,
     TestLiveMathBenchEvaluatorMetadata,

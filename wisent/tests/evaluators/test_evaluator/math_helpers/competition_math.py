@@ -1,7 +1,7 @@
 import re
 from datasets import load_dataset
 from evaluate import load
-from wisent.core.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
 
 
 def extract_boxed_answer(text: str) -> str | None:
@@ -81,8 +81,8 @@ print("\n" + "="*60)
 print("Comparing extraction methods on competition_math dataset:")
 print("="*60)
 
-from wisent.core.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
+from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
 
 evaluator = GenerationEvaluator()
 ds = load_dataset('qwedsacf/competition_math', split='train')

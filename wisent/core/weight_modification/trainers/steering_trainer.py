@@ -8,24 +8,24 @@ import json
 import torch
 import datetime as _dt
 
-from wisent.core.activations.core.atoms import (
+from wisent.core.primitives.model_interface.core.activations.core.atoms import (
     LayerActivations,
     RawActivationMap,
 )
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.models.wisent_model import WisentModel
 
-from wisent.core.trainers.core.atoms import (
+from wisent.core.weight_modification.trainers.core.atoms import (
     TrainingResult,
     BaseSteeringTrainer
 )
 
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.activations.activations_collector import ActivationCollector  
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.contrastive_pairs.diagnostics import run_control_vector_diagnostics, run_vector_quality_diagnostics, VectorQualityConfig
-from wisent.core.errors import ControlVectorDiagnosticsError, NoTrainingResultError, VectorQualityTooLowError
-from wisent.core.constants import STEERABILITY_MIN_PAIRS, DISPLAY_TOP_N_TINY
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector  
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.primitives.contrastive_pairs.diagnostics import run_control_vector_diagnostics, run_vector_quality_diagnostics, VectorQualityConfig
+from wisent.core.utils.infra_tools.errors import ControlVectorDiagnosticsError, NoTrainingResultError, VectorQualityTooLowError
+from wisent.core.utils.config_tools.constants import STEERABILITY_MIN_PAIRS, DISPLAY_TOP_N_TINY
 
 __all__ = [
     "WisentSteeringTrainer",
@@ -262,16 +262,16 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
 
     def save_result(self, output_dir, result=None):
         """Persist vectors, metadata, and the pair set to disk."""
-        from wisent.core.trainers._steering_trainer_helpers import save_result_impl
+        from wisent.core.weight_modification.trainers._steering_trainer_helpers import save_result_impl
         return save_result_impl(result, self._last_result, output_dir)
 
     def _resolve_layers(self, spec):
         """Convert a user-facing spec into canonical layer names."""
-        from wisent.core.trainers._steering_trainer_helpers import resolve_layers
+        from wisent.core.weight_modification.trainers._steering_trainer_helpers import resolve_layers
         return resolve_layers(self.model, spec)
 
     @staticmethod
     def _parse_layer_token(token):
         """Parse a token like "5", "10-20", "10..20" into a list."""
-        from wisent.core.trainers._steering_trainer_helpers import parse_layer_token
+        from wisent.core.weight_modification.trainers._steering_trainer_helpers import parse_layer_token
         return parse_layer_token(token)

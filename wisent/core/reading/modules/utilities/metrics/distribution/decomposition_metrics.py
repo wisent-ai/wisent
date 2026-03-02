@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED, ZERO_THRESHOLD,
     DECOMP_ADAPTIVE_K_MIN, DECOMP_ADAPTIVE_K_MAX,
     DECOMP_MIN_CLUSTER_SIZE_BASE, DECOMP_CLUSTER_SIZE_RATIO,

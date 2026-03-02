@@ -25,7 +25,7 @@ import torch
 from datasets import load_dataset
 from tqdm import tqdm
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     GEMMA_2B_BOS_FEATURES_PAPER,
     BOS_NUM_SAMPLES_DEFAULT,
     BOS_MIN_LENGTH_DEFAULT,

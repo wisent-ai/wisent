@@ -1,12 +1,12 @@
 """Search space generation for steering optimization methods."""
 from typing import Iterator
 
-from wisent.core.cli.optimize_steering.method_configs import (
+from wisent.core.utils.cli.optimize_steering.method_configs import (
     MethodConfig, CAAConfig, OstrzeConfig, MLPConfig,
     TECZAConfig, TETNOConfig, GROMConfig,
     STEERING_STRATEGIES,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     SEARCH_MLP_HIDDEN_DIMS, SEARCH_MLP_NUM_LAYERS, TECZA_SEARCH_NUM_DIRECTIONS,
     TECZA_SEARCH_RETAIN_WEIGHTS, SEARCH_STEERING_RANGES,
     TETNO_SEARCH_CONDITION_THRESHOLDS, TETNO_SEARCH_GATE_TEMPERATURES,

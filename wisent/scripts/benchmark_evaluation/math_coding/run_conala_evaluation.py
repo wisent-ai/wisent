@@ -16,13 +16,13 @@ from pathlib import Path
 from datasets import load_dataset
 from tqdm import tqdm
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.evaluators.benchmark_specific.conala_evaluator import (
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.reading.evaluators.benchmark_specific.conala_evaluator import (
     CoNaLaEvaluator,
     tokenize_for_bleu_eval,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
-from wisent.core.constants import SEPARATOR_WIDTH_STANDARD, JSON_INDENT
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 # Generation config for code generation

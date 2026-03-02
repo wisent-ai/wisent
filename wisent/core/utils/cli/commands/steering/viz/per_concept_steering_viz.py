@@ -7,7 +7,7 @@ import sys
 import json
 import base64
 from pathlib import Path
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     MLP_HIDDEN_DIM, CLASSIFIER_TEST_SIZE,
     VIZ_MLP_EPOCHS, CLASSIFIER_BATCH_SIZE,
     DEFAULT_SPLIT_RATIO, DATABASE_PAIR_LOADING_LIMIT,
@@ -25,15 +25,15 @@ def execute_per_concept_steering_viz(args):
     import random
     import pickle
     import numpy as np
-    from wisent.core.geometry.zwiad_with_concepts import (
+    from wisent.core.reading.modules.zwiad_with_concepts import (
         load_activations_from_database,
         load_pair_texts_from_database,
     )
-    from wisent.core.geometry.steering_visualizations import create_per_concept_steering_figure
-    from wisent.core.wisent import Wisent
-    from wisent.core.classifiers.models.logistic import LogisticClassifier
-    from wisent.core.classifiers.models.mlp import MLPClassifier
-    from wisent.core.classifiers.core.atoms import ClassifierTrainConfig
+    from wisent.core.reading.modules.steering_visualizations import create_per_concept_steering_figure
+    from wisent.core.primitives.model_interface.core.wisent import Wisent
+    from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
+    from wisent.core.reading.classifiers.models.mlp import MLPClassifier
+    from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
 
     print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("PER-CONCEPT STEERING VISUALIZATION WITH EVALUATION")
@@ -97,12 +97,12 @@ def execute_per_concept_steering_viz(args):
     adapter = wisent.adapter
 
     # Setup evaluator
-    from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.activations.core.atoms import LayerActivations
-    from wisent.core.adapters.base import SteeringConfig
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
 
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task).current
     print(f"Using evaluator: {evaluator.name}")
 

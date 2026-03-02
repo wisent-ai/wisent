@@ -7,7 +7,7 @@ Functions for assigning pairs to concepts and analyzing concept structure.
 import torch
 import numpy as np
 from typing import Dict, Any, List, Tuple
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     CONCEPT_MIN_SAMPLES, CONCEPT_SEPARABILITY_HIGH, CONCEPT_MIXED_PAIR_THRESHOLD,
     CONCEPT_DETECTION_DEFAULT_N, CHANCE_LEVEL_ACCURACY, CV_FOLDS,

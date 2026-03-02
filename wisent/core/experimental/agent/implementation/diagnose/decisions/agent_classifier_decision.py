@@ -12,14 +12,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'lm-harness-
 from .classifier_marketplace import ClassifierMarketplace, ClassifierListing, ClassifierCreationEstimate
 from ..budget import get_budget_manager, track_task_performance, ResourceType
 
-from wisent.core.constants import AGENT_RESOURCE_BUDGET_MINUTES, MAX_BENCHMARKS_SINGLE
+from wisent.core.utils.config_tools.constants import AGENT_RESOURCE_BUDGET_MINUTES, MAX_BENCHMARKS_SINGLE
 
-from wisent.core.agent.diagnose._agent_decision_types import (
+from wisent.core.experimental.agent.diagnose._agent_decision_types import (
     TaskAnalysis, ClassifierDecision, SingleClassifierDecision,
     ClassifierParams, SteeringParams, QualityResult, QualityControlledResponse,
 )
-from wisent.core.agent.diagnose._agent_decision_creation import ClassifierCreationMixin
-from wisent.core.agent.diagnose._agent_decision_pipeline import ClassifierPipelineMixin
+from wisent.core.experimental.agent.diagnose._agent_decision_creation import ClassifierCreationMixin
+from wisent.core.experimental.agent.diagnose._agent_decision_pipeline import ClassifierPipelineMixin
 
 class AgentClassifierDecisionSystem(ClassifierCreationMixin, ClassifierPipelineMixin):
     """

@@ -10,11 +10,11 @@ This script:
 
 import re
 from datasets import load_dataset
-from wisent.core.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.is_equiv import is_equiv
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.config import get_generate_kwargs
-from wisent.core.constants import DISPLAY_TRUNCATION_ERROR, SEPARATOR_WIDTH_STANDARD
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models.config import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_ERROR, SEPARATOR_WIDTH_STANDARD
 
 
 def extract_boxed_answer(text: str) -> str | None:

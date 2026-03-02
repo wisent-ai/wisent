@@ -12,7 +12,7 @@ from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 from wisent.extractors.lm_eval.lm_extractor_manifest import EXTRACTORS as _LM_MANIFEST
 from wisent.extractors.hf.hf_extractor_manifest import HF_EXTRACTORS as _HF_MANIFEST
-from wisent.core.errors import InvalidValueError, InvalidDataFormatError
+from wisent.core.utils.infra_tools.errors import InvalidValueError, InvalidDataFormatError
 
 __all__ = [
     "register_extractor",

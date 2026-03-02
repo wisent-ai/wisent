@@ -8,18 +8,18 @@ from typing import Any
 import torch
 import torch.nn as nn
 
-from wisent.core.models.layer import extract_token_ids
-from wisent.core.models.core.atoms import SteeringVector
-from wisent.core.prompts.core.atom import ChatMessage
-from wisent.core.errors import ChatTemplateNotAvailableError
-from wisent.core.constants import (
+from wisent.core.primitives.models.layer import extract_token_ids
+from wisent.core.primitives.models.core.atoms import SteeringVector
+from wisent.core.control.generation.prompts.core.atom import ChatMessage
+from wisent.core.utils.infra_tools.errors import ChatTemplateNotAvailableError
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH,
     STEERING_APP_DECAY_RATE,
     STEERING_APP_GAUSSIAN_CENTER,
     STEERING_APP_GAUSSIAN_WIDTH,
     STEERING_APP_INITIAL_TOKENS,
 )
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 
 def _apply_steering_object(
@@ -50,13 +50,13 @@ def _apply_steering_object(
         max_new_tokens: Expected max tokens for strategy weight calculation
 
     Example:
-        >>> from wisent.core.steering_methods.steering_object import BaseSteeringObject
+        >>> from wisent.core.control.steering_methods.steering_object import BaseSteeringObject
         >>> obj = BaseSteeringObject.load("steering.pt")
         >>> wm.apply_steering_object(obj, base_strength=1.0, steering_strategy="diminishing")
         >>> response = wm.generate([...])
         >>> wm.detach()
     """
-    from wisent.core.steering_methods.steering_object import BaseSteeringObject
+    from wisent.core.control.steering_methods.steering_object import BaseSteeringObject
 
     if max_new_tokens is None:
         max_new_tokens = get_generate_kwargs()["max_new_tokens"]
@@ -94,7 +94,7 @@ def _apply_steering_object(
     # Component-targeted steering: dispatch to submodule hooks
     component = getattr(steering_obj.metadata, "extraction_component", "residual_stream")
     if component != "residual_stream":
-        from wisent.core.models.component_steering import register_component_steering_hooks
+        from wisent.core.primitives.models.component_steering import register_component_steering_hooks
         def _strategy_fn(token_pos: int) -> float:
             return get_steering_weight(steering_strategy, token_pos, max_new_tokens)
         register_component_steering_hooks(

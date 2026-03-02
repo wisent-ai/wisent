@@ -10,7 +10,7 @@ from __future__ import annotations
 
 # Re-export geometry module functions that were previously imported here
 # (other modules import them via geometry_runner for backward compatibility)
-from wisent.core.geometry import (
+from wisent.core.reading.modules import (
     compute_signal_strength,
     compute_linear_probe_accuracy,
     compute_mlp_probe_accuracy,
@@ -67,14 +67,14 @@ from wisent.core.geometry import (
 )
 
 # Re-export classes from split part files
-from wisent.core.geometry._runner_parts._test_result import (
+from wisent.core.reading.modules._runner_parts._test_result import (
     GeometryTestResult,
 )
-from wisent.core.geometry._runner_parts._search_results import (
+from wisent.core.reading.modules._runner_parts._search_results import (
     GeometrySearchResults,
     SteeringEvaluationResult,
 )
-from wisent.core.geometry._runner_parts._types import (
+from wisent.core.reading.modules._runner_parts._types import (
     ZwiadResult,
     ZwiadLayerResult,
     ComponentAnalysisResult,
@@ -82,11 +82,11 @@ from wisent.core.geometry._runner_parts._types import (
     ConceptValidityResult,
     ConceptDecomposition,
 )
-from wisent.core.geometry._runner_parts import (
+from wisent.core.reading.modules._runner_parts import (
     TransformerComponent,
     ComponentActivationExtractor,
 )
-from wisent.core.geometry._runner_parts._runner_class import (
+from wisent.core.reading.modules._runner_parts._runner_class import (
     GeometryRunner,
 )
 

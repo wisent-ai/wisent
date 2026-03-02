@@ -9,18 +9,18 @@ from typing import Dict, Optional
 
 import torch
 
-from wisent.core.cli.optimize_steering.pipeline import _make_args
-from wisent.core.cli.optimize_steering.data.contrastive_pairs_data import (
+from wisent.core.utils.cli.optimize_steering.pipeline import _make_args
+from wisent.core.utils.cli.optimize_steering.data.contrastive_pairs_data import (
     execute_generate_pairs_from_task,
 )
-from wisent.core.cli.optimize_steering.data.activations_data import execute_get_activations
-from wisent.core.cli.optimize_steering.data.responses import execute_generate_responses
-from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
-from wisent.core.steering_methods.steering_object import (
+from wisent.core.utils.cli.optimize_steering.data.activations_data import execute_get_activations
+from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
+from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
+from wisent.core.control.steering_methods.steering_object import (
     load_steering_object,
     CAASteeringObject,
 )
-from wisent.core.constants import (TIKHONOV_REG, RL_NUM_EPISODES, RL_EPSILON,
+from wisent.core.utils.config_tools.constants import (TIKHONOV_REG, RL_NUM_EPISODES, RL_EPSILON,
     DEFAULT_STRENGTH,
     PRZELOM_EPSILON, SZLAK_INFERENCE_K, DEFAULT_LIMIT, CONTINUAL_LOOP_QUERY_LIMIT)
 
@@ -130,7 +130,7 @@ def run_rl_iteration(
         output_path = os.path.join(wd, "optimized.pt")
 
         if method_lower in ("przelom", "szlak"):
-            from wisent.core.cli.optimize_steering.transport.transport_rl import (
+            from wisent.core.utils.cli.optimize_steering.transport.transport_rl import (
                 execute_transport_rl,
             )
             rl_args = _make_args(
@@ -148,7 +148,7 @@ def run_rl_iteration(
             )
             result = execute_transport_rl(rl_args)
         else:
-            from wisent.core.cli.optimize_steering.transport.vector_rl import (
+            from wisent.core.utils.cli.optimize_steering.transport.vector_rl import (
                 run_vector_rl_loop,
             )
             rl_args = _make_args(
@@ -177,7 +177,7 @@ def run_rl_iteration(
 def select_method_for_task(task: str, model: str) -> str:
     """Select steering method for a task using zwiad recommendation."""
     try:
-        from wisent.core.steering_optimizer import run_auto_steering_optimization
+        from wisent.core.control.steering_optimizer import run_auto_steering_optimization
         result = run_auto_steering_optimization(
             model_name=model, task_name=task, limit=CONTINUAL_LOOP_QUERY_LIMIT,
             device=None, verbose=False,

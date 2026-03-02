@@ -3,10 +3,10 @@
 import logging
 from typing import Any, Dict
 
-from wisent.core.activations.activations import Activations
-from wisent.core.constants import CODE_CORRECTNESS_THRESHOLD, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, SPLIT_RATIO_FULL, CHANCE_LEVEL_ACCURACY
-from wisent.core.layer import Layer
-from wisent.core.models import get_generate_kwargs
+from wisent.core.primitives.model_interface.core.activations.activations import Activations
+from wisent.core.utils.config_tools.constants import CODE_CORRECTNESS_THRESHOLD, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, SPLIT_RATIO_FULL, CHANCE_LEVEL_ACCURACY
+from wisent.core.primitives.models.core.layer import Layer
+from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
 
 logger = logging.getLogger(__name__)

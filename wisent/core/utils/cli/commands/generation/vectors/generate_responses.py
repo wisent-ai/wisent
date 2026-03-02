@@ -5,9 +5,9 @@ import os
 import sys
 import torch
 
-from wisent.core.models import get_generate_kwargs
-from wisent.core.activations import ExtractionStrategy, extract_activation
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, JSON_INDENT, MIN_LOAD_LIMIT_QUESTIONS, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, JSON_INDENT, MIN_LOAD_LIMIT_QUESTIONS, DISPLAY_TRUNCATION_COMPACT
 
 
 def execute_generate_responses(args):
@@ -16,10 +16,10 @@ def execute_generate_responses(args):
 
     Generates model responses to questions from a task and saves them to a file.
     """
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.data_loaders.loaders.task_interface_loader import TaskInterfaceDataLoader
-    from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-    from wisent.core.steering_methods.steering_object import load_steering_object
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.utils.infra_tools.data.loaders.task_interface_loader import TaskInterfaceDataLoader
+    from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+    from wisent.core.control.steering_methods.steering_object import load_steering_object
 
     # Validate arguments - need either task or input_file
     input_file = getattr(args, 'input_file', None)
@@ -65,8 +65,8 @@ def execute_generate_responses(args):
 
     # If input file is provided, load from file
     if input_file and os.path.exists(input_file):
-        from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-        from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+        from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+        from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
         
         with open(input_file, 'r') as f:
             data = json.load(f)
@@ -89,7 +89,7 @@ def execute_generate_responses(args):
             pairs.append(pair)
         print(f"   ✓ Loaded {len(pairs)} question pairs from file\n")
     else:
-        from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
+        from wisent.core.utils.infra_tools.data.loaders.huggingface_loader import HuggingFaceDataLoader
         
         load_limit = max(args.num_questions * 2, MIN_LOAD_LIMIT_QUESTIONS)
         load_kwargs = dict(

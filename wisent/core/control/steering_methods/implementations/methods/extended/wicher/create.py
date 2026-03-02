@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import torch
 
-from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
+from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
 from .wicher_steering_object import WicherSteeringObject
-from wisent.core.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CONCEPT_DIM, MAX_CONCEPT_DIM, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, WICHER_CONCEPT_DIM
+from wisent.core.utils.config_tools.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CONCEPT_DIM, MAX_CONCEPT_DIM, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, WICHER_CONCEPT_DIM
 
 
 def _select_concept_dim(

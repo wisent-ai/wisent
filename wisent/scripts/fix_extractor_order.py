@@ -12,7 +12,7 @@ This script:
 import re
 from pathlib import Path
 
-from wisent.core.constants import SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
 
 
 def fix_extractor_order():

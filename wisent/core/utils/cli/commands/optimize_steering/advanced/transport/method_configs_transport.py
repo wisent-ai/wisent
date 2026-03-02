@@ -2,8 +2,8 @@
 from dataclasses import dataclass
 from typing import Dict, Any
 
-from wisent.core.cli.optimize_steering.method_configs import MethodConfig
-from wisent.core.constants import DEFAULT_LAYER, PRZELOM_EPSILON, SZLAK_INFERENCE_K, TIKHONOV_REG
+from wisent.core.utils.cli.optimize_steering.method_configs import MethodConfig
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, PRZELOM_EPSILON, SZLAK_INFERENCE_K, TIKHONOV_REG
 
 
 @dataclass

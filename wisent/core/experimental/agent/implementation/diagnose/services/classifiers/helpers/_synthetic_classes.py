@@ -11,10 +11,10 @@ import time
 from dataclasses import dataclass
 from typing import List, Tuple
 
-from wisent.core.classifier.classifier import ActivationClassifier
-from wisent.core.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_DEFAULT_PAIRS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, TRAIT_LABEL_MAX_LENGTH
-from wisent.core.models.config import get_generate_kwargs
-from wisent.core.errors import InsufficientDataError, MissingParameterError, ExecutionError
+from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_DEFAULT_PAIRS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, TRAIT_LABEL_MAX_LENGTH
+from wisent.core.primitives.models.config import get_generate_kwargs
+from wisent.core.utils.infra_tools.errors import InsufficientDataError, MissingParameterError, ExecutionError
 
 from ....core.agent.budget import ResourceType, calculate_max_tasks_for_time_budget, get_budget_manager
 from ....core.contrastive_pairs.generate_synthetically import SyntheticContrastivePairGenerator
@@ -139,7 +139,7 @@ class SyntheticClassifierFactory:
             logging.info(f"Extracting activations from {len(pair_set.pairs)} pairs...")
 
             # Create Layer object for activation extraction
-            from wisent.core.layer import Layer
+            from wisent.core.primitives.models.core.layer import Layer
 
             layer_obj = Layer(index=DEFAULT_LAYER, type="transformer")
             logging.info(f"Created Layer object: index={layer_obj.index}, type={layer_obj.type}")
@@ -196,13 +196,13 @@ class SyntheticClassifierFactory:
             logging.info("Starting classifier training...")
             try:
                 # Convert activations to the format expected by train_on_activations method
-                from wisent.core.activations.activations import Activations
+                from wisent.core.primitives.model_interface.core.activations.activations import Activations
 
                 # Convert torch tensors to Activations objects if needed
                 harmful_activations = []
                 harmless_activations = []
 
-                from wisent.core.layer import Layer
+                from wisent.core.primitives.models.core.layer import Layer
 
                 layer_obj = Layer(index=DEFAULT_LAYER, type="transformer")
 

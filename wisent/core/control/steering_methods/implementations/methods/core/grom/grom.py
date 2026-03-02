@@ -28,18 +28,18 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import (
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import (
     GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS, GROM_LEARNING_RATE,
     GROM_WARMUP_STEPS, GROM_BEHAVIOR_WEIGHT, GROM_RETAIN_WEIGHT,
     GROM_SPARSE_WEIGHT, GROM_SMOOTH_WEIGHT, GROM_INDEPENDENCE_WEIGHT,
     GROM_MAX_ALPHA, GROM_GATE_TEMPERATURE, GROM_MIN_COSINE_SIM,
     GROM_MAX_COSINE_SIM, GROM_ROUTER_TEMPERATURE,
 )
-from wisent.core.steering_methods.methods.grom._config import (
+from wisent.core.control.steering_methods.methods.grom._config import (
     GROMConfig, GatingNetwork, IntensityNetwork,
     DirectionWeightNetwork, GeometryAdaptation,
 )
@@ -233,41 +233,41 @@ class GROMMethod(BaseSteeringMethod):
     
     def train_grom(self, pair_set: ContrastivePairSet) -> "GROMResult":
         """Full GROM training with all components."""
-        from wisent.core.steering_methods.methods.grom.impl._optimization import train_grom_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._optimization import train_grom_impl
         return train_grom_impl(self, pair_set)
 
     def _analyze_and_adapt_geometry(self, *a, **kw):
-        from wisent.core.steering_methods.methods.grom.impl._training import _analyze_and_adapt_geometry_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._training import _analyze_and_adapt_geometry_impl
         return _analyze_and_adapt_geometry_impl(self, *a, **kw)
 
     def _initialize_directions(self, *a, **kw):
-        from wisent.core.steering_methods.methods.grom.impl._training import _initialize_directions_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._training import _initialize_directions_impl
         return _initialize_directions_impl(self, *a, **kw)
 
     def _prepare_data_tensors(self, *a, **kw):
-        from wisent.core.steering_methods.methods.grom.impl._training import _prepare_data_tensors_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._training import _prepare_data_tensors_impl
         return _prepare_data_tensors_impl(self, *a, **kw)
 
     def _find_sensor_layer(self, *a, **kw):
-        from wisent.core.steering_methods.methods.grom.impl._training import _find_sensor_layer_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._training import _find_sensor_layer_impl
         return _find_sensor_layer_impl(self, *a, **kw)
 
     def _joint_optimization(self, *a, **kw):
-        from wisent.core.steering_methods.methods.grom.impl._optimization import _joint_optimization_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._optimization import _joint_optimization_impl
         return _joint_optimization_impl(self, *a, **kw)
 
     def _compute_grom_loss(self, *a, **kw):
-        from wisent.core.steering_methods.methods.grom.impl._loss import _compute_grom_loss_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._loss import _compute_grom_loss_impl
         return _compute_grom_loss_impl(self, *a, **kw)
 
     def _apply_direction_constraints(self, directions):
-        from wisent.core.steering_methods.methods.grom.impl._loss import _apply_direction_constraints_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._loss import _apply_direction_constraints_impl
         return _apply_direction_constraints_impl(self, directions)
 
     def _collect_from_set(self, *a, **kw):
-        from wisent.core.steering_methods.methods.grom.impl._loss import _collect_from_set_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._loss import _collect_from_set_impl
         return _collect_from_set_impl(self, *a, **kw)
 
     def get_training_logs(self) -> List[Dict[str, Any]]:
-        from wisent.core.steering_methods.methods.grom.impl._loss import get_training_logs_impl
+        from wisent.core.control.steering_methods.methods.grom.impl._loss import get_training_logs_impl
         return get_training_logs_impl(self)

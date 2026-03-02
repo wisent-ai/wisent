@@ -12,7 +12,7 @@ from typing import Optional, Dict, List, Tuple, Any
 import numpy as np
 import torch
 from scipy import stats
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED, LINEARITY_TEST_GAP_THRESHOLD,
     LINEARITY_TEST_P_THRESHOLD, LINEARITY_TEST_RESIDUAL_THRESHOLD,
     LINEARITY_TEST_RAMSEY_THRESHOLD, LINEARITY_TEST_N_BOOTSTRAP,

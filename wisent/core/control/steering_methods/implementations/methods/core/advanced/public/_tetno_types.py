@@ -24,11 +24,11 @@ from dataclasses import dataclass, field
 import torch
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import (
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import (
     TETNO_CONDITION_THRESHOLD,
     TETNO_GATE_TEMPERATURE,
     TETNO_ENTROPY_FLOOR,

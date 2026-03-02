@@ -11,8 +11,8 @@ import torch
 import numpy as np
 from typing import Dict, Any
 
-from wisent.core.constants import NORM_EPS, MIN_CLOUD_POINTS
-from wisent.core.geometry.analysis.structure._cloud_metrics import (
+from wisent.core.utils.config_tools.constants import NORM_EPS, MIN_CLOUD_POINTS
+from wisent.core.reading.modules.analysis.structure._cloud_metrics import (
     compute_cloud_shape,
     compute_cone_fit,
     compute_sphere_fit,
@@ -112,7 +112,7 @@ def analyze_activation_structure(
     Analyzes individual cloud shapes, specific structure tests,
     and relationships between pos and neg clouds.
     """
-    from wisent.core.geometry.analysis.structure._cloud_metrics import (
+    from wisent.core.reading.modules.analysis.structure._cloud_metrics import (
         compute_topology_indicators,
     )
 

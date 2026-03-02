@@ -3,10 +3,10 @@ from __future__ import annotations
 import random
 from typing import Any
 from datasets import load_dataset
-from wisent.core.cli.cli_logger import setup_logger
-from wisent.core.constants import EXTRACTOR_DEFAULT_LIMIT, DISPLAY_TRUNCATION_LARGE
+from wisent.core.utils.cli.cli_logger import setup_logger
+from wisent.core.utils.config_tools.constants import EXTRACTOR_DEFAULT_LIMIT, DISPLAY_TRUNCATION_LARGE
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 __all__ = ["RefusalBenchExtractor"]

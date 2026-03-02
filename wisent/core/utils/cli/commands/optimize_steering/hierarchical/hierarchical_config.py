@@ -2,11 +2,11 @@
 from dataclasses import dataclass, field
 from typing import Optional, List, Dict, Iterator
 
-from wisent.core.cli.optimize_steering.method_configs import (
+from wisent.core.utils.cli.optimize_steering.method_configs import (
     MethodConfig, CAAConfig, OstrzeConfig, TECZAConfig, TETNOConfig, GROMConfig,
     NurtConfig, SzlakConfig, WicherConfig,
 )
-from wisent.core.constants import (LAYER_SWEEP_STRENGTH, TETNO_CONDITION_MARGIN,
+from wisent.core.utils.config_tools.constants import (LAYER_SWEEP_STRENGTH, TETNO_CONDITION_MARGIN,
     TETNO_GATE_TEMPERATURE, GROM_NUM_DIRECTIONS, GROM_ROUTER_HIDDEN_DIM,
     GROM_INTENSITY_HIDDEN_DIM, TECZA_NUM_DIRECTIONS, MLP_HIDDEN_DIM,
     MLP_NUM_LAYERS, DEFAULT_OPTIMIZATION_STEPS,

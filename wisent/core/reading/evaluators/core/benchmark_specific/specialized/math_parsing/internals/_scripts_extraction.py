@@ -2,11 +2,11 @@
 import re
 import multiprocessing
 from latex2sympy2_extended import latex2sympy
-from wisent.core.constants import DEFAULT_TIMEOUT_MATH_SCRIPT, ROUNDING_PRECISION
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_constants import (
+from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_MATH_SCRIPT, ROUNDING_PRECISION
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_constants import (
     STRIP_EXCEPTIONS,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_parsing import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_parsing import (
     numeric_equal, normalize_extracted_answer, strip_string,
 )
 

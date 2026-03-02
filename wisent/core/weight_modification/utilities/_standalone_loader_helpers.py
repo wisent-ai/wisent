@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, TETNO_GATE_SCALE_FACTOR, DEFAULT_LAYER_WEIGHT, STEERING_BASE_STRENGTH_DEFAULT
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, TETNO_GATE_SCALE_FACTOR, DEFAULT_LAYER_WEIGHT, STEERING_BASE_STRENGTH_DEFAULT
 
 
 class TETNOHooks:

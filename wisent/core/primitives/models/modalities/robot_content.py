@@ -4,9 +4,9 @@ from dataclasses import dataclass, field
 from typing import Union, List, Any, Dict
 import torch
 import numpy as np
-from wisent.core.modalities.text_content import Modality, ModalityContent, TextContent
-from wisent.core.modalities.media_content import AudioContent, ImageContent, VideoContent
-from wisent.core.errors import (
+from wisent.core.primitives.models.modalities.text_content import Modality, ModalityContent, TextContent
+from wisent.core.primitives.models.modalities.media_content import AudioContent, ImageContent, VideoContent
+from wisent.core.utils.infra_tools.errors import (
     NoStateDataError, NoActionDataError, EmptyTrajectoryError, MultimodalContentRequiredError,
 )
 

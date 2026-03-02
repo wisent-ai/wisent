@@ -14,10 +14,10 @@ import torch
 from tqdm import tqdm
 
 # Import Wisent functions
-from wisent.core.data_loaders.livecodebench_loader import LiveCodeBenchLoader
-from wisent.core.model import Model
-from wisent.core.models.config import get_generate_kwargs
-from wisent.core.constants import (
+from wisent.core.utils.infra_tools.data.livecodebench_loader import LiveCodeBenchLoader
+from wisent.core.primitives.models.core.wisent_model import Model
+from wisent.core.primitives.models.config import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LAYER,
     TEST_DEFAULT_LIMIT, JSON_INDENT,
 )

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 from enum import Enum
 
-from wisent.core.constants import JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 class ModelArchitecture(Enum):

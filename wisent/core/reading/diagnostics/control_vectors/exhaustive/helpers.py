@@ -8,7 +8,7 @@ from typing import Dict, List, Tuple, Any
 from ..geometry import StructureType
 from .types import ExhaustiveCombinationResult
 from wisent.core import constants as _C
-from wisent.core.constants import EXHAUSTIVE_SEARCH_TOP_K
+from wisent.core.utils.config_tools.constants import EXHAUSTIVE_SEARCH_TOP_K
 
 
 __all__ = ["analyze_combination_patterns", "generate_exhaustive_recommendation"]

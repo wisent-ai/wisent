@@ -4,7 +4,7 @@ from typing import Any, Dict, List, Optional
 import logging
 import torch
 
-from wisent.core.constants import DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH
 
 logger = logging.getLogger(__name__)
 

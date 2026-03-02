@@ -4,7 +4,7 @@ import json
 import os
 from typing import Any, Dict, List, Optional
 
-from wisent.core.constants import JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 class SteeringLoggingMixin:

@@ -1,7 +1,7 @@
 """Cluster 211 benchmarks by their zwiad geometry metrics."""
 import json
 from pathlib import Path
-from wisent.core.constants import (NEAR_ZERO_TOL, DEFAULT_RANDOM_SEED, KMEANS_N_INIT_DEFAULT,
+from wisent.core.utils.config_tools.constants import (NEAR_ZERO_TOL, DEFAULT_RANDOM_SEED, KMEANS_N_INIT_DEFAULT,
     ZWIAD_PCA_COMPONENTS, ZWIAD_KMEANS_PRIMARY_CLUSTERS, ZWIAD_KMEANS_SECONDARY_CLUSTERS,
     VIZ_DPI)
 

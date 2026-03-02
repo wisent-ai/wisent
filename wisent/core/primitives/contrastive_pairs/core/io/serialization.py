@@ -9,10 +9,10 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.constants import JSON_INDENT
-from wisent.core.errors import (
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.utils.infra_tools.errors import (
     DecodeError,
     UnknownTypeError,
     InvalidJSONStructureError,
@@ -248,6 +248,6 @@ def save_contrastive_pair_set(
 
 
 # Re-export from split module
-from wisent.core.contrastive_pairs.core.io._serialization_loader import (
+from wisent.core.primitives.contrastive_pairs.core.io._serialization_loader import (
     load_contrastive_pair_set,
 )

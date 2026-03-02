@@ -28,14 +28,14 @@ warnings.filterwarnings('ignore')
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
-from wisent.core.benchmark_registry import get_all_benchmarks
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.contrastive_pairs.diagnostics import (
+from wisent.core.utils.services.benchmarks.registry.benchmark_registry import get_all_benchmarks
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.primitives.contrastive_pairs.diagnostics import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
 
-from wisent.core.constants import DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PROGRESS_LOG_INTERVAL
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, GEOMETRY_DEFAULT_NUM_COMPONENTS, GEOMETRY_OPTIMIZATION_STEPS_DEFAULT, PROGRESS_LOG_INTERVAL
 
 from cluster_all_benchmarks_strategies import (
     compute_directions_for_strategy,

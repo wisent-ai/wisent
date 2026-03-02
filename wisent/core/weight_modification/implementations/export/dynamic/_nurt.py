@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.errors import MissingParameterError
-from wisent.core.constants import DEFAULT_STRENGTH, JSON_INDENT, NURT_NUM_INTEGRATION_STEPS, NURT_T_MAX
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, JSON_INDENT, NURT_NUM_INTEGRATION_STEPS, NURT_T_MAX
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
@@ -249,7 +249,7 @@ def load_nurt_model(
     if install_hooks and data_exists:
         flow_data = torch.load(data_path, map_location="cpu")
 
-        from wisent.core.steering_methods.methods.nurt.flow_network import (
+        from wisent.core.control.steering_methods.methods.nurt.flow_network import (
             FlowVelocityNetwork,
         )
         from wisent.core.weight_modification.directional.hooks.nurt import (

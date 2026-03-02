@@ -5,10 +5,10 @@ import json
 from typing import Dict, List, Optional, Tuple, Any
 from pathlib import Path
 import torch
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.activations.core.atoms import LayerName
-from wisent.core.steering_core._subspace_compression import UniversalBasis, compute_universal_basis
-from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_VARIANCE_THRESHOLD, TECZA_MAX_DIRECTIONS, MARGINAL_VARIANCE_THRESHOLD, SUBSPACE_ROBUSTNESS_NOISE_SCALE, CONCEPT_PCA_COMPONENTS, SUBSPACE_DIRECTION_PADDING
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerName
+from wisent.core.control.steering_core._subspace_compression import UniversalBasis, compute_universal_basis
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, DEFAULT_VARIANCE_THRESHOLD, TECZA_MAX_DIRECTIONS, MARGINAL_VARIANCE_THRESHOLD, SUBSPACE_ROBUSTNESS_NOISE_SCALE, CONCEPT_PCA_COMPONENTS, SUBSPACE_DIRECTION_PADDING
 
 VARIANCE_EXPLAINED_THRESHOLD = DEFAULT_VARIANCE_THRESHOLD
 

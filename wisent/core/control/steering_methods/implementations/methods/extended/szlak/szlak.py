@@ -14,11 +14,11 @@ from collections import defaultdict
 import torch
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import LOG_EPS, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import LOG_EPS, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K
 
 from .transport import (
     compute_attention_affinity_cost,

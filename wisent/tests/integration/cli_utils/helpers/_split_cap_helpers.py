@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_SPLIT_RATIO,
     SEPARATOR_WIDTH_REPORT,
     SPLIT_RATIO_HALF,

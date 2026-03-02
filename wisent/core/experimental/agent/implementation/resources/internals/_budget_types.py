@@ -11,7 +11,7 @@ from enum import Enum
 import time
 import math
 
-from wisent.core.errors import (
+from wisent.core.utils.infra_tools.errors import (
     ResourceEstimationError,
     BudgetCalculationError,
     UnknownTypeError,

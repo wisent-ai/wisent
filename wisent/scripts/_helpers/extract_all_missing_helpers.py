@@ -11,7 +11,7 @@ import time
 import psycopg2
 import torch
 
-from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, EXTRACTION_SMALL_BATCH_SIZE, PROGRESS_LOG_INTERVAL
+from wisent.core.utils.config_tools.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, EXTRACTION_SMALL_BATCH_SIZE, PROGRESS_LOG_INTERVAL
 
 from wisent.scripts.extract_all_missing import (
     hidden_states_to_bytes,

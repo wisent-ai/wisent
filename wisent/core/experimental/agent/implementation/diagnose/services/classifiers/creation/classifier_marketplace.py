@@ -8,7 +8,7 @@ from datetime import datetime
 import numpy as np
 
 from wisent.core.utils import resolve_default_device
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LAYER,
     MARKETPLACE_F1_WEIGHT, MARKETPLACE_ACCURACY_WEIGHT,
     MARKETPLACE_DATA_QUALITY_WEIGHT, MARKETPLACE_DATA_QUALITY_DENOM,

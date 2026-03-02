@@ -4,7 +4,7 @@ import sys
 import json
 import os
 
-from wisent.core.constants import PAIR_MIN_TEXT_LENGTH, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import PAIR_MIN_TEXT_LENGTH, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_MINI
 
 
 def execute_diagnose_pairs(args):

@@ -11,20 +11,20 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from wisent.core.adapters.base import (
+from wisent.core.primitives.model_interface.adapters.base import (
     AdapterError,
     InterventionPoint,
     SteeringConfig,
 )
-from wisent.core.modalities import (
+from wisent.core.primitives.models.modalities import (
     RobotState,
     RobotAction,
     RobotTrajectory,
 )
-from wisent.core.errors import UnknownTypeError
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.constants import TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
-from wisent.core.adapters.modalities._helpers.robotics_core import (
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.utils.config_tools.constants import TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
+from wisent.core.primitives.model_interface.adapters.modalities._helpers.robotics_core import (
     RoboticsSteeringConfig,
     InputType,
 )

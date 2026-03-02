@@ -17,8 +17,8 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N, SEPARATOR_WIDTH_WIDE, JSON_INDENT
-from wisent.core.geometry import GeometrySearchSpace
+from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, SEPARATOR_WIDTH_WIDE, JSON_INDENT
+from wisent.core.reading.modules import GeometrySearchSpace
 from wisent.examples.scripts._discovery_utils import (
     load_categorized_benchmarks,
     load_category_directions,

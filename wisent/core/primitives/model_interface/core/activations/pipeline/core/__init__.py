@@ -1,7 +1,7 @@
 """Core activation utilities."""
 
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.activations.core.optimal_extraction import (
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.model_interface.core.activations.core.optimal_extraction import (
     OptimalExtractionResult,
     PCADirectionResult,
     compute_signal_trajectory,

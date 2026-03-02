@@ -3,14 +3,14 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 
 from wisent.examples.scripts._pair_generators import (
     generate_hitler_pairs,
     generate_fascism_pairs,
 )
-from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N
+from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N
 from wisent.examples.scripts._pair_generators_harmful import (
     generate_harmful_ideology_pairs,
 )

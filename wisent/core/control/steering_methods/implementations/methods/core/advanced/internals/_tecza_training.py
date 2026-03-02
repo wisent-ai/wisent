@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import List, Dict, Any, Optional, Tuple
 import torch
 import torch.nn.functional as F
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.steering_methods.methods.advanced._tecza_types import TECZAConfig
-from wisent.core.constants import NORM_EPS, TECZA_SEPARATION_MARGIN, TECZA_PERTURBATION_SCALE, TECZA_UNIVERSAL_BASIS_NOISE, TECZA_LOGGING_INTERVAL
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
+from wisent.core.control.steering_methods.methods.advanced._tecza_types import TECZAConfig
+from wisent.core.utils.config_tools.constants import NORM_EPS, TECZA_SEPARATION_MARGIN, TECZA_PERTURBATION_SCALE, TECZA_UNIVERSAL_BASIS_NOISE, TECZA_LOGGING_INTERVAL
 
 class TECZATrainingMixin:
     """Mixin: direction training, initialization, and loss."""
@@ -31,7 +31,7 @@ class TECZATrainingMixin:
         
         # Determine num_directions (auto or fixed)
         if self.config.auto_num_directions:
-            from wisent.core.universal_subspace import compute_optimal_num_directions
+            from wisent.core.control.steering_core.core.universal_subspace import compute_optimal_num_directions
             num_dirs, auto_details = compute_optimal_num_directions(
                 pos_tensor, neg_tensor,
                 variance_threshold=self.config.variance_threshold,
@@ -115,7 +115,7 @@ class TECZATrainingMixin:
         # Try universal basis initialization first
         if self.config.use_universal_basis_init:
             try:
-                from wisent.core.universal_subspace import initialize_from_universal_basis
+                from wisent.core.control.steering_core.core.universal_subspace import initialize_from_universal_basis
                 directions = initialize_from_universal_basis(
                     hidden_dim=hidden_dim,
                     num_directions=num_dirs,

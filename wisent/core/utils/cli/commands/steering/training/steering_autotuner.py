@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Dict, List, Tuple, Any
 from datetime import datetime
 from wisent.core import constants as _C
-from wisent.core.constants import AUTOTUNER_STRENGTHS, AUTOTUNER_PROGRESS_INTERVAL
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import AUTOTUNER_STRENGTHS, AUTOTUNER_PROGRESS_INTERVAL
+from wisent.core.primitives.models.config import get_generate_kwargs
 
-from wisent.core.cli.steering_checkpoint import (
+from wisent.core.utils.cli.steering_checkpoint import (
     SteeringConfig, AutotuneCheckpoint, log_config_result, setup_checkpoint_paths
 )
 
@@ -28,10 +28,10 @@ def evaluate_steering_config(
     max_new_tokens: int | None = None,
 ) -> int:
     """Evaluate a steering config on test set, return number of truthful responses."""
-    from wisent.core.cli.steering_behavioral import extract_response
-    from wisent.core.cli.steering_viz_helpers import create_steering_method
-    from wisent.core.activations.core.atoms import LayerActivations
-    from wisent.core.adapters.base import SteeringConfig as AdapterSteeringConfig
+    from wisent.core.utils.cli.steering_behavioral import extract_response
+    from wisent.core.utils.cli.steering_viz_helpers import create_steering_method
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.adapters.base import SteeringConfig as AdapterSteeringConfig
 
     scales_dict = {f"layer.{layer}": strength for layer, strength in layer_strengths.items() if strength > 0}
     methods_dict = {}
@@ -169,13 +169,13 @@ def run_autotune_multilayer(
     behavioral_acts_by_layer, behavioral_labels, val_split, max_new_tokens
 ):
     """Run full autotune flow for multi-layer steering."""
-    from wisent.core.cli.steering_viz_helpers import (
+    from wisent.core.utils.cli.steering_viz_helpers import (
         select_steering_direction, create_steering_method, create_all_layer_steering
     )
-    from wisent.core.evaluators.rotator import EvaluatorRotator
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
 
     available_layers = sorted(pos_by_layer.keys())
 

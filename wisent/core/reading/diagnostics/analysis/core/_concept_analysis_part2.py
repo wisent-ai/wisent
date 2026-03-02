@@ -10,13 +10,13 @@ from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score, adjusted_rand_score
 from sklearn.decomposition import PCA
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, CONCEPT_K_MAX, CONCEPT_TOP_SINGULAR_VALUES,
     ICD_SINGLE_CONCEPT_THRESHOLD, ICD_MODERATE_THRESHOLD,
     SILHOUETTE_MULTI_CONCEPT_THRESHOLD, SILHOUETTE_WEAK_MULTI_THRESHOLD,
     CONCEPT_CORRELATION_HIGH, CONCEPT_CORRELATION_MODERATE,
 )
-from wisent.core.contrastive_pairs.diagnostics.analysis.concept_analysis import (
+from wisent.core.primitives.contrastive_pairs.diagnostics.analysis.concept_analysis import (
     ConceptAnalysisResult,
     compute_icd,
     compute_eigenvalue_spectrum,

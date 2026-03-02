@@ -10,7 +10,7 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics import silhouette_score
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
     LINEARITY_PCA_COMPONENTS, LINEARITY_N_BOOTSTRAP, STAT_ALPHA,
     CV_FOLDS, DIP_TEST_SIMULATIONS, DIRECTION_N_SPLITS, CV_FOLDS,

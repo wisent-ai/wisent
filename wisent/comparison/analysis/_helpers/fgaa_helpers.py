@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 import torch
-from wisent.core.constants import NORM_EPS, FGAA_DENSITY_THRESHOLD, FGAA_TOP_K_POSITIVE, FGAA_TOP_K_NEGATIVE, COMPARISON_NUM_PAIRS, DISPLAY_TOP_N_MEDIUM, JSON_INDENT
+from wisent.core.utils.config_tools.constants import NORM_EPS, FGAA_DENSITY_THRESHOLD, FGAA_TOP_K_POSITIVE, FGAA_TOP_K_NEGATIVE, COMPARISON_NUM_PAIRS, DISPLAY_TOP_N_MEDIUM, JSON_INDENT
 
 __all__ = [
     "compute_v_target",

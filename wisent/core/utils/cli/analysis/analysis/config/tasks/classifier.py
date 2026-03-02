@@ -5,9 +5,9 @@ import json
 import numpy as np
 import torch
 
-from wisent.core.models import get_generate_kwargs
-from wisent.core.errors import UnknownTypeError
-from wisent.core.constants import DEFAULT_CLASSIFIER_LR, JSON_INDENT, QUALITY_THRESHOLD, MAX_REGENERATION_ATTEMPTS, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, PROGRESS_LOG_INTERVAL_10
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.utils.config_tools.constants import DEFAULT_CLASSIFIER_LR, JSON_INDENT, QUALITY_THRESHOLD, MAX_REGENERATION_ATTEMPTS, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, PROGRESS_LOG_INTERVAL_10
 
 
 def collect_activations(args, model, pair_set, ActivationCollector, ExtractionStrategy):
@@ -52,7 +52,7 @@ def collect_activations(args, model, pair_set, ActivationCollector, ExtractionSt
 
 def train_steering_vector(args, activations):
     """Train and save steering vector."""
-    from wisent.core.steering_methods.methods.caa import CAAMethod
+    from wisent.core.control.steering_methods.methods.caa import CAAMethod
 
     print(f"\n🎯 Training steering vector using {args.steering_method} method...")
 
@@ -118,16 +118,16 @@ def train_classifier(args, activations, LogisticClassifier, MLPClassifier, Class
 
 def evaluate_classifier(args, model, classifier, test_pairs, activations, task_name, eval_task_name, DetectionHandler, DetectionAction, evaluate_quality):
     """Evaluate classifier on real model generations."""
-    from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
     print(f"\n🎯 Evaluating classifier on real model generations...")
     eval_task_for_evaluator = eval_task_name if eval_task_name else task_name
 
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=eval_task_for_evaluator, autoload=False)
 
     detection_handler = _setup_detection_handler(args, DetectionHandler, DetectionAction)
@@ -175,8 +175,8 @@ def _setup_detection_handler(args, DetectionHandler, DetectionAction):
 
 def _evaluate_single_generation(pair, model, classifier, evaluator, gen_collector, activations, detection_handler, detection_stats, enable_quality_check, quality_threshold, evaluate_quality, task_name, args):
     """Evaluate a single generation."""
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
     question = pair.prompt
     expected = pair.positive_response.model_response

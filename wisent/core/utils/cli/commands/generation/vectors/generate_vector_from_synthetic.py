@@ -8,8 +8,8 @@ import hashlib
 import re
 from argparse import Namespace
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import DISPLAY_TRUNCATION_SHORT, HASH_DISPLAY_LENGTH, SEPARATOR_WIDTH_STANDARD
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_SHORT, HASH_DISPLAY_LENGTH, SEPARATOR_WIDTH_STANDARD
 from ..pairs.generate_pairs import execute_generate_pairs
 from ...analysis.geometry.get_activations import execute_get_activations
 from ...steering.core.create_steering_object import execute_create_steering_object

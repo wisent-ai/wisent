@@ -1,16 +1,16 @@
 from __future__ import annotations
 
 from typing import Any
-from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.utils.cli.cli_logger import setup_logger
 import requests
 import zipfile
 import json
 import io
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.constants import HTTP_TIMEOUT_LONG
-from wisent.core.errors import InvalidValueError
+from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_LONG
+from wisent.core.utils.infra_tools.errors import InvalidValueError
 
 log = setup_logger(__name__)
 

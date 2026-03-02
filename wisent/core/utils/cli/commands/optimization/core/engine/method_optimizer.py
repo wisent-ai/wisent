@@ -20,26 +20,26 @@ from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Type
 
 import torch
 
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 from wisent.core.utils import resolve_default_device
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.steering_methods.registry import SteeringMethodRegistry
-from wisent.core.constants import SEPARATOR_WIDTH_STANDARD
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
 
-from wisent.core.cli.optimization.core.method_optimizer_config import (
+from wisent.core.utils.cli.optimization.core.method_optimizer_config import (
     OptimizationConfig, OptimizationResult, OptimizationSummary,
 )
-from wisent.core.cli.optimization.core.method_optimizer_search import (
+from wisent.core.utils.cli.optimization.core.method_optimizer_search import (
     generate_search_space, _get_full_layers,
     _get_method_param_ranges, _generate_param_combinations,
     _determine_activation_layers, _log, _load_evidence_reductions,
 )
-from wisent.core.cli.optimization.core.method_optimizer_eval import (
+from wisent.core.utils.cli.optimization.core.method_optimizer_eval import (
     collect_activations, train_method, _resolve_params,
     create_steering_plan, evaluate, evaluate_baseline,
 )

@@ -5,11 +5,11 @@ from typing import Counter as T_Counter
 from typing import Dict as T_Dict
 from typing import Tuple as T_Tuple
 from typing import Union as T_Union
-from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (
     DEF_ABS_TOL, DEF_N_PROC, DEF_PERCENT_REL_TOL, DEF_REL_TOL,
     DEF_TIMEOUT, is_querying4set,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_math import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_math import (
     EvaluatorMath,
 )
 
@@ -74,7 +74,7 @@ class EvaluatorMathBatch(EvaluatorMath):
         pred_answers: Sequence[str],
         querying4set_flags: Sequence[bool],
     ) -> T_Dict[T_Tuple[str, str, bool], bool]:
-        from wisent.core.evaluators.benchmark_specific.math_parsing.core import (
+        from wisent.core.reading.evaluators.benchmark_specific.math_parsing.core import (
             batch_exec,
         )
         corrects: List[bool] = batch_exec(
@@ -141,7 +141,7 @@ class EvaluatorMathBatch(EvaluatorMath):
 
     def batch_extract_ans(self, resps: List[str]) -> List[str]:
         """Extract answers from a batch of responses."""
-        from wisent.core.evaluators.benchmark_specific.math_parsing.core import (
+        from wisent.core.reading.evaluators.benchmark_specific.math_parsing.core import (
             batch_exec,
         )
         answers: List[str] = batch_exec(

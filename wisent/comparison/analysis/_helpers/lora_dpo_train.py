@@ -15,7 +15,7 @@ from datasets import Dataset
 from peft import LoraConfig, TaskType, get_peft_model
 from trl import DPOTrainer, DPOConfig
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     LORA_DEFAULT_DROPOUT,
     DPO_DEFAULT_BETA,
     COMPARISON_DEFAULT_BATCH_SIZE,

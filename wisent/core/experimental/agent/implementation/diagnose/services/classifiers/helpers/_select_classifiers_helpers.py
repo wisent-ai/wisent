@@ -2,7 +2,7 @@
 
 from typing import List, Dict, Any, Optional
 
-from wisent.core.constants import CLASSIFIER_MIN_PERFORMANCE_SCORE, DEFAULT_MAX_CLASSIFIERS_SELECT, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import CLASSIFIER_MIN_PERFORMANCE_SCORE, DEFAULT_MAX_CLASSIFIERS_SELECT, DISPLAY_TOP_N_TINY
 
 
 class ClassifierSelectorHelpersMixin:

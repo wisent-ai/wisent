@@ -5,8 +5,8 @@ Extracted from test_livemathbench_evaluator.py to keep file under 300 lines.
 
 import pytest
 from scipy.stats import hypergeom
-from wisent.core.constants import ZERO_THRESHOLD
-from wisent.core.evaluators.benchmark_specific.livemathbench_evaluator import (
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
+from wisent.core.reading.evaluators.benchmark_specific.livemathbench_evaluator import (
     LiveMathBenchEvaluator,
     compute_g_pass_at_k,
 )

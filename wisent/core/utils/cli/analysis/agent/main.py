@@ -3,8 +3,8 @@
 import sys
 import time
 
-from wisent.core.errors import UnknownTypeError
-from wisent.core.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, DEFAULT_STRENGTH
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.utils.config_tools.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, DEFAULT_STRENGTH
 
 
 def execute_agent(args):
@@ -39,8 +39,8 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
     4. If incorrect: uses steering to train control vector, creates new response, evaluates until success
     5. If correct: returns the response
     """
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.cli.agent import (
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.utils.cli.agent import (
         generate_synthetic_pairs,
         train_classifier_on_pairs,
         evaluate_response_with_classifier,

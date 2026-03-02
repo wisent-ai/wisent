@@ -16,8 +16,8 @@ from wisent.cli_utils.cli_prepare_dataset import (
     _load_single_task,
     PrepState,
 )
-from wisent.core.model import Model
-from wisent.core.constants import DEFAULT_SPLIT_RATIO
+from wisent.core.primitives.models.core.wisent_model import Model
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO
 from wisent.tests.cli_utils._load_single_helpers import (
     test_load_single_task_with_shots,
     test_load_single_task_different_benchmarks,

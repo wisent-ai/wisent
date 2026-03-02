@@ -3,10 +3,10 @@
 
 import torch
 import numpy as np
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 
@@ -185,7 +185,7 @@ print(f"  MC_BALANCED avg vs CHAT_LAST avg: {cos_sim:.4f}")
 
 # Test steering accuracy using the averaged directions
 from sklearn.linear_model import LogisticRegression
-from wisent.core.constants import NORM_EPS
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 # For MC_BALANCED: project all samples onto its mean direction
 mc_proj = (raw_directions @ mean_raw_direction_norm).numpy()

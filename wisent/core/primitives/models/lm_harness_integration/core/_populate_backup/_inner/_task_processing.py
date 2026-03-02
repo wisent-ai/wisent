@@ -6,9 +6,9 @@ Split from populate_tasks_backup.py to meet 300-line limit.
 
 import random
 from typing import Dict, Any, List, Optional
-from wisent.core.constants import DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
 
-from wisent.core.lm_harness_integration._populate_backup._part3 import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup._part3 import (
     expand_group_task,
     get_evaluation_method,
     get_category,

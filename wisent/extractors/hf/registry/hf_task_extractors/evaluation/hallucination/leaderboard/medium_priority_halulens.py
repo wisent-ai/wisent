@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 from typing import Any
-from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.utils.cli.cli_logger import setup_logger
 import random
 import re
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     CONTEXT_MAX_LENGTH, DEFAULT_RANDOM_SEED, DATABASE_PAIR_LOADING_LIMIT,
     DISPLAY_TOP_N_TINY, HALULENS_MIN_CONTENT_LENGTH,
     HALULENS_SENT_LEN_MIN, HALULENS_SENT_LEN_MAX,

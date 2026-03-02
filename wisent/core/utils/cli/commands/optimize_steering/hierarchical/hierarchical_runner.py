@@ -5,14 +5,14 @@ import tempfile
 import time
 from typing import Optional, List, Dict
 
-from wisent.core.cli.optimize_steering.hierarchical_config import (
+from wisent.core.utils.cli.optimize_steering.hierarchical_config import (
     HierarchicalResult, HierarchicalConfig,
     count_hierarchical_configs, _create_config_for_layer_sweep,
     _create_configs_for_stage3,
 )
-from wisent.core.cli.optimize_steering.pipeline import run_pipeline, OptimizationResult
-from wisent.core.cli.optimize_steering.method_configs import MethodConfig
-from wisent.core.constants import DEFAULT_LIMIT, DISPLAY_TOP_N_TINY, JSON_INDENT, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.cli.optimize_steering.pipeline import run_pipeline, OptimizationResult
+from wisent.core.utils.cli.optimize_steering.method_configs import MethodConfig
+from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, DISPLAY_TOP_N_TINY, JSON_INDENT, SEPARATOR_WIDTH_WIDE
 
 
 def run_hierarchical_optimization(

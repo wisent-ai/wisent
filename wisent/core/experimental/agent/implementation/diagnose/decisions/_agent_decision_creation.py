@@ -1,9 +1,9 @@
 """Classifier creation and execution mixin."""
 from typing import List, Dict, Any, Optional
 import time
-from wisent.core.agent.diagnose._agent_decision_types import (
+from wisent.core.experimental.agent.diagnose._agent_decision_types import (
     SingleClassifierDecision, ClassifierDecision, ClassifierParams)
-from wisent.core.constants import AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET, SECONDS_PER_MINUTE
 
 class ClassifierCreationMixin:
     """Mixin providing classifier creation and execution methods."""

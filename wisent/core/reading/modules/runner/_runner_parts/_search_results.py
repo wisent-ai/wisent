@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass, field
 from typing import Dict, List, Any
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     BLEND_DEFAULT,
     DEFAULT_RANDOM_SEED,
     DEFAULT_SCALE,
@@ -19,8 +19,8 @@ from wisent.core.constants import (
     MULTI_DIR_SATURATION_K_DEFAULT,
     SEARCH_RESULTS_TOP_N,
 )
-from wisent.core.geometry import GeometrySearchConfig
-from wisent.core.geometry._runner_parts._test_result import GeometryTestResult
+from wisent.core.reading.modules import GeometrySearchConfig
+from wisent.core.reading.modules._runner_parts._test_result import GeometryTestResult
 
 
 @dataclass

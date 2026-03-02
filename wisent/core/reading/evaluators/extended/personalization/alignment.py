@@ -15,8 +15,8 @@ if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
     import torch
 
-from wisent.core.errors import MissingParameterError
-from wisent.core.constants import SCORE_SCALE_100, CONTRASTIVE_SCORE_OFFSET, CONTRASTIVE_SCORE_RANGE
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.utils.config_tools.constants import SCORE_SCALE_100, CONTRASTIVE_SCORE_OFFSET, CONTRASTIVE_SCORE_RANGE
 
 __all__ = ["evaluate_alignment", "estimate_alignment"]
 

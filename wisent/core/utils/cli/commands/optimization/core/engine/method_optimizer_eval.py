@@ -7,15 +7,15 @@ from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import torch
 
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-from wisent.core.steering_methods.registry import SteeringMethodRegistry
-from wisent.core.constants import LAYER_RANGE_SMALL_OFFSET, LAYER_RANGE_LARGE_OFFSET
-from wisent.core.cli.optimization.core.method_optimizer_config import (
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
+from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.utils.config_tools.constants import LAYER_RANGE_SMALL_OFFSET, LAYER_RANGE_LARGE_OFFSET
+from wisent.core.utils.cli.optimization.core.method_optimizer_config import (
     OptimizationConfig, OptimizationResult, OptimizationSummary,
 )
 

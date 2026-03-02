@@ -11,13 +11,13 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 import torch
 
-from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
     GeometryAnalysisResult,
     StructureType,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     PREFLIGHT_COMPAT_DEFAULT, PREFLIGHT_COMPAT_EXCELLENT, PREFLIGHT_COMPAT_GOOD,
     PREFLIGHT_COMPAT_ADAPTIVE, PREFLIGHT_COMPAT_POOR, PREFLIGHT_COMPAT_NEUTRAL,
     PREFLIGHT_COMPAT_THRESHOLD, PREFLIGHT_LINEAR_HIGH, PREFLIGHT_LINEAR_VERY_HIGH,
@@ -234,7 +234,7 @@ def check_method_compatibility(
         else:
             compat_score = PREFLIGHT_COMPAT_GOOD
     else:
-        from wisent.core.steering_methods._helpers.preflight_helpers import complete_method_compatibility_check
+        from wisent.core.control.steering_methods._helpers.preflight_helpers import complete_method_compatibility_check
         return complete_method_compatibility_check(method, best_structure, structure_scores, warnings, STRUCTURE_TO_METHODS)
     is_compatible = compat_score >= PREFLIGHT_COMPAT_THRESHOLD
     return is_compatible, compat_score, warnings

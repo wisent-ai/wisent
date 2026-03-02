@@ -1,11 +1,11 @@
 """SQuAD v2 and DROP benchmark extractors."""
 from __future__ import annotations
 from typing import Any
-from wisent.core.cli.cli_logger import setup_logger
-from wisent.core.constants import EXTRACTOR_DEFAULT_LIMIT, CONTEXT_MAX_LENGTH
+from wisent.core.utils.cli.cli_logger import setup_logger
+from wisent.core.utils.config_tools.constants import EXTRACTOR_DEFAULT_LIMIT, CONTEXT_MAX_LENGTH
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 log = setup_logger(__name__)

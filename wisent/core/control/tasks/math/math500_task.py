@@ -3,8 +3,8 @@ MATH-500 task implementation for task-agnostic architecture.
 """
 
 from typing import Dict, Any, List, Optional
-from wisent.core.tasks.base.task_interface import TaskInterface
-from wisent.core.benchmarks import GSM8KExtractor
+from wisent.core.control.tasks.base.task_interface import TaskInterface
+from wisent.core.utils.services.benchmarks import GSM8KExtractor
 import datasets
 
 

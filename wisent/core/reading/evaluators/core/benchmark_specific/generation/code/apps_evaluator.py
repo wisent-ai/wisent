@@ -17,8 +17,8 @@ import json
 import re
 from typing import Any
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator
 
 # Import shared utilities from extractor
 from wisent.extractors.hf.hf_task_extractors.apps import AppsExtractor

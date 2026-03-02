@@ -17,7 +17,7 @@ current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, current_dir)
 
 from only_benchmarks import CORE_BENCHMARKS, get_task_samples_for_analysis
-from wisent.core.constants import JSON_INDENT, LM_HARNESS_NUM_SAMPLES_DEFAULT, STEERABILITY_MIN_PAIRS
+from wisent.core.utils.config_tools.constants import JSON_INDENT, LM_HARNESS_NUM_SAMPLES_DEFAULT, STEERABILITY_MIN_PAIRS
 
 def test_failed_benchmark(benchmark_name: str, benchmark_config: Dict) -> Dict:
     """Test a single failed benchmark with the fixes."""

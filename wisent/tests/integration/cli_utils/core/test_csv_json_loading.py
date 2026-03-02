@@ -19,8 +19,8 @@ from wisent.cli_utils.cli_prepare_dataset import (
     PrepState,
     Caps
 )
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, SPLIT_RATIO_70
-from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, SPLIT_RATIO_70
+from wisent.core.primitives.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
 
 # Import helpers and additional tests from extracted module
 from wisent.tests.cli_utils._csv_json_helpers import (

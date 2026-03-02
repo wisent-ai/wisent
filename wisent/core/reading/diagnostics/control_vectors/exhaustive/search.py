@@ -9,7 +9,7 @@ from typing import Dict, List, Optional, Tuple, Callable
 
 import torch
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LAYER,
     DEFAULT_LIMIT,
     DEFAULT_SCORE,

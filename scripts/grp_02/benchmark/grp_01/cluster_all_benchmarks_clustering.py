@@ -8,7 +8,7 @@ import torch
 import numpy as np
 from typing import List, Dict
 from sklearn.cluster import AgglomerativeClustering
-from wisent.core.constants import NORM_EPS
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 def find_optimal_clusters(sim_matrix: np.ndarray, names: List[str], max_clusters: int = 10):
     dist_matrix = 1 - sim_matrix

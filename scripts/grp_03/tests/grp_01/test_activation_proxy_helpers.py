@@ -14,7 +14,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 import torch
 import torch.nn as nn
-from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, PROBE_TRAINING_LR
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, PROBE_TRAINING_LR
 
 # Database configuration
 DB_CONFIG = {

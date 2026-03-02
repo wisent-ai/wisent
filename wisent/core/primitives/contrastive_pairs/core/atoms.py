@@ -5,7 +5,7 @@ from abc import ABC, abstractmethod
 from typing import Iterable, TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from wisent.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 
 __all__ = [
     "AtomResponse",

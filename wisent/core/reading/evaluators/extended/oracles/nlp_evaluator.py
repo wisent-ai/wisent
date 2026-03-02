@@ -1,9 +1,9 @@
 import re
 from typing import Any, Mapping
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.constants import COMPARE_TOL, NLI_MARGIN, NLI_ENT_MIN, EMB_DELTA_MIN, EMB_MATCH_MIN, NLI_ENTAILMENT_THRESHOLD, NLP_EVAL_CONFIDENCE_BASE, NLI_REVERSE_ENTAILMENT_THRESHOLD, NLI_CONFIDENCE_BASE_WEIGHT, NLI_CONFIDENCE_SCALE_WEIGHT, NLP_EMB_CONFIDENCE_CAP, NLP_EMB_CONFIDENCE_BASE, ROUNDING_PRECISION
-from wisent.core.evaluators.oracles._helpers._nlp_evaluator_helpers import (
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, NLI_MARGIN, NLI_ENT_MIN, EMB_DELTA_MIN, EMB_MATCH_MIN, NLI_ENTAILMENT_THRESHOLD, NLP_EVAL_CONFIDENCE_BASE, NLI_REVERSE_ENTAILMENT_THRESHOLD, NLI_CONFIDENCE_BASE_WEIGHT, NLI_CONFIDENCE_SCALE_WEIGHT, NLP_EMB_CONFIDENCE_CAP, NLP_EMB_CONFIDENCE_BASE, ROUNDING_PRECISION
+from wisent.core.reading.evaluators.oracles._helpers._nlp_evaluator_helpers import (
     NLPEvaluatorHelpersMixin,
 )
 

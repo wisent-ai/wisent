@@ -5,7 +5,7 @@ import sys
 sys.path.insert(0, '/Users/lukaszbartoszcze/Documents/CodingProjects/Wisent/backends/wisent-open-source')
 
 from lm_eval.tasks import TaskManager
-from wisent.core.constants import DISPLAY_TOP_N_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_MEDIUM
 
 def main():
     tm = TaskManager()

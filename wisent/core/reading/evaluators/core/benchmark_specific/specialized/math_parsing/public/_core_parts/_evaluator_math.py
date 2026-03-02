@@ -8,14 +8,14 @@ from typing import Union as T_Union
 from sympy import Expr, Matrix
 from sympy.parsing.latex.errors import LaTeXParsingError
 from sympy.parsing.sympy_parser import parse_expr
-from wisent.core.errors import InvalidDataFormatError, InvalidValueError
-from wisent.core.constants import MATH_EVAL_N_CHECKS
-from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (
+from wisent.core.utils.infra_tools.errors import InvalidDataFormatError, InvalidValueError
+from wisent.core.utils.config_tools.constants import MATH_EVAL_N_CHECKS
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (
     DEF_ABS_TOL, DEF_PERCENT_REL_TOL, DEF_REL_TOL,
     has_non_ascii, is_querying4set, is_set,
     latex2sympy_fix, latex2sympy_interval, norm_str2weekday, parse,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_math_helpers import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_math_helpers import (
     EvaluatorMathHelpersMixin,
 )
 
@@ -53,7 +53,7 @@ class EvaluatorMath(EvaluatorMathHelpersMixin):
         self.ascii_only: bool = ascii_only
 
     def extract_ans(self, resp_str: str) -> str:
-        from wisent.core.evaluators.benchmark_specific.math_parsing.core import (
+        from wisent.core.reading.evaluators.benchmark_specific.math_parsing.core import (
             EvaluatorBase,
         )
         raw_ans: str = EvaluatorBase().extract_ans(resp_str)
@@ -222,7 +222,7 @@ class EvaluatorMath(EvaluatorMathHelpersMixin):
 
     def norm_ans_str(self, ans: str) -> str:
         """Normalize answer string for all kinds of answers."""
-        from wisent.core.evaluators.benchmark_specific.math_parsing.core import (
+        from wisent.core.reading.evaluators.benchmark_specific.math_parsing.core import (
             norm_str2bool,
         )
         ans = str(ans)

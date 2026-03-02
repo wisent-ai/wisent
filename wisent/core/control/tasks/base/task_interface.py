@@ -8,8 +8,8 @@ without depending on lm-evaluation-harness.
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Type
 
-from wisent.core.benchmarks import BenchmarkExtractor
-from wisent.core.errors import TaskNotFoundError
+from wisent.core.utils.services.benchmarks import BenchmarkExtractor
+from wisent.core.utils.infra_tools.errors import TaskNotFoundError
 
 
 class TaskInterface(ABC):

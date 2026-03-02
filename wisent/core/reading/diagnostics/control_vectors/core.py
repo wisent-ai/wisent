@@ -8,9 +8,9 @@ from typing import Mapping
 
 import torch
 
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap
 from ..base import DiagnosticsIssue, DiagnosticsReport, MetricReport
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, MIN_NORM_THRESHOLD, NEAR_ZERO_TOL,
     CONTROL_VECTOR_MAX_ZERO_FRACTION,
 )

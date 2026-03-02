@@ -2,11 +2,11 @@
 import time
 import logging
 from typing import Dict, List, Optional, Any
-from wisent.core.errors import BudgetCalculationError, NoBenchmarkDataError, ResourceEstimationError
-from wisent.core.agent.resources._budget_types import (
+from wisent.core.utils.infra_tools.errors import BudgetCalculationError, NoBenchmarkDataError, ResourceEstimationError
+from wisent.core.experimental.agent.resources._budget_types import (
     ResourceType, ResourceBudget, TaskEstimate,
 )
-from wisent.core.constants import BUDGET_EMA_ALPHA, BUDGET_DEFAULT_QUANTITY, AGENT_RESOURCE_BUDGET_MINUTES, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import BUDGET_EMA_ALPHA, BUDGET_DEFAULT_QUANTITY, AGENT_RESOURCE_BUDGET_MINUTES, SECONDS_PER_MINUTE
 
 logger = logging.getLogger(__name__)
 

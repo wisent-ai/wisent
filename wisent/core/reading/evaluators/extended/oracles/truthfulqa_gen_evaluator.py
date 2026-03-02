@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import Any, List, Mapping
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.constants import TRUTHFUL_MIN_SIMILARITY, TRUTHFUL_MIN_MARGIN, EVAL_CONFIDENCE_BASE, ROUNDING_PRECISION_FINE
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.config_tools.constants import TRUTHFUL_MIN_SIMILARITY, TRUTHFUL_MIN_MARGIN, EVAL_CONFIDENCE_BASE, ROUNDING_PRECISION_FINE
 
 __all__ = ["TruthfulQAGenEvaluator"]
 

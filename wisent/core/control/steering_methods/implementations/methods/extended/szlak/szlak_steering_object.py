@@ -12,11 +12,11 @@ from typing import Any, Dict, Optional
 import torch
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.steering_object import (
+from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
-from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, SZLAK_INFERENCE_K
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_STRENGTH, SZLAK_INFERENCE_K
 
 __all__ = ["SzlakSteeringObject"]
 

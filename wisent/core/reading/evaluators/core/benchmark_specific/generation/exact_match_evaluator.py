@@ -7,7 +7,7 @@ Used for tasks like GSM8K, TriviaQA where the answer must match exactly
 from typing import Any
 import logging
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 
 logger = logging.getLogger(__name__)
 

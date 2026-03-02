@@ -3,12 +3,12 @@ import json
 import os
 from pathlib import Path
 
-from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.config_tools.constants import JSON_INDENT, SEPARATOR_WIDTH_WIDE
 
 
 def run_evaluation(args, wisent_model, all_layer_vectors, train_pairs, eval_pairs, benchmarks_used, checkpoint_dir):
     """Run Step 5: pooled evaluation and generate summary."""
-    from wisent.core.cli.analysis.training.train_unified_goodness import (
+    from wisent.core.utils.cli.analysis.training.train_unified_goodness import (
         save_checkpoint, load_checkpoint, clear_checkpoints,
     )
     # =========================================================================
@@ -24,8 +24,8 @@ def run_evaluation(args, wisent_model, all_layer_vectors, train_pairs, eval_pair
         print(f"   Testing steering scales: {steering_scales}")
 
         # Discover evaluators
-        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+        EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+        EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
 
         evaluation_results = {
             'by_scale': {},
@@ -38,8 +38,8 @@ def run_evaluation(args, wisent_model, all_layer_vectors, train_pairs, eval_pair
             scale_results = []
 
             # Create steering plan for this scale
-            from wisent.core.models.core.atoms import SteeringPlan
-            from wisent.core.activations.core.atoms import RawActivationMap
+            from wisent.core.primitives.models.core.atoms import SteeringPlan
+            from wisent.core.primitives.model_interface.core.activations.core.atoms import RawActivationMap
 
             if scale > 0:
                 raw_map: RawActivationMap = {

@@ -4,10 +4,10 @@ from typing import List
 import torch
 import numpy as np
 
-from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
-from wisent.core.errors import InsufficientDataError
+from wisent.core.control.steering_methods.core.atoms import PerLayerBaseSteeringMethod
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import LOG_EPS, OSTRZE_C
+from wisent.core.utils.config_tools.constants import LOG_EPS, OSTRZE_C
 
 __all__ = [
     "OstrzeMethod",

@@ -7,8 +7,8 @@ Provides functions to compare strategies, generate reports, and run full diagnos
 from typing import List, Tuple, Optional
 import torch
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import SEPARATOR_WIDTH_REPORT
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT
 from .strategy_diagnostics import StrategyDiagnostics, run_strategy_diagnostics
 
 
@@ -84,7 +84,7 @@ def run_full_diagnostics(
     Returns:
         Tuple of (diagnostics list, formatted report)
     """
-    from wisent.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
 
     if strategies is None:
         strategies = [

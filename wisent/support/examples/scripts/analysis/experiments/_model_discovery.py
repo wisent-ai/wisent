@@ -7,18 +7,18 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Dict, Optional
 
-from wisent.core.geometry import (
+from wisent.core.reading.modules import (
     GeometrySearchSpace,
     GeometrySearchConfig,
 )
-from wisent.core.geometry_runner import (
+from wisent.core.reading.modules.runner.geometry_runner import (
     GeometryRunner,
     GeometrySearchResults,
     analyze_with_nonsense_baseline,
 )
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import PAIR_COUNT_ABLATION_SERIES, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import PAIR_COUNT_ABLATION_SERIES, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
+from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.examples.scripts._discovery_utils import (
     gcs_sync_download,
     gcs_upload_file,

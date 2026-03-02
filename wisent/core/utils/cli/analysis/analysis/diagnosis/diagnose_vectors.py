@@ -8,8 +8,8 @@ import math
 import torch
 from wisent.core.utils import preferred_dtype
 from wisent.core import constants as _C
-from wisent.core.constants import NEAR_ZERO_TOL, CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS
-from wisent.core.cli.analysis.diagnosis.diagnose_vectors_analysis import (
+from wisent.core.utils.config_tools.constants import NEAR_ZERO_TOL, CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS
+from wisent.core.utils.cli.analysis.diagnosis.diagnose_vectors_analysis import (
     _run_cone_analysis, _run_geometry_analysis,
 )
 

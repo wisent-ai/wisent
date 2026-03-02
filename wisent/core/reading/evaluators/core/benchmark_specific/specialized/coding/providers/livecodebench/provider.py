@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from typing import Iterable, Optional
 from ..core.atoms import CodingTask, Language
-from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, SUBPROCESS_TIMEOUT_SHORT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, SUBPROCESS_TIMEOUT_SHORT
 
 
 class LiveCodeBenchProvider:

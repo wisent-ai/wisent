@@ -14,9 +14,9 @@ from pathlib import Path
 from datasets import load_dataset
 from tqdm import tqdm
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.evaluators.benchmark_specific.polymath_evaluator import PolyMathEvaluator
-from wisent.core.constants import POLYMATH_DEFAULT_TOTAL, POLYMATH_DEFAULT_K, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.reading.evaluators.benchmark_specific.polymath_evaluator import PolyMathEvaluator
+from wisent.core.utils.config_tools.constants import POLYMATH_DEFAULT_TOTAL, POLYMATH_DEFAULT_K, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 # Generation configs following PolyMath benchmark methodology
