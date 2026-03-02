@@ -1,0 +1,70 @@
+"""Mmlu group task manifest."""
+
+from __future__ import annotations
+
+BASE_IMPORT = "wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_extractors."
+
+# NO PARENT TASK MAPPING - each subtask mapped individually based on output_type
+
+MMLU_TASKS = {
+    # Multiple_choice subtasks → mmlu_mc.py (evaluator_name = "log_likelihoods")
+    "mmlu_abstract_algebra": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_anatomy": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_astronomy": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_business_ethics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_clinical_knowledge": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_college_biology": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_college_chemistry": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_college_computer_science": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_college_mathematics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_college_medicine": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_college_physics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_computer_security": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_conceptual_physics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_econometrics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_electrical_engineering": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_elementary_mathematics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_formal_logic": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_global_facts": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_biology": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_chemistry": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_computer_science": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_european_history": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_geography": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_government_and_politics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_macroeconomics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_mathematics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_microeconomics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_physics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_psychology": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_statistics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_us_history": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_high_school_world_history": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_human_aging": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_human_sexuality": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_international_law": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_jurisprudence": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_logical_fallacies": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_machine_learning": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_management": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_marketing": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_medical_genetics": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_miscellaneous": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_moral_disputes": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_moral_scenarios": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_nutrition": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_philosophy": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_prehistory": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_professional_accounting": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_professional_law": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_professional_medicine": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_professional_psychology": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_public_relations": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_security_studies": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_sociology": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_us_foreign_policy": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_virology": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    "mmlu_world_religions": f"{BASE_IMPORT}mmlu_mc:MMLUMultipleChoiceExtractor",
+    # Generate_until (CoT) subtasks → mmlu_cot.py (evaluator_name = "generation")
+
+}

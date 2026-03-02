@@ -92,7 +92,7 @@ BENCHMARK_EXTRACTORS = {
 def try_hf_extractor(extractor_name: str, limit: int = 500):
     """Try to extract pairs using HF extractor."""
     try:
-        from wisent.extractors.hf._registry.hf_extractor_registry import get_extractor
+        from wisent.core.contrastive_pairs.huggingface_pairs.hf_extractor_registry import get_extractor
         extractor = get_extractor(extractor_name)
         pairs = extractor.extract_contrastive_pairs(limit=limit)
         return pairs
@@ -103,7 +103,7 @@ def try_hf_extractor(extractor_name: str, limit: int = 500):
 def try_lm_eval_extractor(task_name: str, limit: int = 500):
     """Try to extract pairs using lm-eval extractor."""
     try:
-        from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import build_contrastive_pairs
+        from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
         pairs = build_contrastive_pairs(task_name, limit=limit)
         return pairs
     except Exception as e:

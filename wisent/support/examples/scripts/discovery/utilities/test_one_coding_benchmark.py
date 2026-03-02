@@ -25,9 +25,9 @@ from wisent.core.constants import (
     CODING_BENCHMARK_DEFAULT_LIMIT, SPLIT_RATIO_HALF, TEST_DEFAULT_LIMIT,
     DEFAULT_RANDOM_SEED, DEFAULT_TIMEOUT_DOCKER, JSON_INDENT,
 )
-from wisent.core.hardware import docker_sandbox_time_limit_s, docker_sandbox_cpu_limit_s, docker_sandbox_mem_limit_mb
+from wisent.core.utils.core.hardware import docker_sandbox_time_limit_s, docker_sandbox_cpu_limit_s, docker_sandbox_mem_limit_mb
 from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
-from wisent.core.evaluators.benchmark_specific.coding.code_metrics.evaluator import CodingEvaluator, EvaluatorConfig
+from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
 
 
 def test_coding_benchmark(

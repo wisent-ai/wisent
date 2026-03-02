@@ -29,7 +29,7 @@ def get_benchmark_status(conn):
 
 def extract_pairs(task_name: str, limit: int = 500):
     """Extract pairs using the appropriate extractor."""
-    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import build_contrastive_pairs
+    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
     return build_contrastive_pairs(task_name, limit=limit)
 
 

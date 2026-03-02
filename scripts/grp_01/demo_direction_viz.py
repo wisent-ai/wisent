@@ -9,9 +9,9 @@ import torch
 import os
 
 from wisent.core.constants import VIZ_DPI, VIZ_MARKER_SIZE_TINY
-from wisent.core.reading.database_loaders import load_activations_from_database
-from wisent.core.reading.decomposition_metrics import find_optimal_clustering
-from wisent.core.reading.direction_visualization import (
+from wisent.core.geometry.database_loaders import load_activations_from_database
+from wisent.core.geometry.decomposition_metrics import find_optimal_clustering
+from wisent.core.geometry.direction_visualization import (
     compute_direction_angles,
     compute_per_concept_directions,
     plot_directions_in_pca_space,

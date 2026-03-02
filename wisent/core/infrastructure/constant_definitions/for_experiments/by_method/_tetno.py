@@ -1,0 +1,47 @@
+"""TETNO (Heartbeat) steering method constants."""
+from wisent.core.infrastructure.constant_definitions.for_experiments.by_method.transport import *  # noqa: F401,F403
+
+# --- Core TETNO parameters ---
+TETNO_CONDITION_THRESHOLD = 0.5
+TETNO_GATE_TEMPERATURE = 0.1
+TETNO_ENTROPY_FLOOR = 0.5
+TETNO_ENTROPY_CEILING = 2.0
+TETNO_MAX_ALPHA = 2.0
+TETNO_THRESHOLD_SEARCH_STEPS = 20
+
+# --- TETNO search ranges ---
+TETNO_SEARCH_STEERING_LAYERS = ("single", "range_3", "range_5")
+TETNO_SEARCH_CONDITION_THRESHOLDS = (0.3, 0.5, 0.7)
+TETNO_SEARCH_GATE_TEMPERATURES = (0.1, 0.5, 1.0)
+TETNO_SEARCH_MAX_ALPHAS = (1.5, 2.0, 3.0)
+
+# --- TETNO training ---
+TETNO_CONDITION_MARGIN = 0.5
+TETNO_MIN_LAYER_SCALE = 0.1
+
+# --- TETNO export/load ---
+TETNO_HYBRID_STRENGTH_FACTOR = 0.5
+TETNO_GATE_TEMPERATURE_LEGACY = 0.5
+TETNO_DYNAMIC_BASE_STRENGTH = 1.0
+
+# --- TETNO hierarchical ---
+HIERARCHICAL_TETNO_THRESHOLDS = (0.3, 0.5, 0.7)
+HIERARCHICAL_TETNO_TEMPERATURES = (0.05, 0.1, 0.2, 0.5)
+
+# --- TETNO parser defaults ---
+TETNO_DEFAULT_NUM_DIRECTIONS = 3
+TETNO_DEFAULT_STEP_SIZE = 0.01
+TETNO_GATE_SCALE_FACTOR = 0.1
+
+# --- TETNO optimizer bounds ---
+TETNO_GATE_TEMP_LOWER = 0.1
+TETNO_GATE_TEMP_UPPER = 2.0
+TETNO_CONDITION_UPPER = 0.9
+TETNO_ALPHA_UPPER = 5.0
+TETNO_DIRECTIONS_UPPER = 1.5
+
+# --- TETNO condition vector optimization ---
+TETNO_CONDITION_VEC_OPT_ITERS = 50
+
+# --- TETNO steering configs ---
+TETNO_STEERING_LAYER_CONFIGS = ("single_best", "range_3", "range_5")

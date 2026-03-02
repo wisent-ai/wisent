@@ -21,7 +21,7 @@ os.environ["TRANSFORMERS_VERBOSITY"] = "error"
 
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
-from wisent.core.diagnostics.control_vectors import (
+from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )

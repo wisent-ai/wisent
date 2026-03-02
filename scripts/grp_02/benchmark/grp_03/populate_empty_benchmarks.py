@@ -178,7 +178,7 @@ def create_pair(conn, set_id: int, positive: str, negative: str, category: str) 
 
 def populate_benchmark(conn, set_id: int, db_name: str, lm_task: str, limit: int = 500) -> int:
     """Generate and store pairs for a benchmark."""
-    from wisent.extractors.lm_eval._registry.lm_task_pairs_generation import build_contrastive_pairs
+    from wisent.core.contrastive_pairs.lm_eval_pairs.lm_task_pairs_generation import build_contrastive_pairs
 
     print(f"  Generating pairs using lm-eval task '{lm_task}'...", flush=True)
     try:

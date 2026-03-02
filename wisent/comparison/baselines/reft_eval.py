@@ -134,9 +134,9 @@ def _eval_reft_with_steering(wisent_model, task, task_dict, limit, base_acc_ll, 
     from wisent.core.trainers.steering_trainer import WisentSteeringTrainer
     from wisent.core.steering_methods import get_steering_method
     from wisent.core.activations import ExtractionStrategy
-    from wisent.core.contrastive_pairs.set import ContrastivePairSet
-    from wisent.core.contrastive_pairs.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
     from wisent.comparison.utils import generate_contrastive_pairs
     pairs_data, pairs_file = generate_contrastive_pairs(task, steering_num_pairs)
     pairs = [
