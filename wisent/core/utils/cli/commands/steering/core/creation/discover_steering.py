@@ -7,7 +7,7 @@ import json
 import random
 import numpy as np
 from pathlib import Path
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DISCOVER_STEERING_TASK_LIMIT,
     DISCOVER_STEERING_TRAIN_LIMIT,
     DISPLAY_TOP_N_BRIEF,
@@ -19,23 +19,23 @@ from wisent.core.constants import (
     DEFAULT_SCALE_FACTOR,
     JSON_INDENT,
 )
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 
 def execute_discover_steering(args):
     """Execute the discover-steering command - find optimal steering directions."""
     import torch
-    from wisent.core.geometry.zwiad_with_concepts import (
+    from wisent.core.reading.modules.zwiad_with_concepts import (
         load_activations_from_database, load_pair_texts_from_database,
     )
-    from wisent.core.geometry.steering_discovery import (
+    from wisent.core.reading.modules.steering_discovery import (
         discover_behavioral_direction, generate_candidate_directions,
         extract_generation_activations, compute_generation_direction, compare_directions,
     )
-    from wisent.core.wisent import Wisent
-    from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.activations.core.atoms import LayerActivations
-    from wisent.core.adapters.base import SteeringConfig
+    from wisent.core.primitives.model_interface.core.wisent import Wisent
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
 
     print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("STEERING DIRECTION DISCOVERY")
@@ -74,8 +74,8 @@ def execute_discover_steering(args):
     wisent = Wisent.for_text(args.model)
     adapter = wisent.adapter
 
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task).current
     print(f"  Using evaluator: {evaluator.name}")
 

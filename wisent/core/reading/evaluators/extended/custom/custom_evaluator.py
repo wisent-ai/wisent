@@ -15,11 +15,11 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Protocol, Union
 
-from wisent.core.constants import DEFAULT_TIMEOUT_DOCKER, DEFAULT_API_RETRIES, DEFAULT_RETRY_DELAY, SCORE_RANGE_MIN, SCORE_RANGE_MAX
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_DOCKER, DEFAULT_API_RETRIES, DEFAULT_RETRY_DELAY, SCORE_RANGE_MIN, SCORE_RANGE_MAX
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 
 # Re-export from helpers
-from wisent.core.evaluators.custom._custom_evaluator_helpers import (
+from wisent.core.reading.evaluators.custom._custom_evaluator_helpers import (
     create_custom_evaluator,
 )
 

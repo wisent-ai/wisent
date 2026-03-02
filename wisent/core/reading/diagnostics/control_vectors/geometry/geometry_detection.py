@@ -6,7 +6,7 @@ from typing import Dict, Tuple
 
 import torch
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     GEOMETRY_THRESHOLD_DEFAULT,
     GEOMETRY_THRESHOLD_CLUSTER,
     GEOMETRY_THRESHOLD_SPARSE,

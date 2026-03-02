@@ -1,8 +1,8 @@
 """Test GenerationEvaluator answer extraction on AIME 2024 dataset."""
 
 from datasets import load_dataset
-from wisent.core.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
-from wisent.core.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT
+from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import GenerationEvaluator
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, DISPLAY_TRUNCATION_COMPACT, NUM_EXAMPLES_DEFAULT, SEPARATOR_WIDTH_REPORT
 
 # Load dataset
 ds = load_dataset("HuggingFaceH4/aime_2024", split="train")

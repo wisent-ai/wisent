@@ -8,7 +8,7 @@ import logging
 from typing import List, Dict, Any, Optional, Tuple
 
 import torch
-from wisent.core.constants import NORM_EPS, AUTO_EVAL_SUBSET, BAR_CHART_SCALE
+from wisent.core.utils.config_tools.constants import NORM_EPS, AUTO_EVAL_SUBSET, BAR_CHART_SCALE
 
 logger = logging.getLogger(__name__)
 
@@ -39,15 +39,15 @@ def run_grid_search(
     Returns:
         Tuple of (grid_results, best_layer, best_strength, best_config)
     """
-    from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.models import get_generate_kwargs
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+    from wisent.core.primitives.models import get_generate_kwargs
 
     if verbose:
         print(f"\n Evaluating {len(layers_to_test) * len(strength_range)} configurations...")
 
     # Initialize evaluator
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=task_name, autoload=False)
 
     grid_results = []
@@ -157,7 +157,7 @@ def _evaluate_pairs(
     task_name: str
 ) -> Tuple[int, int]:
     """Evaluate model on pairs and return (correct, total)."""
-    from wisent.core.models import get_generate_kwargs
+    from wisent.core.primitives.models import get_generate_kwargs
 
     correct = 0
     total = 0

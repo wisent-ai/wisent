@@ -13,14 +13,14 @@ import os
 import tempfile
 from typing import Dict
 import torch
-from wisent.core.steering_methods.steering_object import (
+from wisent.core.control.steering_methods.steering_object import (
     load_steering_object, CAASteeringObject,
 )
-from wisent.core.cli.optimize_steering.steering_objects import execute_create_steering_object
-from wisent.core.cli.optimize_steering.data.responses import execute_generate_responses
-from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
-from wisent.core.cli.optimize_steering.pipeline import _make_args
-from wisent.core.constants import (COMPARE_TOL, DEFAULT_LIMIT, RL_NUM_EPISODES, RL_EPSILON,
+from wisent.core.utils.cli.optimize_steering.steering_objects import execute_create_steering_object
+from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
+from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
+from wisent.core.utils.cli.optimize_steering.pipeline import _make_args
+from wisent.core.utils.config_tools.constants import (COMPARE_TOL, DEFAULT_LIMIT, RL_NUM_EPISODES, RL_EPSILON,
     DEFAULT_STRENGTH,
     SEPARATOR_WIDTH_WIDE)
 

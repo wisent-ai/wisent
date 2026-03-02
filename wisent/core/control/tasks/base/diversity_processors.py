@@ -5,7 +5,7 @@ Logits processors for ensuring diverse, non-repetitive responses across conversa
 import torch
 from typing import List, Set, Dict, Any
 from collections import deque
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DIVERSITY_OPENER_PENALTY, DIVERSITY_OPENER_CUTOFF_POS,
     DIVERSITY_TRIE_PENALTY, DIVERSITY_TRIE_MAX_DEPTH,
     DIVERSITY_LEDGER_MAX_ITEMS, DIVERSITY_SAMPLE_K,

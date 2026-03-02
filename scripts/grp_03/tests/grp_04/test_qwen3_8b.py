@@ -7,7 +7,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 import numpy as np
 from datasets import load_dataset
 import random
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED
 
 model_name = "Qwen/Qwen3-8B"
 print(f"Loading {model_name}...")

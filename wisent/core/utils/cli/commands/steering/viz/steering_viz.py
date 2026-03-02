@@ -7,8 +7,8 @@ import os
 os.environ["NUMBA_NUM_THREADS"] = "1"
 
 import json
-from wisent.core.constants import DEFAULT_LIMIT, JSON_INDENT, VIZ_TRUTHFUL_REGION_THRESHOLD, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, JSON_INDENT, VIZ_TRUTHFUL_REGION_THRESHOLD, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.primitives.models.config import get_generate_kwargs
 import base64
 import tempfile
 from pathlib import Path
@@ -18,7 +18,7 @@ from argparse import Namespace
 def execute_steering_viz(args):
     """Execute the steering-viz command."""
     import torch
-    from wisent.core.geometry.steering import (
+    from wisent.core.reading.modules.steering import (
         create_steering_effect_figure, create_interactive_steering_figure,
         train_classifier_and_predict,
     )
@@ -75,7 +75,7 @@ def execute_steering_viz(args):
             f.write(viz_html)
         print(f"\nInteractive visualization saved to: {output_path}")
     elif multipanel:
-        from wisent.core.geometry.steering import create_steering_multipanel_figure
+        from wisent.core.reading.modules.steering import create_steering_multipanel_figure
         extraction_strategy = getattr(args, 'extraction_strategy', 'chat_last')
         viz_b64 = create_steering_multipanel_figure(**viz_args, extraction_strategy=extraction_strategy)
         output_path = Path(args.output)
@@ -101,7 +101,7 @@ def execute_steering_viz(args):
 
 def _load_or_generate_reference_activations(args):
     """Load activations from database if available, otherwise generate."""
-    from wisent.core.geometry.data.database_loaders import load_activations_from_database
+    from wisent.core.reading.modules.data.database_loaders import load_activations_from_database
 
     try:
         pos_ref, neg_ref = load_activations_from_database(
@@ -123,8 +123,8 @@ def _generate_reference_activations(args):
     import torch
     import tempfile
     from pathlib import Path
-    from wisent.core.cli.analysis.geometry.get_activations import execute_get_activations
-    from wisent.core.geometry.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.utils.cli.analysis.geometry.get_activations import execute_get_activations
+    from wisent.core.reading.modules.data.database_loaders import load_pair_texts_from_database
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
@@ -166,19 +166,19 @@ def _generate_reference_activations(args):
 def _generate_and_extract(args, steering_vector):
     """Generate steered/unsteered responses and extract activations."""
     import torch
-    from wisent.core.wisent import Wisent
-    from wisent.core.adapters.base import SteeringConfig
-    from wisent.core.activations.core.atoms import LayerActivations
-    from wisent.core.activations import ExtractionStrategy, extract_activation
-    from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.geometry.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.primitives.model_interface.core.wisent import Wisent
+    from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+    from wisent.core.reading.modules.data.database_loaders import load_pair_texts_from_database
 
     wisent = Wisent.for_text(args.model)
     adapter = wisent.adapter
     layer_name = f"layer.{args.layer}"
 
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task).current
 
     # Map old names to new enum values

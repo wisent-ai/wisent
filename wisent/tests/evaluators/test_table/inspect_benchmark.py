@@ -15,7 +15,7 @@ import argparse
 import os
 import sys
 
-from wisent.core.constants import NUM_EXAMPLES_DEFAULT, MAX_DOCS_INSPECT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_NARROW
+from wisent.core.utils.config_tools.constants import NUM_EXAMPLES_DEFAULT, MAX_DOCS_INSPECT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_NARROW
 
 os.environ["HF_ALLOW_CODE_EVAL"] = "1"
 

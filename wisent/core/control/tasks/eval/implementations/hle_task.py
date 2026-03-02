@@ -4,8 +4,8 @@ HLE (Human-Level Evaluation) task implementation for task-agnostic architecture.
 
 from typing import Dict, Any, List, Optional
 from datasets import load_dataset
-from wisent.core.tasks.base.task_interface import TaskInterface
-from wisent.core.benchmarks import HLEExtractor
+from wisent.core.control.tasks.base.task_interface import TaskInterface
+from wisent.core.utils.services.benchmarks import HLEExtractor
 
 
 class HLETask(TaskInterface):

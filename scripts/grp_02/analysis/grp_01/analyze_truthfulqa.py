@@ -2,12 +2,12 @@
 """Full rigorous analysis of TruthfulQA data."""
 
 import torch
-from wisent.core.geometry.database_loaders import load_activations_from_database
-from wisent.core.geometry.signal_null_tests import compute_signal_vs_null, compute_aggregate_signal
-from wisent.core.geometry.is_linear import test_linearity
-from wisent.core.geometry.effective_dim_null import compute_effective_dimensions_vs_null
-from wisent.core.geometry.decomposition_metrics import find_optimal_clustering
-from wisent.core.geometry.intervention_selection import rigorous_select_intervention
+from wisent.core.reading.modules.database_loaders import load_activations_from_database
+from wisent.core.reading.modules.signal_null_tests import compute_signal_vs_null, compute_aggregate_signal
+from wisent.core.reading.modules.is_linear import test_linearity
+from wisent.core.reading.modules.effective_dim_null import compute_effective_dimensions_vs_null
+from wisent.core.reading.modules.decomposition_metrics import find_optimal_clustering
+from wisent.core.reading.modules.intervention_selection import rigorous_select_intervention
 
 
 def main():

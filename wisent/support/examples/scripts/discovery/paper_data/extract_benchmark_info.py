@@ -5,7 +5,7 @@ import json
 import re
 from pathlib import Path
 
-from wisent.core.constants import DISPLAY_TRUNCATION_LARGE, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_LARGE, JSON_INDENT
 
 def extract_info_from_readme(readme_path):
     """Extract title, description, paper, homepage from README."""

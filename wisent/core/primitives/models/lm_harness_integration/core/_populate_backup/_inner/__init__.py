@@ -1,8 +1,8 @@
 """Inner sub-package for additional populate_tasks_backup split parts."""
-from wisent.core.lm_harness_integration._populate_backup._inner._benchmark_matching import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup._inner._benchmark_matching import (
     get_relevant_benchmarks_for_prompt,
 )
-from wisent.core.lm_harness_integration._populate_backup._inner._task_processing import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup._inner._task_processing import (
     get_task_info,
     process_individual_task,
     process_group_task,

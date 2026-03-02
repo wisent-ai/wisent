@@ -3,8 +3,8 @@ import argparse
 import json
 import os
 
-from wisent.core.cli.optimization.core.optimize_helpers import save_checkpoint
-from wisent.core.constants import (
+from wisent.core.utils.cli.optimization.core.optimize_helpers import save_checkpoint
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LAYER, DEFAULT_SCORE, DEFAULT_STRENGTH, DISPLAY_TRUNCATION_ERROR,
     RL_NUM_EPISODES, WELFARE_LIMIT,
 )
@@ -15,7 +15,7 @@ def run_benchmark_steering(args, benchmarks, results):
     
     Modifies results dict in-place.
     """
-    from wisent.core.cli.optimize_steering import execute_optimize_steering
+    from wisent.core.utils.cli.optimize_steering import execute_optimize_steering
 
     
     for bench_idx, benchmark in enumerate(benchmarks, 1):

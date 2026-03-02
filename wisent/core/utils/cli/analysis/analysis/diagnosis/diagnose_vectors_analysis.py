@@ -3,7 +3,7 @@ from typing import Dict
 
 import torch
 from wisent.core import constants as _C
-from wisent.core.constants import CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS, DEFAULT_OPTIMIZATION_STEPS
+from wisent.core.utils.config_tools.constants import CONE_THRESHOLD, CONE_DIRECTIONS, DIAG_NUM_COMPONENTS, MAX_CLUSTERS, MANIFOLD_NEIGHBORS, DEFAULT_OPTIMIZATION_STEPS
 
 
 def _run_cone_analysis(
@@ -13,7 +13,7 @@ def _run_cone_analysis(
     cone_directions: int = CONE_DIRECTIONS,
 ):
     """Run cone structure analysis on activations."""
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
         check_cone_structure,
         ConeAnalysisConfig,
     )
@@ -134,7 +134,7 @@ def _run_geometry_analysis(
     manifold_neighbors: int = MANIFOLD_NEIGHBORS,
 ):
     """Run comprehensive geometry structure analysis on activations."""
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
         detect_geometry_structure,
         GeometryAnalysisConfig,
     )

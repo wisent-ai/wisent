@@ -2,8 +2,8 @@
 
 import sys
 import json
-from wisent.core.constants import DEFAULT_SCORE, DISPLAY_TRUNCATION_MODEL, DISPLAY_TRUNCATION_TASK, JSON_INDENT, SEPARATOR_WIDTH_FULL
-from wisent.core.config_manager import (
+from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, DISPLAY_TRUNCATION_MODEL, DISPLAY_TRUNCATION_TASK, JSON_INDENT, SEPARATOR_WIDTH_FULL
+from wisent.core.utils.config_tools.config import (
     get_cache,
     get_cached_optimization,
     OptimizationCache,

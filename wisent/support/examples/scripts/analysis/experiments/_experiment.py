@@ -9,13 +9,13 @@ from typing import Dict, List
 import numpy as np
 from sklearn.cluster import KMeans
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED, LINEARITY_N_INIT, STABILITY_N_CLUSTERS,
     N_PAIRS_PER_CONCEPT_DEFAULT,
     SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, SEPARATOR_WIDTH_WIDE_PLUS,
     JSON_INDENT,
 )
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.primitives.models.wisent_model import WisentModel
 
 from ._data_loading import (
     load_truthfulqa_pairs,

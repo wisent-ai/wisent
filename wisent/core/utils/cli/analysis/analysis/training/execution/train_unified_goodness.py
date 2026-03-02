@@ -13,7 +13,7 @@ from typing import Any, Optional
 
 import torch
 
-from wisent.core.constants import BENCHMARK_DISPLAY_LIMIT, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.config_tools.constants import BENCHMARK_DISPLAY_LIMIT, SEPARATOR_WIDTH_WIDE
 
 
 def get_checkpoint_dir(output_path: str) -> Path:
@@ -58,12 +58,12 @@ def load_all_benchmarks():
     Returns:
         Tuple of (filtered_benchmarks, broken_benchmarks)
     """
-    from wisent.core.benchmarks import load_all_benchmarks as _load_all_benchmarks
+    from wisent.core.utils.services.benchmarks import load_all_benchmarks as _load_all_benchmarks
     return _load_all_benchmarks()
 
 
-from wisent.core.cli.analysis.training.train_unified_data import collect_pairs_and_train
-from wisent.core.cli.analysis.training.train_unified_eval import run_evaluation
+from wisent.core.utils.cli.analysis.training.train_unified_data import collect_pairs_and_train
+from wisent.core.utils.cli.analysis.training.train_unified_eval import run_evaluation
 
 
 def execute_train_unified_goodness(args):
@@ -78,20 +78,20 @@ def execute_train_unified_goodness(args):
     5. Evaluate vector across ALL benchmarks (pooled evaluation)
     """
     # Expand task if it's a skill or risk name
-    from wisent.core.tasks.base.task_selector import expand_task_if_skill_or_risk
+    from wisent.core.control.tasks.base.task_selector import expand_task_if_skill_or_risk
     if args.task:
         args.task = expand_task_if_skill_or_risk(args.task)
     
-    from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
     from wisent.extractors.lm_eval.lm_task_pairs_generation import lm_build_contrastive_pairs
-    from wisent.core.steering_methods.methods.caa import CAAMethod
-    from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.models import get_generate_kwargs
+    from wisent.core.control.steering_methods.methods.caa import CAAMethod
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+    from wisent.core.primitives.models import get_generate_kwargs
 
     pipeline_start = time.time() if args.timing else None
 

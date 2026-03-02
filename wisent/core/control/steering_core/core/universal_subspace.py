@@ -15,21 +15,21 @@ from pathlib import Path
 import torch
 import torch.nn.functional as F
 
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.activations.core.atoms import LayerActivations, LayerName
-from wisent.core.constants import DEFAULT_VARIANCE_THRESHOLD, UNIVERSAL_SUBSPACE_RANK, MARGINAL_VARIANCE_THRESHOLD
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, LayerName
+from wisent.core.utils.config_tools.constants import DEFAULT_VARIANCE_THRESHOLD, UNIVERSAL_SUBSPACE_RANK, MARGINAL_VARIANCE_THRESHOLD
 
 # Backward-compatible aliases
 VARIANCE_EXPLAINED_THRESHOLD = DEFAULT_VARIANCE_THRESHOLD
 
 # Re-exports from extracted modules
-from wisent.core.steering_core._subspace_analysis import (
+from wisent.core.control.steering_core._subspace_analysis import (
     SubspaceAnalysisConfig,
     SubspaceAnalysisResult,
     analyze_steering_vector_subspace,
     check_vector_quality,
 )
-from wisent.core.steering_core._subspace_compression import (
+from wisent.core.control.steering_core._subspace_compression import (
     UniversalBasis,
     compute_universal_basis,
     compress_steering_vectors,
@@ -37,13 +37,13 @@ from wisent.core.steering_core._subspace_compression import (
     save_compressed_vectors,
     load_compressed_vectors,
 )
-from wisent.core.steering_core._subspace_directions import (
+from wisent.core.control.steering_core._subspace_directions import (
     explained_variance_analysis,
     compute_optimal_num_directions,
     get_cached_universal_basis,
     initialize_from_universal_basis,
 )
-from wisent.core.steering_core._subspace_validation import (
+from wisent.core.control.steering_core._subspace_validation import (
     UNIVERSAL_SUBSPACE_THRESHOLDS,
     compute_subspace_alignment,
     verify_subspace_preservation,

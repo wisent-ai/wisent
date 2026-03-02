@@ -8,7 +8,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import List, Dict, Any
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH,
     PAIR_GENERATORS_DEFAULT_N,
     DISPLAY_TRUNCATION_LARGE,

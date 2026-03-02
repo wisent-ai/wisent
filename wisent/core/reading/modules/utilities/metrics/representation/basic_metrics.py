@@ -7,7 +7,7 @@ Metrics for magnitude, sparsity, and per-pair quality.
 import torch
 import numpy as np
 from typing import Dict, Any
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, SPARSITY_THRESHOLD_FRACTION,
     STABILITY_LOO_SAMPLE_LIMIT, TOP_NEURONS_COUNT, TOP_NEURONS_SHORT_COUNT,
     CUMSUM_THRESHOLD_50, CUMSUM_THRESHOLD_90, CUMSUM_THRESHOLD_99,

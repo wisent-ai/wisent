@@ -19,9 +19,9 @@ import hashlib
 
 import torch
 
-from wisent.core.constants import DEVICE_HASH_PREFIX, JSON_INDENT, SECONDS_PER_DAY, HOURS_PER_DAY
+from wisent.core.utils.config_tools.constants import DEVICE_HASH_PREFIX, JSON_INDENT, SECONDS_PER_DAY, HOURS_PER_DAY
 from wisent.core.utils import resolve_default_device
-from wisent.core.errors import (
+from wisent.core.utils.infra_tools.errors import (
     DeviceBenchmarkError,
     NoBenchmarkDataError,
     InsufficientDataError,
@@ -51,9 +51,9 @@ class DeviceBenchmark:
     def from_dict(cls, data: Dict[str, Any]) -> 'DeviceBenchmark':
         """Create from dictionary loaded from JSON."""
         return cls(**data)
-from wisent.core.agent.resources._device_bench_tests import DeviceBenchTestsMixin1
-from wisent.core.agent.resources._device_bench_tests2 import DeviceBenchTestsMixin2
-from wisent.core.agent.resources._device_bench_runner import DeviceBenchmarkRunnerMixin
+from wisent.core.experimental.agent.resources._device_bench_tests import DeviceBenchTestsMixin1
+from wisent.core.experimental.agent.resources._device_bench_tests2 import DeviceBenchTestsMixin2
+from wisent.core.experimental.agent.resources._device_bench_runner import DeviceBenchmarkRunnerMixin
 
 
 class DeviceBenchmarker(DeviceBenchTestsMixin1, DeviceBenchTestsMixin2, DeviceBenchmarkRunnerMixin):

@@ -2,23 +2,23 @@
 
 import sys
 
-from wisent.core.models import get_generate_kwargs
-from wisent.core.errors import UnknownTypeError
-from wisent.core.constants import SEPARATOR_WIDTH_STANDARD
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
 
 
 def execute_tasks(args):
     """Execute the tasks command - train classifier or steering on benchmark tasks."""
-    from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.classifiers.models.logistic import LogisticClassifier
-    from wisent.core.classifiers.models.mlp import MLPClassifier
-    from wisent.core.classifiers.core.atoms import ClassifierTrainConfig
-    from wisent.core.models.model_persistence import ModelPersistence, create_classifier_metadata
+    from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
+    from wisent.core.reading.classifiers.models.mlp import MLPClassifier
+    from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
+    from wisent.core.primitives.models.model_persistence import ModelPersistence, create_classifier_metadata
     from wisent.core.utils.display.detection_handling import DetectionHandler, DetectionAction
-    from wisent.core.evaluators.personalization.coherence import evaluate_quality
+    from wisent.core.reading.evaluators.personalization.coherence import evaluate_quality
 
     from .utilities import execute_list_tasks, execute_task_info, select_tasks_by_criteria, execute_optimization
     from .cross_benchmark import load_cross_benchmark_data, load_single_task_data

@@ -85,7 +85,7 @@ setup(
     },
     entry_points={
         "console_scripts": [
-            "wisent=wisent.core.main:main",
+            "wisent=wisent.core.primitives.model_interface.core.main:main",
         ],
     },
     keywords="nlp, machine learning, language models, safety, guardrails, lm-evaluation-harness",

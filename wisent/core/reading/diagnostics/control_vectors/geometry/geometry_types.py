@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Dict, Any, List, Tuple
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DIAG_NUM_COMPONENTS,
     DEFAULT_OPTIMIZATION_STEPS,
     GEO_DIAG_LINEAR_VARIANCE,

@@ -7,7 +7,7 @@ for training classifiers for specific issue types using model-driven decisions.
 
 from typing import List, Dict, Any, Set, Tuple
 from .task_manager import get_available_tasks
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LAYER,
     TASK_SELECTOR_MAX_TASKS, TASK_SELECTOR_QUALITY_THRESHOLD,
     TASK_QUALITY_SCORE_MAX, TASK_SELECTOR_LIMIT,

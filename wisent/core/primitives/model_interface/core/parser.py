@@ -2,33 +2,33 @@
 Command-line argument parser for wisent.
 
 This module sets up the main CLI parser with all subcommands.
-Parser setup functions are imported from wisent.core.parser_arguments.
+Parser setup functions are imported from wisent.core.utils.config_tools.parser_arguments.
 """
 
 import argparse
 from typing import List, Optional
 
-from wisent.core.errors import ModelNotProvidedError, InvalidValueError
+from wisent.core.utils.infra_tools.errors import ModelNotProvidedError, InvalidValueError
 
 # Import all setup functions from parser_arguments
-from wisent.core.parser_arguments.tasks_parser import setup_tasks_parser
-from wisent.core.parser_arguments.generate_pairs_parser import setup_generate_pairs_parser
-from wisent.core.parser_arguments.synthetic_parser import setup_synthetic_parser
-from wisent.core.parser_arguments.nonsense_parser import setup_test_nonsense_parser
-from wisent.core.parser_arguments.monitor_parser import setup_monitor_parser
-from wisent.core.parser_arguments.agent_parser import setup_agent_parser
-from wisent.core.parser_arguments.model_config_parser import setup_model_config_parser
-from wisent.core.parser_arguments.configure_model_parser import setup_configure_model_parser
-from wisent.core.parser_arguments.optimize_classification_parser import setup_classification_optimizer_parser
-from wisent.core.parser_arguments.optimize_steering_parser import setup_steering_optimizer_parser
-from wisent.core.parser_arguments.optimize_sample_size_parser import setup_sample_size_optimizer_parser
-from wisent.core.parser_arguments.full_optimize_parser import setup_full_optimizer_parser
-from wisent.core.parser_arguments.optimize_parser import setup_optimize_parser
-from wisent.core.parser_arguments.generate_vector_parser import setup_generate_vector_parser
-from wisent.core.parser_arguments.multi_steer_parser import setup_multi_steer_parser
-from wisent.core.parser_arguments.evaluate_parser import setup_evaluate_parser
-from wisent.core.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser
-from wisent.core.parser_arguments.zwiad_parser import setup_zwiad_parser
+from wisent.core.utils.config_tools.parser_arguments.tasks_parser import setup_tasks_parser
+from wisent.core.utils.config_tools.parser_arguments.generate_pairs_parser import setup_generate_pairs_parser
+from wisent.core.utils.config_tools.parser_arguments.synthetic_parser import setup_synthetic_parser
+from wisent.core.utils.config_tools.parser_arguments.nonsense_parser import setup_test_nonsense_parser
+from wisent.core.utils.config_tools.parser_arguments.monitor_parser import setup_monitor_parser
+from wisent.core.utils.config_tools.parser_arguments.agent_parser import setup_agent_parser
+from wisent.core.utils.config_tools.parser_arguments.model_config_parser import setup_model_config_parser
+from wisent.core.utils.config_tools.parser_arguments.configure_model_parser import setup_configure_model_parser
+from wisent.core.utils.config_tools.parser_arguments.optimize_classification_parser import setup_classification_optimizer_parser
+from wisent.core.utils.config_tools.parser_arguments.optimize_steering_parser import setup_steering_optimizer_parser
+from wisent.core.utils.config_tools.parser_arguments.optimize_sample_size_parser import setup_sample_size_optimizer_parser
+from wisent.core.utils.config_tools.parser_arguments.full_optimize_parser import setup_full_optimizer_parser
+from wisent.core.utils.config_tools.parser_arguments.optimize_parser import setup_optimize_parser
+from wisent.core.utils.config_tools.parser_arguments.generate_vector_parser import setup_generate_vector_parser
+from wisent.core.utils.config_tools.parser_arguments.multi_steer_parser import setup_multi_steer_parser
+from wisent.core.utils.config_tools.parser_arguments.evaluate_parser import setup_evaluate_parser
+from wisent.core.utils.config_tools.parser_arguments.train_unified_goodness_parser import setup_train_unified_goodness_parser
+from wisent.core.utils.config_tools.parser_arguments.zwiad_parser import setup_zwiad_parser
 
 
 def setup_parser() -> argparse.ArgumentParser:

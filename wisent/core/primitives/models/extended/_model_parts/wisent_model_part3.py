@@ -6,13 +6,13 @@ from typing import Any
 
 import torch
 
-from wisent.core.models.core.atoms import SteeringPlan
-from wisent.core.activations.core.atoms import RawActivationMap
-from wisent.core.prompts.core.atom import ChatMessage
-from wisent.core.contrastive_pairs.diagnostics import run_control_steering_diagnostics
-from wisent.core.errors import ControlVectorDiagnosticsError
-from wisent.core.constants import DEFAULT_STRENGTH
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.primitives.models.core.atoms import SteeringPlan
+from wisent.core.primitives.model_interface.core.activations.core.atoms import RawActivationMap
+from wisent.core.control.generation.prompts.core.atom import ChatMessage
+from wisent.core.primitives.contrastive_pairs.diagnostics import run_control_steering_diagnostics
+from wisent.core.utils.infra_tools.errors import ControlVectorDiagnosticsError
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 logger = logging.getLogger(__name__)
 
@@ -107,7 +107,7 @@ def _generate(
 
     # Add diversity processors if requested
     if ensure_varied_responses and phrase_ledger:
-        from wisent.core.tasks.base.diversity_processors import build_diversity_processors
+        from wisent.core.control.tasks.base.diversity_processors import build_diversity_processors
         logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
         if logits_processors:
             generation_kwargs['logits_processor'] = logits_processors

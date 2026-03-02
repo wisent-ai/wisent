@@ -6,7 +6,7 @@ from typing import Dict
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, LINEARITY_N_INIT, CONCEPT_K_DIRECTION_THRESHOLD,
     DEFAULT_RANDOM_SEED, MAX_K_DEFAULT,
 )

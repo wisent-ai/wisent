@@ -1,12 +1,12 @@
 """Generate and evaluate response with classifier."""
 
-from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM
-from wisent.core.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.primitives.models import get_generate_kwargs
 
 
 def _map_token_aggregation(aggregation_str: str):
     """Map string token aggregation to ExtractionStrategy."""
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 
     mapping = {
         "average": ExtractionStrategy.CHAT_MEAN,
@@ -72,8 +72,8 @@ def evaluate_response_with_classifier(
     returns:
         Tuple of (response_text, quality_score)
     """
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 
     print(f"\n💬 Step 3: Generating unsteered response")
 

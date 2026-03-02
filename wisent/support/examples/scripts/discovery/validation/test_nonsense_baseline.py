@@ -15,12 +15,12 @@ from typing import List, Tuple
 from sklearn.svm import LinearSVC
 from sklearn.preprocessing import StandardScaler
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-from wisent.core.constants import ZERO_THRESHOLD, PAIR_GENERATORS_DEFAULT_N
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, PAIR_GENERATORS_DEFAULT_N
 
 
 WORD_LIST = [

@@ -4,10 +4,10 @@ from collections.abc import Iterable, Mapping
 from typing import Any, TYPE_CHECKING
 from abc import ABC, abstractmethod
 
-from wisent.core.errors import FileLoadError, DatasetLoadError
+from wisent.core.utils.infra_tools.errors import FileLoadError, DatasetLoadError
 
 if TYPE_CHECKING:
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
 __all__ = [
     "UnsupportedHuggingFaceBenchmarkError",
@@ -239,8 +239,8 @@ class HuggingFaceBenchmarkExtractor(ABC):
         Returns:
             A ContrastivePair with positive and negative responses.
         """
-        from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-        from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
+        from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+        from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 
         positive_response = PositiveResponse(model_response=correct)
         negative_response = NegativeResponse(model_response=incorrect)

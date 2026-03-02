@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import torch
 from typing import Dict, TYPE_CHECKING
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import NORM_EPS, SZLAK_INFERENCE_K, DEFAULT_STRENGTH, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import NORM_EPS, SZLAK_INFERENCE_K, DEFAULT_STRENGTH, SEPARATOR_WIDTH_STANDARD
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -101,7 +101,7 @@ def project_weights_przelom(
 ) -> dict[str, int]:
     """Static projection: bake mean displacement into model weights."""
     from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
-    from wisent.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
     if components is None:
         components = ["self_attn.o_proj", "mlp.down_proj"]
     mean_vectors = {}

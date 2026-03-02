@@ -4,8 +4,8 @@ import random
 import time
 from typing import Any, Dict, List, Optional
 
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import DEFAULT_LAYER, CLASSIFIER_BENCHMARK_SAMPLES
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, CLASSIFIER_BENCHMARK_SAMPLES
 
 from ....activations import Activations
 from ....model import Model

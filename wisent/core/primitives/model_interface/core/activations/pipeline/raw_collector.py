@@ -12,16 +12,16 @@ from __future__ import annotations
 from typing import Sequence, TYPE_CHECKING
 import torch
 
-from wisent.core.activations.core.atoms import LayerName
-from wisent.core.activations import (
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerName
+from wisent.core.primitives.model_interface.core.activations import (
     ExtractionStrategy,
     ExtractionComponent,
     build_extraction_texts,
 )
-from wisent.core.errors import NoHiddenStatesError
+from wisent.core.utils.infra_tools.errors import NoHiddenStatesError
 
 if TYPE_CHECKING:
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
 
 def _resp_text(resp_obj: object) -> str:
@@ -136,7 +136,7 @@ def collect_single_raw(
         # For non-residual components, run a second pass with hooks
         hooked = None
         if component.needs_hooks:
-            from wisent.core.activations.component_hooks import ComponentHookManager
+            from wisent.core.primitives.model_interface.core.activations.component_hooks import ComponentHookManager
             mgr = ComponentHookManager(collector.model.hf_model, component, keep)
             with mgr.hooks_active():
                 collector.model.hf_model(

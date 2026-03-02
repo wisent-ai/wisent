@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Tuple
 import torch
 
-from wisent.core.activations import ExtractionStrategy, extract_activation
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
 from .cached_activations import CachedActivations, get_strategy_text_family
 
 

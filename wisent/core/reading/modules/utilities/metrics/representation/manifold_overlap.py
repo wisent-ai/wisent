@@ -7,7 +7,7 @@ Metrics for manifold structure, curvature, and direction overlap.
 import torch
 import numpy as np
 from typing import Dict, Any, Optional
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, MANIFOLD_LINEARITY_SAMPLE_LIMIT, SPECTRAL_N_NEIGHBORS_DEFAULT,
     PCA_MAX_COMPONENTS_NULL, CUMULATIVE_VARIANCE_TOP_N, PCA_QUALITY_COMPONENTS,
     DISPLAY_TOP_N_SMALL,

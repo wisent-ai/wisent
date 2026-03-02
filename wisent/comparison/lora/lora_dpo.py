@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     LORA_DEFAULT_DROPOUT,
     DPO_DEFAULT_BETA, DEFAULT_SPLIT_RATIO,
     COMPARISON_DEFAULT_BATCH_SIZE,

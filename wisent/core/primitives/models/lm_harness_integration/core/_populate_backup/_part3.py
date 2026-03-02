@@ -10,7 +10,7 @@ import sys
 import random
 from typing import Dict, Any, List, Optional
 
-from wisent.core.constants import MAX_RECURSION_DEPTH, EVAL_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import MAX_RECURSION_DEPTH, EVAL_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TOP_N_TINY
 
 
 def find_working_task_from_group(group_dict: Dict, depth: int = 0,

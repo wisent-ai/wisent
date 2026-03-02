@@ -17,7 +17,7 @@ import time
 
 import torch
 
-from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
+from wisent.core.utils.config_tools.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
 
 # Add the repo root to path so we can import from scripts.strategy_extraction
 script_dir = os.path.dirname(os.path.abspath(__file__))

@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Dict, Any, List
 
 from wisent.core import Model
-from wisent.core.constants import QWEN3_4B_DEFAULT_LAYER, JSON_INDENT
-from wisent.core.layer import Layer
-from wisent.core.steering_methods.caa import CAA
-from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.utils.config_tools.constants import QWEN3_4B_DEFAULT_LAYER, JSON_INDENT
+from wisent.core.primitives.models.core.layer import Layer
+from wisent.core.control.steering_methods.caa import CAA
+from wisent.core.primitives.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
 from json_loader import SeedPairLoader
 
 logger = logging.getLogger(__name__)

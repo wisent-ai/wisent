@@ -10,11 +10,11 @@ import numpy as np
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_val_score
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import NORM_EPS, DIAGNOSTIC_MLP_HIDDEN_SIZES
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import NORM_EPS, DIAGNOSTIC_MLP_HIDDEN_SIZES
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 STRATEGIES = [

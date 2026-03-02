@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 from typing import List, Optional
 import numpy as np
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZWIAD_GAP_K,
     ZWIAD_GAP_MIN,
     ZWIAD_GAP_MAX,

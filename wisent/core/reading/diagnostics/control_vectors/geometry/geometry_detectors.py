@@ -7,7 +7,7 @@ from typing import Dict
 import torch
 
 from .geometry_types import StructureType, StructureScore, GeometryAnalysisConfig
-from wisent.core.constants import NORM_EPS, COMPARE_TOL, GEO_MANIFOLD_SCORE_DEFAULT, GEO_MANIFOLD_CONFIDENCE, GEO_ORTHOGONAL_CONFIDENCE, KMEANS_MAX_ITERATIONS_DEFAULT
+from wisent.core.utils.config_tools.constants import NORM_EPS, COMPARE_TOL, GEO_MANIFOLD_SCORE_DEFAULT, GEO_MANIFOLD_CONFIDENCE, GEO_ORTHOGONAL_CONFIDENCE, KMEANS_MAX_ITERATIONS_DEFAULT
 from wisent.core import constants as _C
 
 

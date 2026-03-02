@@ -7,8 +7,8 @@ import json
 import logging
 from typing import Optional
 
-from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import (
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import (
     EVAL_DEFAULT_DIFFERENCE_SCORE, EVAL_DIFFERENCE_CUTOFF,
     EVAL_W_DIFFERENCE, EVAL_W_QUALITY, EVAL_W_ALIGNMENT,
 )
@@ -50,7 +50,7 @@ class PersonalizationEvaluator:
         positive_examples: Optional[list[str]] = None,
         negative_examples: Optional[list[str]] = None,
     ):
-        from wisent.core.evaluators.steering_evaluators import BaseSteeringEvaluator
+        from wisent.core.reading.evaluators.steering_evaluators import BaseSteeringEvaluator
         BaseSteeringEvaluator.__init__(self, config, model_name)
         self.wisent_model = wisent_model
         self.positive_examples = positive_examples or []
@@ -101,7 +101,7 @@ class PersonalizationEvaluator:
 
     def evaluate_responses(self, responses: list[str]) -> dict[str, float]:
         """Evaluate responses for trait alignment."""
-        from wisent.core.evaluators.personalization import (
+        from wisent.core.reading.evaluators.personalization import (
             evaluate_difference,
             evaluate_quality,
             estimate_alignment,
@@ -136,13 +136,13 @@ class PersonalizationEvaluator:
     @staticmethod
     def _evaluate_difference(baseline_responses: list[str], steered_responses: list[str]) -> float:
         """Evaluate how different steered responses are from baseline."""
-        from wisent.core.evaluators.personalization import evaluate_difference
+        from wisent.core.reading.evaluators.personalization import evaluate_difference
         return evaluate_difference(baseline_responses, steered_responses)
 
     @staticmethod
     def _evaluate_quality(responses: list[str]) -> float:
         """Evaluate the quality/coherence of responses."""
-        from wisent.core.evaluators.personalization import evaluate_quality
+        from wisent.core.reading.evaluators.personalization import evaluate_quality
         return evaluate_quality(responses)
 
     @staticmethod
@@ -153,7 +153,7 @@ class PersonalizationEvaluator:
         negative_examples: list[str] = None,
     ) -> float:
         """Estimate trait alignment using contrastive embedding similarity."""
-        from wisent.core.evaluators.personalization import estimate_alignment
+        from wisent.core.reading.evaluators.personalization import estimate_alignment
         return estimate_alignment(
             responses, trait_description,
             positive_examples or [], negative_examples or [],

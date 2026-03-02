@@ -9,7 +9,7 @@ from dataclasses import dataclass
 import torch
 import numpy as np
 from sklearn.metrics import roc_curve, auc, precision_recall_curve
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     N_BOOTSTRAP_DEFAULT, PAIR_GENERATORS_DEFAULT_N,
     THRESHOLD_HIDDEN_DIM_LARGE, THRESHOLD_HIDDEN_DIM_DEFAULT,
     ZERO_THRESHOLD, NULL_DISTRIBUTION_SAMPLES_PER_CLASS,
@@ -78,7 +78,7 @@ def generate_null_distribution(
     Returns:
         (knn_scores, linear_scores) for random data
     """
-    from wisent.core.geometry_runner import compute_knn_accuracy, compute_linear_probe_accuracy
+    from wisent.core.reading.modules.runner.geometry_runner import compute_knn_accuracy, compute_linear_probe_accuracy
     
     knn_scores = []
     linear_scores = []

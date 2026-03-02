@@ -8,8 +8,8 @@ from typing import Dict, List, Optional, Any
 
 import torch
 
-from wisent.core.config_manager import ModelConfigManager
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.config import ModelConfigManager
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LIMIT, DEFAULT_SCORE, BLEND_DEFAULT,
     AUTO_MAX_TIME_MINUTES, AUTO_MIN_PAIRS, AUTO_SAMPLE_SIZE,
     AUTO_N_FOLDS, AUTO_DEFAULT_STRENGTHS, AUTO_MIN_PAIRS_SPLIT,
@@ -34,7 +34,7 @@ def run_auto_steering_optimization(
     layer_range: Optional[str] = None
 ) -> Dict[str, Any]:
     """Automatically optimize steering using zwiad geometry analysis."""
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
     if not task_name:
         return {"error": "Task name is required for auto steering optimization"}
@@ -125,9 +125,9 @@ def _generate_pairs(task_name: str, limit: int) -> List:
 
 def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose: bool) -> tuple:
     """Run zwiad geometry analysis on collected activations."""
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.geometry import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.reading.modules import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
 
     if verbose:
         print("Collecting activations for geometry analysis...", flush=True)

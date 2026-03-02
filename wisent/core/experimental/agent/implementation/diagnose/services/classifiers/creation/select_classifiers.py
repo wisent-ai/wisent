@@ -16,11 +16,11 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from ...model_persistence import ModelPersistence
-from wisent.core.errors import NoSuitableClassifierError
-from wisent.core.constants import DEFAULT_LAYER, SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_THRESHOLD, CLASSIFIER_RECENCY_BONUS
+from wisent.core.utils.infra_tools.errors import NoSuitableClassifierError
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_THRESHOLD, CLASSIFIER_RECENCY_BONUS
 
 
-from wisent.core.agent.diagnose.classifiers._select_classifiers_helpers import ClassifierSelectorHelpersMixin, auto_select_classifiers_for_agent  # noqa: F401
+from wisent.core.experimental.agent.diagnose.classifiers._select_classifiers_helpers import ClassifierSelectorHelpersMixin, auto_select_classifiers_for_agent  # noqa: F401
 
 @dataclass
 class ClassifierInfo:

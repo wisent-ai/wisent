@@ -1,8 +1,8 @@
 """Behavioral label collection for steering direction discovery."""
 
 import numpy as np
-from wisent.core.constants import PROGRESS_LOG_INTERVAL_20
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_20
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 
 def extract_response(raw_response: str) -> str:

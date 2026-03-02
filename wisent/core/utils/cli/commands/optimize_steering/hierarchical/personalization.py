@@ -4,9 +4,9 @@ import os
 import tempfile
 from typing import Optional
 
-from wisent.core.cli.optimize_steering.method_configs import CAAConfig
-from wisent.core.cli.optimize_steering.pipeline import run_pipeline
-from wisent.core.constants import (JSON_INDENT, PERSONALIZATION_N_TRIALS, DEFAULT_N_TRIALS, WELFARE_LIMIT,
+from wisent.core.utils.cli.optimize_steering.method_configs import CAAConfig
+from wisent.core.utils.cli.optimize_steering.pipeline import run_pipeline
+from wisent.core.utils.config_tools.constants import (JSON_INDENT, PERSONALIZATION_N_TRIALS, DEFAULT_N_TRIALS, WELFARE_LIMIT,
     DEFAULT_NUM_HIDDEN_LAYERS, DEFAULT_NUM_STRENGTH_STEPS,
     PARSER_STRENGTH_RANGE_PERSONALIZATION, SEPARATOR_WIDTH_REPORT,
     LAYER_STRIDE_DEFAULT)
@@ -53,7 +53,7 @@ def _execute_personalization_optimization(args):
     except FileNotFoundError:
         # Generate synthetic pairs
         print(f"   Generating {num_pairs} synthetic pairs for '{trait}'...")
-        from wisent.core.contrastive_pairs.synthetic import generate_trait_pairs
+        from wisent.core.primitives.contrastive_pairs.synthetic import generate_trait_pairs
 
         pairs_list = generate_trait_pairs(
             trait_description=trait,
@@ -61,7 +61,7 @@ def _execute_personalization_optimization(args):
             model=model,
         )
 
-        from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+        from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
         pair_set = ContrastivePairSet(
             name=f"{trait_name}_personalization",
             pairs=pairs_list,
@@ -73,7 +73,7 @@ def _execute_personalization_optimization(args):
     os.makedirs(output_dir, exist_ok=True)
     pairs_file = os.path.join(output_dir, f"{trait_name}_pairs.json")
 
-    from wisent.core.contrastive_pairs.core.io.serialization import save_contrastive_pair_set
+    from wisent.core.primitives.contrastive_pairs.core.io.serialization import save_contrastive_pair_set
     save_contrastive_pair_set(pair_set, pairs_file)
 
     # Get model's number of layers

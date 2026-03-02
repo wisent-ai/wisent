@@ -6,7 +6,7 @@ on positive responses from contrastive pairs.
 
 Re-exports from reft_train and reft_eval submodules.
 """
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COMPARISON_NUM_PAIRS, DEFAULT_SPLIT_RATIO, COMPARISON_EVAL_BATCH_SIZE,
     COMPARISON_STEERING_LAYER, COMPARISON_REFT_LEARNING_RATE,
     COMPARISON_NUM_EPOCHS_DEFAULT, COMPARISON_TRAINING_BATCH_SIZE,

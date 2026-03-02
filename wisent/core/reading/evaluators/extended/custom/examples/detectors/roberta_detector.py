@@ -4,7 +4,7 @@ RoBERTa-based AI text detector using Hugging Face's free inference API.
 Uses openai-community/roberta-base-openai-detector model.
 
 Usage:
-    from wisent.core.evaluators.custom.examples.roberta_detector import RobertaDetectorEvaluator
+    from wisent.core.reading.evaluators.custom.examples.roberta_detector import RobertaDetectorEvaluator
     
     evaluator = RobertaDetectorEvaluator()  # No API key needed!
     result = evaluator("Some text to analyze")
@@ -16,11 +16,11 @@ import logging
 import time
 from typing import Any, Dict, Optional
 
-from wisent.core.evaluators.custom.custom_evaluator import (
+from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     CLASSIFIER_THRESHOLD,
     DEFAULT_API_RETRIES,
     DEFAULT_TIMEOUT_DOCKER,

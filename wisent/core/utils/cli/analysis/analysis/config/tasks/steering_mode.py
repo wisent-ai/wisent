@@ -3,13 +3,13 @@
 import sys
 import torch
 
-from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import JSON_INDENT, NORM_EPS, DEFAULT_STRENGTH, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import JSON_INDENT, NORM_EPS, DEFAULT_STRENGTH, CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_DIRECTIONS, TECZA_NUM_DIRECTIONS, GEOMETRY_CV_FOLDS, DISPLAY_TRUNCATION_COMPACT, ENRICHMENT_MAX_PAIRS, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
 
 
 def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy):
     """Execute steering mode - train and evaluate steering vectors."""
-    from wisent.core.evaluators.rotator import EvaluatorRotator
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 
     print(f"\n🎯 Starting steering evaluation on task: {args.task_names}")
     print(f"   Steering method: {getattr(args, 'steering_method', 'CAA')}")
@@ -30,8 +30,8 @@ def execute_steering_mode(args, model, train_pair_set, test_pair_set, collector,
         )
 
     print(f"\n🔧 Initializing evaluator for task '{task_name}'...")
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-    EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+    EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=task_name, autoload=False)
 
     return _evaluate_steering(args, model, test_pair_set, steering_vector, layer, layer_str, evaluator, task_name)
@@ -60,7 +60,7 @@ def _load_steering_vector(args, layer, layer_str):
 
 def _compute_steering_vector(args, model, train_pair_set, collector, extraction_strategy, layer, layer_str):
     """Compute steering vector from training data using zwiad."""
-    from wisent.core.geometry import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
+    from wisent.core.reading.modules import compute_geometry_metrics, compute_recommendation, compute_concept_coherence
 
     print(f"\n🧠 Collecting activations from layer {layer}...")
     positive_activations, negative_activations = [], []
@@ -132,8 +132,8 @@ def _train_steering_method(args, model, method, pos_tensor, neg_tensor, layer, c
 
 def _train_grom(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
     """Train GROM steering vector."""
-    from wisent.core.steering_methods.methods.grom import GROMMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.control.steering_methods.methods.grom import GROMMethod
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
     enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:ENRICHMENT_MAX_PAIRS]]
@@ -157,8 +157,8 @@ def _train_grom(model, layer, collector, extraction_strategy, train_pair_set, po
 
 def _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
     """Train TECZA steering vector."""
-    from wisent.core.steering_methods.methods.advanced import TECZAMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
     enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:ENRICHMENT_MAX_PAIRS]]

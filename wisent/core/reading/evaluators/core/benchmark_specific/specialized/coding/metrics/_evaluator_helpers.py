@@ -9,15 +9,15 @@ from __future__ import annotations
 
 from typing import Iterable, TYPE_CHECKING
 
-from wisent.core.evaluators.benchmark_specific.coding.safe_docker.recipes import RECIPE_REGISTRY
-from wisent.core.evaluators.benchmark_specific.coding.metrics.core.atoms import SampleOutcome
-from wisent.core.errors import MissingParameterError
-from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema
+from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.recipes import RECIPE_REGISTRY
+from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.core.atoms import SampleOutcome
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema
 
 if TYPE_CHECKING:
-    from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result
-    from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
-    from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import CodeStandardizer
+    from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result
+    from wisent.core.reading.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
+    from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import CodeStandardizer
 
 
 def _feedback(self, res: "Result") -> str:
@@ -44,7 +44,7 @@ def _run_once(self, task: "CodingTask", files: dict[str, str]) -> "Result":
 
 def _maybe_sanitize(self, task: "CodingTask", files: dict[str, str]) -> dict[str, str]:
     """Optionally sanitizes the generated files based on the task schema."""
-    from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import (
+    from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import (
         _SANITIZERS, _make_schema,
     )
 

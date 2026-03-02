@@ -8,7 +8,7 @@ independent directions are needed to represent the concept.
 import torch
 import numpy as np
 from typing import Dict
-from wisent.core.constants import PCA_QUALITY_COMPONENTS, ZERO_THRESHOLD
+from wisent.core.utils.config_tools.constants import PCA_QUALITY_COMPONENTS, ZERO_THRESHOLD
 
 
 def compute_icd(

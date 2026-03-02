@@ -12,9 +12,9 @@ from typing import Dict, List, Optional
 import torch
 import torch.nn as nn
 
-from wisent.core.constants import ARCHITECTURE_MODULE_LIMIT
-from wisent.core.activations.strategies.extraction_strategy import ExtractionComponent
-from wisent.core.geometry.analysis.structure.transformer_analysis import (
+from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
+from wisent.core.primitives.model_interface.core.activations.strategies.extraction_strategy import ExtractionComponent
+from wisent.core.reading.modules.analysis.structure.transformer_analysis import (
     TransformerComponent,
     get_component_hook_points,
 )

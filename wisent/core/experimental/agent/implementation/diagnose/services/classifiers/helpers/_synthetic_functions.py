@@ -1,13 +1,13 @@
 """Public functions for synthetic classifier creation."""
 import logging, time
 from typing import List, Tuple
-from wisent.core.classifier.classifier import ActivationClassifier
-from wisent.core.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_PAIRS_PER_TRAIT, AGENT_CLASSIFIER_NUM_PAIRS, TRAIT_LABEL_MAX_LENGTH
-from wisent.core.errors import InsufficientDataError, MissingParameterError, ExecutionError
-from wisent.core.agent.diagnose.classifiers._synthetic_classes import (
+from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_PAIRS_PER_TRAIT, AGENT_CLASSIFIER_NUM_PAIRS, TRAIT_LABEL_MAX_LENGTH
+from wisent.core.utils.infra_tools.errors import InsufficientDataError, MissingParameterError, ExecutionError
+from wisent.core.experimental.agent.diagnose.classifiers._synthetic_classes import (
     TraitDiscoveryResult, SyntheticClassifierResult,
     AutomaticTraitDiscovery, SyntheticClassifierFactory)
-from wisent.core.agent.diagnose.classifiers._synthetic_system import SyntheticClassifierSystem
+from wisent.core.experimental.agent.diagnose.classifiers._synthetic_system import SyntheticClassifierSystem
 from wisent.core import constants as _C
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def create_classifier_from_trait_description(
     log_and_print(f"🧠 Extracting activations from {len(pair_set.pairs)} pairs...")
 
     # Create Layer object for activation extraction
-    from wisent.core.layer import Layer
+    from wisent.core.primitives.models.core.layer import Layer
 
     layer_obj = Layer(index=DEFAULT_LAYER, type="transformer")
     log_and_print(f"🔧 Created Layer object: index={layer_obj.index}, type={layer_obj.type}")
@@ -202,7 +202,7 @@ def create_classifier_from_trait_description(
     log_and_print("🎯 Starting classifier training...")
     try:
         # Convert activations to the format expected by train_on_activations method
-        from wisent.core.activations import Activations
+        from wisent.core.primitives.model_interface.core.activations import Activations
 
         # Convert torch tensors to Activations objects if needed
         harmful_activations = []

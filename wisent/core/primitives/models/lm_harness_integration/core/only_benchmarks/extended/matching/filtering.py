@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Dict, Optional
 
-from wisent.core.constants import BENCHMARK_LOADING_TIME_DEFAULT, SECONDS_PER_MINUTE, SEPARATOR_WIDTH_PLUS
+from wisent.core.utils.config_tools.constants import BENCHMARK_LOADING_TIME_DEFAULT, SECONDS_PER_MINUTE, SEPARATOR_WIDTH_PLUS
 
 
 __all__ = [

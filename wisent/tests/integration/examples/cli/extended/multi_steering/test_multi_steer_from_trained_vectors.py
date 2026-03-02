@@ -17,7 +17,7 @@ def create_named_vector(tmpdir, name, trait_label):
     
     result = subprocess.run(
         [
-            "python", "-m", "wisent.core.main", "generate-vector-from-task",
+            "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-task",
             "--task", "boolq",
             "--trait-label", trait_label,
             "--output", vector_path,
@@ -47,7 +47,7 @@ def test_technical_documentation_persona():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{formal_vector}:0.5",
                 "--vector", f"{technical_vector}:0.5",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -78,7 +78,7 @@ def test_friendly_teacher_persona():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{friendly_vector}:0.6",
                 "--vector", f"{detailed_vector}:0.4",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -109,7 +109,7 @@ def test_executive_summary_persona():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{concise_vector}:0.6",
                 "--vector", f"{formal_vector}:0.4",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -142,7 +142,7 @@ def test_comparing_weight_ratios():
         # Configuration A: More weight on vector1
         result_a = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1}:0.7",
                 "--vector", f"{vector2}:0.3",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -164,7 +164,7 @@ def test_comparing_weight_ratios():
         # Configuration B: More weight on vector2
         result_b = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1}:0.3",
                 "--vector", f"{vector2}:0.7",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -186,7 +186,7 @@ def test_comparing_weight_ratios():
         # Configuration C: Balanced
         result_c = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1}:0.5",
                 "--vector", f"{vector2}:0.5",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",

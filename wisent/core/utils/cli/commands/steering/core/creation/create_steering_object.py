@@ -13,12 +13,12 @@ import torch
 from collections import defaultdict
 from datetime import datetime
 
-from wisent.core.steering_methods._steering_object_base import (
+from wisent.core.control.steering_methods._steering_object_base import (
     SteeringObjectMetadata,
     BaseSteeringObject,
 )
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     MLP_DROPOUT,
     MLP_HIDDEN_DIM,
     MLP_LEARNING_RATE,
@@ -30,11 +30,11 @@ from wisent.core.constants import (
 
 
 
-from wisent.core.cli.steering.core.create_steering_helpers import (
+from wisent.core.utils.cli.steering.core.create_steering_helpers import (
     _create_tecza_steering_object,
     _create_tetno_steering_object,
 )
-from wisent.core.cli.steering.core.create_steering_grom import (
+from wisent.core.utils.cli.steering.core.create_steering_grom import (
     _create_grom_steering_object,
 )
 
@@ -180,22 +180,22 @@ def execute_create_steering_object(args):
                 metadata, layer_activations, available_layers, args
             )
         elif method_name == 'nurt':
-            from wisent.core.cli.steering.core.create_nurt import _create_nurt_steering_object
+            from wisent.core.utils.cli.steering.core.create_nurt import _create_nurt_steering_object
             steering_obj = _create_nurt_steering_object(
                 metadata, layer_activations, available_layers, args
             )
         elif method_name == 'szlak':
-            from wisent.core.steering_methods.methods.szlak.create import _create_szlak_steering_object
+            from wisent.core.control.steering_methods.methods.szlak.create import _create_szlak_steering_object
             steering_obj = _create_szlak_steering_object(
                 metadata, layer_activations, available_layers, args
             )
         elif method_name == 'wicher':
-            from wisent.core.steering_methods.methods.wicher.create import _create_wicher_steering_object
+            from wisent.core.control.steering_methods.methods.wicher.create import _create_wicher_steering_object
             steering_obj = _create_wicher_steering_object(
                 metadata, layer_activations, available_layers, args
             )
         elif method_name == 'przelom':
-            from wisent.core.steering_methods.methods.przelom.create import _create_przelom_steering_object
+            from wisent.core.control.steering_methods.methods.przelom.create import _create_przelom_steering_object
             steering_obj = _create_przelom_steering_object(
                 metadata, layer_activations, available_layers, args
             )
@@ -239,21 +239,21 @@ def _create_simple_steering_object(
     
     # Get method class
     if method_name == 'caa':
-        from wisent.core.steering_methods.methods.caa import CAAMethod
-        from wisent.core.steering_methods._steering_object_simple import CAASteeringObject
+        from wisent.core.control.steering_methods.methods.caa import CAAMethod
+        from wisent.core.control.steering_methods._steering_object_simple import CAASteeringObject
         method = CAAMethod(normalize=getattr(args, 'normalize', True))
         obj_class = CAASteeringObject
     elif method_name == 'ostrze':
-        from wisent.core.steering_methods.methods.ostrze import OstrzeMethod
-        from wisent.core.steering_methods._steering_object_simple import OstrzeSteeringObject
+        from wisent.core.control.steering_methods.methods.ostrze import OstrzeMethod
+        from wisent.core.control.steering_methods._steering_object_simple import OstrzeSteeringObject
         method = OstrzeMethod(
             normalize=getattr(args, 'normalize', True),
             C=getattr(args, 'ostrze_C', OSTRZE_C),
         )
         obj_class = OstrzeSteeringObject
     elif method_name == 'mlp':
-        from wisent.core.steering_methods.methods.mlp import MLPMethod
-        from wisent.core.steering_methods._steering_object_simple import MLPSteeringObject
+        from wisent.core.control.steering_methods.methods.mlp import MLPMethod
+        from wisent.core.control.steering_methods._steering_object_simple import MLPSteeringObject
         method = MLPMethod(
             normalize=getattr(args, 'normalize', True),
             hidden_dim=getattr(args, 'mlp_hidden_dim', MLP_HIDDEN_DIM),

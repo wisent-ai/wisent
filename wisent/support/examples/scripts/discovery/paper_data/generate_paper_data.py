@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any
 
-from wisent.core.constants import SEPARATOR_WIDTH_WIDE, JSON_INDENT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, JSON_INDENT
 from wisent.examples.scripts.generate_paper_data_helpers import (
     GCS_BUCKET,
     download_all_results,

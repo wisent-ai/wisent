@@ -8,10 +8,10 @@ model-based threshold determination, plus classifier parameter determination.
 
 from typing import List
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.activations import Activations
-from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import (DEFAULT_LAYER, CLASSIFIER_THRESHOLD,
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.activations import Activations
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import (DEFAULT_LAYER, CLASSIFIER_THRESHOLD,
     AGENT_DEFAULT_SAMPLES, CLASSIFIER_HIDDEN_DIM,
     CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_CLASSIFIER_LR,
     CLASSIFIER_EARLY_STOPPING_PATIENCE, QUALITY_THRESHOLD_CLAMP_MIN,

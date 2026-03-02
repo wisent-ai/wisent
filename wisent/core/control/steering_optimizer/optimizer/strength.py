@@ -12,14 +12,14 @@ from typing import Dict, List, Tuple, Optional, Any
 
 import numpy as np
 
-from wisent.core.errors import (
+from wisent.core.utils.infra_tools.errors import (
     MissingParameterError,
     SteeringMethodUnknownError,
     InsufficientDataError,
 )
-from wisent.core.steering_methods import SteeringMethodType
+from wisent.core.control.steering_methods import SteeringMethodType
 from wisent.core import constants as _C
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH, DEFAULT_LIMIT, DEFAULT_LAYER,
     DEFAULT_NUM_STRENGTH_STEPS, SEARCH_LAYER_OFFSET,
     SEARCH_STRENGTH_RANGE_MIN, SEARCH_STRENGTH_RANGE_MAX,

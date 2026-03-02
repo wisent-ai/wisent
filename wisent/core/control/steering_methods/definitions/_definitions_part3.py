@@ -1,11 +1,11 @@
 """Steering method definitions: MLP, NURT, SZLAK, WICHER."""
 
-from wisent.core.steering_methods.registry import (
+from wisent.core.control.steering_methods.registry import (
     SteeringMethodDefinition,
     SteeringMethodParameter,
     SteeringMethodType,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH,
     DEFAULT_VARIANCE_THRESHOLD,
     BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA,
@@ -22,7 +22,7 @@ MLP_DEFINITION = SteeringMethodDefinition(
     name="mlp",
     method_type=SteeringMethodType.MLP,
     description="MLP-based steering using adversarial gradient direction from trained classifier. Captures non-linear decision boundaries.",
-    method_class_path="wisent.core.steering_methods.methods.mlp.MLPMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.mlp.MLPMethod",
     parameters=[
         SteeringMethodParameter(
             name="hidden_dim",
@@ -88,7 +88,7 @@ NURT_DEFINITION = SteeringMethodDefinition(
     name="nurt",
     method_type=SteeringMethodType.NURT,
     description="Concept Flow - Flow matching in SVD-derived concept subspace. Learns on-manifold transport between contrastive distributions.",
-    method_class_path="wisent.core.steering_methods.methods.nurt.NurtMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.nurt.NurtMethod",
     parameters=[
         SteeringMethodParameter(
             name="num_dims",
@@ -155,7 +155,7 @@ SZLAK_DEFINITION = SteeringMethodDefinition(
     name="szlak",
     method_type=SteeringMethodType.SZLAK,
     description="Attention-Transport steering via EOT cost inversion with one-sided Sinkhorn.",
-    method_class_path="wisent.core.steering_methods.methods.szlak.SzlakMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.szlak.SzlakMethod",
     parameters=[
         SteeringMethodParameter(
             name="sinkhorn_reg",
@@ -185,7 +185,7 @@ WICHER_DEFINITION = SteeringMethodDefinition(
     name="wicher",
     method_type=SteeringMethodType.WICHER,
     description="WICHER — subspace-projected Broyden steering via low-rank SVD concept basis with adaptive regularization.",
-    method_class_path="wisent.core.steering_methods.methods.wicher.WicherMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.wicher.WicherMethod",
     parameters=[
         SteeringMethodParameter(
             name="concept_dim",

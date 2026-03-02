@@ -10,14 +10,14 @@ from typing import Optional
 
 from tqdm import tqdm
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import (
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.utils.config_tools.constants import (
     LIVEMATHBENCH_K_VALUES,
     LIVEMATHBENCH_NUM_SAMPLES,
     LIVEMATHBENCH_TAU_VALUES,
     SEPARATOR_WIDTH_STANDARD, JSON_INDENT,
 )
-from wisent.core.evaluators.benchmark_specific.livemathbench_evaluator import (
+from wisent.core.reading.evaluators.benchmark_specific.livemathbench_evaluator import (
     LiveMathBenchEvaluator,
     compute_all_metrics,
 )

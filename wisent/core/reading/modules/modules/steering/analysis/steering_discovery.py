@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from typing import List, Dict, Tuple, Optional, Callable
 from dataclasses import dataclass
-from wisent.core.constants import NORM_EPS, STEERING_N_RANDOM, STEERING_N_PCA, DEFAULT_STRENGTH, DEFAULT_RANDOM_SEED, CONCEPT_PCA_COMPONENTS, DEFAULT_SCALE_FACTOR
+from wisent.core.utils.config_tools.constants import NORM_EPS, STEERING_N_RANDOM, STEERING_N_PCA, DEFAULT_STRENGTH, DEFAULT_RANDOM_SEED, CONCEPT_PCA_COMPONENTS, DEFAULT_SCALE_FACTOR
 
 
 @dataclass
@@ -164,8 +164,8 @@ def search_layers(
 
     Returns list of (layer, base_truthful, steered_truthful, improvement_pct) sorted by improvement.
     """
-    from wisent.core.activations.core.atoms import LayerActivations
-    from wisent.core.adapters.base import SteeringConfig
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
 
     results = []
 

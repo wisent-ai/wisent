@@ -10,7 +10,7 @@ import time
 from typing import Optional, Any
 from contextlib import asynccontextmanager
 
-from wisent.core.constants import AGENT_TIMEOUT_CHECK_INTERVAL, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import AGENT_TIMEOUT_CHECK_INTERVAL, SECONDS_PER_MINUTE
 
 
 class TimeoutError(Exception):

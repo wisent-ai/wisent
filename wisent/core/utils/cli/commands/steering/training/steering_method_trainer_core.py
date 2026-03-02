@@ -4,13 +4,13 @@ from typing import Any, Dict, List, Optional, Tuple
 
 import torch
 
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
-from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.constants import DEFAULT_STRENGTH, NORM_EPS
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, NORM_EPS
 
 logger = logging.getLogger(__name__)
 
@@ -60,13 +60,13 @@ def train_steering_vector_for_layer(
     params = method_params or {}
     
     if method_name == "caa":
-        from wisent.core.steering_methods.methods.caa import CAAMethod
+        from wisent.core.control.steering_methods.methods.caa import CAAMethod
         method = CAAMethod(**params)
         return method.train_for_layer(pos_acts, neg_acts)
     
     elif method_name == "tecza":
         # TECZA can work per-layer by training on stacked tensors
-        from wisent.core.steering_methods.methods.advanced import TECZAMethod
+        from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
         method = TECZAMethod(**params)
         
         # Stack activations and train
@@ -92,13 +92,13 @@ def train_steering_vector_for_layer(
     elif method_name in ("tetno", "grom"):
         # TETNO and GROM require full ContrastivePairSet - fall back to CAA for per-layer
         # This is a simplification; for full TETNO/GROM training, use train_steering_vectors
-        from wisent.core.steering_methods.methods.caa import CAAMethod
+        from wisent.core.control.steering_methods.methods.caa import CAAMethod
         method = CAAMethod(normalize=True)
         return method.train_for_layer(pos_acts, neg_acts)
     
     else:
         # Default to CAA
-        from wisent.core.steering_methods.methods.caa import CAAMethod
+        from wisent.core.control.steering_methods.methods.caa import CAAMethod
         method = CAAMethod(**params)
         return method.train_for_layer(pos_acts, neg_acts)
 

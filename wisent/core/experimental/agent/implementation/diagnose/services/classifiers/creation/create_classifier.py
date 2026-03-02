@@ -12,9 +12,9 @@ import time
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional, Tuple
 
-from wisent.core.classifier.classifier import ActivationClassifier, Classifier
-from wisent.core.constants import CLASSIFIER_TRAINING_SAMPLES, CLASSIFIER_TEST_SIZE, CLASSIFIER_THRESHOLD, CLASSIFIER_MIN_TARGET_SCORE, LAYER_STRIDE_DEFAULT
-from wisent.core.errors import ClassifierCreationError, InsufficientDataError
+from wisent.core.reading.classifiers.core.atoms import ActivationClassifier, Classifier
+from wisent.core.utils.config_tools.constants import CLASSIFIER_TRAINING_SAMPLES, CLASSIFIER_TEST_SIZE, CLASSIFIER_THRESHOLD, CLASSIFIER_MIN_TARGET_SCORE, LAYER_STRIDE_DEFAULT
+from wisent.core.utils.infra_tools.errors import ClassifierCreationError, InsufficientDataError
 
 from ...activations import Activations
 from ...layer import Layer

@@ -29,7 +29,7 @@ sys.path.insert(0, current_dir)
 # Import the sample retrieval function and benchmark list
 from populate_tasks import get_task_samples_for_analysis
 from only_benchmarks import CORE_BENCHMARKS
-from wisent.core.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
 from wisent.core import constants as _C
 
 def time_benchmark_loading(benchmark_name: str, benchmark_config: dict, num_samples: int = DEFAULT_NUM_SAMPLES) -> Dict:

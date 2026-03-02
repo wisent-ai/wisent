@@ -18,11 +18,11 @@ from dataclasses import dataclass, asdict
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from sklearn.cluster import AgglomerativeClustering
 
-from wisent.core.benchmarks import get_all_benchmarks
+from wisent.core.utils.services.benchmarks import get_all_benchmarks
 from wisent.extractors.lm_eval.lm_task_pairs_generation import lm_build_contrastive_pairs
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.extractors.hf.hf_extractor_manifest import HF_EXTRACTORS
-from wisent.core.contrastive_pairs.diagnostics import (
+from wisent.core.primitives.contrastive_pairs.diagnostics import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )
@@ -42,12 +42,12 @@ STRATEGIES = [
 RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", "To"]
 
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, CLUSTER_PROGRESS_INTERVAL, CLUSTER_MIN_PAIRS,
     GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS,
     DEFAULT_RANDOM_SEED, JSON_INDENT, CHANCE_LEVEL_ACCURACY,
 )
-from wisent.core.cli.analysis.diagnosis.cluster_benchmarks_activations import (
+from wisent.core.utils.cli.analysis.diagnosis.cluster_benchmarks_activations import (
     ConfigResult, get_layers_to_test, get_activation, get_mc_balanced_activations,
     load_benchmark_pairs, compute_directions_for_strategy,
 )

@@ -36,21 +36,21 @@ import tempfile
 from typing import Optional
 
 # Re-exports for backwards compatibility
-from wisent.core.cli.optimize_steering.method_configs import (
+from wisent.core.utils.cli.optimize_steering.method_configs import (
     STEERING_STRATEGIES,
     MethodConfig, CAAConfig, OstrzeConfig, MLPConfig,
     TECZAConfig, TETNOConfig, GROMConfig, NurtConfig,
     SzlakConfig, WicherConfig,
 )
-from wisent.core.cli.optimize_steering.transport import PrzelomConfig, execute_transport_rl
-from wisent.core.cli.optimize_steering.search_space import get_search_space
-from wisent.core.cli.optimize_steering.pipeline import (
+from wisent.core.utils.cli.optimize_steering.transport import PrzelomConfig, execute_transport_rl
+from wisent.core.utils.cli.optimize_steering.search_space import get_search_space
+from wisent.core.utils.cli.optimize_steering.pipeline import (
     OptimizationResult, run_pipeline, create_optuna_objective, _make_args,
 )
-from wisent.core.cli.optimize_steering.welfare import _execute_welfare_optimization
-from wisent.core.cli.optimize_steering.personalization import _execute_personalization_optimization
-from wisent.core.cli.optimize_steering.continual import execute_continual_learning
-from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, DEFAULT_NUM_HIDDEN_LAYERS, JSON_INDENT, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.cli.optimize_steering.welfare import _execute_welfare_optimization
+from wisent.core.utils.cli.optimize_steering.personalization import _execute_personalization_optimization
+from wisent.core.utils.cli.optimize_steering.continual import execute_continual_learning
+from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, DEFAULT_NUM_HIDDEN_LAYERS, JSON_INDENT, SEPARATOR_WIDTH_REPORT
 
 
 def execute_optimize_steering(args):
@@ -66,7 +66,7 @@ def execute_optimize_steering(args):
     # Check for 'auto' subcommand - route to zwiad-based optimizer
     subcommand = getattr(args, 'subcommand', None)
     if subcommand == 'auto':
-        from wisent.core.steering_optimizer import run_auto_steering_optimization
+        from wisent.core.control.steering_optimizer import run_auto_steering_optimization
 
         result = run_auto_steering_optimization(
             model_name=args.model,

@@ -14,7 +14,7 @@ def run_wisent_command(
     args: list, timeout: int = TIMEOUT
 ) -> subprocess.CompletedProcess:
     """Run a wisent CLI command and return the result."""
-    cmd = ["python", "-m", "wisent.core.main"] + args
+    cmd = ["python", "-m", "wisent.core.primitives.model_interface.core.main"] + args
     return subprocess.run(
         cmd, capture_output=True, text=True, timeout=timeout
     )

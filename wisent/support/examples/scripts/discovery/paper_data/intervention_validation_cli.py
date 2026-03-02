@@ -7,7 +7,7 @@ from pathlib import Path
 from dataclasses import asdict
 from typing import List
 
-from wisent.core.constants import DEFAULT_RANDOM_SEED, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, JSON_INDENT
 from wisent.examples.scripts.intervention_validation_cli_helpers import (
     GCS_BUCKET,
     GCS_PREFIX,

@@ -3,7 +3,7 @@
 import numpy as np
 from typing import Dict, Any
 from scipy import stats
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     STAT_ALPHA, TARGET_POWER,
     EFFECT_SIZE_SMALL, EFFECT_SIZE_MEDIUM, EFFECT_SIZE_LARGE,
     POWER_EXCELLENT_THRESHOLD, POWER_ADEQUATE_THRESHOLD, POWER_LOW_THRESHOLD,

@@ -16,7 +16,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from wisent.core.constants import SECONDS_PER_MINUTE, SECONDS_PER_HOUR
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE, SECONDS_PER_HOUR
 
 
 # Measured benchmark loading times (seconds) from lm-eval-harness

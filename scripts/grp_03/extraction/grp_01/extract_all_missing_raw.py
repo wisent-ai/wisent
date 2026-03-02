@@ -21,7 +21,7 @@ import time
 import psycopg2
 import torch
 
-from wisent.core.constants import PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL, EXTRACTION_DEFAULT_PAIR_LIMIT
 
 from extract_all_missing_raw_helpers import (
     get_conn,
@@ -37,7 +37,7 @@ from extract_all_missing_raw_helpers import (
 def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_id: int,
                       num_layers: int, device: str, limit: int = 500):
     """Extract raw activations for a single benchmark using 3 formats."""
-    from wisent.core.activations import ExtractionStrategy, build_extraction_texts
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, build_extraction_texts
 
     conn = get_conn()
 

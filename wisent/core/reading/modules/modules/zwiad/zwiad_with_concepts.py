@@ -5,7 +5,7 @@ from dataclasses import asdict as _asdict
 import json
 import torch
 import numpy as np
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_SCORE, DEFAULT_RANDOM_SEED, JSON_INDENT, VIZ_PCA_COMPONENTS,
     LINEARITY_MAX_PAIRS, MIN_CONCEPT_DIM,
 )

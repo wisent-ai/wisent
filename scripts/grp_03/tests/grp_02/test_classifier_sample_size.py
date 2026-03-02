@@ -16,7 +16,7 @@ from sklearn.metrics import accuracy_score
 import random
 from datasets import load_dataset
 from transformers import AutoTokenizer, AutoModelForCausalLM
-from wisent.core.constants import DEFAULT_RANDOM_SEED
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
 
 # Config
 MODEL_NAME = "meta-llama/Llama-3.2-1B-Instruct"

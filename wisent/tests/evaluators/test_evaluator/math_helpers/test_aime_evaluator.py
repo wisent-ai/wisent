@@ -1,7 +1,7 @@
 """Unit tests for AIMEEvaluator."""
 
 import pytest
-from wisent.core.evaluators.benchmark_specific.aime_evaluator import AIMEEvaluator
+from wisent.core.reading.evaluators.benchmark_specific.aime_evaluator import AIMEEvaluator
 
 
 class TestAIMEEvaluator:

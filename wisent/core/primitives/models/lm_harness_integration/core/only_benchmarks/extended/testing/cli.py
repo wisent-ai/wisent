@@ -7,7 +7,7 @@ import os
 import sys
 from typing import Dict
 
-from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import JSON_INDENT, SEPARATOR_WIDTH_REPORT, SEPARATOR_WIDTH_STANDARD
 from ..registry import CORE_BENCHMARKS
 from ..readme_parsing import update_all_benchmarks_from_readme
 from ..matching import (

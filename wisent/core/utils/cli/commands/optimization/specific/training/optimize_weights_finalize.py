@@ -4,7 +4,7 @@ import os
 import subprocess
 import time
 
-from wisent.core.constants import DEFAULT_SHOW_COMPARISONS, DISPLAY_TRUNCATION_SHORT, JSON_INDENT, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import DEFAULT_SHOW_COMPARISONS, DISPLAY_TRUNCATION_SHORT, JSON_INDENT, SECONDS_PER_MINUTE
 
 
 def upload_to_gcs(local_path: str, gcs_bucket: str, gcs_key: str) -> bool:
@@ -52,7 +52,7 @@ def _finalize_optimization(
     Returns:
         OptimizationResult
     """
-    from wisent.core.cli.optimization.specific.optimize_weights_comparisons import (
+    from wisent.core.utils.cli.optimization.specific.optimize_weights_comparisons import (
         _show_response_comparisons,
     )
 
@@ -166,7 +166,7 @@ def _finalize_optimization(
     print(f"Total optimization time: {total_time:.1f}s ({total_time/SECONDS_PER_MINUTE:.1f} min)")
     print(f"{'='*80}\n")
 
-    from wisent.core.cli.optimization.specific.optimize_weights import OptimizationResult
+    from wisent.core.utils.cli.optimization.specific.optimize_weights import OptimizationResult
     return OptimizationResult(
         best_params=best_params,
         best_score=best_value,

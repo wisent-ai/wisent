@@ -9,8 +9,8 @@ Uses math_equal from math_parsing for robust comparison.
 import logging
 from typing import Any
 
-from wisent.core.evaluators.benchmark_specific.math_parsing.scripts import multi_math_equal
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.scripts import multi_math_equal
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 
 logger = logging.getLogger(__name__)
 

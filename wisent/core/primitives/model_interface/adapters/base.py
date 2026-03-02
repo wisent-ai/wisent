@@ -15,15 +15,15 @@ import inspect
 import torch
 import torch.nn as nn
 
-from wisent.core.modalities import (
+from wisent.core.primitives.models.modalities import (
     Modality,
     ModalityContent,
     ContentType,
     wrap_content,
 )
-from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
-from wisent.core.errors import DuplicateNameError
-from wisent.core.adapters._base_steering_mixin import SteeringHookMixin
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap
+from wisent.core.utils.infra_tools.errors import DuplicateNameError
+from wisent.core.primitives.model_interface.adapters._base_steering_mixin import SteeringHookMixin
 
 __all__ = [
     "AdapterError",

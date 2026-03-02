@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 
 from ..geometry import StructureType, GeometryAnalysisResult
-from wisent.core.constants import DIAG_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, DIAG_MAX_PAIR_COMBINATIONS
+from wisent.core.utils.config_tools.constants import DIAG_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, DIAG_MAX_PAIR_COMBINATIONS
 
 
 @dataclass

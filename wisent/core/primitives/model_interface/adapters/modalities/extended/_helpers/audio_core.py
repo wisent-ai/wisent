@@ -13,20 +13,20 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from wisent.core.adapters.base import (
+from wisent.core.primitives.model_interface.adapters.base import (
     BaseAdapter,
     AdapterError,
     InterventionPoint,
     SteeringConfig,
 )
-from wisent.core.modalities import (
+from wisent.core.primitives.models.modalities import (
     Modality,
     AudioContent,
     TextContent,
 )
-from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import AUDIO_SAMPLE_RATE
+from wisent.core.utils.config_tools.constants import AUDIO_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
 

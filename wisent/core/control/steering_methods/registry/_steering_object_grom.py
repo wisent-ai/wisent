@@ -4,10 +4,10 @@ from typing import Any, Dict, List, Optional
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from wisent.core.steering_methods._steering_object_base import (
+from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
-from wisent.core.constants import GROM_HIDDEN_DIM, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE, GROM_MAX_ALPHA, GROM_GATE_TEMPERATURE
+from wisent.core.utils.config_tools.constants import GROM_HIDDEN_DIM, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE, GROM_MAX_ALPHA, GROM_GATE_TEMPERATURE
 
 class GROMGateNetwork(nn.Module):
     """Serializable gate network for GROM."""

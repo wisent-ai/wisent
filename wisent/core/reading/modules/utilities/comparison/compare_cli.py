@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 from typing import List, Optional
 
-from wisent.core.constants import JSON_INDENT, SEPARATOR_WIDTH_NARROW
-from wisent.core.steering_methods.steering_object import load_steering_object
-from wisent.core.geometry.comparison.cross_trait import compare_steering_objects
+from wisent.core.utils.config_tools.constants import JSON_INDENT, SEPARATOR_WIDTH_NARROW
+from wisent.core.control.steering_methods.steering_object import load_steering_object
+from wisent.core.reading.modules.comparison.cross_trait import compare_steering_objects
 
 
 def _get_label(obj) -> str:

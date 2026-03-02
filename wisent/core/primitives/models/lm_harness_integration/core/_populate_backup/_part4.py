@@ -7,18 +7,18 @@ Split from populate_tasks_backup.py to meet 300-line limit.
 import random
 from typing import Dict, Any, List, Optional
 
-from wisent.core.errors import InsufficientDataError, TaskNotFoundError
-from wisent.core.constants import DISPLAY_TOP_N_TINY
-from wisent.core.constants import EVAL_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.utils.infra_tools.errors import InsufficientDataError, TaskNotFoundError
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import EVAL_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM
 from wisent.core import constants as _C
-from wisent.core.lm_harness_integration._populate_backup._part3 import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup._part3 import (
     get_samples_from_group_task,
     expand_group_task,
     _get_task_docs,
     _extract_question,
     _extract_answer,
 )
-from wisent.core.lm_harness_integration._populate_backup._part2 import (
+from wisent.core.primitives.models.lm_harness_integration._populate_backup._part2 import (
     get_benchmark_groups_from_readme,
 )
 

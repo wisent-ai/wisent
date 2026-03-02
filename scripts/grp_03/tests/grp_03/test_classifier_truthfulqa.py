@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score
 from sklearn.neural_network import MLPClassifier
 import random
-from wisent.core.constants import DEFAULT_RANDOM_SEED, DIAGNOSTIC_MLP_HIDDEN_SIZES_LARGE
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, DIAGNOSTIC_MLP_HIDDEN_SIZES_LARGE
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "mps"

@@ -8,7 +8,7 @@ from collections import defaultdict
 from dataclasses import dataclass, asdict
 from typing import Dict, List, Optional
 
-from wisent.core.constants import JSON_INDENT, REPLAY_BUFFER_MAX_SIZE
+from wisent.core.utils.config_tools.constants import JSON_INDENT, REPLAY_BUFFER_MAX_SIZE
 
 
 @dataclass

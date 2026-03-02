@@ -45,14 +45,14 @@ from . import (
 )
 
 
-from wisent.core.cli.optimize_steering.hierarchical_config import (
+from wisent.core.utils.cli.optimize_steering.hierarchical_config import (
     HierarchicalResult, HierarchicalConfig,
     count_hierarchical_configs,
 )
-from wisent.core.cli.optimize_steering.hierarchical_runner import (
+from wisent.core.utils.cli.optimize_steering.hierarchical_runner import (
     run_hierarchical_optimization,
 )
-from wisent.core.constants import DEFAULT_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS
+from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS
 
 
 def execute_hierarchical_optimization(args):

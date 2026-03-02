@@ -34,7 +34,7 @@ Usage:
     wisent optimize-weights \
         --task custom \
         --trait "human-like writing style" \
-        --custom-evaluator wisent.core.evaluators.custom.examples.gptzero \
+        --custom-evaluator wisent.core.reading.evaluators.custom.examples.gptzero \
         --custom-evaluator-kwargs '{"api_key": "YOUR_KEY"}' \
         --model meta-llama/Llama-3.2-1B-Instruct \
         --trials 30 \
@@ -48,7 +48,7 @@ import argparse
 import subprocess
 import sys
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_N_TRIALS,
     SEPARATOR_WIDTH_REPORT,
 )
@@ -121,7 +121,7 @@ def main():
 
     # Build the optimize-weights command
     cmd = [
-        "python", "-m", "wisent.core.main", "optimize-weights",
+        "python", "-m", "wisent.core.primitives.model_interface.core.main", "optimize-weights",
         args.model,
         "--trials", str(args.trials),
         "--num-pairs", str(args.num_pairs),

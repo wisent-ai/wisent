@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.errors import MissingParameterError
-from wisent.core.constants import DEFAULT_STRENGTH, JSON_INDENT, SZLAK_INFERENCE_K
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, JSON_INDENT, SZLAK_INFERENCE_K
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,

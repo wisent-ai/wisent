@@ -24,7 +24,7 @@ def run_numeric_expected_test():
     Returns:
         EvaluationResult from evaluating numeric expected values
     """
-    from wisent.core.evaluators.benchmark_specific.coding.metrics.conala import (
+    from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.conala import (
         CoNaLaEvaluator,
     )
 

@@ -8,7 +8,7 @@ from typing import Any, Mapping
 from abc import ABC, abstractmethod
 import unicodedata
 
-from wisent.core.errors import DuplicateNameError
+from wisent.core.utils.infra_tools.errors import DuplicateNameError
 
 __all__ = [
     "BaseEvaluator",

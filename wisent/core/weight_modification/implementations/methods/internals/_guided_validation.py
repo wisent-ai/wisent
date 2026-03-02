@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Dict, List, TYPE_CHECKING
 if TYPE_CHECKING:
     from torch.nn import Module
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.constants import BLEND_DEFAULT
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import BLEND_DEFAULT
 from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig, CollateralDamageReport)
 from wisent.core.weight_modification.methods._guided_diagnostics import compute_layer_diagnostics

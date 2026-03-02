@@ -9,7 +9,7 @@ import signal
 import sys
 from pathlib import Path
 
-from wisent.core.constants import BENCHMARKS_PER_TYPE, DEFAULT_TIMEOUT_DOCKER, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_MEDIUM, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
+from wisent.core.utils.config_tools.constants import BENCHMARKS_PER_TYPE, DEFAULT_TIMEOUT_DOCKER, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_MEDIUM, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 class TimeoutError(Exception):
@@ -39,7 +39,7 @@ def format_pair_with_strategies(pair, tokenizer):
     
     Returns dict with raw data and formatted versions for each strategy.
     """
-    from wisent.core.activations import (
+    from wisent.core.primitives.model_interface.core.activations import (
         ExtractionStrategy,
         build_extraction_texts,
     )
@@ -131,7 +131,7 @@ def test_all_benchmarks(timeout_per_task: int = DEFAULT_TIMEOUT_DOCKER, limit: i
         Dictionary with results including example pairs with all strategies
     """
     from wisent.extractors.lm_eval.lm_task_pairs_generation import build_contrastive_pairs
-    from wisent.core.benchmarks import get_all_benchmarks, get_broken_tasks
+    from wisent.core.utils.services.benchmarks import get_all_benchmarks, get_broken_tasks
     
     all_benchmarks = get_all_benchmarks()
     broken = set(get_broken_tasks())

@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DISPLAY_TRUNCATION_ERROR,
     DISPLAY_TOP_N_MINI,
     OPTUNA_N_TRIALS_SMALL,
@@ -40,13 +40,13 @@ from wisent.core.constants import (
     SECONDS_PER_HOUR,
     JSON_INDENT,
 )
-from wisent.core.cli.optimization.core.optimize_helpers import (
+from wisent.core.utils.cli.optimization.core.optimize_helpers import (
     get_checkpoint_path, get_s3_checkpoint_key, load_checkpoint,
     save_checkpoint, get_all_benchmarks, get_personalization_traits,
     get_safety_traits, get_humanization_traits, get_welfare_traits,
 )
-from wisent.core.cli.optimization.core.optimize_phase2a import run_benchmark_steering
-from wisent.core.cli.optimization.core.optimize_phase2b import run_safety_welfare_steering
+from wisent.core.utils.cli.optimization.core.optimize_phase2a import run_benchmark_steering
+from wisent.core.utils.cli.optimization.core.optimize_phase2b import run_safety_welfare_steering
 
 
 def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
@@ -60,7 +60,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
     
     Across ALL benchmarks and traits.
     """
-    from wisent.core.config_manager import store_optimization, get_cached_optimization
+    from wisent.core.utils.config_tools.config import store_optimization, get_cached_optimization
     
     start_time = time.time()
     
@@ -127,7 +127,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
         print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
         
         try:
-            from wisent.core.cli.optimize_classification import execute_optimize_classification
+            from wisent.core.utils.cli.optimize_classification import execute_optimize_classification
             
             clf_args = argparse.Namespace(
                 model=args.model,
@@ -175,7 +175,7 @@ def execute_optimize(args: argparse.Namespace) -> Dict[str, Any]:
         print(f"{'=' * SEPARATOR_WIDTH_WIDE}\n")
         
         try:
-            from wisent.core.cli.optimize_weights import execute_optimize_weights
+            from wisent.core.utils.cli.optimize_weights import execute_optimize_weights
             
             # Weight optimization for key traits
             weight_tasks = []

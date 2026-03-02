@@ -8,15 +8,15 @@ import os
 # Add the wisent package to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))))
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
-from wisent.core.synthetic.db_instructions.mini_dp import Default_DB_Instructions
-from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
-from wisent.core.synthetic.cleaners.deduper_cleaner import DeduperCleaner
-from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
-from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
-from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import (
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.control.generation.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
+from wisent.core.control.generation.synthetic.db_instructions.mini_dp import Default_DB_Instructions
+from wisent.core.control.generation.synthetic.cleaners.pairs_cleaner import PairsCleaner
+from wisent.core.control.generation.synthetic.cleaners.deduper_cleaner import DeduperCleaner
+from wisent.core.control.generation.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
+from wisent.core.control.generation.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import (
     TOKENS_PER_PAIR_ESTIMATE,
     TOKENS_BASE_OFFSET,
     TOKEN_ESTIMATE_MIN,

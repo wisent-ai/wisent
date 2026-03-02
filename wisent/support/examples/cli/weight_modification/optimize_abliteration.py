@@ -15,7 +15,7 @@ from pathlib import Path
 from dataclasses import dataclass
 import sys
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     EXTRACTION_DEFAULT_PAIR_LIMIT,
     ABLITERATION_DEFAULT_POSITION,
     ABLITERATION_DEFAULT_DISTANCE,
@@ -61,7 +61,7 @@ def run_modification(config: AbliterationConfig, task: str, output_dir: str, mod
     model_path = f"{output_dir}/{model_name}"
 
     cmd = [
-        "python", "-m", "wisent.core.main", "modify-weights",
+        "python", "-m", "wisent.core.primitives.model_interface.core.main", "modify-weights",
         "--task", task,
         "--trait-label", "correctness",
         "--output-dir", model_path,

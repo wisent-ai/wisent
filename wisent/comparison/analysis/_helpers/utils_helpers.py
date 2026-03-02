@@ -10,11 +10,11 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import torch
-from wisent.core.constants import DEFAULT_STRENGTH, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, JSON_INDENT
 from wisent.core.utils import preferred_dtype
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
 
 def load_steering_vector(path: str | Path, default_method: str = "unknown") -> dict:

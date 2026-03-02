@@ -5,12 +5,12 @@ from __future__ import annotations
 import torch
 from typing import Dict, List, TYPE_CHECKING
 
-from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.utils.cli.cli_logger import setup_logger
 
 if TYPE_CHECKING:
     from torch import Tensor
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, PROBE_KNN_K, BLEND_DEFAULT,
     GUIDED_FISHER_MAX_BOOST, GUIDED_FISHER_BOOST_SCALE, GUIDED_FISHER_LOG_DIVISOR,
     GUIDED_EFFECT_MAX_BOOST, GUIDED_EFFECT_BOOST_SCALE, GUIDED_COHENS_D_NORMALIZER,

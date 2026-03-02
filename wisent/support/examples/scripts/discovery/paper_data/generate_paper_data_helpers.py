@@ -5,7 +5,7 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any
 from collections import defaultdict
-from wisent.core.constants import DISPLAY_TOP_N_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_MEDIUM
 
 GCS_BUCKET = "wisent-images-bucket"
 

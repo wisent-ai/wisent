@@ -6,7 +6,7 @@ by importing them from the steering_methods package.
 """
 
 # Import available steering methods from the package
-from wisent.core.steering_methods import (
+from wisent.core.control.steering_methods import (
     CAAMethod,
     CAA,
     SteeringMethodRotator,

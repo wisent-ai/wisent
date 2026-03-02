@@ -3,11 +3,11 @@ from __future__ import annotations
 from typing import Any, Callable, Dict, List
 import torch
 import torch.nn as nn
-from wisent.core.adapters.base import SteeringConfig
-from wisent.core.modalities import RobotState, RobotAction, RobotTrajectory
-from wisent.core.errors import UnknownTypeError
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.constants import TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
+from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
+from wisent.core.primitives.models.modalities import RobotState, RobotAction, RobotTrajectory
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.utils.config_tools.constants import TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
 
 __all__ = [
     "forward_with_steering_robotics", "generate_unsteered_robotics",
@@ -17,7 +17,7 @@ __all__ = [
 
 def forward_with_steering_robotics(adapter, content, steering_vectors, config=None) -> RobotAction:
     """Get action with steering applied."""
-    from wisent.core.adapters.modalities.robotics import RoboticsSteeringConfig
+    from wisent.core.primitives.model_interface.adapters.modalities.robotics import RoboticsSteeringConfig
     config = config or RoboticsSteeringConfig()
     with adapter._steering_hooks(steering_vectors, config):
         action_tensor = adapter.forward_policy(content)

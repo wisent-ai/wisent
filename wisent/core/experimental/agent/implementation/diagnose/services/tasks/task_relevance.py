@@ -9,7 +9,7 @@ Uses model-driven decisions instead of hardcoded patterns.
 
 from typing import List, Dict, Set, Tuple
 from .task_manager import get_available_tasks
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LAYER,
     TASK_RELEVANCE_MAX_RESULTS, TASK_MIN_RELEVANCE_SCORE, TASK_SEARCH_LIMIT,
 )

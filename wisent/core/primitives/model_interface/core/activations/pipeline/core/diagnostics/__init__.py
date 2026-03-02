@@ -5,7 +5,7 @@ Provides comprehensive analysis of extraction strategies to determine which
 produces the best activations for steering.
 
 Usage:
-    from wisent.core.activations.core.diagnostics import (
+    from wisent.core.primitives.model_interface.core.activations.core.diagnostics import (
         StrategyDiagnostics,
         run_strategy_diagnostics,
         compare_strategies,

@@ -17,8 +17,8 @@ import itertools
 
 
 
-from wisent.core.constants import SEARCH_DEFAULT_STRENGTHS
-from wisent.core.cli.steering.core.config.steering_search_space_classes import (
+from wisent.core.utils.config_tools.constants import SEARCH_DEFAULT_STRENGTHS
+from wisent.core.utils.cli.steering.core.config.steering_search_space_classes import (
     DirectionWeighting, SteeringLayerConfig, SensorLayerConfig,
     BaseSearchSpace, CAASearchSpace, TECZASearchSpace,
     TETNOSearchSpace, GROMSearchSpace,

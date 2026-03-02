@@ -11,15 +11,15 @@ from typing import Any, Dict, List, Union
 import torch
 import torch.nn as nn
 
-from wisent.core.adapters.base import (
+from wisent.core.primitives.model_interface.adapters.base import (
     AdapterError,
     InterventionPoint,
     SteeringConfig,
 )
-from wisent.core.modalities import AudioContent
-from wisent.core.constants import AUDIO_WHISPER_MAX_TOKENS
-from wisent.core.models.config import get_generate_kwargs
-from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.models.modalities import AudioContent
+from wisent.core.utils.config_tools.constants import AUDIO_WHISPER_MAX_TOKENS
+from wisent.core.primitives.models.config import get_generate_kwargs
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 
 
 class AudioOpsMixin:

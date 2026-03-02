@@ -5,7 +5,7 @@ import torch
 from pathlib import Path
 from typing import Dict, List, Tuple
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED, VIZ_N_NEIGHBORS, VIZ_MIN_DIST,
     VIZ_PERPLEXITY, TSNE_N_ITER, VIZ_DPI, VIZ_N_COMPONENTS_2D,
     VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_TITLE, VIZ_FONTSIZE_SUBTITLE,

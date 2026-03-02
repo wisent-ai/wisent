@@ -11,11 +11,11 @@ This module handles:
 from dataclasses import dataclass
 from typing import Any, Dict, List
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import CLASSIFIER_THRESHOLD, AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, CLASSIFIER_THRESHOLD, DEFAULT_LAYER, QUALITY_CLASSIFIER_DEFAULT_LAYER
-from wisent.core.activations.activations import Activations
-from wisent.core.classifier.classifier import Classifier
-from wisent.core.errors import (
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD, AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, CLASSIFIER_THRESHOLD, DEFAULT_LAYER, QUALITY_CLASSIFIER_DEFAULT_LAYER
+from wisent.core.primitives.model_interface.core.activations.activations import Activations
+from wisent.core.reading.classifiers.core.atoms import Classifier
+from wisent.core.utils.infra_tools.errors import (
     ClassifierConfigRequiredError,
     ClassifierLoadError,
     NoConfidenceScoresError,

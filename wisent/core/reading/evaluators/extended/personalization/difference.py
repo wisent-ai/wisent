@@ -8,8 +8,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from wisent.core.constants import SCORE_SCALE_100, SCORE_MIDPOINT_PCT
-from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
+from wisent.core.utils.config_tools.constants import SCORE_SCALE_100, SCORE_MIDPOINT_PCT
+from wisent.core.control.generation.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
 
 if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer

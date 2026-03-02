@@ -11,8 +11,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from wisent.cli_utils.cli_prepare_dataset import _cross_benchmark_mode, PrepState
-from wisent.core.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
-from wisent.core.contrastive_pairs.contrastive_pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
+from wisent.core.primitives.contrastive_pairs.contrastive_pair import ContrastivePair
 
 
 def test_cross_benchmark_mode_disabled():

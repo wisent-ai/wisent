@@ -19,7 +19,7 @@ import torch
 from scipy.sparse import csr_matrix
 from scipy.sparse.csgraph import shortest_path
 from sklearn.neighbors import NearestNeighbors
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS,
     SZLAK_SINKHORN_REG,
     SZLAK_MAX_ITER,

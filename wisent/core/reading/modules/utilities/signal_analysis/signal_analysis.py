@@ -8,7 +8,7 @@ bootstrap estimates, and saturation analysis.
 import torch
 import numpy as np
 from typing import Dict, Any, List, Optional
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NORM_EPS, DEFAULT_SCORE, BLEND_DEFAULT, DEFAULT_SCALE,
     SIGNAL_NULL_MEAN, SIGNAL_NULL_STD, SIGNAL_SATURATION_DELTA,
     SIGNAL_POWER_SAMPLE_SIZES, SIGNAL_ICD_THRESHOLD, AUTO_MIN_PAIRS,

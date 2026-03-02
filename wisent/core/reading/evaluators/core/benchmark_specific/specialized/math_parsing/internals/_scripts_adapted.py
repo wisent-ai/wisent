@@ -2,17 +2,17 @@
 import re
 from typing import Any, Optional, List
 from sympy import simplify, N
-from wisent.core.evaluators.benchmark_specific.math_parsing.core import EvaluatorMath
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_constants import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.core import EvaluatorMath
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_constants import (
     MULTILINGUAL_ANSWER_REGEXES, MULTILINGUAL_ANSWER_PATTERN_TEMPLATE, STRIP_EXCEPTIONS,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_parsing import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_parsing import (
     numeric_equal, normalize_extracted_answer, strip_string,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_extraction import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_extraction import (
     extract_answer,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_equality import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_equality import (
     math_equal,
 )
 

@@ -7,8 +7,8 @@ import numpy as np
 import torch
 from datasets import load_dataset
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, PROGRESS_LOG_INTERVAL_20
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, PROGRESS_LOG_INTERVAL_20
 
 
 def load_truthfulqa_pairs(n_pairs: int = N_BOOTSTRAP_DEFAULT, seed: int = DEFAULT_RANDOM_SEED) -> List[Dict]:

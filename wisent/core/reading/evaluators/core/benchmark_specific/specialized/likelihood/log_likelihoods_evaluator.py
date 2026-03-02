@@ -9,8 +9,8 @@ import logging
 import torch
 from typing import Any, List
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.errors.error_handler import (
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.infra_tools.errors.error_handler import (
     ModelNotProvidedError,
     validate_choices,
     require_all_parameters

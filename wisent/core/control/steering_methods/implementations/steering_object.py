@@ -18,14 +18,14 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 # Re-export base classes
-from wisent.core.steering_methods._steering_object_base import (
+from wisent.core.control.steering_methods._steering_object_base import (
     LayerName,
     SteeringObjectMetadata,
     BaseSteeringObject,
 )
 
 # Re-export simple objects
-from wisent.core.steering_methods._steering_object_simple import (
+from wisent.core.control.steering_methods._steering_object_simple import (
     SimpleSteeringObject,
     CAASteeringObject,
     OstrzeSteeringObject,
@@ -33,13 +33,13 @@ from wisent.core.steering_methods._steering_object_simple import (
 )
 
 # Re-export advanced objects
-from wisent.core.steering_methods._steering_object_advanced import (
+from wisent.core.control.steering_methods._steering_object_advanced import (
     TECZASteeringObject,
     TETNOSteeringObject,
 )
 
 # Re-export GROM objects
-from wisent.core.steering_methods._steering_object_grom import (
+from wisent.core.control.steering_methods._steering_object_grom import (
     GROMGateNetwork,
     GROMIntensityNetwork,
     GROMSteeringObject,
@@ -65,16 +65,16 @@ def create_steering_object(
     elif method == 'grom':
         return GROMSteeringObject(metadata, **kwargs)
     elif method == 'nurt':
-        from wisent.core.steering_methods.methods.nurt import NurtSteeringObject
+        from wisent.core.control.steering_methods.methods.nurt import NurtSteeringObject
         return NurtSteeringObject(metadata, **kwargs)
     elif method == 'szlak':
-        from wisent.core.steering_methods.methods.szlak import SzlakSteeringObject
+        from wisent.core.control.steering_methods.methods.szlak import SzlakSteeringObject
         return SzlakSteeringObject(metadata, **kwargs)
     elif method == 'wicher':
-        from wisent.core.steering_methods.methods.wicher import WicherSteeringObject
+        from wisent.core.control.steering_methods.methods.wicher import WicherSteeringObject
         return WicherSteeringObject(metadata, **kwargs)
     elif method == 'przelom':
-        from wisent.core.steering_methods.methods.przelom import PrzelomSteeringObject
+        from wisent.core.control.steering_methods.methods.przelom import PrzelomSteeringObject
         return PrzelomSteeringObject(metadata, **kwargs)
     else:
         raise ValueError(f"Unknown steering method: {method}")

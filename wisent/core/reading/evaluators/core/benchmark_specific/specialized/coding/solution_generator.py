@@ -12,10 +12,10 @@ from pathlib import Path
 from typing import Any, Callable, Optional
 from dataclasses import dataclass, asdict
 
-from wisent.core.evaluators.benchmark_specific.coding.providers.livecodebench.provider import LiveCodeBenchProvider
-from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
-from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
-from wisent.core.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
+from wisent.core.reading.evaluators.benchmark_specific.coding.providers.livecodebench.provider import LiveCodeBenchProvider
+from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
+from wisent.core.reading.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
+from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
 from wisent.core.utils.core.hardware import eval_time_limit_s, eval_cpu_limit_s, code_eval_mem_limit_mb
 
 

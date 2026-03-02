@@ -2,7 +2,7 @@
 
 Extracted from optimize_sample_size.py to keep file under 300 lines.
 """
-from wisent.core.constants import VIZ_DPI, VIZ_FIGSIZE_WIDE, VIZ_LINEWIDTH_NORMAL, VIZ_ALPHA_HIGH
+from wisent.core.utils.config_tools.constants import VIZ_DPI, VIZ_FIGSIZE_WIDE, VIZ_LINEWIDTH_NORMAL, VIZ_ALPHA_HIGH
 
 
 def save_optimization_plots(args, results, optimal_size):

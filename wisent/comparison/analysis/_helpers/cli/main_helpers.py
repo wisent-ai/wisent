@@ -6,7 +6,7 @@ import argparse
 import json
 from pathlib import Path
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COMPARISON_NUM_PAIRS,
     COMPARISON_MAX_BATCH_SIZE,
     COMPARISON_DEFAULT_BATCH_SIZE,

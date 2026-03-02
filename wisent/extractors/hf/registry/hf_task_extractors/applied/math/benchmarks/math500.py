@@ -3,13 +3,13 @@ from __future__ import annotations
 from typing import Any
 import logging
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 from latex2sympy2_extended import latex2sympy
 from sympy import latex
-from wisent.core.evaluators.benchmark_specific.math_parsing.scripts import strip_string
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.scripts import strip_string
 
 __all__ = ["MATH500Extractor"]
 

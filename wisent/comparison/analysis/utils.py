@@ -12,10 +12,10 @@ from typing import TYPE_CHECKING
 
 import torch
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, PROGRESS_LOG_INTERVAL, COMPARISON_MAX_BATCH_SIZE, COMPARISON_DEFAULT_BATCH_SIZE
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, PROGRESS_LOG_INTERVAL, COMPARISON_MAX_BATCH_SIZE, COMPARISON_DEFAULT_BATCH_SIZE
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
 # Re-export from helpers
 from wisent.comparison._helpers.utils_helpers import (
@@ -130,7 +130,7 @@ def generate_contrastive_pairs(
         Tuple of (pairs list, path to temporary pairs file).
         Caller is responsible for cleaning up the file if needed.
     """
-    from wisent.core.cli.generate_pairs_from_task import execute_generate_pairs_from_task
+    from wisent.core.utils.cli.generate_pairs_from_task import execute_generate_pairs_from_task
 
     pairs_file = tempfile.NamedTemporaryFile(mode='w', suffix='_pairs.json', delete=False).name
     pairs_args = Namespace(
@@ -222,7 +222,7 @@ def run_ll_evaluation(
     limit: int | None = None,
 ) -> float:
     """Run evaluation using wisent's LogLikelihoodsEvaluator."""
-    from wisent.core.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
+    from wisent.core.reading.evaluators.benchmark_specific.log_likelihoods_evaluator import LogLikelihoodsEvaluator
     from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor
 
     ll_evaluator = LogLikelihoodsEvaluator()

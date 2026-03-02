@@ -17,8 +17,8 @@ import torch
 from lm_eval import evaluator
 from lm_eval.models.hf_steered import SteeredModel
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import (
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.utils.config_tools.constants import (
     COMPARISON_NUM_PAIRS,
     COMPARISON_MAX_BATCH_SIZE,
     COMPARISON_STEERING_LAYER,

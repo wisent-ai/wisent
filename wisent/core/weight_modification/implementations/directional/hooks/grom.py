@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-from wisent.core.constants import DEFAULT_STRENGTH, GROM_GATE_TEMPERATURE, GROM_SENSOR_LAYER_DEFAULT, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, GROM_GATE_TEMPERATURE, GROM_SENSOR_LAYER_DEFAULT, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -118,7 +118,7 @@ def project_weights_grom(
 ) -> dict[str, int]:
     """Bake GROM effective directions into model weights using ADDITIVE steering."""
     from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
-    from wisent.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
     log = bind(_LOG, num_layers=len(grom_result.directions))
     if components is None:
         components = ["self_attn.o_proj", "mlp.down_proj"]

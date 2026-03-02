@@ -2,12 +2,12 @@
 """
 Run extraction strategy diagnostics using the new consolidated module.
 
-Demonstrates usage of wisent.core.activations.core.diagnostics API.
+Demonstrates usage of wisent.core.primitives.model_interface.core.activations.core.diagnostics API.
 """
 
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.activations.core.diagnostics import run_full_diagnostics
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations.core.diagnostics import run_full_diagnostics
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 N_SAMPLES = 50  # Use fewer samples for faster testing

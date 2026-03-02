@@ -5,7 +5,7 @@ from __future__ import annotations
 import os
 from typing import Dict, List, Optional
 
-from wisent.core.constants import EVAL_HARNESS_NUM_SAMPLES_SMALL
+from wisent.core.utils.config_tools.constants import EVAL_HARNESS_NUM_SAMPLES_SMALL
 
 
 __all__ = [

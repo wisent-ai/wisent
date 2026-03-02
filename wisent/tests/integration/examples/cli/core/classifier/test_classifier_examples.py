@@ -18,7 +18,7 @@ def test_train_classifier_and_save():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
@@ -46,7 +46,7 @@ def test_use_pretrained_classifier():
         # Train classifier first
         train_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
@@ -65,7 +65,7 @@ def test_use_pretrained_classifier():
         # Use pretrained classifier
         inference_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--load-classifier", classifier_path,
@@ -90,7 +90,7 @@ def test_run_and_evaluate_on_benchmark():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
@@ -119,7 +119,7 @@ def test_classifier_with_mlp():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "mlp",

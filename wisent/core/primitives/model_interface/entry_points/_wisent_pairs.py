@@ -1,7 +1,7 @@
 """Pair management mixin for Wisent."""
 from __future__ import annotations
 from typing import List
-from wisent.core.modalities import ContentType, wrap_content
+from wisent.core.primitives.models.modalities import ContentType, wrap_content
 
 
 class WisentPairsMixin:

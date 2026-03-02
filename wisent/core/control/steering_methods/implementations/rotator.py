@@ -10,9 +10,9 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Type, Union
 
-from wisent.core.steering_methods.core.atoms import BaseSteeringError, BaseSteeringMethod
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.control.steering_methods.core.atoms import BaseSteeringError, BaseSteeringMethod
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 from wisent.core.utils import BaseRotator
 
 __all__ = [
@@ -34,7 +34,7 @@ class SteeringMethodRotator(BaseRotator[BaseSteeringMethod]):
     def __init__(
         self,
         method: Union[str, BaseSteeringMethod, Type[BaseSteeringMethod], None] = None,
-        methods_location: Union[str, Path] = "wisent.core.steering_methods.methods",
+        methods_location: Union[str, Path] = "wisent.core.control.steering_methods.methods",
         autoload: bool = True,
         **default_method_kwargs: Any,
     ) -> None:

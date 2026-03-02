@@ -4,9 +4,9 @@ import os
 import tempfile
 
 import torch
-from wisent.core.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, SIMILARITY_THRESHOLD
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, SIMILARITY_THRESHOLD
 from wisent.core.utils import resolve_default_device
-from wisent.core.cli.optimization.specific.optimize_weights_training import _train_multi_direction_method
+from wisent.core.utils.cli.optimization.specific.optimize_weights_training import _train_multi_direction_method
 
 
 def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> tuple[dict[int, torch.Tensor], list[str], list[str]]:
@@ -50,7 +50,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
             if not getattr(args, 'trait', None):
                 raise ValueError("--trait is required when --task personalization")
             
-            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+            from wisent.core.utils.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
 
             vector_args = Namespace(
                 trait=args.trait,
@@ -77,7 +77,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
 
         elif task_lower == "refusal":
             # Refusal: use synthetic pairs with refusal trait
-            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+            from wisent.core.utils.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
 
             vector_args = Namespace(
                 trait="refusal",
@@ -107,7 +107,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
             if not getattr(args, 'trait', None):
                 raise ValueError("--trait is required when --task custom (needed to generate steering vectors)")
             
-            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+            from wisent.core.utils.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
 
             vector_args = Namespace(
                 trait=args.trait,
@@ -134,7 +134,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
 
         elif "," in (args.task or ""):
             # Multiple benchmarks: generate unified steering vector
-            from wisent.core.cli.train_unified_goodness import execute_train_unified_goodness
+            from wisent.core.utils.cli.train_unified_goodness import execute_train_unified_goodness
 
             # Use .pt format for train_unified_goodness output
             temp_output_pt = temp_output.replace('.json', '.pt')
@@ -204,7 +204,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
 
         elif getattr(args, 'trait', None):
             # Trait-based: use synthetic pairs (when --trait is provided without --task)
-            from wisent.core.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
+            from wisent.core.utils.cli.generate_vector_from_synthetic import execute_generate_vector_from_synthetic
 
             vector_args = Namespace(
                 trait=args.trait,
@@ -231,7 +231,7 @@ def _generate_steering_vectors(args, num_pairs: int, num_layers: int = None) -> 
 
         else:
             # Single benchmark: use task-based generation
-            from wisent.core.cli.generate_vector_from_task import execute_generate_vector_from_task
+            from wisent.core.utils.cli.generate_vector_from_task import execute_generate_vector_from_task
 
             vector_args = Namespace(
                 task=args.task,

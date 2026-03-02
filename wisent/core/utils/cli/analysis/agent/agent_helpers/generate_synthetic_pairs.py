@@ -1,10 +1,10 @@
 """Generate synthetic contrastive pairs for agent."""
 
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.synthetic.generators.core.atoms import GenerationReport
-from wisent.core.errors import PairGenerationError
-from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import AGENT_MAX_WORKERS, GENERATE_PAIRS_MIN_TOKENS, SIMHASH_DEFAULT_THRESHOLD_BITS, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.control.generation.synthetic.generators.core.atoms import GenerationReport
+from wisent.core.utils.infra_tools.errors import PairGenerationError
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import AGENT_MAX_WORKERS, GENERATE_PAIRS_MIN_TOKENS, SIMHASH_DEFAULT_THRESHOLD_BITS, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET
 
 
 def generate_synthetic_pairs(
@@ -40,12 +40,12 @@ def generate_synthetic_pairs(
     returns:
         Tuple of (ContrastivePairSet, GenerationReport)
     """
-    from wisent.core.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
-    from wisent.core.synthetic.cleaners.pairs_cleaner import PairsCleaner
-    from wisent.core.synthetic.cleaners.deduper_cleaner import DeduperCleaner
-    from wisent.core.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
-    from wisent.core.synthetic.db_instructions.mini_dp import Default_DB_Instructions
-    from wisent.core.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
+    from wisent.core.control.generation.synthetic.generators.pairs_generator import SyntheticContrastivePairsGenerator
+    from wisent.core.control.generation.synthetic.cleaners.pairs_cleaner import PairsCleaner
+    from wisent.core.control.generation.synthetic.cleaners.deduper_cleaner import DeduperCleaner
+    from wisent.core.control.generation.synthetic.cleaners.methods.base_dedupers import SimHashDeduper
+    from wisent.core.control.generation.synthetic.db_instructions.mini_dp import Default_DB_Instructions
+    from wisent.core.control.generation.synthetic.generators.diversities.methods.fast_diversity import FastDiversity
 
     print(f"\n📝 Step 1: Creating contrastive pairs synthetically")
     print(f"   Trait: {prompt}")

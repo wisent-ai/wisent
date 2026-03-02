@@ -12,7 +12,7 @@ from __future__ import annotations
 from typing import Tuple
 
 import torch
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     LOG_EPS,
     DEFAULT_VARIANCE_THRESHOLD,
     MIN_CONCEPT_DIM,

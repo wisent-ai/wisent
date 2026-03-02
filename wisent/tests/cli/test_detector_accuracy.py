@@ -10,12 +10,12 @@ import torch
 import numpy as np
 from pathlib import Path
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.extractors.lm_eval.lm_extractor_registry import get_extractor
-from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PAIR_GENERATORS_DEFAULT_N, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10
-from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+from wisent.core.utils.config_tools.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PAIR_GENERATORS_DEFAULT_N, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10
+from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )

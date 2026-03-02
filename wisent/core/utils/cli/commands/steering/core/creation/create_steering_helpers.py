@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 
 from wisent.core import constants as _C
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_SCORE,
     TECZA_LEARNING_RATE,
     TECZA_NUM_DIRECTIONS,
@@ -23,7 +23,7 @@ def _create_tecza_steering_object(
     args,
 ) -> TECZASteeringObject:
     """Create TECZA steering object with multiple directions."""
-    from wisent.core.steering_methods.methods.advanced import TECZAMethod
+    from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
     
     num_directions = getattr(args, 'tecza_num_directions', TECZA_NUM_DIRECTIONS)
     
@@ -58,7 +58,7 @@ def _create_tecza_steering_object(
         
         print(f"   Layer {layer_str}: {layer_dirs.shape[0]} directions, avg_cosine={meta.get('avg_cosine_similarity', DEFAULT_SCORE):.3f}")
     
-    from wisent.core.steering_methods._steering_object_advanced import TECZASteeringObject
+    from wisent.core.control.steering_methods._steering_object_advanced import TECZASteeringObject
     return TECZASteeringObject(
         metadata=metadata,
         directions=directions,
@@ -74,7 +74,7 @@ def _create_tetno_steering_object(
     args,
 ) -> TETNOSteeringObject:
     """Create TETNO steering object with conditional gating."""
-    from wisent.core.steering_methods.methods.advanced import TETNOMethod
+    from wisent.core.control.steering_methods.methods.advanced import TETNOMethod
     
     # Determine sensor layer — use last available layer if not specified
     num_layers = len(available_layers)
@@ -169,7 +169,7 @@ def _create_tetno_steering_object(
     print(f"   Sensor layer: {sensor_layer}")
     print(f"   Optimal threshold: {best_threshold:.3f} (accuracy: {best_acc:.3f})")
     
-    from wisent.core.steering_methods._steering_object_advanced import TETNOSteeringObject
+    from wisent.core.control.steering_methods._steering_object_advanced import TETNOSteeringObject
     return TETNOSteeringObject(
         metadata=metadata,
         behavior_vectors=behavior_vectors,

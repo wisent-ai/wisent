@@ -7,7 +7,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.decomposition import PCA
-from wisent.core.constants import DEFAULT_RANDOM_SEED, N_JOBS_SINGLE
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, N_JOBS_SINGLE
 from wisent.core import constants as _C
 
 

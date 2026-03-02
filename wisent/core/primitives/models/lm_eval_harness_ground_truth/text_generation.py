@@ -3,10 +3,10 @@
 import logging
 from typing import Any, Dict
 
-from wisent.core.activations.activations import Activations
-from wisent.core.constants import CLASSIFIER_THRESHOLD, SPLIT_RATIO_FULL
-from wisent.core.layer import Layer
-from wisent.core.models import get_generate_kwargs
+from wisent.core.primitives.model_interface.core.activations.activations import Activations
+from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD, SPLIT_RATIO_FULL
+from wisent.core.primitives.models.core.layer import Layer
+from wisent.core.primitives.models import get_generate_kwargs
 
 logger = logging.getLogger(__name__)
 

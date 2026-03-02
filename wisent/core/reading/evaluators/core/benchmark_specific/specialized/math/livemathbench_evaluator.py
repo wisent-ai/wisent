@@ -18,10 +18,10 @@ import numpy as np
 from typing import List
 from scipy.stats import hypergeom
 
-from wisent.core.constants import LIVEMATHBENCH_K_VALUES
+from wisent.core.utils.config_tools.constants import LIVEMATHBENCH_K_VALUES
 
 # Re-export evaluator class and constants from helpers
-from wisent.core.evaluators.benchmark_specific.math._helpers.livemathbench_helpers import (
+from wisent.core.reading.evaluators.benchmark_specific.math._helpers.livemathbench_helpers import (
     LiveMathBenchEvaluator,
     LANGUAGE_PROMPTS,
     JUDGE_PROMPTS,

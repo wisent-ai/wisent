@@ -13,7 +13,7 @@ Usage:
 
 import argparse
 
-from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N
+from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N
 
 from check_signal_helpers import (
     load_model,

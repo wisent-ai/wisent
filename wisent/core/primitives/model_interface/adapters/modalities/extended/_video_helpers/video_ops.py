@@ -10,15 +10,15 @@ from typing import Any, Dict, List, Union
 import torch
 import torch.nn as nn
 
-from wisent.core.adapters.base import (
+from wisent.core.primitives.model_interface.adapters.base import (
     InterventionPoint,
     SteeringConfig,
 )
-from wisent.core.modalities import VideoContent
-from wisent.core.errors import UnknownTypeError
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.adapters.modalities._video_helpers.video_core import VideoSteeringConfig
-from wisent.core.constants import NORM_EPS, TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
+from wisent.core.primitives.models.modalities import VideoContent
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.model_interface.adapters.modalities._video_helpers.video_core import VideoSteeringConfig
+from wisent.core.utils.config_tools.constants import NORM_EPS, TEMPORAL_RAMP_MIN, TEMPORAL_RAMP_MAX
 
 
 class VideoOpsMixin:

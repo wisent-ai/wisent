@@ -2,9 +2,9 @@
 
 from typing import Any, Dict, List, Tuple
 
-from wisent.core.classifier.classifier import ActivationClassifier
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import DATA_OVERSAMPLE_MULTIPLIER, SPLIT_RATIO_FULL
+from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import DATA_OVERSAMPLE_MULTIPLIER, SPLIT_RATIO_FULL
 
 from ....activations import Activations
 from ....layer import Layer

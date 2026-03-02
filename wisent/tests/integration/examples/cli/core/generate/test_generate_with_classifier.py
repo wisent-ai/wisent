@@ -19,7 +19,7 @@ def test_classifier_train_only():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
@@ -52,7 +52,7 @@ def test_classifier_inference_only():
         # First train the classifier
         train_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
@@ -73,7 +73,7 @@ def test_classifier_inference_only():
         # Now use it for inference
         inference_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--limit", "10",
@@ -102,7 +102,7 @@ def test_classifier_with_threshold():
         # Train classifier
         train_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--classifier-type", "logistic",
@@ -122,7 +122,7 @@ def test_classifier_with_threshold():
         # Use with custom threshold
         inference_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "tasks", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "tasks", "boolq",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
                 "--layer", "3",
                 "--limit", "10",

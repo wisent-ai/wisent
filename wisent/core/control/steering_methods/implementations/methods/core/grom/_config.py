@@ -5,8 +5,8 @@ from dataclasses import dataclass, field
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from wisent.core.activations.core.atoms import LayerName
-from wisent.core.constants import (
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerName
+from wisent.core.utils.config_tools.constants import (
     GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS, GROM_LEARNING_RATE,
     GROM_WARMUP_STEPS, GROM_BEHAVIOR_WEIGHT, GROM_RETAIN_WEIGHT,
     GROM_SPARSE_WEIGHT, GROM_SMOOTH_WEIGHT, GROM_INDEPENDENCE_WEIGHT,

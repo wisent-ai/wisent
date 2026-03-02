@@ -8,7 +8,7 @@ config) or default (zeros for untuned methods).
 
 from typing import Dict, Any, Optional
 
-from wisent.core.constants import MIN_CONCEPT_PAIRS, STEERING_ICD_WEIGHT
+from wisent.core.utils.config_tools.constants import MIN_CONCEPT_PAIRS, STEERING_ICD_WEIGHT
 from .recommendation.config import (
     RecommendationConfig, Thresholds as SteeringThresholds)
 from .recommendation.configurable import compute_configurable_recommendation
@@ -68,7 +68,7 @@ def compute_per_layer_recommendation(
 
 def get_method_description(method: str) -> str:
     """Get description of a steering method."""
-    from wisent.core.steering_methods.registry import SteeringMethodRegistry
+    from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
     name = method.lower().replace(" ", "_")
     if SteeringMethodRegistry.validate_method(name):
         return SteeringMethodRegistry.get(name).description
@@ -77,7 +77,7 @@ def get_method_description(method: str) -> str:
 
 def get_method_requirements(method: str) -> Dict[str, Any]:
     """Get requirements/assumptions for a steering method."""
-    from wisent.core.steering_methods.registry import SteeringMethodRegistry
+    from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
     name = method.lower().replace(" ", "_")
     if not SteeringMethodRegistry.validate_method(name):
         return {}

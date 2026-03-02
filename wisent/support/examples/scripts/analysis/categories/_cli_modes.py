@@ -5,8 +5,8 @@ from pathlib import Path
 
 import numpy as np
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.constants import SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_STANDARD, SEPARATOR_WIDTH_TABLE
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_STANDARD, SEPARATOR_WIDTH_TABLE
 
 from ._data_loading import (
     load_truthfulqa_pairs,

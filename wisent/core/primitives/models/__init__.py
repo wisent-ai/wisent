@@ -5,8 +5,8 @@ for _root, _dirs, _files in _os.walk(_base):
     if _root != _base:
         __path__.append(_root)
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.config import (
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models.config import (
     InferenceConfig,
     get_config,
     set_config,

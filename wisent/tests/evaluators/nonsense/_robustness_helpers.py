@@ -2,7 +2,7 @@
 
 import argparse
 
-from wisent.core.constants import TEST_DEFAULT_LIMIT
+from wisent.core.utils.config_tools.constants import TEST_DEFAULT_LIMIT
 
 
 def main():

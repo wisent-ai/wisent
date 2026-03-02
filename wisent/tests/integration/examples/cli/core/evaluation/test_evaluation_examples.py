@@ -38,7 +38,7 @@ def test_generate_responses_from_task():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-responses",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-responses",
                 "meta-llama/Llama-3.2-1B-Instruct",
                 "--task", "boolq",
                 "--num-questions", "3",
@@ -68,7 +68,7 @@ def test_evaluate_generated_responses():
 
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "evaluate-responses",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "evaluate-responses",
                 "--input", input_file,
                 "--output", output_file,
                 "--task", "boolq",
@@ -98,7 +98,7 @@ def test_evaluate_personalization():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "evaluate-responses",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "evaluate-responses",
                 "--input", input_file,
                 "--output", output_file,
                 "--task", "personalization",

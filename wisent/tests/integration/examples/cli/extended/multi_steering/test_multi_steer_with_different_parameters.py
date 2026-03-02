@@ -19,7 +19,7 @@ def setup_test_vectors(tmpdir):
     # Train first vector
     result1 = subprocess.run(
         [
-            "python", "-m", "wisent.core.main", "generate-vector-from-task",
+            "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-task",
             "--task", "boolq",
             "--trait-label", "test1",
             "--output", vector1_path,
@@ -41,7 +41,7 @@ def setup_test_vectors(tmpdir):
     # Train second vector
     result2 = subprocess.run(
         [
-            "python", "-m", "wisent.core.main", "generate-vector-from-task",
+            "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-task",
             "--task", "boolq",
             "--trait-label", "test2",
             "--output", vector2_path,
@@ -70,7 +70,7 @@ def test_normalized_weights():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1_path}:0.6",
                 "--vector", f"{vector2_path}:0.4",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -97,7 +97,7 @@ def test_unnormalized_weights():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1_path}:2.0",
                 "--vector", f"{vector2_path}:1.5",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -124,7 +124,7 @@ def test_target_norm_scaling():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1_path}:0.5",
                 "--vector", f"{vector2_path}:0.5",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -151,7 +151,7 @@ def test_subtle_steering_with_small_norm():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1_path}:0.5",
                 "--vector", f"{vector2_path}:0.5",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -179,7 +179,7 @@ def test_save_combined_vector():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1_path}:0.5",
                 "--vector", f"{vector2_path}:0.5",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",

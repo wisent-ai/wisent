@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any, Dict, List, Union
 import torch
 import torch.nn as nn
-from wisent.core.adapters.base import SteeringConfig, InterventionPoint
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.primitives.model_interface.adapters.base import SteeringConfig, InterventionPoint
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 __all__ = [
     "get_intervention_points_multimodal",
@@ -87,7 +87,7 @@ def extract_activations_multimodal(
 
 def forward_with_steering_multimodal(adapter, content, steering_vectors, config=None) -> str:
     """Generate output with steering applied."""
-    from wisent.core.adapters.modalities.multimodal import MultimodalSteeringConfig
+    from wisent.core.primitives.model_interface.adapters.modalities.multimodal import MultimodalSteeringConfig
     config = config or MultimodalSteeringConfig()
     if isinstance(config, MultimodalSteeringConfig):
         if config.steer_modalities != "all":

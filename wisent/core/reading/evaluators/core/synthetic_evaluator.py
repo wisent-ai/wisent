@@ -11,12 +11,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-from wisent.core.evaluators.custom.custom_evaluator import CustomEvaluator
-from wisent.core.constants import SYNTHETIC_EVAL_NUM_PROMPTS
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.reading.evaluators.custom.custom_evaluator import CustomEvaluator
+from wisent.core.utils.config_tools.constants import SYNTHETIC_EVAL_NUM_PROMPTS
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 # Re-export from helpers
-from wisent.core.evaluators.core._synthetic_evaluator_helpers import (
+from wisent.core.reading.evaluators.core._synthetic_evaluator_helpers import (
     create_synthetic_evaluator,
 )
 
@@ -256,5 +256,5 @@ Respond with ONLY a single number (1-10), nothing else."""
 
     def evaluate_model(self, model=None, num_samples: int = None) -> Dict:
         """Evaluate a model on the test prompts."""
-        from wisent.core.evaluators.core._synthetic_evaluator_helpers import evaluate_model_impl
+        from wisent.core.reading.evaluators.core._synthetic_evaluator_helpers import evaluate_model_impl
         return evaluate_model_impl(self, model=model, num_samples=num_samples)

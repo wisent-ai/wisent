@@ -9,7 +9,7 @@ import torch
 from datetime import datetime
 from typing import Dict, List
 
-from wisent.core.constants import DISPLAY_TRUNCATION_COMPACT, PROGRESS_CALLBACK_THRESHOLD, SEPARATOR_WIDTH_REPORT, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, PROGRESS_CALLBACK_THRESHOLD, SEPARATOR_WIDTH_REPORT, JSON_INDENT
 
 
 def detect_model_layers(model: str) -> int:
@@ -28,7 +28,7 @@ def generate_pairs_cli(task: str, pairs_file: str, num_pairs: int):
     """Generate contrastive pairs using CLI."""
     result = subprocess.run(
         [
-            sys.executable, "-m", "wisent.core.main",
+            sys.executable, "-m", "wisent.core.primitives.model_interface.core.main",
             "generate-pairs-from-task",
             task,
             "--output", pairs_file,
@@ -53,7 +53,7 @@ def extract_activations_cli(
 ):
     """Extract activations using CLI."""
     cmd = [
-        sys.executable, "-m", "wisent.core.main",
+        sys.executable, "-m", "wisent.core.primitives.model_interface.core.main",
         "get-activations",
         pairs_file,
         "--output", activations_file,

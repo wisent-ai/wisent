@@ -4,13 +4,13 @@ import regex
 from typing import Union, Optional
 from math import isclose
 from latex2sympy2_extended import latex2sympy
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_parsing import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_parsing import (
     numeric_equal, strip_string, str_to_pmatrix,
 )
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_extraction import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_extraction import (
     symbolic_equal, call_with_timeout, symbolic_equal_process,
 )
-from wisent.core.constants import MATH_SHORT_VAR_MAX_LEN
+from wisent.core.utils.config_tools.constants import MATH_SHORT_VAR_MAX_LEN
 
 def math_equal(
     prediction: Union[bool, float, str],

@@ -8,9 +8,9 @@ import logging
 import math
 import torch
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.errors import ModelNotProvidedError, InvalidValueError
-from wisent.core.constants import EVAL_PERPLEXITY_DIFF_THRESHOLD
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.infra_tools.errors import ModelNotProvidedError, InvalidValueError
+from wisent.core.utils.config_tools.constants import EVAL_PERPLEXITY_DIFF_THRESHOLD
 
 logger = logging.getLogger(__name__)
 

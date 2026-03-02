@@ -2,8 +2,8 @@
 import torch
 import torch.nn.functional as F
 from typing import Any, Dict, Optional
-from wisent.core.contrastive_pairs import ContrastivePairSet
-from wisent.core.constants import TIKHONOV_REG, EWC_PERTURBATION_SCALE, STEERING_OPT_NUM_EPOCHS
+from wisent.core.primitives.contrastive_pairs import ContrastivePairSet
+from wisent.core.utils.config_tools.constants import TIKHONOV_REG, EWC_PERTURBATION_SCALE, STEERING_OPT_NUM_EPOCHS
 from wisent.core.utils.core.hardware import eval_batch_size
 
 

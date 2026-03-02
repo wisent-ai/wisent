@@ -5,10 +5,10 @@ from typing import Any
 
 import torch
 
-from wisent.core.models.core.atoms import SteeringPlan, GenerationStats, TopLogits
-from wisent.core.prompts.core.atom import ChatMessage
-from wisent.core.constants import DEFAULT_STRENGTH, MODEL_COLLECT_TOPK
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.primitives.models.core.atoms import SteeringPlan, GenerationStats, TopLogits
+from wisent.core.control.generation.prompts.core.atom import ChatMessage
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, MODEL_COLLECT_TOPK
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 
 @torch.inference_mode()
@@ -73,7 +73,7 @@ def _generate_with_stats(
 
     # Add diversity processors if requested
     if ensure_varied_responses and phrase_ledger:
-        from wisent.core.tasks.base.diversity_processors import build_diversity_processors
+        from wisent.core.control.tasks.base.diversity_processors import build_diversity_processors
         logits_processors = build_diversity_processors(self.tokenizer, phrase_ledger)
         if logits_processors:
             generation_kwargs['logits_processor'] = logits_processors

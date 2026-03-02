@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """Grid search for optimal Qwen3-8B steering parameters."""
 
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.core.atoms import SteeringPlan
-from wisent.core.steering_methods import CAAMethod
-from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy, map_legacy_strategy
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models.core.atoms import SteeringPlan
+from wisent.core.control.steering_methods import CAAMethod
+from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, map_legacy_strategy
+from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 
 print("Loading Qwen/Qwen3-8B...")
 model = WisentModel("Qwen/Qwen3-8B")
@@ -21,7 +21,7 @@ test_pairs = result["test_qa_pairs"].pairs
 train_pairs = result["train_qa_pairs"]
 print(f"Train: {len(train_pairs.pairs)}, Test: {len(test_pairs)}")
 
-EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
 evaluator = EvaluatorRotator(evaluator=None, task_name="truthfulqa_generation")
 
 # Test different layer configs for 36-layer model

@@ -35,8 +35,8 @@ def run_multi_steer(
     Returns:
         Generated text
     """
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.steering_core.multi_steering import MultiSteering
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.control.steering_core.multi_steering import MultiSteering
 
     # Initialize model
     if verbose:

@@ -13,9 +13,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.core.atoms import PerLayerBaseSteeringMethod
-from wisent.core.errors import InsufficientDataError
-from wisent.core.constants import EARLY_STOP_TOL, MLP_HIDDEN_DIM, MLP_NUM_LAYERS, MLP_DROPOUT, DEFAULT_OPTIMIZATION_STEPS, MLP_LEARNING_RATE, DEFAULT_WEIGHT_DECAY, MLP_EARLY_STOPPING_PATIENCE, MLP_INPUT_DIVISOR, GATING_HIDDEN_DIM_DIVISOR
+from wisent.core.control.steering_methods.core.atoms import PerLayerBaseSteeringMethod
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
+from wisent.core.utils.config_tools.constants import EARLY_STOP_TOL, MLP_HIDDEN_DIM, MLP_NUM_LAYERS, MLP_DROPOUT, DEFAULT_OPTIMIZATION_STEPS, MLP_LEARNING_RATE, DEFAULT_WEIGHT_DECAY, MLP_EARLY_STOPPING_PATIENCE, MLP_INPUT_DIVISOR, GATING_HIDDEN_DIM_DIVISOR
 
 __all__ = ["MLPMethod"]
 

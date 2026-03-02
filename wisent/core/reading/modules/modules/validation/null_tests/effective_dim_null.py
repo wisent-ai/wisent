@@ -7,7 +7,7 @@ import numpy as np
 import torch
 from typing import Dict
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED, Z_SCORE_SIGNIFICANCE,
 )
 

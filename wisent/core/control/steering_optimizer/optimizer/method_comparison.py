@@ -9,8 +9,8 @@ import time
 from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
 
-from wisent.core.steering_methods import SteeringMethodRegistry, SteeringMethodType
-from wisent.core.constants import (
+from wisent.core.control.steering_methods import SteeringMethodRegistry, SteeringMethodType
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS, DEFAULT_SPLIT_RATIO,
     SEARCH_DEFAULT_STRENGTHS, SEARCH_MAX_LAYER_CAP,
     OPTIMIZE_MAX_TIME_MINUTES, SECONDS_PER_MINUTE,

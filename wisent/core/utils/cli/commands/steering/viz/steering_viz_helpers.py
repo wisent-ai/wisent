@@ -5,13 +5,13 @@ import torch
 from typing import Tuple, Any
 
 # Re-export behavioral collection functions from separate module
-from wisent.core.cli.steering_behavioral import (
+from wisent.core.utils.cli.steering_behavioral import (
     extract_response,
     collect_behavioral_labels,
     collect_behavioral_labels_all_layers,
 )
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DISPLAY_TRUNCATION_DESCRIPTION,
     NORM_EPS, VIZ_LIMIT, VIZ_CLAMPING_MARGIN, VIZ_PROJECTION_COMPONENTS,
     VIZ_REPLACEMENT_BLEND, MLP_HIDDEN_DIM, VIZ_MLP_EPOCHS,
@@ -19,7 +19,7 @@ from wisent.core.constants import (
     CLASSIFIER_THRESHOLD, ADAPTIVE_STRENGTH_MULTIPLIER,
 )
 # Re-export from steering_viz_utils for backwards compatibility
-from wisent.core.geometry.steering_viz_utils import (
+from wisent.core.reading.modules.steering_viz_utils import (
     create_steering_object_from_pairs,
     extract_activations_from_responses,
     load_reference_activations,
@@ -42,7 +42,7 @@ def select_steering_direction(
     Returns (steering_vector, description, accuracy).
     Accuracy is the behavioral classifier accuracy (CLASSIFIER_THRESHOLD for non-behavioral methods).
     """
-    from wisent.core.geometry.steering_discovery import generate_candidate_directions
+    from wisent.core.reading.modules.steering_discovery import generate_candidate_directions
 
     pos_ref_np = pos_ref.cpu().numpy()
     neg_ref_np = neg_ref.cpu().numpy()
@@ -108,7 +108,7 @@ def create_steering_method(
 
     Returns fitted SteeringMethod instance, or None for default linear.
     """
-    from wisent.core.geometry.advanced_steering import (
+    from wisent.core.reading.modules.advanced_steering import (
         LinearSteering, ClampingSteering, ProjectionSteering,
         ReplacementSteering, ContrastSteering, MLPSteering, AdaptiveSteering,
     )
@@ -151,7 +151,7 @@ def load_all_layer_activations(
     Returns:
         (pos_by_layer, neg_by_layer) dicts mapping layer number -> numpy activations
     """
-    from wisent.core.geometry.zwiad_with_concepts import load_activations_from_database
+    from wisent.core.reading.modules.zwiad_with_concepts import load_activations_from_database
 
     if layers is None:
         layers = list(range(num_layers))

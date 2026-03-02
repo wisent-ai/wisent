@@ -23,7 +23,7 @@ Usage:
 
 import argparse
 
-from wisent.core.constants import DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, MAX_K_DEFAULT
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, N_BOOTSTRAP_DEFAULT, MAX_K_DEFAULT
 
 from ._data_loading import (
     load_truthfulqa_pairs,

@@ -3,8 +3,8 @@ import re
 from typing import Union, Optional
 from math import isclose
 from word2number import w2n
-from wisent.core.constants import MATH_REL_TOL
-from wisent.core.evaluators.benchmark_specific.math_parsing._scripts_constants import (
+from wisent.core.utils.config_tools.constants import MATH_REL_TOL
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._scripts_constants import (
     unit_texts,
 )
 

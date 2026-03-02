@@ -3,13 +3,13 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.errors import MissingParameterError
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
 )
-from wisent.core.constants import BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH, JSON_INDENT
+from wisent.core.utils.config_tools.constants import BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH, JSON_INDENT
 
 _LOG = setup_logger(__name__)
 

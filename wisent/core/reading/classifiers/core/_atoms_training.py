@@ -8,10 +8,10 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 from torch.nn.modules.loss import _Loss
-from wisent.core.classifiers.core._atoms_config import (
+from wisent.core.reading.classifiers.core._atoms_config import (
     ClassifierTrainConfig, ClassifierTrainReport, ClassifierMetrics,
 )
-from wisent.core.constants import TRAINING_LOG_FREQUENCY
+from wisent.core.utils.config_tools.constants import TRAINING_LOG_FREQUENCY
 
 logger = logging.getLogger(__name__)
 

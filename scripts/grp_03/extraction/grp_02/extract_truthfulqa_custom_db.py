@@ -20,7 +20,7 @@ import time
 import torch
 import psycopg2
 
-from wisent.core.constants import PROGRESS_LOG_INTERVAL
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL
 
 from extract_truthfulqa_custom_db_helpers import (
     get_conn,
@@ -40,7 +40,7 @@ from extract_truthfulqa_custom_db_verify import verify_extraction
 def extract_benchmark(model_name: str, benchmark: str = "truthfulqa_custom", device: str = "cuda"):
     from transformers import AutoTokenizer, AutoModelForCausalLM
     from wisent.extractors.lm_eval.lm_task_pairs_generation import lm_build_contrastive_pairs
-    from wisent.core.activations import ExtractionStrategy, build_extraction_texts
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, build_extraction_texts
 
     # Initialize DB connection (uses auto-reconnect mechanism)
     conn = get_conn()

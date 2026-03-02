@@ -1,6 +1,6 @@
 """CLI entry point for estimating unified goodness training time."""
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, BENCHMARK_FAST_LOAD_THRESHOLD, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_HALF
-from wisent.core.cli.analysis.training.estimate_time_functions import (
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, BENCHMARK_FAST_LOAD_THRESHOLD, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_HALF
+from wisent.core.utils.cli.analysis.training.estimate_time_functions import (
     BENCHMARK_SIZES, BENCHMARK_LOAD_TIMES, estimate_runtime,
     get_benchmark_load_time, get_benchmark_size, format_time,
 )
@@ -47,7 +47,7 @@ def main():
     
     # Import benchmark list - use ALL benchmarks (same as test_all_benchmarks.py)
     try:
-        from wisent.core.cli.train_unified_goodness import load_all_benchmarks
+        from wisent.core.utils.cli.train_unified_goodness import load_all_benchmarks
         all_benchmark_names, broken = load_all_benchmarks()
     except ImportError:
         print("Error: Cannot import load_all_benchmarks. Run from wisent-open-source directory.")

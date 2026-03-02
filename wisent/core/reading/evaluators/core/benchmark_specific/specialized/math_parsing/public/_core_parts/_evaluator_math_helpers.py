@@ -8,7 +8,7 @@ from typing import Dict as T_Dict
 from typing import Tuple as T_Tuple
 from typing import Union as T_Union
 from sympy import N, simplify
-from wisent.core.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (
     BASIC_FN_NAMES, DATETIME_FMTS, LATEX_CMDS, LATEX_FMT_ENVS,
     LATEX_LIST_ENVS, NO_PRECEDING_PUNCS, NO_TRAILING_STRS,
     PAREN_MAP, SIMPLE_REPLACE_MAP, SIMPLE_RM_STRS, STR2NUM, UNITS,

@@ -5,7 +5,7 @@ Allows users to pass custom evaluator functions (like API calls to GPTZero,
 Claude, or any external service) for optimization objectives.
 """
 
-from wisent.core.evaluators.custom.custom_evaluator import (
+from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CallableEvaluator,
     APIEvaluator,

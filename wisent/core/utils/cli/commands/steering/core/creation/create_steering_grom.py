@@ -2,7 +2,7 @@
 from __future__ import annotations
 import torch
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     GROM_GATE_TEMPERATURE,
     GROM_MAX_ALPHA,
     GROM_NUM_DIRECTIONS,
@@ -26,8 +26,8 @@ def _create_grom_steering_object(
     args,
 ) -> GROMSteeringObject:
     """Create GROM steering object with learned networks."""
-    from wisent.core.steering_methods.methods.grom import GROMMethod
-    from wisent.core.steering_methods._steering_object_grom import GROMGateNetwork, GROMIntensityNetwork
+    from wisent.core.control.steering_methods.methods.grom import GROMMethod
+    from wisent.core.control.steering_methods._steering_object_grom import GROMGateNetwork, GROMIntensityNetwork
     
     num_directions = getattr(args, 'grom_num_directions', GROM_NUM_DIRECTIONS)
     hidden_dim = metadata.hidden_dim
@@ -152,7 +152,7 @@ def _create_grom_steering_object(
     print(f"   Sensor layer: {sensor_layer}")
     print(f"   Final gate accuracy: pos={pos_gate.mean().item():.3f}, neg={neg_gate.mean().item():.3f}")
     
-    from wisent.core.steering_methods._steering_object_grom import GROMSteeringObject
+    from wisent.core.control.steering_methods._steering_object_grom import GROMSteeringObject
     return GROMSteeringObject(
         metadata=metadata,
         directions=final_directions,

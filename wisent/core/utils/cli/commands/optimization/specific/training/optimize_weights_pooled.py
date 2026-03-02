@@ -1,7 +1,7 @@
 """Pooled evaluator for multi-benchmark optimization."""
 from typing import Callable
 
-from wisent.core.models.wisent_model import WisentModel
+from wisent.core.primitives.models.wisent_model import WisentModel
 
 
 def _create_pooled_evaluator(args) -> Callable:
@@ -10,8 +10,8 @@ def _create_pooled_evaluator(args) -> Callable:
     Evaluates on ALL benchmarks from training, using each benchmark's
     native evaluator (routing by source_benchmark metadata).
     """
-    from wisent.core.evaluators.rotator import EvaluatorRotator
-    from wisent.core.models import get_generate_kwargs
+    from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+    from wisent.core.primitives.models import get_generate_kwargs
 
     # Get eval pairs stored during vector generation
     eval_pairs = getattr(args, '_pooled_eval_pairs', [])
@@ -24,8 +24,8 @@ def _create_pooled_evaluator(args) -> Callable:
     print(f"   Pooled evaluator: {len(eval_pairs)} eval pairs across {len(benchmarks_used)} benchmarks")
 
     # Discover evaluators once
-    EvaluatorRotator.discover_evaluators('wisent.core.evaluators.oracles')
-    EvaluatorRotator.discover_evaluators('wisent.core.evaluators.benchmark_specific')
+    EvaluatorRotator.discover_evaluators('wisent.core.reading.evaluators.oracles')
+    EvaluatorRotator.discover_evaluators('wisent.core.reading.evaluators.benchmark_specific')
 
     # Group pairs by benchmark
     pairs_by_benchmark = {}
@@ -39,7 +39,7 @@ def _create_pooled_evaluator(args) -> Callable:
 
     def evaluate(hf_model, tokenizer) -> dict[str, float]:
         """Evaluate modified model on pooled benchmark data."""
-        from wisent.core.models.wisent_model import WisentModel
+        from wisent.core.primitives.models.wisent_model import WisentModel
 
         # Create WisentModel wrapper - use object.__new__ to avoid __init__ loading
         wisent_model = object.__new__(WisentModel)

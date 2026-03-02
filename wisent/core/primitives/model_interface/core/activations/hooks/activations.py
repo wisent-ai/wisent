@@ -2,9 +2,9 @@
 
 from typing import Any
 import torch
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.errors import InvalidValueError
-from wisent.core.constants import EXTRACTION_WEIGHTED_DECAY
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.infra_tools.errors import InvalidValueError
+from wisent.core.utils.config_tools.constants import EXTRACTION_WEIGHTED_DECAY
 
 
 class Activations:

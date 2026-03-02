@@ -18,7 +18,7 @@ def test_create_synthetic_pairs():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-pairs",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs",
                 "--trait", "helpfulness",
                 "--output", output_file,
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",

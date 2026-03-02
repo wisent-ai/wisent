@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import torch
 
-from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
-from wisent.core.steering_methods.methods.nurt import (
+from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
+from wisent.core.control.steering_methods.methods.nurt import (
     NurtMethod,
     NurtSteeringObject,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_VARIANCE_THRESHOLD,
     MLP_LEARNING_RATE,
     NURT_NUM_DIMS,
@@ -52,11 +52,11 @@ def _create_nurt_steering_object(
     )
 
     # Prepare per-layer data
-    from wisent.core.steering_methods.methods.nurt.subspace import (
+    from wisent.core.control.steering_methods.methods.nurt.subspace import (
         discover_concept_subspace,
         project_to_subspace,
     )
-    from wisent.core.steering_methods.methods.nurt.flow_network import (
+    from wisent.core.control.steering_methods.methods.nurt.flow_network import (
         FlowVelocityNetwork,
     )
 

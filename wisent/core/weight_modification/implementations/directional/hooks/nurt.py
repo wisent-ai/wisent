@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import torch
 from typing import Dict, Optional, TYPE_CHECKING
-from wisent.core.constants import NURT_T_MAX, NURT_NUM_INTEGRATION_STEPS, DEFAULT_STRENGTH
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import NURT_T_MAX, NURT_NUM_INTEGRATION_STEPS, DEFAULT_STRENGTH
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -89,7 +89,7 @@ class NurtRuntimeHooks:
         layer_idx: int,
     ) -> torch.Tensor:
         """Project, integrate, reconstruct — preserving orthogonal complement."""
-        from wisent.core.steering_methods.methods.nurt.flow_network import (
+        from wisent.core.control.steering_methods.methods.nurt.flow_network import (
             euler_integrate,
         )
 

@@ -23,8 +23,8 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
 from enum import Enum
 
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import (
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH,
     GUIDED_MIN_LINEAR_SCORE, GUIDED_SURGICAL_TOP_K,
     GUIDED_FISHER_WEIGHT_MIN, GUIDED_FISHER_WEIGHT_MAX,
@@ -34,8 +34,8 @@ from wisent.core.constants import (
 if TYPE_CHECKING:
     from torch import Tensor
     from torch.nn import Module
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
 __all__ = [
     "GuidedModificationConfig",

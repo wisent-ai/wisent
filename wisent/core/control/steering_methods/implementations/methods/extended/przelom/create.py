@@ -10,13 +10,13 @@ from __future__ import annotations
 import math
 import torch
 
-from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
+from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
 from .przelom_steering_object import PrzelomSteeringObject
-from wisent.core.steering_methods.methods.szlak.transport import (
+from wisent.core.control.steering_methods.methods.szlak.transport import (
     compute_attention_affinity_cost,
     sinkhorn_one_sided,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     LOG_EPS,
     TIKHONOV_REG,
     PRZELOM_EPSILON,

@@ -27,7 +27,7 @@ def timeout(seconds):
 
 def load_benchmarks():
     """Load benchmarks from central registry."""
-    from wisent.core.benchmarks import get_all_benchmarks, get_broken_tasks
+    from wisent.core.utils.services.benchmarks import get_all_benchmarks, get_broken_tasks
     
     broken_tasks = get_broken_tasks()
     if broken_tasks:

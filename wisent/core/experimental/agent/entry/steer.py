@@ -11,8 +11,8 @@ This module handles:
 from dataclasses import dataclass
 from typing import List, Dict, Any, Callable, Awaitable
 from .diagnose import AnalysisResult
-from wisent.core.errors import ImprovementMethodUnknownError, TrainingDataGenerationError
-from wisent.core.constants import AGENT_IMPROVEMENT_THRESHOLD, AGENT_SYNTH_PAIRS_PER_ISSUE
+from wisent.core.utils.infra_tools.errors import ImprovementMethodUnknownError, TrainingDataGenerationError
+from wisent.core.utils.config_tools.constants import AGENT_IMPROVEMENT_THRESHOLD, AGENT_SYNTH_PAIRS_PER_ISSUE
 
 
 @dataclass
@@ -169,7 +169,7 @@ Ensure your response avoids the types of errors shown in the correction examples
     
     def create_steering_training_data(self, issues: List[str]) -> List[Dict[str, str]]:
         """Create dynamic steering training data based on detected issues."""
-        from wisent.core.contrastive_pairs.generate_synthetically import SyntheticContrastivePairGenerator
+        from wisent.core.primitives.contrastive_pairs.generate_synthetically import SyntheticContrastivePairGenerator
         
         # Generate synthetic training data for the detected issues
         try:

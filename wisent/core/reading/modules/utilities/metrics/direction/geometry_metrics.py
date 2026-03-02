@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import cross_val_score
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED, GEOMETRY_ADAPT_THRESHOLD_NUMERATOR,
     GEOMETRY_ADAPT_THRESHOLD_MIN, GEOMETRY_ADAPT_THRESHOLD_MAX,
 )

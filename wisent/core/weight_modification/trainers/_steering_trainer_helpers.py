@@ -8,10 +8,10 @@ from typing import Any, Sequence
 
 import torch
 
-from wisent.core.activations.core.atoms import RawActivationMap
-from wisent.core.trainers.core.atoms import TrainingResult
-from wisent.core.constants import JSON_INDENT
-from wisent.core.errors import NoTrainingResultError
+from wisent.core.primitives.model_interface.core.activations.core.atoms import RawActivationMap
+from wisent.core.weight_modification.trainers.core.atoms import TrainingResult
+from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.utils.infra_tools.errors import NoTrainingResultError
 
 
 def save_result_impl(result, last_result, output_dir):

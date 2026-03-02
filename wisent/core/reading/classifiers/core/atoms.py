@@ -14,12 +14,12 @@ from torch.utils.data import DataLoader, TensorDataset, random_split
 import numpy as np
 
 from torch.nn.modules.loss import _Loss
-from wisent.core.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
+from wisent.core.utils.infra_tools.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import CLASSIFIER_THRESHOLD
+from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD
 
 # Re-export config types
-from wisent.core.classifiers.core._atoms_config import (
+from wisent.core.reading.classifiers.core._atoms_config import (
     ClassifierTrainConfig,
     ClassifierMetrics,
     ClassifierTrainReport,
@@ -27,9 +27,9 @@ from wisent.core.classifiers.core._atoms_config import (
 )
 
 # Import mixins
-from wisent.core.classifiers.core._atoms_training import ClassifierTrainingMixin
-from wisent.core.classifiers.core._atoms_inference import ClassifierInferenceMixin
-from wisent.core.classifiers.core._atoms_io import ClassifierIOMixin
+from wisent.core.reading.classifiers.core._atoms_training import ClassifierTrainingMixin
+from wisent.core.reading.classifiers.core._atoms_inference import ClassifierInferenceMixin
+from wisent.core.reading.classifiers.core._atoms_io import ClassifierIOMixin
 
 __all__ = [
     "ClassifierTrainConfig",

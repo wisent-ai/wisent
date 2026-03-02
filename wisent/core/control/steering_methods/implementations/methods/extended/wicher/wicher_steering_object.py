@@ -14,12 +14,12 @@ from typing import Any, Dict, Optional
 import torch
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.steering_object import (
+from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
 from .solvers.broyden import wicher_broyden_step
-from wisent.core.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH
 
 __all__ = ["WicherSteeringObject"]
 

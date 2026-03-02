@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Optional, Tuple, Dict, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LAYER, GROM_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE,
     GROM_ROUTER_HIDDEN_DIM, GROM_MAX_ALPHA, DEFAULT_STRENGTH,
     GROM_GATING_SHRINK_FACTOR,

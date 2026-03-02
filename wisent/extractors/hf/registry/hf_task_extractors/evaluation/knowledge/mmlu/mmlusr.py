@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 __all__ = ["MMLUSRExtractor"]
 _LOG = setup_logger(__name__)

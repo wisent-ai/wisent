@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import torch
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     MOVEMENT_THRESHOLD, BEHAVIOR_THRESHOLD,
     DEFAULT_STRENGTH,
     DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD,
@@ -219,9 +219,9 @@ def run_behavioral_validation(
         BehavioralValidationResult
     """
     max_new_tokens = max_new_tokens if max_new_tokens is not None else 100
-    from wisent.core.activations.core.atoms import LayerActivations
-    from wisent.core.adapters.base import SteeringConfig
-    from wisent.core.activations import ExtractionStrategy, extract_activation
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
     strategy = ExtractionStrategy(extraction_strategy)
     base_acts, steered_acts = [], []
     base_evals, steered_evals = [], []

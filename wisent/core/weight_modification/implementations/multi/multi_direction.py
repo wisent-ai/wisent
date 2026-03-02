@@ -20,9 +20,9 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass
 
 from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
-from wisent.core.constants import DEFAULT_STRENGTH, GROM_NUM_DIRECTIONS, DEFAULT_OPTIMIZATION_STEPS
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, GROM_NUM_DIRECTIONS, DEFAULT_OPTIMIZATION_STEPS
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -179,7 +179,7 @@ def train_and_bake_grom(
     grom_config: Optional[Dict[str, Any]] = None,
 ) -> MultiDirectionResult:
     """Train GROM and bake directions into model weights."""
-    from wisent.core.steering_methods.methods.grom import GROMMethod, GROMConfig
+    from wisent.core.control.steering_methods.methods.grom import GROMMethod, GROMConfig
 
     cfg = config or MultiDirectionConfig(method="grom")
 

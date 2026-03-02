@@ -5,10 +5,10 @@ import numpy as np
 import torch
 from typing import Any, Dict
 
-from wisent.core.activations.activations import Activations
-from wisent.core.constants import CONTEXT_MAX_PREVIEW, PERPLEXITY_WIKITEXT_THRESHOLD, CLASSIFIER_THRESHOLD, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_SMALL, SPLIT_RATIO_FULL
-from wisent.core.layer import Layer
-from wisent.core.models import get_generate_kwargs
+from wisent.core.primitives.model_interface.core.activations.activations import Activations
+from wisent.core.utils.config_tools.constants import CONTEXT_MAX_PREVIEW, PERPLEXITY_WIKITEXT_THRESHOLD, CLASSIFIER_THRESHOLD, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_SMALL, SPLIT_RATIO_FULL
+from wisent.core.primitives.models.core.layer import Layer
+from wisent.core.primitives.models import get_generate_kwargs
 
 logger = logging.getLogger(__name__)
 

@@ -9,11 +9,11 @@ from wisent.core.utils import (
     get_all_docs_from_task,
     create_deterministic_split,
 )
-from wisent.core.errors import NoDocsAvailableError, DatasetLoadError
+from wisent.core.utils.infra_tools.errors import NoDocsAvailableError, DatasetLoadError
 
 
 if TYPE_CHECKING:
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
     from lm_eval.api.task import ConfigurableTask
 
 

@@ -7,8 +7,8 @@ import random
 from typing import List, Dict, Any, Optional, Tuple
 from difflib import SequenceMatcher
 
-from wisent.core.errors import TaskLoadError, TaskNotFoundError, NoDocsAvailableError
-from wisent.core.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, DEFAULT_TIMEOUT_DOCKER, TASK_FUZZY_MATCH_THRESHOLD
+from wisent.core.utils.infra_tools.errors import TaskLoadError, TaskNotFoundError, NoDocsAvailableError
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, DEFAULT_TIMEOUT_DOCKER, TASK_FUZZY_MATCH_THRESHOLD
 from wisent.core import constants as _C
 
 

@@ -3,7 +3,7 @@ import os
 
 import torch
 
-from wisent.core.constants import DEFAULT_CHECKPOINT_INTERVAL, DEFAULT_LAYER_WEIGHT, DEFAULT_LIMIT
+from wisent.core.utils.config_tools.constants import DEFAULT_CHECKPOINT_INTERVAL, DEFAULT_LAYER_WEIGHT, DEFAULT_LIMIT
 
 
 def _train_multi_direction_method(
@@ -37,7 +37,7 @@ def _train_multi_direction_method(
     print(f"   Pairs file: {enriched_file}")
     
     try:
-        from wisent.core.contrastive_pairs.core.io.serialization import load_contrastive_pair_set
+        from wisent.core.primitives.contrastive_pairs.core.io.serialization import load_contrastive_pair_set
         from wisent.core.weight_modification.multi_direction import (
             MultiDirectionConfig,
             combine_directions,
@@ -54,7 +54,7 @@ def _train_multi_direction_method(
         
         # Train the method
         if method == 'grom':
-            from wisent.core.steering_methods.methods.grom import GROMMethod, GROMConfig
+            from wisent.core.control.steering_methods.methods.grom import GROMMethod, GROMConfig
             config = GROMConfig(
                 num_directions=num_directions,
                 optimization_steps=optimization_steps,
@@ -65,7 +65,7 @@ def _train_multi_direction_method(
             weights = result.direction_weights
             
         elif method == 'tecza':
-            from wisent.core.steering_methods.methods.advanced import TECZAMethod, TECZAConfig
+            from wisent.core.control.steering_methods.methods.advanced import TECZAMethod, TECZAConfig
             config = TECZAConfig(
                 num_directions=num_directions,
                 optimization_steps=optimization_steps,
@@ -76,7 +76,7 @@ def _train_multi_direction_method(
             weights = None  # TECZA doesn't have learned weights
             
         elif method == 'tetno':
-            from wisent.core.steering_methods.methods.advanced import TETNOMethod, TETNOConfig
+            from wisent.core.control.steering_methods.methods.advanced import TETNOMethod, TETNOConfig
             config = TETNOConfig(
                 optimization_steps=optimization_steps,
             )

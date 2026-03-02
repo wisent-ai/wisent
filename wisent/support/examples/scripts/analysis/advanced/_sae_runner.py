@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from wisent.examples.scripts._sae import train_sparse_autoencoder
-from wisent.core.constants import DEFAULT_CLASSIFIER_LR, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_BATCH_SIZE_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER, SAE_TOP_K_ANALYSIS, DISPLAY_TOP_N_SMALL, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DEFAULT_CLASSIFIER_LR, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_BATCH_SIZE_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER, SAE_TOP_K_ANALYSIS, DISPLAY_TOP_N_SMALL, JSON_INDENT
 from wisent.examples.scripts._sae_analysis import (
     analyze_sae_features,
     visualize_sae_analysis,

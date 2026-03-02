@@ -8,7 +8,7 @@ from dataclasses import dataclass, field
 
 import torch
 import numpy as np
-from wisent.core.constants import ZERO_THRESHOLD
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
 
 GCS_BUCKET = "wisent-images-bucket"
 GCS_PREFIX = "intervention_validation"
@@ -118,7 +118,7 @@ def apply_steering_to_model(
         direction: [hidden_dim] steering direction
         coefficient: Steering strength
     """
-    from wisent.core.models.core.atoms import SteeringPlan
+    from wisent.core.primitives.models.core.atoms import SteeringPlan
     
     # Create steering vector dict: layer_name -> tensor
     # WisentModel uses 1-based layer names

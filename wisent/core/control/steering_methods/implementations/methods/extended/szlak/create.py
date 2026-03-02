@@ -9,10 +9,10 @@ from __future__ import annotations
 
 import torch
 
-from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
+from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
 from .szlak_steering_object import SzlakSteeringObject
 from .transport import compute_attention_affinity_cost, sinkhorn_one_sided
-from wisent.core.constants import LOG_EPS, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K
+from wisent.core.utils.config_tools.constants import LOG_EPS, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K
 
 
 def _create_szlak_steering_object(

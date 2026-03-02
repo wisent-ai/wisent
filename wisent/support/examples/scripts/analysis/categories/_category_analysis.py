@@ -4,11 +4,11 @@ Category result analysis for direction discovery.
 
 from typing import Dict, List, Optional
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     BLEND_DEFAULT, DEFAULT_SCORE, DENSITY_RATIO_DEFAULT,
     MULTI_DIR_MIN_K_NOT_FOUND, SIGNAL_EXIST_THRESHOLD, SIGNAL_LINEAR_GAP,
 )
-from wisent.core.geometry_runner import GeometrySearchResults
+from wisent.core.reading.modules.runner.geometry_runner import GeometrySearchResults
 from wisent.examples.scripts._discovery_utils import CategoryResult
 from wisent.examples.scripts._pairs_ablation import find_optimal_config
 

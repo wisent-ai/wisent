@@ -1,6 +1,6 @@
 """Steering method definitions: CAA, OSTRZE, TECZA."""
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH,
     TECZA_NUM_DIRECTIONS,
     DEFAULT_OPTIMIZATION_STEPS,
@@ -12,7 +12,7 @@ from wisent.core.constants import (
     STEERING_STRENGTH_RANGE_WIDE,
     STEERING_STRENGTH_RANGE_NARROW,
 )
-from wisent.core.steering_methods.registry import (
+from wisent.core.control.steering_methods.registry import (
     SteeringMethodDefinition,
     SteeringMethodParameter,
     SteeringMethodType,
@@ -23,7 +23,7 @@ CAA_DEFINITION = SteeringMethodDefinition(
     name="caa",
     method_type=SteeringMethodType.CAA,
     description="Contrastive Activation Addition - computes mean(positive) - mean(negative) steering vectors",
-    method_class_path="wisent.core.steering_methods.methods.caa.CAAMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.caa.CAAMethod",
     parameters=[
         SteeringMethodParameter(
             name="normalize",
@@ -47,7 +47,7 @@ OSTRZE_DEFINITION = SteeringMethodDefinition(
     name="ostrze",
     method_type=SteeringMethodType.OSTRZE,
     description="Classifier-based steering using logistic regression decision boundary. Works better than CAA when geometry is orthogonal (each pair has unique direction rather than shared direction).",
-    method_class_path="wisent.core.steering_methods.methods.ostrze.OstrzeMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.ostrze.OstrzeMethod",
     parameters=[
         SteeringMethodParameter(
             name="normalize",
@@ -78,7 +78,7 @@ TECZA_DEFINITION = SteeringMethodDefinition(
     name="tecza",
     method_type=SteeringMethodType.TECZA,
     description="TECZA - Projected Representations for Independent Steering Manifolds. Gradient-optimized multi-directional steering.",
-    method_class_path="wisent.core.steering_methods.methods.tecza.TECZAMethod",
+    method_class_path="wisent.core.control.steering_methods.methods.tecza.TECZAMethod",
     parameters=[
         SteeringMethodParameter(
             name="num_directions",

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import torch
 from typing import Dict, Optional, TYPE_CHECKING
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH, SEPARATOR_WIDTH_STANDARD
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -96,7 +96,7 @@ class WicherRuntimeHooks:
         self, hidden_states: torch.Tensor, layer_idx: int,
     ) -> torch.Tensor:
         """Run Broyden iterations in SVD concept subspace."""
-        from wisent.core.steering_methods.methods.wicher.solvers.broyden import (
+        from wisent.core.control.steering_methods.methods.wicher.solvers.broyden import (
             wicher_broyden_step,
         )
 
@@ -153,7 +153,7 @@ def project_weights_wicher(
     from wisent.core.weight_modification.methods.additive import (
         bake_steering_into_weights,
     )
-    from wisent.core.activations.core.atoms import LayerActivations
+    from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
     import torch.nn.functional as F
 
     if components is None:

@@ -1,7 +1,7 @@
 """Activation analysis helpers for verify-steering."""
 import torch
 from typing import Any, Dict, List, Optional
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     COMPARE_TOL,
     DISPLAY_TRUNCATION_SHORT,
     MAX_NEW_TOKENS_VERIFY_SINGLE,

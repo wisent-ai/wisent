@@ -9,11 +9,11 @@ import torch
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 import torch.nn.functional as F
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED, GEOMETRY_OPTIMIZATION_LR,
     TECZA_NUM_DIRECTIONS, DIAGNOSIS_OPTIMIZATION_STEPS,
 )
-from wisent.core.models.inference_config import get_generate_kwargs
+from wisent.core.primitives.models.inference_config import get_generate_kwargs
 
 
 def train_caa(pos_tensor, neg_tensor):

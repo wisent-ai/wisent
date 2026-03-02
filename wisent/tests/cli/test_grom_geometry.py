@@ -10,7 +10,7 @@ import os
 import json
 import torch
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED,
     GROM_TEST_HIDDEN_DIM,
     GROM_TEST_N_SAMPLES,
@@ -34,7 +34,7 @@ def test_grom_geometry_on_truthfulqa():
         print("\n[Step 1] Generating truthfulqa_gen pairs...")
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-pairs-from-task",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs-from-task",
                 "truthfulqa_gen",
                 "--output", pairs_file,
                 "--limit", "30",
@@ -51,7 +51,7 @@ def test_grom_geometry_on_truthfulqa():
         print("[Step 2] Collecting activations...")
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "get-activations",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "get-activations",
                 pairs_file,
                 "--output", activations_file,
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -69,9 +69,9 @@ def test_grom_geometry_on_truthfulqa():
         # Step 3: Run geometry analysis and GROM training
         print("[Step 3] Running geometry analysis and GROM training...")
         
-        from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure
-        from wisent.core.steering_methods.preflight import run_preflight_check
-        from wisent.core.steering_methods.methods.grom import GROMMethod
+        from wisent.core.primitives.contrastive_pairs.diagnostics import detect_geometry_structure
+        from wisent.core.control.steering_methods.preflight import run_preflight_check
+        from wisent.core.control.steering_methods.methods.grom import GROMMethod
         
         # Load activations from JSON
         with open(activations_file, 'r') as f:
@@ -152,7 +152,7 @@ def test_grom_geometry_on_truthfulqa():
 
 def test_geometry_detection_synthetic():
     """Test geometry detection with synthetic data."""
-    from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure
+    from wisent.core.primitives.contrastive_pairs.diagnostics import detect_geometry_structure
     
     torch.manual_seed(DEFAULT_RANDOM_SEED)
     hidden_dim = GROM_TEST_HIDDEN_DIM
@@ -173,7 +173,7 @@ def test_geometry_detection_synthetic():
 
 def test_preflight_checks():
     """Test pre-flight check system."""
-    from wisent.core.steering_methods.preflight import run_preflight_check
+    from wisent.core.control.steering_methods.preflight import run_preflight_check
     
     torch.manual_seed(DEFAULT_RANDOM_SEED)
     hidden_dim = GROM_TEST_HIDDEN_DIM
@@ -198,7 +198,7 @@ def test_preflight_checks():
 
 def test_grom_adaptation_linear():
     """Test GROM adapts correctly to linear data."""
-    from wisent.core.steering_methods.methods.grom import GROMMethod
+    from wisent.core.control.steering_methods.methods.grom import GROMMethod
     
     torch.manual_seed(DEFAULT_RANDOM_SEED)
     hidden_dim = GROM_TEST_HIDDEN_DIM

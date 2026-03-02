@@ -11,7 +11,7 @@ from scipy.spatial.distance import cdist
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import cross_val_score
 from sklearn.metrics.pairwise import rbf_kernel
-from wisent.core.constants import ZERO_THRESHOLD
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
 
 
 @dataclass

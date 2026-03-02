@@ -29,9 +29,9 @@ from __future__ import annotations
 import torch
 from typing import TYPE_CHECKING
 
-from wisent.core.errors import UnknownTypeError
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import NORM_EPS, DEFAULT_STRENGTH, KERNEL_DISTANCE_FRACTION, KERNEL_MIN_ALPHA, ADDITIVE_METHOD_MAX_ALPHA, ADDITIVE_KERNEL_CENTER_DIVISOR, ADDITIVE_KERNEL_SIGMA_DIVISOR, DEFAULT_LAYER_WEIGHT
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_STRENGTH, KERNEL_DISTANCE_FRACTION, KERNEL_MIN_ALPHA, ADDITIVE_METHOD_MAX_ALPHA, ADDITIVE_KERNEL_CENTER_DIVISOR, ADDITIVE_KERNEL_SIGMA_DIVISOR, DEFAULT_LAYER_WEIGHT
 
 if TYPE_CHECKING:
     from torch import Tensor

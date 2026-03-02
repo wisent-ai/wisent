@@ -34,7 +34,7 @@ def train_and_bake_tecza(
     Returns:
         MultiDirectionResult
     """
-    from wisent.core.steering_methods.methods.advanced import (
+    from wisent.core.control.steering_methods.methods.advanced import (
         TECZAMethod, TECZAConfig)
 
     cfg = config or MultiDirectionConfig(method="tecza")
@@ -87,7 +87,7 @@ def train_and_bake_tetno(
     Returns:
         MultiDirectionResult
     """
-    from wisent.core.steering_methods.methods.advanced import (
+    from wisent.core.control.steering_methods.methods.advanced import (
         TETNOMethod, TETNOConfig)
 
     cfg = config or MultiDirectionConfig(method="tetno")

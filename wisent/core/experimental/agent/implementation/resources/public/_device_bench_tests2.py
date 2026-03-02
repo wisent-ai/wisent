@@ -2,7 +2,7 @@
 import time
 import torch
 from typing import Dict, Any, Optional
-from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, BENCH_TEST_SAMPLE_MIN
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, BENCH_TEST_SAMPLE_MIN
 from wisent.core.utils.core.hardware import subprocess_timeout_s
 from wisent.core.utils import resolve_default_device
 
@@ -88,8 +88,8 @@ sys.path.append('.')
 
 start_time = time.time()
 try:
-    from wisent.core.model import Model
-    from wisent.core.contrastive_pairs.generate_synthetically import SyntheticContrastivePairGenerator
+    from wisent.core.primitives.models.core.wisent_model import Model
+    from wisent.core.primitives.contrastive_pairs.generate_synthetically import SyntheticContrastivePairGenerator
     
     # Load the actual model
     model = Model("meta-llama/Llama-3.1-8B-Instruct")

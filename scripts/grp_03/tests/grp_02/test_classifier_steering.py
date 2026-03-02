@@ -8,8 +8,8 @@ import numpy as np
 from datasets import load_dataset
 from sklearn.linear_model import LogisticRegression
 import random
-from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_RANDOM_SEED
-from wisent.core.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, DEFAULT_RANDOM_SEED
+from wisent.core.primitives.models import get_generate_kwargs
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 DEVICE = "cuda" if torch.cuda.is_available() else "mps"

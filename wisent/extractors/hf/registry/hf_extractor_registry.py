@@ -10,7 +10,7 @@ from wisent.extractors.hf.atoms import (
 )
 
 from wisent.extractors.hf.hf_extractor_manifest import EXTRACTORS as _MANIFEST
-from wisent.core.errors import InvalidValueError, InvalidDataFormatError
+from wisent.core.utils.infra_tools.errors import InvalidValueError, InvalidDataFormatError
 
 __all__ = [
     "register_extractor",

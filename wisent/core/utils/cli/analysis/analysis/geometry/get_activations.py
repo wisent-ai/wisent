@@ -5,18 +5,18 @@ import json
 import os
 import time
 
-from wisent.core.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
 
 
 def execute_get_activations(args):
     """Execute the get-activations command - load pairs and collect activations."""
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy, ExtractionComponent
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, ExtractionComponent
     
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 
     raw_mode = getattr(args, 'raw', False)
     mode_str = "raw hidden states" if raw_mode else "activations"
@@ -110,7 +110,7 @@ def execute_get_activations(args):
         if raw_mode:
             # RAW MODE: Collect full hidden states [seq_len, hidden_size]
             print(f"\n⚡ Collecting RAW hidden states...")
-            from wisent.core.activations.activation_cache import get_strategy_text_family
+            from wisent.core.primitives.model_interface.core.activations.activation_cache import get_strategy_text_family
             text_family = get_strategy_text_family(extraction_strategy)
             
             raw_pairs_data = []

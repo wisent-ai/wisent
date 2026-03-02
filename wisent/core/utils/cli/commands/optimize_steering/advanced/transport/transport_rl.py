@@ -14,19 +14,19 @@ from collections import defaultdict
 from datetime import datetime
 from typing import Dict, List, Tuple
 import torch
-from wisent.core.steering_methods.steering_object import SteeringObjectMetadata
-from wisent.core.steering_methods.methods.przelom.przelom_steering_object import (
+from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
+from wisent.core.control.steering_methods.methods.przelom.przelom_steering_object import (
     PrzelomSteeringObject,
 )
-from wisent.core.steering_methods.methods.przelom.create import _regularized_pinv
-from wisent.core.steering_methods.methods.szlak.transport import (
+from wisent.core.control.steering_methods.methods.przelom.create import _regularized_pinv
+from wisent.core.control.steering_methods.methods.szlak.transport import (
     compute_attention_affinity_cost,
 )
-from wisent.core.cli.optimize_steering.data.responses import execute_generate_responses
-from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
-from wisent.core.cli.optimize_steering.pipeline import _make_args
+from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
+from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
+from wisent.core.utils.cli.optimize_steering.pipeline import _make_args
 from wisent.core.utils import preferred_dtype
-from wisent.core.constants import (LOG_EPS, TIKHONOV_REG, RL_BASELINE, DEFAULT_SCORE, RL_NUM_EPISODES,
+from wisent.core.utils.config_tools.constants import (LOG_EPS, TIKHONOV_REG, RL_BASELINE, DEFAULT_SCORE, RL_NUM_EPISODES,
     DEFAULT_STRENGTH,
     RL_EPSILON, PRZELOM_EPSILON, SZLAK_INFERENCE_K, RL_BATCH_LIMIT, CLASSIFIER_THRESHOLD,
     SEPARATOR_WIDTH_WIDE)
@@ -194,7 +194,7 @@ def execute_transport_rl(args):
     """
     method = getattr(args, 'method', 'przelom').lower()
     if method not in ('przelom', 'szlak'):
-        from wisent.core.cli.optimize_steering.transport.vector_rl import run_vector_rl_loop
+        from wisent.core.utils.cli.optimize_steering.transport.vector_rl import run_vector_rl_loop
         return run_vector_rl_loop(args)
 
     # --- Transport cost-shaping path (PRZELOM / SZLAK) ---

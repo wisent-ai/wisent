@@ -13,7 +13,7 @@ import torch
 from dataclasses import dataclass
 from typing import Dict, List
 from wisent.core import constants as _C
-from wisent.core.constants import PAIR_GENERATORS_DEFAULT_N, DISPLAY_TOP_N_SMALL
+from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, DISPLAY_TOP_N_SMALL
 
 
 @dataclass
@@ -43,9 +43,9 @@ def run_comprehensive_geometry_analysis(
     
     Returns best configuration for each geometry type.
     """
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure
-    from wisent.core.steering_methods.preflight import run_preflight_check
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.contrastive_pairs.diagnostics import detect_geometry_structure
+    from wisent.core.control.steering_methods.preflight import run_preflight_check
     
     print("=" * _C.SEPARATOR_WIDTH_REPORT)
     print("COMPREHENSIVE GEOMETRY ANALYSIS")
@@ -84,7 +84,7 @@ def run_comprehensive_geometry_analysis(
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-pairs-from-task",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs-from-task",
                 task,
                 "--output", pairs_file,
                 "--limit", str(num_pairs),
@@ -122,7 +122,7 @@ def run_comprehensive_geometry_analysis(
                     # Collect activations for this configuration
                     result = subprocess.run(
                         [
-                            "python", "-m", "wisent.core.main", "get-activations",
+                            "python", "-m", "wisent.core.primitives.model_interface.core.main", "get-activations",
                             pairs_file,
                             "--output", activations_file,
                             "--model", model,

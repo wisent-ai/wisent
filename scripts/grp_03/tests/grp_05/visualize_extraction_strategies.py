@@ -13,11 +13,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.activations.activations_collector import ActivationCollector
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import NORM_EPS, VIZ_DPI, VIZ_HISTOGRAM_BINS_LARGE, VIZ_LINEWIDTH_NORMAL
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import NORM_EPS, VIZ_DPI, VIZ_HISTOGRAM_BINS_LARGE, VIZ_LINEWIDTH_NORMAL
 
 MODEL = "meta-llama/Llama-3.2-1B-Instruct"
 STRATEGIES = [

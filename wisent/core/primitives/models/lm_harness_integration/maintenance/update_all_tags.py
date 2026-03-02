@@ -8,7 +8,7 @@ import sys
 import json
 from typing import Dict, List
 
-from wisent.core.constants import DEFAULT_TIMEOUT_QUICK, DISPLAY_TOP_N_MINI, HTTP_STATUS_OK
+from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_QUICK, DISPLAY_TOP_N_MINI, HTTP_STATUS_OK
 
 # Import the tag determination function
 from populate_tasks import get_benchmark_tags_with_llama

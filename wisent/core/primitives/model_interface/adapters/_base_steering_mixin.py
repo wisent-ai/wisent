@@ -10,8 +10,8 @@ from typing import Any, Dict
 import torch
 import torch.nn as nn
 
-from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.constants import NORM_EPS, DEFAULT_LAYER_WEIGHT
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_LAYER_WEIGHT
 
 
 class SteeringHookMixin:
@@ -33,7 +33,7 @@ class SteeringHookMixin:
         Yields:
             None (hooks are active within context)
         """
-        from wisent.core.adapters.base import SteeringConfig
+        from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
         config = config or SteeringConfig()
         handles = []
 
@@ -141,7 +141,7 @@ class SteeringHookMixin:
         Raises:
             AdapterError: If adapter not found
         """
-        from wisent.core.adapters.base import AdapterError
+        from wisent.core.primitives.model_interface.adapters.base import AdapterError
         try:
             return cls._REGISTRY[name]
         except KeyError as exc:

@@ -3,8 +3,8 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import (
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import (
     GROM_HIDDEN_DIM, GROM_ROUTER_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE, GROM_MAX_ALPHA,
 )
 from wisent.core.weight_modification.export._generic import load_steered_model
@@ -132,7 +132,7 @@ def load_grom_model(
         
         # Reconstruct gate network
         if "gate_network_state" in grom_data:
-            from wisent.core.steering_methods.methods.grom import GatingNetwork
+            from wisent.core.control.steering_methods.methods.grom import GatingNetwork
             config = grom_data["gate_network_config"]
             grom_result.gate_network = GatingNetwork(
                 config["input_dim"],
@@ -145,7 +145,7 @@ def load_grom_model(
         
         # Reconstruct intensity network
         if "intensity_network_state" in grom_data:
-            from wisent.core.steering_methods.methods.grom import IntensityNetwork
+            from wisent.core.control.steering_methods.methods.grom import IntensityNetwork
             config = grom_data["intensity_network_config"]
             grom_result.intensity_network = IntensityNetwork(
                 config["input_dim"],

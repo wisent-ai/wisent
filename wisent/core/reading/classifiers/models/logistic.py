@@ -3,7 +3,7 @@ from __future__ import annotations
 import torch
 from torch import nn
 
-from wisent.core.classifiers.core.atoms import BaseClassifier
+from wisent.core.reading.classifiers.core.atoms import BaseClassifier
 
 __all__ = ["LogisticClassifier"]
 

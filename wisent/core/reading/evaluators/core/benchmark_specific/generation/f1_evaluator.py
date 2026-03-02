@@ -6,8 +6,8 @@ Used for reading comprehension tasks where partial credit is appropriate.
 from typing import Any, Set
 import logging
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.constants import EVAL_F1_MATCH_THRESHOLD, EVAL_F1_PARTIAL_THRESHOLD
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.config_tools.constants import EVAL_F1_MATCH_THRESHOLD, EVAL_F1_PARTIAL_THRESHOLD
 
 logger = logging.getLogger(__name__)
 

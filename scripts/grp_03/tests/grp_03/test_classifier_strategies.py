@@ -15,7 +15,7 @@ from sklearn.linear_model import LogisticRegression
 import gc
 from transformers import AutoTokenizer, AutoModelForCausalLM
 
-from wisent.core.constants import DEFAULT_RANDOM_SEED
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
 from test_classifier_strategies_helpers import (
     load_task_pairs,
     build_train_text,

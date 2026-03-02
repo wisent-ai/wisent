@@ -10,9 +10,9 @@ from dataclasses import asdict
 from datetime import datetime
 from typing import Dict, List, Optional, Any
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.steering_methods import SteeringMethodType
-from wisent.core.constants import (
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.control.steering_methods import SteeringMethodType
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LIMIT, DEFAULT_SPLIT_RATIO, AUTO_MAX_TIME_MINUTES,
     SEARCH_DEFAULT_STRENGTHS, SEARCH_MAX_LAYER_CAP, SEARCH_DEFAULT_LAYERS,
     SECONDS_PER_MINUTE,

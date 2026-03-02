@@ -18,7 +18,7 @@ def test_generate_pairs_from_task():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-pairs-from-task", "boolq",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs-from-task", "boolq",
                 "--output", output_file,
                 "--limit", "10",
                 "--verbose"
@@ -44,7 +44,7 @@ def test_generate_synthetic_pairs():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-pairs",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs",
                 "--trait", "truthfulness",
                 "--num-pairs", "5",
                 "--output", output_file,
@@ -69,7 +69,7 @@ def test_generate_synthetic_pairs_different_trait():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-pairs",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-pairs",
                 "--trait", "being helpful and informative",
                 "--num-pairs", "5",
                 "--output", output_file,

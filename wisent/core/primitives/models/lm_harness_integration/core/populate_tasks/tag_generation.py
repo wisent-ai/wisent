@@ -3,7 +3,7 @@
 from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
-from wisent.core.constants import DEFAULT_TIMEOUT_SHORT, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH, MAX_TAGS_PER_BENCHMARK, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_SHORT, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH, MAX_TAGS_PER_BENCHMARK, DISPLAY_TOP_N_MINI
 
 
 APPROVED_SKILLS = [

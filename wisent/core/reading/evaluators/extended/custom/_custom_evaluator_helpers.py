@@ -30,7 +30,7 @@ def create_custom_evaluator(
     Returns:
         CustomEvaluator instance
     """
-    from wisent.core.evaluators.custom.custom_evaluator import (
+    from wisent.core.reading.evaluators.custom.custom_evaluator import (
         CustomEvaluator, CallableEvaluator,
     )
 
@@ -66,7 +66,7 @@ def _load_evaluator_from_module(
     """Load evaluator from a Python module path or file path."""
     import sys
     from pathlib import Path
-    from wisent.core.evaluators.custom.custom_evaluator import (
+    from wisent.core.reading.evaluators.custom.custom_evaluator import (
         CustomEvaluator, CallableEvaluator,
     )
 

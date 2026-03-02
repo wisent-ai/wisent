@@ -5,7 +5,7 @@ import base64
 import argparse
 from pathlib import Path
 
-from wisent.core.constants import VIZ_DPI_DRAFT
+from wisent.core.utils.config_tools.constants import VIZ_DPI_DRAFT
 
 
 def create_combined_figure(visualizations: dict, layer_num: int, metrics: dict = None) -> bytes:

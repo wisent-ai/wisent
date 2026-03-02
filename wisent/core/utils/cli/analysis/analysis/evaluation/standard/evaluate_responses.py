@@ -4,21 +4,21 @@ import json
 import os
 from pathlib import Path
 
-from wisent.core.constants import JSON_INDENT
-from wisent.core.errors import TaskNotFoundError
-from wisent.core.evaluators.steering_evaluators import (
+from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.utils.infra_tools.errors import TaskNotFoundError
+from wisent.core.reading.evaluators.steering_evaluators import (
     SteeringEvaluatorFactory,
     EvaluatorConfig,
     RefusalEvaluator,
     PersonalizationEvaluator as SteeringPersonalizationEvaluator,
 )
-from wisent.core.evaluators.rotator import EvaluatorRotator
+from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 
 
-from wisent.core.cli.analysis.evaluation.evaluate_docker import evaluate_docker_execution
-from wisent.core.cli.analysis.evaluation.evaluate_personalization import evaluate_personalization
-from wisent.core.cli.analysis.evaluation.evaluate_refusal import evaluate_refusal
-from wisent.core.cli.analysis.evaluation.evaluate_standard import evaluate_standard
+from wisent.core.utils.cli.analysis.evaluation.evaluate_docker import evaluate_docker_execution
+from wisent.core.utils.cli.analysis.evaluation.evaluate_personalization import evaluate_personalization
+from wisent.core.utils.cli.analysis.evaluation.evaluate_refusal import evaluate_refusal
+from wisent.core.utils.cli.analysis.evaluation.evaluate_standard import evaluate_standard
 
 
 def execute_evaluate_responses(args):
@@ -32,7 +32,7 @@ def execute_evaluate_responses(args):
     Evaluation uses the TEST portion (20%) to ensure no data leakage with training.
     """
     from lm_eval.tasks import TaskManager
-    from wisent.core.evaluators.benchmark_specific import (
+    from wisent.core.reading.evaluators.benchmark_specific import (
         GenerationEvaluator,
         ExactMatchEvaluator,
         F1Evaluator,
@@ -142,11 +142,11 @@ def execute_evaluate_responses(args):
     
     # Special handling for certain evaluation types
     if evaluation_type == "docker_execution":
-        from wisent.core.evaluators.benchmark_specific.coding.metrics.evaluator import (
+        from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import (
             CodingEvaluator,
             EvaluatorConfig
         )
-        from wisent.core.evaluators.benchmark_specific.coding.providers.livecodebench import LiveCodeBenchProvider
+        from wisent.core.reading.evaluators.benchmark_specific.coding.providers.livecodebench import LiveCodeBenchProvider
         print(f"   Using: CodingEvaluator (Docker sandbox execution)\n")
         docker_config = task_config.get('docker_config', {})
         provider_name = task_config.get('provider', 'livecodebench')
@@ -157,8 +157,8 @@ def execute_evaluate_responses(args):
     else:
         # Use EvaluatorRotator to auto-select based on task name
         try:
-            EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-            EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+            EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+            EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
             evaluator_rotator = EvaluatorRotator(evaluator=None, task_name=task_name)
             evaluator = evaluator_rotator.current
             print(f"   Using: {evaluator.name} (auto-selected via EvaluatorRotator)\n")

@@ -21,7 +21,7 @@ def test_train_multiple_vectors_and_combine():
         # Train first vector
         train1_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-vector-from-task",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-task",
                 "--task", "boolq",
                 "--trait-label", "truthfulness",
                 "--output", vector1_path,
@@ -45,7 +45,7 @@ def test_train_multiple_vectors_and_combine():
         # Train second vector
         train2_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-vector-from-task",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-task",
                 "--task", "boolq",
                 "--trait-label", "helpfulness",
                 "--output", vector2_path,
@@ -69,7 +69,7 @@ def test_train_multiple_vectors_and_combine():
         # Combine vectors with equal weights
         combine_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1_path}:0.5",
                 "--vector", f"{vector2_path}:0.5",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -106,7 +106,7 @@ def test_multi_steer_with_different_emphasis():
         # Train vectors (abbreviated for test)
         train1_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-vector-from-task",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-task",
                 "--task", "boolq",
                 "--trait-label", "trait1",
                 "--output", vector1_path,
@@ -127,7 +127,7 @@ def test_multi_steer_with_different_emphasis():
         
         train2_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-vector-from-task",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-task",
                 "--task", "boolq",
                 "--trait-label", "trait2",
                 "--output", vector2_path,
@@ -149,7 +149,7 @@ def test_multi_steer_with_different_emphasis():
         # Emphasize first vector (70% vs 30%)
         combine_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "multi-steer",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "multi-steer",
                 "--vector", f"{vector1_path}:0.7",
                 "--vector", f"{vector2_path}:0.3",
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",

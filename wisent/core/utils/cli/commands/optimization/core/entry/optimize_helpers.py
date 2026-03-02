@@ -6,7 +6,7 @@ import subprocess
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from wisent.core.constants import JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 def get_checkpoint_path(model: str) -> Path:
@@ -83,7 +83,7 @@ def save_checkpoint(model: str, results: Dict[str, Any], phase: str = "unknown")
 
 def get_all_benchmarks() -> List[str]:
     """Get ALL available benchmarks from the central registry."""
-    from wisent.core.benchmarks import get_all_benchmarks as _get_all_benchmarks
+    from wisent.core.utils.services.benchmarks import get_all_benchmarks as _get_all_benchmarks
     return _get_all_benchmarks()
 
 

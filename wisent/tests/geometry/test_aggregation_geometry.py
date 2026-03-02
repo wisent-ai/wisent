@@ -11,7 +11,7 @@ import json
 import tempfile
 import os
 import torch
-from wisent.core.constants import DISPLAY_TOP_N_SMALL, SEPARATOR_WIDTH_REPORT, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_SMALL, SEPARATOR_WIDTH_REPORT, JSON_INDENT
 
 POSITIVE_WORDS = [
     "happy", "joyful", "excited", "wonderful", "amazing",
@@ -52,7 +52,7 @@ def create_pairs_file(output_path):
 def run_cli(args):
     """Run a CLI command and return stdout."""
     result = subprocess.run(
-        [sys.executable, "-m", "wisent.core.main"] + args,
+        [sys.executable, "-m", "wisent.core.primitives.model_interface.core.main"] + args,
         capture_output=True,
         text=True,
     )

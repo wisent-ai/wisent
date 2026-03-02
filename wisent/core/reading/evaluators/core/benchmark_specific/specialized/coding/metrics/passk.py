@@ -4,7 +4,7 @@ from typing import Iterable
 import math
 from collections import defaultdict
 from .core.atoms import SampleOutcome, Metric
-from wisent.core.errors import InvalidRangeError
+from wisent.core.utils.infra_tools.errors import InvalidRangeError
 
 class PassAtK(Metric):
     """

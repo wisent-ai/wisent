@@ -10,15 +10,15 @@ import re
 from typing import Any, Dict
 import logging
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.errors import NumericalExtractionError, TextExtractionError
-from wisent.core.constants import (
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.infra_tools.errors import NumericalExtractionError, TextExtractionError
+from wisent.core.utils.config_tools.constants import (
     COMPARE_TOL, EVAL_NLI_THRESHOLD, EVAL_NLI_CONF_CEILING,
     EVAL_NLI_CONF_BASE, EVAL_NLI_CONF_SCALE, EVAL_EMB_THRESHOLD,
     EVAL_EMB_CONF_CEILING, EVAL_EMB_CONF_BASE, EVAL_EMB_CONF_SCALE,
     GEN_EVAL_HIGH_CONFIDENCE,
 )
-from wisent.core.evaluators.benchmark_specific._generation_evaluator_helpers import (
+from wisent.core.reading.evaluators.benchmark_specific._generation_evaluator_helpers import (
     GenerationEvaluatorHelpersMixin,
 )
 

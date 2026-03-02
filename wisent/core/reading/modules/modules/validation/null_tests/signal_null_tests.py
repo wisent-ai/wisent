@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import torch
 import numpy as np
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, DEFAULT_RANDOM_SEED, CONFIDENCE_LEVEL,
     MAX_PAIRS_FOR_NULL_TEST, SIGNIFICANCE_ALPHA,
     NULL_TEST_Z_SCORE_NORMALIZER, NULL_TEST_Z_SCORE_SIGNIFICANT,

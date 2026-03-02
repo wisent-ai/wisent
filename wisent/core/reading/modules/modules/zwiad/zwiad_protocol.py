@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 import torch
 import numpy as np
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_SCORE, DEFAULT_SCALE, ROUNDING_PRECISION, STAT_ALPHA, BLEND_DEFAULT,
     ZWIAD_MIN_SILHOUETTE, ZWIAD_EDITABILITY_THRESHOLD, ZWIAD_PRZELOM_BONUS_MAX,
     ZWIAD_SCORE_PRIMARY, ZWIAD_SCORE_SECONDARY, ZWIAD_SCORE_TERTIARY,

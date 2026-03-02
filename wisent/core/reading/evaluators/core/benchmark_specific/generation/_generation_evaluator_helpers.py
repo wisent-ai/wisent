@@ -3,8 +3,8 @@
 from __future__ import annotations
 from typing import Any
 
-from wisent.core.evaluators.core.atoms import EvalResult
-from wisent.core.constants import (
+from wisent.core.reading.evaluators.core.atoms import EvalResult
+from wisent.core.utils.config_tools.constants import (
     EVAL_WEIGHT_EMBEDDING, EVAL_WEIGHT_NLI, EVAL_MIN_MARGIN,
     EVAL_CONFIDENCE_CEILING, EVAL_CONFIDENCE_BASELINE,
     ROUNDING_PRECISION,
@@ -108,7 +108,7 @@ class GenerationEvaluatorHelpersMixin:
     def _nli_entailment(self, response: str, expected: str) -> float:
         """Check if response entails expected using NLI cross-encoder."""
         try:
-            from wisent.core.evaluators.benchmark_specific.generation_evaluator import _get_cross_encoder
+            from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import _get_cross_encoder
             ce = _get_cross_encoder()
             import torch
             import torch.nn.functional as F
@@ -130,7 +130,7 @@ class GenerationEvaluatorHelpersMixin:
     def _embedding_similarity(self, response: str, expected: str) -> float:
         """Compute cosine similarity between response and expected using embeddings."""
         try:
-            from wisent.core.evaluators.benchmark_specific.generation_evaluator import _get_embedding_model
+            from wisent.core.reading.evaluators.benchmark_specific.generation_evaluator import _get_embedding_model
             emb = _get_embedding_model()
             import torch
 

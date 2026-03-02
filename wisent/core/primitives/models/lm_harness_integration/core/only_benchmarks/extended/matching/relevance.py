@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from typing import Any, Dict, List
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     BENCHMARK_LOADING_TIME_DEFAULT,
     JSON_INDENT,
     RELEVANCE_CONTENT_MATCH_SCORE,

@@ -13,7 +13,7 @@ from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Any
 
-from wisent.core.constants import JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 # Default config file location

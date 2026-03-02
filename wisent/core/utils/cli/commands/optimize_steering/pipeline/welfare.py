@@ -4,15 +4,15 @@ import os
 import tempfile
 from typing import Optional
 
-from wisent.core.cli.optimize_steering.method_configs import (
+from wisent.core.utils.cli.optimize_steering.method_configs import (
     MethodConfig, CAAConfig, STEERING_STRATEGIES,
 )
-from wisent.core.cli.optimize_steering.pipeline import OptimizationResult, _make_args
-from wisent.core.cli.optimize_steering.data.activations_data import execute_get_activations
-from wisent.core.cli.optimize_steering.steering_objects import execute_create_steering_object
-from wisent.core.cli.optimize_steering.data.responses import execute_generate_responses
-from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
-from wisent.core.constants import (DEFAULT_N_TRIALS, WELFARE_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS,
+from wisent.core.utils.cli.optimize_steering.pipeline import OptimizationResult, _make_args
+from wisent.core.utils.cli.optimize_steering.data.activations_data import execute_get_activations
+from wisent.core.utils.cli.optimize_steering.steering_objects import execute_create_steering_object
+from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
+from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
+from wisent.core.utils.config_tools.constants import (DEFAULT_N_TRIALS, WELFARE_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS,
     DEFAULT_NUM_STRENGTH_STEPS, DEFAULT_LAYER,
     PARSER_STRENGTH_RANGE_WELFARE, SEPARATOR_WIDTH_REPORT,
     JSON_INDENT, LAYER_STRIDE_DEFAULT)
@@ -67,7 +67,7 @@ def _execute_welfare_optimization(args):
     os.makedirs(output_dir, exist_ok=True)
     pairs_file = os.path.join(output_dir, f"{trait}_{direction}_pairs.json")
 
-    from wisent.core.contrastive_pairs.core.io.serialization import save_contrastive_pair_set
+    from wisent.core.primitives.contrastive_pairs.core.io.serialization import save_contrastive_pair_set
     save_contrastive_pair_set(pair_set, pairs_file)
     print(f"   Saved pairs to: {pairs_file}")
 

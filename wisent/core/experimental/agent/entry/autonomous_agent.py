@@ -7,12 +7,12 @@ using activation-based steering and correction techniques.
 import asyncio
 from typing import Any, Dict, List, Optional
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.activations import Activations
-from wisent.core.models import get_generate_kwargs
-from wisent.core.errors import MissingParameterError
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.activations import Activations
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core import constants as _C
-from wisent.core.constants import (AGENT_STEERING_THRESHOLD, AGENT_QUALITY_THRESHOLD,
+from wisent.core.utils.config_tools.constants import (AGENT_STEERING_THRESHOLD, AGENT_QUALITY_THRESHOLD,
     AGENT_DEFAULT_TIME_BUDGET_INIT, AGENT_DEFAULT_TIME_BUDGET, AGENT_DEMO_TIME_BUDGET,
     CLASSIFIER_THRESHOLD, AGENT_MAX_RESPONSE_ATTEMPTS, DEFAULT_STRENGTH)
 from .agent.diagnose import AgentClassifierDecisionSystem, AnalysisResult, ClassifierMarketplace, ResponseDiagnostics

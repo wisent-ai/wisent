@@ -7,7 +7,7 @@ from dataclasses import dataclass
 
 from .sample_adequacy import compute_sample_dimension_ratio, compute_effective_sample_size
 from .power_analysis import compute_statistical_power
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     STAT_ALPHA,
     SHRINKAGE_INTENSITY_THRESHOLD,
     STATISTICAL_POWER_THRESHOLD,

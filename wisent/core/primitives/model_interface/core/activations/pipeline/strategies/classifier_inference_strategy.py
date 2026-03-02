@@ -172,7 +172,7 @@ def get_recommended_inference_strategy(train_strategy) -> ClassifierInferenceStr
         Recommended ClassifierInferenceStrategy
     """
     # Import here to avoid circular dependency
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     
     if train_strategy in (ExtractionStrategy.CHAT_LAST, 
                           ExtractionStrategy.ROLE_PLAY, 

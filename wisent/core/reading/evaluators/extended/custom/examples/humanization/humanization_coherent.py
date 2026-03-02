@@ -8,7 +8,7 @@ Uses enochlev/coherence-all-mpnet-base-v2 model to check if the response
 is semantically relevant to the prompt.
 
 Usage:
-    from wisent.core.evaluators.custom.examples.humanization_coherent import HumanizationCoherentEvaluator
+    from wisent.core.reading.evaluators.custom.examples.humanization_coherent import HumanizationCoherentEvaluator
     
     evaluator = HumanizationCoherentEvaluator()
     result = evaluator("Some text to analyze", prompt="What was the question?")
@@ -22,8 +22,8 @@ from typing import Any, Dict, Optional
 import torch
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-from wisent.core.constants import HUMANIZATION_COHERENCE_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
-from wisent.core.evaluators.custom.custom_evaluator import (
+from wisent.core.utils.config_tools.constants import HUMANIZATION_COHERENCE_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT
+from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
 )
@@ -79,7 +79,7 @@ class HumanizationCoherentEvaluator(CustomEvaluator):
         self.device = device
         
         # Load Desklib detector
-        from wisent.core.evaluators.custom.examples.desklib_detector import DesklibDetectorEvaluator
+        from wisent.core.reading.evaluators.custom.examples.desklib_detector import DesklibDetectorEvaluator
         self._desklib = DesklibDetectorEvaluator(device=device)
         
         # Load coherence model

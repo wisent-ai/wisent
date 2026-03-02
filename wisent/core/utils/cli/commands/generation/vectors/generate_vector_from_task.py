@@ -5,7 +5,7 @@ import os
 import time
 import tempfile
 from argparse import Namespace
-from wisent.core.constants import TECZA_NUM_DIRECTIONS, DEFAULT_RANDOM_SEED, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import TECZA_NUM_DIRECTIONS, DEFAULT_RANDOM_SEED, SEPARATOR_WIDTH_STANDARD
 
 from ..pairs.generate_pairs_from_task import execute_generate_pairs_from_task
 from ...analysis.geometry.get_activations import execute_get_activations
@@ -19,7 +19,7 @@ def _load_optimal_defaults(model_name: str, task_name: str, args):
     Returns the optimal config dict if found, None otherwise.
     """
     try:
-        from wisent.core.config_manager import get_cached_optimization
+        from wisent.core.utils.config_tools.config import get_cached_optimization
         
         # Try to get cached optimization for any method
         result = get_cached_optimization(model_name, task_name, method="*")
@@ -72,7 +72,7 @@ def execute_generate_vector_from_task(args):
     If optimal steering config exists for model/task, those settings are used as defaults.
     """
     # Expand task if it's a skill or risk name
-    from wisent.core.tasks.base.task_selector import expand_task_if_skill_or_risk
+    from wisent.core.control.tasks.base.task_selector import expand_task_if_skill_or_risk
     args.task = expand_task_if_skill_or_risk(args.task)
     
     # Check for optimal defaults from previous optimization

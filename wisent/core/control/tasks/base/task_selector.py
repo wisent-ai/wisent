@@ -9,7 +9,7 @@ import logging
 from typing import List, Dict, Any, Optional, Set
 from pathlib import Path
 
-from wisent.core.constants import PARSER_DEFAULT_MIN_QUALITY
+from wisent.core.utils.config_tools.constants import PARSER_DEFAULT_MIN_QUALITY
 
 logger = logging.getLogger(__name__)
 

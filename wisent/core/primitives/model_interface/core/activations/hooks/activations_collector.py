@@ -3,20 +3,20 @@ from dataclasses import dataclass, field
 from typing import Sequence, TYPE_CHECKING
 import torch
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.activations.core.atoms import LayerActivations, LayerName, RawActivationMap
-from wisent.core.activations import (
+from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, LayerName, RawActivationMap
+from wisent.core.primitives.model_interface.core.activations import (
     ExtractionStrategy,
     ExtractionComponent,
     build_extraction_texts,
     extract_activation,
 )
-from wisent.core.errors import NoHiddenStatesError
-from wisent.core.constants import LOG_EPS, PROGRESS_REPORT_INTERVAL
+from wisent.core.utils.infra_tools.errors import NoHiddenStatesError
+from wisent.core.utils.config_tools.constants import LOG_EPS, PROGRESS_REPORT_INTERVAL
 from wisent.core.utils.core.hardware import default_batch_size
 
 if TYPE_CHECKING:
-    from wisent.core.models.wisent_model import WisentModel
+    from wisent.core.primitives.models.wisent_model import WisentModel
 
 __all__ = ["ActivationCollector"]
 
@@ -102,7 +102,7 @@ class ActivationCollector:
             keep = self._select_indices(layers, n_blocks)
             qk_mgrs = []
             if capture_qk:
-                from wisent.core.activations.component_hooks import ComponentHookManager
+                from wisent.core.primitives.model_interface.core.activations.component_hooks import ComponentHookManager
                 for comp in (ExtractionComponent.Q_PROJ, ExtractionComponent.K_PROJ):
                     mgr = ComponentHookManager(self.model.hf_model, comp, keep)
                     mgr._register_hooks()
@@ -148,7 +148,7 @@ class ActivationCollector:
 
     def _collect_with_hooks(self, full_enc, keep, component, strategy, answer_text, tok, prompt_len):
         """Run a second forward pass with hooks to capture component activations."""
-        from wisent.core.activations.component_hooks import ComponentHookManager
+        from wisent.core.primitives.model_interface.core.activations.component_hooks import ComponentHookManager
         manager = ComponentHookManager(self.model.hf_model, component, keep)
         with manager.hooks_active():
             self.model.hf_model(**full_enc, output_hidden_states=False, use_cache=False)
@@ -162,11 +162,11 @@ class ActivationCollector:
         component: ExtractionComponent = ExtractionComponent.RESIDUAL_STREAM,
     ) -> dict:
         """Collect RAW hidden states (full sequences) for a contrastive pair."""
-        from wisent.core.activations.raw_collector import collect_raw
+        from wisent.core.primitives.model_interface.core.activations.raw_collector import collect_raw
         return collect_raw(self, pair, strategy, layers, component=component)
 
     def _collect_single_raw(self, prompt, response, strategy, layers, other_response=None, is_positive=True):
-        from wisent.core.activations.raw_collector import collect_single_raw
+        from wisent.core.primitives.model_interface.core.activations.raw_collector import collect_single_raw
         return collect_single_raw(self, prompt, response, strategy, layers, other_response=other_response, is_positive=is_positive)
 
     def collect_batched(

@@ -7,7 +7,7 @@ from typing import Dict, Any, List, Tuple
 import torch
 import torch.nn.functional as F
 from wisent.core import constants as _C
-from wisent.core.constants import COMPARE_TOL, PROGRESS_LOG_INTERVAL_20
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, PROGRESS_LOG_INTERVAL_20
 
 
 def compute_pca_directions(

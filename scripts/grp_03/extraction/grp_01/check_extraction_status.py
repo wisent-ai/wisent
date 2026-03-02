@@ -3,7 +3,7 @@
 
 import psycopg2
 import sys
-from wisent.core.constants import DB_CONNECT_WAIT_S
+from wisent.core.utils.config_tools.constants import DB_CONNECT_WAIT_S
 
 DATABASE_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:5432/postgres'
 

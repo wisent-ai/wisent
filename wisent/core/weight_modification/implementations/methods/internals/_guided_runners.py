@@ -3,13 +3,13 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import Dict, List, Optional, TYPE_CHECKING
-from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
 if TYPE_CHECKING:
     from torch import Tensor
     from torch.nn import Module
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.constants import GUIDED_VARIANCE_THRESHOLD, GUIDED_STRONG_SIGNAL, GUIDED_MODERATE_SIGNAL, SEPARATOR_WIDTH_WIDE
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
+from wisent.core.utils.config_tools.constants import GUIDED_VARIANCE_THRESHOLD, GUIDED_STRONG_SIGNAL, GUIDED_MODERATE_SIGNAL, SEPARATOR_WIDTH_WIDE
 from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig, GuidedModificationResult, CollateralDamageReport)
 from wisent.core.weight_modification.methods._guided_diagnostics import compute_layer_diagnostics
@@ -246,8 +246,8 @@ def _compute_steering_vectors(
     normalize: bool,
 ) -> Dict[int, Tensor]:
     """Compute steering vectors (difference of means) for specified layers."""
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     
     collector = ActivationCollector(model)
     strategy = ExtractionStrategy(extraction_strategy)

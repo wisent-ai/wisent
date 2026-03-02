@@ -9,11 +9,11 @@ from typing import Literal
 
 import optuna
 
-from wisent.core.optimization.core.atoms import BaseOptimizer, HPOConfig, HPORun
+from wisent.core.utils.services.optimization.core.atoms import BaseOptimizer, HPOConfig, HPORun
 from .config import RecommendationConfig, Thresholds, ScoreWeights
 from .configurable import compute_configurable_recommendation
 from .collector import GroundTruthDataset
-from wisent.core.constants import RECOMMEND_TOP_K, RECOMMEND_N_TRIALS, DEFAULT_RANDOM_SEED
+from wisent.core.utils.config_tools.constants import RECOMMEND_TOP_K, RECOMMEND_N_TRIALS, DEFAULT_RANDOM_SEED
 
 ObjectiveType = Literal["top1", "topk", "regret"]
 

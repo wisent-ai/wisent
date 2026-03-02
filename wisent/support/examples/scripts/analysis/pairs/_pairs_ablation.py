@@ -4,8 +4,8 @@ Pairs ablation and optimal configuration finding for direction discovery.
 
 from typing import Dict, List, Optional
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import PAIR_COUNT_ABLATION_SERIES, PAIRS_ABLATION_DEFAULT_MIN
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import PAIR_COUNT_ABLATION_SERIES, PAIRS_ABLATION_DEFAULT_MIN
 from wisent.examples.scripts._discovery_utils import OptimalConfig
 
 
@@ -31,8 +31,8 @@ def run_pairs_ablation(
     Returns:
         Dict mapping n_pairs -> accuracy
     """
-    from wisent.core.geometry_runner import compute_geometry_metrics
-    from wisent.core.activations.activation_cache import CachedActivations
+    from wisent.core.reading.modules.runner.geometry_runner import compute_geometry_metrics
+    from wisent.core.primitives.model_interface.core.activations.activation_cache import CachedActivations
     
     pair_counts = pair_counts or list(PAIR_COUNT_ABLATION_SERIES)
     results = {}

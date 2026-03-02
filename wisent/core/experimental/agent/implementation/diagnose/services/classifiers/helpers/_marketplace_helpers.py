@@ -9,7 +9,7 @@ from datetime import datetime
 
 from wisent.core.utils import resolve_default_device
 from wisent.core import constants as _C
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_LAYER, MARKETPLACE_MIN_QUALITY_DEFAULT,
 )
 

@@ -3,7 +3,7 @@
 from typing import Dict, Any, List, Optional, Tuple
 
 from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
-from wisent.core.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.utils.config_tools.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
 
 
 def get_evaluation_method(task) -> str:

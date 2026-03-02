@@ -6,19 +6,19 @@ import tempfile
 from dataclasses import dataclass
 from typing import Optional
 
-from wisent.core.cli.optimize_steering.method_configs import (
+from wisent.core.utils.cli.optimize_steering.method_configs import (
     MethodConfig, CAAConfig, OstrzeConfig, MLPConfig, TECZAConfig,
     TETNOConfig, GROMConfig, NurtConfig, SzlakConfig, WicherConfig,
     STEERING_STRATEGIES,
 )
-from wisent.core.cli.optimize_steering.transport.method_configs_transport import PrzelomConfig
-from wisent.core.cli.optimize_steering.data.contrastive_pairs_data import execute_generate_pairs_from_task
-from wisent.core.cli.optimize_steering.data.activations_data import execute_get_activations
-from wisent.core.cli.optimize_steering.steering_objects import execute_create_steering_object
-from wisent.core.cli.optimize_steering.data.responses import execute_generate_responses
-from wisent.core.cli.optimize_steering.scores import execute_evaluate_responses
+from wisent.core.utils.cli.optimize_steering.transport.method_configs_transport import PrzelomConfig
+from wisent.core.utils.cli.optimize_steering.data.contrastive_pairs_data import execute_generate_pairs_from_task
+from wisent.core.utils.cli.optimize_steering.data.activations_data import execute_get_activations
+from wisent.core.utils.cli.optimize_steering.steering_objects import execute_create_steering_object
+from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
+from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core import constants as _C
-from wisent.core.constants import COMPARE_TOL, LR_LOWER_BOUND, LR_UPPER_BOUND, ALPHA_LOWER_BOUND, ALPHA_UPPER_BOUND, DEFAULT_LIMIT, DEFAULT_LAYER
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, LR_LOWER_BOUND, LR_UPPER_BOUND, ALPHA_LOWER_BOUND, ALPHA_UPPER_BOUND, DEFAULT_LIMIT, DEFAULT_LAYER
 
 
 @dataclass

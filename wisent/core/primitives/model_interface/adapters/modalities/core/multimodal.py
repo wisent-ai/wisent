@@ -6,13 +6,13 @@ from dataclasses import dataclass
 import logging
 import torch
 import torch.nn as nn
-from wisent.core.adapters.base import BaseAdapter, AdapterError, InterventionPoint, SteeringConfig
-from wisent.core.modalities import (
+from wisent.core.primitives.model_interface.adapters.base import BaseAdapter, AdapterError, InterventionPoint, SteeringConfig
+from wisent.core.primitives.models.modalities import (
     Modality, ModalityContent, MultimodalContent, TextContent, ImageContent, AudioContent, VideoContent,
 )
-from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 from wisent.core.utils import preferred_dtype
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 __all__ = ["MultimodalAdapter", "MultimodalSteeringConfig"]
 logger = logging.getLogger(__name__)
@@ -222,7 +222,7 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
                 raise AdapterError("Model output format not recognized")
 
     def decode(self, latent: torch.Tensor) -> str:
-        from wisent.core.adapters.modalities.multimodal_decode import (
+        from wisent.core.primitives.model_interface.adapters.modalities.multimodal_decode import (
             decode_llava, decode_qwen_vl, decode_idefics, decode_generic,
         )
         model_type = self._detect_model_type()
@@ -240,20 +240,20 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
                 return decode_generic(self.model, latent, self.processor)
 
     def get_intervention_points(self) -> List[InterventionPoint]:
-        from wisent.core.adapters.modalities.multimodal_steering import get_intervention_points_multimodal
+        from wisent.core.primitives.model_interface.adapters.modalities.multimodal_steering import get_intervention_points_multimodal
         return get_intervention_points_multimodal(self)
 
     def extract_activations(self, content: MultimodalContent, layers: List[str] | None = None) -> LayerActivations:
-        from wisent.core.adapters.modalities.multimodal_steering import extract_activations_multimodal
+        from wisent.core.primitives.model_interface.adapters.modalities.multimodal_steering import extract_activations_multimodal
         return extract_activations_multimodal(self, content, layers)
 
     def forward_with_steering(self, content: MultimodalContent, steering_vectors: LayerActivations,
                               config: SteeringConfig | MultimodalSteeringConfig | None = None) -> str:
-        from wisent.core.adapters.modalities.multimodal_steering import forward_with_steering_multimodal
+        from wisent.core.primitives.model_interface.adapters.modalities.multimodal_steering import forward_with_steering_multimodal
         return forward_with_steering_multimodal(self, content, steering_vectors, config)
 
     def _generate_unsteered(self, content: MultimodalContent, **kwargs: Any) -> str:
-        from wisent.core.adapters.modalities.multimodal_steering import generate_unsteered_multimodal
+        from wisent.core.primitives.model_interface.adapters.modalities.multimodal_steering import generate_unsteered_multimodal
         return generate_unsteered_multimodal(self, content, **kwargs)
 
     def generate(self, content: MultimodalContent, steering_vectors: LayerActivations | None = None,
@@ -264,5 +264,5 @@ class MultimodalAdapter(BaseAdapter[MultimodalContent, Union[str, torch.Tensor]]
 
     def compute_cross_modal_steering_vector(self, positive_content: MultimodalContent,
                                             negative_content: MultimodalContent, layer: str) -> torch.Tensor:
-        from wisent.core.adapters.modalities.multimodal_steering import compute_cross_modal_steering_vector
+        from wisent.core.primitives.model_interface.adapters.modalities.multimodal_steering import compute_cross_modal_steering_vector
         return compute_cross_modal_steering_vector(self, positive_content, negative_content, layer)

@@ -14,11 +14,11 @@ from typing import Any, Dict, List, Optional
 import torch
 import torch.nn.functional as F
 
-from wisent.core.steering_methods.steering_object import (
+from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_STRENGTH,
     NURT_NUM_INTEGRATION_STEPS,
     NURT_T_MAX,

@@ -13,9 +13,9 @@ from typing import Dict
 
 import torch
 
-from wisent.core.benchmarks.benchmark_registry import get_all_benchmarks
-from wisent.core.steering_methods.steering_object import CAASteeringObject
-from wisent.core.cli.optimize_steering.continual.state import (
+from wisent.core.utils.services.benchmarks.benchmark_registry import get_all_benchmarks
+from wisent.core.control.steering_methods.steering_object import CAASteeringObject
+from wisent.core.utils.cli.optimize_steering.continual.state import (
     ContinualState,
     decompose_into_shared_and_task,
     compose_vectors,
@@ -24,8 +24,8 @@ from wisent.core.cli.optimize_steering.continual.state import (
     upload_to_gcs,
     ewc_constrained_update,
 )
-from wisent.core.cli.optimize_steering.continual.replay_buffer import detect_forgetting
-from wisent.core.cli.optimize_steering.continual._loop_helpers import (
+from wisent.core.utils.cli.optimize_steering.continual.replay_buffer import detect_forgetting
+from wisent.core.utils.cli.optimize_steering.continual._loop_helpers import (
     ensure_enriched_pairs,
     evaluate_vectors,
     run_rl_iteration,
@@ -33,7 +33,7 @@ from wisent.core.cli.optimize_steering.continual._loop_helpers import (
     check_convergence,
     get_task_priority,
 )
-from wisent.core.constants import (DEFAULT_LIMIT, CONTINUAL_EWC_LAMBDA, WELFARE_LIMIT,
+from wisent.core.utils.config_tools.constants import (DEFAULT_LIMIT, CONTINUAL_EWC_LAMBDA, WELFARE_LIMIT,
     CONTINUAL_SHARED_UPDATE_RATE, DISPLAY_TOP_N_MINI, SEPARATOR_WIDTH_WIDE,
     SEPARATOR_WIDTH_MEDIUM, CONTINUAL_REPLAY_INTERVAL,
     CONTINUAL_FORGETTING_THRESHOLD, CONTINUAL_CONVERGENCE_WINDOW)

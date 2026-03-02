@@ -5,7 +5,7 @@ RecommendationConfig instance.
 """
 from __future__ import annotations
 from typing import Any, Dict, List, Optional
-from wisent.core.constants import RECOMMEND_CONFIDENCE_MARGIN_WEIGHT, RECOMMEND_BASELINE_CONFIDENCE
+from wisent.core.utils.config_tools.constants import RECOMMEND_CONFIDENCE_MARGIN_WEIGHT, RECOMMEND_BASELINE_CONFIDENCE
 from .config import RecommendationConfig, METHODS
 
 

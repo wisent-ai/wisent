@@ -3,8 +3,8 @@ from __future__ import annotations
 from typing import Any
 import torch
 import torch.nn as nn
-from wisent.core.constants import TEST_DEFAULT_LIMIT
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import TEST_DEFAULT_LIMIT
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 __all__ = ["decode_llava", "decode_qwen_vl", "decode_idefics", "decode_generic", "greedy_decode"]
 

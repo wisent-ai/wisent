@@ -4,7 +4,7 @@ from __future__ import annotations
 import torch
 from pathlib import Path
 from typing import TYPE_CHECKING
-from wisent.core.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -252,7 +252,7 @@ The steering vectors were computed from {contrastive_pairs_info.get('num_pairs',
 
 ```python
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from wisent.core.constants import COMPARE_TOL
+from wisent.core.utils.config_tools.constants import COMPARE_TOL
 
 model = AutoModelForCausalLM.from_pretrained("{repo_id}")
 tokenizer = AutoTokenizer.from_pretrained("{repo_id}")

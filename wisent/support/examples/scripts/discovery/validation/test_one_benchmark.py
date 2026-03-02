@@ -4,13 +4,13 @@ import json
 import os
 from pathlib import Path
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     SPLIT_RATIO_HALF, DEFAULT_RANDOM_SEED, BENCHMARK_TEST_DATA_LIMIT,
     BENCHMARK_SPLIT_LIMIT, JSON_INDENT,
 )
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.data_loaders.loaders.huggingface_loader import HuggingFaceDataLoader
-from wisent.core.evaluators.rotator import EvaluatorRotator
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.utils.infra_tools.data.loaders.huggingface_loader import HuggingFaceDataLoader
+from wisent.core.reading.evaluators.rotator import EvaluatorRotator
 from wisent.examples.scripts.test_one_benchmark_helpers import (
     MockModel,
     detect_loader_type,
@@ -91,7 +91,7 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
 
         # Step 2: Find evaluator
         print("  [2/4] Finding evaluator...")
-        EvaluatorRotator.discover_evaluators('wisent.core.evaluators.benchmark_specific')
+        EvaluatorRotator.discover_evaluators('wisent.core.reading.evaluators.benchmark_specific')
         rotator = EvaluatorRotator(task_name=task_name)
         evaluator_name = rotator._plugin.name
         print(f"    Using evaluator: {evaluator_name}")

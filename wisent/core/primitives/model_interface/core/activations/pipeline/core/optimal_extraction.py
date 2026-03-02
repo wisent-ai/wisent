@@ -14,7 +14,7 @@ Usage:
     # 1. Get preliminary steering direction from chat_last
     # 2. Re-extract at optimal positions using this module
 
-    from wisent.core.activations.core.optimal_extraction import (
+    from wisent.core.primitives.model_interface.core.activations.core.optimal_extraction import (
         extract_at_optimal_position,
         find_optimal_positions,
         compute_signal_trajectory,
@@ -32,7 +32,7 @@ Usage:
 from dataclasses import dataclass
 from typing import Tuple, List, Optional
 import torch
-from wisent.core.constants import NORM_EPS, PCA_TOP_N_COMPONENTS
+from wisent.core.utils.config_tools.constants import NORM_EPS, PCA_TOP_N_COMPONENTS
 
 
 @dataclass

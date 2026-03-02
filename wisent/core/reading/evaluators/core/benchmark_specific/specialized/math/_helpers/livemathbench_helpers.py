@@ -6,10 +6,10 @@ Extracted from livemathbench_evaluator.py to keep file under 300 lines.
 import logging
 from typing import Any
 
-from wisent.core.evaluators.benchmark_specific.math_parsing.scripts import multi_math_equal
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.scripts import multi_math_equal
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
 
-from wisent.core.constants import CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import CHANCE_LEVEL_ACCURACY
 logger = logging.getLogger(__name__)
 
 # Language-specific prompts for boxed answer format
@@ -90,7 +90,7 @@ class LiveMathBenchEvaluator(BaseEvaluator):
 
     def _evaluate_llm_judge(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate using LLM as a judge."""
-        from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
+        from wisent.core.reading.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
         model = kwargs.get("judge_model")
         if model is None:
             return EvalResult(

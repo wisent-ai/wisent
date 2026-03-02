@@ -3,12 +3,12 @@ from __future__ import annotations
 
 import torch
 from typing import Any, Dict, Optional, TYPE_CHECKING
-from wisent.core.contrastive_pairs import ContrastivePairSet
-from wisent.core.errors import NoTrainedVectorsError, InsufficientDataError
-from wisent.core.constants import CLASSIFIER_THRESHOLD
+from wisent.core.primitives.contrastive_pairs import ContrastivePairSet
+from wisent.core.utils.infra_tools.errors import NoTrainedVectorsError, InsufficientDataError
+from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD
 
 if TYPE_CHECKING:
-    from wisent.core.steering_core.steering import SteeringType
+    from wisent.core.control.steering_core.steering import SteeringType
 
 
 class SteeringEvalIOMixin:

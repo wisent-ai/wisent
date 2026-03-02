@@ -5,14 +5,14 @@ import time
 import numpy as np
 import torch
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.activations import ExtractionStrategy, ActivationCollector
-from wisent.core.classifiers.models.logistic import LogisticClassifier
-from wisent.core.classifiers.core.atoms import ClassifierTrainConfig
-from wisent.core.evaluators.rotator import EvaluatorRotator
-from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, OPTIMIZE_ACCURACY_THRESHOLD_MULT, AUTOTUNE_VAL_SPLIT, SAMPLE_LOADING_BUFFER, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, ActivationCollector
+from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
+from wisent.core.reading.classifiers.core.atoms import ClassifierTrainConfig
+from wisent.core.reading.evaluators.rotator import EvaluatorRotator
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import DEFAULT_CLASSIFIER_LR, CLASSIFIER_TEST_SIZE, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, OPTIMIZE_ACCURACY_THRESHOLD_MULT, AUTOTUNE_VAL_SPLIT, SAMPLE_LOADING_BUFFER, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
 
 
 def execute_optimize_sample_size(args):
@@ -51,7 +51,7 @@ def execute_optimize_sample_size(args):
         test_pairs = result['test_qa_pairs']
         all_pairs_list = train_pairs.pairs + test_pairs.pairs
 
-        from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+        from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
         all_pairs = ContrastivePairSet(name="combined_pairs", pairs=all_pairs_list)
 
         total_available = len(all_pairs.pairs)
@@ -92,8 +92,8 @@ def execute_optimize_sample_size(args):
         y_test = np.array(y_test_list)
         print(f"\n   Test set: {X_test.shape[0]} samples, {X_test.shape[1]} features")
 
-        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.oracles")
-        EvaluatorRotator.discover_evaluators("wisent.core.evaluators.benchmark_specific")
+        EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.oracles")
+        EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
         evaluator = EvaluatorRotator(evaluator=None, task_name=args.task, autoload=False)
         print(f"   Using evaluator: {evaluator._plugin.name}")
 
@@ -108,8 +108,8 @@ def execute_optimize_sample_size(args):
             response = model.generate([[{"role": "user", "content": question}]], **get_generate_kwargs())[0]
             eval_result = evaluator.evaluate(response=response, expected=expected, model=model,
                                              question=question, choices=choices, task_name=args.task)
-            from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-            from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+            from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+            from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
             temp_pos = PositiveResponse(model_response=response, layers_activations={})
             temp_neg = NegativeResponse(model_response="placeholder", layers_activations={})
             temp_pair = ContrastivePair(prompt=question, positive_response=temp_pos, negative_response=temp_neg, label=None, trait_description=None)
@@ -175,7 +175,7 @@ def execute_optimize_sample_size(args):
         print(f"{'='*80}\n")
 
         if args.save_plot:
-            from wisent.core.cli.optimization.specific._helpers.optimize_sample_size_helpers import save_optimization_plots
+            from wisent.core.utils.cli.optimization.specific._helpers.optimize_sample_size_helpers import save_optimization_plots
             save_optimization_plots(args, results, optimal_size)
 
         print(f"Sample size optimization completed successfully!\n")

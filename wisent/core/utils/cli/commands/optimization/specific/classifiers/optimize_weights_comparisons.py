@@ -4,9 +4,9 @@ import os
 import re
 
 import torch
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.optimization.methods.opti_weights import WeightsOptimizerConfig
-from wisent.core.constants import JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.utils.services.optimization.methods.opti_weights import WeightsOptimizerConfig
+from wisent.core.utils.config_tools.constants import JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
 
 
 def _apply_weight_modification_standalone(
@@ -78,7 +78,7 @@ def _show_response_comparisons(
     """
     from uncensorbench import UncensorBench
     from uncensorbench.evaluator import KeywordEvaluator, SemanticEvaluator
-    from wisent.core.models import get_generate_kwargs
+    from wisent.core.primitives.models import get_generate_kwargs
 
     print(f"\n{'='*80}")
     print("RESPONSE COMPARISONS (Baseline vs Optimized)")
@@ -95,7 +95,7 @@ def _show_response_comparisons(
         use_custom = True
     elif getattr(args, 'trait', None):
         # For trait-based optimization, use personalization prompts (not UncensorBench)
-        from wisent.core.evaluators.steering_evaluators import PersonalizationEvaluator
+        from wisent.core.reading.evaluators.steering_evaluators import PersonalizationEvaluator
         prompts = PersonalizationEvaluator.DEFAULT_PROMPTS[:args.num_eval_prompts]
         use_custom = True  # Treat as custom to skip UncensorBench evaluation
     else:

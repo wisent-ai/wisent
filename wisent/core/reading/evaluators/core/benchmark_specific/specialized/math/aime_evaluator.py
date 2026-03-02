@@ -7,9 +7,9 @@ benchmarks where answers are integers from 0-999 and may be in \\boxed{} format.
 import logging
 from typing import Any
 
-from wisent.core.constants import DISPLAY_TRUNCATION_MEDIUM
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
 
 logger = logging.getLogger(__name__)
 

@@ -6,8 +6,8 @@ using Cohen's d effect size by comparing outputs before and after steering.
 from typing import Dict, List, Optional, Any
 import numpy as np
 import torch
-from wisent.core.constants import ZERO_THRESHOLD, DEFAULT_STRENGTH, EFFECT_SIZE_MEDIUM
-from wisent.core.models.config import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, DEFAULT_STRENGTH, EFFECT_SIZE_MEDIUM
+from wisent.core.primitives.models.config import get_generate_kwargs
 
 
 def compute_steering_effect_size(

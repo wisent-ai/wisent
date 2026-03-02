@@ -9,7 +9,7 @@ import sys
 
 import psycopg2
 
-from wisent.core.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
+from wisent.core.utils.config_tools.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
 
 # Map DB benchmark names to extractor names (lm-eval or HuggingFace)
 DB_TO_EXTRACTOR = {

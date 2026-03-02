@@ -4,7 +4,7 @@ import random
 from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import get_all_docs_from_task
-from wisent.core.constants import MAX_DEPTH, DEFAULT_NUM_SAMPLES, DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import MAX_DEPTH, DEFAULT_NUM_SAMPLES, DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI
 
 
 def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: int = MAX_DEPTH) -> Any:

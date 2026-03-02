@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import torch
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     DEFAULT_SCALE,
     DEFAULT_SCORE,
     EOT_DEFAULT_TEMPERATURE,

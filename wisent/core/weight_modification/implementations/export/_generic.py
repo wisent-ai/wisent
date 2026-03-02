@@ -4,9 +4,9 @@ from __future__ import annotations
 import torch
 from pathlib import Path
 from typing import TYPE_CHECKING
-from wisent.core.cli.cli_logger import setup_logger, bind
-from wisent.core.constants import JSON_INDENT
-from wisent.core.errors import MissingParameterError
+from wisent.core.utils.cli.cli_logger import setup_logger, bind
+from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 if TYPE_CHECKING:
     from torch.nn import Module

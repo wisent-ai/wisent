@@ -8,8 +8,8 @@ import random
 from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import get_all_docs_from_task
-from wisent.core.errors import InsufficientDataError, TaskNotFoundError
-from wisent.core.constants import JSON_INDENT, LM_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
+from wisent.core.utils.infra_tools.errors import InsufficientDataError, TaskNotFoundError
+from wisent.core.utils.config_tools.constants import JSON_INDENT, LM_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
 from wisent.core.utils.core.hardware import subprocess_timeout_s
 
 from .sample_extraction import get_evaluation_method, get_category, extract_examples_from_task

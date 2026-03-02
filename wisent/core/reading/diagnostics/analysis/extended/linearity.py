@@ -8,8 +8,8 @@ from enum import Enum
 
 import torch
 
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.constants import (
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.utils.config_tools.constants import (
     CHECK_LINEARITY_LINEAR_THRESHOLD,
     CHECK_LINEARITY_WEAK_THRESHOLD,
     CHECK_LINEARITY_MIN_COHENS_D,
@@ -113,8 +113,8 @@ def check_linearity(
     Returns:
         LinearityResult with verdict and best configuration
     """
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.contrastive_pairs.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
     
     cfg = config or LinearityConfig()
     collector = ActivationCollector(model)
@@ -263,6 +263,6 @@ def check_linearity(
 
 
 # Re-export from split module
-from wisent.core.contrastive_pairs.diagnostics.analysis._linearity_from_activations import (
+from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._linearity_from_activations import (
     check_linearity_from_activations,
 )

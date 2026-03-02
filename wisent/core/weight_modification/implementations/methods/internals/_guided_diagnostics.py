@@ -5,17 +5,17 @@ from __future__ import annotations
 import torch
 from typing import Dict, List, Optional, Tuple, TYPE_CHECKING
 
-from wisent.core.cli.cli_logger import setup_logger
+from wisent.core.utils.cli.cli_logger import setup_logger
 
 if TYPE_CHECKING:
     from torch import Tensor
-    from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.primitives.models.wisent_model import WisentModel
+    from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 
 from wisent.core.weight_modification.methods.guided import (
     LayerDiagnostics,
 )
-from wisent.core.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD, CHANCE_LEVEL_ACCURACY
 from wisent.core.weight_modification.methods._guided_scoring import (
     _compute_knn_accuracy,
     _compute_fisher_ratio,
@@ -53,8 +53,8 @@ def compute_layer_diagnostics(
     Returns:
         Dictionary mapping layer_idx to LayerDiagnostics
     """
-    from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.activations import ExtractionStrategy
+    from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
     
     log = bind(_LOG)
     

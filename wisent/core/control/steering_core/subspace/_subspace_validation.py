@@ -2,11 +2,11 @@
 from __future__ import annotations
 from typing import Dict, List, Optional, Tuple, Any
 import torch
-from wisent.core.cli.cli_logger import setup_logger
-from wisent.core.activations.core.atoms import LayerName
-from wisent.core.steering_core._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
+from wisent.core.utils.cli.cli_logger import setup_logger
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerName
+from wisent.core.control.steering_core._subspace_analysis import UNIVERSAL_SUBSPACE_RANK
 from wisent.core import constants as _C
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD,
     GEO_DIAG_LINEAR_VARIANCE,
     GEO_DIAG_CONE_THRESHOLD,

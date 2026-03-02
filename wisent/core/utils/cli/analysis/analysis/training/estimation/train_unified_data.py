@@ -8,7 +8,7 @@ from wisent.core import constants as _C
 
 def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmarks, loader):
     """Collect pairs from benchmarks, train steering vector. Returns (vectors, train, eval, benchmarks)."""
-    from wisent.core.cli.analysis.training.train_unified_goodness import (
+    from wisent.core.utils.cli.analysis.training.train_unified_goodness import (
         save_checkpoint, load_checkpoint,
     )
 

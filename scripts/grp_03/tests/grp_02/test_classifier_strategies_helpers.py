@@ -8,7 +8,7 @@ import torch
 import numpy as np
 import random
 from datasets import load_dataset
-from wisent.core.constants import DEFAULT_RANDOM_SEED
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
 
 RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", "To"]
 

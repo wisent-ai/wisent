@@ -18,7 +18,7 @@ def test_create_vector_from_task():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-vector-from-task",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-task",
                 "--task", "boolq",
                 "--trait-label", "correctness",
                 "--output", output_file,
@@ -47,7 +47,7 @@ def test_create_vector_from_synthetic():
         
         result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "generate-vector-from-synthetic",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "generate-vector-from-synthetic",
                 "--trait", "helpfulness",
                 "--output", output_file,
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -97,7 +97,7 @@ def test_create_vector_from_activations():
         # Enrich with activations
         enrich_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "get-activations",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "get-activations",
                 pairs_file,
                 "--output", enriched_file,
                 "--model", "meta-llama/Llama-3.2-1B-Instruct",
@@ -115,7 +115,7 @@ def test_create_vector_from_activations():
         # Create steering vector from enriched pairs
         vector_result = subprocess.run(
             [
-                "python", "-m", "wisent.core.main", "create-steering-vector",
+                "python", "-m", "wisent.core.primitives.model_interface.core.main", "create-steering-vector",
                 enriched_file,
                 "--output", vector_file,
                 "--method", "caa",

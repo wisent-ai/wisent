@@ -19,7 +19,7 @@ try:
 except ImportError:
     HAS_SKLEARN = False
 
-from wisent.core.constants import VIZ_PLOT_DPI, TRAIT_NAME_MAX_LENGTH, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.config_tools.constants import VIZ_PLOT_DPI, TRAIT_NAME_MAX_LENGTH, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, SEPARATOR_WIDTH_WIDE
 from wisent.examples.scripts.visualization_gallery_helpers import (
     gcs_upload_file,
     load_diagnosis_results,
@@ -53,8 +53,8 @@ def create_tsne_gallery(
         print("Skipping t-SNE gallery: required packages not installed")
         return
     
-    from wisent.core.activations import ExtractionStrategy
-    from wisent.core.activations.activation_cache import ActivationCache, collect_and_cache_activations
+    from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+    from wisent.core.primitives.model_interface.core.activations.activation_cache import ActivationCache, collect_and_cache_activations
     from lm_eval.tasks import TaskManager
     from wisent.extractors.lm_eval.lm_task_pairs_generation import lm_build_contrastive_pairs
     
@@ -232,7 +232,7 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
     if not skip_tsne:
         print("\n3. Creating t-SNE gallery...")
         
-        from wisent.core.models.wisent_model import WisentModel
+        from wisent.core.primitives.models.wisent_model import WisentModel
         
         print(f"  Loading model: {model_name}")
         model = WisentModel(model_name, device="cuda")

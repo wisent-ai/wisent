@@ -1,8 +1,8 @@
 """Unit tests for MathEvaluator."""
 
 import pytest
-from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
-from wisent.core.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
+from wisent.core.reading.evaluators.benchmark_specific.math_evaluator import MathEvaluator
+from wisent.core.reading.evaluators.benchmark_specific.math_parsing.extract_boxed import extract_boxed_answer
 
 
 class TestExtractBoxedAnswer:

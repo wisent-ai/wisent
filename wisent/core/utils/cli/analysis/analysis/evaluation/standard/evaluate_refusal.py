@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import json
 import os
-from wisent.core.constants import DEFAULT_SCORE, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, JSON_INDENT
 
-from wisent.core.evaluators.steering_evaluators import (
+from wisent.core.reading.evaluators.steering_evaluators import (
     EvaluatorConfig,
     RefusalEvaluator,
 )

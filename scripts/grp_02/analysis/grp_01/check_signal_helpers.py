@@ -17,7 +17,7 @@ from sklearn.model_selection import cross_val_score
 from transformers import AutoTokenizer, AutoModelForCausalLM
 from datasets import load_dataset
 from huggingface_hub import hf_hub_download
-from wisent.core.constants import NORM_EPS, DEFAULT_RANDOM_SEED, DIAGNOSTIC_MLP_HIDDEN_SIZES, KMEANS_N_INIT_LARGE
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, DIAGNOSTIC_MLP_HIDDEN_SIZES, KMEANS_N_INIT_LARGE
 
 
 def load_model(model_name, device="auto"):

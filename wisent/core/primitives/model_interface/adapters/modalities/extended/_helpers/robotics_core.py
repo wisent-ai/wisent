@@ -13,21 +13,21 @@ import torch
 import torch.nn as nn
 import numpy as np
 
-from wisent.core.adapters.base import (
+from wisent.core.primitives.model_interface.adapters.base import (
     BaseAdapter,
     AdapterError,
     InterventionPoint,
     SteeringConfig,
 )
-from wisent.core.modalities import (
+from wisent.core.primitives.models.modalities import (
     Modality,
     RobotState,
     RobotAction,
     RobotTrajectory,
 )
-from wisent.core.constants import POLICY_LAYER_COUNT
-from wisent.core.errors import UnknownTypeError
-from wisent.core.activations.core.atoms import LayerActivations
+from wisent.core.utils.config_tools.constants import POLICY_LAYER_COUNT
+from wisent.core.utils.infra_tools.errors import UnknownTypeError
+from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
 
 logger = logging.getLogger(__name__)
 

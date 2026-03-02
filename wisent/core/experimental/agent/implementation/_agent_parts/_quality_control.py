@@ -7,7 +7,7 @@ iterative improvement loop, and steered generation.
 """
 
 import time
-from wisent.core.constants import QUALITY_CONTROL_MAX_ATTEMPTS, CLASSIFIER_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import QUALITY_CONTROL_MAX_ATTEMPTS, CLASSIFIER_THRESHOLD, DISPLAY_TRUNCATION_COMPACT, SECONDS_PER_MINUTE
 
 
 class QualityControlMixin:

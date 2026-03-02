@@ -8,7 +8,7 @@ and linear subset detection.
 import numpy as np
 from typing import List, Optional
 from dataclasses import dataclass
-from wisent.core.constants import NORM_EPS, ZERO_THRESHOLD
+from wisent.core.utils.config_tools.constants import NORM_EPS, ZERO_THRESHOLD
 
 
 @dataclass

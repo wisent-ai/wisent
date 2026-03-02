@@ -13,11 +13,11 @@ from pathlib import Path
 from datasets import load_dataset
 from tqdm import tqdm
 
-from wisent.core.models.wisent_model import WisentModel
-from wisent.core.models.config import get_generate_kwargs
-from wisent.core.evaluators.benchmark_specific.math_evaluator import MathEvaluator
-from wisent.core.errors import InvalidChoicesError
-from wisent.core.constants import SEPARATOR_WIDTH_STANDARD, JSON_INDENT
+from wisent.core.primitives.models.wisent_model import WisentModel
+from wisent.core.primitives.models.config import get_generate_kwargs
+from wisent.core.reading.evaluators.benchmark_specific.math_evaluator import MathEvaluator
+from wisent.core.utils.infra_tools.errors import InvalidChoicesError
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 QUESTION_TYPES = [

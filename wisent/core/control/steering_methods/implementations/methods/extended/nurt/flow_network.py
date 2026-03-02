@@ -13,7 +13,7 @@ from typing import Optional
 import torch
 import torch.nn as nn
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     NURT_T_MAX, NURT_NUM_INTEGRATION_STEPS,
     NURT_FLOW_HIDDEN_MIN, NURT_FLOW_HIDDEN_MAX, NURT_FLOW_HIDDEN_MULTIPLIER,
 )

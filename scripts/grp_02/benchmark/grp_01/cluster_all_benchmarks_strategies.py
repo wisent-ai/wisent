@@ -8,7 +8,7 @@ role_play, mc_balanced.
 import torch
 import numpy as np
 from typing import List, Tuple, Optional
-from wisent.core.constants import NORM_EPS
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 RANDOM_TOKENS = ["I", "Well", "The", "Sure", "Let", "That", "It", "This", "My", "To"]
 

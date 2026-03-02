@@ -18,7 +18,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import numpy as np
 
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     CV_FOLDS,
     NORM_EPS,
     VQ_ALIGNMENT_MIN_CRITICAL,
@@ -249,7 +249,7 @@ def _compute_cross_validation(
 
 
 # Re-exports from split modules
-from wisent.core.contrastive_pairs.diagnostics.analysis._vector_quality_helpers import (
+from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._vector_quality_helpers import (
     _compute_snr,
     _compute_pca,
     _compute_pair_alignment,
@@ -258,6 +258,6 @@ from wisent.core.contrastive_pairs.diagnostics.analysis._vector_quality_helpers 
     _compute_cv_classification,
     _compute_cohens_d,
 )
-from wisent.core.contrastive_pairs.diagnostics.analysis._vector_quality_runner import (
+from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._vector_quality_runner import (
     run_vector_quality_diagnostics,
 )

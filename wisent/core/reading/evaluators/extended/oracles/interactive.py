@@ -3,8 +3,8 @@ from __future__ import annotations
 import sys
 from typing import Any
 
-from wisent.core.constants import SEPARATOR_WIDTH_REPORT
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult, EvaluatorError
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult, EvaluatorError
 
 __all__ = [
     "InteractiveEvaluator",

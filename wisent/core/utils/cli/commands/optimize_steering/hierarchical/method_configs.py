@@ -1,7 +1,7 @@
 """Method configuration dataclasses for steering optimization."""
 from dataclasses import dataclass, field
 from typing import List, Dict, Any
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     BROYDEN_DEFAULT_ALPHA,
     BROYDEN_DEFAULT_ALPHA_DECAY,
     BROYDEN_DEFAULT_BETA,

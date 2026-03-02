@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from wisent.core.models.layer import extract_token_ids
+from wisent.core.primitives.models.layer import extract_token_ids
 
 import logging
 from contextlib import contextmanager
@@ -18,13 +18,13 @@ from transformers import (
 
 
 
-from wisent.core.models.core.atoms import SteeringPlan, SteeringVector, HookHandleGroup, GenerationStats, TopLogits
-from wisent.core.activations.core.atoms import RawActivationMap
+from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector, HookHandleGroup, GenerationStats, TopLogits
+from wisent.core.primitives.model_interface.core.activations.core.atoms import RawActivationMap
 
-from wisent.core.prompts.core.atom import ChatMessage
+from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.utils import resolve_default_device, resolve_torch_device, preferred_dtype
-from wisent.core.contrastive_pairs.diagnostics import run_control_steering_diagnostics
-from wisent.core.errors import (
+from wisent.core.primitives.contrastive_pairs.diagnostics import run_control_steering_diagnostics
+from wisent.core.utils.infra_tools.errors import (
     ChatTemplateNotAvailableError,
     DecoderLayersNotFoundError,
     HiddenSizeNotFoundError,
@@ -36,19 +36,19 @@ from wisent.core.errors import (
 
 import threading
 
-from wisent.core.models._model_parts.wisent_model_part2 import (
+from wisent.core.primitives.models._model_parts.wisent_model_part2 import (
     _apply_steering_object,
     _encode_one,
     _batch_encode,
     _extract_assistant_response,
 )
-from wisent.core.models._model_parts.wisent_model_part3 import (
+from wisent.core.primitives.models._model_parts.wisent_model_part3 import (
     _generate,
     _set_steering_from_raw,
     _clear_steering,
 )
-from wisent.core.models._model_parts.wisent_model_part4 import _generate_with_stats
-from wisent.core.models._model_parts.wisent_model_part5 import _generate_stream
+from wisent.core.primitives.models._model_parts.wisent_model_part4 import _generate_with_stats
+from wisent.core.primitives.models._model_parts.wisent_model_part5 import _generate_stream
 
 __all__ = ["WisentModel"]
 

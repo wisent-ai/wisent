@@ -7,9 +7,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 import torch
 
-from wisent.core.geometry import GeometrySearchSpace
-from wisent.core.activations import ExtractionStrategy
-from wisent.core.activations.activation_cache import (
+from wisent.core.reading.modules import GeometrySearchSpace
+from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
+from wisent.core.primitives.model_interface.core.activations.activation_cache import (
     ActivationCache,
     CachedActivations,
     RawActivationCache,
@@ -17,12 +17,12 @@ from wisent.core.activations.activation_cache import (
     get_strategy_text_family,
 )
 from wisent.core.utils import get_layer_combinations
-from wisent.core.geometry import (
+from wisent.core.reading.modules import (
     compute_geometry_metrics,
     generate_nonsense_activations,
 )
-from wisent.core.geometry._runner_parts._test_result import GeometryTestResult
-from wisent.core.geometry._runner_parts._search_results import GeometrySearchResults
+from wisent.core.reading.modules._runner_parts._test_result import GeometryTestResult
+from wisent.core.reading.modules._runner_parts._search_results import GeometrySearchResults
 
 
 class GeometryRunner:

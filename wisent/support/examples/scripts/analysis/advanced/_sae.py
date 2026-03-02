@@ -3,7 +3,7 @@
 import torch
 import numpy as np
 from typing import Tuple
-from wisent.core.constants import NORM_EPS, L1_DEFAULT_COEF, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_BATCH_SIZE_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER
+from wisent.core.utils.config_tools.constants import NORM_EPS, L1_DEFAULT_COEF, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_BATCH_SIZE_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER
 
 
 # =============================================================================

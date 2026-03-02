@@ -6,9 +6,9 @@ Extracted from autonomous_agent.py to comply with the 300-line file limit.
 
 from typing import List
 
-from wisent.core.errors import MissingParameterError
-from wisent.core.models import get_generate_kwargs
-from wisent.core.constants import (
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.primitives.models import get_generate_kwargs
+from wisent.core.utils.config_tools.constants import (
     CLASSIFIER_THRESHOLD, CLASSIFIER_TRAINING_SAMPLES,
     CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE,
     DEFAULT_CLASSIFIER_LR, CLASSIFIER_EARLY_STOPPING_PATIENCE,

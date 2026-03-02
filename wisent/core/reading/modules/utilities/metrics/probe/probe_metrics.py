@@ -2,7 +2,7 @@
 from __future__ import annotations
 import torch
 import numpy as np
-from wisent.core.constants import (
+from wisent.core.utils.config_tools.constants import (
     PROBE_MIN_PER_CLASS, PROBE_SMALL_HIDDEN, PROBE_MLP_HIDDEN,
     PROBE_MLP_ALPHA, PROBE_VALIDATION_FRACTION, CV_FOLDS,
     DEFAULT_RANDOM_SEED, BLEND_DEFAULT, VIZ_N_NEIGHBORS,

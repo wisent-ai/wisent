@@ -3,8 +3,8 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Iterable, Optional, TYPE_CHECKING
 import logging
 
-from wisent.core.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.constants import FEEDBACK_MAX_CHARS, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE, DISPLAY_TRUNCATION_LARGE
+from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
+from wisent.core.utils.config_tools.constants import FEEDBACK_MAX_CHARS, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE, DISPLAY_TRUNCATION_LARGE
 from wisent.core.utils.core.hardware import (
     eval_time_limit_s,
     eval_cpu_limit_s,
@@ -14,18 +14,18 @@ from wisent.core.utils.core.hardware import (
     ds1000_wall_timeout_s,
     ds1000_nproc,
 )
-from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
-from wisent.core.evaluators.benchmark_specific.coding.metrics.core.atoms import SampleOutcome
+from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.runtime import DockerSandboxExecutor
+from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.core.atoms import SampleOutcome
 
-from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema
-from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.python_sanitizer import PythonStandardizer
-from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.cpp_sanitizer import CppStandardizer
-from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.java_sanitizer import JavaStandardizer
+from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import TaskSchema
+from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.python_sanitizer import PythonStandardizer
+from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.cpp_sanitizer import CppStandardizer
+from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.java_sanitizer import JavaStandardizer
 
 if TYPE_CHECKING:
-    from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result
-    from wisent.core.evaluators.benchmark_specific.coding.providers.core.atoms import Provider, CodingTask
-    from wisent.core.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import CodeStandardizer
+    from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Result
+    from wisent.core.reading.evaluators.benchmark_specific.coding.providers.core.atoms import Provider, CodingTask
+    from wisent.core.reading.evaluators.benchmark_specific.coding.output_sanitizer.core.atoms import CodeStandardizer
 
 logger = logging.getLogger(__name__)
 
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     def _execute_in_docker(self, files, task_name, language, kwargs):
         """Execute code in Docker sandbox and return EvalResult."""
         try:
-            from wisent.core.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job
+            from wisent.core.reading.evaluators.benchmark_specific.coding.safe_docker.core.atoms import Job
 
             timeout_override = kwargs.get('timeout')
             if 'ds1000' in task_name.lower() or 'ds_1000' in task_name.lower():
@@ -222,7 +222,7 @@ if __name__ == "__main__":
             )
 
     # --- Batch evaluation methods (from _evaluator_helpers.py) ---
-    from wisent.core.evaluators.benchmark_specific.coding.metrics._evaluator_helpers import (
+    from wisent.core.reading.evaluators.benchmark_specific.coding.metrics._evaluator_helpers import (
         _feedback, _run_once, _maybe_sanitize, evaluate_all,
     )
 
