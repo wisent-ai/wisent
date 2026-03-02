@@ -133,7 +133,7 @@ def _train_steering_method(args, model, method, pos_tensor, neg_tensor, layer, c
 def _train_grom(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
     """Train GROM steering vector."""
     from wisent.core.steering_methods.methods.grom import GROMMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
     enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:ENRICHMENT_MAX_PAIRS]]
@@ -158,7 +158,7 @@ def _train_grom(model, layer, collector, extraction_strategy, train_pair_set, po
 def _train_tecza(model, layer, collector, extraction_strategy, train_pair_set, pos_tensor, neg_tensor):
     """Train TECZA steering vector."""
     from wisent.core.steering_methods.methods.advanced import TECZAMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
 
     all_layers = [str(i) for i in range(1, model.num_layers + 1)]
     enriched_pairs = [collector.collect(pair, strategy=extraction_strategy, layers=all_layers) for pair in train_pair_set.pairs[:ENRICHMENT_MAX_PAIRS]]

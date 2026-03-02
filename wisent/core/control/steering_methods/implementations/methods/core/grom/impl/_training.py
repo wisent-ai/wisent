@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.constants import (
     MAX_CLUSTERS, MANIFOLD_NEIGHBORS, GROM_ADAPT_CONE_THRESHOLD,
     GROM_ADAPT_LINEAR_DIRECTIONS, GROM_ADAPT_MAX_DIRECTIONS,
@@ -26,7 +26,7 @@ def _analyze_and_adapt_geometry_impl(
     Returns:
         GeometryAdaptation with detected structure and adaptations made.
     """
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.diagnostics.control_vectors import (
         detect_geometry_structure,
         GeometryAnalysisConfig,
     )

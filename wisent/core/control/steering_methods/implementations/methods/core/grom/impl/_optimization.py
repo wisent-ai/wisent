@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.errors import InsufficientDataError
 from wisent.core.constants import DEFAULT_WEIGHT_DECAY, GROM_ETA_MIN_FACTOR, GROM_MAX_GRAD_NORM, TRAINING_LOG_INTERVAL
 from wisent.core.steering_methods.methods.grom._config import (

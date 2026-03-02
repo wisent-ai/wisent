@@ -30,7 +30,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from wisent.core.benchmark_registry import get_all_benchmarks
 from wisent.core.data_loaders.loaders.lm_eval.lm_loader import LMEvalDataLoader
-from wisent.core.contrastive_pairs.diagnostics import (
+from wisent.core.diagnostics import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )

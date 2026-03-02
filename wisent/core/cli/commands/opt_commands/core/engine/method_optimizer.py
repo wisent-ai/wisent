@@ -24,8 +24,8 @@ from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.core.activations.core.atoms import LayerActivations
 from wisent.core.utils import resolve_default_device
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.steering_methods.registry import SteeringMethodRegistry

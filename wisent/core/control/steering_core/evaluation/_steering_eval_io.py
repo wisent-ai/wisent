@@ -8,7 +8,7 @@ from wisent.core.errors import NoTrainedVectorsError, InsufficientDataError
 from wisent.core.constants import CLASSIFIER_THRESHOLD
 
 if TYPE_CHECKING:
-    from wisent.core.steering.steering import SteeringType
+    from wisent.core.steering import SteeringType
 
 
 class SteeringEvalIOMixin:

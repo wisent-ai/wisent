@@ -4,10 +4,10 @@ import requests
 from typing import Any
 from wisent.core.cli.cli_logger import setup_logger
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.constants import HTTP_TIMEOUT_MEDIUM
-from wisent.core.utils.core.hardware import subprocess_timeout_s
+from wisent.core.hardware import subprocess_timeout_s
 
 __all__ = ["AiderPolyglotExtractor"]
 

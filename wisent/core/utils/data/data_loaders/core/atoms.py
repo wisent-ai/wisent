@@ -6,7 +6,7 @@ from typing import Any, Dict, Type
 
 from typing import TypedDict, Mapping
 from lm_eval.api.task import ConfigurableTask
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.constants import DEFAULT_SPLIT_RATIO
 from wisent.core.errors import DuplicateNameError, InvalidRangeError
 

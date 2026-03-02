@@ -4,9 +4,9 @@ import random
 from typing import Any
 from wisent.core.cli.cli_logger import setup_logger
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.io.response import NegativeResponse, PositiveResponse
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.constants import GSM8K_DEFAULT_LIMIT, GSM8K_PERTURBATION_MIN, GSM8K_PERTURBATION_MAX
 
 log = setup_logger(__name__)

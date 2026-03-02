@@ -1,5 +1,5 @@
 """Agent, marketplace, classifier, and task selection constants."""
-from wisent.core.infrastructure.constant_definitions.for_experiments.by_domain.analysis.infra._data_infra import *  # noqa: F401,F403
+from wisent.core.constant_definitions.for_experiments.by_domain.analysis.infra._data_infra import *  # noqa: F401,F403
 
 # --- Classifier core ---
 CLASSIFIER_TEST_SIZE = 0.2

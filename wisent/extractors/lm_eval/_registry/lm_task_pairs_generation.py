@@ -4,12 +4,12 @@ import random
 from typing import TYPE_CHECKING
 
 from wisent.extractors.lm_eval._registry.lm_extractor_registry import get_extractor
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.cli.cli_logger import setup_logger, bind
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
 
 __all__ = ["build_contrastive_pairs", "lm_build_contrastive_pairs"]
 _LOG = setup_logger(__name__)

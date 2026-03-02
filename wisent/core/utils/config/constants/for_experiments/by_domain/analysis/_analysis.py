@@ -1,5 +1,5 @@
 """Statistical analysis, recommendation, and intervention constants."""
-from wisent.core.infrastructure.constant_definitions.for_experiments.by_domain.analysis.infra import *  # noqa: F401,F403
+from wisent.core.constant_definitions.for_experiments.by_domain.analysis.infra import *  # noqa: F401,F403
 
 # --- Recommendation thresholds ---
 RECOMMEND_LINEAR_PROBE_HIGH = 0.85

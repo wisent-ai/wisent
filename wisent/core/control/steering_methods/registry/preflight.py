@@ -11,7 +11,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any
 import torch
 
-from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+from wisent.core.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
     GeometryAnalysisResult,

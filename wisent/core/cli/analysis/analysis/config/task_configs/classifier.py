@@ -120,8 +120,8 @@ def evaluate_classifier(args, model, classifier, test_pairs, activations, task_n
     """Evaluate classifier on real model generations."""
     from wisent.core.evaluators.rotator import EvaluatorRotator
     from wisent.core.activations.activations_collector import ActivationCollector
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
 
     print(f"\n🎯 Evaluating classifier on real model generations...")
     eval_task_for_evaluator = eval_task_name if eval_task_name else task_name
@@ -175,8 +175,8 @@ def _setup_detection_handler(args, DetectionHandler, DetectionAction):
 
 def _evaluate_single_generation(pair, model, classifier, evaluator, gen_collector, activations, detection_handler, detection_stats, enable_quality_check, quality_threshold, evaluate_quality, task_name, args):
     """Evaluate a single generation."""
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
 
     question = pair.prompt
     expected = pair.positive_response.model_response

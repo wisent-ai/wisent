@@ -44,7 +44,7 @@ def run_comprehensive_geometry_analysis(
     Returns best configuration for each geometry type.
     """
     from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.diagnostics import detect_geometry_structure
+    from wisent.core.diagnostics import detect_geometry_structure
     from wisent.core.steering_methods.preflight import run_preflight_check
     
     print("=" * _C.SEPARATOR_WIDTH_REPORT)

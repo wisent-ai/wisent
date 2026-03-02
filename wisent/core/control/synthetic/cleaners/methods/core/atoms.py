@@ -2,7 +2,7 @@
 from abc import ABC, abstractmethod
 
 from wisent.core.models.wisent_model import WisentModel 
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 
     
 class Refusaler(ABC):

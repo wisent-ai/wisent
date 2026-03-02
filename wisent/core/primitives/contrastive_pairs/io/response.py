@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 
-from wisent.core.contrastive_pairs.core.atoms import AtomResponse
+from wisent.core.contrastive_pairs.atoms import AtomResponse
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap
 from wisent.core.errors import ResponseMustBeStringError
 

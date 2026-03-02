@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any
 import logging
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.io.response import NegativeResponse, PositiveResponse
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 
 from latex2sympy2_extended import latex2sympy
 from sympy import latex

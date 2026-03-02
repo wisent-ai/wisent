@@ -61,7 +61,7 @@ def _execute_personalization_optimization(args):
             model=model,
         )
 
-        from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+        from wisent.core.contrastive_pairs.set import ContrastivePairSet
         pair_set = ContrastivePairSet(
             name=f"{trait_name}_personalization",
             pairs=pairs_list,
@@ -73,7 +73,7 @@ def _execute_personalization_optimization(args):
     os.makedirs(output_dir, exist_ok=True)
     pairs_file = os.path.join(output_dir, f"{trait_name}_pairs.json")
 
-    from wisent.core.contrastive_pairs.core.io.serialization import save_contrastive_pair_set
+    from wisent.core.contrastive_pairs.io.serialization import save_contrastive_pair_set
     save_contrastive_pair_set(pair_set, pairs_file)
 
     # Get model's number of layers

@@ -13,7 +13,7 @@ def _run_cone_analysis(
     cone_directions: int = CONE_DIRECTIONS,
 ):
     """Run cone structure analysis on activations."""
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.diagnostics.control_vectors import (
         check_cone_structure,
         ConeAnalysisConfig,
     )
@@ -134,7 +134,7 @@ def _run_geometry_analysis(
     manifold_neighbors: int = MANIFOLD_NEIGHBORS,
 ):
     """Run comprehensive geometry structure analysis on activations."""
-    from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+    from wisent.core.diagnostics.control_vectors import (
         detect_geometry_structure,
         GeometryAnalysisConfig,
     )

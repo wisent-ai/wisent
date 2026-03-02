@@ -3,7 +3,7 @@ import time
 import torch
 from typing import Dict, Any, Optional
 from wisent.core.constants import DEFAULT_LAYER, DEFAULT_STRENGTH, BENCH_TEST_SAMPLE_MIN
-from wisent.core.utils.core.hardware import subprocess_timeout_s
+from wisent.core.utils.infra.core.hardware import subprocess_timeout_s
 from wisent.core.utils import resolve_default_device
 
 class DeviceBenchTestsMixin2:

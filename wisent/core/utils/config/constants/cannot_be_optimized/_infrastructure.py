@@ -1,5 +1,5 @@
 """Infrastructure constants: timeouts, retries, batch sizes, caching, logging."""
-from wisent.core.infrastructure.constant_definitions.cannot_be_optimized._benchmark_data import *  # noqa: F401,F403
+from wisent.core.constant_definitions.cannot_be_optimized._benchmark_data import *  # noqa: F401,F403
 
 # --- Core defaults ---
 DEFAULT_RANDOM_SEED = 42

@@ -8,8 +8,8 @@ import optuna
 
 from wisent.core.optimization.core.atoms import BaseOptimizer
 from wisent.core.prompts.core.atom import ChatMessage
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 
 from wisent.core.models.wisent_model import WisentModel
 from wisent.core.errors import NoCandidateLayersError

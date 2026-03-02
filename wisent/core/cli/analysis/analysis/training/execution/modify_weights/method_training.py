@@ -9,7 +9,7 @@ from wisent.core.constants import CLASSIFIER_THRESHOLD, DEFAULT_SCORE, GROM_NUM_
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
 
 def get_all_layers(model) -> List[str]:
     """Get all layer indices as strings for a model (1-indexed for collector API)."""
@@ -136,7 +136,7 @@ def auto_select_steering_method(
 def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train GROM on contrastive pairs and return the GROMResult."""
     from wisent.core.steering_methods.methods.grom import GROMMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
 
@@ -191,7 +191,7 @@ def train_grom_for_task(args, model: "WisentModel", pairs: List["ContrastivePair
 def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train TETNO steering for a task."""
     from wisent.core.steering_methods.methods.advanced import TETNOMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
 
@@ -237,7 +237,7 @@ def train_tetno_for_task(args, wisent_model: "WisentModel", pairs: List["Contras
 def train_tecza_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train TECZA steering for a task."""
     from wisent.core.steering_methods.methods.advanced import TECZAMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
 

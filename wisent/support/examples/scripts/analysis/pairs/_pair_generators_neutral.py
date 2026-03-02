@@ -3,8 +3,8 @@
 from dataclasses import dataclass, field
 from typing import Dict, List
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
 
 from wisent.examples.scripts._pair_generators import (
     generate_hitler_pairs,

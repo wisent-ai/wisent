@@ -72,8 +72,8 @@ def evaluate_response_with_classifier(
     returns:
         Tuple of (response_text, quality_score)
     """
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-    from wisent.core.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.io.response import PositiveResponse, NegativeResponse
 
     print(f"\n💬 Step 3: Generating unsteered response")
 

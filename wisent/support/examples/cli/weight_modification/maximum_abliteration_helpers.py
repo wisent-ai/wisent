@@ -15,7 +15,7 @@ from wisent.core.constants import (
     DISPLAY_TRUNCATION_LARGE,
     SEPARATOR_WIDTH_REPORT,
 )
-from wisent.core.utils.core.hardware import subprocess_timeout_long_s
+from wisent.core.hardware import subprocess_timeout_long_s
 
 
 @dataclass

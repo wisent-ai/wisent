@@ -12,13 +12,13 @@ from wisent.core.constants import PROGRESS_LOG_INTERVAL_10
 
 if TYPE_CHECKING:
     from wisent.core.models.wisent_model import WisentModel
-    from wisent.core.contrastive_pairs.core.pair import ContrastivePair
+    from wisent.core.contrastive_pairs.pair import ContrastivePair
 
 
 def train_nurt_for_task(args, wisent_model: "WisentModel", pairs: List["ContrastivePair"]):
     """Train Concept Flow on contrastive pairs and return a NurtSteeringObject."""
     from wisent.core.steering_methods.methods.nurt import NurtMethod
-    from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+    from wisent.core.contrastive_pairs.set import ContrastivePairSet
     from wisent.core.activations.activations_collector import ActivationCollector
     from wisent.core.activations import ExtractionStrategy
     from wisent.core.steering_methods.steering_object import SteeringObjectMetadata

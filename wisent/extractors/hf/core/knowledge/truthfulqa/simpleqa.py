@@ -4,8 +4,8 @@ from typing import Any
 from wisent.core.cli.cli_logger import setup_logger
 import json
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.constants import (
     SIMPLEQA_YEAR_DIGIT_LENGTH, SIMPLEQA_MIN_CHAR_LENGTH,
     SIMPLEQA_MAX_ANSWER_LENGTH,

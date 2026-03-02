@@ -5,8 +5,8 @@ from wisent.core import constants as _C
 from wisent.core.cli.cli_logger import setup_logger
 from typing import Any
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.get_positive_example_livecodebench import (
     get_positive_example,
 )

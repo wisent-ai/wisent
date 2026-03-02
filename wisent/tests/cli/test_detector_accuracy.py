@@ -15,7 +15,7 @@ from wisent.core.activations.activations_collector import ActivationCollector
 from wisent.core.activations import ExtractionStrategy
 from wisent.extractors.lm_eval._registry.lm_extractor_registry import get_extractor
 from wisent.core.constants import NORM_EPS, GEOMETRY_DEFAULT_NUM_COMPONENTS, DIAG_OPTIMIZATION_STEPS, PAIR_GENERATORS_DEFAULT_N, TEST_DETECTOR_DEFAULT_LAYER, PROGRESS_LOG_INTERVAL_10
-from wisent.core.contrastive_pairs.diagnostics.control_vectors import (
+from wisent.core.diagnostics.control_vectors import (
     detect_geometry_structure,
     GeometryAnalysisConfig,
 )

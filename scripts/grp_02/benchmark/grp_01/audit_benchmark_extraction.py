@@ -11,7 +11,7 @@ import warnings
 warnings.filterwarnings('ignore')
 
 from wisent.extractors.hf._registry.hf_extractor_registry import get_extractor, _REGISTRY
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import UnsupportedHuggingFaceBenchmarkError
+from wisent.extractors.hf._registry.manifest.atoms import UnsupportedHuggingFaceBenchmarkError
 
 
 def get_benchmarks_under_500():

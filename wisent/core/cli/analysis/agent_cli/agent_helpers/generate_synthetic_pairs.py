@@ -1,6 +1,6 @@
 """Generate synthetic contrastive pairs for agent."""
 
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.synthetic.generators.core.atoms import GenerationReport
 from wisent.core.errors import PairGenerationError
 from wisent.core.models import get_generate_kwargs

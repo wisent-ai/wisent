@@ -6,7 +6,7 @@ from wisent.core.constants import (
     DEFAULT_RANDOM_SEED,
     PAIRS_SIMILARITY_THRESHOLD,
 )
-from wisent.core.utils.core.hardware import default_batch_size
+from wisent.core.utils.infra.core.hardware import default_batch_size
 
 
 def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:

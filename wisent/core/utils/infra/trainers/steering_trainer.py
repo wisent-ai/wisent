@@ -20,10 +20,10 @@ from wisent.core.trainers.core.atoms import (
     BaseSteeringTrainer
 )
 
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.activations.activations_collector import ActivationCollector  
 from wisent.core.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.contrastive_pairs.diagnostics import run_control_vector_diagnostics, run_vector_quality_diagnostics, VectorQualityConfig
+from wisent.core.diagnostics import run_control_vector_diagnostics, run_vector_quality_diagnostics, VectorQualityConfig
 from wisent.core.errors import ControlVectorDiagnosticsError, NoTrainingResultError, VectorQualityTooLowError
 from wisent.core.constants import STEERABILITY_MIN_PAIRS, DISPLAY_TOP_N_TINY
 

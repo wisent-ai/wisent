@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 from wisent.core.activations.core.atoms import LayerActivations
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 
 __all__ = [
     "TrainingResult",

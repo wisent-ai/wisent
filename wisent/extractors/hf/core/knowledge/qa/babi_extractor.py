@@ -4,9 +4,9 @@ from typing import Any
 from wisent.core.cli.cli_logger import setup_logger
 from wisent.core.constants import CONTEXT_MAX_PREVIEW, EXTRACTOR_DEFAULT_LIMIT
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
-from wisent.core.contrastive_pairs.huggingface_pairs.atoms import HuggingFaceBenchmarkExtractor
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.io.response import NegativeResponse, PositiveResponse
+from wisent.extractors.hf._registry.manifest.atoms import HuggingFaceBenchmarkExtractor
 
 log = setup_logger(__name__)
 

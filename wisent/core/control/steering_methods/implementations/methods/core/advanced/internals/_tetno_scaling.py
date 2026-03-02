@@ -4,7 +4,7 @@ from typing import List, Dict, Any, Optional, Tuple
 import torch
 import torch.nn.functional as F
 from wisent.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.steering_methods.methods.advanced._tetno_types import TETNOConfig, TETNOResult
 from wisent.core.constants import TETNO_MIN_LAYER_SCALE
 

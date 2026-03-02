@@ -9,8 +9,8 @@ from pathlib import Path
 import numpy as np
 import torch
 
-from wisent.core.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.contrastive_pairs.core.set import ContrastivePairSet
+from wisent.core.contrastive_pairs.pair import ContrastivePair
+from wisent.core.contrastive_pairs.set import ContrastivePairSet
 from wisent.core.constants import JSON_INDENT
 from wisent.core.errors import (
     DecodeError,
@@ -248,6 +248,6 @@ def save_contrastive_pair_set(
 
 
 # Re-export from split module
-from wisent.core.contrastive_pairs.core.io._serialization_loader import (
+from wisent.core.contrastive_pairs.io._serialization_loader import (
     load_contrastive_pair_set,
 )

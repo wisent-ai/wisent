@@ -18,7 +18,7 @@ from wisent.core.errors import (
     NoActivationDataError,
 )
 from wisent.core.constants import COMPARISON_STEERING_LAYER, CHANCE_LEVEL_ACCURACY
-from wisent.core.utils.core.hardware import default_batch_size
+from wisent.core.utils.infra.core.hardware import default_batch_size
 
 logger = logging.getLogger(__name__)
 
