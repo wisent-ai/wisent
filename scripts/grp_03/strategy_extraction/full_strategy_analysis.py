@@ -1,3 +1,4 @@
+import os
 #!/usr/bin/env python3
 """Full extraction strategy analysis - parallel workers with batch layer queries."""
 import argparse, json, struct, os, sys, multiprocessing
@@ -17,7 +18,7 @@ from analyze_checkpoint import (
 
 DB_CONFIG = {"host": "aws-0-eu-west-2.pooler.supabase.com", "port": 5432,
     "database": "postgres", "user": "postgres.rbqjqnouluslojmmnuqi",
-    "password": "REDACTED_DB_PASSWORD",
+    "password": os.environ["DB_PASSWORD"],
     "options": "-c statement_timeout=0"}
 MODELS = ["meta-llama/Llama-3.2-1B-Instruct", "Qwen/Qwen3-8B",
     "meta-llama/Llama-2-7b-chat-hf", "openai/gpt-oss-20b"]

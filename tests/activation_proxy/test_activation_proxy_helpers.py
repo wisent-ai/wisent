@@ -22,7 +22,7 @@ DB_CONFIG = {
     "port": int(os.environ.get("DB_PORT", 5432)),
     "database": os.environ.get("DB_NAME", "postgres"),
     "user": os.environ.get("DB_USER", "postgres.rbqjqnouluslojmmnuqi"),
-    "password": os.environ.get("DB_PASSWORD", "REDACTED_DB_PASSWORD"),
+    "password": os.environ["DB_PASSWORD"],
 }
 
 

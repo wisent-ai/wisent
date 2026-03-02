@@ -4,6 +4,7 @@
 import sys
 sys.path.insert(0, "/Users/lukaszbartoszcze/Documents/CodingProjects/Wisent/backends/wisent-open-source")
 
+import os
 import psycopg2
 import logging
 from datetime import datetime
@@ -12,7 +13,7 @@ from fix_benchmark_one_by_one_data import BENCHMARK_FIXES
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
 log = logging.getLogger(__name__)
 
-DB_URL = 'postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:5432/postgres'
+DB_URL = os.environ["DATABASE_URL"]
 
 def get_benchmark_status(conn):
     """Get current status of all benchmarks."""

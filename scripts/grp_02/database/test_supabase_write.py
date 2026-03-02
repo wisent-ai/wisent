@@ -3,7 +3,7 @@
 import psycopg2
 import os
 
-DATABASE_URL = os.environ.get("DATABASE_URL", "postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:6543/postgres")
+DATABASE_URL = os.environ["DATABASE_URL"]
 
 print(f"Testing connection to: {DATABASE_URL[:50]}...")
 

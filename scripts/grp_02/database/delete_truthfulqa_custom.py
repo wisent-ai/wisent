@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Delete all truthfulqa_custom data from database."""
+import os
 import psycopg2
 
 DB_CONFIG = {
@@ -7,7 +8,7 @@ DB_CONFIG = {
     "port": 5432,
     "database": "postgres",
     "user": "postgres.rbqjqnouluslojmmnuqi",
-    "password": "REDACTED_DB_PASSWORD",
+    "password": os.environ["DB_PASSWORD"],
 }
 
 conn = psycopg2.connect(**DB_CONFIG)

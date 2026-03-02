@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Check what truthfulqa data exists in both tables."""
+import os
 import psycopg2
 
 conn = psycopg2.connect(
@@ -7,7 +8,7 @@ conn = psycopg2.connect(
     port=5432,
     database='postgres',
     user='postgres.rbqjqnouluslojmmnuqi',
-    password='REDACTED_DB_PASSWORD'
+    password=os.environ["DB_PASSWORD"]
 )
 cur = conn.cursor()
 

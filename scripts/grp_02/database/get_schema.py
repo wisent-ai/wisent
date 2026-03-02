@@ -5,7 +5,7 @@ import os
 
 DATABASE_URL = os.environ.get(
     "DATABASE_URL",
-    "postgresql://postgres.rbqjqnouluslojmmnuqi:REDACTED_DB_PASSWORD@aws-0-eu-west-2.pooler.supabase.com:5432/postgres"
+    os.environ["DATABASE_URL"]
 )
 
 conn = psycopg2.connect(DATABASE_URL)
