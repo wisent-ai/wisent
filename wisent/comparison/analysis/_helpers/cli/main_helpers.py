@@ -12,26 +12,26 @@ from wisent.core.utils.config_tools.constants import (
     COMPARISON_DEFAULT_BATCH_SIZE,
     COMPARISON_STEERING_LAYER,
     DEFAULT_SPLIT_RATIO,
-    DEFAULT_STRENGTH, JSON_INDENT,
+    JSON_INDENT,
 )
 
 
 def run_comparison(
     model_name: str,
     tasks: list[str],
+    bos_features_source: str,
+    device: str,
+    output_dir: str,
     methods: list[str] = None,
     num_pairs: int = COMPARISON_NUM_PAIRS,
     steering_scales: list[float] = None,
-    device: str = "cuda:0",
     batch_size: int | str = 1,
     max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     eval_limit: int | None = None,
-    output_dir: str = "comparison_results",
     train_ratio: float = DEFAULT_SPLIT_RATIO,
     caa_layers: str = str(COMPARISON_STEERING_LAYER),
     sae_layers: str = str(COMPARISON_STEERING_LAYER),
     extraction_strategies: list[str] = None,
-    bos_features_source: str = "detected",
     run_single_task_fn=None,
 ) -> list[dict]:
     """
@@ -40,7 +40,7 @@ def run_comparison(
     if methods is None:
         methods = ["caa"]
     if steering_scales is None:
-        steering_scales = [DEFAULT_STRENGTH]
+        raise ValueError("steering_scales must be provided explicitly")
     if extraction_strategies is None:
         extraction_strategies = ["mc_balanced"]
 
@@ -135,21 +135,21 @@ def _print_summary(
 def main(run_single_task_fn, run_comparison_fn):
     """CLI entry point for comparison."""
     parser = argparse.ArgumentParser(description="Compare steering methods")
-    parser.add_argument("--model", default="EleutherAI/gpt-neo-125M",
+    parser.add_argument("--model", required=True,
                         help="Model name")
-    parser.add_argument("--tasks", default="boolq",
+    parser.add_argument("--tasks", required=True,
                         help="Comma-separated lm-eval tasks")
-    parser.add_argument("--methods", default="caa",
+    parser.add_argument("--methods", required=True,
                         help="Comma-separated methods (caa,sae,fgaa)")
     parser.add_argument("--num-pairs", type=int, default=COMPARISON_NUM_PAIRS,
                         help="Number of contrastive pairs")
-    parser.add_argument("--scales", default="1.0",
+    parser.add_argument("--scales", required=True,
                         help="Comma-separated steering scales")
     parser.add_argument("--caa-layers", default=str(COMPARISON_STEERING_LAYER),
                         help="Layer(s) for CAA steering")
     parser.add_argument("--sae-layers", default=str(COMPARISON_STEERING_LAYER),
                         help="Layer(s) for SAE/FGAA steering")
-    parser.add_argument("--device", default="cuda:0", help="Device")
+    parser.add_argument("--device", required=True, help="Device")
     parser.add_argument("--batch-size", default=COMPARISON_DEFAULT_BATCH_SIZE,
                         help="Batch size (int or 'auto')")
     parser.add_argument("--max-batch-size", type=int, default=COMPARISON_MAX_BATCH_SIZE,
@@ -157,13 +157,13 @@ def main(run_single_task_fn, run_comparison_fn):
     parser.add_argument("--limit", type=int, default=None,
                         help="Limit eval examples")
     parser.add_argument("--output-dir",
-                        default="wisent/comparison/comparison_results",
+                        required=True,
                         help="Output directory")
     parser.add_argument("--train-ratio", type=float, default=DEFAULT_SPLIT_RATIO,
                         help="Train/test split ratio")
-    parser.add_argument("--extraction-strategy", default="mc_balanced",
+    parser.add_argument("--extraction-strategy", required=True,
                         help="Extraction strategy (comma-separated)")
-    parser.add_argument("--bos-features-source", default="detected",
+    parser.add_argument("--bos-features-source", required=True,
                         help="BOS features source for FGAA")
 
     args = parser.parse_args()

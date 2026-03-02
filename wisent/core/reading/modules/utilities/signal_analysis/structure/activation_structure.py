@@ -8,7 +8,7 @@ Implementation split into _cloud_metrics.py and _relationship_metrics.py
 to keep files under 300 lines. This module re-exports all public functions.
 """
 
-from wisent.core.reading.modules.analysis.structure._cloud_metrics import (
+from wisent.core.reading.modules.utilities.signal_analysis.structure._cloud_metrics import (
     compute_cloud_shape,
     compute_cone_fit,
     compute_sphere_fit,
@@ -17,7 +17,7 @@ from wisent.core.reading.modules.analysis.structure._cloud_metrics import (
     compute_density_structure,
     compute_topology_indicators,
 )
-from wisent.core.reading.modules.analysis.structure._relationship_metrics import (
+from wisent.core.reading.modules.utilities.signal_analysis.structure._relationship_metrics import (
     compute_two_cloud_relationship,
     compute_relative_position,
     analyze_activation_structure,

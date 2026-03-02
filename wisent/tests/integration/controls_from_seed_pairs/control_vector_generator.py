@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class ControlVectorGenerator:
     """Generates control vectors from seed pair JSON files and serializes them."""
 
-    def __init__(self, model_name: str = "unsloth/Qwen3-4B-bnb-4bit", layer_index: int = QWEN3_4B_DEFAULT_LAYER, device: str = "auto"):
+    def __init__(self, model_name: str, layer_index: int = QWEN3_4B_DEFAULT_LAYER, device: str | None = None):
         """
         Initialize the control vector generator.
 
@@ -32,7 +32,7 @@ class ControlVectorGenerator:
         self.model_name = model_name
         self.layer_index = layer_index
 
-        if device == "auto":
+        if device is None:
             self.device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self.device = device

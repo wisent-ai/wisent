@@ -196,8 +196,8 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     target_group.add_argument(
         "--target-metric",
         type=str,
-        default="compliance_rate",
-        help="Metric to optimize: compliance_rate, refusal_rate, accuracy. Default: compliance_rate"
+        required=True,
+        help="Metric to optimize: compliance_rate, refusal_rate, accuracy"
     )
     target_group.add_argument(
         "--target-value",
@@ -208,9 +208,9 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     target_group.add_argument(
         "--direction",
         type=str,
-        default="auto",
+        required=True,
         choices=["auto", "maximize", "minimize"],
-        help="Optimization direction. 'auto' infers from metric. Default: auto"
+        help="Optimization direction. 'auto' infers from metric"
     )
 
     setup_advanced_optimize_weights_args(parser)

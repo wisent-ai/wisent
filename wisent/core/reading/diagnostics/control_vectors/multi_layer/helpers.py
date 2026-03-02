@@ -30,7 +30,7 @@ def combine_layer_activations(
     pos_by_layer: Dict[int, torch.Tensor],
     neg_by_layer: Dict[int, torch.Tensor],
     layers: List[int],
-    method: str = "concat",
+    method: str,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Combine activations from multiple layers."""
     pos_acts = [pos_by_layer[l] for l in layers if l in pos_by_layer]

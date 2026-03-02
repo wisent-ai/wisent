@@ -22,7 +22,7 @@ from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Tuple, Any, TYPE_CHECKING
 from enum import Enum
 
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, WM_MAX_INTERFERENCE
+from wisent.core.utils.config_tools.constants import WM_MAX_INTERFERENCE
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -56,15 +56,15 @@ class ConceptSpec:
     
     name: str
     """Human-readable name for the concept."""
-    
+
     steering_vectors: Dict[int, "Tensor"]
     """Per-layer steering vectors for this concept."""
-    
+
+    strength: float
+    """Modification strength for this concept."""
+
     action: ConceptAction = ConceptAction.SUPPRESS
     """Action to take: suppress, enhance, or neutral."""
-    
-    strength: float = DEFAULT_STRENGTH
-    """Modification strength for this concept."""
     
     layer_weights: Optional[Dict[int, float]] = None
     """Optional per-layer weights. If None, uses uniform weights."""
@@ -81,7 +81,7 @@ class MultiConceptConfig:
     orthogonalize: bool = True
     """Orthogonalize concept directions to minimize interference."""
     
-    orthogonalization_order: str = "priority"
+    orthogonalization_order: Optional[str] = None
     """Order for Gram-Schmidt: 'priority', 'variance', or 'sequential'."""
     
     # Interference handling

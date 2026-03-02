@@ -1,13 +1,13 @@
 """Parser for the 'discover-steering' command - find optimal steering directions."""
 
-from wisent.core.utils.config_tools.constants import COMPARISON_STEERING_LAYER, DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import COMPARISON_STEERING_LAYER
 
 
 def setup_discover_steering_parser(parser):
     """Set up the discover-steering command parser."""
     parser.add_argument(
-        "--model", type=str, default="meta-llama/Llama-3.2-1B-Instruct",
-        help="Model name (default: meta-llama/Llama-3.2-1B-Instruct)"
+        "--model", type=str, required=True,
+        help="Model name"
     )
     parser.add_argument(
         "--task", type=str, required=True,
@@ -22,8 +22,8 @@ def setup_discover_steering_parser(parser):
         help="Layer range to search, e.g., '8-16' (default: None, only test --layer)"
     )
     parser.add_argument(
-        "--strength", type=float, default=DEFAULT_STRENGTH,
-        help="Steering strength multiplier (default: 1.0)"
+        "--strength", type=float, required=True,
+        help="Steering strength multiplier"
     )
     parser.add_argument(
         "--n-test-samples", type=int, required=True,
@@ -38,8 +38,8 @@ def setup_discover_steering_parser(parser):
         help="Database URL (default: DATABASE_URL env var)"
     )
     parser.add_argument(
-        "--output", type=str, default="./steering_discovery_results.json",
-        help="Output JSON file path (default: ./steering_discovery_results.json)"
+        "--output", type=str, required=True,
+        help="Output JSON file path"
     )
     parser.add_argument(
         "--skip-layer-search", action="store_true",

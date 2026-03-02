@@ -1,6 +1,6 @@
 """Steering and advanced arguments for the tasks parser."""
 
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, NONSENSE_MAX_WORD_LENGTH, MIN_QUALITY_SCORE_OUTPUT, TRACKING_SAMPLING_INTERVAL, MIN_SNR_EARLY_REJECT, MIN_CV_SCORE_EARLY_REJECT
+from wisent.core.utils.config_tools.constants import NONSENSE_MAX_WORD_LENGTH, MIN_QUALITY_SCORE_OUTPUT, TRACKING_SAMPLING_INTERVAL, MIN_SNR_EARLY_REJECT, MIN_CV_SCORE_EARLY_REJECT
 
 
 def setup_steering_task_args(parser):
@@ -17,7 +17,7 @@ def setup_steering_task_args(parser):
         help="CLASSIFICATION MODE: Train a classifier to detect good/bad responses. Uses activations to predict response quality. Outputs classifier accuracy and F1 score."
     )
     parser.add_argument(
-        "--steering-strength", type=float, default=DEFAULT_STRENGTH, help="Strength of steering vector application (default: 1.0)"
+        "--steering-strength", type=float, required=True, help="Strength of steering vector application"
     )
 
     # Steering method selection - uses centralized registry
@@ -28,9 +28,9 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--output-mode",
         type=str,
-        default="both",
+        required=True,
         choices=["likelihoods", "responses", "both"],
-        help="Type of comparison to show: 'likelihoods' for log-likelihood comparison only, 'responses' for response generation only, 'both' for both (default: both)",
+        help="Type of comparison to show: 'likelihoods' for log-likelihood comparison only, 'responses' for response generation only, 'both' for both",
     )
 
     # Token steering arguments
@@ -38,7 +38,7 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--token-steering-strategy",
         type=str,
-        default="last_only",
+        required=True,
         choices=[
             "last_only",
             "first_only",
@@ -49,7 +49,7 @@ def setup_steering_task_args(parser):
             "linear_growth",
             "custom",
         ],
-        help="Token steering strategy (default: last_only)",
+        help="Token steering strategy",
     )
     parser.add_argument(
         "--token-decay-rate",
@@ -66,8 +66,8 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--token-max-strength",
         type=float,
-        default=DEFAULT_STRENGTH,
-        help="Maximum steering strength for token strategies (default: 1.0)",
+        required=True,
+        help="Maximum steering strength for token strategies",
     )
     parser.add_argument(
         "--token-apply-to-prompt",
@@ -107,15 +107,15 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--classifier-dir",
         type=str,
-        default="./models",
-        help="Directory for saving/loading classifiers and vectors (default: ./models)",
+        required=True,
+        help="Directory for saving/loading classifiers and vectors",
     )
     # Normalization options
     parser.add_argument("--normalize-mode", action="store_true", help="Enable normalization mode (legacy flag)")
     parser.add_argument(
         "--normalization-method",
         type=str,
-        default="none",
+        required=True,
         choices=["none", "l2_unit", "cross_behavior", "layer_wise_mean"],
         help="Vector normalization method to apply",
     )
@@ -153,7 +153,7 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--nonsense-action",
         type=str,
-        default="regenerate",
+        required=True,
         choices=["regenerate", "stop", "flag"],
         help="Action when nonsense is detected: regenerate, stop generation, or flag for review",
     )
@@ -203,9 +203,9 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--priority",
         type=str,
-        default="all",
+        required=True,
         choices=["all", "high", "medium", "low"],
-        help="Priority level for benchmark selection (default: all)",
+        help="Priority level for benchmark selection",
     )
     parser.add_argument(
         "--fast-only", action="store_true", help="Only use fast benchmarks (high priority, < 13.5s loading time)"
@@ -284,8 +284,8 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--cache-dir",
         type=str,
-        default="./benchmark_cache",
-        help="Directory to store cached benchmark data (default: ./benchmark_cache)",
+        required=True,
+        help="Directory to store cached benchmark data",
     )
     parser.add_argument("--cache-status", action="store_true", help="Show cache status and exit")
     parser.add_argument("--cleanup-cache", type=int, metavar="DAYS", help="Clean up cache entries older than DAYS days")

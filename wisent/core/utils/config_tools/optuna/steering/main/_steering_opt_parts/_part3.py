@@ -59,9 +59,9 @@ class _SteeringOptimizerCore:
         model,
         tokenizer,
         device: str,
+        task_name: str,
         batch_size: int = CLASSIFIER_BATCH_SIZE,
         max_length: int | None = None,
-        task_name: str = "gsm8k",
         max_new_tokens: int = None,
     ) -> Tuple[Dict[str, Any], List]:
         """
@@ -102,7 +102,7 @@ class _SteeringOptimizerCore:
 
         # Calculate baseline metrics with integrated classifier scoring
         classifier_scorer = lambda predictions, description: self.score_predictions_with_classifier(
-            predictions, model, tokenizer, device, max_length, description
+            predictions, model, tokenizer, device, description, max_length
         )
         baseline_benchmark_metrics = metrics.evaluate_benchmark_performance(
             baseline_predictions, ground_truths, task_name, classifier_scorer=classifier_scorer
@@ -227,7 +227,7 @@ class _SteeringOptimizerCore:
 
         enhanced_metrics = self.compare_predictions(
             baseline_predictions, steered_predictions, ground_truths,
-            model, tokenizer, device, max_length, task_name,
+            model, tokenizer, device, task_name, max_length,
         )
 
         benchmark_metrics = enhanced_metrics["steered"]

@@ -1,6 +1,7 @@
 """HuggingFace extractor manifest - Part 2 (SE, multilingual, medical, translation)."""
 
-base_import: str = "wisent.extractors.hf.hf_task_extractors."
+from wisent.core.utils.config_tools.constants import HF_EXTRACTOR_BASE_IMPORT
+base_import: str = HF_EXTRACTOR_BASE_IMPORT
 
 EXTRACTORS_PART2: dict[str, str] = {
     # Software Engineering benchmarks (NOT lm-eval)

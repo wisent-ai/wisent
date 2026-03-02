@@ -7,7 +7,7 @@ from typing import Any, Dict, Type
 from typing import TypedDict, Mapping
 from lm_eval.api.task import ConfigurableTask
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, BASE_CLASS_NAME
 from wisent.core.utils.infra_tools.errors import DuplicateNameError, InvalidRangeError
 
 __all__ = ["DataLoaderError", "BaseDataLoader"]
@@ -43,7 +43,7 @@ class DataLoaderError(RuntimeError):
 
 class BaseDataLoader(ABC):
     """Abstract data loader base. Concrete subclasses auto-register on import."""
-    name: str = "base"
+    name: str = BASE_CLASS_NAME
     description: str = "Abstract data loader"
 
     _REGISTRY: Dict[str, Type["BaseDataLoader"]] = {}

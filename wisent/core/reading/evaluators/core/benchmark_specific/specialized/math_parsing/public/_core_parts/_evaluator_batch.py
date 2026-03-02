@@ -32,7 +32,7 @@ class EvaluatorMathBatch(EvaluatorMath):
 
     def __init__(
         self,
-        ans_extract_mode: str = "boxed",
+        ans_extract_mode: str,
         include_percentage: bool = True,
         rel_tol: float = DEF_REL_TOL,
         abs_tol: float = DEF_ABS_TOL,

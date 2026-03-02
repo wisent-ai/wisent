@@ -91,8 +91,8 @@ def evaluate_greedy(
     model: WisentModel,
     evaluator: LiveMathBenchEvaluator,
     dataset_config: str,
+    eval_mode: str,
     limit: Optional[int] = None,
-    eval_mode: str = "math",
     judge_model: Optional[WisentModel] = None,
 ) -> tuple[float, list[dict]]:
     """Evaluate model with greedy decoding (temperature=0).

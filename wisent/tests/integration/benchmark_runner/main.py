@@ -18,7 +18,6 @@ from wisent.core.utils.infra_tools.data.livecodebench_loader import LiveCodeBenc
 from wisent.core.primitives.models.core.wisent_model import Model
 from wisent.core.primitives.models.config import get_generate_kwargs
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER,
     TEST_DEFAULT_LIMIT, JSON_INDENT,
 )
 
@@ -27,14 +26,14 @@ import datasets
 print(f"🔍 Using datasets version: {datasets.__version__}")
 
 
-def setup_output_directory(output_dir: str = "results") -> Path:
+def setup_output_directory(output_dir: str) -> Path:
     """Create and setup output directory for results."""
     output_path = Path(output_dir)
     output_path.mkdir(exist_ok=True)
     return output_path
 
 
-def generate_code_completion(model: Model, problem: Dict[str, Any], max_tokens: int | None = None) -> Dict[str, Any]:
+def generate_code_completion(model: Model, problem: Dict[str, Any], max_tokens: int | None = None, layer: int = None) -> Dict[str, Any]:
     """
     Generate code completion for a given problem using the model.
 
@@ -67,7 +66,7 @@ Please provide a complete solution:"""
         start_time = time.time()
         response = model.generate(
             prompt=prompt,
-            layer_index=DEFAULT_LAYER,
+            layer_index=layer,
             **gen_kwargs
         )
         generation_time = time.time() - start_time
@@ -100,18 +99,20 @@ Please provide a complete solution:"""
 
 def main():
     parser = argparse.ArgumentParser(description="LiveCodeBench benchmark runner with DeepSeek-R1-Distill-Qwen-1.5B")
-    parser.add_argument("--model-name", default="deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B", 
+    parser.add_argument("--model-name", required=True,
                        help="HuggingFace model name")
-    parser.add_argument("--release-version", default="release_v1", 
+    parser.add_argument("--release-version", required=True,
                        help="LiveCodeBench release version")
     parser.add_argument("--limit", type=int, default=TEST_DEFAULT_LIMIT,
                        help="Limit number of problems to process")
     parser.add_argument("--max-tokens", type=int, default=512,
                        help="Maximum tokens to generate per problem")
-    parser.add_argument("--output-dir", default="results", 
+    parser.add_argument("--output-dir", required=True,
                        help="Output directory for results")
-    parser.add_argument("--device", default=None, 
+    parser.add_argument("--device", default=None,
                        help="Device to use (cuda/cpu/auto)")
+    parser.add_argument("--layer", type=int, required=True,
+                       help="Layer index for activation extraction")
     
     args = parser.parse_args()
     
@@ -155,7 +156,7 @@ def main():
         
         for problem in tqdm(problems, desc="Generating solutions"):
             problem_dict = problem.to_dict()
-            result = generate_code_completion(model, problem_dict, args.max_tokens)
+            result = generate_code_completion(model, problem_dict, args.max_tokens, layer=args.layer)
             results.append(result)
             
             # Print progress

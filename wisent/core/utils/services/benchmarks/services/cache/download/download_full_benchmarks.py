@@ -39,7 +39,7 @@ class FullBenchmarkDownloader(
 
     UNAVAILABLE_BENCHMARKS = {}
 
-    def __init__(self, download_dir: str = "full_benchmarks"):
+    def __init__(self, download_dir: str):
         self.download_dir = Path(download_dir)
         self.download_dir.mkdir(exist_ok=True)
 
@@ -273,7 +273,7 @@ def main():
     group.add_argument("--benchmarks", nargs="+", help="Benchmarks to download")
     group.add_argument("--all", action="store_true", help="Download all")
     parser.add_argument("--force", action="store_true", help="Force redownload")
-    parser.add_argument("--download-dir", default="full_benchmarks")
+    parser.add_argument("--download-dir", required=True)
     args = parser.parse_args()
     downloader = FullBenchmarkDownloader(download_dir=args.download_dir)
     try:

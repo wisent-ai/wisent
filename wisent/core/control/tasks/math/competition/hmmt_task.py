@@ -22,7 +22,7 @@ class HMMTTask(TaskInterface):
         }
     }
     
-    def __init__(self, competition: str = "feb_2025", limit: Optional[int] = None):
+    def __init__(self, competition: Optional[str] = None, limit: Optional[int] = None):
         """
         Initialize HMMT task for specified competition.
         

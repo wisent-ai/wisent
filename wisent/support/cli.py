@@ -7,7 +7,7 @@ This module provides a Python API for running tasks that would normally be invok
 import argparse
 from typing import Dict, Any, Optional
 from wisent.core.utils.cli import execute_tasks
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, CLASSIFIER_THRESHOLD, DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, CLASSIFIER_THRESHOLD
 
 
 def run_task_pipeline(
@@ -16,17 +16,17 @@ def run_task_pipeline(
     layer: str,
     training_limit: int,
     testing_limit: int,
+    token_aggregation: str,
+    classifier_type: str,
+    token_targeting_strategy: str,
+    steering_method: Optional[str] = None,
     seed: int = DEFAULT_RANDOM_SEED,
     verbose: bool = False,
     split_ratio: float = DEFAULT_SPLIT_RATIO,
     limit: Optional[int] = None,
     steering_mode: bool = False,
-    token_aggregation: str = "average",
     detection_threshold: float = CLASSIFIER_THRESHOLD,
-    classifier_type: str = "logistic",
-    steering_method: str = "CAA",
-    steering_strength: float = DEFAULT_STRENGTH,
-    token_targeting_strategy: str = "LAST_TOKEN",
+    steering_strength: Optional[float] = None,
     **kwargs
 ) -> Dict[str, Any]:
     """
@@ -78,6 +78,12 @@ def run_task_pipeline(
 
     # Set method-specific arguments
     if steering_mode:
+        if steering_method is None:
+            from wisent.core.utils.infra_tools.errors import MissingParameterError
+            raise MissingParameterError(
+                params=["steering_method"],
+                context="run_task_pipeline with steering_mode=True",
+            )
         args.steering_mode = True
         args.steering_method = steering_method
         args.steering_strength = steering_strength

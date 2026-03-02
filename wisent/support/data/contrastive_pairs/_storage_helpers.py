@@ -91,9 +91,9 @@ def save_benchmark_pairs(
 
 
 def load_benchmark_pairs(
+    return_backend: str,
     benchmark: str | None = None,
     filename: str | None = None,
-    return_backend: str = "torch",
 ) -> ContrastivePairSet:
     """Load benchmark-extracted contrastive pairs.
 
@@ -177,8 +177,8 @@ def save_welfare_pairs(
 
 def load_welfare_pairs(
     welfare_trait: str,
+    return_backend: str,
     filename: str | None = None,
-    return_backend: str = "torch",
 ) -> ContrastivePairSet:
     """Load welfare state contrastive pairs.
 

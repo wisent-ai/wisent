@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import requests
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_MEDIUM
-from wisent.core.utils.core.hardware import subprocess_timeout_s
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 __all__ = ["AiderPolyglotExtractor"]
 
@@ -41,7 +41,7 @@ class AiderPolyglotExtractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "code_editing"
 
-    def __init__(self, language: str = "python"):
+    def __init__(self, language: Optional[str] = None):
         """
         Initialize Aider Polyglot extractor.
 
@@ -49,9 +49,10 @@ class AiderPolyglotExtractor(HuggingFaceBenchmarkExtractor):
             language: Target programming language (python, javascript, java, cpp, go, rust)
         """
         super().__init__()
-        if language not in AIDER_POLYGLOT_LANGUAGES:
+        resolved = language if language is not None else "python"
+        if resolved not in AIDER_POLYGLOT_LANGUAGES:
             raise ValueError(f"Language must be one of {AIDER_POLYGLOT_LANGUAGES}")
-        self.language = language
+        self.language = resolved
 
     def extract_contrastive_pairs(
         self,

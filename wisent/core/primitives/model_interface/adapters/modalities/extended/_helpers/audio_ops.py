@@ -159,10 +159,10 @@ class AudioOpsMixin:
     def transcribe(
         self,
         content: AudioContent,
+        task: str,
         steering_vectors: LayerActivations | None = None,
         config: SteeringConfig | None = None,
         language: str | None = None,
-        task: str = "transcribe",
     ) -> str:
         """Transcribe audio to text (convenience method for ASR)."""
         model_type = self._detect_model_type()

@@ -10,16 +10,17 @@ Uses model-driven decisions instead of hardcoded patterns.
 from typing import List, Dict, Set, Tuple
 from .task_manager import get_available_tasks
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER,
     TASK_RELEVANCE_MAX_RESULTS, TASK_MIN_RELEVANCE_SCORE, TASK_SEARCH_LIMIT,
 )
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 
 class TaskRelevanceSelector:
     """Selects tasks based on model-driven relevance analysis."""
-    
-    def __init__(self, model):
+
+    def __init__(self, model, layer: int):
         self.model = model
+        self.layer = layer
         
     def find_relevant_tasks(
         self,
@@ -63,7 +64,7 @@ Rate relevance from 0.0 to 1.0 (1.0 = highly relevant, 0.0 = not relevant).
 Respond with only the number:"""
         
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
+            response = self.model.generate(prompt, layer_index=self.layer)
             score_str = response.strip()
             
             # Extract number from response
@@ -81,18 +82,22 @@ def find_relevant_tasks(
     query: str,
     max_results: int = TASK_RELEVANCE_MAX_RESULTS,
     min_relevance_score: float = TASK_MIN_RELEVANCE_SCORE,
-    model=None
+    model=None,
+    layer: int = None,
 ) -> List[Tuple[str, float]]:
     """Standalone function for task relevance selection."""
     if model is None:
         from ....model import Model
         model = Model("meta-llama/Llama-3.1-8B-Instruct")
     
-    selector = TaskRelevanceSelector(model)
+    if layer is None:
+        raise MissingParameterError(params=["layer"], context="find_relevant_tasks")
+
+    selector = TaskRelevanceSelector(model, layer=layer)
     return selector.find_relevant_tasks(query, max_results, min_relevance_score)
 
 
-def get_top_relevant_tasks(query: str, count: int, model=None) -> List[str]:
+def get_top_relevant_tasks(query: str, count: int, model=None, layer: int = None) -> List[str]:
     """Get top N relevant tasks for a query."""
-    results = find_relevant_tasks(query, max_results=count, model=model)
+    results = find_relevant_tasks(query, max_results=count, model=model, layer=layer)
     return [task_name for task_name, _ in results]

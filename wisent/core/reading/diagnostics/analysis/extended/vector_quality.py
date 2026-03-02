@@ -128,7 +128,7 @@ class VectorQualityReport:
     cohens_d: Optional[float] = None
     
     # Summary
-    overall_quality: str = "unknown"
+    overall_quality: Optional[str] = None
     issues: List[DiagnosticsIssue] = field(default_factory=list)
     recommendations: List[str] = field(default_factory=list)
 
@@ -249,7 +249,7 @@ def _compute_cross_validation(
 
 
 # Re-exports from split modules
-from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._vector_quality_helpers import (
+from wisent.core.reading.diagnostics.analysis._vector_quality_helpers import (
     _compute_snr,
     _compute_pca,
     _compute_pair_alignment,
@@ -258,6 +258,6 @@ from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._vector_quali
     _compute_cv_classification,
     _compute_cohens_d,
 )
-from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._vector_quality_runner import (
+from wisent.core.reading.diagnostics.analysis._vector_quality_runner import (
     run_vector_quality_diagnostics,
 )

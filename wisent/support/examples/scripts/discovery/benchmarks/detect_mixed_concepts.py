@@ -109,7 +109,7 @@ __all__ = [
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Detect multiple concepts in mixed samples")
-    parser.add_argument("--model", type=str, default="meta-llama/Llama-3.2-1B-Instruct",
+    parser.add_argument("--model", type=str, required=True,
                         help="Model to use")
     parser.add_argument("--n-pairs", type=int, default=N_BOOTSTRAP_DEFAULT,
                         help="Number of pairs per concept")
@@ -117,7 +117,7 @@ if __name__ == "__main__":
                         help="Layer to extract activations from (default: middle)")
     parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED,
                         help="Random seed")
-    parser.add_argument("--output-dir", type=str, default="/tmp/concept_detection",
+    parser.add_argument("--output-dir", type=str, required=True,
                         help="Output directory")
     parser.add_argument("--single-sample-test", action="store_true",
                         help="Run single-sample detection test (tests if we can detect mixed vs pure)")
@@ -125,7 +125,7 @@ if __name__ == "__main__":
                         help="Number of bootstrap samples for null distribution")
     parser.add_argument("--visualize", action="store_true",
                         help="Generate visualizations")
-    parser.add_argument("--vis-output-dir", type=str, default="/tmp/concept_detection_vis",
+    parser.add_argument("--vis-output-dir", type=str, required=True,
                         help="Directory for visualization outputs")
     parser.add_argument("--detect-k", action="store_true",
                         help="Run k-concept detection (find how many concepts exist)")
@@ -135,7 +135,7 @@ if __name__ == "__main__":
                         help="Run attribution to trace pairs back to detected concepts")
     parser.add_argument("--analyze-layers", action="store_true",
                         help="Analyze separability across all layers")
-    parser.add_argument("--projection-method", type=str, default="pca",
+    parser.add_argument("--projection-method", type=str, required=True,
                         choices=["pca", "umap", "pacmap", "all"],
                         help="Projection method for visualization")
     

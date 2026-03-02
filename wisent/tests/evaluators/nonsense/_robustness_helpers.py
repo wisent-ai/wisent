@@ -11,8 +11,8 @@ def main():
         description="Test Math500 robustness with nonsense data"
     )
     parser.add_argument(
-        "--model", default="EleutherAI/gpt-neo-1.3B",
-        help="Model to test (default: EleutherAI/gpt-neo-1.3B)"
+        "--model", required=True,
+        help="Model to test"
     )
     parser.add_argument(
         "--limit", type=int, default=TEST_DEFAULT_LIMIT,

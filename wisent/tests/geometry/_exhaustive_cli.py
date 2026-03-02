@@ -17,11 +17,11 @@ from wisent.tests.test_geometry_exhaustive import (
 
 
 def run_comprehensive_sweep(
-    task: str = "truthfulqa_gen",
-    model: str = "meta-llama/Llama-3.2-1B-Instruct",
+    task: str,
+    model: str,
     num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
     max_combo_size: int = TEST_MAX_COMBO_SIZE,
-    output_dir: str = "/home/ubuntu/output",
+    output_dir: str | None = None,
 ):
     """Run sweep across all token agg and prompt strategies."""
     sys.stdout.reconfigure(line_buffering=True)
@@ -97,16 +97,14 @@ def main():
     """CLI entry point."""
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", default="truthfulqa_gen")
-    parser.add_argument(
-        "--model", default="meta-llama/Llama-3.2-1B-Instruct"
-    )
+    parser.add_argument("--task", required=True)
+    parser.add_argument("--model", required=True)
     parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument(
         "--max-layers", type=int, default=None,
         help="DEBUG ONLY - DO NOT USE IN PRODUCTION.",
     )
-    parser.add_argument("--output-dir", default="/home/ubuntu/output")
+    parser.add_argument("--output-dir", required=True)
     parser.add_argument("--sweep", action="store_true")
     parser.add_argument("--smart", action="store_true", default=True)
     parser.add_argument("--limited", action="store_true")
@@ -114,11 +112,11 @@ def main():
     parser.add_argument("--exhaustive", action="store_true")
     parser.add_argument("--max-combo-size", type=int, default=GEO_MAX_LAYER_COMBO_SIZE)
     parser.add_argument(
-        "--token-aggregation", default="final",
+        "--token-aggregation", required=True,
         choices=TOKEN_AGGREGATIONS,
     )
     parser.add_argument(
-        "--prompt-strategy", default="chat_template",
+        "--prompt-strategy", required=True,
         choices=PROMPT_STRATEGIES,
     )
     args = parser.parse_args()
@@ -136,6 +134,7 @@ def main():
     elif args.exhaustive:
         run_exhaustive_layer_analysis(
             task=args.task, model=args.model,
+            token_aggregation=args.token_aggregation,
             num_pairs=args.num_pairs,
             max_layers=args.max_layers,
             output_dir=args.output_dir,
@@ -143,12 +142,14 @@ def main():
     elif args.contiguous:
         run_contiguous_layer_analysis(
             task=args.task, model=args.model,
+            token_aggregation=args.token_aggregation,
             num_pairs=args.num_pairs,
             output_dir=args.output_dir,
         )
     elif args.limited:
         run_limited_layer_analysis(
             task=args.task, model=args.model,
+            token_aggregation=args.token_aggregation,
             num_pairs=args.num_pairs,
             max_combo_size=args.max_combo_size,
             output_dir=args.output_dir,
@@ -156,10 +157,10 @@ def main():
     else:
         run_smart_layer_analysis(
             task=args.task, model=args.model,
-            num_pairs=args.num_pairs,
-            max_combo_size=args.max_combo_size,
             token_aggregation=args.token_aggregation,
             prompt_strategy=args.prompt_strategy,
+            num_pairs=args.num_pairs,
+            max_combo_size=args.max_combo_size,
             output_dir=args.output_dir,
         )
 

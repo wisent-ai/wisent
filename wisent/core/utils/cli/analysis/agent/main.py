@@ -4,7 +4,7 @@ import sys
 import time
 
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR, DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import AGENT_CLASSIFIER_EPOCHS, DEFAULT_CLASSIFIER_LR
 
 
 def execute_agent(args):
@@ -81,7 +81,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         prompt_strategy=getattr(args, 'prompt_strategy', 'chat_template'),
         normalize_layers=getattr(args, 'normalize_layers', False),
         return_full_sequence=getattr(args, 'return_full_sequence', False),
-        classifier_type=getattr(args, 'classifier_type', 'logistic')
+        classifier_type=args.classifier_type
     )
 
     # Step 3: Generate and evaluate unsteered response
@@ -116,7 +116,7 @@ def execute_synthetic_pairs_classifier_steering_strategy(args):
         collector=collector,
         layer_key=layer_key,
         quality_threshold=args.quality_threshold,
-        steering_strength=getattr(args, 'steering_strength', DEFAULT_STRENGTH),
+        steering_strength=getattr(args, 'steering_strength', None),
         steering_normalize=getattr(args, 'normalize_mode', True),
         verbose=args.verbose,
         token_aggregation=getattr(args, 'token_aggregation', 'average'),

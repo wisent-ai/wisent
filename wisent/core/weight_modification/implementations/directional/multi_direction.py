@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -56,11 +56,11 @@ def project_component_multi_direction(
 def project_weights_multi_direction(
     model: Module,
     multi_steering_vectors: dict[int, Tensor],
+    global_strength: float,
     harmless_vectors: dict[int, Tensor] | None = None,
     components: list[str] | None = None,
     layer_weights: dict[int, float] | None = None,
     direction_strengths: list[float] | None = None,
-    global_strength: float = DEFAULT_STRENGTH,
     use_biprojection: bool = True,
     verbose: bool = True,
 ) -> dict[str, int]:

@@ -66,7 +66,7 @@ def rollout_robotics(
 
 def compute_trajectory_steering_vector(
     adapter, positive_trajectory: RobotTrajectory, negative_trajectory: RobotTrajectory,
-    layer: str, aggregation: str = "mean",
+    layer: str, aggregation: str,
 ) -> torch.Tensor:
     """Compute steering vector from trajectory pairs."""
     pos_activations = []

@@ -32,7 +32,7 @@ class AgentClassifierDecisionSystem(ClassifierCreationMixin, ClassifierPipelineM
         self.decision_history: List[ClassifierDecision] = []
         
     def analyze_task_requirements(self, prompt: str, context: str = "", 
-                                 priority: str = "all", fast_only: bool = False, 
+                                 priority: Optional[str] = None, fast_only: bool = False, 
                                  time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES, max_benchmarks: int = MAX_BENCHMARKS_SINGLE) -> TaskAnalysis:
         """
         Analyze a task/prompt to select relevant benchmarks for training and steering.
@@ -69,7 +69,7 @@ class AgentClassifierDecisionSystem(ClassifierCreationMixin, ClassifierPipelineM
         )
     
     def _get_relevant_benchmarks_for_prompt(self, prompt: str, existing_model=None, 
-                                           priority: str = "all", fast_only: bool = False, 
+                                           priority: Optional[str] = None, fast_only: bool = False, 
                                            time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES, max_benchmarks: int = MAX_BENCHMARKS_SINGLE) -> List[Dict[str, Any]]:
         """Get relevant benchmarks for the prompt using the intelligent selection system with priority awareness."""
         try:

@@ -283,7 +283,7 @@ def run_intervention_validation(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Intervention validation for Zwiad")
-    parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model to test")
+    parser.add_argument("--model", type=str, required=True, help="Model to test")
     parser.add_argument("--benchmarks", type=str, nargs="+", default=None, help="Specific benchmarks to test")
     parser.add_argument("--samples", type=int, required=True, help="Samples for direction computation")
     parser.add_argument("--test-samples", type=int, required=True, help="Samples for evaluation")

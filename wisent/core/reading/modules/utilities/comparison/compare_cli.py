@@ -7,7 +7,7 @@ from typing import List, Optional
 
 from wisent.core.utils.config_tools.constants import JSON_INDENT, SEPARATOR_WIDTH_NARROW
 from wisent.core.control.steering_methods.steering_object import load_steering_object
-from wisent.core.reading.modules.comparison.cross_trait import compare_steering_objects
+from wisent.core.reading.modules.utilities.comparison.cross_trait import compare_steering_objects
 
 
 def _get_label(obj) -> str:

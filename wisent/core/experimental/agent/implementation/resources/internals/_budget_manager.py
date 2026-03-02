@@ -81,8 +81,8 @@ class BudgetManager:
         
         return selected_tasks
     
-    def calculate_max_tasks_for_budget(self, 
-                                     task_type: str = "default",
+    def calculate_max_tasks_for_budget(self,
+                                     task_type: str,
                                      time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES) -> int:
         """
         Calculate maximum number of tasks that can fit within a time budget.

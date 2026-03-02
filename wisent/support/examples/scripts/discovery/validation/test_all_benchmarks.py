@@ -7,6 +7,7 @@ import signal
 from contextlib import contextmanager
 from pathlib import Path
 from wisent.examples.scripts.test_one_benchmark import test_benchmark
+from wisent.examples.scripts.test_one_benchmark_helpers import detect_loader_type
 
 # Set environment variable to trust remote code for datasets like meddialog
 os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'
@@ -39,7 +40,7 @@ def load_benchmarks():
 BENCHMARKS = load_benchmarks()
 
 
-def test_all_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", output_dir: str = ".", start_index: int = 0):
+def test_all_benchmarks(model_name: str, output_dir: str, start_index: int = 0):
     """Test all benchmarks.
 
     Args:
@@ -71,7 +72,7 @@ def test_all_benchmarks(model_name: str = "meta-llama/Llama-3.1-8B-Instruct", ou
 
         try:
             with timeout(1200):
-                success = test_benchmark(benchmark, model_name, output_dir)
+                success = test_benchmark(benchmark, model_name, output_dir, detect_loader_type(benchmark))
             results["benchmarks"][benchmark] = {
                 "status": "passed" if success else "failed",
                 "success": success

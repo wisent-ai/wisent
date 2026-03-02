@@ -9,7 +9,8 @@ import torch
 
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName  
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.utils.infra_tools.errors import DuplicateNameError  
+from wisent.core.utils.infra_tools.errors import DuplicateNameError
+from wisent.core.utils.config_tools.constants import BASE_CLASS_NAME
 
 __all__ = [
     "SteeringError",
@@ -21,7 +22,7 @@ class BaseSteeringError(RuntimeError):
     """Raised when a steering method fails or is misconfigured."""
 
 class BaseSteeringMethod(ABC):
-    name: str = "base"
+    name: str = BASE_CLASS_NAME
     description: str = "Abstract steering method"
     _REGISTRY: dict[str, type[BaseSteeringMethod]] = {}
 
@@ -33,9 +34,8 @@ class BaseSteeringMethod(ABC):
             return
         if not getattr(cls, "name", None):
             raise TypeError("BaseSteeringMethod subclasses must define `name`.")
-        if cls.name in BaseSteeringMethod._REGISTRY:
-            raise DuplicateNameError(name=cls.name, context="steering method registry")
-        BaseSteeringMethod._REGISTRY[cls.name] = cls
+        if cls.name not in BaseSteeringMethod._REGISTRY:
+            BaseSteeringMethod._REGISTRY[cls.name] = cls
 
     def __init__(self, **kwargs: Any) -> None:
         self.kwargs: dict[str, Any] = dict(kwargs)

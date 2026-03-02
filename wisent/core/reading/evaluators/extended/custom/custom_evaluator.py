@@ -42,10 +42,10 @@ class EvaluatorProtocol(Protocol):
 @dataclass
 class CustomEvaluatorConfig:
     """Configuration for custom evaluators."""
-    name: str = "custom"
+    name: Optional[str] = None
     description: str = "Custom evaluator"
     invert_score: bool = False
-    score_key: str = "score"
+    score_key: Optional[str] = None
     min_score: float = SCORE_RANGE_MIN
     max_score: float = SCORE_RANGE_MAX
     normalize: bool = True
@@ -56,8 +56,8 @@ class CustomEvaluator(ABC):
 
     def __init__(
         self,
-        name: str = "custom",
-        description: str = "Custom evaluator",
+        name: str,
+        description: str,
         config: Optional[CustomEvaluatorConfig] = None,
     ):
         self.name = name
@@ -111,7 +111,7 @@ class CallableEvaluator(CustomEvaluator):
     def __init__(
         self,
         fn: Callable[[str], Union[float, Dict[str, Any]]],
-        name: str = "callable",
+        name: str,
         description: str = "Callable evaluator",
         config: Optional[CustomEvaluatorConfig] = None,
     ):
@@ -127,8 +127,8 @@ class APIEvaluator(CustomEvaluator):
 
     def __init__(
         self,
-        name: str = "api",
-        description: str = "API-based evaluator",
+        name: str,
+        description: str,
         config: Optional[CustomEvaluatorConfig] = None,
         api_key: Optional[str] = None,
         base_url: Optional[str] = None,

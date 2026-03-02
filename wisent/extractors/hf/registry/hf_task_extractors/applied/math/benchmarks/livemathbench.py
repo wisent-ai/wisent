@@ -7,6 +7,7 @@ from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 from wisent.core.reading.evaluators.benchmark_specific.math_parsing.scripts import strip_string
+from wisent.core.utils.config_tools.constants import LIVEMATHBENCH_DEFAULT_DATASET_CONFIG, LIVEMATHBENCH_DEFAULT_CONFIG_LABEL
 
 from latex2sympy2_extended import latex2sympy
 from sympy import latex
@@ -56,8 +57,8 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
     evaluator_name = "exact_match"
 
     # Set default dataset_config and config_label, to be override by subclass
-    dataset_config: str = "v202412_CNMO_en"
-    config_label: str = "cnmo_en"
+    dataset_config: str = LIVEMATHBENCH_DEFAULT_DATASET_CONFIG
+    config_label: str = LIVEMATHBENCH_DEFAULT_CONFIG_LABEL
 
     def extract_contrastive_pairs(
         self,

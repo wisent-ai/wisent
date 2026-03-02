@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -66,9 +66,9 @@ class OlympiadBenchExtractor(HuggingFaceBenchmarkExtractor):
 
     def __init__(
         self,
-        config: str = "math_en",
+        config: Optional[str] = None,
         text_only: bool = True,
-        subject: str = "maths",
+        subject: Optional[str] = None,
     ):
         """
         Initialize OlympiadBench extractor.
@@ -79,9 +79,10 @@ class OlympiadBenchExtractor(HuggingFaceBenchmarkExtractor):
             subject: Subject filter ("maths" or "physics")
         """
         super().__init__()
-        self.config = OLYMPIAD_CONFIGS.get(config, config)
+        resolved_config = config if config is not None else "math_en"
+        self.config = OLYMPIAD_CONFIGS.get(resolved_config, resolved_config)
         self.text_only = text_only
-        self.subject = subject
+        self.subject = subject if subject is not None else "maths"
 
     def extract_contrastive_pairs(
         self,

@@ -47,7 +47,7 @@ def test_prompt_benchmark_matching(test_prompt: str = "I like food"):
     return results
 
 
-def test_sample_retrieval(task_name: str = "truthfulqa_mc1"):
+def test_sample_retrieval(task_name: str):
     """Test function to demonstrate the get_task_samples_for_analysis function."""
     print(f"\n=== Testing Sample Retrieval for '{task_name}' ===")
     result = get_task_samples_for_analysis(task_name, num_samples=BENCH_TEST_SAMPLE_SIZE)

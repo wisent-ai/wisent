@@ -24,8 +24,8 @@ from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", default="truthfulqa_gen")
-    parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct")
+    parser.add_argument("--task", required=True)
+    parser.add_argument("--model", required=True)
     parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument("--layer", type=int, default=TEST_DETECTOR_DEFAULT_LAYER)
     args = parser.parse_args()

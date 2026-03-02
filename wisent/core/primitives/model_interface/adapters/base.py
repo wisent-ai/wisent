@@ -71,7 +71,7 @@ class SteeringConfig:
     scale: float | Dict[str, float] = 1.0
     normalize: bool = True
     layers: List[str] | None = None
-    temporal_mode: str = "per_step"
+    temporal_mode: Optional[str] = None
     method: Any = None  # SteeringMethod, Dict[str, SteeringMethod], or None for linear
 
 
@@ -93,7 +93,7 @@ class BaseAdapter(SteeringHookMixin, ABC, Generic[InputT, OutputT]):
     Subclasses must implement the abstract methods for their specific modality.
     """
 
-    name: str = "base"
+    name: Optional[str] = None
     modality: Modality = Modality.TEXT
     _REGISTRY: Dict[str, type["BaseAdapter"]] = {}
 
@@ -104,10 +104,9 @@ class BaseAdapter(SteeringHookMixin, ABC, Generic[InputT, OutputT]):
             return
         if not getattr(cls, "name", None):
             raise TypeError("BaseAdapter subclasses must define `name`.")
-        if cls.name != "base" and cls.name in BaseAdapter._REGISTRY:
+        if cls.name in BaseAdapter._REGISTRY:
             raise DuplicateNameError(name=cls.name, context="adapter registry")
-        if cls.name != "base":
-            BaseAdapter._REGISTRY[cls.name] = cls
+        BaseAdapter._REGISTRY[cls.name] = cls
 
     def __init__(
         self,

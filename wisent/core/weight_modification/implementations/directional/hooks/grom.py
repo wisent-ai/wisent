@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import torch
 from typing import TYPE_CHECKING
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, GROM_GATE_TEMPERATURE, GROM_SENSOR_LAYER_DEFAULT, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import GROM_GATE_TEMPERATURE, GROM_SENSOR_LAYER_DEFAULT, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -17,7 +17,7 @@ _LOG = setup_logger(__name__)
 class GROMRuntimeHooks:
     """Runtime hook system for GROM dynamic steering."""
 
-    def __init__(self, model: Module, grom_result, base_strength: float = DEFAULT_STRENGTH, gate_threshold: float = GROM_GATE_TEMPERATURE, use_soft_gating: bool = True):
+    def __init__(self, model: Module, grom_result, base_strength: float, gate_threshold: float = GROM_GATE_TEMPERATURE, use_soft_gating: bool = True):
         self.model = model
         self.grom_result = grom_result
         self.base_strength = base_strength
@@ -113,7 +113,7 @@ class GROMRuntimeHooks:
 
 
 def project_weights_grom(
-    model: Module, grom_result, components: list[str] | None = None, base_strength: float = DEFAULT_STRENGTH,
+    model: Module, grom_result, base_strength: float, components: list[str] | None = None,
     use_learned_intensities: bool = True, verbose: bool = True
 ) -> dict[str, int]:
     """Bake GROM effective directions into model weights using ADDITIVE steering."""
@@ -140,7 +140,7 @@ def project_weights_grom(
     weighted_vectors = {layer_idx: vec * layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT) if use_learned_intensities else vec
                         for layer_idx, vec in effective_vectors.items()}
     steering_vectors = LayerActivations(weighted_vectors)
-    stats = bake_steering_into_weights(model=model, steering_vectors=steering_vectors, alpha=base_strength, components=components, verbose=verbose)
+    stats = bake_steering_into_weights(model=model, steering_vectors=steering_vectors, alpha=base_strength, method="bias", components=components, verbose=verbose)
     stats["grom_layers"] = len(grom_result.layer_order)
     stats["grom_directions_per_layer"] = grom_result.directions[grom_result.layer_order[0]].shape[0]
     stats["method"] = "additive"

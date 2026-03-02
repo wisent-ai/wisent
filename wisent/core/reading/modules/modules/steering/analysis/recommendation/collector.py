@@ -7,7 +7,7 @@ from dataclasses import dataclass, asdict, field
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, DEFAULT_N_TRIALS, JSON_INDENT, RECOMMEND_COLLECTOR_PER_TYPE, DEFAULT_RANDOM_SEED
-from wisent.core.reading.modules.data.enriched_builder import build_enriched_from_db, generate_and_collect_enriched
+from wisent.core.reading.modules.utilities.data.enriched_builder import build_enriched_from_db, generate_and_collect_enriched
 
 # ── Data types ─────────────────────────────────────────────────
 
@@ -104,7 +104,7 @@ def _load_zwiad_metrics(model: str, benchmark: str, zwiad_dir: str) -> Optional[
 
 def collect_benchmark_ground_truth(
     model_name: str, benchmark: str,
-    zwiad_dir: str = "zwiad_results",
+    zwiad_dir: str,
     limit: int = DEFAULT_LIMIT, device: Optional[str] = None,
     methods: Optional[List[str]] = None,
     n_trials: int = DEFAULT_N_TRIALS,
@@ -201,9 +201,9 @@ def collect_benchmark_ground_truth(
 
 
 def collect_ground_truth(
-    model: str, benchmarks: Optional[List[str]] = None,
+    model: str, zwiad_dir: str,
+    benchmarks: Optional[List[str]] = None,
     output_path: Optional[str] = None,
-    zwiad_dir: str = "zwiad_results",
     limit: int = DEFAULT_LIMIT, device: Optional[str] = None,
     methods: Optional[List[str]] = None,
     n_trials: int = DEFAULT_N_TRIALS,
@@ -215,7 +215,7 @@ def collect_ground_truth(
     """Collect ground truth. use_geometry_selection picks per_type per type."""
     if benchmarks is None:
         if use_geometry_selection:
-            from wisent.core.reading.modules.zwiad.geometry_types import (
+            from wisent.core.reading.modules.modules.zwiad.geometry_types import (
                 select_representative_benchmarks, GeometryType, GeometryTypeFine)
             selected = select_representative_benchmarks(
                 zwiad_dir, model, per_type=per_type, fine=fine_geometry)

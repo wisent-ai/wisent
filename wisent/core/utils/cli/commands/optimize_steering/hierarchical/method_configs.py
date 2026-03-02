@@ -1,13 +1,12 @@
 """Method configuration dataclasses for steering optimization."""
 from dataclasses import dataclass, field
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from wisent.core.utils.config_tools.constants import (
     BROYDEN_DEFAULT_ALPHA,
     BROYDEN_DEFAULT_ALPHA_DECAY,
     BROYDEN_DEFAULT_BETA,
     BROYDEN_DEFAULT_ETA,
     BROYDEN_DEFAULT_NUM_STEPS,
-    DEFAULT_LAYER,
     DEFAULT_VARIANCE_THRESHOLD,
     GROM_BEHAVIOR_WEIGHT,
     GROM_INTENSITY_HIDDEN_DIM,
@@ -32,6 +31,7 @@ from wisent.core.utils.config_tools.constants import (
     TETNO_MAX_ALPHA,
     DEFAULT_STEERING_LAYERS,
     WICHER_CONCEPT_DIM,
+    PARSER_DEFAULT_LAYER_START,
 )
 
 
@@ -43,14 +43,14 @@ STEERING_STRATEGIES = ["constant", "initial_only", "diminishing", "increasing", 
 class MethodConfig:
     """Base configuration for all methods."""
     method: str = ""
-    extraction_strategy: str = "chat_last"
-    steering_strategy: str = "constant"  # How steering is applied during generation
+    extraction_strategy: Optional[str] = None
+    steering_strategy: Optional[str] = None
 
 
 @dataclass
 class CAAConfig(MethodConfig):
     """CAA-specific parameters."""
-    layer: int = DEFAULT_LAYER
+    layer: int = PARSER_DEFAULT_LAYER_START
     
     def to_args(self) -> Dict[str, Any]:
         return {
@@ -63,7 +63,7 @@ class CAAConfig(MethodConfig):
 @dataclass
 class OstrzeConfig(MethodConfig):
     """Ostrze-specific parameters."""
-    layer: int = DEFAULT_LAYER
+    layer: int = PARSER_DEFAULT_LAYER_START
     
     def to_args(self) -> Dict[str, Any]:
         return {
@@ -76,7 +76,7 @@ class OstrzeConfig(MethodConfig):
 @dataclass
 class MLPConfig(MethodConfig):
     """MLP-specific parameters."""
-    layer: int = DEFAULT_LAYER
+    layer: int = PARSER_DEFAULT_LAYER_START
     hidden_dim: int = MLP_HIDDEN_DIM
     num_layers: int = MLP_NUM_LAYERS
     
@@ -93,9 +93,9 @@ class MLPConfig(MethodConfig):
 @dataclass
 class TECZAConfig(MethodConfig):
     """TECZA-specific parameters."""
-    layer: int = DEFAULT_LAYER
+    layer: int = PARSER_DEFAULT_LAYER_START
     num_directions: int = TECZA_NUM_DIRECTIONS
-    direction_weighting: str = "primary_only"
+    direction_weighting: Optional[str] = None
     retain_weight: float = TECZA_RETAIN_WEIGHT
     optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     
@@ -114,7 +114,7 @@ class TECZAConfig(MethodConfig):
 @dataclass
 class TETNOConfig(MethodConfig):
     """TETNO-specific parameters."""
-    sensor_layer: int = DEFAULT_LAYER
+    sensor_layer: int = PARSER_DEFAULT_LAYER_START
     steering_layers: List[int] = field(default_factory=lambda: list(DEFAULT_STEERING_LAYERS))
     condition_threshold: float = TETNO_CONDITION_THRESHOLD
     gate_temperature: float = TETNO_GATE_TEMPERATURE_LEGACY
@@ -135,7 +135,7 @@ class TETNOConfig(MethodConfig):
 @dataclass
 class GROMConfig(MethodConfig):
     """GROM-specific parameters."""
-    sensor_layer: int = DEFAULT_LAYER
+    sensor_layer: int = PARSER_DEFAULT_LAYER_START
     steering_layers: List[int] = field(default_factory=lambda: list(DEFAULT_STEERING_LAYERS))
     num_directions: int = TECZA_NUM_DIRECTIONS
     gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM
@@ -166,7 +166,7 @@ class GROMConfig(MethodConfig):
 @dataclass
 class NurtConfig(MethodConfig):
     """Nurt-specific parameters."""
-    layer: int = DEFAULT_LAYER
+    layer: int = PARSER_DEFAULT_LAYER_START
     num_dims: int = NURT_NUM_DIMS
     variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
     training_epochs: int = NURT_TRAINING_EPOCHS
@@ -184,7 +184,7 @@ class NurtConfig(MethodConfig):
 @dataclass
 class SzlakConfig(MethodConfig):
     """Szlak-specific parameters."""
-    layer: int = DEFAULT_LAYER
+    layer: int = PARSER_DEFAULT_LAYER_START
     sinkhorn_reg: float = SZLAK_SINKHORN_REG
     inference_k: int = SZLAK_INFERENCE_K
 
@@ -201,7 +201,7 @@ class SzlakConfig(MethodConfig):
 @dataclass
 class WicherConfig(MethodConfig):
     """WICHER-specific parameters."""
-    layer: int = DEFAULT_LAYER
+    layer: int = PARSER_DEFAULT_LAYER_START
     concept_dim: int = WICHER_CONCEPT_DIM
     variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
     num_steps: int = BROYDEN_DEFAULT_NUM_STEPS

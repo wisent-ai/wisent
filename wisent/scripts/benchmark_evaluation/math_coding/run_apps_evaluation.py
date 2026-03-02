@@ -41,7 +41,7 @@ DIFFICULTIES = ["introductory", "interview", "competition"]
 def evaluate_apps(
     model: WisentModel,
     evaluator: APPSEvaluator,
-    split: str = "test",
+    split: str,
     difficulty: str | None = None,
     limit: int | None = None,
 ) -> dict:
@@ -222,8 +222,8 @@ def evaluate_apps(
 
 
 def main(
+    split: str,
     limit: int | None = None,
-    split: str = "test",
     difficulty: str | None = None,
 ):
     """Run APPS evaluation and save results."""

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import requests
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -51,7 +51,7 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "agent_task_completion"
 
-    def __init__(self, domain: str = "retail"):
+    def __init__(self, domain: Optional[str] = None):
         """
         Initialize TAU-bench extractor.
 
@@ -59,7 +59,7 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
             domain: Domain to use ("retail", "airline", "telecom")
         """
         super().__init__()
-        self.domain = domain
+        self.domain = domain if domain is not None else "retail"
 
     def extract_contrastive_pairs(
         self,

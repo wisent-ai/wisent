@@ -243,4 +243,5 @@ def _save_config(
         'method': method, 'layer': layer, 'strength': strength,
         'score': score, 'confidence': confidence,
     }
+    config.setdefault('optimization_method', 'auto')
     config_manager.save_model_config(model_name, **config)

@@ -80,7 +80,7 @@ class EmptyGenerationError(WisentError):
 
 
 class TokenizerMissingMethodError(WisentError):
-    def __init__(self, method_name: str = "apply_chat_template"):
+    def __init__(self, method_name: Optional[str] = None):
         super().__init__(ErrorCode.TOKENIZER_MISSING_METHOD, {"method": method_name}, method_name=method_name)
 
 

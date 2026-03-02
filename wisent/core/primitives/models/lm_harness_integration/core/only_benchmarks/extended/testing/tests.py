@@ -9,7 +9,7 @@ from typing import Dict, List, Tuple
 
 from wisent.core.utils.infra_tools.errors import BenchmarkLoadError
 from wisent.core import constants as _C
-from wisent.core.utils.core.hardware import subprocess_timeout_long_s
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_long_s
 
 from ..sample_extraction import get_task_samples_for_analysis, get_task_samples_with_subtasks
 from ..sample_helpers import try_alternative_task_names

@@ -1,6 +1,6 @@
 """Basic arguments for the tasks parser."""
 
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, DEFAULT_LAYER, OPTIMIZE_MAX_COMBINATIONS_DEFAULT
+from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, OPTIMIZE_MAX_COMBINATIONS_DEFAULT
 
 
 def setup_basic_task_args(parser):
@@ -71,8 +71,8 @@ def setup_basic_task_args(parser):
         "--tag-mode",
         type=str,
         choices=["any", "all"],
-        default="any",
-        help="Whether benchmarks must have ANY or ALL specified tags (default: any)",
+        required=True,
+        help="Whether benchmarks must have ANY or ALL specified tags",
     )
 
     # Cross-benchmark evaluation
@@ -121,15 +121,15 @@ def setup_basic_task_args(parser):
         "--nonsense-mode",
         type=str,
         choices=["random_chars", "repetitive", "word_salad", "mixed"],
-        default="random_chars",
-        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination). Default: random_chars",
+        required=True,
+        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination)",
     )
 
-    parser.add_argument("--model", type=str, default="meta-llama/Llama-3.1-8B-Instruct", help="Model name or path")
+    parser.add_argument("--model", type=str, required=True, help="Model name or path")
     parser.add_argument(
         "--layer",
         type=str,
-        default=str(DEFAULT_LAYER),
+        required=True,
         help="Layer(s) to extract activations from. Can be a single layer, range (14-16), or comma-separated list (14,15,16)",
     )
     parser.add_argument("--shots", type=int, required=True, help="Number of few-shot examples")
@@ -147,9 +147,9 @@ def setup_basic_task_args(parser):
         default=None,
         help="Limit number of testing documents (overrides limit for testing)",
     )
-    parser.add_argument("--output", type=str, default="./results", help="Output directory for results")
+    parser.add_argument("--output", type=str, required=True, help="Output directory for results")
     parser.add_argument(
-        "--classifier-type", type=str, choices=["logistic", "mlp"], default="logistic", help="Type of classifier"
+        "--classifier-type", type=str, choices=["logistic", "mlp"], required=True, help="Type of classifier"
     )
     parser.add_argument("--max-new-tokens", type=int, default=300, help="Maximum new tokens for generation")
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
@@ -177,8 +177,8 @@ def setup_basic_task_args(parser):
             "good",
             "lm-eval-harness",
         ],
-        default="lm-eval-harness",
-        help="Method for ground truth evaluation. 'lm-eval-harness' uses lm-eval-harness tasks for evaluation (default for most tasks), 'none' skips evaluation, 'exact_match' and 'substring_match' are problematic for free-form generation, 'user_specified' allows manual labeling, 'interactive' prompts for y/n labeling, 'manual_review' marks for review, 'good' marks everything as truthful (for debugging)",
+        required=True,
+        help="Method for ground truth evaluation. 'lm-eval-harness' uses lm-eval-harness tasks for evaluation, 'none' skips evaluation, 'exact_match' and 'substring_match' are problematic for free-form generation, 'user_specified' allows manual labeling, 'interactive' prompts for y/n labeling, 'manual_review' marks for review, 'good' marks everything as truthful (for debugging)",
     )
     parser.add_argument(
         "--user-labels",
@@ -200,19 +200,19 @@ def setup_basic_task_args(parser):
         help="Load task data from JSON file. Expected format: list of objects with question, correct_answer, incorrect_answer",
     )
     parser.add_argument(
-        "--question-col", type=str, default="question", help="Column name for questions in CSV file (default: question)"
+        "--question-col", type=str, required=True, help="Column name for questions in CSV file"
     )
     parser.add_argument(
         "--correct-col",
         type=str,
-        default="correct_answer",
-        help="Column name for correct answers in CSV file (default: correct_answer)",
+        required=True,
+        help="Column name for correct answers in CSV file",
     )
     parser.add_argument(
         "--incorrect-col",
         type=str,
-        default="incorrect_answer",
-        help="Column name for incorrect answers in CSV file (default: incorrect_answer)",
+        required=True,
+        help="Column name for incorrect answers in CSV file",
     )
 
     # Optimization arguments
@@ -224,15 +224,15 @@ def setup_basic_task_args(parser):
     parser.add_argument(
         "--optimize-layers",
         type=str,
-        default="all",
-        help="Layer range for optimization (e.g., '8-24' or '10,15,20' or 'all'). Default: all (uses all model layers)",
+        required=True,
+        help="Layer range for optimization (e.g., range, comma-separated, or 'all')",
     )
     parser.add_argument(
         "--optimize-metric",
         type=str,
         choices=["accuracy", "f1", "precision", "recall", "auc"],
-        default="f1",
-        help="Metric to optimize for. Default: f1",
+        required=True,
+        help="Metric to optimize for",
     )
     parser.add_argument(
         "--optimize-max-combinations",
@@ -258,8 +258,8 @@ def setup_basic_task_args(parser):
         "--detection-action",
         type=str,
         choices=["pass_through", "replace_with_placeholder", "regenerate_until_safe"],
-        default="pass_through",
-        help="Action to take when problematic content is detected (default: pass_through)",
+        required=True,
+        help="Action to take when problematic content is detected",
     )
     parser.add_argument(
         "--placeholder-message",

@@ -2,7 +2,7 @@
 import json
 import os
 from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, JSON_INDENT
-from wisent.core.utils.core.hardware import eval_time_limit_s, eval_cpu_limit_s, eval_mem_limit_mb
+from wisent.core.utils.infra_tools.infra.core.hardware import eval_time_limit_s, eval_cpu_limit_s, eval_mem_limit_mb
 
 
 def evaluate_docker_execution(args, input_data, responses, task_name, evaluation_results, task_results, task_config=None):
@@ -94,7 +94,7 @@ def evaluate_docker_execution(args, input_data, responses, task_name, evaluation
     skipped_count = 0
 
     # Iterate through provider tasks manually to track problem_ids
-    for idx, task in enumerate(provider.iter_tasks()):
+    for idx, task in enumerate(provider.iter_tasks(split="test")):
         problem_id = task.options.get('problem_id', f'unknown_{idx}')
 
         # Skip problems without solutions

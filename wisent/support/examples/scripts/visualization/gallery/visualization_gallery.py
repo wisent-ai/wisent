@@ -256,7 +256,7 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Visualization gallery for Zwiad")
-    parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model to visualize")
+    parser.add_argument("--model", type=str, required=True, help="Model to visualize")
     parser.add_argument("--skip-tsne", action="store_true", help="Skip t-SNE (doesn't require model)")
     args = parser.parse_args()
     

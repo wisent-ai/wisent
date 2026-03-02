@@ -7,7 +7,7 @@ from typing import Dict, List, Tuple, Optional, Callable
 from dataclasses import dataclass
 from abc import ABC, abstractmethod
 from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, DEFAULT_STRENGTH, DIAG_NUM_COMPONENTS,
+    NORM_EPS, DIAG_NUM_COMPONENTS,
     BLEND_DEFAULT, MLP_HIDDEN_DIM, DEFAULT_OPTIMIZATION_STEPS,
     CLAMPING_MARGIN_DEFAULT, CENTROID_SHIFT_FACTOR,
     MLP_LEARNING_RATE, ADAPTIVE_MAX_STRENGTH, ADVANCED_DEFAULT_STRENGTHS,
@@ -50,7 +50,7 @@ class SteeringMethod(ABC):
 class LinearSteering(SteeringMethod):
     """Standard linear steering: activation + strength * direction."""
 
-    def __init__(self, strength: float = DEFAULT_STRENGTH):
+    def __init__(self, strength: float):
         self.strength = strength
         self.direction = None
 
@@ -94,7 +94,7 @@ class ClampingSteering(SteeringMethod):
 class ProjectionSteering(SteeringMethod):
     """Project activations away from untruthful subspace."""
 
-    def __init__(self, n_components: int = DIAG_NUM_COMPONENTS, strength: float = DEFAULT_STRENGTH):
+    def __init__(self, strength: float, n_components: int = DIAG_NUM_COMPONENTS):
         self.n_components = n_components
         self.strength = strength
         self.untruthful_basis = None
@@ -148,7 +148,7 @@ class ReplacementSteering(SteeringMethod):
 class ContrastSteering(SteeringMethod):
     """Maximize distance from untruthful centroid while preserving norm."""
 
-    def __init__(self, strength: float = DEFAULT_STRENGTH):
+    def __init__(self, strength: float):
         self.strength = strength
         self.neg_centroid = None
         self.pos_centroid = None
@@ -266,7 +266,8 @@ def get_all_steering_methods(strengths: List[float] = None) -> List[SteeringMeth
     methods.append(ClampingSteering(margin=CLAMPING_MARGIN_DEFAULT))
     methods.append(ClampingSteering(margin=CLAMPING_STEERING_MARGIN))
     for n in [3, 5, 10]:
-        methods.append(ProjectionSteering(n_components=n, strength=1.0))
+        for proj_s in strengths:
+            methods.append(ProjectionSteering(strength=proj_s, n_components=n))
     for b in BETA_SEARCH_GRID:
         methods.append(ReplacementSteering(blend=b))
     for s in strengths:

@@ -2,6 +2,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 from abc import ABC, abstractmethod
 from dataclasses import field, dataclass
+from wisent.core.utils.config_tools.constants import CLEAN_STEP_DEFAULT_NAME
 
 if TYPE_CHECKING:
     from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
@@ -38,7 +39,7 @@ class CleanStep(ABC):
         apply(items):
             Apply the cleaning step to a list of items. 
     """
-    name: str = "step"
+    name: str = CLEAN_STEP_DEFAULT_NAME
 
     def stats(self) -> CleanStepStats:
         return CleanStepStats()

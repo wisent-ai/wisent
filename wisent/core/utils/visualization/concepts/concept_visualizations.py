@@ -8,7 +8,7 @@ import base64
 
 from wisent.core.utils.config_tools.constants import VIZ_DPI, VIZ_MARKER_SIZE, VIZ_FIGSIZE_STANDARD, VIZ_FIGSIZE_COMPACT, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HIGH
 
-from ...visualization.visualizations import (
+from wisent.core.utils.visualization.geometry.public.visualizations import (
     plot_pca_projection,
     plot_pacmap_projection,
     create_summary_figure,

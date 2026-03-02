@@ -152,7 +152,7 @@ def run_threshold_analysis(model_name: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Threshold analysis for Zwiad")
-    parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model to analyze")
+    parser.add_argument("--model", type=str, required=True, help="Model to analyze")
     args = parser.parse_args()
     
     run_threshold_analysis(args.model)

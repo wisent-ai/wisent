@@ -111,7 +111,7 @@ def multi_math_equal(answer, response, choice=False):
 
         prediction2 = None
         try:
-            evaluator = AdaptedEvaluatorMath()
+            evaluator = AdaptedEvaluatorMath(ans_extract_mode="boxed")
             prediction2 = evaluator.extract_ans(response)
             result2 = evaluator.eq(answer, prediction2)
         except:

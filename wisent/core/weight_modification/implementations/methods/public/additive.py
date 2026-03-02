@@ -31,7 +31,7 @@ from typing import TYPE_CHECKING
 
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_STRENGTH, KERNEL_DISTANCE_FRACTION, KERNEL_MIN_ALPHA, ADDITIVE_METHOD_MAX_ALPHA, ADDITIVE_KERNEL_CENTER_DIVISOR, ADDITIVE_KERNEL_SIGMA_DIVISOR, DEFAULT_LAYER_WEIGHT
+from wisent.core.utils.config_tools.constants import NORM_EPS, KERNEL_DISTANCE_FRACTION, KERNEL_MIN_ALPHA, ADDITIVE_METHOD_MAX_ALPHA, ADDITIVE_KERNEL_CENTER_DIVISOR, ADDITIVE_KERNEL_SIGMA_DIVISOR, DEFAULT_LAYER_WEIGHT
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -50,7 +50,7 @@ _LOG = setup_logger(__name__)
 def add_output_bias(
     module: Module,
     bias_vector: Tensor,
-    alpha: float = DEFAULT_STRENGTH,
+    alpha: float,
 ) -> None:
     """
     Add bias vector to a module's output.
@@ -85,7 +85,7 @@ def bake_steering_into_component(
     module: Module,
     steering_vector: Tensor,
     alpha: float,
-    method: str = "bias",
+    method: str,
 ) -> None:
     """
     Bake steering vector into a single component.
@@ -101,7 +101,7 @@ def bake_steering_into_component(
     Example:
         >>> o_proj = model.model.layers[15].self_attn.o_proj
         >>> steering = torch.randn(4096)
-        >>> bake_steering_into_component(o_proj, steering, alpha=1.0, method="bias")
+        >>> bake_steering_into_component(o_proj, steering, alpha=strength, method="bias")
     """
     log = bind(_LOG, method=method)
 
@@ -143,10 +143,10 @@ def bake_steering_into_component(
 def bake_steering_into_weights(
     model: Module,
     steering_vectors: dict[int, Tensor],
+    alpha: float,
+    method: str,
     components: list[str] | None = None,
-    alpha: float = DEFAULT_STRENGTH,
     layer_weights: dict[int, float] | None = None,
-    method: str = "bias",
     verbose: bool = True,
 ) -> dict[str, int]:
     """
@@ -173,7 +173,7 @@ def bake_steering_into_weights(
         >>> # Compute steering vectors from contrastive pairs
         >>> steering_vectors = {...}
         >>> # Bake steering into model weights
-        >>> stats = bake_steering_into_weights(model, steering_vectors, alpha=1.0)
+        >>> stats = bake_steering_into_weights(model, steering_vectors, alpha=strength, method="bias")
         >>> # Model now exhibits steering behavior permanently
         >>> model.save_pretrained("path/to/steered-model")
     """
@@ -267,12 +267,12 @@ def bake_steering_into_weights(
 def bake_steering_with_kernel(
     model: Module,
     steering_vectors: dict[int, Tensor],
+    method: str,
     max_alpha: float = ADDITIVE_METHOD_MAX_ALPHA,
     max_alpha_position: float | None = None,
     min_alpha: float = KERNEL_MIN_ALPHA,
     min_alpha_distance: float | None = None,
     components: list[str] | None = None,
-    method: str = "bias",
     verbose: bool = True,
 ) -> dict[str, int]:
     """Bake steering with kernel-based alpha distribution across layers."""

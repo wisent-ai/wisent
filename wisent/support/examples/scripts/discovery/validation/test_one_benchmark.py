@@ -20,7 +20,7 @@ os.environ["HF_DATASETS_TRUST_REMOTE_CODE"] = "1"
 os.environ["HF_ALLOW_CODE_EVAL"] = "1"
 
 
-def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: str = ".", loader_type: str = "auto"):
+def test_benchmark(task_name: str, model_name: str, output_dir: str, loader_type: str):
     """Test if we can create contrastive pairs and evaluate them with mock model.
 
     This function:
@@ -251,10 +251,12 @@ def test_benchmark(task_name: str, model_name: str = "distilgpt2", output_dir: s
 
 if __name__ == "__main__":
     import sys
-    task = sys.argv[1] if len(sys.argv) > 1 else "boolq"
-    model = sys.argv[2] if len(sys.argv) > 2 else "distilgpt2"
-    # Default to results directory in same folder as this script
-    default_output = Path(__file__).parent / "results"
-    output_dir = sys.argv[3] if len(sys.argv) > 3 else str(default_output)
-    success = test_benchmark(task, model, output_dir)
+    import argparse as _ap
+    _parser = _ap.ArgumentParser(description="Test one benchmark")
+    _parser.add_argument("task", help="Benchmark name")
+    _parser.add_argument("--model", type=str, required=True, help="Model name")
+    _parser.add_argument("--output-dir", type=str, required=True, help="Output directory")
+    _parser.add_argument("--loader-type", type=str, required=True, help="Loader type")
+    _args = _parser.parse_args()
+    success = test_benchmark(_args.task, _args.model, _args.output_dir, _args.loader_type)
     sys.exit(0 if success else 1)

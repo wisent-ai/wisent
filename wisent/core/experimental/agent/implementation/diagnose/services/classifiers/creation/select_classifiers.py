@@ -17,7 +17,7 @@ from typing import Dict, List, Any, Optional, Tuple
 from dataclasses import dataclass
 from ...model_persistence import ModelPersistence
 from wisent.core.utils.infra_tools.errors import NoSuitableClassifierError
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_THRESHOLD, CLASSIFIER_RECENCY_BONUS
+from wisent.core.utils.config_tools.constants import SELECT_F1_WEIGHT, SELECT_ACCURACY_WEIGHT, SELECT_MAX_CLASSIFIERS, CLASSIFIER_BONUS_SAMPLE_DENOM, CLASSIFIER_BONUS_MAX, CLASSIFIER_RECENCY_DAYS, CLASSIFIER_THRESHOLD, CLASSIFIER_RECENCY_BONUS
 
 
 from wisent.core.experimental.agent.diagnose.classifiers._select_classifiers_helpers import ClassifierSelectorHelpersMixin, auto_select_classifiers_for_agent  # noqa: F401
@@ -177,15 +177,15 @@ class ClassifierSelector(ClassifierSelectorHelpersMixin):
         # Pattern: issue_type_classifier.pkl or issue_type_model_classifier.pkl
         elif "_classifier" in filename:
             parts = filename.replace("_classifier.pkl", "").split("_")
-            # Default layer if not specified
-            layer = DEFAULT_LAYER
+            # Layer not specified in filename - set to None (caller must handle)
+            layer = None
             issue_type = "_".join(parts[:-1]) if len(parts) > 1 else parts[0]
             return layer, issue_type
         
         # Fallback: extract from path structure
         else:
             path_parts = Path(filepath).parts
-            layer = DEFAULT_LAYER
+            layer = None
             issue_type = "unknown"
             
             # Look for layer information in path

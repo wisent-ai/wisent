@@ -11,9 +11,9 @@ def setup_evaluate_refusal_parser(parser):
     parser.add_argument(
         "--evaluator",
         type=str,
-        default="semantic",
+        required=True,
         choices=["keyword", "semantic"],
-        help="Evaluator type: keyword (refusal detection) or semantic (embedding similarity). Default: semantic",
+        help="Evaluator type: keyword (refusal detection) or semantic (embedding similarity)",
     )
     parser.add_argument(
         "--topics",

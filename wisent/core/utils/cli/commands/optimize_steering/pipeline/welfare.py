@@ -13,7 +13,7 @@ from wisent.core.utils.cli.optimize_steering.steering_objects import execute_cre
 from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
 from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.utils.config_tools.constants import (DEFAULT_N_TRIALS, WELFARE_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS,
-    DEFAULT_NUM_STRENGTH_STEPS, DEFAULT_LAYER,
+    DEFAULT_NUM_STRENGTH_STEPS,
     PARSER_STRENGTH_RANGE_WELFARE, SEPARATOR_WIDTH_REPORT,
     JSON_INDENT, LAYER_STRIDE_DEFAULT)
 
@@ -220,7 +220,9 @@ def _run_welfare_pipeline(
     scores_file = os.path.join(work_dir, "scores.json")
 
     # 1. Get activations from pairs
-    layer = getattr(config, 'layer', DEFAULT_LAYER)
+    layer = getattr(config, 'layer', None)
+    if layer is None:
+        raise ValueError("Config must specify 'layer' for welfare pipeline")
     execute_get_activations(_make_args(
         pairs_file=pairs_file,
         model=model,

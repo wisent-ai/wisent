@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD, AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, CLASSIFIER_THRESHOLD, DEFAULT_LAYER, QUALITY_CLASSIFIER_DEFAULT_LAYER
+from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD, AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, QUALITY_CLASSIFIER_DEFAULT_LAYER
 from wisent.core.primitives.model_interface.core.activations.activations import Activations
 from wisent.core.reading.classifiers.core.atoms import Classifier
 from wisent.core.utils.infra_tools.errors import (
@@ -48,8 +48,8 @@ class ResponseDiagnostics:
             model: The language model to extract activations from
             classifier_configs: List of classifier configurations with paths and layers
                 Example: [
-                    {"path": "./models/hallucination_classifier.pt", "layer": DEFAULT_LAYER, "issue_type": "hallucination"},
-                    {"path": "./models/quality_classifier.pt", "layer": QUALITY_CLASSIFIER_DEFAULT_LAYER, "issue_type": "quality"}
+                    {"path": "./models/hallucination_classifier.pt", "layer": <layer_index>, "issue_type": "hallucination"},
+                    {"path": "./models/quality_classifier.pt", "layer": <layer_index>, "issue_type": "quality"}
                 ]
         """
         if not classifier_configs:

@@ -5,7 +5,7 @@ import time
 from typing import Any, Dict, List, Optional
 
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, CLASSIFIER_BENCHMARK_SAMPLES
+from wisent.core.utils.config_tools.constants import CLASSIFIER_BENCHMARK_SAMPLES
 
 from ....activations import Activations
 from ....model import Model
@@ -20,7 +20,7 @@ class BenchmarkMixin:
         self,
         issue_type: str,
         relevant_benchmarks: List[str],
-        layer: int = DEFAULT_LAYER,
+        layer: int,
         num_samples: int = CLASSIFIER_BENCHMARK_SAMPLES,
         config: Optional["TrainingConfig"] = None,
     ) -> "TrainingResult":
@@ -30,7 +30,7 @@ class BenchmarkMixin:
         Args:
             issue_type: Type of issue to detect (e.g., "hallucination", "quality")
             relevant_benchmarks: List of benchmark names to use for training data
-            layer: Model layer to use for activation extraction (default: DEFAULT_LAYER)
+            layer: Model layer to use for activation extraction (required)
             num_samples: Number of training samples to generate
             config: Optional training configuration
 
@@ -239,7 +239,7 @@ class BenchmarkMixin:
         print(f"      Final combined dataset: {len(combined_data)} samples")
         return combined_data
 
-    async def create_classifier_for_issue(self, issue_type: str, layer: int = DEFAULT_LAYER) -> "TrainingResult":
+    async def create_classifier_for_issue(self, issue_type: str, layer: int = None) -> "TrainingResult":
         """
         Create a classifier for an issue type (async version for compatibility).
 

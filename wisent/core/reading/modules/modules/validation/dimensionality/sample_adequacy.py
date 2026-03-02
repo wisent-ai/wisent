@@ -58,7 +58,7 @@ def compute_sample_dimension_ratio(
     }
 
 
-def compute_effective_sample_size(X: np.ndarray, method: str = "eigenvalue") -> Dict[str, Any]:
+def compute_effective_sample_size(X: np.ndarray, method: str) -> Dict[str, Any]:
     """Compute effective sample size accounting for correlation."""
     n, d = X.shape
     X_centered = X - X.mean(axis=0)
@@ -105,8 +105,8 @@ def compute_effective_sample_size(X: np.ndarray, method: str = "eigenvalue") -> 
 
 def recommend_sample_size(
     effective_dim: float,
+    target_effect_size: str,
     target_power: float = TARGET_POWER,
-    target_effect_size: str = "medium",
     alpha: float = STAT_ALPHA,
 ) -> Dict[str, Any]:
     """
@@ -123,7 +123,7 @@ def recommend_sample_size(
         Dict with recommended sample sizes for different effect sizes.
 
     Example:
-        >>> from wisent.core.reading.modules.analysis.intrinsic_dim import participation_ratio
+        >>> from wisent.core.reading.modules.utilities.signal_analysis.intrinsic_dim import participation_ratio
         >>> eff_dim = participation_ratio(diff_vectors)
         >>> rec = recommend_sample_size(eff_dim)
         >>> print(f"Need {rec['recommended_pairs']} pairs for medium effects")
@@ -167,8 +167,8 @@ def recommend_sample_size(
 def recommend_sample_size_from_data(
     pos: np.ndarray,
     neg: np.ndarray,
+    target_effect_size: str,
     target_power: float = TARGET_POWER,
-    target_effect_size: str = "medium",
     alpha: float = STAT_ALPHA,
 ) -> Dict[str, Any]:
     """

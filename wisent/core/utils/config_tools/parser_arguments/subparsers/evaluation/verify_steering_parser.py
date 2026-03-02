@@ -48,9 +48,9 @@ def setup_verify_steering_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--device",
         type=str,
-        default="auto",
+        required=True,
         choices=["auto", "cuda", "mps", "cpu"],
-        help="Device to use for inference (default: auto)"
+        help="Device to use for inference"
     )
 
     parser.add_argument(

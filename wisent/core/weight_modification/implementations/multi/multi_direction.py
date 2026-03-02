@@ -20,7 +20,7 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass
 
 from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, GROM_NUM_DIRECTIONS, DEFAULT_OPTIMIZATION_STEPS
+from wisent.core.utils.config_tools.constants import GROM_NUM_DIRECTIONS, DEFAULT_OPTIMIZATION_STEPS
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -45,14 +45,14 @@ _LOG = setup_logger(__name__)
 class MultiDirectionConfig:
     """Configuration for multi-direction weight modification."""
 
-    method: str = "grom"
+    alpha: float
+    """Global steering strength multiplier"""
+
+    method: Optional[str] = None
     """Which method to use: 'grom', 'tecza', or 'tetno'"""
 
-    combination_strategy: str = "learned"
+    combination_strategy: Optional[str] = None
     """How to combine directions: 'learned', 'uniform', 'pca_weighted'"""
-
-    alpha: float = DEFAULT_STRENGTH
-    """Global steering strength multiplier"""
 
     components: List[str] = None
     """Components to modify. Default: ['self_attn.o_proj', 'mlp.down_proj']"""
@@ -63,7 +63,7 @@ class MultiDirectionConfig:
     optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
     """Training steps for direction optimization"""
 
-    bake_method: str = "bias"
+    bake_method: Optional[str] = None
     """How to bake: 'bias' or 'weight'"""
 
     def __post_init__(self):
@@ -87,7 +87,8 @@ class MultiDirectionResult:
 def combine_directions(
     directions: "Tensor",
     weights: Optional["Tensor"] = None,
-    strategy: str = "learned",
+    *,
+    strategy: str,
 ) -> "Tensor":
     """
     Combine multiple directions into a single effective direction.

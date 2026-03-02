@@ -19,26 +19,26 @@ from ..probe.probe_metrics import (
 from ..distribution.distribution_metrics import (
     compute_mmd_rbf, compute_density_ratio, compute_fisher_per_dimension,
 )
-from ...analysis.intrinsic_dim import compute_local_intrinsic_dims
+from wisent.core.reading.modules.utilities.signal_analysis.intrinsic_dim import compute_local_intrinsic_dims
 from ..direction.direction_metrics import (
     compute_direction_stability,
     compute_pairwise_diff_consistency,
 )
 from ..direction.multi_direction import compute_multi_direction_accuracy
-from ...steering.analysis.steerability import compute_steerability_metrics
-from ...steering.analysis.steering_recommendation import compute_steering_recommendation
-from ...geo_utils.icd import compute_icd
-from ...concepts import detect_multiple_concepts, compute_concept_coherence
-from ...analysis.signal_analysis import compute_signal_to_noise
-from ...analysis.structure import (
+from wisent.core.reading.modules.modules.steering.analysis.steerability import compute_steerability_metrics
+from wisent.core.reading.modules.modules.steering.analysis.steering_recommendation import compute_steering_recommendation
+from wisent.core.reading.modules.modules.geo_utils.icd import compute_icd
+from wisent.core.reading.modules.utilities.concepts import detect_multiple_concepts, compute_concept_coherence
+from wisent.core.reading.modules.utilities.signal_analysis.signal_analysis import compute_signal_to_noise
+from wisent.core.reading.modules.utilities.signal_analysis.structure import (
     compute_two_cloud_relationship, compute_relative_position, compute_cluster_structure,
 )
 from ..representation import (
     compute_magnitude_metrics, compute_sparsity_metrics, compute_pair_quality_metrics,
     compute_manifold_metrics, compute_noise_baseline_comparison,
 )
-from ...data.nonsense import analyze_with_nonsense_baseline
-from ...analysis.structure import compare_components_for_benchmark
+from wisent.core.reading.modules.utilities.data.sources.nonsense import analyze_with_nonsense_baseline
+from wisent.core.reading.modules.utilities.signal_analysis.structure import compare_components_for_benchmark
 from .metrics_viz import generate_metrics_visualizations
 
 
@@ -50,7 +50,7 @@ def compute_geometry_metrics(
     model=None,
     tokenizer=None,
     layer: Optional[int] = None,
-    device: str = "cuda",
+    device: Optional[str] = None,
     pos_activations_by_component: Optional[Dict[str, torch.Tensor]] = None,
     neg_activations_by_component: Optional[Dict[str, torch.Tensor]] = None,
     generate_visualizations: bool = True,
@@ -200,8 +200,8 @@ def compute_geometry_metrics(
     # Nonsense baseline (requires model/tokenizer)
     if model is not None and tokenizer is not None:
         nonsense_result = analyze_with_nonsense_baseline(
-            pos_activations, neg_activations, model=model,
-            tokenizer=tokenizer, layer=layer, device=device,
+            pos_activations, neg_activations, device=device,
+            model=model, tokenizer=tokenizer, layer=layer,
         )
         if "error" not in nonsense_result:
             metrics["nonsense_baseline"] = nonsense_result

@@ -31,8 +31,8 @@ def main():
         help="Skip evaluation phase"
     )
     parser.add_argument(
-        "--device", choices=["cuda", "cpu", "mps", "auto"], default="auto",
-        help="Device for computation (auto = detect best available)"
+        "--device", choices=["cuda", "cpu", "mps", "auto"], required=True,
+        help="Device for computation"
     )
     parser.add_argument(
         "--show-breakdown", action="store_true",

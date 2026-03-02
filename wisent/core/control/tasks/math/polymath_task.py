@@ -44,7 +44,7 @@ class PolyMathTask(TaskInterface):
         }
     }
     
-    def __init__(self, language: str = "en", difficulty: str = "medium", limit: Optional[int] = None):
+    def __init__(self, language: Optional[str] = None, difficulty: Optional[str] = None, limit: Optional[int] = None):
         """
         Initialize PolyMath task for specified language and difficulty.
         

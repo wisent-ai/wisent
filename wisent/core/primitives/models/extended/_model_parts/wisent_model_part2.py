@@ -13,7 +13,6 @@ from wisent.core.primitives.models.core.atoms import SteeringVector
 from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.utils.infra_tools.errors import ChatTemplateNotAvailableError
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_STRENGTH,
     STEERING_APP_DECAY_RATE,
     STEERING_APP_GAUSSIAN_CENTER,
     STEERING_APP_GAUSSIAN_WIDTH,
@@ -25,8 +24,8 @@ from wisent.core.primitives.models.config import get_generate_kwargs
 def _apply_steering_object(
     self,
     steering_obj: "BaseSteeringObject",
-    base_strength: float = DEFAULT_STRENGTH,
-    steering_strategy: str = "constant",
+    base_strength: float,
+    steering_strategy: str,
     steering_strategy_config: dict | None = None,
     max_new_tokens: int | None = None,
 ) -> None:

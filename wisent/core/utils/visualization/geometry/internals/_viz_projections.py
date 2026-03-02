@@ -13,7 +13,8 @@ def plot_tsne_projection(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     perplexity: int = VIZ_PERPLEXITY,
-    title: str = "t-SNE Projection",
+    *,
+    title: str,
 ) -> Dict[str, Any]:
     """
     Project activations using t-SNE.
@@ -154,8 +155,8 @@ def plot_cone_visualization(
 def plot_layer_comparison(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
     metric_fn,
-    metric_name: str = "metric",
-    title: str = "Metric Across Layers",
+    metric_name: str,
+    title: str,
 ) -> Dict[str, Any]:
     """
     Plot a metric across different layers.

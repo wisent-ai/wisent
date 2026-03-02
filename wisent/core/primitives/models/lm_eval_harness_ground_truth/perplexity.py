@@ -36,7 +36,7 @@ def calculate_perplexity(model, text: str) -> float:
 
 
 def evaluate_perplexity(evaluator, classifier, task_name: str, num_samples: int, model, layer: int,
-                         token_aggregation: str = "average") -> Dict[str, Any]:
+                         token_aggregation: str) -> Dict[str, Any]:
     """Evaluate classifier using perplexity approach."""
     try:
         logger.info(f"PERPLEXITY EVALUATION: {task_name}")

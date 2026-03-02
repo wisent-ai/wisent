@@ -18,7 +18,7 @@ from wisent.core.utils.cli.optimize_steering.steering_objects import execute_cre
 from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
 from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core import constants as _C
-from wisent.core.utils.config_tools.constants import COMPARE_TOL, LR_LOWER_BOUND, LR_UPPER_BOUND, ALPHA_LOWER_BOUND, ALPHA_UPPER_BOUND, DEFAULT_LIMIT, DEFAULT_LAYER
+from wisent.core.utils.config_tools.constants import COMPARE_TOL, LR_LOWER_BOUND, LR_UPPER_BOUND, ALPHA_LOWER_BOUND, ALPHA_UPPER_BOUND, DEFAULT_LIMIT
 
 
 @dataclass
@@ -42,6 +42,7 @@ def run_pipeline(
     task: str,
     config: MethodConfig,
     work_dir: str,
+    strength: float,
     limit: int = DEFAULT_LIMIT,
     device: Optional[str] = None,
     enriched_pairs_file: Optional[str] = None,
@@ -73,7 +74,9 @@ def run_pipeline(
         ))
 
         # 2. Collect activations
-        layer = getattr(config, 'layer', None) or getattr(config, 'sensor_layer', DEFAULT_LAYER)
+        layer = getattr(config, 'layer', None) or getattr(config, 'sensor_layer', None)
+        if layer is None:
+            raise ValueError("Config must specify 'layer' or 'sensor_layer'")
         execute_get_activations(_make_args(
             pairs_file=pairs_file,
             model=model,
@@ -106,7 +109,7 @@ def run_pipeline(
         output=responses_file,
         num_questions=limit,
         steering_object=steering_file,
-        steering_strength=_C.DEFAULT_STRENGTH,
+        steering_strength=strength,
         steering_strategy=steering_strategy, use_steering=True, device=device,
         verbose=False, cached_model=cached_model,
     ))
@@ -155,6 +158,7 @@ def create_optuna_objective(
         # Common parameters for all methods
         extraction_strategy = trial.suggest_categorical("extraction_strategy", ["chat_last", "chat_mean"])
         steering_strategy = trial.suggest_categorical("steering_strategy", STEERING_STRATEGIES)
+        trial_strength = trial.suggest_float("strength", _C.SEARCH_STRENGTH_RANGE_MIN, _C.SEARCH_STRENGTH_RANGE_MAX)
         
         if method.upper() == "CAA":
             config = CAAConfig(
@@ -288,6 +292,7 @@ def create_optuna_objective(
             device=device,
             enriched_pairs_file=enriched_pairs_file,
             cached_model=cached_model,
+            strength=trial_strength,
         )
         return result.score
 

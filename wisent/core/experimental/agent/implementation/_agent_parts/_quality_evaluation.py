@@ -11,7 +11,8 @@ from typing import List
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.primitives.model_interface.core.activations.activations import Activations
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import (DEFAULT_LAYER, CLASSIFIER_THRESHOLD,
+from wisent.core.utils.infra_tools.errors import MissingParameterError
+from wisent.core.utils.config_tools.constants import (CLASSIFIER_THRESHOLD,
     AGENT_DEFAULT_SAMPLES, CLASSIFIER_HIDDEN_DIM,
     CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_CLASSIFIER_LR,
     CLASSIFIER_EARLY_STOPPING_PATIENCE, QUALITY_THRESHOLD_CLAMP_MIN,
@@ -97,7 +98,7 @@ class QualityEvaluationMixin:
 
         # Generate model judgment (short response for yes/no decision)
         gen_kwargs = get_generate_kwargs()
-        result = self.model.generate(threshold_prompt, layer_index=DEFAULT_LAYER, **gen_kwargs)
+        result = self.model.generate(threshold_prompt, layer_index=self.params.layer, **gen_kwargs)
         judgment = result[0] if isinstance(result, tuple) else result
         judgment = judgment.strip().upper()
 
@@ -158,7 +159,7 @@ class QualityEvaluationMixin:
 
         # Generate model response
         gen_kwargs = get_generate_kwargs()
-        result = self.model.generate(parameter_prompt, layer_index=DEFAULT_LAYER, **gen_kwargs)
+        result = self.model.generate(parameter_prompt, layer_index=self.params.layer, **gen_kwargs)
         response = result[0] if isinstance(result, tuple) else result
 
         # Parse the response
@@ -169,10 +170,10 @@ class QualityEvaluationMixin:
         from ..agent.diagnose.agent_classifier_decision import ClassifierParams
 
         # Default values in case parsing fails
-        layer = DEFAULT_LAYER
+        layer = self.params.layer
         threshold = CLASSIFIER_THRESHOLD
         samples = AGENT_DEFAULT_SAMPLES
-        classifier_type = "logistic"
+        classifier_type = None
         reasoning = "Using default parameters due to parsing failure"
 
         try:
@@ -199,8 +200,12 @@ class QualityEvaluationMixin:
         layer = max(QUALITY_EVAL_LAYER_MIN, min(QUALITY_EVAL_LAYER_MAX, layer))
         threshold = max(QUALITY_THRESHOLD_CLAMP_MIN, min(QUALITY_THRESHOLD_CLAMP_MAX, threshold))
         samples = max(QUALITY_EVAL_SAMPLES_MIN, min(QUALITY_EVAL_SAMPLES_MAX, samples))
-        if classifier_type not in ["logistic", "svm", "neural"]:
-            classifier_type = "logistic"
+        valid_types = ["logistic", "svm", "neural"]
+        if classifier_type not in valid_types:
+            raise MissingParameterError(
+                params=["classifier_type"],
+                context=f"Model must specify TYPE as one of {valid_types}, got: {classifier_type}",
+            )
 
         return ClassifierParams(
             optimal_layer=layer,
@@ -209,8 +214,8 @@ class QualityEvaluationMixin:
             classifier_type=classifier_type,
             reasoning=reasoning,
             model_name=self.model_name,
-            aggregation_method="last_token",  # Default for model-determined params
-            token_aggregation="average",  # Default for model-determined params
+            aggregation_method=None,
+            token_aggregation=None,
             num_epochs=CLASSIFIER_NUM_EPOCHS,
             batch_size=CLASSIFIER_BATCH_SIZE,
             learning_rate=DEFAULT_CLASSIFIER_LR,

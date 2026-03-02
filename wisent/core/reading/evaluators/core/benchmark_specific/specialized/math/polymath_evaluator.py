@@ -52,7 +52,7 @@ class PolyMathEvaluator(BaseEvaluator):
     description = "PolyMath evaluator for multilingual math answers"
 
     @staticmethod
-    def get_prompt(question: str, language: str = "en") -> str:
+    def get_prompt(question: str, language: str) -> str:
         """Create prompt by appending language-specific instruction to the question.
 
         Args:

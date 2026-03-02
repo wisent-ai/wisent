@@ -29,7 +29,7 @@ class RawActivationCache:
         self._memory_cache: Dict[str, RawCachedActivations] = {}
 
     def _get_cache_key(self, model_name: str, benchmark: str, text_family: str,
-                       component: str = "residual_stream") -> str:
+                       component: str) -> str:
         key_str = f"{model_name}_{benchmark}_{text_family}_raw"
         if component != "residual_stream":
             key_str += f"_{component}"
@@ -42,20 +42,20 @@ class RawActivationCache:
         return self.cache_dir / f"{cache_key}_meta.json"
 
     def has(self, model_name: str, benchmark: str, text_family: str,
-            component: str = "residual_stream") -> bool:
+            component: str) -> bool:
         key = self._get_cache_key(model_name, benchmark, text_family, component)
         if key in self._memory_cache:
             return True
         return self._get_cache_path(key).exists()
 
     def has_for_strategy(self, model_name: str, benchmark: str, strategy: ExtractionStrategy,
-                         component: str = "residual_stream") -> bool:
+                         component: str) -> bool:
         text_family = get_strategy_text_family(strategy)
         return self.has(model_name, benchmark, text_family, component)
 
     def get(
         self, model_name: str, benchmark: str, text_family: str,
-        load_to_memory: bool = True, component: str = "residual_stream",
+        component: str, load_to_memory: bool = True,
     ) -> Optional[RawCachedActivations]:
         key = self._get_cache_key(model_name, benchmark, text_family, component)
 
@@ -93,14 +93,14 @@ class RawActivationCache:
 
     def get_for_strategy(
         self, model_name: str, benchmark: str,
-        strategy: ExtractionStrategy, load_to_memory: bool = True,
-        component: str = "residual_stream",
+        strategy: ExtractionStrategy, component: str,
+        load_to_memory: bool = True,
     ) -> Optional[RawCachedActivations]:
         text_family = get_strategy_text_family(strategy)
-        return self.get(model_name, benchmark, text_family, load_to_memory, component)
+        return self.get(model_name, benchmark, text_family, component, load_to_memory)
 
-    def put(self, cached: RawCachedActivations, save_to_disk: bool = True,
-            component: str = "residual_stream") -> None:
+    def put(self, cached: RawCachedActivations, component: str,
+            save_to_disk: bool = True) -> None:
         key = self._get_cache_key(cached.model_name, cached.benchmark, cached.text_family, component)
         self._memory_cache[key] = cached
 
@@ -151,7 +151,7 @@ class ActivationCache:
         self._memory_cache: Dict[str, CachedActivations] = {}
 
     def _get_cache_key(self, model_name: str, benchmark: str, strategy: ExtractionStrategy,
-                       component: str = "residual_stream") -> str:
+                       component: str) -> str:
         key_str = f"{model_name}_{benchmark}_{strategy.value}"
         if component != "residual_stream":
             key_str += f"_{component}"
@@ -164,7 +164,7 @@ class ActivationCache:
         return self.cache_dir / f"{cache_key}.json"
 
     def has(self, model_name: str, benchmark: str, strategy: ExtractionStrategy,
-            component: str = "residual_stream") -> bool:
+            component: str) -> bool:
         key = self._get_cache_key(model_name, benchmark, strategy, component)
         if key in self._memory_cache:
             return True
@@ -172,8 +172,8 @@ class ActivationCache:
 
     def get(
         self, model_name: str, benchmark: str,
-        strategy: ExtractionStrategy, load_to_memory: bool = True,
-        component: str = "residual_stream",
+        strategy: ExtractionStrategy, component: str,
+        load_to_memory: bool = True,
     ) -> Optional[CachedActivations]:
         key = self._get_cache_key(model_name, benchmark, strategy, component)
 
@@ -200,8 +200,8 @@ class ActivationCache:
             self._memory_cache[key] = cached
         return cached
 
-    def put(self, cached: CachedActivations, save_to_disk: bool = True,
-            component: str = "residual_stream") -> None:
+    def put(self, cached: CachedActivations, component: str,
+            save_to_disk: bool = True) -> None:
         key = self._get_cache_key(cached.model_name, cached.benchmark, cached.strategy, component)
         self._memory_cache[key] = cached
 

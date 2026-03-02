@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 import subprocess
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import torch
 
@@ -27,14 +27,14 @@ def generate_steering_vector(
     task: str,
     model_name: str,
     output_path: str | Path,
-    trait_label: str = "correctness",
+    extraction_strategy: str,
+    device: str,
+    trait_label: str,
     num_pairs: int = COMPARISON_NUM_PAIRS,
-    method: str = "caa",
+    method: Optional[str] = None,
     layers: str | None = None,
     normalize: bool = True,
-    device: str = "cuda:0",
     keep_intermediate: bool = False,
-    extraction_strategy: str = "mc_balanced",
 ) -> Path:
     """
     Generate a steering vector using wisent CLI in subprocess.

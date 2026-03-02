@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Callable, Dict, Iterator, List, Optional, Tuple, Type
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import DEFAULT_SCORE
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 
 
@@ -27,10 +27,10 @@ class OptimizationConfig:
     """How to construct prompts for the model."""
     
     # Application parameters
-    strength: float = DEFAULT_STRENGTH
+    strength: float
     """Steering strength multiplier."""
     
-    strategy: str = "constant"
+    strategy: Optional[str] = None
     """Steering application strategy."""
     
     # Method-specific parameters

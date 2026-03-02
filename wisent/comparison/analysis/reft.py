@@ -24,10 +24,11 @@ def main():
 
     parser = argparse.ArgumentParser(description="Train and evaluate ReFT intervention on benchmark task")
     parser.add_argument("--model", required=True, help="HuggingFace model name")
-    parser.add_argument("--task", default="boolq", help="lm-eval task name")
-    parser.add_argument("--output-dir", default="/home/ubuntu/output", help="Output directory")
+    parser.add_argument("--task", required=True, help="lm-eval task name")
+    parser.add_argument("--trait-label", required=True, help="Label for the trait being steered")
+    parser.add_argument("--output-dir", required=True, help="Output directory")
     parser.add_argument("--num-pairs", type=int, default=COMPARISON_NUM_PAIRS, help="Number of training examples")
-    parser.add_argument("--device", default="cuda:0", help="Device")
+    parser.add_argument("--device", required=True, help="Device")
     parser.add_argument("--low-rank-dimension", type=int, default=LOREFT_DEFAULT_RANK, help="LoReFT rank")
     parser.add_argument("--intervention-layers", default=None, help="Comma-separated intervention layers (default: auto)")
     parser.add_argument("--learning-rate", type=float, default=COMPARISON_REFT_LEARNING_RATE, help="Learning rate")
@@ -36,16 +37,16 @@ def main():
     parser.add_argument("--max-length", type=int, default=None, help="Max sequence length")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files")
     parser.add_argument("--train-ratio", type=float, default=DEFAULT_SPLIT_RATIO, help="Train/test split ratio")
-    parser.add_argument("--eval-batch-size", default="auto", help="Eval batch size (int or 'auto')")
+    parser.add_argument("--eval-batch-size", required=True, help="Eval batch size (int or 'auto')")
     parser.add_argument("--eval-max-batch-size", type=int, default=COMPARISON_EVAL_BATCH_SIZE, help="Max eval batch size for auto")
     parser.add_argument("--eval-limit", type=int, default=None, help="Limit eval examples")
     parser.add_argument("--skip-eval", action="store_true", help="Skip evaluation after training")
     parser.add_argument("--with-steering", action="store_true", help="Also evaluate ReFT + steering")
-    parser.add_argument("--steering-method", default="caa", choices=["caa", "fgaa"], help="Steering method")
+    parser.add_argument("--steering-method", required=True, choices=["caa", "fgaa"], help="Steering method")
     parser.add_argument("--steering-layers", default=str(COMPARISON_STEERING_LAYER), help="Layers for steering vector")
     parser.add_argument("--steering-num-pairs", type=int, default=COMPARISON_NUM_PAIRS, help="Number of pairs for steering")
-    parser.add_argument("--steering-scales", default="1.0,2.0,4.0", help="Comma-separated steering scales")
-    parser.add_argument("--extraction-strategy", default="mc_completion", help="Extraction strategy for steering")
+    parser.add_argument("--steering-scales", required=True, help="Comma-separated steering scales")
+    parser.add_argument("--extraction-strategy", required=True, help="Extraction strategy for steering")
     args = parser.parse_args()
 
     output_path = Path(args.output_dir) / f"{args.task}_reft_intervention"
@@ -56,7 +57,8 @@ def main():
 
     train_reft_adapter(
         task=args.task, model_name=args.model, output_path=output_path,
-        num_pairs=args.num_pairs, device=args.device, keep_intermediate=args.keep_intermediate,
+        trait_label=args.trait_label, device=args.device,
+        num_pairs=args.num_pairs, keep_intermediate=args.keep_intermediate,
         low_rank_dimension=args.low_rank_dimension, intervention_layers=args.intervention_layers,
         learning_rate=args.learning_rate, num_epochs=args.num_epochs,
         batch_size=args.batch_size, max_length=args.max_length,

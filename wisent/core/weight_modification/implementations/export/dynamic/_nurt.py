@@ -3,9 +3,10 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
+from typing import Optional
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, JSON_INDENT, NURT_NUM_INTEGRATION_STEPS, NURT_T_MAX
+from wisent.core.utils.config_tools.constants import JSON_INDENT, NURT_NUM_INTEGRATION_STEPS, NURT_T_MAX
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
@@ -16,8 +17,8 @@ def export_nurt_model(
     model: Module,
     nurt_steering: object,
     save_path: str | Path,
+    base_strength: float,
     tokenizer=None,
-    base_strength: float = DEFAULT_STRENGTH,
     push_to_hub: bool = False,
     repo_id: str | None = None,
     commit_message: str | None = None,
@@ -158,7 +159,7 @@ def export_nurt_model(
 
 def load_nurt_model(
     model_path: str | Path,
-    device_map: str = "auto",
+    device_map: Optional[str] = None,
     torch_dtype=None,
     install_hooks: bool = True,
 ):
@@ -287,7 +288,7 @@ def load_nurt_model(
             layer_weights=layer_weights,
             t_max=flow_data.get("t_max", NURT_T_MAX),
             num_integration_steps=flow_data.get("num_integration_steps", NURT_NUM_INTEGRATION_STEPS),
-            base_strength=flow_data.get("base_strength", DEFAULT_STRENGTH),
+            base_strength=flow_data["base_strength"],
         )
         hooks.install()
         log.info(
@@ -296,5 +297,3 @@ def load_nurt_model(
         )
 
     return model, tokenizer, hooks
-
-

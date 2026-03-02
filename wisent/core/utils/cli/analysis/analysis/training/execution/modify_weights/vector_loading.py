@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 
 import torch
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, SIMILARITY_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO
+from wisent.core.utils.config_tools.constants import SIMILARITY_THRESHOLD, DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO
 
 from wisent.core.utils import resolve_default_device
 
@@ -35,7 +35,7 @@ def load_vectors_from_file(path: str, verbose: bool = False) -> Dict[int, torch.
                     for layer, vec in raw_vectors.items()
                 }
         elif 'vector' in checkpoint:
-            layer = checkpoint.get('layer', checkpoint.get('best_layer', DEFAULT_LAYER))
+            layer = checkpoint.get('layer', checkpoint.get('best_layer', None))
             steering_vectors = {layer: checkpoint['vector']}
         else:
             steering_vectors = {

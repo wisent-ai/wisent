@@ -19,14 +19,15 @@ from typing import Optional, Dict, Any, List, TypeVar, Type
 import numpy as np
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER_CONFIG, DEFAULT_SCORE, DEFAULT_STRENGTH,
+    DEFAULT_LAYER_CONFIG, DEFAULT_SCORE,
     MOVEMENT_THRESHOLD, BROYDEN_DEFAULT_ALPHA, PAIRS_NUM_PAIRS,
     TECZA_INDEPENDENCE_WEIGHT, DEFAULT_OPTIMIZATION_STEPS,
     TECZA_MIN_COSINE_SIM, TECZA_MAX_COSINE_SIM,
-    TETNO_CONDITION_THRESHOLD, TETNO_MAX_ALPHA, DEFAULT_OPTIMIZATION_STEPS,
+    TETNO_CONDITION_THRESHOLD, TETNO_MAX_ALPHA,
     GROM_GATE_TEMPERATURE, GROM_ROUTER_HIDDEN_DIM, GROM_INTENSITY_HIDDEN_DIM,
     GROM_BEHAVIOR_WEIGHT, GROM_SPARSE_WEIGHT, GROM_OPTIMIZATION_STEPS,
-    GROM_LEARNING_RATE, BLEND_DEFAULT,
+    GROM_LEARNING_RATE, BLEND_DEFAULT, NESTED_CONFIG_NAME_FIELD,
+    TASK_CONFIG_NAME_FIELD, TRAIT_CONFIG_NAME_FIELD,
 )
 
 
@@ -64,11 +65,11 @@ class NumpyEncoder(json.JSONEncoder):
 class ClassificationConfig(SerializableConfig):
     """Classification optimization parameters."""
     layer: int = DEFAULT_LAYER_CONFIG
-    token_aggregation: str = "average"
+    token_aggregation: Optional[str] = None
     detection_threshold: float = MOVEMENT_THRESHOLD
-    classifier_type: str = "logistic"
-    prompt_construction_strategy: str = "multiple_choice"
-    token_targeting_strategy: str = "last_token"
+    classifier_type: Optional[str] = None
+    prompt_construction_strategy: Optional[str] = None
+    token_targeting_strategy: Optional[str] = None
     accuracy: float = DEFAULT_SCORE
     f1_score: float = DEFAULT_SCORE
     precision: float = DEFAULT_SCORE
@@ -79,17 +80,17 @@ class ClassificationConfig(SerializableConfig):
 class SteeringConfig(SerializableConfig):
     """Steering optimization parameters with method-specific settings."""
     layer: int = DEFAULT_LAYER_CONFIG
-    strength: float = DEFAULT_STRENGTH
-    method: str = "CAA"
-    token_aggregation: str = "average"
-    prompt_strategy: str = "question_only"
-    normalize_mode: str = "none"
-    strategy: str = "constant"
+    strength: Optional[float] = None
+    method: Optional[str] = None
+    token_aggregation: Optional[str] = None
+    prompt_strategy: Optional[str] = None
+    normalize_mode: Optional[str] = None
+    strategy: Optional[str] = None
     score: float = DEFAULT_SCORE
-    metric: str = "accuracy"
+    metric: Optional[str] = None
     # TECZA parameters
     num_directions: int = 1
-    direction_weighting: str = "primary_only"
+    direction_weighting: Optional[str] = None
     retain_weight: float = DEFAULT_SCORE
     independence_weight: float = TECZA_INDEPENDENCE_WEIGHT
     tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
@@ -99,7 +100,7 @@ class SteeringConfig(SerializableConfig):
     max_cosine_similarity: float = TECZA_MAX_COSINE_SIM
     # TETNO parameters
     sensor_layer: int = -1
-    steering_layers: str = ""
+    steering_layers: Optional[str] = None
     condition_threshold: float = TETNO_CONDITION_THRESHOLD
     gate_temperature: float = GROM_GATE_TEMPERATURE
     per_layer_scaling: bool = True
@@ -120,15 +121,15 @@ class SteeringConfig(SerializableConfig):
 @dataclass
 class WeightModificationConfig(SerializableConfig):
     """Weight modification (directional projection/additive) parameters."""
-    method: str = "directional"
-    max_weight: float = DEFAULT_STRENGTH
+    method: Optional[str] = None
+    max_weight: Optional[float] = None
     min_weight: float = DEFAULT_SCORE
     max_weight_position: float = BLEND_DEFAULT
     min_weight_distance: float = BLEND_DEFAULT
-    strength: float = DEFAULT_STRENGTH
+    strength: Optional[float] = None
     num_pairs: int = PAIRS_NUM_PAIRS
     alpha: float = BROYDEN_DEFAULT_ALPHA
-    additive_method: str = "bias"
+    additive_method: Optional[str] = None
     components: List[str] = field(default_factory=lambda: ["self_attn.o_proj", "mlp.down_proj"])
     normalize_vectors: bool = True
     norm_preserve: bool = True
@@ -136,7 +137,7 @@ class WeightModificationConfig(SerializableConfig):
     use_kernel: bool = True
     score: float = DEFAULT_SCORE
     baseline_score: float = DEFAULT_SCORE
-    output_dir: str = ""
+    output_dir: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "WeightModificationConfig":
@@ -147,12 +148,12 @@ class WeightModificationConfig(SerializableConfig):
 
 class NestedConfigMixin:
     """Mixin for configs with nested classification/steering/weight_modification configs."""
-    _name_field: str = "name"
+    _name_field: str = NESTED_CONFIG_NAME_FIELD
     classification: Optional[ClassificationConfig] = None
     steering: Optional[SteeringConfig] = None
     weight_modification: Optional[WeightModificationConfig] = None
     updated_at: str = ""
-    optimization_method: str = "manual"
+    optimization_method: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         result = {
@@ -182,20 +183,20 @@ class NestedConfigMixin:
 @dataclass
 class TaskConfig(NestedConfigMixin):
     """Configuration for a specific benchmark task."""
-    _name_field: str = field(default="task_name", init=False, repr=False)
+    _name_field: str = field(default=TASK_CONFIG_NAME_FIELD, init=False, repr=False)
     task_name: str = ""
     classification: Optional[ClassificationConfig] = None
     steering: Optional[SteeringConfig] = None
     weight_modification: Optional[WeightModificationConfig] = None
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    optimization_method: str = "manual"
+    optimization_method: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TaskConfig":
         config = cls(
             task_name=data.get("task_name", ""),
             updated_at=data.get("updated_at", datetime.now().isoformat()),
-            optimization_method=data.get("optimization_method", "manual"),
+            optimization_method=data.get("optimization_method"),
         )
         return cls._from_dict_common(config, data)
 
@@ -203,20 +204,20 @@ class TaskConfig(NestedConfigMixin):
 @dataclass
 class TraitConfig(NestedConfigMixin):
     """Configuration for a specific behavioral trait."""
-    _name_field: str = field(default="trait_name", init=False, repr=False)
+    _name_field: str = field(default=TRAIT_CONFIG_NAME_FIELD, init=False, repr=False)
     trait_name: str = ""
     classification: Optional[ClassificationConfig] = None
     steering: Optional[SteeringConfig] = None
     weight_modification: Optional[WeightModificationConfig] = None
     updated_at: str = field(default_factory=lambda: datetime.now().isoformat())
-    optimization_method: str = "manual"
+    optimization_method: Optional[str] = None
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "TraitConfig":
         config = cls(
             trait_name=data.get("trait_name", ""),
             updated_at=data.get("updated_at", datetime.now().isoformat()),
-            optimization_method=data.get("optimization_method", "manual"),
+            optimization_method=data.get("optimization_method"),
         )
         return cls._from_dict_common(config, data)
 

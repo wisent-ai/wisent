@@ -61,8 +61,8 @@ class GPTZeroEvaluator(APIEvaluator):
     
     def __init__(
         self,
+        optimize_for: str,
         api_key: Optional[str] = None,
-        optimize_for: str = "human_prob",
         model_version: str = "2025-11-28-base",
         **kwargs,
     ):
@@ -162,8 +162,8 @@ class GPTZeroEvaluator(APIEvaluator):
 
 
 def create_gptzero_evaluator(
+    optimize_for: str,
     api_key: Optional[str] = None,
-    optimize_for: str = "human_prob",
     **kwargs,
 ) -> GPTZeroEvaluator:
     """Create a GPTZero evaluator instance.

@@ -16,7 +16,7 @@ def setup_model_config_parser(parser):
     )
     save_parser.add_argument("--detection-threshold", type=float, required=True, help="Detection threshold")
     save_parser.add_argument(
-        "--optimization-method", type=str, default="manual", help="How these parameters were determined"
+        "--optimization-method", type=str, required=True, help="How these parameters were determined"
     )
     save_parser.add_argument("--metrics", type=str, default=None, help="JSON string with optimization metrics")
 
@@ -38,7 +38,7 @@ def setup_model_config_parser(parser):
     test_parser = config_subparsers.add_parser("test", help="Test if saved configuration works")
     test_parser.add_argument("model", type=str, help="Model name or path")
     test_parser.add_argument(
-        "--task", type=str, default="truthfulqa_mc1", help="Task to test with (default: truthfulqa_mc1)"
+        "--task", type=str, required=True, help="Task to test with"
     )
     test_parser.add_argument("--limit", type=int, required=True, help="Number of samples to test with")
     test_parser.add_argument("--device", type=str, default=None, help="Device to run on")

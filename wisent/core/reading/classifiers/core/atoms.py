@@ -16,7 +16,7 @@ import numpy as np
 from torch.nn.modules.loss import _Loss
 from wisent.core.utils.infra_tools.errors import DuplicateNameError, InvalidRangeError, UnknownTypeError
 from wisent.core.utils import preferred_dtype
-from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD
+from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD, BASE_CLASS_NAME
 
 # Re-export config types
 from wisent.core.reading.classifiers.core._atoms_config import (
@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 
 class BaseClassifier(ClassifierTrainingMixin, ClassifierInferenceMixin, ClassifierIOMixin, ABC):
-    name: str = "base"
+    name: str = BASE_CLASS_NAME
     description: str = "Abstract classifier"
 
     _REGISTRY: dict[str, type[BaseClassifier]] = {}

@@ -25,11 +25,11 @@ def execute_per_concept_steering_viz(args):
     import random
     import pickle
     import numpy as np
-    from wisent.core.reading.modules.zwiad_with_concepts import (
+    from wisent.core.reading.modules.utilities.data.database_loaders import (
         load_activations_from_database,
         load_pair_texts_from_database,
     )
-    from wisent.core.reading.modules.steering_visualizations import create_per_concept_steering_figure
+    from wisent.core.utils.visualization.steering.steering_visualizations import create_per_concept_steering_figure
     from wisent.core.primitives.model_interface.core.wisent import Wisent
     from wisent.core.reading.classifiers.models.logistic import LogisticClassifier
     from wisent.core.reading.classifiers.models.mlp import MLPClassifier
@@ -160,7 +160,9 @@ def execute_per_concept_steering_viz(args):
         else:
             pos_ref, neg_ref = load_activations_from_database(
                 model_name=args.model, task_name=args.task, layer=optimal_layer,
-                prompt_format=args.prompt_format, extraction_strategy=args.extraction_strategy,
+                component=args.extraction_component,
+                extraction_strategy=args.extraction_strategy,
+                prompt_format=args.prompt_format,
                 limit=DATABASE_ACTIVATION_LOADING_LIMIT, database_url=args.database_url, pair_ids=train_ids
             )
         print(f"  Loaded {len(pos_ref)} training reference pairs")

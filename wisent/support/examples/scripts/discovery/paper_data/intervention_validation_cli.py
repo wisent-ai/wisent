@@ -162,7 +162,7 @@ def run_intervention_validation(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Intervention validation using wisent CLI")
-    parser.add_argument("--model", type=str, default="Qwen/Qwen3-8B", help="Model to test")
+    parser.add_argument("--model", type=str, required=True, help="Model to test")
     parser.add_argument("--num-per-category", type=int, required=True, help="Benchmarks per diagnosis category")
     args = parser.parse_args()
     

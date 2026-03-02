@@ -76,7 +76,7 @@ def norm_str2bool(s: str) -> Optional[bool]:
 class EvaluatorBase:
     """Base class for evaluators."""
 
-    def __init__(self, ans_extract_mode: str = "boxed"):
+    def __init__(self, ans_extract_mode: str):
         self.ans_extract_mode: str = ans_extract_mode
 
     def eq(self, ref_ans: str, pred: str) -> bool:
@@ -204,10 +204,10 @@ DEF_N_PROC: int = os.cpu_count() // 2
 def batch_exec(
     func: Callable[..., Any],
     kwargs_list: List[T_Dict[str, Any]],
+    desc: str,
     n_procs: int = DEF_N_PROC,
     timeout: int = DEF_TIMEOUT,
     use_tqdm: bool = True,
-    desc: str = "Processing",
     def_val: Any = None,
     max_tasks_per_proc: int = MAX_TASKS_PER_PROC,
 ) -> List[Any]:

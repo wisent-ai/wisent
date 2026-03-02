@@ -63,7 +63,7 @@ class LatencyReportingMixin:
         self.operation_stack.clear()
         self.start_time = time.time() if self.is_tracking else None
     
-    def get_generation_metrics(self, operation_name: str = "response_generation") -> Optional[GenerationMetrics]:
+    def get_generation_metrics(self, operation_name: str) -> Optional[GenerationMetrics]:
         """Get user-facing generation metrics."""
         events = [e for e in self.events if e.name == operation_name]
         if not events:
@@ -81,7 +81,7 @@ class LatencyReportingMixin:
             prompt_length=metadata.get('prompt_length', 0)
         )
     
-    def get_training_metrics(self, operation_name: str = "total_training_time") -> Optional[TrainingMetrics]:
+    def get_training_metrics(self, operation_name: str) -> Optional[TrainingMetrics]:
         """Get user-facing training metrics."""
         events = [e for e in self.events if e.name == operation_name]
         if not events:
@@ -103,7 +103,7 @@ class LatencyReportingMixin:
         lines = ["🚀 Performance Summary:"]
         
         # Training metrics
-        training_metrics = self.get_training_metrics()
+        training_metrics = self.get_training_metrics("total_training_time")
         if training_metrics:
             lines.extend([
                 f"\n📚 Training:",

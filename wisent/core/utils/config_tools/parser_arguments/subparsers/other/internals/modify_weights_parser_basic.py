@@ -6,7 +6,7 @@ from wisent.core.utils.config_tools.constants import (
     DEFAULT_RANDOM_SEED,
     PAIRS_SIMILARITY_THRESHOLD,
 )
-from wisent.core.utils.core.hardware import default_batch_size
+from wisent.core.utils.infra_tools.infra.core.hardware import default_batch_size
 
 
 def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
@@ -117,8 +117,8 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--trait-label",
         type=str,
-        default="correctness",
-        help="Trait label for task mode (default: correctness)"
+        required=True,
+        help="Trait label for task mode"
     )
     parser.add_argument(
         "--similarity-threshold",
@@ -149,9 +149,9 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--steering-method",
         type=str,
-        default="auto",
+        required=True,
         choices=["auto", "caa", "ostrze", "tecza", "tetno", "grom", "mlp", "szlak", "wicher", "nurt"],
-        help="Method for generating steering vectors: auto, caa, ostrze, tecza, tetno, grom, mlp, szlak (geodesic OT), wicher (Newton), nurt (concept flow). Default: auto"
+        help="Method for generating steering vectors: auto, caa, ostrze, tecza, tetno, grom, mlp, szlak (geodesic OT), wicher (Newton), nurt (concept flow)"
     )
 
     # Weight modification method
@@ -159,9 +159,9 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     modification_group.add_argument(
         "--method",
         type=str,
-        default="auto",
+        required=True,
         choices=["auto", "directional", "additive", "grom", "tetno", "tecza", "nurt", "szlak", "wicher"],
-        help="Weight modification method: auto, directional, additive, grom, tetno, tecza, nurt (concept flow), szlak (geodesic OT), wicher (Newton). Default: auto"
+        help="Weight modification method: auto, directional, additive, grom, tetno, tecza, nurt (concept flow), szlak (geodesic OT), wicher (Newton)"
     )
     
     # GROM-specific parameters
@@ -169,9 +169,9 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     grom_group.add_argument(
         "--grom-mode",
         type=str,
-        default="hybrid",
+        required=True,
         choices=["static", "dynamic", "hybrid"],
-        help="GROM mode: 'static' (bake directions only), 'dynamic' (hooks only), 'hybrid' (both, recommended). Default: hybrid"
+        help="GROM mode: 'static' (bake directions only), 'dynamic' (hooks only), 'hybrid' (both, recommended)"
     )
     grom_group.add_argument(
         "--grom-num-directions",
@@ -185,9 +185,9 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     tecza_group.add_argument(
         "--tecza-mode",
         type=str,
-        default="weighted",
+        required=True,
         choices=["primary", "weighted", "full"],
-        help="TECZA mode: 'primary' (only first direction), 'weighted' (average all), 'full' (save all). Default: weighted"
+        help="TECZA mode: 'primary' (only first direction), 'weighted' (average all), 'full' (save all)"
     )
     tecza_group.add_argument(
         "--tecza-num-directions",

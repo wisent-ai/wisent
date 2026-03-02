@@ -165,7 +165,7 @@ def compute_concept_stability(
 ) -> float:
     """Compute stability of concept direction across bootstrap samples."""
     try:
-        from ...metrics.direction.direction_metrics import compute_direction_stability
+        from wisent.core.reading.modules.utilities.metrics.direction.direction_metrics import compute_direction_stability
 
         result = compute_direction_stability(
             pos_activations, neg_activations, n_bootstrap=n_bootstrap
@@ -219,4 +219,4 @@ from .concept_pairs import (
 )
 
 # Clustering validation
-from ...validation.clustering_validation import validate_clustering_quality
+from wisent.core.reading.modules.modules.validation.clustering_validation import validate_clustering_quality

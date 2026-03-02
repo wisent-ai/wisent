@@ -18,7 +18,7 @@ from argparse import Namespace
 def execute_steering_viz(args):
     """Execute the steering-viz command."""
     import torch
-    from wisent.core.reading.modules.steering import (
+    from wisent.core.reading.modules.modules.steering import (
         create_steering_effect_figure, create_interactive_steering_figure,
         train_classifier_and_predict,
     )
@@ -75,8 +75,8 @@ def execute_steering_viz(args):
             f.write(viz_html)
         print(f"\nInteractive visualization saved to: {output_path}")
     elif multipanel:
-        from wisent.core.reading.modules.steering import create_steering_multipanel_figure
-        extraction_strategy = getattr(args, 'extraction_strategy', 'chat_last')
+        from wisent.core.reading.modules.modules.steering import create_steering_multipanel_figure
+        extraction_strategy = args.extraction_strategy
         viz_b64 = create_steering_multipanel_figure(**viz_args, extraction_strategy=extraction_strategy)
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -101,13 +101,14 @@ def execute_steering_viz(args):
 
 def _load_or_generate_reference_activations(args):
     """Load activations from database if available, otherwise generate."""
-    from wisent.core.reading.modules.data.database_loaders import load_activations_from_database
+    from wisent.core.reading.modules.utilities.data.database_loaders import load_activations_from_database
 
     try:
         pos_ref, neg_ref = load_activations_from_database(
             model_name=args.model, task_name=args.task, layer=args.layer,
-            prompt_format=getattr(args, 'prompt_format', 'chat'),
-            extraction_strategy=getattr(args, 'extraction_strategy', 'chat_last'),
+            component=args.extraction_component,
+            extraction_strategy=args.extraction_strategy,
+            prompt_format=args.prompt_format,
             limit=getattr(args, 'limit', DEFAULT_LIMIT),
             database_url=getattr(args, 'database_url', None),
         )
@@ -124,7 +125,7 @@ def _generate_reference_activations(args):
     import tempfile
     from pathlib import Path
     from wisent.core.utils.cli.analysis.geometry.get_activations import execute_get_activations
-    from wisent.core.reading.modules.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.reading.modules.utilities.data.database_loaders import load_pair_texts_from_database
 
     with tempfile.TemporaryDirectory() as tmpdir:
         tmpdir = Path(tmpdir)
@@ -144,7 +145,7 @@ def _generate_reference_activations(args):
         execute_get_activations(Namespace(
             pairs_file=str(pairs_path), model=args.model, output=str(enriched_path),
             device=getattr(args, 'device', None),
-            layers=str(args.layer), extraction_strategy=getattr(args, 'extraction_strategy', 'chat_last'),
+            layers=str(args.layer), extraction_strategy=args.extraction_strategy,
             verbose=False, timing=False, limit=None, raw=False,
         ))
 
@@ -171,7 +172,7 @@ def _generate_and_extract(args, steering_vector):
     from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
     from wisent.core.reading.evaluators.rotator import EvaluatorRotator
-    from wisent.core.reading.modules.data.database_loaders import load_pair_texts_from_database
+    from wisent.core.reading.modules.utilities.data.database_loaders import load_pair_texts_from_database
 
     wisent = Wisent.for_text(args.model)
     adapter = wisent.adapter
@@ -182,7 +183,7 @@ def _generate_and_extract(args, steering_vector):
     evaluator = EvaluatorRotator(evaluator=None, task_name=args.task).current
 
     # Map old names to new enum values
-    strategy_str = getattr(args, 'extraction_strategy', 'chat_last')
+    strategy_str = args.extraction_strategy
     strategy_map = {"last_token": "chat_last", "first_token": "chat_first", "mean": "chat_mean"}
     strategy_str = strategy_map.get(strategy_str, strategy_str)
     extraction_strategy = ExtractionStrategy(strategy_str)

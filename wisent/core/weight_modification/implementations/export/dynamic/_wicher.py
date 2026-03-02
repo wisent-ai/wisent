@@ -3,13 +3,14 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
+from typing import Optional
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
 )
-from wisent.core.utils.config_tools.constants import BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH, JSON_INDENT
+from wisent.core.utils.config_tools.constants import BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, JSON_INDENT
 
 _LOG = setup_logger(__name__)
 
@@ -17,8 +18,8 @@ def export_wicher_model(
     model,
     wicher_steering,
     save_path,
+    base_strength: float,
     tokenizer=None,
-    base_strength: float = DEFAULT_STRENGTH,
     push_to_hub: bool = False,
     repo_id=None,
     commit_message=None,
@@ -119,7 +120,7 @@ def export_wicher_model(
 
 def load_wicher_model(
     model_path,
-    device_map: str = "auto",
+    device_map: Optional[str] = None,
     torch_dtype=None,
     install_hooks: bool = True,
 ):
@@ -229,7 +230,7 @@ def load_wicher_model(
             eta=wicher_data.get("eta", BROYDEN_DEFAULT_ETA),
             beta=wicher_data.get("beta", BROYDEN_DEFAULT_BETA),
             alpha_decay=wicher_data.get("alpha_decay", BROYDEN_DEFAULT_ALPHA_DECAY),
-            base_strength=wicher_data.get("base_strength", DEFAULT_STRENGTH),
+            base_strength=wicher_data["base_strength"],
         )
         hooks.install()
         log.info(

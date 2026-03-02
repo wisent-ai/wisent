@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 import json
 
@@ -51,17 +51,18 @@ class LiveCodeBenchV6Extractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "code_generation"
 
-    def __init__(self, version: str = "v6", platform: str | None = None):
+    def __init__(self, version: Optional[str] = None, platform: str | None = None):
         """
         Initialize LiveCodeBench V6 extractor.
 
         Args:
-            version: Dataset version (v1-v6, default v6)
+            version: Dataset version (v1-v6)
             platform: Optional filter for platform (leetcode, atcoder, codeforces)
         """
         super().__init__()
-        self.version = version
-        self.version_tag = LIVECODEBENCH_VERSIONS.get(version, "release_v6")
+        resolved = version if version is not None else "v6"
+        self.version = resolved
+        self.version_tag = LIVECODEBENCH_VERSIONS.get(resolved, "release_v6")
         self.platform = platform
 
     def extract_contrastive_pairs(

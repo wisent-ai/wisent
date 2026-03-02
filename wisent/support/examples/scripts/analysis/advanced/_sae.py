@@ -89,12 +89,12 @@ class SparseAutoencoder(torch.nn.Module):
 
 def train_sparse_autoencoder(
     activations: torch.Tensor,
+    device: str,
     hidden_dim: int = None,
     l1_coef: float = SAE_L1_COEF_DEFAULT,
     n_epochs: int = SAE_N_EPOCHS_DEFAULT,
     batch_size: int = SAE_BATCH_SIZE_DEFAULT,
     lr: float = L1_DEFAULT_COEF,
-    device: str = "cpu",
     verbose: bool = True,
 ) -> SparseAutoencoder:
     """

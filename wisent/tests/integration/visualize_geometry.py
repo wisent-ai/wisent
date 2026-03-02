@@ -28,7 +28,7 @@ from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SE
 BEST_CONFIGS = None  # Will be loaded from geometry_analysis_results.json
 
 
-def load_best_configs(results_file: str = "/home/ubuntu/output/geometry_analysis_results.json", configs_json: str = None):
+def load_best_configs(results_file: str | None = None, configs_json: str | None = None):
     """Load best configs from comprehensive geometry analysis results or JSON string."""
     global BEST_CONFIGS
     
@@ -102,13 +102,13 @@ PROMPT_MAP = {
 def main():
     import argparse
     parser = argparse.ArgumentParser()
-    parser.add_argument("--task", default="truthfulqa_gen")
-    parser.add_argument("--model", default="meta-llama/Llama-3.2-1B-Instruct")
+    parser.add_argument("--task", required=True)
+    parser.add_argument("--model", required=True)
     parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
     parser.add_argument("--layer", type=int, default=None, help="Single layer (overrides multi-config)")
     parser.add_argument("--aggregation", default=None, help="Single aggregation (overrides multi-config)")
     parser.add_argument("--prompt-strategy", default=None, help="Single prompt strategy (overrides multi-config)")
-    parser.add_argument("--output", default="geometry_visualization.png")
+    parser.add_argument("--output", required=True)
     parser.add_argument("--multi-config", action="store_true", help="Run all best configs for each structure")
     parser.add_argument("--configs-json", default=None, help="JSON string with best_by_geometry configs")
     args = parser.parse_args()

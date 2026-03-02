@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_DEFAULT_PAIRS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, TRAIT_LABEL_MAX_LENGTH
+from wisent.core.utils.config_tools.constants import AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_DEFAULT_PAIRS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, TRAIT_LABEL_MAX_LENGTH
 from wisent.core.primitives.models.config import get_generate_kwargs
 from wisent.core.utils.infra_tools.errors import InsufficientDataError, MissingParameterError, ExecutionError
 
@@ -42,8 +42,9 @@ class SyntheticClassifierResult:
 class AutomaticTraitDiscovery:
     """Automatically discovers relevant traits for prompt response analysis."""
 
-    def __init__(self, model):
+    def __init__(self, model, layer: int = None):
         self.model = model
+        self.layer = layer
 
     def discover_relevant_traits(self, prompt: str, time_budget_minutes: float) -> TraitDiscoveryResult:
         """
@@ -71,7 +72,7 @@ List {max_traits} quality traits for responses:
 
         try:
             analysis, _ = self.model.generate(
-                discovery_prompt, layer_index=DEFAULT_LAYER
+                discovery_prompt, layer_index=self.layer
             )
 
             logging.info(f"Model generated analysis: {analysis[:DISPLAY_TRUNCATION_MEDIUM]}...")
@@ -104,8 +105,9 @@ List {max_traits} quality traits for responses:
 class SyntheticClassifierFactory:
     """Creates custom classifiers from trait descriptions using synthetic contrastive pairs."""
 
-    def __init__(self, model):
+    def __init__(self, model, layer: int = None):
         self.model = model
+        self.layer = layer
         self.pair_generator = SyntheticContrastivePairGenerator(model)
 
     def create_classifier_from_trait(
@@ -141,7 +143,7 @@ class SyntheticClassifierFactory:
             # Create Layer object for activation extraction
             from wisent.core.primitives.models.core.layer import Layer
 
-            layer_obj = Layer(index=DEFAULT_LAYER, type="transformer")
+            layer_obj = Layer(index=self.layer, type="transformer")
             logging.info(f"Created Layer object: index={layer_obj.index}, type={layer_obj.type}")
 
             for i, pair in enumerate(pair_set.pairs):
@@ -204,7 +206,7 @@ class SyntheticClassifierFactory:
 
                 from wisent.core.primitives.models.core.layer import Layer
 
-                layer_obj = Layer(index=DEFAULT_LAYER, type="transformer")
+                layer_obj = Layer(index=self.layer, type="transformer")
 
                 for pos_act in positive_activations:
                     if hasattr(pos_act, "shape"):  # It's a torch tensor

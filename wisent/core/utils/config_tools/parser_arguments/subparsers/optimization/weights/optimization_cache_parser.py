@@ -19,7 +19,7 @@ def setup_optimization_cache_parser(parser):
     )
     show_parser.add_argument("model", type=str, help="Model name")
     show_parser.add_argument("task", type=str, help="Task name")
-    show_parser.add_argument("--method", type=str, default="CAA", help="Steering method (default: CAA)")
+    show_parser.add_argument("--method", type=str, required=True, help="Steering method")
 
     # Delete a cached result
     delete_parser = cache_subparsers.add_parser(
@@ -27,7 +27,7 @@ def setup_optimization_cache_parser(parser):
     )
     delete_parser.add_argument("model", type=str, help="Model name")
     delete_parser.add_argument("task", type=str, help="Task name")
-    delete_parser.add_argument("--method", type=str, default="CAA", help="Steering method (default: CAA)")
+    delete_parser.add_argument("--method", type=str, required=True, help="Steering method")
 
     # Clear all cached results
     clear_parser = cache_subparsers.add_parser(
@@ -41,7 +41,7 @@ def setup_optimization_cache_parser(parser):
     )
     set_default_parser.add_argument("model", type=str, help="Model name")
     set_default_parser.add_argument("task", type=str, help="Task name")
-    set_default_parser.add_argument("--method", type=str, default="CAA", help="Steering method to set as default (default: CAA)")
+    set_default_parser.add_argument("--method", type=str, required=True, help="Steering method to set as default")
 
     # Get default for a model/task
     get_default_parser = cache_subparsers.add_parser(

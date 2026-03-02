@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class SteeringMethodConfig(ABC):
     """Base configuration for steering methods - uses centralized registry."""
 
-    method_name: str = "base"
+    method_name: Optional[str] = None
     layers: List[int] = None
     strengths: List[float] = None
 
@@ -37,7 +37,17 @@ class SteeringMethodConfig(ABC):
         return cls(
             method_name=method_name,
             layers=layers or [],
-            strengths=strengths or [definition.default_strength],
+            strengths=strengths if strengths else cls._resolve_strengths(definition),
+        )
+
+    @staticmethod
+    def _resolve_strengths(definition) -> List[float]:
+        """Resolve strengths from definition or raise if unavailable."""
+        if definition.default_strength is not None:
+            return [definition.default_strength]
+        raise ValueError(
+            f"No strengths provided for '{definition.name}' and no "
+            f"default_strength configured. Pass strengths explicitly."
         )
 
 

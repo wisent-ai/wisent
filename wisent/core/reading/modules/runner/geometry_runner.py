@@ -67,14 +67,14 @@ from wisent.core.reading.modules import (
 )
 
 # Re-export classes from split part files
-from wisent.core.reading.modules._runner_parts._test_result import (
+from wisent.core.reading.modules.runner._runner_parts._test_result import (
     GeometryTestResult,
 )
-from wisent.core.reading.modules._runner_parts._search_results import (
+from wisent.core.reading.modules.runner._runner_parts._search_results import (
     GeometrySearchResults,
     SteeringEvaluationResult,
 )
-from wisent.core.reading.modules._runner_parts._types import (
+from wisent.core.reading.modules.runner._runner_parts._types import (
     ZwiadResult,
     ZwiadLayerResult,
     ComponentAnalysisResult,
@@ -82,11 +82,11 @@ from wisent.core.reading.modules._runner_parts._types import (
     ConceptValidityResult,
     ConceptDecomposition,
 )
-from wisent.core.reading.modules._runner_parts import (
+from wisent.core.reading.modules.runner._runner_parts import (
     TransformerComponent,
     ComponentActivationExtractor,
 )
-from wisent.core.reading.modules._runner_parts._runner_class import (
+from wisent.core.reading.modules.runner._runner_parts._runner_class import (
     GeometryRunner,
 )
 

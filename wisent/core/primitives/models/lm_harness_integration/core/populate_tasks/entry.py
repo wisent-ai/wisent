@@ -10,7 +10,7 @@ from typing import Dict, Any, List, Optional
 from wisent.core.utils import get_all_docs_from_task
 from wisent.core.utils.infra_tools.errors import InsufficientDataError, TaskNotFoundError
 from wisent.core.utils.config_tools.constants import JSON_INDENT, LM_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_TINY
-from wisent.core.utils.core.hardware import subprocess_timeout_s
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 from .sample_extraction import get_evaluation_method, get_category, extract_examples_from_task
 from .group_handling import expand_group_task, get_samples_from_group_task
@@ -137,7 +137,7 @@ def process_group_task(group_name: str, sub_tasks: List[str], get_task_dict) -> 
     }
 
 
-def test_sample_retrieval(task_name: str = "truthfulqa_mc1"):
+def test_sample_retrieval(task_name: str):
     """Test function to demonstrate the get_task_samples_for_analysis function."""
     from .sample_extraction import get_task_samples_for_analysis
     print(f"\n=== Testing Sample Retrieval for '{task_name}' ===")

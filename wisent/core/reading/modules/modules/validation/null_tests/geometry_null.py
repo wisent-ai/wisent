@@ -11,7 +11,7 @@ from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD, N_BOOTSTRAP, DEFAULT_RANDOM_SEED, Z_SCORE_SIGNIFICANCE,
 )
 
-from ...analysis.structure import (
+from wisent.core.reading.modules.utilities.signal_analysis.structure import (
     compute_cone_fit,
     compute_sphere_fit,
     compute_cluster_structure,

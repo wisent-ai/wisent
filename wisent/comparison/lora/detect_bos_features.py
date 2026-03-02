@@ -206,13 +206,13 @@ def compare_with_known(model_name: str, detected: list[int], stats: dict[str, to
 
 def main():
     parser = argparse.ArgumentParser(description="Detect BOS features in Gemma Scope SAEs")
-    parser.add_argument("--model", default="google/gemma-2-2b", help="Model name")
+    parser.add_argument("--model", required=True, help="Model name")
     parser.add_argument("--layer", type=int, default=COMPARISON_STEERING_LAYER, help="Layer index")
     parser.add_argument("--num-samples", type=int, default=BOS_ARGPARSE_NUM_SAMPLES, help="Number of text samples")
     parser.add_argument("--top-k", type=int, default=BOS_TOP_K_DEFAULT, help="Number of top BOS features to detect")
     parser.add_argument("--batch-size", type=int, default=COMPARISON_DEFAULT_BATCH_SIZE, help="Batch size")
-    parser.add_argument("--device", default="cuda:0", help="Device")
-    parser.add_argument("--output-dir", default="wisent/comparison/results", help="Output directory")
+    parser.add_argument("--device", required=True, help="Device")
+    parser.add_argument("--output-dir", required=True, help="Output directory")
     args = parser.parse_args()
 
     print(f"Model: {args.model}")

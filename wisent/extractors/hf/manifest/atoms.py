@@ -110,8 +110,8 @@ class HuggingFaceBenchmarkExtractor(ABC):
     def load_dataset(
         cls,
         dataset_name: str,
+        split: str,
         dataset_config: str | None = None,
-        split: str = "test",
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
         """
@@ -120,10 +120,10 @@ class HuggingFaceBenchmarkExtractor(ABC):
         arguments:
             dataset_name:
                 HuggingFace dataset identifier (e.g., "openai_humaneval").
+            split:
+                Dataset split to load (e.g., "test", "train", "validation").
             dataset_config:
                 Optional dataset configuration/subset name.
-            split:
-                Dataset split to load (default: "test").
             limit:
                 Optional maximum number of examples to return.
 

@@ -35,7 +35,7 @@ class SteeringLoggingMixin:
                 pass
 
     def log_harmful_response(
-        self, prompt: str, response: str, probability: float, category: str = "harmful", additional_info: Dict = None
+        self, prompt: str, response: str, probability: float, category: str, additional_info: Dict = None
     ) -> bool:
         """
         Log a harmful response to the JSON log file.

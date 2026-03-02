@@ -10,6 +10,7 @@ from wisent.core.utils import (
     create_deterministic_split,
 )
 from wisent.core.utils.infra_tools.errors import NoDocsAvailableError, DatasetLoadError
+from wisent.core.utils.config_tools.constants import EVALUATOR_NAME_LOG_LIKELIHOODS
 
 
 if TYPE_CHECKING:
@@ -53,7 +54,7 @@ class LMEvalBenchmarkExtractor(ABC):
     """
 
     # Default evaluator - subclasses should override
-    evaluator_name: str = "log_likelihoods"
+    evaluator_name: str = EVALUATOR_NAME_LOG_LIKELIHOODS
 
     @abstractmethod
     def extract_contrastive_pairs(

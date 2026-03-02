@@ -9,6 +9,7 @@ from abc import ABC, abstractmethod
 import unicodedata
 
 from wisent.core.utils.infra_tools.errors import DuplicateNameError
+from wisent.core.utils.config_tools.constants import BASE_CLASS_NAME
 
 __all__ = [
     "BaseEvaluator",
@@ -75,7 +76,7 @@ class BaseEvaluator(ABC):
             get a registered evaluator subclass by name.
     """
 
-    name: str = "base"
+    name: str = BASE_CLASS_NAME
     description: str = "Abstract base evaluator"
     task_names: tuple[str, ...] = ()
 

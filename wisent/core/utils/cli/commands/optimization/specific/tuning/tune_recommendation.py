@@ -25,7 +25,7 @@ def execute_tune_recommendation(args) -> None:
 
 
 def _collect(args) -> None:
-    from wisent.core.reading.modules.steering.analysis.recommendation import (
+    from wisent.core.reading.modules.modules.steering.analysis.recommendation import (
         collect_ground_truth,
     )
     benchmarks = None
@@ -53,7 +53,7 @@ def _collect(args) -> None:
 
 
 def _optimize(args) -> None:
-    from wisent.core.reading.modules.steering.analysis.recommendation import (
+    from wisent.core.reading.modules.modules.steering.analysis.recommendation import (
         GroundTruthDataset, RecommendationOptimizer,
     )
     dataset = GroundTruthDataset.load(args.ground_truth)

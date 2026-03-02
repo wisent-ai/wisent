@@ -1,6 +1,6 @@
 """bABI and SciQ benchmark extractors."""
 from __future__ import annotations
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 from wisent.core.utils.config_tools.constants import CONTEXT_MAX_PREVIEW, EXTRACTOR_DEFAULT_LIMIT
 
@@ -16,10 +16,10 @@ __all__ = ["BABIExtractor", "SciQExtractor"]
 class BABIExtractor(HuggingFaceBenchmarkExtractor):
     """Extract contrastive pairs from bABI benchmark."""
 
-    def __init__(self, task: str = "qa1"):
+    def __init__(self, task: Optional[str] = None):
         super().__init__()
         self.name = "babi"
-        self.task = task
+        self.task = task if task is not None else "qa1"
 
     def extract_contrastive_pairs(self, limit: int | None = EXTRACTOR_DEFAULT_LIMIT) -> list[ContrastivePair]:
         pairs: list[ContrastivePair] = []

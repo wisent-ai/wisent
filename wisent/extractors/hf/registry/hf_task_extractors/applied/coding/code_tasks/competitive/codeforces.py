@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 from wisent.core.utils.config_tools.constants import CODEFORCES_DEFAULT_TIME_LIMIT, CODEFORCES_DEFAULT_MEMORY_LIMIT
 
@@ -51,10 +51,10 @@ class CodeforcesExtractor(CodeforcesHelperMixin, HuggingFaceBenchmarkExtractor):
 
     def __init__(
         self,
-        config: str = "verifiable",
+        config: Optional[str] = None,
         max_rating: int | None = None,
         min_rating: int | None = None,
-        language: str = "python",
+        language: Optional[str] = None,
     ):
         """
         Initialize Codeforces extractor.
@@ -66,10 +66,10 @@ class CodeforcesExtractor(CodeforcesHelperMixin, HuggingFaceBenchmarkExtractor):
             language: Target programming language
         """
         super().__init__()
-        self.config = config
+        self.config = config if config is not None else "verifiable"
         self.max_rating = max_rating
         self.min_rating = min_rating
-        self.language = language
+        self.language = language if language is not None else "python"
 
     def extract_contrastive_pairs(
         self,

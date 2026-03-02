@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from wisent.core.utils.infra_tools.tracking._latency_types import (
     TimingEvent, LatencyStats, GenerationMetrics, TrainingMetrics)
 from wisent.core.utils.infra_tools.tracking._latency_tracker_reporting import LatencyReportingMixin
+from wisent.core.utils.config_tools.constants import DEFAULT_PROMPT_LENGTH
 logger = logging.getLogger(__name__)
 
 class LatencyTracker(LatencyReportingMixin):
@@ -140,7 +141,7 @@ class LatencyTracker(LatencyReportingMixin):
             event_placeholder["event"] = event
     
     @contextmanager
-    def time_generation(self, name: str = "response_generation", prompt_length: int = 0):
+    def time_generation(self, name: str, prompt_length: int = DEFAULT_PROMPT_LENGTH):
         """
         Context manager for timing text generation with TTFT tracking.
         

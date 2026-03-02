@@ -15,7 +15,7 @@ from wisent.core.utils.config_tools.constants import (
     DISPLAY_TRUNCATION_LARGE,
     SEPARATOR_WIDTH_REPORT,
 )
-from wisent.core.utils.core.hardware import subprocess_timeout_long_s
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_long_s
 
 
 @dataclass
@@ -43,7 +43,7 @@ class AbliterationConfig:
         return args
 
 
-def evaluate_model(model_path: str, task: str = "hellaswag", limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT) -> tuple[float, float]:
+def evaluate_model(model_path: str, task: str, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT) -> tuple[float, float]:
     """
     Evaluate model and return (acc, acc_norm).
     """

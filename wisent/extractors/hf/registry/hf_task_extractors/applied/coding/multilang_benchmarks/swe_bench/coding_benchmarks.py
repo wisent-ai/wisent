@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 import requests
 import zipfile
@@ -35,17 +35,17 @@ class OJBenchExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "competitive_programming"
 
-    def __init__(self, difficulty: str | None = None, language: str = "cpp"):
+    def __init__(self, difficulty: str | None = None, language: Optional[str] = None):
         """
         Initialize OJ-Bench extractor.
 
         Args:
             difficulty: Optional filter (easy, medium, hard)
-            language: Programming language (default: cpp)
+            language: Programming language (e.g., "cpp")
         """
         super().__init__()
         self.difficulty = difficulty
-        self.language = language
+        self.language = language if language is not None else "cpp"
 
     def extract_contrastive_pairs(
         self,

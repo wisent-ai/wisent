@@ -26,7 +26,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class EvaluatorConfig:
     """Configuration for steering evaluators."""
-    evaluator_type: str = "auto"  # auto, refusal, task, personalization
+    evaluator_type: Optional[str] = None  # auto, refusal, task, personalization
     trait: Optional[str] = None
     task: Optional[str] = None
     eval_prompts_path: Optional[str] = None
@@ -48,7 +48,7 @@ class SteeringEvaluatorFactory:
         """Create the appropriate evaluator based on config."""
         evaluator_type = config.evaluator_type
 
-        if evaluator_type == "auto":
+        if evaluator_type is None:
             if config.trait and "refus" in config.trait.lower():
                 evaluator_type = "refusal"
             elif config.task:

@@ -79,19 +79,20 @@ class EditabilityTestResult:
 
 def test_signal(
     pos: torch.Tensor, neg: torch.Tensor, metric_keys: List[str],
+    device: str,
     model=None, tokenizer=None, layer: int = None,
-    device: str = "cuda", p_threshold: float = STAT_ALPHA,
+    p_threshold: float = STAT_ALPHA,
 ) -> SignalTestResult:
     """Step 1: Test if a learnable signal exists relative to null."""
     from ..validation.null_tests.signal_null_tests import compute_signal_vs_null, compute_signal_vs_nonsense, compute_aggregate_signal
     perm_metrics = compute_signal_vs_null(pos, neg, metric_keys)
-    max_z, min_p, any_sig = compute_aggregate_signal(perm_metrics)
+    max_z, min_p, any_sig = compute_aggregate_signal(perm_metrics, correction="bonferroni")
     nonsense_metrics = None
     if model is not None and tokenizer is not None:
         try:
             nonsense_metrics = compute_signal_vs_nonsense(
-                pos, neg, model, tokenizer, metric_keys, layer=layer, device=device)
-            nonsense_z, _, nonsense_sig = compute_aggregate_signal(nonsense_metrics)
+                pos, neg, model, tokenizer, metric_keys, device=device, layer=layer)
+            nonsense_z, _, nonsense_sig = compute_aggregate_signal(nonsense_metrics, correction="bonferroni")
             max_z = max(max_z, nonsense_z)
             passed = (min_p < p_threshold) and nonsense_sig
         except Exception:
@@ -193,8 +194,9 @@ _GEO_FIELDS = ["linear_accuracy", "nonlinear_accuracy", "gap", "diagnosis",
 
 
 def run_full_protocol(
-    pos: torch.Tensor, neg: torch.Tensor, model=None, tokenizer=None,
-    layer: int = None, device: str = "cuda", signal_keys: Optional[List[str]] = None,
+    pos: torch.Tensor, neg: torch.Tensor, device: str,
+    model=None, tokenizer=None,
+    layer: int = None, signal_keys: Optional[List[str]] = None,
     p_threshold: float = STAT_ALPHA, gap_threshold: Optional[float] = None,
     min_silhouette: Optional[float] = None, include_dimensionality_diagnostics: bool = True,
 ) -> Dict[str, Any]:
@@ -210,7 +212,7 @@ def run_full_protocol(
     if include_dimensionality_diagnostics:
         from ..validation.dimensionality import run_dimensionality_diagnostics
         dim_diag = run_dimensionality_diagnostics(pos, neg)
-    sig = test_signal(pos, neg, signal_keys, model, tokenizer, layer, device, p_threshold)
+    sig = test_signal(pos, neg, signal_keys, device, model, tokenizer, layer, p_threshold)
     geo = test_geometry(pos, neg)
     dec = test_decomposition(pos, neg, min_silhouette)
     edit = test_editability(pos, neg)

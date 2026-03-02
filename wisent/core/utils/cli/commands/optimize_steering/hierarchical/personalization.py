@@ -125,6 +125,7 @@ def _execute_personalization_optimization(args):
                         work_dir=work_dir,
                         limit=min(limit, len(pair_set.pairs)),
                         device=device,
+                        strength=strength,
                     )
                     if result.score > best_score:
                         best_score = result.score

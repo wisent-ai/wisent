@@ -11,7 +11,7 @@ class Layer:
     """Represents a model layer for activation extraction."""
 
     index: int
-    type: str = "transformer"
+    type: Optional[str] = None
     name: Optional[str] = None
 
     def __post_init__(self):

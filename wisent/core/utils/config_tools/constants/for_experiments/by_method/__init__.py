@@ -1,10 +1,8 @@
 """Method-specific constants organized by steering method."""
-from wisent.core.utils.constants.for_experiments.by_method._grom import *  # noqa: F401,F403
-from wisent.core.utils.constants.for_experiments.by_domain import *  # noqa: F401,F403
+from wisent.core.utils.config_tools.constants.for_experiments.by_method._grom import *  # noqa: F401,F403
+from wisent.core.utils.config_tools.constants.for_experiments.by_domain import *  # noqa: F401,F403
 
 # --- Common steering defaults ---
-DEFAULT_STRENGTH = 1.0
-DEFAULT_LAYER = 16
 DEFAULT_LAYER_CONFIG = 12
 DEFAULT_NUM_HIDDEN_LAYERS = 32
 DEFAULT_SCORE = 0.0

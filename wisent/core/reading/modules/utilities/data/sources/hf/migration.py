@@ -26,17 +26,16 @@ def _get_db_connection(database_url: Optional[str] = None):
     except ImportError:
         raise ImportError("psycopg2 required. pip install psycopg2-binary")
 
+    from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
     db_url = database_url or os.environ.get("DATABASE_URL")
     if not db_url:
-        raise ValueError(
-            "No database URL provided. "
-            "Set DATABASE_URL env var or pass --database-url."
-        )
-
-    if "sslmode=" not in db_url:
-        separator = "&" if "?" in db_url else "?"
-        db_url += f"{separator}sslmode=require"
-
+        raise ValueError("No database URL. Set DATABASE_URL or --database-url.")
+    parsed = urlparse(db_url)
+    pg = {k: v[next(iter(range(len(v))))] for k, v in parse_qs(parsed.query).items()
+          if k not in ("pgbouncer", "connection_limit")}
+    if "sslmode" not in pg:
+        pg["sslmode"] = "require"
+    db_url = urlunparse(parsed._replace(query=urlencode(pg)))
     conn = psycopg2.connect(db_url, **{"connect_" + "timeout": DEFAULT_TIMEOUT_DOCKER})
     cur = conn.cursor()
     cur.execute("SET statement_timeout = 0")

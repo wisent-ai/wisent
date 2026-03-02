@@ -61,7 +61,7 @@ def main():
     parser.add_argument(
         "--model",
         type=str,
-        default="meta-llama/Llama-3.2-1B-Instruct",
+        required=True,
         help="Model name",
     )
     parser.add_argument(
@@ -80,7 +80,7 @@ def main():
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./data/modified_models/optuna",
+        required=True,
         help="Output directory for optimized model",
     )
     parser.add_argument(

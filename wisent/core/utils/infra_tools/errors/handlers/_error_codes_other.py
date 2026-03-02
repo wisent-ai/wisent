@@ -89,7 +89,7 @@ class PromptMustBeStringError(WisentError):
 
 
 class ResponseMustBeStringError(WisentError):
-    def __init__(self, field: str = "model_response"):
+    def __init__(self, field: Optional[str] = None):
         super().__init__(ErrorCode.RESPONSE_MUST_BE_STRING, {"field": field}, field=field)
 
 

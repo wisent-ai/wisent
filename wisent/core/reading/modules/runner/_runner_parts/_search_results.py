@@ -20,7 +20,7 @@ from wisent.core.utils.config_tools.constants import (
     SEARCH_RESULTS_TOP_N,
 )
 from wisent.core.reading.modules import GeometrySearchConfig
-from wisent.core.reading.modules._runner_parts._test_result import GeometryTestResult
+from wisent.core.reading.modules.runner._runner_parts._test_result import GeometryTestResult
 
 
 @dataclass

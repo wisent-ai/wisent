@@ -3,7 +3,7 @@ from __future__ import annotations
 import gc
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 import torch
 from wisent.core.utils.config_tools.constants import (
     COMPARISON_DEFAULT_BATCH_SIZE,
@@ -63,7 +63,7 @@ def _eval_lora_with_steering(wisent_model, task, task_dict, limit, base_acc_lm_e
                              negative_response=NegativeResponse(model_response=p["negative_response"]["model_response"]))
              for p in pairs_data]
     pair_set = ContrastivePairSet(pairs=pairs, name=f"{task}_lora_steering")
-    steering_method_obj = get_steering_method(steering_method, device=device)
+    steering_method_obj = get_steering_method(steering_method, task_name=task, device=device)
     strategy = ExtractionStrategy(extraction_strategy)
     trainer = WisentSteeringTrainer(model=wisent_model, pair_set=pair_set, steering_method=steering_method_obj)
     result = trainer.run(layers_spec=steering_layers, strategy=strategy, accept_low_quality_vector=True)
@@ -90,15 +90,16 @@ def _eval_lora_with_steering(wisent_model, task, task_dict, limit, base_acc_lm_e
 
 def evaluate_lora(
     model_name: str, lora_path: str | Path, task: str,
-    train_ratio: float = DEFAULT_SPLIT_RATIO, device: str = "cuda:0",
+    extraction_strategy: str, device: str,
+    train_ratio: float = DEFAULT_SPLIT_RATIO,
     batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE, max_batch_size: int = COMPARISON_MAX_BATCH_SIZE, limit: int | None = None,
     output_dir: str | Path = None,
     num_train_pairs: int | None = None, num_epochs: int | None = None,
     lora_r: int | None = None, lora_alpha: int | None = None,
     lora_dropout: float | None = None, learning_rate: float | None = None,
-    with_steering: bool = False, steering_method: str = "caa",
+    with_steering: bool = False, steering_method: Optional[str] = None,
     steering_layers: str = str(COMPARISON_STEERING_LAYER), steering_num_pairs: int = COMPARISON_NUM_PAIRS,
-    steering_scales: list[float] | None = None, extraction_strategy: str = "mc_completion",
+    steering_scales: list[float] | None = None,
 ) -> dict:
     """Evaluate a trained LoRA adapter comparing base vs LoRA performance."""
     from wisent.core.primitives.models.wisent_model import WisentModel

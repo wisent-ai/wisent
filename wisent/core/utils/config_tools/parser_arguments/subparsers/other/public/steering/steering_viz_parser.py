@@ -1,6 +1,6 @@
 """Parser for the 'steering-viz' command - steering effect visualization."""
 
-from wisent.core.utils.config_tools.constants import AUTOTUNE_VAL_SPLIT, COMPARISON_STEERING_LAYER, DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import AUTOTUNE_VAL_SPLIT, COMPARISON_STEERING_LAYER
 
 
 def setup_steering_viz_parser(parser):
@@ -8,8 +8,8 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--model",
         type=str,
-        default="meta-llama/Llama-3.2-1B-Instruct",
-        help="Model name (default: meta-llama/Llama-3.2-1B-Instruct)"
+        required=True,
+        help="Model name"
     )
     parser.add_argument(
         "--task",
@@ -26,8 +26,8 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--strength",
         type=float,
-        default=DEFAULT_STRENGTH,
-        help="Steering strength multiplier (default: 1.0)"
+        required=True,
+        help="Steering strength multiplier"
     )
     parser.add_argument(
         "--n-test-prompts",
@@ -44,16 +44,16 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--prompt-format",
         type=str,
-        default="chat",
+        required=True,
         choices=["chat", "completion"],
-        help="Prompt format (default: chat)"
+        help="Prompt format"
     )
     parser.add_argument(
         "--extraction-strategy",
         type=str,
-        default="last_token",
+        required=True,
         choices=["last_token", "first_token"],
-        help="Token extraction strategy (default: last_token)"
+        help="Token extraction strategy"
     )
     parser.add_argument(
         "--database-url",
@@ -64,8 +64,8 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--output",
         type=str,
-        default="./steering_effect.png",
-        help="Output PNG file path (default: ./steering_effect.png)"
+        required=True,
+        help="Output PNG file path"
     )
     parser.add_argument(
         "--compare-responses",
@@ -98,8 +98,8 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--output-dir",
         type=str,
-        default="./concept_steering_viz",
-        help="Output directory for per-concept visualizations (default: ./concept_steering_viz)"
+        required=True,
+        help="Output directory for per-concept visualizations"
     )
     parser.add_argument(
         "--from-cache",
@@ -110,9 +110,9 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--space-classifier",
         type=str,
-        default="mlp",
+        required=True,
         choices=["logistic", "mlp"],
-        help="Classifier for activation space location (default: mlp)"
+        help="Classifier for activation space location"
     )
     parser.add_argument(
         "--multipanel",
@@ -122,16 +122,16 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--direction-method",
         type=str,
-        default="mean_diff",
+        required=True,
         choices=["mean_diff", "search", "behavioral", "pca_0"],
         help="Direction discovery method: mean_diff (naive), search (best candidate), behavioral (from labels), pca_0 (first PCA component)"
     )
     parser.add_argument(
         "--steering-method",
         type=str,
-        default="linear",
+        required=True,
         choices=["linear", "clamping", "projection", "replacement", "contrast", "mlp", "adaptive"],
-        help="Steering method to use (default: linear)"
+        help="Steering method to use"
     )
     parser.add_argument(
         "--multi-layer",
@@ -175,6 +175,6 @@ def setup_steering_viz_parser(parser):
     parser.add_argument(
         "--device",
         type=str,
-        default="cuda",
-        help="Device to run model on (default: cuda, can be 'mps' for Mac)"
+        required=True,
+        help="Device to run model on (e.g., 'cuda', 'mps' for Mac)"
     )

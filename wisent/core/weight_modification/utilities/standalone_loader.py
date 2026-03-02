@@ -18,10 +18,11 @@ from typing import Optional, Tuple, Dict, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER, GROM_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE,
-    GROM_ROUTER_HIDDEN_DIM, GROM_MAX_ALPHA, DEFAULT_STRENGTH,
+    GROM_HIDDEN_DIM, GROM_ROUTER_TEMPERATURE,
+    GROM_ROUTER_HIDDEN_DIM, GROM_MAX_ALPHA,
     GROM_GATING_SHRINK_FACTOR,
 )
+from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 from wisent.core.weight_modification._standalone_loader_helpers import (
     TETNOHooks,
@@ -75,7 +76,7 @@ class GROMHooks:
     """Runtime hooks for GROM dynamic steering."""
 
     def __init__(self, model, grom_data: Dict[str, Any],
-                 base_strength: float = DEFAULT_STRENGTH):
+                 base_strength: float):
         self.model = model
         self.grom_data = grom_data
         self.base_strength = base_strength
@@ -106,8 +107,10 @@ class GROMHooks:
         sensor_layer = grom_data.get("sensor_layer")
         if sensor_layer is None:
             sensor_layer = self._layer_name_to_idx.get(
-                self.layer_order[len(self.layer_order) // 2], DEFAULT_LAYER)
+                self.layer_order[len(self.layer_order) // 2], None)
         self._sensor_layer_idx = sensor_layer
+        if self._sensor_layer_idx is None:
+            raise MissingParameterError(params=["sensor_layer"], context="GROM hooks: no sensor layer found in data or layer order")
 
         # Load directions
         self.directions = {
@@ -234,7 +237,7 @@ class GROMHooks:
 
 def load_model(
     model_path: str,
-    device_map: str = "auto",
+    device_map: Optional[str] = None,
     torch_dtype=None,
     install_hooks: bool = True,
 ) -> Tuple[Any, Any, Optional[Any]]:

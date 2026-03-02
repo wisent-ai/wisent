@@ -5,7 +5,7 @@ import os
 
 from wisent.core.utils.cli.optimization.core.optimize_helpers import save_checkpoint
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER, DEFAULT_SCORE, DEFAULT_STRENGTH, DISPLAY_TRUNCATION_ERROR,
+    DEFAULT_SCORE, DISPLAY_TRUNCATION_ERROR,
     RL_NUM_EPISODES, WELFARE_LIMIT,
 )
 
@@ -66,8 +66,12 @@ def run_benchmark_steering(args, benchmarks, results):
                     if isinstance(method_result, dict) and method_result.get("best_score", DEFAULT_SCORE) > best_score:
                         best_score = method_result["best_score"]
                         best_method = method
-                        best_layer = method_result.get("best_layer", DEFAULT_LAYER)
-                        best_strength = method_result.get("best_strength", DEFAULT_STRENGTH)
+                        best_layer = method_result.get("best_layer")
+                        best_strength = method_result.get("best_strength")
+                        if best_layer is None:
+                            raise ValueError(f"Missing 'best_layer' in result for {method}")
+                        if best_strength is None:
+                            raise ValueError(f"Missing 'best_strength' in result for {method}")
                 
                 if best_method:
                     store_optimization(
@@ -136,14 +140,16 @@ def run_benchmark_steering(args, benchmarks, results):
                 
                 if steering_result:
                     best_method = steering_result.get("best_method", "CAA")
-                    best_layer = steering_result.get("best_layer", DEFAULT_LAYER)
+                    best_layer = steering_result.get("best_layer")
+                    if best_layer is None:
+                        raise ValueError(f"Missing 'best_layer' in personalization result for {trait}")
                     best_score = steering_result.get("best_score", DEFAULT_SCORE)
                     
                     store_optimization(
                         model=args.model,
                         task=f"personalization:{trait}",
                         layer=best_layer,
-                        strength=steering_result.get("best_strength", DEFAULT_STRENGTH),
+                        strength=steering_result["best_strength"],
                         method=best_method.upper(),
                         score=best_score,
                     )

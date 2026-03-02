@@ -71,7 +71,7 @@ class BabilongExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
 
-    def _extract_pair_from_doc(self, doc: dict[str, Any], qa_config: str = "qa1") -> ContrastivePair | None:
+    def _extract_pair_from_doc(self, doc: dict[str, Any], qa_config: str) -> ContrastivePair | None:
         """
         Convert a single Babilong doc into a ContrastivePair, if possible.
         Returns None when required fields are missing or malformed.

@@ -6,14 +6,14 @@ using Cohen's d effect size by comparing outputs before and after steering.
 from typing import Dict, List, Optional, Any
 import numpy as np
 import torch
-from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, DEFAULT_STRENGTH, EFFECT_SIZE_MEDIUM
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, EFFECT_SIZE_MEDIUM, LAYER_SWEEP_STRENGTH
 from wisent.core.primitives.models.config import get_generate_kwargs
 
 
 def compute_steering_effect_size(
     outputs_before: List[str],
     outputs_after: List[str],
-    target_direction: str = "increase",
+    target_direction: str,
     metric_fn: Optional[callable] = None,
 ) -> Dict[str, float]:
     """
@@ -66,9 +66,9 @@ def validate_steering_effectiveness(
     steering_vector: torch.Tensor,
     test_prompts: List[str],
     layer: int,
-    steering_strength: float = DEFAULT_STRENGTH,
+    steering_strength: float,
+    target_direction: str,
     metric_fn: Optional[callable] = None,
-    target_direction: str = "increase",
     max_new_tokens: int | None = None,
 ) -> Dict[str, Any]:
     """
@@ -143,11 +143,11 @@ def validate_steering_effectiveness(
 def run_full_validation(
     pos: torch.Tensor,
     neg: torch.Tensor,
+    device: str,
     model=None,
     tokenizer=None,
     test_prompts: Optional[List[str]] = None,
     layer: int = None,
-    device: str = "cuda",
 ) -> Dict[str, Any]:
     """
     Run full protocol with validation: test -> recommend -> validate.
@@ -163,7 +163,7 @@ def run_full_validation(
 
     # Step 1: Signal test
     signal_metrics = compute_signal_vs_null(pos, neg, ["knn_accuracy", "mlp_probe_accuracy"])
-    signal_z, signal_p, _ = compute_aggregate_signal(signal_metrics)
+    signal_z, signal_p, _ = compute_aggregate_signal(signal_metrics, correction="bonferroni")
 
     # Step 2: Geometry test
     linearity = test_linearity(pos, neg)
@@ -206,7 +206,8 @@ def run_full_validation(
     if model is not None and test_prompts and intervention.recommended_method != "NONE":
         steering_vector = (pos.mean(dim=0) - neg.mean(dim=0)).to(device)
         validation = validate_steering_effectiveness(
-            model, tokenizer, steering_vector, test_prompts, layer
+            model, tokenizer, steering_vector, test_prompts, layer,
+            steering_strength=LAYER_SWEEP_STRENGTH, target_direction="increase",
         )
         result["validation"] = validation
 

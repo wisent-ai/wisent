@@ -3,11 +3,11 @@ from __future__ import annotations
 
 import torch
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_STRENGTH, JSON_INDENT, TETNO_HYBRID_STRENGTH_FACTOR,
+    JSON_INDENT, TETNO_HYBRID_STRENGTH_FACTOR,
     TETNO_GATE_TEMPERATURE, TETNO_DYNAMIC_BASE_STRENGTH,
 )
 from wisent.core.weight_modification.export._generic import (
@@ -24,9 +24,9 @@ def export_tetno_model(
     model: Module,
     tetno_result,
     save_path: str | Path,
+    strength: float,
+    mode: str,
     tokenizer=None,
-    mode: str = "hybrid",
-    strength: float = DEFAULT_STRENGTH,
     push_to_hub: bool = False,
     repo_id: str | None = None,
     commit_message: str | None = None,
@@ -79,6 +79,7 @@ def export_tetno_model(
             model=model,
             steering_vectors=steering_vectors,
             alpha=bake_strength,
+            method="bias",
         )
         log.info(f"Baked TETNO vectors (strength={bake_strength})")
     
@@ -140,7 +141,7 @@ def export_tetno_model(
 
 def load_tetno_model(
     model_path: str | Path,
-    device_map: str = "auto",
+    device_map: Optional[str] = None,
     torch_dtype=None,
     install_hooks: bool = True,
 ):

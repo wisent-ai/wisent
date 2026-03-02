@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 
 def evaluate_text_generation(evaluator, classifier, task_name: str, num_samples: int, model, layer: int,
-                              token_aggregation: str = "average") -> Dict[str, Any]:
+                              token_aggregation: str) -> Dict[str, Any]:
     """Evaluate classifier using text generation approach."""
     try:
         logger.info(f"TEXT GENERATION EVALUATION: {task_name}")

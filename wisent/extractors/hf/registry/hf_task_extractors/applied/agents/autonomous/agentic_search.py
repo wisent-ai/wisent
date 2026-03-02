@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -28,7 +28,7 @@ class BrowseCompExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "web_browsing_accuracy"
 
-    def __init__(self, language: str = "en"):
+    def __init__(self, language: Optional[str] = None):
         """
         Initialize BrowseComp extractor.
 
@@ -36,7 +36,7 @@ class BrowseCompExtractor(HuggingFaceBenchmarkExtractor):
             language: Language code (en for English, zh for Chinese)
         """
         super().__init__()
-        self.language = language
+        self.language = language if language is not None else "en"
 
     def extract_contrastive_pairs(
         self,
@@ -147,7 +147,7 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "search_augmented_qa"
 
-    def __init__(self, flavor: str = "seal_0"):
+    def __init__(self, flavor: Optional[str] = None):
         """
         Initialize SealQA extractor.
 
@@ -155,7 +155,7 @@ class SealExtractor(HuggingFaceBenchmarkExtractor):
             flavor: Benchmark flavor (seal_0, seal_hard, longseal)
         """
         super().__init__()
-        self.flavor = flavor
+        self.flavor = flavor if flavor is not None else "seal_0"
 
     def extract_contrastive_pairs(
         self,

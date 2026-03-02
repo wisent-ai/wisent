@@ -25,7 +25,7 @@ from wisent.core.utils.config_tools.constants import (
     CODING_BENCHMARK_DEFAULT_LIMIT, SPLIT_RATIO_HALF, TEST_DEFAULT_LIMIT,
     DEFAULT_RANDOM_SEED, DEFAULT_TIMEOUT_DOCKER, JSON_INDENT,
 )
-from wisent.core.utils.core.hardware import docker_sandbox_time_limit_s, docker_sandbox_cpu_limit_s, docker_sandbox_mem_limit_mb
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_sandbox_time_limit_s, docker_sandbox_cpu_limit_s, docker_sandbox_mem_limit_mb
 from wisent.core.utils.infra_tools.data.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
 
@@ -271,7 +271,7 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Test coding benchmarks with Docker execution")
-    parser.add_argument("task", nargs="?", default="humaneval", help="Benchmark name (default: humaneval)")
+    parser.add_argument("task", help="Benchmark name")
     parser.add_argument("--limit", type=int, default=CODING_BENCHMARK_DEFAULT_LIMIT, help="Number of pairs to test (default: 5)")
     parser.add_argument("--output", type=str, default=None, help="Output directory")
 

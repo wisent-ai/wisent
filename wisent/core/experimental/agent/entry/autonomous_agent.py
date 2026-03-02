@@ -1,10 +1,6 @@
-#!/usr/bin/env python3
-"""
-Autonomous Wisent Agent - generates, analyzes, and improves responses
-using activation-based steering and correction techniques.
-"""
-
+"""Autonomous Wisent Agent - steering and correction techniques."""
 import asyncio
+import sys
 from typing import Any, Dict, List, Optional
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -14,7 +10,7 @@ from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core import constants as _C
 from wisent.core.utils.config_tools.constants import (AGENT_STEERING_THRESHOLD, AGENT_QUALITY_THRESHOLD,
     AGENT_DEFAULT_TIME_BUDGET_INIT, AGENT_DEFAULT_TIME_BUDGET, AGENT_DEMO_TIME_BUDGET,
-    CLASSIFIER_THRESHOLD, AGENT_MAX_RESPONSE_ATTEMPTS, DEFAULT_STRENGTH)
+    CLASSIFIER_THRESHOLD, AGENT_MAX_RESPONSE_ATTEMPTS)
 from .agent.diagnose import AgentClassifierDecisionSystem, AnalysisResult, ClassifierMarketplace, ResponseDiagnostics
 from .agent.steer import ImprovementResult, ResponseSteering
 from .model import Model
@@ -33,15 +29,15 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
 
     def __init__(
         self,
-        model_name: str = "meta-llama/Llama-3.1-8B-Instruct",
+        model_name: str,
+        steering_strength: Optional[float] = None,
         layer_override: int = None,
         enable_tracking: bool = True,
-        steering_method: str = "CAA",
-        steering_strength: float = DEFAULT_STRENGTH,
+        steering_method: Optional[str] = None,
         steering_mode: bool = False,
-        normalization_method: str = "none",
+        normalization_method: Optional[str] = None,
         target_norm: Optional[float] = None,
-        priority: str = "all",
+        priority: Optional[str] = None,
         fast_only: bool = False,
         time_budget_minutes: float = None,
         max_benchmarks: int = None,
@@ -262,11 +258,11 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
         return self.marketplace.get_marketplace_summary()
 
 
-async def demo_autonomous_agent():
+async def demo_autonomous_agent(model_name: str):
     """Demo function for the autonomous agent."""
     print("AUTONOMOUS AGENT DEMO - Intelligent Classifier Selection")
     print("=" * _C.SEPARATOR_WIDTH_STANDARD)
-    agent = AutonomousAgent()
+    agent = AutonomousAgent(model_name=model_name)
     try:
         await agent.initialize(quality_threshold=AGENT_QUALITY_THRESHOLD, default_time_budget_minutes=AGENT_DEFAULT_TIME_BUDGET)
         test_prompts = [
@@ -297,4 +293,6 @@ async def demo_autonomous_agent():
 
 
 if __name__ == "__main__":
-    asyncio.run(demo_autonomous_agent())
+    if len(sys.argv) < _C.MIN_ARGV_WITH_ARG:
+        raise MissingParameterError(params=["model_name"], context="pass model name as first argument")
+    asyncio.run(demo_autonomous_agent(model_name=sys.argv[_C.FIRST_ARG_INDEX]))

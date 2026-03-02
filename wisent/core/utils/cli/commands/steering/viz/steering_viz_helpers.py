@@ -19,7 +19,7 @@ from wisent.core.utils.config_tools.constants import (
     CLASSIFIER_THRESHOLD, ADAPTIVE_STRENGTH_MULTIPLIER,
 )
 # Re-export from steering_viz_utils for backwards compatibility
-from wisent.core.reading.modules.steering_viz_utils import (
+from wisent.core.utils.visualization.steering.steering_viz_utils import (
     create_steering_object_from_pairs,
     extract_activations_from_responses,
     load_reference_activations,
@@ -42,7 +42,7 @@ def select_steering_direction(
     Returns (steering_vector, description, accuracy).
     Accuracy is the behavioral classifier accuracy (CLASSIFIER_THRESHOLD for non-behavioral methods).
     """
-    from wisent.core.reading.modules.steering_discovery import generate_candidate_directions
+    from wisent.core.reading.modules.modules.steering.analysis.steering_discovery import generate_candidate_directions
 
     pos_ref_np = pos_ref.cpu().numpy()
     neg_ref_np = neg_ref.cpu().numpy()
@@ -108,7 +108,7 @@ def create_steering_method(
 
     Returns fitted SteeringMethod instance, or None for default linear.
     """
-    from wisent.core.reading.modules.advanced_steering import (
+    from wisent.core.reading.modules.modules.steering.advanced_steering import (
         LinearSteering, ClampingSteering, ProjectionSteering,
         ReplacementSteering, ContrastSteering, MLPSteering, AdaptiveSteering,
     )
@@ -139,8 +139,9 @@ def load_all_layer_activations(
     task_name: str,
     num_layers: int,
     train_ids: set,
-    prompt_format: str = "chat",
-    extraction_strategy: str = "last_token",
+    extraction_strategy: str,
+    component: str,
+    prompt_format: str,
     limit: int = VIZ_LIMIT,
     database_url: str = None,
     layers: list = None,
@@ -151,7 +152,7 @@ def load_all_layer_activations(
     Returns:
         (pos_by_layer, neg_by_layer) dicts mapping layer number -> numpy activations
     """
-    from wisent.core.reading.modules.zwiad_with_concepts import load_activations_from_database
+    from wisent.core.reading.modules.utilities.data.database_loaders import load_activations_from_database
 
     if layers is None:
         layers = list(range(num_layers))
@@ -161,7 +162,8 @@ def load_all_layer_activations(
         try:
             pos, neg = load_activations_from_database(
                 model_name=model_name, task_name=task_name, layer=layer,
-                prompt_format=prompt_format, extraction_strategy=extraction_strategy,
+                component=component, extraction_strategy=extraction_strategy,
+                prompt_format=prompt_format,
                 limit=limit, database_url=database_url, pair_ids=train_ids
             )
             pos_by_layer[layer] = pos.cpu().numpy()
@@ -188,7 +190,7 @@ def create_all_layer_steering(
     neg_by_layer: dict,
     default_method: str,
     default_strength: float,
-    direction_method: str = "mean_diff",
+    direction_method: str,
     layer_strengths: dict = None,
     layer_methods: dict = None,
     behavioral_acts_by_layer: dict = None,

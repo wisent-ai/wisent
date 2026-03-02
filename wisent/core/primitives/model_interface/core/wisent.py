@@ -125,7 +125,7 @@ class Wisent(WisentPairsMixin, WisentTrainingMixin, WisentIOMixin):
     def __init__(
         self,
         adapter: BaseAdapter,
-        steering_method: str = "caa",
+        steering_method: Optional[str] = None,
         device: str | None = None,
     ):
         """

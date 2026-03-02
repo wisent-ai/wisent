@@ -2,7 +2,7 @@
 import logging, time
 from typing import List, Tuple
 from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_PAIRS_PER_TRAIT, AGENT_CLASSIFIER_NUM_PAIRS, TRAIT_LABEL_MAX_LENGTH
+from wisent.core.utils.config_tools.constants import AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_PAIRS_PER_TRAIT, AGENT_CLASSIFIER_NUM_PAIRS, TRAIT_LABEL_MAX_LENGTH
 from wisent.core.utils.infra_tools.errors import InsufficientDataError, MissingParameterError, ExecutionError
 from wisent.core.experimental.agent.diagnose.classifiers._synthetic_classes import (
     TraitDiscoveryResult, SyntheticClassifierResult,
@@ -65,7 +65,7 @@ def apply_classifiers_to_response(
 
 
 def create_classifier_from_trait_description(
-    model, trait_description: str, num_pairs: int = AGENT_CLASSIFIER_NUM_PAIRS
+    model, trait_description: str, num_pairs: int = AGENT_CLASSIFIER_NUM_PAIRS, layer: int = None,
 ) -> ActivationClassifier:
     """
     Direct function to create a classifier from a trait description.
@@ -88,13 +88,10 @@ def create_classifier_from_trait_description(
         with open(log_file, "a") as f:
             f.write(f"{datetime.datetime.now().isoformat()}: {message}\n")
 
-    log_and_print(f"🎯 Creating classifier for trait: '{trait_description}'")
-    log_and_print(f"📋 Parameters: num_pairs={num_pairs}")
-
-    # Create synthetic contrastive pair generator
-    log_and_print("🏭 Creating SyntheticContrastivePairGenerator...")
+    if layer is None:
+        raise MissingParameterError(params=["layer"], context="create_classifier_from_trait_description")
+    log_and_print(f"Creating classifier: trait='{trait_description}', layer={layer}, num_pairs={num_pairs}")
     pair_generator = SyntheticContrastivePairGenerator(model)
-    log_and_print("✅ SyntheticContrastivePairGenerator created successfully")
 
     # Generate contrastive pairs for this trait
     log_and_print(f"📝 Generating {num_pairs} contrastive pairs...")
@@ -147,8 +144,8 @@ def create_classifier_from_trait_description(
     # Create Layer object for activation extraction
     from wisent.core.primitives.models.core.layer import Layer
 
-    layer_obj = Layer(index=DEFAULT_LAYER, type="transformer")
-    log_and_print(f"🔧 Created Layer object: index={layer_obj.index}, type={layer_obj.type}")
+    layer_obj = Layer(index=layer, type="transformer")
+    log_and_print(f"Created Layer object: index={layer_obj.index}, type={layer_obj.type}")
 
     for i, pair in enumerate(pair_set.pairs):
         log_and_print(f"\n🔍 Processing pair {i + 1}/{len(pair_set.pairs)}...")
@@ -250,7 +247,7 @@ def create_classifier_from_trait_description(
 
 
 def evaluate_response_with_trait_classifier(
-    model, response_text: str, trait_classifier: ActivationClassifier
+    model, response_text: str, trait_classifier: ActivationClassifier, layer: int = None,
 ) -> SyntheticClassifierResult:
     """
     Evaluate a response using a trait-specific classifier.
@@ -269,8 +266,10 @@ def evaluate_response_with_trait_classifier(
     logging.info(f"Evaluating response with '{trait_description}' classifier...")
 
     # Extract activations from response
+    if layer is None:
+        raise MissingParameterError(params=["layer"], context="evaluate_response_with_trait_classifier")
     try:
-        response_activations, _ = model.extract_activations(response_text, layer=DEFAULT_LAYER)
+        response_activations, _ = model.extract_activations(response_text, layer=layer)
     except Exception as e:
         raise ExecutionError(reason=f"Error extracting response activations: {e}", cause=e)
 

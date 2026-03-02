@@ -1,5 +1,5 @@
 """Infrastructure constants: timeouts, retries, batch sizes, caching, logging."""
-from wisent.core.utils.constants.cannot_be_optimized._benchmark_data import *  # noqa: F401,F403
+from wisent.core.utils.config_tools.constants.cannot_be_optimized._benchmark_data import *  # noqa: F401,F403
 
 # --- Core defaults ---
 DEFAULT_RANDOM_SEED = 42
@@ -48,7 +48,8 @@ DB_CONNECTION_MAX_RETRIES = 5
 DB_CURSOR_ITERSIZE = 500
 DB_CONNECT_WAIT_S = 30
 DB_TEXT_FIELD_MAX_LENGTH = 65000
-# --- HuggingFace upload retry ---
+DB_KEEPALIVE_INTERVAL = 10
+DB_KEEPALIVE_COUNT = 5# --- HuggingFace upload retry ---
 HF_UPLOAD_MAX_RETRIES = 8
 HF_UPLOAD_BASE_WAIT = 120
 HF_UPLOAD_BACKOFF_MAX_EXPONENT = 3
@@ -76,6 +77,11 @@ COMPARISON_LOGGING_STEPS = 10
 PROGRESS_LOG_INTERVAL = 50
 PROGRESS_REPORT_INTERVAL = 10
 PROGRESS_CALLBACK_THRESHOLD = 100
+PROGRESS_CALLBACK_THRESHOLD_EXHAUSTIVE = 10000
+PROGRESS_CALLBACK_THRESHOLD_CONTIGUOUS = 50
+# --- Combinatorics ---
+COMBO_BASE = 2
+COMBO_OFFSET = 1
 # --- Agent ---
 AGENT_MAX_WORKERS = 4
 AGENT_CLASSIFIER_EPOCHS = 50
@@ -97,6 +103,7 @@ DATA_CHUNK_SIZE = 50
 MIN_LOAD_LIMIT_QUESTIONS = 20
 QA_PARSER_LOOKAHEAD_LINES = 10
 # --- Timing ---
+DEFAULT_PROMPT_LENGTH = 0
 TIMING_SAMPLES_PER_TASK = 1000
 TRACKING_SAMPLING_INTERVAL = 0.1
 BENCHMARK_LOADING_TIME_DEFAULT = 60.0
@@ -169,3 +176,21 @@ MIN_CLUSTERS = 2
 LAYER_STRIDE_DEFAULT = 2
 LAYER_RANGE_SMALL_OFFSET = 2
 LAYER_RANGE_LARGE_OFFSET = 3
+# --- String identity constants ---
+# Evaluator names
+EVALUATOR_NAME_TRUTHFULQA_GEN = "truthfulqa_gen"
+EVALUATOR_NAME_LOG_LIKELIHOODS = "log_likelihoods"
+# Extractor manifest base imports
+HF_EXTRACTOR_BASE_IMPORT = "wisent.extractors.hf.hf_task_extractors."
+LM_EVAL_EXTRACTOR_BASE_IMPORT = "wisent.extractors.lm_eval.lm_task_extractors."
+# Base class / registry identity names
+BASE_CLASS_NAME = "base"
+CLEAN_STEP_DEFAULT_NAME = "step"
+BASE_OPTIMIZER_NAME = "base-optimizer"
+# LiveMathBench defaults
+LIVEMATHBENCH_DEFAULT_DATASET_CONFIG = "v202412_CNMO_en"
+LIVEMATHBENCH_DEFAULT_CONFIG_LABEL = "cnmo_en"
+# Config field names
+NESTED_CONFIG_NAME_FIELD = "name"
+TASK_CONFIG_NAME_FIELD = "task_name"
+TRAIT_CONFIG_NAME_FIELD = "trait_name"

@@ -17,7 +17,7 @@ __all__ = [
 
 def apply_priority_filtering(
     benchmarks: Dict[str, Dict],
-    priority: str = "all",
+    priority: Optional[str] = None,
     fast_only: bool = False,
     time_budget_minutes: Optional[float] = None,
 ) -> Dict[str, Dict]:
@@ -30,7 +30,7 @@ def apply_priority_filtering(
         if fast_only and benchmark_priority != "high":
             continue
 
-        if priority != "all" and benchmark_priority != priority:
+        if priority is not None and benchmark_priority != priority:
             continue
 
         if time_budget_minutes is not None:
@@ -45,7 +45,7 @@ def apply_priority_filtering(
 
 
 def get_benchmarks_by_priority(
-    core_benchmarks: Dict[str, Dict], priority: str = "high"
+    core_benchmarks: Dict[str, Dict], priority: str
 ) -> Dict[str, Dict]:
     """Get benchmarks filtered by priority level."""
     return {

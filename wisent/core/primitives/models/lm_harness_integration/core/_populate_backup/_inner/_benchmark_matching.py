@@ -9,13 +9,13 @@ import sys
 import re
 from typing import Dict, Any, List, Optional
 
-from wisent.core.utils.config_tools.constants import (DEFAULT_LAYER, DISPLAY_TOP_N_TINY, LLAMA_PAD_TOKEN_ID,
+from wisent.core.utils.config_tools.constants import (DISPLAY_TOP_N_TINY, LLAMA_PAD_TOKEN_ID,
     MAX_BENCHMARKS_SINGLE)
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
 
 
 def get_relevant_benchmarks_for_prompt(prompt: str, max_benchmarks: int = MAX_BENCHMARKS_SINGLE,
-                                        existing_model=None) -> List[Dict[str, Any]]:
+                                        existing_model=None, layer: int = None) -> List[Dict[str, Any]]:
     """
     Use Llama-3.1B-Instruct to determine the most relevant benchmarks
     for testing a given prompt.
@@ -95,7 +95,7 @@ Top {max_benchmarks} most relevant benchmarks:"""
         print("   Analyzing with Llama...")
         if existing_model is not None:
             response, _ = existing_model.generate(
-                formatted_prompt, layer_index=DEFAULT_LAYER)
+                formatted_prompt, layer_index=layer)
             generated_text = response.strip()
         else:
             response = generator(

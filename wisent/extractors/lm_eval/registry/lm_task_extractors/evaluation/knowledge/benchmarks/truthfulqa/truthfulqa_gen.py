@@ -7,7 +7,7 @@ from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.lm_eval.atoms import LMEvalBenchmarkExtractor
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_SHORT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_SHORT, EVALUATOR_NAME_TRUTHFULQA_GEN
 
 if TYPE_CHECKING:
     from lm_eval.api.task import ConfigurableTask
@@ -19,7 +19,7 @@ _LOG = setup_logger(__name__)
 task_names = ("truthfulqa_gen", "truthfulqa_generation")
 
 # Use semantic similarity evaluator for generation tasks
-evaluator_name = "truthfulqa_gen"
+evaluator_name = EVALUATOR_NAME_TRUTHFULQA_GEN
 
 
 class TruthfulQAGenExtractor(LMEvalBenchmarkExtractor):
@@ -35,7 +35,7 @@ class TruthfulQAGenExtractor(LMEvalBenchmarkExtractor):
         - type: str
     """
 
-    evaluator_name: str = "truthfulqa_gen"
+    evaluator_name: str = EVALUATOR_NAME_TRUTHFULQA_GEN
 
     def extract_contrastive_pairs(
         self,

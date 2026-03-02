@@ -10,7 +10,7 @@ class LiveCodeBenchProvider:
     """LiveCodeBench provider: loads real coding problems from HuggingFace."""
     name = "livecodebench"
 
-    def __init__(self, language: Language = "python", release_version: str = "all",
+    def __init__(self, language: Language = "python", release_version: Optional[str] = None,
                  limit: Optional[int] = None, platform: Optional[str] = None):
         self.language = language
         self.release_version = release_version
@@ -19,7 +19,7 @@ class LiveCodeBenchProvider:
         if language != "python":
             raise NotImplementedError(f"LiveCodeBench currently only supports Python. Got: {language}")
 
-    def iter_tasks(self, split: str = "test") -> Iterable[CodingTask]:
+    def iter_tasks(self, split: str) -> Iterable[CodingTask]:
         """Iterate over LiveCodeBench coding tasks."""
         from datasets import load_dataset
         dataset = load_dataset("livecodebench/code_generation_lite", split=split)

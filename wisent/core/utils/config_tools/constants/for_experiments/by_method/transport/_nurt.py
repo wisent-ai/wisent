@@ -1,5 +1,5 @@
 """NURT (Current) steering method constants."""
-from wisent.core.utils.constants.for_experiments.by_method.transport._szlak import *  # noqa: F401,F403
+from wisent.core.utils.config_tools.constants.for_experiments.by_method.transport._szlak import *  # noqa: F401,F403
 
 # --- Core NURT parameters ---
 NURT_NUM_DIMS = 0

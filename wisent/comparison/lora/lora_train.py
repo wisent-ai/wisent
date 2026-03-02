@@ -58,8 +58,9 @@ def prepare_sft_dataset(pairs: list[dict], tokenizer) -> Dataset:
 def train_lora_adapter(
     task: str, model_name: str, output_path: str | Path,
     lora_r: int, lora_alpha: int,
-    trait_label: str = "correctness", num_pairs: int = COMPARISON_NUM_PAIRS,
-    device: str = "cuda:0", keep_intermediate: bool = False,
+    trait_label: str, device: str,
+    num_pairs: int = COMPARISON_NUM_PAIRS,
+    keep_intermediate: bool = False,
     lora_dropout: float = LORA_DEFAULT_DROPOUT,
     learning_rate: float = COMPARISON_LORA_LEARNING_RATE, num_epochs: int = COMPARISON_NUM_EPOCHS_DEFAULT,
     batch_size: int = COMPARISON_TRAINING_BATCH_SIZE, max_length: int | None = None,

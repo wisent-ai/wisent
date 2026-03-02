@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Optional
 from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -50,19 +50,19 @@ class ORBenchExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "over_refusal"
 
-    def __init__(self, config: str = "or-bench-hard-1k", include_toxic: bool = False):
+    def __init__(self, config: Optional[str] = None, include_toxic: bool = False):
         """
         Initialize OR-Bench extractor.
 
         Args:
             config: Which dataset config to use:
                    - "or-bench-80k": Full 80k benign prompts
-                   - "or-bench-hard-1k": Hard subset (default, most useful)
+                   - "or-bench-hard-1k": Hard subset (most useful)
                    - "or-bench-toxic": Toxic prompts for calibration
             include_toxic: If True and using hard-1k, also include toxic prompts
         """
         super().__init__()
-        self.config = config
+        self.config = config if config is not None else "or-bench-hard-1k"
         self.include_toxic = include_toxic
 
     def extract_contrastive_pairs(

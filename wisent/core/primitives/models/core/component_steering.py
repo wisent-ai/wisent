@@ -24,7 +24,7 @@ from wisent.core.primitives.model_interface.core.activations.component_hooks imp
     _detect_model_type,
     _get_submodule,
 )
-from wisent.core.reading.modules.analysis.structure.transformer_analysis import (
+from wisent.core.reading.modules.utilities.signal_analysis.structure.transformer_analysis import (
     get_component_hook_points,
 )
 

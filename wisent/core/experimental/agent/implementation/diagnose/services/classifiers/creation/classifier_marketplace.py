@@ -9,7 +9,6 @@ import numpy as np
 
 from wisent.core.utils import resolve_default_device
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER,
     MARKETPLACE_F1_WEIGHT, MARKETPLACE_ACCURACY_WEIGHT,
     MARKETPLACE_DATA_QUALITY_WEIGHT, MARKETPLACE_DATA_QUALITY_DENOM,
     MARKETPLACE_RECENCY_WEIGHT, BUDGET_RECENCY_WINDOW_DAYS,
@@ -50,8 +49,9 @@ class ClassifierMarketplace(MarketplaceEstimationMixin):
     to discover, evaluate, and create classifiers based on its needs.
     """
 
-    def __init__(self, model, search_paths: List[str] = None):
+    def __init__(self, model, search_paths: List[str] = None, layer: int = None):
         self.model = model
+        self.layer = layer
         self.search_paths = search_paths or [
             "./models/",
             "./classifiers/",
@@ -160,13 +160,13 @@ class ClassifierMarketplace(MarketplaceEstimationMixin):
             if len(path_parts) >= 2:
                 benchmark_name = path_parts[-2]
                 layer_match = re.search(r'layer_(\d+)\.pkl', filename)
-                layer = int(layer_match.group(1)) if layer_match else DEFAULT_LAYER
+                layer = int(layer_match.group(1)) if layer_match else self.layer
                 issue_type = f"quality_{benchmark_name}"
                 return layer, issue_type
 
         filename = os.path.basename(filepath).lower()
 
-        layer = DEFAULT_LAYER
+        layer = self.layer
         for part in filename.replace('_', ' ').replace('-', ' ').split():
             if part.startswith('l') and part[1:].isdigit():
                 layer = int(part[1:])
@@ -203,7 +203,7 @@ Common issue types include:
 Respond with just the issue type (one word):"""
 
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
+            response = self.model.generate(prompt, layer_index=self.layer)
             issue_type = response.strip().lower()
 
             match = re.search(r'(hallucination|quality|harmful|bias|coherence|unknown)', issue_type)
@@ -254,7 +254,7 @@ Common families include: llama, mistral, gemma, qwen, gpt, claude, other
 Respond with just the family name (one word):"""
 
         try:
-            response = self.model.generate(prompt, layer_index=DEFAULT_LAYER, )
+            response = self.model.generate(prompt, layer_index=self.layer)
             family = response.strip().lower()
 
             match = re.search(r'(llama|mistral|gemma|qwen|gpt|claude|other|unknown)', family)

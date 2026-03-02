@@ -12,7 +12,7 @@ from wisent.core.utils.config_tools.constants import (
     CLASSIFIER_THRESHOLD, CLASSIFIER_TRAINING_SAMPLES,
     CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE,
     DEFAULT_CLASSIFIER_LR, CLASSIFIER_EARLY_STOPPING_PATIENCE,
-    CLASSIFIER_HIDDEN_DIM, DEFAULT_LAYER,
+    CLASSIFIER_HIDDEN_DIM,
     AGENT_STEERING_INITIAL_STRENGTH,
     AGENT_STEERING_INCREMENT, AGENT_STEERING_MAX_STRENGTH,
     AGENT_STEERING_INITIAL_MIN, AGENT_STEERING_INITIAL_MAX,
@@ -59,7 +59,7 @@ class SteeringParamsMixin:
         """
 
         gen_kwargs = get_generate_kwargs()
-        result = self.model.generate(steering_prompt, layer_index=DEFAULT_LAYER, **gen_kwargs)
+        result = self.model.generate(steering_prompt, layer_index=self.params.layer, **gen_kwargs)
         response = result[0] if isinstance(result, tuple) else result
         return self._parse_steering_params(response)
 
@@ -162,13 +162,13 @@ class SteeringParamsMixin:
                 optimal_layer=classifier_config["layer"],
                 classification_threshold=classifier_config.get("threshold", CLASSIFIER_THRESHOLD),
                 training_samples=classifier_config.get("samples", CLASSIFIER_TRAINING_SAMPLES),
-                classifier_type=classifier_config.get("type", "logistic"),
+                classifier_type=classifier_config["type"],
                 reasoning="Using parameters from configuration file",
                 model_name=self.model_name,
             )
 
-            params.aggregation_method = classifier_config.get("aggregation_method", "last_token")
-            params.token_aggregation = classifier_config.get("token_aggregation", "average")
+            params.aggregation_method = classifier_config.get("aggregation_method")
+            params.token_aggregation = classifier_config.get("token_aggregation")
             params.num_epochs = classifier_config.get("num_epochs", CLASSIFIER_NUM_EPOCHS)
             params.batch_size = classifier_config.get("batch_size", CLASSIFIER_BATCH_SIZE)
             params.learning_rate = classifier_config.get("learning_rate", DEFAULT_CLASSIFIER_LR)

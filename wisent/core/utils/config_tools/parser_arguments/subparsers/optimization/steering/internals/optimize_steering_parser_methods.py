@@ -1,5 +1,5 @@
 """Method-specific subparsers for optimize-steering."""
-from wisent.core.utils.config_tools.constants import AUTO_MAX_TIME_MINUTES, DEFAULT_STRENGTH, OPTIMIZE_MAX_TIME_MINUTES, SEARCH_DEFAULT_STRENGTHS
+from wisent.core.utils.config_tools.constants import AUTO_MAX_TIME_MINUTES, OPTIMIZE_MAX_TIME_MINUTES, SEARCH_DEFAULT_STRENGTHS
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
@@ -30,8 +30,8 @@ def setup_method_parsers(steering_subparsers):
         type=str,
         nargs="+",
         choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
-        default=["CAA", "Ostrze", "MLP", "TECZA", "TETNO", "GROM"],
-        help=f"Methods to optimize (default: all)"
+        required=True,
+        help=f"Methods to optimize. Available: {', '.join(AVAILABLE_METHODS)}"
     )
     hierarchical_parser.add_argument(
         "--limit",
@@ -42,7 +42,7 @@ def setup_method_parsers(steering_subparsers):
     hierarchical_parser.add_argument(
         "--output-dir",
         type=str,
-        default="./hierarchical_results",
+        required=True,
         help="Directory to save results"
     )
     hierarchical_parser.add_argument("--device", type=str, default=None, help="Device")
@@ -54,14 +54,14 @@ def setup_method_parsers(steering_subparsers):
     )
     method_parser.add_argument("model", type=str, help="Model name or path")
     method_parser.add_argument(
-        "--task", type=str, default="truthfulqa_mc1", help="Task to optimize steering for (default: truthfulqa_mc1)"
+        "--task", type=str, required=True, help="Task to optimize steering for"
     )
     method_parser.add_argument(
         "--methods",
         type=str,
         nargs="+",
         choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
-        default=["CAA"],
+        required=True,
         help=f"Steering methods to compare. Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(method_parser)
@@ -86,19 +86,19 @@ def setup_method_parsers(steering_subparsers):
     layer_parser = steering_subparsers.add_parser("optimize-layer", help="Find optimal steering layer for a method")
     layer_parser.add_argument("model", type=str, help="Model name or path")
     layer_parser.add_argument(
-        "--task", type=str, default="truthfulqa_mc1", help="Task to optimize for (default: truthfulqa_mc1)"
+        "--task", type=str, required=True, help="Task to optimize for"
     )
     layer_parser.add_argument(
         "--method",
         type=str,
-        default="CAA",
+        required=True,
         choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
-        help=f"Steering method to use (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
+        help=f"Steering method to use. Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(layer_parser)
     layer_parser.add_argument("--layer-range", type=str, default=None, help="Layer range to search (e.g., '10-20')")
     layer_parser.add_argument(
-        "--strength", type=float, default=DEFAULT_STRENGTH, help="Fixed steering strength during layer search (default: 1.0)"
+        "--strength", type=float, required=True, help="Fixed steering strength during layer search"
     )
     layer_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")
     layer_parser.add_argument("--device", type=str, default=None, help="Device to run on")
@@ -118,14 +118,14 @@ def setup_method_parsers(steering_subparsers):
     strength_parser = steering_subparsers.add_parser("optimize-strength", help="Find optimal steering strength")
     strength_parser.add_argument("model", type=str, help="Model name or path")
     strength_parser.add_argument(
-        "--task", type=str, default="truthfulqa_mc1", help="Task to optimize for (default: truthfulqa_mc1)"
+        "--task", type=str, required=True, help="Task to optimize for"
     )
     strength_parser.add_argument(
         "--method",
         type=str,
-        default="CAA",
+        required=True,
         choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
-        help=f"Steering method to use (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
+        help=f"Steering method to use. Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(strength_parser)
     strength_parser.add_argument(
@@ -172,8 +172,8 @@ def setup_method_parsers(steering_subparsers):
         type=str,
         nargs="+",
         choices=AVAILABLE_METHODS + [m.lower() for m in AVAILABLE_METHODS],
-        default=["CAA"],
-        help=f"Steering methods to test (default: CAA). Available: {', '.join(AVAILABLE_METHODS)}",
+        required=True,
+        help=f"Steering methods to test. Available: {', '.join(AVAILABLE_METHODS)}",
     )
     SteeringMethodRegistry.add_all_cli_arguments(auto_parser)
     auto_parser.add_argument("--limit", type=int, required=True, help="Maximum samples for testing")

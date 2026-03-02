@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH, DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -19,10 +19,10 @@ _LOG = setup_logger(__name__)
 def project_weights_norm_preserved(
     model: Module,
     steering_vectors: dict[int, Tensor],
+    strength: float,
     harmless_vectors: dict[int, Tensor] | None = None,
     components: list[str] | None = None,
     layer_weights: dict[int, float] | None = None,
-    strength: float = DEFAULT_STRENGTH,
     use_biprojection: bool = True,
     verbose: bool = True,
 ) -> dict[str, int]:
@@ -84,10 +84,10 @@ def project_weights_norm_preserved(
 def project_weights(
     model: Module,
     steering_vectors: dict[int, Tensor],
+    strength: float,
     harmless_vectors: dict[int, Tensor] | None = None,
     components: list[str] | None = None,
     layer_weights: dict[int, float] | None = None,
-    strength: float = DEFAULT_STRENGTH,
     normalize_vectors: bool = True,
     norm_preserve: bool = True,
     use_biprojection: bool = True,

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import random
-from typing import Any
+from typing import Any, Optional
 
 from wisent.core.utils.cli.cli_logger import setup_logger
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -28,9 +28,9 @@ class TranslationExtractor(HuggingFaceBenchmarkExtractor):
 
     def __init__(
         self,
-        source_lang: str = "en",
-        target_lang: str = "de",
-        dataset_name: str = "wmt14",
+        source_lang: Optional[str] = None,
+        target_lang: Optional[str] = None,
+        dataset_name: Optional[str] = None,
     ):
         """
         Initialize Translation extractor.
@@ -41,9 +41,9 @@ class TranslationExtractor(HuggingFaceBenchmarkExtractor):
             dataset_name: HuggingFace dataset name
         """
         super().__init__()
-        self.source_lang = source_lang
-        self.target_lang = target_lang
-        self.dataset_name = dataset_name
+        self.source_lang = source_lang if source_lang is not None else "en"
+        self.target_lang = target_lang if target_lang is not None else "de"
+        self.dataset_name = dataset_name if dataset_name is not None else "wmt14"
 
     def extract_contrastive_pairs(
         self,
@@ -157,7 +157,7 @@ class WMT14Extractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "generation"
 
-    def __init__(self, lang_pair: str = "en-fr"):
+    def __init__(self, lang_pair: Optional[str] = None):
         """
         Initialize WMT14 extractor.
 
@@ -165,8 +165,8 @@ class WMT14Extractor(HuggingFaceBenchmarkExtractor):
             lang_pair: Language pair (e.g., 'en-fr', 'fr-en', 'en-de', 'de-en')
         """
         super().__init__()
-        self.lang_pair = lang_pair
-        parts = lang_pair.split("-")
+        self.lang_pair = lang_pair if lang_pair is not None else "en-fr"
+        parts = self.lang_pair.split("-")
         self.source_lang = parts[0] if len(parts) > 0 else "en"
         self.target_lang = parts[1] if len(parts) > 1 else "fr"
 

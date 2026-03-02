@@ -25,7 +25,7 @@ def set_time_budget(minutes: float) -> None:
     _budget_manager.set_time_budget(minutes)
 
 
-def calculate_max_tasks_for_time_budget(task_type: str = "benchmark_evaluation",
+def calculate_max_tasks_for_time_budget(task_type: str,
                                        time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES) -> int:
     """
     Calculate maximum number of tasks that can fit within a time budget.

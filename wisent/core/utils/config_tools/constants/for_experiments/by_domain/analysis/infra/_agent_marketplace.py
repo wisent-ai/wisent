@@ -1,5 +1,5 @@
 """Agent, marketplace, classifier, and task selection constants."""
-from wisent.core.utils.constants.for_experiments.by_domain.analysis.infra._data_infra import *  # noqa: F401,F403
+from wisent.core.utils.config_tools.constants.for_experiments.by_domain.analysis.infra._data_infra import *  # noqa: F401,F403
 
 # --- Classifier core ---
 CLASSIFIER_TEST_SIZE = 0.2
@@ -73,6 +73,8 @@ HASH_DIGEST_PREFIX = 16
 DEVICE_HASH_PREFIX = 12
 
 # --- Agent defaults ---
+MIN_ARGV_WITH_ARG = 2
+FIRST_ARG_INDEX = 1
 AGENT_DEFAULT_SAMPLES = 25
 AGENT_STEERING_THRESHOLD = 0.6
 AGENT_QUALITY_THRESHOLD = 0.3
@@ -80,7 +82,6 @@ AGENT_DEFAULT_TIME_BUDGET = 5.0
 AGENT_DEFAULT_TIME_BUDGET_INIT = 10.0
 AGENT_DEMO_TIME_BUDGET = 2.0
 AGENT_MAX_PARALLEL_WORKERS = 4
-AGENT_DEFAULT_STEERING_STRENGTH = 1.0
 
 # --- Agent generation ---
 AGENT_STEERING_INITIAL_STRENGTH = 0.5

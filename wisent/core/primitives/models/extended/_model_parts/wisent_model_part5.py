@@ -10,7 +10,6 @@ from transformers import TextIteratorStreamer
 from wisent.core.primitives.models.core.atoms import SteeringPlan
 from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import DEFAULT_STRENGTH
 from wisent.core.primitives.models.config import get_generate_kwargs
 
 # Non-blocking join for the generation worker thread
@@ -21,10 +20,10 @@ _JOIN_NOWAIT = 0.0
 def _generate_stream(
     self,
     inputs: list[list[ChatMessage]] | str,
+    steering_strength: float,
     use_steering: bool = False,
     steering_plan: SteeringPlan | None = None,
     steering_object: "BaseSteeringObject | None" = None,
-    steering_strength: float = DEFAULT_STRENGTH,
     skip_prompt: bool = True,
     skip_special_tokens: bool = True,
     enable_thinking: bool = False,

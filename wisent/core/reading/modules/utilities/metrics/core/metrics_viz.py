@@ -9,7 +9,7 @@ import logging
 from typing import Dict, Any
 import torch
 
-from ...visualization.visualizations import (
+from wisent.core.utils.visualization.geometry.public.visualizations import (
     plot_pca_projection,
     plot_diff_vectors,
     plot_alignment_distribution,
@@ -46,7 +46,7 @@ def generate_metrics_visualizations(
 
     viz_funcs = [
         ("pca_projection", lambda: render_matplotlib_figure(plot_pca_projection(pos_activations, neg_activations))),
-        ("tsne_projection", lambda: render_matplotlib_figure(plot_tsne_projection(pos_activations, neg_activations))),
+        ("tsne_projection", lambda: render_matplotlib_figure(plot_tsne_projection(pos_activations, neg_activations, title="t-SNE Projection"))),
         ("umap_projection", lambda: render_matplotlib_figure(plot_umap_projection(pos_activations, neg_activations))),
         ("pacmap_projection", lambda: render_matplotlib_figure(plot_pacmap_projection(pos_activations, neg_activations))),
         ("diff_vectors", lambda: render_matplotlib_figure(plot_diff_vectors(pos_activations, neg_activations))),

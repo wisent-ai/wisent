@@ -67,9 +67,9 @@ def clear_nonsense_cache() -> None:
 def generate_nonsense_activations(
     model,
     tokenizer,
+    device: str,
     n_pairs: int = NONSENSE_N_PAIRS,
     layer: int = None,
-    device: str = "cuda",
     use_cache: bool = True,
     persist_to_db: bool = True,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -182,10 +182,10 @@ def compute_nonsense_baseline(
 def analyze_with_nonsense_baseline(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    device: str,
     model=None,
     tokenizer=None,
     layer: int = None,
-    device: str = "cuda",
 ) -> Dict[str, Any]:
     """
     Full analysis comparing real data to nonsense baseline.
@@ -207,7 +207,7 @@ def analyze_with_nonsense_baseline(
     if model is not None and tokenizer is not None:
         try:
             nonsense_pos, nonsense_neg = generate_nonsense_activations(
-                model, tokenizer, n_pairs=NONSENSE_N_PAIRS, layer=layer, device=device
+                model, tokenizer, device=device, n_pairs=NONSENSE_N_PAIRS, layer=layer,
             )
             
             nonsense_metrics = {

@@ -8,7 +8,7 @@ import torch
 import numpy as np
 
 from ..base import DiagnosticsIssue, DiagnosticsReport, MetricReport
-from wisent.core.primitives.contrastive_pairs.diagnostics.analysis.vector_quality import (
+from wisent.core.reading.diagnostics.analysis.vector_quality import (
     VectorQualityConfig,
     VectorQualityReport,
     _cosine_similarity,
@@ -16,7 +16,7 @@ from wisent.core.primitives.contrastive_pairs.diagnostics.analysis.vector_qualit
     _compute_convergence,
     _compute_cross_validation,
 )
-from wisent.core.primitives.contrastive_pairs.diagnostics.analysis._vector_quality_helpers import (
+from wisent.core.reading.diagnostics.analysis._vector_quality_helpers import (
     _compute_snr,
     _compute_pca,
     _compute_pair_alignment,

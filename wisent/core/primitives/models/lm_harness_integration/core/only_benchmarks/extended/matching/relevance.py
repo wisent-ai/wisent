@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from wisent.core.utils.config_tools.constants import (
     BENCHMARK_LOADING_TIME_DEFAULT,
@@ -148,14 +148,14 @@ def find_most_relevant_benchmarks(
     prompt: str,
     benchmarks: Dict[str, Dict],
     top_k: int = 1,
-    priority: str = "all",
+    priority: Optional[str] = None,
     fast_only: bool = False,
     time_budget_minutes: float = None,
     prefer_fast: bool = False,
 ) -> List[Dict[str, Any]]:
     """Find the most relevant benchmarks for a given prompt using LLM analysis."""
     # Apply priority filtering
-    if priority != "all" or fast_only or time_budget_minutes is not None:
+    if priority is not None or fast_only or time_budget_minutes is not None:
         benchmarks = apply_priority_filtering(benchmarks, priority, fast_only, time_budget_minutes)
 
     # Build benchmark list for LLM

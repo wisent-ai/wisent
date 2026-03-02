@@ -4,11 +4,11 @@ import numpy as np
 from typing import Dict, Any, List, Tuple, Optional
 import warnings
 from wisent.core import constants as _C
-from wisent.core.reading.modules.visualization._viz_basic import (
+from wisent.core.utils.visualization.geometry.internals._viz_basic import (
     plot_pca_projection, plot_diff_vectors, plot_norm_distribution,
     plot_alignment_distribution, plot_eigenvalue_spectrum, plot_pairwise_distances,
 )
-from wisent.core.reading.modules.visualization._viz_projections import (
+from wisent.core.utils.visualization.geometry.internals._viz_projections import (
     plot_tsne_projection, plot_umap_projection, plot_pacmap_projection,
     plot_cone_visualization, plot_layer_comparison,
 )
@@ -56,7 +56,7 @@ def create_summary_figure(
     plot_projection(axes[0, 0], pca_data, "PCA Projection")
 
     # 2. t-SNE projection
-    tsne_data = plot_tsne_projection(pos_activations, neg_activations)
+    tsne_data = plot_tsne_projection(pos_activations, neg_activations, title="t-SNE Projection")
     plot_projection(axes[0, 1], tsne_data, "t-SNE Projection")
 
     # 3. UMAP projection

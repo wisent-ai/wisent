@@ -16,7 +16,7 @@ from wisent.core.primitives.model_interface.core.activations.activations import 
 from wisent.core.reading.classifiers.core.atoms import Classifier
 from wisent.core.primitives.models.core.layer import Layer
 from wisent.core.primitives.models.core.wisent_model import Model
-from wisent.core.utils.config_tools.constants import AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, CLASSIFIER_THRESHOLD, DEFAULT_LAYER, QUALITY_CLASSIFIER_DEFAULT_LAYER, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, CLASSIFIER_THRESHOLD, QUALITY_CLASSIFIER_DEFAULT_LAYER, CHANCE_LEVEL_ACCURACY
 from wisent.core.utils.infra_tools.errors import (
     ClassifierConfigRequiredError,
     ClassifierLoadError,
@@ -46,8 +46,8 @@ class ResponseDiagnostics:
             model: The language model to extract activations from
             classifier_configs: List of classifier configurations with paths and layers
                 Example: [
-                    {"path": "./models/hallucination_classifier.pt", "layer": DEFAULT_LAYER, "issue_type": "hallucination"},
-                    {"path": "./models/quality_classifier.pt", "layer": QUALITY_CLASSIFIER_DEFAULT_LAYER, "issue_type": "quality"}
+                    {"path": "./models/hallucination_classifier.pt", "layer": <layer_index>, "issue_type": "hallucination"},
+                    {"path": "./models/quality_classifier.pt", "layer": <layer_index>, "issue_type": "quality"}
                 ]
         """
         if not classifier_configs:

@@ -59,7 +59,7 @@ from wisent.core.experimental.agent.resources._device_bench_runner import Device
 class DeviceBenchmarker(DeviceBenchTestsMixin1, DeviceBenchTestsMixin2, DeviceBenchmarkRunnerMixin):
     """Runs performance benchmarks and manages device-specific estimates."""
     
-    def __init__(self, benchmarks_file: str = "device_benchmarks.json"):
+    def __init__(self, benchmarks_file: str):
         self.benchmarks_file = benchmarks_file
         self.cached_benchmark: Optional[DeviceBenchmark] = None
         

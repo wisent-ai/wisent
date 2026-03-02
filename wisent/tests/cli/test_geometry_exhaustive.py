@@ -1,46 +1,14 @@
 """
 Exhaustive layer combination analysis.
 
-Tests all 2^N - 1 layer combinations to find optimal layer subsets
-for geometry detection.
+Tests all power-of-two minus one layer combinations to find optimal layer
+subsets for geometry detection. Uses CLI commands for pair generation and
+activation extraction.
 
-Uses CLI commands for pair generation and activation extraction.
-
-===============================================================================
-DEBUGGING NOTES - READ BEFORE MAKING ASSUMPTIONS
-===============================================================================
-
-On Dec 15, 2025, a Qwen3-8B run (36 layers = 68 billion combinations) became
-unresponsive after starting step [5]. The instance lost SSM connection, SSH
-timed out, and required a reboot.
-
-WHAT WE KNOW (facts with evidence):
-- Step [5] started: "Running exhaustive analysis (68719476735 combinations)..."
-- No further output after that line
-- Instance became unreachable (SSM ConnectionLost, SSH timeout)
-- After reboot, dmesg.0 showed NO OOM messages
-- kern.log had no errors between 18:30 (step 5 start) and 19:58 (reboot)
-
-WHAT WE DO NOT KNOW (no evidence):
-- Whether the process was running or stuck
-- Whether memory was exhausted (no OOM in logs)
-- Whether CPU was pegged
-- The actual cause of unresponsiveness
-
-DO NOT ASSUME:
-- That 68 billion combinations is "too many" without measuring
-- That the list allocation caused OOM (no evidence)
-- That the loop is slow (no benchmarks)
-- ANY root cause without actual evidence from logs/metrics
-
-If investigating future failures:
-1. Check dmesg BEFORE rebooting for OOM messages
-2. Check /var/log/kern.log for errors
-3. Try to SSH and run 'top', 'free -h', 'ps aux' before assuming crash
-4. Get actual memory/CPU metrics, don't guess
-
-The instance may have been working fine but just not producing output.
-===============================================================================
+A prior Qwen-8B run became unresponsive after starting the exhaustive step.
+If investigating future failures: check dmesg BEFORE rebooting for OOM
+messages, check kern.log, try SSH to run top/free before assuming crash.
+Do NOT assume the root cause without actual evidence from logs/metrics.
 """
 
 import os
@@ -49,7 +17,12 @@ import tempfile
 import time
 from typing import Dict
 
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import (
+    PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, SEPARATOR_WIDTH_REPORT,
+    COMBO_BASE, COMBO_OFFSET,
+    PROGRESS_CALLBACK_THRESHOLD_EXHAUSTIVE,
+    PROGRESS_CALLBACK_THRESHOLD_CONTIGUOUS,
+)
 from wisent.tests._exhaustive_helpers import (
     detect_model_layers,
     generate_pairs_cli,
@@ -59,7 +32,6 @@ from wisent.tests._exhaustive_helpers import (
     print_analysis_results,
     save_analysis_results,
 )
-
 
 TOKEN_AGGREGATIONS = [
     "final", "average", "first", "max", "min", "max_score"
@@ -71,21 +43,14 @@ PROMPT_STRATEGIES = [
 
 
 def run_exhaustive_layer_analysis(
-    task: str = "truthfulqa_gen",
-    model: str = "meta-llama/Llama-3.2-1B-Instruct",
+    task: str,
+    model: str,
+    token_aggregation: str,
     num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
     max_layers: int | None = None,
-    output_dir: str = "/home/ubuntu/output",
+    output_dir: str | None = None,
 ):
-    """
-    Run exhaustive layer combination analysis.
-
-    Tests all 2^N - 1 layer combinations.
-
-    WARNING: DO NOT SET max_layers TO REDUCE THE NUMBER OF LAYERS.
-    The whole point is to test ALL layer combinations.
-    max_layers exists ONLY for debugging/testing purposes.
-    """
+    """Run exhaustive layer combination analysis (all power-of-two minus one combos)."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
         detect_geometry_exhaustive,
     )
@@ -94,32 +59,29 @@ def run_exhaustive_layer_analysis(
     print("EXHAUSTIVE LAYER COMBINATION ANALYSIS")
     print("=" * SEPARATOR_WIDTH_REPORT)
     print(f"Task: {task}, Model: {model}, Pairs: {num_pairs}")
-
-    print(f"\n[0] Detecting model layer count from config...")
     start = time.time()
     model_layers = detect_model_layers(model)
     print(f"    Model has {model_layers} layers ({time.time()-start:.1f}s)")
-
     num_layers = min(max_layers, model_layers) if max_layers else model_layers
-    print(f"    Combinations to test: {2**num_layers - 1:,}")
-
+    combo_count = COMBO_BASE**num_layers - COMBO_OFFSET
+    print(f"    Combinations to test: {combo_count:,}")
     with tempfile.TemporaryDirectory() as tmpdir:
         pairs_file = os.path.join(tmpdir, "pairs.json")
         acts_file = os.path.join(tmpdir, "activations.json")
-        layers_str = ",".join(str(i) for i in range(1, num_layers + 1))
-
-        print(f"\n[1] Generating {num_pairs} pairs...")
+        layers_str = ",".join(str(i) for i in range(COMBO_OFFSET, num_layers + COMBO_OFFSET))
+        print(f"\n[step-one] Generating {num_pairs} pairs...")
         generate_pairs_cli(task, pairs_file, num_pairs)
-        print(f"\n[2] Extracting activations layers 1-{num_layers}...")
-        extract_activations_cli(pairs_file, acts_file, model, layers_str)
-        print("\n[3-4] Loading and converting to tensors...")
+        print(f"\n[step-two] Extracting activations for {num_layers} layers...")
+        extract_activations_cli(
+            pairs_file, acts_file, model, layers_str, token_aggregation,
+        )
+        print("\n[step-three] Loading and converting to tensors...")
         pos_t, neg_t, nl = load_activations_as_tensors(acts_file, max_layers)
-        actual_combos = 2 ** nl - 1
+        actual_combos = COMBO_BASE ** nl - COMBO_OFFSET
         print(f"    {nl} layers -> {actual_combos} combinations")
-
-        print(f"\n[5] Running exhaustive analysis...")
+        print("\n[step-four] Running exhaustive analysis...")
         start = time.time()
-        cb = make_progress_callback(start, threshold=10000)
+        cb = make_progress_callback(start, threshold=PROGRESS_CALLBACK_THRESHOLD_EXHAUSTIVE)
         result = detect_geometry_exhaustive(
             pos_t, neg_t, max_layers=nl,
             combination_method="concat", progress_callback=cb,
@@ -128,8 +90,7 @@ def run_exhaustive_layer_analysis(
         print(f"    Done in {elapsed:.1f}s ({actual_combos/elapsed:.1f} c/s)")
         print_analysis_results(result)
         save_analysis_results(
-            result, output_dir,
-            f"exhaustive_geometry_{task}",
+            result, output_dir, f"exhaustive_geometry_{task}",
             {"task": task, "model": model, "num_pairs": num_pairs,
              "max_layers": num_layers, "elapsed_seconds": elapsed},
         )
@@ -137,13 +98,14 @@ def run_exhaustive_layer_analysis(
 
 
 def run_limited_layer_analysis(
-    task: str = "truthfulqa_gen",
-    model: str = "meta-llama/Llama-3.2-1B-Instruct",
+    task: str,
+    model: str,
+    token_aggregation: str,
     num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
     max_combo_size: int = TEST_MAX_COMBO_SIZE,
-    output_dir: str = "/home/ubuntu/output",
+    output_dir: str | None = None,
 ):
-    """Run limited layer combination analysis (1,2,3-layer combos + all)."""
+    """Run limited layer combination analysis (small-layer combos + all)."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
         detect_geometry_limited,
     )
@@ -152,27 +114,25 @@ def run_limited_layer_analysis(
     print("=" * SEPARATOR_WIDTH_REPORT)
     print("LIMITED LAYER COMBINATION ANALYSIS")
     print("=" * SEPARATOR_WIDTH_REPORT)
-
     start = time.time()
     model_layers = detect_model_layers(model)
     print(f"    Model has {model_layers} layers ({time.time()-start:.1f}s)")
     total = sum(
         comb(model_layers, r)
-        for r in range(1, min(max_combo_size, model_layers) + 1)
+        for r in range(COMBO_OFFSET, min(max_combo_size, model_layers) + COMBO_OFFSET)
     )
     if max_combo_size < model_layers:
-        total += 1
+        total += COMBO_OFFSET
     print(f"    Will test {total:,} combinations")
-
     with tempfile.TemporaryDirectory() as tmpdir:
         pairs_file = os.path.join(tmpdir, "pairs.json")
         acts_file = os.path.join(tmpdir, "activations.json")
-        layers_str = ",".join(str(i) for i in range(1, model_layers + 1))
-
+        layers_str = ",".join(str(i) for i in range(COMBO_OFFSET, model_layers + COMBO_OFFSET))
         generate_pairs_cli(task, pairs_file, num_pairs)
-        extract_activations_cli(pairs_file, acts_file, model, layers_str)
+        extract_activations_cli(
+            pairs_file, acts_file, model, layers_str, token_aggregation,
+        )
         pos_t, neg_t, nl = load_activations_as_tensors(acts_file)
-
         start = time.time()
         cb = make_progress_callback(start)
         result = detect_geometry_limited(
@@ -189,10 +149,11 @@ def run_limited_layer_analysis(
 
 
 def run_contiguous_layer_analysis(
-    task: str = "truthfulqa_gen",
-    model: str = "meta-llama/Llama-3.2-1B-Instruct",
+    task: str,
+    model: str,
+    token_aggregation: str,
     num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
-    output_dir: str = "/home/ubuntu/output",
+    output_dir: str | None = None,
 ):
     """Run contiguous layer combination analysis (adjacent layers only)."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
@@ -202,24 +163,22 @@ def run_contiguous_layer_analysis(
     print("=" * SEPARATOR_WIDTH_REPORT)
     print("CONTIGUOUS LAYER COMBINATION ANALYSIS")
     print("=" * SEPARATOR_WIDTH_REPORT)
-
     start = time.time()
     model_layers = detect_model_layers(model)
     print(f"    Model has {model_layers} layers ({time.time()-start:.1f}s)")
-    total = model_layers * (model_layers + 1) // 2
+    total = model_layers * (model_layers + COMBO_OFFSET) // COMBO_BASE
     print(f"    Will test {total:,} contiguous combinations")
-
     with tempfile.TemporaryDirectory() as tmpdir:
         pairs_file = os.path.join(tmpdir, "pairs.json")
         acts_file = os.path.join(tmpdir, "activations.json")
-        layers_str = ",".join(str(i) for i in range(1, model_layers + 1))
-
+        layers_str = ",".join(str(i) for i in range(COMBO_OFFSET, model_layers + COMBO_OFFSET))
         generate_pairs_cli(task, pairs_file, num_pairs)
-        extract_activations_cli(pairs_file, acts_file, model, layers_str)
+        extract_activations_cli(
+            pairs_file, acts_file, model, layers_str, token_aggregation,
+        )
         pos_t, neg_t, nl = load_activations_as_tensors(acts_file)
-
         start = time.time()
-        cb = make_progress_callback(start, threshold=50)
+        cb = make_progress_callback(start, threshold=PROGRESS_CALLBACK_THRESHOLD_CONTIGUOUS)
         result = detect_geometry_contiguous(
             pos_t, neg_t,
             combination_method="concat", progress_callback=cb,
@@ -234,13 +193,13 @@ def run_contiguous_layer_analysis(
 
 
 def run_smart_layer_analysis(
-    task: str = "truthfulqa_gen",
-    model: str = "meta-llama/Llama-3.2-1B-Instruct",
+    task: str,
+    model: str,
+    token_aggregation: str,
+    prompt_strategy: str,
     num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
     max_combo_size: int = TEST_MAX_COMBO_SIZE,
-    token_aggregation: str = "final",
-    prompt_strategy: str = "chat_template",
-    output_dir: str = "/home/ubuntu/output",
+    output_dir: str | None = None,
 ):
     """Run smart analysis (contiguous + limited combos)."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
@@ -250,16 +209,14 @@ def run_smart_layer_analysis(
     print("=" * SEPARATOR_WIDTH_REPORT)
     print("SMART LAYER COMBINATION ANALYSIS")
     print("=" * SEPARATOR_WIDTH_REPORT)
-
     start = time.time()
     model_layers = detect_model_layers(model)
     print(f"    Model has {model_layers} layers ({time.time()-start:.1f}s)")
-
     with tempfile.TemporaryDirectory() as tmpdir:
         pairs_file = os.path.join(tmpdir, "pairs.json")
         acts_file = os.path.join(tmpdir, "activations.json")
         layers_str = ",".join(
-            str(i) for i in range(1, model_layers + 1)
+            str(i) for i in range(COMBO_OFFSET, model_layers + COMBO_OFFSET)
         )
         generate_pairs_cli(task, pairs_file, num_pairs)
         extract_activations_cli(
@@ -267,27 +224,20 @@ def run_smart_layer_analysis(
             token_aggregation, prompt_strategy,
         )
         pos_t, neg_t, nl = load_activations_as_tensors(acts_file)
-
         start = time.time()
         cb = make_progress_callback(start)
         result = detect_geometry_smart(
             pos_t, neg_t, max_combo_size=max_combo_size,
-            combination_method="concat",
-            progress_callback=cb,
+            combination_method="concat", progress_callback=cb,
         )
         print_analysis_results(result)
         save_analysis_results(
             result, output_dir,
-            f"geometry_smart_{task}_{token_aggregation}"
-            f"_{prompt_strategy}",
-            {
-                "task": task, "model": model,
-                "num_pairs": num_pairs,
-                "mode": "smart",
-                "max_combo_size": max_combo_size,
-                "token_aggregation": token_aggregation,
-                "prompt_strategy": prompt_strategy,
-            },
+            f"geometry_smart_{task}_{token_aggregation}_{prompt_strategy}",
+            {"task": task, "model": model, "num_pairs": num_pairs,
+             "mode": "smart", "max_combo_size": max_combo_size,
+             "token_aggregation": token_aggregation,
+             "prompt_strategy": prompt_strategy},
         )
         return result
 

@@ -16,7 +16,7 @@ def setup_geometry_search_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--output",
         type=str,
-        default="/home/ubuntu/output/geometry_results.json",
+        required=True,
         help="Output path for results JSON",
     )
     parser.add_argument(
@@ -58,6 +58,6 @@ def setup_geometry_search_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--device",
         type=str,
-        default="auto",
-        help="Device for model (auto/cuda/mps/cpu, default: auto)",
+        required=True,
+        help="Device for model (auto/cuda/mps/cpu)",
     )

@@ -39,7 +39,7 @@ class SteeringMethodTrainer(ABC):
         model,
         tokenizer,
         device: str,
-        task_name: str = "gsm8k",
+        task_name: str,
         max_new_tokens: int = None,
     ) -> Tuple[bool, Dict[str, Any]]:
         """Train the steering method on training data."""
@@ -56,7 +56,7 @@ class SteeringMethodTrainer(ABC):
         device: str,
         batch_size: int,
         max_length: int,
-        task_name: str = "gsm8k",
+        task_name: str,
         max_new_tokens: int = None,
     ) -> Tuple[List[str], List[str]]:
         """Apply steering and generate predictions for evaluation."""
@@ -65,7 +65,7 @@ class SteeringMethodTrainer(ABC):
 class SteeringTrainer(SteeringMethodTrainer):
     """Generic trainer that uses the centralized steering method registry."""
 
-    def __init__(self, method_name: str = "caa"):
+    def __init__(self, method_name: str):
         self.method_name = method_name
 
     def create_method_instance(self, hyperparams: Dict[str, Any], device: str):
@@ -80,7 +80,7 @@ class SteeringTrainer(SteeringMethodTrainer):
         model,
         tokenizer,
         device: str,
-        task_name: str = "gsm8k",
+        task_name: str,
         max_new_tokens: int = None,
     ) -> Tuple[bool, Dict[str, Any]]:
         """Train steering method on training data to create steering vectors."""
@@ -118,7 +118,7 @@ class SteeringTrainer(SteeringMethodTrainer):
         device: str,
         batch_size: int,
         max_length: int,
-        task_name: str = "gsm8k",
+        task_name: str,
         max_new_tokens: int = None,
     ) -> Tuple[List[str], List[str]]:
         """Apply steering and generate predictions using task extractor."""

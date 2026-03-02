@@ -9,7 +9,6 @@ import numpy as np
 import torch
 from wisent.core.utils.config_tools.constants import (
     MOVEMENT_THRESHOLD, BEHAVIOR_THRESHOLD,
-    DEFAULT_STRENGTH,
     DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD,
     BEHAVIORAL_CONF_IMPROPERLY, BEHAVIORAL_CONF_UNEXPECTED,
     BEHAVIORAL_CONF_INEFFECTIVE,
@@ -191,10 +190,10 @@ def run_behavioral_validation(
     test_prompts: List[str],
     evaluator,
     layer_name: str,
-    strength: float = DEFAULT_STRENGTH,
+    strength: float,
+    extraction_strategy: str,
     max_new_tokens: int | None = None,
     positive_label: str = "TRUTHFUL",
-    extraction_strategy: str = "chat_last",
 ) -> BehavioralValidationResult:
     """
     Full behavioral validation: generate outputs, extract activations FROM RESPONSE, evaluate.

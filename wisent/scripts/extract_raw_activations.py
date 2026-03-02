@@ -42,7 +42,7 @@ def main():
     print("[MAIN] Parsing arguments...", flush=True)
     parser = argparse.ArgumentParser(description="Extract raw activations for all missing benchmarks with 3 formats")
     parser.add_argument("--model", required=True, help="Model name (e.g., meta-llama/Llama-3.2-1B-Instruct)")
-    parser.add_argument("--device", default="cuda", help="Device (cuda/mps/cpu)")
+    parser.add_argument("--device", required=True, help="Device (cuda/mps/cpu)")
     parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark (default: 500)")
     parser.add_argument("--benchmark", default=None, help="Single benchmark to extract (optional)")
     args = parser.parse_args()

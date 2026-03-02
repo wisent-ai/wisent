@@ -13,7 +13,7 @@ from wisent.core.primitives.model_interface.core.activations import (
 )
 from wisent.core.utils.infra_tools.errors import NoHiddenStatesError
 from wisent.core.utils.config_tools.constants import LOG_EPS, PROGRESS_REPORT_INTERVAL
-from wisent.core.utils.core.hardware import default_batch_size
+from wisent.core.utils.infra_tools.infra.core.hardware import default_batch_size
 
 if TYPE_CHECKING:
     from wisent.core.primitives.models.wisent_model import WisentModel

@@ -18,10 +18,10 @@ def run_sae_analysis(
     layer: int,
     output_dir: str,
     model_name: str,
+    device: str,
     hidden_dim_multiplier: int = SAE_HIDDEN_DIM_MULTIPLIER,
     l1_coef: float = SAE_L1_COEF_DEFAULT,
     n_epochs: int = SAE_N_EPOCHS_DEFAULT,
-    device: str = "cpu",
 ) -> Dict:
     """
     Run full SAE analysis on collected activations.

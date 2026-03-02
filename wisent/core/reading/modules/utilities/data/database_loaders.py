@@ -6,7 +6,7 @@ import json
 import torch
 from .cache import get_cache_path, save_pair_texts_cache, save_activations_cache
 from wisent.core.utils.config_tools.constants import DATA_LOAD_LIMIT
-from wisent.core.utils.core.hardware import subprocess_timeout_s
+from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 
 def _get_db_connection(database_url: Optional[str] = None):
@@ -41,9 +41,9 @@ def load_activations_from_database(
     model_name: str,
     task_name: str,
     layer: int,
-    prompt_format: str = "chat",
-    extraction_strategy: str = "completion_last",
-    component: str = "residual_stream",
+    component: str,
+    extraction_strategy: str,
+    prompt_format: str,
     limit: Optional[int] = None,
     database_url: Optional[str] = None,
     pair_ids: Optional[set] = None,
@@ -158,8 +158,8 @@ def load_activations_from_database(
 
 
 def load_available_layers_from_database(
-    model_name: str, task_name: str, extraction_strategy: str = "completion_last",
-    component: str = "residual_stream",
+    model_name: str, task_name: str, component: str,
+    extraction_strategy: str,
     database_url: Optional[str] = None,
 ) -> List[int]:
     """Query database to find all available layers for a model/task combination."""

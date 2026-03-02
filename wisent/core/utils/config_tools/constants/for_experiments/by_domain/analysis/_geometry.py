@@ -1,5 +1,5 @@
 """Geometry, linearity, stability, and subspace constants."""
-from wisent.core.utils.constants.for_experiments.by_domain.analysis._analysis import *  # noqa: F401,F403
+from wisent.core.utils.config_tools.constants.for_experiments.by_domain.analysis._analysis import *  # noqa: F401,F403
 
 # --- SVD / subspace ---
 MIN_CONCEPT_DIM = 2

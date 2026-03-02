@@ -8,7 +8,7 @@ from __future__ import annotations
 import gc
 import json
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 import torch
 
@@ -38,8 +38,9 @@ def evaluate_lora_dpo(
     model_name: str,
     lora_path: str | Path,
     task: str,
+    extraction_strategy: str,
+    device: str,
     train_ratio: float = DEFAULT_SPLIT_RATIO,
-    device: str = "cuda:0",
     batch_size: int = COMPARISON_DEFAULT_BATCH_SIZE,
     max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
     limit: int | None = None,
@@ -54,11 +55,10 @@ def evaluate_lora_dpo(
     max_length: int | None = None,
     max_prompt_length: int | None = None,
     with_steering: bool = False,
-    steering_method: str = "caa",
+    steering_method: Optional[str] = None,
     steering_layers: str = str(COMPARISON_STEERING_LAYER),
     steering_num_pairs: int = COMPARISON_NUM_PAIRS,
     steering_scales: list[float] | None = None,
-    extraction_strategy: str = "mc_completion",
 ) -> dict:
     """Evaluate a trained DPO LoRA adapter."""
     from wisent.core.primitives.models.wisent_model import WisentModel
@@ -153,7 +153,7 @@ def _run_steering_eval(
         pairs.append(pair)
     pair_set = ContrastivePairSet(pairs=pairs, name=f"{task}_dpo_lora_steering")
 
-    steering_method_obj = get_steering_method(steering_method, device=device)
+    steering_method_obj = get_steering_method(steering_method, task_name=task, device=device)
     strategy = ExtractionStrategy(extraction_strategy)
     trainer = WisentSteeringTrainer(
         model=wisent_model, pair_set=pair_set, steering_method=steering_method_obj,

@@ -15,7 +15,7 @@ def setup_generate_pairs_parser(parser):
         "--output", type=str, required=True, help="Output file path for the generated pairs (JSON format)"
     )
     parser.add_argument(
-        "--model", type=str, default="meta-llama/Llama-3.1-8B-Instruct", help="Model name or path to use for generation"
+        "--model", type=str, required=True, help="Model name or path to use for generation"
     )
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
@@ -40,6 +40,6 @@ def setup_generate_pairs_parser(parser):
         "--nonsense-mode",
         type=str,
         choices=["random_chars", "repetitive", "word_salad", "mixed"],
-        default="random_chars",
-        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination). Default: random_chars",
+        required=True,
+        help="Type of nonsense to generate: 'random_chars' (ahsdhashdahsdha), 'repetitive' (the the the), 'word_salad' (real words, no meaning), 'mixed' (combination)",
     )

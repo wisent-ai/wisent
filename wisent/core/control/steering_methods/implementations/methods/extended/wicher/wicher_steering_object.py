@@ -19,7 +19,7 @@ from wisent.core.control.steering_methods.steering_object import (
     SteeringObjectMetadata,
 )
 from .solvers.broyden import wicher_broyden_step
-from wisent.core.utils.config_tools.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, DEFAULT_STRENGTH
+from wisent.core.utils.config_tools.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY
 
 __all__ = ["WicherSteeringObject"]
 
@@ -89,7 +89,7 @@ class WicherSteeringObject(BaseSteeringObject):
         self,
         hidden_state: torch.Tensor,
         layer: int,
-        base_strength: float = DEFAULT_STRENGTH,
+        base_strength: float,
     ) -> torch.Tensor:
         """Apply WICHER Broyden steering with layer variance weighting."""
         if layer not in self.concept_directions:

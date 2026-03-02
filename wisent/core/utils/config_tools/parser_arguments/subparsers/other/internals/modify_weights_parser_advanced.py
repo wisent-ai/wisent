@@ -17,9 +17,9 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     additive_group.add_argument(
         "--additive-method",
         type=str,
-        default="bias",
+        required=True,
         choices=["bias", "weight"],
-        help="How to add steering: 'bias' (add to output bias) or 'weight' (modify weight matrix) (default: bias)"
+        help="How to add steering: 'bias' (add to output bias) or 'weight' (modify weight matrix)"
     )
 
     # Component selection
@@ -35,14 +35,14 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--extraction-component",
         type=str,
-        default="residual_stream",
+        required=True,
         choices=["residual_stream", "attn_output", "mlp_output", "per_head",
                  "mlp_intermediate", "post_attn_residual", "pre_attn_layernorm",
                  "embedding_output", "final_layernorm", "q_proj", "k_proj",
                  "v_proj", "mlp_gate_activation", "attention_scores", "logits"],
         help=(
             "Extraction component used for steering vectors. Auto-selects "
-            "--components if not explicitly set. Default: residual_stream"
+            "--components if not explicitly set"
         )
     )
 
@@ -128,13 +128,13 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     guided_group.add_argument(
         "--guided-mode",
         type=str,
-        default="adaptive",
+        required=True,
         choices=["full", "surgical", "adaptive"],
         help=(
             "Guided ablation mode: "
             "'full' (all layers with signal), "
             "'surgical' (only top-k layers), "
-            "'adaptive' (auto-select based on variance). Default: adaptive"
+            "'adaptive' (auto-select based on variance)"
         )
     )
     guided_group.add_argument(
@@ -163,9 +163,9 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
     guided_group.add_argument(
         "--extraction-strategy",
         type=str,
-        default="chat_last",
+        required=True,
         choices=["chat_last", "chat_mean", "chat_max_norm", "completion_last"],
-        help="Extraction strategy for guided mode (default: chat_last)"
+        help="Extraction strategy for guided mode"
     )
     
     # Collateral damage validation
