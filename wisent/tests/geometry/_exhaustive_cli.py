@@ -4,8 +4,9 @@ import json
 import os
 import sys
 from datetime import datetime
+from typing import Optional
 
-from wisent.core.utils.config_tools.constants import GEO_MAX_LAYER_COMBO_SIZE, PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, DISPLAY_TOP_N_SMALL, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_SMALL, JSON_INDENT
 from wisent.tests.test_geometry_exhaustive import (
     run_exhaustive_layer_analysis,
     run_limited_layer_analysis,
@@ -19,8 +20,9 @@ from wisent.tests.test_geometry_exhaustive import (
 def run_comprehensive_sweep(
     task: str,
     model: str,
-    num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
-    max_combo_size: int = TEST_MAX_COMBO_SIZE,
+    progress_callback_threshold: int,
+    num_pairs: int,
+    max_combo_size: int,
     output_dir: str | None = None,
 ):
     """Run sweep across all token agg and prompt strategies."""
@@ -43,6 +45,7 @@ def run_comprehensive_sweep(
                     max_combo_size=max_combo_size,
                     token_aggregation=token_agg,
                     prompt_strategy=prompt_strat,
+                    progress_callback_threshold=progress_callback_threshold,
                     output_dir=output_dir,
                 )
                 if result:
@@ -99,7 +102,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", required=True)
     parser.add_argument("--model", required=True)
-    parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
+    parser.add_argument("--num-pairs", type=int, required=True)
     parser.add_argument(
         "--max-layers", type=int, default=None,
         help="DEBUG ONLY - DO NOT USE IN PRODUCTION.",
@@ -110,7 +113,7 @@ def main():
     parser.add_argument("--limited", action="store_true")
     parser.add_argument("--contiguous", action="store_true")
     parser.add_argument("--exhaustive", action="store_true")
-    parser.add_argument("--max-combo-size", type=int, default=GEO_MAX_LAYER_COMBO_SIZE)
+    parser.add_argument("--max-combo-size", type=int, required=True)
     parser.add_argument(
         "--token-aggregation", required=True,
         choices=TOKEN_AGGREGATIONS,
@@ -118,6 +121,10 @@ def main():
     parser.add_argument(
         "--prompt-strategy", required=True,
         choices=PROMPT_STRATEGIES,
+    )
+    parser.add_argument(
+        "--progress-callback-threshold", type=int, required=True,
+        help="Progress callback reporting threshold (in combinations)",
     )
     args = parser.parse_args()
     if args.max_layers is not None:
@@ -127,6 +134,7 @@ def main():
     if args.sweep:
         run_comprehensive_sweep(
             task=args.task, model=args.model,
+            progress_callback_threshold=args.progress_callback_threshold,
             num_pairs=args.num_pairs,
             max_combo_size=args.max_combo_size,
             output_dir=args.output_dir,
@@ -135,6 +143,7 @@ def main():
         run_exhaustive_layer_analysis(
             task=args.task, model=args.model,
             token_aggregation=args.token_aggregation,
+            progress_callback_threshold=args.progress_callback_threshold,
             num_pairs=args.num_pairs,
             max_layers=args.max_layers,
             output_dir=args.output_dir,
@@ -143,6 +152,7 @@ def main():
         run_contiguous_layer_analysis(
             task=args.task, model=args.model,
             token_aggregation=args.token_aggregation,
+            progress_callback_threshold=args.progress_callback_threshold,
             num_pairs=args.num_pairs,
             output_dir=args.output_dir,
         )
@@ -150,6 +160,7 @@ def main():
         run_limited_layer_analysis(
             task=args.task, model=args.model,
             token_aggregation=args.token_aggregation,
+            progress_callback_threshold=args.progress_callback_threshold,
             num_pairs=args.num_pairs,
             max_combo_size=args.max_combo_size,
             output_dir=args.output_dir,
@@ -159,6 +170,7 @@ def main():
             task=args.task, model=args.model,
             token_aggregation=args.token_aggregation,
             prompt_strategy=args.prompt_strategy,
+            progress_callback_threshold=args.progress_callback_threshold,
             num_pairs=args.num_pairs,
             max_combo_size=args.max_combo_size,
             output_dir=args.output_dir,

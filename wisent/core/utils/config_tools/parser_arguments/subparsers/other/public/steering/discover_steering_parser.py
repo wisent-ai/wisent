@@ -49,3 +49,11 @@ def setup_discover_steering_parser(parser):
         "--skip-direction-search", action="store_true",
         help="Skip the direction search (faster but less thorough)"
     )
+    parser.add_argument(
+        "--discover-task-limit", type=int, required=True,
+        help="Maximum number of task pairs to load for discovery"
+    )
+    parser.add_argument(
+        "--discover-train-limit", type=int, required=True,
+        help="Maximum number of activation pairs to load for training"
+    )

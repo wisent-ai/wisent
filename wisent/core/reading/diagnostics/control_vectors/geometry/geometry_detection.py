@@ -6,12 +6,6 @@ from typing import Dict, Tuple
 
 import torch
 
-from wisent.core.utils.config_tools.constants import (
-    GEOMETRY_THRESHOLD_DEFAULT,
-    GEOMETRY_THRESHOLD_CLUSTER,
-    GEOMETRY_THRESHOLD_SPARSE,
-    GEOMETRY_THRESHOLD_MANIFOLD,
-)
 
 from .geometry_types import (
     StructureType,
@@ -36,8 +30,14 @@ def detect_geometry_structure(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     config: GeometryAnalysisConfig | None = None,
+    geometry_threshold_default: float = None,
+    geometry_threshold_cluster: float = None,
+    geometry_threshold_sparse: float = None,
+    geometry_threshold_manifold: float = None,
 ) -> GeometryAnalysisResult:
     """Detect the geometric structure of activation differences."""
+    for _n, _v in [("geometry_threshold_default", geometry_threshold_default), ("geometry_threshold_cluster", geometry_threshold_cluster), ("geometry_threshold_sparse", geometry_threshold_sparse), ("geometry_threshold_manifold", geometry_threshold_manifold)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     cfg = config or GeometryAnalysisConfig()
 
     pos_tensor = pos_activations.detach().float()
@@ -54,13 +54,13 @@ def detect_geometry_structure(
     raw_scores: Dict[str, StructureScore] = {}
     raw_scores["linear"] = detect_linear_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
     raw_scores["cone"] = detect_cone_structure_score(pos_tensor, neg_tensor, cfg)
-    raw_scores["cluster"] = detect_cluster_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
+    raw_scores["cluster"] = detect_cluster_structure(pos_tensor, neg_tensor, diff_vectors, cfg, min_clusters=cfg.min_clusters)
     raw_scores["manifold"] = detect_manifold_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
     raw_scores["sparse"] = detect_sparse_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
     raw_scores["bimodal"] = detect_bimodal_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
     raw_scores["orthogonal"] = detect_orthogonal_structure(pos_tensor, neg_tensor, diff_vectors, cfg)
 
-    best_structure, best_score = _find_most_specific_structure(raw_scores)
+    best_structure, best_score = _find_most_specific_structure(raw_scores, geometry_threshold_default=geometry_threshold_default, geometry_threshold_cluster=geometry_threshold_cluster, geometry_threshold_sparse=geometry_threshold_sparse, geometry_threshold_manifold=geometry_threshold_manifold)
     recommendation = _generate_recommendation(best_structure, raw_scores)
 
     return GeometryAnalysisResult(
@@ -77,22 +77,24 @@ def detect_geometry_structure(
     )
 
 
-def _find_most_specific_structure(scores: Dict[str, StructureScore]) -> Tuple[StructureType, float]:
+def _find_most_specific_structure(scores: Dict[str, StructureScore], geometry_threshold_default: float = None, geometry_threshold_cluster: float = None, geometry_threshold_sparse: float = None, geometry_threshold_manifold: float = None) -> Tuple[StructureType, float]:
     """Find the most specific structure that fits the data well."""
-    THRESHOLDS = {
-        "linear": GEOMETRY_THRESHOLD_DEFAULT,
-        "cone": GEOMETRY_THRESHOLD_DEFAULT,
-        "orthogonal": GEOMETRY_THRESHOLD_DEFAULT,
-        "cluster": GEOMETRY_THRESHOLD_CLUSTER,
-        "sparse": GEOMETRY_THRESHOLD_SPARSE,
-        "bimodal": GEOMETRY_THRESHOLD_DEFAULT,
-        "manifold": GEOMETRY_THRESHOLD_MANIFOLD,
+    for _n, _v in [("geometry_threshold_default", geometry_threshold_default), ("geometry_threshold_cluster", geometry_threshold_cluster), ("geometry_threshold_sparse", geometry_threshold_sparse), ("geometry_threshold_manifold", geometry_threshold_manifold)]:
+        if _v is None: raise ValueError(f"{_n} is required")
+    thresholds = {
+        "linear": geometry_threshold_default,
+        "cone": geometry_threshold_default,
+        "orthogonal": geometry_threshold_default,
+        "cluster": geometry_threshold_cluster,
+        "sparse": geometry_threshold_sparse,
+        "bimodal": geometry_threshold_default,
+        "manifold": geometry_threshold_manifold,
     }
     specificity_order = ["linear", "cone", "orthogonal", "cluster", "sparse", "bimodal", "manifold"]
 
     for struct_name in specificity_order:
         if struct_name in scores:
-            if scores[struct_name].score >= THRESHOLDS.get(struct_name, GEOMETRY_THRESHOLD_DEFAULT):
+            if scores[struct_name].score >= thresholds.get(struct_name, geometry_threshold_default):
                 return scores[struct_name].structure_type, scores[struct_name].score
 
     best_key = max(scores.keys(), key=lambda k: scores[k].score)

@@ -8,7 +8,7 @@ import re
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 from wisent.core.utils.config_tools.constants import (
-    CONTEXT_MAX_LENGTH, DEFAULT_RANDOM_SEED, DATABASE_PAIR_LOADING_LIMIT,
+    RECURSION_INITIAL_DEPTH,
     DISPLAY_TOP_N_TINY, HALULENS_MIN_CONTENT_LENGTH,
     HALULENS_SENT_LEN_MIN, HALULENS_SENT_LEN_MAX,
 )
@@ -61,15 +61,12 @@ class HalulensExtractor(HuggingFaceBenchmarkExtractor):
         "fabrication",      # Add completely fabricated details
     ]
 
-    def __init__(self, seed: int = DEFAULT_RANDOM_SEED):
-        """
-        Initialize HalluLens extractor with dynamic generation.
-        
-        Args:
-            seed: Random seed for reproducible hallucination generation
-        """
+    def __init__(self, context_max_length: int):
+        """Initialize HalluLens extractor with dynamic generation."""
         super().__init__()
-        self._rng = random.Random(seed)
+        from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+        self._rng = random.Random(DEFAULT_RANDOM_SEED)
+        self._context_max_length = context_max_length
 
     def extract_contrastive_pairs(
         self,
@@ -85,7 +82,9 @@ class HalulensExtractor(HuggingFaceBenchmarkExtractor):
         pairs: list[ContrastivePair] = []
 
         # Load Wikipedia data from GoodWiki
-        wiki_docs = self._load_wikipedia_data(max_items)
+        if max_items is None:
+            raise ValueError("limit is required for HalluLensExtractor")
+        wiki_docs = self._load_wikipedia_data(load_limit=max_items)
         
         if not wiki_docs:
             log.error("Failed to load Wikipedia data for HalluLens")
@@ -94,7 +93,7 @@ class HalulensExtractor(HuggingFaceBenchmarkExtractor):
         log.info(f"Loaded {len(wiki_docs)} Wikipedia articles for HalluLens generation")
 
         for doc in wiki_docs:
-            pair = self._generate_hallucination_pair(doc)
+            pair = self._generate_hallucination_pair(doc, context_max_length=self._context_max_length)
             if pair is not None:
                 pairs.append(pair)
                 if max_items is not None and len(pairs) >= max_items:
@@ -105,21 +104,21 @@ class HalulensExtractor(HuggingFaceBenchmarkExtractor):
 
         return pairs
 
-    def _load_wikipedia_data(self, limit: int | None = None) -> list[dict[str, Any]]:
+    def _load_wikipedia_data(self, *, load_limit: int) -> list[dict[str, Any]]:
         """Load high-quality Wikipedia articles from GoodWiki dataset."""
         try:
             # euirim/goodwiki contains cleaned Wikipedia articles
             docs = self.load_dataset(
                 dataset_name="euirim/goodwiki",
                 split="train",
-                limit=limit * 2 if limit else DATABASE_PAIR_LOADING_LIMIT,  # Load extra for filtering
+                limit=load_limit,
             )
             return docs
         except Exception as e:
             log.error(f"Failed to load GoodWiki: {e}")
             return []
 
-    def _generate_hallucination_pair(self, doc: dict[str, Any]) -> ContrastivePair | None:
+    def _generate_hallucination_pair(self, doc: dict[str, Any], context_max_length: int) -> ContrastivePair | None:
         """
         Generate a contrastive pair from a Wikipedia article.
         
@@ -138,7 +137,8 @@ class HalulensExtractor(HuggingFaceBenchmarkExtractor):
                 return None
             
             # Use first substantive paragraph as context
-            context = paragraphs[0][:CONTEXT_MAX_LENGTH]
+            first_paragraph = paragraphs[RECURSION_INITIAL_DEPTH]
+            context = first_paragraph[:context_max_length]
             
             # Extract a factual claim from the context
             factual_claim = self._extract_factual_claim(context, title)

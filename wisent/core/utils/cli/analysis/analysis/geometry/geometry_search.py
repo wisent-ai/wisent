@@ -4,10 +4,10 @@ import json
 import sys
 import os
 from pathlib import Path
-from wisent.core.utils.config_tools.constants import DEFAULT_SCORE, SCORE_MIDPOINT_PCT, GEOMETRY_MINORITY_PCT, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_STANDARD, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import SCORE_MIDPOINT_PCT, DISPLAY_TOP_N_MEDIUM, SEPARATOR_WIDTH_STANDARD, SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 
 
-def execute_geometry_search(args):
+def execute_geometry_search(args, default_score: float):
     """Execute the geometry-search command."""
     print(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
     print("GEOMETRY SEARCH")
@@ -48,17 +48,17 @@ def execute_geometry_search(args):
     config = GeometrySearchConfig(
         pairs_per_benchmark=args.pairs_per_benchmark,
         max_layer_combo_size=args.max_layer_combo_size,
-        random_seed=args.seed,
+        estimated_time_per_extraction_seconds=args.estimated_time_per_extraction,
         cache_activations=True,
         cache_dir=args.cache_dir,
     )
-    
+
     # Create search space
     search_space = GeometrySearchSpace(
+        config=config,
         models=[args.model],
         strategies=strategies,
         benchmarks=benchmarks,
-        config=config,
     )
     
     print(f"\n{search_space.summary()}")
@@ -70,7 +70,7 @@ def execute_geometry_search(args):
     
     # Create runner
     cache_dir = args.cache_dir or f"/tmp/wisent_geometry_cache_{args.model.replace('/', '_')}"
-    runner = GeometryRunner(search_space, model, cache_dir=cache_dir)
+    runner = GeometryRunner(search_space, model, report_interval=args.report_interval, cache_dir=cache_dir, train_ratio=args.train_ratio)
     
     # Run search
     print(f"\nStarting geometry search...")
@@ -120,14 +120,14 @@ def execute_geometry_search(args):
     # Determine if unified direction exists
     dist = results.get_structure_distribution()
     total = sum(dist.values())
-    linear_pct = 100 * dist.get('linear', DEFAULT_SCORE) / total if total > 0 else 0
-    cone_pct = 100 * dist.get('cone', DEFAULT_SCORE) / total if total > 0 else 0
-    orthogonal_pct = 100 * dist.get('orthogonal', DEFAULT_SCORE) / total if total > 0 else 0
+    linear_pct = 100 * dist.get('linear', default_score) / total if total > 0 else 0
+    cone_pct = 100 * dist.get('cone', default_score) / total if total > 0 else 0
+    orthogonal_pct = 100 * dist.get('orthogonal', default_score) / total if total > 0 else 0
     
     if linear_pct > SCORE_MIDPOINT_PCT:
         print(f"UNIFIED LINEAR DIRECTION EXISTS ({linear_pct:.1f}% linear)")
         print("Recommendation: Use CAA with the best layer/strategy combination")
-    elif cone_pct > GEOMETRY_MINORITY_PCT:
+    elif cone_pct > args.geometry_minority_pct:
         print(f"CONE STRUCTURE DETECTED ({cone_pct:.1f}% cone)")
         print("Recommendation: Use TECZA with multi-directional steering")
     elif orthogonal_pct > SCORE_MIDPOINT_PCT:

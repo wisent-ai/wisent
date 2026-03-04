@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 
 from wisent.examples.scripts._sae import train_sparse_autoencoder
-from wisent.core.utils.config_tools.constants import DEFAULT_CLASSIFIER_LR, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_BATCH_SIZE_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER, SAE_TOP_K_ANALYSIS, DISPLAY_TOP_N_SMALL, JSON_INDENT
+from wisent.core.utils.config_tools.constants import SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER, SAE_TOP_K_ANALYSIS, DISPLAY_TOP_N_SMALL, JSON_INDENT
 from wisent.examples.scripts._sae_analysis import (
     analyze_sae_features,
     visualize_sae_analysis,
@@ -19,6 +19,8 @@ def run_sae_analysis(
     output_dir: str,
     model_name: str,
     device: str,
+    lr: float,
+    batch_size: int,
     hidden_dim_multiplier: int = SAE_HIDDEN_DIM_MULTIPLIER,
     l1_coef: float = SAE_L1_COEF_DEFAULT,
     n_epochs: int = SAE_N_EPOCHS_DEFAULT,
@@ -31,6 +33,7 @@ def run_sae_analysis(
         layer: Which layer to analyze
         output_dir: Where to save results
         model_name: Name of the model (for titles)
+        batch_size: Batch size for SAE training
         hidden_dim_multiplier: SAE hidden dim = input_dim * this
         l1_coef: Sparsity coefficient
         n_epochs: Training epochs
@@ -82,8 +85,8 @@ def run_sae_analysis(
         hidden_dim=hidden_dim,
         l1_coef=l1_coef,
         n_epochs=n_epochs,
-        batch_size=SAE_BATCH_SIZE_DEFAULT,
-        lr=DEFAULT_CLASSIFIER_LR,
+        batch_size=batch_size,
+        lr=lr,
         device=device,
         verbose=True,
     )

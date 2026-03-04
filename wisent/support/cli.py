@@ -7,7 +7,7 @@ This module provides a Python API for running tasks that would normally be invok
 import argparse
 from typing import Dict, Any, Optional
 from wisent.core.utils.cli import execute_tasks
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, CLASSIFIER_THRESHOLD
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
 
 
 def run_task_pipeline(
@@ -22,10 +22,10 @@ def run_task_pipeline(
     steering_method: Optional[str] = None,
     seed: int = DEFAULT_RANDOM_SEED,
     verbose: bool = False,
-    split_ratio: float = DEFAULT_SPLIT_RATIO,
+    split_ratio: float = 0.8,
     limit: Optional[int] = None,
     steering_mode: bool = False,
-    detection_threshold: float = CLASSIFIER_THRESHOLD,
+    detection_threshold: float = None,
     steering_strength: Optional[float] = None,
     **kwargs
 ) -> Dict[str, Any]:
@@ -90,6 +90,8 @@ def run_task_pipeline(
         args.token_targeting_strategy = token_targeting_strategy
         args.token_aggregation = token_aggregation
     else:
+        if detection_threshold is None:
+            raise ValueError("detection_threshold is required when steering_mode=False")
         args.steering_mode = False
         args.token_aggregation = token_aggregation
         args.detection_threshold = detection_threshold

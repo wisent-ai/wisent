@@ -7,7 +7,7 @@ or multiple interleaved concepts, and how to separate them.
 
 import torch
 import numpy as np
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple
 from wisent.core import constants as _C
 
 
@@ -50,7 +50,9 @@ def detect_multiple_concepts(
 def split_by_concepts(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_concepts: int = _C.CONCEPT_DETECTION_DEFAULT_N,
+    n_concepts: int,
+    *,
+    spectral_n_neighbors: int,
 ) -> List[Tuple[torch.Tensor, torch.Tensor]]:
     """Split activations into separate concepts using SpectralClustering."""
     try:
@@ -63,10 +65,10 @@ def split_by_concepts(
         valid_mask = norms.squeeze() > _C.NORM_EPS
         diff_normalized = diff_vectors[valid_mask] / norms[valid_mask]
 
-        n_neighbors = min(_C.SPECTRAL_N_NEIGHBORS_DEFAULT, len(diff_normalized) - 1)
+        n_nbrs = min(spectral_n_neighbors, len(diff_normalized) - _C.COMBO_OFFSET)
         spectral = SpectralClustering(
             n_clusters=n_concepts, random_state=_C.DEFAULT_RANDOM_SEED,
-            affinity='nearest_neighbors', n_neighbors=n_neighbors
+            affinity='nearest_neighbors', n_neighbors=n_nbrs
         )
         labels = spectral.fit_predict(diff_normalized)
 
@@ -161,24 +163,32 @@ def compute_concept_coherence(
 def compute_concept_stability(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_bootstrap: int = _C.CONCEPT_STABILITY_N_BOOTSTRAP,
+    *,
+    concept_stability_n_bootstrap: int,
+    direction_subset_fraction: float,
+    direction_std_penalty: float,
 ) -> float:
     """Compute stability of concept direction across bootstrap samples."""
     try:
         from wisent.core.reading.modules.utilities.metrics.direction.direction_metrics import compute_direction_stability
 
         result = compute_direction_stability(
-            pos_activations, neg_activations, n_bootstrap=n_bootstrap
+            pos_activations, neg_activations,
+            n_bootstrap=concept_stability_n_bootstrap,
+            subset_fraction=direction_subset_fraction,
+            direction_std_penalty=direction_std_penalty,
         )
-        return result.get("stability_score", 0.0)
+        return result.get("stability_score", _C.SCORE_RANGE_MIN)
     except Exception:
-        return 0.0
+        return _C.SCORE_RANGE_MIN
 
 
 def decompose_into_concepts(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     n_concepts: int = None,
+    *,
+    spectral_n_neighbors: int,
 ) -> Dict[str, Any]:
     """Full concept decomposition: detect, split, and analyze."""
     detection = detect_multiple_concepts(pos_activations, neg_activations)
@@ -194,7 +204,7 @@ def decompose_into_concepts(
             "coherence": compute_concept_coherence(pos_activations, neg_activations),
         }
 
-    concepts = split_by_concepts(pos_activations, neg_activations, n_concepts)
+    concepts = split_by_concepts(pos_activations, neg_activations, n_concepts, spectral_n_neighbors=spectral_n_neighbors)
     independence = analyze_concept_independence(concepts)
 
     coherences = [compute_concept_coherence(p, n) for p, n in concepts]
@@ -202,7 +212,7 @@ def decompose_into_concepts(
     return {
         "n_concepts": len(concepts),
         "concepts": concepts,
-        "independence": independence.get("independence", _C.CLASSIFIER_THRESHOLD),
+        "independence": independence["independence"],
         "coherences": coherences,
         "mean_coherence": float(np.mean(coherences)) if coherences else 0.0,
     }

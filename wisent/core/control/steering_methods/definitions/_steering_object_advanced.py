@@ -5,7 +5,6 @@ import torch
 from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject, SteeringObjectMetadata, LayerName,
 )
-from wisent.core.utils.config_tools.constants import TETNO_GATE_TEMPERATURE, DEFAULT_LAYER_WEIGHT, BINARY_CLASSIFICATION_THRESHOLD
 
 class TECZASteeringObject(BaseSteeringObject):
     """
@@ -128,7 +127,7 @@ class TETNOSteeringObject(BaseSteeringObject):
         sensor_layer: int,
         threshold: float,
         layer_scales: Dict[int, float],
-        gate_temperature: float = TETNO_GATE_TEMPERATURE,
+        gate_temperature: float,
     ):
         super().__init__(metadata)
         self.behavior_vectors = behavior_vectors
@@ -154,13 +153,15 @@ class TETNOSteeringObject(BaseSteeringObject):
     
     def compute_intensity(self, hidden_state: torch.Tensor, layer: int) -> torch.Tensor:
         batch_size = hidden_state.shape[0] if hidden_state.dim() > 1 else 1
-        scale = self.layer_scales.get(layer, DEFAULT_LAYER_WEIGHT)
+        if layer not in self.layer_scales:
+            raise KeyError(f"No layer_scale for layer {layer}")
+        scale = self.layer_scales[layer]
         return torch.full((batch_size,), scale, device=hidden_state.device, dtype=hidden_state.dtype)
     
     def should_steer(self, hidden_state: torch.Tensor) -> bool:
         """Hard decision on whether to steer."""
         gate = self.compute_gate(hidden_state)
-        return gate.mean().item() > BINARY_CLASSIFICATION_THRESHOLD
+        return gate.mean().item() > 0.5
     
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -217,7 +218,7 @@ class TETNOSteeringObject(BaseSteeringObject):
             sensor_layer=data['sensor_layer'],
             threshold=data['threshold'],
             layer_scales=layer_scales,
-            gate_temperature=data.get('gate_temperature', TETNO_GATE_TEMPERATURE),
+            gate_temperature=data['gate_temperature'],
         )
 
 

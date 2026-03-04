@@ -10,12 +10,12 @@ import json
 import os
 from pathlib import Path
 from typing import Any, Callable, Optional
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
 
 from wisent.core.reading.evaluators.benchmark_specific.coding.providers.livecodebench.provider import LiveCodeBenchProvider
 from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
 from wisent.core.reading.evaluators.benchmark_specific.coding.providers.core.atoms import CodingTask
-from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10, FEEDBACK_MAX_CHARS, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE
 from wisent.core.utils.infra_tools.infra.core.hardware import eval_time_limit_s, eval_cpu_limit_s, code_eval_mem_limit_mb
 
 
@@ -36,11 +36,7 @@ class ProblemSolutions:
     good_example: Optional[dict[str, Any]] = None
     bad_example: Optional[dict[str, Any]] = None
     difficulty: Optional[str] = None
-    all_solutions: list[dict[str, Any]] = None
-
-    def __post_init__(self):
-        if self.all_solutions is None:
-            self.all_solutions = []
+    all_solutions: list[dict[str, Any]] = field(default_factory=list)
 
 
 class LiveCodeBenchSolutionGenerator:
@@ -70,6 +66,7 @@ class LiveCodeBenchSolutionGenerator:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
         self.evaluator_config = evaluator_config or EvaluatorConfig(
+            feedback_max_chars=FEEDBACK_MAX_CHARS, fsize_mb=SAFE_DOCKER_FSIZE_MB, nofile=SAFE_DOCKER_NOFILE,
             image="coding/sandbox:polyglot-1.0",
             self_repair=False,
             time_limit_s=eval_time_limit_s(),
@@ -129,6 +126,7 @@ class LiveCodeBenchSolutionGenerator:
 
     def generate_solutions(
         self,
+        subprocess_timeout: int,
         limit: Optional[int] = None,
         platform: Optional[str] = None,
         release_version: Optional[str] = None,
@@ -148,6 +146,7 @@ class LiveCodeBenchSolutionGenerator:
 
         # Load problems
         provider = LiveCodeBenchProvider(
+            subprocess_timeout=subprocess_timeout,
             language="python",
             limit=limit,
             platform=platform,

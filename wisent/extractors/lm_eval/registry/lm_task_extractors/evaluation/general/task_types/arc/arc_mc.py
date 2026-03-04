@@ -24,18 +24,13 @@ class ArcMultipleChoiceExtractor(LMEvalBenchmarkExtractor):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
-        preferred_doc: str | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
         max_items = self._normalize_limit(limit)
 
-        # arc_ar doesn't have validation split, use test split
-        if preferred_doc is None:
-            task_name = getattr(lm_eval_task_data, "NAME", "").lower()
-            if "ar" in task_name:
-                preferred_doc = "test"
-
-        docs = self.load_docs(lm_eval_task_data, max_items, preferred_doc=preferred_doc)
+        docs = self.load_docs(lm_eval_task_data, max_items, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
         log.info("Extracting contrastive pairs", extra={"doc_count": len(docs)})

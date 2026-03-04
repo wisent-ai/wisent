@@ -7,16 +7,11 @@ bootstrap estimates, and saturation analysis.
 
 import torch
 import numpy as np
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, DEFAULT_SCORE, BLEND_DEFAULT, DEFAULT_SCALE,
-    SIGNAL_NULL_MEAN, SIGNAL_NULL_STD, SIGNAL_SATURATION_DELTA,
-    SIGNAL_POWER_SAMPLE_SIZES, SIGNAL_ICD_THRESHOLD, AUTO_MIN_PAIRS,
-    AUTO_N_FOLDS, DEFAULT_RANDOM_SEED, LINEARITY_N_BOOTSTRAP,
-    STABILITY_N_BOOTSTRAP, STABILITY_SUBSAMPLE_RATIO, STAT_ALPHA,
-    DETECTION_THRESHOLD, LINEARITY_Z_SCORE_THRESHOLD, SIMILARITY_THRESHOLD,
-    BOOTSTRAP_CI_LOW_DEFAULT, BOOTSTRAP_CI_HIGH_DEFAULT, CV_FOLDS,
-    VQ_MIN_PAIRS, PERCENTILE_HIGH, CI_PERCENTILE_LOW, CI_PERCENTILE_HIGH,
+    NORM_EPS,
+    DEFAULT_RANDOM_SEED, STAT_ALPHA,
+    CI_PERCENTILE_LOW, CI_PERCENTILE_HIGH, N_COMPONENTS_2D,
 )
 
 
@@ -38,91 +33,114 @@ def compute_signal_to_noise(
         neg_std = np.std(neg, axis=0).mean()
         noise = (pos_std + neg_std) / 2
         if noise < NORM_EPS:
-            return DEFAULT_SCORE
+            raise ValueError("signal_to_noise failed: noise below NORM_EPS threshold")
         return float(signal / noise)
-    except Exception:
-        return DEFAULT_SCORE
+    except ValueError:
+        raise
+    except Exception as e:
+        raise ValueError(f"signal_to_noise computation failed: {e}") from e
 
 
 def compute_null_distribution(
     activations: torch.Tensor,
-    n_permutations: int = LINEARITY_N_BOOTSTRAP,
+    n_permutations: int = None,
+    auto_min_pairs: int = None,
+    auto_n_folds: int = None,
+    *,
+    signal_null_mean: float,
+    signal_null_std: float,
+    null_percentile_high: float,
 ) -> Dict[str, float]:
     """
     Compute null distribution by random permutation.
     Randomly split activations into two groups and compute
     metrics, to establish baseline for random split.
     """
+    if n_permutations is None:
+        raise ValueError("n_permutations is required")
+    if auto_min_pairs is None:
+        raise ValueError("auto_min_pairs is required")
+    if auto_n_folds is None:
+        raise ValueError("auto_n_folds is required")
     from .probe_metrics import compute_linear_probe_accuracy
     try:
         n = len(activations)
-        if n < AUTO_MIN_PAIRS:
-            return {"null_mean": SIGNAL_NULL_MEAN, "null_std": SIGNAL_NULL_STD}
+        if n < auto_min_pairs:
+            return {"null_mean": signal_null_mean, "null_std": signal_null_std}
         null_accuracies = []
         rng = np.random.RandomState(DEFAULT_RANDOM_SEED)
         for _ in range(n_permutations):
             perm = rng.permutation(n)
-            half = n // 2
+            half = n // N_COMPONENTS_2D
             pos = activations[perm[:half]]
-            neg = activations[perm[half:2*half]]
-            acc = compute_linear_probe_accuracy(pos, neg, n_folds=AUTO_N_FOLDS)
+            neg = activations[perm[half:N_COMPONENTS_2D*half]]
+            acc = compute_linear_probe_accuracy(pos, neg, n_folds=auto_n_folds)
             null_accuracies.append(acc)
         return {
             "null_mean": float(np.mean(null_accuracies)),
             "null_std": float(np.std(null_accuracies)),
-            "null_95th": float(np.percentile(null_accuracies, PERCENTILE_HIGH)),
+            "null_high": float(np.percentile(null_accuracies, null_percentile_high)),
         }
     except Exception:
-        return {"null_mean": SIGNAL_NULL_MEAN, "null_std": SIGNAL_NULL_STD}
+        return {"null_mean": signal_null_mean, "null_std": signal_null_std}
 
 
 def compare_to_null(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     null_distribution: Dict[str, float],
+    auto_n_folds: int = None,
+    *,
+    signal_null_std: float,
+    blend_default: float,
 ) -> Dict[str, Any]:
     """Compare observed metrics to null distribution."""
+    if auto_n_folds is None:
+        raise ValueError("auto_n_folds is required")
     from .probe_metrics import compute_linear_probe_accuracy
     try:
-        observed = compute_linear_probe_accuracy(pos_activations, neg_activations)
-        null_mean = null_distribution.get("null_mean", SIGNAL_NULL_MEAN)
-        null_std = null_distribution.get("null_std", SIGNAL_NULL_STD)
+        observed = compute_linear_probe_accuracy(pos_activations, neg_activations, auto_n_folds)
+        null_mean = null_distribution["null_mean"]
+        null_std = null_distribution["null_std"]
         if null_std < NORM_EPS:
-            null_std = SIGNAL_NULL_STD
+            null_std = signal_null_std
         z_score = (observed - null_mean) / null_std
-        p_value = 1 - BLEND_DEFAULT * (1 + np.erf(z_score / np.sqrt(2)))
+        erf_val = np.erf(z_score / np.sqrt(N_COMPONENTS_2D))
+        p_value = blend_default - blend_default * erf_val
         return {
             "observed": observed,
             "z_score": float(z_score),
             "p_value": float(p_value),
             "is_significant": p_value < STAT_ALPHA,
         }
-    except Exception:
-        return {
-            "observed": BLEND_DEFAULT,
-            "z_score": DEFAULT_SCORE,
-            "p_value": DEFAULT_SCALE,
-            "is_significant": False,
-        }
+    except Exception as e:
+        raise ValueError(f"significance_of_separation failed: {e}") from e
 
 
 def validate_concept(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    min_accuracy: float = DETECTION_THRESHOLD,
-    min_z_score: float = LINEARITY_Z_SCORE_THRESHOLD,
+    *,
+    min_accuracy: float,
+    min_z_score: float = None,
+    auto_n_folds: int = None,
+    signal_icd_threshold: int,
 ) -> Dict[str, Any]:
     """Validate that activations contain a real, extractable concept."""
+    if min_z_score is None:
+        raise ValueError("min_z_score is required")
+    if auto_n_folds is None:
+        raise ValueError("auto_n_folds is required")
     from .probe_metrics import compute_linear_probe_accuracy, compute_signal_strength
     from .icd import compute_icd
     try:
-        linear_acc = compute_linear_probe_accuracy(pos_activations, neg_activations)
-        signal = compute_signal_strength(pos_activations, neg_activations)
+        linear_acc = compute_linear_probe_accuracy(pos_activations, neg_activations, auto_n_folds)
+        signal = compute_signal_strength(pos_activations, neg_activations, auto_n_folds)
         icd_result = compute_icd(pos_activations, neg_activations)
         is_valid = (
             linear_acc >= min_accuracy and
             signal >= min_accuracy and
-            icd_result["icd"] < SIGNAL_ICD_THRESHOLD
+            icd_result["icd"] < signal_icd_threshold
         )
         return {
             "is_valid": is_valid,
@@ -132,7 +150,7 @@ def validate_concept(
             "reasons": [] if is_valid else [
                 f"linear_acc={linear_acc:.2f} < {min_accuracy}" if linear_acc < min_accuracy else None,
                 f"signal={signal:.2f} < {min_accuracy}" if signal < min_accuracy else None,
-                f"icd={icd_result['icd']:.1f} >= {SIGNAL_ICD_THRESHOLD}" if icd_result["icd"] >= SIGNAL_ICD_THRESHOLD else None,
+                f"icd={icd_result['icd']:.1f} >= {signal_icd_threshold}" if icd_result["icd"] >= signal_icd_threshold else None,
             ],
         }
     except Exception as e:
@@ -142,18 +160,30 @@ def validate_concept(
 def compute_bootstrap_signal_estimate(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_bootstrap: int = STABILITY_N_BOOTSTRAP,
-    subset_fraction: float = STABILITY_SUBSAMPLE_RATIO,
+    n_bootstrap: int = None,
+    subset_fraction: float = None,
+    auto_min_pairs: int = None,
+    auto_n_folds: int = None,
+    *,
+    vq_min_pairs: int,
+    bootstrap_ci_low_default: float,
+    bootstrap_ci_high_default: float,
+    signal_null_std: float,
+    blend_default: float,
 ) -> Dict[str, float]:
     """Estimate signal metrics with bootstrap confidence intervals."""
+    if auto_min_pairs is None:
+        raise ValueError("auto_min_pairs is required")
+    if auto_n_folds is None:
+        raise ValueError("auto_n_folds is required")
     from .probe_metrics import compute_linear_probe_accuracy
     try:
         n_pairs = min(len(pos_activations), len(neg_activations))
-        subset_size = max(int(n_pairs * subset_fraction), VQ_MIN_PAIRS)
-        if n_pairs < AUTO_MIN_PAIRS:
+        subset_size = max(int(n_pairs * subset_fraction), vq_min_pairs)
+        if n_pairs < auto_min_pairs:
             return {
-                "mean": BLEND_DEFAULT, "std": SIGNAL_NULL_STD,
-                "ci_low": BOOTSTRAP_CI_LOW_DEFAULT, "ci_high": BOOTSTRAP_CI_HIGH_DEFAULT,
+                "mean": blend_default, "std": signal_null_std,
+                "ci_low": bootstrap_ci_low_default, "ci_high": bootstrap_ci_high_default,
             }
         rng = np.random.RandomState(DEFAULT_RANDOM_SEED)
         accuracies = []
@@ -161,7 +191,7 @@ def compute_bootstrap_signal_estimate(
             indices = rng.choice(n_pairs, size=subset_size, replace=True)
             pos_sub = pos_activations[indices]
             neg_sub = neg_activations[indices]
-            acc = compute_linear_probe_accuracy(pos_sub, neg_sub, n_folds=AUTO_N_FOLDS)
+            acc = compute_linear_probe_accuracy(pos_sub, neg_sub, n_folds=auto_n_folds)
             accuracies.append(acc)
         return {
             "mean": float(np.mean(accuracies)),
@@ -171,25 +201,28 @@ def compute_bootstrap_signal_estimate(
         }
     except Exception:
         return {
-            "mean": BLEND_DEFAULT, "std": SIGNAL_NULL_STD,
-            "ci_low": BOOTSTRAP_CI_LOW_DEFAULT, "ci_high": BOOTSTRAP_CI_HIGH_DEFAULT,
+            "mean": blend_default, "std": signal_null_std,
+            "ci_low": bootstrap_ci_low_default, "ci_high": bootstrap_ci_high_default,
         }
 
 
 def compute_saturation_check(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    sample_sizes: List[int] = None,
+    sample_sizes: tuple = None,
+    *,
+    cv_folds: int,
+    signal_saturation_delta: float,
 ) -> Dict[str, Any]:
     """
     Check if metrics have saturated (more data won't help).
     Train on increasing amounts of data to see if accuracy plateaus.
     """
+    if sample_sizes is None:
+        raise ValueError("sample_sizes is required")
     from .probe_metrics import compute_linear_probe_accuracy
     try:
         n_pairs = min(len(pos_activations), len(neg_activations))
-        if sample_sizes is None:
-            sample_sizes = list(SIGNAL_POWER_SAMPLE_SIZES)
         sample_sizes = [s for s in sample_sizes if s <= n_pairs]
         if len(sample_sizes) < 2:
             return {
@@ -201,7 +234,7 @@ def compute_saturation_check(
         for size in sample_sizes:
             acc = compute_linear_probe_accuracy(
                 pos_activations[:size], neg_activations[:size],
-                n_folds=min(CV_FOLDS, size // 2),
+                n_folds=min(cv_folds, size // N_COMPONENTS_2D),
             )
             accuracies[size] = acc
         # Check if last two are similar (saturated)
@@ -209,13 +242,13 @@ def compute_saturation_check(
         if len(sorted_sizes) >= 2:
             last = accuracies[sorted_sizes[-1]]
             second_last = accuracies[sorted_sizes[-2]]
-            is_saturated = abs(last - second_last) < SIGNAL_SATURATION_DELTA
+            is_saturated = abs(last - second_last) < signal_saturation_delta
         else:
             is_saturated = False
         return {
             "is_saturated": is_saturated,
             "accuracies": accuracies,
-            "final_accuracy": accuracies[sorted_sizes[-1]] if sorted_sizes else BLEND_DEFAULT,
+            "final_accuracy": accuracies[max(sorted_sizes)] if sorted_sizes else None,
         }
     except Exception:
         return {"is_saturated": False, "accuracies": {}, "error": "Failed to compute"}
@@ -224,12 +257,18 @@ def compute_saturation_check(
 def find_optimal_pair_count(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    target_accuracy: float = SIMILARITY_THRESHOLD,
+    *, target_accuracy: float,
     max_pairs: int = None,
+    cv_folds: int,
+    signal_saturation_delta: float,
+    sample_sizes: tuple,
 ) -> Dict[str, Any]:
     """Find minimum number of pairs needed to reach target accuracy."""
-    saturation = compute_saturation_check(pos_activations, neg_activations)
-    accuracies = saturation.get("accuracies", {})
+    saturation = compute_saturation_check(
+        pos_activations, neg_activations, sample_sizes=sample_sizes,
+        cv_folds=cv_folds, signal_saturation_delta=signal_saturation_delta,
+    )
+    accuracies = saturation["accuracies"]
     if not accuracies:
         return {"optimal_pairs": -1, "reason": "No data"}
     for size in sorted(accuracies.keys()):

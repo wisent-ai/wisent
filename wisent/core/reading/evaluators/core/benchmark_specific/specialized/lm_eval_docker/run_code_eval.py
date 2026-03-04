@@ -8,7 +8,6 @@ Supported tasks: any, in particular:
 Args:
     --tasks       lm_eval task(s), comma-separated (required)
     --model       HuggingFace model name (required)
-    --limit       Number of samples, None for all (default: 20)
     --batch_size  Batch size (default: 4)
     --device      Device to use (required)
     --output_dir  Output directory (default: ./output)
@@ -18,8 +17,6 @@ import argparse
 import subprocess
 import os
 from pathlib import Path
-from typing import Optional
-from wisent.core.utils.config_tools.constants import DEFAULT_CODE_EVAL_LIMIT
 from wisent.core.utils.infra_tools.infra.core.hardware import eval_batch_size
 
 
@@ -42,21 +39,16 @@ def build_image() -> None:
 
 
 def run_code_eval(
-    model: str = "EleutherAI/gpt-neo-125M",
-    tasks: Optional[str] = None,
-    device: Optional[str] = None,
-    batch_size: int | None = None,
-    limit: int | None = DEFAULT_CODE_EVAL_LIMIT,
-    output_dir: Path | None = None,
+    model: str,
+    tasks: str,
+    device: str,
+    batch_size: int,
+    output_dir: Path,
 ) -> None:
     """Run lm_eval code evaluation tasks in sandboxed Docker container."""
-    if batch_size is None:
-        batch_size = eval_batch_size()
-
     build_image()
 
     # Setup directories
-    output_dir = output_dir or SCRIPT_DIR / "output"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     hf_cache = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface"))
@@ -73,8 +65,7 @@ def run_code_eval(
         "--output_path", "/home/sandbox/output",
     ]
 
-    if limit is not None:
-        lm_eval_args.extend(["--limit", str(limit)])
+    lm_eval_args.extend(["--limit", str(20)])
 
     # Docker command
     docker_cmd = [
@@ -110,18 +101,19 @@ def main():
     parser.add_argument("--tasks", required=True, help="lm_eval task(s), comma-separated")
     parser.add_argument("--device", required=True, help="Device to use")
     parser.add_argument("--batch_size", type=int, default=None, help="Batch size (auto-detected if omitted)")
-    parser.add_argument("--limit", type=int, default=DEFAULT_CODE_EVAL_LIMIT, help="Number of samples (None for all)")
     parser.add_argument("--output_dir", type=Path, default=None, help="Output directory")
 
     args = parser.parse_args()
+
+    batch_size = args.batch_size if args.batch_size is not None else eval_batch_size()
+    output_dir = args.output_dir if args.output_dir is not None else SCRIPT_DIR / "output"
 
     run_code_eval(
         model=args.model,
         tasks=args.tasks,
         device=args.device,
-        batch_size=args.batch_size,
-        limit=args.limit,
-        output_dir=args.output_dir,
+        batch_size=batch_size,
+        output_dir=output_dir,
     )
 
 

@@ -214,14 +214,14 @@ def run_multi_concept_modification(
         for c in suppress_concepts:
             if layer_idx in c.steering_vectors:
                 suppress_dirs.append(c.steering_vectors[layer_idx])
-                weight = c.layer_weights.get(layer_idx, _C.DEFAULT_LAYER_WEIGHT) if c.layer_weights else _C.DEFAULT_LAYER_WEIGHT
-                suppress_strengths.append(c.strength * weight)
-        
+                effective = c.strength * c.layer_weights[layer_idx] if c.layer_weights else c.strength
+                suppress_strengths.append(effective)
+
         for c in enhance_concepts:
             if layer_idx in c.steering_vectors:
                 enhance_dirs.append(c.steering_vectors[layer_idx])
-                weight = c.layer_weights.get(layer_idx, _C.DEFAULT_LAYER_WEIGHT) if c.layer_weights else _C.DEFAULT_LAYER_WEIGHT
-                enhance_strengths.append(c.strength * weight)
+                effective = c.strength * c.layer_weights[layer_idx] if c.layer_weights else c.strength
+                enhance_strengths.append(effective)
         
         if not suppress_dirs and not enhance_dirs:
             continue

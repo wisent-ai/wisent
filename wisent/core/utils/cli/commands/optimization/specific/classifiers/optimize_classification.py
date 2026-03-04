@@ -10,11 +10,12 @@ import os
 from typing import Dict, Any
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_NUM_EVAL_PROMPTS,
-    DEFAULT_SHOW_COMPARISONS,
     JSON_INDENT,
-    CLASSIFIER_THRESHOLD,
     SEPARATOR_WIDTH_MAX,
+    CHANCE_LEVEL_ACCURACY,
+    PERSONALIZATION_DIFFERENCE_WEIGHT,
+    PERSONALIZATION_QUALITY_WEIGHT,
+    PERSONALIZATION_ALIGNMENT_WEIGHT,
 )
 from wisent.core.utils.config_tools.config import save_classification_config
 from wisent.core.reading.evaluators.steering_evaluators import SteeringEvaluatorFactory, EvaluatorConfig
@@ -44,10 +45,26 @@ def execute_optimize_classification(args):
         eval_config = EvaluatorConfig(
             evaluator_type=evaluator_type, trait=trait,
             eval_prompts_path=getattr(args, 'eval_prompts', None),
-            num_eval_prompts=getattr(args, 'num_eval_prompts', DEFAULT_NUM_EVAL_PROMPTS),
             custom_evaluator_path=getattr(args, 'custom_evaluator', None),
         )
-        steering_evaluator = SteeringEvaluatorFactory.create(eval_config, args.model)
+        steering_evaluator = SteeringEvaluatorFactory.create(
+                eval_config, args.model,
+                fast_diversity_seed=args.fast_diversity_seed,
+                diversity_max_sample_size=args.diversity_max_sample_size,
+                min_sentence_length=args.min_sentence_length,
+                nonsense_min_tokens=args.nonsense_min_tokens,
+                quality_min_response_length=args.quality_min_response_length,
+                quality_repetition_ratio_threshold=args.quality_repetition_ratio_threshold,
+                quality_bigram_repeat_threshold=args.quality_bigram_repeat_threshold,
+                quality_bigram_repeat_penalty=args.quality_bigram_repeat_penalty,
+                quality_special_char_ratio_threshold=args.quality_special_char_ratio_threshold,
+                quality_special_char_penalty=args.quality_special_char_penalty,
+                quality_char_repeat_count=args.quality_char_repeat_count,
+                quality_char_repeat_penalty=args.quality_char_repeat_penalty,
+                difference_weight=PERSONALIZATION_DIFFERENCE_WEIGHT,
+                quality_weight=PERSONALIZATION_QUALITY_WEIGHT,
+                alignment_weight=PERSONALIZATION_ALIGNMENT_WEIGHT,
+            )
         print(f"Using {evaluator_type} evaluator for optimization\n")
     from wisent.core.primitives.models.wisent_model import WisentModel
     print(f"Loading model to determine layer range...")
@@ -161,7 +178,7 @@ def _print_summary(args, all_results):
 
 def _handle_comparisons(args, all_results, total_layers):
     """Handle --show-comparisons and --save-comparisons flags."""
-    show = getattr(args, 'show_comparisons', DEFAULT_SHOW_COMPARISONS)
+    show = args.show_comparisons
     save_path = getattr(args, 'save_comparisons', None)
     if show <= 0 and not save_path:
         return
@@ -170,7 +187,7 @@ def _handle_comparisons(args, all_results, total_layers):
     for task_name, result in all_results.items():
         bc = result['best_config']
         dc = {
-            'layer': total_layers // 2, 'aggregation': 'average', 'threshold': CLASSIFIER_THRESHOLD,
+            'layer': total_layers // 2, 'aggregation': 'average', 'threshold': CHANCE_LEVEL_ACCURACY,
             'classifier_type': 'logistic', 'prompt_construction_strategy': 'multiple_choice',
             'token_targeting_strategy': 'last_token',
         }

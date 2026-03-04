@@ -6,14 +6,16 @@ from wisent.core.utils.infra_tools.errors import BudgetCalculationError, NoBench
 from wisent.core.experimental.agent.resources._budget_types import (
     ResourceType, ResourceBudget, TaskEstimate,
 )
-from wisent.core.utils.config_tools.constants import BUDGET_EMA_ALPHA, BUDGET_DEFAULT_QUANTITY, AGENT_RESOURCE_BUDGET_MINUTES, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE
 
 logger = logging.getLogger(__name__)
 
 class BudgetManager:
     """Manages budgets and resource allocation for agent operations."""
-    
-    def __init__(self):
+
+    def __init__(self, ema_alpha: float = None, default_quantity: int = None):
+        self._ema_alpha = ema_alpha
+        self._default_quantity = default_quantity
         self.budgets: Dict[ResourceType, ResourceBudget] = {}
         self.task_estimates: Dict[str, TaskEstimate] = {}
         self._default_estimates = self._get_default_task_estimates()
@@ -83,17 +85,19 @@ class BudgetManager:
     
     def calculate_max_tasks_for_budget(self,
                                      task_type: str,
-                                     time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES) -> int:
+                                     time_budget_minutes: float = None) -> int:
         """
         Calculate maximum number of tasks that can fit within a time budget.
-        
+
         Args:
             task_type: Type of task to estimate
             time_budget_minutes: Time budget in minutes
-            
+
         Returns:
             Maximum number of tasks
         """
+        if time_budget_minutes is None:
+            raise ValueError("time_budget_minutes is required")
         time_budget_seconds = time_budget_minutes * SECONDS_PER_MINUTE
 
         # Get estimate for this task type
@@ -134,8 +138,10 @@ class BudgetManager:
         # Update our estimates based on actual performance
         if task_name in self.task_estimates:
             # Use exponential moving average to update estimates
+            if self._ema_alpha is None:
+                raise ValueError("ema_alpha is required for tracking task execution")
             current_estimate = self.task_estimates[task_name].time_seconds
-            alpha = BUDGET_EMA_ALPHA  # Learning rate
+            alpha = self._ema_alpha  # Learning rate
             new_estimate = alpha * actual_time + (1 - alpha) * current_estimate
             self.task_estimates[task_name].time_seconds = new_estimate
         else:
@@ -177,6 +183,8 @@ class BudgetManager:
     
     def _get_default_cost_estimate(self, task_name: str, resource_type: ResourceType) -> float:
         """Get default cost estimate for a task using device benchmarking."""
+        if resource_type == ResourceType.TIME and self._default_quantity is None:
+            raise ValueError("default_quantity is required for cost estimation")
         if resource_type == ResourceType.TIME:
             # Use device-specific benchmarks for time estimates
             try:
@@ -204,14 +212,14 @@ class BudgetManager:
                 if benchmark_type:
                     # Get quantity based on task type
                     if benchmark_type in ["benchmark_eval", "classifier_training"]:
-                        quantity = BUDGET_DEFAULT_QUANTITY  # Base unit for these tasks
+                        quantity = self._default_quantity  # Base unit for these tasks
                     else:
                         quantity = 1
                     
                     return estimate_task_time(benchmark_type, quantity)
                 else:
                     # Use benchmark_eval as default
-                    return estimate_task_time("benchmark_eval", BUDGET_DEFAULT_QUANTITY)
+                    return estimate_task_time("benchmark_eval", self._default_quantity)
                     
             except Exception as e:
                 raise ResourceEstimationError(resource_type="time", task_name=task_name, cause=e)

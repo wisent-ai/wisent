@@ -20,14 +20,13 @@ from wisent.core.utils.infra_tools.errors import (
     ClassifierLoadError,
 )
 
-from ._part2 import SteeringMethodTrainer, SteeringTrainer
-from wisent.core.utils.config_tools.constants import CLASSIFIER_BATCH_SIZE
+from ._steering_trainer import SteeringMethodTrainer, SteeringTrainer
 
 
 class _SteeringOptimizerCore:
     """Core mixin: __init__, register_trainer, optimize, hyperparameter generation."""
 
-    def __init__(self, cache_config: Optional[CacheConfig] = None):
+    def __init__(self, cache_config: CacheConfig):
         self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
         # Initialize trainers from centralized registry
@@ -37,7 +36,7 @@ class _SteeringOptimizerCore:
 
         # Initialize classifier cache for reusing trained classifiers
         if cache_config is None:
-            cache_config = CacheConfig(cache_dir="./steering_classifier_cache")
+            raise ValueError("cache_config is required for _SteeringOptimizerCore")
         self.classifier_cache = ClassifierCache(cache_config)
 
         # Session-level classifier caching for current optimization run
@@ -60,9 +59,11 @@ class _SteeringOptimizerCore:
         tokenizer,
         device: str,
         task_name: str,
-        batch_size: int = CLASSIFIER_BATCH_SIZE,
+        test_timeout: int,
+        batch_size: int,
         max_length: int | None = None,
         max_new_tokens: int = None,
+        classifier_layer_range_end: int = None, *, train_ratio: float,
     ) -> Tuple[Dict[str, Any], List]:
         """
         Optimize hyperparameters for a steering method using grid search.
@@ -86,7 +87,8 @@ class _SteeringOptimizerCore:
         contrastive_pairs = data_utils.get_task_contrastive_pairs(train_samples, task_name)
 
         classifier = self.load_or_find_best_classifier(
-            model=model, optimization_config=classifier_optimization_config, contrastive_pairs=contrastive_pairs
+            model=model, batch_size=batch_size, optimization_config=classifier_optimization_config,
+            contrastive_pairs=contrastive_pairs, classifier_layer_range_end=classifier_layer_range_end,
         )
 
         if classifier is None:
@@ -97,7 +99,7 @@ class _SteeringOptimizerCore:
         # Collect baseline predictions once for all trials
         self.logger.info("Collecting baseline predictions for comparison...")
         baseline_predictions, ground_truths = self.collect_baseline_predictions(
-            validation_samples, model, tokenizer, classifier, device, batch_size, max_length, task_name, max_new_tokens
+            validation_samples, model, tokenizer, classifier, device, batch_size, max_length, task_name, max_new_tokens, train_ratio=train_ratio,
         )
 
         # Calculate baseline metrics with integrated classifier scoring
@@ -105,7 +107,7 @@ class _SteeringOptimizerCore:
             predictions, model, tokenizer, device, description, max_length
         )
         baseline_benchmark_metrics = metrics.evaluate_benchmark_performance(
-            baseline_predictions, ground_truths, task_name, classifier_scorer=classifier_scorer
+            baseline_predictions, ground_truths, task_name, test_timeout=test_timeout, classifier_scorer=classifier_scorer, train_ratio=train_ratio,
         )
         self.logger.info(f"Baseline performance: {baseline_benchmark_metrics}")
 
@@ -131,7 +133,7 @@ class _SteeringOptimizerCore:
                     trainer, method_name, layer, strength, hyperparams, i,
                     train_samples, validation_samples, model, tokenizer, device,
                     batch_size, max_length, task_name, max_new_tokens,
-                    baseline_predictions, ground_truths, baseline_benchmark_metrics,
+                    baseline_predictions, ground_truths, baseline_benchmark_metrics, train_ratio=train_ratio,
                 )
                 all_results.append(result)
 
@@ -198,7 +200,7 @@ class _SteeringOptimizerCore:
         self, trainer, method_name, layer, strength, hyperparams, index,
         train_samples, validation_samples, model, tokenizer, device,
         batch_size, max_length, task_name, max_new_tokens,
-        baseline_predictions, ground_truths, baseline_benchmark_metrics,
+        baseline_predictions, ground_truths, baseline_benchmark_metrics, *, train_ratio: float,
     ):
         """Evaluate a single steering configuration. Returns SteeringResult."""
         from wisent.core.utils.config_tools.optuna.steering.steering_optimization import SteeringResult
@@ -222,12 +224,12 @@ class _SteeringOptimizerCore:
 
         steered_predictions, steered_ground_truths = trainer.apply_steering_and_evaluate(
             method_instance, validation_samples, layer, strength,
-            model, tokenizer, device, batch_size, max_length, task_name, max_new_tokens,
+            model, tokenizer, device, batch_size, max_length, task_name, max_new_tokens, train_ratio=train_ratio,
         )
 
         enhanced_metrics = self.compare_predictions(
             baseline_predictions, steered_predictions, ground_truths,
-            model, tokenizer, device, task_name, max_length,
+            model, tokenizer, device, task_name, test_timeout=test_timeout, max_length=max_length, train_ratio=train_ratio,
         )
 
         benchmark_metrics = enhanced_metrics["steered"]

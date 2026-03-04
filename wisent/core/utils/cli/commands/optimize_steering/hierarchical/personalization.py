@@ -2,14 +2,12 @@
 import json
 import os
 import tempfile
-from typing import Optional
 
 from wisent.core.utils.cli.optimize_steering.method_configs import CAAConfig
 from wisent.core.utils.cli.optimize_steering.pipeline import run_pipeline
-from wisent.core.utils.config_tools.constants import (JSON_INDENT, PERSONALIZATION_N_TRIALS, DEFAULT_N_TRIALS, WELFARE_LIMIT,
-    DEFAULT_NUM_HIDDEN_LAYERS, DEFAULT_NUM_STRENGTH_STEPS,
-    PARSER_STRENGTH_RANGE_PERSONALIZATION, SEPARATOR_WIDTH_REPORT,
-    LAYER_STRIDE_DEFAULT)
+from wisent.core.utils.config_tools.constants import (JSON_INDENT,
+    SEPARATOR_WIDTH_REPORT,
+    PARSER_DEFAULT_LAYER_START)
 
 
 def _execute_personalization_optimization(args):
@@ -24,9 +22,13 @@ def _execute_personalization_optimization(args):
     trait = args.trait
     trait_name = getattr(args, 'trait_name', trait.split()[0].lower())
     model = args.model
-    num_pairs = getattr(args, 'num_pairs', PERSONALIZATION_N_TRIALS)
-    n_trials = getattr(args, 'n_trials', DEFAULT_N_TRIALS)
-    limit = getattr(args, 'limit', WELFARE_LIMIT)
+    num_pairs = getattr(args, 'num_pairs', None)
+    if num_pairs is None:
+        raise ValueError("num_pairs is required (set via --num-pairs)")
+    n_trials = args.n_trials
+    limit = getattr(args, 'limit', None)
+    if limit is None:
+        raise ValueError("limit is required (set via --limit)")
     device = getattr(args, 'device', None)
     output_dir = getattr(args, 'output_dir', './personalization_optimization')
 
@@ -80,18 +82,21 @@ def _execute_personalization_optimization(args):
     from transformers import AutoConfig
     try:
         config = AutoConfig.from_pretrained(model, trust_remote_code=True)
-        num_layers = getattr(config, 'num_hidden_layers', DEFAULT_NUM_HIDDEN_LAYERS)
-    except Exception:
-        num_layers = DEFAULT_NUM_HIDDEN_LAYERS
+        num_layers = getattr(config, 'num_hidden_layers', None)
+        if num_layers is None:
+            raise ValueError(f"num_layers must be specified: model '{model}' config has no num_hidden_layers")
+    except ValueError:
+        raise
+    except Exception as e:
+        raise ValueError(f"num_layers must be specified: failed to load model config ({e})")
 
     # Determine layers to search
-    layers = getattr(args, 'layers', None)
-    if layers is None:
-        layers = list(range(0, num_layers, LAYER_STRIDE_DEFAULT))
+    layer_stride = args.layer_stride
+    layers = list(range(PARSER_DEFAULT_LAYER_START, num_layers, layer_stride))
 
     # Strength range
-    strength_range = getattr(args, 'strength_range', list(PARSER_STRENGTH_RANGE_PERSONALIZATION))
-    num_strength_steps = getattr(args, 'num_strength_steps', DEFAULT_NUM_STRENGTH_STEPS)
+    strength_range = args.strength_range
+    num_strength_steps = args.num_strength_steps
     strengths = [
         strength_range[0] + i * (strength_range[1] - strength_range[0]) / (num_strength_steps - 1)
         for i in range(num_strength_steps)

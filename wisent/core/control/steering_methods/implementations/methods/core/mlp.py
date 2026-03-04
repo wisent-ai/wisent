@@ -15,22 +15,41 @@ import torch.nn.functional as F
 
 from wisent.core.control.steering_methods.core.atoms import PerLayerBaseSteeringMethod
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import EARLY_STOP_TOL, MLP_HIDDEN_DIM, MLP_NUM_LAYERS, MLP_DROPOUT, DEFAULT_OPTIMIZATION_STEPS, MLP_LEARNING_RATE, DEFAULT_WEIGHT_DECAY, MLP_EARLY_STOPPING_PATIENCE, MLP_INPUT_DIVISOR, GATING_HIDDEN_DIM_DIVISOR
+from wisent.core import constants as _C
 
 __all__ = ["MLPMethod"]
 
 
+def _require(name: str, kwargs: dict):
+    """Raise ValueError if a required hyperparameter is missing."""
+    if name not in kwargs:
+        raise ValueError(
+            f"Parameter '{name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return kwargs[name]
+
+
 class MLPClassifier(nn.Module):
     """Simple MLP for classifying activations."""
-    
-    def __init__(self, input_dim: int, hidden_dim: int = MLP_HIDDEN_DIM, num_layers: int = MLP_NUM_LAYERS, dropout: float = MLP_DROPOUT):
+
+    def __init__(
+        self,
+        input_dim: int,
+        hidden_dim: int,
+        num_layers: int,
+        dropout: float,
+        *,
+        gating_hidden_dim_divisor: int,
+    ):
         super().__init__()
-        
+
         layers = []
         current_dim = input_dim
-        
+
+        last_layer_idx = num_layers - _C.COMBO_OFFSET
         for i in range(num_layers):
-            next_dim = hidden_dim if i < num_layers - 1 else hidden_dim // GATING_HIDDEN_DIM_DIVISOR
+            next_dim = hidden_dim if i < last_layer_idx else hidden_dim // gating_hidden_dim_divisor
             layers.extend([
                 nn.Linear(current_dim, next_dim),
                 nn.LayerNorm(next_dim),
@@ -91,20 +110,25 @@ class MLPMethod(PerLayerBaseSteeringMethod):
         perm = torch.randperm(len(X))
         X, y = X[perm], y[perm]
         
-        # Get hyperparameters
-        mlp_hidden = int(self.kwargs.get("hidden_dim", min(MLP_HIDDEN_DIM, hidden_dim // MLP_INPUT_DIVISOR)))
-        mlp_layers = int(self.kwargs.get("num_layers", MLP_NUM_LAYERS))
-        dropout = float(self.kwargs.get("dropout", MLP_DROPOUT))
-        epochs = int(self.kwargs.get("epochs", DEFAULT_OPTIMIZATION_STEPS))
-        lr = float(self.kwargs.get("learning_rate", MLP_LEARNING_RATE))
-        weight_decay = float(self.kwargs.get("weight_decay", DEFAULT_WEIGHT_DECAY))
-        
+        # Get hyperparameters (all required — no silent defaults)
+        mlp_hidden = int(_require("hidden_dim", self.kwargs))
+        mlp_input_divisor = int(_require("mlp_input_divisor", self.kwargs))
+        mlp_hidden = min(mlp_hidden, hidden_dim // mlp_input_divisor)
+        mlp_layers = int(_require("num_layers", self.kwargs))
+        dropout = float(_require("dropout", self.kwargs))
+        epochs = int(_require("epochs", self.kwargs))
+        lr = float(_require("learning_rate", self.kwargs))
+        weight_decay = float(_require("weight_decay", self.kwargs))
+        early_stop_tol = float(_require("early_stop_tol", self.kwargs))
+        gating_divisor = int(_require("gating_hidden_dim_divisor", self.kwargs))
+
         # Initialize MLP
         mlp = MLPClassifier(
             input_dim=hidden_dim,
             hidden_dim=mlp_hidden,
             num_layers=mlp_layers,
             dropout=dropout,
+            gating_hidden_dim_divisor=gating_divisor,
         )
         
         # Train classifier
@@ -114,7 +138,7 @@ class MLPMethod(PerLayerBaseSteeringMethod):
         mlp.train()
         best_loss = float('inf')
         patience_counter = 0
-        patience = MLP_EARLY_STOPPING_PATIENCE
+        patience = int(_require("mlp_early_stopping_patience", self.kwargs))
         
         for epoch in range(epochs):
             optimizer.zero_grad()
@@ -125,7 +149,7 @@ class MLPMethod(PerLayerBaseSteeringMethod):
             scheduler.step()
             
             # Early stopping
-            if loss.item() < best_loss - EARLY_STOP_TOL:
+            if loss.item() < best_loss - early_stop_tol:
                 best_loss = loss.item()
                 patience_counter = 0
             else:

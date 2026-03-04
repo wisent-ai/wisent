@@ -7,7 +7,7 @@ import os
 os.environ["NUMBA_NUM_THREADS"] = "1"
 
 import json
-from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, JSON_INDENT, VIZ_TRUTHFUL_REGION_THRESHOLD, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import JSON_INDENT, VIZ_TRUTHFUL_REGION_THRESHOLD, PROGRESS_LOG_INTERVAL_10, SEPARATOR_WIDTH_STANDARD
 from wisent.core.primitives.models.config import get_generate_kwargs
 import base64
 import tempfile
@@ -49,7 +49,10 @@ def execute_steering_viz(args):
     print(f"\n[Step 4/4] Creating visualization...")
     base_space_probs, steered_space_probs, train_report = train_classifier_and_predict(
         pos_ref, neg_ref, base_activations, steered_activations,
-        classifier_type=getattr(args, 'space_classifier', 'mlp')
+        log_frequency=args.log_frequency,
+        test_size=args.classifier_test_size,
+        classifier_type=getattr(args, 'space_classifier', 'mlp'),
+        mlp_hidden_dim=getattr(args, 'mlp_hidden_dim', None),
     )
 
     viz_args = dict(
@@ -77,7 +80,7 @@ def execute_steering_viz(args):
     elif multipanel:
         from wisent.core.reading.modules.modules.steering import create_steering_multipanel_figure
         extraction_strategy = args.extraction_strategy
-        viz_b64 = create_steering_multipanel_figure(**viz_args, extraction_strategy=extraction_strategy)
+        viz_b64 = create_steering_multipanel_figure(**viz_args, extraction_strategy=extraction_strategy, pacmap_neighbors_max=args.pacmap_neighbors_max, pacmap_neighbors_divisor=args.pacmap_neighbors_divisor, pacmap_num_iters=args.pacmap_num_iters)
         output_path = Path(args.output)
         output_path.parent.mkdir(parents=True, exist_ok=True)
         with open(output_path, 'wb') as f:
@@ -109,7 +112,7 @@ def _load_or_generate_reference_activations(args):
             component=args.extraction_component,
             extraction_strategy=args.extraction_strategy,
             prompt_format=args.prompt_format,
-            limit=getattr(args, 'limit', DEFAULT_LIMIT),
+            limit=args.limit,
             database_url=getattr(args, 'database_url', None),
         )
         print(f"  Found activations in database")
@@ -131,7 +134,7 @@ def _generate_reference_activations(args):
         tmpdir = Path(tmpdir)
         pairs_path = tmpdir / "pairs.json"
         pair_texts = load_pair_texts_from_database(
-            task_name=args.task, limit=getattr(args, 'limit', DEFAULT_LIMIT),
+            task_name=args.task, limit=args.limit,
             database_url=getattr(args, 'database_url', None)
         )
         pairs_list = [{"prompt": p.get("prompt", ""),
@@ -193,7 +196,7 @@ def _generate_and_extract(args, steering_vector):
     config = SteeringConfig(scale={layer_name: args.strength})
 
     pair_texts = load_pair_texts_from_database(
-        task_name=args.task, limit=getattr(args, 'limit', DEFAULT_LIMIT),
+        task_name=args.task, limit=args.limit,
         database_url=getattr(args, 'database_url', None)
     )
 

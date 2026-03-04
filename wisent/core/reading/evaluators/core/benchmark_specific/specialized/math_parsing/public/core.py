@@ -195,9 +195,9 @@ class EvaluatorBase:
         return maj_ans
 
 
-from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_QUICK, MAX_TASKS_PER_PROC
 
-DEF_TIMEOUT: int = DEFAULT_TIMEOUT_QUICK
+
+
 DEF_N_PROC: int = os.cpu_count() // 2
 
 
@@ -205,11 +205,11 @@ def batch_exec(
     func: Callable[..., Any],
     kwargs_list: List[T_Dict[str, Any]],
     desc: str,
+    timeout: int,
     n_procs: int = DEF_N_PROC,
-    timeout: int = DEF_TIMEOUT,
     use_tqdm: bool = True,
+    max_tasks_per_proc: int,
     def_val: Any = None,
-    max_tasks_per_proc: int = MAX_TASKS_PER_PROC,
 ) -> List[Any]:
     """Execute a function in batch using ProcessPool."""
     n_samples: int = len(kwargs_list)

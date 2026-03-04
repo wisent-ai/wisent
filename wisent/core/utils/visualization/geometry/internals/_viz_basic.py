@@ -6,7 +6,7 @@ All functions return matplotlib figures or data for plotting.
 
 import torch
 import numpy as np
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple
 import warnings
 from wisent.core.utils.config_tools.constants import NORM_EPS, VIZ_N_COMPONENTS_2D, VIZ_PCA_COMPONENTS, VIZ_MAX_SAMPLES
 

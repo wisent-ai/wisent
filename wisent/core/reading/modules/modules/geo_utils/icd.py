@@ -8,12 +8,14 @@ independent directions are needed to represent the concept.
 import torch
 import numpy as np
 from typing import Dict
-from wisent.core.utils.config_tools.constants import PCA_QUALITY_COMPONENTS, ZERO_THRESHOLD
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD
 
 
 def compute_icd(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    *,
+    pca_quality_components: int,
 ) -> Dict[str, float]:
     """
     Compute Intrinsic Concept Dimensionality (ICD) of difference vectors.
@@ -50,7 +52,7 @@ def compute_icd(
         
         total_var = (S ** 2).sum()
         top1_var = float((S[0] ** 2) / total_var) if total_var > 0 else 0.0
-        top5_var = float((S[:PCA_QUALITY_COMPONENTS] ** 2).sum() / total_var) if total_var > 0 else 0.0
+        top5_var = float((S[:pca_quality_components] ** 2).sum() / total_var) if total_var > 0 else 0.0
         
         return {
             "icd": icd,

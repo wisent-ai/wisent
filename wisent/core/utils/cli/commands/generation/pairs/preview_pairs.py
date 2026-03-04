@@ -5,7 +5,7 @@ import json
 import argparse
 from typing import Optional
 
-from wisent.core.utils.config_tools.constants import JSON_INDENT, NUM_EXAMPLES_DEFAULT, DISPLAY_TRUNCATION_LONG, DISPLAY_TRUNCATION_XLARGE, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, DISPLAY_TRUNCATION_LONG, DISPLAY_TRUNCATION_XLARGE, DISPLAY_TRUNCATION_COMPACT
 
 
 def execute_preview_pairs(args):
@@ -40,6 +40,7 @@ def execute_preview_pairs(args):
                 task_name=task_name,
                 lm_eval_task=None,
                 limit=limit,
+                train_ratio=args.train_ratio,
             )
         else:
             from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
@@ -61,6 +62,7 @@ def execute_preview_pairs(args):
                 task_name=task_name,
                 lm_eval_task=task,
                 limit=limit,
+                train_ratio=args.train_ratio,
             )
         
         print(f"Loaded {len(pairs)} pairs\n")
@@ -190,12 +192,13 @@ def execute_preview_pairs(args):
 def main():
     parser = argparse.ArgumentParser(description="Preview contrastive pairs with different strategies")
     parser.add_argument("task_name", help="Task/benchmark name (e.g., boolq, mmlu, hellaswag)")
-    parser.add_argument("--limit", "-n", type=int, default=NUM_EXAMPLES_DEFAULT, help="Number of pairs to show (default: 5)")
+    parser.add_argument("--limit", "-n", type=int, default=5, help="Number of pairs to show (default: 5)")
     parser.add_argument("--strategies", "-s", nargs="+", 
                         default=["chat_last", "mc_balanced", "completion_last"],
                         help="Strategies to preview")
     parser.add_argument("--output", "-o", help="Save to JSON file")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
+    parser.add_argument("--train-ratio", type=float, required=True, help="Fraction of docs for training")
     
     args = parser.parse_args()
     execute_preview_pairs(args)

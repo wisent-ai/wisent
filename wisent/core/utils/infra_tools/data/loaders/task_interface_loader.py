@@ -7,7 +7,7 @@ from wisent.core.utils.infra_tools.data.core.atoms import BaseDataLoader, DataLo
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, RANDOM_MATH_ANSWER_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_DECIMAL_PRECISION
+from wisent.core.utils.config_tools.constants import PERTURB_UP_MIN, PERTURB_UP_MAX, PERTURB_DOWN_MIN, PERTURB_DOWN_MAX, RANDOM_MATH_ANSWER_MAX, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_DECIMAL_PRECISION
 from wisent.core.control.tasks.base.task_interface import get_task, list_tasks, TaskInterface
 
 __all__ = [
@@ -39,10 +39,10 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         self,
         task: Optional[str] = None,
         split_ratio: Optional[float] = None,
-        seed: int = DEFAULT_RANDOM_SEED,
+        seed: Optional[int] = None,
         limit: Optional[int] = None,
         training_limit: Optional[int] = None,
-        testing_limit: Optional[int] = None,
+        testing_limit: Optional[int] = None, *, train_ratio: float,
         **kwargs: Any,
     ) -> LoadDataResult:
         """
@@ -63,19 +63,18 @@ class TaskInterfaceDataLoader(BaseDataLoader):
         Raises:
             DataLoaderError: If task is not specified or not found
         """
+        if seed is None:
+            from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+            seed = DEFAULT_RANDOM_SEED
         if not task:
             available = list_tasks()
             raise DataLoaderError(
                 f"TaskInterface loader requires a 'task' parameter. "
                 f"Available tasks: {', '.join(available[:DISPLAY_TOP_N_SMALL])}..."
             )
-
-        # Ensure split ratio is valid
         split_ratio = self._effective_split(split_ratio)
-
-        # Load the task
         try:
-            task_obj: TaskInterface = get_task(task, limit=limit)
+            task_obj: TaskInterface = get_task(task, limit=limit, train_ratio=train_ratio)
         except ValueError as e:
             available = list_tasks()
             raise DataLoaderError(

@@ -6,7 +6,6 @@ from typing import Dict, Any, List, Tuple
 
 import torch
 import torch.nn.functional as F
-from wisent.core import constants as _C
 from wisent.core.utils.config_tools.constants import COMPARE_TOL, PROGRESS_LOG_INTERVAL_20
 
 
@@ -32,15 +31,15 @@ def compute_pca_directions(
 
 
 def discover_cone_directions(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    num_directions: int,
-    optimization_steps: int,
-    learning_rate: float,
-    min_cos_sim: float,
-    max_cos_sim: float,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor,
+    num_directions: int, optimization_steps: int, learning_rate: float,
+    min_cos_sim: float, max_cos_sim: float,
+    cone_noise_scale: float = None, cone_loss_weight_dissimilar: float = None,
+    cone_loss_weight_cone: float = None, cone_loss_weight_diversity: float = None,
 ) -> Tuple[torch.Tensor, Dict[str, Any]]:
     """Discover cone directions via gradient optimization."""
+    for _n, _v in [("cone_noise_scale", cone_noise_scale), ("cone_loss_weight_dissimilar", cone_loss_weight_dissimilar), ("cone_loss_weight_cone", cone_loss_weight_cone), ("cone_loss_weight_diversity", cone_loss_weight_diversity)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     hidden_dim = pos_tensor.shape[1]
 
     caa_dir = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
@@ -50,7 +49,7 @@ def discover_cone_directions(
     directions[0] = caa_dir
 
     for i in range(1, num_directions):
-        noise = torch.randn(hidden_dim) * _C.CONE_NOISE_SCALE
+        noise = torch.randn(hidden_dim) * cone_noise_scale
         directions[i] = F.normalize(caa_dir + noise, p=2, dim=0)
 
     directions = F.normalize(directions, p=2, dim=1)
@@ -77,11 +76,11 @@ def discover_cone_directions(
         too_dissimilar = F.relu(min_cos_sim - off_diag).sum()
 
         cone_loss = (negative_penalty + too_similar
-                     + _C.CONE_LOSS_WEIGHT_DISSIMILAR * too_dissimilar)
+                     + cone_loss_weight_dissimilar * too_dissimilar)
         diversity_loss = -off_diag.var()
         total_loss = (separation_loss
-                      + _C.CONE_LOSS_WEIGHT_CONE * cone_loss
-                      + _C.CONE_LOSS_WEIGHT_DIVERSITY * diversity_loss)
+                      + cone_loss_weight_cone * cone_loss
+                      + cone_loss_weight_diversity * diversity_loss)
 
         total_loss.backward()
         optimizer.step()
@@ -136,11 +135,12 @@ def check_half_space_consistency(directions: torch.Tensor) -> float:
 
 
 def test_positive_combinations(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    directions: torch.Tensor,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, directions: torch.Tensor,
+    cone_significance_threshold: float = None, cone_pos_ratio_weight: float = None, cone_sig_ratio_weight: float = None,
 ) -> float:
     """Test if difference vectors can be represented as positive combinations."""
+    for _n, _v in [("cone_significance_threshold", cone_significance_threshold), ("cone_pos_ratio_weight", cone_pos_ratio_weight), ("cone_sig_ratio_weight", cone_sig_ratio_weight)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
     diff_norm = F.normalize(diff.unsqueeze(0), p=2, dim=1)
     dirs_norm = F.normalize(directions, p=2, dim=1)
@@ -148,13 +148,13 @@ def test_positive_combinations(
     projections = (diff_norm @ dirs_norm.T).squeeze()
     positive_projections = (projections >= 0).sum().item()
     significant_projections = (
-        projections > _C.CONE_SIGNIFICANCE_THRESHOLD
+        projections > cone_significance_threshold
     ).sum().item()
 
     pos_ratio = positive_projections / directions.shape[0]
     sig_ratio = significant_projections / directions.shape[0]
 
-    return _C.CONE_POS_RATIO_WEIGHT * pos_ratio + _C.CONE_SIG_RATIO_WEIGHT * sig_ratio
+    return cone_pos_ratio_weight * pos_ratio + cone_sig_ratio_weight * sig_ratio
 
 
 def compute_cosine_similarity_matrix(directions: torch.Tensor) -> torch.Tensor:
@@ -186,14 +186,16 @@ def compute_separation_scores(
 
 
 def compute_cone_score(
-    pca_explained: float,
-    cone_explained: float,
-    half_space_score: float,
-    avg_cos_sim: float,
-    pos_combo_score: float,
-    separation_scores: List[float],
+    pca_explained: float, cone_explained: float, half_space_score: float,
+    avg_cos_sim: float, pos_combo_score: float, separation_scores: List[float],
+    cone_cos_threshold_low: float = None, cone_cos_score_low: float = None,
+    cone_cos_threshold_high: float = None, cone_significance_threshold: float = None,
+    cone_weight_cos: float = None, cone_weight_sig: float = None,
+    cone_weight_effect: float = None, cone_weight_sample: float = None, cone_weight_ratio: float = None,
 ) -> float:
     """Compute overall cone score combining all metrics."""
+    for _n, _v in [("cone_cos_threshold_low", cone_cos_threshold_low), ("cone_cos_score_low", cone_cos_score_low), ("cone_cos_threshold_high", cone_cos_threshold_high), ("cone_significance_threshold", cone_significance_threshold), ("cone_weight_cos", cone_weight_cos), ("cone_weight_sig", cone_weight_sig), ("cone_weight_effect", cone_weight_effect), ("cone_weight_sample", cone_weight_sample), ("cone_weight_ratio", cone_weight_ratio)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     var_ratio = cone_explained / max(pca_explained, COMPARE_TOL)
     var_score = min(var_ratio, 1.0)
 
@@ -201,34 +203,34 @@ def compute_cone_score(
 
     if avg_cos_sim < 0:
         cos_score = 0.0
-    elif avg_cos_sim < _C.CONE_COS_THRESHOLD_LOW:
-        cos_score = (avg_cos_sim / _C.CONE_COS_THRESHOLD_LOW
-                     * _C.CONE_COS_SCORE_LOW)
-    elif avg_cos_sim <= _C.CONE_COS_THRESHOLD_HIGH:
+    elif avg_cos_sim < cone_cos_threshold_low:
+        cos_score = (avg_cos_sim / cone_cos_threshold_low
+                     * cone_cos_score_low)
+    elif avg_cos_sim <= cone_cos_threshold_high:
         cos_score = 1.0
     else:
         cos_score = max(
-            _C.CONE_COS_SCORE_LOW,
-            1.0 - (avg_cos_sim - _C.CONE_COS_THRESHOLD_HIGH)
-            / _C.CONE_COS_THRESHOLD_LOW,
+            cone_cos_score_low,
+            1.0 - (avg_cos_sim - cone_cos_threshold_high)
+            / cone_cos_threshold_low,
         )
 
     combo_component = pos_combo_score
 
     significant_directions = sum(
         1 for s in separation_scores
-        if abs(s) > _C.CONE_SIGNIFICANCE_THRESHOLD
+        if abs(s) > cone_significance_threshold
     )
     multi_dir_score = min(
         significant_directions / max(len(separation_scores), 1), 1.0
     )
 
     cone_score = (
-        _C.CONE_WEIGHT_COS * var_score
-        + _C.CONE_WEIGHT_SIG * half_space_component
-        + _C.CONE_WEIGHT_EFFECT * cos_score
-        + _C.CONE_WEIGHT_SAMPLE * combo_component
-        + _C.CONE_WEIGHT_RATIO * multi_dir_score
+        cone_weight_cos * var_score
+        + cone_weight_sig * half_space_component
+        + cone_weight_effect * cos_score
+        + cone_weight_sample * combo_component
+        + cone_weight_ratio * multi_dir_score
     )
 
     return float(cone_score)

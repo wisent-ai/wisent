@@ -5,15 +5,10 @@ import json
 import tempfile
 from pathlib import Path
 import torch
-from datasets import Dataset
 from wisent.comparison.utils import generate_contrastive_pairs
 from wisent.core.utils import preferred_dtype
 from wisent.core.utils.config_tools.constants import (
-    COMPARISON_NUM_PAIRS, DEFAULT_WEIGHT_DECAY, TRAINING_WARMUP_RATIO,
-    COMPARISON_REFT_LEARNING_RATE, COMPARISON_NUM_EPOCHS_DEFAULT,
-    COMPARISON_TRAINING_BATCH_SIZE,
-    COMPARISON_LOGGING_STEPS, LOREFT_DEFAULT_RANK,
-    GRADIENT_ACCUMULATION_STEPS_DEFAULT, JSON_INDENT,
+    JSON_INDENT,
 )
 import pyreft
 import transformers
@@ -55,13 +50,18 @@ def train_reft_adapter(
     output_path: str | Path,
     trait_label: str,
     device: str,
-    num_pairs: int = COMPARISON_NUM_PAIRS,
+    weight_decay: float,
+    num_pairs: int,
+    low_rank_dimension: int,
+    learning_rate: float,
+    num_epochs: int,
+    batch_size: int,
+    logging_steps: int,
+    intervention_layers: str,
+    gradient_accumulation_steps: int,
+    warmup_ratio: float,
+    *,
     keep_intermediate: bool = False,
-    low_rank_dimension: int = LOREFT_DEFAULT_RANK,
-    intervention_layers: str | None = None,
-    learning_rate: float = COMPARISON_REFT_LEARNING_RATE,
-    num_epochs: int = COMPARISON_NUM_EPOCHS_DEFAULT,
-    batch_size: int = COMPARISON_TRAINING_BATCH_SIZE,
     max_length: int | None = None,
 ) -> Path:
     """Train a LoReFT intervention using SFT on positive responses."""
@@ -86,10 +86,7 @@ def train_reft_adapter(
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
 
-    if intervention_layers is None:
-        layer_indices = [get_default_layer(model_name)]
-    else:
-        layer_indices = [int(l.strip()) for l in intervention_layers.split(",")]
+    layer_indices = [int(l.strip()) for l in intervention_layers.split(",")]
 
     print(f"\nStep 3: Configuring LoReFT (rank={low_rank_dimension}, layers={layer_indices})...")
     hidden_size = model.config.hidden_size
@@ -118,9 +115,9 @@ def train_reft_adapter(
     training_output_dir = tempfile.mkdtemp(prefix="reft_training_")
     training_args = transformers.TrainingArguments(
         output_dir=training_output_dir, num_train_epochs=num_epochs,
-        per_device_train_batch_size=batch_size, gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS_DEFAULT,
-        learning_rate=learning_rate, weight_decay=DEFAULT_WEIGHT_DECAY, warmup_ratio=TRAINING_WARMUP_RATIO,
-        logging_steps=COMPARISON_LOGGING_STEPS, save_strategy="no",
+        per_device_train_batch_size=batch_size, gradient_accumulation_steps=gradient_accumulation_steps,
+        learning_rate=learning_rate, weight_decay=weight_decay, warmup_ratio=warmup_ratio,
+        logging_steps=logging_steps, save_strategy="no",
         bf16=(dtype == torch.bfloat16), fp16=(dtype == torch.float16), report_to="none",
     )
     trainer = pyreft.ReftTrainerForCausalLM(

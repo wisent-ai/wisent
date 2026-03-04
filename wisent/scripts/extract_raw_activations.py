@@ -31,7 +31,6 @@ print("[STARTUP] Importing torch...", flush=True)
 import torch
 print(f"[STARTUP] torch imported, version: {torch.__version__}, CUDA available: {torch.cuda.is_available()}", flush=True)
 
-from wisent.core.utils.config_tools.constants import EXTRACTION_DEFAULT_PAIR_LIMIT
 from wisent.scripts._helpers.extract_raw_helpers import extract_benchmark
 from wisent.scripts._helpers.extract_raw_db import (
     get_conn, reset_conn, get_or_create_model, get_missing_benchmarks,
@@ -43,8 +42,10 @@ def main():
     parser = argparse.ArgumentParser(description="Extract raw activations for all missing benchmarks with 3 formats")
     parser.add_argument("--model", required=True, help="Model name (e.g., meta-llama/Llama-3.2-1B-Instruct)")
     parser.add_argument("--device", required=True, help="Device (cuda/mps/cpu)")
-    parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark (default: 500)")
+    parser.add_argument("--limit", type=int, required=True, help="Max pairs per benchmark")
     parser.add_argument("--benchmark", default=None, help="Single benchmark to extract (optional)")
+    parser.add_argument("--max-retries", type=int, required=True, help="Maximum retry attempts for DB operations")
+    parser.add_argument("--log-interval", type=int, required=True, help="Progress logging interval")
     args = parser.parse_args()
     print(f"[MAIN] Args: model={args.model}, device={args.device}, limit={args.limit}, benchmark={args.benchmark}", flush=True)
 
@@ -98,7 +99,7 @@ def main():
 
         print(f"\nExtracting single benchmark: {args.benchmark}", flush=True)
         extracted = extract_benchmark(model, tokenizer, model_id, args.benchmark, set_id,
-                                       num_layers, args.device, get_conn, reset_conn, args.limit)
+                                       num_layers, args.device, get_conn, reset_conn, max_retries=args.max_retries, log_interval=args.log_interval, limit=args.limit)
         print(f"\nDone! Extracted {extracted} pairs", flush=True)
     else:
         missing = get_missing_benchmarks(conn, model_id, num_layers)
@@ -114,7 +115,7 @@ def main():
             start = time.time()
 
             extracted = extract_benchmark(model, tokenizer, model_id, benchmark_name, set_id,
-                                           num_layers, args.device, get_conn, reset_conn, args.limit)
+                                           num_layers, args.device, get_conn, reset_conn, max_retries=args.max_retries, log_interval=args.log_interval, limit=args.limit)
 
             total_extracted += extracted
             elapsed = time.time() - start

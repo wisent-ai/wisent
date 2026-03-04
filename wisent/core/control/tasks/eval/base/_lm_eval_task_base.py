@@ -22,11 +22,12 @@ def get_extractor(task_name: str) -> BenchmarkExtractor:
 class LMEvalTask(TaskInterface):
     """Wrapper for lm-evaluation-harness tasks."""
 
-    def __init__(self, task_name: str, description: str, categories: List[str]):
+    def __init__(self, task_name: str, description: str, categories: List[str], *, train_ratio: float):
         self.task_name = task_name
         self._description = description
         self._categories = categories
         self._extractor = get_extractor(task_name)
+        self.train_ratio = train_ratio
 
     def load_data(self, limit: Optional[int] = None) -> List[Dict[str, Any]]:
         """
@@ -55,7 +56,7 @@ class LMEvalTask(TaskInterface):
                 return []
 
             # Apply our 80/20 split and get TEST docs only
-            _, test_docs = create_deterministic_split(all_docs, self.task_name)
+            _, test_docs = create_deterministic_split(all_docs, self.task_name, train_ratio=self.train_ratio)
 
             # Ensure docs are in dictionary format
             processed_docs = []
@@ -108,44 +109,48 @@ class LMEvalTask(TaskInterface):
 class MBPPTask(LMEvalTask):
     """MBPP task implementation."""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="mbpp",
             description="MBPP: Mostly Basic Python Problems coding benchmark",
             categories=["coding", "reasoning", "python"],
+            train_ratio=train_ratio,
         )
 
 
 class HumanEvalTask(LMEvalTask):
     """HumanEval task implementation."""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="humaneval",
             description="HumanEval: Human Evaluation of Python coding problems",
             categories=["coding", "reasoning", "python"],
+            train_ratio=train_ratio,
         )
 
 
 class MBPPPlusTask(LMEvalTask):
     """MBPP Plus task implementation."""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="mbpp_plus",
             description="MBPP Plus: Extended version of MBPP with additional test cases",
             categories=["coding", "reasoning", "python"],
+            train_ratio=train_ratio,
         )
 
 
 class GSM8KTask(LMEvalTask):
     """GSM8K task implementation."""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="gsm8k",
             description="GSM8K: Grade School Math 8K problems",
             categories=["mathematics", "reasoning", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class ArithmeticBaseTask(LMEvalTask):
@@ -156,101 +161,111 @@ class ArithmeticBaseTask(LMEvalTask):
 class Arithmetic1dcTask(ArithmeticBaseTask):
     """Arithmetic 1dc task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_1dc",
             description="Arithmetic 1dc: 1 digit addition arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 
 class Arithmetic2daTask(ArithmeticBaseTask):
     """Arithmetic 2da task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_2da",
             description="Arithmetic 2da: 2 digit addition arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class Arithmetic2dmTask(ArithmeticBaseTask):
     """Arithmetic 2dm task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_2dm",
             description="Arithmetic 2dm: 2 digit multiplication arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class Arithmetic2dsTask(ArithmeticBaseTask):
     """Arithmetic 2ds task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_2ds",
             description="Arithmetic 2ds: 2 digit subtraction arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class Arithmetic3daTask(ArithmeticBaseTask):
     """Arithmetic 3da task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_3da",
             description="Arithmetic 3da: 3 digit addition arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class Arithmetic3dsTask(ArithmeticBaseTask):
     """Arithmetic 3ds task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_3ds",
             description="Arithmetic 3ds: 3 digit subtraction arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class Arithmetic4daTask(ArithmeticBaseTask):
     """Arithmetic 4da task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_4da",
             description="Arithmetic 4da: 4 digit addition arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class Arithmetic4dsTask(ArithmeticBaseTask):
     """Arithmetic 4ds task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_4ds",
             description="Arithmetic 4ds: 4 digit subtraction arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class Arithmetic5daTask(ArithmeticBaseTask):
     """Arithmetic 5da task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_5da",
             description="Arithmetic 5da: 5 digit addition arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 
 class Arithmetic5dsTask(ArithmeticBaseTask):
     """Arithmetic 5ds task implementation"""
 
-    def __init__(self):
+    def __init__(self, *, train_ratio: float):
         super().__init__(
             task_name="arithmetic_5ds",
             description="Arithmetic 5ds: 5 digit subtraction arithmetic problems",
-            categories=["mathematics", "arithmetic"]
+            categories=["mathematics", "arithmetic"],
+            train_ratio=train_ratio,
         )
 

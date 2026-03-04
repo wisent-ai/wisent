@@ -43,6 +43,21 @@ def load_model_task_config(
         if config is None:
             return {}
         result: Dict[str, Any] = {}
+        # Extract all non-None typed fields from SteeringConfig
+        _TYPED_FIELDS = [
+            "num_directions", "retain_weight", "independence_weight",
+            "condition_threshold", "gate_temperature", "max_alpha",
+            "gate_hidden_dim", "intensity_hidden_dim", "behavior_weight",
+            "sparse_weight", "grom_optimization_steps", "grom_learning_rate",
+            "tecza_optimization_steps", "tetno_optimization_steps",
+            "sensor_layer", "steering_layers", "min_cosine_similarity",
+            "max_cosine_similarity",
+        ]
+        for field_name in _TYPED_FIELDS:
+            val = getattr(config, field_name, None)
+            if val is not None:
+                result[field_name] = val
+        # method_params dict takes priority (most specific)
         if hasattr(config, "method_params") and config.method_params:
             result.update(config.method_params)
         return result

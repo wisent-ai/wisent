@@ -21,11 +21,6 @@ from scipy.sparse.csgraph import shortest_path
 from sklearn.neighbors import NearestNeighbors
 from wisent.core.utils.config_tools.constants import (
     NORM_EPS,
-    SZLAK_SINKHORN_REG,
-    SZLAK_MAX_ITER,
-    SZLAK_HIGH_REG,
-    SZLAK_SPARSE_K,
-    SZLAK_GEODESIC_INF_MULTIPLIER,
 )
 
 __all__ = [
@@ -39,8 +34,8 @@ __all__ = [
 
 def sinkhorn(
     cost: torch.Tensor,
-    reg: float = SZLAK_SINKHORN_REG,
-    max_iter: int = SZLAK_MAX_ITER,
+    reg: float,
+    max_iter: int,
     tol: float = NORM_EPS,
 ) -> torch.Tensor:
     """
@@ -79,8 +74,8 @@ def sinkhorn(
 
 def sinkhorn_one_sided(
     cost: torch.Tensor,
-    reg: float = SZLAK_HIGH_REG,
-    max_iter: int = SZLAK_MAX_ITER,
+    reg: float,
+    max_iter: int,
     tol: float = NORM_EPS,
 ) -> torch.Tensor:
     """
@@ -148,7 +143,7 @@ def compute_attention_affinity_cost(
 
 def build_knn_graph(
     X: np.ndarray,
-    k: int = SZLAK_SPARSE_K,
+    k: int,
 ) -> csr_matrix:
     """
     Build a symmetric k-NN graph with Euclidean edge weights.
@@ -171,20 +166,17 @@ def build_knn_graph(
 def compute_geodesic_cost(
     neg: torch.Tensor,
     pos: torch.Tensor,
-    k: int = SZLAK_SPARSE_K,
+    k: int,
+    geodesic_inf_multiplier: float,
 ) -> Tuple[torch.Tensor, np.ndarray]:
     """
     Compute geodesic cost matrix between neg and pos activations.
-
-    1. Concatenate X = [neg; pos]
-    2. Build k-NN graph on X
-    3. Compute all-pairs shortest paths (geodesic distances)
-    4. Extract cost block C[i, j] = geodesic(neg_i, pos_j)
 
     Args:
         neg: [N_neg, D] negative activations (float32 tensor).
         pos: [N_pos, D] positive activations (float32 tensor).
         k: Number of nearest neighbors for graph construction.
+        geodesic_inf_multiplier: Multiplier for replacing inf distances.
 
     Returns:
         cost: [N_neg, N_pos] geodesic cost matrix (torch tensor).
@@ -198,7 +190,7 @@ def compute_geodesic_cost(
 
     # Replace inf with large finite value (disconnected components)
     max_finite = geodesic_all[np.isfinite(geodesic_all)].max()
-    geodesic_all[~np.isfinite(geodesic_all)] = max_finite * SZLAK_GEODESIC_INF_MULTIPLIER
+    geodesic_all[~np.isfinite(geodesic_all)] = max_finite * geodesic_inf_multiplier
 
     # Extract neg-to-pos block
     cost_np = geodesic_all[:N_neg, N_neg:]

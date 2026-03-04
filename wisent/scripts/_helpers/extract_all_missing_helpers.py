@@ -11,7 +11,7 @@ import time
 import psycopg2
 import torch
 
-from wisent.core.utils.config_tools.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, EXTRACTION_SMALL_BATCH_SIZE, PROGRESS_LOG_INTERVAL
+from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH
 
 from wisent.scripts.extract_all_missing import (
     hidden_states_to_bytes,
@@ -23,12 +23,15 @@ from wisent.scripts.extract_all_missing import (
 
 
 def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_id: int,
-                      device: str, num_layers: int, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT):
+                      device: str, num_layers: int, batch_size: int,
+                      db_connect_wait_s: int, max_retries: int,
+                      log_interval: int,
+                      limit: int):
     """Extract activations for a single benchmark using EXISTING pairs from database.
 
     Only extracts pairs that don't already have activations for this model.
     """
-    conn = get_conn()
+    conn = get_conn(db_connect_wait_s)
     cur = conn.cursor()
 
     # Get pairs that DON'T already have activations for this model
@@ -61,8 +64,7 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
         # Return last token hidden state for each layer
         return [out.hidden_states[i][0, -1, :] for i in range(1, len(out.hidden_states))]
 
-    # Process in batches of 10 pairs to reduce DB round trips
-    batch_size = EXTRACTION_SMALL_BATCH_SIZE
+    # Process in batches to reduce DB round trips
     for batch_start in range(0, len(db_pairs), batch_size):
         batch_end = min(batch_start + batch_size, len(db_pairs))
         batch_pairs = db_pairs[batch_start:batch_end]
@@ -92,9 +94,9 @@ def extract_benchmark(model, tokenizer, model_id: int, benchmark_name: str, set_
             extracted += 1
 
         # Batch insert all activations for this batch of pairs
-        batch_create_activations(activations_batch)
+        batch_create_activations(activations_batch, max_retries=max_retries, db_connect_wait_s=db_connect_wait_s)
 
-        if batch_end % PROGRESS_LOG_INTERVAL == 0 or batch_end == len(db_pairs):
+        if batch_end % log_interval == RECURSION_INITIAL_DEPTH or batch_end == len(db_pairs):
             print(f"    Processed {batch_end}/{len(db_pairs)} pairs", flush=True)
 
     if device == "cuda":
@@ -107,8 +109,12 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--model", required=True, help="Model name (e.g., meta-llama/Llama-3.2-1B-Instruct)")
     parser.add_argument("--device", required=True, help="Device (cuda/mps/cpu)")
-    parser.add_argument("--limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Max pairs per benchmark")
+    parser.add_argument("--batch-size", type=int, required=True, help="Batch size for extraction (number of pairs per DB round trip)")
+    parser.add_argument("--limit", type=int, required=True, help="Max pairs per benchmark")
     parser.add_argument("--benchmark", default=None, help="Single benchmark to extract (optional)")
+    parser.add_argument("--db-connect-wait-s", type=int, required=True, help="Database connection wait seconds")
+    parser.add_argument("--max-retries", type=int, required=True, help="Maximum retry attempts for DB operations")
+    parser.add_argument("--log-interval", type=int, required=True, help="Progress logging interval")
     args = parser.parse_args()
 
     from transformers import AutoTokenizer, AutoModelForCausalLM
@@ -135,7 +141,7 @@ def main():
     num_layers = model.config.num_hidden_layers
     print(f"Model loaded: {num_layers} layers", flush=True)
 
-    conn = get_conn()
+    conn = get_conn(args.db_connect_wait_s)
     cur = conn.cursor()
 
     # Get model ID
@@ -150,7 +156,7 @@ def main():
 
     if args.benchmark:
         # Extract single benchmark
-        conn = get_conn()
+        conn = get_conn(args.db_connect_wait_s)
         cur = conn.cursor()
         cur.execute('SELECT id FROM "ContrastivePairSet" WHERE name = %s', (args.benchmark,))
         result = cur.fetchone()
@@ -162,11 +168,14 @@ def main():
 
         print(f"Extracting single benchmark: {args.benchmark}", flush=True)
         extracted = extract_benchmark(model, tokenizer, model_id, args.benchmark, set_id,
-                                       args.device, num_layers, args.limit)
+                                       args.device, num_layers, args.batch_size,
+                                       db_connect_wait_s=args.db_connect_wait_s, max_retries=args.max_retries,
+                                       log_interval=args.log_interval,
+                                       limit=args.limit)
         print(f"Done! Extracted {extracted} pairs", flush=True)
     else:
         # Extract all incomplete benchmarks
-        missing = get_missing_benchmarks(get_conn(), model_id, args.limit)
+        missing = get_missing_benchmarks(get_conn(args.db_connect_wait_s), model_id, log_interval=args.log_interval, target_pairs=args.limit)
         print(f"Found {len(missing)} incomplete benchmarks to extract", flush=True)
 
         if not missing:
@@ -180,7 +189,10 @@ def main():
             start = time.time()
 
             extracted = extract_benchmark(model, tokenizer, model_id, benchmark_name, set_id,
-                                           args.device, num_layers, args.limit)
+                                           args.device, num_layers, args.batch_size,
+                                           db_connect_wait_s=args.db_connect_wait_s, max_retries=args.max_retries,
+                                           log_interval=args.log_interval,
+                                           limit=args.limit)
 
             total_extracted += extracted
             elapsed = time.time() - start

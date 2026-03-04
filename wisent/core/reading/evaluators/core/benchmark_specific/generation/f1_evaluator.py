@@ -7,7 +7,7 @@ from typing import Any, Set
 import logging
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.utils.config_tools.constants import EVAL_F1_MATCH_THRESHOLD, EVAL_F1_PARTIAL_THRESHOLD
+from wisent.core.utils.config_tools.constants import CHANCE_LEVEL_ACCURACY, F1_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +26,13 @@ class F1Evaluator(BaseEvaluator):
 
     name = "f1"
     description = "F1 score evaluator for token-level comparison"
+
+    def __init__(
+        self,
+        *,
+        f1_threshold: float = F1_THRESHOLD,
+    ) -> None:
+        self._f1_threshold = f1_threshold
 
     def evaluate(self, response: str, expected: Any, **kwargs) -> EvalResult:
         """Evaluate using F1 score.
@@ -70,7 +77,7 @@ class F1Evaluator(BaseEvaluator):
 
             # If correct answer has better F1 with expected, return TRUTHFUL
             # If incorrect answer has better F1 with expected, return UNTRUTHFUL
-            if best_f1_correct >= EVAL_F1_MATCH_THRESHOLD and best_f1_incorrect < EVAL_F1_MATCH_THRESHOLD:
+            if best_f1_correct >= self._f1_threshold and best_f1_incorrect < self._f1_threshold:
                 return EvalResult(
                     ground_truth="TRUTHFUL",
                     method_used=self.name,
@@ -83,7 +90,7 @@ class F1Evaluator(BaseEvaluator):
                         "incorrect_answer": incorrect_answer,
                     }
                 )
-            elif best_f1_incorrect >= EVAL_F1_MATCH_THRESHOLD and best_f1_correct < EVAL_F1_MATCH_THRESHOLD:
+            elif best_f1_incorrect >= self._f1_threshold and best_f1_correct < self._f1_threshold:
                 return EvalResult(
                     ground_truth="UNTRUTHFUL",
                     method_used=self.name,
@@ -127,9 +134,9 @@ class F1Evaluator(BaseEvaluator):
                 best_match = exp
 
         # Determine ground truth based on F1 threshold
-        if best_f1 >= EVAL_F1_MATCH_THRESHOLD:
+        if best_f1 >= self._f1_threshold:
             ground_truth = "TRUTHFUL"
-        elif best_f1 >= EVAL_F1_PARTIAL_THRESHOLD:
+        elif best_f1 >= CHANCE_LEVEL_ACCURACY:
             ground_truth = "UNKNOWN"  # Partial match
         else:
             ground_truth = "UNTRUTHFUL"

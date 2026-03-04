@@ -22,10 +22,6 @@ Task types:
 
 import argparse
 
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SPLIT_RATIO,
-    DEFAULT_RANDOM_SEED,
-)
 
 from wisent.core.utils.config_tools.parser_arguments.optimization.weights.optimize_weights_parser_advanced import (
     setup_advanced_optimize_weights_args,
@@ -106,16 +102,65 @@ def setup_optimize_weights_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--train-ratio",
         type=float,
-        default=DEFAULT_SPLIT_RATIO,
-        help="Fraction of pairs for training vs evaluation (default: 0.8)"
+        required=True,
+        help="Fraction of pairs for training vs evaluation"
     )
     parser.add_argument(
         "--seed",
         type=int,
-        default=DEFAULT_RANDOM_SEED,
+        default=None,
         help="Random seed for reproducibility (default: 42)"
     )
 
+    # Personalization evaluator quality parameters
+    parser.add_argument(
+        "--fast-diversity-seed", type=int, required=True,
+        help="Seed for fast diversity computation"
+    )
+    parser.add_argument(
+        "--diversity-max-sample-size", type=int, required=True,
+        help="Maximum sample size for diversity computation"
+    )
+    parser.add_argument(
+        "--min-sentence-length", type=int, required=True,
+        help="Minimum sentence length for coherence evaluation"
+    )
+    parser.add_argument(
+        "--nonsense-min-tokens", type=int, required=True,
+        help="Minimum token count for nonsense word detection"
+    )
+    parser.add_argument(
+        "--quality-min-response-length", type=int, required=True,
+        help="Minimum response length for quality scoring"
+    )
+    parser.add_argument(
+        "--quality-repetition-ratio-threshold", type=float, required=True,
+        help="Threshold for repetitive token ratio penalty"
+    )
+    parser.add_argument(
+        "--quality-bigram-repeat-threshold", type=int, required=True,
+        help="Threshold for repeated bigram count penalty"
+    )
+    parser.add_argument(
+        "--quality-bigram-repeat-penalty", type=float, required=True,
+        help="Penalty multiplier for repeated bigrams"
+    )
+    parser.add_argument(
+        "--quality-special-char-ratio-threshold", type=float, required=True,
+        help="Threshold for special character ratio penalty"
+    )
+    parser.add_argument(
+        "--quality-special-char-penalty", type=float, required=True,
+        help="Penalty multiplier for excessive special characters"
+    )
+    parser.add_argument(
+        "--quality-char-repeat-count", type=int, required=True,
+        help="Minimum consecutive character repeats to trigger penalty"
+    )
+    parser.add_argument(
+        "--quality-char-repeat-penalty", type=float, required=True,
+        help="Penalty multiplier for character repetition"
+    )
     # ==========================================================================
     # MODEL CONFIGURATION
     # ==========================================================================

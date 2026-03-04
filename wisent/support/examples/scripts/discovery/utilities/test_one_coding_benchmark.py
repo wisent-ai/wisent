@@ -21,10 +21,8 @@ from pathlib import Path
 os.environ['HF_DATASETS_TRUST_REMOTE_CODE'] = '1'
 os.environ['HF_ALLOW_CODE_EVAL'] = '1'
 
-from wisent.core.utils.config_tools.constants import (
-    CODING_BENCHMARK_DEFAULT_LIMIT, SPLIT_RATIO_HALF, TEST_DEFAULT_LIMIT,
-    DEFAULT_RANDOM_SEED, DEFAULT_TIMEOUT_DOCKER, JSON_INDENT,
-)
+from typing import Optional
+from wisent.core import constants as _C
 from wisent.core.utils.infra_tools.infra.core.hardware import docker_sandbox_time_limit_s, docker_sandbox_cpu_limit_s, docker_sandbox_mem_limit_mb
 from wisent.core.utils.infra_tools.data.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
@@ -33,7 +31,7 @@ from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator 
 def test_coding_benchmark(
     task_name: str,
     output_dir: str = ".",
-    limit: int = TEST_DEFAULT_LIMIT,
+    limit: Optional[int] = None,
 ):
     """
     Test a coding benchmark using Docker sandbox execution.
@@ -46,6 +44,7 @@ def test_coding_benchmark(
     Returns:
         True if all evaluations correct, False otherwise
     """
+    limit = limit if limit is not None else _C.TEST_DEFAULT_LIMIT
     try:
         print(f"\n{'='*60}")
         print(f"Testing coding benchmark: {task_name}")
@@ -60,8 +59,8 @@ def test_coding_benchmark(
 
         result = loader._load_one_task(
             task_name=task_name,
-            split_ratio=SPLIT_RATIO_HALF,
-            seed=DEFAULT_RANDOM_SEED,
+            split_ratio=_C.SPLIT_RATIO_HALF,
+            seed=_C.DEFAULT_RANDOM_SEED,
             limit=limit * 3,  # Load more to account for filtering
             training_limit=limit,
             testing_limit=limit,
@@ -78,6 +77,7 @@ def test_coding_benchmark(
         print("\n[2/4] Initializing CodingEvaluator with Docker sandbox...")
 
         cfg = EvaluatorConfig(
+            feedback_max_chars=_C.FEEDBACK_MAX_CHARS, fsize_mb=_C.SAFE_DOCKER_FSIZE_MB, nofile=_C.SAFE_DOCKER_NOFILE,
             image="coding/sandbox:polyglot-1.0",
             time_limit_s=docker_sandbox_time_limit_s(),
             cpu_limit_s=docker_sandbox_cpu_limit_s(),
@@ -104,7 +104,7 @@ def test_coding_benchmark(
 
         pairs_file = output_path / f"coding_{task_name}_pairs.json"
         with open(pairs_file, 'w') as f:
-            json.dump(pairs_data, f, indent=JSON_INDENT)
+            json.dump(pairs_data, f, indent=_C.JSON_INDENT)
         print(f"  Saved pairs to: {pairs_file}")
 
         # Step 4: Evaluate with Docker execution
@@ -216,7 +216,7 @@ def test_coding_benchmark(
         }
 
         with open(eval_file, 'w') as f:
-            json.dump(summary, f, indent=JSON_INDENT)
+            json.dump(summary, f, indent=_C.JSON_INDENT)
 
         # Final summary
         print(f"\n{'='*60}")
@@ -243,7 +243,7 @@ def test_coding_benchmark(
         return False
 
 
-def check_docker_available():
+def check_docker_available(docker_timeout: int):
     """Check if Docker is available and running."""
     import subprocess
     try:
@@ -251,7 +251,7 @@ def check_docker_available():
             ["docker", "info"],
             capture_output=True,
             text=True,
-            timeout=DEFAULT_TIMEOUT_DOCKER
+            timeout=docker_timeout
         )
         if result.returncode != 0:
             print("ERROR: Docker daemon is not running")
@@ -266,14 +266,14 @@ def check_docker_available():
         print("ERROR: Docker command timed out")
         return False
 
-
 if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Test coding benchmarks with Docker execution")
     parser.add_argument("task", help="Benchmark name")
-    parser.add_argument("--limit", type=int, default=CODING_BENCHMARK_DEFAULT_LIMIT, help="Number of pairs to test (default: 5)")
+    parser.add_argument("--limit", type=int, default=_C.CODING_BENCHMARK_DEFAULT_LIMIT, help="Number of pairs to test (default: 5)")
     parser.add_argument("--output", type=str, default=None, help="Output directory")
+    parser.add_argument("--docker-timeout", type=int, required=True, help="Timeout in seconds for Docker availability check")
 
     args = parser.parse_args()
 
@@ -282,7 +282,7 @@ if __name__ == "__main__":
         args.output = str(Path(__file__).parent / "results")
 
     print("Checking Docker availability...")
-    if not check_docker_available():
+    if not check_docker_available(docker_timeout=args.docker_timeout):
         sys.exit(1)
 
     print(f"\nRunning test for: {args.task}")

@@ -27,13 +27,6 @@ from wisent.core.reading.evaluators.custom.custom_evaluator import (
     APIEvaluator,
     CustomEvaluatorConfig,
 )
-from wisent.core.utils.config_tools.constants import (
-    GPTZERO_MIN_TEXT_LENGTH,
-    GPTZERO_DEFAULT_NEUTRAL_SCORE,
-    GPTZERO_AI_PROB_WEIGHT,
-    GPTZERO_AVG_PROB_WEIGHT,
-    CLASSIFIER_THRESHOLD,
-)
 
 __all__ = ["GPTZeroEvaluator", "create_gptzero_evaluator"]
 
@@ -62,6 +55,9 @@ class GPTZeroEvaluator(APIEvaluator):
     def __init__(
         self,
         optimize_for: str,
+        api_timeout: int,
+        max_retries: int,
+        retry_delay: float,
         api_key: Optional[str] = None,
         model_version: str = "2025-11-28-base",
         **kwargs,
@@ -83,6 +79,9 @@ class GPTZeroEvaluator(APIEvaluator):
         super().__init__(
             name="gptzero",
             description="GPTZero AI detection evaluator",
+            api_timeout=api_timeout,
+            max_retries=max_retries,
+            retry_delay=retry_delay,
             config=config,
             api_key=api_key,
             base_url=self.GPTZERO_BASE_URL,
@@ -96,9 +95,9 @@ class GPTZeroEvaluator(APIEvaluator):
         """Call GPTZero API to analyze text."""
         import requests
         
-        if len(response.strip()) < GPTZERO_MIN_TEXT_LENGTH:
+        if len(response.strip()) < 50:
             logger.warning("Text too short for GPTZero analysis, returning neutral score")
-            return {"score": GPTZERO_DEFAULT_NEUTRAL_SCORE, "error": "text_too_short"}
+            return {"score": 0.5, "error": "text_too_short"}
         
         headers = {
             "x-api-key": self.api_key,
@@ -129,9 +128,13 @@ class GPTZeroEvaluator(APIEvaluator):
         documents = data.get("documents", [{}])
         doc = documents[0] if documents else {}
         
-        ai_prob = doc.get("completely_generated_prob", CLASSIFIER_THRESHOLD)
+        if "completely_generated_prob" not in doc:
+            raise KeyError("GPTZero response missing 'completely_generated_prob' in document data")
+        ai_prob = doc["completely_generated_prob"]
         avg_ai_prob = doc.get("average_generated_prob", ai_prob)
-        mixed_prob = doc.get("overall_burstiness", CLASSIFIER_THRESHOLD)
+        if "overall_burstiness" not in doc:
+            raise KeyError("GPTZero response missing 'overall_burstiness' in document data")
+        mixed_prob = doc["overall_burstiness"]
         
         human_prob = 1.0 - ai_prob
         avg_human_prob = 1.0 - avg_ai_prob
@@ -139,7 +142,7 @@ class GPTZeroEvaluator(APIEvaluator):
         if self.optimize_for == "human_prob":
             score = human_prob
         elif self.optimize_for == "mixed_prob":
-            score = 1.0 - (ai_prob * GPTZERO_AI_PROB_WEIGHT + avg_ai_prob * GPTZERO_AVG_PROB_WEIGHT)
+            score = 1.0 - (ai_prob * 0.7 + avg_ai_prob * 0.3)
         elif self.optimize_for == "avg_human_prob":
             score = avg_human_prob
         else:
@@ -184,7 +187,7 @@ def create_gptzero_evaluator(
         result = evaluator("This is some text to analyze")
         print(f"Human-like score: {result['score']}")
     """
-    return GPTZeroEvaluator(api_key=api_key, optimize_for=optimize_for, **kwargs)
+    return GPTZeroEvaluator(optimize_for=optimize_for, api_key=api_key, **kwargs)
 
 
 def create_evaluator(**kwargs) -> GPTZeroEvaluator:

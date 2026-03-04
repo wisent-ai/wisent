@@ -137,7 +137,7 @@ def collect_single_raw(
         hooked = None
         if component.needs_hooks:
             from wisent.core.primitives.model_interface.core.activations.component_hooks import ComponentHookManager
-            mgr = ComponentHookManager(collector.model.hf_model, component, keep)
+            mgr = ComponentHookManager(collector.model.hf_model, component, keep, collector.architecture_module_limit)
             with mgr.hooks_active():
                 collector.model.hf_model(
                     **full_enc, output_hidden_states=False, use_cache=False

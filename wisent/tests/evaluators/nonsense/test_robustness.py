@@ -248,45 +248,45 @@ def test_math500_robustness(model="EleutherAI/gpt-neo-1.3B", limit=10, verbose=F
     print("-" * _C.SEPARATOR_WIDTH_STANDARD)
 
     print("📊 LM-EVAL-HARNESS ROBUSTNESS:")
-    if nonsense_results['lm_eval_accuracy'] > _C.ROBUSTNESS_THRESHOLD_MODERATE:
+    if nonsense_results['lm_eval_accuracy'] > 0.2:
         print("🚨 WARNING: Nonsense data has high lm-eval accuracy (>20%)")
         print("   This suggests the lm-eval evaluation may be broken")
-    elif nonsense_results['lm_eval_accuracy'] > _C.ROBUSTNESS_THRESHOLD_STRICT:
+    elif nonsense_results['lm_eval_accuracy'] > 0.1:
         print("⚠️  CONCERN: Nonsense data has moderate lm-eval accuracy (>10%)")
         print("   The lm-eval evaluation may have issues")
     else:
         print("✅ GOOD: Nonsense data has low lm-eval accuracy (<10%)")
 
-    if lm_eval_difference < _C.ROBUSTNESS_THRESHOLD_LOOSE:
+    if lm_eval_difference < 0.3:
         print("🚨 WARNING: Small lm-eval difference between real and nonsense (<30%)")
         print("   The lm-eval system may not be learning meaningful patterns")
     else:
         print("✅ GOOD: Large lm-eval difference between real and nonsense (≥30%)")
 
     print("\n🎯 CLASSIFIER ROBUSTNESS:")
-    if nonsense_results['evaluation_accuracy'] > _C.ROBUSTNESS_THRESHOLD_MODERATE:
+    if nonsense_results['evaluation_accuracy'] > 0.2:
         print("🚨 WARNING: Nonsense data has high classifier accuracy (>20%)")
         print("   This suggests the classifier evaluation may be broken")
-    elif nonsense_results['evaluation_accuracy'] > _C.ROBUSTNESS_THRESHOLD_STRICT:
+    elif nonsense_results['evaluation_accuracy'] > 0.1:
         print("⚠️  CONCERN: Nonsense data has moderate classifier accuracy (>10%)")
         print("   The classifier evaluation may have issues")
     else:
         print("✅ GOOD: Nonsense data has low classifier accuracy (<10%)")
 
-    if eval_difference < _C.ROBUSTNESS_THRESHOLD_LOOSE:
+    if eval_difference < 0.3:
         print("🚨 WARNING: Small classifier difference between real and nonsense (<30%)")
         print("   The classifier may not be learning meaningful patterns")
     else:
         print("✅ GOOD: Large classifier difference between real and nonsense (≥30%)")
 
     # Overall assessment
-    lm_eval_robust = (nonsense_results['lm_eval_accuracy'] < _C.ROBUSTNESS_THRESHOLD_STRICT and
-                      lm_eval_difference >= _C.ROBUSTNESS_THRESHOLD_LOOSE and
-                      real_results['lm_eval_accuracy'] > _C.ROBUSTNESS_THRESHOLD_LOOSE)
+    lm_eval_robust = (nonsense_results['lm_eval_accuracy'] < 0.1 and
+                      lm_eval_difference >= 0.3 and
+                      real_results['lm_eval_accuracy'] > 0.3)
 
-    classifier_robust = (nonsense_results['evaluation_accuracy'] < _C.ROBUSTNESS_THRESHOLD_STRICT and
-                        eval_difference >= _C.ROBUSTNESS_THRESHOLD_LOOSE and
-                        real_results['evaluation_accuracy'] > _C.ROBUSTNESS_THRESHOLD_LOOSE)
+    classifier_robust = (nonsense_results['evaluation_accuracy'] < 0.1 and
+                        eval_difference >= 0.3 and
+                        real_results['evaluation_accuracy'] > 0.3)
 
     if lm_eval_robust and classifier_robust:
         print("\n🎉 ROBUSTNESS TEST: PASSED")

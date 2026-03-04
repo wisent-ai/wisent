@@ -48,6 +48,7 @@ def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmar
                         task_name=task_name,
                         lm_eval_task=None,  # HF extractors don't need lm_eval_task
                         limit=None,  # Load all, we'll cap later
+                        train_ratio=args.train_ratio,
                     )
                 else:
                     # lm-eval task - load via LMEvalDataLoader
@@ -62,6 +63,7 @@ def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmar
                                     task_name=subname,
                                     lm_eval_task=subtask,
                                     limit=None,  # Load all, we'll cap later
+                                    train_ratio=args.train_ratio,
                                 )
                                 bench_pairs.extend(subtask_pairs)
                             except Exception as e:
@@ -73,6 +75,7 @@ def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmar
                             task_name=task_name,
                             lm_eval_task=task_obj,
                             limit=None,  # Load all, we'll cap later
+                            train_ratio=args.train_ratio,
                         )
 
                 # Apply cap with random sampling if needed
@@ -168,7 +171,7 @@ def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmar
         negative_activations = activations_checkpoint['negative_activations']
         print(f"   ✓ Loaded activations from checkpoint ({len(positive_activations[layers[0]])} pairs)")
     else:
-        collector = ActivationCollector(model=model)
+        collector = ActivationCollector(model=model, architecture_module_limit=_C.ARCHITECTURE_MODULE_LIMIT)
 
         # Collect activations for all training pairs using batched processing
         positive_activations = {layer: [] for layer in layers}
@@ -203,25 +206,17 @@ def collect_pairs_and_train(args, wisent_model, layers, checkpoint_dir, benchmar
             
             positive_texts.append(pos_text)
             negative_texts.append(neg_text)
-        
-        # Collect positive activations in batches
         print(f"   Collecting positive response activations...")
         pos_results = collector.collect_batched(
-            positive_texts,
-            layers=layers,
-            aggregation=aggregation_strategy,
-            batch_size=_C.COMPARISON_DEFAULT_BATCH_SIZE,
-            show_progress=True,
+            positive_texts, report_interval=args.report_interval,
+            layers=layers, aggregation=aggregation_strategy,
+            batch_size=_C.COMPARISON_DEFAULT_BATCH_SIZE, show_progress=True,
         )
-        
-        # Collect negative activations in batches
         print(f"   Collecting negative response activations...")
         neg_results = collector.collect_batched(
-            negative_texts,
-            layers=layers,
-            aggregation=aggregation_strategy,
-            batch_size=_C.COMPARISON_DEFAULT_BATCH_SIZE,
-            show_progress=True,
+            negative_texts, report_interval=args.report_interval,
+            layers=layers, aggregation=aggregation_strategy,
+            batch_size=_C.COMPARISON_DEFAULT_BATCH_SIZE, show_progress=True,
         )
         
         # Organize results by layer

@@ -5,12 +5,11 @@ CLI convenience functions for steering optimization.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any, Optional
 
 from .optimizer import SteeringOptimizer
 from .auto import run_auto_steering_optimization
 from .types import SteeringOptimizationSummary
-from wisent.core.utils.config_tools.constants import DEFAULT_LIMIT, AUTO_MAX_TIME_MINUTES, PARSER_STRENGTH_RANGE_METHODS
 
 logger = logging.getLogger(__name__)
 
@@ -18,14 +17,17 @@ logger = logging.getLogger(__name__)
 def run_steering_optimization(
     model_name: str,
     task_name: str,
+    limit: int,
+    min_norm_threshold: float,
     optimization_type: Optional[str] = None,
     methods_to_test: Optional[List[str]] = None,
     layer_range: Optional[str] = None,
     strength_range: Optional[List[float]] = None,
-    limit: int = DEFAULT_LIMIT,
     device: str = None,
     verbose: bool = False,
-    max_time_minutes: float = AUTO_MAX_TIME_MINUTES
+    max_time_minutes: float = None,
+    min_clusters: int = None,
+    tecza_params: Optional[Dict[str, Any]] = None, *, train_ratio: float,
 ) -> Dict[str, Any]:
     """
     Run steering optimization with the specified type.
@@ -50,17 +52,23 @@ def run_steering_optimization(
     Returns:
         Dictionary with optimization results
     """
+    if max_time_minutes is None:
+        raise ValueError("max_time_minutes is required")
     if optimization_type is None:
         return run_auto_steering_optimization(
             model_name=model_name,
             task_name=task_name,
             limit=limit,
+            min_norm_threshold=min_norm_threshold,
             device=device,
             verbose=verbose,
             max_time_minutes=max_time_minutes,
             methods_to_test=methods_to_test,
             strength_range=strength_range,
             layer_range=layer_range,
+            min_clusters=min_clusters,
+            tecza_params=tecza_params,
+            train_ratio=train_ratio,
         )
 
     optimizer = SteeringOptimizer(model_name=model_name, device=device, verbose=verbose)
@@ -147,10 +155,10 @@ def get_optimal_steering_params(
     return optimizer.load_optimal_steering_config(task_name=task_name)
 
 
-def _generate_pairs_for_zwiad(task_name: str, limit: int = DEFAULT_LIMIT) -> List:
+def _generate_pairs_for_zwiad(task_name: str, limit: int, *, train_ratio: float) -> List:
     """Generate contrastive pairs for zwiad analysis."""
     from wisent.extractors.lm_eval.lm_task_pairs_generation import build_contrastive_pairs
-    return build_contrastive_pairs(task_name=task_name, limit=limit)
+    return build_contrastive_pairs(task_name=task_name, limit=limit, train_ratio=train_ratio)
 
 
 def _summary_to_dict(summary: SteeringOptimizationSummary) -> Dict[str, Any]:
@@ -189,4 +197,4 @@ def _parse_strength_tuple(strength_range: List[float]) -> tuple:
     """Parse strength range to tuple."""
     if strength_range:
         return (min(strength_range), max(strength_range))
-    return PARSER_STRENGTH_RANGE_METHODS
+    raise ValueError("strength_range is required")

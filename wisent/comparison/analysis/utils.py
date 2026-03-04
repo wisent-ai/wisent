@@ -12,7 +12,8 @@ from typing import TYPE_CHECKING
 
 import torch
 from wisent.core.utils import preferred_dtype
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, DEFAULT_SPLIT_RATIO, PROGRESS_LOG_INTERVAL, COMPARISON_MAX_BATCH_SIZE, COMPARISON_DEFAULT_BATCH_SIZE
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, RECURSION_INITIAL_DEPTH
+from wisent.core.utils.config_tools.constants import COMBO_OFFSET
 
 if TYPE_CHECKING:
     from wisent.core.primitives.models.wisent_model import WisentModel
@@ -123,7 +124,7 @@ def generate_contrastive_pairs(
     Args:
         task: lm-eval task name (e.g., 'boolq', 'cb')
         num_pairs: Number of pairs to generate
-        seed: Random seed for reproducibility
+        seed: Random seed for reproducibility (default DEFAULT_RANDOM_SEED)
         verbose: Whether to print verbose output
 
     Returns:
@@ -149,7 +150,7 @@ def generate_contrastive_pairs(
     return pairs, pairs_file
 
 
-def create_test_only_task(task_name: str, train_ratio: float = DEFAULT_SPLIT_RATIO) -> dict:
+def create_test_only_task(task_name: str, *, train_ratio: float) -> dict:
     """
     Create a task that evaluates only on our test split.
 
@@ -191,8 +192,8 @@ def run_lm_eval_evaluation(
     wisent_model: "WisentModel",
     task_dict: dict,
     task_name: str,
-    batch_size: int | str = COMPARISON_DEFAULT_BATCH_SIZE,
-    max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
+    batch_size: int | str,
+    max_batch_size: int,
     limit: int | None = None,
 ) -> dict:
     """Run evaluation using lm-eval-harness."""
@@ -219,6 +220,7 @@ def run_ll_evaluation(
     wisent_model: "WisentModel",
     task_dict: dict,
     task_name: str,
+    log_interval: int,
     limit: int | None = None,
 ) -> float:
     """Run evaluation using wisent's LogLikelihoodsEvaluator."""
@@ -253,7 +255,7 @@ def run_ll_evaluation(
         if result.ground_truth == "TRUTHFUL":
             correct += 1
 
-        if (i + 1) % PROGRESS_LOG_INTERVAL == 0:
+        if (i + COMBO_OFFSET) % log_interval == RECURSION_INITIAL_DEPTH:
             print(f"  Processed {i + 1}/{len(docs)}, acc: {correct/(i+1):.4f}")
 
     return correct / len(docs) if docs else 0.0

@@ -4,7 +4,7 @@ import sys
 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD, ARCHITECTURE_MODULE_LIMIT
 
 
 def execute_tasks(args):
@@ -87,9 +87,9 @@ def execute_tasks(args):
 
     # Handle steering mode
     if steering_mode:
-        collector = ActivationCollector(model=model)
+        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
         extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
-        return execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy)
+        return execute_steering_mode(args, model, train_pair_set, test_pair_set, collector, extraction_strategy, min_norm_threshold=args.min_norm_threshold, min_clusters=getattr(args, 'min_clusters', None), geometry_cv_folds=args.geometry_cv_folds, subsample_threshold=args.subsample_threshold, pca_dims_limit=args.pca_dims_limit)
 
     # Collect activations
     activations = collect_activations(args, model, train_pair_set, ActivationCollector, ExtractionStrategy)
@@ -104,7 +104,8 @@ def execute_tasks(args):
     # Evaluate classifier
     generation_results, detection_stats = evaluate_classifier(
         args, model, classifier, test_pair_set, activations, task_name, eval_task_name,
-        DetectionHandler, DetectionAction, evaluate_quality
+        DetectionHandler, DetectionAction, evaluate_quality,
+        max_regeneration_attempts=args.max_regeneration_attempts
     )
 
     # Compute metrics and save

@@ -9,7 +9,7 @@ from typing import Dict, Any, List, Optional
 
 from wisent.core.utils.infra_tools.errors import InsufficientDataError, TaskNotFoundError
 from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY
-from wisent.core.utils.config_tools.constants import EVAL_HARNESS_NUM_SAMPLES_SMALL, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM
 from wisent.core import constants as _C
 from wisent.core.primitives.models.lm_harness_integration._populate_backup._part3 import (
     get_samples_from_group_task,
@@ -23,8 +23,8 @@ from wisent.core.primitives.models.lm_harness_integration._populate_backup._part
 )
 
 
-def get_task_samples_for_analysis(task_name: str,
-                                   num_samples: int = EVAL_HARNESS_NUM_SAMPLES_SMALL) -> Dict[str, Any]:
+def get_task_samples_for_analysis(task_name: str, timeout: int, context_max_length: int,
+                                   num_samples: int = 5) -> Dict[str, Any]:
     """
     Retrieve sample questions and answers from a benchmark task for AI analysis.
 
@@ -94,7 +94,7 @@ def get_task_samples_for_analysis(task_name: str,
                 except Exception as e3:
                     # Step 4: Try README-based discovery
                     return _try_readme_groups(
-                        task_name, num_samples, evaluator, e, e2, e3)
+                        task_name, num_samples, evaluator, e, e2, e3, timeout=timeout, context_max_length=context_max_length)
         # Get task description
         description = getattr(task, 'DESCRIPTION',
                               getattr(task, '__doc__', f"Task: {task_name}"))
@@ -136,11 +136,11 @@ def get_task_samples_for_analysis(task_name: str,
         }
 
 
-def _try_readme_groups(task_name, num_samples, evaluator, e, e2, e3):
+def _try_readme_groups(task_name, num_samples, evaluator, e, e2, e3, timeout: int, context_max_length: int):
     """Try to find benchmark groups by reading README from lm-eval-harness."""
     print(f"Large group failed, trying to read README for '{task_name}'...")
     try:
-        readme_data = get_benchmark_groups_from_readme(task_name)
+        readme_data = get_benchmark_groups_from_readme(task_name, timeout=timeout, context_max_length=context_max_length)
         benchmark_groups = readme_data.get('groups', [])
         readme_tags = readme_data.get('tags', [])
         if benchmark_groups:

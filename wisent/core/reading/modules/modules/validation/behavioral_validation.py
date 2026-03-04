@@ -1,18 +1,9 @@
-"""Behavioral validation for steering - Step 5 of Zwiad protocol.
-
-Actually tests if steering changes behavior, not just geometry.
-Diagnoses whether activation movement translates to behavioral change.
-"""
+"""Behavioral validation for steering - tests if steering changes behavior, not just geometry."""
 from dataclasses import dataclass
 from typing import List, Dict, Any, Optional, Tuple
 import numpy as np
 import torch
-from wisent.core.utils.config_tools.constants import (
-    MOVEMENT_THRESHOLD, BEHAVIOR_THRESHOLD,
-    DEFAULT_RANDOM_SEED, CLASSIFIER_THRESHOLD,
-    BEHAVIORAL_CONF_IMPROPERLY, BEHAVIORAL_CONF_UNEXPECTED,
-    BEHAVIORAL_CONF_INEFFECTIVE,
-)
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
 
 
 @dataclass
@@ -34,6 +25,7 @@ def compute_activation_movement(
     neg_activations: torch.Tensor,
     base_activations: torch.Tensor,
     steered_activations: torch.Tensor,
+    classification_threshold: float,
 ) -> Dict[str, float]:
     """Measure if steered activations moved toward positive region."""
     pos = pos_activations.float().cpu().numpy()
@@ -63,8 +55,8 @@ def compute_activation_movement(
     base_probs = clf.predict_proba(base)[:, 1]
     steered_probs = clf.predict_proba(steered)[:, 1]
 
-    base_in_pos_region = np.sum(base_probs >= CLASSIFIER_THRESHOLD)
-    steered_in_pos_region = np.sum(steered_probs >= CLASSIFIER_THRESHOLD)
+    base_in_pos_region = np.sum(base_probs >= classification_threshold)
+    steered_in_pos_region = np.sum(steered_probs >= classification_threshold)
 
     return {
         "moved_toward_pos_count": int(moved_toward_pos),
@@ -120,9 +112,15 @@ def validate_steering_behavioral(
     steered_activations: torch.Tensor,
     base_evaluations: List[str],
     steered_evaluations: List[str],
+    classification_threshold: float,
     positive_label: str = "TRUTHFUL",
-    movement_threshold: float = MOVEMENT_THRESHOLD,
-    behavior_threshold: float = BEHAVIOR_THRESHOLD,
+    *,
+    movement_threshold: float,
+    behavior_threshold: float,
+    confidence_effective: float,
+    confidence_improperly_identified: float,
+    confidence_unexpected: float,
+    confidence_ineffective: float,
 ) -> BehavioralValidationResult:
     """
     Validate if steering actually works by comparing activation movement vs behavior.
@@ -142,7 +140,8 @@ def validate_steering_behavioral(
         BehavioralValidationResult with diagnosis
     """
     activation_metrics = compute_activation_movement(
-        pos_activations, neg_activations, base_activations, steered_activations
+        pos_activations, neg_activations, base_activations, steered_activations,
+        classification_threshold=classification_threshold,
     )
     behavior_metrics = compute_behavioral_change(
         base_evaluations, steered_evaluations, positive_label
@@ -155,16 +154,16 @@ def validate_steering_behavioral(
     if activations_moved and behavior_improved:
         diagnosis = "EFFECTIVE"
         confidence = min(activation_metrics["moved_toward_pos_rate"],
-                        0.5 + behavior_metrics["delta"])
+                        confidence_effective + behavior_metrics["delta"])
     elif activations_moved and not behavior_improved:
         diagnosis = "IMPROPERLY_IDENTIFIED"
-        confidence = activation_metrics["moved_toward_pos_rate"] * BEHAVIORAL_CONF_IMPROPERLY
+        confidence = activation_metrics["moved_toward_pos_rate"] * confidence_improperly_identified
     elif not activations_moved and behavior_improved:
         diagnosis = "UNEXPECTED_IMPROVEMENT"
-        confidence = BEHAVIORAL_CONF_UNEXPECTED
+        confidence = confidence_unexpected
     else:
         diagnosis = "INEFFECTIVE"
-        confidence = BEHAVIORAL_CONF_INEFFECTIVE
+        confidence = confidence_ineffective
 
     return BehavioralValidationResult(
         diagnosis=diagnosis,
@@ -192,31 +191,16 @@ def run_behavioral_validation(
     layer_name: str,
     strength: float,
     extraction_strategy: str,
+    classification_threshold: float,
     max_new_tokens: int | None = None,
     positive_label: str = "TRUTHFUL",
+    *,
+    confidence_effective: float,
+    confidence_improperly_identified: float,
+    confidence_unexpected: float,
+    confidence_ineffective: float,
 ) -> BehavioralValidationResult:
-    """
-    Full behavioral validation: generate outputs, extract activations FROM RESPONSE, evaluate.
-
-    IMPORTANT: Extracts activations from the GENERATED RESPONSE using the same
-    extraction strategy that was used for the contrastive pair activations.
-
-    Args:
-        adapter: Model adapter with steering capability
-        pos_activations: Positive contrastive pair activations
-        neg_activations: Negative contrastive pair activations
-        steering_vector: The steering vector to apply
-        test_prompts: Prompts to test on
-        evaluator: Evaluator to judge outputs
-        layer_name: Layer to steer (e.g., "layer.8")
-        strength: Steering strength
-        max_new_tokens: Max tokens to generate
-        positive_label: Success label
-        extraction_strategy: Same strategy used for contrastive pairs (e.g., "chat_last", "chat_mean")
-
-    Returns:
-        BehavioralValidationResult
-    """
+    """Full behavioral validation: generate, extract activations, evaluate."""
     max_new_tokens = max_new_tokens if max_new_tokens is not None else 100
     from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
     from wisent.core.primitives.model_interface.adapters.base import SteeringConfig
@@ -294,5 +278,10 @@ def run_behavioral_validation(
         pos_activations, neg_activations,
         base_activations, steered_activations,
         base_evals, steered_evals,
+        classification_threshold=classification_threshold,
         positive_label=positive_label,
+        confidence_effective=confidence_effective,
+        confidence_improperly_identified=confidence_improperly_identified,
+        confidence_unexpected=confidence_unexpected,
+        confidence_ineffective=confidence_ineffective,
     )

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
-from wisent.core.utils.config_tools.constants import GENERATE_OVERSAMPLING_FACTOR
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
@@ -40,6 +39,8 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
+        *,
+        oversampling_factor: float,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from FinSearchComp dataset.
@@ -56,7 +57,7 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
         try:
             # Load more docs than needed since some have null response_reference
             # Dataset has ~20% null values, so load 50% extra to be safe
-            load_limit = int(max_items * GENERATE_OVERSAMPLING_FACTOR) if max_items else None
+            load_limit = int(max_items * oversampling_factor) if max_items else None
             docs = self.load_dataset(
                 dataset_name="ByteSeedXpert/FinSearchComp",
                 split="test",
@@ -67,7 +68,7 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
             log.warning(f"Failed to load FinSearchComp test split: {e}")
             # Try train split
             try:
-                load_limit = int(max_items * GENERATE_OVERSAMPLING_FACTOR) if max_items else None
+                load_limit = int(max_items * oversampling_factor) if max_items else None
                 docs = self.load_dataset(
                     dataset_name="ByteSeedXpert/FinSearchComp",
                     split="train",
@@ -77,7 +78,7 @@ class FinSearchCompExtractor(HuggingFaceBenchmarkExtractor):
             except Exception as e2:
                 # Try validation split
                 try:
-                    load_limit = int(max_items * GENERATE_OVERSAMPLING_FACTOR) if max_items else None
+                    load_limit = int(max_items * oversampling_factor) if max_items else None
                     docs = self.load_dataset(
                         dataset_name="ByteSeedXpert/FinSearchComp",
                         split="validation",

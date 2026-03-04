@@ -18,17 +18,15 @@ def run_unicode_test(evaluator):
 def run_numeric_expected_test():
     """Test that numeric expected values are converted to string.
 
-    Short strings have 0 BLEU with BLEU-4 (not enough tokens for 4-grams).
-    Uses a lower threshold with max_order=1 to test numeric conversion.
-
     Returns:
         EvaluationResult from evaluating numeric expected values
     """
     from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.conala import (
         CoNaLaEvaluator,
     )
+    from wisent.core.utils.config_tools.constants import CONALA_BLEU_THRESHOLD
 
-    evaluator = CoNaLaEvaluator(bleu_threshold=0.0, max_order=1)
+    evaluator = CoNaLaEvaluator(bleu_threshold=CONALA_BLEU_THRESHOLD)
     result = evaluator.evaluate(
         response="42",
         expected=42

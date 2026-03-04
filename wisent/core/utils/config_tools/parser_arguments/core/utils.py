@@ -6,8 +6,7 @@ Shared helper functions used across multiple command parsers.
 
 from typing import List, Optional
 
-from wisent.core.utils.infra_tools.errors import ModelNotProvidedError, InvalidValueError
-from wisent.core.utils.config_tools.constants import CLASSIFIER_THRESHOLD
+from wisent.core.utils.infra_tools.errors import ModelNotProvidedError, InvalidValueError, InsufficientDataError
 
 
 def parse_layers_from_arg(layer_arg: str, model=None) -> List[int]:
@@ -78,7 +77,7 @@ def aggregate_token_scores(token_scores: List[float], method: str) -> float:
         Aggregated score
     """
     if not token_scores:
-        return CLASSIFIER_THRESHOLD
+        raise InsufficientDataError(reason="token_scores is empty, cannot aggregate")
 
     # Convert any tensor values to floats and filter out None values
     clean_scores = []
@@ -92,7 +91,7 @@ def aggregate_token_scores(token_scores: List[float], method: str) -> float:
         clean_scores.append(float(score))
 
     if not clean_scores:
-        return CLASSIFIER_THRESHOLD
+        raise InsufficientDataError(reason="no valid token_scores after filtering")
 
     if method == "average":
         return sum(clean_scores) / len(clean_scores)

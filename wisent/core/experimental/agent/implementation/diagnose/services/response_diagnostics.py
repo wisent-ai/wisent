@@ -16,7 +16,7 @@ from wisent.core.primitives.model_interface.core.activations.activations import 
 from wisent.core.reading.classifiers.core.atoms import Classifier
 from wisent.core.primitives.models.core.layer import Layer
 from wisent.core.primitives.models.core.wisent_model import Model
-from wisent.core.utils.config_tools.constants import AGENT_QUALITY_HIGH_THRESHOLD, AGENT_CONFIDENCE_HIGH_THRESHOLD, CLASSIFIER_THRESHOLD, QUALITY_CLASSIFIER_DEFAULT_LAYER, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import CHANCE_LEVEL_ACCURACY
 from wisent.core.utils.infra_tools.errors import (
     ClassifierConfigRequiredError,
     ClassifierLoadError,
@@ -67,7 +67,7 @@ class ResponseDiagnostics:
                         "classifier": classifier,
                         "layer": Layer(index=config["layer"], type="transformer"),
                         "issue_type": config.get("issue_type", "unknown"),
-                        "threshold": config.get("threshold", CLASSIFIER_THRESHOLD),
+                        "threshold": config["threshold"],
                     }
                 )
                 print(f"✅ Loaded classifier for {config['issue_type']} at layer {config['layer']}")
@@ -228,7 +228,7 @@ class ResponseDiagnostics:
         return suggestions
 
     def decide_if_improvement_needed(
-        self, analysis: AnalysisResult, quality_threshold: float = AGENT_QUALITY_HIGH_THRESHOLD, confidence_threshold: float = AGENT_CONFIDENCE_HIGH_THRESHOLD
+        self, analysis: AnalysisResult, quality_threshold: float = None, confidence_threshold: float = None
     ) -> bool:
         """
         Decide if improvement is needed based on analysis results.
@@ -241,7 +241,10 @@ class ResponseDiagnostics:
         Returns:
             True if improvement is needed, False otherwise
         """
-        # High confidence decisions
+        if quality_threshold is None:
+            raise ValueError("quality_threshold is required")
+        if confidence_threshold is None:
+            raise ValueError("confidence_threshold is required")
         if analysis.confidence >= confidence_threshold:
             if analysis.has_issues:
                 return True
@@ -251,7 +254,7 @@ class ResponseDiagnostics:
         # Low confidence - be conservative
         return False
 
-    def add_classifier(self, classifier_path: str, layer_index: int, issue_type: str, threshold: float = CLASSIFIER_THRESHOLD):
+    def add_classifier(self, classifier_path: str, layer_index: int, issue_type: str, threshold: float):
         """Add a new classifier to the diagnostic system."""
         classifier = Classifier()
         classifier.load_model(classifier_path)

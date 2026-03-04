@@ -7,7 +7,7 @@ activations once and uses intelligent caching to avoid redundant training.
 
 import logging
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
 
 import numpy as np
@@ -22,14 +22,6 @@ from wisent.core.utils.infra_tools.errors import NoActivationDataError, Classifi
 
 from .activation_generator import ActivationData, ActivationGenerator, GenerationConfig
 from .classifier_cache import CacheConfig, ClassifierCache
-from wisent.core.utils.config_tools.constants import (
-    LR_LOWER_BOUND, LR_UPPER_BOUND, DEFAULT_N_TRIALS,
-    DEFAULT_RANDOM_SEED, CLASSIFIER_TEST_SIZE,
-    OPTUNA_CLASSIFIER_BATCH_SIZES,
-    OPTUNA_HIDDEN_DIM_RANGE, OPTUNA_THRESHOLD_RANGE,
-    OPTUNA_EPOCH_RANGE, OPTUNA_CLASSIFIER_CV_FOLDS,
-    PARSER_OPTUNA_EARLY_STOP_PATIENCE,
-)
 
 
 def get_model_dtype(model) -> torch.dtype:
@@ -61,51 +53,51 @@ logger = logging.getLogger(__name__)
 @dataclass
 class ClassifierOptimizationConfig:
     """Configuration for Optuna classifier optimization."""
-
+    # Training settings (required)
+    learning_rate_range: tuple[float, float]
     # Model configuration
     model_name: Optional[str] = None
     device: Optional[str] = None  # "auto", "cuda", "cpu", "mps"
     model_dtype: Optional[torch.dtype] = None  # Auto-detect if None
 
     # Optuna settings
-    n_trials: int = DEFAULT_N_TRIALS
+    n_trials: int = None
     timeout: Optional[float] = None
     n_jobs: int = 1
-    sampler_seed: int = DEFAULT_RANDOM_SEED
+    sampler_seed: int | None = None
 
     # Model type search space
-    model_types: list[str] = None
+    model_types: list[str] = field(default_factory=lambda: ["logistic", "mlp"])
+
 
     # Hyperparameter ranges
-    hidden_dim_range: tuple[int, int] = OPTUNA_HIDDEN_DIM_RANGE
-    threshold_range: tuple[float, float] = OPTUNA_THRESHOLD_RANGE
+    hidden_dim_range: tuple[int, int] = None
+    threshold_range: tuple[float, float] = None
 
     # Training settings
-    num_epochs_range: tuple[int, int] = OPTUNA_EPOCH_RANGE
-    learning_rate_range: tuple[float, float] = (LR_LOWER_BOUND, LR_UPPER_BOUND)
+    num_epochs_range: tuple[int, int] = None
     batch_size_options: list[int] = None
 
     # Evaluation settings
-    cv_folds: int = OPTUNA_CLASSIFIER_CV_FOLDS
-    test_size: float = CLASSIFIER_TEST_SIZE
-    random_state: int = DEFAULT_RANDOM_SEED
+    cv_folds: int = None
+    test_size: float = None
+    random_state: int | None = None
 
     # Optimization objective
     primary_metric: Optional[str] = None  # "accuracy", "f1", "auc", "precision", "recall"
 
     # Pruning settings
     enable_pruning: bool = True
-    pruning_patience: int = PARSER_OPTUNA_EARLY_STOP_PATIENCE
+    pruning_patience: int = None
+    prune_accuracy_threshold: float = None
+    pruner_startup_trials: int = None
 
     def __post_init__(self):
-        if self.model_types is None:
-            self.model_types = ["logistic", "mlp"]
-        if self.batch_size_options is None:
-            self.batch_size_options = list(OPTUNA_CLASSIFIER_BATCH_SIZES)
-
-        # Auto-detect device if needed
         if self.device is None:
             self.device = resolve_default_device()
+        for field_name in ("n_trials", "hidden_dim_range", "threshold_range", "num_epochs_range", "batch_size_options", "cv_folds", "pruning_patience", "prune_accuracy_threshold", "pruner_startup_trials", "test_size"):
+            if getattr(self, field_name) is None:
+                raise ValueError(f"{field_name} is required in ClassifierOptimizationConfig")
 
 
 @dataclass

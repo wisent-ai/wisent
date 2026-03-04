@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 from wisent.core.reading.evaluators.custom.custom_evaluator import CustomEvaluator
-from wisent.core.utils.config_tools.constants import SYNTHETIC_EVAL_NUM_PROMPTS
 from wisent.core.primitives.models.config import get_generate_kwargs
 
 # Re-export from helpers
@@ -52,20 +51,10 @@ class SyntheticEvaluatorConfig:
     """Configuration for synthetic evaluator."""
     trait_description: str
     judge_model: str = None
-    num_test_prompts: int = SYNTHETIC_EVAL_NUM_PROMPTS
     test_prompts: List[str] = field(default_factory=list)
     test_prompts_file: Optional[str] = None
     generate_prompts: bool = False
     cache_criteria: bool = True
-    temperature: float = None
-    max_tokens: int = None
-
-    def __post_init__(self):
-        gen_kwargs = get_generate_kwargs()
-        if self.temperature is None:
-            self.temperature = gen_kwargs["temperature"]
-        if self.max_tokens is None:
-            self.max_tokens = gen_kwargs["max_new_tokens"]
 
 
 class SyntheticEvaluator(CustomEvaluator):
@@ -74,9 +63,9 @@ class SyntheticEvaluator(CustomEvaluator):
     def __init__(
         self,
         trait_description: str,
+        num_prompts: int,
         model=None,
         judge_model: str = None,
-        num_test_prompts: int = SYNTHETIC_EVAL_NUM_PROMPTS,
         test_prompts: List[str] = None,
         test_prompts_file: str = None,
         generate_prompts: bool = False,
@@ -89,9 +78,9 @@ class SyntheticEvaluator(CustomEvaluator):
         self.trait_description = trait_description
         self.model = model
         self.judge_model = judge_model
-        self.num_test_prompts = num_test_prompts
         self.generate_prompts = generate_prompts
         self.verbose = verbose
+        self.num_prompts = num_prompts
         self._criteria = None
         self._test_prompts = self._load_test_prompts(
             test_prompts=test_prompts,
@@ -104,13 +93,13 @@ class SyntheticEvaluator(CustomEvaluator):
         if test_prompts:
             if self.verbose:
                 print(f"   Using {len(test_prompts)} user-provided test prompts")
-            return test_prompts[:self.num_test_prompts]
+            return test_prompts[:self.num_prompts]
 
         if test_prompts_file:
             prompts = self._load_prompts_from_file(test_prompts_file)
             if self.verbose:
                 print(f"   Loaded {len(prompts)} test prompts from {test_prompts_file}")
-            return prompts[:self.num_test_prompts]
+            return prompts[:self.num_prompts]
 
         if generate_prompts and self.model:
             prompts = self._generate_relevant_prompts()
@@ -118,7 +107,7 @@ class SyntheticEvaluator(CustomEvaluator):
                 print(f"   Generated {len(prompts)} trait-relevant test prompts")
             return prompts
 
-        prompts = random.sample(DEFAULT_TEST_PROMPTS, min(self.num_test_prompts, len(DEFAULT_TEST_PROMPTS)))
+        prompts = random.sample(DEFAULT_TEST_PROMPTS, min(self.num_prompts, len(DEFAULT_TEST_PROMPTS)))
         if self.verbose:
             print(f"   Using {len(prompts)} default test prompts")
         return prompts
@@ -142,9 +131,9 @@ class SyntheticEvaluator(CustomEvaluator):
         """Generate test prompts relevant to the trait using the model."""
         if not self.model:
             logger.warning("No model available for prompt generation, using defaults")
-            return DEFAULT_TEST_PROMPTS[:self.num_test_prompts]
+            return DEFAULT_TEST_PROMPTS[:self.num_prompts]
 
-        generation_prompt = f"""Generate {self.num_test_prompts} diverse user prompts/questions that would be good for testing if a model demonstrates this trait: "{self.trait_description}"
+        generation_prompt = f"""Generate {self.num_prompts} diverse user prompts/questions that would be good for testing if a model demonstrates this trait: "{self.trait_description}"
 
 The prompts should:
 - Be diverse in topic and style
@@ -164,10 +153,10 @@ Return ONLY a JSON array of strings, no other text:
                 response = response.strip()
             prompts = json.loads(response)
             if isinstance(prompts, list) and len(prompts) > 0:
-                return prompts[:self.num_test_prompts]
+                return prompts[:self.num_prompts]
         except Exception as e:
             logger.warning(f"Failed to generate prompts: {e}, using defaults")
-        return DEFAULT_TEST_PROMPTS[:self.num_test_prompts]
+        return DEFAULT_TEST_PROMPTS[:self.num_prompts]
 
     def _get_criteria(self) -> str:
         """Get or generate evaluation criteria for the trait."""
@@ -192,11 +181,10 @@ Score 7-10: Response strongly demonstrates "{self.trait_description}" """
             print(f"\n   Generated evaluation criteria:\n{self._criteria}\n")
         return self._criteria
 
-    def _generate_with_model(self, prompt: str, temperature: float = None) -> str:
+    def _generate_with_model(self, prompt: str) -> str:
         """Generate text using the model."""
         gen_kwargs = get_generate_kwargs()
-        if temperature is None:
-            temperature = gen_kwargs["temperature"]
+        temperature = gen_kwargs["temperature"]
         max_new_tokens = gen_kwargs["max_new_tokens"]
         if self.model is None:
             raise ValueError("No model available for generation")

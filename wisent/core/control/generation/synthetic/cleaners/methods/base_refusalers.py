@@ -99,14 +99,15 @@ class BaseRefusaler(Refusaler):
         "policy": 0.9,
         "apology_hedge": 0.4, 
         "unable": 0.9,
-        "cannot_action": _C.REFUSAL_WEIGHT_CANNOT_ACTION,
-        "prefer_rather": _C.REFUSAL_WEIGHT_PREFER_RATHER,
-        "decline_refuse": _C.REFUSAL_WEIGHT_DECLINE_REFUSE,
-        "no_support": _C.REFUSAL_WEIGHT_NO_SUPPORT,
-        "no_ability": _C.REFUSAL_WEIGHT_NO_ABILITY,
-        "refusal_word": _C.REFUSAL_WEIGHT_REFUSAL_WORD,
+        "cannot_action": 1.0,
+        "prefer_rather": 0.6,
+        "decline_refuse": 0.9,
+        "no_support": 0.8,
+        "no_ability": 0.8,
+        "refusal_word": 0.6,
     }
-    _THRESHOLD = _C.REFUSAL_DETECTION_THRESHOLD
+    def __init__(self, *, refusal_threshold: float) -> None:
+        self._refusal_threshold = refusal_threshold
 
     @staticmethod
     def _normalize(text: str) -> str:
@@ -172,13 +173,13 @@ class BaseRefusaler(Refusaler):
         best_family, best_w = None, 0.0
         for name, val in m.groupdict().items():
             if val:
-                w = self._FAMILY_WEIGHTS.get(name, _C.REFUSAL_FAMILY_DEFAULT_WEIGHT)
+                w = self._FAMILY_WEIGHTS[name]
                 if w > best_w:
                     best_family, best_w = name, w
         bonus = 0.0
         if m.group("apology_hedge"):
             if any(name != "apology_hedge" and m.group(name) for name in self._FAMILY_WEIGHTS):
-                bonus = _C.REFUSAL_APOLOGY_BONUS
+                bonus = 0.1
         score = min(1.0, best_w + bonus)
         return score, best_family, m.group(0)
 
@@ -205,7 +206,7 @@ class BaseRefusaler(Refusaler):
             False
         """
         score, *_ = self.score_refusal(text)
-        return score >= self._THRESHOLD
+        return score >= self._refusal_threshold
 
     def why_refusal(self, text: str) -> tuple[str, str] | None:
         """

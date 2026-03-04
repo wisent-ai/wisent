@@ -1,38 +1,7 @@
 """Method configuration dataclasses for steering optimization."""
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional
-from wisent.core.utils.config_tools.constants import (
-    BROYDEN_DEFAULT_ALPHA,
-    BROYDEN_DEFAULT_ALPHA_DECAY,
-    BROYDEN_DEFAULT_BETA,
-    BROYDEN_DEFAULT_ETA,
-    BROYDEN_DEFAULT_NUM_STEPS,
-    DEFAULT_VARIANCE_THRESHOLD,
-    GROM_BEHAVIOR_WEIGHT,
-    GROM_INTENSITY_HIDDEN_DIM,
-    GROM_OPTIMIZATION_STEPS,
-    GROM_RETAIN_WEIGHT,
-    GROM_ROUTER_HIDDEN_DIM,
-    GROM_SPARSE_WEIGHT,
-    MLP_HIDDEN_DIM,
-    MLP_NUM_LAYERS,
-    MLP_LEARNING_RATE,
-    NURT_NUM_DIMS,
-    NURT_NUM_INTEGRATION_STEPS,
-    NURT_T_MAX,
-    NURT_TRAINING_EPOCHS,
-    SZLAK_INFERENCE_K,
-    SZLAK_SINKHORN_REG,
-    TECZA_NUM_DIRECTIONS,
-    DEFAULT_OPTIMIZATION_STEPS,
-    TECZA_RETAIN_WEIGHT,
-    TETNO_CONDITION_THRESHOLD,
-    TETNO_GATE_TEMPERATURE_LEGACY,
-    TETNO_MAX_ALPHA,
-    DEFAULT_STEERING_LAYERS,
-    WICHER_CONCEPT_DIM,
-    PARSER_DEFAULT_LAYER_START,
-)
+from typing import Optional as _Optional
 
 
 # Steering application strategies
@@ -50,176 +19,135 @@ class MethodConfig:
 @dataclass
 class CAAConfig(MethodConfig):
     """CAA-specific parameters."""
-    layer: int = PARSER_DEFAULT_LAYER_START
-    
+    layer: _Optional[int] = None
+
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "CAA",
-            "layer": self.layer,
-            "steering_strategy": self.steering_strategy,
-        }
+        return {"method": "CAA", "layer": self.layer, "steering_strategy": self.steering_strategy}
 
 
 @dataclass
 class OstrzeConfig(MethodConfig):
     """Ostrze-specific parameters."""
-    layer: int = PARSER_DEFAULT_LAYER_START
-    
+    layer: _Optional[int] = None
+
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "Ostrze",
-            "layer": self.layer,
-            "steering_strategy": self.steering_strategy,
-        }
+        return {"method": "Ostrze", "layer": self.layer, "steering_strategy": self.steering_strategy}
 
 
 @dataclass
 class MLPConfig(MethodConfig):
     """MLP-specific parameters."""
-    layer: int = PARSER_DEFAULT_LAYER_START
-    hidden_dim: int = MLP_HIDDEN_DIM
-    num_layers: int = MLP_NUM_LAYERS
-    
+    layer: _Optional[int] = None
+    hidden_dim: _Optional[int] = None
+    num_layers: _Optional[int] = None
+    mlp_input_divisor: _Optional[int] = None
+    mlp_early_stopping_patience: _Optional[int] = None
+    mlp_gating_hidden_dim_divisor: _Optional[int] = None
+
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "MLP",
-            "layer": self.layer,
-            "mlp_hidden_dim": self.hidden_dim,
-            "mlp_num_layers": self.num_layers,
-            "steering_strategy": self.steering_strategy,
-        }
+        return {"method": "MLP", "layer": self.layer, "mlp_hidden_dim": self.hidden_dim,
+                "mlp_num_layers": self.num_layers, "steering_strategy": self.steering_strategy,
+                "mlp_input_divisor": self.mlp_input_divisor,
+                "mlp_early_stopping_patience": self.mlp_early_stopping_patience,
+                "mlp_gating_hidden_dim_divisor": self.mlp_gating_hidden_dim_divisor}
 
 
 @dataclass
 class TECZAConfig(MethodConfig):
     """TECZA-specific parameters."""
-    layer: int = PARSER_DEFAULT_LAYER_START
-    num_directions: int = TECZA_NUM_DIRECTIONS
-    direction_weighting: Optional[str] = None
-    retain_weight: float = TECZA_RETAIN_WEIGHT
-    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
-    
+    layer: _Optional[int] = None
+    num_directions: _Optional[int] = None
+    direction_weighting: _Optional[str] = None
+    retain_weight: _Optional[float] = None
+    optimization_steps: _Optional[int] = None
+
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "TECZA",
-            "layer": self.layer,
-            "num_directions": self.num_directions,
-            "direction_weighting": self.direction_weighting,
-            "retain_weight": self.retain_weight,
-            "tecza_optimization_steps": self.optimization_steps,
-            "steering_strategy": self.steering_strategy,
-        }
+        return {"method": "TECZA", "layer": self.layer, "num_directions": self.num_directions,
+                "direction_weighting": self.direction_weighting, "retain_weight": self.retain_weight,
+                "tecza_optimization_steps": self.optimization_steps, "steering_strategy": self.steering_strategy}
 
 
 @dataclass
 class TETNOConfig(MethodConfig):
     """TETNO-specific parameters."""
-    sensor_layer: int = PARSER_DEFAULT_LAYER_START
-    steering_layers: List[int] = field(default_factory=lambda: list(DEFAULT_STEERING_LAYERS))
-    condition_threshold: float = TETNO_CONDITION_THRESHOLD
-    gate_temperature: float = TETNO_GATE_TEMPERATURE_LEGACY
-    max_alpha: float = TETNO_MAX_ALPHA
-    
+    sensor_layer: _Optional[int] = None
+    steering_layers: List[int] = field(default_factory=list)
+    condition_threshold: _Optional[float] = None
+    gate_temperature: _Optional[float] = None
+    max_alpha: _Optional[float] = None
+
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "TETNO",
-            "sensor_layer": self.sensor_layer,
-            "steering_layers": ",".join(str(l) for l in self.steering_layers),
-            "condition_threshold": self.condition_threshold,
-            "gate_temperature": self.gate_temperature,
-            "max_alpha": self.max_alpha,
-            "steering_strategy": self.steering_strategy,
-        }
+        return {"method": "TETNO", "sensor_layer": self.sensor_layer,
+                "steering_layers": ",".join(str(l) for l in self.steering_layers),
+                "condition_threshold": self.condition_threshold, "gate_temperature": self.gate_temperature,
+                "max_alpha": self.max_alpha, "steering_strategy": self.steering_strategy}
 
 
 @dataclass
 class GROMConfig(MethodConfig):
     """GROM-specific parameters."""
-    sensor_layer: int = PARSER_DEFAULT_LAYER_START
-    steering_layers: List[int] = field(default_factory=lambda: list(DEFAULT_STEERING_LAYERS))
-    num_directions: int = TECZA_NUM_DIRECTIONS
-    gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM
-    intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM
-    behavior_weight: float = GROM_BEHAVIOR_WEIGHT
-    retain_weight: float = GROM_RETAIN_WEIGHT
-    sparse_weight: float = GROM_SPARSE_WEIGHT
-    max_alpha: float = TETNO_MAX_ALPHA
-    optimization_steps: int = GROM_OPTIMIZATION_STEPS
-    
+    sensor_layer: _Optional[int] = None
+    steering_layers: List[int] = field(default_factory=list)
+    num_directions: _Optional[int] = None
+    gate_hidden_dim: _Optional[int] = None
+    intensity_hidden_dim: _Optional[int] = None
+    behavior_weight: _Optional[float] = None
+    retain_weight: _Optional[float] = None
+    sparse_weight: _Optional[float] = None
+    max_alpha: _Optional[float] = None
+    optimization_steps: _Optional[int] = None
+
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "GROM",
-            "sensor_layer": self.sensor_layer,
-            "steering_layers": ",".join(str(l) for l in self.steering_layers),
-            "num_directions": self.num_directions,
-            "gate_hidden_dim": self.gate_hidden_dim,
-            "intensity_hidden_dim": self.intensity_hidden_dim,
-            "behavior_weight": self.behavior_weight,
-            "retain_weight": self.retain_weight,
-            "sparse_weight": self.sparse_weight,
-            "max_alpha": self.max_alpha,
-            "grom_optimization_steps": self.optimization_steps,
-            "steering_strategy": self.steering_strategy,
-        }
+        return {"method": "GROM", "sensor_layer": self.sensor_layer,
+                "steering_layers": ",".join(str(l) for l in self.steering_layers),
+                "num_directions": self.num_directions, "gate_hidden_dim": self.gate_hidden_dim,
+                "intensity_hidden_dim": self.intensity_hidden_dim, "behavior_weight": self.behavior_weight,
+                "retain_weight": self.retain_weight, "sparse_weight": self.sparse_weight,
+                "max_alpha": self.max_alpha, "grom_optimization_steps": self.optimization_steps,
+                "steering_strategy": self.steering_strategy}
 
 
 @dataclass
 class NurtConfig(MethodConfig):
     """Nurt-specific parameters."""
-    layer: int = PARSER_DEFAULT_LAYER_START
-    num_dims: int = NURT_NUM_DIMS
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
-    training_epochs: int = NURT_TRAINING_EPOCHS
-    lr: float = MLP_LEARNING_RATE
-    num_integration_steps: int = NURT_NUM_INTEGRATION_STEPS
-    t_max: float = NURT_T_MAX
-    
+    layer: _Optional[int] = None
+    num_dims: _Optional[int] = None
+    variance_threshold: _Optional[float] = None
+    training_epochs: _Optional[int] = None
+    lr: _Optional[float] = None
+    num_integration_steps: _Optional[int] = None
+    t_max: _Optional[float] = None
+
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "nurt",
-            "layer": self.layer,
-            "steering_strategy": self.steering_strategy,
-        }
+        return {"method": "nurt", "layer": self.layer, "steering_strategy": self.steering_strategy}
+
 
 @dataclass
 class SzlakConfig(MethodConfig):
     """Szlak-specific parameters."""
-    layer: int = PARSER_DEFAULT_LAYER_START
-    sinkhorn_reg: float = SZLAK_SINKHORN_REG
-    inference_k: int = SZLAK_INFERENCE_K
+    layer: _Optional[int] = None
+    sinkhorn_reg: _Optional[float] = None
+    inference_k: _Optional[int] = None
 
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "szlak",
-            "layer": self.layer,
-            "steering_strategy": self.steering_strategy,
-            "szlak_sinkhorn_reg": self.sinkhorn_reg,
-            "szlak_inference_k": self.inference_k,
-        }
+        return {"method": "szlak", "layer": self.layer, "steering_strategy": self.steering_strategy,
+                "szlak_sinkhorn_reg": self.sinkhorn_reg, "szlak_inference_k": self.inference_k}
 
 
 @dataclass
 class WicherConfig(MethodConfig):
     """WICHER-specific parameters."""
-    layer: int = PARSER_DEFAULT_LAYER_START
-    concept_dim: int = WICHER_CONCEPT_DIM
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
-    num_steps: int = BROYDEN_DEFAULT_NUM_STEPS
-    alpha: float = BROYDEN_DEFAULT_ALPHA
-    eta: float = BROYDEN_DEFAULT_ETA
-    beta: float = BROYDEN_DEFAULT_BETA
-    alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY
+    layer: _Optional[int] = None
+    concept_dim: _Optional[int] = None
+    variance_threshold: _Optional[float] = None
+    num_steps: _Optional[int] = None
+    alpha: _Optional[float] = None
+    eta: _Optional[float] = None
+    beta: _Optional[float] = None
+    alpha_decay: _Optional[float] = None
 
     def to_args(self) -> Dict[str, Any]:
-        return {
-            "method": "wicher",
-            "layer": self.layer,
-            "steering_strategy": self.steering_strategy,
-            "wicher_concept_dim": self.concept_dim,
-            "wicher_variance_threshold": self.variance_threshold,
-            "wicher_num_steps": self.num_steps,
-            "wicher_alpha": self.alpha,
-            "wicher_eta": self.eta,
-            "wicher_beta": self.beta,
-            "wicher_alpha_decay": self.alpha_decay,
-        }
+        return {"method": "wicher", "layer": self.layer, "steering_strategy": self.steering_strategy,
+                "wicher_concept_dim": self.concept_dim, "wicher_variance_threshold": self.variance_threshold,
+                "wicher_num_steps": self.num_steps, "wicher_alpha": self.alpha, "wicher_eta": self.eta,
+                "wicher_beta": self.beta, "wicher_alpha_decay": self.alpha_decay}

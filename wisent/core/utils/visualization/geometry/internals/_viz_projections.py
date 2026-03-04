@@ -1,7 +1,7 @@
 """Advanced projection visualizations."""
 import torch
 import numpy as np
-from typing import Dict, Any, List, Tuple, Optional
+from typing import Dict, Any, List, Tuple
 import warnings
 from wisent.core.utils.config_tools.constants import (
     NORM_EPS, VIZ_PERPLEXITY, VIZ_N_NEIGHBORS, VIZ_MIN_DIST,

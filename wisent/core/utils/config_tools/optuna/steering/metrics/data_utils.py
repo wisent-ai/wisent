@@ -22,13 +22,12 @@ from wisent.core.primitives.models import get_generate_kwargs
 logger = logging.getLogger(__name__)
 
 
-def load_dataset_samples(dataset_name: str, limit: int) -> List[Dict]:
+def load_dataset_samples(dataset_name: str, limit: int, *, train_ratio: float) -> List[Dict]:
     """Load samples from a dataset using the unified task interface."""
     logger.info(f"Loading {limit} samples from {dataset_name}...")
 
     try:
-        # Use the unified task interface to get any registered task
-        task = get_task(dataset_name, limit=limit)
+        task = get_task(dataset_name, limit=limit, train_ratio=train_ratio)
         samples = task.load_data(limit=limit)
 
         logger.info(f"Loaded {len(samples)} samples from {dataset_name} via {task.__class__.__name__}")
@@ -108,7 +107,7 @@ def generate_benchmark_predictions(
     device: torch.device,
     task_name: str,
     max_new_tokens: int,
-    preserve_task_docs: bool = False,
+    preserve_task_docs: bool = False, *, train_ratio: float,
 ) -> Tuple[List[str], List[str], List[Dict]]:
     """Generate model predictions for benchmark evaluation using task extractor with batching.
 
@@ -123,8 +122,7 @@ def generate_benchmark_predictions(
     ground_truths = []
     task_docs = [] if preserve_task_docs else []
 
-    # Get the task and its extractor
-    task = get_task(task_name)
+    task = get_task(task_name, train_ratio=train_ratio)
     extractor = task.get_extractor()
 
     # First, extract all questions and answers
@@ -185,13 +183,14 @@ def create_probe_training_data(
     max_length: int,
     device: torch.device,
     task_name: str,
-    max_new_tokens: int = None,
+    test_timeout: int,
+    max_new_tokens: int = None, *, train_ratio: float,
 ) -> Tuple[np.ndarray, np.ndarray]:
     """Create training data for probes: activations -> correctness labels using task extractor with batched generation."""
     max_new_tokens = max_new_tokens or get_generate_kwargs()["max_new_tokens"]
     texts = []
     labels = []
-    task = get_task(task_name)
+    task = get_task(task_name, train_ratio=train_ratio)
     extractor = task.get_extractor()
 
     # Pre-extract all questions and answers for batched generation
@@ -229,7 +228,7 @@ def create_probe_training_data(
             generated_answers.append(generated)
 
     # Now process each question-answer pair for probe training data
-    evaluator = LMEvalHarnessGroundTruth(task_name)
+    evaluator = LMEvalHarnessGroundTruth(task_name, test_timeout=test_timeout, train_ratio=train_ratio)
 
     for question, correct_answer, generated in zip(questions, correct_answers, generated_answers):
         # Create examples with model's actual prediction

@@ -7,26 +7,24 @@ from pathlib import Path
 import torch
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerName
-from wisent.core.control.steering_core._subspace_compression import UniversalBasis, compute_universal_basis
-from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, DEFAULT_VARIANCE_THRESHOLD, TECZA_MAX_DIRECTIONS, MARGINAL_VARIANCE_THRESHOLD, SUBSPACE_ROBUSTNESS_NOISE_SCALE, CONCEPT_PCA_COMPONENTS, SUBSPACE_DIRECTION_PADDING
-
-VARIANCE_EXPLAINED_THRESHOLD = DEFAULT_VARIANCE_THRESHOLD
+from wisent.core.control.steering_core._subspace_compression import UniversalBasis
+from wisent.core.utils.config_tools.constants import ZERO_THRESHOLD, SCORE_RANGE_MAX
 
 _LOG = setup_logger(__name__)
 
 def explained_variance_analysis(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    max_components: int = CONCEPT_PCA_COMPONENTS,
+    *,
+    concept_pca_components: int,
 ) -> Tuple[List[float], List[float]]:
     """
     Analyze how many directions are needed to explain the behavioral difference.
-    
+
     Args:
         pos_activations: Positive example activations [N_pos, hidden_dim]
         neg_activations: Negative example activations [N_neg, hidden_dim]
-        max_components: Maximum components to analyze
-        
+
     Returns:
         Tuple of (individual_variance, cumulative_variance) lists
     """
@@ -41,14 +39,14 @@ def explained_variance_analysis(
     try:
         _, S, _ = torch.linalg.svd(centered, full_matrices=False)
     except Exception:
-        return [1.0], [1.0]
+        return [SCORE_RANGE_MAX], [SCORE_RANGE_MAX]
     
     # Variance ratios
     total_var = (S ** 2).sum()
     if total_var < ZERO_THRESHOLD:
-        return [1.0], [1.0]
+        return [SCORE_RANGE_MAX], [SCORE_RANGE_MAX]
     
-    k = min(max_components, len(S))
+    k = min(concept_pca_components, len(S))
     individual = ((S[:k] ** 2) / total_var).tolist()
     cumulative = ((S[:k] ** 2).cumsum(0) / total_var).tolist()
     
@@ -58,23 +56,24 @@ def explained_variance_analysis(
 def compute_optimal_num_directions(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    variance_threshold: float = VARIANCE_EXPLAINED_THRESHOLD,
-    marginal_threshold: float = MARGINAL_VARIANCE_THRESHOLD,
-    max_directions: int = TECZA_MAX_DIRECTIONS,
-    min_directions: int = 1,
+    variance_threshold: float,
+    max_directions: int = None,
+    min_directions: int = None,
+    marginal_variance_threshold: float = None,
+    *,
+    concept_pca_components: int,
 ) -> Tuple[int, Dict[str, Any]]:
     """
     Compute optimal number of steering directions based on explained variance.
-    
+
     Stops adding directions when:
     1. Cumulative variance exceeds threshold, OR
-    2. Marginal variance of next direction < marginal_threshold
+    2. Marginal variance of next direction < marginal_variance_threshold
     
     Args:
         pos_activations: Positive example activations
         neg_activations: Negative example activations
         variance_threshold: Target cumulative variance
-        marginal_threshold: Minimum marginal variance for new direction
         max_directions: Maximum directions to return
         min_directions: Minimum directions to return
         
@@ -82,11 +81,18 @@ def compute_optimal_num_directions(
         Tuple of (optimal_num_directions, analysis_details)
     """
     log = bind(_LOG)
-    
+    if max_directions is None:
+        raise ValueError("max_directions is required")
+    if min_directions is None:
+        raise ValueError("min_directions is required")
+    if marginal_variance_threshold is None:
+        raise ValueError("marginal_variance_threshold is required")
+
     individual, cumulative = explained_variance_analysis(
-        pos_activations, neg_activations, max_directions + SUBSPACE_DIRECTION_PADDING
+        pos_activations, neg_activations,
+        concept_pca_components=concept_pca_components,
     )
-    
+
     # Find optimal k
     optimal_k = min_directions
     
@@ -97,7 +103,7 @@ def compute_optimal_num_directions(
             break
         
         # Check marginal threshold
-        if k > 1 and individual[k - 1] < marginal_threshold:
+        if k > 1 and individual[k - 1] < marginal_variance_threshold:
             optimal_k = k - 1
             break
         
@@ -109,9 +115,9 @@ def compute_optimal_num_directions(
     details = {
         "individual_variance": individual[:optimal_k + 2],
         "cumulative_variance": cumulative[:optimal_k + 2],
-        "variance_at_optimal": cumulative[optimal_k - 1] if optimal_k <= len(cumulative) else 1.0,
+        "variance_at_optimal": cumulative[optimal_k - 1] if optimal_k <= len(cumulative) else SCORE_RANGE_MAX,
         "variance_threshold": variance_threshold,
-        "marginal_threshold": marginal_threshold,
+        "marginal_threshold": marginal_variance_threshold,
         "reason": (
             "reached_threshold" if cumulative[optimal_k - 1] >= variance_threshold
             else "marginal_too_small" if optimal_k < max_directions
@@ -178,25 +184,27 @@ def initialize_from_universal_basis(
     num_directions: int,
     basis: Optional[UniversalBasis] = None,
     model_name: Optional[str] = None,
-    noise_scale: float = SUBSPACE_ROBUSTNESS_NOISE_SCALE,
+    noise_scale: float = None,
 ) -> torch.Tensor:
     """
     Initialize steering directions from universal basis.
-    
+
     If no basis available, falls back to random initialization.
-    
+
     Args:
         hidden_dim: Hidden dimension
         num_directions: Number of directions to initialize
         basis: Optional pre-computed universal basis
         model_name: Model name for cached basis lookup
         noise_scale: Scale of noise to add for diversity
-        
+
     Returns:
         Initialized directions tensor [num_directions, hidden_dim]
     """
+    if noise_scale is None:
+        raise ValueError("noise_scale is required")
     log = bind(_LOG)
-    
+
     # Try to get basis
     if basis is None and model_name is not None:
         basis = get_cached_universal_basis(model_name, hidden_dim)

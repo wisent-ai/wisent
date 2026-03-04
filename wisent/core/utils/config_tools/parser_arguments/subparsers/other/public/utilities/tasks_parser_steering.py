@@ -1,6 +1,6 @@
 """Steering and advanced arguments for the tasks parser."""
 
-from wisent.core.utils.config_tools.constants import NONSENSE_MAX_WORD_LENGTH, MIN_QUALITY_SCORE_OUTPUT, TRACKING_SAMPLING_INTERVAL, MIN_SNR_EARLY_REJECT, MIN_CV_SCORE_EARLY_REJECT
+from wisent.core.utils.config_tools.constants import NONSENSE_MAX_WORD_LENGTH
 
 
 def setup_steering_task_args(parser):
@@ -165,7 +165,7 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--quality-threshold",
         type=float,
-        default=MIN_QUALITY_SCORE_OUTPUT,
+        default=50.0,
         help="Minimum quality score (1-100) to consider output acceptable (default: 50.0)",
     )
 
@@ -177,7 +177,7 @@ def setup_steering_task_args(parser):
         "--enable-latency-tracking", action="store_true", help="Enable latency/timing tracking and reporting"
     )
     parser.add_argument(
-        "--memory-sampling-interval", type=float, default=TRACKING_SAMPLING_INTERVAL, help="Memory sampling interval in seconds (default: 0.1)"
+        "--memory-sampling-interval", type=float, required=True, help="Memory sampling interval in seconds"
     )
     parser.add_argument("--track-gpu-memory", action="store_true", help="Track GPU memory usage (requires CUDA)")
     parser.add_argument(
@@ -230,12 +230,9 @@ def setup_steering_task_args(parser):
         action="store_true",
         help="Prefer fast benchmarks in selection when multiple options are available",
     )
-    parser.add_argument(
-        "--save-steering-vector", type=str, default=None, help="Path to save the computed steering vector"
-    )
-    parser.add_argument(
-        "--load-steering-vector", type=str, default=None, help="Path to load a pre-computed steering vector"
-    )
+    parser.add_argument("--enrichment-max-pairs", type=int, required=True, help="Maximum pairs for enrichment during GROM/TECZA training")
+    parser.add_argument("--save-steering-vector", type=str, default=None, help="Path to save the computed steering vector")
+    parser.add_argument("--load-steering-vector", type=str, default=None, help="Path to load a pre-computed steering vector")
     parser.add_argument(
         "--accept-low-quality-vector",
         action="store_true",
@@ -252,13 +249,13 @@ def setup_steering_task_args(parser):
     parser.add_argument(
         "--early-rejection-snr-threshold",
         type=float,
-        default=MIN_SNR_EARLY_REJECT,
+        default=5.0,
         help="Minimum SNR for early rejection during optimization (default: 5.0)"
     )
     parser.add_argument(
         "--early-rejection-cv-threshold",
         type=float,
-        default=MIN_CV_SCORE_EARLY_REJECT,
+        default=0.1,
         help="Minimum cross-validation score for early rejection during optimization (default: 0.1)"
     )
 

@@ -8,10 +8,10 @@ import random
 from typing import Dict, Any, List
 
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
-from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_SHORT, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH, DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import LLAMA_PAD_TOKEN_ID, DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI
 
 
-def get_benchmark_tags_with_llama(task_name: str, readme_content: str = "") -> List[str]:
+def get_benchmark_tags_with_llama(task_name: str, context_max_length: int, readme_content: str = "") -> List[str]:
     """
     Use Llama-3.1B-Instruct to determine appropriate tags for a benchmark.
 
@@ -62,7 +62,7 @@ def get_benchmark_tags_with_llama(task_name: str, readme_content: str = "") -> L
             pad_token_id=LLAMA_PAD_TOKEN_ID
         )
         print(f"   Successfully loaded Llama-3.1-8B-Instruct pipeline")
-        description = readme_content[:CONTEXT_MAX_LENGTH] if readme_content else (
+        description = readme_content[:context_max_length] if readme_content else (
             f"A benchmark called '{task_name}' for evaluating language models."
         )
         user_prompt = f"""Analyze the benchmark and determine exactly 3 tags.
@@ -150,7 +150,7 @@ def _basic_content_tag_analysis(readme_content: str) -> List[str]:
     return determined_tags[:DISPLAY_TOP_N_TINY]
 
 
-def get_benchmark_groups_from_readme(task_name: str) -> Dict[str, Any]:
+def get_benchmark_groups_from_readme(task_name: str, timeout: int, context_max_length: int) -> Dict[str, Any]:
     """
     Read the README from lm-eval-harness repository to get benchmark groups
     and use LLM for tags.
@@ -175,10 +175,10 @@ def get_benchmark_groups_from_readme(task_name: str) -> Dict[str, Any]:
     )
     try:
         print(f"   Fetching README from: {readme_url}")
-        response = requests.get(readme_url, timeout=DEFAULT_TIMEOUT_SHORT)
+        response = requests.get(readme_url, timeout=timeout)
         response.raise_for_status()
         readme_content = response.text
-        determined_tags = get_benchmark_tags_with_llama(task_name, readme_content)
+        determined_tags = get_benchmark_tags_with_llama(task_name, context_max_length=context_max_length, readme_content=readme_content)
         groups = []
         lines = readme_content.split('\n')
         in_target_section = False

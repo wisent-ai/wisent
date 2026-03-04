@@ -105,6 +105,12 @@ def setup_zwiad_parser(parser):
         required=True,
         help="LLM model for concept naming"
     )
+    parser.add_argument(
+        "--concept-naming-n-samples",
+        type=int,
+        required=True,
+        help="Number of samples to use for LLM concept naming prompts"
+    )
 
     # Output
     parser.add_argument(

@@ -25,7 +25,7 @@ from wisent.core.primitives.model_interface.core.activations.activations_collect
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.contrastive_pairs.diagnostics import run_control_vector_diagnostics, run_vector_quality_diagnostics, VectorQualityConfig
 from wisent.core.utils.infra_tools.errors import ControlVectorDiagnosticsError, NoTrainingResultError, VectorQualityTooLowError
-from wisent.core.utils.config_tools.constants import STEERABILITY_MIN_PAIRS, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY, ARCHITECTURE_MODULE_LIMIT
 
 __all__ = [
     "WisentSteeringTrainer",
@@ -60,18 +60,22 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
     dtype: torch.dtype | None = None
 
     def __post_init__(self) -> None:
-        self.collector = ActivationCollector(model=self.model, store_device=self.store_device, dtype=self.dtype)
+        self.collector = ActivationCollector(model=self.model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT, store_device=self.store_device, dtype=self.dtype)
         self._last_result: TrainingResult | None = None
 
     def run(
         self,
         layers_spec: Sequence[str] | str | int | Sequence[int] | None,
+        min_norm_threshold: float,
         method_kwargs: dict[str, Any] | None = None,
         strategy: ExtractionStrategy = ExtractionStrategy.CHAT_LAST,
         normalize_layers: bool = False,
         save_dir: str | Path | None = None,
         accept_low_quality_vector: bool = False,
         quality_config: VectorQualityConfig | None = None,
+        min_clusters: int = None,
+        adaptive_cv_min_folds: int = None,
+        steerability_min_pairs: int = None,
     ) -> TrainingResult:
         """
         Full pipeline:
@@ -119,7 +123,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
 
         steered = LayerActivations(raw_vectors)
 
-        control_vector_report = run_control_vector_diagnostics(steered)
+        control_vector_report = run_control_vector_diagnostics(steered, min_norm_threshold=min_norm_threshold)
         for issue in control_vector_report.issues:
             log_method = logger.error if issue.severity == "critical" else logger.warning
             log_method(
@@ -145,7 +149,7 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
         # 3b) Run vector quality diagnostics if we have enough pairs
         quality_report = None
         quality_diagnostics_report = None
-        if len(self.pair_set.pairs) >= STEERABILITY_MIN_PAIRS:
+        if len(self.pair_set.pairs) >= steerability_min_pairs:
             try:
                 # Extract activations for quality analysis (use first layer with data)
                 positive_activations = []
@@ -171,12 +175,13 @@ class WisentSteeringTrainer(BaseSteeringTrainer):
                     
                     pair_prompts.append(pair.prompt if hasattr(pair, 'prompt') else "")
                 
-                if len(positive_activations) >= STEERABILITY_MIN_PAIRS and len(negative_activations) >= STEERABILITY_MIN_PAIRS:
+                if len(positive_activations) >= steerability_min_pairs and len(negative_activations) >= steerability_min_pairs:
                     pos_stacked = torch.stack(positive_activations)
                     neg_stacked = torch.stack(negative_activations)
                     
                     quality_report, quality_diagnostics_report = run_vector_quality_diagnostics(
-                        pos_stacked, neg_stacked, pair_prompts, quality_config
+                        pos_stacked, neg_stacked, min_clusters=min_clusters, adaptive_cv_min_folds=adaptive_cv_min_folds,
+                        pair_prompts=pair_prompts, config=quality_config,
                     )
                     
                     # Log quality issues

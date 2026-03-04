@@ -7,7 +7,7 @@ from typing import Dict, List, Any
 
 import torch
 import numpy as np
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, VIZ_MARKER_SIZE_SMALL, PCA_GALLERY_COMPONENTS, VIZ_GALLERY_N_PER_TYPE, TSNE_PERPLEXITY_MAX, SIGNAL_EXIST_THRESHOLD, SIGNAL_LINEAR_GAP, VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_HIGH, VIZ_BBOX_ALPHA
+from wisent.core.utils.config_tools.constants import COMBO_OFFSET, DEFAULT_RANDOM_SEED, VIZ_MARKER_SIZE_SMALL, VIZ_GALLERY_N_PER_TYPE, TSNE_PERPLEXITY_MAX, VIZ_FONTSIZE_BODY, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_HIGH, VIZ_BBOX_ALPHA
 
 try:
     import matplotlib.pyplot as plt
@@ -72,14 +72,17 @@ def load_diagnosis_results(model_name: str, output_dir: Path) -> Dict[str, Any]:
 def select_representative_benchmarks(
     diagnosis_results: Dict[str, Any],
     n_per_type: int = VIZ_GALLERY_N_PER_TYPE,
+    *,
+    signal_exist_threshold: float,
+    signal_linear_gap: float,
 ) -> Dict[str, List[str]]:
     """
     Select representative benchmarks for each diagnosis type.
-    
+
     Args:
         diagnosis_results: Loaded diagnosis results
         n_per_type: Number of benchmarks per type
-        
+
     Returns:
         Dict with keys 'LINEAR', 'NONLINEAR', 'NO_SIGNAL'
     """
@@ -99,9 +102,9 @@ def select_representative_benchmarks(
             linear = r["linear_probe_accuracy"]
             knn = r["nonlinear_metrics"]["knn_accuracy_k10"]
             
-            if signal < SIGNAL_EXIST_THRESHOLD:
+            if signal < signal_exist_threshold:
                 by_diagnosis["NO_SIGNAL"].append((bench, signal, linear, knn))
-            elif linear > SIGNAL_EXIST_THRESHOLD and (signal - linear) < SIGNAL_LINEAR_GAP:
+            elif linear > signal_exist_threshold and (signal - linear) < signal_linear_gap:
                 by_diagnosis["LINEAR"].append((bench, signal, linear, knn))
             else:
                 by_diagnosis["NONLINEAR"].append((bench, signal, linear, knn))
@@ -130,6 +133,7 @@ def create_tsne_plot(
     title: str,
     ax: plt.Axes,
     diagnosis: str,
+    *, pca_gallery_components: int,
 ) -> None:
     """
     Create t-SNE visualization on given axes.
@@ -151,8 +155,8 @@ def create_tsne_plot(
     labels = np.array([1] * len(pos) + [0] * len(neg))
     
     # Reduce dimensionality with PCA first for speed
-    if X.shape[1] > PCA_GALLERY_COMPONENTS:
-        pca = PCA(n_components=PCA_GALLERY_COMPONENTS)
+    if X.shape[COMBO_OFFSET] > pca_gallery_components:
+        pca = PCA(n_components=pca_gallery_components)
         X = pca.fit_transform(X)
     
     # t-SNE

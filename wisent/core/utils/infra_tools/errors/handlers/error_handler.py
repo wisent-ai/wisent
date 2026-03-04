@@ -9,8 +9,6 @@ from __future__ import annotations
 
 import logging
 from typing import Optional, Any, Dict
-from wisent.core.utils.config_tools.constants import MIN_CHOICES_VALIDATION
-
 logger = logging.getLogger(__name__)
 
 
@@ -97,7 +95,7 @@ def require_all_parameters(params: Dict[str, Any], context: str, task_name: Opti
         )
 
 
-def validate_choices(choices: Optional[list], task_name: str, min_choices: int = MIN_CHOICES_VALIDATION):
+def validate_choices(choices: Optional[list], task_name: str, min_choices: int):
     """Validate that choices are provided and valid.
 
     Args:

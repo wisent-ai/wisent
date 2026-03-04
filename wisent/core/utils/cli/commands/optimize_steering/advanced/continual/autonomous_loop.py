@@ -33,16 +33,17 @@ from wisent.core.utils.cli.optimize_steering.continual._loop_helpers import (
     check_convergence,
     get_task_priority,
 )
-from wisent.core.utils.config_tools.constants import (DEFAULT_LIMIT, CONTINUAL_EWC_LAMBDA, WELFARE_LIMIT,
-    CONTINUAL_SHARED_UPDATE_RATE, DISPLAY_TOP_N_MINI, SEPARATOR_WIDTH_WIDE,
-    SEPARATOR_WIDTH_MEDIUM, CONTINUAL_REPLAY_INTERVAL,
-    CONTINUAL_FORGETTING_THRESHOLD, CONTINUAL_CONVERGENCE_WINDOW)
-from wisent.core import constants as _C
+from wisent.core.utils.config_tools.constants import (
+    DISPLAY_TOP_N_MINI, SEPARATOR_WIDTH_WIDE,
+    SEPARATOR_WIDTH_MEDIUM)
 
 
 def _run_replay_check(state, model, pairs_dir, limit, device,
-                      replay_size, forgetting_threshold, result):
+                      replay_size, forgetting_threshold, result,
+                      layer_sweep_strength):
     """Sample past tasks, evaluate, detect forgetting."""
+    if layer_sweep_strength is None:
+        raise ValueError("layer_sweep_strength is required")
     print(f"\n   --- Replay check ---")
     entries = state.replay_buffer.sample(
         min(replay_size, len(state.replay_buffer))
@@ -64,7 +65,7 @@ def _run_replay_check(state, model, pairs_dir, limit, device,
             current_scores[rt] = evaluate_vectors(
                 rt_vectors, rt_obj.metadata, model, rt,
                 rt_enriched, limit, device, wd,
-                strength=_C.LAYER_SWEEP_STRENGTH,
+                strength=layer_sweep_strength,
             )
     degraded = detect_forgetting(
         state.replay_buffer.entries, current_scores, forgetting_threshold,
@@ -80,15 +81,32 @@ def execute_continual_learning(args):
     model = args.model
     tasks_str = getattr(args, 'tasks', None)
     method = getattr(args, 'method', None)
-    max_cycles = getattr(args, 'max_cycles', DEFAULT_LIMIT)
+    max_cycles = args.max_cycles
     pairs_dir = getattr(args, 'enriched_pairs_dir', './pairs/')
     checkpoint_dir = getattr(args, 'checkpoint_dir', './checkpoints/')
-    ewc_lambda = getattr(args, 'ewc_lambda', CONTINUAL_EWC_LAMBDA)
-    replay_size = getattr(args, 'replay_size', WELFARE_LIMIT)
-    replay_interval = getattr(args, 'replay_interval', CONTINUAL_REPLAY_INTERVAL)
-    forgetting_threshold = getattr(args, 'forgetting_threshold', CONTINUAL_FORGETTING_THRESHOLD)
-    convergence_window = getattr(args, 'convergence_window', CONTINUAL_CONVERGENCE_WINDOW)
-    limit = getattr(args, 'limit', DEFAULT_LIMIT)
+    ewc_lambda = getattr(args, 'ewc_lambda', None)
+    if ewc_lambda is None:
+        raise ValueError("ewc_lambda is required (set via --ewc-lambda)")
+    ewc_learning_rate = getattr(args, 'ewc_learning_rate', None)
+    if ewc_learning_rate is None:
+        raise ValueError("ewc_learning_rate is required (set via --ewc-learning-rate)")
+    replay_size = getattr(args, 'replay_size', None)
+    if replay_size is None:
+        raise ValueError("replay_size is required (set via --replay-size)")
+    replay_interval = args.replay_interval
+    forgetting_threshold = getattr(args, 'forgetting_threshold', None)
+    if forgetting_threshold is None:
+        raise ValueError("forgetting_threshold is required (set via --forgetting-threshold)")
+    convergence_window = getattr(args, 'convergence_window', None)
+    if convergence_window is None:
+        raise ValueError("convergence_window is required (set via --convergence-window)")
+    shared_update_rate = getattr(args, 'shared_update_rate', None)
+    if shared_update_rate is None:
+        raise ValueError("shared_update_rate is required (set via --shared-update-rate)")
+    query_limit = getattr(args, 'query_limit', None)
+    if query_limit is None:
+        raise ValueError("query_limit is required (set via --query-limit)")
+    limit = args.limit
     device = getattr(args, 'device', None)
     gcs_bucket = getattr(args, 'gcs_bucket', None)
 
@@ -127,7 +145,25 @@ def execute_continual_learning(args):
 
         # 2-3. Ensure pairs + select method
         enriched_path = ensure_enriched_pairs(task, model, pairs_dir, device, limit)
-        task_method = method or select_method_for_task(task, model)
+        task_method = method or select_method_for_task(
+            task, model, min_norm_threshold=args.min_norm_threshold,
+            query_limit=query_limit, tecza_params={
+                "tecza_num_directions": args.tecza_num_directions,
+                "tecza_learning_rate": args.tecza_learning_rate,
+                "tecza_retain_weight": args.tecza_retain_weight,
+                "tecza_independence_weight": args.tecza_independence_weight,
+                "tecza_min_cosine_sim": args.tecza_min_cosine_sim,
+                "tecza_max_cosine_sim": args.tecza_max_cosine_sim,
+                "tecza_marginal_threshold": args.tecza_marginal_threshold,
+                "tecza_max_directions": args.tecza_max_directions,
+                "tecza_ablation_weight": args.tecza_ablation_weight,
+                "tecza_addition_weight": args.tecza_addition_weight,
+                "tecza_separation_margin": args.tecza_separation_margin,
+                "tecza_perturbation_scale": args.tecza_perturbation_scale,
+                "tecza_universal_basis_noise": args.tecza_universal_basis_noise,
+            },
+            train_ratio=args.train_ratio,
+        )
         print(f"   Method: {task_method}")
 
         # 4. Compose initial vectors
@@ -156,6 +192,7 @@ def execute_continual_learning(args):
                 fisher_all_tasks=state.fisher_info,
                 old_vectors_all_tasks=state.old_vectors,
                 ewc_lambda=ewc_lambda,
+                learning_rate=ewc_learning_rate,
             )
             print(f"   EWC applied ({len(state.fisher_info)} past tasks)")
 
@@ -170,7 +207,7 @@ def execute_continual_learning(args):
         )
         for layer in shared_update:
             if layer in state.shared_vectors:
-                state.shared_vectors[layer] += CONTINUAL_SHARED_UPDATE_RATE * shared_update[layer]
+                state.shared_vectors[layer] += shared_update_rate * shared_update[layer]
             else:
                 state.shared_vectors[layer] = shared_update[layer].clone()
         state.task_vectors[task] = task_update
@@ -178,7 +215,8 @@ def execute_continual_learning(args):
         # 8. Replay check
         if cycle % replay_interval == 0 and len(state.replay_buffer) > 0:
             _run_replay_check(state, model, pairs_dir, limit, device,
-                              replay_size, forgetting_threshold, result)
+                              replay_size, forgetting_threshold, result,
+                              layer_sweep_strength=getattr(args, 'layer_sweep_strength', None))
 
         # 9. Replay buffer + save steering
         steering_path = os.path.join(checkpoint_dir, f"{task}_latest.pt")

@@ -7,7 +7,7 @@ from typing import Dict, Optional, Tuple
 from pathlib import Path
 
 from wisent.core.utils.infra_tools.errors import LayerRangeError, ModelConfigAccessError, CalibrationError, CalibrationDataMissingError
-from wisent.core.utils.config_tools.constants import JSON_INDENT, TIMING_SAMPLES_PER_TASK, TIMING_CALIBRATION_BASE_SAMPLES
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 
 
 class TimingCalibrator:
@@ -118,9 +118,10 @@ class TimingCalibrator:
         self,
         num_tasks: int,
         num_layers: int,
-        samples_per_task: int = TIMING_SAMPLES_PER_TASK,
+        samples_per_task: int,
+        sample_size_limit: int,
+        timing_calibration_base_samples: int = None,
         sample_sizes: list = None,
-        sample_size_limit: int = TIMING_SAMPLES_PER_TASK,
         include_sample_size_opt: bool = True,
         include_classifier_training: bool = True,
         include_control_vectors: bool = True,
@@ -134,9 +135,11 @@ class TimingCalibrator:
         Returns:
             Tuple of (total_seconds, breakdown_dict)
         """
+        if timing_calibration_base_samples is None:
+            raise ValueError("timing_calibration_base_samples is required")
         if self.timings["training_time"] is None:
             raise CalibrationDataMissingError()
-        
+
         # Base measurements from calibration
         base_training = self.timings["training_time"]  # Time for 1 task, 1 layer, 10 samples
         base_steering = self.timings["steering_time"]  # Time for 1 task, 1 layer, 10 samples
@@ -144,7 +147,7 @@ class TimingCalibrator:
         breakdown = {}
         
         # Classification optimization: scales linearly with tasks, layers, and samples
-        classification_time = base_training * num_tasks * num_layers * (samples_per_task / TIMING_CALIBRATION_BASE_SAMPLES)
+        classification_time = base_training * num_tasks * num_layers * (samples_per_task / timing_calibration_base_samples)
         breakdown["classification"] = classification_time
         
         # Sample size optimization: tests multiple sample sizes on ONE layer per task
@@ -152,14 +155,14 @@ class TimingCalibrator:
             # Calculate average sample size from the provided list
             avg_sample_size = sum(sample_sizes) / len(sample_sizes)
             # Each test uses sample_size_limit samples from the dataset
-            sample_size_time = base_training * num_tasks * len(sample_sizes) * (min(avg_sample_size, sample_size_limit) / TIMING_CALIBRATION_BASE_SAMPLES)
+            sample_size_time = base_training * num_tasks * len(sample_sizes) * (min(avg_sample_size, sample_size_limit) / timing_calibration_base_samples)
             breakdown["sample_size"] = sample_size_time
         else:
             breakdown["sample_size"] = 0
         
         # Classifier training: one run per task with full samples
         if include_classifier_training:
-            classifier_time = base_training * num_tasks * (samples_per_task / TIMING_CALIBRATION_BASE_SAMPLES)
+            classifier_time = base_training * num_tasks * (samples_per_task / timing_calibration_base_samples)
             breakdown["classifier_training"] = classifier_time
         else:
             breakdown["classifier_training"] = 0
@@ -167,7 +170,7 @@ class TimingCalibrator:
         # Control vector generation: skip if no steering calibration
         if include_control_vectors and base_steering is not None:
             cv_layers = num_cv_layers or num_layers
-            control_vectors_time = base_steering * num_tasks * cv_layers * (samples_per_task / TIMING_CALIBRATION_BASE_SAMPLES)
+            control_vectors_time = base_steering * num_tasks * cv_layers * (samples_per_task / timing_calibration_base_samples)
             breakdown["control_vectors"] = control_vectors_time
         else:
             breakdown["control_vectors"] = 0

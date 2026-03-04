@@ -8,14 +8,10 @@ import random
 import numpy as np
 from pathlib import Path
 from wisent.core.utils.config_tools.constants import (
-    DISCOVER_STEERING_TASK_LIMIT,
-    DISCOVER_STEERING_TRAIN_LIMIT,
     DISPLAY_TOP_N_BRIEF,
     NORM_EPS,
     SEPARATOR_WIDTH_STANDARD,
-    DEFAULT_SPLIT_RATIO,
     DEFAULT_RANDOM_SEED,
-    DEFAULT_SCALE_FACTOR,
     JSON_INDENT,
 )
 from wisent.core.primitives.models.config import get_generate_kwargs
@@ -43,13 +39,13 @@ def execute_discover_steering(args):
     # Load data
     print(f"\nLoading data...")
     all_pair_texts = load_pair_texts_from_database(
-        task_name=args.task, limit=DISCOVER_STEERING_TASK_LIMIT, database_url=args.database_url
+        task_name=args.task, limit=args.discover_task_limit, database_url=args.database_url
     )
     all_pair_ids = list(all_pair_texts.keys())
     random.seed(DEFAULT_RANDOM_SEED)
     random.shuffle(all_pair_ids)
 
-    split_idx = int(len(all_pair_ids) * DEFAULT_SPLIT_RATIO)
+    split_idx = int(len(all_pair_ids) * 0.8)
     train_ids = set(all_pair_ids[:split_idx])
     test_ids = all_pair_ids[split_idx:][:args.n_test_samples]
 
@@ -61,7 +57,7 @@ def execute_discover_steering(args):
         component=args.extraction_component,
         extraction_strategy=args.extraction_strategy,
         prompt_format=args.prompt_format,
-        limit=DISCOVER_STEERING_TRAIN_LIMIT, database_url=args.database_url, pair_ids=train_ids
+        limit=args.discover_train_limit, database_url=args.database_url, pair_ids=train_ids
     )
     pos_np = pos_ref.cpu().numpy()
     neg_np = neg_ref.cpu().numpy()
@@ -100,7 +96,7 @@ def execute_discover_steering(args):
             base_r = _extract_response(adapter._generate_unsteered(fmt, **gen_kwargs))
             base_evals.append(evaluator.evaluate(base_r, pos_ref, correct_answers=[pos_ref], incorrect_answers=[neg_ref]).ground_truth)
             base_resps.append(base_r)
-            steer_r = _extract_response(adapter.forward_with_steering(fmt, steering_vectors=steering_vectors, config=SteeringConfig(scale=DEFAULT_SCALE_FACTOR)))
+            steer_r = _extract_response(adapter.forward_with_steering(fmt, steering_vectors=steering_vectors, config=SteeringConfig(scale=strength)))
             steered_evals.append(evaluator.evaluate(steer_r, pos_ref, correct_answers=[pos_ref], incorrect_answers=[neg_ref]).ground_truth)
             steered_resps.append(steer_r)
         base_t = sum(1 for e in base_evals if e == "TRUTHFUL")
@@ -148,7 +144,7 @@ def execute_discover_steering(args):
     # 4. Direction search
     if not args.skip_direction_search:
         print(f"\n[4/4] DIRECTION SEARCH...")
-        candidates = generate_candidate_directions(pos_np, neg_np, n_random=args.n_random_directions)
+        candidates = generate_candidate_directions(pos_np, neg_np, steering_n_random=args.n_random_directions, steering_n_pca=args.steering_n_pca, concept_pca_components=args.concept_pca_components)
         best_imp, best_name = steered_t - base_t, "baseline"
         dir_results = []
         for name, direction in candidates[:DISPLAY_TOP_N_BRIEF]:

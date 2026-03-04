@@ -4,7 +4,7 @@ from typing import Dict, Tuple, Optional
 from pathlib import Path
 
 from .timing_calibration import TimingCalibrator
-from wisent.core.utils.config_tools.constants import DATA_LOAD_LIMIT, TIMING_SAMPLES_PER_TASK, TIME_ESTIMATOR_CLASSIFICATION_LAYERS, TIME_ESTIMATOR_CV_LAYERS, SECONDS_PER_MINUTE, SECONDS_PER_HOUR
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE, SECONDS_PER_HOUR
 from wisent.core.utils.infra_tools.errors import (
     ModelConfigAccessError,
     CalibrationRequiredError,
@@ -17,16 +17,24 @@ class OptimizationTimeEstimator:
     """Estimates time required for optimization operations using calibration"""
     
     def __init__(
-        self, 
-        model_name: str, 
+        self,
+        model_name: str,
         verbose: bool = True,
         skip_calibration: bool = False,
         calibration_file: Optional[Path] = None,
-        calibrate_only: bool = False
+        calibrate_only: bool = False,
+        time_estimator_classification_layers: int = None,
+        time_estimator_cv_layers: int = None,
     ):
+        if time_estimator_classification_layers is None:
+            raise ValueError("time_estimator_classification_layers is required")
+        if time_estimator_cv_layers is None:
+            raise ValueError("time_estimator_cv_layers is required")
         self.model_name = model_name
         self.verbose = verbose
         self.calibrator = TimingCalibrator(verbose=verbose)
+        self._classification_layers = time_estimator_classification_layers
+        self._cv_layers = time_estimator_cv_layers
         
         # Get number of layers in the model
         from . import Model
@@ -68,7 +76,7 @@ class OptimizationTimeEstimator:
     def estimate_classification_time(
         self,
         num_tasks: int,
-        sample_limit: int = DATA_LOAD_LIMIT,
+        sample_limit: int,
         layers: Optional[list] = None
     ) -> Tuple[float, Dict[str, float]]:
         """
@@ -77,12 +85,13 @@ class OptimizationTimeEstimator:
         Returns:
             Tuple of (total_seconds, breakdown)
         """
-        num_layers = len(layers) if layers else min(TIME_ESTIMATOR_CLASSIFICATION_LAYERS, self.total_layers)
+        num_layers = len(layers) if layers else min(self._classification_layers, self.total_layers)
         
         total_time, breakdown = self.calibrator.estimate_optimization_time(
             num_tasks=num_tasks,
             num_layers=num_layers,
             samples_per_task=sample_limit,
+            sample_size_limit=sample_limit,
             include_sample_size_opt=False,
             include_classifier_training=False,
             include_control_vectors=False
@@ -93,9 +102,9 @@ class OptimizationTimeEstimator:
     def estimate_full_optimization_time(
         self,
         num_tasks: int,
-        classification_limit: int = DATA_LOAD_LIMIT,
+        classification_limit: int,
+        sample_size_limit: int,
         sample_sizes: list = None,
-        sample_size_limit: int = TIMING_SAMPLES_PER_TASK,
         include_sample_size_opt: bool = True,
         include_classifier_training: bool = True,
         include_control_vectors: bool = True
@@ -107,10 +116,10 @@ class OptimizationTimeEstimator:
             Tuple of (total_seconds, breakdown)
         """
         # Typical number of layers tested in classification
-        num_layers = min(TIME_ESTIMATOR_CLASSIFICATION_LAYERS, self.total_layers)
+        num_layers = min(self._classification_layers, self.total_layers)
 
         # Control vectors typically test more layers
-        cv_layers = min(TIME_ESTIMATOR_CV_LAYERS, self.total_layers)
+        cv_layers = min(self._cv_layers, self.total_layers)
         
         # Sample sizes must be provided
         if sample_sizes is None:

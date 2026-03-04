@@ -1,13 +1,13 @@
 """Group task handling for populate_tasks."""
 
 import random
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List
 
 from wisent.core.utils import get_all_docs_from_task
-from wisent.core.utils.config_tools.constants import MAX_DEPTH, DEFAULT_NUM_SAMPLES, DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY, DISPLAY_TOP_N_MINI, RECURSION_INITIAL_DEPTH, COMBO_OFFSET
 
 
-def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: int = MAX_DEPTH) -> Any:
+def find_working_task_from_group(group_dict: Dict, max_depth: int, depth: int = RECURSION_INITIAL_DEPTH) -> Any:
     """Recursively search through a ConfigurableGroup to find a task with usable documents."""
     if depth > max_depth:
         print(f"   Warning: Maximum recursion depth ({max_depth}) reached, stopping search")
@@ -22,7 +22,7 @@ def find_working_task_from_group(group_dict: Dict, depth: int = 0, max_depth: in
 
         if hasattr(item, 'items') and callable(item.items):
             print(f"{indent}'{item_name}' is a nested group, going deeper...")
-            nested_task = find_working_task_from_group(item, depth + 1, max_depth)
+            nested_task = find_working_task_from_group(item, max_depth, depth + COMBO_OFFSET)
             if nested_task:
                 print(f"{indent}Found working task in '{item_name}'")
                 return nested_task
@@ -69,8 +69,10 @@ def expand_group_task(task_name: str, get_task_dict) -> List[str]:
         return [task_name]
 
 
-def get_samples_from_group_task(group_name: str, subtasks: List[str], num_samples: int = DEFAULT_NUM_SAMPLES) -> Dict[str, Any]:
+def get_samples_from_group_task(group_name: str, subtasks: List[str], num_samples: int = None) -> Dict[str, Any]:
     """Get samples from a group task by sampling from its subtasks."""
+    if num_samples is None:
+        num_samples = 5
     from lm_eval import evaluator
 
     print(f"Getting samples from group task '{group_name}' with {len(subtasks)} subtasks...")

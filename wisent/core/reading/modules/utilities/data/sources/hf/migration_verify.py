@@ -2,7 +2,7 @@
 import json
 import shutil
 import tempfile
-from typing import Optional, Set
+from typing import Dict, Optional, Set
 
 import torch
 
@@ -43,6 +43,7 @@ def _load_migrated_keys() -> Set[str]:
 
 
 def migrate_all(
+    hf_retry_config: Dict,
     database_url: Optional[str] = None,
     dry_run: bool = False,
     combo_start: int = 0,
@@ -94,13 +95,14 @@ def migrate_all(
                 if task not in migrated_tasks:
                     print(f"\nStaging pair texts: {task}")
                     migrate_pair_texts(
-                        task, database_url=database_url,
+                        task, hf_retry_config=hf_retry_config,
+                        database_url=database_url,
                         dry_run=dry_run, staging_dir=pair_staging,
                     )
                     migrated_tasks.add(task)
             if not dry_run and migrated_tasks:
                 print(f"\nFlushing {len(migrated_tasks)} pair text files...")
-                flush_staging_dir(pair_staging)
+                flush_staging_dir(pair_staging, hf_retry_config=hf_retry_config)
         finally:
             shutil.rmtree(pair_staging, ignore_errors=True)
     else:
@@ -119,9 +121,11 @@ def migrate_all(
         try:
             migrate_activation_table(
                 model, task, strategy,
+                hf_retry_config=hf_retry_config,
                 database_url=database_url, dry_run=dry_run,
                 shared_conn=shared_conn,
             )
+            shared_conn.commit()
         except Exception as exc:
             if "closed the connection" in str(exc) or "connection" in str(exc).lower():
                 print(f"  Connection lost, reconnecting...")
@@ -132,9 +136,11 @@ def migrate_all(
                 shared_conn = _get_db_connection(database_url)
                 migrate_activation_table(
                     model, task, strategy,
+                    hf_retry_config=hf_retry_config,
                     database_url=database_url, dry_run=dry_run,
                     shared_conn=shared_conn,
                 )
+                shared_conn.commit()
             else:
                 raise
     try:

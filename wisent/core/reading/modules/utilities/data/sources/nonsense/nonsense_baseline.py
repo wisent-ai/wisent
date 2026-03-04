@@ -18,10 +18,7 @@ from .nonsense_cache import (
     cache_nonsense_to_db,
 )
 from wisent.core.utils.config_tools.constants import (
-    NONSENSE_N_PAIRS, CV_FOLDS,
-    NONSENSE_MIN_TOKENS, NONSENSE_MAX_TOKENS, NONSENSE_TOKEN_OFFSET,
-    SIGNIFICANCE_MARGIN,
-    NONSENSE_Z_SIGNIFICANCE, HASH_DISPLAY_LENGTH,
+    NONSENSE_N_PAIRS, NONSENSE_MAX_TOKENS, HASH_DISPLAY_LENGTH,
 )
 
 # In-memory cache for nonsense activations
@@ -65,13 +62,11 @@ def clear_nonsense_cache() -> None:
 
 
 def generate_nonsense_activations(
-    model,
-    tokenizer,
-    device: str,
+    model, tokenizer, device: str,
     n_pairs: int = NONSENSE_N_PAIRS,
     layer: int = None,
-    use_cache: bool = True,
-    persist_to_db: bool = True,
+    use_cache: bool = True, persist_to_db: bool = True,
+    *, nonsense_min_tokens: int, nonsense_token_offset: int,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """
     Generate activations from random token sequences (nonsense baseline).
@@ -103,9 +98,9 @@ def generate_nonsense_activations(
 
     vocab_size = tokenizer.vocab_size
 
-    def generate_random_tokens(min_tokens=NONSENSE_MIN_TOKENS, max_tokens=NONSENSE_MAX_TOKENS):
+    def generate_random_tokens(min_tokens=nonsense_min_tokens, max_tokens=NONSENSE_MAX_TOKENS):
         n_tokens = random.randint(min_tokens, max_tokens)
-        token_ids = [random.randint(NONSENSE_TOKEN_OFFSET, vocab_size - NONSENSE_TOKEN_OFFSET) for _ in range(n_tokens)]
+        token_ids = [random.randint(nonsense_token_offset, vocab_size - nonsense_token_offset) for _ in range(n_tokens)]
         return tokenizer.decode(token_ids)
 
     def get_activation(text):
@@ -146,27 +141,25 @@ def generate_nonsense_activations(
 
 
 def compute_nonsense_baseline(
-    pos_activations: torch.Tensor,
-    neg_activations: torch.Tensor,
-    nonsense_pos: torch.Tensor,
-    nonsense_neg: torch.Tensor,
-    n_folds: int = CV_FOLDS,
+    pos_activations: torch.Tensor, neg_activations: torch.Tensor,
+    nonsense_pos: torch.Tensor, nonsense_neg: torch.Tensor,
+    n_folds: int = None, *, nonsense_z_significance: float, significance_margin: float,
 ) -> Dict[str, float]:
     """
     Compare metrics against nonsense baseline.
-    
+
     Returns z-scores: how many standard deviations above nonsense.
     """
     from .probe_metrics import compute_linear_probe_accuracy, compute_signal_strength
-    
+
     real_linear = compute_linear_probe_accuracy(pos_activations, neg_activations, n_folds)
     real_signal = compute_signal_strength(pos_activations, neg_activations, n_folds)
     
     nonsense_linear = compute_linear_probe_accuracy(nonsense_pos, nonsense_neg, n_folds)
     nonsense_signal = compute_signal_strength(nonsense_pos, nonsense_neg, n_folds)
     
-    linear_z = (real_linear - nonsense_linear) / SIGNIFICANCE_MARGIN  # Assume std ~SIGNIFICANCE_MARGIN
-    signal_z = (real_signal - nonsense_signal) / SIGNIFICANCE_MARGIN
+    linear_z = (real_linear - nonsense_linear) / significance_margin  # Assume std ~significance_margin
+    signal_z = (real_signal - nonsense_signal) / significance_margin
     
     return {
         "real_linear_probe": real_linear,
@@ -175,17 +168,14 @@ def compute_nonsense_baseline(
         "nonsense_signal_strength": nonsense_signal,
         "linear_z_score": float(linear_z),
         "signal_z_score": float(signal_z),
-        "is_significant": linear_z > NONSENSE_Z_SIGNIFICANCE or signal_z > NONSENSE_Z_SIGNIFICANCE,
+        "is_significant": linear_z > nonsense_z_significance or signal_z > nonsense_z_significance,
     }
 
 
 def analyze_with_nonsense_baseline(
-    pos_activations: torch.Tensor,
-    neg_activations: torch.Tensor,
-    device: str,
-    model=None,
-    tokenizer=None,
-    layer: int = None,
+    pos_activations: torch.Tensor, neg_activations: torch.Tensor,
+    device: str, model=None, tokenizer=None, layer: int = None,
+    *, nonsense_z_significance: float, significance_margin: float, cv_folds: int,
 ) -> Dict[str, Any]:
     """
     Full analysis comparing real data to nonsense baseline.
@@ -198,9 +188,9 @@ def analyze_with_nonsense_baseline(
     from .icd import compute_icd
     
     real_metrics = {
-        "linear_probe": compute_linear_probe_accuracy(pos_activations, neg_activations),
-        "signal_strength": compute_signal_strength(pos_activations, neg_activations),
-        "mlp_probe": compute_mlp_probe_accuracy(pos_activations, neg_activations),
+        "linear_probe": compute_linear_probe_accuracy(pos_activations, neg_activations, cv_folds),
+        "signal_strength": compute_signal_strength(pos_activations, neg_activations, cv_folds),
+        "mlp_probe": compute_mlp_probe_accuracy(pos_activations, neg_activations, cv_folds),
         "icd": compute_icd(pos_activations, neg_activations)["icd"],
     }
     
@@ -211,22 +201,22 @@ def analyze_with_nonsense_baseline(
             )
             
             nonsense_metrics = {
-                "linear_probe": compute_linear_probe_accuracy(nonsense_pos, nonsense_neg),
-                "signal_strength": compute_signal_strength(nonsense_pos, nonsense_neg),
-                "mlp_probe": compute_mlp_probe_accuracy(nonsense_pos, nonsense_neg),
+                "linear_probe": compute_linear_probe_accuracy(nonsense_pos, nonsense_neg, cv_folds),
+                "signal_strength": compute_signal_strength(nonsense_pos, nonsense_neg, cv_folds),
+                "mlp_probe": compute_mlp_probe_accuracy(nonsense_pos, nonsense_neg, cv_folds),
                 "icd": compute_icd(nonsense_pos, nonsense_neg)["icd"],
             }
             
             z_scores = {}
             for key in real_metrics:
                 diff = real_metrics[key] - nonsense_metrics[key]
-                z_scores[f"{key}_z"] = diff / SIGNIFICANCE_MARGIN
+                z_scores[f"{key}_z"] = diff / significance_margin
             
             return {
                 "real": real_metrics,
                 "nonsense": nonsense_metrics,
                 "z_scores": z_scores,
-                "is_real_signal": z_scores.get("linear_probe_z", 0) > NONSENSE_Z_SIGNIFICANCE,
+                "is_real_signal": z_scores.get("linear_probe_z", 0) > nonsense_z_significance,
             }
         except Exception as e:
             return {

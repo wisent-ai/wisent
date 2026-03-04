@@ -1,7 +1,6 @@
 """Parser for check-linearity command."""
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import DIAG_OPTIMIZATION_STEPS
 
 
 def setup_check_linearity_parser(parser):
@@ -72,7 +71,7 @@ def setup_check_linearity_parser(parser):
     parser.add_argument(
         '--optimization-steps',
         type=int,
-        default=DIAG_OPTIMIZATION_STEPS,
+        default=50,
         help='Optimization steps for geometry detection (default: 50)'
     )
     

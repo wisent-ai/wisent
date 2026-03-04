@@ -3,7 +3,7 @@ from typing import Iterable
 import re
 import numpy as np
 from wisent.core.control.generation.synthetic.generators.diversities.core.core import Diversity, DiversityScores
-from wisent.core.utils.config_tools.constants import SIMHASH_BIT_WIDTH, DIVERSITY_MAX_SAMPLE_SIZE, FAST_DIVERSITY_SEED
+from wisent.core.utils.config_tools.constants import SIMHASH_BIT_WIDTH
 
 __all__ = [
     "FastDiversity",
@@ -19,8 +19,9 @@ class FastDiversity(Diversity):
     """
     _TOKEN_RE = re.compile(r"[A-Za-z0-9']+|[^\w\s]")
 
-    def __init__(self, seed: int | None = FAST_DIVERSITY_SEED) -> None:
+    def __init__(self, *, seed: int, max_sample_size: int) -> None:
         self._rng = np.random.default_rng(seed)
+        self._max_sample_size = max_sample_size
 
     def compute(self, texts: list[str]) -> DiversityScores:
         """
@@ -45,7 +46,7 @@ class FastDiversity(Diversity):
         """
         d1 = self._distinct_n(texts, 1)
         d2 = self._distinct_n(texts, 2)
-        sample = texts if len(texts) <= DIVERSITY_MAX_SAMPLE_SIZE else self._rng.choice(texts, size=DIVERSITY_MAX_SAMPLE_SIZE, replace=False).tolist()
+        sample = texts if len(texts) <= self._max_sample_size else self._rng.choice(texts, size=self._max_sample_size, replace=False).tolist()
         if len(sample) >= 2:
             jaccs: list[float] = []
             fps: list[int] = []

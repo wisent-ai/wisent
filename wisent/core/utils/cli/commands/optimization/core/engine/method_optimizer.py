@@ -29,13 +29,14 @@ from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
+from wisent.core import constants as _C
 from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
 
 from wisent.core.utils.cli.optimization.core.method_optimizer_config import (
     OptimizationConfig, OptimizationResult, OptimizationSummary,
 )
 from wisent.core.utils.cli.optimization.core.method_optimizer_search import (
-    generate_search_space, _get_full_layers,
+    generate_search_space, _get_full_layers, _build_default_method_params,
     _get_method_param_ranges, _generate_param_combinations,
     _determine_activation_layers, _log, _load_evidence_reductions,
 )
@@ -82,20 +83,16 @@ class MethodOptimizer:
         self,
         model,
         method_name: str,
+        layer_range_small_offset: int,
+        layer_range_large_offset: int,
         device: str | None = None,
         verbose: bool = True,
     ):
-        """
-        Initialize the optimizer.
-        
-        Args:
-            model: WisentModel instance
-            method_name: Name of steering method to optimize
-            device: Device for storing activations
-            verbose: Whether to print progress
-        """
+        """Initialize the optimizer."""
         self.model = model
         self.method_name = method_name.lower()
+        self.layer_range_small_offset = layer_range_small_offset
+        self.layer_range_large_offset = layer_range_large_offset
         self.device = device or resolve_default_device()
         self.verbose = verbose
         
@@ -134,6 +131,8 @@ class MethodOptimizer:
         task_name: str,
         configs: Optional[List[OptimizationConfig]] = None,
         progress_callback: Optional[Callable[[int, int, OptimizationResult], None]] = None,
+        *,
+        auto_default_strengths: tuple,
     ) -> OptimizationSummary:
         """
         Run optimization over configurations.
@@ -159,9 +158,12 @@ class MethodOptimizer:
         # Generate configs if not provided
         if configs is None:
             evidence_reductions = self._load_evidence_reductions(task_name)
+            mp = _build_default_method_params(self.method_name)
             configs = self.generate_search_space(
                 num_layers=self.model.num_layers,
                 evidence_reductions=evidence_reductions,
+                custom_method_params=mp,
+                auto_default_strengths=auto_default_strengths,
             )
         
         self._log(f"\n{'='*SEPARATOR_WIDTH_STANDARD}")
@@ -254,17 +256,12 @@ def optimize_steering_method(
     test_pairs: ContrastivePairSet,
     evaluator,
     task_name: str,
+    layer_range_small_offset: int,
+    layer_range_large_offset: int,
     verbose: bool = True,
 ) -> OptimizationSummary:
     """
     Convenience function to optimize a steering method.
-
-    This is the main entry point for optimizing any steering method.
-    It handles all the complexity of:
-    - Generating appropriate search spaces
-    - Collecting activations
-    - Training methods
-    - Evaluating results
 
     Args:
         model: WisentModel instance
@@ -273,6 +270,8 @@ def optimize_steering_method(
         test_pairs: Test pairs
         evaluator: Evaluator instance
         task_name: Name of task/benchmark
+        layer_range_small_offset: Offset for small layer range resolution
+        layer_range_large_offset: Offset for large layer range resolution
         verbose: Print progress
 
     Returns:
@@ -281,6 +280,8 @@ def optimize_steering_method(
     optimizer = MethodOptimizer(
         model=model,
         method_name=method_name,
+        layer_range_small_offset=layer_range_small_offset,
+        layer_range_large_offset=layer_range_large_offset,
         verbose=verbose,
     )
 

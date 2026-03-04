@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import torch
 import torch.nn.functional as F
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import InvalidValueError
-from wisent.core.utils.config_tools.constants import NORM_EPS, WM_TOLERANCE, DEFAULT_LAYER_WEIGHT
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 if TYPE_CHECKING:
     from torch import Tensor
@@ -46,7 +46,11 @@ def compute_projection_kernel(
             v = F.normalize(steering_vector.float(), p=2, dim=0)
         else:
             v = steering_vector.float()
-        weight = DEFAULT_LAYER_WEIGHT if layer_weights is None else layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT)
+        if layer_weights is None:
+            raise ValueError(f"layer_weights is required (missing for layer {layer_idx})")
+        if layer_idx not in layer_weights:
+            raise KeyError(f"No weight for layer {layer_idx} in layer_weights")
+        weight = layer_weights[layer_idx]
         kernel[layer_idx] = (v, weight)
         log.debug("Computed projection kernel", extra={"layer": layer_idx, "weight": weight, "vector_norm": v.norm().item(), "biprojected": harmless_vector is not None})
     return kernel
@@ -94,8 +98,10 @@ def project_with_kernel(
     return stats
 
 
-def verify_weight_modification_preservation(original_norms: dict, modified_norms: dict, tolerance: float = WM_TOLERANCE) -> tuple[bool, dict]:
+def verify_weight_modification_preservation(original_norms: dict, modified_norms: dict, tolerance: float = None) -> tuple[bool, dict]:
     """Verify weight modification preserved norms within tolerance."""
+    if tolerance is None:
+        raise ValueError("tolerance is required")
     results = {"preserved": True, "max_deviation": 0.0, "violations": []}
     for key in original_norms:
         if key not in modified_norms:

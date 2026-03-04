@@ -6,11 +6,11 @@ detected as problematic (hallucinations, harmful content, bias, etc.).
 """
 
 from enum import Enum
-from typing import Optional, Callable, Dict, Any
+from typing import Callable, Dict, Any, Optional
 import logging
 
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import MAX_REGENERATION_ATTEMPTS, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT
 
 logger = logging.getLogger(__name__)
 
@@ -32,19 +32,18 @@ class DetectionHandler:
     
     def __init__(
         self,
+        max_regeneration_attempts: int,
         action: DetectionAction = DetectionAction.REPLACE_WITH_PLACEHOLDER,
         placeholder_message: Optional[str] = None,
-        max_regeneration_attempts: int = MAX_REGENERATION_ATTEMPTS,
         custom_placeholder_generator: Optional[Callable[[str, str], str]] = None,
         log_detections: bool = True
     ):
         """
         Initialize the detection handler.
-        
+
         Args:
             action: What action to take when detection occurs
             placeholder_message: Custom placeholder message (if None, uses default)
-            max_regeneration_attempts: Maximum times to regenerate before giving up
             custom_placeholder_generator: Function to generate custom placeholders
             log_detections: Whether to log detection events
         """
@@ -192,33 +191,36 @@ class DetectionHandler:
 
 # Convenience functions for common use cases
 
-def create_pass_through_handler() -> DetectionHandler:
+def create_pass_through_handler(max_regeneration_attempts: int) -> DetectionHandler:
     """Create a handler that passes through all responses unchanged."""
-    return DetectionHandler(action=DetectionAction.PASS_THROUGH)
+    return DetectionHandler(max_regeneration_attempts=max_regeneration_attempts, action=DetectionAction.PASS_THROUGH)
 
 
-def create_placeholder_handler(custom_message: Optional[str] = None) -> DetectionHandler:
+def create_placeholder_handler(max_regeneration_attempts: int, custom_message: Optional[str] = None) -> DetectionHandler:
     """Create a handler that replaces detected responses with placeholders."""
     return DetectionHandler(
+        max_regeneration_attempts=max_regeneration_attempts,
         action=DetectionAction.REPLACE_WITH_PLACEHOLDER,
         placeholder_message=custom_message
     )
 
 
-def create_regeneration_handler(max_attempts: int = MAX_REGENERATION_ATTEMPTS) -> DetectionHandler:
+def create_regeneration_handler(max_regeneration_attempts: int) -> DetectionHandler:
     """Create a handler that regenerates responses until they're safe."""
     return DetectionHandler(
+        max_regeneration_attempts=max_regeneration_attempts,
         action=DetectionAction.REGENERATE_UNTIL_SAFE,
-        max_regeneration_attempts=max_attempts
     )
 
 
 def create_custom_handler(
+    max_regeneration_attempts: int,
     placeholder_generator: Callable[[str, str], str],
     action: DetectionAction = DetectionAction.REPLACE_WITH_PLACEHOLDER
 ) -> DetectionHandler:
     """Create a handler with a custom placeholder generator function."""
     return DetectionHandler(
+        max_regeneration_attempts=max_regeneration_attempts,
         action=action,
         custom_placeholder_generator=placeholder_generator
     )

@@ -8,50 +8,57 @@ import numpy as np
 from typing import Dict, Any, List
 from wisent.core.utils.config_tools.constants import (
     NORM_EPS,
-    BLEND_DEFAULT,
-    DEFAULT_SCORE,
     DEFAULT_RANDOM_SEED,
-    CV_FOLDS,
-    STABILITY_N_BOOTSTRAP,
-    VQ_MIN_PAIRS,
-    MULTI_DIR_MIN_K_NOT_FOUND,
-    MULTI_DIR_SATURATION_K_DEFAULT,
-    SIGNAL_SATURATION_DELTA,
-    DETECTION_THRESHOLD,
-    DIRECTION_K_VALUES,
 )
 
 
 def compute_multi_direction_accuracy(
     pos_activations,
     neg_activations,
-    k_values: List[int] = list(DIRECTION_K_VALUES),
-    n_folds: int = CV_FOLDS,
-    n_bootstrap: int = STABILITY_N_BOOTSTRAP,
+    blend_default: float,
+    default_score: float,
+    detection_threshold: float,
+    multi_dir_min_k_not_found: int,
+    multi_dir_saturation_k_default: int,
+    k_values: tuple = None,
+    n_folds: int = None,
+    n_bootstrap: int = None,
+    *,
+    vq_min_pairs: int,
+    signal_saturation_delta: float,
 ) -> Dict[str, Any]:
     """
     Test how many separation directions are needed for good classification.
 
     Uses bootstrap + SVD to find multiple separation directions:
-    1. Bootstrap N subsets of pairs
-    2. Compute diff-mean for each subset (each is a separation direction)
-    3. SVD on matrix of diff-means -> principal separation directions
-    4. Test linear probe accuracy using top-k directions
+    - Bootstrap N subsets of pairs
+    - Compute diff-mean for each subset (each is a separation direction)
+    - SVD on matrix of diff-means -> principal separation directions
+    - Test linear probe accuracy using top-k directions
 
     Args:
         pos_activations: [N, hidden_dim] positive class activations
         neg_activations: [N, hidden_dim] negative class activations
-        k_values: List of k values to test (number of directions)
+        blend_default: Score value used for uninformative accuracy results
+        default_score: Score value representing zero signal
+        detection_threshold: Minimum accuracy to consider a direction count sufficient
+        k_values: Tuple of k values to test (number of directions)
         n_folds: Number of CV folds
         n_bootstrap: Number of bootstrap samples for direction discovery
 
     Returns:
         Dict with:
             - accuracy_by_k: {k: accuracy} for each k
-            - min_k_for_good: minimum k where accuracy >= 0.6
+            - min_k_for_good: minimum k where accuracy >= detection_threshold
             - saturation_k: k where accuracy stops improving significantly
-            - gain_from_multi: accuracy(best_k) - accuracy(k=1)
+            - gain_from_multi: accuracy(best_k) - accuracy(k=single)
     """
+    if n_folds is None:
+        raise ValueError("n_folds is required")
+    if k_values is None:
+        raise ValueError("k_values is required")
+    if n_bootstrap is None:
+        raise ValueError("n_bootstrap is required")
     try:
         from sklearn.linear_model import LogisticRegression
         from sklearn.model_selection import cross_val_score
@@ -60,12 +67,12 @@ def compute_multi_direction_accuracy(
         n_neg = len(neg_activations)
         n_pairs = min(n_pos, n_neg)
 
-        if n_pairs < VQ_MIN_PAIRS:
+        if n_pairs < vq_min_pairs:
             return {
-                "accuracy_by_k": {k: BLEND_DEFAULT for k in k_values},
-                "min_k_for_good": MULTI_DIR_MIN_K_NOT_FOUND,
-                "saturation_k": MULTI_DIR_SATURATION_K_DEFAULT,
-                "gain_from_multi": DEFAULT_SCORE,
+                "accuracy_by_k": {k: blend_default for k in k_values},
+                "min_k_for_good": multi_dir_min_k_not_found,
+                "saturation_k": multi_dir_saturation_k_default,
+                "gain_from_multi": default_score,
             }
 
         pos_np = pos_activations.float().cpu().numpy()
@@ -87,10 +94,10 @@ def compute_multi_direction_accuracy(
 
         if len(diff_means) < 2:
             return {
-                "accuracy_by_k": {k: BLEND_DEFAULT for k in k_values},
-                "min_k_for_good": MULTI_DIR_MIN_K_NOT_FOUND,
-                "saturation_k": MULTI_DIR_SATURATION_K_DEFAULT,
-                "gain_from_multi": DEFAULT_SCORE,
+                "accuracy_by_k": {k: blend_default for k in k_values},
+                "min_k_for_good": multi_dir_min_k_not_found,
+                "saturation_k": multi_dir_saturation_k_default,
+                "gain_from_multi": default_score,
             }
 
         diff_matrix = np.stack(diff_means, axis=0)
@@ -99,10 +106,10 @@ def compute_multi_direction_accuracy(
         max_k = min(max(k_values), len(S), Vh.shape[0])
         if max_k < 1:
             return {
-                "accuracy_by_k": {k: BLEND_DEFAULT for k in k_values},
-                "min_k_for_good": MULTI_DIR_MIN_K_NOT_FOUND,
-                "saturation_k": MULTI_DIR_SATURATION_K_DEFAULT,
-                "gain_from_multi": DEFAULT_SCORE,
+                "accuracy_by_k": {k: blend_default for k in k_values},
+                "min_k_for_good": multi_dir_min_k_not_found,
+                "saturation_k": multi_dir_saturation_k_default,
+                "gain_from_multi": default_score,
             }
 
         X_full = np.vstack([pos_np, neg_np])
@@ -116,7 +123,7 @@ def compute_multi_direction_accuracy(
 
         for k in k_values:
             if k > max_k:
-                accuracy_by_k[k] = accuracy_by_k.get(max_k, BLEND_DEFAULT)
+                accuracy_by_k[k] = accuracy_by_k.get(max_k, blend_default)
                 continue
 
             top_k_directions = Vh[:k]
@@ -127,28 +134,28 @@ def compute_multi_direction_accuracy(
                 scores = cross_val_score(clf, X_projected, y, cv=n_folds_actual, scoring='accuracy')
                 accuracy_by_k[k] = float(scores.mean())
             except Exception:
-                accuracy_by_k[k] = BLEND_DEFAULT
+                accuracy_by_k[k] = blend_default
 
-        min_k_for_good = MULTI_DIR_MIN_K_NOT_FOUND
+        min_k_for_good = multi_dir_min_k_not_found
         for k in sorted(k_values):
-            if accuracy_by_k.get(k, DEFAULT_SCORE) >= DETECTION_THRESHOLD:
+            if accuracy_by_k.get(k, default_score) >= detection_threshold:
                 min_k_for_good = k
                 break
 
         sorted_ks = sorted([k for k in k_values if k <= max_k])
-        saturation_k = sorted_ks[0] if sorted_ks else MULTI_DIR_SATURATION_K_DEFAULT
+        saturation_k = sorted_ks[0] if sorted_ks else multi_dir_saturation_k_default
 
         for i in range(1, len(sorted_ks)):
             k_prev = sorted_ks[i-1]
             k_curr = sorted_ks[i]
-            improvement = accuracy_by_k.get(k_curr, DEFAULT_SCORE) - accuracy_by_k.get(k_prev, DEFAULT_SCORE)
-            if improvement < SIGNAL_SATURATION_DELTA:
+            improvement = accuracy_by_k.get(k_curr, default_score) - accuracy_by_k.get(k_prev, default_score)
+            if improvement < signal_saturation_delta:
                 saturation_k = k_prev
                 break
             saturation_k = k_curr
 
-        acc_k1 = accuracy_by_k.get(1, BLEND_DEFAULT)
-        best_acc = max(accuracy_by_k.values()) if accuracy_by_k else BLEND_DEFAULT
+        acc_k1 = accuracy_by_k.get(1, blend_default)
+        best_acc = max(accuracy_by_k.values()) if accuracy_by_k else blend_default
         gain_from_multi = best_acc - acc_k1
 
         return {
@@ -159,8 +166,8 @@ def compute_multi_direction_accuracy(
         }
     except Exception:
         return {
-            "accuracy_by_k": {k: BLEND_DEFAULT for k in k_values},
-            "min_k_for_good": MULTI_DIR_MIN_K_NOT_FOUND,
-            "saturation_k": MULTI_DIR_SATURATION_K_DEFAULT,
-            "gain_from_multi": DEFAULT_SCORE,
+            "accuracy_by_k": {k: blend_default for k in k_values},
+            "min_k_for_good": multi_dir_min_k_not_found,
+            "saturation_k": multi_dir_saturation_k_default,
+            "gain_from_multi": default_score,
         }

@@ -6,7 +6,7 @@ import re
 import torch
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.utils.services.optimization.methods.opti_weights import WeightsOptimizerConfig
-from wisent.core.utils.config_tools.constants import JSON_INDENT, WEIGHT_MIN_DISTANCE_FRACTION, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
+from wisent.core.utils.config_tools.constants import JSON_INDENT, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LONG
 
 
 def _apply_weight_modification_standalone(
@@ -20,7 +20,7 @@ def _apply_weight_modification_standalone(
     from wisent.core.weight_modification import project_with_kernel, bake_steering_with_kernel
 
     max_weight_position = params["max_weight_position"] * (num_layers - 1)
-    min_weight_distance = WEIGHT_MIN_DISTANCE_FRACTION * (num_layers - 1)
+    min_weight_distance = config.weight_min_distance_fraction * (num_layers - 1)
 
     if config.method == "directional":
         project_with_kernel(
@@ -42,6 +42,8 @@ def _apply_weight_modification_standalone(
             steering_vectors,
             method="bias",
             max_alpha=params["max_weight"] * params["strength"],
+            kernel_center_divisor=config.kernel_center_divisor,
+            kernel_sigma_divisor=config.kernel_sigma_divisor,
             max_alpha_position=max_weight_position,
             min_alpha=params["min_weight"],
             components=config.components,
@@ -54,6 +56,8 @@ def _apply_weight_modification_standalone(
             steering_vectors,
             method="bias",
             max_alpha=params["max_weight"] * params["strength"],
+            kernel_center_divisor=config.kernel_center_divisor,
+            kernel_sigma_divisor=config.kernel_sigma_divisor,
             max_alpha_position=max_weight_position,
             min_alpha=params["min_weight"],
             components=config.components,

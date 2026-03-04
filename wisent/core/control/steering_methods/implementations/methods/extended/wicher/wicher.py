@@ -28,7 +28,7 @@ from wisent.core.primitives.model_interface.core.activations.core.atoms import (
 )
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CONCEPT_DIM, MAX_CONCEPT_DIM, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, WICHER_CONCEPT_DIM
+from wisent.core.utils.config_tools.constants import LOG_EPS
 
 __all__ = [
     "WicherMethod",
@@ -37,24 +37,34 @@ __all__ = [
 ]
 
 
+def _require(name: str, kwargs: dict):
+    """Raise ValueError if a required hyperparameter is missing."""
+    if name not in kwargs:
+        raise ValueError(
+            f"Parameter '{name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return kwargs[name]
+
+
 @dataclass
 class WicherConfig:
     """Configuration for WICHER method."""
 
-    concept_dim: int = WICHER_CONCEPT_DIM
-    """Concept subspace dimensionality (0 = auto from variance)."""
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
-    """Cumulative variance threshold for auto dim selection."""
-    num_steps: int = BROYDEN_DEFAULT_NUM_STEPS
+    concept_dim: int
+    """Concept subspace dimensionality (zero = auto from variance)."""
+    num_steps: int
     """Number of Broyden iterations per forward pass."""
-    alpha: float = BROYDEN_DEFAULT_ALPHA
+    alpha: float
     """Base Tikhonov regularisation."""
-    eta: float = BROYDEN_DEFAULT_ETA
+    eta: float
     """Step-size multiplier per Broyden iteration."""
-    beta: float = BROYDEN_DEFAULT_BETA
-    """EMA momentum coefficient (0 = disabled)."""
-    alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY
+    beta: float
+    """EMA momentum coefficient (zero = disabled)."""
+    alpha_decay: float
     """Per-step decay factor for alpha."""
+    variance_threshold: float
+    """Cumulative variance threshold for auto dim selection."""
 
 
 @dataclass
@@ -91,13 +101,13 @@ class WicherMethod(BaseSteeringMethod):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.config = WicherConfig(
-            concept_dim=kwargs.get("concept_dim", WICHER_CONCEPT_DIM),
-            variance_threshold=kwargs.get("variance_threshold", DEFAULT_VARIANCE_THRESHOLD),
-            num_steps=kwargs.get("num_steps", BROYDEN_DEFAULT_NUM_STEPS),
-            alpha=kwargs.get("alpha", BROYDEN_DEFAULT_ALPHA),
-            eta=kwargs.get("eta", BROYDEN_DEFAULT_ETA),
-            beta=kwargs.get("beta", BROYDEN_DEFAULT_BETA),
-            alpha_decay=kwargs.get("alpha_decay", BROYDEN_DEFAULT_ALPHA_DECAY),
+            concept_dim=_require("concept_dim", kwargs),
+            num_steps=_require("num_steps", kwargs),
+            alpha=_require("alpha", kwargs),
+            eta=_require("eta", kwargs),
+            beta=_require("beta", kwargs),
+            alpha_decay=_require("alpha_decay", kwargs),
+            variance_threshold=_require("variance_threshold", kwargs),
         )
 
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:
@@ -178,17 +188,22 @@ class WicherMethod(BaseSteeringMethod):
 
     @staticmethod
     def _select_concept_dim(
-        s_squared: torch.Tensor, explicit_dim: int, var_threshold: float
+        s_squared: torch.Tensor, explicit_dim: int, var_threshold: float,
+        min_concept_dim: int = None, max_concept_dim: int = None,
     ) -> int:
         """Select concept subspace dimensionality k."""
+        if min_concept_dim is None:
+            raise ValueError("min_concept_dim is required")
+        if max_concept_dim is None:
+            raise ValueError("max_concept_dim is required")
         if explicit_dim > 0:
-            return max(MIN_CONCEPT_DIM, min(explicit_dim, MAX_CONCEPT_DIM, len(s_squared)))
+            return max(min_concept_dim, min(explicit_dim, max_concept_dim, len(s_squared)))
         total = s_squared.sum().item()
         if total < LOG_EPS:
             return 2
         cumvar = torch.cumsum(s_squared, dim=0) / total
         k = int((cumvar < var_threshold).sum().item()) + 1
-        return max(MIN_CONCEPT_DIM, min(k, MAX_CONCEPT_DIM, len(s_squared)))
+        return max(min_concept_dim, min(k, max_concept_dim, len(s_squared)))
 
     def _collect_from_set(
         self, pair_set: ContrastivePairSet

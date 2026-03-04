@@ -15,7 +15,6 @@ from wisent.cli_utils.cli_prepare_dataset import (
     PrepState,
 )
 from wisent.core.primitives.models.core.wisent_model import Model
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO
 
 
 # Test cache directory
@@ -60,7 +59,7 @@ def test_load_single_task_with_shots():
             model=model,
             task_name=task_name,
             shots=shots,  # Few-shot examples
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             limit=10,
             training_limit=None,
@@ -125,7 +124,7 @@ def test_load_single_task_different_benchmarks():
                 model=model,
                 task_name=task_name,
                 shots=0,
-                split_ratio=DEFAULT_SPLIT_RATIO,
+                split_ratio=0.8,
                 seed=42,
                 limit=5,  # Very small limit for speed
                 training_limit=None,

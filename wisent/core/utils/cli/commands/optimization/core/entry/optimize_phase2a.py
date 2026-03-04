@@ -5,8 +5,7 @@ import os
 
 from wisent.core.utils.cli.optimization.core.optimize_helpers import save_checkpoint
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SCORE, DISPLAY_TRUNCATION_ERROR,
-    RL_NUM_EPISODES, WELFARE_LIMIT,
+    DISPLAY_TRUNCATION_ERROR,
 )
 
 
@@ -51,8 +50,8 @@ def run_benchmark_steering(args, benchmarks, results):
                 save_as_default=True,
                 compute_baseline=True,
                 search_strategy=getattr(args, 'search_strategy', 'grid'),
-                n_trials=getattr(args, 'n_trials', WELFARE_LIMIT),
-                n_startup_trials=getattr(args, 'n_startup_trials', RL_NUM_EPISODES),
+                n_trials=args.n_trials,
+                n_startup_trials=args.n_startup_trials,
             )
             
             steering_result = execute_optimize_steering(steering_args)
@@ -63,7 +62,7 @@ def run_benchmark_steering(args, benchmarks, results):
                 best_method = None
                 best_score = -1
                 for method, method_result in best_result.items():
-                    if isinstance(method_result, dict) and method_result.get("best_score", DEFAULT_SCORE) > best_score:
+                    if isinstance(method_result, dict) and method_result["best_score"] > best_score:
                         best_score = method_result["best_score"]
                         best_method = method
                         best_layer = method_result.get("best_layer")
@@ -143,7 +142,7 @@ def run_benchmark_steering(args, benchmarks, results):
                     best_layer = steering_result.get("best_layer")
                     if best_layer is None:
                         raise ValueError(f"Missing 'best_layer' in personalization result for {trait}")
-                    best_score = steering_result.get("best_score", DEFAULT_SCORE)
+                    best_score = steering_result["best_score"]
                     
                     store_optimization(
                         model=args.model,

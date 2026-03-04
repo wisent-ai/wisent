@@ -7,7 +7,6 @@ import torch.nn.functional as F
 from pathlib import Path
 from typing import Optional, Tuple, Dict, Any
 from transformers import AutoModelForCausalLM, AutoTokenizer
-from wisent.core.utils.config_tools.constants import TETNO_GATE_SCALE_FACTOR, DEFAULT_LAYER_WEIGHT, STEERING_BASE_STRENGTH_DEFAULT
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 
@@ -15,10 +14,11 @@ class TETNOHooks:
     """Runtime hooks for TETNO conditional steering."""
 
     def __init__(self, model, tetno_data: Dict[str, Any],
-                 base_strength: float):
+                 base_strength: float, *, gate_scale_factor: float):
         self.model = model
         self.tetno_data = tetno_data
         self.base_strength = base_strength
+        self._gate_scale_factor = gate_scale_factor
 
         self._hooks = []
         self._current_gate = None
@@ -89,7 +89,7 @@ class TETNOHooks:
         c_norm = F.normalize(self.condition_vector, p=2, dim=-1)
         similarity = (h_norm * c_norm).sum(dim=-1)
         self._current_gate = torch.sigmoid(
-            (similarity - self.optimal_threshold) / TETNO_GATE_SCALE_FACTOR)
+            (similarity - self.optimal_threshold) / self._gate_scale_factor)
 
         return output
 
@@ -107,7 +107,9 @@ class TETNOHooks:
 
         behavior = behavior.to(hidden.device)
         gate = self._current_gate.to(hidden.device)
-        scale = self.layer_scales.get(layer_name, DEFAULT_LAYER_WEIGHT)
+        if layer_name not in self.layer_scales:
+            raise KeyError(f"No layer_scale for '{layer_name}' in TETNO data")
+        scale = self.layer_scales[layer_name]
 
         if hidden.dim() == 3:
             gate = gate.view(-1, 1, 1)
@@ -132,7 +134,7 @@ def load_model(
     torch_dtype=None,
     install_hooks: bool = True,
     GROMHooksClass=None,
-    TETNOHooksClass=None,
+    TETNOHooksClass=TETNOHooks,
 ) -> Tuple[Any, Any, Optional[Any]]:
     """
     Load a GROM or TETNO steered model.
@@ -149,9 +151,6 @@ def load_model(
         Tuple of (model, tokenizer, hooks)
         - hooks is None if no dynamic steering or install_hooks=False
     """
-    if TETNOHooksClass is None:
-        TETNOHooksClass = TETNOHooks
-
     model_path = (Path(model_path)
                   if not str(model_path).startswith(("http", "hf://"))
                   else model_path)
@@ -223,7 +222,13 @@ def load_model(
                     repo_id=str(model_path), filename="tetno_steering.pt")
                 tetno_data = torch.load(data_file, map_location="cpu")
 
-            hooks = TETNOHooksClass(model, tetno_data, base_strength=STEERING_BASE_STRENGTH_DEFAULT)
+            gate_scale = tetno_config.get("gate_scale_factor")
+            if gate_scale is None:
+                raise MissingParameterError(params=["gate_scale_factor"], context="tetno_config.json must include gate_scale_factor")
+            base_strength = tetno_config.get("base_strength")
+            if base_strength is None:
+                raise MissingParameterError(params=["base_strength"], context="tetno_config.json must include base_strength")
+            hooks = TETNOHooksClass(model, tetno_data, base_strength=base_strength, gate_scale_factor=gate_scale)
             hooks.install()
 
     return model, tokenizer, hooks

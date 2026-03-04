@@ -5,10 +5,8 @@ from dataclasses import dataclass
 from typing import Dict, List, Any
 
 from wisent.core.utils.config_tools.constants import (
-    SIGNAL_STRENGTH_THRESHOLD,
-    SIGNAL_PROBE_ACCURACY_THRESHOLD,
     NONSENSE_BASELINE_ACCURACY,
-    SIGNAL_BASELINE_RATIO_DEFAULT,
+    SCORE_RANGE_MAX,
 )
 
 
@@ -19,11 +17,11 @@ class GeometryTestResult:
     strategy: str
     layers: List[int]
     # Step 1: Is there any signal? (MLP CV accuracy)
-    signal_strength: float  # MLP CV accuracy, ~0.5 = no signal, >SIGNAL_STRENGTH_THRESHOLD = signal exists
-    has_signal: bool  # signal_strength > SIGNAL_STRENGTH_THRESHOLD
+    signal_strength: float  # MLP CV accuracy: above threshold = signal exists
+    has_signal: bool  # signal_strength > signal strength threshold
     # Step 2: Is signal linear? (Linear probe CV accuracy)
     linear_probe_accuracy: float  # Linear CV accuracy, high = linear, low = nonlinear
-    is_linear: bool  # linear_probe_accuracy > SIGNAL_PROBE_ACCURACY_THRESHOLD AND close to signal_strength
+    is_linear: bool  # linear_probe_accuracy > probe accuracy threshold AND close to signal_strength
     # Nonlinear signal metrics
     knn_accuracy_k5: float
     knn_accuracy_k10: float
@@ -98,7 +96,7 @@ class GeometryTestResult:
     icd_top5_variance: float = 0.0
     # Nonsense baseline comparison
     nonsense_baseline_accuracy: float = NONSENSE_BASELINE_ACCURACY
-    signal_vs_baseline_ratio: float = SIGNAL_BASELINE_RATIO_DEFAULT
+    signal_vs_baseline_ratio: float = SCORE_RANGE_MAX
     signal_above_baseline: float = 0.0
     has_real_signal: bool = False
 

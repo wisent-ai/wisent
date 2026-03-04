@@ -20,7 +20,6 @@ import datasets.features.features as _features_module
 if 'List' not in _features_module._FEATURE_TYPES and 'LargeList' in _features_module._FEATURE_TYPES:
     _features_module._FEATURE_TYPES['List'] = _features_module._FEATURE_TYPES['LargeList']
 
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
 from wisent.core.utils.infra_tools.data.core.atoms import BaseDataLoader, DataLoaderError, LoadDataResult
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
@@ -59,12 +58,13 @@ class LMEvalDataLoader(BaseDataLoader):
     def _load_one_task(
         self, task_name: str, split_ratio: float, seed: int,
         limit: int | None, training_limit: int | None, testing_limit: int | None,
+        *, train_ratio: float,
     ) -> LoadDataResult:
         """Load a single lm-eval task, convert to contrastive pairs, split into train/test."""
         task_name_lower = task_name.lower()
         if task_name_lower in self._get_huggingface_only_tasks():
             log.info(f"Task '{task_name}' is a HuggingFace-only task, loading via HuggingFace extractor")
-            pairs = lm_build_contrastive_pairs(task_name=task_name, lm_eval_task=None, limit=limit)
+            pairs = lm_build_contrastive_pairs(task_name=task_name, lm_eval_task=None, limit=limit, train_ratio=train_ratio)
             train_pairs, test_pairs = self._split_pairs(pairs, split_ratio, seed, training_limit, testing_limit)
             if not train_pairs or not test_pairs:
                 raise DataLoaderError("One of the splits is empty after splitting.")
@@ -82,7 +82,7 @@ class LMEvalDataLoader(BaseDataLoader):
         if isinstance(loaded, dict):
             if len(loaded) == 1:
                 (subname, task_obj), = loaded.items()
-                pairs = lm_build_contrastive_pairs(task_name=subname, lm_eval_task=task_obj, limit=limit)
+                pairs = lm_build_contrastive_pairs(task_name=subname, lm_eval_task=task_obj, limit=limit, train_ratio=train_ratio)
             else:
                 log.info(f"Task '{task_name}' is a group task with {len(loaded)} subtasks. Loading all subtasks...")
                 print(f"Task '{task_name}' is a group task with {len(loaded)} subtasks. Loading all subtasks...")
@@ -91,7 +91,7 @@ class LMEvalDataLoader(BaseDataLoader):
                 for subname, task_obj in loaded.items():
                     try:
                         subtask_pairs = lm_build_contrastive_pairs(
-                            task_name=subname, lm_eval_task=task_obj, limit=pairs_per_subtask,
+                            task_name=subname, lm_eval_task=task_obj, limit=pairs_per_subtask, train_ratio=train_ratio,
                         )
                         all_pairs.extend(subtask_pairs)
                         log.info(f"Loaded {len(subtask_pairs)} pairs from subtask '{subname}'")
@@ -104,7 +104,7 @@ class LMEvalDataLoader(BaseDataLoader):
                 log.info(f"Combined {len(pairs)} total pairs from {len(loaded)} subtasks")
         else:
             task_obj = loaded
-            pairs = lm_build_contrastive_pairs(task_name=task_name, lm_eval_task=task_obj, limit=limit)
+            pairs = lm_build_contrastive_pairs(task_name=task_name, lm_eval_task=task_obj, limit=limit, train_ratio=train_ratio)
 
         train_pairs, test_pairs = self._split_pairs(pairs, split_ratio, seed, training_limit, testing_limit)
         if not train_pairs or not test_pairs:
@@ -119,15 +119,19 @@ class LMEvalDataLoader(BaseDataLoader):
         )
 
     def load(
-        self, task: str, split_ratio: float | None = None, seed: int = DEFAULT_RANDOM_SEED,
+        self, task: str, split_ratio: float | None = None, seed: int | None = None,
         limit: int | None = None, training_limit: int | None = None,
-        testing_limit: int | None = None, **_: Any,
+        testing_limit: int | None = None, *, train_ratio: float, **_: Any,
     ) -> LoadDataResult:
         """Load contrastive pairs from a single lm-eval-harness task, split into train/test sets."""
+        if seed is None:
+            from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+            seed = DEFAULT_RANDOM_SEED
         split = self._effective_split(split_ratio)
         return self._load_one_task(
             task_name=str(task), split_ratio=split, seed=seed,
             limit=limit, training_limit=training_limit, testing_limit=testing_limit,
+            train_ratio=train_ratio,
         )
 
     @staticmethod

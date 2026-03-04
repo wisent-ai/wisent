@@ -10,7 +10,7 @@ from typing import Dict, Optional, List, Any
 import torch
 
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import GUIDED_MAX_DEGRADATION, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT
 from wisent.core.weight_modification import (
     project_weights, project_with_kernel,
     bake_steering_into_weights, bake_steering_with_kernel,
@@ -52,9 +52,12 @@ def execute_standard_modification(
     elif args.method == "additive":
         if args.use_kernel:
             stats = bake_steering_with_kernel(
-                model, steering_vectors, max_alpha=args.max_weight,
+                model, steering_vectors, method=args.additive_method,
+                max_alpha=args.max_weight,
+                kernel_center_divisor=args.kernel_center_divisor,
+                kernel_sigma_divisor=args.kernel_sigma_divisor,
                 max_alpha_position=args.max_weight_position, min_alpha=args.min_weight,
-                components=args.components, method=args.additive_method, verbose=args.verbose,
+                components=args.components, verbose=args.verbose,
             )
         else:
             stats = bake_steering_into_weights(
@@ -111,15 +114,16 @@ def execute_tetno_mode(args, model, tokenizer, wisent_model, pairs):
 
     tetno_result = train_tetno_for_task(args, wisent_model, pairs)
     tetno_mode = getattr(args, 'grom_mode', 'hybrid')
-
+    hsf = getattr(args, 'tetno_hybrid_strength_factor', None)
+    if hsf is None:
+        raise ValueError("--tetno-hybrid-strength-factor is required for TETNO weight export")
     if args.verbose:
         print(f"\nExporting TETNO model (mode={tetno_mode})...")
-
     export_tetno_model(
         model=model, tetno_result=tetno_result, save_path=args.output_dir,
-        tokenizer=tokenizer, mode=tetno_mode, strength=args.strength,
-        push_to_hub=args.push_to_hub, repo_id=args.repo_id if args.push_to_hub else None,
-        commit_message=args.commit_message,
+        strength=args.strength, mode=tetno_mode, hybrid_strength_factor=hsf,
+        tokenizer=tokenizer, push_to_hub=args.push_to_hub,
+        repo_id=args.repo_id if args.push_to_hub else None, commit_message=args.commit_message,
     )
 
     if args.verbose:
@@ -157,7 +161,7 @@ def execute_tecza_mode(args, model, tokenizer, wisent_model, pairs):
 
 
 
-def execute_guided_modification(args, wisent_model, model, tokenizer):
+def execute_guided_modification(args, wisent_model, model, tokenizer, *, guided_max_degradation: float):
     """Execute linearity-guided weight modification."""
     from wisent.core.weight_modification.methods.guided import (
         GuidedModificationConfig, AblationMode, run_guided_modification,
@@ -184,7 +188,7 @@ def execute_guided_modification(args, wisent_model, model, tokenizer):
         use_fisher_weights=not getattr(args, 'no_fisher_weights', False),
         extraction_strategy=args.extraction_strategy,
         validate_collateral=getattr(args, 'validate_collateral', False),
-        max_allowed_degradation=getattr(args, 'max_degradation', GUIDED_MAX_DEGRADATION),
+        max_allowed_degradation=getattr(args, 'max_degradation', guided_max_degradation),
         base_strength=args.strength,
         normalize_vectors=getattr(args, 'normalize_vectors', True),
         verbose=args.verbose,

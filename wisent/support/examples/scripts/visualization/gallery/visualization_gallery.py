@@ -19,7 +19,7 @@ try:
 except ImportError:
     HAS_SKLEARN = False
 
-from wisent.core.utils.config_tools.constants import VIZ_PLOT_DPI, TRAIT_NAME_MAX_LENGTH, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, SEPARATOR_WIDTH_WIDE
+from wisent.core.utils.config_tools.constants import VIZ_PLOT_DPI, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, SEPARATOR_WIDTH_WIDE, NONSENSE_N_PAIRS
 from wisent.examples.scripts.visualization_gallery_helpers import (
     gcs_upload_file,
     load_diagnosis_results,
@@ -37,6 +37,8 @@ def create_tsne_gallery(
     selected_benchmarks: Dict[str, List[str]],
     output_path: Path,
     model_name: str,
+    report_interval: int,
+    trait_name_max_length: int,
 ) -> None:
     """
     Create t-SNE gallery figure.
@@ -81,7 +83,7 @@ def create_tsne_gallery(
                 except Exception:
                     task = None
                 
-                pairs = lm_build_contrastive_pairs(benchmark, task, limit=50)
+                pairs = lm_build_contrastive_pairs(benchmark, task, limit=NONSENSE_N_PAIRS, train_ratio=args.train_ratio)
                 
                 if len(pairs) < 20:
                     ax.text(0.5, 0.5, f'{benchmark}\n(insufficient data)', 
@@ -95,6 +97,7 @@ def create_tsne_gallery(
                     pairs=pairs,
                     benchmark=benchmark,
                     strategy=strategy,
+                    report_interval=report_interval,
                     cache=cache,
                     show_progress=False,
                 )
@@ -105,10 +108,10 @@ def create_tsne_gallery(
                 neg_acts = cached.get_negative_activations(middle_layer)
                 
                 # Create t-SNE plot
-                create_tsne_plot(pos_acts, neg_acts, benchmark, ax, diagnosis)
+                create_tsne_plot(pos_acts, neg_acts, benchmark, ax, diagnosis, pca_gallery_components=args.pca_gallery_components)
                 
             except Exception as e:
-                ax.text(0.5, 0.5, f'{benchmark}\n(error: {str(e)[:TRAIT_NAME_MAX_LENGTH]})', 
+                ax.text(0.5, 0.5, f'{benchmark}\n(error: {str(e)[:trait_name_max_length]})', 
                        ha='center', va='center', transform=ax.transAxes)
                 ax.axis('off')
     
@@ -190,7 +193,7 @@ def create_layer_accuracy_curves(
     print(f"  Saved layer curves: {output_path}")
 
 
-def run_visualization(model_name: str, skip_tsne: bool = False):
+def run_visualization(model_name: str, report_interval: int, skip_tsne: bool = False, *, signal_exist_threshold: float, signal_linear_gap: float):
     """
     Generate all visualizations.
     
@@ -219,7 +222,7 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
     # 1. Hero figure
     print("\n1. Creating hero figure...")
     hero_path = output_dir / f"{model_prefix}_hero_figure.png"
-    create_hero_figure(diagnosis_results, hero_path, model_name)
+    create_hero_figure(diagnosis_results, hero_path, model_name, signal_exist_threshold=signal_exist_threshold, signal_linear_gap=signal_linear_gap)
     gcs_upload_file(hero_path, model_name)
     
     # 2. Layer accuracy curves
@@ -237,11 +240,11 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
         print(f"  Loading model: {model_name}")
         model = WisentModel(model_name, device="cuda")
         
-        selected = select_representative_benchmarks(diagnosis_results, n_per_type=2)
+        selected = select_representative_benchmarks(diagnosis_results, signal_exist_threshold=signal_exist_threshold, signal_linear_gap=signal_linear_gap)
         print(f"  Selected benchmarks: {selected}")
         
         tsne_path = output_dir / f"{model_prefix}_tsne_gallery.png"
-        create_tsne_gallery(model, selected, tsne_path, model_name)
+        create_tsne_gallery(model, selected, tsne_path, model_name, report_interval=report_interval)
         gcs_upload_file(tsne_path, model_name)
         
         del model
@@ -257,7 +260,10 @@ def run_visualization(model_name: str, skip_tsne: bool = False):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Visualization gallery for Zwiad")
     parser.add_argument("--model", type=str, required=True, help="Model to visualize")
+    parser.add_argument("--report-interval", type=int, required=True, help="Progress reporting interval for activation collection")
     parser.add_argument("--skip-tsne", action="store_true", help="Skip t-SNE (doesn't require model)")
+    parser.add_argument("--signal-exist-threshold", type=float, required=True, help="Signal existence threshold")
+    parser.add_argument("--signal-linear-gap", type=float, required=True, help="Signal linear gap threshold")
     args = parser.parse_args()
-    
-    run_visualization(args.model, skip_tsne=args.skip_tsne)
+
+    run_visualization(args.model, report_interval=args.report_interval, skip_tsne=args.skip_tsne, signal_exist_threshold=args.signal_exist_threshold, signal_linear_gap=args.signal_linear_gap)

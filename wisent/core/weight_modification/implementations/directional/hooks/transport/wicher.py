@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from typing import Dict, Optional, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -29,11 +29,11 @@ class WicherRuntimeHooks:
         component_variances: Dict[int, torch.Tensor],
         layer_variance: Dict[int, float],
         base_strength: float,
-        num_steps: int = BROYDEN_DEFAULT_NUM_STEPS,
-        alpha: float = BROYDEN_DEFAULT_ALPHA,
-        eta: float = BROYDEN_DEFAULT_ETA,
-        beta: float = BROYDEN_DEFAULT_BETA,
-        alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY,
+        num_steps: int,
+        alpha: float,
+        eta: float,
+        beta: float,
+        alpha_decay: float,
     ):
         self.model = model
         self.concept_directions = concept_directions

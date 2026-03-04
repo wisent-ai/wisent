@@ -17,7 +17,6 @@ from wisent.cli_utils.cli_prepare_dataset import (
     PrepState,
 )
 from wisent.core.primitives.models.core.wisent_model import Model
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO
 from wisent.tests.cli_utils._load_single_helpers import (
     test_load_single_task_with_shots,
     test_load_single_task_different_benchmarks,
@@ -63,7 +62,7 @@ def test_load_single_task_basic():
             model=model,
             task_name=task_name,
             shots=0,
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             limit=10,
             training_limit=None,
@@ -132,7 +131,7 @@ def test_load_single_task_with_limits():
             model=model,
             task_name=task_name,
             shots=0,
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             limit=None,
             training_limit=training_limit,
@@ -193,7 +192,7 @@ def test_load_single_task_with_cache():
             model=model,
             task_name=task_name,
             shots=0,
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             limit=10,
             training_limit=None,

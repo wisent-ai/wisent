@@ -1,9 +1,4 @@
-"""Activation space geometry types derived from empirical clustering.
-
-K-means on 208 benchmarks x 16 zwiad metrics identified two
-granularity levels: 5 coarse types (best silhouette) and 8 fine
-types (k=8). classify_geometry(fine=True) uses the 8-type system.
-"""
+"""Activation space geometry types derived from empirical clustering."""
 from __future__ import annotations
 
 import json
@@ -12,12 +7,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from wisent.core.utils.config_tools.constants import (
-    BLEND_DEFAULT, DEFAULT_SCALE, DEFAULT_SCORE, ROUNDING_PRECISION, STAT_ALPHA,
-    ZWIAD_PER_TYPE_DEFAULT, ZWIAD_RANGE_CONC_MAX, ZWIAD_RANGE_DIM_MAX,
-    ZWIAD_RANGE_DIM_MIN, ZWIAD_RANGE_SHARP_MAX, ZWIAD_RANGE_SPECTRAL_MIN,
-    ZWIAD_RANGE_SURVIVAL_MIN, ZWIAD_WEIGHT_CONC, ZWIAD_WEIGHT_DIM,
-    ZWIAD_WEIGHT_EDITABILITY, ZWIAD_WEIGHT_SHARP, ZWIAD_WEIGHT_SPECTRAL,
-    ZWIAD_WEIGHT_SURVIVAL)
+    BINARY_CLASS_NEGATIVE, COMBO_BASE, COMBO_OFFSET, ROUNDING_PRECISION, STAT_ALPHA,
+)
 
 
 class GeometryType(Enum):
@@ -41,8 +32,6 @@ class GeometryTypeFine(Enum):
     MANY_CONCEPT_CURVED = "many_concept_curved"
 
 
-# Maps fine geometry types to theoretical activation space shapes
-# (as computed by geometry_runner.py structure scores)
 SHAPE_MAP = {
     GeometryTypeFine.LINEAR_STABLE: "linear",
     GeometryTypeFine.LINEAR_CONCENTRATED: "cone",
@@ -54,11 +43,7 @@ SHAPE_MAP = {
     GeometryTypeFine.MANY_CONCEPT_CURVED: "manifold",
 }
 
-# Maps fine geometry types to recommended steering methods.
-# Populated from ground truth experiments via collect_ground_truth().
-# Empty until experimental data is available.
 METHOD_MAP: Dict[GeometryTypeFine, List[str]] = {}
-
 
 _CENTROIDS_5 = {
     GeometryType.LINEAR_FLAT: {
@@ -87,7 +72,6 @@ _CENTROIDS_5 = {
         "curvature": 0.037, "coherence": 0.78,
     },
 }
-
 _CENTROIDS_8 = {
     GeometryTypeFine.LINEAR_STABLE: {
         "linear": 0.986, "stability": 0.997,
@@ -130,7 +114,6 @@ _CENTROIDS_8 = {
         "curvature": 0.794, "coherence": 0.139,
     },
 }
-
 _METRIC_ALIASES = {
     "linear": ["linear_probe_accuracy", "linear_probe"],
     "stability": ["direction_stability_score",
@@ -142,20 +125,13 @@ _METRIC_ALIASES = {
     "coherence": ["concept_coherence"],
 }
 
-_RANGES = {
-    "linear": (ZWIAD_RANGE_SPECTRAL_MIN, DEFAULT_SCALE),
-    "stability": (ZWIAD_RANGE_SURVIVAL_MIN, DEFAULT_SCALE),
-    "n_concepts": (ZWIAD_RANGE_DIM_MIN, ZWIAD_RANGE_DIM_MAX),
-    "var_pc1": (STAT_ALPHA, ZWIAD_RANGE_CONC_MAX),
-    "curvature": (DEFAULT_SCORE, ZWIAD_RANGE_SHARP_MAX),
-    "coherence": (DEFAULT_SCORE, DEFAULT_SCALE),
-}
-_WEIGHTS = {
-    "linear": ZWIAD_WEIGHT_SPECTRAL, "stability": ZWIAD_WEIGHT_SURVIVAL,
-    "n_concepts": ZWIAD_WEIGHT_DIM, "var_pc1": ZWIAD_WEIGHT_CONC,
-    "curvature": ZWIAD_WEIGHT_SHARP, "coherence": ZWIAD_WEIGHT_EDITABILITY,
-}
-
+def _build_ranges(*, default_scale: float, default_score: float, zwiad_ranges: Dict[str, float]):
+    return {"linear": (zwiad_ranges["spectral_min"], default_scale),
+            "stability": (zwiad_ranges["survival_min"], default_scale),
+            "n_concepts": (zwiad_ranges["dim_min"], zwiad_ranges["dim_max"]),
+            "var_pc1": (STAT_ALPHA, zwiad_ranges["conc_max"]),
+            "curvature": (default_score, zwiad_ranges["sharp_max"]),
+            "coherence": (default_score, default_scale)}
 
 def _extract(metrics: Dict[str, Any], key: str) -> Optional[float]:
     for alias in _METRIC_ALIASES[key]:
@@ -163,41 +139,41 @@ def _extract(metrics: Dict[str, Any], key: str) -> Optional[float]:
             return float(metrics[alias])
     return None
 
-
-def _classify(metrics, centroids, default_type):
+def _classify(metrics, centroids, default_type, *, default_score: float, blend_default: float,
+              default_scale: float, zwiad_ranges: Dict[str, float], zwiad_weights: Dict[str, float]):
     vals = {}
+    ranges = _build_ranges(default_scale=default_scale, default_score=default_score, zwiad_ranges=zwiad_ranges)
     for key in _METRIC_ALIASES:
         v = _extract(metrics, key)
         if v is None:
-            return default_type, 0.0
+            return default_type, default_score
         vals[key] = v
     distances = {}
     for gtype, centroid in centroids.items():
-        dist = DEFAULT_SCORE
+        dist = default_score
         for key in centroid:
-            lo, hi = _RANGES[key]
-            span = hi - lo if hi > lo else 1.0
+            lo, hi = ranges[key]
+            span = hi - lo if hi > lo else default_scale
             nv = (vals[key] - lo) / span
             nc = (centroid[key] - lo) / span
-            dist += _WEIGHTS[key] * (nv - nc) ** 2
-        distances[gtype] = dist ** BLEND_DEFAULT
-    ranked = sorted(distances.items(), key=lambda x: x[1])
-    best, best_d = ranked[0]
-    second_d = ranked[1][1]
-    conf = min((second_d - best_d) / best_d, DEFAULT_SCALE) if best_d > 0 else DEFAULT_SCALE
+            dist += zwiad_weights[key] * (nv - nc) ** COMBO_BASE
+        distances[gtype] = dist ** blend_default
+    ranked = sorted(distances.items(), key=lambda x: x[COMBO_OFFSET])
+    best, best_d = ranked[BINARY_CLASS_NEGATIVE]
+    second_d = ranked[COMBO_OFFSET][COMBO_OFFSET]
+    conf = min((second_d - best_d) / best_d, default_scale) if best_d > default_score else default_scale
     return best, round(conf, ROUNDING_PRECISION)
 
-
 def classify_geometry(
-    metrics: Dict[str, Any], fine: bool = False,
+    metrics: Dict[str, Any], fine: bool = False, *, default_score: float, blend_default: float,
+    default_scale: float, zwiad_ranges: Dict[str, float], zwiad_weights: Dict[str, float],
 ) -> Tuple:
-    """Classify geometry. fine=True uses 8 types, False uses 5."""
+    """Classify geometry. fine=True uses fine types, False uses coarse."""
+    kw = dict(default_score=default_score, blend_default=blend_default,
+              default_scale=default_scale, zwiad_ranges=zwiad_ranges, zwiad_weights=zwiad_weights)
     if fine:
-        return _classify(metrics, _CENTROIDS_8,
-                         GeometryTypeFine.LINEAR_STABLE)
-    return _classify(metrics, _CENTROIDS_5,
-                     GeometryType.LINEAR_FLAT)
-
+        return _classify(metrics, _CENTROIDS_8, GeometryTypeFine.LINEAR_STABLE, **kw)
+    return _classify(metrics, _CENTROIDS_5, GeometryType.LINEAR_FLAT, **kw)
 
 def _build_categorized_reverse_map():
     """Build {category_task: task} from working_benchmarks_categorized.json."""
@@ -216,10 +192,10 @@ def _build_categorized_reverse_map():
             return rmap
     return {}
 
-
 def select_representative_benchmarks(
-    zwiad_dir: str, model_slug: str,
-    per_type: int = ZWIAD_PER_TYPE_DEFAULT, fine: bool = False,
+    zwiad_dir: str, model_slug: str, *, per_type: int, fine: bool = False,
+    default_score: float, blend_default: float, default_scale: float,
+    zwiad_ranges: Dict[str, float], zwiad_weights: Dict[str, float],
 ) -> Dict:
     """Select representative benchmarks covering all types."""
     zwiad_path = Path(zwiad_dir)
@@ -227,20 +203,21 @@ def select_representative_benchmarks(
     enum_cls = GeometryTypeFine if fine else GeometryType
     rev_map = _build_categorized_reverse_map()
     typed = {t: [] for t in enum_cls}
+    geo_kw = dict(default_score=default_score, blend_default=blend_default,
+                  default_scale=default_scale, zwiad_ranges=zwiad_ranges, zwiad_weights=zwiad_weights)
     for f in sorted(zwiad_path.glob(f"{prefix}__*.json")):
         bench = f.stem.replace(f"{prefix}__", "")
         task_name = rev_map.get(bench, bench)
         data = json.loads(f.read_text())
         m = data.get("metrics", data)
-        gtype, conf = classify_geometry(m, fine=fine)
+        gtype, conf = classify_geometry(m, fine=fine, **geo_kw)
         typed[gtype].append((task_name, conf))
     selected = {}
     for gtype in enum_cls:
         cands = typed[gtype]
-        cands.sort(key=lambda x: x[1], reverse=True)
+        cands.sort(key=lambda x: x[COMBO_OFFSET], reverse=True)
         selected[gtype] = [b for b, _ in cands[:per_type]]
     return selected
-
 
 @dataclass
 class GeometryProfile:
@@ -273,13 +250,15 @@ class GeometryProfile:
     def from_dict(cls, d: dict) -> GeometryProfile:
         return cls(**d)
 
-
 def profile_benchmark(
-    metrics: Dict[str, Any],
+    metrics: Dict[str, Any], *, default_score: float, blend_default: float,
+    default_scale: float, zwiad_ranges: Dict[str, float], zwiad_weights: Dict[str, float],
 ) -> GeometryProfile:
     """Build full geometry profile with both granularities."""
-    gt5, c5 = classify_geometry(metrics, fine=False)
-    gt8, c8 = classify_geometry(metrics, fine=True)
+    kw = dict(default_score=default_score, blend_default=blend_default,
+              default_scale=default_scale, zwiad_ranges=zwiad_ranges, zwiad_weights=zwiad_weights)
+    gt5, c5 = classify_geometry(metrics, fine=False, **kw)
+    gt8, c8 = classify_geometry(metrics, fine=True, **kw)
     key_metrics = {}
     for key in _METRIC_ALIASES:
         v = _extract(metrics, key)

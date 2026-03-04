@@ -3,8 +3,6 @@ import os
 
 import torch
 
-from wisent.core.utils.config_tools.constants import DEFAULT_CHECKPOINT_INTERVAL, DEFAULT_LAYER_WEIGHT, DEFAULT_LIMIT
-
 
 def _train_multi_direction_method(
     args,
@@ -48,29 +46,71 @@ def _train_multi_direction_method(
         print(f"   Loaded {len(pair_set.pairs)} pairs with activations")
         
         # Get config from args
-        num_directions = getattr(args, 'num_directions', DEFAULT_CHECKPOINT_INTERVAL)
+        num_directions = args.num_directions
         combination_strategy = getattr(args, 'combination_strategy', 'learned')
-        optimization_steps = getattr(args, 'multi_optimization_steps', DEFAULT_LIMIT)
-        
+        optimization_steps = args.multi_optimization_steps
+        if optimization_steps is None:
+            raise ValueError("--multi-optimization-steps is required for multi-direction training")
         # Train the method
         if method == 'grom':
             from wisent.core.control.steering_methods.methods.grom import GROMMethod, GROMConfig
             config = GROMConfig(
                 num_directions=num_directions,
                 optimization_steps=optimization_steps,
+                learning_rate=args.grom_learning_rate,
+                warmup_steps=args.grom_warmup_steps,
+                behavior_weight=args.grom_behavior_weight,
+                retain_weight=args.grom_retain_weight,
+                sparse_weight=args.grom_sparse_weight,
+                smooth_weight=args.grom_smooth_weight,
+                independence_weight=args.grom_independence_weight,
+                max_alpha=args.grom_max_alpha,
+                gate_temperature=args.grom_gate_temperature,
+                min_cosine_similarity=args.grom_min_cosine_sim,
+                max_cosine_similarity=args.grom_max_cosine_sim,
+                weight_decay=args.grom_weight_decay,
+                max_grad_norm=args.grom_max_grad_norm,
+                eta_min_factor=args.grom_eta_min_factor,
+                linear_threshold=args.grom_linear_threshold,
+                adapt_cone_threshold=args.grom_adapt_cone_threshold,
+                adapt_manifold_threshold=args.grom_adapt_manifold_threshold,
+                adapt_linear_directions=args.grom_adapt_linear_directions,
+                adapt_complex_directions=args.grom_adapt_complex_directions,
+                adapt_max_directions=args.grom_adapt_max_directions,
+                significant_directions_default=args.grom_significant_directions_default,
+                min_adapted_directions=args.grom_min_adapted_directions,
+                caa_similarity_skip=args.grom_caa_similarity_skip,
+                contrastive_margin=args.grom_contrastive_margin,
+                contrastive_weight=args.grom_contrastive_weight,
+                utility_weight=args.grom_utility_weight,
+                concentration_weight=args.grom_concentration_weight,
+                gate_warmup_weight=args.grom_gate_warmup_weight,
+                caa_alignment_weight=args.grom_caa_alignment_weight,
+                gate_dim_min=args.grom_gate_dim_min,
+                gate_dim_max=args.grom_gate_dim_max,
+                gate_dim_divisor=args.grom_gate_dim_divisor,
+                intensity_dim_min=args.grom_intensity_dim_min,
+                intensity_dim_max=args.grom_intensity_dim_max,
+                intensity_dim_divisor=args.grom_intensity_dim_divisor,
+                gate_shrink_factor=args.grom_gate_shrink_factor,
             )
-            trainer = GROMMethod(config=config)
+            trainer = GROMMethod(config=config, log_interval=args.grom_log_interval)
             result = trainer.train_grom(pair_set)
             directions = result.directions
             weights = result.direction_weights
             
         elif method == 'tecza':
-            from wisent.core.control.steering_methods.methods.advanced import TECZAMethod, TECZAConfig
-            config = TECZAConfig(
-                num_directions=num_directions,
-                optimization_steps=optimization_steps,
+            from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
+            trainer = TECZAMethod(
+                num_directions=num_directions, optimization_steps=optimization_steps,
+                learning_rate=args.tecza_learning_rate, retain_weight=args.tecza_retain_weight,
+                independence_weight=args.tecza_independence_weight, ablation_weight=args.tecza_ablation_weight,
+                addition_weight=args.tecza_addition_weight, separation_margin=args.tecza_separation_margin,
+                perturbation_scale=args.tecza_perturbation_scale, universal_basis_noise=args.tecza_universal_basis_noise,
+                min_cosine_similarity=args.tecza_min_cosine_sim, max_cosine_similarity=args.tecza_max_cosine_sim,
+                variance_threshold=args.tecza_variance_threshold, marginal_threshold=args.tecza_marginal_threshold,
+                max_directions=args.tecza_max_directions, log_interval=args.tecza_log_interval,
             )
-            trainer = TECZAMethod(config=config)
             result = trainer.train_tecza(pair_set)
             directions = result.directions
             weights = None  # TECZA doesn't have learned weights
@@ -84,7 +124,7 @@ def _train_multi_direction_method(
             result = trainer.train_tetno(pair_set)
             # TETNO has single direction per layer
             directions = {k: v.unsqueeze(0) for k, v in result.behavior_vectors.items()}
-            weights = {k: torch.tensor([result.layer_scales.get(k, DEFAULT_LAYER_WEIGHT)])
+            weights = {k: torch.tensor([result.layer_scales[k]])
                       for k in directions} if result.layer_scales else None
         
         print(f"   Trained {len(directions)} layers with {method.upper()}")

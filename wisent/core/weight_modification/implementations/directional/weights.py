@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 import torch.nn.functional as F
 from typing import TYPE_CHECKING
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER_WEIGHT, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_STANDARD
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -118,7 +118,11 @@ def project_weights(
         layer_modified = False
         v = F.normalize(steering_vector.float(), p=2, dim=0) if normalize_vectors else steering_vector.float()
         projector = torch.outer(v, v)
-        layer_weight = DEFAULT_LAYER_WEIGHT if layer_weights is None else layer_weights.get(layer_idx, DEFAULT_LAYER_WEIGHT)
+        if layer_weights is None:
+            raise ValueError(f"layer_weights is required (missing for layer {layer_idx})")
+        if layer_idx not in layer_weights:
+            raise KeyError(f"No weight for layer {layer_idx} in layer_weights")
+        layer_weight = layer_weights[layer_idx]
         effective_strength = strength * layer_weight
         for component_name in components:
             try:

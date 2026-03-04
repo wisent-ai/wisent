@@ -6,22 +6,20 @@ where Annoy hangs (e.g., some Apple Silicon configurations).
 """
 
 import numpy as np
-from typing import Optional, Tuple
+from typing import Tuple
 from pynndescent import NNDescent
 from sklearn.decomposition import PCA
-from wisent.core.utils.config_tools.constants import (NORM_EPS, DEFAULT_RANDOM_SEED, PACMAP_INITIAL_SCALE, SPECTRAL_N_NEIGHBORS_DEFAULT,
-    PACMAP_W_NEAR, PACMAP_W_MID, PACMAP_W_FAR, PACMAP_PHASE_1_END, PACMAP_PHASE_2_END,
-    PACMAP_P1_NEAR, PACMAP_P1_MID, PACMAP_P1_FAR, PACMAP_P2_NEAR, PACMAP_P2_MID,
-    PACMAP_P2_FAR, PACMAP_P3_NEAR, PACMAP_P3_MID, PACMAP_P3_FAR, PACMAP_FAR_REPULSE_EPS,
-    PACMAP_ALT_NUM_ITERS, PACMAP_LEARNING_RATE_DEFAULT, PACMAP_N_MID_PAIRS,
-    PACMAP_N_FAR_PAIRS, N_COMPONENTS_2D, PACMAP_PCA_DIM_THRESHOLD, N_JOBS_SINGLE)
+from wisent.core.utils.config_tools.constants import (NORM_EPS, DEFAULT_RANDOM_SEED,
+    N_COMPONENTS_2D, N_JOBS_SINGLE)
 
 
 def find_neighbors(
     X: np.ndarray,
-    n_neighbors: int = SPECTRAL_N_NEIGHBORS_DEFAULT,
+    n_neighbors: int = None,
 ) -> np.ndarray:
     """Find k-nearest neighbors using pynndescent."""
+    if n_neighbors is None:
+        raise ValueError("n_neighbors is required")
     n_samples = X.shape[0]
     n_neighbors = min(n_neighbors, n_samples - 1)
 
@@ -39,10 +37,14 @@ def find_neighbors(
 def create_pairs(
     X: np.ndarray,
     neighbors: np.ndarray,
-    n_mid: int = PACMAP_N_MID_PAIRS,
-    n_far: int = PACMAP_N_FAR_PAIRS,
+    n_mid: int = None,
+    n_far: int = None,
 ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Create near, mid, and far pairs for PaCMAP optimization."""
+    if n_mid is None:
+        raise ValueError("n_mid is required")
+    if n_far is None:
+        raise ValueError("n_far is required")
     n_samples = X.shape[0]
     rng = np.random.RandomState(DEFAULT_RANDOM_SEED)
 
@@ -86,18 +88,20 @@ def create_pairs(
 
 def pacmap_embedding(
     X: np.ndarray,
+    pacmap_pca_dim_threshold: int,
     n_components: int = N_COMPONENTS_2D,
-    n_neighbors: int = SPECTRAL_N_NEIGHBORS_DEFAULT,
-    num_iters: int = PACMAP_ALT_NUM_ITERS,
-    learning_rate: float = PACMAP_LEARNING_RATE_DEFAULT,
+    n_neighbors: int = None,
+    num_iters: int = None,
+    learning_rate: float = None,
     random_state: int = DEFAULT_RANDOM_SEED,
+    pacmap_config: dict = None,
 ) -> np.ndarray:
     """
     Compute PaCMAP embedding using pynndescent for neighbor search.
 
     Args:
         X: Input data (n_samples, n_features)
-        n_components: Output dimensions (default 2)
+        n_components: Output dimensions (defaults to N_COMPONENTS_2D)
         n_neighbors: Number of neighbors to use
         num_iters: Number of optimization iterations
         learning_rate: Learning rate for optimization
@@ -106,70 +110,60 @@ def pacmap_embedding(
     Returns:
         Embedding array (n_samples, n_components)
     """
+    if n_neighbors is None:
+        raise ValueError("n_neighbors is required")
+    if num_iters is None:
+        raise ValueError("num_iters is required")
+    if learning_rate is None:
+        raise ValueError("learning_rate is required")
+    if pacmap_config is None:
+        raise ValueError("pacmap_config is required (dict with phase params)")
+    pc = pacmap_config
     n_samples, n_features = X.shape
     rng = np.random.RandomState(random_state)
 
-    # Reduce dimensions with PCA if needed for speed
-    if n_features > PACMAP_PCA_DIM_THRESHOLD:
-        pca = PCA(n_components=min(PACMAP_PCA_DIM_THRESHOLD, n_samples - 1), random_state=random_state)
+    if n_features > pacmap_pca_dim_threshold:
+        pca = PCA(n_components=min(pacmap_pca_dim_threshold, n_samples - 1), random_state=random_state)
         X_reduced = pca.fit_transform(X)
     else:
         X_reduced = X
 
-    # Find neighbors
     neighbors = find_neighbors(X_reduced, n_neighbors)
+    near_pairs, mid_pairs, far_pairs = create_pairs(X_reduced, neighbors, n_mid=pc["n_mid_pairs"], n_far=pc["n_far_pairs"])
 
-    # Create pairs
-    near_pairs, mid_pairs, far_pairs = create_pairs(X_reduced, neighbors)
-
-    # Initialize embedding with PCA
     pca_init = PCA(n_components=n_components, random_state=random_state)
     Y = pca_init.fit_transform(X_reduced).astype(np.float32)
-    Y = Y / (np.std(Y) + NORM_EPS) * PACMAP_INITIAL_SCALE
+    Y = Y / (np.std(Y) + NORM_EPS) * pc["initial_scale"]
 
-    # Optimization weights
-    w_near = PACMAP_W_NEAR
-    w_mid = PACMAP_W_MID
-    w_far = PACMAP_W_FAR
-
-    # Gradient descent optimization
     for iteration in range(num_iters):
         grad = np.zeros_like(Y)
-
-        # Phase-dependent weights (like original PaCMAP)
         phase = iteration / num_iters
-        if phase < PACMAP_PHASE_1_END:
-            w_near_curr, w_mid_curr, w_far_curr = PACMAP_P1_NEAR, PACMAP_P1_MID, PACMAP_P1_FAR
-        elif phase < PACMAP_PHASE_2_END:
-            w_near_curr, w_mid_curr, w_far_curr = PACMAP_P2_NEAR, PACMAP_P2_MID, PACMAP_P2_FAR
+        if phase < pc["phase_1_end"]:
+            w_near_curr, w_mid_curr, w_far_curr = pc["p1_near"], pc["p1_mid"], pc["p1_far"]
+        elif phase < pc["phase_2_end"]:
+            w_near_curr, w_mid_curr, w_far_curr = pc["p2_near"], pc["p2_mid"], pc["p2_far"]
         else:
-            w_near_curr, w_mid_curr, w_far_curr = PACMAP_P3_NEAR, PACMAP_P3_MID, PACMAP_P3_FAR
+            w_near_curr, w_mid_curr, w_far_curr = pc["p3_near"], pc["p3_mid"], pc["p3_far"]
 
-        # Near pair attractive forces
         for i, j in near_pairs:
             diff = Y[i] - Y[j]
             dist_sq = np.sum(diff ** 2) + NORM_EPS
             force = w_near_curr * diff / (1 + dist_sq)
             grad[i] -= force
             grad[j] += force
-
-        # Mid pair forces
         for i, j in mid_pairs:
             diff = Y[i] - Y[j]
             dist_sq = np.sum(diff ** 2) + NORM_EPS
             force = w_mid_curr * diff / (1 + dist_sq)
             grad[i] -= force
             grad[j] += force
-
-        # Far pair repulsive forces
         for i, j in far_pairs:
             diff = Y[i] - Y[j]
             dist_sq = np.sum(diff ** 2) + NORM_EPS
-            force = w_far_curr * diff / (dist_sq + PACMAP_FAR_REPULSE_EPS)
+            force = w_far_curr * diff / (dist_sq + pc["far_repulse_eps"])
             grad[i] += force
             grad[j] -= force
 
-        # Update with adaptive learning rate
         lr = learning_rate * (1 - iteration / num_iters)
         Y -= lr * grad / (n_samples + NORM_EPS)
 
@@ -179,8 +173,9 @@ def pacmap_embedding(
 def plot_pacmap_alt(
     pos_activations: np.ndarray,
     neg_activations: np.ndarray,
-    n_neighbors: int = SPECTRAL_N_NEIGHBORS_DEFAULT,
-    num_iters: int = PACMAP_ALT_NUM_ITERS,
+    pacmap_pca_dim_threshold: int,
+    n_neighbors: int = None,
+    num_iters: int = None,
     title: str = "PaCMAP Projection",
 ) -> dict:
     """
@@ -208,6 +203,7 @@ def plot_pacmap_alt(
 
     embedding = pacmap_embedding(
         X,
+        pacmap_pca_dim_threshold=pacmap_pca_dim_threshold,
         n_components=N_COMPONENTS_2D,
         n_neighbors=n_neighbors,
         num_iters=num_iters,

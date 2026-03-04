@@ -7,14 +7,17 @@ Compare actual metrics to random noise baselines.
 import torch
 import numpy as np
 from typing import Dict, Any
-from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, VARIANCE_EXPLAINED_90PCT, NOISE_BASELINE_N_SAMPLES, CHANCE_LEVEL_ACCURACY, PCA_MAX_COMPONENTS_NULL
+from wisent.core.utils.config_tools.constants import NORM_EPS, DEFAULT_RANDOM_SEED, CHANCE_LEVEL_ACCURACY, COMBO_OFFSET
 
 
 def compute_noise_baseline_comparison(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_noise_samples: int = NOISE_BASELINE_N_SAMPLES,
+    n_noise_samples: int = None,
     seed: int = DEFAULT_RANDOM_SEED,
+    *,
+    pca_max_components_null: int,
+    variance_explained_90pct: float,
 ) -> Dict[str, Any]:
     """
     Compare actual metrics to what random noise would produce.
@@ -55,7 +58,7 @@ def compute_noise_baseline_comparison(
 
     # Actual variance concentration (PC1)
     from sklearn.decomposition import PCA
-    n_components = min(PCA_MAX_COMPONENTS_NULL, n - 1, hidden_dim)
+    n_components = min(pca_max_components_null, n - 1, hidden_dim)
     if n_components < 1:
         return {"error": "not enough samples for PCA"}
 
@@ -63,7 +66,7 @@ def compute_noise_baseline_comparison(
     pca.fit(diffs)
     actual_variance_pc1 = float(pca.explained_variance_ratio_[0])
     actual_cumsum = np.cumsum(pca.explained_variance_ratio_)
-    actual_dims_for_90 = int(np.searchsorted(actual_cumsum, VARIANCE_EXPLAINED_90PCT) + 1)
+    actual_dims_for_90 = int(np.searchsorted(actual_cumsum, variance_explained_90pct) + 1)
 
     # Actual linear probe
     from sklearn.linear_model import LogisticRegression
@@ -118,7 +121,7 @@ def compute_noise_baseline_comparison(
             noise_pca.fit(noise_diffs)
             noise_metrics['variance_pc1'].append(float(noise_pca.explained_variance_ratio_[0]))
             noise_cumsum = np.cumsum(noise_pca.explained_variance_ratio_)
-            noise_metrics['dims_for_90'].append(int(np.searchsorted(noise_cumsum, VARIANCE_EXPLAINED_90PCT) + 1))
+            noise_metrics['dims_for_90'].append(int(np.searchsorted(noise_cumsum, variance_explained_90pct) + 1))
         except:
             pass
 

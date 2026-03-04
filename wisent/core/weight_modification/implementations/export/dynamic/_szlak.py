@@ -6,7 +6,8 @@ from pathlib import Path
 from typing import Optional
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import JSON_INDENT, SZLAK_INFERENCE_K
+from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
@@ -200,11 +201,17 @@ def load_szlak_model(
             for k, v in szlak_data["displacements"].items()
         }
 
+        inference_k = szlak_data.get("inference_k")
+        if inference_k is None:
+            raise InsufficientDataError(
+                reason="Missing 'inference_k' in saved data. Re-train the steering object.",
+            )
+
         hooks = SzlakRuntimeHooks(
             model=model,
             source_points=source_points,
             displacements=displacements,
-            inference_k=szlak_data.get("inference_k", SZLAK_INFERENCE_K),
+            inference_k=inference_k,
             base_strength=szlak_data["base_strength"],
         )
         hooks.install()

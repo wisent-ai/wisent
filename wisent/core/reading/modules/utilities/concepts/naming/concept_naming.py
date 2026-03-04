@@ -7,6 +7,7 @@ from wisent.core import constants as _C
 
 def name_concepts(
     concepts: List[Dict[str, Any]],
+    concept_naming_n_samples: int,
     pair_texts: Optional[Dict[int, Dict[str, str]]] = None,
     cluster_labels: Optional[np.ndarray] = None,
     llm_model: str = "Qwen/Qwen3-8B",
@@ -32,13 +33,16 @@ def name_concepts(
 
     # Use LLM naming
     from .llm_concept_naming import name_all_concepts_with_llm
-    return name_all_concepts_with_llm(concepts, pair_texts, cluster_labels, model=llm_model)
+    return name_all_concepts_with_llm(concepts, pair_texts, cluster_labels, concept_naming_n_samples=concept_naming_n_samples, model=llm_model)
 
 
 def find_optimal_layer_per_concept(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
     cluster_labels: np.ndarray,
     n_concepts: int,
+    *,
+    cv_folds: int,
+    min_concept_pairs: int,
 ) -> Dict[int, Dict[str, Any]]:
     """
     Find the optimal layer for each concept based on linear separability.
@@ -69,7 +73,7 @@ def find_optimal_layer_per_concept(
 
         for layer, (pos_all, neg_all) in sorted(activations_by_layer.items()):
             # Get activations for this concept's pairs
-            if n_pairs < _C.MIN_CONCEPT_PAIRS:
+            if n_pairs < min_concept_pairs:
                 continue
 
             pos_concept = pos_all[pair_indices].float().cpu().numpy()
@@ -80,7 +84,7 @@ def find_optimal_layer_per_concept(
 
             clf = LogisticRegression( solver='lbfgs', C=1.0)
             try:
-                n_cv = min(_C.CV_FOLDS, min(np.sum(y == 0), np.sum(y == 1)))
+                n_cv = min(cv_folds, min(np.sum(y == _C.BINARY_CLASS_NEGATIVE), np.sum(y == _C.BINARY_CLASS_POSITIVE)))
                 if n_cv >= 2:
                     scores = cross_val_score(clf, X, y, cv=n_cv, scoring='accuracy')
                     acc = float(np.mean(scores))
@@ -106,7 +110,7 @@ def find_optimal_layer_per_concept(
 
 
 def _build_result(diff_normalized, cluster_labels, n_concepts, pair_texts,
-                  pos_activations, neg_activations, generate_visualizations, llm_model):
+                  pos_activations, neg_activations, generate_visualizations, llm_model, concept_naming_n_samples):
     """Build decomposition result dict from cluster labels."""
     from sklearn.metrics import silhouette_samples
     from sklearn.metrics.pairwise import cosine_similarity
@@ -145,7 +149,7 @@ def _build_result(diff_normalized, cluster_labels, n_concepts, pair_texts,
                          "silhouette": cluster_silhouette, "intra_similarity": intra_sim,
                          "representative_pairs": representative_pairs})
 
-    concepts = name_concepts(concepts, pair_texts, cluster_labels, llm_model)
+    concepts = name_concepts(concepts, concept_naming_n_samples=concept_naming_n_samples, pair_texts=pair_texts, cluster_labels=cluster_labels, llm_model=llm_model)
 
     pair_assignments = {}
     if pair_texts:
@@ -182,6 +186,7 @@ def _build_result(diff_normalized, cluster_labels, n_concepts, pair_texts,
 def decompose_and_name_concepts_with_labels(
     pos_activations,
     neg_activations,
+    concept_naming_n_samples: int,
     pair_texts: Optional[Dict[int, Dict[str, str]]] = None,
     cluster_labels: Optional[List[int]] = None,
     n_concepts: Optional[int] = None,
@@ -223,22 +228,26 @@ def decompose_and_name_concepts_with_labels(
 
     return _build_result(
         diff_normalized, cluster_labels, n_concepts, pair_texts,
-        pos_activations, neg_activations, generate_visualizations, llm_model
+        pos_activations, neg_activations, generate_visualizations, llm_model,
+        concept_naming_n_samples=concept_naming_n_samples,
     )
 
 
 def decompose_and_name_concepts(
     pos_activations,
     neg_activations,
+    concept_naming_n_samples: int,
     pair_texts: Optional[Dict[int, Dict[str, str]]] = None,
     generate_visualizations: bool = True,
     llm_model: str = "Qwen/Qwen3-8B",
+    *,
+    spectral_n_neighbors: int,
 ) -> Dict[str, Any]:
     """Full concept decomposition with single-layer clustering and LLM naming."""
     from ..analysis.concept_analysis import decompose_into_concepts
     from sklearn.cluster import SpectralClustering
 
-    decomposition = decompose_into_concepts(pos_activations, neg_activations)
+    decomposition = decompose_into_concepts(pos_activations, neg_activations, spectral_n_neighbors=spectral_n_neighbors)
     n_concepts = decomposition["n_concepts"]
 
     n_pairs = min(len(pos_activations), len(neg_activations))
@@ -254,14 +263,16 @@ def decompose_and_name_concepts(
     norms = np.where(norms < _C.NORM_EPS, 1.0, norms)
     diff_normalized = diff_vectors / norms
 
+    n_nbrs = min(spectral_n_neighbors, n_pairs - _C.COMBO_OFFSET)
     spectral = SpectralClustering(
         n_clusters=n_concepts, random_state=_C.DEFAULT_RANDOM_SEED,
-        affinity='nearest_neighbors', n_neighbors=min(_C.SPECTRAL_N_NEIGHBORS_DEFAULT, n_pairs - 1)
+        affinity='nearest_neighbors', n_neighbors=n_nbrs
     )
     cluster_labels = spectral.fit_predict(diff_normalized)
 
     # Delegate to shared builder
     return _build_result(
         diff_normalized, cluster_labels, n_concepts, pair_texts,
-        pos_activations, neg_activations, generate_visualizations, llm_model
+        pos_activations, neg_activations, generate_visualizations, llm_model,
+        concept_naming_n_samples=concept_naming_n_samples,
     )

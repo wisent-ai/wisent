@@ -35,12 +35,13 @@ __all__ = ["detect_geometry_multi_layer", "detect_geometry_all_layers"]
 def detect_geometry_multi_layer(
     pos_activations_by_layer: Dict[int, torch.Tensor],
     neg_activations_by_layer: Dict[int, torch.Tensor],
+    layer_stride: int,
     config: MultiLayerGeometryConfig | None = None,
 ) -> MultiLayerGeometryResult:
     """Detect geometric structure across multiple layers."""
     cfg = config or MultiLayerGeometryConfig()
     geo_cfg = GeometryAnalysisConfig(
-        num_components=cfg.num_components, optimization_steps=cfg.optimization_steps
+        num_components=cfg.num_components, optimization_steps=50
     )
 
     layers = sorted(pos_activations_by_layer.keys())
@@ -100,7 +101,8 @@ def detect_geometry_multi_layer(
         pos_activations_by_layer, neg_activations_by_layer, layers, cfg, geo_cfg, all_combo_results
     )
     skip_results = analyze_skip(
-        pos_activations_by_layer, neg_activations_by_layer, layers, cfg, geo_cfg, all_combo_results
+        pos_activations_by_layer, neg_activations_by_layer, layers, cfg, geo_cfg, all_combo_results,
+        layer_stride=layer_stride,
     )
     custom_results = analyze_custom(
         pos_activations_by_layer, neg_activations_by_layer, layers, cfg, geo_cfg, all_combo_results
@@ -163,6 +165,7 @@ def detect_geometry_multi_layer(
 
 def detect_geometry_all_layers(
     pairs_with_activations: List,
+    layer_stride: int,
     layers: Optional[List[int]] = None,
     config: MultiLayerGeometryConfig | None = None,
 ) -> MultiLayerGeometryResult:
@@ -193,4 +196,4 @@ def detect_geometry_all_layers(
             pos_tensors[layer] = torch.stack(valid_pos)
             neg_tensors[layer] = torch.stack(valid_neg)
 
-    return detect_geometry_multi_layer(pos_tensors, neg_tensors, config)
+    return detect_geometry_multi_layer(pos_tensors, neg_tensors, layer_stride=layer_stride, config=config)

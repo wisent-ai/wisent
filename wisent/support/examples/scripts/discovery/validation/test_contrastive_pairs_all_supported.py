@@ -8,8 +8,7 @@ import json
 import signal
 import sys
 from pathlib import Path
-
-from wisent.core.utils.config_tools.constants import BENCHMARKS_PER_TYPE, DEFAULT_TIMEOUT_DOCKER, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_MEDIUM, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_MEDIUM, SEPARATOR_WIDTH_STANDARD, JSON_INDENT
 
 
 class TimeoutError(Exception):
@@ -120,13 +119,13 @@ def format_pair_with_strategies(pair, tokenizer):
     return result
 
 
-def test_all_benchmarks(timeout_per_task: int = DEFAULT_TIMEOUT_DOCKER, limit: int = BENCHMARKS_PER_TYPE):
+def test_all_benchmarks(timeout_per_task: int, limit: int):
     """Test contrastive pairs generation for all supported benchmarks.
-    
+
     Args:
         timeout_per_task: Timeout in seconds per benchmark
         limit: Number of pairs to generate per benchmark
-    
+
     Returns:
         Dictionary with results including example pairs with all strategies
     """
@@ -155,7 +154,7 @@ def test_all_benchmarks(timeout_per_task: int = DEFAULT_TIMEOUT_DOCKER, limit: i
     
     for i, benchmark in enumerate(benchmarks):
         try:
-            pairs = build_contrastive_pairs(benchmark, limit=limit)
+            pairs = build_contrastive_pairs(benchmark, limit=limit, train_ratio=args.train_ratio)
 
             if pairs and len(pairs) > 0:
                 results["ok"] += 1
@@ -208,8 +207,8 @@ def main():
     import argparse
     
     parser = argparse.ArgumentParser(description="Test contrastive pairs for all supported benchmarks")
-    parser.add_argument("--timeout", "-t", type=int, default=DEFAULT_TIMEOUT_DOCKER, help="Timeout per task in seconds (default: 30)")
-    parser.add_argument("--limit", "-l", type=int, default=BENCHMARKS_PER_TYPE, help="Number of pairs per benchmark (default: 2)")
+    parser.add_argument("--timeout", "-t", type=int, required=True, help="Timeout per task in seconds")
+    parser.add_argument("--limit", "-l", type=int, required=True, help="Number of pairs per benchmark")
     parser.add_argument("--output", "-o", type=str, required=True, help="Output JSON file for results")
     
     args = parser.parse_args()

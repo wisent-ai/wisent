@@ -9,7 +9,7 @@ import torch
 from datetime import datetime
 from typing import Dict, List
 
-from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, PROGRESS_CALLBACK_THRESHOLD, SEPARATOR_WIDTH_REPORT, JSON_INDENT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, SEPARATOR_WIDTH_REPORT, JSON_INDENT
 
 
 def detect_model_layers(model: str) -> int:
@@ -122,7 +122,7 @@ def load_activations_as_tensors(
     return pos_tensors, neg_tensors, len(pos_tensors)
 
 
-def make_progress_callback(start_time: float, threshold: int = PROGRESS_CALLBACK_THRESHOLD):
+def make_progress_callback(start_time: float, threshold: int):
     """Create a progress callback for combination analysis."""
     last_report = [0, time.time()]
 

@@ -11,18 +11,20 @@ from typing import Tuple
 from wisent.core import constants as _C
 
 
-def estimate_local_intrinsic_dim(X: np.ndarray, k: int = _C.INTRINSIC_DIM_K) -> float:
+def estimate_local_intrinsic_dim(X: np.ndarray, k: int = None) -> float:
     """
     Estimate local intrinsic dimensionality using MLE method.
     Based on Levina & Bickel (2004).
     
     Args:
         X: [N, D] data matrix
-        k: Number of neighbors for estimation
-        
+        k: Number of neighbors for estimation. Must be set by caller.
+
     Returns:
         Estimated intrinsic dimension
     """
+    if k is None:
+        raise ValueError("k must be provided by caller")
     from scipy.spatial.distance import cdist
     
     if len(X) < k + 1:
@@ -49,7 +51,7 @@ def estimate_local_intrinsic_dim(X: np.ndarray, k: int = _C.INTRINSIC_DIM_K) -> 
 def compute_local_intrinsic_dims(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    k: int = _C.INTRINSIC_DIM_K,
+    k: int = None,
 ) -> Tuple[float, float, float]:
     """
     Compute local intrinsic dimension for pos and neg separately.
@@ -80,7 +82,7 @@ def compute_local_intrinsic_dims(
 def compute_diff_intrinsic_dim(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    k: int = _C.INTRINSIC_DIM_K,
+    k: int = None,
 ) -> float:
     """
     Estimate intrinsic dimensionality of difference vectors.
@@ -174,14 +176,13 @@ def stable_rank(X: np.ndarray) -> float:
     return float(frobenius_sq / spectral_sq)
 
 
-def pca_variance_dimensions(X: np.ndarray, thresholds: list = None) -> dict:
+def pca_variance_dimensions(X: np.ndarray, *, pca_variance_thresholds: tuple, intrinsic_dim_top_n: int) -> dict:
     """
     How many PCs needed to explain X% variance?
 
     Returns dict: {90: n_90, 95: n_95, 99: n_99, eigenvalues: [...]}
     """
-    if thresholds is None:
-        thresholds = list(_C.PCA_VARIANCE_THRESHOLDS)
+    thresholds = list(pca_variance_thresholds)
 
     X_centered = X - X.mean(axis=0)
     cov = np.cov(X_centered, rowvar=False)
@@ -200,13 +201,13 @@ def pca_variance_dimensions(X: np.ndarray, thresholds: list = None) -> dict:
         n_dims = int(np.searchsorted(cumvar, t) + 1)
         result[f"dims_{int(t*100)}pct"] = min(n_dims, len(eigenvalues))
 
-    result["top_10_eigenvalues"] = eigenvalues[:_C.INTRINSIC_DIM_TOP_N].tolist()
+    result["top_10_eigenvalues"] = eigenvalues[:intrinsic_dim_top_n].tolist()
     result["total_variance"] = float(total_var)
 
     return result
 
 
-def two_nn_dimension(X: np.ndarray) -> float:
+def two_nn_dimension(X: np.ndarray, *, two_nn_mu_threshold: float) -> float:
     """
     Two-NN intrinsic dimension estimator (Facco et al. 2017).
 
@@ -230,7 +231,7 @@ def two_nn_dimension(X: np.ndarray) -> float:
         return float(X.shape[1])
 
     mu = r2[valid] / r1[valid]
-    mu = mu[mu > _C.TWO_NN_MU_THRESHOLD]
+    mu = mu[mu > two_nn_mu_threshold]
 
     if len(mu) < 2:
         return float(X.shape[1])
@@ -242,36 +243,20 @@ def two_nn_dimension(X: np.ndarray) -> float:
 
 
 def compute_effective_dimensions(
-    pos: torch.Tensor,
-    neg: torch.Tensor,
+    pos: torch.Tensor, neg: torch.Tensor,
+    *, intrinsic_dim_k: int, pca_variance_thresholds: tuple, intrinsic_dim_top_n: int, two_nn_mu_threshold: float,
 ) -> dict:
-    """
-    Comprehensive effective dimensionality analysis.
-
-    Returns multiple estimates to triangulate the true effective dimension:
-    - participation_ratio: (Σλ)²/Σλ²
-    - effective_rank: exp(entropy of singular values)
-    - stable_rank: Frobenius²/spectral²
-    - two_nn: ratio-based estimator
-    - mle: Levina-Bickel MLE
-    - pca_dims: PCs for 90/95/99% variance
-
-    Interpretation:
-    - All estimates ≈ 1-5: Few dominant directions (CAA likely works)
-    - All estimates ≈ 10-50: Moderate structure (TECZA might help)
-    - All estimates > 100: High-dimensional (steering may not work)
-    """
+    """Comprehensive effective dimensionality analysis with multiple estimators."""
     pos_np = pos.cpu().numpy() if isinstance(pos, torch.Tensor) else pos
     neg_np = neg.cpu().numpy() if isinstance(neg, torch.Tensor) else neg
-
     diff = pos_np - neg_np
 
     pr = participation_ratio(diff)
     er = effective_rank(diff)
     sr = stable_rank(diff)
-    tnn = two_nn_dimension(diff)
-    mle = estimate_local_intrinsic_dim(diff, k=min(_C.INTRINSIC_DIM_K, len(diff)-1))
-    pca = pca_variance_dimensions(diff)
+    tnn = two_nn_dimension(diff, two_nn_mu_threshold=two_nn_mu_threshold)
+    mle = estimate_local_intrinsic_dim(diff, k=min(intrinsic_dim_k, len(diff) - _C.COMBO_OFFSET))
+    pca = pca_variance_dimensions(diff, pca_variance_thresholds=pca_variance_thresholds, intrinsic_dim_top_n=intrinsic_dim_top_n)
 
     estimates = [pr, er, sr, tnn, mle]
     median_estimate = float(np.median(estimates))

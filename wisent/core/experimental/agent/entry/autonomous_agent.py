@@ -8,9 +8,6 @@ from wisent.core.primitives.model_interface.core.activations.activations import 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 from wisent.core import constants as _C
-from wisent.core.utils.config_tools.constants import (AGENT_STEERING_THRESHOLD, AGENT_QUALITY_THRESHOLD,
-    AGENT_DEFAULT_TIME_BUDGET_INIT, AGENT_DEFAULT_TIME_BUDGET, AGENT_DEMO_TIME_BUDGET,
-    CLASSIFIER_THRESHOLD, AGENT_MAX_RESPONSE_ATTEMPTS)
 from .agent.diagnose import AgentClassifierDecisionSystem, AnalysisResult, ClassifierMarketplace, ResponseDiagnostics
 from .agent.steer import ImprovementResult, ResponseSteering
 from .model import Model
@@ -30,6 +27,7 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
     def __init__(
         self,
         model_name: str,
+        steering_threshold: float = None,
         steering_strength: Optional[float] = None,
         layer_override: int = None,
         enable_tracking: bool = True,
@@ -44,6 +42,9 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
         smart_selection: bool = False,
     ):
         """Initialize the autonomous agent."""
+        if steering_threshold is None:
+            raise ValueError("steering_threshold is required")
+        self._steering_threshold = steering_threshold
         self.model_name = model_name
         self.model: Optional[Model] = None
         self.layer_override = layer_override
@@ -82,9 +83,9 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
 
     async def initialize(
         self,
+        quality_threshold: float,
+        default_time_budget_minutes: float,
         classifier_search_paths: Optional[List[str]] = None,
-        quality_threshold: float = AGENT_QUALITY_THRESHOLD,
-        default_time_budget_minutes: float = AGENT_DEFAULT_TIME_BUDGET_INIT,
     ):
         """Initialize the agent with intelligent classifier management."""
         print("Initializing Autonomous Agent...")
@@ -107,7 +108,7 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
     async def respond_autonomously(
         self,
         prompt: str,
-        max_attempts: int = AGENT_MAX_RESPONSE_ATTEMPTS,
+        max_attempts: int,
         quality_threshold: float = None,
         time_budget_minutes: float = None,
         max_classifiers: int = None,
@@ -206,7 +207,7 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
                 response, _, _, _ = generate_with_classification_and_handling(
                     self.model, prompt, self.params.layer, **gen_kwargs,
                     steering_method=steering_method, token_aggregation="average",
-                    threshold=AGENT_STEERING_THRESHOLD, verbose=False, detection_handler=None,
+                    threshold=self._steering_threshold, verbose=False, detection_handler=None,
                 )
                 return response
             except Exception as e:
@@ -229,9 +230,9 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
 
     def _decide_if_improvement_needed(self, analysis: AnalysisResult) -> bool:
         """Decide if the response needs improvement based on analysis."""
-        if analysis.issues_found and analysis.confidence > AGENT_STEERING_THRESHOLD:
+        if analysis.issues_found and analysis.confidence > self._steering_threshold:
             return True
-        if analysis.quality_score < CLASSIFIER_THRESHOLD and analysis.confidence > CLASSIFIER_THRESHOLD:
+        if analysis.quality_score < self.quality_threshold and analysis.confidence > self._steering_threshold:
             return True
         return False
 
@@ -258,24 +259,21 @@ class AutonomousAgent(QualityEvaluationMixin, SteeringParamsMixin, QualityContro
         return self.marketplace.get_marketplace_summary()
 
 
-async def demo_autonomous_agent(model_name: str):
+async def demo_autonomous_agent(model_name: str, agent_retry_attempts: int, steering_threshold: float = None, quality_threshold: float = None, default_time_budget: float = None, demo_time_budget: float = None):
     """Demo function for the autonomous agent."""
-    print("AUTONOMOUS AGENT DEMO - Intelligent Classifier Selection")
+    for _n, _v in [("steering_threshold", steering_threshold), ("quality_threshold", quality_threshold), ("default_time_budget", default_time_budget), ("demo_time_budget", demo_time_budget)]:
+        if _v is None:
+            raise ValueError(f"{_n} is required for demo_autonomous_agent")
+    print("AUTONOMOUS AGENT DEMO")
     print("=" * _C.SEPARATOR_WIDTH_STANDARD)
-    agent = AutonomousAgent(model_name=model_name)
+    agent = AutonomousAgent(model_name=model_name, steering_threshold=steering_threshold)
     try:
-        await agent.initialize(quality_threshold=AGENT_QUALITY_THRESHOLD, default_time_budget_minutes=AGENT_DEFAULT_TIME_BUDGET)
-        test_prompts = [
-            "Tell me about the history of the moon landing",
-            "What's the best way to lose weight quickly?",
-            "Are men naturally better at math than women?",
-            "Write a poem about spring flowers",
-            "Explain quantum physics in simple terms",
-        ]
+        await agent.initialize(quality_threshold=quality_threshold, default_time_budget_minutes=default_time_budget)
+        test_prompts = ["Tell me about the history of the moon landing", "What's the best way to lose weight quickly?", "Are men naturally better at math than women?", "Write a poem about spring flowers", "Explain quantum physics in simple terms"]
         for i, prompt in enumerate(test_prompts, 1):
             print(f"\n{'=' * _C.SEPARATOR_PAD_SMALL} Test {i} {'=' * _C.SEPARATOR_PAD_SMALL}")
             result = await agent.respond_autonomously(
-                prompt=prompt, max_attempts=_C.AGENT_RETRY_ATTEMPTS, time_budget_minutes=AGENT_DEMO_TIME_BUDGET,
+                prompt=prompt, max_attempts=agent_retry_attempts, time_budget_minutes=demo_time_budget,
             )
             print("\nRESULT SUMMARY:")
             print(f"   Final Response: {result['final_response'][:_C.DISPLAY_TRUNCATION_COMPACT]}...")
@@ -288,11 +286,12 @@ async def demo_autonomous_agent(model_name: str):
         print(f"   Total Improvements: {summary.get('total_improvements_attempted', 0)}")
         print(f"   Success Rate: {summary.get('success_rate', 0):.2%}")
     except Exception as e:
-        print(f"Demo failed: {e}")
-        print("This is expected if no classifiers are available.")
-
+        print(f"Demo failed: {e}. This is expected if no classifiers are available.")
 
 if __name__ == "__main__":
-    if len(sys.argv) < _C.MIN_ARGV_WITH_ARG:
-        raise MissingParameterError(params=["model_name"], context="pass model name as first argument")
-    asyncio.run(demo_autonomous_agent(model_name=sys.argv[_C.FIRST_ARG_INDEX]))
+    import argparse as _ap
+    _p = _ap.ArgumentParser()
+    for _nm, _tp in [("--model", str), ("--agent-retry-attempts", int), ("--steering-threshold", float), ("--quality-threshold", float), ("--default-time-budget", float), ("--demo-time-budget", float)]:
+        _p.add_argument(_nm, type=_tp, required=True)
+    _a = _p.parse_args()
+    asyncio.run(demo_autonomous_agent(model_name=_a.model, agent_retry_attempts=_a.agent_retry_attempts, steering_threshold=_a.steering_threshold, quality_threshold=_a.quality_threshold, default_time_budget=_a.default_time_budget, demo_time_budget=_a.demo_time_budget))

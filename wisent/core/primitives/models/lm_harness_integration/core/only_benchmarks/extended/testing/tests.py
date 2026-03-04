@@ -93,7 +93,7 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
             print(f"Successfully tested {benchmark_name}")
             print(f"Output preview: {result.stdout[:_C.DISPLAY_TRUNCATION_LONG]}...")
 
-            contrastive_pairs = extract_contrastive_pairs_from_output(result.stdout)
+            contrastive_pairs = extract_contrastive_pairs_from_output(result.stdout, qa_parser_lookahead_lines=_C.QA_PARSER_LOOKAHEAD_LINES)
             if contrastive_pairs:
                 print(f"Found {len(contrastive_pairs)} contrastive pairs")
                 pairs_file = os.path.join(output_dir, "contrastive_pairs.json")
@@ -122,7 +122,7 @@ def test_single_benchmark_direct(benchmark_name: str, benchmark_config: dict) ->
         return False
 
 
-def extract_contrastive_pairs_from_output(output: str) -> List[Dict]:
+def extract_contrastive_pairs_from_output(output: str, qa_parser_lookahead_lines: int) -> List[Dict]:
     """Extract contrastive pairs from CLI output."""
     pairs = []
     lines = output.split("\n")
@@ -133,7 +133,7 @@ def extract_contrastive_pairs_from_output(output: str) -> List[Dict]:
             correct_answer = None
             incorrect_answer = None
 
-            for j in range(i + 1, min(i + _C.QA_PARSER_LOOKAHEAD_LINES, len(lines))):
+            for j in range(i + 1, min(i + qa_parser_lookahead_lines, len(lines))):
                 next_line = lines[j].strip()
                 if "Correct:" in next_line or "Good:" in next_line:
                     correct_answer = next_line.split(":", 1)[1].strip() if ":" in next_line else next_line
@@ -153,7 +153,7 @@ def extract_contrastive_pairs_from_output(output: str) -> List[Dict]:
 
 
 def test_benchmark_creation(
-    benchmark_name: str, benchmark_config: dict
+    benchmark_name: str, benchmark_config: dict, lm_harness_num_samples_default: int,
 ) -> Tuple[bool, List[str]]:
     """Test creating a dataset for a benchmark."""
     task_name = benchmark_config["task"]
@@ -179,13 +179,13 @@ def test_benchmark_creation(
         if use_subtasks:
             result = get_task_samples_with_subtasks(
                 task_name,
-                num_samples=_C.LM_HARNESS_NUM_SAMPLES_DEFAULT,
+                num_samples=lm_harness_num_samples_default,
                 trust_remote_code=trust_remote_code,
                 limit_subtasks=limit_subtasks,
             )
         else:
             result = get_task_samples_for_analysis(
-                task_name, num_samples=_C.LM_HARNESS_NUM_SAMPLES_DEFAULT, trust_remote_code=trust_remote_code
+                task_name, num_samples=lm_harness_num_samples_default, trust_remote_code=trust_remote_code
             )
 
         if "error" in result:
@@ -195,7 +195,7 @@ def test_benchmark_creation(
             if "trust_remote_code" in error_msg and not trust_remote_code:
                 print("Retrying with trust_remote_code=True...")
                 result = get_task_samples_for_analysis(
-                    task_name, num_samples=_C.LM_HARNESS_NUM_SAMPLES_DEFAULT, trust_remote_code=True
+                    task_name, num_samples=lm_harness_num_samples_default, trust_remote_code=True
                 )
                 if "error" not in result:
                     print("Success with trust_remote_code=True")
@@ -204,7 +204,7 @@ def test_benchmark_creation(
                     return False, tags
             elif "not found" in error_msg.lower():
                 alternative_results = try_alternative_task_names(
-                    benchmark_name, task_name, num_samples=_C.LM_HARNESS_NUM_SAMPLES_DEFAULT, trust_remote_code=trust_remote_code
+                    benchmark_name, task_name, num_samples=lm_harness_num_samples_default, trust_remote_code=trust_remote_code
                 )
                 if alternative_results:
                     result = alternative_results
@@ -222,7 +222,7 @@ def test_benchmark_creation(
             if not use_subtasks:
                 print("Trying subtask approach...")
                 result = get_task_samples_with_subtasks(
-                    task_name, num_samples=_C.LM_HARNESS_NUM_SAMPLES_DEFAULT, trust_remote_code=trust_remote_code
+                    task_name, num_samples=lm_harness_num_samples_default, trust_remote_code=trust_remote_code
                 )
                 if result.get("samples"):
                     print("Success with subtask approach")
@@ -269,7 +269,7 @@ def test_readme_updates(core_benchmarks: Dict) -> None:
             print(f"   Updated:  {updated_config}")
 
 
-def test_benchmark_matching(find_relevant_fn, top_k: int = _C.TEST_BENCHMARK_TOP_K) -> None:
+def test_benchmark_matching(find_relevant_fn, test_benchmark_top_k: int) -> None:
     """Test the benchmark matching function with various prompts."""
     test_prompts = [
         "What is the capital of France?",
@@ -288,7 +288,7 @@ def test_benchmark_matching(find_relevant_fn, top_k: int = _C.TEST_BENCHMARK_TOP
 
     for prompt in test_prompts:
         print(f"\nPrompt: '{prompt}'")
-        matches = find_relevant_fn(prompt, top_k=top_k)
+        matches = find_relevant_fn(prompt, top_k=test_benchmark_top_k)
 
         for i, match in enumerate(matches, 1):
             print(f"  {i}. {match['benchmark']} (score: {match['score']})")

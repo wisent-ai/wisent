@@ -6,7 +6,7 @@ import torch.nn.functional as F
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.control.steering_methods.methods.advanced._tetno_types import TETNOConfig, TETNOResult
-from wisent.core.utils.config_tools.constants import TETNO_CONDITION_MARGIN, TETNO_CONDITION_LOGGING_INTERVAL
+from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH
 
 class TETNOTrainingMixin:
     """Mixin: behavior and condition vector training."""
@@ -68,6 +68,9 @@ class TETNOTrainingMixin:
     def _train_condition_vector(
         self,
         pair_set: ContrastivePairSet,
+        log_interval: int,
+        *,
+        condition_margin: float,
     ) -> torch.Tensor:
         """
         Train condition vector at sensor layer.
@@ -111,7 +114,8 @@ class TETNOTrainingMixin:
         
         # Optimize condition vector to maximize separation
         condition_vec = self._optimize_condition_vector(
-            condition_vec, pos_tensor, neg_tensor
+            condition_vec, pos_tensor, neg_tensor, log_interval=log_interval,
+            condition_margin=condition_margin,
         )
         
         if self.config.normalize:
@@ -132,6 +136,9 @@ class TETNOTrainingMixin:
         init_vec: torch.Tensor,
         pos_tensor: torch.Tensor,
         neg_tensor: torch.Tensor,
+        log_interval: int,
+        *,
+        condition_margin: float,
     ) -> torch.Tensor:
         """
         Optimize condition vector to maximize separation between pos and neg.
@@ -158,7 +165,7 @@ class TETNOTrainingMixin:
             
             # Loss: maximize pos_sim, minimize neg_sim
             # Equivalent to minimizing -pos_sim + neg_sim
-            margin = TETNO_CONDITION_MARGIN
+            margin = condition_margin
             pos_loss = F.relu(margin - pos_sim).mean()
             neg_loss = F.relu(neg_sim + margin).mean()
             
@@ -173,7 +180,7 @@ class TETNOTrainingMixin:
                 best_separation = separation.item()
                 best_vec = condition_vec.detach().clone()
             
-            if step % TETNO_CONDITION_LOGGING_INTERVAL == 0:
+            if step % log_interval == RECURSION_INITIAL_DEPTH:
                 self._training_logs.append({
                     "phase": "condition_opt",
                     "step": step,

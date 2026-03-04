@@ -12,21 +12,36 @@ import torch
 
 from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
 from .wicher_steering_object import WicherSteeringObject
-from wisent.core.utils.config_tools.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CONCEPT_DIM, MAX_CONCEPT_DIM, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY, WICHER_CONCEPT_DIM
+from wisent.core.utils.config_tools.constants import LOG_EPS
+
+
+def _require_arg(args, attr_name):
+    val = getattr(args, attr_name, None)
+    if val is None:
+        raise ValueError(
+            f"Parameter '{attr_name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return val
 
 
 def _select_concept_dim(
-    s_squared: torch.Tensor, explicit_dim: int, var_threshold: float
+    s_squared: torch.Tensor, explicit_dim: int, var_threshold: float,
+    min_concept_dim: int = None, max_concept_dim: int = None,
 ) -> int:
     """Select concept subspace dimensionality k."""
-    if explicit_dim > 0:
-        return max(MIN_CONCEPT_DIM, min(explicit_dim, MAX_CONCEPT_DIM, len(s_squared)))
+    if min_concept_dim is None:
+        raise ValueError("min_concept_dim is required")
+    if max_concept_dim is None:
+        raise ValueError("max_concept_dim is required")
+    if explicit_dim > min_concept_dim:
+        return max(min_concept_dim, min(explicit_dim, max_concept_dim, len(s_squared)))
     total = s_squared.sum().item()
     if total < LOG_EPS:
-        return MIN_CONCEPT_DIM
+        return min_concept_dim
     cumvar = torch.cumsum(s_squared, dim=0) / total
     k = int((cumvar < var_threshold).sum().item()) + 1
-    return max(MIN_CONCEPT_DIM, min(k, MAX_CONCEPT_DIM, len(s_squared)))
+    return max(min_concept_dim, min(k, max_concept_dim, len(s_squared)))
 
 
 def _create_wicher_steering_object(
@@ -37,13 +52,13 @@ def _create_wicher_steering_object(
 ) -> WicherSteeringObject:
     """Create WICHER object with per-layer concept directions + subspace."""
 
-    concept_dim = getattr(args, "wicher_concept_dim", WICHER_CONCEPT_DIM)
-    variance_threshold = getattr(args, "wicher_variance_threshold", DEFAULT_VARIANCE_THRESHOLD)
-    num_steps = getattr(args, "wicher_num_steps", BROYDEN_DEFAULT_NUM_STEPS)
-    alpha = getattr(args, "wicher_alpha", BROYDEN_DEFAULT_ALPHA)
-    eta = getattr(args, "wicher_eta", BROYDEN_DEFAULT_ETA)
-    beta = getattr(args, "wicher_beta", BROYDEN_DEFAULT_BETA)
-    alpha_decay = getattr(args, "wicher_alpha_decay", BROYDEN_DEFAULT_ALPHA_DECAY)
+    concept_dim = _require_arg(args, "wicher_concept_dim")
+    variance_threshold = _require_arg(args, "wicher_variance_threshold")
+    num_steps = _require_arg(args, "wicher_num_steps")
+    alpha = _require_arg(args, "wicher_alpha")
+    eta = _require_arg(args, "wicher_eta")
+    beta = _require_arg(args, "wicher_beta")
+    alpha_decay = _require_arg(args, "wicher_alpha_decay")
 
     concept_dirs = {}
     concept_bases = {}

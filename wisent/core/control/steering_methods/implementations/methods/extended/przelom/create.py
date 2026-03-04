@@ -16,15 +16,10 @@ from wisent.core.control.steering_methods.methods.szlak.transport import (
     compute_attention_affinity_cost,
     sinkhorn_one_sided,
 )
-from wisent.core.utils.config_tools.constants import (
-    LOG_EPS,
-    TIKHONOV_REG,
-    PRZELOM_EPSILON,
-    SZLAK_INFERENCE_K,
-)
+from wisent.core.utils.config_tools.constants import LOG_EPS
 
 
-def _regularized_pinv(M: torch.Tensor, reg: float = TIKHONOV_REG) -> torch.Tensor:
+def _regularized_pinv(M: torch.Tensor, reg: float) -> torch.Tensor:
     """Tikhonov-regularized pseudoinverse: (M^T M + reg I)^-1 M^T."""
     MtM = M.T @ M
     I = torch.eye(MtM.shape[0], device=M.device, dtype=M.dtype)
@@ -51,10 +46,20 @@ def _create_przelom_steering_object(
     args,
 ) -> PrzelomSteeringObject:
     """Create attention-transport steering object with per-layer displacements."""
-    epsilon = getattr(args, "przelom_epsilon", PRZELOM_EPSILON)
+    epsilon = args.przelom_epsilon
     target_mode = getattr(args, "przelom_target_mode", "uniform")
-    regularization = getattr(args, "przelom_regularization", TIKHONOV_REG)
-    inference_k = getattr(args, "przelom_inference_k", SZLAK_INFERENCE_K)
+    regularization = getattr(args, "przelom_regularization", None)
+    if regularization is None:
+        raise ValueError(
+            "Parameter 'przelom_regularization' is required. "
+            "Run 'wisent optimize-steering auto' first, or pass --regularization explicitly."
+        )
+    inference_k = getattr(args, "przelom_inference_k", None)
+    if inference_k is None:
+        raise ValueError(
+            "Parameter 'przelom_inference_k' is required. "
+            "Run 'wisent optimize-steering auto' first, or pass --inference-k explicitly."
+        )
 
     num_heads = metadata.extra.get('num_attention_heads')
     num_kv_heads = metadata.extra.get('num_key_value_heads')

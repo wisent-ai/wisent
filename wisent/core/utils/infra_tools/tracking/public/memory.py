@@ -16,7 +16,7 @@ import torch
 
 from wisent.core.utils import resolve_default_device
 from wisent.core.utils.infra_tools.errors import InvalidValueError, InsufficientDataError
-from wisent.core.utils.config_tools.constants import TRACKING_SAMPLING_INTERVAL, BYTES_PER_MB
+from wisent.core.utils.config_tools.constants import BYTES_PER_MB
 
 try:
     import nvidia_ml_py3 as nvml
@@ -61,8 +61,8 @@ class MemoryTracker:
     
     def __init__(
         self,
+        sampling_interval: float,
         track_gpu: bool = True,
-        sampling_interval: float = TRACKING_SAMPLING_INTERVAL,
         auto_cleanup: bool = True
     ):
         """

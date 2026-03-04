@@ -23,7 +23,6 @@ from typing import Any, Dict, List, Optional
 from wisent.core.utils.services.benchmarks import get_extractor
 from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
 from wisent.core.utils.infra_tools.errors import ExtractorReturnedNoneError, BigCodeTaskRequiresFlagError, TaskNotFoundError
-from wisent.core.utils.config_tools.constants import CACHE_CHUNK_SIZE, CACHE_MAX_AGE_DAYS
 
 logger = logging.getLogger(__name__)
 
@@ -85,11 +84,9 @@ class ManagedCachedBenchmarks(CachedBenchDownloadMixin, CachedBenchIOMixin):
     """
 
     CACHE_VERSION = "1.0"
-    CHUNK_SIZE = CACHE_CHUNK_SIZE
-    MAX_CACHE_AGE_DAYS = CACHE_MAX_AGE_DAYS
     SUPPORTED_BENCHMARKS = None  # Will be initialized in __init__
 
-    def __init__(self, cache_dir: str = "./benchmark_cache"):
+    def __init__(self, chunk_size: int, max_cache_age_days: int, cache_dir: str = "./benchmark_cache"):
         """
         Initialize the managed cache service.
 
@@ -98,6 +95,8 @@ class ManagedCachedBenchmarks(CachedBenchDownloadMixin, CachedBenchIOMixin):
         """
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(exist_ok=True)
+        self.CHUNK_SIZE = chunk_size
+        self.MAX_CACHE_AGE_DAYS = max_cache_age_days
 
         self.metadata_file = self.cache_dir / "metadata.json"
         self._metadata = self._load_metadata()
@@ -127,7 +126,7 @@ class ManagedCachedBenchmarks(CachedBenchDownloadMixin, CachedBenchIOMixin):
             except Exception as e:
                 raise BenchmarkError(f"Invalid extractor for supported benchmark '{benchmark}': {e}")
 
-    def get_task_samples(self, task_name: str, limit: int, force_fresh: bool = False) -> List[Dict[str, Any]]:
+    def get_task_samples(self, task_name: str, limit: int, force_fresh: bool = False, *, train_ratio: float) -> List[Dict[str, Any]]:
         """
         Get samples for a task, using intelligent caching.
 
@@ -176,7 +175,7 @@ class ManagedCachedBenchmarks(CachedBenchDownloadMixin, CachedBenchIOMixin):
             needed = limit - cached_count
             logger.info(f"Incremental download: need {needed} more samples for '{task_name}'")
 
-            new_samples = self._download_samples(task_name, needed, start_offset=cached_count)
+            new_samples = self._download_samples(task_name, needed, start_offset=cached_count, train_ratio=train_ratio)
             self._append_to_cache(task_name, new_samples)
 
             return self._load_cached_samples(task_name, limit)
@@ -185,14 +184,14 @@ class ManagedCachedBenchmarks(CachedBenchDownloadMixin, CachedBenchIOMixin):
         logger.info(f"Fresh download: getting {limit} samples for '{task_name}'")
         self._clear_task_cache(task_name)
 
-        new_samples = self._download_samples(task_name, limit, start_offset=0)
+        new_samples = self._download_samples(task_name, limit, start_offset=0, train_ratio=train_ratio)
         self._save_to_cache(task_name, new_samples)
 
         return new_samples
 
-def get_managed_cache(cache_dir: str = "./benchmark_cache") -> ManagedCachedBenchmarks:
+def get_managed_cache(chunk_size: int, max_cache_age_days: int, cache_dir: str = "./benchmark_cache") -> ManagedCachedBenchmarks:
     """Get the global managed cache instance."""
     global _managed_cache
     if _managed_cache is None:
-        _managed_cache = ManagedCachedBenchmarks(cache_dir)
+        _managed_cache = ManagedCachedBenchmarks(chunk_size=chunk_size, max_cache_age_days=max_cache_age_days, cache_dir=cache_dir)
     return _managed_cache

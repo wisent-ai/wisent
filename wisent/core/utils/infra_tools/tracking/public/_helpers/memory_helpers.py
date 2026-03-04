@@ -7,32 +7,32 @@ from typing import Dict, Any, Optional, Callable
 _global_tracker = None
 
 
-def get_global_tracker():
+def get_global_tracker(sampling_interval: float):
     """Get or create the global memory tracker instance."""
     from wisent.core.utils.infra_tools.tracking.memory import MemoryTracker
 
     global _global_tracker
     if _global_tracker is None:
-        _global_tracker = MemoryTracker()
+        _global_tracker = MemoryTracker(sampling_interval=sampling_interval)
     return _global_tracker
 
 
-def track_memory(operation_name: str):
+def track_memory(operation_name: str, sampling_interval: float):
     """Decorator to track memory usage of a function."""
     def decorator(func: Callable) -> Callable:
         def wrapper(*args, **kwargs):
-            tracker = get_global_tracker()
+            tracker = get_global_tracker(sampling_interval=sampling_interval)
             with tracker.track_operation(operation_name):
                 return func(*args, **kwargs)
         return wrapper
     return decorator
 
 
-def get_memory_info() -> Dict[str, Any]:
+def get_memory_info(sampling_interval: float) -> Dict[str, Any]:
     """Get current memory information without tracking."""
     from wisent.core.utils.infra_tools.tracking.memory import MemoryTracker
 
-    tracker = MemoryTracker(auto_cleanup=False)
+    tracker = MemoryTracker(sampling_interval=sampling_interval, auto_cleanup=False)
     return tracker.get_current_usage()
 
 

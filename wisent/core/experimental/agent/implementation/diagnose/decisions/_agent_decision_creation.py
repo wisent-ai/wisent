@@ -3,16 +3,16 @@ from typing import List, Dict, Any, Optional
 import time
 from wisent.core.experimental.agent.diagnose._agent_decision_types import (
     SingleClassifierDecision, ClassifierDecision, ClassifierParams)
-from wisent.core.utils.config_tools.constants import AGENT_DECISION_QUALITY_THRESHOLD, AGENT_DECISION_TIME_BUDGET, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE
 
 class ClassifierCreationMixin:
     """Mixin providing classifier creation and execution methods."""
 
-    async def create_single_quality_classifier(self, 
+    async def create_single_quality_classifier(self,
                                           task_analysis: TaskAnalysis,
                                           classifier_params: 'ClassifierParams',
-                                          quality_threshold: float = AGENT_DECISION_QUALITY_THRESHOLD,
-                                          time_budget_minutes: float = AGENT_DECISION_TIME_BUDGET) -> SingleClassifierDecision:
+                                          quality_threshold: float,
+                                          time_budget_minutes: float) -> SingleClassifierDecision:
         """
         Create a single classifier trained on one benchmark.
         
@@ -168,7 +168,7 @@ class ClassifierCreationMixin:
             )
             
             # Create classifier creator
-            creator = ClassifierCreator(self.marketplace.model)
+            creator = ClassifierCreator(self.marketplace.model, max_tasks_to_process=self.max_tasks_to_process)
             
             # Create classifier using benchmark-specific training data
             result = await creator.create_classifier_for_issue_with_benchmarks(
@@ -200,7 +200,7 @@ class ClassifierCreationMixin:
         
         try:
             # Initialize classifier creator
-            creator = ClassifierCreator(self.marketplace.model)
+            creator = ClassifierCreator(self.marketplace.model, max_tasks_to_process=self.max_tasks_to_process)
             
             # Create classifier using combined benchmark training data
             print(f"      📊 Loading combined training data from benchmarks: {benchmark_names}")

@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import List, Tuple
 
 from wisent.core.reading.classifiers.core.atoms import ActivationClassifier
-from wisent.core.utils.config_tools.constants import AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_DEFAULT_PAIRS, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT, TRAIT_LABEL_MAX_LENGTH
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
 from wisent.core.primitives.models.config import get_generate_kwargs
 from wisent.core.utils.infra_tools.errors import InsufficientDataError, MissingParameterError, ExecutionError
 
@@ -105,13 +105,14 @@ List {max_traits} quality traits for responses:
 class SyntheticClassifierFactory:
     """Creates custom classifiers from trait descriptions using synthetic contrastive pairs."""
 
-    def __init__(self, model, layer: int = None):
+    def __init__(self, model, trait_label_max_length: int, layer: int = None):
         self.model = model
         self.layer = layer
+        self._trait_label_max_length = trait_label_max_length
         self.pair_generator = SyntheticContrastivePairGenerator(model)
 
     def create_classifier_from_trait(
-        self, trait_description: str, num_pairs: int = AGENT_SYNTH_DEFAULT_PAIRS
+        self, trait_description: str, num_pairs: int = None, min_pairs: int = None,
     ) -> Tuple[ActivationClassifier, int]:
         """
         Create a classifier for a specific trait using synthetic contrastive pairs.
@@ -123,16 +124,19 @@ class SyntheticClassifierFactory:
         Returns:
             Tuple of (trained classifier, number of training pairs)
         """
+        if num_pairs is None:
+            raise ValueError("num_pairs is required")
+        if min_pairs is None:
+            raise ValueError("min_pairs is required")
         try:
-            # Generate synthetic contrastive pairs for this trait
             pair_set = self.pair_generator.generate_contrastive_pair_set(
                 trait_description=trait_description,
                 num_pairs=num_pairs,
-                name=f"synthetic_{trait_description[:TRAIT_LABEL_MAX_LENGTH].replace(' ', '_')}",
+                name=f"synthetic_{trait_description[:self._trait_label_max_length].replace(' ', '_')}",
             )
 
-            if len(pair_set.pairs) < AGENT_SYNTH_MIN_PAIRS:
-                raise InsufficientDataError(reason="training pairs", required=AGENT_SYNTH_MIN_PAIRS, actual=len(pair_set.pairs))
+            if len(pair_set.pairs) < min_pairs:
+                raise InsufficientDataError(reason="training pairs", required=min_pairs, actual=len(pair_set.pairs))
 
             # Extract activations for training
             positive_activations = []

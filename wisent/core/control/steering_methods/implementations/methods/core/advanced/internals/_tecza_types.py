@@ -26,20 +26,7 @@ from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_VARIANCE_THRESHOLD,
-    TECZA_NUM_DIRECTIONS,
-    TECZA_MARGINAL_THRESHOLD,
-    TECZA_MAX_DIRECTIONS,
-    DEFAULT_OPTIMIZATION_STEPS,
-    TECZA_LEARNING_RATE,
-    TECZA_RETAIN_WEIGHT,
-    TECZA_INDEPENDENCE_WEIGHT,
-    TECZA_ABLATION_WEIGHT,
-    TECZA_ADDITION_WEIGHT,
-    TECZA_MIN_COSINE_SIM,
-    TECZA_MAX_COSINE_SIM,
-)
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 
 __all__ = [
     "TECZAMethod",
@@ -51,57 +38,68 @@ __all__ = [
 @dataclass
 class TECZAConfig:
     """Configuration for TECZA steering method."""
-    
-    num_directions: int = TECZA_NUM_DIRECTIONS
-    """Number of directions to discover per layer. Set to 'auto' or -1 for automatic."""
-    
+
+    # Required fields (no defaults — must come from optimizer or explicit config)
+    num_directions: int
+    """Number of directions to discover per layer."""
+
+    optimization_steps: int
+    """Number of gradient descent steps for direction optimization."""
+
+    learning_rate: float
+    """Learning rate for direction optimization."""
+
+    retain_weight: float
+    """Weight for retain loss (preserving behavior on negative/harmless examples)."""
+
+    independence_weight: float
+    """Weight for representational independence loss between directions."""
+
+    min_cosine_similarity: float
+    """Minimum cosine similarity between directions (they should be related, not orthogonal)."""
+
+    max_cosine_similarity: float
+    """Maximum cosine similarity (avoid redundant directions)."""
+
+    variance_threshold: float
+    """Target cumulative variance for auto num_directions."""
+
+    marginal_threshold: float
+    """Minimum marginal variance for adding another direction."""
+
+    max_directions: int
+    """Maximum directions when using auto num_directions."""
+
+    ablation_weight: float
+    """Weight for ablation loss (making model comply with harmful after ablation)."""
+
+    addition_weight: float
+    """Weight for addition loss (making model refuse harmless after addition)."""
+
+    separation_margin: float
+    """Margin for separation loss (pos_mean - neg_mean must exceed this)."""
+
+    perturbation_scale: float
+    """Scale of noise added when perturbing CAA direction for additional directions."""
+
+    universal_basis_noise: float
+    """Noise scale when initializing from universal subspace basis."""
+
+    # Optional fields with defaults
     auto_num_directions: bool = False
     """Automatically determine num_directions based on explained variance."""
-    
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD
-    """Target cumulative variance for auto num_directions."""
-    
-    marginal_threshold: float = TECZA_MARGINAL_THRESHOLD
-    """Minimum marginal variance for adding another direction."""
-    
-    max_directions: int = TECZA_MAX_DIRECTIONS
-    """Maximum directions when using auto num_directions."""
-    
-    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
-    """Number of gradient descent steps for direction optimization."""
-    
-    learning_rate: float = TECZA_LEARNING_RATE
-    """Learning rate for direction optimization."""
-    
-    retain_weight: float = TECZA_RETAIN_WEIGHT
-    """Weight for retain loss (preserving behavior on negative/harmless examples)."""
-    
-    independence_weight: float = TECZA_INDEPENDENCE_WEIGHT
-    """Weight for representational independence loss between directions."""
-    
-    ablation_weight: float = TECZA_ABLATION_WEIGHT
-    """Weight for ablation loss (making model comply with harmful after ablation)."""
-    
-    addition_weight: float = TECZA_ADDITION_WEIGHT
-    """Weight for addition loss (making model refuse harmless after addition)."""
-    
+
     normalize: bool = True
     """Whether to L2-normalize the final directions."""
-    
+
     use_caa_init: bool = True
     """Whether to initialize first direction using CAA (difference-in-means)."""
-    
+
     use_universal_basis_init: bool = False
     """Whether to initialize from universal subspace basis if available."""
-    
+
     cone_constraint: bool = True
     """Whether to constrain directions to form a polyhedral cone (all positive combinations)."""
-    
-    min_cosine_similarity: float = TECZA_MIN_COSINE_SIM
-    """Minimum cosine similarity between directions (they should be related, not orthogonal)."""
-    
-    max_cosine_similarity: float = TECZA_MAX_COSINE_SIM
-    """Maximum cosine similarity (avoid redundant directions)."""
 
 
 @dataclass

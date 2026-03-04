@@ -4,10 +4,7 @@ import json
 import os
 from pathlib import Path
 
-from wisent.core.utils.config_tools.constants import (
-    SPLIT_RATIO_HALF, DEFAULT_RANDOM_SEED, BENCHMARK_TEST_DATA_LIMIT,
-    BENCHMARK_SPLIT_LIMIT, JSON_INDENT,
-)
+from wisent.core.utils.config_tools.constants import SPLIT_RATIO_HALF, DEFAULT_RANDOM_SEED, JSON_INDENT
 from wisent.core.utils.infra_tools.data.loaders.lm_eval.lm_loader import LMEvalDataLoader
 from wisent.core.utils.infra_tools.data.loaders.huggingface_loader import HuggingFaceDataLoader
 from wisent.core.reading.evaluators.rotator import EvaluatorRotator
@@ -66,9 +63,9 @@ def test_benchmark(task_name: str, model_name: str, output_dir: str, loader_type
             task_name=task_name,
             split_ratio=SPLIT_RATIO_HALF,
             seed=DEFAULT_RANDOM_SEED,
-            limit=BENCHMARK_TEST_DATA_LIMIT,
-            training_limit=BENCHMARK_SPLIT_LIMIT,
-            testing_limit=BENCHMARK_SPLIT_LIMIT
+            limit=300,
+            training_limit=15,
+            testing_limit=15
         )
 
         test_pairs = result['test_qa_pairs']

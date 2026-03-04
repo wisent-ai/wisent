@@ -15,14 +15,7 @@ if TYPE_CHECKING:
     import torch
 
 from wisent.core.utils.config_tools.constants import (
-    COHERENCE_UNIQUE_TOKEN_RATIO_MIN, COHERENCE_REPETITION_RATIO_MAX,
-    COHERENCE_SPECIAL_CHAR_RATIO_MAX, COHERENCE_SPECIAL_CHAR_PENALTY,
-    COHERENCE_SHORT_RESPONSE_PENALTY, COHERENCE_NONSENSE_WORD_RATIO_MAX,
-    COHERENCE_TRIGRAM_REPEAT_THRESHOLD, COHERENCE_CONTENT_WORD_REPEAT_THRESHOLD,
-    COHERENCE_FUNCTION_WORD_THRESHOLD, MIN_SENTENCE_LENGTH, SCORE_SCALE_100,
-    MIN_RESPONSE_TOKENS, MIN_TOKENS_TRIGRAM, MIN_CONTENT_WORD_LENGTH,
-    NONSENSE_MIN_TOKENS, MIN_TOKEN_LENGTH_NONSENSE,
-    COHERENCE_DEGENERATION_PENALTY,
+    SCORE_SCALE_100,
 )
 from wisent.core.reading.evaluators.personalization.coherence import (
     _is_gibberish,
@@ -31,7 +24,7 @@ from wisent.core.reading.evaluators.personalization.coherence import (
 )
 
 
-def _is_incoherent(text: str) -> bool:
+def _is_incoherent(text: str, min_sentence_length: int, *, nonsense_min_tokens: int) -> bool:
     """
     Detect if text is semantically incoherent or unhelpful.
 
@@ -47,12 +40,12 @@ def _is_incoherent(text: str) -> bool:
     text = text.strip()
 
     # Check 1: Too short to be a helpful response
-    if len(text) < MIN_SENTENCE_LENGTH:
+    if len(text) < min_sentence_length:
         return True
 
     # Check 2: Single word or very few words (unhelpful)
     tokens = text.split()
-    if len(tokens) < MIN_RESPONSE_TOKENS:
+    if len(tokens) < 4:
         return True
 
     # Check 3: Consecutive duplicate words (e.g., "policymakers policymakers")
@@ -71,19 +64,19 @@ def _is_incoherent(text: str) -> bool:
             return True
 
     # Check 5: Repeated phrases (3+ word sequences appearing multiple times)
-    if len(tokens) >= MIN_TOKENS_TRIGRAM:
+    if len(tokens) >= 6:
         trigrams = [' '.join(tokens[i:i+3]) for i in range(len(tokens) - 2)]
         trigram_counts = Counter(trigrams)
         most_common_count = trigram_counts.most_common(1)[0][1] if trigrams else 0
         # If any trigram appears 3+ times, it's repetitive
-        if most_common_count >= COHERENCE_TRIGRAM_REPEAT_THRESHOLD:
+        if most_common_count >= 3:
             return True
 
     # Check 6: Circular statements that don't add information
     # e.g., "Football, football, and the beautiful game are intertwined, intertwined, intertwined"
     unique_tokens = set(t.lower().strip('.,!?"\'-') for t in tokens)
     # If unique words are less than 40% of total words, very repetitive
-    if len(tokens) >= 5 and len(unique_tokens) / len(tokens) < COHERENCE_UNIQUE_TOKEN_RATIO_MIN:
+    if len(tokens) >= 5 and len(unique_tokens) / len(tokens) < 0.4:
         return True
 
     # Check 7: Non-answer patterns
@@ -99,7 +92,7 @@ def _is_incoherent(text: str) -> bool:
             return True
 
     # Check 8: Excessive repetition of the same word (3+ times for content words)
-    content_words = [t.lower().strip('.,!?"\'-') for t in tokens if len(t) >= MIN_CONTENT_WORD_LENGTH]
+    content_words = [t.lower().strip('.,!?"\'-') for t in tokens if len(t) >= 4]
     if content_words:
         word_counts = Counter(content_words)
         for word, count in word_counts.items():
@@ -107,18 +100,18 @@ def _is_incoherent(text: str) -> bool:
             if word in {'that', 'this', 'have', 'been', 'with', 'from', 'they', 'would', 'could', 'should'}:
                 continue
             # If any content word appears more than 3 times in a short response, flag it
-            if count >= COHERENCE_CONTENT_WORD_REPEAT_THRESHOLD and count / len(content_words) > COHERENCE_FUNCTION_WORD_THRESHOLD:
+            if count >= 3 and count / len(content_words) > 0.15:
                 return True
 
     # Check 9: Nonsense words (using tokenizer fragmentation)
     tokenizer = _get_tokenizer()
-    if tokenizer and len(tokens) >= NONSENSE_MIN_TOKENS:
+    if tokenizer and len(tokens) >= nonsense_min_tokens:
         nonsense_count = 0
         for token in tokens_lower:
-            if len(token) >= MIN_TOKEN_LENGTH_NONSENSE and _is_nonsense_word(token, tokenizer):
+            if len(token) >= 4 and _is_nonsense_word(token, tokenizer, nonsense_min_tokens=nonsense_min_tokens):
                 nonsense_count += 1
         # If more than 15% of words are nonsense, flag it
-        if nonsense_count / len(tokens) > COHERENCE_NONSENSE_WORD_RATIO_MAX:
+        if nonsense_count / len(tokens) > 0.15:
             return True
 
     return False
@@ -126,9 +119,20 @@ def _is_incoherent(text: str) -> bool:
 
 def evaluate_quality(
     response: "str | list[str]",
+    min_sentence_length: int,
     model: "PreTrainedModel | None" = None,
     tokenizer: "PreTrainedTokenizer | None" = None,
     device: "torch.device | None" = None,
+    *,
+    nonsense_min_tokens: int,
+    quality_min_response_length: int,
+    quality_repetition_ratio_threshold: float,
+    quality_bigram_repeat_threshold: int,
+    quality_bigram_repeat_penalty: float,
+    quality_special_char_ratio_threshold: float,
+    quality_special_char_penalty: float,
+    quality_char_repeat_count: int,
+    quality_char_repeat_penalty: float,
 ) -> float:
     """
     Evaluate response quality using heuristic checks on a scale of 1-100.
@@ -157,22 +161,32 @@ def evaluate_quality(
     if isinstance(response, list):
         if not response:
             return 50.0  # Default if empty
-        scores = [evaluate_quality(r) for r in response]
+        scores = [evaluate_quality(
+            r, min_sentence_length=min_sentence_length, nonsense_min_tokens=nonsense_min_tokens,
+            quality_min_response_length=quality_min_response_length,
+            quality_repetition_ratio_threshold=quality_repetition_ratio_threshold,
+            quality_bigram_repeat_threshold=quality_bigram_repeat_threshold,
+            quality_bigram_repeat_penalty=quality_bigram_repeat_penalty,
+            quality_special_char_ratio_threshold=quality_special_char_ratio_threshold,
+            quality_special_char_penalty=quality_special_char_penalty,
+            quality_char_repeat_count=quality_char_repeat_count,
+            quality_char_repeat_penalty=quality_char_repeat_penalty,
+        ) for r in response]
         return sum(scores) / len(scores)
 
     # Check for gibberish first - immediate zero if detected
-    if _is_gibberish(response):
+    if _is_gibberish(response, nonsense_min_tokens=nonsense_min_tokens):
         return 0.0
 
     # Check for incoherent/unhelpful responses - immediate zero if detected
-    if _is_incoherent(response):
+    if _is_incoherent(response, min_sentence_length=min_sentence_length, nonsense_min_tokens=nonsense_min_tokens):
         return 0.0
 
     score = 1.0  # Start with perfect score (0-1 scale)
 
     # Check 1: Empty or too short
-    if len(response.strip()) < 10:
-        score *= COHERENCE_SHORT_RESPONSE_PENALTY
+    if len(response.strip()) < quality_min_response_length:
+        score *= 0.1
         # Scale to 1-100 and return early
         return max(1.0, score * SCORE_SCALE_100 + 1.0)
 
@@ -185,27 +199,28 @@ def evaluate_quality(
         repetition_ratio = most_common_count / len(tokens)
 
         # Penalize if any token appears more than 30% of the time
-        if repetition_ratio > COHERENCE_REPETITION_RATIO_MAX:
-            score *= 1.0 - (repetition_ratio - COHERENCE_REPETITION_RATIO_MAX)
+        if repetition_ratio > quality_repetition_ratio_threshold:
+            score *= 1.0 - (repetition_ratio - quality_repetition_ratio_threshold)
 
     # Check 3: Repeated n-grams (phrases)
     bigrams = [f"{tokens[i]} {tokens[i+1]}" for i in range(len(tokens) - 1)]
     if bigrams:
         bigram_counts = Counter(bigrams)
         most_common_bigram_count = bigram_counts.most_common(1)[0][1]
-        if most_common_bigram_count > 2:  # Same phrase repeated 3+ times
-            score *= COHERENCE_DEGENERATION_PENALTY
+        if most_common_bigram_count > quality_bigram_repeat_threshold:
+            score *= quality_bigram_repeat_penalty
 
     # Check 4: Nonsensical patterns (too many special chars)
     special_char_ratio = len(re.findall(r"[^a-zA-Z0-9\s.,!?']", response)) / max(
         len(response), 1
     )
-    if special_char_ratio > COHERENCE_SPECIAL_CHAR_RATIO_MAX:
-        score *= COHERENCE_SPECIAL_CHAR_PENALTY
+    if special_char_ratio > quality_special_char_ratio_threshold:
+        score *= quality_special_char_penalty
 
-    # Check 5: Single repeated character
-    if re.search(r"(.)\1{10,}", response):  # Same char 10+ times in a row
-        score *= 0.3
+    # Check: Single repeated character
+    char_repeat_pattern = rf"(.)\1{{{quality_char_repeat_count},}}"
+    if re.search(char_repeat_pattern, response):
+        score *= quality_char_repeat_penalty
 
     # Ensure score is non-negative
     score = max(0.0, score)

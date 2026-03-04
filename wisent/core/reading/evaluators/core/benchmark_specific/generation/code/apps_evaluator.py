@@ -18,7 +18,8 @@ import re
 from typing import Any
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator
+from wisent.core.reading.evaluators.benchmark_specific.coding.metrics.evaluator import CodingEvaluator, EvaluatorConfig
+from wisent.core.utils.config_tools.constants import FEEDBACK_MAX_CHARS, SAFE_DOCKER_FSIZE_MB, SAFE_DOCKER_NOFILE
 
 # Import shared utilities from extractor
 from wisent.extractors.hf.hf_task_extractors.apps import AppsExtractor
@@ -31,7 +32,8 @@ class APPSEvaluator(BaseEvaluator):
     description = "APPS coding benchmark evaluator"
 
     def __init__(self):
-        self._coding_evaluator = CodingEvaluator()
+        cfg = EvaluatorConfig(feedback_max_chars=FEEDBACK_MAX_CHARS, fsize_mb=SAFE_DOCKER_FSIZE_MB, nofile=SAFE_DOCKER_NOFILE)
+        self._coding_evaluator = CodingEvaluator(cfg=cfg)
 
     # --- Static helper methods for scripts ---
     # Reuse from AppsExtractor

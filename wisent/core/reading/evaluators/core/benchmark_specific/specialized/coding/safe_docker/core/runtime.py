@@ -15,8 +15,6 @@ if TYPE_CHECKING:
 
 __all__ = ["DockerSandboxExecutor"]
 
-DEFAULT_IMAGE = "coding/sandbox:polyglot-1.0"
-
 def _safe_flags() -> list[str]:
     return [
         "--rm", "--network=none",
@@ -36,7 +34,7 @@ class DockerSandboxExecutor(SandboxExecutor):
     """
     Executes a Job inside a Docker container, given a read-only job dir of files.
     """
-    def __init__(self, image: str = DEFAULT_IMAGE, runtime: str | None = None):
+    def __init__(self, image: str, runtime: str | None = None):
         self.image = image
         self.runtime = runtime
         # Skip Docker health check if environment variable is set (useful for slow Docker Desktop on macOS)

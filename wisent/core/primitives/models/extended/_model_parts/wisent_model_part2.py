@@ -12,12 +12,6 @@ from wisent.core.primitives.models.layer import extract_token_ids
 from wisent.core.primitives.models.core.atoms import SteeringVector
 from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.utils.infra_tools.errors import ChatTemplateNotAvailableError
-from wisent.core.utils.config_tools.constants import (
-    STEERING_APP_DECAY_RATE,
-    STEERING_APP_GAUSSIAN_CENTER,
-    STEERING_APP_GAUSSIAN_WIDTH,
-    STEERING_APP_INITIAL_TOKENS,
-)
 from wisent.core.primitives.models.config import get_generate_kwargs
 
 
@@ -75,17 +69,17 @@ def _apply_steering_object(
         if strategy == "constant":
             return 1.0
         elif strategy == "initial_only":
-            initial_tokens = config.get("initial_tokens", STEERING_APP_INITIAL_TOKENS)
+            initial_tokens = config["initial_tokens"]
             return 1.0 if token_pos < initial_tokens else 0.0
         elif strategy == "diminishing":
-            rate = config.get("rate", STEERING_APP_DECAY_RATE)
+            rate = config["rate"]
             return math.exp(-rate * token_pos)
         elif strategy == "increasing":
-            rate = config.get("rate", STEERING_APP_DECAY_RATE)
+            rate = config["rate"]
             return 1.0 - math.exp(-rate * token_pos)
         elif strategy == "gaussian":
-            center = config.get("gaussian_center", STEERING_APP_GAUSSIAN_CENTER)
-            width = config.get("gaussian_width", STEERING_APP_GAUSSIAN_WIDTH)
+            center = config["gaussian_center"]
+            width = config["gaussian_width"]
             return math.exp(-((position_frac - center) ** 2) / (2 * width ** 2))
         else:
             return 1.0

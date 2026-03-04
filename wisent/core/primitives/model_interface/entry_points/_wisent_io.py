@@ -132,10 +132,12 @@ class WisentIOMixin:
         data = torch.load(path, map_location=self.device)
 
         for trait, trait_data in data.items():
+            if "default_scale" not in trait_data:
+                raise ValueError(f"default_scale is required in saved vectors for trait '{trait}'")
             self._traits[trait] = TraitConfig(
                 name=trait,
                 description=trait_data.get("description", ""),
-                default_scale=trait_data.get("default_scale"),
+                default_scale=trait_data["default_scale"],
                 layers=trait_data.get("layers"),
                 steering_vectors=LayerActivations(trait_data["vectors"]),
             )

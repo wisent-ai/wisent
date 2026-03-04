@@ -15,7 +15,7 @@ class CachedBenchDownloadMixin:
             return 0
         return self._metadata.tasks[task_name].samples_count
 
-    def _download_samples(self, task_name: str, limit: int, start_offset: int = 0) -> List[Dict[str, Any]]:
+    def _download_samples(self, task_name: str, limit: int, start_offset: int = 0, *, train_ratio: float) -> List[Dict[str, Any]]:
         """
         Download samples from a benchmark task.
 
@@ -44,13 +44,13 @@ class CachedBenchDownloadMixin:
                 task = self._load_bigcode_task(task_name)
             # Check if it's a TaskInterface task (like AIME, HLE, etc.)
             elif self._is_taskinterface_task(task_name):
-                task = self._load_taskinterface_task(task_name, limit=start_offset + limit)
+                task = self._load_taskinterface_task(task_name, limit=start_offset + limit, train_ratio=train_ratio)
             else:
                 raise BenchmarkError(f"Failed to load task '{task_name}' from lm-eval: {e}")
 
         # Get sample iterator
         try:
-            sample_iterator = self._get_task_sample_iterator(task, start_offset + limit)
+            sample_iterator = self._get_task_sample_iterator(task, start_offset + limit, train_ratio=train_ratio)
         except Exception as e:
             raise BenchmarkError(f"Failed to get samples from task '{task_name}': {e}")
 
@@ -154,16 +154,16 @@ class CachedBenchDownloadMixin:
 
         return task_name in list_tasks()
 
-    def _load_taskinterface_task(self, task_name: str, limit: Optional[int] = None):
+    def _load_taskinterface_task(self, task_name: str, limit: Optional[int] = None, *, train_ratio: float):
         """Load TaskInterface task using the central task registry."""
         from wisent.core.control.tasks.base.task_interface import get_task
 
         try:
-            return get_task(task_name, limit=limit)
+            return get_task(task_name, limit=limit, train_ratio=train_ratio)
         except Exception as e:
             raise BenchmarkError(f"Failed to load TaskInterface task '{task_name}': {e}")
 
-    def _get_task_sample_iterator(self, task, limit: int) -> Iterator[Dict[str, Any]]:
+    def _get_task_sample_iterator(self, task, limit: int, *, train_ratio: float) -> Iterator[Dict[str, Any]]:
         """
         Get iterator over task samples using unified split strategy.
 
@@ -180,7 +180,7 @@ class CachedBenchDownloadMixin:
             raise BenchmarkError(f"No document source available for task '{task_name}'")
 
         # Apply our 80/20 split and get TEST docs only
-        _, test_docs = create_deterministic_split(all_docs, task_name)
+        _, test_docs = create_deterministic_split(all_docs, task_name, train_ratio=train_ratio)
 
         logger.info(f"Using {len(test_docs)} test docs from {task_name} "
                    f"(total: {len(all_docs)}, original splits: {split_counts})")

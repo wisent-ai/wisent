@@ -8,9 +8,8 @@ import torch
 import numpy as np
 from typing import Dict, Any, List, Tuple
 from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, DEFAULT_RANDOM_SEED, LINEARITY_N_INIT,
-    CONCEPT_MIN_SAMPLES, CONCEPT_SEPARABILITY_HIGH, CONCEPT_MIXED_PAIR_THRESHOLD,
-    CONCEPT_DETECTION_DEFAULT_N, CHANCE_LEVEL_ACCURACY, CV_FOLDS,
+    NORM_EPS, DEFAULT_RANDOM_SEED, COMBO_BASE,
+    CHANCE_LEVEL_ACCURACY, N_COMPONENTS_2D, BINARY_CLASS_NEGATIVE, BINARY_CLASS_POSITIVE,
 )
 
 
@@ -18,6 +17,10 @@ def compute_concept_linear_separability(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     cluster_labels: np.ndarray,
+    *,
+    concept_min_samples: int,
+    concept_separability_high: float,
+    cv_folds: int,
 ) -> Dict[str, Any]:
     """Check if concepts are linearly separable from each other."""
     try:
@@ -40,13 +43,13 @@ def compute_concept_linear_separability(
                 X = diff_vectors[mask]
                 y = (labels[mask] == c_j).astype(int)
 
-                if len(X) < CONCEPT_MIN_SAMPLES or len(np.unique(y)) < 2:
+                if len(X) < concept_min_samples or len(np.unique(y)) < N_COMPONENTS_2D:
                     continue
 
                 clf = LogisticRegression( solver='lbfgs')
                 try:
-                    n_cv = min(CV_FOLDS, min(np.sum(y == 0), np.sum(y == 1)))
-                    if n_cv >= 2:
+                    n_cv = min(cv_folds, min(np.sum(y == BINARY_CLASS_NEGATIVE), np.sum(y == BINARY_CLASS_POSITIVE)))
+                    if n_cv >= N_COMPONENTS_2D:
                         scores = cross_val_score(clf, X, y, cv=n_cv, scoring='accuracy')
                         acc = float(np.mean(scores))
                     else:
@@ -60,7 +63,7 @@ def compute_concept_linear_separability(
             return {"separability": CHANCE_LEVEL_ACCURACY, "pairwise_separability": {}, "all_linearly_separable": False}
 
         mean_separability = float(np.mean(list(pairwise_scores.values())))
-        all_separable = all(s >= CONCEPT_SEPARABILITY_HIGH for s in pairwise_scores.values())
+        all_separable = all(s >= concept_separability_high for s in pairwise_scores.values())
 
         return {
             "separability": mean_separability,
@@ -74,7 +77,8 @@ def compute_concept_linear_separability(
 def get_pair_concept_assignments(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_concepts: int = CONCEPT_DETECTION_DEFAULT_N,
+    n_concepts: int,
+    *, linearity_n_init: int,
 ) -> Dict[str, Any]:
     """Get concept assignment for each pair using KMeans."""
     try:
@@ -90,7 +94,7 @@ def get_pair_concept_assignments(
         if len(diff_normalized) < n_concepts * 2:
             return {"assignments": [0] * n_pairs, "confidences": [1.0] * n_pairs, "error": "not enough samples"}
 
-        km = KMeans(n_clusters=n_concepts, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
+        km = KMeans(n_clusters=n_concepts, random_state=DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
         labels = km.fit_predict(diff_normalized)
         distances = km.transform(diff_normalized)
 
@@ -141,7 +145,9 @@ def get_pair_concept_assignments(
 def find_mixed_pairs(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    threshold: float = CONCEPT_MIXED_PAIR_THRESHOLD,
+    *,
+    concept_mixed_pair_threshold: float,
+    linearity_n_init: int,
 ) -> List[int]:
     """Find pairs that don't fit well into any cluster."""
     try:
@@ -154,13 +160,13 @@ def find_mixed_pairs(
         valid_mask = norms.squeeze() > NORM_EPS
         diff_normalized = diff_vectors[valid_mask] / norms[valid_mask]
 
-        km = KMeans(n_clusters=2, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
+        km = KMeans(n_clusters=N_COMPONENTS_2D, random_state=DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
         km.fit(diff_normalized)
 
         distances = km.transform(diff_normalized).min(axis=1)
         median_dist = np.median(distances)
 
-        mixed_mask = distances > median_dist * (1 + threshold)
+        mixed_mask = distances > median_dist * (BINARY_CLASS_POSITIVE + concept_mixed_pair_threshold)
         valid_indices = np.where(valid_mask)[0]
 
         return list(valid_indices[mixed_mask])
@@ -172,10 +178,12 @@ def get_pure_concept_pairs(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
     concept_idx: int = 0,
+    *,
+    spectral_n_neighbors: int,
 ) -> Tuple[torch.Tensor, torch.Tensor]:
     """Get pairs belonging to a specific concept cluster."""
     from .concept_analysis import split_by_concepts
-    concepts = split_by_concepts(pos_activations, neg_activations, n_concepts=2)
+    concepts = split_by_concepts(pos_activations, neg_activations, n_concepts=COMBO_BASE, spectral_n_neighbors=spectral_n_neighbors)
 
     if concept_idx < len(concepts):
         return concepts[concept_idx]
@@ -185,11 +193,13 @@ def get_pure_concept_pairs(
 def analyze_concept_structure(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    *,
+    spectral_n_neighbors: int,
 ) -> Dict[str, Any]:
     """Analyze concept structure - returns raw metrics for steering decisions."""
     from .concept_analysis import decompose_into_concepts, detect_multiple_concepts
 
-    decomposition = decompose_into_concepts(pos_activations, neg_activations)
+    decomposition = decompose_into_concepts(pos_activations, neg_activations, spectral_n_neighbors=spectral_n_neighbors)
     n_concepts = decomposition["n_concepts"]
     independence = decomposition["independence"]
     mean_coherence = decomposition.get("mean_coherence", 0.0)
@@ -211,6 +221,8 @@ def analyze_concept_structure(
 def recommend_per_concept_steering(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    *,
+    spectral_n_neighbors: int,
 ) -> Dict[str, Any]:
     """Deprecated: Use analyze_concept_structure instead."""
-    return analyze_concept_structure(pos_activations, neg_activations)
+    return analyze_concept_structure(pos_activations, neg_activations, spectral_n_neighbors=spectral_n_neighbors)

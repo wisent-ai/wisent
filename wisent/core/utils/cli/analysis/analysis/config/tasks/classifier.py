@@ -7,7 +7,7 @@ import torch
 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import DEFAULT_CLASSIFIER_LR, JSON_INDENT, QUALITY_THRESHOLD, MAX_REGENERATION_ATTEMPTS, CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import JSON_INDENT, PROGRESS_LOG_INTERVAL_10, ARCHITECTURE_MODULE_LIMIT
 
 
 def collect_activations(args, model, pair_set, ActivationCollector, ExtractionStrategy):
@@ -16,7 +16,7 @@ def collect_activations(args, model, pair_set, ActivationCollector, ExtractionSt
     layer_str = str(layer)
 
     print(f"\n🧠 Extracting activations from layer {layer}...")
-    collector = ActivationCollector(model=model)
+    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     extraction_strategy = ExtractionStrategy(getattr(args, 'extraction_strategy', 'chat_last'))
     print(f"   Extraction strategy: {extraction_strategy.value}")
 
@@ -106,17 +106,17 @@ def train_classifier(args, activations, LogisticClassifier, MLPClassifier, Class
         raise UnknownTypeError(entity_type="classifier_type", value=args.classifier_type, valid_values=["logistic", "mlp"])
 
     train_config = ClassifierTrainConfig(
-        test_size=1.0 - args.split_ratio, num_epochs=CLASSIFIER_NUM_EPOCHS, batch_size=CLASSIFIER_BATCH_SIZE,
-        learning_rate=DEFAULT_CLASSIFIER_LR, monitor='f1', random_state=args.seed
+        test_size=1.0 - args.split_ratio, num_epochs=args.classifier_epochs, batch_size=args.classifier_batch_size,
+        learning_rate=args.classifier_lr, monitor='f1', random_state=args.seed
     )
 
-    report = classifier.fit(X, y, config=train_config)
+    report = classifier.fit(X, y, log_frequency=args.log_frequency, config=train_config)
     print(f"\n📈 Training completed! Best epoch: {report.best_epoch}/{report.epochs_ran}")
 
     return classifier, report
 
 
-def evaluate_classifier(args, model, classifier, test_pairs, activations, task_name, eval_task_name, DetectionHandler, DetectionAction, evaluate_quality):
+def evaluate_classifier(args, model, classifier, test_pairs, activations, task_name, eval_task_name, DetectionHandler, DetectionAction, evaluate_quality, max_regeneration_attempts: int):
     """Evaluate classifier on real model generations."""
     from wisent.core.reading.evaluators.rotator import EvaluatorRotator
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
@@ -130,12 +130,12 @@ def evaluate_classifier(args, model, classifier, test_pairs, activations, task_n
     EvaluatorRotator.discover_evaluators("wisent.core.reading.evaluators.benchmark_specific")
     evaluator = EvaluatorRotator(evaluator=None, task_name=eval_task_for_evaluator, autoload=False)
 
-    detection_handler = _setup_detection_handler(args, DetectionHandler, DetectionAction)
+    detection_handler = _setup_detection_handler(args, DetectionHandler, DetectionAction, max_regeneration_attempts=max_regeneration_attempts)
     detection_stats = {'total_outputs': 0, 'issues_detected': 0, 'low_quality_outputs': 0, 'handled_outputs': 0, 'detection_types': {}}
     enable_quality_check = hasattr(args, 'enable_quality_check') and args.enable_quality_check
-    quality_threshold = getattr(args, 'quality_threshold', QUALITY_THRESHOLD)
+    quality_threshold = getattr(args, 'quality_threshold', 50.0)
 
-    gen_collector = ActivationCollector(model=model)
+    gen_collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     generation_results = []
 
     for i, pair in enumerate(test_pairs.pairs):
@@ -154,7 +154,7 @@ def evaluate_classifier(args, model, classifier, test_pairs, activations, task_n
     return generation_results, detection_stats
 
 
-def _setup_detection_handler(args, DetectionHandler, DetectionAction):
+def _setup_detection_handler(args, DetectionHandler, DetectionAction, max_regeneration_attempts: int):
     """Setup detection handler if enabled."""
     if not hasattr(args, 'detection_action') or args.detection_action == 'pass_through':
         return None
@@ -166,9 +166,9 @@ def _setup_detection_handler(args, DetectionHandler, DetectionAction):
     }
 
     return DetectionHandler(
+        max_regeneration_attempts=max_regeneration_attempts,
         action=action_map.get(args.detection_action, DetectionAction.REPLACE_WITH_PLACEHOLDER),
         placeholder_message=getattr(args, 'placeholder_message', None),
-        max_regeneration_attempts=getattr(args, 'max_regeneration_attempts', MAX_REGENERATION_ATTEMPTS),
         log_detections=True
     )
 

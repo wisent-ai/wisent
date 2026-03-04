@@ -7,7 +7,7 @@ from typing import Tuple as T_Tuple
 from typing import Union as T_Union
 from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._sympy_utils import (
     DEF_ABS_TOL, DEF_N_PROC, DEF_PERCENT_REL_TOL, DEF_REL_TOL,
-    DEF_TIMEOUT, is_querying4set,
+    is_querying4set,
 )
 from wisent.core.reading.evaluators.benchmark_specific.math_parsing._core_parts._evaluator_math import (
     EvaluatorMath,
@@ -25,7 +25,7 @@ class EvaluatorMathBatch(EvaluatorMath):
     abs_tol : float, default: DEF_ABS_TOL
     percent_rel_tol : float, default: DEF_PERCENT_REL_TOL
     ascii_only : bool, default: True
-    timeout : int, default: DEF_TIMEOUT
+    timeout : int (required)
     n_procs: int, default: DEF_N_PROC
     use_tqdm: bool, default: True
     """
@@ -33,12 +33,13 @@ class EvaluatorMathBatch(EvaluatorMath):
     def __init__(
         self,
         ans_extract_mode: str,
+        timeout: int,
+        max_tasks_per_proc: int,
         include_percentage: bool = True,
         rel_tol: float = DEF_REL_TOL,
         abs_tol: float = DEF_ABS_TOL,
         percent_rel_tol: float = DEF_PERCENT_REL_TOL,
         ascii_only: bool = True,
-        timeout: int = DEF_TIMEOUT,
         n_procs: int = DEF_N_PROC,
         use_tqdm: bool = True,
     ):
@@ -52,6 +53,7 @@ class EvaluatorMathBatch(EvaluatorMath):
             ans_extract_mode=ans_extract_mode,
         )
         self.timeout = timeout
+        self.max_tasks_per_proc = max_tasks_per_proc
         self.n_procs = n_procs
         self.use_tqdm = use_tqdm
 
@@ -91,6 +93,7 @@ class EvaluatorMathBatch(EvaluatorMath):
             ],
             n_procs=self.n_procs,
             timeout=self.timeout,
+            max_tasks_per_proc=self.max_tasks_per_proc,
             use_tqdm=self.use_tqdm,
             desc="Judging",
             def_val=False,
@@ -149,6 +152,7 @@ class EvaluatorMathBatch(EvaluatorMath):
             [{"resp_str": resp} for resp in resps],
             n_procs=self.n_procs,
             timeout=self.timeout,
+            max_tasks_per_proc=self.max_tasks_per_proc,
             use_tqdm=self.use_tqdm,
             desc="Extracting",
             def_val="",

@@ -18,8 +18,7 @@ import os
 import sys
 import time
 import traceback
-from typing import Dict, List, Optional, Tuple
-from pathlib import Path
+from typing import Dict, List
 import statistics
 
 # Add current directory to path to import local modules
@@ -29,21 +28,19 @@ sys.path.insert(0, current_dir)
 # Import the sample retrieval function and benchmark list
 from populate_tasks import get_task_samples_for_analysis
 from only_benchmarks import CORE_BENCHMARKS
-from wisent.core.utils.config_tools.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_COMPACT
 from wisent.core import constants as _C
 
-def time_benchmark_loading(benchmark_name: str, benchmark_config: dict, num_samples: int = DEFAULT_NUM_SAMPLES) -> Dict:
-    """
-    Time the loading of samples from a single benchmark.
-    
+def time_benchmark_loading(benchmark_name: str, benchmark_config: dict) -> Dict:
+    """Time the loading of samples from a single benchmark.
+
     Args:
         benchmark_name: Display name of the benchmark
         benchmark_config: Config dict with 'task' and 'tags' keys
-        num_samples: Number of samples to retrieve (default 5)
-    
     Returns:
         Dictionary with timing results and metadata
     """
+    num_samples = 5
     task_name = benchmark_config["task"]
     tags = benchmark_config.get("tags", [])
     

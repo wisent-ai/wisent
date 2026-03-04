@@ -35,6 +35,7 @@ def load_cross_benchmark_data(args, LMEvalDataLoader):
                     task_name=subname,
                     lm_eval_task=task_obj,
                     limit=training_limit_per_task,
+                    train_ratio=args.train_ratio,
                 )
                 all_train_pairs.extend(subtask_pairs)
             train_pairs = all_train_pairs
@@ -43,6 +44,7 @@ def load_cross_benchmark_data(args, LMEvalDataLoader):
                 task_name=train_task_name,
                 lm_eval_task=train_task_obj,
                 limit=getattr(args, 'training_limit', None),
+                train_ratio=args.train_ratio,
             )
 
         train_pair_set = ContrastivePairSet("train", train_pairs, task_type=train_task_name)
@@ -63,6 +65,7 @@ def load_cross_benchmark_data(args, LMEvalDataLoader):
                     task_name=subname,
                     lm_eval_task=task_obj,
                     limit=testing_limit_per_task,
+                    train_ratio=args.train_ratio,
                 )
                 all_eval_pairs.extend(subtask_pairs)
             eval_pairs = all_eval_pairs
@@ -71,6 +74,7 @@ def load_cross_benchmark_data(args, LMEvalDataLoader):
                 task_name=eval_task_name,
                 lm_eval_task=eval_task_obj,
                 limit=getattr(args, 'testing_limit', None),
+                train_ratio=args.train_ratio,
             )
 
         test_pair_set = ContrastivePairSet("test", eval_pairs, task_type=eval_task_name)
@@ -109,7 +113,8 @@ def load_single_task_data(args, LMEvalDataLoader):
             seed=args.seed,
             limit=args.limit,
             training_limit=args.training_limit,
-            testing_limit=args.testing_limit
+            testing_limit=args.testing_limit,
+            train_ratio=args.train_ratio,
         )
 
         train_pair_set = result['train_qa_pairs']

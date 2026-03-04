@@ -23,7 +23,6 @@ from .data.dataset_splits import (
     get_train_docs,
     get_test_docs,
     get_split_info,
-    DEFAULT_TRAIN_RATIO,
     DEFAULT_SEED,
 )
 
@@ -68,7 +67,6 @@ __all__ = [
     "get_train_docs",
     "get_test_docs",
     "get_split_info",
-    "DEFAULT_TRAIN_RATIO",
     "DEFAULT_SEED",
     # Base rotator
     "BaseRotator",

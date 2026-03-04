@@ -6,8 +6,6 @@ from wisent.core.utils.infra_tools.errors import BudgetCalculationError, NoBench
 from wisent.core.experimental.agent.resources._budget_types import ResourceType, ResourceBudget, TaskEstimate
 from wisent.core.experimental.agent.resources._budget_manager import BudgetManager
 from wisent.core.utils.config_tools.constants import (
-    AGENT_RESOURCE_BUDGET_MINUTES,
-    BENCHMARK_LOADING_TIME_DEFAULT,
     PRIORITY_HIGH,
     PRIORITY_MEDIUM,
     PRIORITY_LOW,
@@ -26,17 +24,19 @@ def set_time_budget(minutes: float) -> None:
 
 
 def calculate_max_tasks_for_time_budget(task_type: str,
-                                       time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES) -> int:
+                                       time_budget_minutes: float = None) -> int:
     """
     Calculate maximum number of tasks that can fit within a time budget.
-    
+
     Args:
         task_type: Type of task to estimate (benchmark_evaluation, classifier_training, etc.)
         time_budget_minutes: Time budget in minutes
-        
+
     Returns:
         Maximum number of tasks
     """
+    if time_budget_minutes is None:
+        raise ValueError("time_budget_minutes is required")
     # Use device benchmarking for more accurate estimates
     try:
         from .device_benchmarks import estimate_task_time
@@ -68,19 +68,21 @@ def calculate_max_tasks_for_time_budget(task_type: str,
 
 
 def optimize_tasks_for_budget(task_candidates: List[str],
-                            time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES,
+                            time_budget_minutes: float = None,
                             max_tasks: Optional[int] = None) -> List[str]:
     """
     Optimize task selection within a time budget.
-    
+
     Args:
         task_candidates: List of candidate task names
         time_budget_minutes: Time budget in minutes
         max_tasks: Maximum number of tasks to select
-        
+
     Returns:
         List of selected tasks that fit within budget
     """
+    if time_budget_minutes is None:
+        raise ValueError("time_budget_minutes is required")
     _budget_manager.set_time_budget(time_budget_minutes)
     return _budget_manager.optimize_task_allocation(
         task_candidates, 
@@ -90,21 +92,23 @@ def optimize_tasks_for_budget(task_candidates: List[str],
 
 
 def optimize_benchmarks_for_budget(task_candidates: List[str],
-                                 time_budget_minutes: float = AGENT_RESOURCE_BUDGET_MINUTES,
+                                 time_budget_minutes: float = None,
                                  max_tasks: Optional[int] = None,
                                  prefer_fast: bool = False) -> List[str]:
     """
     Optimize benchmark selection within a time budget using priority and loading time data.
-    
+
     Args:
         task_candidates: List of candidate benchmark names
         time_budget_minutes: Time budget in minutes
         max_tasks: Maximum number of tasks to select
         prefer_fast: Whether to prefer fast benchmarks
-        
+
     Returns:
         List of selected benchmarks that fit within budget
     """
+    if time_budget_minutes is None:
+        raise ValueError("time_budget_minutes is required")
     try:
         # Import benchmark data
         import sys
@@ -117,7 +121,7 @@ def optimize_benchmarks_for_budget(task_candidates: List[str],
         for task in task_candidates:
             if task in BENCHMARKS:
                 config = BENCHMARKS[task]
-                loading_time = config.get('loading_time', BENCHMARK_LOADING_TIME_DEFAULT)  # seconds
+                loading_time = config['loading_time']  # seconds
                 priority = config.get('priority', 'unknown')
                 
                 # Calculate priority score for selection
@@ -140,14 +144,7 @@ def optimize_benchmarks_for_budget(task_candidates: List[str],
                     'efficiency_score': efficiency_score
                 })
             else:
-                # Fallback for unknown benchmarks
-                benchmark_info.append({
-                    'task': task,
-                    'loading_time': BENCHMARK_LOADING_TIME_DEFAULT,
-                    'priority': 'unknown',
-                    'priority_score': 0,
-                    'efficiency_score': 0.0
-                })
+                raise NoBenchmarkDataError()
         
         # Sort by efficiency (prefer fast) or priority (prefer high priority)
         if prefer_fast:

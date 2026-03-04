@@ -1,29 +1,13 @@
-"""
-EOT-based editability metrics for Zwiad Step 5.
-
-Measures how sensitive each layer's attention distribution is to activation
-perturbations, using the connection between attention and one-sided entropic
-optimal transport (EOT).
-
-Composite editability: 50% steering_survival + 25% spectral_concentration + 25% spectral_sharpness.
-"""
+"""EOT-based editability metrics for Zwiad Step five."""
 
 from __future__ import annotations
 
 import math
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional  # still needed for q_neg, k_pos params
 
 import torch
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SCALE,
-    DEFAULT_SCORE,
-    EOT_DEFAULT_TEMPERATURE,
-    EOT_PERTURBATION_SCALE,
-    EOT_SPECTRAL_WEIGHT,
-    EOT_SURVIVAL_WEIGHT,
-    LOG_EPS,
-)
+from wisent.core.utils.config_tools.constants import LOG_EPS
 
 
 @dataclass
@@ -38,7 +22,7 @@ class EOTEditabilityResult:
     composite_editability: float
 
 
-def compute_attention_entropy(cost: torch.Tensor, temperature: float = EOT_DEFAULT_TEMPERATURE) -> float:
+def compute_attention_entropy(cost: torch.Tensor, temperature: float) -> float:
     """
     Shannon entropy of the softmax attention distribution.
 
@@ -59,12 +43,12 @@ def compute_attention_entropy(cost: torch.Tensor, temperature: float = EOT_DEFAU
     return row_entropy.mean().item()
 
 
-def compute_jacobian_sensitivity(cost: torch.Tensor, temperature: float = EOT_DEFAULT_TEMPERATURE) -> float:
+def compute_jacobian_sensitivity(cost: torch.Tensor, temperature: float) -> float:
     """
     Frobenius norm of the Jacobian d(softmax)/d(cost).
 
-    For softmax P_i = softmax(-C_i/T), the Jacobian of row i is:
-    J_i = (1/T) * (diag(P_i) - P_i P_i^T)
+    For softmax P_i = softmax(-C_i/T), the Jacobian of row i is
+    J_i = (inv_T) * (diag(P_i) - P_i P_i^T).
     Sensitivity = avg_i ||J_i||_F.
 
     Args:
@@ -85,26 +69,26 @@ def compute_jacobian_sensitivity(cost: torch.Tensor, temperature: float = EOT_DE
     return total_norm / N
 
 
-def compute_steering_survival(cost: torch.Tensor, temperature: float = EOT_DEFAULT_TEMPERATURE) -> float:
+def compute_steering_survival(cost: torch.Tensor, temperature: float, *, default_scale: float, eot_perturbation_scale: float) -> float:
     """
     Fraction of perturbation that survives the softmax nonlinearity.
 
     Applies a small random perturbation delta to cost, measures
     ||softmax(-(C+delta)/T) - softmax(-C/T)||_F / ||delta||_F.
 
-    Values close to 1 mean the layer faithfully transmits perturbations.
+    Values close to default_scale mean the layer faithfully transmits perturbations.
 
     Args:
         cost: [N, M] cost matrix.
         temperature: Softmax temperature.
 
     Returns:
-        Survival ratio in [0, 1].
+        Survival ratio, bounded between zero and default_scale.
     """
     logits = -cost / temperature
     base_probs = torch.softmax(logits, dim=1)
 
-    delta = torch.randn_like(cost) * EOT_PERTURBATION_SCALE
+    delta = torch.randn_like(cost) * eot_perturbation_scale
     perturbed_logits = -(cost + delta) / temperature
     perturbed_probs = torch.softmax(perturbed_logits, dim=1)
 
@@ -115,11 +99,11 @@ def compute_steering_survival(cost: torch.Tensor, temperature: float = EOT_DEFAU
         return 0.0
 
     raw_ratio = output_change / input_change
-    survival = min(raw_ratio * temperature, DEFAULT_SCALE)
+    survival = min(raw_ratio * temperature, default_scale)
     return survival
 
 
-def compute_spectral_metrics(cost: torch.Tensor) -> tuple[float, float]:
+def compute_spectral_metrics(cost: torch.Tensor, *, default_score: float, default_scale: float) -> tuple[float, float]:
     """
     SVD-based metrics of the cost matrix structure.
 
@@ -135,10 +119,10 @@ def compute_spectral_metrics(cost: torch.Tensor) -> tuple[float, float]:
     S = torch.linalg.svdvals(cost.float())
     total_variance = (S ** 2).sum().item()
     if total_variance < LOG_EPS:
-        return DEFAULT_SCORE, DEFAULT_SCORE
+        return default_score, default_score
     concentration = (S[0] ** 2).item() / total_variance
     sharpness = (S[0] / (S[1] + LOG_EPS)).item() if len(S) > 1 else 1.0
-    sharpness = min(sharpness / (sharpness + DEFAULT_SCALE), DEFAULT_SCALE)
+    sharpness = min(sharpness / (sharpness + default_scale), default_scale)
     return concentration, sharpness
 
 
@@ -147,7 +131,8 @@ def compute_eot_editability(
     neg: torch.Tensor,
     q_neg: Optional[torch.Tensor] = None,
     k_pos: Optional[torch.Tensor] = None,
-    temperature: float = EOT_DEFAULT_TEMPERATURE,
+    *, temperature: float, default_score: float, default_scale: float,
+    eot_perturbation_scale: float, eot_survival_weight: float, eot_spectral_weight: float,
 ) -> EOTEditabilityResult:
     """
     Compute full EOT editability metrics for a layer.
@@ -155,7 +140,7 @@ def compute_eot_editability(
     If Q/K projections are provided, uses attention-affinity cost.
     Otherwise, uses Euclidean pairwise distance as a surrogate cost.
 
-    Composite: 50% steering_survival + 25% spectral_concentration + 25% spectral_sharpness.
+    Composite: survival_weight * steering_survival + spectral_weight * (concentration + sharpness).
 
     Args:
         pos: [N_pos, D] positive activations.
@@ -175,11 +160,11 @@ def compute_eot_editability(
 
     entropy = compute_attention_entropy(cost, temperature)
     jacobian = compute_jacobian_sensitivity(cost, temperature)
-    survival = compute_steering_survival(cost, temperature)
-    concentration, sharpness = compute_spectral_metrics(cost)
+    survival = compute_steering_survival(cost, temperature, default_scale=default_scale, eot_perturbation_scale=eot_perturbation_scale)
+    concentration, sharpness = compute_spectral_metrics(cost, default_score=default_score, default_scale=default_scale)
 
     cost_effect = jacobian * survival
-    composite = EOT_SURVIVAL_WEIGHT * survival + EOT_SPECTRAL_WEIGHT * concentration + EOT_SPECTRAL_WEIGHT * sharpness
+    composite = eot_survival_weight * survival + eot_spectral_weight * concentration + eot_spectral_weight * sharpness
 
     return EOTEditabilityResult(
         attention_entropy=entropy,

@@ -2,7 +2,7 @@
 Centralized Steering Method Registry.
 
 Single source of truth for all steering method definitions.
-See _definitions_part*.py for method-specific definitions.
+See _definitions_*.py for method-specific definitions.
 """
 from __future__ import annotations
 
@@ -13,7 +13,6 @@ from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Type
 
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.utils.config_tools.constants import STEERING_STRENGTH_RANGE_WIDE
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +68,7 @@ class SteeringMethodDefinition:
     parameters: List[SteeringMethodParameter] = field(default_factory=list)
     optimization_config: Dict[str, Any] = field(default_factory=dict)
     default_strength: Optional[float] = None
-    strength_range: tuple = STEERING_STRENGTH_RANGE_WIDE
+    strength_range: Optional[tuple] = None
 
     def get_method_class(self) -> Type[BaseSteeringMethod]:
         """Dynamically import and return the method class."""
@@ -120,17 +119,17 @@ class SteeringMethodDefinition:
 # =============================================================================
 # STEERING METHOD DEFINITIONS (imported from sibling modules)
 # =============================================================================
-from wisent.core.control.steering_methods._definitions_part1 import (
+from wisent.core.control.steering_methods._definitions_caa_ostrze_tecza import (
     CAA_DEFINITION,
     OSTRZE_DEFINITION,
     TECZA_DEFINITION,
 )
-from wisent.core.control.steering_methods._definitions_part2 import (
+from wisent.core.control.steering_methods._definitions_tetno_grom import (
     TETNO_DEFINITION,
     GROM_DEFINITION,
     PRZELOM_DEFINITION,
 )
-from wisent.core.control.steering_methods._definitions_part3 import (
+from wisent.core.control.steering_methods._definitions_mlp_nurt_szlak_wicher import (
     MLP_DEFINITION,
     NURT_DEFINITION,
     SZLAK_DEFINITION,
@@ -250,7 +249,13 @@ class SteeringMethodRegistry:
     @classmethod
     def get_strength_range(cls, name: str) -> tuple:
         """Get the strength search range for a method."""
-        return cls.get(name).strength_range
+        defn = cls.get(name)
+        if defn.strength_range is None:
+            raise ValueError(
+                f"No strength_range defined for method '{name}'. "
+                f"Specify --strength-range via CLI."
+            )
+        return defn.strength_range
     
     @classmethod
     def get_default_strength(cls, name: str) -> float:

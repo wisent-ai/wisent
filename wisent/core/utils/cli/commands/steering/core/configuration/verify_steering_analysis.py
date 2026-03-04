@@ -8,11 +8,6 @@ from wisent.core.utils.config_tools.constants import (
     SEPARATOR_WIDTH_MEDIUM_PLUS,
     SEPARATOR_WIDTH_STANDARD,
     SEPARATOR_WIDTH_WIDE,
-    VERIFY_ALIGNMENT_THRESHOLD,
-    VERIFY_GATE_ACTIVE_THRESHOLD,
-    VERIFY_GATE_PARTIAL_THRESHOLD,
-    VERIFY_GATE_VARIANCE_THRESHOLD,
-    VERIFY_GOOD_LAYER_THRESHOLD,
 )
 
 
@@ -135,7 +130,7 @@ def _compare_activations(
     for result in all_results:
         alignments = [v["alignment"] for v in result["layers"].values()]
         avg = sum(alignments) / len(alignments) if alignments else 0
-        status = "ALIGNED" if avg > VERIFY_ALIGNMENT_THRESHOLD else ("WEAK" if avg > 0 else "MISALIGNED")
+        status = "ALIGNED" if avg > 0.3 else ("WEAK" if avg > 0 else "MISALIGNED")
         print(f"{result['prompt']:<40} {avg:>12.4f}    {status}")
 
     if verbose:
@@ -149,7 +144,7 @@ def _compare_activations(
             avg = sum(aligns) / len(aligns)
             min_a = min(aligns)
             max_a = max(aligns)
-            status = "OK" if avg > VERIFY_ALIGNMENT_THRESHOLD else ("WEAK" if avg > 0 else "BAD")
+            status = "OK" if avg > 0.3 else ("WEAK" if avg > 0 else "BAD")
             print(f"{layer_name:<10} {avg:>12.4f}    {min_a:>8.4f}  {max_a:>8.4f}  {status}")
 
     return {
@@ -210,13 +205,13 @@ def _check_gate_intensity(
         print("-" * SEPARATOR_WIDTH_STANDARD)
         for r in gate_results:
             gate = r["gate"]
-            status = "ACTIVE" if gate > VERIFY_GATE_ACTIVE_THRESHOLD else ("PARTIAL" if gate > VERIFY_GATE_PARTIAL_THRESHOLD else "INACTIVE")
+            status = "ACTIVE" if gate > 0.7 else ("PARTIAL" if gate > 0.3 else "INACTIVE")
             print(f"{r['prompt']:<40} {gate:>8.4f}  {status}")
 
         # Check discrimination
         gates = [r["gate"] for r in gate_results]
         gate_std = torch.tensor(gates).std().item()
-        if gate_std < VERIFY_GATE_VARIANCE_THRESHOLD:
+        if gate_std < 0.1:
             print(f"\n[WARNING] Gate not discriminating (std={gate_std:.4f})")
             print("  All prompts get similar gate values - gating network may need more training")
 
@@ -242,8 +237,8 @@ def _print_summary(
     per_layer = results.get("per_layer", {})
 
     # Count layers by status
-    good_layers = sum(1 for v in per_layer.values() if v > VERIFY_GOOD_LAYER_THRESHOLD)
-    weak_layers = sum(1 for v in per_layer.values() if 0 < v <= VERIFY_GOOD_LAYER_THRESHOLD)
+    good_layers = sum(1 for v in per_layer.values() if v > 0.5)
+    weak_layers = sum(1 for v in per_layer.values() if 0 < v <= 0.5)
     bad_layers = sum(1 for v in per_layer.values() if v <= 0)
 
     print(f"\nOverall Alignment: {overall:.4f}")

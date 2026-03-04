@@ -5,7 +5,6 @@ import struct
 import json
 import torch
 from .cache import get_cache_path, save_pair_texts_cache, save_activations_cache
-from wisent.core.utils.config_tools.constants import DATA_LOAD_LIMIT
 from wisent.core.utils.infra_tools.infra.core.hardware import subprocess_timeout_s
 
 
@@ -190,7 +189,7 @@ def load_available_layers_from_database(
 
 def load_pair_texts_from_database(
     task_name: str,
-    limit: int = DATA_LOAD_LIMIT,
+    limit: int,
     database_url: Optional[str] = None,
     use_cache: bool = True,
     force_refresh: bool = False,

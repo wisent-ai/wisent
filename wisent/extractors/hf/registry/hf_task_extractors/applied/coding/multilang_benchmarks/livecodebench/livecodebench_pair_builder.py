@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from wisent.core import constants as _C
 from wisent.core.utils.cli.cli_logger import setup_logger
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_code_exec_timeout_s as _get_code_exec_timeout
 from typing import Any
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
@@ -193,7 +194,7 @@ def test_stdin():
 
 if __name__ == '__main__':
     test_stdin()
-""".replace("TIMEOUT_VAL", str(_C.DEFAULT_TIMEOUT_QUICK))
+""".replace("TIMEOUT_VAL", str(_get_code_exec_timeout()))
 
     return test_code
 

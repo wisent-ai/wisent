@@ -12,11 +12,7 @@ from typing import Dict, List, Optional, Any
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.control.steering_methods import SteeringMethodType
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LIMIT, DEFAULT_SPLIT_RATIO, AUTO_MAX_TIME_MINUTES,
-    SEARCH_DEFAULT_STRENGTHS, SEARCH_MAX_LAYER_CAP, SEARCH_DEFAULT_LAYERS,
-    SECONDS_PER_MINUTE,
-)
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE
 
 from ..types import (
     SteeringApplicationStrategy,
@@ -40,15 +36,17 @@ class FullPipelineMixin:
     def optimize_full_steering_pipeline(
         self,
         task_name: str,
-        methods_to_test: Optional[List[SteeringMethod]] = None,
+        limit: int,
+        methods_to_test: tuple[SteeringMethod, ...] = (SteeringMethod.CAA,),
         layer_range: Optional[str] = None,
-        strength_range: Optional[List[float]] = None,
+        strength_range: tuple[float, ...] = None,
         token_aggregation_strategies: Optional[List[ExtractionStrategy]] = None,
         prompt_construction_strategies: Optional[List[ExtractionStrategy]] = None,
         steering_application_configs: Optional[List[SteeringApplicationConfig]] = None,
-        limit: int = DEFAULT_LIMIT,
-        max_time_minutes: float = AUTO_MAX_TIME_MINUTES,
-        split_ratio: float = DEFAULT_SPLIT_RATIO
+        max_time_minutes: Optional[float] = None,
+        split_ratio: Optional[float] = None,
+        search_max_layer_cap: int = None,
+        search_default_layers: tuple = None,
     ) -> SteeringOptimizationSummary:
         """
         Full optimization across all steering dimensions.
@@ -68,11 +66,11 @@ class FullPipelineMixin:
         Returns:
             SteeringOptimizationSummary with comprehensive results
         """
-        # Set defaults
-        if methods_to_test is None:
-            methods_to_test = [SteeringMethod.CAA]
+        if max_time_minutes is None:
+            raise ValueError("max_time_minutes is required")
         if strength_range is None:
-            strength_range = list(SEARCH_DEFAULT_STRENGTHS)
+            raise ValueError("strength_range is required")
+        split_ratio = split_ratio if split_ratio is not None else 0.8
         if token_aggregation_strategies is None:
             token_aggregation_strategies = get_default_token_aggregation_strategies()
         if prompt_construction_strategies is None:
@@ -81,7 +79,11 @@ class FullPipelineMixin:
             steering_application_configs = get_default_steering_application_configs()
 
         # Determine layer range
-        layers_to_test = self._get_layers_for_full_pipeline(layer_range)
+        if search_max_layer_cap is None:
+            raise ValueError("search_max_layer_cap is required")
+        if search_default_layers is None:
+            raise ValueError("search_default_layers is required")
+        layers_to_test = self._get_layers_for_full_pipeline(layer_range, search_max_layer_cap, search_default_layers)
 
         logger.info(f"Full steering optimization for task: {task_name}")
         logger.info(f"   Methods: {[m.value for m in methods_to_test]}")
@@ -160,16 +162,16 @@ class FullPipelineMixin:
 
         return summary
 
-    def _get_layers_for_full_pipeline(self, layer_range: Optional[str]) -> List[int]:
+    def _get_layers_for_full_pipeline(self, layer_range: Optional[str], search_max_layer_cap: int, search_default_layers: tuple) -> List[int]:
         """Get layers to test for full pipeline optimization."""
         if layer_range:
             return self._parse_layer_range(layer_range)
         elif self.base_classification_layer:
             min_layer = max(1, self.base_classification_layer - 2)
-            max_layer = min(SEARCH_MAX_LAYER_CAP, self.base_classification_layer + 2)
+            max_layer = min(search_max_layer_cap, self.base_classification_layer + 2)
             return list(range(min_layer, max_layer + 1))
         else:
-            return list(SEARCH_DEFAULT_LAYERS)
+            return list(search_default_layers)
 
     def _evaluate_full_configuration(
         self, task_name: str, method: SteeringMethod, layer: int, strength: float,

@@ -9,19 +9,16 @@ from typing import Dict, List, Optional, Any, Tuple
 from sklearn.decomposition import PCA
 from wisent.core.utils.config_tools.constants import (
     ZERO_THRESHOLD,
-    DIRECTION_ORTHOGONAL_THRESHOLD,
-    DIRECTION_ALIGNED_THRESHOLD,
-    DIRECTION_HIGH_SIMILARITY,
-    DIRECTION_MODERATE_SIMILARITY,
-    DIRECTION_LOW_SIMILARITY,
     N_COMPONENTS_2D,
-    ANGLE_DEVIATION_DEGREES_THRESHOLD,
 )
 
 
 def compute_direction_angles(
     directions: List[torch.Tensor],
     names: Optional[List[str]] = None,
+    *,
+    direction_orthogonal_threshold: float,
+    direction_aligned_threshold: float,
 ) -> Dict[str, Any]:
     """
     Compute pairwise angles and cosine similarities between directions.
@@ -69,21 +66,24 @@ def compute_direction_angles(
         "mean_angle_degrees": float(off_diag_ang.mean()) if n > 1 else 0.0,
         "min_angle_degrees": float(off_diag_ang.min()) if n > 1 else 0.0,
         "max_angle_degrees": float(off_diag_ang.max()) if n > 1 else 0.0,
-        "orthogonal_pairs": int((np.abs(off_diag_cos) < DIRECTION_ORTHOGONAL_THRESHOLD).sum() // 2) if n > 1 else 0,
-        "aligned_pairs": int((off_diag_cos > DIRECTION_ALIGNED_THRESHOLD).sum() // 2) if n > 1 else 0,
+        "orthogonal_pairs": int((np.abs(off_diag_cos) < direction_orthogonal_threshold).sum() // 2) if n > 1 else 0,
+        "aligned_pairs": int((off_diag_cos > direction_aligned_threshold).sum() // 2) if n > 1 else 0,
     }
 
 
 def plot_direction_similarity_matrix(
     directions: List[torch.Tensor],
     names: Optional[List[str]] = None,
+    *,
+    direction_orthogonal_threshold: float,
+    direction_aligned_threshold: float,
 ) -> Dict[str, Any]:
     """
     Create data for a heatmap of direction similarities.
 
     Returns data suitable for plotting with matplotlib/seaborn.
     """
-    angles = compute_direction_angles(directions, names)
+    angles = compute_direction_angles(directions, names, direction_orthogonal_threshold=direction_orthogonal_threshold, direction_aligned_threshold=direction_aligned_threshold)
 
     return {
         "matrix": angles["cosine_matrix"],
@@ -118,7 +118,7 @@ def plot_directions_in_pca_space(
         pos_activations: Optional positive activations for PCA fitting
         neg_activations: Optional negative activations for PCA fitting
         names: Optional names for directions
-        n_components: 2 or 3 for visualization
+        n_components: Number of PCA components for visualization
 
     Returns:
         Dict with projected directions and activation points for plotting.
@@ -207,10 +207,11 @@ def compute_per_concept_directions(
 
 
 def visualize_concept_directions(
-    pos: torch.Tensor,
-    neg: torch.Tensor,
-    cluster_labels: List[int],
-    n_concepts: int,
+    pos: torch.Tensor, neg: torch.Tensor,
+    cluster_labels: List[int], n_concepts: int,
+    angle_deviation_degrees_threshold: int,
+    *, direction_orthogonal_threshold: float, direction_aligned_threshold: float,
+    direction_high_similarity: float, direction_moderate_similarity: float, direction_low_similarity: float,
 ) -> Dict[str, Any]:
     """
     Full visualization of per-concept steering directions.
@@ -228,8 +229,8 @@ def visualize_concept_directions(
             "error": "Need at least 2 concept directions to visualize relationships",
         }
 
-    angles = compute_direction_angles(directions, names)
-    similarity_matrix = plot_direction_similarity_matrix(directions, names)
+    angles = compute_direction_angles(directions, names, direction_orthogonal_threshold=direction_orthogonal_threshold, direction_aligned_threshold=direction_aligned_threshold)
+    similarity_matrix = plot_direction_similarity_matrix(directions, names, direction_orthogonal_threshold=direction_orthogonal_threshold, direction_aligned_threshold=direction_aligned_threshold)
     pca_viz = plot_directions_in_pca_space(directions, pos, neg, names)
 
     return {
@@ -238,11 +239,11 @@ def visualize_concept_directions(
         "angles": angles,
         "similarity_matrix": similarity_matrix,
         "pca_visualization": pca_viz,
-        "interpretation": _interpret_direction_relationships(angles),
+        "interpretation": _interpret_direction_relationships(angles, angle_deviation_degrees_threshold, direction_high_similarity=direction_high_similarity, direction_moderate_similarity=direction_moderate_similarity, direction_low_similarity=direction_low_similarity),
     }
 
 
-def _interpret_direction_relationships(angles: Dict[str, Any]) -> List[str]:
+def _interpret_direction_relationships(angles: Dict[str, Any], angle_deviation_degrees_threshold: int, *, direction_high_similarity: float, direction_moderate_similarity: float, direction_low_similarity: float) -> List[str]:
     """Generate interpretation of direction relationships."""
     interpretations = []
 
@@ -251,13 +252,13 @@ def _interpret_direction_relationships(angles: Dict[str, Any]) -> List[str]:
     aligned = angles["aligned_pairs"]
     n = angles["n_directions"]
 
-    if mean_cos > DIRECTION_HIGH_SIMILARITY:
+    if mean_cos > direction_high_similarity:
         interpretations.append("Directions are highly aligned - may be same concept")
-    elif mean_cos > DIRECTION_MODERATE_SIMILARITY:
+    elif mean_cos > direction_moderate_similarity:
         interpretations.append("Directions are moderately correlated")
-    elif mean_cos > DIRECTION_LOW_SIMILARITY:
+    elif mean_cos > direction_low_similarity:
         interpretations.append("Directions are weakly correlated")
-    elif mean_cos > -DIRECTION_LOW_SIMILARITY:
+    elif mean_cos > -direction_low_similarity:
         interpretations.append("Directions are approximately orthogonal")
     else:
         interpretations.append("Directions are anti-correlated (opposing)")
@@ -268,7 +269,7 @@ def _interpret_direction_relationships(angles: Dict[str, Any]) -> List[str]:
     if aligned > 0 and n > 2:
         interpretations.append(f"{aligned} direction pairs are nearly identical")
 
-    if angles["max_angle_degrees"] - angles["min_angle_degrees"] > ANGLE_DEVIATION_DEGREES_THRESHOLD:
+    if angles["max_angle_degrees"] - angles["min_angle_degrees"] > angle_deviation_degrees_threshold:
         interpretations.append("Direction angles vary widely - concepts are distinct")
 
     return interpretations

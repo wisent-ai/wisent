@@ -3,19 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 import torch
 
-from wisent.core.utils.config_tools.constants import (
-    CONE_DIRECTIONS,
-    DEFAULT_OPTIMIZATION_STEPS,
-    TECZA_LEARNING_RATE,
-    GROM_MIN_COSINE_SIM,
-    TECZA_MAX_COSINE_SIM,
-    DIAG_NUM_COMPONENTS,
-    CONE_THRESHOLD,
-)
+from wisent.core import constants as _C
 
 from .cone_helpers import (
     compute_pca_directions,
@@ -40,26 +32,26 @@ __all__ = [
 class ConeAnalysisConfig:
     """Configuration for cone structure analysis."""
 
-    num_directions: int = CONE_DIRECTIONS
-    """Number of directions to discover in the cone."""
+    num_directions: int = None
+    """Number of directions to discover in the cone. Must be set by caller."""
 
-    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
-    """Gradient steps for cone direction optimization."""
+    optimization_steps: Optional[int] = None
+    """Gradient steps for cone direction optimization. Must be set by caller."""
 
-    learning_rate: float = TECZA_LEARNING_RATE
-    """Learning rate for optimization."""
+    learning_rate: Optional[float] = None
+    """Learning rate for optimization. Must be set by caller."""
 
-    min_cosine_similarity: float = GROM_MIN_COSINE_SIM
-    """Minimum cosine similarity between cone directions."""
+    min_cosine_similarity: Optional[float] = None
+    """Minimum cosine similarity. Must be set by caller."""
 
-    max_cosine_similarity: float = TECZA_MAX_COSINE_SIM
-    """Maximum cosine similarity (avoid redundant directions)."""
+    max_cosine_similarity: Optional[float] = None
+    """Maximum cosine similarity (avoid redundant directions). Must be set by caller."""
 
-    pca_components: int = DIAG_NUM_COMPONENTS
-    """Number of PCA components to compare against."""
+    pca_components: int = None
+    """Number of PCA components to compare against. Must be set by caller."""
 
-    cone_threshold: float = CONE_THRESHOLD
-    """Threshold for cone_score to declare cone structure exists."""
+    cone_threshold: float = None
+    """Threshold for cone_score to declare cone structure exists. Must be set by caller."""
 
 
 @dataclass

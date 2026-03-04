@@ -5,7 +5,6 @@ if TYPE_CHECKING:
     from torch.nn import Module
     from wisent.core.primitives.models.wisent_model import WisentModel
     from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
-from wisent.core.utils.config_tools.constants import BLEND_DEFAULT
 from wisent.core.weight_modification.methods.guided import (
     GuidedModificationConfig, CollateralDamageReport)
 from wisent.core.weight_modification.methods._guided_diagnostics import compute_layer_diagnostics
@@ -17,6 +16,8 @@ def validate_collateral_damage(
     wisent_model_after: "WisentModel",
     validation_pairs: Dict[str, List["ContrastivePair"]],
     config: GuidedModificationConfig,
+    *,
+    blend_default: float,
 ) -> CollateralDamageReport:
     """
     Validate that weight modification didn't damage unrelated representations.
@@ -50,26 +51,28 @@ def validate_collateral_damage(
             model=wisent_model_before,
             layers=None,
             verbose=False,
+            blend_default=blend_default,
         )
-        
+
         # Compute diagnostics after
         diag_after = compute_layer_diagnostics(
             pairs=pairs,
             model=wisent_model_after,
             layers=None,
             verbose=False,
+            blend_default=blend_default,
         )
         
         # Best linear score before/after
         if diag_before:
             before_best = max(d.linear_score for d in diag_before.values())
         else:
-            before_best = BLEND_DEFAULT
+            before_best = blend_default
 
         if diag_after:
             after_best = max(d.linear_score for d in diag_after.values())
         else:
-            after_best = BLEND_DEFAULT
+            after_best = blend_default
         
         before_scores[benchmark] = before_best
         after_scores[benchmark] = after_best

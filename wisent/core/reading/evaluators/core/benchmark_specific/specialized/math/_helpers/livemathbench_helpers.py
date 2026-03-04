@@ -51,6 +51,14 @@ class LiveMathBenchEvaluator(BaseEvaluator):
     name = "livemathbench"
     description = "LiveMathBench evaluator for mathematical olympiad problems"
 
+    def __init__(self, math_timeout: int):
+        """Initialize LiveMathBench evaluator.
+
+        Args:
+            math_timeout: Timeout in seconds for symbolic math equality checks.
+        """
+        self.math_timeout = math_timeout
+
     @staticmethod
     def get_prompt(question: str, language: str) -> str:
         """Create prompt by appending language-specific instruction to the question."""
@@ -74,7 +82,7 @@ class LiveMathBenchEvaluator(BaseEvaluator):
                 meta={"response_preview": None, "expected": expected}
             )
         expected_str = str(expected).strip()
-        is_correct, predictions, no_boxed = multi_math_equal(expected_str, response)
+        is_correct, predictions, no_boxed = multi_math_equal(expected_str, response, timeout=self.math_timeout)
         model_answer = predictions[0][0] if predictions and predictions[0] else None
         return EvalResult(
             ground_truth="TRUTHFUL" if is_correct else "UNTRUTHFUL",

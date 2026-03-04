@@ -7,7 +7,7 @@ from typing import Any, Dict, Type
 from typing import TypedDict, Mapping
 from lm_eval.api.task import ConfigurableTask
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, BASE_CLASS_NAME
+from wisent.core.utils.config_tools.constants import BASE_CLASS_NAME
 from wisent.core.utils.infra_tools.errors import DuplicateNameError, InvalidRangeError
 
 __all__ = ["DataLoaderError", "BaseDataLoader"]
@@ -78,7 +78,7 @@ class BaseDataLoader(ABC):
             ValueError if split_ratio is not in [0.0, 1.0].
         """
         if split_ratio is None:
-            return DEFAULT_SPLIT_RATIO
+            return 0.8
         if not (0.0 <= split_ratio <= 1.0):
             raise InvalidRangeError(param_name="split_ratio", actual=split_ratio, min_val=0.0, max_val=1.0)
         return float(split_ratio)

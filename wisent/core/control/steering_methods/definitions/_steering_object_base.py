@@ -20,7 +20,7 @@ import json
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from wisent.core.utils.config_tools.constants import DEFAULT_SCALE, JSON_INDENT, BASE_CLASS_NAME
+from wisent.core.utils.config_tools.constants import JSON_INDENT, BASE_CLASS_NAME
 
 
 LayerName = str
@@ -157,17 +157,17 @@ class BaseSteeringObject(ABC):
 
         return (hidden_state + delta).to(original_dtype)
     
-    def to_steering_plan(self, scale: float = DEFAULT_SCALE, normalize: bool = True) -> "SteeringPlan":
+    def to_steering_plan(self, scale: float, normalize: bool = True) -> "SteeringPlan":
         """
         Convert this steering object to a SteeringPlan for use with WisentModel.
-        
+
         This allows steering objects to be used with the existing model infrastructure.
         Complex methods (TETNO, GROM) are simplified to their primary vectors.
-        
+
         Args:
             scale: Base scale for all vectors
             normalize: Whether to normalize vectors
-            
+
         Returns:
             SteeringPlan compatible with WisentModel.apply_steering()
         """

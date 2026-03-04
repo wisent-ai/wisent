@@ -4,17 +4,30 @@ from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.control.generation.synthetic.generators.core.atoms import GenerationReport
 from wisent.core.utils.infra_tools.errors import PairGenerationError
 from wisent.core.primitives.models import get_generate_kwargs
-from wisent.core.utils.config_tools.constants import AGENT_MAX_WORKERS, GENERATE_PAIRS_MIN_TOKENS, SIMHASH_DEFAULT_THRESHOLD_BITS, DISPLAY_TRUNCATION_SHORT, TRAIT_LABEL_MAX_LENGTH, AGENT_SYNTH_MIN_PAIRS, AGENT_SYNTH_TIME_MULTIPLIER, TOKENS_PER_PAIR_ESTIMATE, TOKENS_BASE_OFFSET
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_SHORT
 
 
 def generate_synthetic_pairs(
     model,
     prompt: str,
     time_budget: float,
+    max_workers: int,
+    trait_label_max_length: int,
     verbose: bool = False,
-    num_pairs: int = None,
     similarity_threshold: float = None,
-    max_workers: int = AGENT_MAX_WORKERS
+    *,
+    agent_synth_min_pairs: int,
+    agent_synth_time_multiplier: int,
+    generate_pairs_min_tokens: int,
+    simhash_default_threshold_bits: int,
+    tokens_per_pair_estimate: int,
+    tokens_base_offset: int,
+    dedup_word_ngram: int,
+    dedup_char_ngram: int,
+    simhash_num_bands: int,
+    fast_diversity_seed: int,
+    diversity_max_sample_size: int,
+    retry_multiplier: int,
 ) -> tuple[ContrastivePairSet, GenerationReport]:
     """
     Generate synthetic contrastive pairs for the given prompt.
@@ -28,14 +41,12 @@ def generate_synthetic_pairs(
             The trait/behavior to generate pairs for
         time_budget:
             Time budget in minutes
+        max_workers:
+            Number of parallel workers
         verbose:
             Enable verbose output
-        num_pairs:
-            Override number of pairs (default: based on time_budget)
         similarity_threshold:
-            Similarity threshold for deduplication (default: None uses SimHash threshold_bits=3)
-        max_workers:
-            Number of parallel workers (default: 4, currently not used by generator)
+            Similarity threshold for deduplication (default: None uses SimHash threshold_bits)
 
     returns:
         Tuple of (ContrastivePairSet, GenerationReport)
@@ -51,19 +62,16 @@ def generate_synthetic_pairs(
     print(f"   Trait: {prompt}")
     print(f"   Time budget: {time_budget} minutes")
 
-    # Determine number of pairs: use parameter override or estimate from time budget
-    if num_pairs is None:
-        num_pairs = max(AGENT_SYNTH_MIN_PAIRS, int(time_budget * AGENT_SYNTH_TIME_MULTIPLIER))
-        print(f"   Generating {num_pairs} pairs (based on time budget)")
-    else:
-        print(f"   Generating {num_pairs} pairs (user specified)")
+    # Determine number of pairs from time budget
+    num_pairs = max(agent_synth_min_pairs, int(time_budget * agent_synth_time_multiplier))
+    print(f"   Generating {num_pairs} pairs (based on time budget)")
 
     print(f"   ✓ Model loaded with {model.num_layers} layers")
 
     # Scale max_new_tokens based on number of pairs (same as generate-pairs CLI)
     gen_kwargs = get_generate_kwargs()
-    estimated_tokens = num_pairs * TOKENS_PER_PAIR_ESTIMATE + TOKENS_BASE_OFFSET
-    max_tokens = max(GENERATE_PAIRS_MIN_TOKENS, min(estimated_tokens, gen_kwargs["max_new_tokens"]))
+    estimated_tokens = num_pairs * tokens_per_pair_estimate + tokens_base_offset
+    max_tokens = max(generate_pairs_min_tokens, min(estimated_tokens, gen_kwargs["max_new_tokens"]))
 
     generation_config = {**gen_kwargs, "max_new_tokens": max_tokens}
 
@@ -72,11 +80,15 @@ def generate_synthetic_pairs(
 
     # Use similarity threshold if provided, otherwise use SimHash threshold_bits
     if similarity_threshold is not None:
-        print(f"   Using similarity threshold: {similarity_threshold}")
-        deduper = SimHashDeduper(threshold=similarity_threshold)
-    else:
-        print(f"   Using SimHash deduper with threshold_bits={SIMHASH_DEFAULT_THRESHOLD_BITS}")
-        deduper = SimHashDeduper(threshold_bits=SIMHASH_DEFAULT_THRESHOLD_BITS)
+        print(f"   Using similarity threshold (bits): {simhash_default_threshold_bits}")
+    tb = simhash_default_threshold_bits
+    print(f"   Using SimHash deduper with threshold_bits={tb}")
+    deduper = SimHashDeduper(
+        threshold_bits=tb,
+        word_ngram=dedup_word_ngram,
+        char_ngram=dedup_char_ngram,
+        num_bands=simhash_num_bands,
+    )
 
     cleaning_steps = [
         DeduperCleaner(deduper=deduper),
@@ -85,19 +97,20 @@ def generate_synthetic_pairs(
 
     # Set up components
     db_instructions = Default_DB_Instructions()
-    diversity = FastDiversity()
+    diversity = FastDiversity(seed=fast_diversity_seed, max_sample_size=diversity_max_sample_size)
 
     print(f"\n⚙️  Initializing generator...")
 
     generator = SyntheticContrastivePairsGenerator(
         model=model,
         generation_config=generation_config,
-        contrastive_set_name=f"agent_synthetic_{prompt[:TRAIT_LABEL_MAX_LENGTH].replace(' ', '_')}",
+        contrastive_set_name=f"agent_synthetic_{prompt[:trait_label_max_length].replace(' ', '_')}",
         trait_description=prompt,
         trait_label=prompt[:DISPLAY_TRUNCATION_SHORT],
         db_instructions=db_instructions,
         cleaner=cleaner,
         diversity=diversity,
+        retry_multiplier=retry_multiplier,
         nonsense_mode=None,
     )
 

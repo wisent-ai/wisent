@@ -9,15 +9,7 @@ from typing import Any, Dict, List, Optional
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
 from wisent.core.reading.classifiers.core.atoms import Classifier
-from wisent.core.utils.config_tools.constants import (
-    BLEND_DEFAULT,
-    CLASSIFIER_BATCH_SIZE,
-    CLASSIFIER_LAYER_RANGE_END,
-    DEFAULT_LIMIT,
-    DEFAULT_SCORE,
-    KEEP_RECENT_HOURS_DEFAULT,
-    OPTUNA_N_TRIALS_SMALL,
-)
+from wisent.core.utils.config_tools.constants import PARSER_DEFAULT_LAYER_START
 from wisent.core.utils.config_tools.optuna.classifier import (
     ClassifierOptimizationConfig,
     GenerationConfig,
@@ -41,7 +33,8 @@ class _SteeringOptimizerClassifier:
         tokenizer,
         device: str,
         task_name: str,
-        max_length: int | None = None,
+        test_timeout: int,
+        max_length: int | None = None, *, train_ratio: float,
     ) -> Dict[str, Any]:
 
 
@@ -60,40 +53,42 @@ class _SteeringOptimizerClassifier:
 
         # Calculate standard benchmark metrics with integrated classifier confidence scores
         baseline_metrics = metrics.evaluate_benchmark_performance(
-            baseline_predictions, ground_truths, task_name, classifier_scorer=classifier_scorer
+            baseline_predictions, ground_truths, task_name, test_timeout=test_timeout, classifier_scorer=classifier_scorer, train_ratio=train_ratio,
         )
         steered_metrics = metrics.evaluate_benchmark_performance(
-            steered_predictions, ground_truths, task_name, classifier_scorer=classifier_scorer
+            steered_predictions, ground_truths, task_name, test_timeout=test_timeout, classifier_scorer=classifier_scorer, train_ratio=train_ratio,
         )
 
         # Extract classifier scores from integrated metrics
         baseline_scores = [
-            detail.get("classifier_confidence", BLEND_DEFAULT) for detail in baseline_metrics.get("evaluation_details", [])
+            detail["classifier_confidence"] for detail in baseline_metrics["evaluation_details"]
         ]
         steered_scores = [
-            detail.get("classifier_confidence", BLEND_DEFAULT) for detail in steered_metrics.get("evaluation_details", [])
+            detail["classifier_confidence"] for detail in steered_metrics["evaluation_details"]
         ]
 
         # Calculate improvement metrics
-        accuracy_delta = steered_metrics.get("accuracy", DEFAULT_SCORE) - baseline_metrics.get("accuracy", DEFAULT_SCORE)
-        f1_delta = steered_metrics.get("f1", DEFAULT_SCORE) - baseline_metrics.get("f1", DEFAULT_SCORE)
+        accuracy_delta = steered_metrics["accuracy"] - baseline_metrics["accuracy"]
+        f1_delta = steered_metrics["f1"] - baseline_metrics["f1"]
 
         # Calculate classifier score improvements
-        avg_baseline_score = sum(baseline_scores) / len(baseline_scores) if baseline_scores else DEFAULT_SCORE
-        avg_steered_score = sum(steered_scores) / len(steered_scores) if steered_scores else DEFAULT_SCORE
+        if not baseline_scores or not steered_scores:
+            raise ValueError("No classifier scores found in evaluation details.")
+        avg_baseline_score = sum(baseline_scores) / len(baseline_scores)
+        avg_steered_score = sum(steered_scores) / len(steered_scores)
         classifier_score_delta = avg_steered_score - avg_baseline_score
 
         return {
             "baseline": {
-                "accuracy": baseline_metrics.get("accuracy", DEFAULT_SCORE),
-                "f1": baseline_metrics.get("f1", DEFAULT_SCORE),
+                "accuracy": baseline_metrics["accuracy"],
+                "f1": baseline_metrics["f1"],
                 "classifier_scores": baseline_scores,
                 "avg_classifier_score": avg_baseline_score,
                 "predictions": baseline_predictions,
             },
             "steered": {
-                "accuracy": steered_metrics.get("accuracy", DEFAULT_SCORE),
-                "f1": steered_metrics.get("f1", DEFAULT_SCORE),
+                "accuracy": steered_metrics["accuracy"],
+                "f1": steered_metrics["f1"],
                 "classifier_scores": steered_scores,
                 "avg_classifier_score": avg_steered_score,
                 "predictions": steered_predictions,
@@ -108,11 +103,13 @@ class _SteeringOptimizerClassifier:
     def load_or_find_best_classifier(
         self,
         model,
+        batch_size: int,
         optimization_config: Optional[ClassifierOptimizationConfig] = None,
         model_name: Optional[str] = None,
         task_name: Optional[str] = None,
         contrastive_pairs: Optional[List] = None,
         force_reoptimize: bool = False,
+        classifier_layer_range_end: int = None,
     ) -> Optional[Classifier]:
         """
         Load or train the best classifier for current steering session.
@@ -127,9 +124,9 @@ class _SteeringOptimizerClassifier:
         if optimization_config is not None:
             model_name = optimization_config.model_name
             task_name = getattr(optimization_config, "task_name", task_name)
-            limit = getattr(optimization_config, "data_limit", DEFAULT_LIMIT)
+            limit = optimization_config.data_limit
         else:
-            limit = DEFAULT_LIMIT
+            raise MissingParameterError(params=["optimization_config"])
 
         if not model_name or not task_name:
             raise MissingParameterError(params=["model_name", "task_name"])
@@ -153,20 +150,13 @@ class _SteeringOptimizerClassifier:
             self.logger.error("contrastive_pairs required for classifier optimization")
             return None
 
-        try:
-            # Create configuration for classifier optimization if not provided
-            if optimization_config is None:
-                optimization_config = ClassifierOptimizationConfig(
-                    model_name=model_name,
-                    device="auto",
-                    n_trials=OPTUNA_N_TRIALS_SMALL,
-                    model_types=["logistic", "mlp"],
-                    primary_metric="f1",
-                )
+        if classifier_layer_range_end is None:
+            raise ValueError("classifier_layer_range_end is required")
 
+        try:
             # Create generation config for activation pre-generation
             generation_config = GenerationConfig(
-                layer_search_range=(0, CLASSIFIER_LAYER_RANGE_END),
+                layer_search_range=(PARSER_DEFAULT_LAYER_START, classifier_layer_range_end),
                 aggregation_methods=[
                     ExtractionStrategy.CHAT_MEAN,
                     ExtractionStrategy.CHAT_LAST,
@@ -175,7 +165,7 @@ class _SteeringOptimizerClassifier:
                 ],
                 cache_dir="./cache/steering_activations",
                 device=optimization_config.device,
-                batch_size=CLASSIFIER_BATCH_SIZE,
+                batch_size=batch_size,
             )
 
             # Create classifier optimizer
@@ -230,6 +220,6 @@ class _SteeringOptimizerClassifier:
         """Get information about cached classifiers."""
         return self.classifier_cache.get_cache_info()
 
-    def clear_classifier_cache(self, keep_recent_hours: float = KEEP_RECENT_HOURS_DEFAULT) -> int:
+    def clear_classifier_cache(self, keep_recent_hours: float) -> int:
         """Clear old cached classifiers."""
         return self.classifier_cache.clear_cache(keep_recent_hours=keep_recent_hours)

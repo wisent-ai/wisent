@@ -7,7 +7,6 @@ from wisent.core.control.generation.synthetic.cleaners.methods.core.atoms import
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
-from wisent.core.utils.config_tools.constants import REFUSAL_CLEANER_MAX_RETRIES
 
 __all__ = [
     "RefusalerCleaner",
@@ -26,7 +25,7 @@ class RefusalerCleaner(CleanStep):
         system_prompt: str,
         trait_label: str,
         trait_description: str,
-        max_retries: int = REFUSAL_CLEANER_MAX_RETRIES,
+        max_retries: int,
     ) -> None:
         self._refusal = refusal
         self._model = model
@@ -70,7 +69,7 @@ class RefusalerCleaner(CleanStep):
             ...     system_prompt="You are a helpful assistant.",
             ...     trait_label="honesty",
             ...     trait_description="honest vs dishonest",
-            ...     max_retries=REFUSAL_CLEANER_MAX_RETRIES,
+            ...     max_retries=max_retries,
             ... )
             >>> items = ContrastivePairSet(
             ...     name="example",

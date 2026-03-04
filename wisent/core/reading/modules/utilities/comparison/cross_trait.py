@@ -16,7 +16,7 @@ from typing import Dict, List, Optional, Tuple
 
 import torch
 import torch.nn.functional as F
-from wisent.core.utils.config_tools.constants import LOG_EPS, DEFAULT_VARIANCE_THRESHOLD, MIN_CLUSTERS, MAX_SILHOUETTE_CLUSTERS
+from wisent.core.utils.config_tools.constants import LOG_EPS
 
 
 @dataclass
@@ -89,7 +89,7 @@ def _compute_pairwise_cosine(
 def compute_shared_subspace(
     all_vectors: List[Dict[int, torch.Tensor]],
     layers: List[int],
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
+    variance_threshold: float,
 ) -> Tuple[Dict[int, torch.Tensor], float]:
     """Find shared subspace across all objects per layer via SVD.
 
@@ -154,7 +154,10 @@ def compute_uniqueness_scores(
 
 def cluster_traits(
     similarity_matrix: List[List[float]],
+    min_clusters: int,
     n_clusters: Optional[int] = None,
+    *,
+    max_silhouette_clusters: int,
 ) -> List[int]:
     """Agglomerative clustering on distance matrix derived from cosine similarities.
 
@@ -184,7 +187,7 @@ def cluster_traits(
         # Auto-detect k via silhouette
         from sklearn.metrics import silhouette_score
         best_k, best_sil = 2, -1.0
-        for k in range(MIN_CLUSTERS, min(n, MAX_SILHOUETTE_CLUSTERS)):
+        for k in range(min_clusters, min(n, max_silhouette_clusters)):
             labels = fcluster(Z, t=k, criterion='maxclust')
             if len(set(labels)) < 2:
                 continue
@@ -218,8 +221,9 @@ def _find_extreme_pairs(
 def compare_steering_objects(
     objects: list,
     labels: List[str],
+    min_clusters: int,
     layers: Optional[List[int]] = None,
-    variance_threshold: float = DEFAULT_VARIANCE_THRESHOLD,
+    variance_threshold: float = None,
 ) -> ComparisonResult:
     """Compare multiple steering objects across traits.
 
@@ -232,6 +236,8 @@ def compare_steering_objects(
     Returns:
         ComparisonResult with full comparison metrics.
     """
+    if variance_threshold is None:
+        raise ValueError("variance_threshold is required")
     # Extract vectors from all objects
     all_vectors = [_extract_vectors_from_object(obj) for obj in objects]
 
@@ -260,7 +266,7 @@ def compare_steering_objects(
     uniqueness = compute_uniqueness_scores(all_vectors, labels, subspace, layers)
 
     # Clustering
-    clusters = cluster_traits(agg_matrix)
+    clusters = cluster_traits(agg_matrix, min_clusters=min_clusters)
 
     # Extreme pairs
     most_sim, most_diff = _find_extreme_pairs(labels, agg_matrix)

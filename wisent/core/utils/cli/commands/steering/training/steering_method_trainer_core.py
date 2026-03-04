@@ -10,7 +10,7 @@ from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
 from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
-from wisent.core.utils.config_tools.constants import NORM_EPS
+from wisent.core.utils.config_tools.constants import NORM_EPS, ARCHITECTURE_MODULE_LIMIT
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,7 @@ def train_steering_vector_for_layer(
         neg_tensor = torch.stack([t.detach().float().reshape(-1) for t in neg_acts], dim=0)
         
         # Train TECZA for this layer
-        directions, _ = method._train_layer_directions(pos_tensor, neg_tensor, layer_name="layer")
+        directions, _ = method._train_layer_directions(pos_tensor, neg_tensor, layer_name="layer", log_interval=method.log_interval)
         
         # Return primary direction (first direction, weighted)
         if directions.shape[0] > 1:
@@ -153,7 +153,7 @@ def collect_activations_for_pair_set(
     Returns:
         Updated ContrastivePairSet with activations attached
     """
-    collector = ActivationCollector(model=model)
+    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     
     updated_pairs = []
     for pair in pair_set.pairs:

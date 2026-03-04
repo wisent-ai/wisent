@@ -5,7 +5,7 @@ import os
 
 from wisent.core.utils.cli.optimization.core.optimize_helpers import save_checkpoint
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SCORE, DISPLAY_TRUNCATION_ERROR, LAYER_SWEEP_STRENGTH,
+    DISPLAY_TRUNCATION_ERROR,
 )
 
 
@@ -73,21 +73,23 @@ def run_safety_welfare_steering(args, results):
                         best_method = None
                         best_score = -1
                         for method, method_result in best_result.items():
-                            if isinstance(method_result, dict) and method_result.get("best_score", DEFAULT_SCORE) > best_score:
+                            if isinstance(method_result, dict) and method_result["best_score"] > best_score:
                                 best_score = method_result["best_score"]
                                 best_method = method
                                 best_layer = method_result.get("best_layer")
                     else:
                         best_method = steering_result.get("best_method", "CAA")
                         best_layer = steering_result.get("best_layer")
-                        best_score = steering_result.get("best_score", DEFAULT_SCORE)
+                        best_score = steering_result["best_score"]
                     
                     if best_method:
+                        if not isinstance(steering_result, dict) or "best_strength" not in steering_result:
+                            raise ValueError("steering_result must contain 'best_strength'")
                         store_optimization(
                             model=args.model,
                             task=f"safety:{trait}",
                             layer=best_layer,
-                            strength=steering_result["best_strength"] if isinstance(steering_result, dict) and "best_strength" in steering_result else LAYER_SWEEP_STRENGTH,
+                            strength=steering_result["best_strength"],
                             method=best_method.upper(),
                             score=best_score,
                         )
@@ -146,7 +148,7 @@ def run_safety_welfare_steering(args, results):
                 if steering_result:
                     best_method = steering_result.get("best_method", "CAA")
                     best_layer = steering_result.get("best_layer")
-                    best_score = steering_result.get("best_score", DEFAULT_SCORE)
+                    best_score = steering_result["best_score"]
                     
                     store_optimization(
                         model=args.model,
@@ -211,7 +213,7 @@ def run_safety_welfare_steering(args, results):
                 if steering_result:
                     best_method = steering_result.get("best_method", "CAA")
                     best_layer = steering_result.get("best_layer")
-                    best_score = steering_result.get("best_score", DEFAULT_SCORE)
+                    best_score = steering_result["best_score"]
 
                     store_optimization(
                         model=args.model,

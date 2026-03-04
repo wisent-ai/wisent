@@ -17,10 +17,6 @@ import torch.nn.functional as F
 
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, LayerName
-from wisent.core.utils.config_tools.constants import DEFAULT_VARIANCE_THRESHOLD, UNIVERSAL_SUBSPACE_RANK, MARGINAL_VARIANCE_THRESHOLD
-
-# Backward-compatible aliases
-VARIANCE_EXPLAINED_THRESHOLD = DEFAULT_VARIANCE_THRESHOLD
 
 # Re-exports from extracted modules
 from wisent.core.control.steering_core._subspace_analysis import (
@@ -44,7 +40,7 @@ from wisent.core.control.steering_core._subspace_directions import (
     initialize_from_universal_basis,
 )
 from wisent.core.control.steering_core._subspace_validation import (
-    UNIVERSAL_SUBSPACE_THRESHOLDS,
+    _build_universal_subspace_thresholds,
     compute_subspace_alignment,
     verify_subspace_preservation,
     get_recommended_geometry_thresholds,
@@ -67,6 +63,6 @@ __all__ = [
     "get_cached_universal_basis",
     "verify_subspace_preservation",
     "compute_subspace_alignment",
-    "UNIVERSAL_SUBSPACE_THRESHOLDS",
+    "_build_universal_subspace_thresholds",
     "get_recommended_geometry_thresholds",
 ]

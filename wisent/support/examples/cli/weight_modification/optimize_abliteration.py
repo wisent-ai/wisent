@@ -16,10 +16,8 @@ from dataclasses import dataclass
 import sys
 
 from wisent.core.utils.config_tools.constants import (
-    EXTRACTION_DEFAULT_PAIR_LIMIT,
     ABLITERATION_DEFAULT_POSITION,
     ABLITERATION_DEFAULT_DISTANCE,
-    EXTRACTOR_DEFAULT_LIMIT,
 )
 
 
@@ -93,7 +91,7 @@ def run_modification(config: AbliterationConfig, task: str, output_dir: str, mod
     return model_path
 
 
-def evaluate_model(model_path: str, task: str, limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT) -> tuple[float, float]:
+def evaluate_model(model_path: str, task: str, *, limit: int) -> tuple[float, float]:
     """
     Evaluate model on benchmark.
 
@@ -158,7 +156,8 @@ def optimize_abliteration(
     model: str,
     baseline_accuracy: float,
     output_dir: str = "./data/modified_models",
-    eval_limit: int = EXTRACTOR_DEFAULT_LIMIT
+    *,
+    eval_limit: int,
 ) -> EvaluationResult:
     """
     Optimize abliteration parameters through grid search.
@@ -223,7 +222,7 @@ def optimize_abliteration(
         model_path = run_modification(config, task, output_dir, model)
 
         # Evaluate
-        accuracy, acc_norm = evaluate_model(model_path, task, eval_limit)
+        accuracy, acc_norm = evaluate_model(model_path, task, limit=eval_limit)
 
         # Store results
         result = EvaluationResult(
@@ -275,15 +274,24 @@ def optimize_abliteration(
 
 
 if __name__ == "__main__":
-    # Run optimization
+    import argparse
+    parser = argparse.ArgumentParser(description="Optimize abliteration parameters")
+    parser.add_argument("--task", type=str, required=True, help="Benchmark task name")
+    parser.add_argument("--model", type=str, required=True, help="Base model name")
+    parser.add_argument("--baseline-accuracy", type=float, required=True, help="Baseline accuracy")
+    parser.add_argument("--output-dir", type=str, required=True, help="Output directory")
+    parser.add_argument("--eval-limit", type=int, required=True, help="Evaluation limit")
+    args = parser.parse_args()
+
     best = optimize_abliteration(
-        task="hellaswag",
-        model="meta-llama/Llama-3.2-1B-Instruct",
-        baseline_accuracy=0.44,  # 44% baseline
-        output_dir="./data/modified_models/optimized",
-        eval_limit=500
+        task=args.task,
+        model=args.model,
+        baseline_accuracy=args.baseline_accuracy,
+        output_dir=args.output_dir,
+        eval_limit=args.eval_limit,
     )
 
-    print(f"\n✅ Optimization complete!")
+    print(f"\nOptimization complete!")
     print(f"Best model: {best.model_path}")
-    print(f"Best accuracy: {best.accuracy:.1%} ({best.gain(0.44):+.1f}% gain)")
+    gain = best.gain(args.baseline_accuracy)
+    print(f"Best accuracy: {best.accuracy:.1%} ({gain:+.1f}% gain)")

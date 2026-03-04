@@ -2,13 +2,13 @@
 
 from typing import Any, Dict, List
 
-from wisent.core.utils.config_tools.constants import MIN_PAGE_TEXT_LENGTH, MIN_SENTENCE_LENGTH, DISPLAY_TRUNCATION_COMPACT, MAX_INCORRECT_PER_CORRECT
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT
 
 
 class QAConvertersMixin:
     """Mixin providing QA conversion methods and the sample-to-pairs dispatcher."""
 
-    def _convert_sample_to_pairs(self, sample: Dict[str, Any], benchmark_name: str) -> List[Dict[str, Any]]:
+    def _convert_sample_to_pairs(self, sample: Dict[str, Any], benchmark_name: str, min_page_text_length: int, min_sentence_length: int) -> List[Dict[str, Any]]:
         """Convert a single sample to contrastive pairs based on benchmark type."""
 
         # MMMLU format (instruction, option_a, option_b, option_c, option_d, answer)
@@ -93,7 +93,7 @@ class QAConvertersMixin:
 
         # WikiText format (page)
         if "page" in sample:
-            return self._convert_wikitext_format(sample)
+            return self._convert_wikitext_format(sample, min_page_text_length=min_page_text_length, min_sentence_length=min_sentence_length)
 
         # GPQA format (Question, choice1-4, answer, plus rich metadata)
         if (
@@ -129,11 +129,11 @@ class QAConvertersMixin:
         print(f"         Warning: Unknown sample format: {list(sample.keys())}")
         return []
 
-    def _convert_wikitext_format(self, sample: Dict[str, Any]) -> List[Dict[str, Any]]:
+    def _convert_wikitext_format(self, sample: Dict[str, Any], min_page_text_length: int, min_sentence_length: int) -> List[Dict[str, Any]]:
         """Convert WikiText format (page)."""
         page = sample.get("page", "")
 
-        if not page or len(page.strip()) < MIN_PAGE_TEXT_LENGTH:  # Skip very short pages
+        if not page or len(page.strip()) < min_page_text_length:  # Skip very short pages
             return []
 
         # For WikiText, we create language modeling pairs
@@ -144,7 +144,7 @@ class QAConvertersMixin:
 
         pairs = []
         for i, sentence in enumerate(sentences):
-            if len(sentence.strip()) > MIN_SENTENCE_LENGTH:  # Only use substantial sentences
+            if len(sentence.strip()) > min_sentence_length:  # Only use substantial sentences
                 # Create a corrupted version by replacing some words
                 words = sentence.split()
                 if len(words) > 3:
@@ -192,7 +192,7 @@ class QAConvertersMixin:
 
         # Strategy 1: Use other answers from the list as distractors if available
         if len(answer_list) > 1:
-            incorrect_answers.extend(answer_list[1:MAX_INCORRECT_PER_CORRECT + 1])
+            incorrect_answers.extend(answer_list[1:self.max_incorrect_per_correct + 1])
 
         # Strategy 2: Generate generic incorrect answers
         if len(incorrect_answers) < 2:
@@ -201,7 +201,7 @@ class QAConvertersMixin:
 
         # Create contrastive pairs
         pairs = []
-        for incorrect in incorrect_answers[:MAX_INCORRECT_PER_CORRECT]:  # Limit pairs
+        for incorrect in incorrect_answers[:self.max_incorrect_per_correct]:  # Limit pairs
             pairs.append(
                 {
                     "context": question,
@@ -243,7 +243,7 @@ class QAConvertersMixin:
 
         # Strategy 1: Use other aliases as distractors if available
         if len(aliases) > 1:
-            incorrect_answers.extend(aliases[1:MAX_INCORRECT_PER_CORRECT + 1])
+            incorrect_answers.extend(aliases[1:self.max_incorrect_per_correct + 1])
 
         # Strategy 2: Generate generic incorrect answers for trivia
         if len(incorrect_answers) < 2:
@@ -252,7 +252,7 @@ class QAConvertersMixin:
 
         # Create contrastive pairs
         pairs = []
-        for incorrect in incorrect_answers[:MAX_INCORRECT_PER_CORRECT]:  # Limit pairs
+        for incorrect in incorrect_answers[:self.max_incorrect_per_correct]:  # Limit pairs
             pairs.append(
                 {
                     "context": question,

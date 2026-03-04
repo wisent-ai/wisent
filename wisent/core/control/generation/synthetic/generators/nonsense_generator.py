@@ -7,7 +7,6 @@ from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core import constants as _C
 
 __all__ = [
     "ProgrammaticNonsenseGenerator",
@@ -23,6 +22,22 @@ class ProgrammaticNonsenseGenerator:
         contrastive_set_name: str,
         trait_label: str,
         trait_description: str,
+        *,
+        char_len_min: int,
+        char_len_max: int,
+        word_filter_max_len: int,
+        repetition_min: int,
+        repetition_max: int,
+        word_salad_min: int,
+        word_salad_max: int,
+        mixed_components_min: int,
+        mixed_components_max: int,
+        mixed_char_len_min: int,
+        mixed_char_len_max: int,
+        mixed_reps_min: int,
+        mixed_reps_max: int,
+        mixed_words_min: int,
+        mixed_words_max: int,
     ) -> None:
         """
         Initialize the programmatic nonsense generator.
@@ -32,11 +47,41 @@ class ProgrammaticNonsenseGenerator:
             contrastive_set_name: Name for the contrastive pair set
             trait_label: Label for the trait
             trait_description: Description of the trait
+            char_len_min: Minimum character length for random char generation.
+            char_len_max: Maximum character length for random char generation.
+            word_filter_max_len: Maximum word length when filtering tokenizer vocab.
+            repetition_min: Minimum repetitions for repetitive mode.
+            repetition_max: Maximum repetitions for repetitive mode.
+            word_salad_min: Minimum word count for word salad mode.
+            word_salad_max: Maximum word count for word salad mode.
+            mixed_components_min: Minimum number of mixed components.
+            mixed_components_max: Maximum number of mixed components.
+            mixed_char_len_min: Minimum char length in mixed char mode.
+            mixed_char_len_max: Maximum char length in mixed char mode.
+            mixed_reps_min: Minimum repetitions in mixed repetitive mode.
+            mixed_reps_max: Maximum repetitions in mixed repetitive mode.
+            mixed_words_min: Minimum words in mixed word salad mode.
+            mixed_words_max: Maximum words in mixed word salad mode.
         """
         self.nonsense_mode = nonsense_mode
         self.contrastive_set_name = contrastive_set_name
         self.trait_label = trait_label
         self.trait_description = trait_description
+        self._char_len_min = char_len_min
+        self._char_len_max = char_len_max
+        self._word_filter_max_len = word_filter_max_len
+        self._repetition_min = repetition_min
+        self._repetition_max = repetition_max
+        self._word_salad_min = word_salad_min
+        self._word_salad_max = word_salad_max
+        self._mixed_components_min = mixed_components_min
+        self._mixed_components_max = mixed_components_max
+        self._mixed_char_len_min = mixed_char_len_min
+        self._mixed_char_len_max = mixed_char_len_max
+        self._mixed_reps_min = mixed_reps_min
+        self._mixed_reps_max = mixed_reps_max
+        self._mixed_words_min = mixed_words_min
+        self._mixed_words_max = mixed_words_max
         self._valid_words = None
     
     def set_tokenizer(self, tokenizer) -> None:
@@ -50,16 +95,17 @@ class ProgrammaticNonsenseGenerator:
                 valid_words.append(clean)
         self._valid_words = list(set(valid_words))
 
-    def generate(self, num_pairs: int = _C.NONSENSE_DEFAULT_NUM_PAIRS) -> ContrastivePairSet:
+    def generate(self, *, nonsense_default_num_pairs: int) -> ContrastivePairSet:
         """
         Generate nonsense contrastive pairs programmatically.
 
         Args:
-            num_pairs: Number of pairs to generate
+            nonsense_default_num_pairs: Number of nonsense pairs to generate.
 
         Returns:
             ContrastivePairSet with generated nonsense pairs
         """
+        num_pairs = nonsense_default_num_pairs
         cps = ContrastivePairSet(
             name=self.contrastive_set_name,
             task_type=self.trait_label

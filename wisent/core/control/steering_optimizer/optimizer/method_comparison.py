@@ -10,11 +10,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Any, Union
 
 from wisent.core.control.steering_methods import SteeringMethodRegistry, SteeringMethodType
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LIMIT, DEFAULT_NUM_HIDDEN_LAYERS, DEFAULT_SPLIT_RATIO,
-    SEARCH_DEFAULT_STRENGTHS, SEARCH_MAX_LAYER_CAP,
-    OPTIMIZE_MAX_TIME_MINUTES, SECONDS_PER_MINUTE,
-)
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE
 
 from ..types import (
     SteeringMethodConfig,
@@ -35,12 +31,13 @@ class MethodComparisonMixin:
     def optimize_steering_method_comparison(
         self,
         task_name: str,
+        limit: int,
         methods_to_test: Optional[Union[List[SteeringMethod], List[SteeringMethodConfig]]] = None,
         layer_range: Optional[str] = None,
-        strength_range: Optional[List[float]] = None,
-        limit: int = DEFAULT_LIMIT,
-        max_time_minutes: float = OPTIMIZE_MAX_TIME_MINUTES,
-        split_ratio: float = DEFAULT_SPLIT_RATIO
+        strength_range: tuple[float, ...] = None,
+        max_time_minutes: Optional[float] = None,
+        search_max_layer_cap: int = None,
+        split_ratio: Optional[float] = None,
     ) -> SteeringOptimizationSummary:
         """
         Compare different steering methods to find the best one for a task.
@@ -57,6 +54,13 @@ class MethodComparisonMixin:
         Returns:
             SteeringOptimizationSummary with method comparison results
         """
+        if max_time_minutes is None:
+            raise ValueError("max_time_minutes is required")
+        if strength_range is None:
+            raise ValueError("strength_range is required")
+        if search_max_layer_cap is None:
+            raise ValueError("search_max_layer_cap is required")
+        split_ratio = split_ratio if split_ratio is not None else 0.8
         # Handle both old-style method list and new config list
         if methods_to_test is None:
             method_configs = get_default_steering_configs()
@@ -80,9 +84,6 @@ class MethodComparisonMixin:
                 else:
                     logger.warning(f"Unknown method type: {type(item)}, value: {item}")
 
-        if strength_range is None:
-            strength_range = list(SEARCH_DEFAULT_STRENGTHS)
-
         logger.info(f"Comparing {len(method_configs)} steering method configs for: {task_name}")
 
         start_time = time.time()
@@ -90,7 +91,7 @@ class MethodComparisonMixin:
         all_results = {}
 
         # Determine layer search range
-        layers_to_test = self._get_layers_to_test(layer_range)
+        layers_to_test = self._get_layers_to_test(layer_range, search_max_layer_cap)
 
         configurations_tested = 0
         best_overall_score = 0.0
@@ -181,13 +182,13 @@ class MethodComparisonMixin:
         self._save_steering_optimization_results(summary)
         return summary
 
-    def _get_layers_to_test(self, layer_range: Optional[str]) -> List[int]:
+    def _get_layers_to_test(self, layer_range: Optional[str], search_max_layer_cap: int) -> List[int]:
         """Determine layers to test based on layer_range or model config."""
         if layer_range:
             return self._parse_layer_range(layer_range)
         elif self.base_classification_layer:
             min_layer = max(1, self.base_classification_layer - 2)
-            max_layer = min(SEARCH_MAX_LAYER_CAP, self.base_classification_layer + 2)
+            max_layer = min(search_max_layer_cap, self.base_classification_layer + 2)
             return list(range(min_layer, max_layer + 1))
         else:
             try:
@@ -195,10 +196,14 @@ class MethodComparisonMixin:
                 config = AutoConfig.from_pretrained(self.model_name, trust_remote_code=True)
                 num_layers = getattr(config, 'num_hidden_layers', None) or \
                              getattr(config, 'n_layer', None) or \
-                             getattr(config, 'num_layers', None) or DEFAULT_NUM_HIDDEN_LAYERS
+                             getattr(config, 'num_layers', None)
+                if num_layers is None:
+                    raise ValueError("num_layers must be specified: could not detect from model config")
                 return list(range(num_layers))
-            except Exception:
-                return list(range(DEFAULT_NUM_HIDDEN_LAYERS))
+            except ValueError:
+                raise
+            except Exception as e:
+                raise ValueError(f"num_layers must be specified: failed to load model config ({e})")
 
     def _analyze_results(self, all_results: Dict) -> tuple:
         """Analyze optimization results to compute rankings."""

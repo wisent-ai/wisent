@@ -6,10 +6,8 @@ from pathlib import Path
 from typing import Optional, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import (
-    JSON_INDENT, TETNO_HYBRID_STRENGTH_FACTOR,
-    TETNO_GATE_TEMPERATURE, TETNO_DYNAMIC_BASE_STRENGTH,
-)
+from wisent.core.utils.config_tools.constants import JSON_INDENT
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
@@ -26,6 +24,8 @@ def export_tetno_model(
     save_path: str | Path,
     strength: float,
     mode: str,
+    *,
+    hybrid_strength_factor: float,
     tokenizer=None,
     push_to_hub: bool = False,
     repo_id: str | None = None,
@@ -62,7 +62,7 @@ def export_tetno_model(
     
     # Step 1: Bake behavior vectors into weights (for static/hybrid mode)
     if mode in ("static", "hybrid"):
-        bake_strength = strength if mode == "static" else strength * TETNO_HYBRID_STRENGTH_FACTOR
+        bake_strength = strength if mode == "static" else strength * hybrid_strength_factor
         
         # Convert layer names to integer indices
         int_keyed_vectors = {}
@@ -94,12 +94,19 @@ def export_tetno_model(
     # Step 3: Save TETNO components for dynamic steering
     tetno_save_path = save_path / "tetno_steering.pt"
     
+    # Extract gate_temperature from metadata config if available
+    config_dict = tetno_result.metadata.get("config", {}) if isinstance(tetno_result.metadata, dict) else {}
+    gate_temp = config_dict.get("gate_temperature", getattr(tetno_result, "gate_temperature", None))
+    if gate_temp is None:
+        raise InsufficientDataError(reason="gate_temperature not found in TETNO result metadata. Re-train with current wisent version.")
+
     tetno_data = {
         "mode": mode,
         "behavior_vectors": {k: v.cpu() for k, v in tetno_result.behavior_vectors.items()},
         "condition_vector": tetno_result.condition_vector.cpu(),
         "layer_scales": tetno_result.layer_scales,
         "optimal_threshold": tetno_result.optimal_threshold,
+        "gate_temperature": gate_temp,
         "metadata": tetno_result.metadata,
     }
     
@@ -141,6 +148,9 @@ def export_tetno_model(
 
 def load_tetno_model(
     model_path: str | Path,
+    *,
+    hybrid_strength_factor: float,
+    dynamic_base_strength: float,
     device_map: Optional[str] = None,
     torch_dtype=None,
     install_hooks: bool = True,
@@ -233,10 +243,15 @@ def load_tetno_model(
         tetno_result.optimal_threshold = tetno_data["optimal_threshold"]
         tetno_result.metadata = tetno_data.get("metadata", {})
         
+        # Extract gate_temperature from saved data
+        if "gate_temperature" not in tetno_data:
+            raise InsufficientDataError(reason="gate_temperature missing from saved TETNO data. Re-export the model with current wisent version.")
+        saved_gate_temperature = tetno_data["gate_temperature"]
+
         # Add methods
         import torch.nn.functional as F
-        
-        def compute_gate(hidden_state, temperature=TETNO_GATE_TEMPERATURE):
+
+        def compute_gate(hidden_state, temperature=saved_gate_temperature):
             if hidden_state.dim() > 1:
                 hidden_state = hidden_state.reshape(-1, hidden_state.shape[-1]).mean(dim=0)
             h_norm = F.normalize(hidden_state, p=2, dim=-1)
@@ -249,7 +264,8 @@ def load_tetno_model(
         hooks = TETNORuntimeHooks(
             model=model,
             tetno_result=tetno_result,
-            base_strength=TETNO_HYBRID_STRENGTH_FACTOR if mode == "hybrid" else TETNO_DYNAMIC_BASE_STRENGTH,
+            base_strength=hybrid_strength_factor if mode == "hybrid" else dynamic_base_strength,
+            gate_temperature=saved_gate_temperature,
         )
         hooks.install()
         log.info(f"Installed TETNO runtime hooks (threshold={tetno_result.optimal_threshold:.3f})")

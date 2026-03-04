@@ -7,11 +7,6 @@ import json
 from pathlib import Path
 
 from wisent.core.utils.config_tools.constants import (
-    COMPARISON_NUM_PAIRS,
-    COMPARISON_MAX_BATCH_SIZE,
-    COMPARISON_DEFAULT_BATCH_SIZE,
-    COMPARISON_STEERING_LAYER,
-    DEFAULT_SPLIT_RATIO,
     JSON_INDENT,
 )
 
@@ -22,27 +17,23 @@ def run_comparison(
     bos_features_source: str,
     device: str,
     output_dir: str,
-    methods: list[str] = None,
-    num_pairs: int = COMPARISON_NUM_PAIRS,
-    steering_scales: list[float] = None,
-    batch_size: int | str = 1,
-    max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
+    num_pairs: int,
+    max_batch_size: int,
+    train_ratio: float,
+    steering_scales: list[float],
+    batch_size: int | str,
+    log_interval: int,
+    caa_layers: str,
+    sae_layers: str,
+    methods: list[str],
+    extraction_strategies: list[str],
+    *,
     eval_limit: int | None = None,
-    train_ratio: float = DEFAULT_SPLIT_RATIO,
-    caa_layers: str = str(COMPARISON_STEERING_LAYER),
-    sae_layers: str = str(COMPARISON_STEERING_LAYER),
-    extraction_strategies: list[str] = None,
     run_single_task_fn=None,
 ) -> list[dict]:
     """
     Run full comparison for multiple tasks, methods, scales, and extraction strategies.
     """
-    if methods is None:
-        methods = ["caa"]
-    if steering_scales is None:
-        raise ValueError("steering_scales must be provided explicitly")
-    if extraction_strategies is None:
-        extraction_strategies = ["mc_balanced"]
 
     output_dir = Path(output_dir)
     # Add model name to path (sanitize "/" -> "_")
@@ -65,17 +56,18 @@ def run_comparison(
         task_results = run_single_task_fn(
             model_name=model_name,
             task=task,
-            methods=methods,
             num_pairs=num_pairs,
             steering_scales=steering_scales,
             device=device,
             batch_size=batch_size,
             max_batch_size=max_batch_size,
+            log_interval=log_interval,
             eval_limit=eval_limit,
             vectors_dir=vectors_dir,
             train_ratio=train_ratio,
             caa_layers=caa_layers,
             sae_layers=sae_layers,
+            methods=methods,
             extraction_strategies=extraction_strategies,
             bos_features_source=bos_features_source,
         )
@@ -139,41 +131,42 @@ def main(run_single_task_fn, run_comparison_fn):
                         help="Model name")
     parser.add_argument("--tasks", required=True,
                         help="Comma-separated lm-eval tasks")
-    parser.add_argument("--methods", required=True,
-                        help="Comma-separated methods (caa,sae,fgaa)")
-    parser.add_argument("--num-pairs", type=int, default=COMPARISON_NUM_PAIRS,
+    parser.add_argument("--num-pairs", type=int, required=True,
                         help="Number of contrastive pairs")
     parser.add_argument("--scales", required=True,
                         help="Comma-separated steering scales")
-    parser.add_argument("--caa-layers", default=str(COMPARISON_STEERING_LAYER),
+    parser.add_argument("--caa-layers", default=None,
                         help="Layer(s) for CAA steering")
-    parser.add_argument("--sae-layers", default=str(COMPARISON_STEERING_LAYER),
+    parser.add_argument("--sae-layers", default=None,
                         help="Layer(s) for SAE/FGAA steering")
+    parser.add_argument("--methods", required=True,
+                        help="Comma-separated method names")
+    parser.add_argument("--extraction-strategies", required=True,
+                        help="Comma-separated extraction strategies")
     parser.add_argument("--device", required=True, help="Device")
-    parser.add_argument("--batch-size", default=COMPARISON_DEFAULT_BATCH_SIZE,
+    parser.add_argument("--batch-size", required=True,
                         help="Batch size (int or 'auto')")
-    parser.add_argument("--max-batch-size", type=int, default=COMPARISON_MAX_BATCH_SIZE,
+    parser.add_argument("--max-batch-size", type=int, required=True,
                         help="Max batch size for lm-eval internal batching")
     parser.add_argument("--limit", type=int, default=None,
                         help="Limit eval examples")
     parser.add_argument("--output-dir",
                         required=True,
                         help="Output directory")
-    parser.add_argument("--train-ratio", type=float, default=DEFAULT_SPLIT_RATIO,
+    parser.add_argument("--train-ratio", type=float, required=True,
                         help="Train/test split ratio")
-    parser.add_argument("--extraction-strategy", required=True,
-                        help="Extraction strategy (comma-separated)")
     parser.add_argument("--bos-features-source", required=True,
                         help="BOS features source for FGAA")
+    parser.add_argument("--log-interval", type=int, required=True,
+                        help="Progress logging interval for LL evaluation")
 
     args = parser.parse_args()
 
     # Parse comma-separated values
     tasks = [t.strip() for t in args.tasks.split(",")]
-    methods = [m.strip() for m in args.methods.split(",")]
     scales = [float(s.strip()) for s in args.scales.split(",")]
-    extraction_strategies = [s.strip()
-                             for s in args.extraction_strategy.split(",")]
+    methods = [m.strip() for m in args.methods.split(",")]
+    extraction_strategies = [s.strip() for s in args.extraction_strategies.split(",")]
 
     # Parse batch_size (can be int or "auto")
     batch_size = (args.batch_size if args.batch_size == "auto"
@@ -182,17 +175,18 @@ def main(run_single_task_fn, run_comparison_fn):
     run_comparison_fn(
         model_name=args.model,
         tasks=tasks,
-        methods=methods,
         num_pairs=args.num_pairs,
         steering_scales=scales,
         device=args.device,
         batch_size=batch_size,
         max_batch_size=args.max_batch_size,
+        log_interval=args.log_interval,
         eval_limit=args.limit,
         output_dir=args.output_dir,
         train_ratio=args.train_ratio,
         caa_layers=args.caa_layers,
         sae_layers=args.sae_layers,
+        methods=methods,
         extraction_strategies=extraction_strategies,
         bos_features_source=args.bos_features_source,
         run_single_task_fn=run_single_task_fn,

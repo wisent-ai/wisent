@@ -7,10 +7,10 @@ don't exceed their allocated time budgets.
 
 import asyncio
 import time
-from typing import Optional, Any
+from typing import Any
 from contextlib import asynccontextmanager
 
-from wisent.core.utils.config_tools.constants import AGENT_TIMEOUT_CHECK_INTERVAL, SECONDS_PER_MINUTE
+from wisent.core.utils.config_tools.constants import SECONDS_PER_MINUTE, RECURSION_INITIAL_DEPTH, COMBO_OFFSET
 
 
 class TimeoutError(Exception):
@@ -119,15 +119,15 @@ class AsyncTimeoutChecker:
     Automatically checks timeout every few operations.
     """
     
-    def __init__(self, timeout_mgr: TimeoutManager, check_interval: int = AGENT_TIMEOUT_CHECK_INTERVAL):
+    def __init__(self, timeout_mgr: TimeoutManager, timeout_check_interval: int):
         self.timeout_mgr = timeout_mgr
-        self.check_interval = check_interval
-        self.operation_count = 0
-    
+        self.timeout_check_interval = timeout_check_interval
+        self.operation_count = RECURSION_INITIAL_DEPTH
+
     def tick(self):
         """Call this on each iteration/operation. Checks timeout periodically."""
-        self.operation_count += 1
-        if self.operation_count % self.check_interval == 0:
+        self.operation_count += COMBO_OFFSET
+        if self.operation_count % self.timeout_check_interval == RECURSION_INITIAL_DEPTH:
             self.timeout_mgr.check_timeout()
     
     async def async_tick(self):

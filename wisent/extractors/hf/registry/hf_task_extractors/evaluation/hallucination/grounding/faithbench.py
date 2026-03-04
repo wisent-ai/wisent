@@ -7,7 +7,6 @@ import requests
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_MEDIUM
 
 __all__ = ["FaithBenchExtractor"]
 
@@ -62,14 +61,16 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "hallucination_detection"
 
-    def __init__(self, include_benign: bool = False):
+    def __init__(self, http_timeout: int, include_benign: bool = False):
         """
         Initialize FaithBench extractor.
 
         Args:
+            http_timeout: Timeout in seconds for HTTP requests.
             include_benign: If True, include benign hallucinations as positive examples
         """
         super().__init__()
+        self.http_timeout = http_timeout
         self.include_benign = include_benign
 
     def extract_contrastive_pairs(
@@ -125,7 +126,7 @@ class FaithBenchExtractor(HuggingFaceBenchmarkExtractor):
                 
             url = f"{FAITHBENCH_GITHUB_BASE}/batch_{batch_id}.json"
             try:
-                response = requests.get(url, timeout=HTTP_TIMEOUT_MEDIUM)
+                response = requests.get(url, timeout=self.http_timeout)
                 response.raise_for_status()
                 batch_data = response.json()
                 

@@ -5,11 +5,11 @@ import random
 from typing import Optional, Tuple, List, Any
 
 from wisent.core.utils.infra_tools.errors import TaskLoadError
-from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_TOP_N_TINY, SAE_TOP_FEATURES_DISPLAY, MAX_TASKS_TO_PROCESS
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_SMALL, DISPLAY_TOP_N_MEDIUM, DISPLAY_TOP_N_TINY, SAE_TOP_FEATURES_DISPLAY
 from wisent.core import constants as _C
 
 
-def extract_individual_tasks_from_yaml(yaml_file: str, group_name: str, _visited_files=None) -> List[str]:
+def extract_individual_tasks_from_yaml(yaml_file: str, group_name: str, max_tasks_to_process: int, _visited_files=None) -> List[str]:
     """Extract individual task names from a YAML configuration file."""
     try:
         import yaml
@@ -51,7 +51,7 @@ def extract_individual_tasks_from_yaml(yaml_file: str, group_name: str, _visited
         print(f"   Found potential tasks/groups: {potential_tasks[:_C.DISPLAY_TOP_N_MINI]}...")
         resolved_tasks = []
         yaml_dir = os.path.dirname(yaml_file)
-        for i, task_name in enumerate(potential_tasks[:MAX_TASKS_TO_PROCESS]):
+        for i, task_name in enumerate(potential_tasks[:max_tasks_to_process]):
             if any(suffix in task_name for suffix in ['_zeroshot_', '_fewshot_', '_cot_', '_prompt-', '_task_']):
                 resolved_tasks.append(task_name)
                 continue
@@ -59,7 +59,7 @@ def extract_individual_tasks_from_yaml(yaml_file: str, group_name: str, _visited
                 potential_group_file = os.path.join(yaml_dir, f"{task_name}.yaml")
                 if os.path.exists(potential_group_file):
                     print(f"   Found nested group file: {os.path.basename(potential_group_file)}")
-                    nested_tasks = extract_individual_tasks_from_yaml(potential_group_file, task_name, _visited_files.copy())
+                    nested_tasks = extract_individual_tasks_from_yaml(potential_group_file, task_name, max_tasks_to_process, _visited_files.copy())
                     resolved_tasks.extend(nested_tasks[:DISPLAY_TOP_N_TINY])
                     continue
                 for subdir in ['zeroshot', 'fewshot', 'cot']:
@@ -68,7 +68,7 @@ def extract_individual_tasks_from_yaml(yaml_file: str, group_name: str, _visited
                         subdir_yaml = os.path.join(subdir_path, f"_{task_name}_{subdir}.yaml")
                         if os.path.exists(subdir_yaml):
                             print(f"   Found nested group in subdir: {subdir}")
-                            nested_tasks = extract_individual_tasks_from_yaml(subdir_yaml, f"{task_name}_{subdir}", _visited_files.copy())
+                            nested_tasks = extract_individual_tasks_from_yaml(subdir_yaml, f"{task_name}_{subdir}", max_tasks_to_process, _visited_files.copy())
                             resolved_tasks.extend(nested_tasks[:DISPLAY_TOP_N_TINY])
                             break
                 else:
@@ -83,7 +83,7 @@ def extract_individual_tasks_from_yaml(yaml_file: str, group_name: str, _visited
         return []
 
 
-def try_find_related_working_task(task_name: str):
+def try_find_related_working_task(task_name: str, max_tasks_to_process: int, max_depth: int):
     """Aggressively find related tasks that work when the main task has issues."""
     try:
         from lm_eval.tasks import get_task_dict
@@ -104,7 +104,7 @@ def try_find_related_working_task(task_name: str):
             print(f"   Trying base name: {base_name}")
             try:
                 from .group_handling import handle_configurable_group_task
-                return handle_configurable_group_task(base_name)
+                return handle_configurable_group_task(base_name, max_tasks_to_process, max_depth=max_depth)
             except:
                 pass
         parts = task_name.split('_')
@@ -114,7 +114,7 @@ def try_find_related_working_task(task_name: str):
                 print(f"   Trying parent: {parent_name}")
                 try:
                     from .group_handling import handle_configurable_group_task
-                    return handle_configurable_group_task(parent_name)
+                    return handle_configurable_group_task(parent_name, max_tasks_to_process, max_depth=max_depth)
                 except:
                     continue
         prefix = parts[0] if parts else task_name
@@ -124,7 +124,7 @@ def try_find_related_working_task(task_name: str):
             print(f"   Trying candidate: {candidate}")
             try:
                 from .group_handling import handle_configurable_group_task
-                result = handle_configurable_group_task(candidate)
+                result = handle_configurable_group_task(candidate, max_tasks_to_process, max_depth=max_depth)
                 print(f"   SUCCESS! Found working alternative: {candidate}")
                 return result
             except:
@@ -133,7 +133,7 @@ def try_find_related_working_task(task_name: str):
             print(f"   Trying exact prefix: {prefix}")
             try:
                 from .group_handling import handle_configurable_group_task
-                return handle_configurable_group_task(prefix)
+                return handle_configurable_group_task(prefix, max_tasks_to_process, max_depth=max_depth)
             except:
                 pass
         keywords = [part for part in parts if len(part) > 2]
@@ -144,7 +144,7 @@ def try_find_related_working_task(task_name: str):
                 print(f"   Trying keyword match: {candidate}")
                 try:
                     from .group_handling import handle_configurable_group_task
-                    result = handle_configurable_group_task(candidate)
+                    result = handle_configurable_group_task(candidate, max_tasks_to_process, max_depth=max_depth)
                     print(f"   SUCCESS! Found working keyword match: {candidate}")
                     return result
                 except:
@@ -156,7 +156,7 @@ def try_find_related_working_task(task_name: str):
         return None
 
 
-def try_extract_working_tasks_from_group(group_name: str, task_manager):
+def try_extract_working_tasks_from_group(group_name: str, task_manager, max_tasks_to_process: int):
     """Try to extract and load individual working tasks from a problematic group."""
     try:
         from lm_eval.tasks import get_task_dict
@@ -199,7 +199,7 @@ def try_extract_working_tasks_from_group(group_name: str, task_manager):
                 except Exception as yaml_parse_error:
                     print(f"   Main YAML parsing failed: {str(yaml_parse_error)[:DISPLAY_TRUNCATION_COMPACT]}")
                 try:
-                    individual_tasks = extract_individual_tasks_from_yaml(yaml_path, group_name)
+                    individual_tasks = extract_individual_tasks_from_yaml(yaml_path, group_name, max_tasks_to_process)
                     if individual_tasks:
                         print(f"   Found {len(individual_tasks)} individual tasks in group")
                         base_tasks_to_try = []

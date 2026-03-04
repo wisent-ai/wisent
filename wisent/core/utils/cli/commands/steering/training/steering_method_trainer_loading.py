@@ -5,17 +5,9 @@ import os
 from typing import Any, Dict, List, Optional
 
 import torch
-from wisent.core.utils.config_tools.constants import (
-    GROM_BEHAVIOR_WEIGHT, GROM_INTENSITY_HIDDEN_DIM, GROM_LEARNING_RATE,
-    GROM_MAX_ALPHA, GROM_NUM_DIRECTIONS, GROM_OPTIMIZATION_STEPS,
-    GROM_RETAIN_WEIGHT, GROM_ROUTER_HIDDEN_DIM, GROM_SPARSE_WEIGHT,
-    TECZA_INDEPENDENCE_WEIGHT, TECZA_MAX_COSINE_SIM, TECZA_MIN_COSINE_SIM,
-    TECZA_NUM_DIRECTIONS, DEFAULT_OPTIMIZATION_STEPS, TECZA_RETAIN_WEIGHT,
-    TETNO_CONDITION_THRESHOLD, TETNO_GATE_TEMPERATURE,
-    TETNO_MAX_ALPHA, DEFAULT_OPTIMIZATION_STEPS,
-)
 
 from wisent.core.primitives.models.core.atoms import SteeringPlan, SteeringVector
+from wisent.core.utils.config_tools.constants import ARCHITECTURE_MODULE_LIMIT
 
 logger = logging.getLogger(__name__)
 
@@ -130,47 +122,46 @@ def create_steering_method_from_config(config: Dict[str, Any]) -> Any:
     
     if method_name == "caa":
         params = {"normalize": True}
-        
+
     elif method_name == "tecza":
-        params = {
-            "num_directions": config.get("num_directions", TECZA_NUM_DIRECTIONS),
-            "direction_weighting": config.get("direction_weighting", "primary_only"),
-            "retain_weight": config.get("retain_weight", TECZA_RETAIN_WEIGHT),
-            "independence_weight": config.get("independence_weight", TECZA_INDEPENDENCE_WEIGHT),
-            "optimization_steps": config.get("optimization_steps", DEFAULT_OPTIMIZATION_STEPS),
-            "use_caa_init": config.get("use_caa_init", True),
-            "cone_constraint": config.get("cone_constraint", True),
-            "min_cosine_similarity": config.get("min_cosine_similarity", TECZA_MIN_COSINE_SIM),
-            "max_cosine_similarity": config.get("max_cosine_similarity", TECZA_MAX_COSINE_SIM),
-        }
-        
+        params = {}
+        for key in [
+            "num_directions", "retain_weight", "independence_weight",
+            "optimization_steps", "min_cosine_similarity", "max_cosine_similarity",
+        ]:
+            if key in config:
+                params[key] = config[key]
+        # Boolean flags with sensible defaults
+        params["direction_weighting"] = config.get("direction_weighting", "primary_only")
+        params["use_caa_init"] = config.get("use_caa_init", True)
+        params["cone_constraint"] = config.get("cone_constraint", True)
+
     elif method_name == "tetno":
-        params = {
-            "sensor_layer": config.get("sensor_layer", -1),
-            "steering_layers": config.get("steering_layers", ""),
-            "condition_threshold": config.get("condition_threshold", TETNO_CONDITION_THRESHOLD),
-            "gate_temperature": config.get("gate_temperature", TETNO_GATE_TEMPERATURE),
-            "per_layer_scaling": config.get("per_layer_scaling", True),
-            "use_entropy_scaling": config.get("use_entropy_scaling", False),
-            "max_alpha": config.get("max_alpha", TETNO_MAX_ALPHA),
-            "learn_threshold": config.get("learn_threshold", True),
-            "optimization_steps": config.get("optimization_steps", DEFAULT_OPTIMIZATION_STEPS),
-        }
-        
+        params = {}
+        for key in [
+            "condition_threshold", "gate_temperature", "max_alpha",
+            "optimization_steps", "learning_rate", "sensor_layer",
+            "steering_layers",
+        ]:
+            if key in config:
+                params[key] = config[key]
+        # Boolean flags with sensible defaults
+        params["per_layer_scaling"] = config.get("per_layer_scaling", True)
+        params["use_entropy_scaling"] = config.get("use_entropy_scaling", False)
+        params["learn_threshold"] = config.get("learn_threshold", True)
+
     elif method_name == "grom":
-        params = {
-            "num_directions": config.get("num_directions", GROM_NUM_DIRECTIONS),
-            "sensor_layer": config.get("sensor_layer", -1),
-            "steering_layers": config.get("steering_layers", ""),
-            "gate_hidden_dim": config.get("gate_hidden_dim", GROM_ROUTER_HIDDEN_DIM),
-            "intensity_hidden_dim": config.get("intensity_hidden_dim", GROM_INTENSITY_HIDDEN_DIM),
-            "behavior_weight": config.get("behavior_weight", GROM_BEHAVIOR_WEIGHT),
-            "retain_weight": config.get("retain_weight", GROM_RETAIN_WEIGHT),
-            "sparse_weight": config.get("sparse_weight", GROM_SPARSE_WEIGHT),
-            "max_alpha": config.get("max_alpha", GROM_MAX_ALPHA),
-            "optimization_steps": config.get("optimization_steps", GROM_OPTIMIZATION_STEPS),
-            "learning_rate": config.get("learning_rate", GROM_LEARNING_RATE),
-        }
+        params = {}
+        for key in [
+            "num_directions", "optimization_steps", "learning_rate",
+            "warmup_steps", "behavior_weight", "retain_weight",
+            "sparse_weight", "smooth_weight", "independence_weight",
+            "max_alpha", "gate_temperature", "min_cosine_similarity",
+            "max_cosine_similarity", "sensor_layer", "steering_layers",
+            "gate_hidden_dim", "intensity_hidden_dim",
+        ]:
+            if key in config:
+                params[key] = config[key]
     
     # Create the method
     method_class = SteeringMethodRegistry.get(method_name).method_class
@@ -225,7 +216,7 @@ def get_optimal_steering_plan(
     method_name = config["method"]
     
     # Collect activations for the optimal layer
-    collector = ActivationCollector(model=model)
+    collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
     layer_str = str(layer)
     
     pos_acts = []

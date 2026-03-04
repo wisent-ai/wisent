@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from datetime import datetime
 from typing import Dict, List, Optional, Any
@@ -10,10 +11,7 @@ import torch
 
 from wisent.core.utils.config_tools.config import ModelConfigManager
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LIMIT, DEFAULT_SCORE, BLEND_DEFAULT,
-    AUTO_MAX_TIME_MINUTES, AUTO_MIN_PAIRS, AUTO_SAMPLE_SIZE,
-    AUTO_N_FOLDS, AUTO_DEFAULT_STRENGTHS, AUTO_MIN_PAIRS_SPLIT,
-    AUTO_LAYER_DIVISOR, SEPARATOR_WIDTH_WIDE,
+    SEPARATOR_WIDTH_WIDE, ARCHITECTURE_MODULE_LIMIT,
 )
 from .training import train_recommended_method
 from .grid_search import run_grid_search
@@ -23,107 +21,126 @@ logger = logging.getLogger(__name__)
 
 def run_auto_steering_optimization(
     model_name: str,
+    limit: int,
+    min_norm_threshold: float,
     task_name: Optional[str] = None,
-    limit: int = DEFAULT_LIMIT,
     device: str = None,
     verbose: bool = False,
     use_classification_config: bool = True,
-    max_time_minutes: float = AUTO_MAX_TIME_MINUTES,
+    max_time_minutes: float = None,
     methods_to_test: Optional[List[str]] = None,
-    strength_range: Optional[List[float]] = None,
-    layer_range: Optional[str] = None
+    strength_range: tuple[float, ...] = None,
+    layer_range: Optional[str] = None,
+    min_clusters: int = None,
+    grom_params: Dict[str, Any] = None,
+    tetno_params: Dict[str, Any] = None,
+    tecza_params: Optional[Dict[str, Any]] = None,
+    auto_min_pairs: int = None,
+    auto_sample_size: int = None,
+    auto_n_folds: int = None,
+    auto_min_pairs_split: int = None,
+    auto_layer_divisor: int = None, spectral_n_neighbors: int = None,
+    subsample_threshold: int = None, pca_dims_limit: int = None, *, train_ratio: float,
 ) -> Dict[str, Any]:
     """Automatically optimize steering using zwiad geometry analysis."""
+    _required = {"max_time_minutes": max_time_minutes, "strength_range": strength_range,
+        "auto_min_pairs": auto_min_pairs, "auto_sample_size": auto_sample_size,
+        "auto_n_folds": auto_n_folds, "auto_min_pairs_split": auto_min_pairs_split,
+        "auto_layer_divisor": auto_layer_divisor, "spectral_n_neighbors": spectral_n_neighbors,
+        "subsample_threshold": subsample_threshold, "pca_dims_limit": pca_dims_limit, "train_ratio": train_ratio}
+    for _name, _val in _required.items():
+        if _val is None:
+            raise ValueError(f"{_name} is required")
     from wisent.core.primitives.models.wisent_model import WisentModel
-
     if not task_name:
         return {"error": "Task name is required for auto steering optimization"}
-
     if verbose:
-        print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}\nAUTO STEERING OPTIMIZATION (zwiad)\n{'=' * SEPARATOR_WIDTH_WIDE}")
-        print(f"   Model: {model_name}\n   Task: {task_name}\n{'=' * SEPARATOR_WIDTH_WIDE}\n")
-        print("Loading model...", flush=True)
-
+        sep = '=' * SEPARATOR_WIDTH_WIDE
+        print(f"\n{sep}\nAUTO STEERING OPTIMIZATION (zwiad)\n{sep}")
+        print(f"   Model: {model_name}\n   Task: {task_name}\n{sep}\nLoading model...", flush=True)
     wisent_model = WisentModel(model_name, device=device)
     num_layers = wisent_model.num_layers
-
     if verbose:
-        print(f"Model loaded with {num_layers} layers\n")
-        print(f"Generating contrastive pairs for {task_name}...", flush=True)
-
-    pairs = _generate_pairs(task_name, limit)
-    if not pairs or len(pairs) < AUTO_MIN_PAIRS:
+        print(f"Model loaded with {num_layers} layers\nGenerating contrastive pairs for {task_name}...", flush=True)
+    pairs = _generate_pairs(task_name, limit, train_ratio=train_ratio)
+    if not pairs or len(pairs) < auto_min_pairs:
         return {"error": f"Could not generate enough pairs for {task_name}"}
     if verbose:
         print(f"Generated {len(pairs)} contrastive pairs\n")
-
-    # Run zwiad analysis
     recommended_method, confidence, reasoning, metrics, coherence = _run_zwiad_analysis(
-        wisent_model, pairs, num_layers, verbose
+        wisent_model, pairs, num_layers, min_clusters=min_clusters, verbose=verbose,
+        spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit,
     )
 
     # Determine search space
     layers_to_test = _get_layers_to_test(layer_range, num_layers)
-    if strength_range is None:
-        strength_range = list(AUTO_DEFAULT_STRENGTHS)
-
     if verbose:
         print(f"\nGRID SEARCH for {recommended_method}")
         print(f"   Layers: {layers_to_test}\n   Strengths: {strength_range}")
         print(f"\nTraining {recommended_method} steering vectors...")
 
+    first_layer = next(iter(layers_to_test))
+    if grom_params is None:
+        raise ValueError("grom_params dict is required with all GROM hyperparameters")
+    if tetno_params is None:
+        raise ValueError("tetno_params dict is required with all TETNO hyperparameters")
+    grom_kw = {f"grom_{k}": v for k, v in grom_params.items()}
+    tetno_kw = {f"tetno_{k}": v for k, v in tetno_params.items()}
     steering_result = train_recommended_method(
         wisent_model=wisent_model, pairs=pairs,
-        method=recommended_method, layer=layers_to_test[0], verbose=verbose,
+        method=recommended_method, layer=first_layer, verbose=verbose,
+        **tetno_kw,
+        **grom_kw,
+        **(tecza_params or {}),
     )
 
-    eval_pairs = pairs[len(pairs)//2:] if len(pairs) > AUTO_MIN_PAIRS_SPLIT else pairs
-    grid_results, best_layer, best_strength, best_config = run_grid_search(
+    eval_pairs = pairs[len(pairs)//2:] if len(pairs) > auto_min_pairs_split else pairs
+    grid_results, best_layer, best_strength, best_config, method_params = run_grid_search(
         wisent_model=wisent_model, steering_result=steering_result,
         recommended_method=recommended_method, layers_to_test=layers_to_test,
         strength_range=strength_range, eval_pairs=eval_pairs,
-        task_name=task_name, verbose=verbose,
+        task_name=task_name, min_norm_threshold=min_norm_threshold, verbose=verbose,
     )
 
-    best_score = best_config.get('score', DEFAULT_SCORE) if best_config else DEFAULT_SCORE
+    if not best_config:
+        raise ValueError("Grid search returned no results. Check input data.")
+    best_score = best_config['score']
     _save_config(model_name, task_name, recommended_method, best_layer,
                  best_strength, best_score, confidence, reasoning,
-                 metrics, coherence, layers_to_test, strength_range, grid_results)
+                 metrics, coherence, layers_to_test, strength_range, grid_results,
+                 method_params=method_params)
 
     if verbose:
-        print(f"\nSteering optimization complete!")
-        print(f"   Method: {recommended_method}, Layer: {best_layer}, Strength: {best_strength}, Score: {best_score:.3f}")
+        print(f"\nSteering optimization complete! Method: {recommended_method}, Layer: {best_layer}, Strength: {best_strength}, Score: {best_score:.3f}")
 
+    zwiad = {
+        'linear_probe_accuracy': metrics['linear_probe_accuracy'],
+        'signal_strength': metrics['signal_strength'],
+        'steerability_score': metrics['steer_steerability_score'],
+        'icd': metrics['icd_icd'], 'concept_coherence': coherence,
+    }
     return {
         'model_name': model_name, 'task_name': task_name,
         'recommended_method': recommended_method,
         'optimal_layer': best_layer, 'optimal_strength': best_strength,
         'best_score': best_score, 'confidence': confidence, 'reasoning': reasoning,
-        'zwiad_metrics': {
-            'linear_probe_accuracy': metrics.get('linear_probe_accuracy', DEFAULT_SCORE),
-            'signal_strength': metrics.get('signal_strength', DEFAULT_SCORE),
-            'steerability_score': metrics.get('steer_steerability_score', DEFAULT_SCORE),
-            'icd': metrics.get('icd_icd', DEFAULT_SCORE),
-            'concept_coherence': coherence,
-        },
-        'grid_search_results': grid_results,
+        'zwiad_metrics': zwiad, 'grid_search_results': grid_results,
         'steering_result': steering_result,
-        'optimization_date': datetime.now().isoformat(),
-        'config_saved': True,
+        'optimization_date': datetime.now().isoformat(), 'config_saved': True,
     }
 
 
-def _generate_pairs(task_name: str, limit: int) -> List:
+def _generate_pairs(task_name: str, limit: int, *, train_ratio: float) -> List:
     """Generate contrastive pairs for the task."""
     from wisent.extractors.lm_eval.lm_task_pairs_generation import build_contrastive_pairs
     try:
-        return build_contrastive_pairs(task_name=task_name, limit=limit)
+        return build_contrastive_pairs(task_name=task_name, limit=limit, train_ratio=train_ratio)
     except Exception as e:
         logger.error(f"Failed to generate pairs for {task_name}: {e}")
         return []
 
 
-def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose: bool) -> tuple:
+def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, min_clusters: int, verbose: bool, *, spectral_n_neighbors: int, subsample_threshold: int, pca_dims_limit: int) -> tuple:
     """Run zwiad geometry analysis on collected activations."""
     from wisent.core.primitives.model_interface.core.activations.activations_collector import ActivationCollector
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -132,13 +149,13 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose
     if verbose:
         print("Collecting activations for geometry analysis...", flush=True)
 
-    candidate_layers = list(range(0, num_layers, max(1, num_layers // AUTO_LAYER_DIVISOR)))
+    candidate_layers = list(range(0, num_layers, max(1, num_layers // auto_layer_divisor)))
     if (num_layers - 1) not in candidate_layers:
         candidate_layers.append(num_layers - 1)
     candidate_layer_strs = [str(l) for l in candidate_layers]
 
-    collector = ActivationCollector(model=wisent_model)
-    sample_pairs = pairs[:min(AUTO_SAMPLE_SIZE, len(pairs))]
+    collector = ActivationCollector(model=wisent_model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT)
+    sample_pairs = pairs[:min(auto_sample_size, len(pairs))]
     layer_pos = {l: [] for l in candidate_layer_strs}
     layer_neg = {l: [] for l in candidate_layer_strs}
 
@@ -156,17 +173,17 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose
     best_lpa, best_layer = -1.0, candidate_layer_strs[0]
     best_metrics = None
     for l in candidate_layer_strs:
-        if len(layer_pos[l]) < AUTO_MIN_PAIRS or len(layer_neg[l]) < AUTO_MIN_PAIRS:
+        if len(layer_pos[l]) < auto_min_pairs or len(layer_neg[l]) < auto_min_pairs:
             continue
         pt = torch.stack(layer_pos[l])
         nt = torch.stack(layer_neg[l])
-        m = compute_geometry_metrics(pt, nt, n_folds=AUTO_N_FOLDS)
+        m = compute_geometry_metrics(pt, nt, min_clusters=min_clusters, n_folds=auto_n_folds, spectral_n_neighbors=spectral_n_neighbors, subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit)
         lpa = m.get('linear_probe_accuracy', 0.0)
         if lpa > best_lpa:
             best_lpa, best_metrics, best_layer = lpa, m, l
 
     if best_metrics is None:
-        return "GROM", BLEND_DEFAULT, "Insufficient activations", {}, DEFAULT_SCORE
+        raise ValueError("Insufficient activations for zwiad analysis. No layers had enough data.")
 
     if verbose:
         print(f"Analyzed {len(candidate_layers)} layers, best: layer {best_layer} (lpa={best_lpa:.3f})\n")
@@ -177,12 +194,12 @@ def _run_zwiad_analysis(wisent_model: Any, pairs: List, num_layers: int, verbose
     recommendation = compute_recommendation(metrics)
     coherence = compute_concept_coherence(pos_tensor, neg_tensor)
 
-    recommended_method = recommendation.get("recommended_method", "GROM").upper()
-    confidence = recommendation.get("confidence", BLEND_DEFAULT)
-    reasoning = recommendation.get("reasoning", "")
+    recommended_method = recommendation["recommended_method"].upper()
+    confidence = recommendation["confidence"]
+    reasoning = recommendation["reasoning"]
 
     if verbose:
-        print(f"   Repscan: Linear accuracy: {metrics.get('linear_probe_accuracy', DEFAULT_SCORE):.3f}")
+        print(f"   Repscan: Linear accuracy: {metrics['linear_probe_accuracy']:.3f}")
         print(f"   Recommendation: {recommended_method} (confidence={confidence:.2f})")
 
     return recommended_method, confidence, reasoning, metrics, coherence
@@ -204,7 +221,8 @@ def _save_config(
     model_name: str, task_name: str, method: str, layer: int,
     strength: float, score: float, confidence: float, reasoning: str,
     metrics: Dict, coherence: float, layers_tested: List[int],
-    strengths_tested: List[float], grid_results: List[Dict]
+    strengths_tested: List[float], grid_results: List[Dict],
+    method_params: Optional[Dict[str, Any]] = None,
 ):
     """Save optimization results to model config."""
     config_manager = ModelConfigManager()
@@ -222,10 +240,10 @@ def _save_config(
         'best_strength': strength, 'best_score': score,
         'optimization_date': datetime.now().isoformat(),
         'zwiad_metrics': {
-            'linear_probe_accuracy': metrics.get('linear_probe_accuracy', DEFAULT_SCORE),
-            'signal_strength': metrics.get('signal_strength', DEFAULT_SCORE),
-            'steerability_score': metrics.get('steer_steerability_score', DEFAULT_SCORE),
-            'icd': metrics.get('icd_icd', DEFAULT_SCORE),
+            'linear_probe_accuracy': metrics['linear_probe_accuracy'],
+            'signal_strength': metrics['signal_strength'],
+            'steerability_score': metrics['steer_steerability_score'],
+            'icd': metrics['icd_icd'],
             'concept_coherence': coherence,
         },
         'confidence': confidence, 'reasoning': reasoning,
@@ -239,9 +257,44 @@ def _save_config(
     if 'task_specific_steering' not in config:
         config['task_specific_steering'] = {}
 
-    config['task_specific_steering'][task_name] = {
+    task_entry = {
         'method': method, 'layer': layer, 'strength': strength,
         'score': score, 'confidence': confidence,
     }
+    if method_params:
+        # Filter out non-serializable values (e.g. None layers lists)
+        serializable_params = {}
+        for k, v in method_params.items():
+            if v is not None and not callable(v):
+                try:
+                    json.dumps(v)
+                    serializable_params[k] = v
+                except (TypeError, ValueError):
+                    pass
+        task_entry['method_params'] = serializable_params
+    config['task_specific_steering'][task_name] = task_entry
     config.setdefault('optimization_method', 'auto')
     config_manager.save_model_config(model_name, **config)
+
+    # Also persist method_params via the typed config system
+    if method_params:
+        try:
+            from wisent.core.utils.config_tools.config.convenience import save_steering_config
+            save_steering_config(
+                model_name=model_name,
+                method=method,
+                token_aggregation="chat_last",
+                prompt_strategy="default",
+                normalize_mode="l2",
+                strategy="auto",
+                optimization_method="auto",
+                metric="accuracy",
+                direction_weighting="primary_only",
+                task_name=task_name,
+                layer=layer,
+                strength=strength,
+                score=score,
+                method_params=method_params if method_params else None,
+            )
+        except Exception as e:
+            logger.warning(f"Could not persist method_params via config system: {e}")

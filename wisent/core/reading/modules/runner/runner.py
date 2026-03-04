@@ -28,24 +28,49 @@ def run_full_zwiad(
     neg_activations: torch.Tensor,
     layer: int,
     benchmark_name: str,
+    min_clusters: int,
     output_dir: Optional[str] = None,
+    *,
+    spectral_n_neighbors: int,
+    cv_folds: int,
+    probe_min_per_class: int,
+    probe_small_hidden: int,
+    probe_mlp_hidden: int,
+    probe_mlp_alpha: float,
+    probe_validation_fraction: float,
+    probe_knn_k: int,
+    knn_min_class_offset: int,
+    feature_dim_index: int,
+    direction_n_bootstrap: int,
+    direction_subset_fraction: float,
+    direction_std_penalty: float,
+    consistency_w_cosine: float,
+    consistency_w_positive: float,
+    consistency_w_high_sim: float,
+    blend_default: float,
+    default_score: float,
+    detection_threshold: float,
+    subsample_threshold: int,
+    pca_dims_limit: int,
 ) -> Dict[str, Any]:
-    """
-    Run full representation scan for a single layer.
-
-    Args:
-        pos_activations: Positive class activations
-        neg_activations: Negative class activations
-        layer: Layer number
-        benchmark_name: Name of benchmark
-        output_dir: Optional directory to save results
-
-    Returns:
-        Dict with all metrics and recommendations
-    """
+    """Run full representation scan for a single layer."""
     start_time = time.time()
 
-    metrics = compute_geometry_metrics(pos_activations, neg_activations)
+    metrics = compute_geometry_metrics(
+        pos_activations, neg_activations, min_clusters=min_clusters, n_folds=cv_folds,
+        spectral_n_neighbors=spectral_n_neighbors,
+        probe_min_per_class=probe_min_per_class, probe_small_hidden=probe_small_hidden,
+        probe_mlp_hidden=probe_mlp_hidden, probe_mlp_alpha=probe_mlp_alpha,
+        probe_validation_fraction=probe_validation_fraction, probe_knn_k=probe_knn_k,
+        knn_min_class_offset=knn_min_class_offset, feature_dim_index=feature_dim_index,
+        cv_folds=cv_folds, direction_n_bootstrap=direction_n_bootstrap,
+        direction_subset_fraction=direction_subset_fraction, direction_std_penalty=direction_std_penalty,
+        consistency_w_cosine=consistency_w_cosine, consistency_w_positive=consistency_w_positive,
+        consistency_w_high_sim=consistency_w_high_sim,
+        blend_default=blend_default, default_score=default_score,
+        detection_threshold=detection_threshold,
+        subsample_threshold=subsample_threshold, pca_dims_limit=pca_dims_limit,
+    )
 
     result = {
         "benchmark": benchmark_name,
@@ -68,24 +93,16 @@ def run_full_zwiad(
 def run_full_zwiad_with_layer_search(
     activations_by_layer: Dict[int, Tuple[torch.Tensor, torch.Tensor]],
     benchmark_name: str,
+    min_clusters: int,
     output_dir: Optional[str] = None,
+    **kwargs,
 ) -> Dict[str, Any]:
-    """
-    Run zwiad across multiple layers.
-
-    Args:
-        activations_by_layer: Dict mapping layer -> (pos, neg) activations
-        benchmark_name: Name of benchmark
-        output_dir: Optional directory to save results
-
-    Returns:
-        Dict with per-layer raw metrics. No recommendations or "best" layer selection.
-    """
+    """Run zwiad across multiple layers."""
     results_by_layer = {}
     per_layer_metrics = {}
 
     for layer, (pos, neg) in activations_by_layer.items():
-        result = run_full_zwiad(pos, neg, layer, benchmark_name)
+        result = run_full_zwiad(pos, neg, layer, benchmark_name, min_clusters=min_clusters, **kwargs)
         results_by_layer[layer] = result
         per_layer_metrics[layer] = result["metrics"]
 
@@ -114,14 +131,15 @@ def run_full_zwiad_with_steering_eval(
     test_prompts: List[str],
     layer: int,
     benchmark_name: str,
+    min_clusters: int,
+    **kwargs,
 ) -> Dict[str, Any]:
-    """
-    Run zwiad and evaluate actual steering effectiveness.
-
-    This combines geometry analysis with actual steering tests.
-    """
-    # Run geometry analysis
-    metrics = compute_geometry_metrics(pos_activations, neg_activations)
+    """Run zwiad and evaluate actual steering effectiveness."""
+    cv_folds_val = kwargs["cv_folds"]
+    metrics = compute_geometry_metrics(
+        pos_activations, neg_activations, min_clusters=min_clusters,
+        n_folds=cv_folds_val, **kwargs,
+    )
 
     # Compute steering direction
     n = min(len(pos_activations), len(neg_activations))
@@ -141,16 +159,18 @@ def run_full_zwiad_with_steering_eval(
 def evaluate_steering_effectiveness(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    min_clusters: int,
     model=None,
     tokenizer=None,
     test_pairs: List[Tuple[str, str]] = None,
+    **kwargs,
 ) -> Dict[str, Any]:
-    """
-    Return raw metrics relevant to steering effectiveness.
-
-    Does NOT predict effectiveness - just returns the raw metrics.
-    """
-    metrics = compute_geometry_metrics(pos_activations, neg_activations)
+    """Return raw metrics relevant to steering effectiveness."""
+    cv_folds_val = kwargs["cv_folds"]
+    metrics = compute_geometry_metrics(
+        pos_activations, neg_activations, min_clusters=min_clusters,
+        n_folds=cv_folds_val, **kwargs,
+    )
 
     return {
         "caa_probe_alignment": metrics.get("steer_caa_probe_alignment"),

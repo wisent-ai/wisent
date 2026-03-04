@@ -46,7 +46,7 @@ class TaskRegistry:
         """Register a new task."""
         self._tasks[name] = task_class
 
-    def get_task(self, name: str, limit: Optional[int] = None) -> TaskInterface:
+    def get_task(self, name: str, limit: Optional[int] = None, *, train_ratio: float) -> TaskInterface:
         """Get a task instance by name."""
         if name not in self._tasks:
             raise TaskNotFoundError(task_name=name, available_tasks=list(self._tasks.keys()))
@@ -57,26 +57,24 @@ class TaskRegistry:
         if callable(task_factory):
             # Try calling with limit parameter
             try:
-                return task_factory(limit=limit)
+                return task_factory(limit=limit, train_ratio=train_ratio)
             except TypeError:
-                # Fallback for factories that don't accept limit
-                return task_factory()
+                return task_factory(train_ratio=train_ratio)
         else:
-            # Direct class instantiation
-            return task_factory()
+            return task_factory(train_ratio=train_ratio)
 
     def list_tasks(self) -> List[str]:
         """List all available task names."""
         return list(self._tasks.keys())
 
-    def get_task_info(self, name: str) -> Dict[str, Any]:
+    def get_task_info(self, name: str, *, train_ratio: float) -> Dict[str, Any]:
         """Get information about a specific task."""
-        task = self.get_task(name)
+        task = self.get_task(name, train_ratio=train_ratio)
         return {"name": task.get_name(), "description": task.get_description(), "categories": task.get_categories()}
 
-    def list_task_info(self) -> List[Dict[str, Any]]:
+    def list_task_info(self, *, train_ratio: float) -> List[Dict[str, Any]]:
         """List information about all available tasks."""
-        return [self.get_task_info(name) for name in self.list_tasks()]
+        return [self.get_task_info(name, train_ratio=train_ratio) for name in self.list_tasks()]
 
 
 # Global task registry instance
@@ -88,32 +86,25 @@ def register_task(name: str, task_class: Type[TaskInterface]):
     _task_registry.register_task(name, task_class)
 
 
-def get_task(name: str, limit: Optional[int] = None) -> TaskInterface:
+def get_task(name: str, limit: Optional[int] = None, *, train_ratio: float) -> TaskInterface:
     """Get a task instance by name."""
-    # Ensure tasks are registered before attempting to get a task
     _ensure_tasks_registered()
 
-    # Check if this is a file path (contains / or \\ or ends with .json)
     if "/" in name or "\\" in name or name.endswith(".json"):
-        # Treat as file path and load directly
         from .tasks.file_task import FileTask
-
         return FileTask(name, limit=limit)
 
-    # Otherwise, try to get from registry
     try:
-        return _task_registry.get_task(name, limit=limit)
+        return _task_registry.get_task(name, limit=limit, train_ratio=train_ratio)
     except (ValueError, TaskNotFoundError):
-        # Fallback: try to create a dynamic LMEvalTask if an extractor exists
         try:
             from .tasks.lm_eval_task import LMEvalTask, get_extractor
-            # Check if extractor exists for this task
             get_extractor(name)
-            # Create dynamic task
             return LMEvalTask(
                 task_name=name,
                 description=f"LM-eval task: {name}",
-                categories=["lm-eval"]
+                categories=["lm-eval"],
+                train_ratio=train_ratio,
             )
         except Exception:
             raise TaskNotFoundError(task_name=name, available_tasks=list(_task_registry._tasks.keys()))
@@ -125,14 +116,14 @@ def list_tasks() -> List[str]:
     return _task_registry.list_tasks()
 
 
-def get_task_info(name: str) -> Dict[str, Any]:
+def get_task_info(name: str, *, train_ratio: float) -> Dict[str, Any]:
     """Get information about a specific task."""
-    return _task_registry.get_task_info(name)
+    return _task_registry.get_task_info(name, train_ratio=train_ratio)
 
 
-def list_task_info() -> List[Dict[str, Any]]:
+def list_task_info(*, train_ratio: float) -> List[Dict[str, Any]]:
     """List information about all available tasks."""
-    return _task_registry.list_task_info()
+    return _task_registry.list_task_info(train_ratio=train_ratio)
 
 
 def _ensure_tasks_registered():

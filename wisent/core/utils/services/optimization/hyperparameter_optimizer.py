@@ -11,7 +11,7 @@ from .activations.activations_collector import ActivationCollector
 from .activations.extraction_strategy import ExtractionStrategy
 
 from wisent.core.utils.infra_tools.errors import OptimizationError, NoActivationDataError, InsufficientDataError
-from wisent.core.utils.config_tools.constants import VAL_SPLIT, MAX_COMBINATIONS, DEFAULT_RANDOM_SEED, THRESHOLD_RANGE_DEFAULT, OPTIMIZER_AGGREGATION_METHODS, OPTIMIZER_TOKEN_TARGETING, PROGRESS_LOG_INTERVAL_20
+from wisent.core.utils.config_tools.constants import PROGRESS_LOG_INTERVAL_20
 from wisent.core.utils.services.optimization._hyperparameter_evaluate import (
     HyperparameterEvaluateMixin,
     detect_model_layers,
@@ -24,23 +24,13 @@ logger = logging.getLogger(__name__)
 @dataclass
 class OptimizationConfig:
     """Configuration for hyperparameter optimization."""
-
-    # Layer range to search (will be auto-detected if None)
+    aggregation_methods: List[str]
+    token_targeting_strategies: List[str]
+    threshold_range: List[float]
     layer_range: List[int] = None
-
-    # Token aggregation methods to try
-    aggregation_methods: List[str] = field(default_factory=lambda: list(OPTIMIZER_AGGREGATION_METHODS))
-
-    # Prompt construction strategies to try
     prompt_construction_strategies: List[str] = field(default_factory=lambda: [
         "multiple_choice", "role_playing", "direct_completion", "instruction_following"
     ])
-
-    # Token targeting strategies to try
-    token_targeting_strategies: List[str] = field(default_factory=lambda: list(OPTIMIZER_TOKEN_TARGETING))
-
-    # Threshold range to search (for classification)
-    threshold_range: List[float] = field(default_factory=lambda: list(THRESHOLD_RANGE_DEFAULT))
 
     # Classifier types to try
     classifier_types: List[str] = field(default_factory=lambda: ["logistic"])
@@ -51,14 +41,14 @@ class OptimizationConfig:
     # Cross-validation folds (if 0, uses simple train/val split)
     cv_folds: int = 0
 
-    # Validation split ratio (used when cv_folds=0)
-    val_split: float = VAL_SPLIT
+    # Validation split ratio (used when cv_folds is zero) - required
+    val_split: float = None
 
-    # Maximum number of combinations to try (for performance)
-    max_combinations: int = MAX_COMBINATIONS
+    # Maximum number of combinations to try (for performance) - required
+    max_combinations: int = None
 
     # Random seed for reproducibility
-    seed: int = DEFAULT_RANDOM_SEED
+    seed: Optional[int] = None
 
 
 @dataclass
@@ -86,7 +76,8 @@ class HyperparameterOptimizer(HyperparameterEvaluateMixin):
     
     def __init__(self, config: OptimizationConfig = None):
         self.config = config or OptimizationConfig()
-        np.random.seed(self.config.seed)
+        from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+        np.random.seed(self.config.seed if self.config.seed is not None else DEFAULT_RANDOM_SEED)
         
     def optimize(
         self, 

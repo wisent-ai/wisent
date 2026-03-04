@@ -8,24 +8,18 @@ from wisent.core import constants as _C
 def compute_knn_pacmap_accuracy(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    k: int = _C.KNN_DEFAULT_K,
-    n_components: int = _C.PACMAP_N_COMPONENTS_DEFAULT,
-    n_folds: int = _C.CV_FOLDS,
+    knn_default_k: int,
+    *,
+    pacmap_n_components: int,
+    pacmap_neighbors_max: int,
+    pacmap_neighbors_divisor: int,
+    pacmap_mn_ratio: float,
+    pacmap_fp_ratio: float,
+    adaptive_cv_min_folds: int,
+    knn_min_class_offset: int,
+    cv_folds: int,
 ) -> float:
-    """Compute k-NN accuracy on PaCMAP-reduced features.
-
-    PaCMAP preserves both local AND global structure better than UMAP.
-
-    Args:
-        pos_activations: Positive class activation tensors
-        neg_activations: Negative class activation tensors
-        k: Number of nearest neighbors
-        n_components: Number of PaCMAP components
-        n_folds: Number of cross-validation folds
-
-    Returns:
-        Mean cross-validated accuracy, or CHANCE_LEVEL_ACCURACY on failure
-    """
+    """Compute k-NN accuracy on PaCMAP-reduced features."""
     try:
         import pacmap
         from sklearn.neighbors import KNeighborsClassifier
@@ -34,28 +28,28 @@ def compute_knn_pacmap_accuracy(
         n_pos = len(pos_activations)
         n_neg = len(neg_activations)
 
-        if n_pos < k + 1 or n_neg < k + 1:
+        if n_pos < knn_default_k + knn_min_class_offset or n_neg < knn_default_k + knn_min_class_offset:
             return _C.CHANCE_LEVEL_ACCURACY
 
         X = torch.cat(
-            [pos_activations, neg_activations], dim=0
+            [pos_activations, neg_activations], dim=_C.BINARY_CLASS_NEGATIVE
         ).float().cpu().numpy()
-        y = np.array([1] * n_pos + [0] * n_neg)
+        y = np.array([_C.BINARY_CLASS_POSITIVE] * n_pos + [_C.BINARY_CLASS_NEGATIVE] * n_neg)
 
-        n_folds = min(n_folds, min(n_pos, n_neg))
-        if n_folds < 2:
+        n_folds = min(cv_folds, min(n_pos, n_neg))
+        if n_folds < adaptive_cv_min_folds:
             return _C.CHANCE_LEVEL_ACCURACY
 
         reducer = pacmap.PaCMAP(
-            n_components=n_components,
-            n_neighbors=min(_C.PACMAP_NEIGHBORS_MAX, len(X) // _C.PACMAP_NEIGHBORS_DIVISOR),
-            MN_ratio=_C.PACMAP_MN_RATIO_DEFAULT,
-            FP_ratio=_C.PACMAP_FP_RATIO_DEFAULT,
+            n_components=pacmap_n_components,
+            n_neighbors=min(pacmap_neighbors_max, len(X) // pacmap_neighbors_divisor),
+            MN_ratio=pacmap_mn_ratio,
+            FP_ratio=pacmap_fp_ratio,
             random_state=_C.DEFAULT_RANDOM_SEED,
         )
         X_pacmap = reducer.fit_transform(X)
 
-        clf = KNeighborsClassifier(n_neighbors=k)
+        clf = KNeighborsClassifier(n_neighbors=knn_default_k)
         scores = cross_val_score(
             clf, X_pacmap, y, cv=n_folds, scoring='accuracy'
         )

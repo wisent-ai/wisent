@@ -117,13 +117,13 @@ def evaluate_conala(
     }
 
 
-def main(limit: int | None = None, *, split: str):
+def main(limit: int | None = None, *, split: str, bleu_threshold: float):
     """Run CoNaLa evaluation and save results."""
     print("Loading model...")
     model_name = "Qwen/Qwen2.5-0.5B-Instruct"
     model = WisentModel(model_name=model_name)
 
-    evaluator = CoNaLaEvaluator()
+    evaluator = CoNaLaEvaluator(bleu_threshold=bleu_threshold)
 
     print(f"\nEvaluating on CoNaLa {split} split")
     print("=" * SEPARATOR_WIDTH_STANDARD)
@@ -167,4 +167,10 @@ def main(limit: int | None = None, *, split: str):
 
 
 if __name__ == "__main__":
-    main(limit=2, split="test")
+    import argparse
+    parser = argparse.ArgumentParser(description="Run CoNaLa evaluation")
+    parser.add_argument("--limit", type=int, default=None)
+    parser.add_argument("--split", type=str, required=True)
+    parser.add_argument("--bleu-threshold", type=float, required=True)
+    _args = parser.parse_args()
+    main(limit=_args.limit, split=_args.split, bleu_threshold=_args.bleu_threshold)

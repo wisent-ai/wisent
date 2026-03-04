@@ -78,6 +78,15 @@ def setup_advanced_modify_args(parser: argparse.ArgumentParser) -> None:
         help="Distance over which weight decays (default: 60%% of layers)"
     )
 
+    kernel_group.add_argument(
+        "--kernel-center-divisor", type=float, required=True,
+        help="Divisor for computing kernel center position from num layers"
+    )
+    kernel_group.add_argument(
+        "--kernel-sigma-divisor", type=float, required=True,
+        help="Divisor for computing kernel sigma from distance"
+    )
+
     # Vector processing
     parser.add_argument(
         "--normalize-vectors",

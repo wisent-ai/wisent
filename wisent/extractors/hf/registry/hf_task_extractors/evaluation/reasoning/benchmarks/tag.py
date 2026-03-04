@@ -12,7 +12,6 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import NegativeResponse, PositiveResponse
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_MEDIUM
 
 __all__ = ["TagExtractor"]
 
@@ -26,11 +25,20 @@ class TagExtractor(HuggingFaceBenchmarkExtractor):
     """Extractor for TAG-Bench benchmark.
 
     TAG-Bench evaluates Table-Augmented Generation: answering natural language
-    questions over databases. The benchmark contains 80 queries across different
+    questions over databases. The benchmark contains queries across different
     database domains.
     """
 
     evaluator_name = "table_qa"
+
+    def __init__(self, http_timeout: int):
+        """Initialize TAG-Bench extractor.
+
+        Args:
+            http_timeout: Timeout in seconds for HTTP requests.
+        """
+        super().__init__()
+        self.http_timeout = http_timeout
 
     def extract_contrastive_pairs(
         self,
@@ -116,7 +124,7 @@ class TagExtractor(HuggingFaceBenchmarkExtractor):
     def _download_from_github(self) -> str:
         """Download TAG-Bench CSV from GitHub."""
         try:
-            response = requests.get(TAG_GITHUB_URL, timeout=HTTP_TIMEOUT_MEDIUM)
+            response = requests.get(TAG_GITHUB_URL, timeout=self.http_timeout)
             response.raise_for_status()
             return response.text
         except Exception as e:

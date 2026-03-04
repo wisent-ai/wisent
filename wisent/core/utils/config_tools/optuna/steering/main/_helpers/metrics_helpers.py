@@ -9,11 +9,6 @@ import numpy as np
 from sklearn.metrics import accuracy_score, precision_recall_fscore_support, roc_auc_score
 
 from wisent.core.utils.config_tools.constants import (
-    BLEND_DEFAULT,
-    DEFAULT_SCORE,
-    EFFECTIVENESS_HIGH,
-    EFFECTIVENESS_MODERATE,
-    EFFECTIVENESS_SLIGHT,
     MATH_PERCENT_REL_TOL,
     SEPARATOR_WIDTH_STANDARD,
 )
@@ -54,10 +49,10 @@ def calculate_comprehensive_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
         test_results = results["test_results"]
 
         # Extract key metrics
-        base_benchmark_acc = test_results.get("base_benchmark_metrics", {}).get("accuracy", DEFAULT_SCORE)
-        steered_benchmark_acc = test_results.get("steered_benchmark_metrics", {}).get("accuracy", DEFAULT_SCORE)
-        base_probe_auc = test_results.get("base_probe_metrics", {}).get("auc", BLEND_DEFAULT)
-        steered_probe_auc = test_results.get("steered_probe_metrics", {}).get("auc", BLEND_DEFAULT)
+        base_benchmark_acc = test_results["base_benchmark_metrics"]["accuracy"]
+        steered_benchmark_acc = test_results["steered_benchmark_metrics"]["accuracy"]
+        base_probe_auc = test_results["base_probe_metrics"]["auc"]
+        steered_probe_auc = test_results["steered_probe_metrics"]["auc"]
 
         # Calculate improvements
         benchmark_improvement = steered_benchmark_acc - base_benchmark_acc
@@ -74,7 +69,7 @@ def calculate_comprehensive_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
                 "probe_improvement": probe_improvement,
                 "probe_improvement_percent": (probe_improvement / max(base_probe_auc, MATH_PERCENT_REL_TOL)) * 100,
                 "overall_effectiveness": (benchmark_improvement + probe_improvement) / 2,
-                "validation_score": test_results.get("validation_combined_score", DEFAULT_SCORE),
+                "validation_score": test_results["validation_combined_score"],
             }
         )
 
@@ -105,8 +100,8 @@ def calculate_comprehensive_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
 
         all_configs = optimization_results.get("all_configs", [])
         if all_configs:
-            combined_scores = [config.get("combined_score", DEFAULT_SCORE) for config in all_configs]
-            benchmark_scores = [config.get("benchmark_metrics", {}).get("accuracy", DEFAULT_SCORE) for config in all_configs]
+            combined_scores = [config["combined_score"] for config in all_configs]
+            benchmark_scores = [config["benchmark_metrics"]["accuracy"] for config in all_configs]
 
             comprehensive_metrics.update(
                 {
@@ -121,7 +116,13 @@ def calculate_comprehensive_metrics(results: Dict[str, Any]) -> Dict[str, Any]:
     return comprehensive_metrics
 
 
-def generate_performance_summary(comprehensive_metrics: Dict[str, Any]) -> str:
+def generate_performance_summary(
+    comprehensive_metrics: Dict[str, Any],
+    *,
+    effectiveness_high: float,
+    effectiveness_moderate: float,
+    effectiveness_slight: float,
+) -> str:
     """
     Generate a human-readable performance summary.
 
@@ -171,7 +172,7 @@ def generate_performance_summary(comprehensive_metrics: Dict[str, Any]) -> str:
     # Optimization Statistics
     if "optimization_configs_tested" in comprehensive_metrics:
         num_configs = comprehensive_metrics["optimization_configs_tested"]
-        best_score = comprehensive_metrics.get("validation_score", DEFAULT_SCORE)
+        best_score = comprehensive_metrics["validation_score"]
 
         summary.append("\n⚙️ OPTIMIZATION STATISTICS:")
         summary.append(f"  Configurations Tested:   {num_configs}")
@@ -182,11 +183,11 @@ def generate_performance_summary(comprehensive_metrics: Dict[str, Any]) -> str:
         effectiveness = comprehensive_metrics["overall_effectiveness"]
 
         summary.append("\n🏆 OVERALL ASSESSMENT:")
-        if effectiveness > EFFECTIVENESS_HIGH:
+        if effectiveness > effectiveness_high:
             assessment = "Highly Effective"
-        elif effectiveness > EFFECTIVENESS_MODERATE:
+        elif effectiveness > effectiveness_moderate:
             assessment = "Moderately Effective"
-        elif effectiveness > EFFECTIVENESS_SLIGHT:
+        elif effectiveness > effectiveness_slight:
             assessment = "Slightly Effective"
         else:
             assessment = "Minimal Effect"

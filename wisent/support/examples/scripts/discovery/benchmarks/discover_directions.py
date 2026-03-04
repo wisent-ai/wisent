@@ -17,7 +17,7 @@ import json
 from pathlib import Path
 from typing import Dict, Any, Optional
 
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, SEPARATOR_WIDTH_WIDE, JSON_INDENT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, JSON_INDENT
 from wisent.core.reading.modules import GeometrySearchSpace
 from wisent.examples.scripts._discovery_utils import (
     load_categorized_benchmarks,
@@ -120,7 +120,7 @@ def generate_cross_model_comparison(all_model_results: Dict[str, "DiscoveryResul
     return comparison
 
 
-def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int = PAIR_GENERATORS_DEFAULT_N, with_nonsense_baseline: bool = False, with_pairs_ablation: bool = False):
+def run_discovery(report_interval: int, *, samples_per_benchmark: int, pair_count_ablation_series: tuple, pairs_ablation_default_min: int, model_filter: Optional[str] = None, with_nonsense_baseline: bool = False, with_pairs_ablation: bool = False):
     """Run full category direction discovery."""
     print("=" * SEPARATOR_WIDTH_WIDE)
     print("CATEGORY DIRECTION DISCOVERY")
@@ -135,17 +135,16 @@ def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int
     
     # Get search space config
     search_space = GeometrySearchSpace()
-    search_space.config.pairs_per_benchmark = samples_per_benchmark
-    
+
     # Filter models if specified
     if model_filter:
         models_to_test = [model_filter]
     else:
         models_to_test = search_space.models
-    
+
     print(f"\nModels to test: {models_to_test}")
     print(f"Strategies: {[s.value for s in search_space.strategies]}")
-    print(f"Pairs per benchmark: {search_space.config.pairs_per_benchmark}")
+    print(f"Pairs per benchmark: {samples_per_benchmark}")
     
     # Output directory
     output_dir = Path("/tmp/direction_discovery")
@@ -155,7 +154,7 @@ def run_discovery(model_filter: Optional[str] = None, samples_per_benchmark: int
     
     # Run for each model
     for model_name in models_to_test:
-        model_results = run_discovery_for_model(model_name, output_dir, with_nonsense_baseline, with_pairs_ablation)
+        model_results = run_discovery_for_model(model_name, output_dir, report_interval=report_interval, pair_count_ablation_series=pair_count_ablation_series, pairs_ablation_default_min=pairs_ablation_default_min, with_nonsense_baseline=with_nonsense_baseline, with_pairs_ablation=with_pairs_ablation)
         if model_results:
             all_model_results[model_name] = model_results
     
@@ -203,21 +202,29 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Discover unified directions for skill categories")
     parser.add_argument("--model", type=str, default=None, help="Specific model to test (for parallel execution)")
     parser.add_argument("--samples-per-benchmark", type=int, required=True, help="Number of samples per benchmark")
-    parser.add_argument("--with-nonsense-baseline", action="store_true", 
+    parser.add_argument("--report-interval", type=int, required=True, help="Progress reporting interval for activation collection")
+    parser.add_argument("--with-nonsense-baseline", action="store_true",
                         help="Compare against random token baseline (requires generating activations through the model)")
     parser.add_argument("--with-pairs-ablation", action="store_true",
                         help="Run ablation on number of pairs to find minimum needed for stable signal")
     parser.add_argument("--full-diagnosis", action="store_true",
                         help="Run full diagnosis (enables both --with-nonsense-baseline and --with-pairs-ablation)")
+    parser.add_argument("--pair-count-ablation-series", type=int, nargs="+", required=True,
+                        help="List of pair counts to test in ablation")
+    parser.add_argument("--pairs-ablation-default-min", type=int, required=True,
+                        help="Default minimum pairs when ablation data unavailable")
     args = parser.parse_args()
-    
+
     # --full-diagnosis enables both
     with_nonsense = args.with_nonsense_baseline or args.full_diagnosis
     with_pairs = args.with_pairs_ablation or args.full_diagnosis
-    
+
     run_discovery(
-        model_filter=args.model, 
+        report_interval=args.report_interval,
+        model_filter=args.model,
         samples_per_benchmark=args.samples_per_benchmark,
+        pair_count_ablation_series=tuple(args.pair_count_ablation_series),
+        pairs_ablation_default_min=args.pairs_ablation_default_min,
         with_nonsense_baseline=with_nonsense,
         with_pairs_ablation=with_pairs,
     )

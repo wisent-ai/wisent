@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional, Tuple
 from difflib import SequenceMatcher
 
 from wisent.core.utils.infra_tools.errors import TaskLoadError, TaskNotFoundError, NoDocsAvailableError
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, DEFAULT_TIMEOUT_DOCKER, TASK_FUZZY_MATCH_THRESHOLD
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_code_exec_timeout_s
 from wisent.core import constants as _C
 
 
@@ -36,7 +36,7 @@ def load_available_tasks() -> List[str]:
     except ImportError:
         try:
             import subprocess
-            result = subprocess.run(['lm_eval', '--tasks', 'list'], capture_output=True, text=True, timeout=DEFAULT_TIMEOUT_DOCKER)
+            result = subprocess.run(['lm_eval', '--tasks', 'list'], capture_output=True, text=True, timeout=docker_code_exec_timeout_s())
             task_names = []
             for line in result.stdout.split('\n'):
                 if '|' in line and not line.startswith('|---') and 'Group' not in line and 'Config Location' not in line:
@@ -115,7 +115,12 @@ def resolve_task_name(task_name: str) -> str:
 class TaskManager:
     """Manages lm-eval task discovery, validation, and loading."""
 
-    def __init__(self):
+    def __init__(self, max_tasks_to_process: int, max_depth: int, fuzzy_match_threshold: float = None):
+        if fuzzy_match_threshold is None:
+            raise ValueError("fuzzy_match_threshold is required")
+        self.max_tasks_to_process = max_tasks_to_process
+        self.max_depth = max_depth
+        self._fuzzy_match_threshold = fuzzy_match_threshold
         self._available_tasks = None
         self._task_name_mappings = {}
 
@@ -147,7 +152,7 @@ class TaskManager:
         best_match, best_similarity = None, 0.0
         for available_task in self.available_tasks:
             similarity = self._calculate_task_name_similarity(task_name, available_task)
-            if similarity > best_similarity and similarity >= TASK_FUZZY_MATCH_THRESHOLD:
+            if similarity > best_similarity and similarity >= self._fuzzy_match_threshold:
                 best_similarity, best_match = similarity, available_task
         if best_match:
             self._task_name_mappings[task_name] = best_match
@@ -170,7 +175,7 @@ class TaskManager:
         from .group_handling import handle_configurable_group_task
         actual_task_name = self.resolve_task_name(task_name)
         try:
-            task, _ = handle_configurable_group_task(actual_task_name)
+            task, _ = handle_configurable_group_task(actual_task_name, self.max_tasks_to_process, max_depth=self.max_depth)
             task._limit = limit
             return task
         except Exception as e:
@@ -178,7 +183,7 @@ class TaskManager:
                 raise TaskNotFoundError(task_name=task_name)
             raise TaskLoadError(task_name=task_name, cause=e)
 
-    def split_task_data(self, task_data, split_ratio: float = DEFAULT_SPLIT_RATIO, random_seed: int = DEFAULT_RANDOM_SEED) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
+    def split_task_data(self, task_data, split_ratio: float, random_seed: int) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:
         """Split task data into training and testing sets."""
         limit = getattr(task_data, '_limit', None)
         docs = load_docs(task_data, limit)
@@ -243,11 +248,10 @@ class TaskManager:
                             answer = doc[field]
                             break
                     if answer is None:
-                        answer = "UNKNOWN"
+                        raise KeyError(f"No answer field found in document. Tried: answer, target, label, output, {answer_fields}")
                 answers.append(str(answer))
             except Exception as e:
-                print(f"Warning: Could not extract answer from document: {e}")
-                answers.append("UNKNOWN")
+                raise TaskLoadError(f"Could not extract answer from document: {e}")
         return answers
 
     def register_custom_task_yaml(self, task_name: str, yaml_content: str) -> bool:
@@ -264,6 +268,3 @@ class TaskManager:
             print(f"Failed to register custom task '{task_name}': {e}")
             return False
 
-
-# Global instance for convenience
-_task_manager = TaskManager()

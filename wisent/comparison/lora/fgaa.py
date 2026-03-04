@@ -34,10 +34,6 @@ from wisent.core.utils.config_tools.constants import (
     GEMMA_2B_BOS_FEATURES_PAPER,
     GEMMA_2B_BOS_FEATURES_DETECTED,
     GEMMA_9B_BOS_FEATURES_DETECTED,
-    FGAA_DENSITY_THRESHOLD,
-    FGAA_TOP_K_POSITIVE,
-    FGAA_TOP_K_NEGATIVE,
-    COMPARISON_NUM_PAIRS,
     PROGRESS_LOG_INTERVAL_10,
 )
 
@@ -161,12 +157,13 @@ def generate_steering_vector(
     trait_label: str,
     method: str,
     device: str,
-    num_pairs: int = COMPARISON_NUM_PAIRS,
-    layers: str | None = None,
+    num_pairs: int,
+    layers: str,
+    density_threshold: float,
+    top_k_positive: int,
+    top_k_negative: int,
+    *,
     keep_intermediate: bool = False,
-    density_threshold: float = FGAA_DENSITY_THRESHOLD,
-    top_k_positive: int = FGAA_TOP_K_POSITIVE,
-    top_k_negative: int = FGAA_TOP_K_NEGATIVE,
     **kwargs,
 ) -> Path:
     """Generate a steering vector using the FGAA method."""

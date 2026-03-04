@@ -31,7 +31,7 @@ builtins.print = _quiet_print
 from wisent.core.primitives.models.lm_harness_integration.only_benchmarks import CORE_BENCHMARKS
 from wisent.core.primitives.contrastive_pairs import ContrastivePairSet
 from .cache.managed_cached_benchmarks import ManagedCachedBenchmarks, get_managed_cache
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER_WEIGHT, DEFAULT_SPLIT_RATIO, DISPLAY_TOP_N_SMALL
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_SMALL
 
 logger = logging.getLogger(__name__)
 
@@ -52,15 +52,17 @@ class MixedBenchmarkSampler:
     from multiple sources rather than a single benchmark.
     """
     
-    def __init__(self, cache_dir: str = "./benchmark_cache"):
+    def __init__(self, chunk_size: int, max_cache_age_days: int, cache_dir: str = "./benchmark_cache"):
         """
         Initialize the mixed benchmark sampler.
-        
+
         Args:
+            chunk_size: Number of samples per cache chunk
+            max_cache_age_days: Maximum age of cached data in days
             cache_dir: Directory for cached benchmark data
         """
         self.cache_dir = cache_dir
-        self.managed_cache = get_managed_cache(cache_dir)
+        self.managed_cache = get_managed_cache(chunk_size=chunk_size, max_cache_age_days=max_cache_age_days, cache_dir=cache_dir)
         self._benchmark_registry = self._build_benchmark_registry()
     
     def _build_benchmark_registry(self) -> Dict[str, List[str]]:
@@ -118,13 +120,13 @@ class MixedBenchmarkSampler:
         tags: List[str],
         total_samples: int,
         tag_mode: str,
-        split_ratio: float = DEFAULT_SPLIT_RATIO,
+        split_ratio: float = 0.8,
         random_seed: Optional[int] = None,
-        benchmark_weights: Optional[Dict[str, float]] = None
+        benchmark_weights: Optional[Dict[str, float]] = None, *, train_ratio: float,
     ) -> Tuple[List[BenchmarkSample], List[BenchmarkSample]]:
         """
         Sample a mixed dataset from benchmarks matching the given tags.
-        
+
         Args:
             tags: Tags to filter benchmarks (e.g., ["coding", "python"])
             total_samples: Total number of samples to collect
@@ -132,7 +134,7 @@ class MixedBenchmarkSampler:
             random_seed: Random seed for reproducibility
             tag_mode: "any" or "all" for tag matching
             benchmark_weights: Optional weights for sampling probability per benchmark
-            
+
         Returns:
             Tuple of (train_samples, test_samples)
         """
@@ -168,7 +170,8 @@ class MixedBenchmarkSampler:
                 cached_samples = self.managed_cache.get_task_samples(
                     task_name=benchmark_name,
                     limit=samples_per_benchmark,
-                    force_fresh=False
+                    force_fresh=False,
+                    train_ratio=train_ratio,
                 )
                 
                 # Convert to BenchmarkSample objects
@@ -197,7 +200,7 @@ class MixedBenchmarkSampler:
         if benchmark_weights:
             weighted_samples = []
             for sample in all_samples:
-                weight = benchmark_weights.get(sample.benchmark_name, DEFAULT_LAYER_WEIGHT)
+                weight = benchmark_weights[sample.benchmark_name]
                 # Duplicate samples based on weight (simple approach)
                 weighted_samples.extend([sample] * int(weight))
             all_samples = weighted_samples

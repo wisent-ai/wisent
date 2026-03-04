@@ -6,7 +6,7 @@ from typing import List, Optional
 import io
 import base64
 from sklearn.decomposition import PCA
-from wisent.core.utils.config_tools.constants import VIZ_DPI, DEFAULT_RANDOM_SEED, VIZ_TEXT_BOX_LEFT, VIZ_TEXT_BOX_RIGHT, VIZ_CONTOURF_LEVEL, VIZ_MESHGRID_RESOLUTION_HIGH, VIZ_CENTROID_MARKER_SIZE, VIZ_FIGSIZE_DETAIL, VIZ_MARKER_SIZE_SMALL, VIZ_MARKER_SIZE_XLARGE, VIZ_ARROW_LINEWIDTH, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HIST, VIZ_ALPHA_MEDIUM, VIZ_BBOX_ALPHA, BINARY_CLASSIFICATION_THRESHOLD, VIZ_FONTSIZE_BODY, VIZ_LINEWIDTH_NORMAL, VIZ_LINEWIDTH_HAIRLINE, VIZ_N_COMPONENTS_2D
+from wisent.core.utils.config_tools.constants import VIZ_DPI, DEFAULT_RANDOM_SEED, VIZ_TEXT_BOX_LEFT, VIZ_TEXT_BOX_RIGHT, VIZ_CONTOURF_LEVEL, VIZ_MESHGRID_RESOLUTION_HIGH, VIZ_CENTROID_MARKER_SIZE, VIZ_FIGSIZE_DETAIL, VIZ_MARKER_SIZE_SMALL, VIZ_MARKER_SIZE_XLARGE, VIZ_ARROW_LINEWIDTH, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HIST, VIZ_ALPHA_MEDIUM, VIZ_BBOX_ALPHA, VIZ_FONTSIZE_BODY, VIZ_LINEWIDTH_NORMAL, VIZ_LINEWIDTH_HAIRLINE, VIZ_N_COMPONENTS_2D
 
 
 def create_steering_effect_figure(
@@ -160,7 +160,7 @@ def _compute_metrics_text(base_2d, steered_2d, pos_c, neg_c, base_evals, steered
         st = sum(1 for e in steered_evals if e == "TRUTHFUL")
         text += f"\n\nText: Base TRUTHFUL {bt}/{len(base_evals)}, Steered {st}/{len(steered_evals)}"
     if base_probs and steered_probs:
-        bit = sum(1 for p in base_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
-        sit = sum(1 for p in steered_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
+        bit = sum(1 for p in base_probs if p >= 0.5)
+        sit = sum(1 for p in steered_probs if p >= 0.5)
         text += f"\nActivation space: Base in truthful {bit}/{len(base_probs)}, Steered {sit}/{len(steered_probs)}"
     return text

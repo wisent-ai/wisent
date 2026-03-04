@@ -15,7 +15,7 @@ from wisent.core.control.generation.synthetic.generators.core.atoms import Gener
 from wisent.core.control.generation.synthetic.generators.diversities.core.core import Diversity
 
 from wisent.core.control.generation.synthetic.cleaners.pairs_cleaner import PairsCleaner
-from wisent.core.utils.config_tools.constants import PARSER_DEFAULT_NUM_PAIRS_TRAIT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_COMPACT, PAIR_GEN_RETRY_MULTIPLIER, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_SHORT, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_COMPACT, PROGRESS_LOG_INTERVAL_10
 
 __all__ = [
     "SyntheticContrastivePairsGenerator",
@@ -36,23 +36,22 @@ class SyntheticContrastivePairsGenerator:
         db_instructions: DB_Instructions,
         cleaner: PairsCleaner,
         diversity: Diversity,
+        *,
+        retry_multiplier: int,
         nonsense_mode: str | None = None,
     ) -> None:
         self.model = model
         self.db_instructions = db_instructions
         self.generation_config = generation_config
-        self.cleaner = cleaner
-        self.diversity = diversity
-
+        self.cleaner, self.diversity = cleaner, diversity
+        self._retry_multiplier = retry_multiplier
         self.contrastive_set_name = contrastive_set_name
         self.trait_description = trait_description
-        self.trait_label = trait_label
-        self.nonsense_mode = nonsense_mode
-
+        self.trait_label, self.nonsense_mode = trait_label, nonsense_mode
 
     def generate(
         self,
-        num_pairs: int = PARSER_DEFAULT_NUM_PAIRS_TRAIT,
+        num_pairs: int,
     ) -> tuple[ContrastivePairSet, GenerationReport]:
         """
         Generate synthetic contrastive pairs for the given topic and trait.
@@ -88,7 +87,7 @@ class SyntheticContrastivePairsGenerator:
 
         # Generate pairs one at a time, retry until we have num_pairs AFTER cleaning
         # With aggressive deduplication (~3% retention), need many more attempts
-        max_attempts = num_pairs * PAIR_GEN_RETRY_MULTIPLIER
+        max_attempts = num_pairs * self._retry_multiplier
         attempts = 0
         total_retries_for_refusals = 0
 

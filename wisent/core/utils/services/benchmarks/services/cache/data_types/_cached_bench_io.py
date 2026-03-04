@@ -205,12 +205,9 @@ class CachedBenchIOMixin:
             },
         }
 
-    def cleanup_cache(self, max_age_days: int = None):
+    def cleanup_cache(self):
         """Clean up old cache entries."""
-        if max_age_days is None:
-            max_age_days = self.MAX_CACHE_AGE_DAYS
-
-        cutoff_date = datetime.now() - timedelta(days=max_age_days)
+        cutoff_date = datetime.now() - timedelta(days=self.MAX_CACHE_AGE_DAYS)
         tasks_to_remove = []
 
         for task_name, cache_info in self._metadata.tasks.items():
@@ -226,13 +223,13 @@ class CachedBenchIOMixin:
         logger.info(f"Cleaned up {len(tasks_to_remove)} old cache entries")
         return len(tasks_to_remove)
 
-    def preload_tasks(self, task_limits: Dict[str, int]):
+    def preload_tasks(self, task_limits: Dict[str, int], *, train_ratio: float):
         """Preload multiple tasks with specified limits."""
         results = {}
 
         for task_name, limit in task_limits.items():
             try:
-                samples = self.get_task_samples(task_name, limit)
+                samples = self.get_task_samples(task_name, limit, train_ratio=train_ratio)
                 results[task_name] = {"status": "success", "samples_loaded": len(samples), "requested_limit": limit}
                 logger.info(f"Preloaded {len(samples)} samples for '{task_name}'")
             except Exception as e:

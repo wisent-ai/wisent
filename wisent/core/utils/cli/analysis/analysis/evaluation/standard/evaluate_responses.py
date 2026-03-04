@@ -125,7 +125,7 @@ def execute_evaluate_responses(args):
 
             # Use unified split strategy: combine ALL available splits, then use TEST portion (20%)
             all_docs, split_counts = get_all_docs_from_task(task)
-            _, task_docs = create_deterministic_split(all_docs, task_name)
+            _, task_docs = create_deterministic_split(all_docs, task_name, train_ratio=args.train_ratio)
 
             print(f"   ✓ Combined {len(all_docs)} total docs from splits: {split_counts}")
             print(f"   ✓ Using TEST portion: {len(task_docs)} task documents for evaluation\n")
@@ -196,6 +196,7 @@ def execute_evaluate_responses(args):
     if evaluation_type == "docker_execution":
         aggregated_metrics = evaluate_docker_execution(
             args, input_data, responses, task_name, evaluation_results, task_results,
+            subprocess_timeout=args.subprocess_timeout,
             task_config=task_config)
         if aggregated_metrics is not None:
             return
@@ -203,7 +204,8 @@ def execute_evaluate_responses(args):
     # Handle personalization separately
     if evaluation_type == "personalization":
         aggregated_metrics = evaluate_personalization(
-            args, input_data, responses, task_name, evaluation_results, task_results)
+            args, input_data, responses, task_name, evaluation_results, task_results,
+            personalization_good_threshold=args.personalization_good_threshold)
         if aggregated_metrics is not None:
             return
 

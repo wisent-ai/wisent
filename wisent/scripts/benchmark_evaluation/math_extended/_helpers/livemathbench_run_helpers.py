@@ -111,6 +111,7 @@ def evaluate_sampling(
 
 def main(
     dataset_config: str,
+    math_timeout: int,
     eval_mode: str,
     model_name: str = "Qwen/Qwen2.5-1.5B-Instruct",
     limit: Optional[int] = None,
@@ -128,7 +129,7 @@ def main(
 
     print(f"Loading model: {model_name}")
     model = WisentModel(model_name=model_name)
-    evaluator = LiveMathBenchEvaluator()
+    evaluator = LiveMathBenchEvaluator(math_timeout=math_timeout)
 
     # Load judge model if using LLM judge mode
     judge_model = None

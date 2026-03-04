@@ -5,30 +5,32 @@ This module provides functionality to select the most relevant lm-eval tasks
 for training classifiers for specific issue types using model-driven decisions.
 """
 
-from typing import List, Dict, Any, Set, Tuple
+from typing import List, Optional
 from .task_manager import get_available_tasks
-from wisent.core.utils.config_tools.constants import (
-    TASK_SELECTOR_MAX_TASKS, TASK_SELECTOR_QUALITY_THRESHOLD,
-    TASK_QUALITY_SCORE_MAX, TASK_SELECTOR_LIMIT,
-)
 from wisent.core.utils.infra_tools.errors import MissingParameterError
 
 
 class TaskSelector:
     """Model-driven task selector for issue-type-specific training."""
 
-    def __init__(self, model, layer: int):
+    def __init__(self, model, layer: int, task_selector_limit: int, max_tasks: int = None, quality_threshold: float = None, quality_score_max: float = None):
+        for _n, _v in [("max_tasks", max_tasks), ("quality_threshold", quality_threshold), ("quality_score_max", quality_score_max)]:
+            if _v is None:
+                raise ValueError(f"{_n} is required")
         self.model = model
         self.layer = layer
+        self._task_selector_limit = task_selector_limit
+        self._max_tasks = max_tasks
+        self._quality_threshold = quality_threshold
+        self._quality_score_max = quality_score_max
     
-    def find_relevant_tasks_for_issue_type(self, issue_type: str, max_tasks: int = TASK_SELECTOR_MAX_TASKS) -> List[str]:
+    def find_relevant_tasks_for_issue_type(self, issue_type: str) -> List[str]:
         """
         Find the most relevant tasks for a specific issue type using model decisions.
-        
+
         Args:
             issue_type: Type of issue to find tasks for
-            max_tasks: Maximum number of tasks to return
-            
+
         Returns:
             List of task names ranked by relevance
         """
@@ -36,36 +38,39 @@ class TaskSelector:
         
         # Use model to score task relevance for the issue type
         task_scores = []
-        for task_name in available_tasks[:TASK_SELECTOR_LIMIT]:  # Limit for efficiency
+        for task_name in available_tasks[:self._task_selector_limit]:  # Limit for efficiency
             score = self._get_model_task_relevance(issue_type, task_name)
             if score > 0.0:
                 task_scores.append((task_name, score))
         
         # Sort by relevance score (descending) and return top tasks
         task_scores.sort(key=lambda x: x[1], reverse=True)
-        return [task_name for task_name, _ in task_scores[:max_tasks]]
-    
+        return [task_name for task_name, _ in task_scores[:self._max_tasks]]
+
     def select_best_tasks_for_training(
         self,
         issue_type: str,
         min_tasks: int = 1,
-        max_tasks: int = TASK_SELECTOR_MAX_TASKS,
-        quality_threshold: float = TASK_SELECTOR_QUALITY_THRESHOLD
+        max_tasks: int = None,
+        quality_threshold: float = None
     ) -> List[str]:
         """
         Select the best tasks for training a classifier for the given issue type.
-        
+
         Args:
             issue_type: Type of issue to select tasks for
             min_tasks: Minimum number of tasks to select
             max_tasks: Maximum number of tasks to select
             quality_threshold: Minimum quality score for task inclusion
-            
+
         Returns:
             List of selected task names
         """
-        # Get relevant tasks using model decisions
-        relevant_tasks = self.find_relevant_tasks_for_issue_type(issue_type, max_tasks * 2)
+        if max_tasks is None:
+            max_tasks = self._max_tasks
+        if quality_threshold is None:
+            quality_threshold = self._quality_threshold
+        relevant_tasks = self.find_relevant_tasks_for_issue_type(issue_type)
         
         # Use model to evaluate task quality
         selected_tasks = []
@@ -123,40 +128,26 @@ Respond with only the number:"""
             match = re.search(r'(\d+\.?\d*)', score_str)
             if match:
                 score = float(match.group(1))
-                return min(TASK_QUALITY_SCORE_MAX, max(0.0, score))
+                return min(self._quality_score_max, max(0.0, score))
             return 1.0
         except:
             return 1.0
 
 
-def find_relevant_tasks_for_issue_type(issue_type: str, max_tasks: int = TASK_SELECTOR_MAX_TASKS, model=None, layer: int = None) -> List[str]:
+def find_relevant_tasks_for_issue_type(issue_type: str, task_selector_limit: int, model, layer: int, max_tasks: int = None, quality_threshold: float = None, quality_score_max: float = None) -> List[str]:
     """Standalone function for finding relevant tasks."""
-    if model is None:
-        from ....model import Model
-        model = Model("meta-llama/Llama-3.1-8B-Instruct")
-    
-    if layer is None:
-        raise MissingParameterError(params=["layer"], context="find_relevant_tasks_for_issue_type")
-    selector = TaskSelector(model, layer=layer)
-    return selector.find_relevant_tasks_for_issue_type(issue_type, max_tasks)
+    selector = TaskSelector(model, layer=layer, task_selector_limit=task_selector_limit, max_tasks=max_tasks, quality_threshold=quality_threshold, quality_score_max=quality_score_max)
+    return selector.find_relevant_tasks_for_issue_type(issue_type)
 
 
 def select_best_tasks_for_training(
-    issue_type: str,
-    min_tasks: int = 1,
-    max_tasks: int = TASK_SELECTOR_MAX_TASKS,
-    quality_threshold: float = TASK_SELECTOR_QUALITY_THRESHOLD,
-    model=None,
-    layer: int = None,
+    issue_type: str, task_selector_limit: int, model, layer: int,
+    max_tasks: int = None, quality_threshold: float = None, quality_score_max: float = None,
+    min_tasks: Optional[int] = None,
 ) -> List[str]:
     """Standalone function for selecting best training tasks."""
-    if model is None:
-        from ....model import Model
-        model = Model("meta-llama/Llama-3.1-8B-Instruct")
-    
-    if layer is None:
-        raise MissingParameterError(params=["layer"], context="select_best_tasks_for_training")
-    selector = TaskSelector(model, layer=layer)
-    return selector.select_best_tasks_for_training(
-        issue_type, min_tasks, max_tasks, quality_threshold
-    ) 
+    selector = TaskSelector(model, layer=layer, task_selector_limit=task_selector_limit, max_tasks=max_tasks, quality_threshold=quality_threshold, quality_score_max=quality_score_max)
+    kwargs = {"max_tasks": max_tasks, "quality_threshold": quality_threshold}
+    if min_tasks is not None:
+        kwargs["min_tasks"] = min_tasks
+    return selector.select_best_tasks_for_training(issue_type, **kwargs)

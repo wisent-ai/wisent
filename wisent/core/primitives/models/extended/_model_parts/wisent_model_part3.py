@@ -130,6 +130,7 @@ def _set_steering_from_raw(
     self,
     raw: list[RawActivationMap] | RawActivationMap | None,
     scale: float,
+    min_norm_threshold: float,
     layers_description: list[str] | None = None,
     steering_weights: list[float] | None = None,
     normalize: bool = False,
@@ -143,7 +144,7 @@ def _set_steering_from_raw(
         return
 
     # TODO: this should be outside
-    reports = run_control_steering_diagnostics(raw)
+    reports = run_control_steering_diagnostics(raw, min_norm_threshold=min_norm_threshold)
     for report in reports:
         for issue in report.issues:
             log_method = logger.error if issue.severity == "critical" else logger.warning

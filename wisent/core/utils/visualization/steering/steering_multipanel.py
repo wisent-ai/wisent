@@ -6,14 +6,28 @@ from typing import List, Optional
 import io
 import base64
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_RANDOM_SEED, VIZ_DPI_STANDARD,
-    VIZ_FIGURE_WIDTH_PX, VIZ_FIGURE_HEIGHT_PX, VIZ_LEGEND_Y_TOP,
-    VIZ_GRID_SUMMARY_ROWS, VIZ_GRID_SUMMARY_COLS, VIZ_FIGSIZE_SUMMARY,
-    DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_RESPONSE,
-    VIZ_ARROW_SIZE_DEFAULT, VIZ_ARROW_LINEWIDTH,
-    BINARY_CLASSIFICATION_THRESHOLD, VIZ_N_COMPONENTS_2D,
-    VIZ_FONTSIZE_SUBTITLE, VIZ_SUPTITLE_Y_OFFSET_HIGH,
+    DEFAULT_RANDOM_SEED, COMBO_OFFSET, RECURSION_INITIAL_DEPTH,
+    VIZ_DPI_STANDARD,
+    VIZ_FIGURE_WIDTH_PX,
+    VIZ_FIGURE_HEIGHT_PX,
+    VIZ_LEGEND_Y_TOP,
+    VIZ_GRID_SUMMARY_ROWS,
+    VIZ_GRID_SUMMARY_COLS,
+    VIZ_FIGSIZE_SUMMARY,
+    DISPLAY_TRUNCATION_COMPACT,
+    DISPLAY_TRUNCATION_RESPONSE,
+    VIZ_ARROW_SIZE_DEFAULT,
+    VIZ_ARROW_LINEWIDTH,
+    VIZ_N_COMPONENTS_2D,
+    VIZ_FONTSIZE_SUBTITLE,
+    VIZ_SUPTITLE_Y_OFFSET_HIGH,
 )
+
+
+def _call_pacmap(panel_fn, axes, pos, neg, base, steered, base_evals, steered_evals, nbr_max, nbr_div, num_iters):
+    """Helper to call plot_pacmap_panel routing through the grid position."""
+    ax = axes[COMBO_OFFSET, RECURSION_INITIAL_DEPTH]
+    panel_fn(ax, pos, neg, base, steered, base_evals, steered_evals, pacmap_neighbors_max=nbr_max, pacmap_neighbors_divisor=nbr_div, pacmap_num_iters=num_iters)
 
 
 def create_steering_multipanel_figure(
@@ -27,6 +41,9 @@ def create_steering_multipanel_figure(
     base_space_probs: List[float] = None,
     steered_space_probs: List[float] = None,
     extraction_strategy: str = None,
+    pacmap_neighbors_max: int = None,
+    pacmap_neighbors_divisor: int = None,
+    pacmap_num_iters: int = None,
 ) -> str:
     """
     Create 9-panel steering visualization showing multiple projection methods.
@@ -70,7 +87,7 @@ def create_steering_multipanel_figure(
     plot_umap_panel(axes[0, 2], pos, neg, base, steered, base_evaluations, steered_evaluations)
 
     # Row 2: More projections and decision boundary
-    plot_pacmap_panel(axes[1, 0], pos, neg, base, steered, base_evaluations, steered_evaluations)
+    _call_pacmap(plot_pacmap_panel, axes, pos, neg, base, steered, base_evaluations, steered_evaluations, pacmap_neighbors_max, pacmap_neighbors_divisor, pacmap_num_iters)
     plot_lda_panel(axes[1, 1], pos, neg, base, steered, base_evaluations, steered_evaluations)
     plot_pca_with_boundary(axes[1, 2], pos, neg, base, steered, base_evaluations, steered_evaluations)
 
@@ -114,8 +131,8 @@ def _compute_summary_metrics(pos, neg, base, steered, base_evals, steered_evals,
         steered_truthful = sum(1 for e in steered_evals if e == "TRUTHFUL")
         parts.append(f"Text TRUTHFUL: {base_truthful}->{steered_truthful}")
     if base_probs and steered_probs:
-        base_in_truthful = sum(1 for p in base_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
-        steered_in_truthful = sum(1 for p in steered_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
+        base_in_truthful = sum(1 for p in base_probs if p >= 0.5)
+        steered_in_truthful = sum(1 for p in steered_probs if p >= 0.5)
         parts.append(f"In truthful region: {base_in_truthful}->{steered_in_truthful}")
         if base_evals and steered_evals:
             activations_shifted = steered_in_truthful > base_in_truthful
@@ -235,7 +252,7 @@ def _compute_interactive_metrics(base_2d, steered_2d, pos_c, neg_c, base_evals, 
         st = sum(1 for e in steered_evals if e == "TRUTHFUL")
         parts.append(f"Text: {bt}->{st} truthful")
     if base_probs and steered_probs:
-        bit = sum(1 for p in base_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
-        sit = sum(1 for p in steered_probs if p >= BINARY_CLASSIFICATION_THRESHOLD)
+        bit = sum(1 for p in base_probs if p >= 0.5)
+        sit = sum(1 for p in steered_probs if p >= 0.5)
         parts.append(f"Activation: {bit}->{sit} in truthful")
     return " | ".join(parts)

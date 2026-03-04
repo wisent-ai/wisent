@@ -18,15 +18,16 @@ from wisent.core.control.steering_methods._steering_object_base import (
     BaseSteeringObject,
 )
 from wisent.core.utils import preferred_dtype
-from wisent.core.utils.config_tools.constants import (
-    MLP_DROPOUT,
-    MLP_HIDDEN_DIM,
-    MLP_LEARNING_RATE,
-    MLP_NUM_LAYERS,
-    DEFAULT_OPTIMIZATION_STEPS,
-    DEFAULT_WEIGHT_DECAY,
-    OSTRZE_C,
-)
+
+
+def _require_arg(args, attr_name):
+    val = getattr(args, attr_name, None)
+    if val is None:
+        raise ValueError(
+            f"Parameter '{attr_name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return val
 
 
 
@@ -173,11 +174,22 @@ def execute_create_steering_object(args):
             )
         elif method_name == 'tetno':
             steering_obj = _create_tetno_steering_object(
-                metadata, layer_activations, available_layers, args
+                metadata, layer_activations, available_layers, args,
+                threshold_search_init_value=_require_arg(args, 'tetno_threshold_search_init_value'),
+                default_score=_require_arg(args, 'tetno_default_score'),
             )
         elif method_name == 'grom':
+            _r = _require_arg
             steering_obj = _create_grom_steering_object(
-                metadata, layer_activations, available_layers, args
+                metadata, layer_activations, available_layers, args,
+                log_interval=_r(args, 'grom_log_interval'),
+                gate_dim_min=_r(args, 'grom_gate_dim_min'), gate_dim_max=_r(args, 'grom_gate_dim_max'),
+                gate_dim_divisor=_r(args, 'grom_gate_dim_divisor'), gate_shrink_factor=_r(args, 'grom_gate_shrink_factor'),
+                intensity_dim_min=_r(args, 'grom_intensity_dim_min'),
+                intensity_dim_max=_r(args, 'grom_intensity_dim_max'),
+                intensity_dim_divisor=_r(args, 'grom_intensity_dim_divisor'),
+                create_noise_scale=_r(args, 'grom_create_noise_scale'),
+                create_gate_threshold=_r(args, 'grom_create_gate_threshold'),
             )
         elif method_name == 'nurt':
             from wisent.core.utils.cli.steering.core.create_nurt import _create_nurt_steering_object
@@ -248,7 +260,7 @@ def _create_simple_steering_object(
         from wisent.core.control.steering_methods._steering_object_simple import OstrzeSteeringObject
         method = OstrzeMethod(
             normalize=getattr(args, 'normalize', True),
-            C=getattr(args, 'ostrze_C', OSTRZE_C),
+            C=_require_arg(args, 'ostrze_C'),
         )
         obj_class = OstrzeSteeringObject
     elif method_name == 'mlp':
@@ -256,12 +268,15 @@ def _create_simple_steering_object(
         from wisent.core.control.steering_methods._steering_object_simple import MLPSteeringObject
         method = MLPMethod(
             normalize=getattr(args, 'normalize', True),
-            hidden_dim=getattr(args, 'mlp_hidden_dim', MLP_HIDDEN_DIM),
-            num_layers=getattr(args, 'mlp_num_layers', MLP_NUM_LAYERS),
-            dropout=getattr(args, 'mlp_dropout', MLP_DROPOUT),
-            epochs=getattr(args, 'mlp_epochs', DEFAULT_OPTIMIZATION_STEPS),
-            learning_rate=getattr(args, 'mlp_learning_rate', MLP_LEARNING_RATE),
-            weight_decay=getattr(args, 'mlp_weight_decay', DEFAULT_WEIGHT_DECAY),
+            hidden_dim=_require_arg(args, 'mlp_hidden_dim'),
+            num_layers=_require_arg(args, 'mlp_num_layers'),
+            dropout=_require_arg(args, 'mlp_dropout'),
+            epochs=_require_arg(args, 'mlp_epochs'),
+            learning_rate=_require_arg(args, 'mlp_learning_rate'),
+            weight_decay=_require_arg(args, 'mlp_weight_decay'), early_stop_tol=_require_arg(args, 'mlp_early_stop_tol'),
+            mlp_input_divisor=_require_arg(args, 'mlp_input_divisor'),
+            mlp_early_stopping_patience=_require_arg(args, 'mlp_early_stopping_patience'),
+            gating_hidden_dim_divisor=_require_arg(args, 'mlp_gating_hidden_dim_divisor'),
         )
         obj_class = MLPSteeringObject
     else:

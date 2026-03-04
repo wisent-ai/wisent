@@ -18,7 +18,7 @@ from typing import Any
 import evaluate
 
 from wisent.core.reading.evaluators.core.atoms import BaseEvaluator, EvalResult
-from wisent.core.utils.config_tools.constants import BLEU_THRESHOLD, BLEU_MAX_ORDER
+from wisent.core.utils.config_tools.constants import BLEU_MAX_ORDER, CONALA_BLEU_THRESHOLD
 
 logger = logging.getLogger(__name__)
 
@@ -61,15 +61,13 @@ class CoNaLaEvaluator(BaseEvaluator):
     name = "conala"
     description = "CoNaLa evaluator using BLEU score for code generation"
 
-    def __init__(self, bleu_threshold: float = BLEU_THRESHOLD, max_order: int = BLEU_MAX_ORDER):
-        """Initialize the CoNaLa evaluator.
-
-        Args:
-            bleu_threshold: BLEU score threshold for TRUTHFUL classification (default 0.5)
-            max_order: Maximum n-gram order for BLEU (default 4)
-        """
-        self.bleu_threshold = bleu_threshold
-        self.max_order = max_order
+    def __init__(
+        self,
+        *,
+        bleu_threshold: float = CONALA_BLEU_THRESHOLD,
+    ):
+        """Initialize the CoNaLa evaluator."""
+        self._bleu_threshold = bleu_threshold
         self.bleu_metric = evaluate.load("bleu")
 
     @staticmethod
@@ -126,13 +124,13 @@ class CoNaLaEvaluator(BaseEvaluator):
             predictions=[response_str],
             references=[[expected_str]],
             tokenizer=tokenize_for_bleu_eval,
-            max_order=self.max_order,
+            max_order=BLEU_MAX_ORDER,
             smooth=False,
         )
         bleu_score = result["bleu"]
 
         # Determine truthfulness based on BLEU threshold only
-        is_correct = bleu_score >= self.bleu_threshold
+        is_correct = bleu_score >= self._bleu_threshold
 
         return EvalResult(
             ground_truth="TRUTHFUL" if is_correct else "UNTRUTHFUL",
@@ -141,7 +139,7 @@ class CoNaLaEvaluator(BaseEvaluator):
             details=f"BLEU: {bleu_score:.4f}",
             meta={
                 "bleu_score": bleu_score,
-                "bleu_threshold": self.bleu_threshold,
+                "bleu_threshold": self._bleu_threshold,
             }
         )
 
@@ -175,7 +173,7 @@ class CoNaLaEvaluator(BaseEvaluator):
                 "total": len(responses),
                 "brevity_penalty": 0.0,
                 "length_ratio": 0.0,
-                "precisions": [0.0] * self.max_order,
+                "precisions": [0.0] * BLEU_MAX_ORDER,
             }
 
         # Compute corpus BLEU using HuggingFace evaluate
@@ -183,7 +181,7 @@ class CoNaLaEvaluator(BaseEvaluator):
             predictions=predictions,
             references=references,
             tokenizer=tokenize_for_bleu_eval,
-            max_order=self.max_order,
+            max_order=BLEU_MAX_ORDER,
             smooth=False,
         )
 

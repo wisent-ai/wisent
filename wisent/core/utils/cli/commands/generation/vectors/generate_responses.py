@@ -7,7 +7,7 @@ import torch
 
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy, extract_activation
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, JSON_INDENT, MIN_LOAD_LIMIT_QUESTIONS, DISPLAY_TRUNCATION_COMPACT
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, JSON_INDENT, DISPLAY_TRUNCATION_COMPACT
 
 
 def execute_generate_responses(args):
@@ -91,9 +91,9 @@ def execute_generate_responses(args):
     else:
         from wisent.core.utils.infra_tools.data.loaders.huggingface_loader import HuggingFaceDataLoader
         
-        load_limit = max(args.num_questions * 2, MIN_LOAD_LIMIT_QUESTIONS)
+        load_limit = max(args.num_questions * args.max_incorrect_per_correct, args.min_load_limit_questions)
         load_kwargs = dict(
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=DEFAULT_RANDOM_SEED,
             limit=load_limit,
             training_limit=None,

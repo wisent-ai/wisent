@@ -6,7 +6,7 @@ Extracted from video.py to keep files under 300 lines.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Union
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import logging
 
 import torch
@@ -26,7 +26,6 @@ from wisent.core.primitives.models.modalities import (
 )
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations
-from wisent.core.utils.config_tools.constants import VIDEO_KEYFRAME_INTERVAL, VIDEO_TEMPORAL_DECAY, VIDEO_NUM_FRAMES, VIDEO_FRAME_SAMPLE_RATE
 
 logger = logging.getLogger(__name__)
 
@@ -45,9 +44,9 @@ class VideoSteeringConfig(SteeringConfig):
         keyframe_interval: Interval for keyframe mode
         temporal_decay_rate: Decay rate for temporal_decay mode
     """
+    keyframe_interval: int = field(kw_only=True)
     frame_mode: Optional[str] = None
-    keyframe_interval: int = VIDEO_KEYFRAME_INTERVAL
-    temporal_decay_rate: float = VIDEO_TEMPORAL_DECAY
+    temporal_decay_rate: float = 0.9
 
 
 class VideoAdapterCore(BaseAdapter[VideoContent, Union[torch.Tensor, str]]):
@@ -74,8 +73,9 @@ class VideoAdapterCore(BaseAdapter[VideoContent, Union[torch.Tensor, str]]):
         processor: Any | None = None,
         device: str | None = None,
         model_type: str | None = None,
-        num_frames: int = VIDEO_NUM_FRAMES,
-        frame_sample_rate: int = VIDEO_FRAME_SAMPLE_RATE,
+        *,
+        num_frames: int,
+        frame_sample_rate: int,
         **kwargs: Any,
     ):
         super().__init__(model=model, model_name=model_name, device=device, **kwargs)

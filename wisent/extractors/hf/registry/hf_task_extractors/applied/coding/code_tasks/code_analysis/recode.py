@@ -7,7 +7,6 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_LONG
 
 __all__ = ["RecodeExtractor"]
 
@@ -43,6 +42,15 @@ class RecodeExtractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "code_generation"
 
+    def __init__(self, http_timeout: int):
+        """Initialize ReCode extractor.
+
+        Args:
+            http_timeout: Timeout in seconds for HTTP requests.
+        """
+        super().__init__()
+        self.http_timeout = http_timeout
+
     def extract_contrastive_pairs(
         self,
         limit: int | None = None,
@@ -76,7 +84,7 @@ class RecodeExtractor(HuggingFaceBenchmarkExtractor):
     def _load_from_github(self) -> list[dict[str, Any]]:
         """Load ReCode data from GitHub JSONL file."""
         try:
-            response = requests.get(RECODE_GITHUB_URL, timeout=HTTP_TIMEOUT_LONG)
+            response = requests.get(RECODE_GITHUB_URL, timeout=self.http_timeout)
             response.raise_for_status()
             
             problems = []

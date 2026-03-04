@@ -1,7 +1,7 @@
 """Linearity check from raw activations."""
 from __future__ import annotations
 
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 
 import torch
 import numpy as np
@@ -9,9 +9,10 @@ import numpy as np
 from wisent.core.reading.diagnostics.analysis.linearity import (
     LinearityConfig,
     LinearityResult,
+    LinearityVerdict,
     check_linearity,
 )
-from wisent.core.utils.config_tools.constants import GEOMETRY_DEFAULT_NUM_COMPONENTS
+
 
 def check_linearity_from_activations(
     pos_activations: torch.Tensor,
@@ -20,21 +21,22 @@ def check_linearity_from_activations(
 ) -> LinearityResult:
     """
     Check linearity from pre-collected activations.
-    
+
     Args:
         pos_activations: Positive class activations [N, hidden_dim]
         neg_activations: Negative class activations [N, hidden_dim]
         config: Configuration
-        
+
     Returns:
         LinearityResult
     """
     from wisent.core.reading.diagnostics import detect_geometry_structure, GeometryAnalysisConfig
-    
-    cfg = config or LinearityConfig()
-    
+
+    if config is None:
+        config = LinearityConfig()
+    cfg = config
+
     geo_config = GeometryAnalysisConfig(
-        num_components=GEOMETRY_DEFAULT_NUM_COMPONENTS,
         optimization_steps=cfg.geometry_optimization_steps,
     )
     

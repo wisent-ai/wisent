@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List
 
-from wisent.core.utils.config_tools.constants import AGENT_DEFAULT_TIME_BUDGET, BENCHMARK_LOADING_TIME_DEFAULT, TASK_MIN_RELEVANCE_SCORE, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY
 from ....model import Model
 
 
@@ -11,30 +11,33 @@ class DataGenerationMixin:
 
     model: Model
 
-    def _generate_training_data(self, issue_type: str, num_samples: int) -> List[Dict[str, Any]]:
+    def _generate_training_data(self, issue_type: str, num_samples: int, time_budget_minutes: float, task_search_limit: int, *, data_oversample_multiplier: int, min_relevance_score: float = None) -> List[Dict[str, Any]]:
         """
         Generate training data dynamically for a specific issue type using relevant benchmarks.
 
         Args:
             issue_type: Type of issue to generate data for
             num_samples: Number of training samples to generate
+            time_budget_minutes: Time budget in minutes for benchmark discovery
 
         Returns:
             List of training examples with harmful/harmless pairs
         """
         print(f"   Loading dynamic training data for {issue_type}...")
 
-        # Try to find relevant benchmarks for the issue type (using default 5-minute budget)
-        relevant_benchmarks = self._find_relevant_benchmarks(issue_type)
+        # Try to find relevant benchmarks for the issue type
+        relevant_benchmarks = self._find_relevant_benchmarks(issue_type, time_budget_minutes, task_search_limit=task_search_limit, min_relevance_score=min_relevance_score)
 
         if relevant_benchmarks:
             print(f"   Found {len(relevant_benchmarks)} relevant benchmarks: {relevant_benchmarks[:DISPLAY_TOP_N_TINY]}...")
-            return self._load_benchmark_data(relevant_benchmarks, num_samples)
+            return self._load_benchmark_data(relevant_benchmarks, num_samples, data_oversample_multiplier=data_oversample_multiplier)
         print("   No specific benchmarks found, using synthetic generation...")
         return self._generate_synthetic_training_data(issue_type, num_samples)
 
-    def _find_relevant_benchmarks(self, issue_type: str, time_budget_minutes: float = AGENT_DEFAULT_TIME_BUDGET) -> List[str]:
+    def _find_relevant_benchmarks(self, issue_type: str, time_budget_minutes: float, task_search_limit: int, min_relevance_score: float = None) -> List[str]:
         """Find relevant benchmarks for the given issue type based on time budget with priority-aware selection."""
+        if min_relevance_score is None:
+            raise ValueError("min_relevance_score is required for _find_relevant_benchmarks")
         from ...budget import calculate_max_tasks_for_time_budget
         from ..tasks.task_relevance import find_relevant_tasks
 
@@ -72,7 +75,7 @@ class DataGenerationMixin:
                     print(f"   Found {len(relevant_benchmarks)} priority-aware benchmarks for '{issue_type}':")
                     for i, result in enumerate(relevant_results[:DISPLAY_TOP_N_TINY]):
                         priority_str = f" (priority: {result.get('priority', 'unknown')})"
-                        loading_time_str = f" (loading time: {result.get('loading_time', BENCHMARK_LOADING_TIME_DEFAULT):.1f}s)"
+                        loading_time_str = f" (loading time: {result['loading_time']:.1f}s)"
                         print(f"      {i + 1}. {result['benchmark']}{priority_str}{loading_time_str}")
                     if len(relevant_benchmarks) > DISPLAY_TOP_N_TINY:
                         print(f"      ... and {len(relevant_benchmarks) - DISPLAY_TOP_N_TINY} more")
@@ -85,7 +88,8 @@ class DataGenerationMixin:
 
                 # Use legacy system
                 relevant_task_results = find_relevant_tasks(
-                    query=issue_type, max_results=max_tasks, min_relevance_score=TASK_MIN_RELEVANCE_SCORE
+                    query=issue_type, task_search_limit=task_search_limit,
+                    max_results=max_tasks, min_relevance_score=min_relevance_score
                 )
 
                 # Extract just the task names

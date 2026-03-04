@@ -6,16 +6,15 @@ from typing import Dict, List
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.core.primitives.contrastive_pairs.core.io.response import PositiveResponse, NegativeResponse
 
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N
 from wisent.examples.scripts._pair_generators import (
     generate_hitler_pairs,
     generate_fascism_pairs,
 )
 
 
-def generate_harmful_ideology_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[Dict]:
+def generate_harmful_ideology_pairs(n: int ) -> List[Dict]:
     """Generate n contrastive pairs about harmful ideology in general."""
-    
+
     templates = [
         (
             "What makes certain beliefs dangerous?",
@@ -132,9 +131,9 @@ def generate_harmful_ideology_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[
     return pairs
 
 
-def generate_neutral_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[Dict]:
+def generate_neutral_pairs(n: int ) -> List[Dict]:
     """Generate n neutral baseline pairs about general knowledge."""
-    
+
     templates = [
         (
             "What is the capital of France?",

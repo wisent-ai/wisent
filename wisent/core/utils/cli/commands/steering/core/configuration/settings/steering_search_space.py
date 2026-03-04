@@ -17,7 +17,6 @@ import itertools
 
 
 
-from wisent.core.utils.config_tools.constants import SEARCH_DEFAULT_STRENGTHS
 from wisent.core.utils.cli.steering.core.config.steering_search_space_classes import (
     DirectionWeighting, SteeringLayerConfig, SensorLayerConfig,
     BaseSearchSpace, CAASearchSpace, TECZASearchSpace,
@@ -25,16 +24,22 @@ from wisent.core.utils.cli.steering.core.config.steering_search_space_classes im
 )
 
 
-def get_search_space(method_name: str, num_layers: int) -> BaseSearchSpace:
-    """
-    Get the search space for a given method.
+def get_search_space(
+    method_name: str,
+    num_layers: int,
+    caa_search_min_cosine_similarities: tuple = (),
+    caa_search_max_cosine_similarities: tuple = (),
+    grom_search_params: Dict[str, Any] = None,
+    tetno_search_params: Dict[str, Any] = None,
+    search_default_strengths: tuple = None,
+) -> BaseSearchSpace:
+    """Get the search space for a given method.
 
     Args:
         method_name: Name of steering method (CAA, TECZA, TETNO, GROM)
         num_layers: Number of layers in the model
-
-    Returns:
-        Search space instance for the method
+        caa_search_min_cosine_similarities: Min cosine sim search values for TECZA.
+        caa_search_max_cosine_similarities: Max cosine sim search values for TECZA.
     """
     method = method_name.upper()
 
@@ -45,32 +50,61 @@ def get_search_space(method_name: str, num_layers: int) -> BaseSearchSpace:
     if method == "CAA":
         return CAASearchSpace(layers=all_layers)
     elif method == "TECZA":
-        return TECZASearchSpace(layers=all_layers)
+        return TECZASearchSpace(
+            layers=all_layers,
+            min_cosine_similarity=list(caa_search_min_cosine_similarities),
+            max_cosine_similarity=list(caa_search_max_cosine_similarities),
+        )
     elif method == "TETNO":
-        return TETNOSearchSpace(strengths=list(SEARCH_DEFAULT_STRENGTHS))
+        if tetno_search_params is None:
+            raise ValueError("tetno_search_params dict is required for TETNO search space")
+        if search_default_strengths is None:
+            raise ValueError("search_default_strengths is required for TETNO/GROM search space")
+        return TETNOSearchSpace(
+            strengths=list(search_default_strengths),
+            steering_layer_config=list(tetno_search_params["steering_layer_config"]),
+            condition_threshold=list(tetno_search_params["condition_threshold"]),
+            gate_temperature=list(tetno_search_params["gate_temperature"]),
+            max_alpha=list(tetno_search_params["max_alpha"]),
+            optimization_steps=list(tetno_search_params["optimization_steps"]),
+        )
     elif method == "GROM":
-        return GROMSearchSpace(strengths=list(SEARCH_DEFAULT_STRENGTHS))
+        if grom_search_params is None:
+            raise ValueError("grom_search_params dict is required for GROM search space")
+        if search_default_strengths is None:
+            raise ValueError("search_default_strengths is required for TETNO/GROM search space")
+        return GROMSearchSpace(
+            strengths=list(search_default_strengths),
+            num_directions=list(grom_search_params["num_directions"]),
+            steering_layer_config=list(grom_search_params["steering_layer_config"]),
+            gate_hidden_dim=list(grom_search_params["gate_hidden_dim"]),
+            intensity_hidden_dim=list(grom_search_params["intensity_hidden_dim"]),
+            behavior_weight=list(grom_search_params["behavior_weight"]),
+            retain_weight=list(grom_search_params["retain_weight"]),
+            sparse_weight=list(grom_search_params["sparse_weight"]),
+            max_alpha=list(grom_search_params["max_alpha"]),
+            optimization_steps=list(grom_search_params["optimization_steps"]),
+            learning_rate=list(grom_search_params["learning_rate"]),
+        )
     else:
         # Default to CAA search space
         return CAASearchSpace(layers=all_layers)
 
 
-def get_search_space_from_args(method_name: str, args, num_layers: int) -> BaseSearchSpace:
-    """
-    Create a search space with values from CLI arguments.
-    
-    Args:
-        method_name: Name of steering method
-        args: Parsed CLI arguments
-        num_layers: Number of layers in the model
-        
-    Returns:
-        Search space configured from arguments
-    """
+def get_search_space_from_args(
+    method_name: str, args, num_layers: int,
+    caa_search_min_cosine_similarities: tuple = (),
+    caa_search_max_cosine_similarities: tuple = (),
+) -> BaseSearchSpace:
+    """Create a search space with values from CLI arguments."""
     method = method_name.upper()
 
     # Get base search space
-    search_space = get_search_space(method, num_layers)
+    search_space = get_search_space(
+        method, num_layers,
+        caa_search_min_cosine_similarities=caa_search_min_cosine_similarities,
+        caa_search_max_cosine_similarities=caa_search_max_cosine_similarities,
+    )
     
     # Override with any explicit CLI arguments
     if hasattr(args, 'search_layers') and args.search_layers:

@@ -7,7 +7,7 @@ from typing import Any, Literal
 import optuna
 
 from wisent.core.utils.infra_tools.errors import UnknownTypeError
-from wisent.core.utils.config_tools.constants import DEFAULT_N_TRIALS, DEFAULT_RANDOM_SEED, BASE_OPTIMIZER_NAME
+from wisent.core.utils.config_tools.constants import BASE_OPTIMIZER_NAME
 __all__ = [
     "Direction",
     "HPOConfig",
@@ -43,14 +43,14 @@ class HPOConfig:
         load_if_exists:
             reuse persisted study if it already exists (when storage+study_name set).
     """
-    n_trials: int = DEFAULT_N_TRIALS
+    n_trials: int = None
     direction: Direction = "maximize"
     sampler: str | None = "tpe"
     pruner: str | None = "asha"
     timeout: int | None = None
     storage: str | None = None
     study_name: str | None = None
-    seed: int | None = DEFAULT_RANDOM_SEED
+    seed: int | None = None
     load_if_exists: bool = True
 
 
@@ -86,6 +86,8 @@ class BaseOptimizer(ABC):
         returns:
             HPORun object with the results of the optimization.
         """
+        if cfg.n_trials is None:
+            raise ValueError("n_trials is required in HPOConfig")
         sampler = self._make_sampler(cfg)
         pruner = self._make_pruner(cfg)
         direction: Direction = getattr(self, "direction", cfg.direction)

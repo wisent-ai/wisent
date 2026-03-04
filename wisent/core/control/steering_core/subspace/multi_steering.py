@@ -11,7 +11,6 @@ from wisent.core.primitives.models.core.atoms import SteeringPlan
 from wisent.core.primitives.model_interface.core.activations.core.atoms import RawActivationMap
 from wisent.core.control.generation.prompts.core.atom import ChatMessage
 from wisent.core.utils import resolve_default_device
-from wisent.core.utils.config_tools.constants import DEFAULT_SCALE
 from wisent.core.primitives.models import get_generate_kwargs
 
 # Re-export from helpers
@@ -28,19 +27,20 @@ class MultiSteeringError(Exception):
 class MultiSteering:
     """Handles multi-steering vector combination and application using WisentModel."""
 
-    def __init__(self, method: str, device: str | None = None):
+    def __init__(self, method: str, combined_scale: float, device: str | None = None):
         """Initialize multi-steering handler.
 
         Args:
-            device: Device to use for computations (cpu/cuda/mps)
             method: Steering method to use (kept for backward compatibility, not used in new API)
+            combined_scale: Initial steering scale for combining vectors.
+            device: Device to use for computations (cpu/cuda/mps)
         """
         self.device = device or resolve_default_device()
         self.method = method  # Kept for backward compatibility
         self.loaded_vectors: list[dict] = []
         self.weights: list[float] = []
         self.combined_vector: torch.Tensor | None = None
-        self.combined_scale: float = DEFAULT_SCALE  # Track the total steering scale
+        self.combined_scale: float = combined_scale
         self.layer: int | None = None
 
     def load_vectors(self, vector_specs: list[str]) -> None:

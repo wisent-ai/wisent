@@ -62,7 +62,7 @@ def register_extractor(name: str, ref: Union[str, Type[HuggingFaceBenchmarkExtra
     _REGISTRY[key] = ref
 
 
-def get_extractor(task_name: str) -> HuggingFaceBenchmarkExtractor:
+def get_extractor(task_name: str, **kwargs) -> HuggingFaceBenchmarkExtractor:
     """
     Retrieve a registered HuggingFace extractor by task name.
 
@@ -70,6 +70,9 @@ def get_extractor(task_name: str) -> HuggingFaceBenchmarkExtractor:
         task_name:
             Name of the HuggingFace benchmark/task (e.g., "humaneval", "mbpp").
             Case-insensitive.
+        **kwargs:
+            Additional keyword arguments to pass to the extractor constructor
+            (e.g., http_timeout for extractors that require it).
 
     returns:
         An instance of the corresponding HuggingFaceBenchmarkExtractor subclass.
@@ -90,14 +93,14 @@ def get_extractor(task_name: str) -> HuggingFaceBenchmarkExtractor:
     # Try exact match
     ref = _REGISTRY.get(key)
     if ref:
-        return _instantiate(ref)
+        return _instantiate(ref, **kwargs)
 
     raise UnsupportedHuggingFaceBenchmarkError(
         f"No extractor registered for HuggingFace task '{task_name}'. "
         f"Known: {', '.join(sorted(_REGISTRY)) or '(none)'}"
     )
 
-def _instantiate(ref: Union[str, Type[HuggingFaceBenchmarkExtractor]]) -> HuggingFaceBenchmarkExtractor:
+def _instantiate(ref: Union[str, Type[HuggingFaceBenchmarkExtractor]], **kwargs) -> HuggingFaceBenchmarkExtractor:
     """
     Instantiate an extractor from a string reference or class.
 
@@ -105,6 +108,8 @@ def _instantiate(ref: Union[str, Type[HuggingFaceBenchmarkExtractor]]) -> Huggin
         ref:
             Either a string "module_path:ClassName[.Inner]" or a subclass of
             HuggingFaceBenchmarkExtractor.
+        **kwargs:
+            Additional keyword arguments to pass to the extractor constructor.
 
     returns:
         An instance of the corresponding HuggingFaceBenchmarkExtractor subclass.
@@ -116,7 +121,7 @@ def _instantiate(ref: Union[str, Type[HuggingFaceBenchmarkExtractor]]) -> Huggin
             If the resolved class does not subclass HuggingFaceBenchmarkExtractor.
     """
     if not isinstance(ref, str):
-        return ref()
+        return ref(**kwargs)
 
     module_path, attr_path = ref.split(":", 1)
     try:
@@ -133,4 +138,4 @@ def _instantiate(ref: Union[str, Type[HuggingFaceBenchmarkExtractor]]) -> Huggin
 
     if not isinstance(obj, type) or not issubclass(obj, HuggingFaceBenchmarkExtractor):
         raise TypeError(f"Resolved object '{obj}' is not a HuggingFaceBenchmarkExtractor subclass.")
-    return obj()
+    return obj(**kwargs)

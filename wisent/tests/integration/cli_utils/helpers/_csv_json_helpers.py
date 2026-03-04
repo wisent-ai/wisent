@@ -11,7 +11,7 @@ from wisent.cli_utils.cli_prepare_dataset import (
     PrepState,
     Caps,
 )
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, JSON_INDENT, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, SEPARATOR_WIDTH_REPORT
 
 
 def create_test_csv(path: Path, data: List[Dict[str, str]]):
@@ -53,7 +53,7 @@ def test_deterministic_split():
             incorrect_col="incorrect_answer",
             limit=None,
             caps=Caps(train=100, test=50),
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             verbose=False,
         )
@@ -67,7 +67,7 @@ def test_deterministic_split():
             incorrect_col="incorrect_answer",
             limit=None,
             caps=Caps(train=100, test=50),
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             verbose=False,
         )
@@ -86,7 +86,7 @@ def test_deterministic_split():
             incorrect_col="incorrect_answer",
             limit=None,
             caps=Caps(train=100, test=50),
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=99,
             verbose=False,
         )
@@ -122,7 +122,7 @@ def test_different_column_names():
             incorrect_col="wrong",
             limit=None,
             caps=Caps(train=100, test=50),
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             verbose=False,
         )

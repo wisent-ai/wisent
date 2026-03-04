@@ -4,10 +4,10 @@ import os
 import glob
 import random
 from typing import Optional, Tuple, Any
-from wisent.core.utils.config_tools.constants import MAX_DEPTH, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_SHORT, DISPLAY_TOP_N_MINI, RECURSION_INITIAL_DEPTH
 
 
-def find_working_task_from_group(group_dict, max_depth=MAX_DEPTH, current_depth=0):
+def find_working_task_from_group(group_dict, max_depth: int, current_depth=RECURSION_INITIAL_DEPTH):
     """Recursively search through nested ConfigurableGroup structures to find a working individual task."""
     if current_depth >= max_depth:
         print(f"   {'  ' * current_depth}⚠️  Max depth reached")
@@ -55,7 +55,7 @@ def find_working_task_from_group(group_dict, max_depth=MAX_DEPTH, current_depth=
         return None, None
 
 
-def handle_configurable_group_task(task_name: str):
+def handle_configurable_group_task(task_name: str, max_tasks_to_process: int, max_depth: int):
     """Consolidated function to handle ConfigurableGroup tasks for both CLI and processing scripts."""
     from .extraction import try_extract_working_tasks_from_group, try_find_related_working_task
     from .yaml_support import create_flan_held_in_files, load_task_with_config_dir, extract_individual_tasks_from_yaml
@@ -85,17 +85,17 @@ def handle_configurable_group_task(task_name: str):
             if task_name in all_tasks or task_name in all_groups:
                 if task_name in all_groups:
                     print(f"   💡 Found {task_name} as a ConfigurableGroup - extracting individual tasks...")
-                    result = try_extract_working_tasks_from_group(task_name, task_manager)
+                    result = try_extract_working_tasks_from_group(task_name, task_manager, max_tasks_to_process)
                     if result:
                         return result
                     return None
                 print(f"   💡 Found {task_name} as individual task - trying alternatives...")
-                return try_find_related_working_task(task_name)
+                return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
             print(f"   🔄 Task {task_name} not found in registry, trying alternatives...")
-            return try_find_related_working_task(task_name)
+            return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
         except Exception as registry_error:
             print(f"   ⚠️  Registry check failed: {registry_error}")
-            return try_find_related_working_task(task_name)
+            return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
     print(f"   🔍 Searching for custom YAML configuration for {task_name}")
     if task_name == "flan_held_in":
         yaml_file_path = create_flan_held_in_files()
@@ -108,7 +108,7 @@ def handle_configurable_group_task(task_name: str):
                     print(f"   ✅ Successfully loaded {task_name}")
                     return task_dict[task_name], task_name
                 print(f"   🔍 Extracting individual tasks from group...")
-                individual_tasks = extract_individual_tasks_from_yaml(yaml_file_path, task_name)
+                individual_tasks = extract_individual_tasks_from_yaml(yaml_file_path, task_name, max_tasks_to_process)
                 if individual_tasks:
                     for extracted_task_name in individual_tasks:
                         try:
@@ -148,19 +148,19 @@ def handle_configurable_group_task(task_name: str):
                 if result:
                     return result
                 return None
-            return try_find_related_working_task(task_name)
-        return try_find_related_working_task(task_name)
+            return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
+        return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
     except Exception:
-        return try_find_related_working_task(task_name)
+        return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
     try:
         task_dict = get_task_dict([task_name])
         if task_name not in task_dict:
-            return try_find_related_working_task(task_name)
+            return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
         task = task_dict[task_name]
         if hasattr(task, '__dict__') and isinstance(getattr(task, '__dict__', {}), dict):
             task_dict_items = getattr(task, '__dict__', {})
             if any(isinstance(v, dict) for v in task_dict_items.values()):
-                working_task = find_working_task_from_group(task_dict_items)
+                working_task = find_working_task_from_group(task_dict_items, max_depth=max_depth)
                 if working_task:
                     return working_task
         try:
@@ -177,7 +177,7 @@ def handle_configurable_group_task(task_name: str):
                 if docs:
                     return task, task_name
         except Exception:
-            return try_find_related_working_task(task_name)
-        return try_find_related_working_task(task_name)
+            return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
+        return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)
     except Exception:
-        return try_find_related_working_task(task_name)
+        return try_find_related_working_task(task_name, max_tasks_to_process, max_depth=max_depth)

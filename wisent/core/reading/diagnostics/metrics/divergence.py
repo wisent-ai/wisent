@@ -6,6 +6,7 @@ from difflib import SequenceMatcher
 from statistics import mean
 from typing import Iterable, List
 
+
 from ..base import DiagnosticsConfig, DiagnosticsIssue, MetricReport
 
 
@@ -57,7 +58,7 @@ def compute_divergence_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Me
         divergence = 1.0 - similarity
         divergences.append(divergence)
 
-        if divergence < config.min_divergence:
+        if divergence < 0.3:
             issues.append(
                 DiagnosticsIssue(
                     metric="divergence",
@@ -69,10 +70,10 @@ def compute_divergence_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Me
             )
 
     low_divergence_fraction = 0.0
-    low_divergence_count = sum(1 for value in divergences if value < config.min_divergence)
+    low_divergence_count = len([v for v in divergences if v < 0.3])
     low_divergence_fraction = low_divergence_count / len(divergences)
 
-    if low_divergence_fraction > config.max_low_divergence_fraction:
+    if low_divergence_fraction > 0.1:
         issues.append(
             DiagnosticsIssue(
                 metric="divergence",
@@ -81,7 +82,7 @@ def compute_divergence_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Me
                 pair_index=None,
                 details={
                     "fraction": low_divergence_fraction,
-                    "threshold": config.max_low_divergence_fraction,
+                    "threshold": 0.1,
                     "count": low_divergence_count,
                     "total": len(divergences),
                 },

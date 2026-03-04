@@ -7,9 +7,10 @@ from dataclasses import asdict
 import numpy as np
 
 from wisent.core.utils.config_tools.constants import (
-    NULL_DISTRIBUTION_SAMPLES, THRESHOLD_HIDDEN_DIM_LARGE,
-    JSON_ARRAY_LIMIT, GAP_THRESHOLD_CANDIDATES,
-    SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_STANDARD, JSON_INDENT,
+    THRESHOLD_HIDDEN_DIM_LARGE,
+    SEPARATOR_WIDTH_WIDE,
+    SEPARATOR_WIDTH_STANDARD,
+    JSON_INDENT,
 )
 from wisent.examples.scripts.threshold_analysis_helpers import (
     gcs_upload_file,
@@ -22,12 +23,14 @@ from wisent.examples.scripts.threshold_analysis_helpers import (
 )
 
 
-def run_threshold_analysis(model_name: str):
+def run_threshold_analysis(model_name: str, *, json_array_limit: int, synthetic_n_samples: int, cv_folds: int, probe_knn_k: int, null_sample_size: int, gap_threshold_candidates: list, existence_threshold_grid: list):
     """
     Run full threshold analysis.
-    
+
     Args:
         model_name: Model to analyze
+        json_array_limit: Maximum number of entries per JSON array in output
+        synthetic_n_samples: Number of samples per class for synthetic validation
     """
     print("=" * SEPARATOR_WIDTH_WIDE)
     print("THRESHOLD ANALYSIS")
@@ -47,7 +50,7 @@ def run_threshold_analysis(model_name: str):
     
     # 1. Generate null distribution
     print("\n1. Generating null distribution...")
-    null_knn, null_linear = generate_null_distribution(None, n_samples=NULL_DISTRIBUTION_SAMPLES, hidden_dim=THRESHOLD_HIDDEN_DIM_LARGE)
+    null_knn, null_linear = generate_null_distribution(None, n_samples=null_sample_size, hidden_dim=THRESHOLD_HIDDEN_DIM_LARGE, probe_knn_k=probe_knn_k, cv_folds=cv_folds, null_sample_size=null_sample_size)
     
     print(f"   Null kNN: mean={np.mean(null_knn):.3f}, std={np.std(null_knn):.3f}")
     print(f"   Null linear: mean={np.mean(null_linear):.3f}, std={np.std(null_linear):.3f}")
@@ -70,9 +73,9 @@ def run_threshold_analysis(model_name: str):
     
     synthetic_results = {}
     for structure in ["linear", "xor", "spirals", "random"]:
-        pos, neg = generate_synthetic_data(structure)
-        knn = compute_knn_accuracy(pos, neg, k=10)
-        linear = compute_linear_probe_accuracy(pos, neg)
+        pos, neg = generate_synthetic_data(structure, n_samples=synthetic_n_samples)
+        knn = compute_knn_accuracy(pos, neg, k=probe_knn_k, n_folds=cv_folds)
+        linear = compute_linear_probe_accuracy(pos, neg, cv_folds)
         gap = knn - linear
         
         synthetic_results[structure] = {
@@ -93,7 +96,7 @@ def run_threshold_analysis(model_name: str):
     
     # 4. Sensitivity analysis
     print("\n4. Running sensitivity analysis...")
-    sensitivity = run_sensitivity_analysis(results)
+    sensitivity = run_sensitivity_analysis(results, existence_thresholds=existence_threshold_grid, gap_thresholds=gap_threshold_candidates)
     
     print("\n   Diagnosis distribution (% of benchmarks):")
     print("   " + "-" * SEPARATOR_WIDTH_STANDARD)
@@ -107,12 +110,12 @@ def run_threshold_analysis(model_name: str):
     
     # 5. Save results
     analysis_result = ThresholdAnalysisResult(
-        existence_thresholds=thresholds[:JSON_ARRAY_LIMIT],  # Limit for JSON
-        existence_tpr=tpr[:JSON_ARRAY_LIMIT],
-        existence_fpr=fpr[:JSON_ARRAY_LIMIT],
+        existence_thresholds=thresholds[:json_array_limit],  # Limit for JSON
+        existence_tpr=tpr[:json_array_limit],
+        existence_fpr=fpr[:json_array_limit],
         existence_auc=roc_auc,
         optimal_existence_threshold=float(optimal_exist),
-        gap_thresholds=GAP_THRESHOLD_CANDIDATES,
+        gap_thresholds=gap_threshold_candidates,
         gap_precision=[],  # Would need ground truth
         gap_recall=[],
         gap_f1=[],
@@ -153,6 +156,13 @@ def run_threshold_analysis(model_name: str):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Threshold analysis for Zwiad")
     parser.add_argument("--model", type=str, required=True, help="Model to analyze")
+    parser.add_argument("--json-array-limit", type=int, required=True, help="Max entries per JSON array in output")
+    parser.add_argument("--synthetic-n-samples", type=int, required=True, help="Number of samples per class for synthetic validation")
+    parser.add_argument("--cv-folds", type=int, required=True, help="Number of cross-validation folds")
+    parser.add_argument("--probe-knn-k", type=int, required=True, help="Number of neighbors for kNN probe")
+    parser.add_argument("--null-sample-size", type=int, required=True, help="Number of samples per class for null distribution")
+    parser.add_argument("--gap-threshold-candidates", type=float, nargs="+", required=True, help="Gap threshold candidates to test")
+    parser.add_argument("--existence-threshold-grid", type=float, nargs="+", required=True, help="Existence threshold grid to test")
     args = parser.parse_args()
-    
-    run_threshold_analysis(args.model)
+
+    run_threshold_analysis(args.model, json_array_limit=args.json_array_limit, synthetic_n_samples=args.synthetic_n_samples, cv_folds=args.cv_folds, probe_knn_k=args.probe_knn_k, null_sample_size=args.null_sample_size, gap_threshold_candidates=args.gap_threshold_candidates, existence_threshold_grid=args.existence_threshold_grid)

@@ -15,13 +15,11 @@ import os
 import sys
 import tempfile
 import time
-from typing import Dict
+from typing import Dict, Optional
 
 from wisent.core.utils.config_tools.constants import (
-    PAIR_GENERATORS_DEFAULT_N, TEST_MAX_COMBO_SIZE, SEPARATOR_WIDTH_REPORT,
+    SEPARATOR_WIDTH_REPORT,
     COMBO_BASE, COMBO_OFFSET,
-    PROGRESS_CALLBACK_THRESHOLD_EXHAUSTIVE,
-    PROGRESS_CALLBACK_THRESHOLD_CONTIGUOUS,
 )
 from wisent.tests._exhaustive_helpers import (
     detect_model_layers,
@@ -46,9 +44,12 @@ def run_exhaustive_layer_analysis(
     task: str,
     model: str,
     token_aggregation: str,
-    num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
+    progress_callback_threshold: int,
+    num_pairs: int,
     max_layers: int | None = None,
     output_dir: str | None = None,
+    *,
+    search_results_top_n: int,
 ):
     """Run exhaustive layer combination analysis (all power-of-two minus one combos)."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
@@ -81,10 +82,11 @@ def run_exhaustive_layer_analysis(
         print(f"    {nl} layers -> {actual_combos} combinations")
         print("\n[step-four] Running exhaustive analysis...")
         start = time.time()
-        cb = make_progress_callback(start, threshold=PROGRESS_CALLBACK_THRESHOLD_EXHAUSTIVE)
+        cb = make_progress_callback(start, threshold=progress_callback_threshold)
         result = detect_geometry_exhaustive(
             pos_t, neg_t, max_layers=nl,
             combination_method="concat", progress_callback=cb,
+            search_results_top_n=search_results_top_n,
         )
         elapsed = time.time() - start
         print(f"    Done in {elapsed:.1f}s ({actual_combos/elapsed:.1f} c/s)")
@@ -101,9 +103,12 @@ def run_limited_layer_analysis(
     task: str,
     model: str,
     token_aggregation: str,
-    num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
-    max_combo_size: int = TEST_MAX_COMBO_SIZE,
+    progress_callback_threshold: int,
+    num_pairs: int,
+    max_combo_size: int,
     output_dir: str | None = None,
+    *,
+    search_results_top_n: int,
 ):
     """Run limited layer combination analysis (small-layer combos + all)."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
@@ -134,10 +139,11 @@ def run_limited_layer_analysis(
         )
         pos_t, neg_t, nl = load_activations_as_tensors(acts_file)
         start = time.time()
-        cb = make_progress_callback(start)
+        cb = make_progress_callback(start, threshold=progress_callback_threshold)
         result = detect_geometry_limited(
             pos_t, neg_t, max_combo_size=max_combo_size,
             combination_method="concat", progress_callback=cb,
+            search_results_top_n=search_results_top_n,
         )
         print_analysis_results(result)
         save_analysis_results(
@@ -152,8 +158,11 @@ def run_contiguous_layer_analysis(
     task: str,
     model: str,
     token_aggregation: str,
-    num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
+    progress_callback_threshold: int,
+    num_pairs: int,
     output_dir: str | None = None,
+    *,
+    search_results_top_n: int,
 ):
     """Run contiguous layer combination analysis (adjacent layers only)."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
@@ -178,10 +187,11 @@ def run_contiguous_layer_analysis(
         )
         pos_t, neg_t, nl = load_activations_as_tensors(acts_file)
         start = time.time()
-        cb = make_progress_callback(start, threshold=PROGRESS_CALLBACK_THRESHOLD_CONTIGUOUS)
+        cb = make_progress_callback(start, threshold=progress_callback_threshold)
         result = detect_geometry_contiguous(
             pos_t, neg_t,
             combination_method="concat", progress_callback=cb,
+            search_results_top_n=search_results_top_n,
         )
         print_analysis_results(result)
         save_analysis_results(
@@ -197,9 +207,12 @@ def run_smart_layer_analysis(
     model: str,
     token_aggregation: str,
     prompt_strategy: str,
-    num_pairs: int = PAIR_GENERATORS_DEFAULT_N,
-    max_combo_size: int = TEST_MAX_COMBO_SIZE,
+    progress_callback_threshold: int,
+    num_pairs: int,
+    max_combo_size: int,
     output_dir: str | None = None,
+    *,
+    search_results_top_n: int,
 ):
     """Run smart analysis (contiguous + limited combos)."""
     from wisent.core.primitives.contrastive_pairs.diagnostics.control_vectors import (
@@ -225,10 +238,11 @@ def run_smart_layer_analysis(
         )
         pos_t, neg_t, nl = load_activations_as_tensors(acts_file)
         start = time.time()
-        cb = make_progress_callback(start)
+        cb = make_progress_callback(start, threshold=progress_callback_threshold)
         result = detect_geometry_smart(
             pos_t, neg_t, max_combo_size=max_combo_size,
             combination_method="concat", progress_callback=cb,
+            search_results_top_n=search_results_top_n,
         )
         print_analysis_results(result)
         save_analysis_results(

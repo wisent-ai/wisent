@@ -1,11 +1,6 @@
 """Basic arguments for modify-weights parser."""
 import argparse
 
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SPLIT_RATIO,
-    DEFAULT_RANDOM_SEED,
-    PAIRS_SIMILARITY_THRESHOLD,
-)
 from wisent.core.utils.infra_tools.infra.core.hardware import default_batch_size
 
 
@@ -81,13 +76,13 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--train-ratio",
         type=float,
-        default=DEFAULT_SPLIT_RATIO,
-        help="Fraction of pairs for training vs evaluation (default: 0.8)"
+        required=True,
+        help="Fraction of pairs for training vs evaluation"
     )
     parser.add_argument(
         "--seed",
         type=int,
-        default=DEFAULT_RANDOM_SEED,
+        default=None,
         help="Random seed for reproducibility (default: 42)"
     )
 
@@ -123,8 +118,8 @@ def setup_basic_modify_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--similarity-threshold",
         type=float,
-        default=PAIRS_SIMILARITY_THRESHOLD,
-        help="Similarity threshold for synthetic mode (default: 0.8)"
+        required=True,
+        help="Similarity threshold for synthetic mode"
     )
     parser.add_argument(
         "--pairs-cache-dir",

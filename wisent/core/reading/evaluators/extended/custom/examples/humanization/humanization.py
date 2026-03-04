@@ -34,7 +34,7 @@ class HumanizationEvaluator(CustomEvaluator):
         api_key: GPTZero API key (required)
     """
     
-    def __init__(self, api_key: str):
+    def __init__(self, api_key: str, api_timeout: int, max_retries: int, retry_delay: float):
         if not api_key:
             raise ValueError("GPTZero API key is required for HumanizationEvaluator")
         
@@ -45,7 +45,7 @@ class HumanizationEvaluator(CustomEvaluator):
         super().__init__(name="humanization", description=config.description, config=config)
         
         from wisent.core.reading.evaluators.custom.examples.gptzero import GPTZeroEvaluator
-        self._gptzero = GPTZeroEvaluator(optimize_for="human_prob", api_key=api_key)
+        self._gptzero = GPTZeroEvaluator(optimize_for="human_prob", api_timeout=api_timeout, max_retries=max_retries, retry_delay=retry_delay, api_key=api_key)
     
     def evaluate_response(self, response: str, **kwargs) -> Dict[str, Any]:
         """Evaluate response using GPTZero API."""
@@ -59,7 +59,7 @@ class HumanizationEvaluator(CustomEvaluator):
         }
 
 
-def create_humanization_evaluator(api_key: str, **kwargs) -> HumanizationEvaluator:
+def create_humanization_evaluator(api_key: str, api_timeout: int, max_retries: int, retry_delay: float, **kwargs) -> HumanizationEvaluator:
     """Create a humanization evaluator using GPTZero.
     
     Args:
@@ -69,11 +69,11 @@ def create_humanization_evaluator(api_key: str, **kwargs) -> HumanizationEvaluat
     Returns:
         HumanizationEvaluator instance
     """
-    return HumanizationEvaluator(api_key=api_key)
+    return HumanizationEvaluator(api_key=api_key, api_timeout=api_timeout, max_retries=max_retries, retry_delay=retry_delay)
 
 
-def create_evaluator(api_key: str = None, **kwargs) -> HumanizationEvaluator:
+def create_evaluator(api_key: str = None, api_timeout: int = None, max_retries: int = None, retry_delay: float = None, **kwargs) -> HumanizationEvaluator:
     """Factory function for module-based loading."""
     if not api_key:
         raise ValueError("api_key is required for humanization evaluator")
-    return create_humanization_evaluator(api_key=api_key, **kwargs)
+    return create_humanization_evaluator(api_key=api_key, api_timeout=api_timeout, max_retries=max_retries, retry_delay=retry_delay, **kwargs)

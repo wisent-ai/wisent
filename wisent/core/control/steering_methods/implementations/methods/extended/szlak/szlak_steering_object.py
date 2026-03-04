@@ -16,7 +16,8 @@ from wisent.core.control.steering_methods.steering_object import (
     BaseSteeringObject,
     SteeringObjectMetadata,
 )
-from wisent.core.utils.config_tools.constants import NORM_EPS, SZLAK_INFERENCE_K
+from wisent.core.utils.config_tools.constants import NORM_EPS
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 
 __all__ = ["SzlakSteeringObject"]
 
@@ -31,7 +32,7 @@ class SzlakSteeringObject(BaseSteeringObject):
         metadata: SteeringObjectMetadata,
         source_points: Dict[int, torch.Tensor],
         displacements: Dict[int, torch.Tensor],
-        inference_k: int = SZLAK_INFERENCE_K,
+        inference_k: int,
     ):
         super().__init__(metadata)
         self.source_points = source_points
@@ -159,9 +160,15 @@ class SzlakSteeringObject(BaseSteeringObject):
         source_points = {int(k): to_tensor(v) for k, v in data["source_points"].items()}
         disps = {int(k): to_tensor(v) for k, v in data["displacements"].items()}
 
+        inference_k = data.get("inference_k")
+        if inference_k is None:
+            raise InsufficientDataError(
+                reason="Missing 'inference_k' in saved data. Re-train the steering object.",
+            )
+
         return cls(
             metadata=metadata,
             source_points=source_points,
             displacements=disps,
-            inference_k=data.get("inference_k", SZLAK_INFERENCE_K),
+            inference_k=inference_k,
         )

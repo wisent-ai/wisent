@@ -6,11 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
-from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, GROM_LOSS_CONTRASTIVE_MARGIN, GROM_LOSS_CONTRASTIVE_WEIGHT,
-    GROM_LOSS_UTILITY_WEIGHT, GROM_LOSS_CONCENTRATION_WEIGHT,
-    GROM_LOSS_GATE_WARMUP_WEIGHT, GROM_LOSS_CAA_ALIGNMENT_WEIGHT,
-)
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 def _compute_grom_loss_impl(
     self,
@@ -24,6 +20,13 @@ def _compute_grom_loss_impl(
     layer_names: List[LayerName],
     step: int,
     direction_weight_params: Optional[Dict[LayerName, nn.Parameter]] = None,
+    *,
+    contrastive_margin: float,
+    contrastive_weight: float,
+    utility_weight: float,
+    concentration_weight: float,
+    gate_warmup_weight: float,
+    caa_alignment_weight: float,
 ) -> Tuple[torch.Tensor, Dict[str, torch.Tensor]]:
     """
     Compute the full GROM loss.
@@ -61,7 +64,7 @@ def _compute_grom_loss_impl(
 
         # Margin should be proportional to the scale of activations
         # Typical projections are in range [-5, 5], so margin of 2.0 is reasonable
-        margin = GROM_LOSS_CONTRASTIVE_MARGIN
+        margin = contrastive_margin
         contrastive_loss = contrastive_loss + F.relu(margin - (pos_mean - neg_mean))
 
     contrastive_loss = contrastive_loss / len(layer_names)
@@ -185,7 +188,7 @@ def _compute_grom_loss_impl(
                 # Also add concentration reward: maximize squared weights
                 concentration = -(weights ** 2).sum()
 
-                direction_concentration_loss = direction_concentration_loss + normalized_entropy + GROM_LOSS_CONCENTRATION_WEIGHT * concentration
+                direction_concentration_loss = direction_concentration_loss + normalized_entropy + concentration_weight * concentration
 
         direction_concentration_loss = direction_concentration_loss / len(layer_names)
 
@@ -217,33 +220,33 @@ def _compute_grom_loss_impl(
 
     # Combine losses with warmup
     # IMPORTANT: Contrastive loss is the PRIMARY loss - give it highest weight
-    contrastive_weight = GROM_LOSS_CONTRASTIVE_WEIGHT
-    utility_weight = GROM_LOSS_UTILITY_WEIGHT
-    concentration_weight = GROM_LOSS_CONCENTRATION_WEIGHT
-    caa_alignment_weight = GROM_LOSS_CAA_ALIGNMENT_WEIGHT
+    cw = contrastive_weight
+    uw = utility_weight
+    conc_w = concentration_weight
+    caa_w = caa_alignment_weight
 
     if step < self.config.warmup_steps:
         # Warmup: focus on contrastive + CAA alignment
         total_loss = (
-            contrastive_weight * contrastive_loss +
+            cw * contrastive_loss +
             self.config.behavior_weight * behavior_loss +
             self.config.retain_weight * retain_loss +
-            caa_alignment_weight * caa_alignment_loss +
-            GROM_LOSS_GATE_WARMUP_WEIGHT * gate_loss
+            caa_w * caa_alignment_loss +
+            gate_warmup_weight * gate_loss
         )
     else:
         # Full training with all losses
         total_loss = (
-            contrastive_weight * contrastive_loss +
+            cw * contrastive_loss +
             self.config.behavior_weight * behavior_loss +
             self.config.retain_weight * retain_loss +
             self.config.sparse_weight * sparse_loss +
             self.config.smooth_weight * smooth_loss +
             self.config.independence_weight * independence_loss +
             gate_loss +
-            utility_weight * direction_utility_loss +
-            concentration_weight * direction_concentration_loss +
-            caa_alignment_weight * caa_alignment_loss
+            uw * direction_utility_loss +
+            conc_w * direction_concentration_loss +
+            caa_w * caa_alignment_loss
         )
 
     return total_loss, loss_components

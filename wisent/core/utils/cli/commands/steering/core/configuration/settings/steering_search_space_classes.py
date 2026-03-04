@@ -1,7 +1,8 @@
 """Search space classes for steering methods."""
+import itertools
+from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Dict, Any, Optional
-from wisent.core import constants as _C
+from typing import Any, Dict, Iterator, List, Optional
 
 
 class DirectionWeighting(str, Enum):
@@ -29,23 +30,20 @@ class SensorLayerConfig(str, Enum):
 @dataclass
 class BaseSearchSpace:
     """Base search space common to all methods."""
-    
-    # layers MUST be set by get_search_space() to all layers (0 to num_layers-1)
-    # Empty default ensures it's always explicitly set
     layers: List[int] = field(default_factory=list)
-    strengths: List[float] = field(default_factory=lambda: list(_C.AUTO_DEFAULT_STRENGTHS))
-    strategies: List[str] = field(default_factory=lambda: list(_C.STEERING_STRATEGIES))
-    token_aggregations: List[str] = field(default_factory=lambda: list(_C.TOKEN_AGGREGATIONS))
-    prompt_constructions: List[str] = field(default_factory=lambda: list(_C.PROMPT_CONSTRUCTIONS))
-    
+    strengths: List[float] = field(default_factory=list)
+    strategies: List[str] = field(default_factory=list)
+    token_aggregations: List[str] = field(default_factory=list)
+    prompt_constructions: List[str] = field(default_factory=list)
+
+    def __post_init__(self):
+        for a in ("strengths", "strategies", "token_aggregations", "prompt_constructions"):
+            if not getattr(self, a):
+                raise ValueError(f"{a} is required and must be a non-empty list")
+
     def get_total_configs(self) -> int:
-        return (
-            len(self.layers) *
-            len(self.strengths) *
-            len(self.strategies) *
-            len(self.token_aggregations) *
-            len(self.prompt_constructions)
-        )
+        return (len(self.layers) * len(self.strengths) * len(self.strategies)
+                * len(self.token_aggregations) * len(self.prompt_constructions))
     
     def iterate(self) -> Iterator[Dict[str, Any]]:
         """Iterate over all base configurations."""
@@ -84,16 +82,16 @@ class CAASearchSpace(BaseSearchSpace):
 class TECZASearchSpace(BaseSearchSpace):
     """Search space for TECZA method."""
     
-    num_directions: List[int] = field(default_factory=lambda: list(_C.TECZA_SEARCH_NUM_DIRECTIONS))
-    direction_weighting: List[str] = field(default_factory=lambda: list(_C.DIRECTION_WEIGHTING_OPTIONS))
-    retain_weight: List[float] = field(default_factory=lambda: list(_C.TECZA_SEARCH_RETAIN_WEIGHTS))
-    independence_weight: List[float] = field(default_factory=lambda: [_C.TECZA_INDEPENDENCE_WEIGHT])
-    optimization_steps: List[int] = field(default_factory=lambda: list(_C.TECZA_SEARCH_OPT_STEPS))
-    learning_rate: List[float] = field(default_factory=lambda: [_C.TECZA_LEARNING_RATE])
+    num_directions: List[int] = field(default_factory=list)
+    direction_weighting: List[str] = field(default_factory=list)
+    retain_weight: List[float] = field(default_factory=list)
+    independence_weight: List[float] = field(default_factory=list)
+    optimization_steps: List[int] = field(default_factory=list)
+    learning_rate: List[float] = field(default_factory=list)
     use_caa_init: List[bool] = field(default_factory=lambda: [True])
     cone_constraint: List[bool] = field(default_factory=lambda: [True])
-    min_cosine_similarity: List[float] = field(default_factory=lambda: [_C.CAA_MIN_COSINE_SIMILARITY])
-    max_cosine_similarity: List[float] = field(default_factory=lambda: [_C.CAA_MAX_COSINE_SIMILARITY])
+    min_cosine_similarity: List[float] = field(default_factory=list)
+    max_cosine_similarity: List[float] = field(default_factory=list)
     
     def get_total_configs(self) -> int:
         return (
@@ -132,15 +130,15 @@ class TETNOSearchSpace(BaseSearchSpace):
     # Override base - TETNO uses different layer logic
     layers: List[int] = field(default_factory=lambda: [])  # Not used directly
     
-    sensor_layer_config: List[str] = field(default_factory=lambda: list(_C.SENSOR_LAYER_CONFIGS))
-    steering_layer_config: List[str] = field(default_factory=lambda: list(_C.TETNO_STEERING_LAYER_CONFIGS))
-    condition_threshold: List[float] = field(default_factory=lambda: list(_C.TETNO_SEARCH_CONDITION_THRESHOLDS))
-    gate_temperature: List[float] = field(default_factory=lambda: list(_C.TETNO_SEARCH_GATE_TEMPERATURES))
+    sensor_layer_config: List[str] = field(default_factory=list)
+    steering_layer_config: List[str] = field(kw_only=True)
+    condition_threshold: List[float] = field(kw_only=True)
+    gate_temperature: List[float] = field(kw_only=True)
     per_layer_scaling: List[bool] = field(default_factory=lambda: [True, False])
     use_entropy_scaling: List[bool] = field(default_factory=lambda: [True, False])
-    max_alpha: List[float] = field(default_factory=lambda: list(_C.TETNO_SEARCH_MAX_ALPHAS))
+    max_alpha: List[float] = field(kw_only=True)
     learn_threshold: List[bool] = field(default_factory=lambda: [True])
-    optimization_steps: List[int] = field(default_factory=lambda: [50, 100])
+    optimization_steps: List[int] = field(kw_only=True)
     
     def get_total_configs(self) -> int:
         return (
@@ -214,17 +212,17 @@ class GROMSearchSpace(BaseSearchSpace):
     # Override base - GROM uses different layer logic
     layers: List[int] = field(default_factory=lambda: [])  # Not used directly
 
-    num_directions: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_NUM_DIRECTIONS))
-    sensor_layer_config: List[str] = field(default_factory=lambda: list(_C.SENSOR_LAYER_CONFIGS))
-    steering_layer_config: List[str] = field(default_factory=lambda: list(_C.GROM_STEERING_LAYER_CONFIGS))
-    gate_hidden_dim: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_GATE_HIDDEN_DIMS))
-    intensity_hidden_dim: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_INTENSITY_HIDDEN_DIMS))
-    behavior_weight: List[float] = field(default_factory=lambda: list(_C.GROM_SEARCH_BEHAVIOR_WEIGHTS))
-    retain_weight: List[float] = field(default_factory=lambda: list(_C.GROM_SEARCH_RETAIN_WEIGHTS))
-    sparse_weight: List[float] = field(default_factory=lambda: list(_C.GROM_SPARSE_WEIGHT_OPTIONS))
-    max_alpha: List[float] = field(default_factory=lambda: list(_C.GROM_MAX_ALPHA_SEARCH))
-    optimization_steps: List[int] = field(default_factory=lambda: list(_C.GROM_SEARCH_OPT_STEPS))
-    learning_rate: List[float] = field(default_factory=lambda: [_C.GROM_LEARNING_RATE])
+    num_directions: List[int] = field(kw_only=True)
+    sensor_layer_config: List[str] = field(default_factory=list)
+    steering_layer_config: List[str] = field(kw_only=True)
+    gate_hidden_dim: List[int] = field(kw_only=True)
+    intensity_hidden_dim: List[int] = field(kw_only=True)
+    behavior_weight: List[float] = field(kw_only=True)
+    retain_weight: List[float] = field(kw_only=True)
+    sparse_weight: List[float] = field(kw_only=True)
+    max_alpha: List[float] = field(kw_only=True)
+    optimization_steps: List[int] = field(kw_only=True)
+    learning_rate: List[float] = field(kw_only=True)
     
     def get_total_configs(self) -> int:
         return (

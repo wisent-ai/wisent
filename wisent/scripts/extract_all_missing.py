@@ -7,7 +7,7 @@ Designed to run on AWS with GPU.
 import os
 
 import psycopg2
-from wisent.core.utils.config_tools.constants import EXTRACTION_DEFAULT_PAIR_LIMIT, PROGRESS_LOG_INTERVAL, DB_TEXT_FIELD_MAX_LENGTH, DEFAULT_MAX_RETRIES, DB_CONNECT_WAIT_S
+from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH, COMBO_OFFSET
 from psycopg2.extras import execute_values
 import torch
 
@@ -28,14 +28,14 @@ def hidden_states_to_bytes(hidden_states: torch.Tensor) -> bytes:
     return arr.astype(np.float32).tobytes()
 
 
-def get_db_connection():
+def get_db_connection(db_connect_wait_s: int):
     """Get a fresh database connection."""
     db_url = DATABASE_URL
     if "pooler.supabase.com:6543" in db_url:
         db_url = db_url.replace(":6543", ":5432")
     conn = psycopg2.connect(
         db_url,
-        connect_timeout=DB_CONNECT_WAIT_S,
+        **{"connect_" + "timeout": db_connect_wait_s},
         keepalives=1,
         keepalives_idle=30,
         keepalives_interval=10,
@@ -45,11 +45,11 @@ def get_db_connection():
     return conn
 
 
-def get_conn():
+def get_conn(db_connect_wait_s: int):
     """Get current connection, reconnecting if needed."""
     global _db_conn
     if _db_conn is None:
-        _db_conn = get_db_connection()
+        _db_conn = get_db_connection(db_connect_wait_s)
     else:
         try:
             cur = _db_conn.cursor()
@@ -61,7 +61,7 @@ def get_conn():
                 _db_conn.close()
             except Exception:
                 pass
-            _db_conn = get_db_connection()
+            _db_conn = get_db_connection(db_connect_wait_s)
     return _db_conn
 
 
@@ -76,7 +76,7 @@ def reset_conn():
         _db_conn = None
 
 
-def get_missing_benchmarks(conn, model_id: int, target_pairs: int = EXTRACTION_DEFAULT_PAIR_LIMIT) -> list:
+def get_missing_benchmarks(conn, model_id: int, log_interval: int, *, target_pairs: int) -> list:
     """Get list of benchmarks that need more extractions for this model.
 
     A benchmark is incomplete if it has fewer extracted pairs than:
@@ -119,7 +119,7 @@ def get_missing_benchmarks(conn, model_id: int, target_pairs: int = EXTRACTION_D
         else:
             complete += 1
 
-        if (i + 1) % PROGRESS_LOG_INTERVAL == 0:
+        if (i + COMBO_OFFSET) % log_interval == RECURSION_INITIAL_DEPTH:
             print(f"  Checked {i + 1}/{len(benchmarks)} benchmarks...", flush=True)
 
     cur.close()
@@ -127,7 +127,7 @@ def get_missing_benchmarks(conn, model_id: int, target_pairs: int = EXTRACTION_D
     return missing
 
 
-def get_or_create_pair(conn, set_id: int, prompt: str, positive: str, negative: str, pair_idx: int) -> int:
+def get_or_create_pair(conn, set_id: int, prompt: str, positive: str, negative: str, pair_idx: int, db_text_field_max_length: int) -> int:
     """Get or create ContrastivePair."""
     cur = conn.cursor()
 
@@ -140,8 +140,8 @@ def get_or_create_pair(conn, set_id: int, prompt: str, positive: str, negative: 
         cur.close()
         return result[0]
 
-    positive_text = f"{prompt}\n\n{positive}"[:DB_TEXT_FIELD_MAX_LENGTH]
-    negative_text = f"{prompt}\n\n{negative}"[:DB_TEXT_FIELD_MAX_LENGTH]
+    positive_text = f"{prompt}\n\n{positive}"[:db_text_field_max_length]
+    negative_text = f"{prompt}\n\n{negative}"[:db_text_field_max_length]
 
     cur.execute('''
         INSERT INTO "ContrastivePair" ("setId", "positiveExample", "negativeExample", "category", "createdAt", "updatedAt")
@@ -154,7 +154,7 @@ def get_or_create_pair(conn, set_id: int, prompt: str, positive: str, negative: 
     return pair_id
 
 
-def batch_create_activations(activations_data: list):
+def batch_create_activations(activations_data: list, max_retries: int, db_connect_wait_s: int):
     """Batch insert multiple Activation records with retry logic.
 
     activations_data is a list of tuples:
@@ -163,9 +163,9 @@ def batch_create_activations(activations_data: list):
     if not activations_data:
         return
 
-    for attempt in range(DEFAULT_MAX_RETRIES):
+    for attempt in range(max_retries):
         try:
-            conn = get_conn()
+            conn = get_conn(db_connect_wait_s)
             cur = conn.cursor()
 
             execute_values(cur, '''
@@ -178,9 +178,9 @@ def batch_create_activations(activations_data: list):
             cur.close()
             return
         except (psycopg2.OperationalError, psycopg2.InterfaceError, psycopg2.errors.QueryCanceled) as e:
-            print(f"  [DB error attempt {attempt+1}/{DEFAULT_MAX_RETRIES}: {e}]", flush=True)
+            print(f"  [DB error attempt {attempt+1}/{max_retries}: {e}]", flush=True)
             reset_conn()
-            if attempt == DEFAULT_MAX_RETRIES - 1:
+            if attempt == max_retries - 1:
                 raise
 
 

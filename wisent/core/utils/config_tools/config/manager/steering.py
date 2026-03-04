@@ -6,28 +6,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
-from wisent.core.utils.config_tools.constants import (
-    BLEND_DEFAULT,
-    BROYDEN_DEFAULT_ALPHA,
-    CONFIG_MAX_ALPHA,
-    DEFAULT_LAYER_CONFIG,
-    DEFAULT_SCORE,
-    GROM_BEHAVIOR_WEIGHT,
-    GROM_GATE_TEMPERATURE,
-    GROM_INTENSITY_HIDDEN_DIM,
-    GROM_LEARNING_RATE,
-    GROM_OPTIMIZATION_STEPS,
-    GROM_ROUTER_HIDDEN_DIM,
-    GROM_SPARSE_WEIGHT,
-    PAIRS_NUM_PAIRS,
-    TECZA_INDEPENDENCE_WEIGHT,
-    TECZA_MAX_COSINE_SIM,
-    TECZA_MIN_COSINE_SIM,
-    TECZA_NUM_DIRECTIONS,
-    DEFAULT_OPTIMIZATION_STEPS,
-    TETNO_CONDITION_THRESHOLD,
-    DEFAULT_OPTIMIZATION_STEPS,
-)
+from wisent.core import constants as _C
 from ..types import SteeringConfig, WeightModificationConfig, TaskConfig
 
 
@@ -39,31 +18,31 @@ class SteeringMixin:
         prompt_strategy: str, normalize_mode: str, strategy: str,
         optimization_method: str, metric: str, direction_weighting: str,
         task_name: Optional[str] = None,
-        layer: int = DEFAULT_LAYER_CONFIG, strength: Optional[float] = None,
-        score: float = DEFAULT_SCORE,
-        set_as_default: bool = False, num_directions: int = TECZA_NUM_DIRECTIONS,
-        retain_weight: float = DEFAULT_SCORE,
-        independence_weight: float = TECZA_INDEPENDENCE_WEIGHT,
-        tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS,
+        layer: Optional[int] = None, strength: Optional[float] = None,
+        score: float = None,
+        set_as_default: bool = False, num_directions: Optional[int] = None,
+        retain_weight: Optional[float] = None,
+        independence_weight: Optional[float] = None,
+        tecza_optimization_steps: Optional[int] = None,
         use_caa_init: bool = True,
         cone_constraint: bool = True,
-        min_cosine_similarity: float = TECZA_MIN_COSINE_SIM,
-        max_cosine_similarity: float = TECZA_MAX_COSINE_SIM,
-        sensor_layer: int = -1,
+        min_cosine_similarity: Optional[float] = None,
+        max_cosine_similarity: Optional[float] = None,
+        sensor_layer: Optional[int] = None,
         steering_layers: Optional[str] = None,
-        condition_threshold: float = TETNO_CONDITION_THRESHOLD,
-        gate_temperature: float = GROM_GATE_TEMPERATURE,
+        condition_threshold: Optional[float] = None,
+        gate_temperature: Optional[float] = None,
         per_layer_scaling: bool = True,
         use_entropy_scaling: bool = False,
-        max_alpha: float = CONFIG_MAX_ALPHA,
+        max_alpha: Optional[float] = None,
         learn_threshold: bool = True,
-        tetno_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS,
-        gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM,
-        intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM,
-        behavior_weight: float = GROM_BEHAVIOR_WEIGHT,
-        sparse_weight: float = GROM_SPARSE_WEIGHT,
-        grom_optimization_steps: int = GROM_OPTIMIZATION_STEPS,
-        grom_learning_rate: float = GROM_LEARNING_RATE,
+        tetno_optimization_steps: Optional[int] = None,
+        gate_hidden_dim: Optional[int] = None,
+        intensity_hidden_dim: Optional[int] = None,
+        behavior_weight: Optional[float] = None,
+        sparse_weight: Optional[float] = None,
+        grom_optimization_steps: Optional[int] = None,
+        grom_learning_rate: Optional[float] = None,
         method_params: Optional[Dict[str, Any]] = None,
     ) -> Path:
         """Save steering config for a model/task."""
@@ -106,18 +85,18 @@ class SteeringMixin:
 
     def save_weight_modification_config(
         self, model_name: str, method: str, additive_method: str,
-        optimization_method: str,
+        optimization_method: str, num_pairs: int,
         task_name: Optional[str] = None, trait_label: Optional[str] = None,
         max_weight: Optional[float] = None,
         min_weight: Optional[float] = None,
-        max_weight_position: float = BLEND_DEFAULT,
-        min_weight_distance: float = BLEND_DEFAULT,
-        strength: Optional[float] = None, num_pairs: int = PAIRS_NUM_PAIRS,
-        alpha: float = BROYDEN_DEFAULT_ALPHA,
+        max_weight_position: float = None,
+        min_weight_distance: float = None,
+        strength: Optional[float] = None,
+        alpha: Optional[float] = None,
         components: Optional[List[str]] = None,
         normalize_vectors: bool = True, norm_preserve: bool = True,
         use_biprojection: bool = True, use_kernel: bool = True,
-        score: float = DEFAULT_SCORE, baseline_score: float = DEFAULT_SCORE,
+        score: float = None, baseline_score: float = None,
         output_dir: Optional[str] = None,
         set_as_default: bool = False,
     ) -> Path:
@@ -126,12 +105,14 @@ class SteeringMixin:
         weight_mod = WeightModificationConfig(
             method=method, max_weight=max_weight, min_weight=min_weight,
             max_weight_position=max_weight_position, min_weight_distance=min_weight_distance,
-            strength=strength, num_pairs=num_pairs, alpha=alpha,
+            strength=strength, num_pairs=num_pairs,
             additive_method=additive_method, components=components or ["self_attn.o_proj", "mlp.down_proj"],
             normalize_vectors=normalize_vectors, norm_preserve=norm_preserve,
             use_biprojection=use_biprojection, use_kernel=use_kernel,
             score=score, baseline_score=baseline_score, output_dir=output_dir,
         )
+        if alpha is not None:
+            weight_mod.alpha = alpha
         if task_name:
             if task_name not in config.tasks:
                 config.tasks[task_name] = TaskConfig(task_name=task_name)

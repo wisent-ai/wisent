@@ -4,7 +4,7 @@ import sys
 import json
 import os
 
-from wisent.core.utils.config_tools.constants import PAIR_MIN_TEXT_LENGTH, DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_MEDIUM, DISPLAY_TOP_N_MINI
 
 
 def execute_diagnose_pairs(args):
@@ -91,9 +91,9 @@ def execute_diagnose_pairs(args):
             print(f"     Avg: {sum(negative_lengths)/len(negative_lengths):.1f} chars")
 
             # Quality warnings
-            short_prompts = sum(1 for l in prompt_lengths if l < PAIR_MIN_TEXT_LENGTH)
-            short_positives = sum(1 for l in positive_lengths if l < PAIR_MIN_TEXT_LENGTH)
-            short_negatives = sum(1 for l in negative_lengths if l < PAIR_MIN_TEXT_LENGTH)
+            short_prompts = sum(1 for l in prompt_lengths if l < args.pair_min_text_length)
+            short_positives = sum(1 for l in positive_lengths if l < args.pair_min_text_length)
+            short_negatives = sum(1 for l in negative_lengths if l < args.pair_min_text_length)
 
             if short_prompts > 0 or short_positives > 0 or short_negatives > 0:
                 print(f"\n⚠️  Quality Warnings:")

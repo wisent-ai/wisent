@@ -1,6 +1,5 @@
 """Parser setup for the 'optimize' and 'optimize-all' commands."""
 
-from wisent.core.utils.config_tools.constants import SEARCH_DEFAULT_STRENGTHS
 
 
 def setup_optimize_all_parser(parser):
@@ -148,7 +147,7 @@ def setup_optimize_all_parser(parser):
         "--steering-strength-range",
         type=float,
         nargs="+",
-        default=list(SEARCH_DEFAULT_STRENGTHS),
+        default=None,
         help="Steering strengths to test (default: 0.5 1.0 1.5 2.0)",
     )
     # Task selection options

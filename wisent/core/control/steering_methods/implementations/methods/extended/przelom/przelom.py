@@ -30,25 +30,32 @@ from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
 from wisent.core.utils.config_tools.constants import (
     LOG_EPS,
-    TIKHONOV_REG,
-    PRZELOM_EPSILON,
-    SZLAK_INFERENCE_K,
 )
 
 __all__ = ["PrzelomMethod", "PrzelomConfig", "PrzelomResult"]
 
 
+def _require(name: str, kwargs: dict):
+    """Raise ValueError if a required hyperparameter is missing."""
+    if name not in kwargs:
+        raise ValueError(
+            f"Parameter '{name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return kwargs[name]
+
+
 @dataclass
 class PrzelomConfig:
     """Configuration for PRZELOM attention-transport steering."""
-    epsilon: float = PRZELOM_EPSILON
+    epsilon: float
     """Entropic regularization (temperature for softmax)."""
+    inference_k: int
+    """Number of nearest source points for inference interpolation."""
     target_mode: Optional[str] = None
     """Target transport plan mode: 'uniform' or 'nearest'."""
-    regularization: float = TIKHONOV_REG
+    regularization: Optional[float] = None
     """Tikhonov regularization for pseudoinverse."""
-    inference_k: int = SZLAK_INFERENCE_K
-    """Number of nearest source points for inference interpolation."""
 
 
 @dataclass
@@ -75,7 +82,7 @@ def _compute_target_transport(neg: torch.Tensor, pos: torch.Tensor, mode: str) -
     return T
 
 
-def _regularized_pinv(M: torch.Tensor, reg: float = TIKHONOV_REG) -> torch.Tensor:
+def _regularized_pinv(M: torch.Tensor, reg: float) -> torch.Tensor:
     """Compute Tikhonov-regularized pseudoinverse: (M^T M + reg I)^-1 M^T."""
     MtM = M.T @ M
     I = torch.eye(MtM.shape[0], device=M.device, dtype=M.dtype)
@@ -91,10 +98,10 @@ class PrzelomMethod(BaseSteeringMethod):
     def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.config = PrzelomConfig(
-            epsilon=kwargs.get("epsilon", PRZELOM_EPSILON),
+            epsilon=_require("epsilon", kwargs),
+            inference_k=_require("inference_k", kwargs),
             target_mode=kwargs.get("target_mode", "uniform"),
-            regularization=kwargs.get("regularization", TIKHONOV_REG),
-            inference_k=kwargs.get("inference_k", SZLAK_INFERENCE_K),
+            regularization=_require("regularization", kwargs),
         )
 
     def train(self, pair_set: ContrastivePairSet) -> LayerActivations:

@@ -3,7 +3,7 @@
 import json
 import argparse
 
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N, SEPARATOR_WIDTH_REPORT, JSON_INDENT
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT, JSON_INDENT
 
 
 def save_results_and_finish(all_results, results_file):
@@ -48,7 +48,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--task", required=True)
     parser.add_argument("--model", required=True)
-    parser.add_argument("--num-pairs", type=int, default=PAIR_GENERATORS_DEFAULT_N)
+    parser.add_argument("--num-pairs", type=int, required=True)
     parser.add_argument("--output-dir", required=True)
     args = parser.parse_args()
 

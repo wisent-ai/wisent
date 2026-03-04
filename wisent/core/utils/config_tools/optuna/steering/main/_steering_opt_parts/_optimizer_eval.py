@@ -17,7 +17,7 @@ from wisent.core.utils.infra_tools.errors import (
     ModelArchitectureUnknownError,
     NoActivationDataError,
 )
-from wisent.core.utils.config_tools.constants import COMPARISON_STEERING_LAYER, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import CHANCE_LEVEL_ACCURACY
 from wisent.core.utils.infra_tools.infra.core.hardware import default_batch_size
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class _SteeringOptimizerEval:
         batch_size: int,
         max_length: int,
         task_name: str,
-        max_new_tokens: int = None,
+        max_new_tokens: int = None, *, train_ratio: float,
     ) -> Tuple[List[str], List[str]]:
         """
         Collect unsteered model predictions for baseline comparison.
@@ -47,7 +47,7 @@ class _SteeringOptimizerEval:
         ground_truths = []
 
         # Get the task and its extractor
-        task = get_task(task_name)
+        task = get_task(task_name, train_ratio=train_ratio)
         extractor = task.get_extractor()
 
         # Pre-extract all questions and answers (optimization)
@@ -207,7 +207,7 @@ class _SteeringOptimizerEval:
             return []
 
         # Get classifier metadata
-        layer = self._session_classifier_metadata.get("layer", COMPARISON_STEERING_LAYER)
+        layer = self._session_classifier_metadata["layer"]
         aggregation = self._session_classifier_metadata.get("aggregation", "mean_pooling")
 
         self.logger.info(

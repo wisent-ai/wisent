@@ -6,7 +6,7 @@ from wisent.core.utils.cli.cli_logger import setup_logger
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
-from wisent.core.utils.config_tools.constants import HTTP_TIMEOUT_MEDIUM, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_MINI
 
 __all__ = ["TauBenchExtractor"]
 
@@ -51,14 +51,16 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
     # Evaluator that should be used for this benchmark
     evaluator_name = "agent_task_completion"
 
-    def __init__(self, domain: Optional[str] = None):
+    def __init__(self, http_timeout: int, domain: Optional[str] = None):
         """
         Initialize TAU-bench extractor.
 
         Args:
+            http_timeout: Timeout in seconds for HTTP requests.
             domain: Domain to use ("retail", "airline", "telecom")
         """
         super().__init__()
+        self.http_timeout = http_timeout
         self.domain = domain if domain is not None else "retail"
 
     def extract_contrastive_pairs(
@@ -112,7 +114,7 @@ class TauBenchExtractor(HuggingFaceBenchmarkExtractor):
                 continue
 
             try:
-                response = requests.get(url, timeout=HTTP_TIMEOUT_MEDIUM)
+                response = requests.get(url, timeout=self.http_timeout)
                 response.raise_for_status()
                 content = response.text
 

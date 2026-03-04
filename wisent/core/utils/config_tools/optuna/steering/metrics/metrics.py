@@ -24,11 +24,11 @@ from wisent.core.utils.infra_tools.errors import (
 
 # Use the standard evaluator system
 from wisent.core.reading.evaluators.rotator import EvaluatorRotator
-from wisent.core.utils.config_tools.constants import BENCHMARK_WEIGHT, PROBE_WEIGHT, CLASSIFIER_THRESHOLD, DISPLAY_TOP_N_MINI, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_MINI, CHANCE_LEVEL_ACCURACY, MAX_BENCHMARKS_SINGLE
 logger = logging.getLogger(__name__)
 
 
-def evaluate_response_correctness(response: str, expected_answer: str, task_name: str) -> bool:
+def evaluate_response_correctness(response: str, expected_answer: str, task_name: str, test_timeout: int, *, train_ratio: float) -> bool:
     """
     Evaluate if a response is correct using LMEvalHarnessGroundTruth (same approach as CLI).
     Note: For coding tasks, response should already be extracted code before calling this function.
@@ -44,7 +44,7 @@ def evaluate_response_correctness(response: str, expected_answer: str, task_name
     # Check if this is a file-based task (custom dataset loaded from JSON)
     # For file-based tasks, use exact string matching to avoid false positives
     try:
-        task = get_task(task_name, limit=1)
+        task = get_task(task_name, limit=MAX_BENCHMARKS_SINGLE, train_ratio=train_ratio)
         if isinstance(task, FileTask):
             logger.debug(f"Using exact match for file-based task '{task_name}'")
             return response.strip().lower() == expected_answer.strip().lower()
@@ -53,7 +53,7 @@ def evaluate_response_correctness(response: str, expected_answer: str, task_name
 
     try:
         # Use the same evaluation approach as the CLI
-        evaluator = LMEvalHarnessGroundTruth(task_name)
+        evaluator = LMEvalHarnessGroundTruth(task_name, test_timeout=test_timeout, train_ratio=train_ratio)
 
         # Create response data format expected by _evaluate_with_lm_eval_metrics
         response_data = [
@@ -83,9 +83,10 @@ def evaluate_response_correctness(response: str, expected_answer: str, task_name
 def evaluate_benchmark_performance(
     predictions: List[str],
     ground_truths: List[str],
-    task_name: str = None,
+    task_name: str,
+    test_timeout: int,
     task_docs: List[Dict] = None,
-    classifier_scorer: Optional[Callable[[List[str], str], List[float]]] = None,
+    classifier_scorer: Optional[Callable[[List[str], str], List[float]]] = None, *, train_ratio: float,
 ) -> Dict[str, float]:
     """
     Evaluate benchmark performance using LMEvalHarnessGroundTruth (same approach as CLI).
@@ -154,7 +155,7 @@ def evaluate_benchmark_performance(
                 method = evaluator_name
             else:
                 # Fallback to LMEvalHarnessGroundTruth
-                is_correct = evaluate_response_correctness(pred, gt, task_name)
+                is_correct = evaluate_response_correctness(pred, gt, task_name, test_timeout=test_timeout, train_ratio=train_ratio)
                 method = "lm_eval_harness_ground_truth"
             
             correct_predictions.append(is_correct)
@@ -230,8 +231,8 @@ def evaluate_probe_performance(y_true: np.ndarray, y_pred: np.ndarray, y_pred_pr
 def calculate_combined_score(
     benchmark_metrics: Dict[str, float],
     probe_metrics: Dict[str, float],
-    benchmark_weight: float = BENCHMARK_WEIGHT,
-    probe_weight: float = PROBE_WEIGHT,
+    benchmark_weight: float = 0.7,
+    probe_weight: float = 0.3,
 ) -> float:
     """
     Calculate combined score from benchmark and probe performance.
@@ -243,10 +244,10 @@ def calculate_combined_score(
         probe_weight: Weight for probe performance
 
     Returns:
-        Combined score (0-1)
+        Combined score
     """
     benchmark_score = benchmark_metrics.get("accuracy", 0.0)
-    probe_score = probe_metrics.get("auc", CLASSIFIER_THRESHOLD)  # Use AUC as primary probe metric
+    probe_score = probe_metrics["auc"]  # Use AUC as primary probe metric
 
     combined_score = benchmark_weight * benchmark_score + probe_weight * probe_score
     return combined_score

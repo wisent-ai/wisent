@@ -19,7 +19,8 @@ from wisent.core.control.steering_methods.steering_object import (
     SteeringObjectMetadata,
 )
 from .solvers.broyden import wicher_broyden_step
-from wisent.core.utils.config_tools.constants import NORM_EPS, BROYDEN_DEFAULT_NUM_STEPS, BROYDEN_DEFAULT_ALPHA, BROYDEN_DEFAULT_ETA, BROYDEN_DEFAULT_BETA, BROYDEN_DEFAULT_ALPHA_DECAY
+from wisent.core.utils.config_tools.constants import NORM_EPS
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 
 __all__ = ["WicherSteeringObject"]
 
@@ -35,11 +36,11 @@ class WicherSteeringObject(BaseSteeringObject):
         concept_directions: Dict[int, torch.Tensor],
         concept_bases: Dict[int, torch.Tensor],
         component_variances: Dict[int, torch.Tensor],
-        num_steps: int = BROYDEN_DEFAULT_NUM_STEPS,
-        alpha: float = BROYDEN_DEFAULT_ALPHA,
-        eta: float = BROYDEN_DEFAULT_ETA,
-        beta: float = BROYDEN_DEFAULT_BETA,
-        alpha_decay: float = BROYDEN_DEFAULT_ALPHA_DECAY,
+        num_steps: int,
+        alpha: float,
+        eta: float,
+        beta: float,
+        alpha_decay: float,
         layer_variance: Optional[Dict[int, float]] = None,
     ):
         super().__init__(metadata)
@@ -233,15 +234,22 @@ class WicherSteeringObject(BaseSteeringObject):
         lv_raw = data.get("layer_variance", {})
         layer_variance = {int(k): float(v) for k, v in lv_raw.items()}
 
+        _REQUIRED_KEYS = ["num_steps", "alpha", "eta", "beta", "alpha_decay"]
+        for key in _REQUIRED_KEYS:
+            if data.get(key) is None:
+                raise InsufficientDataError(
+                    reason=f"Missing '{key}' in saved data. Re-train the steering object.",
+                )
+
         return cls(
             metadata=metadata,
             concept_directions=concept_dirs,
             concept_bases=concept_bases,
             component_variances=comp_variances,
-            num_steps=data.get("num_steps", BROYDEN_DEFAULT_NUM_STEPS),
-            alpha=data.get("alpha", BROYDEN_DEFAULT_ALPHA),
-            eta=data.get("eta", BROYDEN_DEFAULT_ETA),
-            beta=data.get("beta", BROYDEN_DEFAULT_BETA),
-            alpha_decay=data.get("alpha_decay", BROYDEN_DEFAULT_ALPHA_DECAY),
+            num_steps=data["num_steps"],
+            alpha=data["alpha"],
+            eta=data["eta"],
+            beta=data["beta"],
+            alpha_decay=data["alpha_decay"],
             layer_variance=layer_variance,
         )

@@ -36,6 +36,10 @@ def compute_coverage_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Metr
     avg_negative_length = mean(neg_lengths) if neg_lengths else 0.0
 
     issues: List[DiagnosticsIssue] = []
+    if config.min_unique_prompt_ratio is None:
+        raise ValueError("config.min_unique_prompt_ratio is required")
+    if config.min_average_length is None:
+        raise ValueError("config.min_average_length is required")
 
     if prompt_ratio < config.min_unique_prompt_ratio:
         issues.append(

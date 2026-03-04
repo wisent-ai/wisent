@@ -15,9 +15,9 @@ from wisent.core.utils.config_tools.constants import MATH_SHORT_VAR_MAX_LEN
 def math_equal(
     prediction: Union[bool, float, str],
     reference: Union[float, str],
+    timeout: int,
     include_percentage: bool = True,
     is_close: bool = True,
-    timeout: bool = True,
 ) -> bool:
     """
     Exact match of math if and only if:
@@ -102,7 +102,7 @@ def math_equal(
             if all(
                 [
                     math_equal(
-                        pred_parts[i], ref_parts[i], include_percentage, is_close
+                        pred_parts[i], ref_parts[i], timeout=timeout, include_percentage=include_percentage, is_close=is_close
                     )
                     for i in range(len(pred_parts))
                 ]
@@ -173,7 +173,7 @@ def math_equal(
         ref = reference.split("=")
         ref = f"{ref[0].strip()} - ({ref[1].strip()})"
         if timeout:
-            if call_with_timeout(symbolic_equal_process, pred, ref) or call_with_timeout(symbolic_equal_process, f"-({pred})", ref):
+            if call_with_timeout(symbolic_equal_process, pred, ref, timeout=timeout) or call_with_timeout(symbolic_equal_process, f"-({pred})", ref, timeout=timeout):
                 return True
         else:
             if symbolic_equal(pred, ref) or symbolic_equal(f"-({pred})", ref):
@@ -185,7 +185,7 @@ def math_equal(
         and "=" not in reference
     ):
         if math_equal(
-            prediction.split("=")[1], reference, include_percentage, is_close
+            prediction.split("=")[1], reference, timeout=timeout, include_percentage=include_percentage, is_close=is_close
         ):
             return True
     elif (
@@ -194,14 +194,14 @@ def math_equal(
         and "=" not in prediction
     ):
         if math_equal(
-            prediction, reference.split("=")[1], include_percentage, is_close
+            prediction, reference.split("=")[1], timeout=timeout, include_percentage=include_percentage, is_close=is_close
         ):
             return True
 
     
     # symbolic equal with sympy
     if timeout:
-        if call_with_timeout(symbolic_equal_process, prediction, reference):
+        if call_with_timeout(symbolic_equal_process, prediction, reference, timeout=timeout):
             return True
     else:
         if symbolic_equal(prediction, reference):

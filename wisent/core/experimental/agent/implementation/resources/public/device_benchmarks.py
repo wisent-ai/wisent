@@ -19,7 +19,7 @@ import hashlib
 
 import torch
 
-from wisent.core.utils.config_tools.constants import DEVICE_HASH_PREFIX, JSON_INDENT, SECONDS_PER_DAY, HOURS_PER_DAY
+from wisent.core.utils.config_tools.constants import JSON_INDENT, SECONDS_PER_DAY, HOURS_PER_DAY
 from wisent.core.utils import resolve_default_device
 from wisent.core.utils.infra_tools.errors import (
     DeviceBenchmarkError,
@@ -59,12 +59,15 @@ from wisent.core.experimental.agent.resources._device_bench_runner import Device
 class DeviceBenchmarker(DeviceBenchTestsMixin1, DeviceBenchTestsMixin2, DeviceBenchmarkRunnerMixin):
     """Runs performance benchmarks and manages device-specific estimates."""
     
-    def __init__(self, benchmarks_file: str):
+    def __init__(self, benchmarks_file: str, device_hash_prefix: int = None):
         self.benchmarks_file = benchmarks_file
+        self._device_hash_prefix = device_hash_prefix
         self.cached_benchmark: Optional[DeviceBenchmark] = None
         
     def get_device_id(self) -> str:
         """Generate a unique ID for the current device configuration."""
+        if self._device_hash_prefix is None:
+            raise ValueError("device_hash_prefix is required")
         import platform
         
         # Create device fingerprint from hardware/software info
@@ -85,7 +88,7 @@ class DeviceBenchmarker(DeviceBenchTestsMixin1, DeviceBenchTestsMixin2, DeviceBe
         
         # Create hash of the combined info
         combined = "|".join(str(part) for part in info_parts)
-        device_hash = hashlib.md5(combined.encode()).hexdigest()[:DEVICE_HASH_PREFIX]
+        device_hash = hashlib.md5(combined.encode()).hexdigest()[:self._device_hash_prefix]
         return device_hash
     
     def get_device_type(self) -> str:

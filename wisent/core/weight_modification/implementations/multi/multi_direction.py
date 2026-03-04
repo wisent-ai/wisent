@@ -20,7 +20,6 @@ from typing import Dict, List, Optional, Any, TYPE_CHECKING
 from dataclasses import dataclass
 
 from wisent.core.weight_modification.methods.additive import bake_steering_into_weights
-from wisent.core.utils.config_tools.constants import GROM_NUM_DIRECTIONS, DEFAULT_OPTIMIZATION_STEPS
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 
@@ -48,6 +47,12 @@ class MultiDirectionConfig:
     alpha: float
     """Global steering strength multiplier"""
 
+    num_directions: int
+    """Number of directions per layer"""
+
+    optimization_steps: int
+    """Training steps for direction optimization"""
+
     method: Optional[str] = None
     """Which method to use: 'grom', 'tecza', or 'tetno'"""
 
@@ -56,12 +61,6 @@ class MultiDirectionConfig:
 
     components: List[str] = None
     """Components to modify. Default: ['self_attn.o_proj', 'mlp.down_proj']"""
-
-    num_directions: int = GROM_NUM_DIRECTIONS
-    """Number of directions per layer"""
-
-    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
-    """Training steps for direction optimization"""
 
     bake_method: Optional[str] = None
     """How to bake: 'bias' or 'weight'"""
@@ -182,18 +181,19 @@ def train_and_bake_grom(
     """Train GROM and bake directions into model weights."""
     from wisent.core.control.steering_methods.methods.grom import GROMMethod, GROMConfig
 
+    if grom_config is None:
+        raise ValueError("grom_config dict is required with all GROM hyperparameters")
+
     cfg = config or MultiDirectionConfig(method="grom")
 
-    t_cfg = GROMConfig(
-        num_directions=cfg.num_directions,
-        optimization_steps=cfg.optimization_steps)
-    if grom_config:
-        for k, v in grom_config.items():
-            if hasattr(t_cfg, k):
-                setattr(t_cfg, k, v)
+    # Build GROMConfig from caller-provided dict, overriding num_directions/optimization_steps
+    grom_kwargs = dict(grom_config)
+    grom_kwargs["num_directions"] = cfg.num_directions
+    grom_kwargs["optimization_steps"] = cfg.optimization_steps
+    t_cfg = GROMConfig(**grom_kwargs)
 
     print(f"\nTraining GROM with {cfg.num_directions} directions...")
-    grom = GROMMethod(config=t_cfg)
+    grom = GROMMethod(config=t_cfg, log_interval=grom_config["log_interval"])
     result = grom.train_grom(pair_set)
 
     directions = result.directions

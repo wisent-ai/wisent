@@ -1,16 +1,12 @@
-"""
-Core geometry metrics computation.
-
-This module contains the main compute_geometry_metrics function that computes
-all geometry metrics for activation representations.
-"""
+"""Core geometry metrics computation for activation representations."""
 
 import os
 os.environ["NUMBA_NUM_THREADS"] = "1"
 
 from typing import Dict, Optional, Any
 import torch
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, MAX_PAIRS_FOR_METRICS, CLASSIFIER_THRESHOLD, CV_FOLDS
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, COMBO_OFFSET
+from wisent.core import constants as _C
 
 from ..probe.probe_metrics import (
     compute_signal_strength, compute_linear_probe_accuracy,
@@ -42,11 +38,11 @@ from wisent.core.reading.modules.utilities.signal_analysis.structure import comp
 from .metrics_viz import generate_metrics_visualizations
 
 
-
 def compute_geometry_metrics(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    n_folds: int = CV_FOLDS,
+    min_clusters: int,
+    n_folds: int,
     model=None,
     tokenizer=None,
     layer: Optional[int] = None,
@@ -54,6 +50,32 @@ def compute_geometry_metrics(
     pos_activations_by_component: Optional[Dict[str, torch.Tensor]] = None,
     neg_activations_by_component: Optional[Dict[str, torch.Tensor]] = None,
     generate_visualizations: bool = True,
+    *,
+    spectral_n_neighbors: int,
+    probe_min_per_class: int,
+    probe_small_hidden: int,
+    probe_mlp_hidden: int,
+    probe_mlp_alpha: float,
+    probe_validation_fraction: float,
+    probe_knn_k: int,
+    knn_min_class_offset: int,
+    feature_dim_index: int,
+    cv_folds: int,
+    direction_n_bootstrap: int,
+    direction_subset_fraction: float,
+    direction_std_penalty: float,
+    consistency_w_cosine: float,
+    consistency_w_positive: float,
+    consistency_w_high_sim: float,
+    sparsity_threshold_fraction: float,
+    pca_max_components_null: int,
+    min_cloud_points: int,
+    variance_explained_90pct: float,
+    blend_default: float,
+    default_score: float,
+    detection_threshold: float,
+    subsample_threshold: int,
+    pca_dims_limit: int,
 ) -> Dict[str, Any]:
     """Compute comprehensive geometry metrics for activations."""
     import numpy as np
@@ -67,19 +89,19 @@ def compute_geometry_metrics(
     metrics["original_dims"] = n_features
     metrics["original_n_pairs"] = n_samples
 
-    # Subsample pairs for metrics when dataset is large (O(n²) ops)
-    if n_samples > MAX_PAIRS_FOR_METRICS:
-        idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(n_samples, MAX_PAIRS_FOR_METRICS, replace=False)
+    # Subsample pairs for metrics when dataset is large (quadratic ops)
+    if n_samples > subsample_threshold:
+        idx = np.random.RandomState(DEFAULT_RANDOM_SEED).choice(n_samples, subsample_threshold, replace=False)
         idx.sort()
         pos_activations = pos_activations[idx]
         neg_activations = neg_activations[idx]
-        n_samples = MAX_PAIRS_FOR_METRICS
-        metrics["subsampled_to"] = MAX_PAIRS_FOR_METRICS
-        logger.info("Subsampled %d -> %d pairs for metrics", metrics["original_n_pairs"], MAX_PAIRS_FOR_METRICS)
+        n_samples = subsample_threshold
+        metrics["subsampled_to"] = subsample_threshold
+        logger.info("Subsampled %d -> %d pairs for metrics", metrics["original_n_pairs"], subsample_threshold)
 
     # PCA reduce for probe/distance-based metrics when dims >> samples
     pos_reduced, neg_reduced = pos_activations, neg_activations
-    pca_dims = min(n_samples - 1, n_features, 50)
+    pca_dims = min(n_samples - COMBO_OFFSET, n_features, pca_dims_limit)
     if pca_dims < n_features and pca_dims >= 2:
         combined = torch.cat([pos_activations, neg_activations], dim=0).cpu().numpy()
         combined_pca = PCA(n_components=pca_dims, random_state=DEFAULT_RANDOM_SEED).fit_transform(combined)
@@ -88,22 +110,42 @@ def compute_geometry_metrics(
         metrics["pca_dims"] = pca_dims
 
     # Basic probe metrics (on PCA-reduced data for speed)
-    metrics["signal_strength"] = compute_signal_strength(pos_reduced, neg_reduced, n_folds)
-    metrics["linear_probe_accuracy"] = compute_linear_probe_accuracy(pos_reduced, neg_reduced, n_folds)
-    metrics["mlp_probe_accuracy"] = compute_mlp_probe_accuracy(pos_reduced, neg_reduced, n_folds=n_folds)
+    metrics["signal_strength"] = compute_signal_strength(
+        pos_reduced, neg_reduced, n_folds,
+        probe_min_per_class=probe_min_per_class, probe_small_hidden=probe_small_hidden,
+        blend_default=blend_default,
+    )
+    metrics["linear_probe_accuracy"] = compute_linear_probe_accuracy(
+        pos_reduced, neg_reduced, n_folds, probe_min_per_class=probe_min_per_class,
+        blend_default=blend_default,
+    )
+    metrics["mlp_probe_accuracy"] = compute_mlp_probe_accuracy(
+        pos_reduced, neg_reduced, n_folds,
+        probe_min_per_class=probe_min_per_class, probe_mlp_hidden=probe_mlp_hidden,
+        probe_mlp_alpha=probe_mlp_alpha, probe_validation_fraction=probe_validation_fraction,
+        blend_default=blend_default,
+    )
 
     # ICD (on reduced)
     icd_result = compute_icd(pos_reduced, neg_reduced)
     metrics.update({f"icd_{k}": v for k, v in icd_result.items()})
 
     # Direction metrics (on reduced)
-    stability = compute_direction_stability(pos_reduced, neg_reduced)
+    stability = compute_direction_stability(
+        pos_reduced, neg_reduced,
+        n_bootstrap=direction_n_bootstrap, subset_fraction=direction_subset_fraction,
+        direction_std_penalty=direction_std_penalty,
+    )
     metrics.update({f"direction_{k}": v for k, v in stability.items()})
-    consistency = compute_pairwise_diff_consistency(pos_reduced, neg_reduced)
+    consistency = compute_pairwise_diff_consistency(
+        pos_reduced, neg_reduced,
+        consistency_w_cosine=consistency_w_cosine, consistency_w_positive=consistency_w_positive,
+        consistency_w_high_sim=consistency_w_high_sim,
+    )
     metrics.update({f"consistency_{k}": v for k, v in consistency.items()})
 
     # Steerability (on reduced)
-    steerability = compute_steerability_metrics(pos_reduced, neg_reduced)
+    steerability = compute_steerability_metrics(pos_reduced, neg_reduced, min_clusters=min_clusters)
     metrics.update({f"steer_{k}": v for k, v in steerability.items()})
 
     # Concept analysis (on reduced)
@@ -125,7 +167,7 @@ def compute_geometry_metrics(
         metrics["pair_high_quality_fraction"] = pair_quality.get("high_quality_fraction")
 
     # Two-cloud relationship (on reduced)
-    relationship = compute_two_cloud_relationship(pos_reduced, neg_reduced)
+    relationship = compute_two_cloud_relationship(pos_reduced, neg_reduced, min_cloud_points=min_cloud_points)
     if "error" not in relationship:
         metrics["cloud_centroid_distance"] = relationship.get("centroid_distance")
         metrics["cloud_separation_ratio"] = relationship.get("separation_ratio")
@@ -151,26 +193,44 @@ def compute_geometry_metrics(
     metrics["intrinsic_dim_ratio"] = dim_ratio
 
     # Multi-direction (on reduced)
-    multi_dir = compute_multi_direction_accuracy(pos_reduced, neg_reduced)
+    multi_dir = compute_multi_direction_accuracy(
+        pos_reduced, neg_reduced,
+        blend_default=blend_default,
+        default_score=default_score,
+        detection_threshold=detection_threshold,
+    )
     metrics["multi_dir_saturation_k"] = multi_dir.get("saturation_k", 1)
     metrics["multi_dir_gain"] = multi_dir.get("gain_from_multi", 0.0)
 
     # k-NN (on reduced)
-    metrics["knn_accuracy"] = compute_knn_accuracy(pos_reduced, neg_reduced)
-    metrics["knn_pca_accuracy"] = compute_knn_pca_accuracy(pos_reduced, neg_reduced)
+    metrics["knn_accuracy"] = compute_knn_accuracy(
+        pos_reduced, neg_reduced, k=probe_knn_k, n_folds=n_folds,
+        knn_min_class_offset=knn_min_class_offset,
+        blend_default=blend_default,
+    )
+    metrics["knn_pca_accuracy"] = compute_knn_pca_accuracy(
+        pos_reduced, neg_reduced,
+        probe_knn_k=probe_knn_k, knn_min_class_offset=knn_min_class_offset,
+        feature_dim_index=feature_dim_index, cv_folds=cv_folds,
+        blend_default=blend_default,
+    )
 
     # Signal to noise (on reduced)
     metrics["signal_to_noise"] = compute_signal_to_noise(pos_reduced, neg_reduced)
 
     # Sparsity metrics (on original - measures per-neuron properties)
-    sparsity = compute_sparsity_metrics(pos_activations, neg_activations)
+    sparsity = compute_sparsity_metrics(
+        pos_activations, neg_activations,
+        top_neurons_count=_C.DISPLAY_TOP_N_MEDIUM, top_neurons_short_count=_C.DISPLAY_TOP_N_SMALL,
+        sparsity_threshold_fraction=sparsity_threshold_fraction,
+    )
     metrics["sparsity_neurons_for_50pct"] = sparsity.get("neurons_for_50pct")
     metrics["sparsity_neurons_for_90pct"] = sparsity.get("neurons_for_90pct")
     metrics["sparsity_diff_gini"] = sparsity.get("diff_gini")
     metrics["sparsity_top_10_contribution"] = sparsity.get("top_10_contribution_fraction")
 
     # Manifold metrics (on reduced)
-    manifold = compute_manifold_metrics(pos_reduced, neg_reduced)
+    manifold = compute_manifold_metrics(pos_reduced, neg_reduced, n_neighbors=spectral_n_neighbors, pca_max_components_null=pca_max_components_null)
     metrics["manifold_variance_pc1"] = manifold.get("variance_pc1")
     metrics["manifold_dims_for_90pct"] = manifold.get("dims_for_90pct_variance")
     metrics["manifold_participation_ratio"] = manifold.get("participation_ratio")
@@ -188,7 +248,7 @@ def compute_geometry_metrics(
         metrics["neg_best_silhouette"] = neg_clusters.get("best_silhouette")
 
     # Noise baseline comparison (on reduced)
-    noise_comparison = compute_noise_baseline_comparison(pos_reduced, neg_reduced)
+    noise_comparison = compute_noise_baseline_comparison(pos_reduced, neg_reduced, pca_max_components_null=pca_max_components_null, variance_explained_90pct=variance_explained_90pct)
     if "error" not in noise_comparison:
         vs_noise = noise_comparison.get("vs_noise", {})
         metrics["noise_alignment_above_baseline"] = vs_noise.get("alignment_mean")
@@ -212,12 +272,14 @@ def compute_geometry_metrics(
 
     # Transformer component analysis
     if pos_activations_by_component is not None and neg_activations_by_component is not None:
-        component_result = compare_components_for_benchmark(
+        comp = compare_components_for_benchmark(
             model, tokenizer, pos_activations_by_component, neg_activations_by_component,
+            min_clusters=min_clusters, cv_folds=cv_folds,
+            probe_min_per_class=probe_min_per_class, blend_default=blend_default,
         )
-        metrics["component_analysis"] = component_result
-        if "best_component" in component_result:
-            metrics["best_component"] = component_result["best_component"]
+        metrics["component_analysis"] = comp
+        if "best_component" in comp:
+            metrics["best_component"] = comp["best_component"]
 
     # Visualizations
     visualizations = generate_metrics_visualizations(pos_reduced, neg_reduced, metrics)
@@ -227,7 +289,7 @@ def compute_geometry_metrics(
     # Generate recommendation
     recommendation = compute_steering_recommendation(metrics)
     metrics["recommended_method"] = recommendation.get("recommended_method", "CAA")
-    metrics["recommendation_confidence"] = recommendation.get("confidence", CLASSIFIER_THRESHOLD)
+    metrics["recommendation_confidence"] = recommendation["confidence"]
     metrics["recommendation_reasoning"] = recommendation.get("reasoning", [])
     metrics["method_scores"] = recommendation.get("method_scores", {})
 

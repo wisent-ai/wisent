@@ -1,6 +1,5 @@
 """Basic arguments for the tasks parser."""
 
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, OPTIMIZE_MAX_COMBINATIONS_DEFAULT
 
 
 def setup_basic_task_args(parser):
@@ -133,7 +132,7 @@ def setup_basic_task_args(parser):
         help="Layer(s) to extract activations from. Can be a single layer, range (14-16), or comma-separated list (14,15,16)",
     )
     parser.add_argument("--shots", type=int, required=True, help="Number of few-shot examples")
-    parser.add_argument("--split-ratio", type=float, default=DEFAULT_SPLIT_RATIO, help="Train/test split ratio")
+    parser.add_argument("--split-ratio", type=float, default=None, help="Train/test split ratio")
     parser.add_argument("--limit", type=int, default=None, help="Limit number of documents per task")
     parser.add_argument(
         "--training-limit",
@@ -153,7 +152,7 @@ def setup_basic_task_args(parser):
     )
     parser.add_argument("--max-new-tokens", type=int, default=300, help="Maximum new tokens for generation")
     parser.add_argument("--device", type=str, default=None, help="Device to run on")
-    parser.add_argument("--seed", type=int, default=DEFAULT_RANDOM_SEED, help="Random seed for reproducibility")
+    parser.add_argument("--seed", type=int, default=None, help="Random seed for reproducibility")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
     # Extraction strategy - unified approach combining prompt format and token selection
     from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
@@ -237,8 +236,8 @@ def setup_basic_task_args(parser):
     parser.add_argument(
         "--optimize-max-combinations",
         type=int,
-        default=OPTIMIZE_MAX_COMBINATIONS_DEFAULT,
-        help="Maximum number of hyperparameter combinations to test. Default: 100",
+        required=True,
+        help="Maximum number of hyperparameter combinations to test",
     )
     parser.add_argument(
         "--auto-optimize",
@@ -280,6 +279,7 @@ def setup_basic_task_args(parser):
         help="Threshold for classification (higher = more strict detection)",
     )
     parser.add_argument("--log-detections", action="store_true", help="Enable logging of detection events")
+    parser.add_argument("--max-regeneration-attempts", type=int, required=True, help="Maximum number of regeneration attempts for detection handler")
 
     # Code execution security arguments
     parser.add_argument(

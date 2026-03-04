@@ -21,5 +21,12 @@ def setup_diagnose_pairs_parser(parser):
         help='Enable verbose output'
     )
 
+    parser.add_argument(
+        '--pair-min-text-length',
+        type=int,
+        required=True,
+        help='Minimum text length for pair quality warnings'
+    )
+
     parser.set_defaults(command='diagnose-pairs')
     return parser

@@ -8,7 +8,9 @@ from typing import List, Tuple, Optional
 import torch
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import (
+    SEPARATOR_WIDTH_REPORT, ARCHITECTURE_MODULE_LIMIT, PERCENT_MULTIPLIER,
+)
 from .strategy_diagnostics import StrategyDiagnostics, run_strategy_diagnostics
 
 
@@ -57,7 +59,7 @@ def generate_diagnostics_report(diagnostics_list: List[StrategyDiagnostics]) -> 
         lines.append("")
         lines.append("MC CONFOUND ANALYSIS:")
         for d in mc_strats:
-            lines.append(f"  {d.strategy}: A/B={d.ab_variance_fraction*100:.1f}%, semantic={d.semantic_consistency:.4f}")
+            lines.append(f"  {d.strategy}: A/B={d.ab_variance_fraction*PERCENT_MULTIPLIER:.1f}%, semantic={d.semantic_consistency:.4f}")
 
     lines.append("")
     lines.append("=" * SEPARATOR_WIDTH_REPORT)
@@ -70,6 +72,18 @@ def run_full_diagnostics(
     layer: int,
     strategies: Optional[List[ExtractionStrategy]] = None,
     collector=None,
+    *,
+    w_linear: float,
+    w_consistency: float,
+    w_steering: float,
+    ab_threshold: float,
+    ab_penalty: float,
+    nonlinear_gap: float,
+    low_consistency: float,
+    low_linear_acc: float,
+    low_semantic: float,
+    cv_folds: int,
+    diagnostic_mlp_hidden_sizes: tuple,
 ) -> Tuple[List[StrategyDiagnostics], str]:
     """
     Run full diagnostics across multiple strategies.
@@ -97,7 +111,7 @@ def run_full_diagnostics(
 
     if collector is None:
         store_dev = "mps" if torch.backends.mps.is_available() else "cpu"
-        collector = ActivationCollector(model=model, store_device=store_dev)
+        collector = ActivationCollector(model=model, architecture_module_limit=ARCHITECTURE_MODULE_LIMIT, store_device=store_dev)
 
     all_diagnostics = []
     for strategy in strategies:
@@ -117,7 +131,18 @@ def run_full_diagnostics(
             torch.stack(pos_acts),
             torch.stack(neg_acts),
             strategy,
-            letters if letters else None
+            letters if letters else None,
+            w_linear=w_linear,
+            w_consistency=w_consistency,
+            w_steering=w_steering,
+            ab_threshold=ab_threshold,
+            ab_penalty=ab_penalty,
+            nonlinear_gap=nonlinear_gap,
+            low_consistency=low_consistency,
+            low_linear_acc=low_linear_acc,
+            low_semantic=low_semantic,
+            cv_folds=cv_folds,
+            diagnostic_mlp_hidden_sizes=diagnostic_mlp_hidden_sizes,
         )
         all_diagnostics.append(diag)
         print(f"  Linear: {diag.linear_accuracy:.3f}, Consistency: {diag.consistency:.4f}")

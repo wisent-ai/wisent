@@ -7,7 +7,6 @@ from pathlib import Path
 from typing import Optional
 
 from ..types import ClassificationConfig, TaskConfig
-from wisent.core.utils.config_tools.constants import DEFAULT_LAYER_CONFIG, MOVEMENT_THRESHOLD, DEFAULT_SCORE
 
 class ClassificationMixin:
     """Mixin providing classification config save/get methods."""
@@ -21,9 +20,10 @@ class ClassificationMixin:
         prompt_construction_strategy: str,
         optimization_method: str,
         task_name: Optional[str] = None,
-        layer: int = DEFAULT_LAYER_CONFIG,
-        detection_threshold: float = MOVEMENT_THRESHOLD,
-        accuracy: float = DEFAULT_SCORE,
+        *,
+        layer: int,
+        detection_threshold: float,
+        accuracy: float = None,
         f1_score: float = 0.0,
         precision: float = 0.0,
         recall: float = 0.0,

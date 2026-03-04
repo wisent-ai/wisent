@@ -1,6 +1,5 @@
 """Parser setup for the 'generate-pairs-from-task' command."""
 
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
 
 
 def setup_generate_pairs_from_task_parser(parser):
@@ -25,7 +24,7 @@ def setup_generate_pairs_from_task_parser(parser):
     parser.add_argument(
         "--seed",
         type=int,
-        default=DEFAULT_RANDOM_SEED,
+        default=None,
         help="Random seed for reproducibility (default: 42)"
     )
     parser.add_argument(

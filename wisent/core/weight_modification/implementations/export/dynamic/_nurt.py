@@ -5,8 +5,8 @@ import torch
 from pathlib import Path
 from typing import Optional
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import JSON_INDENT, NURT_NUM_INTEGRATION_STEPS, NURT_T_MAX
+from wisent.core.utils.infra_tools.errors import MissingParameterError, InsufficientDataError
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 from wisent.core.weight_modification.export._generic import (
     load_steered_model,
     _save_standalone_loader,
@@ -163,23 +163,7 @@ def load_nurt_model(
     torch_dtype=None,
     install_hooks: bool = True,
 ):
-    """
-    Load a Concept Flow model with full nonlinear transport hooks.
-
-    Loads the model and installs NurtRuntimeHooks that apply
-    per-layer nonlinear flow transport (project -> Euler integrate ->
-    reconstruct). No linearization.
-
-    Args:
-        model_path: Path to saved concept flow model
-        device_map: Device map for model loading
-        torch_dtype: Torch dtype for model weights
-        install_hooks: Whether to install runtime hooks (default: True)
-
-    Returns:
-        Tuple of (model, tokenizer, hooks) where hooks is None if
-        install_hooks=False or no concept flow data found.
-    """
+    """Load a Concept Flow model with full nonlinear transport hooks."""
     import json
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from huggingface_hub import hf_hub_download, HfFileSystem
@@ -281,13 +265,23 @@ def load_nurt_model(
             for k, v in flow_data["_layer_weights"].items()
         }
 
+        t_max = flow_data.get("t_max")
+        if t_max is None:
+            raise InsufficientDataError(
+                reason="Missing 't_max' in saved nurt_steering.pt. Re-export the model.",
+            )
+        num_integration_steps = flow_data.get("num_integration_steps")
+        if num_integration_steps is None:
+            raise InsufficientDataError(
+                reason="Missing 'num_integration_steps' in saved nurt_steering.pt. Re-export the model.",
+            )
         hooks = NurtRuntimeHooks(
             model=model,
             flow_networks=flow_networks,
             concept_bases=concept_bases,
             layer_weights=layer_weights,
-            t_max=flow_data.get("t_max", NURT_T_MAX),
-            num_integration_steps=flow_data.get("num_integration_steps", NURT_NUM_INTEGRATION_STEPS),
+            t_max=t_max,
+            num_integration_steps=num_integration_steps,
             base_strength=flow_data["base_strength"],
         )
         hooks.install()

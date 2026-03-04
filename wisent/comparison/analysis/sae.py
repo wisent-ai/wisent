@@ -1,11 +1,4 @@
-"""
-SAE-based steering method for comparison experiments.
-
-Uses Sparse Autoencoders to identify steering directions from contrastive pairs.
-Computes steering vector using SAE decoder features weighted by feature differences.
-
-Supports Gemma models with Gemma Scope SAEs via sae_lens.
-"""
+"""SAE-based steering method for comparison experiments."""
 
 from __future__ import annotations
 
@@ -16,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import torch
 
-from wisent.core.utils.config_tools.constants import COMPARISON_NUM_PAIRS, SAE_TOP_K_DEFAULT, DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_SMALL, PROGRESS_LOG_INTERVAL_10
 from wisent.comparison.utils import (
     apply_steering_to_model,
     remove_steering,
@@ -131,7 +124,8 @@ def compute_feature_diff(
 def compute_steering_vector_from_decoder(
     feature_diff: torch.Tensor,
     sae,
-    top_k: int = SAE_TOP_K_DEFAULT,
+    top_k: int,
+    *,
     normalize: bool = True,
 ) -> tuple[torch.Tensor, dict]:
     """
@@ -187,12 +181,13 @@ def generate_steering_vector(
     trait_label: str,
     method: str,
     device: str,
-    num_pairs: int = COMPARISON_NUM_PAIRS,
-    layers: str | None = None,
+    num_pairs: int,
+    layers: str,
+    top_k: int,
+    *,
     normalize: bool = True,
     keep_intermediate: bool = False,
-    top_k: int = SAE_TOP_K_DEFAULT,
-    **kwargs,  # Accept additional kwargs for compatibility
+    **kwargs,
 ) -> Path:
     """
     Generate a steering vector using SAE decoder features.
@@ -224,9 +219,7 @@ def generate_steering_vector(
     config = SAE_CONFIGS[model_name]
 
     # Parse layers
-    if layers is None:
-        layer_indices = [config["default_layer"]]
-    elif layers == "all":
+    if layers == "all":
         layer_indices = list(range(config["num_layers"]))
     else:
         layer_indices = [int(l.strip()) for l in layers.split(",")]

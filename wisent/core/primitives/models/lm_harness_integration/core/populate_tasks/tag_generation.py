@@ -3,7 +3,8 @@
 from typing import Dict, Any, List, Optional
 
 from wisent.core.utils import preferred_dtype, resolve_default_device, resolve_device
-from wisent.core.utils.config_tools.constants import DEFAULT_TIMEOUT_SHORT, LLAMA_PAD_TOKEN_ID, CONTEXT_MAX_LENGTH, MAX_TAGS_PER_BENCHMARK, DISPLAY_TOP_N_MINI
+from wisent.core.utils.config_tools.constants import LLAMA_PAD_TOKEN_ID, MAX_TAGS_PER_BENCHMARK, DISPLAY_TOP_N_MINI
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_code_exec_timeout_s
 
 
 APPROVED_SKILLS = [
@@ -18,7 +19,7 @@ APPROVED_RISKS = [
 ]
 
 
-def get_benchmark_tags_with_llama(task_name: str, readme_content: str = "") -> List[str]:
+def get_benchmark_tags_with_llama(task_name: str, context_max_length: int, readme_content: str = "") -> List[str]:
     """Use Llama-3.1B-Instruct to determine appropriate tags for a benchmark."""
     print(f"   Using Llama-3.1B-Instruct to determine tags for '{task_name}'...")
 
@@ -58,7 +59,7 @@ def get_benchmark_tags_with_llama(task_name: str, readme_content: str = "") -> L
 
         print(f"   Successfully loaded Llama-3.1-8B-Instruct pipeline")
 
-        description = readme_content[:CONTEXT_MAX_LENGTH] if readme_content else f"A benchmark called '{task_name}' for evaluating language models."
+        description = readme_content[:context_max_length] if readme_content else f"A benchmark called '{task_name}' for evaluating language models."
 
         user_prompt = f"""Analyze the benchmark and determine exactly 3 tags.
 
@@ -156,7 +157,7 @@ def _basic_tag_analysis(readme_content: str) -> List[str]:
     return ["reasoning", "general knowledge", "science"]
 
 
-def get_benchmark_groups_from_readme(task_name: str) -> Dict[str, Any]:
+def get_benchmark_groups_from_readme(task_name: str, context_max_length: int) -> Dict[str, Any]:
     """Read README from lm-eval-harness repository and use LLM for tags."""
     import requests
 
@@ -171,11 +172,11 @@ def get_benchmark_groups_from_readme(task_name: str) -> Dict[str, Any]:
 
     try:
         print(f"   Fetching README from: {readme_url}")
-        response = requests.get(readme_url, timeout=DEFAULT_TIMEOUT_SHORT)
+        response = requests.get(readme_url, timeout=docker_code_exec_timeout_s())
         response.raise_for_status()
         readme_content = response.text
 
-        determined_tags = get_benchmark_tags_with_llama(task_name, readme_content)
+        determined_tags = get_benchmark_tags_with_llama(task_name, context_max_length=context_max_length, readme_content=readme_content)
         groups = _extract_groups_from_readme(readme_content)
 
         print(f"   Extracted {len(groups)} groups from README: {groups}")

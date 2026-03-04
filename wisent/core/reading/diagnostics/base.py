@@ -5,33 +5,24 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any, Dict, Iterable, List
 
-from wisent.core.utils.config_tools.constants import (
-    DIAG_MIN_DIVERGENCE, DIAG_MAX_LOW_DIV_FRACTION, DIAG_NEAR_DUPLICATE_THRESHOLD,
-    PAIRS_MAX_DUPLICATE_FRACTION, PAIRS_MIN_UNIQUE_PROMPT_RATIO, PAIRS_MIN_AVERAGE_LENGTH,
-)
-
 
 @dataclass(slots=True)
 class DiagnosticsConfig:
     """Threshold configuration for diagnostics.
 
     Attributes:
-        min_divergence: Minimum acceptable divergence between positive and negative responses.
-        max_low_divergence_fraction: Maximum allowed share of pairs falling below the divergence threshold.
-        near_duplicate_prompt_threshold: Similarity threshold (0-1) at which prompts are treated as near duplicates.
-        max_exact_duplicate_fraction: Maximum allowed share of exact duplicate prompts or responses.
-        min_unique_prompt_ratio: Minimum ratio of unique prompts to total pairs for coverage diagnostics.
-        min_average_length: Minimum average response length (characters) indicating sufficient content.
         warn_on_missing_activations: Whether missing activations should be reported as issues.
+        min_unique_prompt_ratio: Minimum ratio of unique prompts.
+        min_average_length: Minimum average response length.
+        max_duplicate_fraction: Maximum allowed fraction of exact duplicates.
+        dedup_item_threshold: Threshold below which to use exact-match dedup.
     """
 
-    min_divergence: float = DIAG_MIN_DIVERGENCE
-    max_low_divergence_fraction: float = DIAG_MAX_LOW_DIV_FRACTION
-    near_duplicate_prompt_threshold: float = DIAG_NEAR_DUPLICATE_THRESHOLD
-    max_exact_duplicate_fraction: float = PAIRS_MAX_DUPLICATE_FRACTION
-    min_unique_prompt_ratio: float = PAIRS_MIN_UNIQUE_PROMPT_RATIO
-    min_average_length: int = PAIRS_MIN_AVERAGE_LENGTH
     warn_on_missing_activations: bool = True
+    min_unique_prompt_ratio: float = None
+    min_average_length: int = None
+    max_duplicate_fraction: float = None
+    dedup_item_threshold: int = None
 
 
 @dataclass(slots=True)

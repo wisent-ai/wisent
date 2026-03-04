@@ -20,21 +20,13 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
-
 import torch
 from datasets import load_dataset
 from tqdm import tqdm
 
 from wisent.core.utils.config_tools.constants import (
     GEMMA_2B_BOS_FEATURES_PAPER,
-    BOS_NUM_SAMPLES_DEFAULT,
-    BOS_MIN_LENGTH_DEFAULT,
-    COMPARISON_STEERING_LAYER,
-    BOS_ARGPARSE_NUM_SAMPLES,
-    BOS_TOP_K_DEFAULT,
-    COMPARISON_DEFAULT_BATCH_SIZE,
-    COMPARISON_MAX_BATCH_SIZE,
-    TEST_DEFAULT_LIMIT, JSON_INDENT,
+    JSON_INDENT,
 )
 
 
@@ -45,7 +37,7 @@ KNOWN_BOS_FEATURES = {
 }
 
 
-def load_sample_texts(num_samples: int = BOS_NUM_SAMPLES_DEFAULT, min_length: int = BOS_MIN_LENGTH_DEFAULT) -> list[str]:
+def load_sample_texts(num_samples: int, min_length: int) -> list[str]:
     """Load sample texts from WikiText dataset."""
     print(f"Loading up to {num_samples} sample texts from WikiText...")
 
@@ -70,8 +62,8 @@ def detect_bos_features(
     layer_idx: int,
     device: str,
     texts: list[str],
-    top_k: int = TEST_DEFAULT_LIMIT,
-    batch_size: int = COMPARISON_MAX_BATCH_SIZE,
+    batch_size: int,
+    top_k: int,
 ) -> tuple[list[int], dict[str, torch.Tensor]]:
     """
     Detect BOS features by finding features that activate most strongly at position 0.
@@ -90,7 +82,7 @@ def detect_bos_features(
         layer_idx: Layer index (0-indexed)
         device: Device
         texts: List of sample texts to analyze
-        top_k: Number of top BOS features to return (default 10)
+        top_k: Number of top BOS features to return
         batch_size: Batch size for processing
 
     Returns:
@@ -207,10 +199,11 @@ def compare_with_known(model_name: str, detected: list[int], stats: dict[str, to
 def main():
     parser = argparse.ArgumentParser(description="Detect BOS features in Gemma Scope SAEs")
     parser.add_argument("--model", required=True, help="Model name")
-    parser.add_argument("--layer", type=int, default=COMPARISON_STEERING_LAYER, help="Layer index")
-    parser.add_argument("--num-samples", type=int, default=BOS_ARGPARSE_NUM_SAMPLES, help="Number of text samples")
-    parser.add_argument("--top-k", type=int, default=BOS_TOP_K_DEFAULT, help="Number of top BOS features to detect")
-    parser.add_argument("--batch-size", type=int, default=COMPARISON_DEFAULT_BATCH_SIZE, help="Batch size")
+    parser.add_argument("--layer", type=int, default=None, help="Layer index")
+    parser.add_argument("--num-samples", type=int, default=None, help="Number of text samples")
+    parser.add_argument("--top-k", type=int, default=None, help="Number of top BOS features to detect")
+    parser.add_argument("--min-length", type=int, default=None, help="Minimum text length for samples")
+    parser.add_argument("--batch-size", type=int, required=True, help="Batch size")
     parser.add_argument("--device", required=True, help="Device")
     parser.add_argument("--output-dir", required=True, help="Output directory")
     args = parser.parse_args()
@@ -240,7 +233,7 @@ def main():
     sae_id = f"layer_{args.layer}/width_16k/canonical"
     sae, _, _ = SAE.from_pretrained(release=release, sae_id=sae_id, device=args.device)
 
-    texts = load_sample_texts(args.num_samples)
+    texts = load_sample_texts(args.num_samples, args.min_length)
 
     bos_features, stats = detect_bos_features(
         model=model,

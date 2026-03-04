@@ -32,7 +32,7 @@ Usage:
 from dataclasses import dataclass
 from typing import Tuple, List, Optional
 import torch
-from wisent.core.utils.config_tools.constants import NORM_EPS, PCA_TOP_N_COMPONENTS
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 
 @dataclass
@@ -129,6 +129,8 @@ def find_direction_from_all_tokens(
     neg_batch: List[torch.Tensor],
     prompt_lengths: List[int],
     return_details: bool = False,
+    *,
+    pca_top_n_components: int,
 ) -> torch.Tensor | PCADirectionResult:
     """
     Find steering direction using PCA on ALL token differences. No fixed position needed.
@@ -170,11 +172,11 @@ def find_direction_from_all_tokens(
     # Compute explained variance ratios
     variance = S ** 2
     total_var = variance.sum()
-    explained_ratio = (variance / total_var).tolist()[:PCA_TOP_N_COMPONENTS]
+    explained_ratio = (variance / total_var).tolist()[:pca_top_n_components]
     return PCADirectionResult(
         direction=direction,
         explained_variance_ratio=explained_ratio,
-        singular_values=S[:PCA_TOP_N_COMPONENTS],
+        singular_values=S[:pca_top_n_components],
         n_tokens=n_tokens,
         n_pairs=len(pos_batch),
     )

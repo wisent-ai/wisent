@@ -1,6 +1,6 @@
 """Comprehensive subparser for optimize-steering."""
-from wisent.core.utils.config_tools.constants import SENSOR_LAYER_CONFIGS, TETNO_STEERING_LAYER_CONFIGS
 from wisent.core.control.steering_methods.registry import SteeringMethodRegistry
+from wisent.core.control.steering_methods.definitions._definitions_tetno_grom import TETNO_STEERING_LAYER_CONFIGS
 AVAILABLE_METHODS = [m.upper() for m in SteeringMethodRegistry.list_methods()]
 
 def setup_comprehensive_parser(steering_subparsers):
@@ -230,7 +230,7 @@ def setup_comprehensive_parser(steering_subparsers):
         type=str,
         nargs="+",
         default=None,
-        choices=list(SENSOR_LAYER_CONFIGS),
+        choices=["middle"],
         help="[TETNO/GROM] Sensor layer configurations to search"
     )
     comprehensive_parser.add_argument(

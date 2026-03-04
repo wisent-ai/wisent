@@ -11,6 +11,7 @@ def run_multi_steer(
     model_name: str,
     prompt: str,
     method: str,
+    combined_scale: float,
     layer: int | None = None,
     max_new_tokens: int = None,
     temperature: float = None,
@@ -25,6 +26,7 @@ def run_multi_steer(
         model_name: Name of model to load
         prompt: Input prompt
         method: Steering method to use (kept for backward compatibility)
+        combined_scale: Initial steering scale for combining vectors.
         layer: Target layer (will be inferred from vectors if not specified)
         max_new_tokens: Maximum tokens to generate
         temperature: Sampling temperature (uses inference config if None)
@@ -51,7 +53,7 @@ def run_multi_steer(
     )
 
     # Initialize multi-steering with specified method
-    multi_steer = MultiSteering(device=chosen_device, method=method)
+    multi_steer = MultiSteering(method=method, combined_scale=combined_scale, device=chosen_device)
 
     # Load vectors
     multi_steer.load_vectors(vector_specs)

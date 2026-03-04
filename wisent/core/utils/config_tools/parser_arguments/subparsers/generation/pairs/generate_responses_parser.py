@@ -16,4 +16,6 @@ def setup_generate_responses_parser(parser):
     parser.add_argument("--steering-object", type=str, default=None, help="Path to steering object file (.pt)")
     parser.add_argument("--steering-strength", type=float, required=True, help="Steering strength multiplier")
     parser.add_argument("--disable-thinking", action="store_true", help="Disable thinking/reasoning mode (prevents <think> tags for Qwen models)")
+    parser.add_argument("--min-load-limit-questions", type=int, required=True, help="Minimum number of questions to load from the dataset")
+    parser.add_argument("--max-incorrect-per-correct", type=int, required=True, help="Maximum number of incorrect answers per correct answer")
     parser.add_argument("--verbose", action="store_true", help="Verbose output")

@@ -19,14 +19,7 @@ from typing import Optional, Dict, Any, List, TypeVar, Type
 import numpy as np
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LAYER_CONFIG, DEFAULT_SCORE,
-    MOVEMENT_THRESHOLD, BROYDEN_DEFAULT_ALPHA, PAIRS_NUM_PAIRS,
-    TECZA_INDEPENDENCE_WEIGHT, DEFAULT_OPTIMIZATION_STEPS,
-    TECZA_MIN_COSINE_SIM, TECZA_MAX_COSINE_SIM,
-    TETNO_CONDITION_THRESHOLD, TETNO_MAX_ALPHA,
-    GROM_GATE_TEMPERATURE, GROM_ROUTER_HIDDEN_DIM, GROM_INTENSITY_HIDDEN_DIM,
-    GROM_BEHAVIOR_WEIGHT, GROM_SPARSE_WEIGHT, GROM_OPTIMIZATION_STEPS,
-    GROM_LEARNING_RATE, BLEND_DEFAULT, NESTED_CONFIG_NAME_FIELD,
+    NESTED_CONFIG_NAME_FIELD,
     TASK_CONFIG_NAME_FIELD, TRAIT_CONFIG_NAME_FIELD,
 )
 
@@ -64,57 +57,57 @@ class NumpyEncoder(json.JSONEncoder):
 @dataclass
 class ClassificationConfig(SerializableConfig):
     """Classification optimization parameters."""
-    layer: int = DEFAULT_LAYER_CONFIG
+    layer: Optional[int] = None
     token_aggregation: Optional[str] = None
-    detection_threshold: float = MOVEMENT_THRESHOLD
+    detection_threshold: Optional[float] = None
     classifier_type: Optional[str] = None
     prompt_construction_strategy: Optional[str] = None
     token_targeting_strategy: Optional[str] = None
-    accuracy: float = DEFAULT_SCORE
-    f1_score: float = DEFAULT_SCORE
-    precision: float = DEFAULT_SCORE
-    recall: float = DEFAULT_SCORE
+    accuracy: float = None
+    f1_score: float = None
+    precision: float = None
+    recall: float = None
 
 
 @dataclass
 class SteeringConfig(SerializableConfig):
     """Steering optimization parameters with method-specific settings."""
-    layer: int = DEFAULT_LAYER_CONFIG
+    layer: Optional[int] = None
     strength: Optional[float] = None
     method: Optional[str] = None
     token_aggregation: Optional[str] = None
     prompt_strategy: Optional[str] = None
     normalize_mode: Optional[str] = None
     strategy: Optional[str] = None
-    score: float = DEFAULT_SCORE
+    score: float = None
     metric: Optional[str] = None
     # TECZA parameters
-    num_directions: int = 1
+    num_directions: Optional[int] = None
     direction_weighting: Optional[str] = None
-    retain_weight: float = DEFAULT_SCORE
-    independence_weight: float = TECZA_INDEPENDENCE_WEIGHT
-    tecza_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
+    retain_weight: Optional[float] = None
+    independence_weight: Optional[float] = None
+    tecza_optimization_steps: Optional[int] = None
     use_caa_init: bool = True
     cone_constraint: bool = True
-    min_cosine_similarity: float = TECZA_MIN_COSINE_SIM
-    max_cosine_similarity: float = TECZA_MAX_COSINE_SIM
+    min_cosine_similarity: Optional[float] = None
+    max_cosine_similarity: Optional[float] = None
     # TETNO parameters
-    sensor_layer: int = -1
+    sensor_layer: Optional[int] = None
     steering_layers: Optional[str] = None
-    condition_threshold: float = TETNO_CONDITION_THRESHOLD
-    gate_temperature: float = GROM_GATE_TEMPERATURE
+    condition_threshold: Optional[float] = None
+    gate_temperature: Optional[float] = None
     per_layer_scaling: bool = True
     use_entropy_scaling: bool = False
-    max_alpha: float = TETNO_MAX_ALPHA
+    max_alpha: Optional[float] = None
     learn_threshold: bool = True
-    tetno_optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
+    tetno_optimization_steps: Optional[int] = None
     # GROM parameters
-    gate_hidden_dim: int = GROM_ROUTER_HIDDEN_DIM
-    intensity_hidden_dim: int = GROM_INTENSITY_HIDDEN_DIM
-    behavior_weight: float = GROM_BEHAVIOR_WEIGHT
-    sparse_weight: float = GROM_SPARSE_WEIGHT
-    grom_optimization_steps: int = GROM_OPTIMIZATION_STEPS
-    grom_learning_rate: float = GROM_LEARNING_RATE
+    gate_hidden_dim: Optional[int] = None
+    intensity_hidden_dim: Optional[int] = None
+    behavior_weight: Optional[float] = None
+    sparse_weight: Optional[float] = None
+    grom_optimization_steps: Optional[int] = None
+    grom_learning_rate: Optional[float] = None
     method_params: Dict[str, Any] = field(default_factory=dict)
 
 
@@ -123,20 +116,20 @@ class WeightModificationConfig(SerializableConfig):
     """Weight modification (directional projection/additive) parameters."""
     method: Optional[str] = None
     max_weight: Optional[float] = None
-    min_weight: float = DEFAULT_SCORE
-    max_weight_position: float = BLEND_DEFAULT
-    min_weight_distance: float = BLEND_DEFAULT
+    min_weight: float = None
+    max_weight_position: float = None
+    min_weight_distance: float = None
     strength: Optional[float] = None
-    num_pairs: int = PAIRS_NUM_PAIRS
-    alpha: float = BROYDEN_DEFAULT_ALPHA
+    num_pairs: Optional[int] = None
+    alpha: Optional[float] = None
     additive_method: Optional[str] = None
     components: List[str] = field(default_factory=lambda: ["self_attn.o_proj", "mlp.down_proj"])
     normalize_vectors: bool = True
     norm_preserve: bool = True
     use_biprojection: bool = True
     use_kernel: bool = True
-    score: float = DEFAULT_SCORE
-    baseline_score: float = DEFAULT_SCORE
+    score: float = None
+    baseline_score: float = None
     output_dir: Optional[str] = None
 
     @classmethod

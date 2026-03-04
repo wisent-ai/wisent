@@ -19,7 +19,7 @@ from wisent.cli_utils.cli_prepare_dataset import (
     PrepState,
     Caps
 )
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, SPLIT_RATIO_70
+from wisent.core.utils.config_tools.constants import SPLIT_RATIO_70
 from wisent.core.primitives.contrastive_pairs.contrastive_pair_set import ContrastivePairSet
 
 # Import helpers and additional tests from extracted module
@@ -44,7 +44,7 @@ def test_csv_loading_disabled():
         incorrect_col="incorrect",
         limit=None,
         caps=Caps(train=100, test=50),
-        split_ratio=DEFAULT_SPLIT_RATIO,
+        split_ratio=0.8,
         seed=42,
         verbose=False
     )
@@ -77,7 +77,7 @@ def test_csv_loading_basic():
             incorrect_col="incorrect_answer",
             limit=None,
             caps=Caps(train=100, test=50),
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             verbose=True
         )
@@ -179,7 +179,7 @@ def test_with_limits():
             incorrect_col="incorrect_answer",
             limit=limit,
             caps=Caps(train=100, test=50),
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             verbose=False
         )
@@ -215,7 +215,7 @@ def test_with_caps():
             incorrect_col="incorrect_answer",
             limit=None,
             caps=Caps(train=train_cap, test=test_cap),
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             verbose=True
         )
@@ -247,7 +247,7 @@ def test_empty_file():
             incorrect_col="incorrect_answer",
             limit=None,
             caps=Caps(train=100, test=50),
-            split_ratio=DEFAULT_SPLIT_RATIO,
+            split_ratio=0.8,
             seed=42,
             verbose=False
         )

@@ -82,6 +82,9 @@ def create_per_concept_figure(
     coherence: float = None,
     silhouette: float = None,
     intra_similarity: Dict[str, float] = None,
+    *,
+    cv_folds: int,
+    probe_min_per_class: int,
 ) -> str:
     """Create full 3x3 summary figure for a single concept."""
     n_pairs = min(len(pos_activations), len(neg_activations))
@@ -102,7 +105,7 @@ def create_per_concept_figure(
     from .icd import compute_icd
 
     try:
-        lp_acc = compute_linear_probe_accuracy(pos_activations[:n_pairs], neg_activations[:n_pairs])
+        lp_acc = compute_linear_probe_accuracy(pos_activations[:n_pairs], neg_activations[:n_pairs], cv_folds, probe_min_per_class=probe_min_per_class)
     except Exception:
         lp_acc = 0.0
 

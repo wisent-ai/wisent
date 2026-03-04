@@ -3,7 +3,7 @@
 import torch
 import numpy as np
 from typing import Tuple
-from wisent.core.utils.config_tools.constants import NORM_EPS, L1_DEFAULT_COEF, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT, SAE_BATCH_SIZE_DEFAULT, SAE_HIDDEN_DIM_MULTIPLIER
+from wisent.core.utils.config_tools.constants import NORM_EPS, SAE_L1_COEF_DEFAULT, SAE_N_EPOCHS_DEFAULT
 
 
 # =============================================================================
@@ -24,7 +24,7 @@ class SparseAutoencoder(torch.nn.Module):
         self,
         input_dim: int,
         hidden_dim: int,  # Usually 4x-8x input_dim for overcomplete
-        l1_coef: float = L1_DEFAULT_COEF,
+        l1_coef: float,
         tied_weights: bool = True,
     ):
         super().__init__()
@@ -90,11 +90,11 @@ class SparseAutoencoder(torch.nn.Module):
 def train_sparse_autoencoder(
     activations: torch.Tensor,
     device: str,
-    hidden_dim: int = None,
+    hidden_dim: int,
+    batch_size: int,
+    lr: float,
     l1_coef: float = SAE_L1_COEF_DEFAULT,
     n_epochs: int = SAE_N_EPOCHS_DEFAULT,
-    batch_size: int = SAE_BATCH_SIZE_DEFAULT,
-    lr: float = L1_DEFAULT_COEF,
     verbose: bool = True,
 ) -> SparseAutoencoder:
     """
@@ -102,7 +102,7 @@ def train_sparse_autoencoder(
     
     Args:
         activations: Tensor of shape (n_samples, input_dim)
-        hidden_dim: Number of features to learn (default: 4x input_dim)
+        hidden_dim: Number of features to learn (typically 4x-8x input_dim for overcomplete)
         l1_coef: L1 sparsity coefficient
         n_epochs: Number of training epochs
         batch_size: Batch size for training
@@ -114,9 +114,7 @@ def train_sparse_autoencoder(
         Trained SparseAutoencoder
     """
     input_dim = activations.shape[1]
-    if hidden_dim is None:
-        hidden_dim = input_dim * SAE_HIDDEN_DIM_MULTIPLIER  # overcomplete
-    
+
     # Move data to device
     activations = activations.to(device).float()
     

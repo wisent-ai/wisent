@@ -11,7 +11,7 @@ import torch
 import numpy as np
 from typing import Dict, Any
 
-from wisent.core.utils.config_tools.constants import NORM_EPS, MIN_CLOUD_POINTS
+from wisent.core.utils.config_tools.constants import NORM_EPS
 from wisent.core.reading.modules.utilities.signal_analysis.structure._cloud_metrics import (
     compute_cloud_shape,
     compute_cone_fit,
@@ -25,13 +25,15 @@ from wisent.core.reading.modules.utilities.signal_analysis.structure._cloud_metr
 def compute_two_cloud_relationship(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    *,
+    min_cloud_points: int,
 ) -> Dict[str, Any]:
     """Analyze the geometric relationship between pos and neg clouds."""
     pos = pos_activations.float().cpu().numpy()
     neg = neg_activations.float().cpu().numpy()
     n_pos, d = pos.shape
     n_neg = neg.shape[0]
-    if n_pos < MIN_CLOUD_POINTS or n_neg < MIN_CLOUD_POINTS:
+    if n_pos < min_cloud_points or n_neg < min_cloud_points:
         return {"error": "need at least 3 points in each cloud"}
     pos_centroid = pos.mean(axis=0)
     neg_centroid = neg.mean(axis=0)
@@ -105,6 +107,8 @@ def compute_relative_position(
 def analyze_activation_structure(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    *,
+    min_cloud_points: int,
 ) -> Dict[str, Any]:
     """
     Comprehensive analysis of activation space structure.
@@ -129,6 +133,6 @@ def analyze_activation_structure(
     results["neg_clusters"] = compute_cluster_structure(neg_activations)
     results["pos_density"] = compute_density_structure(pos_activations)
     results["neg_density"] = compute_density_structure(neg_activations)
-    results["relationship"] = compute_two_cloud_relationship(pos_activations, neg_activations)
+    results["relationship"] = compute_two_cloud_relationship(pos_activations, neg_activations, min_cloud_points=min_cloud_points)
     results["relative_position"] = compute_relative_position(pos_activations, neg_activations)
     return results

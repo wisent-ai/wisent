@@ -1,5 +1,5 @@
 """CLI entry point for estimating unified goodness training time."""
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, BENCHMARK_FAST_LOAD_THRESHOLD, SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_HALF
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_HALF
 from wisent.core.utils.cli.analysis.training.estimate_time_functions import (
     BENCHMARK_SIZES, BENCHMARK_LOAD_TIMES, estimate_runtime,
     get_benchmark_load_time, get_benchmark_size, format_time,
@@ -19,7 +19,7 @@ def main():
         help="Cap pairs per benchmark (benchmarks with more get randomly sampled down)"
     )
     parser.add_argument(
-        "--train-ratio", type=float, default=DEFAULT_SPLIT_RATIO,
+        "--train-ratio", type=float, default=None,
         help="Fraction of pairs for training (default: 0.8 = 80%% train, 20%% eval)"
     )
     parser.add_argument(
@@ -37,6 +37,10 @@ def main():
     parser.add_argument(
         "--show-breakdown", action="store_true",
         help="Show detailed time breakdown"
+    )
+    parser.add_argument(
+        "--benchmark-fast-load-threshold", type=int, required=True,
+        help="Load time threshold (seconds) to classify benchmarks as medium vs low priority"
     )
     parser.add_argument(
         "--show-benchmarks", action="store_true",
@@ -61,7 +65,7 @@ def main():
         if name in BENCHMARK_LOAD_TIMES:
             if BENCHMARK_LOAD_TIMES[name] < 15:
                 priority = 'high'
-            elif BENCHMARK_LOAD_TIMES[name] < BENCHMARK_FAST_LOAD_THRESHOLD:
+            elif BENCHMARK_LOAD_TIMES[name] < args.benchmark_fast_load_threshold:
                 priority = 'medium'
             else:
                 priority = 'low'
@@ -150,7 +154,7 @@ def main():
             if name in BENCHMARK_LOAD_TIMES:
                 if BENCHMARK_LOAD_TIMES[name] < 15:
                     priority = 'high'
-                elif BENCHMARK_LOAD_TIMES[name] < BENCHMARK_FAST_LOAD_THRESHOLD:
+                elif BENCHMARK_LOAD_TIMES[name] < args.benchmark_fast_load_threshold:
                     priority = 'medium'
                 else:
                     priority = 'low'

@@ -11,10 +11,7 @@ if TYPE_CHECKING:
     from torch import Tensor
 
 from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, PROBE_KNN_K, BLEND_DEFAULT,
-    GUIDED_FISHER_MAX_BOOST, GUIDED_FISHER_BOOST_SCALE, GUIDED_FISHER_LOG_DIVISOR,
-    GUIDED_EFFECT_MAX_BOOST, GUIDED_EFFECT_BOOST_SCALE, GUIDED_COHENS_D_NORMALIZER,
-    GUIDED_NONLINEAR_PENALTY, GUIDED_WEIGHT_MAX,
+    NORM_EPS,
 )
 from wisent.core.weight_modification.methods.guided import (
     LayerDiagnostics,
@@ -27,7 +24,9 @@ _LOG = setup_logger(__name__)
 def _compute_knn_accuracy(
     pos_tensor: Tensor,
     neg_tensor: Tensor,
-    k: int = PROBE_KNN_K,
+    k: int,
+    *,
+    blend_default: float,
 ) -> float:
     """Compute k-NN leave-one-out accuracy."""
     
@@ -41,8 +40,8 @@ def _compute_knn_accuracy(
     k = min(k, n - 1)
     
     if k < 1:
-        return BLEND_DEFAULT
-    
+        return blend_default
+
     # Compute pairwise distances
     distances = torch.cdist(X, X)
     
@@ -94,44 +93,49 @@ def _compute_recommended_weight(
     knn_score: float,
     fisher_ratio: float,
     cohens_d: float,
+    *,
+    blend_default: float,
+    guided_fisher_max_boost: float,
+    guided_fisher_boost_scale: float,
+    guided_fisher_log_divisor: float,
+    guided_effect_max_boost: float,
+    guided_effect_boost_scale: float,
+    guided_cohens_d_normalizer: float,
+    guided_nonlinear_penalty: float,
+    guided_weight_max: float,
 ) -> float:
-    """
-    Compute recommended ablation weight based on diagnostics.
-    
-    The weight is higher when:
-    - Linear score is high (direction captures the concept well)
-    - Fisher ratio is high (strong linear separability)
-    - Cohen's d is high (large effect size)
-    
-    The weight is moderated when:
-    - k-NN >> linear (nonlinear structure exists)
-    """
-    
-    # Base weight from linear score
+    """Compute recommended ablation weight based on diagnostics."""
     base_weight = linear_score
-    
-    # Boost for high Fisher ratio (log scale since Fisher can be very large)
-    fisher_boost = min(GUIDED_FISHER_MAX_BOOST, GUIDED_FISHER_BOOST_SCALE * (1 + torch.log(torch.tensor(fisher_ratio + 1)).item() / GUIDED_FISHER_LOG_DIVISOR))
-
-    # Boost for high effect size
-    effect_boost = min(GUIDED_EFFECT_MAX_BOOST, GUIDED_EFFECT_BOOST_SCALE * min(cohens_d / GUIDED_COHENS_D_NORMALIZER, 1.0))
-
-    # Penalty if k-NN is much better than linear (nonlinear structure)
+    fisher_boost = min(
+        guided_fisher_max_boost,
+        guided_fisher_boost_scale * (
+            blend_default + torch.log(
+                torch.tensor(fisher_ratio + blend_default)
+            ).item() / guided_fisher_log_divisor
+        ),
+    )
+    effect_boost = min(
+        guided_effect_max_boost,
+        guided_effect_boost_scale * min(
+            cohens_d / guided_cohens_d_normalizer, blend_default
+        ),
+    )
     gap = knn_score - linear_score
-    nonlinear_penalty = max(0, gap * GUIDED_NONLINEAR_PENALTY)
-
-    # Combine
+    nonlinear_penalty = max(
+        blend_default - blend_default, gap * guided_nonlinear_penalty,
+    )
     weight = base_weight + fisher_boost + effect_boost - nonlinear_penalty
-
-    # Clamp to reasonable range
-    weight = max(0.0, min(GUIDED_WEIGHT_MAX, weight))
-    
+    weight = max(
+        blend_default - blend_default, min(guided_weight_max, weight),
+    )
     return weight
 
 
 def compute_fisher_weights(
     diagnostics: Dict[int, LayerDiagnostics],
     config: GuidedModificationConfig,
+    *,
+    blend_default: float,
 ) -> Dict[int, float]:
     """
     Compute layer weights based on Fisher ratios.
@@ -158,7 +162,7 @@ def compute_fisher_weights(
             # Normalize to [0, 1]
             normalized = (fisher - min_fisher) / (max_fisher - min_fisher)
         else:
-            normalized = BLEND_DEFAULT
+            normalized = blend_default
         
         # Scale to weight range
         weight = (

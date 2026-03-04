@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
 from wisent.core.utils.infra_tools.errors import MissingParameterError
-from wisent.core.utils.config_tools.constants import GROM_GATE_TEMPERATURE, GROM_MAX_ALPHA, JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT, RECURSION_INITIAL_DEPTH
 from wisent.core.weight_modification.export._generic import (
     _save_standalone_loader,
 )
@@ -69,6 +69,7 @@ def export_grom_model(
             model=model,
             grom_result=grom_result,
             base_strength=1.0,
+            base_layer_weight=grom_result.metadata.get("base_layer_weight"),
             use_learned_intensities=True,
             verbose=False,
         )
@@ -125,16 +126,18 @@ def export_grom_model(
         "layer_order": grom_result.layer_order,
         "directions": {k: v.cpu() for k, v in grom_result.directions.items()},
         "direction_weights": {k: v.cpu() for k, v in grom_result.direction_weights.items()},
-        "gate_temperature": getattr(grom_result, 'gate_temperature', GROM_GATE_TEMPERATURE),
-        "max_alpha": getattr(grom_result, 'max_alpha', GROM_MAX_ALPHA),
+        "gate_temperature": grom_result.gate_temperature,
+        "max_alpha": grom_result.metadata.get("config", {}).get("max_alpha", grom_result.intensity_network.max_alpha),
     }
     
     # Save networks if present
     if hasattr(grom_result, 'gate_network') and grom_result.gate_network is not None:
         grom_data["gate_network_state"] = grom_result.gate_network.state_dict()
+        first_layer = grom_result.gate_network.net[RECURSION_INITIAL_DEPTH]
         grom_data["gate_network_config"] = {
-            "input_dim": grom_result.gate_network.net[0].in_features,
-            "hidden_dim": grom_result.gate_network.net[0].out_features,
+            "shrink_factor": grom_result.gate_network.shrink_factor,
+            "input_dim": first_layer.in_features,
+            "hidden_dim": first_layer.out_features,
         }
     
     if hasattr(grom_result, 'intensity_network') and grom_result.intensity_network is not None:

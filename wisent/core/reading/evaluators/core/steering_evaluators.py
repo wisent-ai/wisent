@@ -13,8 +13,10 @@ from typing import Any, Callable, Optional
 from wisent.core.primitives.models.wisent_model import WisentModel
 from wisent.core.primitives.models import get_generate_kwargs
 from wisent.core.utils.config_tools.constants import (
-    STEERING_EVAL_NUM_PROMPTS,
-    DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED,
+    DEFAULT_RANDOM_SEED,
+    PERSONALIZATION_DIFFERENCE_WEIGHT,
+    PERSONALIZATION_QUALITY_WEIGHT,
+    PERSONALIZATION_ALIGNMENT_WEIGHT,
 )
 
 # Re-export from helpers
@@ -31,7 +33,6 @@ class EvaluatorConfig:
     task: Optional[str] = None
     eval_prompts_path: Optional[str] = None
     eval_topics: Optional[str] = None
-    num_eval_prompts: int = STEERING_EVAL_NUM_PROMPTS
 
 
 class SteeringEvaluatorFactory:
@@ -44,6 +45,22 @@ class SteeringEvaluatorFactory:
         wisent_model: Optional[WisentModel] = None,
         positive_examples: Optional[list[str]] = None,
         negative_examples: Optional[list[str]] = None,
+        *,
+        fast_diversity_seed: int,
+        diversity_max_sample_size: int,
+        min_sentence_length: int,
+        nonsense_min_tokens: int,
+        quality_min_response_length: int,
+        quality_repetition_ratio_threshold: float,
+        quality_bigram_repeat_threshold: int,
+        quality_bigram_repeat_penalty: float,
+        quality_special_char_ratio_threshold: float,
+        quality_special_char_penalty: float,
+        quality_char_repeat_count: int,
+        quality_char_repeat_penalty: float,
+        difference_weight: float = PERSONALIZATION_DIFFERENCE_WEIGHT,
+        quality_weight: float = PERSONALIZATION_QUALITY_WEIGHT,
+        alignment_weight: float = PERSONALIZATION_ALIGNMENT_WEIGHT,
     ) -> "BaseSteeringEvaluator":
         """Create the appropriate evaluator based on config."""
         evaluator_type = config.evaluator_type
@@ -64,7 +81,22 @@ class SteeringEvaluatorFactory:
             return TaskEvaluator(config, model_name)
         elif evaluator_type == "personalization":
             return PersonalizationEvaluator(
-                config, model_name, wisent_model, positive_examples, negative_examples
+                config, model_name, wisent_model, positive_examples, negative_examples,
+                fast_diversity_seed=fast_diversity_seed,
+                diversity_max_sample_size=diversity_max_sample_size,
+                min_sentence_length=min_sentence_length,
+                nonsense_min_tokens=nonsense_min_tokens,
+                quality_min_response_length=quality_min_response_length,
+                quality_repetition_ratio_threshold=quality_repetition_ratio_threshold,
+                quality_bigram_repeat_threshold=quality_bigram_repeat_threshold,
+                quality_bigram_repeat_penalty=quality_bigram_repeat_penalty,
+                quality_special_char_ratio_threshold=quality_special_char_ratio_threshold,
+                quality_special_char_penalty=quality_special_char_penalty,
+                quality_char_repeat_count=quality_char_repeat_count,
+                quality_char_repeat_penalty=quality_char_repeat_penalty,
+                difference_weight=difference_weight,
+                quality_weight=quality_weight,
+                alignment_weight=alignment_weight,
             )
         else:
             raise ValueError(f"Unknown evaluator type: {evaluator_type}")
@@ -135,10 +167,10 @@ class RefusalEvaluator(BaseSteeringEvaluator):
                 custom_prompts = custom_prompts.get("prompts", [])
             self._prompt_objects = None
             return [p if isinstance(p, str) else p.get("prompt", str(p))
-                    for p in custom_prompts[:self.config.num_eval_prompts]]
+                    for p in custom_prompts[:30]]
         else:
             topics = self.config.eval_topics.split(",") if self.config.eval_topics else None
-            prompt_objects = list(self.bench.prompts(topics=topics))[:self.config.num_eval_prompts]
+            prompt_objects = list(self.bench.prompts(topics=topics))[:30]
             self._prompt_objects = prompt_objects
             return [p.prompt for p in prompt_objects]
 
@@ -195,10 +227,10 @@ class TaskEvaluator(BaseSteeringEvaluator):
 
         result = loader._load_one_task(
             task_name=self.config.task,
-            split_ratio=DEFAULT_SPLIT_RATIO, seed=DEFAULT_RANDOM_SEED,
-            limit=self.config.num_eval_prompts,
+            split_ratio=0.8, seed=DEFAULT_RANDOM_SEED,
+            limit=30,
             training_limit=None,
-            testing_limit=self.config.num_eval_prompts,
+            testing_limit=30,
         )
         self._test_pairs = result["test_qa_pairs"]
         self._evaluator = EvaluatorRotator(evaluator=None, task_name=self.config.task)

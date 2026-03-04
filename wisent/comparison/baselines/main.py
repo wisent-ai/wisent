@@ -10,7 +10,6 @@ This script:
 from __future__ import annotations
 
 import gc
-import json
 from pathlib import Path
 
 import torch
@@ -18,12 +17,6 @@ from lm_eval import evaluator
 from lm_eval.models.hf_steered import SteeredModel
 
 from wisent.core.primitives.models.wisent_model import WisentModel
-from wisent.core.utils.config_tools.constants import (
-    COMPARISON_NUM_PAIRS,
-    COMPARISON_MAX_BATCH_SIZE,
-    COMPARISON_STEERING_LAYER,
-    DEFAULT_SPLIT_RATIO,
-)
 from wisent.comparison import ours
 from wisent.comparison import sae
 from wisent.comparison import fgaa
@@ -55,17 +48,19 @@ def run_single_task(
     task: str,
     bos_features_source: str,
     device: str,
-    methods: list[str] = None,
-    num_pairs: int = COMPARISON_NUM_PAIRS,
-    steering_scales: list[float] = None,
-    batch_size: int | str = 1,
-    max_batch_size: int = COMPARISON_MAX_BATCH_SIZE,
+    num_pairs: int,
+    max_batch_size: int,
+    train_ratio: float,
+    steering_scales: list[float],
+    batch_size: int | str,
+    log_interval: int,
+    min_norm_threshold: float,
+    caa_layers: str,
+    sae_layers: str,
+    methods: list[str],
+    extraction_strategies: list[str],
     eval_limit: int | None = None,
     vectors_dir: Path = None,
-    train_ratio: float = DEFAULT_SPLIT_RATIO,
-    caa_layers: str = str(COMPARISON_STEERING_LAYER),
-    sae_layers: str = str(COMPARISON_STEERING_LAYER),
-    extraction_strategies: list[str] = None,
 ) -> list[dict]:
     """
     Run comparison for a single task with multiple methods, scales,
@@ -73,13 +68,6 @@ def run_single_task(
 
     Returns list of result dicts, one per method/scale/strategy combination.
     """
-    if methods is None:
-        methods = ["caa"]
-    if steering_scales is None:
-        raise ValueError("steering_scales must be provided explicitly")
-    if extraction_strategies is None:
-        extraction_strategies = ["mc_balanced"]
-
     results_list = []
 
     # Step 1: Create test task
@@ -149,14 +137,15 @@ def run_single_task(
 
     base_ll_acc = run_ll_evaluation(
         wisent_model=wisent_model, task_dict=task_dict,
-        task_name=task, limit=eval_limit,
+        task_name=task, log_interval=log_interval, limit=eval_limit,
     )
 
     # Step 5: Run ALL wisent steered evaluations
     wisent_results = _run_steered_evaluations(
         wisent_model, methods, extraction_strategies,
         steering_vectors_data, steering_scales, task_dict, task,
-        batch_size, max_batch_size, eval_limit,
+        batch_size, max_batch_size, eval_limit, log_interval=log_interval,
+        min_norm_threshold=min_norm_threshold,
     )
 
     # Step 6: Free wisent_model to make room for SteeredModel
@@ -180,7 +169,8 @@ def run_single_task(
 def _run_steered_evaluations(
     wisent_model, methods, extraction_strategies,
     steering_vectors_data, steering_scales, task_dict, task,
-    batch_size, max_batch_size, eval_limit,
+    batch_size, max_batch_size, eval_limit, log_interval: int,
+    min_norm_threshold: float,
 ):
     """Run all wisent steered evaluations (model stays loaded)."""
     wisent_results = {}
@@ -192,7 +182,7 @@ def _run_steered_evaluations(
                 continue
             steering_data = steering_vectors_data[extraction_strategy][method]
             for scale in steering_scales:
-                apply_steering_to_model(wisent_model, steering_data, scale=scale)
+                apply_steering_to_model(wisent_model, steering_data, scale=scale, min_norm_threshold=min_norm_threshold)
                 steered_results = run_lm_eval_evaluation(
                     wisent_model=wisent_model, task_dict=task_dict,
                     task_name=task, batch_size=batch_size,
@@ -201,7 +191,7 @@ def _run_steered_evaluations(
                 steered_acc = extract_accuracy(steered_results, task)
                 steered_ll_acc = run_ll_evaluation(
                     wisent_model=wisent_model, task_dict=task_dict,
-                    task_name=task, limit=eval_limit,
+                    task_name=task, log_interval=log_interval, limit=eval_limit,
                 )
                 remove_steering(wisent_model)
                 wisent_results[(extraction_strategy, method, scale)] = {

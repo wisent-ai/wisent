@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from wisent.core.utils.infra_tools.tracking._latency_types import (
     TimingEvent, LatencyStats, GenerationMetrics, TrainingMetrics)
 from wisent.core.utils.infra_tools.tracking._latency_tracker_reporting import LatencyReportingMixin
-from wisent.core.utils.config_tools.constants import DEFAULT_PROMPT_LENGTH
+from typing import Optional as _Optional
 logger = logging.getLogger(__name__)
 
 class LatencyTracker(LatencyReportingMixin):
@@ -141,17 +141,20 @@ class LatencyTracker(LatencyReportingMixin):
             event_placeholder["event"] = event
     
     @contextmanager
-    def time_generation(self, name: str, prompt_length: int = DEFAULT_PROMPT_LENGTH):
+    def time_generation(self, name: str, prompt_length: _Optional[int] = None):
         """
         Context manager for timing text generation with TTFT tracking.
         
         Args:
             name: Name of the generation operation
             prompt_length: Length of the input prompt in tokens
-            
+
         Yields:
             Dict with methods to mark first token and update token count
         """
+        if prompt_length is None:
+            from wisent.core.utils.config_tools.constants import DEFAULT_PROMPT_LENGTH
+            prompt_length = DEFAULT_PROMPT_LENGTH
         start_time = time.time()
         operation_id = self.start_operation(name, {"prompt_length": prompt_length})
         

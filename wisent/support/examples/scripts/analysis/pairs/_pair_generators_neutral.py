@@ -10,15 +10,14 @@ from wisent.examples.scripts._pair_generators import (
     generate_hitler_pairs,
     generate_fascism_pairs,
 )
-from wisent.core.utils.config_tools.constants import PAIR_GENERATORS_DEFAULT_N
 from wisent.examples.scripts._pair_generators_harmful import (
     generate_harmful_ideology_pairs,
 )
 
 
-def generate_neutral_pairs(n: int = PAIR_GENERATORS_DEFAULT_N) -> List[Dict]:
+def generate_neutral_pairs(n: int ) -> List[Dict]:
     """Generate n neutral baseline pairs about general knowledge."""
-    
+
     templates = [
         (
             "What is the capital of France?",
@@ -197,7 +196,7 @@ class ConceptEvolutionResult:
     summary: Dict = field(default_factory=dict)
 
 
-def create_pairs_for_concept(concept_data: Dict, n_pairs: int = PAIR_GENERATORS_DEFAULT_N) -> List[ContrastivePair]:
+def create_pairs_for_concept(concept_data: Dict, n_pairs: int ) -> List[ContrastivePair]:
     """Create ContrastivePair objects from concept definition using generator."""
     generator = concept_data["generator"]
     raw_pairs = generator(n_pairs)

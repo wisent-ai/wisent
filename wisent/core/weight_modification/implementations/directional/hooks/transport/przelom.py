@@ -5,7 +5,7 @@ from __future__ import annotations
 import torch
 from typing import Dict, TYPE_CHECKING
 from wisent.core.utils.cli.cli_logger import setup_logger, bind
-from wisent.core.utils.config_tools.constants import NORM_EPS, SZLAK_INFERENCE_K, SEPARATOR_WIDTH_STANDARD
+from wisent.core.utils.config_tools.constants import NORM_EPS, SEPARATOR_WIDTH_STANDARD
 
 if TYPE_CHECKING:
     from torch.nn import Module
@@ -27,7 +27,7 @@ class PrzelomRuntimeHooks:
         source_points: Dict[int, torch.Tensor],
         displacements: Dict[int, torch.Tensor],
         base_strength: float,
-        inference_k: int = SZLAK_INFERENCE_K,
+        inference_k: int,
     ):
         self.model = model
         self.source_points = source_points

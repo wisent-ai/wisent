@@ -6,10 +6,6 @@ import time
 import sys
 import os
 
-from wisent.core.utils.config_tools.constants import (
-    CLASSIFIER_NUM_EPOCHS, CLASSIFIER_BATCH_SIZE, DEFAULT_CLASSIFIER_LR,
-    CLASSIFIER_EARLY_STOPPING_PATIENCE, CLASSIFIER_HIDDEN_DIM,
-)
 
 # Add the lm-harness-integration path for benchmark selection
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'lm-harness-integration'))
@@ -46,21 +42,20 @@ class SingleClassifierDecision:
 @dataclass
 class ClassifierParams:
     """Model-determined classifier parameters."""
-    optimal_layer: int  # 8-20: Based on semantic complexity needed
-    classification_threshold: float  # 0.1-0.9: Based on quality strictness required
-    training_samples: int  # 10-50: Based on complexity and time constraints
+    optimal_layer: int  # Based on semantic complexity needed
+    classification_threshold: float  # Based on quality strictness required
+    training_samples: int  # Based on complexity and time constraints
     classifier_type: str  # logistic/svm/neural: Based on data characteristics
+    # Additional classifier configuration parameters (required, no silent defaults)
+    num_epochs: int
+    batch_size: int
+    learning_rate: float
+    early_stopping_patience: int
+    hidden_dim: int
     reasoning: str = ""
     model_name: Optional[str] = None  # Model name for matching existing classifiers
-    
-    # Additional classifier configuration parameters
     aggregation_method: Optional[str] = None  # last_token/mean/max for activation aggregation
     token_aggregation: Optional[str] = None  # average/final/first/max/min for token score aggregation
-    num_epochs: int = CLASSIFIER_NUM_EPOCHS
-    batch_size: int = CLASSIFIER_BATCH_SIZE
-    learning_rate: float = DEFAULT_CLASSIFIER_LR
-    early_stopping_patience: int = CLASSIFIER_EARLY_STOPPING_PATIENCE
-    hidden_dim: int = CLASSIFIER_HIDDEN_DIM
 
 @dataclass
 class SteeringParams:

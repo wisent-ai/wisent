@@ -8,7 +8,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent.parent))
 
-from wisent.core.utils.config_tools.constants import ABLITERATION_BASELINE_ACC, EXTRACTION_DEFAULT_PAIR_LIMIT, SEPARATOR_WIDTH_REPORT
+from wisent.core.utils.config_tools.constants import ABLITERATION_BASELINE_ACC, SEPARATOR_WIDTH_REPORT
 from wisent.examples.cli.weight_modification.maximum_abliteration_helpers import (
     AbliterationConfig,
     evaluate_model,
@@ -24,7 +24,8 @@ def maximum_abliteration(
     model: str,
     output_dir: str,
     baseline_acc: float = ABLITERATION_BASELINE_ACC,
-    full_eval_limit: int = EXTRACTION_DEFAULT_PAIR_LIMIT,
+    *,
+    full_eval_limit: int,
 ):
     """
     Run maximum abliteration optimization.
@@ -50,7 +51,8 @@ def maximum_abliteration(
     print("PHASE 1: COMPONENT OPTIMIZATION")
     print("=" * SEPARATOR_WIDTH_REPORT)
     best_components, _ = grid_search_components(
-        task, model, output_dir, baseline_acc, num_pairs=200
+        task, model, output_dir, baseline_acc,
+        limit=full_eval_limit,
     )
 
     # Phase 2: Find best kernel shape
@@ -59,7 +61,8 @@ def maximum_abliteration(
     print("=" * SEPARATOR_WIDTH_REPORT)
     best_position, best_distance, _, _ = grid_search_kernel_shape(
         task, model, output_dir, baseline_acc,
-        num_pairs=200, best_components=best_components
+        best_components=best_components,
+        limit=full_eval_limit,
     )
 
     # Phase 3: Fine-tune strength
@@ -68,7 +71,7 @@ def maximum_abliteration(
     print("=" * SEPARATOR_WIDTH_REPORT)
     best_strength, _, _ = binary_search_strength(
         task, model, output_dir, baseline_acc,
-        low=0.5, high=2.5, iterations=5, num_pairs=300
+        limit=full_eval_limit,
     )
 
     # Phase 4: Final model with all optimized parameters
@@ -145,7 +148,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", required=True, help="Model name")
     parser.add_argument("--output-dir", required=True, help="Output directory")
     parser.add_argument("--baseline", type=float, default=ABLITERATION_BASELINE_ACC, help="Baseline accuracy")
-    parser.add_argument("--eval-limit", type=int, default=EXTRACTION_DEFAULT_PAIR_LIMIT, help="Evaluation limit")
+    parser.add_argument("--eval-limit", type=int, required=True, help="Evaluation limit")
 
     args = parser.parse_args()
 

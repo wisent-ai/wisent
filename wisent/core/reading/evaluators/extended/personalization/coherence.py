@@ -10,13 +10,6 @@ import re
 from collections import Counter
 from typing import TYPE_CHECKING
 
-from wisent.core.utils.config_tools.constants import (
-    COHERENCE_FUNCTION_WORD_THRESHOLD, COHERENCE_SPACE_RATIO_MIN,
-    COHERENCE_LONG_TOKEN_LEN, COHERENCE_LONG_TOKEN_RATIO,
-    COHERENCE_VALIDITY_RATIO_MIN, COHERENCE_QUALITY_MIN_TOKENS,
-    COHERENCE_RATIO_THRESHOLD,
-    MIN_TOKENS_TRIGRAM, NONSENSE_MIN_TOKENS,
-)
 
 if TYPE_CHECKING:
     from transformers import PreTrainedModel, PreTrainedTokenizer
@@ -44,7 +37,7 @@ FUNCTION_WORDS = {
 }
 
 
-def _has_low_function_word_ratio(text: str, threshold: float = COHERENCE_FUNCTION_WORD_THRESHOLD) -> bool:
+def _has_low_function_word_ratio(text: str, threshold: float = None) -> bool:
     """Check if text has suspiciously low ratio of function words.
 
     Natural English text typically has 30-50% function words.
@@ -52,13 +45,15 @@ def _has_low_function_word_ratio(text: str, threshold: float = COHERENCE_FUNCTIO
 
     Args:
         text: Text to check
-        threshold: Minimum ratio of function words (default 0.15)
+        threshold: Minimum ratio of function words. Must be set by caller.
 
     Returns:
         True if text has too few function words (likely gibberish)
     """
+    if threshold is None:
+        raise ValueError("threshold must be provided by caller")
     tokens = re.findall(r'\b\w+\b', text.lower())
-    if len(tokens) < MIN_TOKENS_TRIGRAM:
+    if len(tokens) < 6:
         return False  # Too short to judge
 
     function_count = sum(1 for t in tokens if t in FUNCTION_WORDS)
@@ -80,7 +75,7 @@ def _get_tokenizer():
     return _tokenizer_cache["tokenizer"]
 
 
-def _is_nonsense_word(word: str, tokenizer) -> bool:
+def _is_nonsense_word(word: str, tokenizer, *, nonsense_min_tokens: int) -> bool:
     """Check if a word is nonsense by counting subword tokens.
 
     Real words tokenize into fewer tokens. Nonsense words get split
@@ -89,11 +84,12 @@ def _is_nonsense_word(word: str, tokenizer) -> bool:
     Args:
         word: The word to check
         tokenizer: A tokenizer instance
+        nonsense_min_tokens: Minimum token count threshold
 
     Returns:
         True if the word appears to be nonsense
     """
-    if not tokenizer or len(word) < NONSENSE_MIN_TOKENS:
+    if not tokenizer or len(word) < nonsense_min_tokens:
         return False
 
     # Skip non-ASCII words (likely other languages)
@@ -109,13 +105,13 @@ def _is_nonsense_word(word: str, tokenizer) -> bool:
     ratio = len(tokens) / len(word)
 
     # If more than 1 token per 2 characters AND at least 4 tokens, likely nonsense
-    if ratio > COHERENCE_RATIO_THRESHOLD and len(tokens) >= COHERENCE_QUALITY_MIN_TOKENS:
+    if ratio > 0.5 and len(tokens) >= 4:
         return True
 
     return False
 
 
-def _is_gibberish(text: str) -> bool:
+def _is_gibberish(text: str, *, nonsense_min_tokens: int) -> bool:
     """
     Detect if text is gibberish/nonsensical.
 
@@ -131,7 +127,7 @@ def _is_gibberish(text: str) -> bool:
 
     # Check 1: Spacing ratio - normal English has ~15-20% spaces
     space_ratio = text.count(' ') / len(text)
-    if len(text) > 50 and space_ratio < COHERENCE_SPACE_RATIO_MIN:
+    if len(text) > 50 and space_ratio < 0.08:
         return True
 
     tokens = text.split()
@@ -139,8 +135,8 @@ def _is_gibberish(text: str) -> bool:
         return False
 
     # Check 2: Long tokens (concatenated words)
-    long_tokens = sum(1 for t in tokens if len(t) > COHERENCE_LONG_TOKEN_LEN)
-    if long_tokens / len(tokens) > COHERENCE_LONG_TOKEN_RATIO:
+    long_tokens = sum(1 for t in tokens if len(t) > 25)
+    if long_tokens / len(tokens) > 0.1:
         return True
 
     # Check 3: CamelCase patterns (e.g., "hisHandsThatDelight", "HewalksAway")
@@ -168,7 +164,7 @@ def _is_gibberish(text: str) -> bool:
         "more", "some", "any", "also", "than", "then",
     }
 
-    if len(tokens) >= NONSENSE_MIN_TOKENS:
+    if len(tokens) >= nonsense_min_tokens:
         # Check what fraction of tokens are recognizable
         valid_count = 0
         for token in tokens:
@@ -182,12 +178,12 @@ def _is_gibberish(text: str) -> bool:
                 valid_count += 1
 
         validity_ratio = valid_count / len(tokens)
-        if validity_ratio < COHERENCE_VALIDITY_RATIO_MIN:
+        if validity_ratio < 0.3:
             return True
 
     # Check 6: Function word ratio - real English has ~30-50% function words
     # Gibberish made of strung-together nouns/jargon has very few
-    if _has_low_function_word_ratio(text, threshold=COHERENCE_FUNCTION_WORD_THRESHOLD):
+    if _has_low_function_word_ratio(text, threshold=0.15):
         return True
 
     return False

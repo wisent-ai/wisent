@@ -17,9 +17,6 @@ if TYPE_CHECKING:
 
 __all__ = ["evaluate_difference"]
 
-# Initialize FastDiversity instance
-_diversity = FastDiversity()
-
 
 def evaluate_difference(
     baseline_response: "str | list[str]",
@@ -27,6 +24,9 @@ def evaluate_difference(
     model: "PreTrainedModel | None" = None,
     tokenizer: "PreTrainedTokenizer | None" = None,
     device: "torch.device | None" = None,
+    *,
+    fast_diversity_seed: int,
+    diversity_max_sample_size: int,
 ) -> float:
     """
     Evaluate how different two responses are using Jaccard distance on a scale of 1-100.
@@ -46,6 +46,8 @@ def evaluate_difference(
         - 1 = Nearly identical (high Jaccard similarity)
         - 100 = Completely different (low Jaccard similarity)
     """
+    _diversity = FastDiversity(seed=fast_diversity_seed, max_sample_size=diversity_max_sample_size)
+
     # Handle list inputs - compute average difference
     if isinstance(baseline_response, list) and isinstance(steered_response, list):
         if len(baseline_response) != len(steered_response):

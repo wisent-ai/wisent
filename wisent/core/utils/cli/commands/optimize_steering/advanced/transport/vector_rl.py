@@ -20,8 +20,7 @@ from wisent.core.utils.cli.optimize_steering.steering_objects import execute_cre
 from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
 from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
 from wisent.core.utils.cli.optimize_steering.pipeline import _make_args
-from wisent.core.utils.config_tools.constants import (COMPARE_TOL, DEFAULT_LIMIT, RL_NUM_EPISODES, RL_EPSILON,
-    LAYER_SWEEP_STRENGTH,
+from wisent.core.utils.config_tools.constants import (COMPARE_TOL,
     SEPARATOR_WIDTH_WIDE)
 
 
@@ -40,8 +39,10 @@ def _extract_vectors(obj) -> Dict[int, torch.Tensor]:
     return vectors
 
 
-def _evaluate_with_vectors(vectors, metadata, args, work_dir) -> float:
+def _evaluate_with_vectors(vectors, metadata, args, work_dir, layer_sweep_strength) -> float:
     """Build CAASteeringObject from vectors, generate, evaluate, return score."""
+    if layer_sweep_strength is None:
+        raise ValueError("layer_sweep_strength is required")
     sf = os.path.join(work_dir, "steering.pt")
     rf = os.path.join(work_dir, "responses.json")
     ef = os.path.join(work_dir, "scores.json")
@@ -49,8 +50,8 @@ def _evaluate_with_vectors(vectors, metadata, args, work_dir) -> float:
     obj.save(sf)
     execute_generate_responses(_make_args(
         task=args.task, input_file=args.enriched_pairs_file, model=args.model,
-        output=rf, num_questions=getattr(args, 'limit', DEFAULT_LIMIT),
-        steering_object=sf, steering_strength=LAYER_SWEEP_STRENGTH, steering_strategy="constant",
+        output=rf, num_questions=args.limit, min_load_limit_questions=args.limit,
+        steering_object=sf, steering_strength=layer_sweep_strength, steering_strategy="constant",
         use_steering=True, device=getattr(args, 'device', None),
         verbose=False, cached_model=None,
     ))
@@ -78,10 +79,19 @@ def run_vector_rl_loop(args) -> dict:
       4. Save best-scoring vectors as CAASteeringObject
     """
     method = getattr(args, 'method', 'CAA')
-    max_iter = getattr(args, 'max_iterations', RL_NUM_EPISODES)
-    lr = getattr(args, 'learning_rate', RL_EPSILON)
-    noise_scale = getattr(args, 'noise_scale', RL_EPSILON)
-    limit = getattr(args, 'limit', DEFAULT_LIMIT)
+    layer_sweep_strength = getattr(args, 'layer_sweep_strength', None)
+    if layer_sweep_strength is None:
+        raise ValueError("layer_sweep_strength is required")
+    max_iter = getattr(args, 'max_iterations', None)
+    if max_iter is None:
+        raise ValueError("max_iterations is required")
+    lr = getattr(args, 'learning_rate', None)
+    if lr is None:
+        raise ValueError("learning_rate is required")
+    noise_scale = getattr(args, 'noise_scale', None)
+    if noise_scale is None:
+        raise ValueError("noise_scale is required")
+    limit = args.limit
     output_path = getattr(args, 'output', 'best_transport_rl.pt')
 
     print(f"\n{'=' * SEPARATOR_WIDTH_WIDE}")
@@ -128,11 +138,11 @@ def run_vector_rl_loop(args) -> dict:
 
             # Forward perturbation: v + noise
             v_plus = {l: vectors[l] + noise[l] for l in vectors}
-            score_plus = _evaluate_with_vectors(v_plus, metadata, args, wd)
+            score_plus = _evaluate_with_vectors(v_plus, metadata, args, wd, layer_sweep_strength)
 
             # Antithetic perturbation: v - noise
             v_minus = {l: vectors[l] - noise[l] for l in vectors}
-            score_minus = _evaluate_with_vectors(v_minus, metadata, args, wd)
+            score_minus = _evaluate_with_vectors(v_minus, metadata, args, wd, layer_sweep_strength)
 
             # ES gradient estimate and update
             grad_est = (score_plus - score_minus) / 2.0

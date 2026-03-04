@@ -10,8 +10,7 @@ import numpy as np
 from sklearn.cluster import KMeans
 
 from wisent.core.utils.config_tools.constants import (
-    DEFAULT_RANDOM_SEED, LINEARITY_N_INIT, STABILITY_N_CLUSTERS,
-    N_PAIRS_PER_CONCEPT_DEFAULT,
+    DEFAULT_RANDOM_SEED,
     SEPARATOR_WIDTH_WIDE, SEPARATOR_WIDTH_MEDIUM, SEPARATOR_WIDTH_WIDE_PLUS,
     JSON_INDENT,
 )
@@ -27,22 +26,22 @@ from ._orchestration import detect_concepts
 
 def run_experiment(
     model_name: str,
-    n_pairs_per_concept: int = N_PAIRS_PER_CONCEPT_DEFAULT,
+    n_pairs_per_concept: int,
     layer: int = None,
     seed: int = DEFAULT_RANDOM_SEED,
-    output_dir: str = "/tmp/concept_detection"
+    output_dir: str = "/tmp/concept_detection",
+    *, linearity_n_init: int, stability_n_clusters: int,
 ):
     """
-    Run the full experiment:
-    1. Load pairs from both benchmarks
-    2. Test MIXED (should detect 2 concepts)
-    3. Test PURE TruthfulQA (should detect 1 concept)
-    4. Test PURE HellaSwag (should detect 1 concept)
+    Run the full experiment: load pairs from both benchmarks,
+    test MIXED (should detect multiple concepts),
+    test PURE TruthfulQA (should detect single concept),
+    and test PURE HellaSwag (should detect single concept).
     """
     print("=" * SEPARATOR_WIDTH_WIDE)
     print("MIXED CONCEPT DETECTION EXPERIMENT")
     print("=" * SEPARATOR_WIDTH_WIDE)
-    
+
     # Create output directory
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -91,7 +90,7 @@ def run_experiment(
     print(mixed_result.evidence_summary)
     
     # Validation: check if clusters align with true sources
-    km = KMeans(n_clusters=STABILITY_N_CLUSTERS, random_state=DEFAULT_RANDOM_SEED, n_init=LINEARITY_N_INIT)
+    km = KMeans(n_clusters=stability_n_clusters, random_state=DEFAULT_RANDOM_SEED, n_init=linearity_n_init)
     cluster_labels = km.fit_predict(mixed_diffs)
     
     # Compute alignment with true sources

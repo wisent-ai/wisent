@@ -4,7 +4,7 @@ from itertools import combinations
 from math import comb
 from typing import List
 
-from wisent.core.utils.config_tools.constants import LAYER_COMBOS_PREVIEW_LIMIT, BENCH_TEST_SAMPLE_SIZE
+from wisent.core.utils.config_tools.constants import COMBO_OFFSET
 
 
 def get_layer_combinations(num_layers: int, max_combo_size: int, single_and_all_only: bool = True) -> List[List[int]]:
@@ -58,18 +58,21 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Generate layer combinations")
     parser.add_argument("num_layers", type=int, help="Number of layers in the model")
+    parser.add_argument("--max-combo-size", type=int, required=True, help="Max combination size")
+    parser.add_argument("--preview-limit", type=int, required=True, help="Number of combos to preview")
     cli_args = parser.parse_args()
     num_layers = cli_args.num_layers
-    max_combo_size = BENCH_TEST_SAMPLE_SIZE
+    max_combo_size = cli_args.max_combo_size
+    preview_limit = cli_args.preview_limit
     combos = get_layer_combinations(num_layers, max_combo_size)
-    
+
     print(f"Model with {num_layers} layers, max_combo_size={max_combo_size}:")
     print(f"Total combinations: {len(combos)}")
     print(f"Expected: {get_layer_combinations_count(num_layers, max_combo_size)}")
     print()
-    
-    print(f"First {LAYER_COMBOS_PREVIEW_LIMIT} combinations:")
-    for i, combo in enumerate(combos[:LAYER_COMBOS_PREVIEW_LIMIT]):
-        print(f"  {i+1}: {combo}")
-    if len(combos) > LAYER_COMBOS_PREVIEW_LIMIT:
-        print(f"  ... and {len(combos) - LAYER_COMBOS_PREVIEW_LIMIT} more")
+
+    print(f"First {preview_limit} combinations:")
+    for i, combo in enumerate(combos[:preview_limit]):
+        print(f"  {i+COMBO_OFFSET}: {combo}")
+    if len(combos) > preview_limit:
+        print(f"  ... and {len(combos) - preview_limit} more")

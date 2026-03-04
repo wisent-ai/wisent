@@ -142,13 +142,13 @@ def evaluate_difficulty(
     return accuracy, len(ds), results
 
 
-def main(language: str, limit: int | None = None):
+def main(language: str, math_timeout: int, limit: int | None = None):
     """Run evaluation on all difficulty levels and compute DW-ACC."""
     print("Loading model...")
     model_name = "Qwen/Qwen2.5-1.5B-Instruct"
     model = WisentModel(model_name=model_name)
 
-    evaluator = PolyMathEvaluator()
+    evaluator = PolyMathEvaluator(math_timeout=math_timeout)
 
     accuracies = {}
     all_results = {}
@@ -212,4 +212,8 @@ def main(language: str, limit: int | None = None):
 
 
 if __name__ == "__main__":
-    main(limit=2, language="en")
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--math-timeout", type=int, required=True, help="Timeout for symbolic math equality")
+    args = parser.parse_args()
+    main(limit=2, language="en", math_timeout=args.math_timeout)

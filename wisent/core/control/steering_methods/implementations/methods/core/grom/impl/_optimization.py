@@ -7,7 +7,7 @@ import torch.nn.functional as F
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import DEFAULT_WEIGHT_DECAY, GROM_ETA_MIN_FACTOR, GROM_MAX_GRAD_NORM, TRAINING_LOG_INTERVAL
+from wisent.core.utils.config_tools.constants import RECURSION_INITIAL_DEPTH, COMBO_OFFSET
 from wisent.core.control.steering_methods.methods.grom._config import (
     GatingNetwork,
     IntensityNetwork,
@@ -83,7 +83,10 @@ def train_grom_impl(self, pair_set: ContrastivePairSet):
     )
     gate_network: Optional[GatingNetwork] = None
     if enable_gating:
-        gate_network = GatingNetwork(hidden_dim, self.config.gate_hidden_dim)
+        gate_network = GatingNetwork(
+            hidden_dim, self.config.gate_hidden_dim,
+            shrink_factor=self.config.gate_shrink_factor,
+        )
     intensity_network = IntensityNetwork(
         hidden_dim, num_layers,
         self.config.intensity_hidden_dim,
@@ -111,6 +114,7 @@ def train_grom_impl(self, pair_set: ContrastivePairSet):
         data=data,
         layer_names=layer_names,
         sensor_layer=sensor_layer,
+        log_interval=self.log_interval,
         enable_gating=enable_gating,
     )
     return GROMResult(
@@ -119,6 +123,7 @@ def train_grom_impl(self, pair_set: ContrastivePairSet):
         intensity_network=intensity_network,
         direction_weights=direction_weights,
         layer_order=layer_names,
+        gate_temperature=self.config.gate_temperature,
         metadata={
             "config": self.config.__dict__,
             "num_layers": num_layers,
@@ -141,6 +146,7 @@ def _joint_optimization_impl(
     data: Dict[str, Dict[LayerName, torch.Tensor]],
     layer_names: List[LayerName],
     sensor_layer: LayerName,
+    log_interval: int,
     enable_gating: bool = True,
 ) -> Tuple[Dict[LayerName, torch.Tensor], Optional[GatingNetwork], IntensityNetwork, Dict[LayerName, torch.Tensor]]:
     """
@@ -155,9 +161,9 @@ def _joint_optimization_impl(
         all_params.extend(gate_network.parameters())
     all_params.extend(intensity_network.parameters())
     all_params.extend(direction_weight_params.values())
-    optimizer = torch.optim.AdamW(all_params, lr=self.config.learning_rate, weight_decay=DEFAULT_WEIGHT_DECAY)
+    optimizer = torch.optim.AdamW(all_params, lr=self.config.learning_rate, weight_decay=self.config.weight_decay)
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
-        optimizer, T_max=self.config.optimization_steps, eta_min=self.config.learning_rate * GROM_ETA_MIN_FACTOR
+        optimizer, T_max=self.config.optimization_steps, eta_min=self.config.learning_rate * self.config.eta_min_factor
     )
     best_loss = float('inf')
     best_state = None
@@ -187,18 +193,20 @@ def _joint_optimization_impl(
         loss, loss_components = self._compute_grom_loss(
             direction_params=direction_params,
             effective_dirs=effective_dirs,
-            pos_gate=pos_gate,
-            neg_gate=neg_gate,
-            pos_intensity=pos_intensity,
-            neg_intensity=neg_intensity,
-            data=data,
-            layer_names=layer_names,
-            step=step,
+            pos_gate=pos_gate, neg_gate=neg_gate,
+            pos_intensity=pos_intensity, neg_intensity=neg_intensity,
+            data=data, layer_names=layer_names, step=step,
             direction_weight_params=direction_weight_params,
+            contrastive_margin=self.config.contrastive_margin,
+            contrastive_weight=self.config.contrastive_weight,
+            utility_weight=self.config.utility_weight,
+            concentration_weight=self.config.concentration_weight,
+            gate_warmup_weight=self.config.gate_warmup_weight,
+            caa_alignment_weight=self.config.caa_alignment_weight,
         )
         loss.backward()
         # Gradient clipping
-        torch.nn.utils.clip_grad_norm_(all_params, max_norm=GROM_MAX_GRAD_NORM)
+        torch.nn.utils.clip_grad_norm_(all_params, max_norm=self.config.max_grad_norm)
         optimizer.step()
         scheduler.step()
         # Apply constraints to directions
@@ -217,7 +225,7 @@ def _joint_optimization_impl(
                 "direction_weights": {l: F.softmax(p.detach().clone(), dim=0) for l, p in direction_weight_params.items()},
             }
         # Log
-        if step % TRAINING_LOG_INTERVAL == 0 or step == self.config.optimization_steps - 1:
+        if step % log_interval == RECURSION_INITIAL_DEPTH or step == self.config.optimization_steps - COMBO_OFFSET:
             # Compute direction weight statistics
             weight_stds = []
             weight_maxes = []

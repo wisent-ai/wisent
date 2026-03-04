@@ -12,7 +12,7 @@ import torch
 from wisent.core.control.steering_methods.steering_object import SteeringObjectMetadata
 from .szlak_steering_object import SzlakSteeringObject
 from .transport import compute_attention_affinity_cost, sinkhorn_one_sided
-from wisent.core.utils.config_tools.constants import LOG_EPS, SZLAK_SINKHORN_REG, SZLAK_INFERENCE_K
+from wisent.core.utils.config_tools.constants import LOG_EPS
 
 
 def _create_szlak_steering_object(
@@ -22,8 +22,14 @@ def _create_szlak_steering_object(
     args,
 ) -> SzlakSteeringObject:
     """Create attention-transport steering object with per-layer displacements."""
-    sinkhorn_reg = getattr(args, "szlak_sinkhorn_reg", SZLAK_SINKHORN_REG)
-    inference_k = getattr(args, "szlak_inference_k", SZLAK_INFERENCE_K)
+    sinkhorn_reg = args.szlak_sinkhorn_reg
+    max_iter = args.szlak_max_iter
+    inference_k = getattr(args, "szlak_inference_k", None)
+    if inference_k is None:
+        raise ValueError(
+            "Parameter 'szlak_inference_k' is required. "
+            "Run 'wisent optimize-steering auto' first, or pass --inference-k explicitly."
+        )
     num_heads = metadata.extra.get('num_attention_heads')
     num_kv_heads = metadata.extra.get('num_key_value_heads')
     source_points = {}
@@ -42,7 +48,7 @@ def _create_szlak_steering_object(
         q_neg = torch.stack([t.detach().float().reshape(-1) for t in q_data], dim=0)
         k_pos = torch.stack([t.detach().float().reshape(-1) for t in k_data], dim=0)
         cost = compute_attention_affinity_cost(q_neg, k_pos, num_heads=num_heads, num_kv_heads=num_kv_heads)
-        T = sinkhorn_one_sided(cost, reg=sinkhorn_reg)
+        T = sinkhorn_one_sided(cost, reg=sinkhorn_reg, max_iter=max_iter)
         row_sums = T.sum(dim=1, keepdim=True).clamp(min=LOG_EPS)
         T_norm = T / row_sums
         targets = T_norm @ pos

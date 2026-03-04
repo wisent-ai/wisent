@@ -27,6 +27,8 @@ class RACEExtractor(LMEvalBenchmarkExtractor):
         self,
         lm_eval_task_data: ConfigurableTask,
         limit: int | None = None,
+        *,
+        train_ratio: float,
     ) -> list[ContrastivePair]:
         """
         Build contrastive pairs from Race docs.
@@ -45,7 +47,7 @@ class RACEExtractor(LMEvalBenchmarkExtractor):
         log = bind(_LOG, task=getattr(lm_eval_task_data, "NAME", "unknown"))
 
         max_items = self._normalize_limit(limit)
-        docs = self.load_docs(lm_eval_task_data, max_items)
+        docs = self.load_docs(lm_eval_task_data, max_items, train_ratio=train_ratio)
 
         pairs: list[ContrastivePair] = []
 

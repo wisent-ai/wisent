@@ -2,7 +2,6 @@
 
 import argparse
 
-from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
 
 
 def setup_geometry_search_parser(parser: argparse.ArgumentParser) -> None:
@@ -52,7 +51,7 @@ def setup_geometry_search_parser(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--seed",
         type=int,
-        default=DEFAULT_RANDOM_SEED,
+        default=None,
         help="Random seed for reproducibility (default: 42)",
     )
     parser.add_argument(
@@ -60,4 +59,22 @@ def setup_geometry_search_parser(parser: argparse.ArgumentParser) -> None:
         type=str,
         required=True,
         help="Device for model (auto/cuda/mps/cpu)",
+    )
+    parser.add_argument(
+        "--report-interval",
+        type=int,
+        required=True,
+        help="How often to report progress during activation collection (in pairs)",
+    )
+    parser.add_argument(
+        "--estimated-time-per-extraction",
+        type=float,
+        required=True,
+        help="Estimated seconds per extraction operation",
+    )
+    parser.add_argument(
+        "--geometry-minority-pct",
+        type=int,
+        required=True,
+        help="Percentage threshold for geometry minority structure detection",
     )

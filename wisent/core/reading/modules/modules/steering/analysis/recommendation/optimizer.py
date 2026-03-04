@@ -13,7 +13,6 @@ from wisent.core.utils.services.optimization.core.atoms import BaseOptimizer, HP
 from .config import RecommendationConfig, Thresholds, ScoreWeights
 from .configurable import compute_configurable_recommendation
 from .collector import GroundTruthDataset
-from wisent.core.utils.config_tools.constants import RECOMMEND_TOP_K, RECOMMEND_N_TRIALS, DEFAULT_RANDOM_SEED
 
 ObjectiveType = Literal["top1", "topk", "regret"]
 
@@ -52,11 +51,21 @@ class RecommendationOptimizer(BaseOptimizer):
 
     def __init__(
         self, dataset: GroundTruthDataset,
-        objective_type: ObjectiveType = "top1", top_k: int = RECOMMEND_TOP_K,
+        objective_type: ObjectiveType = "top1", top_k: int = None,
+        *, confidence_margin_weight: float = None,
+        baseline_confidence: float = None,
     ):
+        if top_k is None:
+            raise ValueError("top_k is required")
+        if confidence_margin_weight is None:
+            raise ValueError("confidence_margin_weight is required")
+        if baseline_confidence is None:
+            raise ValueError("baseline_confidence is required")
         self.dataset = dataset
         self.objective_type = objective_type
         self.top_k = top_k
+        self._confidence_margin_weight = confidence_margin_weight
+        self._baseline_confidence = baseline_confidence
 
     def _objective(self, trial: optuna.Trial) -> float:
         t_kw = {}
@@ -80,13 +89,20 @@ class RecommendationOptimizer(BaseOptimizer):
         hits = sum(
             1 for r in self.dataset.records
             if compute_configurable_recommendation(
-                r.metrics, cfg)["recommended_method"] == r.best_method)
+                r.metrics, cfg,
+                confidence_margin_weight=self._confidence_margin_weight,
+                baseline_confidence=self._baseline_confidence,
+            )["recommended_method"] == r.best_method)
         return hits / max(len(self.dataset.records), 1)
 
     def _topk(self, cfg: RecommendationConfig) -> float:
         hits = 0
         for rec in self.dataset.records:
-            res = compute_configurable_recommendation(rec.metrics, cfg)
+            res = compute_configurable_recommendation(
+                rec.metrics, cfg,
+                confidence_margin_weight=self._confidence_margin_weight,
+                baseline_confidence=self._baseline_confidence,
+            )
             ranked = sorted(res["method_scores"].items(),
                             key=lambda x: x[1], reverse=True)
             if rec.best_method in [n for n, _ in ranked[:self.top_k]]:
@@ -96,16 +112,25 @@ class RecommendationOptimizer(BaseOptimizer):
     def _regret(self, cfg: RecommendationConfig) -> float:
         total = 0.0
         for rec in self.dataset.records:
-            res = compute_configurable_recommendation(rec.metrics, cfg)
+            res = compute_configurable_recommendation(
+                rec.metrics, cfg,
+                confidence_margin_weight=self._confidence_margin_weight,
+                baseline_confidence=self._baseline_confidence,
+            )
             mr = rec.method_results.get(res["recommended_method"])
             total += rec.best_accuracy - (mr.accuracy if mr else 0.0)
         return -(total / max(len(self.dataset.records), 1))
 
     def tune(
-        self, n_trials: int = RECOMMEND_N_TRIALS,
-        output_path: str | None = None, seed: int = DEFAULT_RANDOM_SEED,
+        self, n_trials: int = None,
+        output_path: str | None = None, seed: int | None = None,
     ) -> RecommendationConfig:
         """Run optimization and return best config."""
+        if n_trials is None:
+            raise ValueError("n_trials is required")
+        if seed is None:
+            from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+            seed = DEFAULT_RANDOM_SEED
         hpo = HPOConfig(
             n_trials=n_trials, direction="maximize",
             sampler="tpe", pruner=None, seed=seed)

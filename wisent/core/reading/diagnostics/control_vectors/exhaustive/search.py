@@ -9,15 +9,6 @@ from typing import Dict, List, Optional, Tuple, Callable
 
 import torch
 
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_LIMIT,
-    DEFAULT_SCORE,
-    DIAG_NUM_COMPONENTS,
-    DIAG_OPTIMIZATION_STEPS,
-    GEO_MAX_LAYER_COMBO_SIZE,
-    SEARCH_RESULTS_TOP_N,
-)
-
 from ..geometry import (
     StructureType,
     GeometryAnalysisConfig,
@@ -64,20 +55,24 @@ def _finalize_results(
     single_layer_results: List[ExhaustiveCombinationResult],
     layers: List[int],
     total_combinations: int,
+    *,
+    search_results_top_n: int,
 ) -> ExhaustiveGeometryAnalysisResult:
     """Finalize and package exhaustive search results."""
     all_results = [r for _, r in sorted(top_results_heap, key=lambda x: -x[0])]
-    best_result = all_results[0] if all_results else None
-    best_combination = best_result.layers if best_result else ()
-    best_score = best_result.best_score if best_result else DEFAULT_SCORE
-    best_structure = best_result.best_structure if best_result else StructureType.UNKNOWN
+    if not all_results:
+        raise ValueError("Exhaustive search produced no results. Check input data.")
+    best_result = next(iter(all_results))
+    best_combination = best_result.layers
+    best_score = best_result.best_score
+    best_structure = best_result.best_structure
 
     if single_layer_results:
         single_layer_results.sort(key=lambda x: x.best_score, reverse=True)
         single_layer_best = single_layer_results[0].layers[0]
         single_layer_best_score = single_layer_results[0].best_score
     else:
-        single_layer_best, single_layer_best_score = layers[0], DEFAULT_SCORE
+        raise ValueError("No single-layer results found. Check input data.")
 
     combination_beats_single = best_score > single_layer_best_score
     improvement_over_single = best_score - single_layer_best_score
@@ -91,7 +86,7 @@ def _finalize_results(
     return ExhaustiveGeometryAnalysisResult(
         total_combinations=total_combinations, all_results=all_results,
         best_combination=best_combination, best_score=best_score,
-        best_structure=best_structure, top_10=all_results[:SEARCH_RESULTS_TOP_N],
+        best_structure=best_structure, top_10=all_results[:search_results_top_n],
         single_layer_best=single_layer_best, single_layer_best_score=single_layer_best_score,
         combination_beats_single=combination_beats_single,
         improvement_over_single=improvement_over_single,
@@ -104,16 +99,18 @@ def detect_geometry_exhaustive(
     neg_activations_by_layer: Dict[int, torch.Tensor],
     max_layers: int,
     combination_method: str,
-    num_components: int = DIAG_NUM_COMPONENTS,
+    num_components: int,
+    top_k: int,
     progress_callback: Optional[Callable[[int, int], None]] = None,
-    top_k: int = DEFAULT_LIMIT,
+    *,
+    search_results_top_n: int,
 ) -> ExhaustiveGeometryAnalysisResult:
     """Exhaustively test all 2^N - 1 layer combinations."""
     layers = sorted(pos_activations_by_layer.keys())[:max_layers]
     if not layers:
         raise ValueError("No layers provided")
 
-    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=DIAG_OPTIMIZATION_STEPS)
+    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
     total_combinations = (1 << len(layers)) - 1
     top_results_heap: List[Tuple[float, ExhaustiveCombinationResult]] = []
     single_layer_results: List[ExhaustiveCombinationResult] = []
@@ -137,24 +134,26 @@ def detect_geometry_exhaustive(
             elif combo_result.best_score > top_results_heap[0][0]:
                 heapq.heapreplace(top_results_heap, (combo_result.best_score, combo_result))
 
-    return _finalize_results(top_results_heap, single_layer_results, layers, total_combinations)
+    return _finalize_results(top_results_heap, single_layer_results, layers, total_combinations, search_results_top_n=search_results_top_n)
 
 
 def detect_geometry_limited(
     pos_activations_by_layer: Dict[int, torch.Tensor],
     neg_activations_by_layer: Dict[int, torch.Tensor],
     combination_method: str,
-    max_combo_size: int = GEO_MAX_LAYER_COMBO_SIZE,
-    num_components: int = DIAG_NUM_COMPONENTS,
+    num_components: int,
+    top_k: int,
+    max_combo_size: int,
     progress_callback: Optional[Callable[[int, int], None]] = None,
-    top_k: int = DEFAULT_LIMIT,
+    *,
+    search_results_top_n: int,
 ) -> ExhaustiveGeometryAnalysisResult:
-    """Test 1,2,3-layer combinations plus all layers. O(N^3) complexity."""
+    """Test limited layer combinations plus all layers."""
     layers = sorted(pos_activations_by_layer.keys())
     if not layers:
         raise ValueError("No layers provided")
 
-    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=DIAG_OPTIMIZATION_STEPS)
+    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
     n = len(layers)
     total = sum(comb(n, r) for r in range(1, min(max_combo_size, n) + 1))
     if max_combo_size < n:
@@ -184,23 +183,25 @@ def detect_geometry_limited(
         elif combo_result.best_score > top_results_heap[0][0]:
             heapq.heapreplace(top_results_heap, (combo_result.best_score, combo_result))
 
-    return _finalize_results(top_results_heap, single_layer_results, layers, total)
+    return _finalize_results(top_results_heap, single_layer_results, layers, total, search_results_top_n=search_results_top_n)
 
 
 def detect_geometry_contiguous(
     pos_activations_by_layer: Dict[int, torch.Tensor],
     neg_activations_by_layer: Dict[int, torch.Tensor],
     combination_method: str,
-    num_components: int = DIAG_NUM_COMPONENTS,
+    num_components: int,
+    top_k: int,
     progress_callback: Optional[Callable[[int, int], None]] = None,
-    top_k: int = DEFAULT_LIMIT,
+    *,
+    search_results_top_n: int,
 ) -> ExhaustiveGeometryAnalysisResult:
     """Test contiguous layer combinations only. O(N^2) complexity."""
     layers = sorted(pos_activations_by_layer.keys())
     if not layers:
         raise ValueError("No layers provided")
 
-    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=DIAG_OPTIMIZATION_STEPS)
+    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
     n = len(layers)
     total = n * (n + 1) // 2
 
@@ -225,24 +226,26 @@ def detect_geometry_contiguous(
             elif combo_result.best_score > top_results_heap[0][0]:
                 heapq.heapreplace(top_results_heap, (combo_result.best_score, combo_result))
 
-    return _finalize_results(top_results_heap, single_layer_results, layers, total)
+    return _finalize_results(top_results_heap, single_layer_results, layers, total, search_results_top_n=search_results_top_n)
 
 
 def detect_geometry_smart(
     pos_activations_by_layer: Dict[int, torch.Tensor],
     neg_activations_by_layer: Dict[int, torch.Tensor],
     combination_method: str,
-    max_combo_size: int = GEO_MAX_LAYER_COMBO_SIZE,
-    num_components: int = DIAG_NUM_COMPONENTS,
+    num_components: int,
+    top_k: int,
+    max_combo_size: int,
     progress_callback: Optional[Callable[[int, int], None]] = None,
-    top_k: int = DEFAULT_LIMIT,
+    *,
+    search_results_top_n: int,
 ) -> ExhaustiveGeometryAnalysisResult:
-    """Smart search: contiguous + limited (1,2,3-layer) with deduplication."""
+    """Smart search: contiguous plus limited layer combos with deduplication."""
     layers = sorted(pos_activations_by_layer.keys())
     if not layers:
         raise ValueError("No layers provided")
 
-    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=DIAG_OPTIMIZATION_STEPS)
+    geo_cfg = GeometryAnalysisConfig(num_components=num_components, optimization_steps=50)
     n = len(layers)
 
     all_combos_set: set = set()
@@ -273,4 +276,4 @@ def detect_geometry_smart(
         elif combo_result.best_score > top_results_heap[0][0]:
             heapq.heapreplace(top_results_heap, (combo_result.best_score, combo_result))
 
-    return _finalize_results(top_results_heap, single_layer_results, layers, total)
+    return _finalize_results(top_results_heap, single_layer_results, layers, total, search_results_top_n=search_results_top_n)

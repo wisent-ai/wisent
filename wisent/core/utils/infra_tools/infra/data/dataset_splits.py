@@ -8,12 +8,10 @@ and split using our own deterministic 80/20 split.
 
 import hashlib
 import random
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
-from wisent.core.utils.config_tools.constants import DEFAULT_SPLIT_RATIO, DEFAULT_RANDOM_SEED, HASH_DISPLAY_LENGTH
+from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED, HASH_DISPLAY_LENGTH
 
-# Backward-compatible aliases
-DEFAULT_TRAIN_RATIO = DEFAULT_SPLIT_RATIO
 DEFAULT_SEED = DEFAULT_RANDOM_SEED
 
 
@@ -59,7 +57,8 @@ def get_all_docs_from_task(task: Any) -> Tuple[List[Dict[str, Any]], Dict[str, i
 def create_deterministic_split(
     all_docs: List[Any],
     benchmark_name: str,
-    train_ratio: float = DEFAULT_TRAIN_RATIO,
+    *,
+    train_ratio: float,
     seed: int = DEFAULT_SEED,
 ) -> Tuple[List[Any], List[Any]]:
     """
@@ -71,8 +70,8 @@ def create_deterministic_split(
     Args:
         all_docs: All documents from the benchmark
         benchmark_name: Name of the benchmark (used for deterministic seeding)
-        train_ratio: Ratio of data for training (default 0.8)
-        seed: Base random seed (default 42)
+        train_ratio: Ratio of data for training
+        seed: Base random seed (default DEFAULT_RANDOM_SEED)
 
     Returns:
         Tuple of (train_docs, test_docs)
@@ -105,8 +104,9 @@ def create_deterministic_split(
 
 def get_train_docs(
     task: Any,
-    benchmark_name: Optional[str] = None,
-    train_ratio: float = DEFAULT_TRAIN_RATIO,
+    benchmark_name: str,
+    *,
+    train_ratio: float,
     seed: int = DEFAULT_SEED,
 ) -> List[Dict[str, Any]]:
     """
@@ -117,26 +117,24 @@ def get_train_docs(
 
     Args:
         task: An lm-eval task object
-        benchmark_name: Name of the benchmark (defaults to task name)
-        train_ratio: Ratio of data for training (default 0.8)
+        benchmark_name: Name of the benchmark (used for deterministic seeding)
+        train_ratio: Ratio of data for training
         seed: Random seed for reproducibility
 
     Returns:
         List of training documents
     """
-    if benchmark_name is None:
-        benchmark_name = getattr(task, 'NAME', getattr(task, 'TASK_NAME', str(type(task).__name__)))
-
     all_docs, _ = get_all_docs_from_task(task)
-    train_docs, _ = create_deterministic_split(all_docs, benchmark_name, train_ratio, seed)
+    train_docs, _ = create_deterministic_split(all_docs, benchmark_name, train_ratio=train_ratio, seed=seed)
 
     return train_docs
 
 
 def get_test_docs(
     task: Any,
-    benchmark_name: Optional[str] = None,
-    train_ratio: float = DEFAULT_TRAIN_RATIO,
+    benchmark_name: str,
+    *,
+    train_ratio: float,
     seed: int = DEFAULT_SEED,
 ) -> List[Dict[str, Any]]:
     """
@@ -147,26 +145,24 @@ def get_test_docs(
 
     Args:
         task: An lm-eval task object
-        benchmark_name: Name of the benchmark (defaults to task name)
-        train_ratio: Ratio of data for training (default 0.8)
+        benchmark_name: Name of the benchmark (used for deterministic seeding)
+        train_ratio: Ratio of data for training
         seed: Random seed for reproducibility
 
     Returns:
         List of test documents
     """
-    if benchmark_name is None:
-        benchmark_name = getattr(task, 'NAME', getattr(task, 'TASK_NAME', str(type(task).__name__)))
-
     all_docs, _ = get_all_docs_from_task(task)
-    _, test_docs = create_deterministic_split(all_docs, benchmark_name, train_ratio, seed)
+    _, test_docs = create_deterministic_split(all_docs, benchmark_name, train_ratio=train_ratio, seed=seed)
 
     return test_docs
 
 
 def get_split_info(
     task: Any,
-    benchmark_name: Optional[str] = None,
-    train_ratio: float = DEFAULT_TRAIN_RATIO,
+    benchmark_name: str,
+    *,
+    train_ratio: float,
     seed: int = DEFAULT_SEED,
 ) -> Dict[str, Any]:
     """
@@ -174,18 +170,15 @@ def get_split_info(
 
     Args:
         task: An lm-eval task object
-        benchmark_name: Name of the benchmark
+        benchmark_name: Name of the benchmark (used for deterministic seeding)
         train_ratio: Ratio of data for training
         seed: Random seed
 
     Returns:
         Dictionary with split information
     """
-    if benchmark_name is None:
-        benchmark_name = getattr(task, 'NAME', getattr(task, 'TASK_NAME', str(type(task).__name__)))
-
     all_docs, original_splits = get_all_docs_from_task(task)
-    train_docs, test_docs = create_deterministic_split(all_docs, benchmark_name, train_ratio, seed)
+    train_docs, test_docs = create_deterministic_split(all_docs, benchmark_name, train_ratio=train_ratio, seed=seed)
 
     return {
         "benchmark_name": benchmark_name,

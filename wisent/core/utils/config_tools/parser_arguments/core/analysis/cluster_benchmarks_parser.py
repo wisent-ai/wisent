@@ -30,3 +30,17 @@ def setup_cluster_benchmarks_parser(parser: argparse.ArgumentParser) -> None:
         default=None,
         help="Device to use (cuda/mps/cpu). Auto-detected if not specified."
     )
+    parser.add_argument(
+        "--cluster-progress-interval", type=int, required=True,
+        help="Log progress every N benchmarks during loading"
+    )
+    parser.add_argument(
+        "--cluster-min-pairs", type=int, required=True,
+        help="Minimum number of pairs required per benchmark"
+    )
+    parser.add_argument(
+        "--train-ratio",
+        type=float,
+        required=True,
+        help="Fraction of data for training vs evaluation"
+    )

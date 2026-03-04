@@ -6,7 +6,7 @@ so they don't need to be regenerated every time.
 from pathlib import Path
 from typing import List, Dict, Any, Union
 import torch
-from wisent.core.utils.config_tools.constants import BLEND_DEFAULT
+from wisent.core import constants as _C
 
 
 def save_steering_activations(
@@ -100,27 +100,30 @@ def load_steering_activations(path: Union[str, Path]) -> Dict[str, Any]:
     return data
 
 
-def get_activation_summary(data: Dict[str, Any]) -> Dict[str, Any]:
+def get_activation_summary(data: Dict[str, Any], truthful_threshold: float = None) -> Dict[str, Any]:
     """
     Get summary statistics from loaded activation data.
 
     Args:
         data: Loaded activation data from load_steering_activations
+        truthful_threshold: Threshold for classifying activations as truthful. Must be set by caller.
 
     Returns:
         Summary dict with key metrics
     """
+    if truthful_threshold is None:
+        raise ValueError("truthful_threshold must be provided by caller")
     base_evals = data["base_evaluations"]
     steered_evals = data["steered_evaluations"]
     base_probs = data["base_space_probs"]
     steered_probs = data["steered_space_probs"]
 
-    base_truthful = sum(1 for e in base_evals if e == "TRUTHFUL")
-    steered_truthful = sum(1 for e in steered_evals if e == "TRUTHFUL")
+    base_truthful = len([e for e in base_evals if e == "TRUTHFUL"])
+    steered_truthful = len([e for e in steered_evals if e == "TRUTHFUL"])
     total = len(base_evals)
 
-    base_in_region = sum(1 for p in base_probs if p >= BLEND_DEFAULT)
-    steered_in_region = sum(1 for p in steered_probs if p >= BLEND_DEFAULT)
+    base_in_region = len([p for p in base_probs if p >= truthful_threshold])
+    steered_in_region = len([p for p in steered_probs if p >= truthful_threshold])
 
     return {
         "text_evaluation": {

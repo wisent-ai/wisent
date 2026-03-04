@@ -2,12 +2,7 @@
 
 from dataclasses import dataclass
 
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SPLIT_RATIO,
-    SEPARATOR_WIDTH_REPORT,
-    SPLIT_RATIO_HALF,
-    SPLIT_RATIO_70,
-)
+from wisent.core.utils.config_tools.constants import SEPARATOR_WIDTH_REPORT, SPLIT_RATIO_HALF, SPLIT_RATIO_70
 
 
 @dataclass
@@ -55,7 +50,7 @@ def test_split_and_cap_edge_cases():
 
     # Test 1: Empty list
     train, test = _split_and_cap(
-        items=[], split_ratio=DEFAULT_SPLIT_RATIO, caps=Caps(train=100, test=100),
+        items=[], split_ratio=0.8, caps=Caps(train=100, test=100),
         seed=42, verbose=False,
     )
     assert len(train) == 0 and len(test) == 0, "Empty input should produce empty outputs"

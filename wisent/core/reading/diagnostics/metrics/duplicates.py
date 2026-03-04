@@ -6,7 +6,6 @@ from collections import Counter, defaultdict
 from difflib import SequenceMatcher
 from typing import Dict, Iterable, List
 
-from wisent.core.utils.config_tools.constants import DEDUP_ITEM_THRESHOLD
 
 from ..base import DiagnosticsConfig, DiagnosticsIssue, MetricReport
 
@@ -63,8 +62,10 @@ def compute_duplicate_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Met
     issues.extend(_collect_exact(positive_counter, "positive_response"))
     issues.extend(_collect_exact(negative_counter, "negative_response"))
 
+    if config.max_duplicate_fraction is None:
+        raise ValueError("config.max_duplicate_fraction is required")
     exact_duplicate_fraction = sum(max(0, count - 1) for count in prompt_counter.values()) / total_pairs
-    if exact_duplicate_fraction > config.max_exact_duplicate_fraction:
+    if exact_duplicate_fraction > config.max_duplicate_fraction:
         issues.append(
             DiagnosticsIssue(
                 metric="duplicates",
@@ -73,7 +74,7 @@ def compute_duplicate_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Met
                 pair_index=None,
                 details={
                     "fraction": exact_duplicate_fraction,
-                    "threshold": config.max_exact_duplicate_fraction,
+                    "threshold": config.max_duplicate_fraction,
                     "duplicates": [
                         {"prompt": prompt, "count": count}
                         for prompt, count in prompt_counter.items()
@@ -86,11 +87,13 @@ def compute_duplicate_metrics(pairs: Iterable, config: DiagnosticsConfig) -> Met
     near_duplicate_pairs: List[tuple[int, int, float]] = []
     prompt_items = list(prompt_counter.keys())
     # Skip O(n^2) near-duplicate detection for large sets (>1000 unique prompts)
-    if len(prompt_items) <= DEDUP_ITEM_THRESHOLD:
+    if config.dedup_item_threshold is None:
+        raise ValueError("config.dedup_item_threshold is required")
+    if len(prompt_items) <= config.dedup_item_threshold:
         for i, prompt_a in enumerate(prompt_items):
             for prompt_b in prompt_items[i + 1 :]:
                 similarity = SequenceMatcher(None, prompt_a, prompt_b).ratio()
-                if similarity >= config.near_duplicate_prompt_threshold:
+                if similarity >= 0.9:
                     indices_a = indexed_prompts[prompt_a]
                     indices_b = indexed_prompts[prompt_b]
                     near_duplicate_pairs.append((indices_a[0], indices_b[0], similarity))

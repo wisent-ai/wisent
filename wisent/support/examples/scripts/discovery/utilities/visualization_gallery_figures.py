@@ -5,7 +5,7 @@ from typing import Dict, Any
 
 import numpy as np
 
-from wisent.core.utils.config_tools.constants import VIZ_PLOT_DPI, SIGNAL_EXIST_THRESHOLD, SIGNAL_LINEAR_GAP, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_FONTSIZE_ANNOTATION, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, CHANCE_LEVEL_ACCURACY
+from wisent.core.utils.config_tools.constants import VIZ_PLOT_DPI, VIZ_FONTSIZE_SUPTITLE, VIZ_FONTSIZE_SUBTITLE, VIZ_FONTSIZE_ANNOTATION, VIZ_ALPHA_LIGHT, VIZ_ALPHA_HALF, VIZ_LINEWIDTH_NORMAL, CHANCE_LEVEL_ACCURACY
 
 try:
     import matplotlib.pyplot as plt
@@ -20,6 +20,9 @@ def create_hero_figure(
     diagnosis_results: Dict[str, Any],
     output_path: Path,
     model_name: str,
+    *,
+    signal_exist_threshold: float,
+    signal_linear_gap: float,
 ) -> None:
     """
     Create hero figure for paper.
@@ -94,9 +97,9 @@ def create_hero_figure(
             signal = r["signal_strength"]
             linear = r["linear_probe_accuracy"]
             
-            if signal < SIGNAL_EXIST_THRESHOLD:
+            if signal < signal_exist_threshold:
                 counts["NO_SIGNAL"] += 1
-            elif linear > SIGNAL_EXIST_THRESHOLD and (signal - linear) < SIGNAL_LINEAR_GAP:
+            elif linear > signal_exist_threshold and (signal - linear) < signal_linear_gap:
                 counts["LINEAR"] += 1
             else:
                 counts["NONLINEAR"] += 1
@@ -128,9 +131,9 @@ def create_hero_figure(
             linear = r["linear_probe_accuracy"]
             knn = r["nonlinear_metrics"]["knn_accuracy_k10"]
             
-            if signal < SIGNAL_EXIST_THRESHOLD:
+            if signal < signal_exist_threshold:
                 diag = "NO_SIGNAL"
-            elif linear > SIGNAL_EXIST_THRESHOLD and (signal - linear) < SIGNAL_LINEAR_GAP:
+            elif linear > signal_exist_threshold and (signal - linear) < signal_linear_gap:
                 diag = "LINEAR"
             else:
                 diag = "NONLINEAR"

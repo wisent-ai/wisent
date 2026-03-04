@@ -7,14 +7,7 @@ Metrics for magnitude, sparsity, and per-pair quality.
 import torch
 import numpy as np
 from typing import Dict, Any
-from wisent.core.utils.config_tools.constants import (
-    NORM_EPS, SPARSITY_THRESHOLD_FRACTION,
-    STABILITY_LOO_SAMPLE_LIMIT, TOP_NEURONS_COUNT, TOP_NEURONS_SHORT_COUNT,
-    CUMSUM_THRESHOLD_50, CUMSUM_THRESHOLD_90, CUMSUM_THRESHOLD_99,
-    PERCENTILE_P10, PERCENTILE_P25, PERCENTILE_P75, PERCENTILE_P90,
-    ALIGNMENT_HIGH_THRESHOLD, METRICS_TOP_INDICES_LIMIT,
-    METRICS_THRESHOLD_FRACTION_DEFAULT,
-)
+from wisent.core.utils.config_tools.constants import NORM_EPS
 
 
 def compute_magnitude_metrics(
@@ -73,7 +66,10 @@ def compute_magnitude_metrics(
 def compute_sparsity_metrics(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
-    threshold_fraction: float = METRICS_THRESHOLD_FRACTION_DEFAULT,
+    top_neurons_count: int,
+    top_neurons_short_count: int,
+    *,
+    sparsity_sparsity_threshold_fraction: float,
 ) -> Dict[str, Any]:
     """
     Compute sparsity and neuron activation patterns.
@@ -98,9 +94,9 @@ def compute_sparsity_metrics(
     diff_abs = np.abs(diffs)
 
     # Threshold for "active" neuron (fraction of max)
-    pos_threshold = pos_abs.max() * threshold_fraction
-    neg_threshold = neg_abs.max() * threshold_fraction
-    diff_threshold = diff_abs.max() * threshold_fraction
+    pos_threshold = pos_abs.max() * sparsity_threshold_fraction
+    neg_threshold = neg_abs.max() * sparsity_threshold_fraction
+    diff_threshold = diff_abs.max() * sparsity_threshold_fraction
 
     # Sparsity: fraction of neurons below threshold
     pos_sparsity = (pos_abs < pos_threshold).mean()
@@ -122,12 +118,12 @@ def compute_sparsity_metrics(
     cumsum_contributions = np.cumsum(sorted_contributions) / (sorted_contributions.sum() + NORM_EPS)
 
     # How many neurons needed for X% of signal
-    neurons_for_50 = int(np.searchsorted(cumsum_contributions, CUMSUM_THRESHOLD_50) + 1)
-    neurons_for_90 = int(np.searchsorted(cumsum_contributions, CUMSUM_THRESHOLD_90) + 1)
-    neurons_for_99 = int(np.searchsorted(cumsum_contributions, CUMSUM_THRESHOLD_99) + 1)
+    neurons_for_50 = int(np.searchsorted(cumsum_contributions, 0.5) + 1)
+    neurons_for_90 = int(np.searchsorted(cumsum_contributions, 0.9) + 1)
+    neurons_for_99 = int(np.searchsorted(cumsum_contributions, 0.99) + 1)
 
     # Top neuron indices (most important for steering)
-    top_neuron_indices = np.argsort(neuron_contributions)[::-1][:TOP_NEURONS_COUNT].tolist()
+    top_neuron_indices = np.argsort(neuron_contributions)[::-1][:top_neurons_count].tolist()
     top_neuron_contributions = neuron_contributions[top_neuron_indices].tolist()
 
     return {
@@ -151,13 +147,15 @@ def compute_sparsity_metrics(
         # Top neurons
         "top_20_neuron_indices": top_neuron_indices,
         "top_20_neuron_contributions": top_neuron_contributions,
-        "top_10_contribution_fraction": float(sorted_contributions[:TOP_NEURONS_SHORT_COUNT].sum() / (sorted_contributions.sum() + NORM_EPS)),
+        "top_10_contribution_fraction": float(sorted_contributions[:top_neurons_short_count].sum() / (sorted_contributions.sum() + NORM_EPS)),
     }
 
 
 def compute_pair_quality_metrics(
     pos_activations: torch.Tensor,
     neg_activations: torch.Tensor,
+    *,
+    stability_loo_sample_limit: int,
 ) -> Dict[str, Any]:
     """
     Compute per-pair quality metrics.
@@ -195,12 +193,12 @@ def compute_pair_quality_metrics(
     outlier_indices = np.where(outlier_mask)[0].tolist()
 
     # Identify high-quality pairs (high alignment, reasonable norm)
-    high_quality_mask = (alignments > ALIGNMENT_HIGH_THRESHOLD) & (diff_norms > np.percentile(diff_norms, PERCENTILE_P25))
+    high_quality_mask = (alignments > 0.5) & (diff_norms > np.percentile(diff_norms, 25))
     high_quality_indices = np.where(high_quality_mask)[0].tolist()
 
     # Leave-one-out stability: how much does direction change without each pair
     loo_angles = []
-    for i in range(min(n, STABILITY_LOO_SAMPLE_LIMIT)):  # Limit for speed
+    for i in range(min(n, stability_loo_sample_limit)):
         mask = np.ones(n, dtype=bool)
         mask[i] = False
         loo_mean = diffs[mask].mean(axis=0)
@@ -221,20 +219,20 @@ def compute_pair_quality_metrics(
         "alignment_median": float(np.median(alignments)),
 
         # Percentiles
-        "alignment_p10": float(np.percentile(alignments, PERCENTILE_P10)),
-        "alignment_p25": float(np.percentile(alignments, PERCENTILE_P25)),
-        "alignment_p75": float(np.percentile(alignments, PERCENTILE_P75)),
-        "alignment_p90": float(np.percentile(alignments, PERCENTILE_P90)),
+        "alignment_p10": float(np.percentile(alignments, 10)),
+        "alignment_p25": float(np.percentile(alignments, 25)),
+        "alignment_p75": float(np.percentile(alignments, 75)),
+        "alignment_p90": float(np.percentile(alignments, 90)),
 
         # Outliers
         "n_outliers": int(outlier_mask.sum()),
         "outlier_fraction": float(outlier_mask.mean()),
-        "outlier_indices": outlier_indices[:METRICS_TOP_INDICES_LIMIT],
+        "outlier_indices": outlier_indices[:20],
 
         # High quality
         "n_high_quality": int(high_quality_mask.sum()),
         "high_quality_fraction": float(high_quality_mask.mean()),
-        "high_quality_indices": high_quality_indices[:METRICS_TOP_INDICES_LIMIT],
+        "high_quality_indices": high_quality_indices[:20],
 
         # Leave-one-out stability
         "loo_angle_mean": float(loo_angles.mean()) if len(loo_angles) > 0 else None,

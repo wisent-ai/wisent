@@ -3,7 +3,7 @@
 from typing import Dict, Any, List, Optional, Tuple
 
 from wisent.core.utils import get_all_docs_from_task, create_deterministic_split
-from wisent.core.utils.config_tools.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
+from wisent.core.utils.config_tools.constants import DISPLAY_TRUNCATION_COMPACT, DISPLAY_TRUNCATION_LARGE, DISPLAY_TRUNCATION_MEDIUM
 
 
 def get_evaluation_method(task) -> str:
@@ -88,8 +88,10 @@ def extract_examples_from_task(task_name: str, task) -> Dict[str, str]:
     return examples
 
 
-def get_task_samples_for_analysis(task_name: str, num_samples: int = DEFAULT_NUM_SAMPLES) -> Dict[str, Any]:
+def get_task_samples_for_analysis(task_name: str, max_depth: int, num_samples: int = None) -> Dict[str, Any]:
     """Retrieve sample questions and answers from a benchmark task for AI analysis."""
+    if num_samples is None:
+        num_samples = 5
     from lm_eval import evaluator
     from .group_handling import find_working_task_from_group
 
@@ -107,7 +109,7 @@ def get_task_samples_for_analysis(task_name: str, num_samples: int = DEFAULT_NUM
 
     if hasattr(task, 'items') and callable(task.items):
         print(f"   '{task_name}' is a group task, finding working subtask...")
-        task = find_working_task_from_group(task)
+        task = find_working_task_from_group(task, max_depth=max_depth)
         if task is None:
             return {"task_name": task_name, "error": "No working subtask found in group", "samples": []}
 

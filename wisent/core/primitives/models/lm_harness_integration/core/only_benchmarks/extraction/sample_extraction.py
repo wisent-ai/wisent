@@ -9,7 +9,7 @@ from wisent.core.utils.infra_tools.errors import TaskLoadError, FallbackNotPermi
 
 from ..populate_tasks import get_task_samples_for_analysis as _get_task_samples_for_analysis
 from .sample_helpers import get_task_samples_direct
-from wisent.core.utils.config_tools.constants import DEFAULT_NUM_SAMPLES, DISPLAY_TOP_N_TINY
+from wisent.core.utils.config_tools.constants import DISPLAY_TOP_N_TINY
 
 
 __all__ = [
@@ -19,9 +19,11 @@ __all__ = [
 
 
 def get_task_samples_for_analysis(
-    task_name: str, num_samples: int = DEFAULT_NUM_SAMPLES, trust_remote_code: bool = False
+    task_name: str, num_samples: int = None, trust_remote_code: bool = False
 ) -> dict:
     """Enhanced wrapper for get_task_samples_for_analysis with trust_remote_code."""
+    if num_samples is None:
+        num_samples = 5
     try:
         original_env = {}
         if trust_remote_code:
@@ -73,11 +75,13 @@ def get_task_samples_for_analysis(
 
 def get_task_samples_with_subtasks(
     task_name: str,
-    num_samples: int = DEFAULT_NUM_SAMPLES,
+    num_samples: int = None,
     trust_remote_code: bool = False,
     limit_subtasks: Optional[int] = None,
 ) -> dict:
     """Get samples from a task that has subtasks."""
+    if num_samples is None:
+        num_samples = 5
     try:
         try:
             result = get_task_samples_for_analysis(
@@ -156,7 +160,7 @@ def get_task_samples_with_subtasks(
 
 
 def get_task_samples_fallback(
-    task_name: str, num_samples: int = DEFAULT_NUM_SAMPLES, trust_remote_code: bool = False
+    task_name: str, num_samples: int = None, trust_remote_code: bool = False
 ) -> dict:
     """DEPRECATED: Fallback loading is not permitted."""
     raise FallbackNotPermittedError(task_name=task_name)

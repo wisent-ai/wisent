@@ -2,12 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 from wisent.core.utils.cli.cli_logger import setup_logger
+from wisent.core.utils.config_tools.constants import LIVEMATHBENCH_DEFAULT_DATASET_CONFIG, LIVEMATHBENCH_DEFAULT_CONFIG_LABEL
 
 from wisent.core.primitives.contrastive_pairs.core.pair import ContrastivePair
 from wisent.extractors.hf.atoms import HuggingFaceBenchmarkExtractor
 
 from wisent.core.reading.evaluators.benchmark_specific.math_parsing.scripts import strip_string
-from wisent.core.utils.config_tools.constants import LIVEMATHBENCH_DEFAULT_DATASET_CONFIG, LIVEMATHBENCH_DEFAULT_CONFIG_LABEL
 
 from latex2sympy2_extended import latex2sympy
 from sympy import latex
@@ -56,7 +56,7 @@ class LiveMathBenchExtractor(HuggingFaceBenchmarkExtractor):
 
     evaluator_name = "exact_match"
 
-    # Set default dataset_config and config_label, to be override by subclass
+    # Set default dataset_config and config_label, to be overridden by subclass.
     dataset_config: str = LIVEMATHBENCH_DEFAULT_DATASET_CONFIG
     config_label: str = LIVEMATHBENCH_DEFAULT_CONFIG_LABEL
 

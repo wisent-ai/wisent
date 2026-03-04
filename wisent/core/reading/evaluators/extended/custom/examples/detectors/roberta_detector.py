@@ -6,7 +6,7 @@ Uses openai-community/roberta-base-openai-detector model.
 Usage:
     from wisent.core.reading.evaluators.custom.examples.roberta_detector import RobertaDetectorEvaluator
     
-    evaluator = RobertaDetectorEvaluator()  # No API key needed!
+    evaluator = create_roberta_detector_evaluator(api_retries=retries, exponential_backoff_base=backoff, api_max_wait_time=max_wait)
     result = evaluator("Some text to analyze")
 """
 
@@ -20,15 +20,7 @@ from wisent.core.reading.evaluators.custom.custom_evaluator import (
     CustomEvaluator,
     CustomEvaluatorConfig,
 )
-from wisent.core.utils.config_tools.constants import (
-    CLASSIFIER_THRESHOLD,
-    DEFAULT_API_RETRIES,
-    DEFAULT_TIMEOUT_DOCKER,
-    DETECTOR_MAX_TEXT_LENGTH,
-    MIN_RESPONSE_TEXT_LENGTH,
-    ROBERTA_API_DEFAULT_WAIT_TIME,
-    ROBERTA_API_MAX_WAIT_TIME,
-)
+from wisent.core.utils.infra_tools.infra.core.hardware import docker_code_exec_timeout_s
 
 __all__ = ["RobertaDetectorEvaluator", "create_roberta_detector_evaluator"]
 
@@ -48,15 +40,20 @@ class RobertaDetectorEvaluator(CustomEvaluator):
         hf_token: Optional Hugging Face token for API rate limits
     """
     
-    def __init__(self, use_local: bool = True, hf_token: Optional[str] = None):
+    def __init__(self, api_retries: int, exponential_backoff_base: int, api_max_wait_time: int, min_response_text_length: int, detector_max_text_length: int, use_local: bool = True, hf_token: Optional[str] = None):
         config = CustomEvaluatorConfig(
             name="roberta_detector",
             description="RoBERTa-based AI detector (free, higher = more human-like)",
         )
         super().__init__(name="roberta_detector", description=config.description, config=config)
-        
+
         self.use_local = use_local
         self.hf_token = hf_token
+        self._api_retries = api_retries
+        self._exponential_backoff_base = exponential_backoff_base
+        self._api_max_wait_time = api_max_wait_time
+        self._min_response_text_length = min_response_text_length
+        self._detector_max_text_length = detector_max_text_length
         self.model_id = "openai-community/roberta-base-openai-detector"
         
         self._pipeline = None
@@ -75,40 +72,38 @@ class RobertaDetectorEvaluator(CustomEvaluator):
             logger.warning(f"Failed to load local model, falling back to API: {e}")
             self.use_local = False
     
-    def _query_api(self, text: str, retries: int = DEFAULT_API_RETRIES) -> Dict[str, Any]:
+    def _query_api(self, text: str) -> Dict[str, Any]:
         """Query Hugging Face inference API."""
         import requests
-        
+
         headers = {}
         if self.hf_token:
             headers["Authorization"] = f"Bearer {self.hf_token}"
-        
-        for attempt in range(retries):
+
+        last_error: Exception = RuntimeError("No attempts made")
+        for attempt in range(self._api_retries):
             try:
                 response = requests.post(
                     self._api_url,
                     headers=headers,
                     json={"inputs": text},
-                    timeout=DEFAULT_TIMEOUT_DOCKER,
+                    timeout=docker_code_exec_timeout_s(),
                 )
                 
                 if response.status_code == 503:
                     # Model loading, wait and retry
-                    wait_time = response.json().get("estimated_time", ROBERTA_API_DEFAULT_WAIT_TIME)
+                    wait_time = response.json()["estimated_time"]
                     logger.info(f"Model loading, waiting {wait_time}s...")
-                    time.sleep(min(wait_time, ROBERTA_API_MAX_WAIT_TIME))
+                    time.sleep(min(wait_time, self._api_max_wait_time))
                     continue
                 
                 response.raise_for_status()
                 return response.json()
                 
             except requests.exceptions.RequestException as e:
-                if attempt < retries - 1:
-                    time.sleep(2 ** attempt)
-                    continue
-                raise RuntimeError(f"API call failed after {retries} attempts: {e}")
-        
-        raise RuntimeError("API call failed: max retries exceeded")
+                last_error = e
+                time.sleep(self._exponential_backoff_base ** attempt)
+        raise RuntimeError(f"API call failed after {self._api_retries} attempts: {last_error}")
     
     def _parse_result(self, result: Any) -> Dict[str, float]:
         """Parse API or local result into standardized format."""
@@ -122,8 +117,12 @@ class RobertaDetectorEvaluator(CustomEvaluator):
             scores = {item["label"]: item["score"] for item in result}
             
             # Real = human, Fake = AI
-            human_prob = scores.get("Real", scores.get("LABEL_1", CLASSIFIER_THRESHOLD))
-            ai_prob = scores.get("Fake", scores.get("LABEL_0", CLASSIFIER_THRESHOLD))
+            human_prob = scores.get("Real", scores.get("LABEL_1"))
+            ai_prob = scores.get("Fake", scores.get("LABEL_0"))
+            if human_prob is None:
+                raise KeyError("RoBERTa detector response missing both 'Real' and 'LABEL_1' keys")
+            if ai_prob is None:
+                raise KeyError("RoBERTa detector response missing both 'Fake' and 'LABEL_0' keys")
             
             return {
                 "human_prob": human_prob,
@@ -134,7 +133,7 @@ class RobertaDetectorEvaluator(CustomEvaluator):
     
     def evaluate_response(self, response: str, **kwargs) -> Dict[str, Any]:
         """Evaluate response for AI detection."""
-        if len(response.strip()) < MIN_RESPONSE_TEXT_LENGTH:
+        if len(response.strip()) < self._min_response_text_length:
             logger.warning("Text too short for reliable detection")
             return {
                 "score": 0.5,
@@ -144,7 +143,7 @@ class RobertaDetectorEvaluator(CustomEvaluator):
             }
         
         # Truncate to model's max length (512 tokens ~ 2000 chars)
-        text = response[:DETECTOR_MAX_TEXT_LENGTH]
+        text = response[:self._detector_max_text_length]
         
         if self.use_local and self._pipeline:
             result = self._pipeline(text)
@@ -161,22 +160,27 @@ class RobertaDetectorEvaluator(CustomEvaluator):
 
 
 def create_roberta_detector_evaluator(
+    api_retries: int,
+    exponential_backoff_base: int,
+    api_max_wait_time: int,
+    min_response_text_length: int,
+    detector_max_text_length: int,
     use_local: bool = True,
     hf_token: Optional[str] = None,
     **kwargs
 ) -> RobertaDetectorEvaluator:
     """Create a RoBERTa detector evaluator.
-    
+
     Args:
         use_local: Load model locally instead of using API
         hf_token: Optional Hugging Face token
-    
+
     Returns:
         RobertaDetectorEvaluator instance
     """
-    return RobertaDetectorEvaluator(use_local=use_local, hf_token=hf_token)
+    return RobertaDetectorEvaluator(api_retries=api_retries, exponential_backoff_base=exponential_backoff_base, api_max_wait_time=api_max_wait_time, min_response_text_length=min_response_text_length, detector_max_text_length=detector_max_text_length, use_local=use_local, hf_token=hf_token)
 
 
 def create_evaluator(**kwargs) -> RobertaDetectorEvaluator:
     """Factory function for module-based loading."""
-    return create_roberta_detector_evaluator(**kwargs)
+    return create_roberta_detector_evaluator(api_retries=kwargs.pop("api_retries"), exponential_backoff_base=kwargs.pop("exponential_backoff_base"), api_max_wait_time=kwargs.pop("api_max_wait_time"), min_response_text_length=kwargs.pop("min_response_text_length"), detector_max_text_length=kwargs.pop("detector_max_text_length"), **kwargs)

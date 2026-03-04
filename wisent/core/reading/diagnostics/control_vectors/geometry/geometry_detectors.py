@@ -1,23 +1,18 @@
 """Individual geometry structure detectors."""
-
 from __future__ import annotations
-
 from typing import Dict
-
 import torch
-
 from .geometry_types import StructureType, StructureScore, GeometryAnalysisConfig
-from wisent.core.utils.config_tools.constants import NORM_EPS, COMPARE_TOL, GEO_MANIFOLD_SCORE_DEFAULT, GEO_MANIFOLD_CONFIDENCE, GEO_ORTHOGONAL_CONFIDENCE, KMEANS_MAX_ITERATIONS_DEFAULT
-from wisent.core import constants as _C
+from wisent.core.utils.config_tools.constants import NORM_EPS, COMPARE_TOL, SCORE_RANGE_MIN, SCORE_RANGE_MAX
 
 
 def detect_linear_structure(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    diff_vectors: torch.Tensor,
-    cfg: GeometryAnalysisConfig,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig, detector_cohens_d_divisor: float = None, detector_large_sample_n: int = None,
 ) -> StructureScore:
     """Detect if a single linear direction captures the behavior."""
+    for _n, _v in [("detector_cohens_d_divisor", detector_cohens_d_divisor), ("detector_large_sample_n", detector_large_sample_n)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     if pos_tensor.shape[0] < 2 or neg_tensor.shape[0] < 2:
         return StructureScore(StructureType.LINEAR, 0.0, 0.0, {"reason": "insufficient_data"})
 
@@ -51,12 +46,12 @@ def detect_linear_structure(
         consistency = max(0, 1 - spread_ratio)
 
         linear_score = (
-            0.35 * min(float(cohens_d) / _C.DETECTOR_COHENS_D_DIVISOR, 1.0) +
+            0.35 * min(float(cohens_d) / detector_cohens_d_divisor, 1.0) +
             0.35 * variance_explained +
             0.30 * consistency
         )
 
-        confidence = min(1.0, (pos_tensor.shape[0] + neg_tensor.shape[0]) / _C.DETECTOR_LARGE_SAMPLE_N)
+        confidence = min(1.0, (pos_tensor.shape[0] + neg_tensor.shape[0]) / detector_large_sample_n)
 
         return StructureScore(
             StructureType.LINEAR, score=float(linear_score),
@@ -68,11 +63,14 @@ def detect_linear_structure(
 
 
 def detect_cone_structure_score(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    cfg: GeometryAnalysisConfig,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, cfg: GeometryAnalysisConfig,
+    detector_cone_threshold_low: float = None, detector_cone_range_mid: float = None, detector_cone_scale_mid: float = None,
+    detector_cone_range_high: float = None, detector_cone_scale_high: float = None, detector_cone_offset_top: float = None,
+    detector_cone_range_top: float = None, detector_cone_scale_top: float = None, detector_small_sample_n: int = None,
 ) -> StructureScore:
     """Detect cone structure using raw cosine similarity of difference vectors."""
+    for _n, _v in [("detector_cone_threshold_low", detector_cone_threshold_low), ("detector_cone_range_mid", detector_cone_range_mid), ("detector_cone_scale_mid", detector_cone_scale_mid), ("detector_cone_range_high", detector_cone_range_high), ("detector_cone_scale_high", detector_cone_scale_high), ("detector_cone_offset_top", detector_cone_offset_top), ("detector_cone_range_top", detector_cone_range_top), ("detector_cone_scale_top", detector_cone_scale_top), ("detector_small_sample_n", detector_small_sample_n)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     try:
         n_pairs = min(pos_tensor.shape[0], neg_tensor.shape[0])
         if n_pairs < 3:
@@ -96,26 +94,26 @@ def detect_cone_structure_score(
 
         if mean_cos_sim < 0:
             cone_score = 0.0
-        elif mean_cos_sim < _C.DETECTOR_CONE_THRESHOLD_LOW:
+        elif mean_cos_sim < detector_cone_threshold_low:
             cone_score = mean_cos_sim
-        elif mean_cos_sim < _C.DETECTOR_CONE_RANGE_MID:
-            cone_score = (_C.DETECTOR_CONE_THRESHOLD_LOW
-                          + _C.DETECTOR_CONE_SCALE_MID
-                          * ((mean_cos_sim - _C.DETECTOR_CONE_THRESHOLD_LOW)
-                             / _C.DETECTOR_CONE_SCALE_MID))
-        elif mean_cos_sim < _C.DETECTOR_CONE_RANGE_HIGH:
-            cone_score = (_C.DETECTOR_CONE_RANGE_MID
-                          + (_C.DETECTOR_CONE_OFFSET_TOP
-                             - _C.DETECTOR_CONE_RANGE_MID)
-                          * ((mean_cos_sim - _C.DETECTOR_CONE_RANGE_MID)
-                             / _C.DETECTOR_CONE_SCALE_HIGH))
+        elif mean_cos_sim < detector_cone_range_mid:
+            cone_score = (detector_cone_threshold_low
+                          + detector_cone_scale_mid
+                          * ((mean_cos_sim - detector_cone_threshold_low)
+                             / detector_cone_scale_mid))
+        elif mean_cos_sim < detector_cone_range_high:
+            cone_score = (detector_cone_range_mid
+                          + (detector_cone_offset_top
+                             - detector_cone_range_mid)
+                          * ((mean_cos_sim - detector_cone_range_mid)
+                             / detector_cone_scale_high))
         else:
-            _top_span = 1.0 - _C.DETECTOR_CONE_OFFSET_TOP
-            _top_frac = (mean_cos_sim - _C.DETECTOR_CONE_RANGE_TOP) / _C.DETECTOR_CONE_SCALE_TOP
-            cone_score = _C.DETECTOR_CONE_OFFSET_TOP + _top_span * _top_frac
+            _top_span = 1.0 - detector_cone_offset_top
+            _top_frac = (mean_cos_sim - detector_cone_range_top) / detector_cone_scale_top
+            cone_score = detector_cone_offset_top + _top_span * _top_frac
 
         consistency = max(0, 1 - std_cos_sim)
-        confidence = consistency * min(1.0, n_pairs / _C.DETECTOR_SMALL_SAMPLE_N)
+        confidence = consistency * min(1.0, n_pairs / detector_small_sample_n)
 
         return StructureScore(
             StructureType.CONE, score=float(cone_score),
@@ -127,12 +125,11 @@ def detect_cone_structure_score(
 
 
 def detect_cluster_structure(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    diff_vectors: torch.Tensor,
-    cfg: GeometryAnalysisConfig,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig, min_clusters: int, detector_cluster_sample_n: int = None,
 ) -> StructureScore:
     """Detect if activations form discrete clusters."""
+    if detector_cluster_sample_n is None: raise ValueError("detector_cluster_sample_n is required")
     all_activations = torch.cat([pos_tensor, neg_tensor], dim=0)
     n_samples = all_activations.shape[0]
 
@@ -140,11 +137,11 @@ def detect_cluster_structure(
         return StructureScore(StructureType.CLUSTER, 0.0, 0.0, {"reason": "insufficient_data"})
 
     best_silhouette = -1.0
-    best_k = _C.MIN_CLUSTERS
+    best_k = min_clusters
 
-    for k in range(_C.MIN_CLUSTERS, min(cfg.max_clusters + 1, n_samples // 2)):
+    for k in range(min_clusters, min(cfg.max_clusters + 1, n_samples // 2)):
         try:
-            labels, centroids, silhouette = _kmeans_with_silhouette(all_activations, k)
+            labels, centroids, silhouette = _kmeans_with_silhouette(all_activations, k, cfg.kmeans_max_iterations)
             if silhouette > best_silhouette:
                 best_silhouette = silhouette
                 best_k = k
@@ -155,7 +152,7 @@ def detect_cluster_structure(
         return StructureScore(StructureType.CLUSTER, 0.0, 0.0, {"reason": "clustering_failed"})
 
     cluster_score = max(0, min(1, (best_silhouette + 1) / 2))
-    confidence = min(1.0, n_samples / _C.DETECTOR_CLUSTER_SAMPLE_N)
+    confidence = min(1.0, n_samples / detector_cluster_sample_n)
 
     return StructureScore(
         StructureType.CLUSTER, score=float(cluster_score),
@@ -165,20 +162,20 @@ def detect_cluster_structure(
 
 
 def detect_sparse_structure(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    diff_vectors: torch.Tensor,
-    cfg: GeometryAnalysisConfig,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig, geo_diag_sparse_threshold: float = None, sparse_detection_confidence: float = None,
 ) -> StructureScore:
     """Detect if behavior is encoded in sparse activations."""
+    for _n, _v in [("geo_diag_sparse_threshold", geo_diag_sparse_threshold), ("sparse_detection_confidence", sparse_detection_confidence)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     try:
         mean_diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
         abs_diff = mean_diff.abs()
-        threshold = abs_diff.max() * cfg.sparse_threshold
+        threshold = abs_diff.max() * geo_diag_sparse_threshold
         active_dims = (abs_diff > threshold).sum().item()
         sparsity = 1 - (active_dims / mean_diff.shape[0])
         sparse_score = float(sparsity)
-        confidence = _C.SPARSE_DETECTION_CONFIDENCE
+        confidence = sparse_detection_confidence
         return StructureScore(
             StructureType.SPARSE, score=sparse_score,
             confidence=confidence,
@@ -189,26 +186,24 @@ def detect_sparse_structure(
 
 
 def detect_manifold_structure(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    diff_vectors: torch.Tensor,
-    cfg: GeometryAnalysisConfig,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig, geo_manifold_score_default: float = None, geo_manifold_confidence: float = None,
 ) -> StructureScore:
-    """Detect non-linear manifold structure (fallback)."""
-    # Manifold is the most general - use moderate score as fallback
+    """Detect non-linear manifold structure."""
+    for _n, _v in [("geo_manifold_score_default", geo_manifold_score_default), ("geo_manifold_confidence", geo_manifold_confidence)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     return StructureScore(
-        StructureType.MANIFOLD, score=GEO_MANIFOLD_SCORE_DEFAULT, confidence=GEO_MANIFOLD_CONFIDENCE,
-        details={"note": "Manifold is fallback structure"}
+        StructureType.MANIFOLD, score=geo_manifold_score_default, confidence=geo_manifold_confidence,
+        details={"note": "Manifold is general structure"}
     )
 
 
 def detect_bimodal_structure(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    diff_vectors: torch.Tensor,
-    cfg: GeometryAnalysisConfig,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig, bimodal_detection_confidence: float = None,
 ) -> StructureScore:
     """Detect bimodal distribution in projections."""
+    if bimodal_detection_confidence is None: raise ValueError("bimodal_detection_confidence is required")
     try:
         mean_diff = pos_tensor.mean(dim=0) - neg_tensor.mean(dim=0)
         mean_diff = mean_diff / (mean_diff.norm() + NORM_EPS)
@@ -222,19 +217,19 @@ def detect_bimodal_structure(
         bimodal_score = min(1.0, gap / (2 * std + NORM_EPS))
         return StructureScore(
             StructureType.BIMODAL, score=float(bimodal_score),
-            confidence=_C.BIMODAL_DETECTION_CONFIDENCE, details={"gap_over_std": float(gap / (std + NORM_EPS))}
+            confidence=bimodal_detection_confidence, details={"gap_over_std": float(gap / (std + NORM_EPS))}
         )
     except Exception as e:
         return StructureScore(StructureType.BIMODAL, 0.0, 0.0, {"error": str(e)})
 
 
 def detect_orthogonal_structure(
-    pos_tensor: torch.Tensor,
-    neg_tensor: torch.Tensor,
-    diff_vectors: torch.Tensor,
-    cfg: GeometryAnalysisConfig,
+    pos_tensor: torch.Tensor, neg_tensor: torch.Tensor, diff_vectors: torch.Tensor,
+    cfg: GeometryAnalysisConfig, geo_diag_orthogonal_threshold: float = None, geo_orthogonal_confidence: float = None,
 ) -> StructureScore:
     """Detect orthogonal subspaces."""
+    for _n, _v in [("geo_diag_orthogonal_threshold", geo_diag_orthogonal_threshold), ("geo_orthogonal_confidence", geo_orthogonal_confidence)]:
+        if _v is None: raise ValueError(f"{_n} is required")
     try:
         n_pairs = min(pos_tensor.shape[0], neg_tensor.shape[0])
         if n_pairs < 3:
@@ -249,16 +244,16 @@ def detect_orthogonal_structure(
         n = cos_sim.shape[0]
         mask = ~torch.eye(n, dtype=torch.bool)
         mean_abs_cos = cos_sim[mask].abs().mean().item()
-        orthogonal_score = max(0, 1 - mean_abs_cos / cfg.orthogonal_threshold)
+        orthogonal_score = max(SCORE_RANGE_MIN, SCORE_RANGE_MAX - mean_abs_cos / geo_diag_orthogonal_threshold)
         return StructureScore(
             StructureType.ORTHOGONAL, score=float(orthogonal_score),
-            confidence=GEO_ORTHOGONAL_CONFIDENCE, details={"mean_abs_cosine": mean_abs_cos}
+            confidence=geo_orthogonal_confidence, details={"mean_abs_cosine": mean_abs_cos}
         )
     except Exception as e:
         return StructureScore(StructureType.ORTHOGONAL, 0.0, 0.0, {"error": str(e)})
 
 
-def _kmeans_with_silhouette(data: torch.Tensor, k: int, max_iters: int = KMEANS_MAX_ITERATIONS_DEFAULT):
+def _kmeans_with_silhouette(data: torch.Tensor, k: int, max_iters: int):
     """Simple k-means with silhouette score."""
     n = data.shape[0]
     idx = torch.randperm(n)[:k]

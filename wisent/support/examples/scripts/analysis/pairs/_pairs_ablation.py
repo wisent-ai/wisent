@@ -5,7 +5,6 @@ Pairs ablation and optimal configuration finding for direction discovery.
 from typing import Dict, List, Optional
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import PAIR_COUNT_ABLATION_SERIES, PAIRS_ABLATION_DEFAULT_MIN
 from wisent.examples.scripts._discovery_utils import OptimalConfig
 
 
@@ -14,7 +13,8 @@ def run_pairs_ablation(
     benchmark: str,
     layer: int,
     strategy: "ExtractionStrategy",
-    pair_counts: List[int] = None,
+    *,
+    pair_counts: List[int],
 ) -> Dict[int, float]:
     """
     Run ablation study on number of contrastive pairs.
@@ -34,7 +34,7 @@ def run_pairs_ablation(
     from wisent.core.reading.modules.runner.geometry_runner import compute_geometry_metrics
     from wisent.core.primitives.model_interface.core.activations.activation_cache import CachedActivations
     
-    pair_counts = pair_counts or list(PAIR_COUNT_ABLATION_SERIES)
+    pair_counts = list(pair_counts)
     results = {}
     
     # Get full cached activations
@@ -76,6 +76,8 @@ def run_pairs_ablation(
 
 def find_optimal_config(
     results: "GeometrySearchResults",
+    *,
+    pairs_ablation_default_min: int,
     nonsense_analysis: Optional[Dict[str, Dict]] = None,
     pairs_ablation: Optional[Dict[str, Dict[int, float]]] = None,
 ) -> Optional[OptimalConfig]:
@@ -150,9 +152,9 @@ def find_optimal_config(
     if pairs_saturation_curve:
         max_acc = max(pairs_saturation_curve.values())
         threshold = max_acc * 0.95
-        min_pairs = min([n for n, acc in pairs_saturation_curve.items() if acc >= threshold], default=PAIRS_ABLATION_DEFAULT_MIN)
+        min_pairs = min([n for n, acc in pairs_saturation_curve.items() if acc >= threshold], default=pairs_ablation_default_min)
     else:
-        min_pairs = PAIRS_ABLATION_DEFAULT_MIN  # default
+        min_pairs = pairs_ablation_default_min  # default
     
     # Multi-direction analysis
     num_directions = int(best_result.multi_dir_min_k_for_good) if best_result.multi_dir_min_k_for_good > 0 else 1

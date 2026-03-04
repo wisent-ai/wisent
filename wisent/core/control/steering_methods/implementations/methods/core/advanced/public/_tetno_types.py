@@ -28,17 +28,7 @@ from wisent.core.control.steering_methods.core.atoms import BaseSteeringMethod
 from wisent.core.primitives.model_interface.core.activations.core.atoms import LayerActivations, RawActivationMap, LayerName
 from wisent.core.primitives.contrastive_pairs.core.set import ContrastivePairSet
 from wisent.core.utils.infra_tools.errors import InsufficientDataError
-from wisent.core.utils.config_tools.constants import (
-    TETNO_CONDITION_THRESHOLD,
-    TETNO_GATE_TEMPERATURE,
-    TETNO_ENTROPY_FLOOR,
-    TETNO_ENTROPY_CEILING,
-    TETNO_MAX_ALPHA,
-    DEFAULT_OPTIMIZATION_STEPS,
-    TECZA_LEARNING_RATE,
-    TETNO_THRESHOLD_SEARCH_STEPS,
-    DEFAULT_LAYER_WEIGHT,
-)
+from wisent.core.utils.infra_tools.errors import InsufficientDataError
 
 __all__ = [
     "TETNOMethod",
@@ -50,20 +40,63 @@ __all__ = [
 @dataclass
 class TETNOConfig:
     """Configuration for TETNO steering method."""
-    
-    # Layer configuration
+
+    # Required fields (no defaults — must come from optimizer or explicit config)
+    condition_threshold: float
+    """Threshold for condition activation."""
+
+    gate_temperature: float
+    """Temperature for sigmoid gating (lower = sharper)."""
+
+    max_alpha: float
+    """Maximum steering strength."""
+
+    optimization_steps: int
+    """Steps for condition vector optimization."""
+
+    learning_rate: float
+    """Learning rate for optimization."""
+
+    entropy_floor: float
+    """Minimum entropy to trigger scaling (below = no steering)."""
+
+    entropy_ceiling: float
+    """Entropy at which max_alpha is reached."""
+
+    threshold_search_steps: int
+    """Number of threshold values to try in grid search."""
+
+    condition_margin: float
+    """Margin for condition vector optimization loss."""
+
+    min_layer_scale: float
+    """Minimum per-layer scaling factor."""
+
+    # Optional fields with defaults
     sensor_layer: Optional[int] = None
-    """Layer index where condition gating is computed. If None, auto-computed from num_layers."""
-    
+    """Layer index where condition gating is computed. If None, auto-computed."""
+
     steering_layers: Optional[List[int]] = None
-    """Layer indices where steering is applied. If None, auto-computed from num_layers."""
-    
+    """Layer indices where steering is applied. If None, auto-computed."""
+
     num_layers: Optional[int] = None
     """Total layers in the model. Used to auto-compute steering_layers and sensor_layer."""
-    
+
     per_layer_scaling: bool = True
     """Whether to learn/use different scaling per layer."""
-    
+
+    learn_threshold: bool = True
+    """Whether to learn optimal threshold via grid search."""
+
+    use_entropy_scaling: bool = True
+    """Enable entropy-based intensity modulation."""
+
+    use_caa_init: bool = True
+    """Initialize behavior vectors using CAA."""
+
+    normalize: bool = True
+    """L2-normalize vectors."""
+
     def resolve_layers(self, num_layers: int) -> None:
         """Resolve steering_layers and sensor_layer based on model's num_layers."""
         self.num_layers = num_layers
@@ -77,46 +110,6 @@ class TETNOConfig:
                 "steering_layers must be specified explicitly. "
                 "Pass a list of integer layer indices."
             )
-    
-    # Condition gating
-    condition_threshold: float = TETNO_CONDITION_THRESHOLD
-    """Threshold for condition activation (0-1)."""
-    
-    gate_temperature: float = TETNO_GATE_TEMPERATURE
-    """Temperature for sigmoid gating (lower = sharper)."""
-    
-    learn_threshold: bool = True
-    """Whether to learn optimal threshold via grid search."""
-    
-    # Uncertainty-guided intensity
-    use_entropy_scaling: bool = True
-    """Enable entropy-based intensity modulation."""
-    
-    entropy_floor: float = TETNO_ENTROPY_FLOOR
-    """Minimum entropy to trigger scaling (below = no steering)."""
-    
-    entropy_ceiling: float = TETNO_ENTROPY_CEILING
-    """Entropy at which max_alpha is reached."""
-    
-    max_alpha: float = TETNO_MAX_ALPHA
-    """Maximum steering strength."""
-    
-    # Training
-    optimization_steps: int = DEFAULT_OPTIMIZATION_STEPS
-    """Steps for condition vector optimization."""
-    
-    learning_rate: float = TECZA_LEARNING_RATE
-    """Learning rate for optimization."""
-    
-    use_caa_init: bool = True
-    """Initialize behavior vectors using CAA."""
-    
-    normalize: bool = True
-    """L2-normalize vectors."""
-    
-    # Threshold search
-    threshold_search_steps: int = TETNO_THRESHOLD_SEARCH_STEPS
-    """Number of threshold values to try in grid search."""
 
 
 @dataclass
@@ -144,7 +137,9 @@ class TETNOResult:
     
     def get_layer_scale(self, layer: LayerName) -> float:
         """Get scaling factor for a layer."""
-        return self.layer_scales.get(layer, DEFAULT_LAYER_WEIGHT)
+        if layer not in self.layer_scales:
+            raise KeyError(f"No scale for layer {layer}. Available: {list(self.layer_scales.keys())}")
+        return self.layer_scales[layer]
     
     def should_steer(self, hidden_state: torch.Tensor, threshold: Optional[float] = None) -> Tuple[bool, float]:
         """
@@ -170,7 +165,7 @@ class TETNOResult:
         
         return similarity.item() > thresh, similarity.item()
     
-    def compute_gate(self, hidden_state: torch.Tensor, temperature: float = TETNO_GATE_TEMPERATURE) -> torch.Tensor:
+    def compute_gate(self, hidden_state: torch.Tensor, temperature: float) -> torch.Tensor:
         """
         Compute soft gate value for steering.
         

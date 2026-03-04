@@ -69,5 +69,12 @@ def setup_diagnose_vectors_parser(parser):
         help='Number of neighbors for manifold analysis'
     )
 
+    parser.add_argument(
+        '--grom-min-cosine-sim',
+        type=float,
+        default=None,
+        help='Minimum cosine similarity for GROM cone analysis (required at runtime)'
+    )
+
     parser.set_defaults(command='diagnose-vectors')
     return parser

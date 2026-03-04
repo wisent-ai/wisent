@@ -1,10 +1,5 @@
 """Parser setup for the 'synthetic' command."""
-from wisent.core.utils.config_tools.constants import (
-    SYNTHETIC_DEDUP_SIMILARITY,
-    SYNTHETIC_QUALITY_THRESHOLD,
-    SYNTHETIC_MIN_QUALITY,
-    NONSENSE_MAX_WORD_LENGTH,
-)
+from wisent.core.utils.config_tools.constants import NONSENSE_MAX_WORD_LENGTH
 
 
 def setup_synthetic_parser(parser):
@@ -52,7 +47,7 @@ def setup_synthetic_parser(parser):
     parser.add_argument("--output", type=str, required=True, help="Output directory for results")
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output")
     parser.add_argument("--timing", action="store_true", help="Show timing information")
-    parser.add_argument("--similarity-threshold", type=float, default=SYNTHETIC_DEDUP_SIMILARITY, help="Similarity threshold for deduplication")
+    parser.add_argument("--similarity-threshold", type=float, required=True, help="Similarity threshold for deduplication")
     parser.add_argument("--intermediate-dir", type=str, default=None, help="Directory for intermediate files")
     parser.add_argument("--keep-intermediate", action="store_true", help="Keep intermediate files after completion")
     parser.add_argument("--layers", type=str, required=True, help="Layers to extract activations from")
@@ -98,14 +93,14 @@ def setup_synthetic_parser(parser):
     parser.add_argument(
         "--repetition-threshold",
         type=float,
-        default=SYNTHETIC_QUALITY_THRESHOLD,
-        help="Threshold for repetitive content detection (0-1, default: 0.7)",
+        required=True,
+        help="Threshold for repetitive content detection",
     )
     parser.add_argument(
         "--gibberish-threshold",
         type=float,
-        default=SYNTHETIC_MIN_QUALITY,
-        help="Threshold for gibberish word detection (0-1, default: 0.3)",
+        required=True,
+        help="Threshold for gibberish word detection",
     )
     parser.add_argument(
         "--disable-dictionary-check",

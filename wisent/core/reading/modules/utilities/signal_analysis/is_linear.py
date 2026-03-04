@@ -12,14 +12,7 @@ from typing import Optional, Dict, List, Tuple, Any
 import numpy as np
 import torch
 from scipy import stats
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_RANDOM_SEED, LINEARITY_TEST_GAP_THRESHOLD,
-    LINEARITY_TEST_P_THRESHOLD, LINEARITY_TEST_RESIDUAL_THRESHOLD,
-    LINEARITY_TEST_RAMSEY_THRESHOLD, LINEARITY_TEST_N_BOOTSTRAP,
-    CV_FOLDS, LINEARITY_CONFIDENCE_HIGH,
-    LINEARITY_CONFIDENCE_LOW, LINEARITY_CROSS_CONTEXT_THRESHOLD,
-    DIAGNOSTICS_TOTAL_CHECKS,
-)
+"""Formerly imported LINEARITY_TEST_* are now required parameters."""
 
 from wisent.core.reading.modules.modules.geo_utils.linearity_utils import (
     compute_probe_accuracies,
@@ -60,13 +53,19 @@ class LinearityTestResult:
 def test_linearity(
     pos: torch.Tensor,
     neg: torch.Tensor,
-    gap_threshold: float = LINEARITY_TEST_GAP_THRESHOLD,
-    p_threshold: float = LINEARITY_TEST_P_THRESHOLD,
-    residual_threshold: float = LINEARITY_TEST_RESIDUAL_THRESHOLD,
-    ramsey_threshold: float = LINEARITY_TEST_RAMSEY_THRESHOLD,
-    n_bootstrap: int = LINEARITY_TEST_N_BOOTSTRAP,
+    diagnostics_total_checks: int,
     contexts: Optional[List[Tuple[torch.Tensor, torch.Tensor]]] = None,
-    random_state: int = DEFAULT_RANDOM_SEED,
+    random_state: int | None = None,
+    *,
+    cv_folds: int,
+    gap_threshold: float,
+    p_threshold: float,
+    residual_threshold: float,
+    ramsey_threshold: float,
+    n_bootstrap: int,
+    linearity_confidence_high: float,
+    linearity_confidence_low: float,
+    linearity_cross_context_threshold: float,
 ) -> LinearityTestResult:
     """Run complete linearity validation suite.
 
@@ -93,10 +92,13 @@ def test_linearity(
     Returns:
         LinearityTestResult with all diagnostics and final diagnosis.
     """
+    if random_state is None:
+        from wisent.core.utils.config_tools.constants import DEFAULT_RANDOM_SEED
+        random_state = DEFAULT_RANDOM_SEED
     diagnostics = {}
 
     linear_acc, nonlinear_acc, linear_scores, nonlinear_scores = compute_probe_accuracies(
-        pos, neg, n_splits=CV_FOLDS, random_state=random_state
+        pos, neg, n_splits=cv_folds, random_state=random_state
     )
     gap = nonlinear_acc - linear_acc
 
@@ -145,7 +147,7 @@ def test_linearity(
     }
 
     diagnostics_passed = 0
-    diagnostics_total = DIAGNOSTICS_TOTAL_CHECKS
+    diagnostics_total = diagnostics_total_checks
 
     if not gap_significant:
         diagnostics_passed += 1
@@ -160,19 +162,19 @@ def test_linearity(
         cross_context_result = test_cross_context_linearity(contexts, random_state=random_state)
         diagnostics["cross_context"] = cross_context_result
         diagnostics_total += 1
-        if cross_context_result["transfer_accuracy"] > LINEARITY_CROSS_CONTEXT_THRESHOLD:
+        if cross_context_result["transfer_accuracy"] > linearity_cross_context_threshold:
             diagnostics_passed += 1
 
     is_linear = diagnostics_passed >= (diagnostics_total / 2)
     confidence = diagnostics_passed / diagnostics_total
 
     if is_linear:
-        if confidence >= LINEARITY_CONFIDENCE_HIGH:
+        if confidence >= linearity_confidence_high:
             diagnosis = "LINEAR_HIGH_CONFIDENCE"
         else:
             diagnosis = "LINEAR_MODERATE_CONFIDENCE"
     else:
-        if confidence <= LINEARITY_CONFIDENCE_LOW:
+        if confidence <= linearity_confidence_low:
             diagnosis = "NONLINEAR_HIGH_CONFIDENCE"
         else:
             diagnosis = "NONLINEAR_MODERATE_CONFIDENCE"

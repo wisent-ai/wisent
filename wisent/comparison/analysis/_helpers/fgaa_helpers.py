@@ -5,9 +5,8 @@ from __future__ import annotations
 import gc
 import json
 from pathlib import Path
-
 import torch
-from wisent.core.utils.config_tools.constants import NORM_EPS, FGAA_DENSITY_THRESHOLD, FGAA_TOP_K_POSITIVE, FGAA_TOP_K_NEGATIVE, COMPARISON_NUM_PAIRS, DISPLAY_TOP_N_MEDIUM, JSON_INDENT
+from wisent.core.utils.config_tools.constants import NORM_EPS, DISPLAY_TOP_N_MEDIUM, JSON_INDENT
 
 __all__ = [
     "compute_v_target",
@@ -24,9 +23,10 @@ def compute_v_target(
     bos_features_paper: dict,
     bos_features_detected: dict,
     bos_features_source: str,
-    density_threshold: float = FGAA_DENSITY_THRESHOLD,
-    top_k_positive: int = FGAA_TOP_K_POSITIVE,
-    top_k_negative: int = FGAA_TOP_K_NEGATIVE,
+    *,
+    density_threshold: float,
+    top_k_positive: int,
+    top_k_negative: int,
 ) -> torch.Tensor:
     """Compute v_target by filtering v_diff with density, BOS, and top-k."""
     v_filtered = v_diff.clone()
@@ -100,10 +100,11 @@ def generate_steering_vector(
     generate_pairs_fn, compute_v_diff_fn,
     bos_features_source: str,
     trait_label: str, device: str,
-    num_pairs: int = COMPARISON_NUM_PAIRS,
-    layers: str | None = None,
-    keep_intermediate: bool = False, density_threshold: float = FGAA_DENSITY_THRESHOLD,
-    top_k_positive: int = FGAA_TOP_K_POSITIVE, top_k_negative: int = FGAA_TOP_K_NEGATIVE,
+    num_pairs: int,
+    layers: str,
+    density_threshold: float,
+    top_k_positive: int, top_k_negative: int,
+    keep_intermediate: bool = False,
     **kwargs,
 ) -> Path:
     """Generate a steering vector using the FGAA method."""
@@ -112,9 +113,7 @@ def generate_steering_vector(
         raise ValueError(f"No SAE config for '{model_name}'. Supported: {list(sae_configs.keys())}")
     config = sae_configs[model_name]
 
-    if layers is None:
-        layer_indices = [config["default_layer"]]
-    elif layers == "all":
+    if layers == "all":
         layer_indices = list(range(config["num_layers"]))
     else:
         layer_indices = [int(l.strip()) for l in layers.split(",")]

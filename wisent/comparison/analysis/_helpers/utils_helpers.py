@@ -50,6 +50,7 @@ def apply_steering_to_model(
     model: "WisentModel",
     steering_data: dict,
     scale: float,
+    min_norm_threshold: float,
 ) -> None:
     """
     Apply loaded steering vectors to a WisentModel.
@@ -58,13 +59,14 @@ def apply_steering_to_model(
         model: WisentModel instance
         steering_data: Dictionary from load_steering_vector()
         scale: Scaling factor for steering strength (required)
+        min_norm_threshold: Minimum norm threshold for control vector health
     """
     raw_map = {}
     dtype = preferred_dtype()
     for layer_str, vec_list in steering_data["steering_vectors"].items():
         raw_map[layer_str] = torch.tensor(vec_list, dtype=dtype)
 
-    model.set_steering_from_raw(raw_map, scale=scale, normalize=False)
+    model.set_steering_from_raw(raw_map, scale=scale, min_norm_threshold=min_norm_threshold, normalize=False)
     model.apply_steering()
 
 

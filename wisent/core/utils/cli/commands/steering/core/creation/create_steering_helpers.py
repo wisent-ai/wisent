@@ -3,17 +3,17 @@ from __future__ import annotations
 import torch
 
 from wisent.core import constants as _C
-from wisent.core.utils.config_tools.constants import (
-    DEFAULT_SCORE,
-    TECZA_LEARNING_RATE,
-    TECZA_NUM_DIRECTIONS,
-    DEFAULT_OPTIMIZATION_STEPS,
-    TETNO_CONDITION_THRESHOLD,
-    TETNO_GATE_TEMPERATURE,
-    TECZA_LEARNING_RATE,
-    TETNO_THRESHOLD_SEARCH_STEPS,
-    THRESHOLD_SEARCH_INIT_VALUE,
-)
+
+
+def _require_arg(args, attr_name):
+    """Get required arg or raise clear error."""
+    val = getattr(args, attr_name, None)
+    if val is None:
+        raise ValueError(
+            f"Parameter '{attr_name}' is required. "
+            f"Run 'wisent optimize-steering auto' first, or pass it explicitly."
+        )
+    return val
 
 
 def _create_tecza_steering_object(
@@ -24,13 +24,25 @@ def _create_tecza_steering_object(
 ) -> TECZASteeringObject:
     """Create TECZA steering object with multiple directions."""
     from wisent.core.control.steering_methods.methods.advanced import TECZAMethod
-    
-    num_directions = getattr(args, 'tecza_num_directions', TECZA_NUM_DIRECTIONS)
-    
+
+    _r = _require_arg
     method = TECZAMethod(
-        num_directions=num_directions,
-        optimization_steps=getattr(args, 'tecza_optimization_steps', DEFAULT_OPTIMIZATION_STEPS),
-        learning_rate=getattr(args, 'tecza_learning_rate', TECZA_LEARNING_RATE),
+        num_directions=_r(args, 'tecza_num_directions'),
+        optimization_steps=_r(args, 'tecza_optimization_steps'),
+        learning_rate=_r(args, 'tecza_learning_rate'),
+        retain_weight=_r(args, 'tecza_retain_weight'),
+        independence_weight=_r(args, 'tecza_independence_weight'),
+        min_cosine_similarity=_r(args, 'tecza_min_cosine_sim'),
+        max_cosine_similarity=_r(args, 'tecza_max_cosine_sim'),
+        variance_threshold=_r(args, 'tecza_variance_threshold'),
+        marginal_threshold=_r(args, 'tecza_marginal_threshold'),
+        max_directions=_r(args, 'tecza_max_directions'),
+        ablation_weight=_r(args, 'tecza_ablation_weight'),
+        addition_weight=_r(args, 'tecza_addition_weight'),
+        separation_margin=_r(args, 'tecza_separation_margin'),
+        perturbation_scale=_r(args, 'tecza_perturbation_scale'),
+        universal_basis_noise=_r(args, 'tecza_universal_basis_noise'),
+        log_interval=_r(args, 'tecza_log_interval'),
         normalize=getattr(args, 'normalize', True),
     )
     
@@ -49,14 +61,14 @@ def _create_tecza_steering_object(
         neg_tensor = torch.stack([t.detach().float().reshape(-1) for t in neg_list], dim=0)
         
         # Train directions
-        layer_dirs, meta = method._train_layer_directions(pos_tensor, neg_tensor, layer_str)
+        layer_dirs, meta = method._train_layer_directions(pos_tensor, neg_tensor, layer_str, log_interval=method.log_interval)
         
         layer_int = int(layer_str)
         directions[layer_int] = layer_dirs
         # Equal weights by default
         direction_weights[layer_int] = torch.ones(layer_dirs.shape[0]) / layer_dirs.shape[0]
         
-        print(f"   Layer {layer_str}: {layer_dirs.shape[0]} directions, avg_cosine={meta.get('avg_cosine_similarity', DEFAULT_SCORE):.3f}")
+        print(f"   Layer {layer_str}: {layer_dirs.shape[0]} directions, avg_cosine={meta['avg_cosine_similarity']:.3f}")
     
     from wisent.core.control.steering_methods._steering_object_advanced import TECZASteeringObject
     return TECZASteeringObject(
@@ -72,6 +84,9 @@ def _create_tetno_steering_object(
     layer_activations: dict,
     available_layers: list,
     args,
+    *,
+    threshold_search_init_value: float,
+    default_score: float,
 ) -> TETNOSteeringObject:
     """Create TETNO steering object with conditional gating."""
     from wisent.core.control.steering_methods.methods.advanced import TETNOMethod
@@ -85,8 +100,11 @@ def _create_tetno_steering_object(
     
     method = TETNOMethod(
         sensor_layer=sensor_layer,
-        condition_threshold=getattr(args, 'tetno_condition_threshold', TETNO_CONDITION_THRESHOLD),
-        gate_temperature=getattr(args, 'tetno_gate_temperature', TETNO_GATE_TEMPERATURE),
+        condition_threshold=_require_arg(args, 'tetno_condition_threshold'),
+        gate_temperature=_require_arg(args, 'tetno_gate_temperature'),
+        max_alpha=_require_arg(args, 'tetno_max_alpha'),
+        optimization_steps=_require_arg(args, 'tetno_optimization_steps'),
+        learning_rate=_require_arg(args, 'tetno_learning_rate'),
         learn_threshold=getattr(args, 'tetno_learn_threshold', True),
         normalize=getattr(args, 'normalize', True),
     )
@@ -116,7 +134,7 @@ def _create_tetno_steering_object(
         pos_proj = (pos_tensor * behavior_vec).sum(dim=1).mean()
         neg_proj = (neg_tensor * behavior_vec).sum(dim=1).mean()
         separation = (pos_proj - neg_proj).item()
-        layer_scales[layer_int] = max(_C.TETNO_MIN_LAYER_SCALE, separation)
+        layer_scales[layer_int] = max(_require_arg(args, 'tetno_min_layer_scale'), separation)
         
         print(f"   Layer {layer_str}: separation={separation:.3f}")
     
@@ -137,9 +155,9 @@ def _create_tetno_steering_object(
     
     # Optimize condition vector
     condition_vec = condition_vec.clone().requires_grad_(True)
-    optimizer = torch.optim.Adam([condition_vec], lr=TECZA_LEARNING_RATE)
+    optimizer = torch.optim.Adam([condition_vec], lr=_require_arg(args, 'tetno_learning_rate'))
     
-    for _ in range(_C.TETNO_CONDITION_VEC_OPT_ITERS):
+    for _ in range(_require_arg(args, 'tetno_condition_vec_opt_iters')):
         optimizer.zero_grad()
         c_norm = torch.nn.functional.normalize(condition_vec, dim=0)
         pos_norm = torch.nn.functional.normalize(pos_sensor, dim=1)
@@ -160,8 +178,9 @@ def _create_tetno_steering_object(
     pos_sims = (pos_norm * condition_vec).sum(dim=1)
     neg_sims = (neg_norm * condition_vec).sum(dim=1)
     
-    best_threshold, best_acc = THRESHOLD_SEARCH_INIT_VALUE, 0.0
-    for t in torch.linspace(pos_sims.min(), pos_sims.max(), TETNO_THRESHOLD_SEARCH_STEPS):
+    best_threshold, best_acc = threshold_search_init_value, default_score
+    threshold_search_steps = _require_arg(args, 'tetno_threshold_search_steps')
+    for t in torch.linspace(pos_sims.min(), pos_sims.max(), threshold_search_steps):
         acc = ((pos_sims > t).float().mean() + (neg_sims <= t).float().mean()) / 2
         if acc > best_acc:
             best_acc, best_threshold = acc.item(), t.item()
@@ -177,7 +196,7 @@ def _create_tetno_steering_object(
         sensor_layer=sensor_layer,
         threshold=best_threshold,
         layer_scales=layer_scales,
-        gate_temperature=getattr(args, 'tetno_gate_temperature', TETNO_GATE_TEMPERATURE),
+        gate_temperature=_require_arg(args, 'tetno_gate_temperature'),
     )
 
 

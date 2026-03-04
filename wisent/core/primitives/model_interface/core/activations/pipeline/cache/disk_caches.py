@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Any
 import torch
 
 from wisent.core.primitives.model_interface.core.activations import ExtractionStrategy
-from wisent.core.utils.config_tools.constants import HASH_DIGEST_PREFIX, JSON_INDENT
+from wisent.core.utils.config_tools.constants import JSON_INDENT
 from wisent.core.utils import resolve_default_device
 from .cached_activations import CachedActivations, get_strategy_text_family
 from .raw_cached_activations import RawCachedActivations, RawPairData
@@ -23,17 +23,18 @@ from .raw_cached_activations import RawCachedActivations, RawPairData
 class RawActivationCache:
     """Disk-backed cache for raw hidden states."""
 
-    def __init__(self, cache_dir: str):
+    def __init__(self, cache_dir: str, *, hash_digest_prefix: int):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._memory_cache: Dict[str, RawCachedActivations] = {}
+        self._hash_digest_prefix = hash_digest_prefix
 
     def _get_cache_key(self, model_name: str, benchmark: str, text_family: str,
                        component: str) -> str:
         key_str = f"{model_name}_{benchmark}_{text_family}_raw"
         if component != "residual_stream":
             key_str += f"_{component}"
-        return hashlib.md5(key_str.encode()).hexdigest()[:HASH_DIGEST_PREFIX]
+        return hashlib.md5(key_str.encode()).hexdigest()[:self._hash_digest_prefix]
 
     def _get_cache_path(self, cache_key: str) -> Path:
         return self.cache_dir / f"{cache_key}.pt"
@@ -145,17 +146,18 @@ class RawActivationCache:
 class ActivationCache:
     """Disk-backed cache for extracted activation vectors."""
 
-    def __init__(self, cache_dir: str):
+    def __init__(self, cache_dir: str, *, hash_digest_prefix: int):
         self.cache_dir = Path(cache_dir)
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._memory_cache: Dict[str, CachedActivations] = {}
+        self._hash_digest_prefix = hash_digest_prefix
 
     def _get_cache_key(self, model_name: str, benchmark: str, strategy: ExtractionStrategy,
                        component: str) -> str:
         key_str = f"{model_name}_{benchmark}_{strategy.value}"
         if component != "residual_stream":
             key_str += f"_{component}"
-        return hashlib.md5(key_str.encode()).hexdigest()[:HASH_DIGEST_PREFIX]
+        return hashlib.md5(key_str.encode()).hexdigest()[:self._hash_digest_prefix]
 
     def _get_cache_path(self, cache_key: str) -> Path:
         return self.cache_dir / f"{cache_key}.pt"

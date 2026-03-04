@@ -17,8 +17,7 @@ from wisent.core.utils.cli.optimize_steering.data.activations_data import execut
 from wisent.core.utils.cli.optimize_steering.steering_objects import execute_create_steering_object
 from wisent.core.utils.cli.optimize_steering.data.responses import execute_generate_responses
 from wisent.core.utils.cli.optimize_steering.scores import execute_evaluate_responses
-from wisent.core import constants as _C
-from wisent.core.utils.config_tools.constants import COMPARE_TOL, LR_LOWER_BOUND, LR_UPPER_BOUND, ALPHA_LOWER_BOUND, ALPHA_UPPER_BOUND, DEFAULT_LIMIT
+from wisent.core.utils.config_tools.constants import COMPARE_TOL
 
 
 @dataclass
@@ -43,7 +42,7 @@ def run_pipeline(
     config: MethodConfig,
     work_dir: str,
     strength: float,
-    limit: int = DEFAULT_LIMIT,
+    limit: int,
     device: Optional[str] = None,
     enriched_pairs_file: Optional[str] = None,
     cached_model=None,  # Pre-loaded WisentModel to avoid reloading
@@ -103,15 +102,10 @@ def run_pipeline(
     # 4. Generate responses with steering
     steering_strategy = getattr(config, 'steering_strategy', 'constant')
     execute_generate_responses(_make_args(
-        task=task,
-        input_file=pairs_file,  # Load from pairs file instead of task
-        model=model,
-        output=responses_file,
-        num_questions=limit,
-        steering_object=steering_file,
-        steering_strength=strength,
-        steering_strategy=steering_strategy, use_steering=True, device=device,
-        verbose=False, cached_model=cached_model,
+        task=task, input_file=pairs_file, model=model, output=responses_file,
+        num_questions=limit, min_load_limit_questions=limit, steering_object=steering_file,
+        steering_strength=strength, steering_strategy=steering_strategy,
+        use_steering=True, device=device, verbose=False, cached_model=cached_model,
     ))
     
     # 5. Evaluate responses
@@ -142,23 +136,31 @@ def run_pipeline(
 
 
 def create_optuna_objective(
-    model: str,
-    task: str,
-    method: str,
-    num_layers: int,
-    limit: int,
-    device: Optional[str],
-    work_dir: str,
-    enriched_pairs_file: Optional[str] = None,
-    cached_model=None,
+    model: str, task: str, method: str, num_layers: int, limit: int, device: Optional[str], work_dir: str,
+    lr_lower_bound: float, lr_upper_bound: float, alpha_lower_bound: float, alpha_upper_bound: float,
+    optuna_szlak_reg_min: float, optuna_nurt_steps_min: int, optuna_nurt_steps_max: int,
+    optuna_wicher_concept_dims: tuple, optuna_wicher_steps_min: int, optuna_wicher_steps_max: int,
+    optuna_przelom_target_modes: tuple, optuna_mlp_hidden_dim_min: int = None, optuna_mlp_hidden_dim_max: int = None,
+    optuna_mlp_num_layers_min: int = None, optuna_mlp_num_layers_max: int = None,
+    mlp_input_divisor: int = None, mlp_early_stopping_patience: int = None, mlp_gating_hidden_dim_divisor: int = None,
+    enriched_pairs_file: Optional[str] = None, cached_model=None, *,
+    optuna_grom_gate_dim_min: int, optuna_grom_gate_dim_max: int,
+    optuna_grom_intensity_dim_min: int, optuna_grom_intensity_dim_max: int,
+    optuna_grom_sparse_weight_min: float, optuna_grom_sparse_weight_max: float,
+    search_strength_range_min: float, search_strength_range_max: float,
+    optuna_num_directions_min: int, optuna_num_directions_max: int,
+    optuna_retain_weight_min: float, optuna_retain_weight_max: float,
+    optuna_opt_steps_min: int, optuna_opt_steps_max: int,
+    optuna_temperature_min: float, optuna_temperature_max: float,
+    optuna_max_alpha_min: float, optuna_max_alpha_max: float,
+    optuna_variance_min: float, optuna_variance_max: float,
+    optuna_inference_k_min: int, optuna_inference_k_max: int,
 ):
     """Create an Optuna objective function for a given method."""
-
     def objective(trial: "optuna.Trial") -> float:
-        # Common parameters for all methods
         extraction_strategy = trial.suggest_categorical("extraction_strategy", ["chat_last", "chat_mean"])
         steering_strategy = trial.suggest_categorical("steering_strategy", STEERING_STRATEGIES)
-        trial_strength = trial.suggest_float("strength", _C.SEARCH_STRENGTH_RANGE_MIN, _C.SEARCH_STRENGTH_RANGE_MAX)
+        trial_strength = trial.suggest_float("strength", search_strength_range_min, search_strength_range_max)
         
         if method.upper() == "CAA":
             config = CAAConfig(
@@ -178,19 +180,21 @@ def create_optuna_objective(
             config = MLPConfig(
                 method="MLP",
                 layer=trial.suggest_int("layer", 1, num_layers),
-                hidden_dim=trial.suggest_int("hidden_dim", _C.OPTUNA_MLP_HIDDEN_DIM_MIN, _C.OPTUNA_MLP_HIDDEN_DIM_MAX),
-                num_layers=trial.suggest_int("num_layers", _C.OPTUNA_MLP_NUM_LAYERS_MIN, _C.OPTUNA_MLP_NUM_LAYERS_MAX),
-                extraction_strategy=extraction_strategy,
-                steering_strategy=steering_strategy,
+                hidden_dim=trial.suggest_int("hidden_dim", optuna_mlp_hidden_dim_min, optuna_mlp_hidden_dim_max),
+                num_layers=trial.suggest_int("num_layers", optuna_mlp_num_layers_min, optuna_mlp_num_layers_max),
+                mlp_input_divisor=mlp_input_divisor,
+                mlp_early_stopping_patience=mlp_early_stopping_patience,
+                mlp_gating_hidden_dim_divisor=mlp_gating_hidden_dim_divisor,
+                extraction_strategy=extraction_strategy, steering_strategy=steering_strategy,
             )
         elif method.upper() == "TECZA":
             config = TECZAConfig(
                 method="TECZA",
                 layer=trial.suggest_int("layer", 1, num_layers),
-                num_directions=trial.suggest_int("num_directions", _C.OPTUNA_NUM_DIRECTIONS_MIN, _C.OPTUNA_NUM_DIRECTIONS_MAX),
+                num_directions=trial.suggest_int("num_directions", optuna_num_directions_min, optuna_num_directions_max),
                 direction_weighting=trial.suggest_categorical("direction_weighting", ["primary_only", "equal"]),
-                retain_weight=trial.suggest_float("retain_weight", _C.OPTUNA_RETAIN_WEIGHT_MIN, _C.OPTUNA_RETAIN_WEIGHT_MAX),
-                optimization_steps=trial.suggest_int("optimization_steps", _C.OPTUNA_OPT_STEPS_MIN, _C.OPTUNA_OPT_STEPS_MAX),
+                retain_weight=trial.suggest_float("retain_weight", optuna_retain_weight_min, optuna_retain_weight_max),
+                optimization_steps=trial.suggest_int("optimization_steps", optuna_opt_steps_min, optuna_opt_steps_max),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
@@ -204,9 +208,9 @@ def create_optuna_objective(
                 method="TETNO",
                 sensor_layer=sensor_layer,
                 steering_layers=steering_layers,
-                condition_threshold=trial.suggest_float("condition_threshold", _C.OPTUNA_RETAIN_WEIGHT_MIN, _C.OPTUNA_RETAIN_WEIGHT_MAX),
-                gate_temperature=trial.suggest_float("gate_temperature", _C.OPTUNA_TEMPERATURE_MIN, _C.OPTUNA_TEMPERATURE_MAX),
-                max_alpha=trial.suggest_float("max_alpha", _C.OPTUNA_MAX_ALPHA_MIN, _C.OPTUNA_MAX_ALPHA_MAX),
+                condition_threshold=trial.suggest_float("condition_threshold", optuna_retain_weight_min, optuna_retain_weight_max),
+                gate_temperature=trial.suggest_float("gate_temperature", optuna_temperature_min, optuna_temperature_max),
+                max_alpha=trial.suggest_float("max_alpha", optuna_max_alpha_min, optuna_max_alpha_max),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
@@ -220,14 +224,14 @@ def create_optuna_objective(
                 method="GROM",
                 sensor_layer=sensor_layer,
                 steering_layers=steering_layers,
-                num_directions=trial.suggest_int("num_directions", _C.OPTUNA_NUM_DIRECTIONS_MIN, _C.OPTUNA_NUM_DIRECTIONS_MAX),
-                gate_hidden_dim=trial.suggest_int("gate_hidden_dim", _C.OPTUNA_GROM_GATE_DIM_MIN, _C.OPTUNA_GROM_GATE_DIM_MAX),
-                intensity_hidden_dim=trial.suggest_int("intensity_hidden_dim", _C.OPTUNA_GROM_INTENSITY_DIM_MIN, _C.OPTUNA_GROM_INTENSITY_DIM_MAX),
-                behavior_weight=trial.suggest_float("behavior_weight", _C.OPTUNA_TEMPERATURE_MIN, _C.OPTUNA_TEMPERATURE_MAX),
-                retain_weight=trial.suggest_float("retain_weight", _C.OPTUNA_RETAIN_WEIGHT_MIN, _C.OPTUNA_RETAIN_WEIGHT_MAX),
-                sparse_weight=trial.suggest_float("sparse_weight", _C.OPTUNA_GROM_SPARSE_WEIGHT_MIN, _C.OPTUNA_GROM_SPARSE_WEIGHT_MAX),
-                max_alpha=trial.suggest_float("max_alpha", _C.OPTUNA_MAX_ALPHA_MIN, _C.OPTUNA_MAX_ALPHA_MAX),
-                optimization_steps=trial.suggest_int("optimization_steps", _C.OPTUNA_OPT_STEPS_MIN, _C.OPTUNA_OPT_STEPS_MAX),
+                num_directions=trial.suggest_int("num_directions", optuna_num_directions_min, optuna_num_directions_max),
+                gate_hidden_dim=trial.suggest_int("gate_hidden_dim", optuna_grom_gate_dim_min, optuna_grom_gate_dim_max),
+                intensity_hidden_dim=trial.suggest_int("intensity_hidden_dim", optuna_grom_intensity_dim_min, optuna_grom_intensity_dim_max),
+                behavior_weight=trial.suggest_float("behavior_weight", optuna_temperature_min, optuna_temperature_max),
+                retain_weight=trial.suggest_float("retain_weight", optuna_retain_weight_min, optuna_retain_weight_max),
+                sparse_weight=trial.suggest_float("sparse_weight", optuna_grom_sparse_weight_min, optuna_grom_sparse_weight_max),
+                max_alpha=trial.suggest_float("max_alpha", optuna_max_alpha_min, optuna_max_alpha_max),
+                optimization_steps=trial.suggest_int("optimization_steps", optuna_opt_steps_min, optuna_opt_steps_max),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
@@ -236,11 +240,11 @@ def create_optuna_objective(
             config = NurtConfig(
                 method="nurt",
                 layer=trial.suggest_int("layer", 1, num_layers),
-                variance_threshold=trial.suggest_float("variance_threshold", _C.OPTUNA_VARIANCE_MIN, _C.OPTUNA_VARIANCE_MAX),
-                training_epochs=trial.suggest_int("training_epochs", _C.OPTUNA_OPT_STEPS_MIN, _C.OPTUNA_OPT_STEPS_MAX),
-                lr=trial.suggest_float("lr", LR_LOWER_BOUND, LR_UPPER_BOUND, log=True),
-                num_integration_steps=trial.suggest_int("num_integration_steps", _C.OPTUNA_NURT_STEPS_MIN, _C.OPTUNA_NURT_STEPS_MAX),
-                t_max=trial.suggest_float("t_max", _C.OPTUNA_TEMPERATURE_MIN, _C.OPTUNA_TEMPERATURE_MAX),
+                variance_threshold=trial.suggest_float("variance_threshold", optuna_variance_min, optuna_variance_max),
+                training_epochs=trial.suggest_int("training_epochs", optuna_opt_steps_min, optuna_opt_steps_max),
+                lr=trial.suggest_float("lr", lr_lower_bound, lr_upper_bound, log=True),
+                num_integration_steps=trial.suggest_int("num_integration_steps", optuna_nurt_steps_min, optuna_nurt_steps_max),
+                t_max=trial.suggest_float("t_max", optuna_temperature_min, optuna_temperature_max),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
@@ -249,8 +253,8 @@ def create_optuna_objective(
             config = SzlakConfig(
                 method="szlak",
                 layer=trial.suggest_int("layer", 1, num_layers),
-                sinkhorn_reg=trial.suggest_float("sinkhorn_reg", _C.OPTUNA_SZLAK_REG_MIN, _C.OPTUNA_RETAIN_WEIGHT_MAX, log=True),
-                inference_k=trial.suggest_int("inference_k", _C.OPTUNA_INFERENCE_K_MIN, _C.OPTUNA_INFERENCE_K_MAX),
+                sinkhorn_reg=trial.suggest_float("sinkhorn_reg", optuna_szlak_reg_min, optuna_retain_weight_max, log=True),
+                inference_k=trial.suggest_int("inference_k", optuna_inference_k_min, optuna_inference_k_max),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
@@ -258,13 +262,13 @@ def create_optuna_objective(
             config = WicherConfig(
                 method="wicher",
                 layer=trial.suggest_int("layer", 1, num_layers),
-                concept_dim=trial.suggest_categorical("concept_dim", list(_C.OPTUNA_WICHER_CONCEPT_DIMS)),
-                variance_threshold=trial.suggest_float("variance_threshold", _C.OPTUNA_VARIANCE_MIN, _C.OPTUNA_VARIANCE_MAX),
-                num_steps=trial.suggest_int("num_steps", _C.OPTUNA_WICHER_STEPS_MIN, _C.OPTUNA_WICHER_STEPS_MAX),
-                alpha=trial.suggest_float("alpha", ALPHA_LOWER_BOUND, ALPHA_UPPER_BOUND, log=True),
-                eta=trial.suggest_float("eta", _C.OPTUNA_TEMPERATURE_MIN, _C.OPTUNA_TEMPERATURE_MAX),
-                beta=trial.suggest_float("beta", _C.OPTUNA_RETAIN_WEIGHT_MIN, _C.OPTUNA_RETAIN_WEIGHT_MAX),
-                alpha_decay=trial.suggest_float("alpha_decay", _C.OPTUNA_RETAIN_WEIGHT_MIN, _C.OPTUNA_RETAIN_WEIGHT_MAX),
+                concept_dim=trial.suggest_categorical("concept_dim", list(optuna_wicher_concept_dims)),
+                variance_threshold=trial.suggest_float("variance_threshold", optuna_variance_min, optuna_variance_max),
+                num_steps=trial.suggest_int("num_steps", optuna_wicher_steps_min, optuna_wicher_steps_max),
+                alpha=trial.suggest_float("alpha", alpha_lower_bound, alpha_upper_bound, log=True),
+                eta=trial.suggest_float("eta", optuna_temperature_min, optuna_temperature_max),
+                beta=trial.suggest_float("beta", optuna_retain_weight_min, optuna_retain_weight_max),
+                alpha_decay=trial.suggest_float("alpha_decay", optuna_retain_weight_min, optuna_retain_weight_max),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
@@ -272,28 +276,18 @@ def create_optuna_objective(
             config = PrzelomConfig(
                 method="przelom",
                 layer=trial.suggest_int("layer", 1, num_layers),
-                epsilon=trial.suggest_float("epsilon", _C.OPTUNA_MAX_ALPHA_MIN, _C.OPTUNA_MAX_ALPHA_MAX, log=True),
-                target_mode=trial.suggest_categorical("target_mode", list(_C.OPTUNA_PRZELOM_TARGET_MODES)),
-                regularization=trial.suggest_float("regularization", COMPARE_TOL, LR_UPPER_BOUND, log=True),
-                inference_k=trial.suggest_int("inference_k", _C.OPTUNA_INFERENCE_K_MIN, _C.OPTUNA_INFERENCE_K_MAX),
+                epsilon=trial.suggest_float("epsilon", optuna_max_alpha_min, optuna_max_alpha_max, log=True),
+                target_mode=trial.suggest_categorical("target_mode", list(optuna_przelom_target_modes)),
+                regularization=trial.suggest_float("regularization", COMPARE_TOL, lr_upper_bound, log=True),
+                inference_k=trial.suggest_int("inference_k", optuna_inference_k_min, optuna_inference_k_max),
                 extraction_strategy=extraction_strategy,
                 steering_strategy=steering_strategy,
             )
         else:
             raise ValueError(f"Unknown method: {method}")
-        
-        # Run pipeline and return score
-        result = run_pipeline(
-            model=model,
-            task=task,
-            config=config,
-            work_dir=work_dir,
-            limit=limit,
-            device=device,
-            enriched_pairs_file=enriched_pairs_file,
-            cached_model=cached_model,
-            strength=trial_strength,
-        )
-        return result.score
-
+        return run_pipeline(
+            model=model, task=task, config=config, work_dir=work_dir, limit=limit,
+            device=device, enriched_pairs_file=enriched_pairs_file,
+            cached_model=cached_model, strength=trial_strength,
+        ).score
     return objective
