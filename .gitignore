@@ -158,3 +158,6 @@ personalization_outputs/
 *.log
 *.out
 *.synctex.gz
+
+# Optuna databases
+*.db
